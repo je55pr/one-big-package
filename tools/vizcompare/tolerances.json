@@ -1,0 +1,4 @@
+{
+  "_comment": "Per-shot regression tolerances for tools/vizcompare/compare.py. 'default' overrides the built-in DEFAULT_TOL; a key matching a capture's filename stem overrides that. ssim is a floor, mae/over16_pct are ceilings (over16_pct = percent of pixels whose max channel delta exceeds 16).",
+  "default": { "ssim": 0.995, "mae": 1.5, "over16_pct": 0.02 }
+}
