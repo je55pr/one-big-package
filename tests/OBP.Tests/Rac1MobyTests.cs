@@ -1,4 +1,5 @@
 using OBP.IO;
+using OBP.RAC1.Animation;
 using OBP.RAC1.Level;
 
 namespace OBP.Tests;
@@ -111,4 +112,82 @@ public sealed class Rac1MobyTests
         Assert.Equal((1_407L, 16_963L, 1_314_409L, 4_310L, 47_245L, 16_245L, 38L),
             (animatedClasses, animatedPackets, animatedInFileVertices, matrixTransfers, twoWayVertices, threeWayVertices, geometryFreeAnimated));
     }
+    [SkippableFact]
+    public void AllLevels_AnimationStructureMatchesReferenceCensus()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var catalogue = Rac1DiscIndex.Read(reader);
+        long slots = 0, present = 0, frames = 0, quaternions = 0, joints = 0;
+        long jointlessSlots = 0, jointlessPresent = 0;
+        foreach (var level in catalogue.Levels.OrderBy(l => l.LevelId))
+        {
+            var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level));
+            foreach (var cls in classes.Mobies.Values)
+            {
+                joints += cls.Joints.Count;
+                Assert.All(cls.Joints, joint => Assert.Equal(15, joint.NativeAffine.Length));
+                slots += cls.Sequences.Count;
+                if (cls.JointCount == 0) jointlessSlots += cls.Sequences.Count;
+                for (int slotIndex = 0; slotIndex < cls.Sequences.Count; slotIndex++)
+                {
+                    var slot = cls.Sequences[slotIndex];
+                    Assert.Equal(slotIndex, slot.Index);
+                    if (slot.Value is not { } sequence) continue;
+                    present++;
+                    if (cls.JointCount == 0) jointlessPresent++;
+                    Assert.Equal(slotIndex, sequence.Index);
+                    Assert.Equal(sequence.TriggerCount, sequence.Triggers.Count);
+                    Assert.Equal(sequence.Frames.Count, sequence.FrameEntries.Count);
+                    frames += sequence.Frames.Count;
+                    foreach (var frame in sequence.Frames)
+                    {
+                        Assert.Equal(cls.JointCount * 8, frame.JointDataSize);
+                        Assert.Equal(frame.Thing1Count, frame.Thing1.Count);
+                        Assert.Equal(frame.Thing2Count, frame.Thing2.Count);
+                        int payloadBytes = frame.JointDataSize + (frame.Thing1Count + frame.Thing2Count) * 8;
+                        Assert.Equal((payloadBytes + 15) & ~15, frame.DataSizeQwords * 16);
+                        Assert.Equal(cls.JointCount, frame.JointRotations.Count);
+                        foreach (var q in frame.JointRotations)
+                        {
+                            quaternions++;
+                            double norm = q.Xf * q.Xf + q.Yf * q.Yf + q.Zf * q.Zf + q.Wf * q.Wf;
+                            Assert.InRange(norm, 0.999, 1.001);
+                        }
+                    }
+                }
+            }
+        }
+        Assert.Equal((13_697L, 10_745L, 2_952L, 109_156L, 3_110_018L, 28_193L),
+            (slots, present, slots - present, frames, quaternions, joints));
+        Assert.Equal((1_526L, 1_526L), (jointlessSlots, jointlessPresent));
+    }
+
+    [SkippableFact]
+    public void Level1_Class1134_SingleJointPoseHasRetailRestAnchorAndAnimatedFrames()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 1);
+        var cls = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Mobies[1134];
+
+        Assert.Single(cls.Joints);
+        var rest = Assert.IsType<Rac1MobyAnimation.Sequence>(cls.Sequences[0].Value);
+        var animated = Assert.IsType<Rac1MobyAnimation.Sequence>(cls.Sequences[1].Value);
+        Assert.Single(rest.Frames);
+        Assert.Equal(170, animated.Frames.Count);
+        Assert.True(Rac1MobyPose.CanPoseSingleJointRigid(cls.Mesh, cls.Joints, rest.Frames[0]));
+        Assert.True(Rac1MobyPose.IsRestAnchor(cls.Joints[0], rest.Frames[0]));
+
+        var posedRest = Rac1MobyPose.PoseSingleJointRigid(cls.Mesh, cls.Joints, rest.Frames[0]);
+        double restError = posedRest.Zip(cls.Mesh.Positions, (a, b) => System.Math.Abs(a - b)).Max();
+        Assert.InRange(restError, 0, 0.00002);
+
+        var posedAnimated = Rac1MobyPose.PoseSingleJointRigid(cls.Mesh, cls.Joints, animated.Frames[0]);
+        double animatedDelta = posedAnimated.Zip(cls.Mesh.Positions, (a, b) => System.Math.Abs(a - b)).Max();
+        Assert.True(animatedDelta > 0.5, $"Expected a visibly distinct retail animation pose, got max delta {animatedDelta}.");
+    }
+
 }
