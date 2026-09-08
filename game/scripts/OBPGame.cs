@@ -100,6 +100,10 @@ public partial class OBPGame : Node3D
             {
                 _ = RunStressSwitchAsync(seq);
             }
+            else if (_args.ShotsPath is { } shots)
+            {
+                _ = RunShotsAsync(shots);
+            }
             else if (wantsWorldDirectly)
             {
                 EnterWorld(ResolveRequestedLevel());
@@ -119,7 +123,7 @@ public partial class OBPGame : Node3D
         }
 
         GD.Print($"[OBPGame] ready — mode={_mode} scene='{_sceneKind}' " +
-                 $"capture={_args.CaptureFrame?.ToString() ?? "off"} renderer={ActiveRenderer()} " +
+                 $"capture={_args.CaptureFrame?.ToString() ?? "off"} renderer={CaptureHarness.ActiveRenderer()} " +
                  $"providers={string.Join(",", TrilogyWorldProviders.All.Select(provider => provider.BuildId))}");
 
         if (_args.CaptureFrame is { } frame)
@@ -332,10 +336,12 @@ public partial class OBPGame : Node3D
         _world = world;
         _worldSwitches++;
 
-        // A framed showcase capture (--direct + --capture-frame, no player)
-        // parks a static camera over the level; everything else gets the capsule.
+        // A framed showcase capture (--direct + --capture-frame, no player) or a
+        // --shots run parks a static camera over the level; everything else gets
+        // the capsule.
         bool framedCapture = _args.CaptureFrame is not null && _args.DirectLoad && _args.TestScene != "player"
             && !_args.CrateFocus && !_args.CrateAutoStrike;
+        bool staticCamera = framedCapture || _args.ShotsPath is not null;
 
         // Environment, hero light, welded geometry + collision, sky-follow and the
         // per-frame presentation tick all live in the game-neutral WorldHost.
@@ -356,7 +362,7 @@ public partial class OBPGame : Node3D
         {
             FrameAnimatedMobies(world);
         }
-        else if (framedCapture)
+        else if (staticCamera)
         {
             FrameShowcaseCamera(world);
         }
@@ -493,7 +499,23 @@ public partial class OBPGame : Node3D
     private void SetupOverlay(RuntimeWorldScene.Result result, RuntimeWorld world)
     {
         _overlay = new DebugOverlay(result, world);
-        if (_args.Overlay is not { Length: > 0 } spec)
+        ApplyOverlaySpec(_args.Overlay);
+    }
+
+    /// <summary>
+    /// Reset the overlay and apply a comma-separated layer / <c>isolate:&lt;kind&gt;</c>
+    /// spec (the <c>--overlay</c> syntax). Used for one-shot captures and per shot
+    /// in a <c>--shots</c> run.
+    /// </summary>
+    private void ApplyOverlaySpec(string? spec)
+    {
+        if (_overlay is not { } overlay)
+        {
+            return;
+        }
+
+        overlay.Clear();
+        if (spec is not { Length: > 0 })
         {
             return;
         }
@@ -503,19 +525,20 @@ public partial class OBPGame : Node3D
             if (token.StartsWith("isolate:", System.StringComparison.OrdinalIgnoreCase))
             {
                 string want = token["isolate:".Length..];
-                while (_overlay.IsolatedKind != want)
+                while (overlay.IsolatedKind != want)
                 {
-                    string? before = _overlay.IsolatedKind;
-                    _overlay.IsolateNextKind();
-                    if (_overlay.IsolatedKind == before)
+                    string? before = overlay.IsolatedKind;
+                    overlay.IsolateNextKind();
+                    if (overlay.IsolatedKind == before)
                     {
-                        break; // not a real kind — give up rather than loop
+                        GD.PrintErr($"[OBPGame] --overlay isolate:{want} — no such asset kind");
+                        break;
                     }
                 }
             }
             else if (System.Enum.TryParse<DebugOverlay.Layer>(token, ignoreCase: true, out var layer))
             {
-                _overlay.Set(layer, true);
+                overlay.Set(layer, true);
             }
             else
             {
@@ -884,64 +907,45 @@ public partial class OBPGame : Node3D
 
     private async System.Threading.Tasks.Task RunCaptureAsync(int frameArg)
     {
-        double seconds = System.Math.Max(0.25, frameArg / 60.0);
-        var watchdog = GetTree().CreateTimer(seconds + 20.0);
-        watchdog.Timeout += () =>
-        {
-            GD.PrintErr("[OBPGame] capture watchdog fired — quitting");
-            GetTree().Quit(2);
-        };
+        var meta = CaptureMetadata();
+        meta["capture"] = _sceneKind;
+        meta["captureFrameArg"] = frameArg;
 
-        await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-
-        var image = GetViewport().GetTexture().GetImage();
-        string outPath = _args.CaptureOut ?? $"captures/{_sceneKind}.png";
-        string pngPath = outPath.StartsWith("res://") || outPath.StartsWith("user://")
-            ? ProjectSettings.GlobalizePath(outPath)
-            : Path.GetFullPath(outPath);
-        string jsonPath = Path.ChangeExtension(pngPath, ".json");
-        Directory.CreateDirectory(Path.GetDirectoryName(pngPath)!);
-
-        Error err = image.SavePng(pngPath);
-        var r = _sceneResult;
-        var meta = new
-        {
-            capture = _sceneKind,
-            captureFrameArg = frameArg,
-            renderedFrames = _frame,
-            width = image.GetWidth(),
-            height = image.GetHeight(),
-            renderer = ActiveRenderer(),
-            engine = (string)Engine.GetVersionInfo()["string"],
-            authorityBuild = _world?.BuildId ?? Rac2Authority.Primary.BuildId,
-            game = _world?.Game,
-            planet = _world?.PlanetName,
-            location = _world?.LocationName,
-            levelId = _world?.LevelId,
-            worldSwitches = _worldSwitches,
-            camera = new { position = new[] { _activeCamera.GlobalPosition.X, _activeCamera.GlobalPosition.Y, _activeCamera.GlobalPosition.Z } },
-            meshInstances = r?.MeshInstances ?? 0,
-            triangles = r?.Triangles ?? 0,
-            textures = r?.Textures ?? 0,
-            collisionBodies = r?.CollisionBodies ?? 0,
-            collisionTriangles = r?.CollisionTriangles ?? 0,
-            tieInstances = r?.TieInstances ?? 0,
-            shrubInstances = r?.ShrubInstances ?? 0,
-            mobyInstances = r?.MobyInstances ?? 0,
-            dynamicObjects = r?.DynamicObjects ?? 0,
-            crateDebug = GetCrateDebugSnapshot(),
-            player = _player is { } pl && IsInstanceValid(pl)
-                ? new { position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z }, onFloor = pl.IsOnFloor() }
-                : null,
-            savePngResult = err.ToString(),
-        };
-        File.WriteAllText(jsonPath, JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
-
-        GD.Print($"[OBPGame] captured {pngPath} ({image.GetWidth()}x{image.GetHeight()}, {err}) + {Path.GetFileName(jsonPath)}");
-        GetTree().Quit(err == Error.Ok ? 0 : 1);
+        var result = await CaptureHarness.CaptureAsync(
+            this, _args.CaptureOut ?? $"captures/{_sceneKind}.png", frameArg, meta);
+        GetTree().Quit(result.Ok ? 0 : 1);
     }
 
-    private static string ActiveRenderer() =>
-        RenderingServer.GetRenderingDevice() is null ? "gl_compatibility" : "rendering_device";
+    /// <summary>The common world / render / player metadata for any capture (shot or single frame).</summary>
+    private System.Collections.Generic.Dictionary<string, object?> CaptureMetadata()
+    {
+        var r = _sceneResult;
+        return new System.Collections.Generic.Dictionary<string, object?>
+        {
+            ["renderedFrames"] = _frame,
+            ["renderer"] = CaptureHarness.ActiveRenderer(),
+            ["engine"] = (string)Engine.GetVersionInfo()["string"],
+            ["authorityBuild"] = _world?.BuildId ?? Rac2Authority.Primary.BuildId,
+            ["game"] = _world?.Game,
+            ["planet"] = _world?.PlanetName,
+            ["location"] = _world?.LocationName,
+            ["levelId"] = _world?.LevelId,
+            ["worldSwitches"] = _worldSwitches,
+            ["camera"] = new[] { _activeCamera.GlobalPosition.X, _activeCamera.GlobalPosition.Y, _activeCamera.GlobalPosition.Z },
+            ["overlays"] = _overlay?.StatusLine(),
+            ["meshInstances"] = r?.MeshInstances ?? 0,
+            ["triangles"] = r?.Triangles ?? 0,
+            ["textures"] = r?.Textures ?? 0,
+            ["collisionBodies"] = r?.CollisionBodies ?? 0,
+            ["collisionTriangles"] = r?.CollisionTriangles ?? 0,
+            ["tieInstances"] = r?.TieInstances ?? 0,
+            ["shrubInstances"] = r?.ShrubInstances ?? 0,
+            ["mobyInstances"] = r?.MobyInstances ?? 0,
+            ["dynamicObjects"] = r?.DynamicObjects ?? 0,
+            ["crateDebug"] = GetCrateDebugSnapshot(),
+            ["player"] = _player is { } pl && IsInstanceValid(pl)
+                ? new { position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z }, onFloor = pl.IsOnFloor() }
+                : null,
+        };
+    }
 }

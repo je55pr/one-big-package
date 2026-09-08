@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac2-ntscu-v1.01",
+  "camera": [
+    -63.150635,
+    710.1504,
+    1154.7092
+  ],
+  "capture": "shot:lights",
+  "collisionBodies": 2,
+  "collisionTriangles": 741940,
+  "crateDebug": null,
+  "dynamicObjects": 39,
+  "game": "rac2",
+  "levelId": 7,
+  "location": "Frozen Lab",
+  "meshInstances": 363,
+  "mobyInstances": 84,
+  "overlays": "overlays: EnvGizmos",
+  "planet": "Siberius",
+  "player": null,
+  "shot": {
+    "camera": "Orbit",
+    "name": "lights",
+    "overlay": "envgizmos",
+    "settleFrames": 60
+  },
+  "shrubInstances": 34,
+  "textures": 407,
+  "tieInstances": 170,
+  "triangles": 2519925
+}
