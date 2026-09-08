@@ -69,6 +69,33 @@ Pure, `OBP.Godot`-free, unit-tested (`tests/OBP.Tests/WorldPresentationTests`,
 (clear colour, ambient, tone-map + exposure, adjustment grade, depth fog) at load
 and applies the per-region ambient lift + fog each frame.
 
+## Materials — `OBP.Godot.WorldMaterialFactory`
+
+Every Godot material for a built world comes from one factory: it owns the
+decoded `ImageTexture`s and the `StandardMaterial3D` cache, and is the single
+place a material is made from a neutral `RuntimeMesh` / `RuntimeObjectMesh` /
+`RuntimeAnimatedMesh` (three inline sites in `RuntimeWorldScene.Build` before).
+
+The decisions are engine-independent and unit-tested in
+`OBP.Runtime.Presentation.MaterialModel`: back-face cull by kind
+(`tfrag`/`tie`), vertex-colour-as-albedo by kind, the tfrag `BakeCurve` lift,
+and a texture `AlphaProfile`. World geometry stays `Unshaded` — baked PS2 vertex
+colour is the lighting.
+
+`MaterialModel` also carries a histogram-driven `ResolveAlpha` (opaque / scissor
+/ blend from what the texture actually contains) and an emission model — wired
+and tested but **not yet switched on**: on the showcase set they move
+metal-city planets (Endako) more than a fidelity pass should without
+per-planet review. A focused follow-up turns them on with `vizcompare` evidence.
+
+## Visual regression — `tools/vizcompare/`
+
+`compare.py` (numpy + Pillow) diffs two capture sets: MAE, windowed-SSIM,
+changed-pixel %, and a `_diff.png` heat image for any pair over its tolerance
+(`tolerances.json`). `tools/vizcompare.ps1 -Update` refreshes a local baseline
+under `captures/baseline/<set>/` — **gitignored; baselines are retail-derived
+and never committed or uploaded**.
+
 ## Coordinate handedness
 
 `RuntimeWorldScene.ToScene` negates X (the OBP→Godot reflection). Any host-side
