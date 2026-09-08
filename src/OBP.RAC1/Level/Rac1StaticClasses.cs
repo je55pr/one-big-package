@@ -20,7 +20,8 @@ public static class Rac1StaticClasses
         Rac1Moby.Mesh Mesh,
         int[] TriangleTextureIds,
         IReadOnlyList<int> TextureIds,
-        int JointCount);
+        int JointCount,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> Joints);
 
     public sealed record TieClass(
         int OClass,
@@ -77,10 +78,11 @@ public static class Rac1StaticClasses
                 throw new InvalidDataException($"Duplicate R&C1 moby class id {entry.OClass}.");
             var payload = Payload(entry).ToArray();
             var mesh = Rac1Moby.ReadClass(payload);
+            var joints = Rac1Moby.ReadSkeleton(payload);
             var mapped = MapTextureSlots("moby", entry, mesh.TriangleMaterialSlots, allowUntextured: true);
             mobies.Add(entry.OClass, new MobyClass(
                 entry.OClass, entry.AssetOffset, mesh, mapped,
-                mapped.Where(v => v >= 0).Distinct().OrderBy(v => v).ToArray(), mesh.JointCount));
+                mapped.Where(v => v >= 0).Distinct().OrderBy(v => v).ToArray(), mesh.JointCount, joints));
         }
 
         var ties = new Dictionary<int, TieClass>();

@@ -80,6 +80,23 @@ Direct observations already rule out reusing OBP's current GC translation-only b
 
 This strongly suggests the native skeleton carries real rotational inverse-bind information. Full bind-pose reconstruction remains a separate promotion step: classes with unusual zero final vectors and hierarchy details still need to be included in the complete geometry-bound validation before production code emits animated meshes.
 
+## Production C# promotion
+
+The retail-selected skin-state interpretation is now promoted into `OBP.RAC1.Geometry.Rac1Moby` without changing the already-validated base-surface positions.
+
+Production C# now:
+
+- preserves the 64-slot VU0 skin/blend cache across high-LOD packets;
+- decodes current-record upper bits with the operation-dependent meanings established above;
+- emits three joint indices plus normalized weights for every emitted vertex of geometry-bearing animated classes;
+- carries those bindings through the same persistent native vertex cache used by cross-packet duplicate emissions;
+- exposes the matching native `0x40 * jointCount` skeleton records and `0x10 * jointCount` common-transform records, preserving each 4x4 matrix verbatim plus the aligned parent byte offset / record index;
+- deliberately does **not** apply those skeleton matrices to the bind/rest surface yet.
+
+The permanent retail-gated C# test now reproduces the complete animated census exactly: 1,407 geometry-bearing animated class occurrences, 16,963 packets, 1,314,409 in-file vertices, 4,310 pre-loop transfers, 47,245 two-way vertices, 16,245 three-way vertices, and 38 geometry-free special occurrences. It also checks that every emitted animated vertex has a normalized binding whose nonzero joint references are inside the class joint table. The full local retail-authority suite passes with all three supported authority ISOs.
+
+This checkpoint is intentionally animation-ready rather than animation-complete. The remaining blocker is the semantic interpretation of the non-identity R&C1 skeleton matrices and animation-frame data; those transforms must be retail-validated before production code deforms the recovered base surface.
+
 ## R&C1 -> GC evolution implication
 
 At the packet skin-state-machine layer, the current evidence supports a shared lineage: pre-loop transfers, 64 VU0 slots, two-way/three-way blending and exact 8-bit weights all match the later machinery conceptually. R&C1's already-established `8*u32` vertex-table header remains a separate generation.

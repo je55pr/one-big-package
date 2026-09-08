@@ -14,6 +14,8 @@ public static class Rac1Moby
     public const int ClassHeaderSize = 0x48;
     public const int PacketEntrySize = 0x10;
     public const int VertexHeaderSize = 0x20;
+    private const int JointStride = 0x40;
+    private const int CommonTransStride = 0x10;
     private const int VertexPipeline = 7;
 
     public sealed record Mesh(
@@ -24,9 +26,42 @@ public static class Rac1Moby
         float Scale,
         int HighLodPacketCount,
         double BoundingRadius,
-        int JointCount);
+        int JointCount)
+    {
+        /// <summary>Three joint indices per emitted vertex; empty for rigid classes.</summary>
+        public int[] VertexJoints { get; init; } = [];
 
-    private readonly record struct CachedVertex(double X, double Y, double Z);
+        /// <summary>Three normalized weights per emitted vertex; empty for rigid classes.</summary>
+        public float[] VertexWeights { get; init; } = [];
+
+        public int MatrixTransferCount { get; init; }
+        public int TwoWayBlendVertexCount { get; init; }
+        public int ThreeWayBlendVertexCount { get; init; }
+        public int InFileVertexCount { get; init; }
+    }
+
+    /// <summary>
+    /// One native 0x40 skeleton record plus its matching 0x10 common-transform
+    /// record. The 4x4 matrix is preserved verbatim; no bind/animation meaning
+    /// is assigned to it until the remaining retail transform archaeology lands.
+    /// </summary>
+    public sealed record SkeletonJoint(
+        int Index,
+        int ParentByteOffset,
+        int ParentRecordIndex,
+        float[] NativeMatrix,
+        float CommonX,
+        float CommonY,
+        float CommonZ);
+
+    private struct SkinAttr
+    {
+        public int Count;
+        public int J0, J1, J2;
+        public int W0, W1, W2;
+    }
+
+    private readonly record struct CachedVertex(double X, double Y, double Z, SkinAttr Skin);
     private sealed class Primitive
     {
         public int Material;
@@ -36,6 +71,7 @@ public static class Rac1Moby
     private sealed class PacketState
     {
         public readonly Dictionary<int, CachedVertex> VertexCache = [];
+        public readonly SkinAttr?[] BlendCache = new SkinAttr?[64];
         public int ActiveTexture;
     }
 
@@ -44,10 +80,154 @@ public static class Rac1Moby
         float[] Uvs,
         int[] Indices,
         int[] MaterialSlots,
-        int ActiveTexture);
+        int[] VertexJoints,
+        float[] VertexWeights,
+        int ActiveTexture,
+        int MatrixTransferCount,
+        int TwoWayBlendVertexCount,
+        int ThreeWayBlendVertexCount,
+        int InFileVertexCount);
 
     private static int AsS8(byte value) => unchecked((sbyte)value);
     private static int Align(int value, int amount) => ((value + amount - 1) / amount) * amount;
+
+    public static IReadOnlyList<SkeletonJoint> ReadSkeleton(byte[] bytes)
+    {
+        if (bytes.Length < ClassHeaderSize)
+        {
+            throw new InvalidDataException("R&C1 Moby class buffer shorter than the 0x48 header.");
+        }
+        int jointCount = bytes[0x08];
+        if (jointCount == 0)
+        {
+            return [];
+        }
+
+        int skeletonOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0x14));
+        int commonTransOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0x18));
+        bool geometryBearing = bytes[0x04] > 0;
+        if (skeletonOffset <= 0 || commonTransOffset <= 0 ||
+            (long)skeletonOffset + (long)jointCount * JointStride > bytes.Length ||
+            (long)commonTransOffset + (long)jointCount * CommonTransStride > bytes.Length)
+        {
+            if (!geometryBearing)
+            {
+                return [];
+            }
+            throw new InvalidDataException("R&C1 animated Moby has an out-of-range skeleton/common-transform table.");
+        }
+
+        var joints = new List<SkeletonJoint>(jointCount);
+        for (int j = 0; j < jointCount; j++)
+        {
+            int s = skeletonOffset + j * JointStride;
+            var matrix = new float[16];
+            for (int i = 0; i < matrix.Length; i++)
+            {
+                matrix[i] = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(s + i * 4));
+                if (!float.IsFinite(matrix[i]))
+                {
+                    throw new InvalidDataException($"R&C1 Moby joint {j} contains a non-finite skeleton matrix value.");
+                }
+            }
+
+            int c = commonTransOffset + j * CommonTransStride;
+            float cx = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(c));
+            float cy = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(c + 4));
+            float cz = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(c + 8));
+            int parentByteOffset = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(c + 0x0c));
+            if (!float.IsFinite(cx) || !float.IsFinite(cy) || !float.IsFinite(cz) ||
+                parentByteOffset % JointStride != 0 || parentByteOffset / JointStride >= jointCount ||
+                (parentByteOffset != 0 && parentByteOffset / JointStride >= j))
+            {
+                throw new InvalidDataException($"R&C1 Moby joint {j} has an invalid common-transform record.");
+            }
+            joints.Add(new SkeletonJoint(j, parentByteOffset, parentByteOffset / JointStride, matrix, cx, cy, cz));
+        }
+        return joints;
+    }
+
+    private static SkinAttr[] ReadPacketSkin(
+        byte[] bytes, int vertexOffset, int vertexTableOffset, int matrixTransferCount,
+        int twoWayCount, int threeWayCount, int inFileVertexCount, int jointCount,
+        PacketState state, int packetIndex)
+    {
+        void CheckAddress(int address, string role)
+        {
+            if (address < 0 || address > 0xff || (address & 3) != 0)
+            {
+                throw new InvalidDataException($"R&C1 Moby packet {packetIndex} has invalid {role} VU0 address {address}.");
+            }
+        }
+
+        SkinAttr Rigid(int joint)
+        {
+            if (joint < 0 || joint >= jointCount)
+            {
+                throw new InvalidDataException($"R&C1 Moby packet {packetIndex} references joint {joint} outside {jointCount} joints.");
+            }
+            return new SkinAttr { Count = 1, J0 = joint, W0 = 256 };
+        }
+
+        void Set(int address, SkinAttr attr)
+        {
+            CheckAddress(address, "store");
+            if (address != 0xf4)
+            {
+                state.BlendCache[address >> 2] = attr;
+            }
+        }
+
+        SkinAttr Get(int address)
+        {
+            CheckAddress(address, "load");
+            return state.BlendCache[address >> 2]
+                ?? throw new InvalidDataException($"R&C1 Moby packet {packetIndex} reads uninitialized VU0 slot {address >> 2}.");
+        }
+
+        for (int t = 0; t < matrixTransferCount; t++)
+        {
+            int at = vertexOffset + VertexHeaderSize + t * 2;
+            Set(bytes[at + 1], Rigid(bytes[at]));
+        }
+
+        int vertexBase = vertexOffset + vertexTableOffset;
+        var attrs = new SkinAttr[inFileVertexCount];
+        for (int v = 0; v < inFileVertexCount; v++)
+        {
+            int at = vertexBase + v * 0x10;
+            int upperBits = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(at)) >> 9;
+            int B(int offset) => bytes[at + offset];
+            SkinAttr attr;
+            if (v < twoWayCount)
+            {
+                Set(B(6), Rigid(upperBits));
+                var a = Get(B(2));
+                var b = Get(B(3));
+                if (a.Count != 1 || b.Count != 1 || B(4) + B(5) != 256)
+                    throw new InvalidDataException($"R&C1 Moby packet {packetIndex} has invalid two-way blend state at vertex {v}.");
+                attr = new SkinAttr { Count = 2, J0 = a.J0, J1 = b.J0, W0 = B(4), W1 = B(5) };
+                Set(B(7), attr);
+            }
+            else if (v < twoWayCount + threeWayCount)
+            {
+                var a = Get(B(2));
+                var b = Get(B(3));
+                var c = Get(upperBits * 2);
+                if (a.Count != 1 || b.Count != 1 || c.Count != 1 || B(4) + B(5) + B(6) != 256)
+                    throw new InvalidDataException($"R&C1 Moby packet {packetIndex} has invalid three-way blend state at vertex {v}.");
+                attr = new SkinAttr { Count = 3, J0 = a.J0, J1 = b.J0, J2 = c.J0, W0 = B(4), W1 = B(5), W2 = B(6) };
+                Set(B(7), attr);
+            }
+            else
+            {
+                Set(B(3), Rigid(upperBits));
+                attr = Get(B(2));
+            }
+            attrs[v] = attr;
+        }
+        return attrs;
+    }
 
     public static Mesh ReadClass(byte[] bytes)
     {
@@ -78,22 +258,35 @@ public static class Rac1Moby
         var uvs = new List<float>();
         var indices = new List<int>();
         var materialSlots = new List<int>();
+        var vertexJoints = new List<int>();
+        var vertexWeights = new List<float>();
+        int matrixTransfers = 0, twoWay = 0, threeWay = 0, inFileVertices = 0;
         for (int packetIndex = 0; packetIndex < highLodPacketCount; packetIndex++)
         {
-            var packet = DecodePacket(bytes, packetTableOffset + packetIndex * PacketEntrySize, scale, state, packetIndex);
+            var packet = DecodePacket(bytes, packetTableOffset + packetIndex * PacketEntrySize, scale, jointCount, state, packetIndex);
             int vertexBase = positions.Count / 3;
             positions.AddRange(packet.Positions);
             uvs.AddRange(packet.Uvs);
+            vertexJoints.AddRange(packet.VertexJoints);
+            vertexWeights.AddRange(packet.VertexWeights);
             foreach (int index in packet.Indices)
             {
                 indices.Add(vertexBase + index);
             }
             materialSlots.AddRange(packet.MaterialSlots);
+            matrixTransfers += packet.MatrixTransferCount;
+            twoWay += packet.TwoWayBlendVertexCount;
+            threeWay += packet.ThreeWayBlendVertexCount;
+            inFileVertices += packet.InFileVertexCount;
             state.ActiveTexture = packet.ActiveTexture;
         }
         if (indices.Count / 3 != materialSlots.Count)
         {
             throw new InvalidDataException("R&C1 Moby triangle/material counts diverged during bind-pose decode.");
+        }
+        if (jointCount > 0 && (vertexJoints.Count != positions.Count || vertexWeights.Count != positions.Count))
+        {
+            throw new InvalidDataException("R&C1 Moby skin bindings diverged from emitted vertex count.");
         }
 
         return new Mesh(
@@ -104,10 +297,18 @@ public static class Rac1Moby
             scale,
             highLodPacketCount,
             boundingRadius,
-            jointCount);
+            jointCount)
+        {
+            VertexJoints = vertexJoints.ToArray(),
+            VertexWeights = vertexWeights.ToArray(),
+            MatrixTransferCount = matrixTransfers,
+            TwoWayBlendVertexCount = twoWay,
+            ThreeWayBlendVertexCount = threeWay,
+            InFileVertexCount = inFileVertices,
+        };
     }
 
-    private static Packet DecodePacket(byte[] bytes, int entryOffset, float scale, PacketState state, int packetIndex)
+    private static Packet DecodePacket(byte[] bytes, int entryOffset, float scale, int jointCount, PacketState state, int packetIndex)
     {
         uint vifListOffsetRaw = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(entryOffset));
         int vifListSize = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(entryOffset + 0x04)) * 0x10;
@@ -272,17 +473,39 @@ public static class Rac1Moby
             duplicateIndices[i] = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(duplicateArrayOffset + i * 2)) >> 7;
         }
 
+        SkinAttr[]? skinAttrs = jointCount > 0
+            ? ReadPacketSkin(bytes, vertexOffset, vertexTableOffset, matrixTransferCount,
+                twoWayCount, threeWayCount, inFileVertexCount, jointCount, state, packetIndex)
+            : null;
+
         var positions = new List<double>();
         var uvs = new List<float>();
+        var vertexJoints = new List<int>();
+        var vertexWeights = new List<float>();
+
+        void AppendSkin(SkinAttr skin)
+        {
+            if (jointCount == 0) return;
+            int sum = skin.W0 + (skin.Count > 1 ? skin.W1 : 0) + (skin.Count > 2 ? skin.W2 : 0);
+            if (skin.Count is < 1 or > 3 || sum <= 0)
+                throw new InvalidDataException($"R&C1 Moby packet {packetIndex} produced an invalid skin binding.");
+            vertexJoints.Add(skin.J0); vertexJoints.Add(skin.J1); vertexJoints.Add(skin.J2);
+            vertexWeights.Add((float)skin.W0 / sum);
+            vertexWeights.Add(skin.Count > 1 ? (float)skin.W1 / sum : 0f);
+            vertexWeights.Add(skin.Count > 2 ? (float)skin.W2 / sum : 0f);
+        }
+
         for (int i = 0; i < vertices.Count; i++)
         {
             var vertex = vertices[i];
+            var skin = skinAttrs?[i] ?? default;
             positions.Add(vertex.X);
             positions.Add(vertex.Y);
             positions.Add(vertex.Z);
             uvs.Add(BinaryPrimitives.ReadInt16LittleEndian(stData.AsSpan(i * 4)) / 4096f);
             uvs.Add(BinaryPrimitives.ReadInt16LittleEndian(stData.AsSpan(i * 4 + 2)) / 4096f);
-            state.VertexCache[vertex.NativeIndex] = new CachedVertex(vertex.X, vertex.Y, vertex.Z);
+            AppendSkin(skin);
+            state.VertexCache[vertex.NativeIndex] = new CachedVertex(vertex.X, vertex.Y, vertex.Z, skin);
         }
         for (int i = 0; i < duplicateIndices.Length; i++)
         {
@@ -296,6 +519,7 @@ public static class Rac1Moby
             int stIndex = vertices.Count + i;
             uvs.Add(BinaryPrimitives.ReadInt16LittleEndian(stData.AsSpan(stIndex * 4)) / 4096f);
             uvs.Add(BinaryPrimitives.ReadInt16LittleEndian(stData.AsSpan(stIndex * 4 + 2)) / 4096f);
+            AppendSkin(source.Skin);
         }
 
         var primitives = new List<Primitive>();
@@ -384,6 +608,17 @@ public static class Rac1Moby
             }
         }
 
-        return new Packet(positions.ToArray(), uvs.ToArray(), indices.ToArray(), materialSlots.ToArray(), activeTexture);
+        return new Packet(
+            positions.ToArray(),
+            uvs.ToArray(),
+            indices.ToArray(),
+            materialSlots.ToArray(),
+            vertexJoints.ToArray(),
+            vertexWeights.ToArray(),
+            activeTexture,
+            matrixTransferCount,
+            twoWayCount,
+            threeWayCount,
+            inFileVertexCount);
     }
 }
