@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac1-ntscu-original",
+  "camera": [
+    15.701828,
+    200.84161,
+    432.83545
+  ],
+  "capture": "shot:kinds",
+  "collisionBodies": 1,
+  "collisionTriangles": 86184,
+  "crateDebug": null,
+  "dynamicObjects": 0,
+  "game": "rac1",
+  "levelId": 0,
+  "location": null,
+  "meshInstances": 318,
+  "mobyInstances": 33,
+  "overlays": "overlays: KindTint",
+  "planet": null,
+  "player": null,
+  "shot": {
+    "camera": "Showcase",
+    "name": "kinds",
+    "overlay": "kindtint",
+    "settleFrames": 60
+  },
+  "shrubInstances": 70,
+  "textures": 410,
+  "tieInstances": 131,
+  "triangles": 899439
+}

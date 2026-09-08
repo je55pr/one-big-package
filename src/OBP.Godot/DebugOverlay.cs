@@ -253,6 +253,7 @@ public sealed class DebugOverlay
     {
         if (_world.Lighting is not { } lighting)
         {
+            GD.Print($"[DebugOverlay] {_world.Game} {_world.DisplayName}: no decoded lighting — env gizmos unavailable");
             return;
         }
 

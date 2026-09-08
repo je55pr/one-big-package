@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Core;
 using OBP.Godot;
 using OBP.RAC2;
 using OBP.Runtime;
@@ -9,9 +10,12 @@ namespace OneBigPackage;
 /// <summary>
 /// <c>--shots &lt;file&gt;</c>: load one world, then run every named
 /// <see cref="ShotSpec"/> in the <see cref="ShotList"/> — set the framing, apply
-/// the shot's overlay layers, settle, and write <c>captures/shots/&lt;world&gt;-&lt;shot&gt;.png</c>
-/// plus a JSON sidecar — all in a single process, then quit. The world comes from
-/// <c>--shots-world</c>, the list's own <c>world</c> field, or <c>--planet</c>.
+/// the shot's overlay layers, settle, and write
+/// <c>&lt;out&gt;/&lt;world&gt;-&lt;shot&gt;.png</c> plus a JSON sidecar — in a single
+/// process, then quit. The world token is <c>--shots-world</c>, the list's own
+/// <c>world</c> field, or <c>--planet</c>; a token with a <c>:</c>
+/// (<c>rac1:LEVEL0</c>, <c>rac3:TABLE1</c>) routes through the neutral provider
+/// path, otherwise it is a GC planet name / id.
 /// </summary>
 public partial class OBPGame
 {
@@ -29,18 +33,37 @@ public partial class OBPGame
             return;
         }
 
-        string? token = _args.ShotsWorld ?? list.World ?? _args.Planet;
-        int levelId = token is null ? _args.GcLevel : GcPlanetCatalogue.Resolve(token) ?? _args.GcLevel;
+        RegisterCommandLineSources();
 
-        EnterWorld(levelId);
+        string? token = _args.ShotsWorld ?? list.World ?? _args.Planet;
+        string slug;
+
+        if (token is { } t && t.Contains(':'))
+        {
+            OpenDestinationFromBootstrap(t);
+            slug = t.Replace(':', '-').ToLowerInvariant();
+        }
+        else
+        {
+            int levelId = token is null ? _args.GcLevel : GcPlanetCatalogue.Resolve(token) ?? _args.GcLevel;
+            _isoPath = _args.GcIso;
+            if (_isoPath is null || !IdentifyDisc(_isoPath))
+            {
+                GD.PrintErr("[shots] a GC planet token needs --gc-iso");
+                GetTree().Quit(2);
+                return;
+            }
+
+            EnterWorld(levelId);
+            slug = (GcPlanetCatalogue.Find(levelId)?.Planet ?? $"level{levelId}").ToLowerInvariant().Replace(' ', '-');
+        }
+
         if (_mode != Mode.World || _world is not { } world)
         {
-            GD.PrintErr($"[shots] world '{token ?? levelId.ToString()}' did not load");
+            GD.PrintErr($"[shots] world '{token ?? "?"}' did not load");
             GetTree().Quit(1);
             return;
         }
-
-        string slug = (world.PlanetName ?? $"level{levelId}").ToLowerInvariant().Replace(' ', '-');
         Engine.MaxFps = 60;
         int failures = 0;
 
@@ -53,19 +76,21 @@ public partial class OBPGame
             ApplyOverlaySpec(shot.Overlay);
             UpdateWorldHud();
 
-            var meta = CaptureMetadata();
-            meta["capture"] = $"shot:{shot.Name}";
-            meta["shot"] = new Dictionary<string, object?>
-            {
-                ["name"] = shot.Name,
-                ["camera"] = shot.Camera.ToString(),
-                ["overlay"] = shot.Overlay,
-                ["settleFrames"] = shot.SettleFrames,
-            };
-
             string outDir = _args.ShotsOut ?? System.IO.Path.Combine("captures", "shots");
             string outPath = System.IO.Path.Combine(outDir, $"{slug}-{shot.Name}.png");
-            var result = await CaptureHarness.CaptureAsync(this, outPath, shot.SettleFrames, meta);
+            var result = await CaptureHarness.CaptureAsync(this, outPath, shot.SettleFrames, () =>
+            {
+                var meta = CaptureMetadata();
+                meta["capture"] = $"shot:{shot.Name}";
+                meta["shot"] = new Dictionary<string, object?>
+                {
+                    ["name"] = shot.Name,
+                    ["camera"] = shot.Camera.ToString(),
+                    ["overlay"] = shot.Overlay,
+                    ["settleFrames"] = shot.SettleFrames,
+                };
+                return meta;
+            });
             if (!result.Ok)
             {
                 failures++;
@@ -74,6 +99,25 @@ public partial class OBPGame
 
         GD.Print($"[shots] done — {list.Shots.Count - failures}/{list.Shots.Count} written to captures/shots/");
         GetTree().Quit(failures == 0 ? 0 : 1);
+    }
+
+    /// <summary>Remember every <c>--&lt;game&gt;-iso</c> passed, so the neutral provider path can resolve its source.</summary>
+    private void RegisterCommandLineSources()
+    {
+        if (_args.Rac1Iso is { } rc1)
+        {
+            RememberCommandLineSource(ObpSourceGame.Rac1, rc1);
+        }
+
+        if (_args.GcIso is { } gc)
+        {
+            RememberCommandLineSource(ObpSourceGame.Rac2, gc);
+        }
+
+        if (_args.UyaIso is { } uya)
+        {
+            RememberCommandLineSource(ObpSourceGame.Rac3, uya);
+        }
     }
 
     private void ApplyShotCamera(ShotSpec shot, RuntimeWorld world)

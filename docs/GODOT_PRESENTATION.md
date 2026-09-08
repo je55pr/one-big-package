@@ -131,15 +131,25 @@ caller's metadata, with a watchdog. Both capture paths use it.
 
 - **Single frame** — `--capture-frame N --capture-out <path>`. `tools/capture.ps1`,
   `tools/capture-planets.ps1` wrap it.
-- **Shot list** — `--shots <file.json> --shots-world <planet>` runs every named
+- **Shot list** — `--shots <file.json> [--shots-world <token>]` runs every named
   `ShotSpec` in a `ShotList` in one process: set the framing (`showcase` /
   `topDown` / `orbit`), apply the shot's `overlay` layers, settle, write
-  `<world>-<shot>.png` + sidecar. `tools/shots.ps1` wraps it;
-  `tools/shots.ps1 -Check` diffs each sidecar's deterministic keys against
-  `tools/shots/golden/` (via `tools/shots/check.py`). Default list:
-  `tools/shots/showcase.json`.
+  `<world>-<shot>.png` + sidecar. The world token is a GC planet name/id **or**
+  a neutral destination id (`rac1:LEVEL0`, `rac3:TABLE1`) which routes through
+  the provider path. `tools/shots.ps1 -Game rac1|rac2|rac3` picks
+  `tools/shots/<game>.json` + the right ISO; `-Check` diffs each sidecar's
+  deterministic keys against `tools/shots/golden/` (via `tools/shots/check.py`).
 
 `ShotSpec` / `ShotList` live in `OBP.Runtime.Presentation` (pure, JSON, tested).
+
+## Trilogy
+
+`WorldHost` / `PresentationEnvironment` / `DebugOverlay` / `CaptureHarness`
+consume a `RuntimeWorld` from any provider. RAC1 and RAC3 populate core geometry
+/ collision / environment (RAC3 also dynamic objects); `Lighting` and
+`AnimatedMeshes` are still null there, and the host degrades gracefully — the
+hero light hides, F5 env-gizmos report "no decoded lighting", the HUD reads
+`LEVELn` / the native label. Per-game shot sets: `tools/shots/rac{1,2,3}.json`.
 
 ## Milestone 1 status
 

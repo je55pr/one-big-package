@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac3-ntscu-original",
+  "camera": [
+    185.42249,
+    518.442,
+    713.25665
+  ],
+  "capture": "shot:collision",
+  "collisionBodies": 1,
+  "collisionTriangles": 264313,
+  "crateDebug": null,
+  "dynamicObjects": 0,
+  "game": "rac3",
+  "levelId": 1,
+  "location": null,
+  "meshInstances": 335,
+  "mobyInstances": 0,
+  "overlays": "overlays: CollisionWire WorldBounds",
+  "planet": null,
+  "player": null,
+  "shot": {
+    "camera": "Orbit",
+    "name": "collision",
+    "overlay": "collisionwire,worldbounds",
+    "settleFrames": 60
+  },
+  "shrubInstances": 53,
+  "textures": 483,
+  "tieInstances": 163,
+  "triangles": 888830
+}
