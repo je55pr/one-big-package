@@ -57,9 +57,13 @@ Pure, `OBP.Godot`-free, unit-tested (`tests/OBP.Tests/WorldPresentationTests`,
 | `WorldPresentation.Resolve` | `RuntimeEnvironment` → `PresentationState`: background (explicit → fog colour → default), ambient lift, load-time fog. |
 | `WorldPresentation.ResolveFog` / `FogFromResolved` | the one fog resolver — begin/end/density/curve, far-visibility drive, end-plane stretched past `bounds.Diagonal * 1.4`. |
 | `EnvResolver.Evaluate` | nearest env sample + fog fallback + env-transition doorway blend at a world point (`research/GC_LIGHTING.md`). |
-| `PresentationState` / `EnvResolved` / `FogState` / `ToneMap` / `Rgb` | engine-independent result records. |
+| `WorldPresentation.ResolveToneMap` | AgX + an exposure nudge from the baked ambient (dark planets open, bright pull back). |
+| `WorldPresentation.ResolveGrade` | a small fixed post-tone-map contrast/saturation lift. |
+| `PresentationState` / `EnvResolved` / `FogState` / `ToneMap` / `ColourGrade` / `Rgb` | engine-independent result records. |
 
-`ToneMap` currently defaults to `Neutral` (Godot's default — no tone-map).
+`OBP.Godot.PresentationEnvironment` translates that onto a Godot `Environment`
+(clear colour, ambient, tone-map + exposure, adjustment grade, depth fog) at load
+and applies the per-region ambient lift + fog each frame.
 
 ## Coordinate handedness
 
@@ -78,6 +82,6 @@ those scripts for the argument surface.
 
 - [x] PR 1 `presentation-core` — extract the pure maths.
 - [x] PR 2 `world-host` — `WorldHost`, one presentation tick.
-- [ ] PR 3 `presentation-lighting` — tone-map / exposure / grade, material factory.
+- [x] PR 3 `presentation-lighting` — `PresentationEnvironment`, AgX tone-map, ambient exposure, gentle grade.
 - [ ] PR 4 `env-animation` — neutral ambient-animation contract + applier + sky motion.
-- [ ] PR 5 `debug-overlays-and-shots` — runtime overlay toggles + shot-list harness.
+- [ ] PR 5 `debug-overlays-and-shots` — runtime overlay toggles + shot-list harness + material factory.

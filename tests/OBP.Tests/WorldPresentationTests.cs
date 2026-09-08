@@ -60,9 +60,33 @@ public class WorldPresentationTests
     }
 
     [Fact]
-    public void ToneMap_DefaultIsNeutral_ForParity()
+    public void ToneMap_IsAgx_WithNeutralExposure_WhenNoAmbient()
     {
-        Assert.Equal(ToneMap.Neutral, WorldPresentation.Resolve(Env(), UnitBounds).ToneMap);
+        var tm = WorldPresentation.Resolve(Env(), UnitBounds).ToneMap;
+        Assert.Equal(ToneMapMode.Agx, tm.Mode);
+        Assert.Equal(1.0, tm.Exposure);
+    }
+
+    [Fact]
+    public void ToneMap_Exposure_OpensDarkPlanetsAndPullsBackBrightOnes()
+    {
+        double dark = WorldPresentation.ResolveToneMap(Env(ambient: (0.11, 0.18, 0.20))).Exposure;
+        double bright = WorldPresentation.ResolveToneMap(Env(ambient: (0.7, 0.7, 0.7))).Exposure;
+
+        Assert.True(dark > 1.0, $"dark ambient should raise exposure, got {dark}");
+        Assert.True(bright < 1.0, $"bright ambient should lower exposure, got {bright}");
+        Assert.InRange(dark, 0.9, 1.15);
+        Assert.InRange(bright, 0.9, 1.15);
+    }
+
+    [Fact]
+    public void Grade_IsAGentleFixedLift()
+    {
+        var grade = WorldPresentation.Resolve(Env(ambient: (0.2, 0.2, 0.2)), UnitBounds).Grade;
+        Assert.False(grade.IsNeutral);
+        Assert.Equal(1.0, grade.Brightness);
+        Assert.InRange(grade.Contrast, 1.0, 1.15);
+        Assert.InRange(grade.Saturation, 1.0, 1.15);
     }
 
     [Theory]

@@ -81,7 +81,7 @@ public sealed class WorldHost
         World = world;
 
         _env = new WorldEnvironment { Name = "WorldEnvironment", Environment = new global::Godot.Environment() };
-        RuntimeWorldScene.ConfigureEnvironment(_env.Environment, world);
+        PresentationEnvironment.Configure(_env.Environment, world);
         hostNode.AddChild(_env);
 
         _heroLight = new DirectionalLight3D
@@ -177,7 +177,7 @@ public sealed class WorldHost
         _heroLight.Visible = r.HasHeroLight;
         if (r.HasHeroLight)
         {
-            _heroLight.LightColor = RuntimeWorldScene.ToColor(r.HeroColour);
+            _heroLight.LightColor = PresentationEnvironment.ToColor(r.HeroColour);
             // travel dir is OBP space; mirror X for Godot. A DirectionalLight3D
             // shines down its local -Z, so aim -Z along the travel direction.
             var godotTravel = new Vector3(-(float)r.HeroTravel.X, (float)r.HeroTravel.Y, (float)r.HeroTravel.Z);
@@ -187,18 +187,7 @@ public sealed class WorldHost
             }
         }
 
-        // Ambient: lift toward white so the unlit world keeps its decoded colour.
-        env.AmbientLightColor = new Color(
-            0.5f + (0.5f * (float)r.Ambient.R),
-            0.5f + (0.5f * (float)r.Ambient.G),
-            0.5f + (0.5f * (float)r.Ambient.B));
-
-        // Per-region fog: only override while the resolved region defines fog;
-        // leave the load-time fog (and its ease-in curve) otherwise.
-        var fog = WorldPresentation.FogFromResolved(r, World.Bounds.Diagonal);
-        if (fog.Enabled)
-        {
-            RuntimeWorldScene.ApplyFog(env, fog, setCurve: false);
-        }
+        // Scene ambient lift + per-region fog override.
+        PresentationEnvironment.ApplyResolvedRegion(env, r, World.Bounds.Diagonal);
     }
 }

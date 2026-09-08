@@ -42,6 +42,18 @@ public readonly record struct ToneMap(ToneMapMode Mode, double Exposure, double 
 }
 
 /// <summary>
+/// A gentle post-tonemap colour adjustment (brightness / contrast / saturation,
+/// each 1.0 = unchanged). <see cref="Neutral"/> means the host applies no
+/// adjustment layer at all.
+/// </summary>
+public readonly record struct ColourGrade(double Brightness, double Contrast, double Saturation)
+{
+    public static readonly ColourGrade Neutral = new(1.0, 1.0, 1.0);
+
+    public bool IsNeutral => this == Neutral;
+}
+
+/// <summary>
 /// Resolved depth-fog parameters in world units. <see cref="Disabled"/> means the
 /// level defines no usable fog and the host should turn fog off.
 /// </summary>
@@ -66,7 +78,8 @@ public sealed record PresentationState(
     Rgb Ambient,
     double AmbientEnergy,
     FogState Fog,
-    ToneMap ToneMap);
+    ToneMap ToneMap,
+    ColourGrade Grade);
 
 /// <summary>
 /// Per-region lighting / fog resolved at one world point (the player or camera),

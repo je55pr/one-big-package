@@ -1,7 +1,6 @@
 using Godot;
 using OBP.Core.Math;
 using OBP.Runtime;
-using OBP.Runtime.Presentation;
 
 namespace OBP.Godot;
 
@@ -663,55 +662,6 @@ public static class RuntimeWorldScene
         var z = new Vector3((float)-m[8], (float)m[9], (float)m[10]);
         var origin = new Vector3((float)-m[12], (float)m[13], (float)m[14]);
         return new Transform3D(new Basis(x, y, z), origin);
-    }
-
-    /// <summary>Linear <see cref="Rgb"/> → Godot <see cref="Color"/>.</summary>
-    public static Color ToColor(Rgb c) => new((float)c.R, (float)c.G, (float)c.B);
-
-    /// <summary>
-    /// Fill a Godot <see cref="global::Godot.Environment"/> from the runtime
-    /// world's atmosphere: background clear colour, scene ambient and depth fog.
-    /// The maths lives in <see cref="WorldPresentation"/> (engine-independent and
-    /// unit-tested); this only translates the result to Godot. Exact PS2 fog is
-    /// not reproduced.
-    /// </summary>
-    public static void ConfigureEnvironment(global::Godot.Environment env, RuntimeWorld world)
-    {
-        var state = WorldPresentation.Resolve(world.Environment, world.Bounds);
-
-        env.BackgroundMode = global::Godot.Environment.BGMode.Color;
-        env.BackgroundColor = ToColor(state.Background);
-        env.AmbientLightSource = global::Godot.Environment.AmbientSource.Color;
-        env.AmbientLightColor = ToColor(state.Ambient);
-        env.AmbientLightEnergy = (float)state.AmbientEnergy;
-
-        ApplyFog(env, state.Fog, setCurve: true);
-    }
-
-    /// <summary>
-    /// Translate a resolved <see cref="FogState"/> onto a Godot environment.
-    /// <paramref name="setCurve"/> is false on the per-frame path so a live
-    /// region change never re-writes the load-time ease-in curve.
-    /// </summary>
-    public static void ApplyFog(global::Godot.Environment env, FogState fog, bool setCurve)
-    {
-        if (!fog.Enabled)
-        {
-            env.FogEnabled = false;
-            return;
-        }
-
-        env.FogEnabled = true;
-        env.FogMode = global::Godot.Environment.FogModeEnum.Depth;
-        env.FogLightColor = ToColor(fog.Colour);
-        env.FogDepthBegin = (float)fog.Begin;
-        env.FogDepthEnd = (float)fog.End;
-        env.FogDensity = (float)fog.Density;
-        env.FogSkyAffect = 0.0f;
-        if (setCurve)
-        {
-            env.FogDepthCurve = (float)fog.Curve;
-        }
     }
 
     private static Vector3 Vertex(RuntimeCollisionBlob blob, int index)

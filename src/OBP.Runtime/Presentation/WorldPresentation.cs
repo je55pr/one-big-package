@@ -19,6 +19,14 @@ public static class WorldPresentation
     public const double FogCurve = 1.6;
 
     /// <summary>
+    /// Tone-mapper for the world viewport. AgX rolls bright texels and sky off
+    /// smoothly instead of the hard clip a linear map gives, which is the single
+    /// biggest "pleasant" win over the historical default. Change here to retune
+    /// the whole trilogy at once.
+    /// </summary>
+    public const ToneMapMode WorldToneMap = ToneMapMode.Agx;
+
+    /// <summary>
     /// The load-time presentation for a world. <paramref name="bounds"/> is the
     /// full world bounds; its diagonal stretches the fog end-plane past the level
     /// so distant scenery still reads through heavy fog.
@@ -38,7 +46,41 @@ public static class WorldPresentation
             ? new Rgb(0.55 + (0.45 * a.R), 0.55 + (0.45 * a.G), 0.55 + (0.45 * a.B))
             : Rgb.White;
 
-        return new PresentationState(background, ambient, 1.0, ResolveFog(env, bounds), ToneMap.Neutral);
+        return new PresentationState(
+            background,
+            ambient,
+            1.0,
+            ResolveFog(env, bounds),
+            ResolveToneMap(env),
+            ResolveGrade(env));
+    }
+
+    /// <summary>
+    /// AgX tone-map plus a small exposure nudge from the level's baked ambient:
+    /// dark planets open up a little, bright ones pull back, so worlds read at a
+    /// more consistent brightness without touching the decoded colours.
+    /// </summary>
+    public static ToneMap ResolveToneMap(RuntimeEnvironment? env)
+    {
+        double exposure = 1.0;
+        if (env?.AmbientColour is { } a)
+        {
+            double ambLum = System.Math.Clamp(new Rgb(a.R, a.G, a.B).Luminance, 0.0, 1.0);
+            exposure = System.Math.Clamp(1.0 + ((0.32 - ambLum) * 0.5), 0.9, 1.15);
+        }
+
+        return new ToneMap(WorldToneMap, exposure, 1.0);
+    }
+
+    /// <summary>
+    /// A fixed, gentle post-tone-map lift — the unshaded PS2 palette is a touch
+    /// flat, so a small contrast + saturation bump helps it read. Kept subtle and
+    /// level-independent so it never fights the decoded look.
+    /// </summary>
+    public static ColourGrade ResolveGrade(RuntimeEnvironment? env)
+    {
+        _ = env;
+        return new ColourGrade(1.0, 1.04, 1.05);
     }
 
     /// <summary>Load-time depth fog straight from the level settings / nearest fog sample.</summary>
