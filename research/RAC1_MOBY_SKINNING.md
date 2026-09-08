@@ -79,7 +79,7 @@ Direct observations rule out reusing OBP's current GC translation-only bind shor
 - simple two-joint specimens satisfy the inverse-affine relationship exactly, but one global hierarchy formula does not yet explain every rotated/scaled branch;
 - the remaining `common_trans +0x0e` field uses only `0x0000` and `0x7000` in the authority census and is retained raw because both values occur on rigid and non-rigid joints.
 
-A systematic convention sweep finds a strongest current hierarchy recurrence covering **25,509 / 26,786** non-root joints, but the exceptions include scaled/sheared and special skeleton branches. Multi-joint pose reconstruction therefore remains intentionally unpromoted.
+A systematic convention sweep found a strongest `common_trans` hierarchy recurrence covering **25,509 / 26,786** non-root joints, but the exceptions include scaled/sheared and special skeleton branches. That recurrence is retained as negative archaeology only: production does not use `common_trans` as pose authority. The later bind-pivot derivation below solves the proven rigid subset without relying on it.
 
 ## Sequence/frame structure and first safe pose subset
 
@@ -100,13 +100,25 @@ Sequence `+0x18` is the constant-rate fast path. All **586** sequences whose fra
 
 A conservative first pose path is nevertheless proven for a large one-joint subset. Of 389 one-joint geometry-bearing class occurrences, 377 first frames cancel the stored rigid inverse-bind orientation to retail quaternion tolerance. Nine of the twelve exceptions have non-rigid scale in the skeleton, and the remaining three are occurrences of special class `66`. Production `Rac1MobyPose` therefore accepts only one-joint, rigid, zero-tail classes and provides an explicit rest-anchor check. Level 1 class `1134` is the permanent specimen: sequence 0 reproduces the stored rest surface within `2e-5` native world units, while sequence 1 has 170 frames and its first frame is visibly distinct from rest.
 
-The native timing clock is promoted for the proven constant-rate runtime specimens. Variable-rate playback and non-rigid scale/shear deformation remain deliberately separate milestones.
+The native timing clock is promoted for the proven constant-rate runtime specimens. General variable-rate runtime scheduling remains a separate milestone. General non-rigid scale/shear also remains gated; the dedicated Ratchet positive-leaf static-stretch subset is independently proved below.
 
 Rigid multi-joint deformation is now independently pinned. Across all 19 authority levels, **286 multi-joint class occurrences** have a one-frame sequence 0 where every frame quaternion cancels that joint's stored rigid inverse-bind 3x3. All 286, covering **206,213 vertices**, reproduce the decoded retail rest surface within `0.002` world units (observed worst error `0.00109782`) when evaluated by the production hierarchy path. This supports treating the frame quaternions as **global joint orientations for this proven rigid subset**, rather than importing GC's local-rotation hierarchy semantics.
 
 The rigid hierarchy derives each bind pivot directly from the native inverse-bind linear block and tail, derives child-local offsets from those bind pivots, then evaluates each influence as `posed = frameRotation * (inverseBind * rest + tail) + animatedPivot`. The existing exact 1/2/3-way skin weights are then combined by ordinary linear blend skinning. `common_trans` is not used as pose authority because candidate recurrence interpretations do not hold universally across retail.
 
 The moving population also survives a full stress census: **35 class occurrences / 20 distinct classes / 130 multi-frame sequences / 3,630 frames**, spanning **2 to 38 joints**, all pose to finite geometry; the worst posed extent is only **1.25558x** the corresponding rest extent. Level 2 class `766` is the first runtime specimen: 4 joints, 16 frames, constant rate `0.25` = **15 FPS** on the NTSC-U 60 Hz update path, and 54 placements. Those placements contribute 5,184 animated triangles while preserving the previous level total exactly. Deterministic Godot captures of the first instance at capture frames 10 and 40 use the same camera and differ across **81,172 pixels (8.81%)**, providing a visible multi-bone playback proof.
+
+## Dedicated Ratchet player animation
+
+Retail class `0` is now identified as the Ratchet player body by converging structure across every authority level. It is present on all 19 levels with an identical **111-joint / 5,583-vertex / 6,856-triangle** mesh, exactly one placement per level, and that placement is always Moby instance `0`. The class advertises 134 ordinary Moby sequence slots but every class-local sequence pointer is null.
+
+The missing player animations live in a separate 256-slot table referenced by level-core header `+0x78`. On Veldin exactly slots `0..133` are populated, matching class 0's 134 null slots. Across all 19 levels the dedicated decoder sees **1,804 present sequences / 33,977 frames / 3,771,447 joint quaternions**. Every frame is the ordinary 111-joint format (`888 = 111 * 8` joint bytes), with zero special-frame flags or joint-size mismatches. Timing uses the same native equation as ordinary Mobies: **32,173 / 32,173** adjacent pairs match exactly, and all **219** variable-rate sequences use a zero constant-rate field.
+
+Ratchet uses a distinct hierarchy convention from the ordinary rigid Moby subset. Retail rest-anchor evidence selects `globalOrientation[j] = localQuaternion[j] * globalOrientation[parent]`. Class 0 has 109 rigid joints plus two positive-determinant non-rigid leaf joints (22 and 24). Their scale/shear is carried as static bind stretch while animation supplies rotation. That interpretation is independently supported by **35** ordinary retail class occurrences / **210** known anchor frames whose only non-rigid joints are positive-determinant leaves; the static-stretch factorization reconstructs those anchors with observed worst matrix error `2.22e-16`.
+
+Ratchet dedicated sequence `122`, frame 0 is the all-level bind anchor. Production weighted skinning reconstructs all 5,583 Veldin vertices with observed max error **0.000183594** world units; frame 1 moves the mesh by more than **0.0474** world units. A read-only PCSX2/PINE trace of normal untouched gameplay then pins the neutral selector: the active class-0 Moby cycles **sequence 0 -> 2 -> 0 -> 1** while standing still. Sequence 0 is the 10-frame standing loop, constant rate `0.125` = **7.5 FPS** on NTSC-U; sequences 1 and 2 are 77-frame variable-rate delayed idle/fidget variants. The live runtime's patched Ratchet sequence pointers map directly to the dedicated core slots, so these ids are not an OBP naming convention.
+
+The first runtime promotion deliberately plays only sequence 0. Ratchet is emitted as four animated texture surfaces (5,356 + 966 + 404 + 130 = **6,856 triangles**) at 7.5 FPS and removed from the welded static Moby path, preserving each level's combined triangle total. Delayed idle selection between sequences 1/2 remains future gameplay-state work rather than being invented in the importer. Deterministic Godot captures at capture frames 10 and 70 use the same camera and advance the Ratchet surfaces from source frame 2 to source frame 8; **82,343 pixels (8.93%)** differ between the two 1280x720 captures.
 
 ## Production C# promotion
 
@@ -119,11 +131,12 @@ Production C# now:
 - emits three joint indices plus normalized weights for every emitted vertex of geometry-bearing animated classes;
 - carries those bindings through the same persistent native vertex cache used by cross-packet duplicate emissions;
 - exposes the matching native `0x40 * jointCount` skeleton records and `0x10 * jointCount` common-transform records as 15 affine floats plus the proven packed metadata word, aligned parent byte offset / record index, local vector and raw `+0x0e` field;
-- applies the retail-pinned rigid multi-joint hierarchy only when every inverse-bind 3x3 is rigid and the frame provides the complete joint quaternion set; non-rigid scale/shear remains excluded.
+- applies the retail-pinned rigid multi-joint hierarchy when every inverse-bind 3x3 is rigid and the frame provides the complete joint quaternion set;
+- decodes the dedicated 256-slot Ratchet table and evaluates class 0 with parent-composed local quaternions plus the separately proven static-stretch rule for positive-determinant non-rigid leaf joints.
 
 The permanent retail-gated C# test now reproduces the complete animated census exactly: 1,407 geometry-bearing animated class occurrences, 16,963 packets, 1,314,409 in-file vertices, 4,310 pre-loop transfers, 47,245 two-way vertices, 16,245 three-way vertices, and 38 geometry-free special occurrences. It also checks that every emitted animated vertex has a normalized binding whose nonzero joint references are inside the class joint table. The full local retail-authority suite passes with all three supported authority ISOs.
 
-The rigid hierarchy is now animation-capable and retail-validated for the bounded population above. The remaining transform blocker is the non-rigid subset: R&C1 contains meaningful scale/shear in native inverse-bind matrices, and those semantics must be independently recovered before production expands beyond the rigid capability gate.
+The rigid hierarchy and dedicated Ratchet player hierarchy are now animation-capable and retail-validated for their bounded populations. The remaining transform blocker is the wider non-rigid subset: R&C1 contains meaningful scale/shear beyond Ratchet's proven leaf-only case, and those semantics must still be independently recovered before production generalizes that capability.
 
 ## R&C1 -> GC evolution implication
 

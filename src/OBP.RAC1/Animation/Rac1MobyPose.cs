@@ -5,8 +5,8 @@ namespace OBP.RAC1.Animation;
 /// <summary>
 /// Evidence-bounded R&amp;C1 Moby pose evaluation. The original one-joint path
 /// remains available, while rigid multi-joint hierarchies use the retail-pinned
-/// inverse-bind pivots and global frame orientations. Non-rigid bind transforms
-/// remain unsupported until their scale/shear semantics are independently proved.
+/// inverse-bind pivots and global frame orientations. The dedicated Ratchet path
+/// additionally supports retail-proven static stretch/shear on non-rigid leaf joints.
 /// </summary>
 public static class Rac1MobyPose
 {
@@ -209,6 +209,238 @@ public static class Rac1MobyPose
             output[v * 3 + 2] = acc[2];
         }
         return output;
+    }
+
+    /// <summary>
+    /// Capability gate for the dedicated R&amp;C1 Ratchet hierarchy. Retail
+    /// class 0 uses parent-composed local quaternions. Its only non-rigid bind
+    /// transforms are positive-determinant leaves, whose stretch/shear remains
+    /// static while the frame supplies orientation.
+    /// </summary>
+    public static bool CanPoseRatchetHierarchy(
+        Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame)
+    {
+        int n = mesh.JointCount;
+        return n > 0 && joints.Count == n && frame.JointRotations.Count == n &&
+            mesh.VertexJoints.Length == mesh.Positions.Length &&
+            mesh.VertexWeights.Length == mesh.Positions.Length &&
+            CanPoseRatchetJointHierarchy(joints, frame);
+    }
+
+    public static bool IsRatchetHierarchyRestAnchor(
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame,
+        double tolerance = 0.002)
+    {
+        if (!CanPoseRatchetJointHierarchy(joints, frame)) return false;
+        var global = RatchetGlobalRotations(joints, frame);
+        for (int j = 0; j < joints.Count; j++)
+        {
+            var inverseBind = Affine3x3(joints[j].NativeAffine);
+            var stretch = StaticBindStretch(inverseBind);
+            if (IdentityError(Multiply(Multiply(global[j], stretch), inverseBind)) > tolerance)
+                return false;
+        }
+        return true;
+    }
+
+    public static double[] PoseRatchetHierarchy(
+        Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame)
+    {
+        if (!CanPoseRatchetHierarchy(mesh, joints, frame))
+            throw new InvalidOperationException("R&C1 Ratchet pose is outside the pinned local-hierarchy/static-leaf-stretch subset.");
+        int n = joints.Count;
+        double k = mesh.Scale / 1024.0;
+        var inverseBind = new double[n][,];
+        var bindLinear = new double[n][,];
+        var staticStretch = new double[n][,];
+        var globalRotation = RatchetGlobalRotations(joints, frame);
+        var animatedLinear = new double[n][,];
+        var tail = new double[n][];
+        var bindPivot = new double[n][];
+        var animatedPivot = new double[n][];
+        for (int j = 0; j < n; j++)
+        {
+            inverseBind[j] = Affine3x3(joints[j].NativeAffine);
+            bindLinear[j] = Inverse3x3(inverseBind[j]);
+            staticStretch[j] = StaticBindStretch(inverseBind[j]);
+            animatedLinear[j] = Multiply(globalRotation[j], staticStretch[j]);
+            tail[j] =
+            [
+                joints[j].NativeAffine[12] * k,
+                joints[j].NativeAffine[13] * k,
+                joints[j].NativeAffine[14] * k,
+            ];
+            bindPivot[j] = Negate(Multiply(bindLinear[j], tail[j]));
+        }
+        for (int j = 0; j < n; j++)
+        {
+            if (j == 0)
+            {
+                animatedPivot[j] = bindPivot[j];
+                continue;
+            }
+            int parent = joints[j].ParentRecordIndex;
+            var localOffset = Multiply(
+                inverseBind[parent],
+                Subtract(bindPivot[j], bindPivot[parent]));
+            animatedPivot[j] = Add(
+                animatedPivot[parent],
+                Multiply(animatedLinear[parent], localOffset));
+        }
+
+        var output = new double[mesh.Positions.Length];
+        int vertexCount = mesh.Positions.Length / 3;
+        for (int v = 0; v < vertexCount; v++)
+        {
+            var rest = new[]
+            {
+                mesh.Positions[v * 3],
+                mesh.Positions[v * 3 + 1],
+                mesh.Positions[v * 3 + 2],
+            };
+            var acc = new double[3];
+            double weightSum = 0;
+            for (int influence = 0; influence < 3; influence++)
+            {
+                double weight = mesh.VertexWeights[v * 3 + influence];
+                if (weight <= 0) continue;
+                int joint = mesh.VertexJoints[v * 3 + influence];
+                if (joint < 0 || joint >= n)
+                    throw new InvalidDataException($"R&C1 Ratchet vertex {v} references joint {joint} outside {n} joints.");
+                var bindLocal = Add(Multiply(inverseBind[joint], rest), tail[joint]);
+                var posed = Add(Multiply(animatedLinear[joint], bindLocal), animatedPivot[joint]);
+                acc[0] += weight * posed[0];
+                acc[1] += weight * posed[1];
+                acc[2] += weight * posed[2];
+                weightSum += weight;
+            }
+            if (weightSum <= 0)
+            {
+                acc = rest;
+            }
+            else if (System.Math.Abs(weightSum - 1.0) > 1e-5)
+            {
+                acc[0] /= weightSum;
+                acc[1] /= weightSum;
+                acc[2] /= weightSum;
+            }
+            output[v * 3] = acc[0];
+            output[v * 3 + 1] = acc[1];
+            output[v * 3 + 2] = acc[2];
+        }
+        return output;
+    }
+
+    private static bool CanPoseRatchetJointHierarchy(
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame)
+    {
+        int n = joints.Count;
+        if (n == 0 || frame.JointRotations.Count != n) return false;
+        var childCounts = new int[n];
+        for (int j = 1; j < n; j++)
+        {
+            int parent = joints[j].ParentRecordIndex;
+            if (parent < 0 || parent >= j) return false;
+            childCounts[parent]++;
+        }
+        for (int j = 0; j < n; j++)
+        {
+            var a = Affine3x3(joints[j].NativeAffine);
+            double determinant = Determinant(a);
+            if (!double.IsFinite(determinant) || determinant <= 1e-8) return false;
+            if (!IsRigid(joints[j].NativeAffine) && childCounts[j] != 0) return false;
+        }
+        return true;
+    }
+
+    private static double[][,] RatchetGlobalRotations(
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame)
+    {
+        var global = new double[joints.Count][,];
+        for (int j = 0; j < joints.Count; j++)
+        {
+            var local = QuaternionMatrix(frame.JointRotations[j]);
+            if (j == 0)
+            {
+                global[j] = local;
+                continue;
+            }
+            int parent = joints[j].ParentRecordIndex;
+            global[j] = Multiply(local, global[parent]);
+        }
+        return global;
+    }
+
+    private static double[,] StaticBindStretch(double[,] inverseBind)
+    {
+        if (IsRigidMatrix(inverseBind)) return Identity3x3();
+        var bindLinear = Inverse3x3(inverseBind);
+        var bindRotation = PolarRotation(bindLinear);
+        return Multiply(Transpose(bindRotation), bindLinear);
+    }
+
+    private static double[,] PolarRotation(double[,] matrix)
+    {
+        var current = (double[,])matrix.Clone();
+        for (int iteration = 0; iteration < 50; iteration++)
+        {
+            var inverseTranspose = Transpose(Inverse3x3(current));
+            var next = new double[3, 3];
+            double delta = 0;
+            for (int row = 0; row < 3; row++)
+            {
+                for (int col = 0; col < 3; col++)
+                {
+                    next[row, col] = 0.5 * (current[row, col] + inverseTranspose[row, col]);
+                    delta = System.Math.Max(delta, System.Math.Abs(next[row, col] - current[row, col]));
+                }
+            }
+            current = next;
+            if (delta < 1e-13) break;
+        }
+        return current;
+    }
+
+    private static double[,] Identity3x3() => new[,]
+    {
+        { 1d, 0d, 0d }, { 0d, 1d, 0d }, { 0d, 0d, 1d },
+    };
+
+    private static double[,] Transpose(double[,] matrix) => new[,]
+    {
+        { matrix[0,0], matrix[1,0], matrix[2,0] },
+        { matrix[0,1], matrix[1,1], matrix[2,1] },
+        { matrix[0,2], matrix[1,2], matrix[2,2] },
+    };
+
+    private static double Determinant(double[,] a) =>
+        a[0, 0] * (a[1, 1] * a[2, 2] - a[1, 2] * a[2, 1]) -
+        a[0, 1] * (a[1, 0] * a[2, 2] - a[1, 2] * a[2, 0]) +
+        a[0, 2] * (a[1, 0] * a[2, 1] - a[1, 1] * a[2, 0]);
+
+    private static bool IsRigidMatrix(double[,] a)
+    {
+        for (int row = 0; row < 3; row++)
+        {
+            double length2 = 0;
+            for (int col = 0; col < 3; col++) length2 += a[row, col] * a[row, col];
+            if (System.Math.Abs(length2 - 1.0) > RigidTolerance) return false;
+        }
+        for (int aRow = 0; aRow < 3; aRow++)
+            for (int bRow = aRow + 1; bRow < 3; bRow++)
+            {
+                double dot = 0;
+                for (int col = 0; col < 3; col++) dot += a[aRow, col] * a[bRow, col];
+                if (System.Math.Abs(dot) > RigidTolerance) return false;
+            }
+        return System.Math.Abs(Determinant(a) - 1.0) <= RigidTolerance;
     }
 
     private static double IdentityError(double[,] matrix)

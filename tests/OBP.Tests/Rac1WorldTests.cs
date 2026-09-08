@@ -20,15 +20,15 @@ public sealed class Rac1LevelTests_World
         Assert.Equal(0, world.LevelId);
         Assert.Equal("LEVEL0", world.DisplayName);
 
-        Assert.Equal(319, world.Meshes.Count);
-        Assert.Equal(900_909, world.TotalRenderTriangles);
+        Assert.Equal(315, world.Meshes.Count);
+        Assert.Equal(894_053, world.TotalRenderTriangles);
         int Meshes(string kind) => world.Meshes.Count(m => m.AssetKind == kind);
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
         Assert.Equal((78, 24_520), (Meshes("tfrag"), Tris("tfrag")));
         Assert.Equal((7, 2_366), (Meshes("sky"), Tris("sky")));
         Assert.Equal((131, 396_708), (Meshes("tie"), Tris("tie")));
         Assert.Equal((70, 327_841), (Meshes("shrub"), Tris("shrub")));
-        Assert.Equal((33, 149_474), (Meshes("moby"), Tris("moby")));
+        Assert.Equal((29, 142_618), (Meshes("moby"), Tris("moby")));
 
         Assert.All(world.Meshes.Where(m => m.AssetKind == "tfrag"), mesh =>
         {
@@ -91,7 +91,19 @@ public sealed class Rac1LevelTests_World
         Assert.Equal(0, world.Ship.Yaw);
 
         Assert.Null(world.Lighting);
-        Assert.Null(world.AnimatedMeshes);
+        Assert.NotNull(world.AnimatedMeshes);
+        var ratchet = world.AnimatedMeshes!.Where(m => m.Name.StartsWith("ratchet_", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(4, ratchet.Length);
+        Assert.Equal(6_856, ratchet.Sum(m => m.TriangleCount));
+        Assert.Equal(900_909, world.TotalRenderTriangles + ratchet.Sum(m => m.TriangleCount));
+        Assert.All(ratchet, mesh =>
+        {
+            Assert.Equal("moby", mesh.AssetKind);
+            Assert.Equal(5_583, mesh.VertexCount);
+            Assert.Equal(10, mesh.Frames.Count);
+            Assert.Equal(7.5f, mesh.FramesPerSecond);
+            Assert.All(mesh.Frames, frame => Assert.Equal(mesh.VertexCount * 3, frame.Length));
+        });
     }
     [SkippableFact]
     public void Level1_PinnedClass1134InstancesUseNativeAnimatedMeshPath()
@@ -100,15 +112,18 @@ public sealed class Rac1LevelTests_World
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var world = Rac1WorldImport.Build(reader, 1);
-        Assert.Equal(522, world.Meshes.Count);
-        Assert.Equal(1_645_516, world.TotalRenderTriangles);
-        Assert.Equal((139, 527_223),
+        Assert.Equal(518, world.Meshes.Count);
+        Assert.Equal(1_638_660, world.TotalRenderTriangles);
+        Assert.Equal((135, 520_367),
             (world.Meshes.Count(m => m.AssetKind == "moby"), world.Meshes.Where(m => m.AssetKind == "moby").Sum(m => m.TriangleCount)));
         Assert.NotNull(world.AnimatedMeshes);
-        Assert.Equal(3, world.AnimatedMeshes!.Count);
-        Assert.Equal(282, world.AnimatedMeshes.Sum(m => m.TriangleCount));
+        Assert.Equal(7, world.AnimatedMeshes!.Count);
+        Assert.Equal(7_138, world.AnimatedMeshes.Sum(m => m.TriangleCount));
         Assert.Equal(1_645_798, world.TotalRenderTriangles + world.AnimatedMeshes.Sum(m => m.TriangleCount));
-        Assert.All(world.AnimatedMeshes, mesh =>
+        var class1134 = world.AnimatedMeshes.Where(m => m.Name.StartsWith("moby1134_", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(3, class1134.Length);
+        Assert.Equal(282, class1134.Sum(m => m.TriangleCount));
+        Assert.All(class1134, mesh =>
         {
             Assert.Equal("moby", mesh.AssetKind);
             Assert.Equal(109, mesh.VertexCount);
@@ -126,11 +141,11 @@ public sealed class Rac1LevelTests_World
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var world = Rac1WorldImport.Build(reader, 2);
-        Assert.Equal(347, world.Meshes.Count);
-        Assert.Equal(1_097_892, world.TotalRenderTriangles);
+        Assert.Equal(343, world.Meshes.Count);
+        Assert.Equal(1_091_036, world.TotalRenderTriangles);
         Assert.NotNull(world.AnimatedMeshes);
-        Assert.Equal(166, world.AnimatedMeshes!.Count);
-        Assert.Equal(5_560, world.AnimatedMeshes.Sum(m => m.TriangleCount));
+        Assert.Equal(170, world.AnimatedMeshes!.Count);
+        Assert.Equal(12_416, world.AnimatedMeshes.Sum(m => m.TriangleCount));
         Assert.Equal(1_103_452, world.TotalRenderTriangles + world.AnimatedMeshes.Sum(m => m.TriangleCount));
 
         var hierarchy = world.AnimatedMeshes.Where(m => m.Name.StartsWith("moby766_", StringComparison.Ordinal)).ToArray();

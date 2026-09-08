@@ -21,6 +21,7 @@ public static class Rac1LevelCore
         int AssetsCompressedSize,
         int AssetsDecompressedSize,
         int TexturesBaseOffset,
+        int RatchetSequencesOffset,
         ArrayRange TfragTextures,
         ArrayRange MobyTextures,
         ArrayRange TieTextures,
@@ -73,10 +74,12 @@ public static class Rac1LevelCore
         int collisionEnd = I32(0x60);
         int compressed = I32(0x88);
         int decompressed = I32(0x8c);
+        int ratchetSequences = I32(0x78);
         foreach (var (name, value) in new[]
         {
             ("tfrags", tfrags), ("sky", sky), ("collision", collision),
             ("collisionEnd", collisionEnd), ("compressed", compressed), ("decompressed", decompressed),
+            ("ratchetSequences", ratchetSequences),
         })
         {
             if (value < 0) throw new InvalidDataException($"R&C1 core {name} is negative: {value}.");
@@ -97,6 +100,10 @@ public static class Rac1LevelCore
         {
             throw new InvalidDataException("R&C1 tfrag boundary exceeds decompressed core size.");
         }
+        if (ratchetSequences != 0 && (long)ratchetSequences + 256L * 4 > index.Length)
+        {
+            throw new InvalidDataException("R&C1 Ratchet sequence table is out of range.");
+        }
 
         ArrayRange AR(int at)
         {
@@ -109,6 +116,6 @@ public static class Rac1LevelCore
         }
 
         return new Header(raw, tfrags, tfragsEnd, sky, collision, collisionEnd, compressed, decompressed,
-            collisionEnd, AR(0x30), AR(0x38), AR(0x40), AR(0x48), AR(0x50), AR(0x58));
+            collisionEnd, ratchetSequences, AR(0x30), AR(0x38), AR(0x40), AR(0x48), AR(0x50), AR(0x58));
     }
 }
