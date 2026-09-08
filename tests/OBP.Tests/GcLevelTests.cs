@@ -1,11 +1,14 @@
 using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.IO;
+using OBP.PS2;
 using OBP.PS2.Collision;
+using OBP.PS2.Elf;
 using OBP.PS2.Compression;
 using OBP.PS2.Iso;
 using OBP.RAC2;
 using OBP.RAC2.Geometry;
+using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
 
 namespace OBP.Tests;
@@ -69,6 +72,42 @@ public class GcLevelTests
         Assert.Equal(77, core.Header.TfragTextures.Count);
         Assert.Equal(79, core.Header.TieTextures.Count);
         Assert.Equal(38, core.Header.ShrubTextures.Count);
+    }
+
+    [SkippableFact]
+    public void AllLevels_BoltRewardPercentageTablesMatchRetailOverlay()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        byte[] expected = [
+            .. GcBoltReward.AuthoredBank0, .. GcBoltReward.AuthoredBank1,
+            .. GcBoltReward.EmissionBank0, .. GcBoltReward.EmissionBank1
+        ];
+
+        for (int level = 0; level < 27; level++)
+        {
+            var (wad, header) = OpenLevelWad(iso!, level);
+            var overlay = GcLevelOverlay.Open(GcLevelWad.RequireLump(wad, header, 0));
+            Assert.Equal(expected, overlay.ReadVirtual(GcBoltReward.AuthoredBank0Address, expected.Length));
+        }
+    }
+
+    [SkippableFact]
+    public void BootRewardSelectorBaseBlockStartsZeroInRetailFileImage()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        using var isoReader = new FileRandomAccessReader(iso!);
+        var disc = Ps2Boot.OpenDisc(isoReader);
+        var programHeaders = Ps2Boot.ReadBootProgramHeaders(disc);
+        var selectors = Elf32Reader.ReadVirtualRange(
+            disc.BootExecutable, programHeaders,
+            GcBoltReward.PackedSelectorBaseAddress, GcBoltReward.PackedSelectorTableBytes);
+
+        Assert.Equal(GcBoltReward.PackedSelectorTableBytes, selectors.Length);
+        Assert.All(selectors, value => Assert.Equal(0, value));
     }
 
     [SkippableFact]

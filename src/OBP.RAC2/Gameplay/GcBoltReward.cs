@@ -3,13 +3,70 @@ namespace OBP.RAC2.Gameplay;
 /// <summary>
 /// Retail-backed class-500 Bolt reward mechanics recovered from the loaded
 /// Going Commando overlay. This intentionally models only the pieces whose
-/// semantics are proved: authored-value percentage scaling, the deferred
-/// reservoir, progression/RNG physical-pickup budget, and denomination partition.
-/// Runtime table initialization and unrelated reward modes stay outside this type.
+/// semantics are proved: authored-value percentage scaling, the retail percentage
+/// banks, the deferred reservoir, progression/RNG physical-pickup budget, and
+/// denomination partition. Unrelated reward modes stay outside this type.
 /// </summary>
 public static class GcBoltReward
 {
     public static readonly int[] Denominations = [1000, 500, 100, 50, 20, 5, 1];
+
+    public const uint AuthoredBank0Address = 0x001A89C8;
+    public const uint AuthoredBank1Address = 0x001A89D0;
+    public const uint EmissionBank0Address = 0x001A89D8;
+    public const uint EmissionBank1Address = 0x001A89E0;
+    public const uint PackedSelectorBaseAddress = 0x0019B4A8;
+    public const int PackedSelectorTableBytes = 0x400;
+
+    // Loaded .lit data at 0x001A89C8..0x001A89E7. The first pair is consumed
+    // by the authored Moby +0xB4 reward path; the second pair is used by the
+    // earlier reward-emission branch. Selector bit 3 chooses bank 1.
+    private static readonly byte[] AuthoredBank0Data = [100, 50, 40, 30, 25, 20, 15, 10];
+    private static readonly byte[] AuthoredBank1Data = [100, 100, 100, 100, 100, 100, 100, 100];
+    private static readonly byte[] EmissionBank0Data = [100, 50, 40, 30, 25, 20, 15, 10];
+    private static readonly byte[] EmissionBank1Data = [100, 30, 10, 10, 10, 10, 10, 10];
+
+    public static ReadOnlySpan<byte> AuthoredBank0 => AuthoredBank0Data;
+    public static ReadOnlySpan<byte> AuthoredBank1 => AuthoredBank1Data;
+    public static ReadOnlySpan<byte> EmissionBank0 => EmissionBank0Data;
+    public static ReadOnlySpan<byte> EmissionBank1 => EmissionBank1Data;
+
+    /// <summary>Address one 0x400-byte selector block for the native runtime context index.</summary>
+    public static uint PackedSelectorTableAddress(int contextIndex)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(contextIndex);
+        return checked(PackedSelectorBaseAddress + (uint)contextIndex * PackedSelectorTableBytes);
+    }
+
+    /// <summary>Extract one 4-bit native selector from a packed runtime-context UID table.</summary>
+    public static int ReadPackedSelector(ReadOnlySpan<byte> packedSelectors, int uid)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(uid);
+        int byteIndex = uid >> 1;
+        if ((uint)byteIndex >= (uint)packedSelectors.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(uid), "UID lies outside the supplied packed selector table.");
+        }
+
+        int packed = packedSelectors[byteIndex];
+        return (uid & 1) == 0 ? packed & 0x0f : packed >> 4;
+    }
+
+    /// <summary>Resolve the retail percentage used by the authored Moby reward path.</summary>
+    public static int AuthoredPercentageForSelector(int selector)
+    {
+        if ((uint)selector > 0x0f)
+        {
+            throw new ArgumentOutOfRangeException(nameof(selector), "Native reward selector must be a 4-bit value.");
+        }
+
+        return (selector & 0x08) == 0
+            ? AuthoredBank0Data[selector & 0x07]
+            : AuthoredBank1Data[selector & 0x07];
+    }
+
+    public static int ScaleAuthoredValueForSelector(int authoredValue, int selector) =>
+        ScaleAuthoredValue(authoredValue, AuthoredPercentageForSelector(selector));
 
     /// <summary>
     /// Reproduce loaded 0x002D9528: select-table percentage times the authored
