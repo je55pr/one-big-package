@@ -267,7 +267,6 @@ public static class RuntimeWorldScene
 
                 texCache.TryGetValue((m.AssetKind, m.TextureId), out var tex);
                 bool textured = hasUv && tex is not null;
-                bool kindDebug = System.Environment.GetEnvironmentVariable("OBP_KIND_DEBUG") == "1";
                 if (!textured && m.AssetKind is "tfrag" or "tie" or "shrub" or "moby")
                 {
                     untexturedTris[m.AssetKind] = untexturedTris.GetValueOrDefault(m.AssetKind) + m.TriangleCount;
@@ -306,22 +305,6 @@ public static class RuntimeWorldScene
                     mat.Transparency = hasColor
                         ? BaseMaterial3D.TransparencyEnum.Alpha
                         : BaseMaterial3D.TransparencyEnum.Disabled;
-                }
-
-                if (kindDebug)
-                {
-                    mat.AlbedoTexture = null;
-                    mat.VertexColorUseAsAlbedo = false;
-                    mat.Transparency = BaseMaterial3D.TransparencyEnum.Disabled;
-                    mat.AlbedoColor = m.AssetKind switch
-                    {
-                        "tfrag" => new Color(0.1f, 1f, 0.1f),
-                        "tie" => new Color(1f, 0.1f, 0.1f),
-                        "moby" => new Color(0.2f, 0.4f, 1f),
-                        "shrub" => new Color(1f, 1f, 0.1f),
-                        "sky" => new Color(0.3f, 0.3f, 0.3f),
-                        _ => new Color(1f, 0f, 1f),
-                    };
                 }
 
                 matCache[(m.AssetKind, m.TextureId)] = mat;
@@ -662,62 +645,6 @@ public static class RuntimeWorldScene
         var z = new Vector3((float)-m[8], (float)m[9], (float)m[10]);
         var origin = new Vector3((float)-m[12], (float)m[13], (float)m[14]);
         return new Transform3D(new Basis(x, y, z), origin);
-    }
-
-    /// <summary>
-    /// Fill a Godot <see cref="global::Godot.Environment"/> from the runtime
-    /// world's atmosphere: background clear colour and depth fog. Different
-    /// planets get visibly different air; exact PS2 fog is not reproduced.
-    /// </summary>
-    public static void ConfigureEnvironment(global::Godot.Environment env, RuntimeWorld world)
-    {
-        var e = world.Environment;
-        var bg = e?.BackgroundColour ?? e?.FogColour ?? (0.05, 0.06, 0.09);
-        var clear = new Color((float)bg.Item1, (float)bg.Item2, (float)bg.Item3);
-
-        env.BackgroundMode = global::Godot.Environment.BGMode.Color;
-        env.BackgroundColor = clear;
-        env.AmbientLightSource = global::Godot.Environment.AmbientSource.Color;
-        // The nearest env sample point's "hero" colour is the scene ambient the
-        // game lights the player with; lift it toward white so the unlit world
-        // geometry keeps its decoded colour.
-        var amb = e?.AmbientColour;
-        env.AmbientLightColor = amb is { } a
-            ? new Color(
-                0.55f + 0.45f * (float)a.R,
-                0.55f + 0.45f * (float)a.G,
-                0.55f + 0.45f * (float)a.B)
-            : Colors.White;
-        env.AmbientLightEnergy = 1.0f;
-
-        if (e?.FogColour is { } fc && e.FogFarDistance > e.FogNearDistance && e.FogFarDistance > 0)
-        {
-            // Fog distances arrive in world units. The retail fog also has a
-            // *far intensity* (visibility 0..255) — most planets stay partly
-            // clear at the far plane (Oozla ≈ 0.70 visible) — so drive Godot's
-            // density from (1 − far visibility) and stretch the end plane past
-            // the level so distant scenery still reads.
-            float span = (float)(world.Bounds.Max - world.Bounds.Min is var d
-                ? System.Math.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z)
-                : 400.0);
-            float begin = System.Math.Max(1f, e.FogNearDistance);
-            float end = System.Math.Max(System.Math.Max(begin + 1f, e.FogFarDistance), span * 1.4f);
-
-            env.FogEnabled = true;
-            env.FogMode = global::Godot.Environment.FogModeEnum.Depth;
-            env.FogLightColor = new Color((float)fc.R, (float)fc.G, (float)fc.B);
-            env.FogDepthBegin = begin;
-            env.FogDepthEnd = end;
-            env.FogDepthCurve = 1.6f; // ease in — near geometry stays clear
-            // Keep it a tint, not a wall: even a heavy-fog planet reads better
-            // with the scenery visible through it than washed to flat colour.
-            env.FogDensity = System.Math.Clamp((1f - e.FogFarVisibility) * 0.5f + 0.04f, 0.04f, 0.5f);
-            env.FogSkyAffect = 0.0f;
-        }
-        else
-        {
-            env.FogEnabled = false;
-        }
     }
 
     private static Vector3 Vertex(RuntimeCollisionBlob blob, int index)

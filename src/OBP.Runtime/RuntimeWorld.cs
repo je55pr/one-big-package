@@ -31,7 +31,8 @@ public sealed record RuntimeWorld(
     RuntimeSpawn? Ship,
     RuntimeLighting? Lighting = null,
     IReadOnlyList<RuntimeAnimatedMesh>? AnimatedMeshes = null,
-    IReadOnlyList<RuntimeDynamicObject>? DynamicObjects = null)
+    IReadOnlyList<RuntimeDynamicObject>? DynamicObjects = null,
+    IReadOnlyList<RuntimeAmbientAnimation>? AmbientAnimations = null)
 {
     public int TotalRenderTriangles => Meshes.Sum(m => m.TriangleCount);
 
@@ -197,3 +198,42 @@ public sealed record RuntimeLighting(
     IReadOnlyList<RuntimeDirLight> DirLights,
     IReadOnlyList<RuntimeEnvSample> EnvSamples,
     IReadOnlyList<RuntimeEnvTransition> EnvTransitions);
+
+// --- ambient / environmental animation (evaluated per-frame by the host) ---
+
+/// <summary>What a <see cref="RuntimeAmbientAnimation"/> does to its target.</summary>
+public enum RuntimeAmbientAnimationKind
+{
+    /// <summary>Scroll the target material's UVs — drifting clouds, flowing water, conveyor textures.</summary>
+    UvScroll,
+
+    /// <summary>Rotate the target about an axis through its origin — a slowly turning sky dome, a fan.</summary>
+    Spin,
+}
+
+/// <summary>
+/// A neutral, engine-independent description of a looping ambient animation the
+/// host applies without any game-format knowledge. Deterministic: a pure
+/// function of elapsed time. An importer may emit these; when a world emits
+/// none, the host may synthesise a gentle sky drift (see the Godot
+/// <c>WorldHost</c>).
+/// </summary>
+/// <param name="TargetKind">The <see cref="RuntimeMesh.AssetKind"/> the animation applies to ("sky", "tfrag", …).</param>
+/// <param name="TargetTextureId">A specific <see cref="RuntimeMesh.TextureId"/>, or null for every mesh of <paramref name="TargetKind"/>.</param>
+/// <param name="Kind">The effect.</param>
+/// <param name="Rate">
+///   <see cref="RuntimeAmbientAnimationKind.UvScroll"/>: UV units per second in (X, Y) (Z unused).
+///   <see cref="RuntimeAmbientAnimationKind.Spin"/>: radians per second; the vector is the axis (its length is the speed).
+/// </param>
+/// <param name="Phase">Constant offset added to the evaluated value (UV units, or radians).</param>
+public sealed record RuntimeAmbientAnimation(
+    string TargetKind,
+    int? TargetTextureId,
+    RuntimeAmbientAnimationKind Kind,
+    (double X, double Y, double Z) Rate,
+    double Phase = 0)
+{
+    public bool Matches(string assetKind, int textureId) =>
+        string.Equals(assetKind, TargetKind, System.StringComparison.Ordinal)
+        && (TargetTextureId is null || TargetTextureId.Value == textureId);
+}

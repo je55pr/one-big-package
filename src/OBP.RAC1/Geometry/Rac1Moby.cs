@@ -42,14 +42,15 @@ public static class Rac1Moby
 
     /// <summary>
     /// One native 0x40 skeleton record plus its matching 0x10 common-transform
-    /// record. The 4x4 matrix is preserved verbatim; no bind/animation meaning
-    /// is assigned to it until the remaining retail transform archaeology lands.
+    /// record. Retail proves the first 15 words are floats while the final word
+    /// repeats packed joint metadata from common_trans; pose semantics remain separate.
     /// </summary>
     public sealed record SkeletonJoint(
         int Index,
         int ParentByteOffset,
         int ParentRecordIndex,
-        float[] NativeMatrix,
+        ushort CommonRaw0x0E,
+        float[] NativeAffine,
         float CommonX,
         float CommonY,
         float CommonZ);
@@ -120,14 +121,14 @@ public static class Rac1Moby
         var joints = new List<SkeletonJoint>(jointCount);
         for (int j = 0; j < jointCount; j++)
         {
-            int s = skeletonOffset + j * JointStride;
-            var matrix = new float[16];
-            for (int i = 0; i < matrix.Length; i++)
+            int skeletonAt = skeletonOffset + j * JointStride;
+            var affine = new float[15];
+            for (int i = 0; i < affine.Length; i++)
             {
-                matrix[i] = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(s + i * 4));
-                if (!float.IsFinite(matrix[i]))
+                affine[i] = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(skeletonAt + i * 4));
+                if (!float.IsFinite(affine[i]))
                 {
-                    throw new InvalidDataException($"R&C1 Moby joint {j} contains a non-finite skeleton matrix value.");
+                    throw new InvalidDataException($"R&C1 Moby joint {j} contains a non-finite skeleton affine value.");
                 }
             }
 
@@ -135,14 +136,19 @@ public static class Rac1Moby
             float cx = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(c));
             float cy = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(c + 4));
             float cz = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(c + 8));
-            int parentByteOffset = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(c + 0x0c));
+            ushort parentByteOffset = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(c + 0x0c));
+            ushort commonRaw0x0E = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(c + 0x0e));
+            uint packedSkeletonMetadata = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(skeletonAt + 0x3c));
+            uint expectedPackedMetadata = (uint)parentByteOffset | ((uint)commonRaw0x0E << 16);
             if (!float.IsFinite(cx) || !float.IsFinite(cy) || !float.IsFinite(cz) ||
                 parentByteOffset % JointStride != 0 || parentByteOffset / JointStride >= jointCount ||
-                (parentByteOffset != 0 && parentByteOffset / JointStride >= j))
+                (parentByteOffset != 0 && parentByteOffset / JointStride >= j) ||
+                packedSkeletonMetadata != expectedPackedMetadata)
             {
-                throw new InvalidDataException($"R&C1 Moby joint {j} has an invalid common-transform record.");
+                throw new InvalidDataException($"R&C1 Moby joint {j} has invalid or inconsistent skeleton metadata.");
             }
-            joints.Add(new SkeletonJoint(j, parentByteOffset, parentByteOffset / JointStride, matrix, cx, cy, cz));
+            joints.Add(new SkeletonJoint(
+                j, parentByteOffset, parentByteOffset / JointStride, commonRaw0x0E, affine, cx, cy, cz));
         }
         return joints;
     }

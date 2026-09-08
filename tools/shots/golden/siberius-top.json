@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac2-ntscu-v1.01",
+  "camera": [
+    -411.39557,
+    1248.7109,
+    551.5313
+  ],
+  "capture": "shot:top",
+  "collisionBodies": 2,
+  "collisionTriangles": 741940,
+  "crateDebug": null,
+  "dynamicObjects": 39,
+  "game": "rac2",
+  "levelId": 7,
+  "location": "Frozen Lab",
+  "meshInstances": 363,
+  "mobyInstances": 84,
+  "overlays": "overlays: off",
+  "planet": "Siberius",
+  "player": null,
+  "shot": {
+    "camera": "TopDown",
+    "name": "top",
+    "overlay": null,
+    "settleFrames": 60
+  },
+  "shrubInstances": 34,
+  "textures": 407,
+  "tieInstances": 170,
+  "triangles": 2519925
+}

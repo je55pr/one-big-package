@@ -1,0 +1,9 @@
+{
+  "shots": [
+    { "name": "establishing", "camera": "showcase", "settleFrames": 150 },
+    { "name": "top", "camera": "topDown", "settleFrames": 60 },
+    { "name": "collision", "camera": "orbit", "overlay": "collisionwire,worldbounds", "settleFrames": 60, "azimuthDegrees": 45, "elevationDegrees": 34 },
+    { "name": "kinds", "camera": "showcase", "overlay": "kindtint", "settleFrames": 60 },
+    { "name": "lights", "camera": "orbit", "overlay": "envgizmos", "settleFrames": 60, "azimuthDegrees": 30, "elevationDegrees": 24 }
+  ]
+}

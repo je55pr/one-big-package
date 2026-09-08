@@ -68,17 +68,37 @@ They therefore explain every apparently missing animated skeleton/common-transfo
 
 ## Skeleton / bind-pose evidence
 
-For geometry-bearing animated classes, R&C1 stores `jointCount` native `0x40` skeleton records and matching `0x10` common-transform records.
+For geometry-bearing animated classes, R&C1 stores `jointCount` native `0x40` skeleton records and matching `0x10` common-transform records. The `0x40` record is not a conventional homogeneous 4x4 matrix: its first 15 words are finite floats, while the raw word at `+0x3c` equals `(common_trans.raw_0x0e << 16) | common_trans.parent_offset` for **28,193 / 28,193** decoded joints. Production therefore models it as 15 affine floats plus packed metadata rather than assigning matrix-W semantics to the last word.
 
-Direct observations already rule out reusing OBP's current GC translation-only bind shortcut:
+Direct observations rule out reusing OBP's current GC translation-only bind shortcut:
 
 - **5,384** joint records have a top-left diagonal differing from identity;
 - **4,751** have non-zero off-diagonal rotation terms;
-- `common_trans.vector` matches the translation carried with the skeleton record;
 - `common_trans.parent_offset` is always 0x40-aligned, points to an earlier joint when nonzero, and is in-range;
-- for ordinary rotated joints, the skeleton record's final XYZ vector matches the inverse-affine translation relationship `-R^T * T_global` to floating-point tolerance.
+- `common_trans.vector` behaves as a hierarchy-local offset on ordinary chains, while the skeleton tail carries accumulated/inverse-bind information;
+- simple two-joint specimens satisfy the inverse-affine relationship exactly, but one global hierarchy formula does not yet explain every rotated/scaled branch;
+- the remaining `common_trans +0x0e` field uses only `0x0000` and `0x7000` in the authority census and is retained raw because both values occur on rigid and non-rigid joints.
 
-This strongly suggests the native skeleton carries real rotational inverse-bind information. Full bind-pose reconstruction remains a separate promotion step: classes with unusual zero final vectors and hierarchy details still need to be included in the complete geometry-bound validation before production code emits animated meshes.
+A systematic convention sweep finds a strongest current hierarchy recurrence covering **25,509 / 26,786** non-root joints, but the exceptions include scaled/sheared and special skeleton branches. Multi-joint pose reconstruction therefore remains intentionally unpromoted.
+
+## Sequence/frame structure and first safe pose subset
+
+The authority build uses the RAC1/GC/UYA sequence-container lineage, but this checkpoint validates the R&C1 bytes independently rather than borrowing later-game field semantics. Across all 19 levels production decoding sees:
+
+- **13,697** sequence slots;
+- **10,745** present sequences and **2,952** null slots;
+- **109,156** ordinary frames;
+- **3,110,018** joint quaternion records, all unit-length to retail quantisation tolerance;
+- **zero** frame-table entries with the high-nibble special/compressed flag used by generic cross-game tooling;
+- every ordinary frame has `joint_data_size == jointCount * 8`;
+- every frame body size exactly equals the 16-byte-padded size of joint data plus the two counted 8-byte payload arrays;
+- **1,526** present sequence slots belong to `jointCount == 0` classes, proving sequence/state data is broader than skeletal animation.
+
+Frame `+0x00` remains raw. Most values are float-like, but five retail frames decode to non-finite IEEE floats, so production does not name the field `speed` or derive playback timing from it.
+
+A conservative first pose path is nevertheless proven for a large one-joint subset. Of 389 one-joint geometry-bearing class occurrences, 377 first frames cancel the stored rigid inverse-bind orientation to retail quaternion tolerance. Nine of the twelve exceptions have non-rigid scale in the skeleton, and the remaining three are occurrences of special class `66`. Production `Rac1MobyPose` therefore accepts only one-joint, rigid, zero-tail classes and provides an explicit rest-anchor check. Level 1 class `1134` is the permanent specimen: sequence 0 reproduces the stored rest surface within `2e-5` native world units, while sequence 1 has 170 frames and its first frame is visibly distinct from rest.
+
+No animation clock and no multi-joint deformation are promoted by this checkpoint.
 
 ## Production C# promotion
 
@@ -90,8 +110,8 @@ Production C# now:
 - decodes current-record upper bits with the operation-dependent meanings established above;
 - emits three joint indices plus normalized weights for every emitted vertex of geometry-bearing animated classes;
 - carries those bindings through the same persistent native vertex cache used by cross-packet duplicate emissions;
-- exposes the matching native `0x40 * jointCount` skeleton records and `0x10 * jointCount` common-transform records, preserving each 4x4 matrix verbatim plus the aligned parent byte offset / record index;
-- deliberately does **not** apply those skeleton matrices to the bind/rest surface yet.
+- exposes the matching native `0x40 * jointCount` skeleton records and `0x10 * jointCount` common-transform records as 15 affine floats plus the proven packed metadata word, aligned parent byte offset / record index, local vector and raw `+0x0e` field;
+- deliberately does **not** apply multi-joint skeleton transforms to the bind/rest surface yet.
 
 The permanent retail-gated C# test now reproduces the complete animated census exactly: 1,407 geometry-bearing animated class occurrences, 16,963 packets, 1,314,409 in-file vertices, 4,310 pre-loop transfers, 47,245 two-way vertices, 16,245 three-way vertices, and 38 geometry-free special occurrences. It also checks that every emitted animated vertex has a normalized binding whose nonzero joint references are inside the class joint table. The full local retail-authority suite passes with all three supported authority ISOs.
 

@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac2-ntscu-v1.01",
+  "camera": [
+    -24.277771,
+    323.062,
+    861.31085
+  ],
+  "capture": "shot:kinds",
+  "collisionBodies": 2,
+  "collisionTriangles": 328923,
+  "crateDebug": null,
+  "dynamicObjects": 190,
+  "game": "rac2",
+  "levelId": 1,
+  "location": "The Megacorp Outlet",
+  "meshInstances": 490,
+  "mobyInstances": 99,
+  "overlays": "overlays: KindTint",
+  "planet": "Oozla",
+  "player": null,
+  "shot": {
+    "camera": "Showcase",
+    "name": "kinds",
+    "overlay": "kindtint",
+    "settleFrames": 60
+  },
+  "shrubInstances": 38,
+  "textures": 396,
+  "tieInstances": 79,
+  "triangles": 1881731
+}
