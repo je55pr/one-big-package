@@ -164,24 +164,12 @@ public partial class OBPGame
         _world = world;
         _worldSwitches++;
 
-        _gcEnv = new WorldEnvironment { Name = "RuntimeWorldEnvironment", Environment = new Godot.Environment() };
-        RuntimeWorldScene.ConfigureEnvironment(_gcEnv.Environment, world);
-        AddChild(_gcEnv);
-
-        _heroLight = new DirectionalLight3D
-        {
-            Name = "RuntimeHeroLight",
-            RotationDegrees = new Vector3(-52, -37, 0),
-            LightEnergy = 1.1f,
-        };
-        _gcEnv.AddChild(_heroLight);
-
         bool framedCapture = _args.CaptureFrame is not null
             && (_args.DirectLoad || _args.Destination is not null)
             && _args.TestScene != "player"
             && !_args.CrateFocus && !_args.CrateAutoStrike;
 
-        var result = RuntimeWorldScene.Build(world, $"World_{destination.Game}_{destination.NativeDestinationId}", new RuntimeWorldScene.Options
+        var result = _worldHost.Load(this, _worldRoot, world, $"World_{destination.Game}_{destination.NativeDestinationId}", new WorldHost.Options
         {
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = true,
@@ -189,9 +177,6 @@ public partial class OBPGame
             ShowCollisionDebug = _args.CollisionDebug,
         });
         _sceneResult = result;
-        _worldScene = result.Root;
-        _skyRoot = result.SkyRoot;
-        _worldRoot.AddChild(result.Root);
         ConfigureCrateDebugHarness();
 
         if (framedCapture)

@@ -1,11 +1,9 @@
 using System.Text.Json;
 using Godot;
-using OBP.Core.Math;
 using OBP.Godot;
 using OBP.IO;
 using OBP.RAC2;
 using OBP.Runtime;
-using OBP.Runtime.Presentation;
 
 namespace OneBigPackage;
 
@@ -53,10 +51,7 @@ public partial class OBPGame : Node3D
     private GcIsoLoad.Identity? _identity;
 
     // the live world
-    private Node3D? _worldScene;
-    private WorldEnvironment? _gcEnv;
-    private DirectionalLight3D? _heroLight;
-    private Node3D? _skyRoot;
+    private readonly WorldHost _worldHost = new();
     private RuntimeWorld? _world;
     private RuntimeWorldScene.Result? _sceneResult;
     private DebugPlayer? _player;
@@ -147,21 +142,11 @@ public partial class OBPGame : Node3D
     {
         _frame++;
 
-        // Keep the retail sky backdrop centred on the active camera so it reads
-        // as a distant dome however far the player walks.
-        if (_skyRoot is { } sky && IsInstanceValid(sky) && _activeCamera is not null)
-        {
-            sky.GlobalPosition = _activeCamera.GlobalPosition;
-        }
-
         if (_mode == Mode.World)
         {
-            UpdateHeroLighting();
+            // Sky-follow, animated mobies and per-region hero light / fog.
+            _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             UpdateWorldHud();
-            if (_sceneResult is { } sr)
-            {
-                RuntimeWorldScene.AdvanceAnimated(sr);
-            }
         }
 
         if (_verifyOutcome is { } outcome)
@@ -321,29 +306,14 @@ public partial class OBPGame : Node3D
         _world = world;
         _worldSwitches++;
 
-        // environment
-        _gcEnv = new WorldEnvironment { Name = "GcWorldEnvironment", Environment = new Godot.Environment() };
-        RuntimeWorldScene.ConfigureEnvironment(_gcEnv.Environment, world);
-        AddChild(_gcEnv);
-
-        // The "hero" directional light — driven per-frame from the level's env
-        // sample points / transition volumes at the player's position so the
-        // capsule (and any lit geometry) picks up the right region lighting.
-        _heroLight = new DirectionalLight3D
-        {
-            Name = "GcHeroLight",
-            RotationDegrees = new Vector3(-52, -37, 0),
-            LightEnergy = 1.1f,
-        };
-        _gcEnv.AddChild(_heroLight);
-
         // A framed showcase capture (--direct + --capture-frame, no player)
         // parks a static camera over the level; everything else gets the capsule.
         bool framedCapture = _args.CaptureFrame is not null && _args.DirectLoad && _args.TestScene != "player"
             && !_args.CrateFocus && !_args.CrateAutoStrike;
 
-        // world geometry + collision (the generic builder)
-        var result = RuntimeWorldScene.Build(world, $"Gc_{entry?.Planet ?? levelId.ToString()}", new RuntimeWorldScene.Options
+        // Environment, hero light, welded geometry + collision, sky-follow and the
+        // per-frame presentation tick all live in the game-neutral WorldHost.
+        var result = _worldHost.Load(this, _worldRoot, world, $"Gc_{entry?.Planet ?? levelId.ToString()}", new WorldHost.Options
         {
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
@@ -352,9 +322,6 @@ public partial class OBPGame : Node3D
             OnlyAnimatedMobies = _args.AnimSolo,
         });
         _sceneResult = result;
-        _worldScene = result.Root;
-        _skyRoot = result.SkyRoot;
-        _worldRoot.AddChild(result.Root);
         ConfigureCrateDebugHarness();
 
         // spawn + camera
@@ -483,29 +450,11 @@ public partial class OBPGame : Node3D
         _player?.QueueFree();
         _player = null;
 
-        if (_worldScene is { } ws && IsInstanceValid(ws))
-        {
-            ws.QueueFree();
-        }
+        _worldHost.Unload(); // scene tree, environment, hero light + GC.Collect
 
-        _worldScene = null;
-        _skyRoot = null;
-
-        if (_gcEnv is { } env && IsInstanceValid(env))
-        {
-            env.QueueFree();
-        }
-
-        _gcEnv = null;
-        _heroLight = null;
         _sceneResult = null;
         _world = null;
         ResetCrateDebugHarness();
-
-        // Drop the ArrayMesh / ImageTexture / ConcavePolygonShape resources the
-        // freed nodes were holding so memory doesn't creep across switches.
-        System.GC.Collect();
-        System.GC.WaitForPendingFinalizers();
     }
 
     /// <summary>
@@ -711,52 +660,6 @@ public partial class OBPGame : Node3D
             (r.AnimatedMobies > 0 ? $"   Animated mobies: {r.AnimatedMobies}" : "") +
             (r.DynamicObjects > 0 ? $"   Dynamic objects: {r.DynamicObjects}" : "") +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}");
-    }
-
-    /// <summary>
-    /// Per-frame: resolve the GC hero lighting + per-region fog at the active
-    /// camera and apply it — the level's env sample points and env-transition
-    /// doorway volumes, evaluated at the player's position (Phase: dynamic
-    /// lighting). No-op for levels with no decoded lighting.
-    /// </summary>
-    private void UpdateHeroLighting()
-    {
-        if (_world?.Lighting is not { } lighting || _gcEnv?.Environment is not { } env
-            || _heroLight is null || !IsInstanceValid(_heroLight) || _activeCamera is null)
-        {
-            return;
-        }
-
-        // Godot camera position -> OBP space (X is mirrored by RuntimeWorldScene).
-        var g = _activeCamera.GlobalPosition;
-        var r = EnvResolver.Evaluate(lighting, new Vec3(-g.X, g.Y, g.Z));
-
-        _heroLight.Visible = r.HasHeroLight;
-        if (r.HasHeroLight)
-        {
-            _heroLight.LightColor = RuntimeWorldScene.ToColor(r.HeroColour);
-            // travel dir is OBP space; mirror X for Godot. A DirectionalLight3D
-            // shines down its local -Z, so aim -Z along the travel direction.
-            var godotTravel = new Vector3(-(float)r.HeroTravel.X, (float)r.HeroTravel.Y, (float)r.HeroTravel.Z);
-            if (godotTravel.LengthSquared() > 1e-4f)
-            {
-                _heroLight.LookAtFromPosition(_heroLight.GlobalPosition, _heroLight.GlobalPosition + godotTravel, Vector3.Up);
-            }
-        }
-
-        // Ambient: lift toward white so the unlit world keeps its decoded colour.
-        env.AmbientLightColor = new Color(
-            0.5f + (0.5f * (float)r.Ambient.R),
-            0.5f + (0.5f * (float)r.Ambient.G),
-            0.5f + (0.5f * (float)r.Ambient.B));
-
-        // Per-region fog: only override while the resolved region defines fog;
-        // leave the load-time fog (and its ease-in curve) otherwise.
-        var fog = WorldPresentation.FogFromResolved(r, _world.Bounds.Diagonal);
-        if (fog.Enabled)
-        {
-            RuntimeWorldScene.ApplyFog(env, fog, setCurve: false);
-        }
     }
 
     private void SetSelectorHint(string text)
