@@ -76,11 +76,32 @@ world-space maths — sky follow, env-sample queries, gizmos, camera framing —
 mirrors X on the query point and mirrors resolved directions back, exactly as
 `WorldHost.UpdateRegionLighting` does.
 
+## Debug overlays — `OBP.Godot.DebugOverlay`
+
+Runtime inspection layers over a built `RuntimeWorldScene.Result`, all idempotent
+and reversible (kind tint / visibility go through `MeshInstance3D.MaterialOverlay`
+and `Visible`, never the source material; generated meshes live under one
+`DebugOverlay` node freed with the world):
+
+| Key | Layer | |
+|---|---|---|
+| **F1** | isolate kind | cycle none → tfrag → tie → shrub → moby → moby-marker → sky |
+| **F2** | `KindTint` | flat colour per asset kind (replaces the old `OBP_KIND_DEBUG` env var) |
+| **F3** | `CollisionWire` | octree collision wireframe, coloured by native `TriangleMaterialIds` |
+| **F4** | `WorldBounds` | wire box at `world.Bounds` |
+| **F5** | `EnvGizmos` | sphere per `RuntimeEnvSample`, wire box per `RuntimeEnvTransition`, ray per `RuntimeDirLight` |
+| **F6** | `HideSky` | drop the sky shells |
+| **F7** | clear | all layers off |
+
+`--overlay kindtint,collisionwire` / `--overlay isolate:moby` applies layers on
+load for a deterministic capture.
+
 ## Deterministic capture
 
 `OBPGame` runs a screenshot + JSON-sidecar pass under `--capture-frame` /
 `--capture-out`. `tools/capture.ps1`, `tools/capture-planets.ps1` wrap it. See
-those scripts for the argument surface.
+those scripts for the argument surface. (A named shot-list harness + the material
+factory are the remaining Milestone-1 follow-up — see below.)
 
 ## Milestone 1 status
 
@@ -88,4 +109,5 @@ those scripts for the argument surface.
 - [x] PR 2 `world-host` — `WorldHost`, one presentation tick.
 - [x] PR 3 `presentation-lighting` — `PresentationEnvironment`, AgX tone-map, ambient exposure, gentle grade.
 - [x] PR 4 `env-animation` — `RuntimeAmbientAnimation` contract, `AmbientAnimator`, `WorldHost` applier, synthesised sky drift.
-- [ ] PR 5 `debug-overlays-and-shots` — runtime overlay toggles + shot-list harness + material factory.
+- [x] PR 5 `debug-overlays` — `DebugOverlay` runtime inspection layers (F1–F7) + `--overlay`.
+- [ ] PR 6 `capture-shots` — named shot-list harness + `WorldMaterialFactory` extraction (Milestone-1 follow-up).

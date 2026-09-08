@@ -45,6 +45,13 @@ public sealed record CommandLineArgs
     /// <summary>Overlay the decoded octree collision as a translucent debug mesh.</summary>
     public bool CollisionDebug { get; init; }
 
+    /// <summary>
+    /// Comma-separated <see cref="OBP.Godot.DebugOverlay"/> layers to enable on
+    /// load for a deterministic capture — e.g. <c>kindtint,collisionwire</c> or
+    /// <c>isolate:moby,worldbounds</c>. F1..F7 toggle them interactively.
+    /// </summary>
+    public string? Overlay { get; init; }
+
     /// <summary>Spawn the debug player next to the first animated moby instead of the ship point (MobySequence showcase).</summary>
     public bool AnimFocus { get; init; }
 
@@ -100,6 +107,7 @@ public sealed record CommandLineArgs
                 "--stress-switch" => result with { StressSwitch = Next() },
                 "--verify-hash" => result with { VerifyHash = true },
                 "--collision-debug" => result with { CollisionDebug = true },
+                "--overlay" => result with { Overlay = Next() },
                 "--anim-focus" => result with { AnimFocus = true },
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },
