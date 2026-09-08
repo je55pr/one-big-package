@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Godot;
 using OBP.Godot;
 using OBP.IO;
@@ -716,7 +715,7 @@ public partial class OBPGame : Node3D
         {
             Name = "DebugPlayer",
             Scripted = scripted,
-            ScriptedStill = CrateDebugRequested,
+            ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
             Position = spawn,
         };
         _playerRoot.AddChild(player);

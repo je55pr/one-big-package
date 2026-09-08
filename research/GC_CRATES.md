@@ -143,6 +143,8 @@ The authored-value percentage banks are loaded `.lit` bytes at `0x001A89C8` and 
 
 This corrects an earlier MIPS address-decoding error. `addiu` sign-extends its 16-bit immediate, so `lui 0x1A; addiu -0x4B58` resolves to `0x0019B4A8`, not `0x001AB4A8`, and `lui 0x1B; addiu -0x7638` resolves to `0x001A89C8`, not `0x001B89C8`. The real selector region is zero-filled in the retail executable image and is mutated at runtime. The previous `144/190` Oozla selector census sampled unrelated bytes and is discarded. Exact runtime selector-state initialization and context identity remain **UNKNOWN**.
 
+A further local layer check closes a misleading boot-code lead: when Oozla is loaded, virtual address `0x0029B3E0` lies inside the level overlay `.data`, while `0x002DF3F8` is overwritten by the level overlay `.text`. Boot-image routines at those addresses therefore cannot be treated as live in-level selector initializers. OBP's current fresh-showcase path deliberately chooses selector `0` because it is a native-valid encoding backed by the zero-filled executable image; this is an **OBP harness initial condition**, not a claim about selector state for arbitrary retail saves or revisit history.
+
 The scaled value is additionally multiplied by `max(1, byte[0x001A7A32])` in the normal path. Retail code advances that byte up to a maximum of 20 using a subordinate counter at `0x001A7A33`. The multiplier mechanics are **CONFIRMED**; interpreting these two bytes as GC's Challenge Mode bolt multiplier/sublevel is **INFERRED with strong behavioural support** until a retail symbol or independent GC structure names them.
 
 After the deferred-reservoir release is added, `0x0030F920` converts the resulting magnitude into an integer centre and chooses a symmetric random range: values below 2 have zero spread; values from 2 to under 8 use spread 1; values at least 8 use approximately 25% spread (converted with the native float-to-int helper). `0x003177C8` then selects inclusively from `[centre-spread, centre+spread]` using the native modulo RNG. The control flow is **CONFIRMED**; exact host reproduction of the PS2 FPU conversion mode is intentionally not asserted yet.
@@ -254,12 +256,14 @@ On 2026-09-08, the static-to-live Moby bridge was re-derived locally on Jess-Lap
 
 The Godot development harness can focus the first preserved class-500 object and feed it the known-good debug event (`flags=0x00000001`, scalar `1.0`). Target acquisition is explicitly a host/debug convenience; the break decision itself goes through `GcCrateInteraction.ShouldBreakClass500`.
 
-On Jess-Laptop, two otherwise identical LEVEL1 captures at frame 120 target `level:1:moby:31` / UID `73`:
+On Jess-Laptop, the original paired LEVEL1 captures at frame 120 target `level:1:moby:31` / UID `73`:
 
 - `tools/capture.ps1 -CrateFocus ...` records `Visible=true`, `Broken=false`;
 - `tools/capture.ps1 -CrateFocus -CrateAutoStrike ...` records `PvarC8=0`, `Route=Deactivate`, `Visible=false`, `Broken=true`.
 
-Both runs use the same player/camera coordinates. The rendered before/after images also differ in the world region occupied by that crate, not only in HUD text. This proves the preserved dynamic instance can be removed through the recovered native class-500 predicate/deactivation route. Bolt reward spawning remains intentionally disabled until the runtime selector state that chooses the now-authoritative percentage banks is reconstructed.
+A later deterministic fresh-showcase capture extends that path through reward planning and collection. For UID `73`, authored `bolts=13`, explicit selector `0`, reward-multiplier byte `0` (native `max(1, byte)` therefore gives effective multiplier `1`), progression-like input `0`, and native-valid RNG-domain choice `1`, RAC2 gameplay uses the recovered reward centre `13` as the deterministic showcase value and partitions it as `5+5+1 physical, 2 deferred`. The Godot host renders those three physical denominations as deliberately non-native gold placeholder orbs; the scripted debug player walks through their `Area3D` triggers and the RAC2 session records `11` collected, `0` outstanding, `2` deferred. The capture harness now evaluates metadata after frame settling, so its gameplay state matches the photographed frame.
+
+This proves a complete development loop from preserved retail crate identity through the recovered class-500 break predicate, authored reward value, percentage/denomination/deferred rules, physical host pickups and collection accounting. The gold-orb appearance, generous trigger radius, neutral reward-multiplier byte, deterministic progression/RNG inputs, reward-centre choice and selector-zero initialization are **OBP showcase choices**. Native Bolt pickup model/scatter/magnet presentation, exact PS2 RNG sequence, arbitrary-save selector context/history, and real game wallet/save integration remain unreconstructed.
 
 ## What is proved now
 

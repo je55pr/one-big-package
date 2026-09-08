@@ -229,6 +229,21 @@ public class GcLevelTests
         Assert.Single(boltCrates, m => m.Bolts == 14);
         Assert.All(boltCrates, m => Assert.InRange(m.Bolts, 13, 14));
 
+        // The deterministic Oozla showcase deliberately targets the first authored
+        // class-500 instance. Pin its retail identity and the neutral fresh-session
+        // payout contract so the visible crate -> pickups loop cannot drift.
+        var showcaseCrate = boltCrates.OrderBy(m => m.Index).First();
+        Assert.Equal(31, showcaseCrate.Index);
+        Assert.Equal(73, showcaseCrate.Uid);
+        Assert.Equal(13, showcaseCrate.Bolts);
+        Assert.Equal(0, showcaseCrate.PVarData![0xC8]);
+        var showcasePayout = new GcFreshBoltSession().PlanClass500Payout(
+            showcaseCrate.Uid, showcaseCrate.Bolts, rewardMultiplierByte: 0,
+            progressionLikeInput: 0, rngMod2: 1);
+        Assert.Equal(13, showcasePayout.RewardCentreValue);
+        Assert.Equal(new[] { 5, 5, 1 }, showcasePayout.PhysicalPickups.Select(p => p.Denomination));
+        Assert.Equal(2, showcasePayout.DeferredValue);
+
         // Directional lights (gameplay ptr 0x04) — the main GC light type.
         Assert.Equal(3, gameplay.DirLights.Count);
         var dl0 = gameplay.DirLights[0];
