@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac3-ntscu-original",
+  "camera": [
+    229.33273,
+    470.21548,
+    913.18286
+  ],
+  "capture": "shot:establishing",
+  "collisionBodies": 1,
+  "collisionTriangles": 264313,
+  "crateDebug": null,
+  "dynamicObjects": 0,
+  "game": "rac3",
+  "levelId": 1,
+  "location": null,
+  "meshInstances": 335,
+  "mobyInstances": 0,
+  "overlays": "overlays: off",
+  "planet": null,
+  "player": null,
+  "shot": {
+    "camera": "Showcase",
+    "name": "establishing",
+    "overlay": null,
+    "settleFrames": 120
+  },
+  "shrubInstances": 53,
+  "textures": 483,
+  "tieInstances": 163,
+  "triangles": 888830
+}

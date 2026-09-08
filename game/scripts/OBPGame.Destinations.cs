@@ -169,6 +169,7 @@ public partial class OBPGame
             && _args.TestScene != "player"
             && !_args.AnimSolo
             && !_args.CrateFocus && !_args.CrateAutoStrike;
+        bool staticCamera = framedCapture || _args.ShotsPath is not null;
 
         var result = _worldHost.Load(this, _worldRoot, world, $"World_{destination.Game}_{destination.NativeDestinationId}", new WorldHost.Options
         {
@@ -186,7 +187,7 @@ public partial class OBPGame
         {
             FrameAnimatedMobies(world);
         }
-        else if (framedCapture)
+        else if (staticCamera)
         {
             FrameShowcaseCamera(world);
         }

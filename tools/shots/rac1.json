@@ -1,0 +1,9 @@
+{
+  "world": "rac1:LEVEL0",
+  "shots": [
+    { "name": "establishing", "camera": "showcase", "settleFrames": 120 },
+    { "name": "top", "camera": "topDown", "settleFrames": 60 },
+    { "name": "collision", "camera": "orbit", "overlay": "collisionwire,worldbounds", "settleFrames": 60, "azimuthDegrees": 45, "elevationDegrees": 34 },
+    { "name": "kinds", "camera": "showcase", "overlay": "kindtint", "settleFrames": 60 }
+  ]
+}

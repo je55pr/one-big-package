@@ -15,9 +15,10 @@ public partial class SourceManagerBootstrap : Node
 
     public override void _Ready()
     {
-        // The composition / fusion lab replaces the whole OBPGame host tree; the
-        // trilogy source-manager navigation stack does not apply there.
-        if (System.Array.Exists(OS.GetCmdlineUserArgs(), a => a == "--compose" || a == "--composition"))
+        // The composition / fusion lab replaces the whole OBPGame host tree, and
+        // a --shots run drives its own world entry — neither wants the trilogy
+        // source-manager navigation stack.
+        if (System.Array.Exists(OS.GetCmdlineUserArgs(), a => a is "--compose" or "--composition" or "--shots"))
         {
             return;
         }

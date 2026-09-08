@@ -1,4 +1,5 @@
 {
+  "world": "oozla",
   "shots": [
     { "name": "establishing", "camera": "showcase", "settleFrames": 150 },
     { "name": "top", "camera": "topDown", "settleFrames": 60 },

@@ -89,6 +89,14 @@ public partial class OBPGame : Node3D
 
         bool wantsWorldDirectly = _args.TestScene == "player" || _args.DirectLoad;
 
+        // A --shots run works for any provider (--rac1-iso / --gc-iso / --uya-iso)
+        // and drives its own world entry — handle it before the GC-only branch.
+        if (_args.ShotsPath is { } shotList)
+        {
+            _ = RunShotsAsync(shotList);
+            return;
+        }
+
         if (_args.GcIso is { } iso)
         {
             _isoPath = iso;
@@ -99,10 +107,6 @@ public partial class OBPGame : Node3D
             else if (_args.StressSwitch is { } seq)
             {
                 _ = RunStressSwitchAsync(seq);
-            }
-            else if (_args.ShotsPath is { } shots)
-            {
-                _ = RunShotsAsync(shots);
             }
             else if (wantsWorldDirectly)
             {
@@ -908,7 +912,10 @@ public partial class OBPGame : Node3D
     private async System.Threading.Tasks.Task RunCaptureAsync(int frameArg)
     {
         var result = await CaptureHarness.CaptureAsync(
-            this, _args.CaptureOut ?? $"captures/{_sceneKind}.png", frameArg, () =>
+            this,
+            _args.CaptureOut ?? $"captures/{_sceneKind}.png",
+            frameArg,
+            () =>
             {
                 var meta = CaptureMetadata();
                 meta["capture"] = _sceneKind;
@@ -918,7 +925,7 @@ public partial class OBPGame : Node3D
         GetTree().Quit(result.Ok ? 0 : 1);
     }
 
-    /// <summary>The common world / render / player metadata for any capture (shot or single frame).</summary>
+    /// <summary>The common world / render / player metadata for any capture (shot or single frame). Call after the world has settled.</summary>
     private System.Collections.Generic.Dictionary<string, object?> CaptureMetadata()
     {
         var r = _sceneResult;

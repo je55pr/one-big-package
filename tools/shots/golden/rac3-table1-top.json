@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac3-ntscu-original",
+  "camera": [
+    -327.9833,
+    1080.349,
+    199.85086
+  ],
+  "capture": "shot:top",
+  "collisionBodies": 1,
+  "collisionTriangles": 264313,
+  "crateDebug": null,
+  "dynamicObjects": 0,
+  "game": "rac3",
+  "levelId": 1,
+  "location": null,
+  "meshInstances": 335,
+  "mobyInstances": 0,
+  "overlays": "overlays: off",
+  "planet": null,
+  "player": null,
+  "shot": {
+    "camera": "TopDown",
+    "name": "top",
+    "overlay": null,
+    "settleFrames": 60
+  },
+  "shrubInstances": 53,
+  "textures": 483,
+  "tieInstances": 163,
+  "triangles": 888830
+}
