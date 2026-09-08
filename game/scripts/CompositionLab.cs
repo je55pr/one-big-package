@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Text.Json;
 using Godot;
 using OBP.Composition;
 using OBP.Core.Math;
@@ -34,7 +33,9 @@ public partial class CompositionLab : Node3D
 
         public required RuntimeWorld World { get; init; }
 
-        public required RuntimeWorldScene.Result Scene { get; init; }
+        public required WorldHost Host { get; init; }
+
+        public RuntimeWorldScene.Result Scene => Host.Result!;
     }
 
     private readonly System.Collections.Generic.Dictionary<string, LoadedWorld> _worlds = new(System.StringComparer.Ordinal);
@@ -226,19 +227,23 @@ public partial class CompositionLab : Node3D
         var transformRoot = new Node3D { Name = placement.Id };
         _compositionRoot.AddChild(transformRoot);
 
-        var scene = RuntimeWorldScene.Build(world, $"RuntimeWorldScene_{placement.Id}", new RuntimeWorldScene.Options
+        // Each world gets its own WorldHost (geometry / collision / animation
+        // tick), but no environment — one viewport holds one environment, so the
+        // lab shares a single one, driven by the active world.
+        var host = new WorldHost();
+        host.Load(transformRoot, transformRoot, world, $"RuntimeWorldScene_{placement.Id}", new WorldHost.Options
         {
+            ManageEnvironment = false,
             IncludeSky = false, // sky shells follow one camera — meaningless with two worlds overlaid
             IncludeMobyMarkers = true,
             IncludeCollision = true,
         });
-        transformRoot.AddChild(scene.Root);
 
-        var loaded = new LoadedWorld { Placement = placement, TransformRoot = transformRoot, World = world, Scene = scene };
+        var loaded = new LoadedWorld { Placement = placement, TransformRoot = transformRoot, World = world, Host = host };
         _worlds[placement.Id] = loaded;
 
         ApplyTransform(loaded);
-        CompositionView.ApplyDisplayState(scene, placement);
+        CompositionView.ApplyDisplayState(loaded.Scene, placement);
     }
 
     private void ApplyTransform(LoadedWorld w) =>
@@ -249,6 +254,7 @@ public partial class CompositionLab : Node3D
     {
         foreach (var w in _worlds.Values)
         {
+            w.Host.Unload(); // scene tree + animation state + GC.Collect
             if (GodotObject.IsInstanceValid(w.TransformRoot))
             {
                 w.TransformRoot.QueueFree();
@@ -357,6 +363,14 @@ public partial class CompositionLab : Node3D
     {
         _frame++;
         FlyCamera((float)delta);
+
+        // Advance each world's animation (no environment / sky tick — the lab
+        // owns the shared environment).
+        foreach (var w in _worlds.Values)
+        {
+            w.Host.Tick(delta, _camera.GlobalPosition);
+        }
+
         UpdateHud();
     }
 
@@ -847,45 +861,31 @@ public partial class CompositionLab : Node3D
         string view = _args.CompositionView ?? "overview";
         ApplyCaptureView(view);
 
-        double seconds = System.Math.Max(0.35, frameArg / 60.0);
-        var watchdog = GetTree().CreateTimer(seconds + 20.0);
-        watchdog.Timeout += () => { GD.PrintErr("[CompositionLab] capture watchdog fired"); GetTree().Quit(2); };
-
-        await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-
-        var image = GetViewport().GetTexture().GetImage();
-        string outPath = _args.CaptureOut ?? $"captures/composition-{view}.png";
-        string pngPath = Path.GetFullPath(outPath);
-        Directory.CreateDirectory(Path.GetDirectoryName(pngPath)!);
-        Error err = image.SavePng(pngPath);
-
-        var meta = new
-        {
-            capture = "composition",
-            view,
-            composition = _composition.Name,
-            worlds = _composition.Worlds.Select(w => new
+        var result = await CaptureHarness.CaptureAsync(
+            this,
+            _args.CaptureOut ?? $"captures/composition-{view}.png",
+            frameArg,
+            () => new System.Collections.Generic.Dictionary<string, object?>
             {
-                w.Id,
-                w.SourceGame,
-                w.LevelId,
-                w.Visible,
-                transform = new { t = new[] { w.Transform.TranslationX, w.Transform.TranslationY, w.Transform.TranslationZ }, ry = w.Transform.RotationYDegrees, s = w.Transform.Scale },
-                loaded = _worlds.ContainsKey(w.Id),
-            }).ToArray(),
-            anchors = _composition.Anchors.Count,
-            lastSolve = _lastSolve is { } s ? new { s.Quality, s.MeanError, s.MaxError, ry = s.Transform.RotationYDegrees, scale = s.Transform.Scale } : null,
-            camera = new[] { _camera.GlobalPosition.X, _camera.GlobalPosition.Y, _camera.GlobalPosition.Z },
-            width = image.GetWidth(),
-            height = image.GetHeight(),
-            savePngResult = err.ToString(),
-        };
-        File.WriteAllText(Path.ChangeExtension(pngPath, ".json"),
-            JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
+                ["capture"] = "composition",
+                ["view"] = view,
+                ["composition"] = _composition.Name,
+                ["renderer"] = CaptureHarness.ActiveRenderer(),
+                ["worlds"] = _composition.Worlds.Select(w => new
+                {
+                    w.Id,
+                    w.SourceGame,
+                    w.LevelId,
+                    w.Visible,
+                    transform = new { t = new[] { w.Transform.TranslationX, w.Transform.TranslationY, w.Transform.TranslationZ }, ry = w.Transform.RotationYDegrees, s = w.Transform.Scale },
+                    loaded = _worlds.ContainsKey(w.Id),
+                }).ToArray(),
+                ["anchors"] = _composition.Anchors.Count,
+                ["lastSolve"] = _lastSolve is { } s ? new { s.Quality, s.MeanError, s.MaxError, ry = s.Transform.RotationYDegrees, scale = s.Transform.Scale } : null,
+                ["camera"] = new[] { _camera.GlobalPosition.X, _camera.GlobalPosition.Y, _camera.GlobalPosition.Z },
+            });
 
-        GD.Print($"[CompositionLab] captured {pngPath} ({image.GetWidth()}x{image.GetHeight()}, {err})");
-        GetTree().Quit(err == Error.Ok ? 0 : 1);
+        GetTree().Quit(result.Ok ? 0 : 1);
     }
 
     private void ApplyCaptureView(string view)

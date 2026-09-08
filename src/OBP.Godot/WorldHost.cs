@@ -45,6 +45,14 @@ public sealed class WorldHost
         public float HeroLightEnergy { get; init; } = 1.1f;
 
         /// <summary>
+        /// Own a <see cref="WorldEnvironment"/> + hero <see cref="DirectionalLight3D"/>
+        /// for this world (default). The composition lab turns this off — one
+        /// viewport can hold only one environment, so it shares a single one for
+        /// the active world.
+        /// </summary>
+        public bool ManageEnvironment { get; init; } = true;
+
+        /// <summary>
         /// When the world declares no <see cref="RuntimeWorld.AmbientAnimations"/>,
         /// synthesise a gentle drift on the sky shells so something is alive.
         /// Turn off for frame-stable non-sky captures.
@@ -101,17 +109,20 @@ public sealed class WorldHost
         _sceneParent = sceneParent;
         World = world;
 
-        _env = new WorldEnvironment { Name = "WorldEnvironment", Environment = new global::Godot.Environment() };
-        PresentationEnvironment.Configure(_env.Environment, world);
-        hostNode.AddChild(_env);
-
-        _heroLight = new DirectionalLight3D
+        if (options.ManageEnvironment)
         {
-            Name = "HeroLight",
-            RotationDegrees = options.HeroLightRestRotationDegrees,
-            LightEnergy = options.HeroLightEnergy,
-        };
-        _env.AddChild(_heroLight);
+            _env = new WorldEnvironment { Name = "WorldEnvironment", Environment = new global::Godot.Environment() };
+            PresentationEnvironment.Configure(_env.Environment, world);
+            hostNode.AddChild(_env);
+
+            _heroLight = new DirectionalLight3D
+            {
+                Name = "HeroLight",
+                RotationDegrees = options.HeroLightRestRotationDegrees,
+                LightEnergy = options.HeroLightEnergy,
+            };
+            _env.AddChild(_heroLight);
+        }
 
         var result = RuntimeWorldScene.Build(world, name, new RuntimeWorldScene.Options
         {

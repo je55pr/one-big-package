@@ -46,9 +46,11 @@ harness) / `Tick(...)`.
 path) — both of which used to hand-roll the same environment / light / build /
 sky / teardown code twice.
 
-`CompositionLab` keeps its own multi-world path for now (it holds several worlds
-under independent transforms with sky disabled); it still shares
-`WorldPresentation` / `EnvResolver`.
+`CompositionLab` now uses **one `WorldHost` per placement** (with
+`ManageEnvironment = false` — the lab keeps a single shared `LabEnvironment`,
+one environment per viewport) under independent transform roots, plus the shared
+`CaptureHarness`. `OBP.Composition` (transforms, `PlanarAlignment`,
+`CompositionJson`) stays the engine-neutral authority.
 
 ## `OBP.Runtime.Presentation`
 
@@ -179,6 +181,18 @@ consume a `RuntimeWorld` from any provider. RAC1 and RAC3 populate core geometry
 `AnimatedMeshes` are still null there, and the host degrades gracefully — the
 hero light hides, F5 env-gizmos report "no decoded lighting", the HUD reads
 `LEVELn` / the native label. Per-game shot sets: `tools/shots/rac{1,2,3}.json`.
+
+## Milestone 2 status
+
+- [x] `m2-tooling-and-materials` — `tools/vizcompare/`; `WorldMaterialFactory` +
+  `MaterialModel` (parity; histogram alpha / emission staged, not on).
+- [x] `m2-trilogy-bringup` — shots + host null-safe across RAC1/2/3; per-game
+  shot sets; `CaptureHarness` metadata-factory fix.
+- [x] `m2-world-inspector` — `WorldObjectDescriptor` + `WorldPicker` +
+  `WorldInspectorPanel` (I); animation bridge (`AnimationClock`, world-clock
+  `AnimatedMesh`, K pause, dormant `RuntimeSkeleton` + J).
+- [x] `m2-composition-refresh` — `CompositionLab` on `WorldHost` per world +
+  `CaptureHarness`.
 
 ## Milestone 1 status
 
