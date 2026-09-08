@@ -94,11 +94,13 @@ The authority build uses the RAC1/GC/UYA sequence-container lineage, but this ch
 - every frame body size exactly equals the 16-byte-padded size of joint data plus the two counted 8-byte payload arrays;
 - **1,526** present sequence slots belong to `jointCount == 0` classes, proving sequence/state data is broader than skeletal animation.
 
-Frame `+0x00` remains raw. Most values are float-like, but five retail frames decode to non-finite IEEE floats, so production does not name the field `speed` or derive playback timing from it.
+Animation timing is now pinned independently from retail data and executable behaviour. Frame `+0x04` is a nondecreasing native timestamp and frame `+0x00` is the transition rate to the next timestamp. Across **98,411 / 98,411** adjacent frame pairs, the stored IEEE bits equal `8.0f / (next_timestamp - current_timestamp)` exactly. The five formerly suspicious non-finite values are all `+infinity` and correspond exactly to the five zero-delta timestamp pairs. No timestamp moves backwards.
+
+Sequence `+0x18` is the constant-rate fast path. All **586** sequences whose frame rates vary have sequence `+0x18 == 0`. Retail executable routine `0x20d580` selects the sequence `+0x18` rate when nonzero and otherwise loads frame `+0x00`; the ordinary live-Moby update path then advances the interpolation accumulator at Moby state `+0x54` by that selected rate and stores the selected rate at `+0x5c`. The global Moby update loop calls this animation updater for eligible live objects. For the NTSC-U 60 Hz authority path, class `1134` sequence 1 therefore advances at `0.5 * 60 = 30` source frames per second.
 
 A conservative first pose path is nevertheless proven for a large one-joint subset. Of 389 one-joint geometry-bearing class occurrences, 377 first frames cancel the stored rigid inverse-bind orientation to retail quaternion tolerance. Nine of the twelve exceptions have non-rigid scale in the skeleton, and the remaining three are occurrences of special class `66`. Production `Rac1MobyPose` therefore accepts only one-joint, rigid, zero-tail classes and provides an explicit rest-anchor check. Level 1 class `1134` is the permanent specimen: sequence 0 reproduces the stored rest surface within `2e-5` native world units, while sequence 1 has 170 frames and its first frame is visibly distinct from rest.
 
-No animation clock and no multi-joint deformation are promoted by this checkpoint.
+The native timing clock is now promoted for the proven constant-rate runtime specimen. Variable-rate playback and multi-joint deformation remain deliberately separate milestones.
 
 ## Production C# promotion
 
