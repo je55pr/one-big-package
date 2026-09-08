@@ -12,9 +12,9 @@ public class GcCrateInteractionTests
     [InlineData(0x01000000u, 1f, false)]
     [InlineData(0x00000001u, 0f, false)]
     [InlineData(0x00000001u, -1f, false)]
-    public void Class500BreakPredicateMatchesLoadedState1(uint flags, float scalar, bool expected)
+    public void Class500BreakPredicateMatchesLoadedState1(uint damageFlags, float damageHp, bool expected)
     {
-        Assert.Equal(expected, GcCrateInteraction.ShouldBreakClass500(flags, scalar));
+        Assert.Equal(expected, GcCrateInteraction.ShouldBreakClass500(damageFlags, damageHp));
     }
 
     [Theory]
@@ -27,7 +27,7 @@ public class GcCrateInteractionTests
     }
 
     [Fact]
-    public void NaNDoesNotPassNativePositiveScalarComparison()
+    public void NaNDoesNotPassNativePositiveDamageComparison()
     {
         Assert.False(GcCrateInteraction.ShouldBreakClass500(1, float.NaN));
         Assert.True(GcCrateInteraction.ShouldBreakClass500(1, float.PositiveInfinity));
