@@ -34,6 +34,7 @@ When a document contains an unresolved hypothesis, it should say so explicitly.
 | Sky | [`GC_SKY.md`](GC_SKY.md) | Retail-backed shell geometry/settings; effects remain partial |
 | Level settings | [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md) | Retail-backed fixed settings fields |
 | UYA ship/start transform | [`UYA_RETAIL_SHIP_START_COMPATIBILITY.md`](UYA_RETAIL_SHIP_START_COMPATIBILITY.md) | Retail-corroborated shared-layout compatibility; executable field-name provenance remains open |
+| UYA Moby animation | [`UYA_MOBY_ANIMATION.md`](UYA_MOBY_ANIMATION.md) | Retail-pinned GC/UYA skin-state and first evidence-safe multi-joint UYA preview |
 | Public cross-source notes | [`PUBLIC_FORMAT_ARCHAEOLOGY.md`](PUBLIC_FORMAT_ARCHAEOLOGY.md) | Surviving Wrench/noclip findings and contradictions |
 | Geometry architecture caveats | [`PS2_GEOMETRY_PIPELINE.md`](PS2_GEOMETRY_PIPELINE.md) | VIF/packet boundary and future caveats |
 | Wrench format comparison | [`WRENCH_FORMAT_MATRIX.md`](WRENCH_FORMAT_MATRIX.md) | Public-tool comparison matrix |

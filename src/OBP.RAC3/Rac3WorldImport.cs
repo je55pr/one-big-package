@@ -13,7 +13,7 @@ namespace OBP.RAC3;
 /// corresponding retail compatibility proof; unresolved Moby class geometry is
 /// kept out while authored instance identity/PVars cross the runtime boundary.
 /// </summary>
-public static class Rac3WorldImport
+public static partial class Rac3WorldImport
 {
     public sealed record ImportResult(RuntimeWorld World, int TfragCount, int TieInstanceCount, int ShrubInstanceCount,
         int MobyInstanceCount, int MobiesWithPvar, int SkyShellCount);
@@ -85,13 +85,16 @@ public static class Rac3WorldImport
                 throw new InvalidDataException($"UYA Moby placement references undeclared class {oClass}.");
         }
         var mobyModels = BuildMobyModels(mobyClasses.Decoded, referencedMobyClasses);
+        var animatedMeshes = BuildAnimationPreview(tableIndex, gameplay.MobyInstances, mobyClasses.Decoded, out var animatedInstances);
         var dynamicObjects = gameplay.MobyInstances.Select(m =>
         {
             var payloads = new List<RuntimeOpaquePayload> { new("rac3-moby-instance-gc-layout-compat", m.RawInstance) };
             if (m.PvarData is { } pv) payloads.Add(new("rac3-pvar-gc-layout-compat", pv));
-            IReadOnlyList<RuntimeObjectMesh> objectMeshes = mobyModels.TryGetValue(m.OClass, out var modelMeshes)
-                ? modelMeshes
-                : Array.Empty<RuntimeObjectMesh>();
+            IReadOnlyList<RuntimeObjectMesh> objectMeshes = animatedInstances.Contains(m.Index)
+                ? Array.Empty<RuntimeObjectMesh>()
+                : mobyModels.TryGetValue(m.OClass, out var modelMeshes)
+                    ? modelMeshes
+                    : Array.Empty<RuntimeObjectMesh>();
             return new RuntimeDynamicObject("rac3", m.OClass, m.Index, m.UidCompatibility, $"moby:{m.OClass}",
                 $"table:{tableIndex}:moby:{m.Index}", new RuntimeObjectTransform(UyaGameplay.MobyTransform(m)), objectMeshes, payloads);
         }).ToArray();
@@ -108,7 +111,7 @@ public static class Rac3WorldImport
             ? null
             : new RuntimeSpawn(settings.ShipPosition.X, settings.ShipPosition.Z, settings.ShipPosition.Y, settings.ShipRotationZ);
         var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, null, null, meshes, textures, materialCount, collision, bounds, environment, ship,
-            Lighting: null, AnimatedMeshes: null, DynamicObjects: dynamicObjects);
+            Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects);
         return new ImportResult(world, tfrag.TfragCount, gameplay.TieInstances.Count, gameplay.ShrubInstances.Count, gameplay.MobyInstances.Count,
             gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
     }

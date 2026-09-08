@@ -45,12 +45,13 @@ Per **high-LOD packet**:
   `[2]` (optional) = `MobyTexturePrimitive[]` (0x40 each; `tex0.data_lo` @ +0x20,
   `super_secret_index` @ +0x0c/+0x1c/…).
 - **Vertex table** (`class[vertexOffset ..]`): `mainCount + twoWay + threeWay`
-  `MobyVertex`. Position = `(x, y, z) * scale / 1024`. The `lowHalfword`
-  (`vertex index` bits 0..8, `sprJoint` bits 9..15) is pipelined
-  **`VERTEX_PIPELINE` = 7 entries ahead** in the file (`rawIdx[i-7] = rawIdx[i]`;
-  same offset applies to `sprJoint`). `duplicateVertexCount` `u16 >> 7` entries
-  follow the matrix transfers (aligned to 8) and copy an earlier vertex (by
-  index) with a fresh ST.
+  `MobyVertex`. Position = `(x, y, z) * scale / 1024`. The **low 9-bit strip
+  vertex id** is software-pipelined `VERTEX_PIPELINE = 7` entries ahead
+  (`rawIdx[i-7] = rawIdx[i]`). Full-retail GC/UYA matrix-state censuses reject
+  applying that offset to the upper skin-control bits: skinning consumes those
+  from the **current record**. `duplicateVertexCount` `u16 >> 7` entries follow
+  the matrix transfers (aligned to 8) and copy an earlier vertex (by index) with
+  a fresh ST.
 - **Index walk** (Insomniac triangle strips): each `s8` index — `<= 0` twice in a
   row starts a new strip (seeded with the two flagged verts); a lone `<= 0` is a
   fan-pivot restart (the flagged vert is the pivot; the strip fans around it);
@@ -95,44 +96,42 @@ A skinned vertex is stored in **its bone's local space**, so plotting it raw
 collapses every limb toward the origin ("folded"). The bind pose is
 `pos_model = Σ_k w_k · globalBind[joint_k] · pos_local`.
 
-- **Skeleton — PINNED.** `MobyClassHeader` `s32 skeletonOffset @ 0x14`, one
-  4×4 matrix per `u8 jointCount @ 0x08`, stride `0x40`. Rows 0–2 are
-  `[R | T_local]` (parent-relative); **row 3 (floats 12..14) is `-T_global`** —
-  the negated accumulated bind translation. Verified arithmetically:
-  `-row3[j]` equals the sum of the `T_local` values up the `common_trans`
-  parent chain (`s32 commonTransOffset @ 0x18`; `MobyTrans` 0x10, parent index
-  = `parentByteOffset / 0x40`). **Every GC bind-pose joint rotation `R` is
-  identity**, so `globalBind[j] = translate(-row3[j])` — no rotation, no
-  hierarchy walk needed. (The 4th float of row 3 is uninitialised garbage.)
-- **Per-vertex bone binding** — reconstructed by simulating the PS2 VU0
-  matrix-slot machine. A `blend[64]` buffer is seeded from the packet's
-  `matrixTransferCount` "matrix transfers" (`u8 sprJointIndex; u8 vu0DestAddr`
-  at `vertexHeader + 0x10`) and then updated by every vertex in file order
-  (`twoWay`, then `threeWay`, then `main`). Bytes 2–7 of each `MobyVertex` are
-  VU0 load/store addresses and 0..255 blend weights. `two_way` → 2 joints,
-  `three_way` → 3, `main` → the single matrix at its load address.
-- **`sprJoint` is pipelined `VERTEX_PIPELINE` (7) entries ahead** — the joint
-  index in `lowHalfword` bits 9..15 shares the pipelined half-word with the
-  vertex index (bits 0..8), so vertex `v` binds the joint stored at file vertex
-  `v + 7`. Reading it in file order scrambles the binding wherever the joint
-  changes quickly (torsos, shoulders, arms) and throws those vertices onto the
-  wrong bone. The 7-ahead read cuts spike triangles ~4× on retail GO
-  (400 → ~100 across 35 skinned Oozla classes; e.g. `oClass 2842` 36 → 0).
-  Verified empirically — same pipeline distance as the vertex index, which is
-  independently pinned.
+- **Skeleton — corrected 2026-09-08.** `MobyClassHeader` `s32 skeletonOffset
+  @ 0x14`, one 0x40 matrix-like record per joint, plus `commonTransOffset @
+  0x18`. The earlier claim that every GC 3x3 basis is identity is false at
+  full-retail scale: GC contains 9,758 non-identity joint bases and UYA 19,657.
+  A class-sphere census strongly selects the stored 3x3 basis transposed into
+  OBP's column-vector convention plus native row-3 translation for a future
+  static bind correction. Production static geometry deliberately retains the
+  older translation-only path for census compatibility; animation preserves
+  `common_trans.vector` separately and does not treat that shortcut as native
+  truth. See `UYA_MOBY_ANIMATION.md`.
+- **Per-vertex bone binding — pinned for the normal GC/UYA family.** The PS2
+  VU0 matrix-slot machine has 64 slots whose contents **persist across packet
+  boundaries**. Each packet's matrix transfers update that persistent state,
+  then vertices execute in file order (`twoWay`, `threeWay`, `main`). Bytes 2–7
+  are VU0 load/store addresses and fixed `/256` blend weights. Every observed
+  normal-family two-way and three-way blend sums exactly to 256, and blend
+  operations consume rigid matrix sources; ordinary vertices may reuse a
+  cached 2/3-joint blend.
+- **Skin-control upper bits are current-record, not 7-ahead.** Applying the
+  seven-record pipeline to them was an old visual heuristic. Across all 51 UYA
+  rows, current-record bits + persistent state gives zero invalid addresses,
+  invalid joints or uninitialised reads; the 7-ahead interpretation produces
+  hard contradictions. GC independently selects the same rule, apart from three
+  transfers in known special `LEVEL21` oClass 2131 variant territory. The low
+  9-bit strip vertex id remains independently seven-ahead.
 
-**Status: good.** Skinned classes reconstruct into recognisable characters
-(T-pose bipeds with correct boots, torso, arms, head). `readGcMobyClass`:
-1. decodes the skinned bind pose;
-2. `pruneSpikeTriangles` drops the handful of triangles the still-imperfect
-   binding stretches into slivers (longest edge > `max(1.0, 10 × median edge)`);
-3. falls back to the folded (bounded) mesh only if pruning had to remove
-   > 3 % of the mesh or the result is far larger than the class bounding sphere.
+**Static-render status:** the established GC bind-pose renderer remains a
+compatibility path. It still uses spike pruning/folded fallback and its committed
+world counts are intentionally unchanged by the 2026-09-08 animation work. The
+newly pinned VU0 binding stream is stored separately for animation so a future
+full-bind static migration can be reviewed with new retail-backed geometry
+goldens instead of silently changing the existing world census.
 
-On Oozla **36 of 37 skinned classes** now pass (was 26/38); only `oClass 2590`
-still folds. `mesh.skinningApplied` reports the path. The residual roughness is
-the last few mis-bound vertices per model (a partially-pinned VU0 sim, not the
-skeleton and not the strip decode) plus animation not being applied.
+**Animation-binding status:** the normal GC/UYA VU0 state machine is now pinned
+strongly enough to fail closed on unresolved classes and to drive bounded
+multi-joint UYA previews. Special format variants remain outside that admission.
 
 ## Verification (retail Oozla)
 
@@ -186,6 +185,12 @@ that order.
 
 ### Skeleton for animation (`readGcMobyJoints`)
 
+> **2026-09-08 scope note:** the formulas below describe the retained legacy GC
+> single-joint playback path. Evidence-safe multi-joint GC/UYA evaluation now
+> lives in shared `OBP.PS2.Geometry.GcUyaMobyPose` and uses raw skin-local
+> vertices + the separately pinned persistent/current-record binding stream. See
+> [`UYA_MOBY_ANIMATION.md`](UYA_MOBY_ANIMATION.md) for the retail selection.
+
 `MobyTrans` (`commonTransOffset`, 0x10 stride): `Vec3f vector; u16 parentByteOffset; u16`.
 Parent joint index = `parentByteOffset / 0x40`; a self-reference marks a root.
 `common_trans.vector` equals the 4th column of the row-major skeleton matrix
@@ -213,20 +218,23 @@ and play their retail sequences correctly (`oClass 1134` — a 170-frame spinner
 12 single-joint animated instances per level out of the merged static mesh into
 `RuntimeWorld.AnimatedMeshes` (per-frame world-space positions, baked); the Godot
 host CPU-swaps the vertex buffer each tick (`RuntimeWorldScene.AdvanceAnimated`).
-Multi-joint hierarchical playback is decoded but not yet applied (the VU0 skin sim
-is only partially pinned, so multi-bone verts would drift).
+GC production playback remains deliberately limited to its existing admitted
+single-joint classes. The shared codec/evaluator now also supports bounded
+multi-joint playback; UYA Veldin has the first promoted evidence-safe preview.
 
 Equivalence: `GcLevelTests.Level1_MobySequencesMatchTypeScript` hashes joints +
 frames against `reference-ts` (180 classes / 1929 joints / 6476 frames on Oozla).
 
 ## Limitations / next
 
-1. **Per-vertex binding polish** — a few vertices per model still bind to the
-   wrong joint (the VU0 matrix-slot sim is only partially pinned: the `set()` /
-   `get()` scratch-address bookkeeping for `twoWay` / `threeWay` verts, and the
-   `three_way` third-joint `(sprJoint*2)` guess). `oClass 2590` still folds.
-2. Multi-joint animation playback (needs the binding polish above first);
-   per-frame `thing1` / `thing2` (root motion? events?) are skipped.
+1. **Static bind-pose migration** — the newer retail evidence selects a full
+   non-identity skeleton basis for many classes, but production static geometry
+   intentionally keeps the older census-compatible bind shortcut until new
+   geometry goldens are reviewed separately.
+2. **Broader multi-joint animation/state semantics** — the shared VU0 binding
+   state is pinned for the normal GC/UYA family, but per-frame `thing1` / `thing2`
+   channels and native sequence/state selection remain unresolved. Special
+   format variants such as GC `LEVEL21` oClass 2131 remain fail-closed.
 3. Low-LOD and metal packets, bangles, the corncob, per-instance pvars.
 4. The ~47 classes that don't parse — likely a format variant / `force_rac1`
    (`MobyClassHeader` byte `0x0b` != 0).

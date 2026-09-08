@@ -6,14 +6,12 @@ namespace OBP.PS2.Geometry;
 /// <summary>
 /// Going Commando / UYA <b>moby</b> class geometry — the dynamic objects (enemies,
 /// crates, the vendor, gadget pickups, breakables). The most involved R&amp;C
-/// geometry format. Recovers the high-LOD mesh at bind pose: each packet's vertex
-/// table holds positions (<c>s16 x,y,z</c>) and, for animated classes, per-vertex
-/// bone bindings decoded through a simulation of the PS2 VU0 matrix-slot machine.
-/// A skinned vertex is stored in its bone's local space, so the bind pose is
-/// <c>pos_model = Σ w·globalBind[joint]·pos_local</c> with
-/// <c>globalBind[j] = translate(-skeleton[j] row 3)</c> (every GC bind-pose joint
-/// rotation is identity). The joint index is pipelined <c>VERTEX_PIPELINE</c>
-/// entries ahead of the vertex it binds. Translated from
+/// geometry format. The established static renderer preserves its historical
+/// bind-pose reconstruction for visual/census compatibility, while animation
+/// metadata uses the separately retail-pinned VU0 matrix-slot state machine:
+/// matrix slots persist across packets and skin-control upper bits belong to the
+/// current vertex record. Only the low 9-bit strip vertex id is seven records
+/// ahead. Translated originally from
 /// <c>reference-ts/packages/gc-moby</c>. See <c>research/GC_MOBY.md</c>.
 /// </summary>
 public static class GcUyaMoby
@@ -24,9 +22,9 @@ public static class GcUyaMoby
     private const int CommonTransStride = 0x10;
 
     /// <summary>
-    /// The PS2 vertex loop is software-pipelined: the <c>lowHalfword</c> of each
-    /// <c>MobyVertex</c> (vertex index bits 0..8, spr joint bits 9..15) is staged
-    /// this many entries ahead of the vertex it describes.
+    /// The low 9-bit strip vertex id is software-pipelined this many records
+    /// ahead. Retail GC/UYA matrix-state censuses reject applying this offset to
+    /// the upper skin-control bits; those are consumed from the current record.
     /// </summary>
     private const int VertexPipeline = 7;
 
@@ -57,19 +55,27 @@ public static class GcUyaMoby
 
         /// <summary>Per-vertex bone weights, normalised to sum 1, 3 per vertex, length == <see cref="Positions"/>.</summary>
         public float[] VertexWeights { get; init; } = [];
+
+        /// <summary>Stored skinned vertex positions before the native joint transform, in model units.</summary>
+        public double[] SkinLocalPositions { get; init; } = [];
+
+        /// <summary>True only when every VU0 matrix-slot read and blend source was retail-valid.</summary>
+        public bool SkinStateFullyResolved { get; init; } = true;
     }
 
     /// <summary>
-    /// One skeleton joint. <see cref="Parent"/> is the parent joint index (a
-    /// self-reference marks a root), from <c>MobyTrans.parentByteOffset / 0x40</c>
-    /// (<c>commonTransOffset</c>, 0x10 stride). <see cref="Bx"/>/<see cref="By"/>/
-    /// <see cref="Bz"/> is the joint's bind-pose <b>global</b> translation in raw
-    /// class units (multiply by <c>scale / 1024</c> for model units) — the exact
-    /// value the rest-pose decoder subtracts (<c>-skeletonRow3</c>), so re-posing
-    /// from it reproduces <see cref="Mesh.Positions"/> at identity. GC bind-pose
-    /// joint rotations are identity.
+    /// One skeleton joint. <see cref="Parent"/> comes from
+    /// <c>MobyTrans.parentByteOffset / 0x40</c>. The legacy B fields preserve the
+    /// translation-only static reconstruction used by existing GC presentation;
+    /// <see cref="LocalTranslation"/> separately preserves the native
+    /// parent-relative <c>common_trans.vector</c> used by the retail-pinned
+    /// multi-joint animation evaluator.
     /// </summary>
-    public sealed record MobyJoint(int Parent, float Bx, float By, float Bz);
+    public sealed record MobyJoint(int Parent, float Bx, float By, float Bz)
+    {
+        /// <summary>Native parent-relative joint translation from common_trans, in raw class units.</summary>
+        public (float X, float Y, float Z) LocalTranslation { get; init; }
+    }
 
     /// <summary>One animation frame: a local rotation quaternion per joint (<c>x,y,z,w</c>, unit length).</summary>
     public sealed record MobyFrame(float Speed, System.Numerics.Quaternion[] JointRotations);
@@ -81,7 +87,13 @@ public static class GcUyaMoby
     /// = flags). Frame body: <c>MobyFrameHeader</c> 0x10 then <c>s16[4]</c> per
     /// joint at <c>+0x10</c>, each channel <c>/ 32768</c>.
     /// </summary>
-    public sealed record MobySequence(int Index, IReadOnlyList<MobyFrame> Frames);
+    public readonly record struct MobySphere(float X, float Y, float Z, float Radius);
+
+    public sealed record MobySequence(int Index, IReadOnlyList<MobyFrame> Frames)
+    {
+        /// <summary>Native sequence bounding sphere in raw class units.</summary>
+        public MobySphere? BoundingSphere { get; init; }
+    }
 
     public sealed record MobyClass(
         int OClass,
@@ -105,6 +117,12 @@ public static class GcUyaMoby
         public int W0, W1, W2;
     }
 
+    private sealed class SkinState
+    {
+        public SkinAttr?[] Slots { get; } = new SkinAttr?[64];
+        public bool FullyResolved { get; set; } = true;
+    }
+
     private static readonly double[] AffineId = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
 
     private static (double X, double Y, double Z) AffineApply(double[] m, double x, double y, double z) => (
@@ -113,11 +131,11 @@ public static class GcUyaMoby
         m[8] * x + m[9] * y + m[10] * z + m[11]);
 
     /// <summary>
-    /// Build one global bind matrix per joint from the moby skeleton. Returns
-    /// <c>null</c> when the skeleton is absent, out of range, or numerically
-    /// unusable. Row 3 of each 0x40 skeleton entry is <c>-T_global</c>; every GC
-    /// bind-pose joint rotation is identity, so the global bind is
-    /// <c>translate(-row3)</c>.
+    /// Build the translation-only bind approximation retained by the established
+    /// static renderer. This is a compatibility path, not the final native
+    /// skeleton model: full-retail evidence shows many non-identity 3x3 bases.
+    /// Animation uses preserved skin-local positions and <see cref="GcUyaMobyPose"/>
+    /// instead of treating this shortcut as authoritative.
     /// </summary>
     private static double[][]? ReadGlobalBind(byte[] buf, int jointCount)
     {
@@ -166,7 +184,7 @@ public static class GcUyaMoby
     /// (<c>MobyTrans[jointCount]</c>, 0x10 stride). Returns an empty list when the
     /// table is absent or out of range.
     /// </summary>
-    internal static List<MobyJoint> ReadJoints(byte[] buf, int jointCount)
+    public static List<MobyJoint> ReadJoints(byte[] buf, int jointCount)
     {
         var joints = new List<MobyJoint>();
         if (jointCount is <= 0 or > 256)
@@ -195,18 +213,16 @@ public static class GcUyaMoby
                 parent = 0;
             }
 
-            // Bind global translation = -skeletonRow3, matching ReadGlobalBind /
-            // the rest-pose decoder exactly (so identity frames reproduce it).
             int s = skeletonOffset + j * JointStride;
             float bx = -BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(s + 48));
             float by = -BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(s + 52));
             float bz = -BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(s + 56));
-            if (!float.IsFinite(bx) || !float.IsFinite(by) || !float.IsFinite(bz))
-            {
-                bx = by = bz = 0f;
-            }
-
-            joints.Add(new MobyJoint(parent, bx, by, bz));
+            float lx = BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(o));
+            float ly = BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(o + 4));
+            float lz = BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(o + 8));
+            if (!float.IsFinite(bx) || !float.IsFinite(by) || !float.IsFinite(bz)) bx = by = bz = 0f;
+            if (!float.IsFinite(lx) || !float.IsFinite(ly) || !float.IsFinite(lz)) lx = ly = lz = 0f;
+            joints.Add(new MobyJoint(parent, bx, by, bz) { LocalTranslation = (lx, ly, lz) });
         }
 
         return joints;
@@ -217,7 +233,7 @@ public static class GcUyaMoby
     /// (<c>s32[sequenceCount]</c>, relative to the class). <c>sequenceCount</c> is
     /// <c>u8 @ 0x0c</c>. Frames whose data is out of range are skipped.
     /// </summary>
-    internal static List<MobySequence> ReadSequences(byte[] buf, int jointCount)
+    public static List<MobySequence> ReadSequences(byte[] buf, int jointCount)
     {
         var sequences = new List<MobySequence>();
         int sequenceCount = buf[0x0c];
@@ -240,11 +256,16 @@ public static class GcUyaMoby
                 continue;
             }
 
+            var sphere = new MobySphere(
+                BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset)),
+                BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 4)),
+                BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 8)),
+                System.Math.Abs(BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 12))));
             int frameCount = buf[seqOffset + 0x10];
             int frameTable = seqOffset + 0x1c;
             if (frameCount <= 0 || frameTable + frameCount * 4 > buf.Length)
             {
-                sequences.Add(new MobySequence(s, []));
+                sequences.Add(new MobySequence(s, []) { BoundingSphere = sphere });
                 continue;
             }
 
@@ -274,18 +295,18 @@ public static class GcUyaMoby
                 frames.Add(new MobyFrame(speed, rotations));
             }
 
-            sequences.Add(new MobySequence(s, frames));
+            sequences.Add(new MobySequence(s, frames) { BoundingSphere = sphere });
         }
 
         return sequences;
     }
 
     /// <summary>
-    /// Simulate the VU0 matrix-slot machine for one packet and return the bone
-    /// binding of each in-file vertex (<c>twoWay</c> first, then <c>threeWay</c>,
-    /// then <c>main</c>).
+    /// Legacy static-render binding simulation. It intentionally preserves the
+    /// historical per-packet reset / seven-ahead upper-bit heuristic so this
+    /// animation milestone does not silently rewrite established world geometry.
     /// </summary>
-    private static SkinAttr[] ReadPacketSkin(
+    private static SkinAttr[] ReadPacketSkinLegacy(
         byte[] buf, int vh, int vbase, int matrixTransferCount, int twoWay, int threeWay, int count)
     {
         var blend = new SkinAttr?[64];
@@ -346,6 +367,91 @@ public static class GcUyaMoby
             attrs[v] = a;
         }
 
+        return attrs;
+    }
+
+    private static SkinAttr[] ReadPacketSkin(
+        byte[] buf, int vh, int vbase, int matrixTransferCount, int twoWay, int threeWay,
+        int count, int jointCount, SkinState state)
+    {
+        void Reject() => state.FullyResolved = false;
+        bool ValidAddress(int address)
+        {
+            bool valid = (address & 3) == 0;
+            if (!valid) Reject();
+            return valid;
+        }
+        SkinAttr Rigid(int joint)
+        {
+            if (joint < 0 || joint >= jointCount)
+            {
+                Reject();
+                joint = 0;
+            }
+            return new SkinAttr { Count = 1, J0 = joint, W0 = 256 };
+        }
+        void Set(int address, SkinAttr attr)
+        {
+            if (ValidAddress(address)) state.Slots[address >> 2] = attr;
+        }
+        SkinAttr Get(int address, bool requireRigid = false)
+        {
+            if (!ValidAddress(address) || state.Slots[address >> 2] is not { } attr)
+            {
+                Reject();
+                return Rigid(0);
+            }
+            if (requireRigid && attr.Count != 1) Reject();
+            return attr;
+        }
+        for (int t = 0; t < matrixTransferCount; t++)
+        {
+            int o = vh + 0x10 + t * 2;
+            if (o + 2 > buf.Length) { Reject(); break; }
+            Set(buf[o + 1], Rigid(buf[o]));
+        }
+
+        var attrs = new SkinAttr[count];
+        for (int v = 0; v < count; v++)
+        {
+            int o = vbase + v * 0x10;
+            int upperBits = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(o)) >> 9;
+            int B(int k) => buf[o + k];
+            SkinAttr attr;
+            if (v < twoWay)
+            {
+                Set(B(6), Rigid(upperBits));
+                var a = Get(B(2), requireRigid: true);
+                var b = Get(B(3), requireRigid: true);
+                if (B(4) + B(5) != 256) Reject();
+                attr = new SkinAttr { Count = 2, J0 = a.J0, J1 = b.J0, W0 = B(4), W1 = B(5) };
+                Set(B(7), attr);
+            }
+            else if (v < twoWay + threeWay)
+            {
+                var a = Get(B(2), requireRigid: true);
+                var b = Get(B(3), requireRigid: true);
+                var c = Get(upperBits * 2, requireRigid: true);
+                if (B(4) + B(5) + B(6) != 256) Reject();
+                attr = new SkinAttr
+                {
+                    Count = 3,
+                    J0 = a.J0,
+                    J1 = b.J0,
+                    J2 = c.J0,
+                    W0 = B(4),
+                    W1 = B(5),
+                    W2 = B(6),
+                };
+                Set(B(7), attr);
+            }
+            else
+            {
+                Set(B(3), Rigid(upperBits));
+                attr = Get(B(2));
+            }
+            attrs[v] = attr;
+        }
         return attrs;
     }
 
@@ -462,8 +568,10 @@ public static class GcUyaMoby
         double skinCap = System.Math.Max(2000, boundingRadius * 8);
 
         var globalBind = allowSkinning && jointCount > 0 ? ReadGlobalBind(buf, jointCount) : null;
+        var skinState = new SkinState();
 
         var positions = new List<double>();
+        var skinLocalPositionsOut = new List<double>();
         var uvs = new List<float>();
         var normalsOut = new List<float>();
         var vertexJointsOut = new List<int>();
@@ -557,8 +665,11 @@ public static class GcUyaMoby
             }
 
             bool applySkin = globalBind is not null;
-            var skinAttrs = applySkin
-                ? ReadPacketSkin(buf, vh, vbase, matrixTransferCount, twoWay, threeWay, inFileCount)
+            var legacySkinAttrs = applySkin
+                ? ReadPacketSkinLegacy(buf, vh, vbase, matrixTransferCount, twoWay, threeWay, inFileCount)
+                : null;
+            var animationSkinAttrs = applySkin
+                ? ReadPacketSkin(buf, vh, vbase, matrixTransferCount, twoWay, threeWay, inFileCount, jointCount, skinState)
                 : null;
 
             var rawX = new int[inFileCount];
@@ -594,7 +705,7 @@ public static class GcUyaMoby
             bool packetSkinBlewUp = false;
             for (int v = 0; v < inFileCount; v++)
             {
-                SkinAttr? attr = skinAttrs?[v];
+                SkinAttr? attr = legacySkinAttrs?[v];
                 if (globalBind is null || attr is not { } at || at.Count == 0)
                 {
                     posX.Add(rawX[v] * k);
@@ -681,6 +792,9 @@ public static class GcUyaMoby
             var listX = new List<double>();
             var listY = new List<double>();
             var listZ = new List<double>();
+            var listLocalX = new List<double>();
+            var listLocalY = new List<double>();
+            var listLocalZ = new List<double>();
             var listS = new List<float>();
             var listT = new List<float>();
             var listN = new List<(float X, float Y, float Z)>();
@@ -710,8 +824,11 @@ public static class GcUyaMoby
                 listX.Add(posX[v]);
                 listY.Add(posY[v]);
                 listZ.Add(posZ[v]);
+                listLocalX.Add(rawX[v] * k);
+                listLocalY.Add(rawY[v] * k);
+                listLocalZ.Add(rawZ[v] * k);
                 listN.Add(norm[v]);
-                listJW.Add(Bind(skinAttrs?[v]));
+                listJW.Add(Bind(animationSkinAttrs?[v]));
                 var st = v < sts.Count ? sts[v] : (0, 0);
                 listS.Add(st.Item1 / 4096f);
                 listT.Add(st.Item2 / 4096f);
@@ -728,6 +845,9 @@ public static class GcUyaMoby
                 listX.Add(listX[from]);
                 listY.Add(listY[from]);
                 listZ.Add(listZ[from]);
+                listLocalX.Add(listLocalX[from]);
+                listLocalY.Add(listLocalY[from]);
+                listLocalZ.Add(listLocalZ[from]);
                 listN.Add(listN[from]);
                 listJW.Add(listJW[from]);
                 var st = inFileCount + di < sts.Count ? sts[inFileCount + di] : (0, 0);
@@ -786,6 +906,9 @@ public static class GcUyaMoby
                 positions.Add(listX[v]);
                 positions.Add(listY[v]);
                 positions.Add(listZ[v]);
+                skinLocalPositionsOut.Add(listLocalX[v]);
+                skinLocalPositionsOut.Add(listLocalY[v]);
+                skinLocalPositionsOut.Add(listLocalZ[v]);
                 uvs.Add(listS[v]);
                 uvs.Add(listT[v]);
                 normalsOut.Add(listN[v].X);
@@ -845,6 +968,8 @@ public static class GcUyaMoby
             Normals = normalsOut.ToArray(),
             VertexJoints = vertexJointsOut.ToArray(),
             VertexWeights = vertexWeightsOut.ToArray(),
+            SkinLocalPositions = skinLocalPositionsOut.ToArray(),
+            SkinStateFullyResolved = !skinned || (globalBind is not null && skinState.FullyResolved),
         };
     }
 
