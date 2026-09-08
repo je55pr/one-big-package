@@ -59,8 +59,9 @@ public class MaterialModelTests
     [Fact]
     public void Culling_And_Tiling_And_VertexColour_ByKind()
     {
-        Assert.True(MaterialModel.BackFaceCull("tfrag"));
-        Assert.True(MaterialModel.BackFaceCull("tie"));
+        // All world geometry is two-sided — decoded winding is not reliably outward.
+        Assert.False(MaterialModel.BackFaceCull("tfrag"));
+        Assert.False(MaterialModel.BackFaceCull("tie"));
         Assert.False(MaterialModel.BackFaceCull("moby"));
         Assert.False(MaterialModel.BackFaceCull("shrub"));
 
