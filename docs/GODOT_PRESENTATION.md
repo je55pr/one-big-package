@@ -103,6 +103,32 @@ world-space maths — sky follow, env-sample queries, gizmos, camera framing —
 mirrors X on the query point and mirrors resolved directions back, exactly as
 `WorldHost.UpdateRegionLighting` does.
 
+## Interactive world inspector
+
+**I** toggles a panel showing the neutral `WorldObjectDescriptor` for whatever is
+under the crosshair (or the mouse, cursor free). `OBP.Godot.WorldPicker` ray-casts
+against the visible mesh AABBs and resolves the hit to `(kind, textureId)`, the
+owning `dyn_*` `RuntimeDynamicObject`, or a `RuntimeAnimatedMesh`;
+`OBP.Runtime.Presentation.WorldObjectDescriptorBuilder` (pure, tested) turns that
+into the readout: asset kind, texture WxH + `AlphaProfile`, material flags,
+decomposed transform, local bounds, PVar **presence + format + byte length**
+(never decoded), animation state, and provenance. `--inspect` opens it on load.
+
+## Animation presentation
+
+`AnimatedMesh` (its own file) is driven by a **world clock in seconds**
+(`WorldHost` `_animClock`, pauseable with **K**) via
+`RuntimeWorldScene.AdvanceAnimated(result, clockSeconds)` — frame selection is the
+pure `AnimationClock.FrameAt` (`Loop` / `PingPong` / `HoldLast`). A capture at a
+fixed settle time reproduces the same pose regardless of frame rate; the sidecar
+records `animClockSeconds` + per-mesh `currentFrame`.
+
+**Dormant skeleton hook:** `RuntimeAnimatedMesh.Skeleton` (`RuntimeSkeleton` —
+joints + parents + per-frame local rotations) is optional and **defaulted null**.
+`DebugOverlay` layer **J** draws bone lines when it's populated; until a decoder
+chain wires `MobyAnimation` / `Rac1MobyPose` output into it, J prints
+"no RuntimeSkeleton data".
+
 ## Debug overlays — `OBP.Godot.DebugOverlay`
 
 Runtime inspection layers over a built `RuntimeWorldScene.Result`, all idempotent
@@ -119,6 +145,9 @@ and `Visible`, never the source material; generated meshes live under one
 | **F5** | `EnvGizmos` | sphere per `RuntimeEnvSample`, wire box per `RuntimeEnvTransition`, ray per `RuntimeDirLight` |
 | **F6** | `HideSky` | drop the sky shells |
 | **F7** | clear | all layers off |
+| **J** | `Skeleton` | bone lines per animated mesh (dormant — no skeleton data decoded yet) |
+| **I** | — | toggle the interactive world inspector |
+| **K** | — | pause / resume moby animation (sky keeps drifting) |
 
 `--overlay kindtint,collisionwire` / `--overlay isolate:moby` applies layers on
 load for a deterministic capture.

@@ -50,8 +50,12 @@ public static class RuntimeWorldScene
     /// <summary>Godot node plus its neutral runtime identity for one preserved dynamic object.</summary>
     public sealed record DynamicObjectNode(RuntimeDynamicObject Source, Node3D Root);
 
-    /// <summary>Advance every animated moby in <paramref name="result"/> by one render tick — call from the host's <c>_Process</c>.</summary>
-    public static void AdvanceAnimated(Result result, double ticks = 1.0)
+    /// <summary>
+    /// Pose every animated moby in <paramref name="result"/> for
+    /// <paramref name="clockSeconds"/> of elapsed (unpaused) world time — call
+    /// from the host tick. Deterministic in the clock value.
+    /// </summary>
+    public static void AdvanceAnimated(Result result, double clockSeconds)
     {
         if (result.AnimatedMeshes is null)
         {
@@ -60,7 +64,7 @@ public static class RuntimeWorldScene
 
         foreach (var am in result.AnimatedMeshes)
         {
-            am.Advance(ticks);
+            am.Advance(clockSeconds);
         }
     }
 
@@ -398,7 +402,7 @@ public static class RuntimeWorldScene
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             };
             root.AddChild(mi);
-            animatedPlayers.Add(new AnimatedMesh(mi, animMesh, frames, idx, uv, col, am.FramesPerSecond));
+            animatedPlayers.Add(new AnimatedMesh(mi, animMesh, frames, idx, uv, col, am.FramesPerSecond, am.Name));
             animatedMeshInstances++;
             triangles += am.TriangleCount;
         }
@@ -547,80 +551,5 @@ public static class RuntimeWorldScene
         camera.LookAt(centre, Vector3.Up);
         camera.Far = radius * 12f;
         camera.Near = Mathf.Max(0.05f, radius * 0.01f);
-    }
-}
-
-/// <summary>
-/// One CPU-skinned animated moby: cycles a pre-baked list of per-frame
-/// scene-space vertex arrays into a single <see cref="MeshInstance3D"/>.
-///
-/// <para>This is a plain object, not a <see cref="Node"/> — <c>OBP.Godot</c> has
-/// no Godot source generator, so an engine <c>_Process</c> callback on a node
-/// subclass defined here would never fire. The host ticks it every frame via
-/// <see cref="RuntimeWorldScene.AdvanceAnimated"/>.</para>
-/// </summary>
-public sealed class AnimatedMesh
-{
-    private readonly Vector3[][] _frames;
-    private readonly int[] _indices;
-    private readonly Vector2[] _uv;
-    private readonly Color[]? _colors;
-    private readonly ArrayMesh _mesh;
-    private readonly float _framesPerTick;
-    private double _cursor;
-    private int _current = -1;
-
-    internal AnimatedMesh(
-        MeshInstance3D instance, ArrayMesh mesh, Vector3[][] frames,
-        int[] indices, Vector2[] uv, Color[]? colors, float framesPerSecond)
-    {
-        Instance = instance;
-        _mesh = mesh;
-        _frames = frames;
-        _indices = indices;
-        _uv = uv;
-        _colors = colors;
-        _framesPerTick = Mathf.Clamp(framesPerSecond / 60f, 0.02f, 2f);
-        Apply(0);
-    }
-
-    public MeshInstance3D Instance { get; }
-
-    /// <summary>Advance the animation; <paramref name="ticks"/> = elapsed render frames (1 per <c>_Process</c>).</summary>
-    public void Advance(double ticks = 1.0)
-    {
-        if (_frames.Length < 2)
-        {
-            return;
-        }
-
-        _cursor += _framesPerTick * ticks;
-        Apply((int)(_cursor % _frames.Length));
-    }
-
-    private void Apply(int frame)
-    {
-        if (frame == _current || frame < 0 || frame >= _frames.Length)
-        {
-            return;
-        }
-
-        _current = frame;
-        var arrays = new global::Godot.Collections.Array();
-        arrays.Resize((int)Mesh.ArrayType.Max);
-        arrays[(int)Mesh.ArrayType.Vertex] = _frames[frame];
-        arrays[(int)Mesh.ArrayType.Index] = _indices;
-        if (_uv.Length == _frames[frame].Length)
-        {
-            arrays[(int)Mesh.ArrayType.TexUV] = _uv;
-        }
-
-        if (_colors is not null && _colors.Length == _frames[frame].Length)
-        {
-            arrays[(int)Mesh.ArrayType.Color] = _colors;
-        }
-
-        _mesh.ClearSurfaces();
-        _mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
     }
 }

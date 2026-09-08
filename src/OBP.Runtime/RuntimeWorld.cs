@@ -81,11 +81,30 @@ public sealed record RuntimeAnimatedMesh(
     int[] Indices,
     float[] Colors,
     IReadOnlyList<double[]> Frames,
-    float FramesPerSecond)
+    float FramesPerSecond,
+    RuntimeSkeleton? Skeleton = null)
 {
     public int VertexCount => Frames.Count > 0 ? Frames[0].Length / 3 : 0;
 
     public int TriangleCount => Indices.Length / 3;
+}
+
+/// <summary>One joint of a <see cref="RuntimeSkeleton"/> — a name, a parent index (−1 for a root), and its bind translation in OBP Y-up local space.</summary>
+public sealed record RuntimeJoint(string Name, int Parent, (double X, double Y, double Z) BindTranslation);
+
+/// <summary>
+/// The skeleton behind a <see cref="RuntimeAnimatedMesh"/>: the bind-pose joint
+/// hierarchy plus, per animation frame, the local rotation of each joint (flat
+/// XYZW quaternions, 4 per joint). Optional and <b>defaulted null</b> — a
+/// decoder chain populates it once multi-joint skinning is proved; until then
+/// the Godot skeleton view is inert. The engine-independent skinned vertex
+/// positions in <see cref="RuntimeAnimatedMesh.Frames"/> stay the render source.
+/// </summary>
+public sealed record RuntimeSkeleton(
+    IReadOnlyList<RuntimeJoint> Joints,
+    IReadOnlyList<double[]> FrameLocalRotations)
+{
+    public int JointCount => Joints.Count;
 }
 
 /// <summary>

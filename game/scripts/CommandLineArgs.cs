@@ -61,6 +61,9 @@ public sealed record CommandLineArgs
     /// <summary>Directory for <c>--shots</c> output (default: <c>captures/shots</c> relative to the working dir).</summary>
     public string? ShotsOut { get; init; }
 
+    /// <summary>Open the world inspector on load (picks the crosshair centre).</summary>
+    public bool Inspect { get; init; }
+
     /// <summary>Spawn the debug player next to the first animated moby instead of the ship point (MobySequence showcase).</summary>
     public bool AnimFocus { get; init; }
 
@@ -120,6 +123,7 @@ public sealed record CommandLineArgs
                 "--shots" => result with { ShotsPath = Next() },
                 "--shots-world" => result with { ShotsWorld = Next() },
                 "--shots-out" => result with { ShotsOut = Next() },
+                "--inspect" => result with { Inspect = true },
                 "--anim-focus" => result with { AnimFocus = true },
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },
