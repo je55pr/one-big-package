@@ -45,6 +45,22 @@ public sealed record CommandLineArgs
     /// <summary>Overlay the decoded octree collision as a translucent debug mesh.</summary>
     public bool CollisionDebug { get; init; }
 
+    /// <summary>
+    /// Comma-separated <see cref="OBP.Godot.DebugOverlay"/> layers to enable on
+    /// load for a deterministic capture — e.g. <c>kindtint,collisionwire</c> or
+    /// <c>isolate:moby,worldbounds</c>. F1..F7 toggle them interactively.
+    /// </summary>
+    public string? Overlay { get; init; }
+
+    /// <summary>Path to a JSON <see cref="OBP.Runtime.Presentation.ShotList"/> — run every named shot in one process, then quit.</summary>
+    public string? ShotsPath { get; init; }
+
+    /// <summary>Planet / level token for <see cref="ShotsPath"/> when the list does not pin its own world.</summary>
+    public string? ShotsWorld { get; init; }
+
+    /// <summary>Directory for <c>--shots</c> output (default: <c>captures/shots</c> relative to the working dir).</summary>
+    public string? ShotsOut { get; init; }
+
     /// <summary>Spawn the debug player next to the first animated moby instead of the ship point (MobySequence showcase).</summary>
     public bool AnimFocus { get; init; }
 
@@ -100,6 +116,10 @@ public sealed record CommandLineArgs
                 "--stress-switch" => result with { StressSwitch = Next() },
                 "--verify-hash" => result with { VerifyHash = true },
                 "--collision-debug" => result with { CollisionDebug = true },
+                "--overlay" => result with { Overlay = Next() },
+                "--shots" => result with { ShotsPath = Next() },
+                "--shots-world" => result with { ShotsWorld = Next() },
+                "--shots-out" => result with { ShotsOut = Next() },
                 "--anim-focus" => result with { AnimFocus = true },
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },

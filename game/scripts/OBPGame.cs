@@ -51,12 +51,10 @@ public partial class OBPGame : Node3D
     private GcIsoLoad.Identity? _identity;
 
     // the live world
-    private Node3D? _worldScene;
-    private WorldEnvironment? _gcEnv;
-    private DirectionalLight3D? _heroLight;
-    private Node3D? _skyRoot;
+    private readonly WorldHost _worldHost = new();
     private RuntimeWorld? _world;
     private RuntimeWorldScene.Result? _sceneResult;
+    private DebugOverlay? _overlay;
     private DebugPlayer? _player;
     private int _worldSwitches;
 
@@ -102,6 +100,10 @@ public partial class OBPGame : Node3D
             {
                 _ = RunStressSwitchAsync(seq);
             }
+            else if (_args.ShotsPath is { } shots)
+            {
+                _ = RunShotsAsync(shots);
+            }
             else if (wantsWorldDirectly)
             {
                 EnterWorld(ResolveRequestedLevel());
@@ -121,7 +123,7 @@ public partial class OBPGame : Node3D
         }
 
         GD.Print($"[OBPGame] ready — mode={_mode} scene='{_sceneKind}' " +
-                 $"capture={_args.CaptureFrame?.ToString() ?? "off"} renderer={ActiveRenderer()} " +
+                 $"capture={_args.CaptureFrame?.ToString() ?? "off"} renderer={CaptureHarness.ActiveRenderer()} " +
                  $"providers={string.Join(",", TrilogyWorldProviders.All.Select(provider => provider.BuildId))}");
 
         if (_args.CaptureFrame is { } frame)
@@ -145,21 +147,11 @@ public partial class OBPGame : Node3D
     {
         _frame++;
 
-        // Keep the retail sky backdrop centred on the active camera so it reads
-        // as a distant dome however far the player walks.
-        if (_skyRoot is { } sky && IsInstanceValid(sky) && _activeCamera is not null)
-        {
-            sky.GlobalPosition = _activeCamera.GlobalPosition;
-        }
-
         if (_mode == Mode.World)
         {
-            UpdateHeroLighting();
+            // Sky-follow, animated mobies and per-region hero light / fog.
+            _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             UpdateWorldHud();
-            if (_sceneResult is { } sr)
-            {
-                RuntimeWorldScene.AdvanceAnimated(sr);
-            }
         }
 
         if (_verifyOutcome is { } outcome)
@@ -177,19 +169,44 @@ public partial class OBPGame : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is InputEventKey { Pressed: true, Echo: false } key)
+        if (@event is not InputEventKey { Pressed: true, Echo: false } key)
         {
-            if (key.Keycode == Key.Escape)
+            return;
+        }
+
+        if (key.Keycode == Key.Escape)
+        {
+            if (_mode == Mode.World && _selector is null && _isoPath is not null && _args.CaptureFrame is null)
             {
-                if (_mode == Mode.World && _selector is null && _isoPath is not null && _args.CaptureFrame is null)
-                {
-                    ReturnToSelector();
-                }
-                else
-                {
-                    GetTree().Quit();
-                }
+                ReturnToSelector();
             }
+            else
+            {
+                GetTree().Quit();
+            }
+
+            return;
+        }
+
+        if (_mode == Mode.World && _overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
+        {
+            UpdateWorldHud();
+        }
+    }
+
+    /// <summary>F1..F7 toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
+    private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)
+    {
+        switch (keycode)
+        {
+            case Key.F1: overlay.IsolateNextKind(); return true;
+            case Key.F2: overlay.Toggle(DebugOverlay.Layer.KindTint); return true;
+            case Key.F3: overlay.Toggle(DebugOverlay.Layer.CollisionWire); return true;
+            case Key.F4: overlay.Toggle(DebugOverlay.Layer.WorldBounds); return true;
+            case Key.F5: overlay.Toggle(DebugOverlay.Layer.EnvGizmos); return true;
+            case Key.F6: overlay.Toggle(DebugOverlay.Layer.HideSky); return true;
+            case Key.F7: overlay.Clear(); return true;
+            default: return false;
         }
     }
 
@@ -319,29 +336,16 @@ public partial class OBPGame : Node3D
         _world = world;
         _worldSwitches++;
 
-        // environment
-        _gcEnv = new WorldEnvironment { Name = "GcWorldEnvironment", Environment = new Godot.Environment() };
-        RuntimeWorldScene.ConfigureEnvironment(_gcEnv.Environment, world);
-        AddChild(_gcEnv);
-
-        // The "hero" directional light — driven per-frame from the level's env
-        // sample points / transition volumes at the player's position so the
-        // capsule (and any lit geometry) picks up the right region lighting.
-        _heroLight = new DirectionalLight3D
-        {
-            Name = "GcHeroLight",
-            RotationDegrees = new Vector3(-52, -37, 0),
-            LightEnergy = 1.1f,
-        };
-        _gcEnv.AddChild(_heroLight);
-
-        // A framed showcase capture (--direct + --capture-frame, no player)
-        // parks a static camera over the level; everything else gets the capsule.
+        // A framed showcase capture (--direct + --capture-frame, no player) or a
+        // --shots run parks a static camera over the level; everything else gets
+        // the capsule.
         bool framedCapture = _args.CaptureFrame is not null && _args.DirectLoad && _args.TestScene != "player"
             && !_args.CrateFocus && !_args.CrateAutoStrike;
+        bool staticCamera = framedCapture || _args.ShotsPath is not null;
 
-        // world geometry + collision (the generic builder)
-        var result = RuntimeWorldScene.Build(world, $"Gc_{entry?.Planet ?? levelId.ToString()}", new RuntimeWorldScene.Options
+        // Environment, hero light, welded geometry + collision, sky-follow and the
+        // per-frame presentation tick all live in the game-neutral WorldHost.
+        var result = _worldHost.Load(this, _worldRoot, world, $"Gc_{entry?.Planet ?? levelId.ToString()}", new WorldHost.Options
         {
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
@@ -350,9 +354,7 @@ public partial class OBPGame : Node3D
             OnlyAnimatedMobies = _args.AnimSolo,
         });
         _sceneResult = result;
-        _worldScene = result.Root;
-        _skyRoot = result.SkyRoot;
-        _worldRoot.AddChild(result.Root);
+        SetupOverlay(result, world);
         ConfigureCrateDebugHarness();
 
         // spawn + camera
@@ -360,7 +362,7 @@ public partial class OBPGame : Node3D
         {
             FrameAnimatedMobies(world);
         }
-        else if (framedCapture)
+        else if (staticCamera)
         {
             FrameShowcaseCamera(world);
         }
@@ -481,29 +483,68 @@ public partial class OBPGame : Node3D
         _player?.QueueFree();
         _player = null;
 
-        if (_worldScene is { } ws && IsInstanceValid(ws))
-        {
-            ws.QueueFree();
-        }
+        _worldHost.Unload(); // scene tree, environment, hero light + GC.Collect
 
-        _worldScene = null;
-        _skyRoot = null;
-
-        if (_gcEnv is { } env && IsInstanceValid(env))
-        {
-            env.QueueFree();
-        }
-
-        _gcEnv = null;
-        _heroLight = null;
         _sceneResult = null;
+        _overlay = null; // its nodes live under the world sub-tree that was just freed
         _world = null;
         ResetCrateDebugHarness();
+    }
 
-        // Drop the ArrayMesh / ImageTexture / ConcavePolygonShape resources the
-        // freed nodes were holding so memory doesn't creep across switches.
-        System.GC.Collect();
-        System.GC.WaitForPendingFinalizers();
+    /// <summary>
+    /// Attach the runtime inspection overlay to a freshly-built world and apply
+    /// any <c>--overlay</c> layers requested for a deterministic capture.
+    /// F1..F7 toggle the layers interactively; see <see cref="DebugOverlay"/>.
+    /// </summary>
+    private void SetupOverlay(RuntimeWorldScene.Result result, RuntimeWorld world)
+    {
+        _overlay = new DebugOverlay(result, world);
+        ApplyOverlaySpec(_args.Overlay);
+    }
+
+    /// <summary>
+    /// Reset the overlay and apply a comma-separated layer / <c>isolate:&lt;kind&gt;</c>
+    /// spec (the <c>--overlay</c> syntax). Used for one-shot captures and per shot
+    /// in a <c>--shots</c> run.
+    /// </summary>
+    private void ApplyOverlaySpec(string? spec)
+    {
+        if (_overlay is not { } overlay)
+        {
+            return;
+        }
+
+        overlay.Clear();
+        if (spec is not { Length: > 0 })
+        {
+            return;
+        }
+
+        foreach (string token in spec.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries))
+        {
+            if (token.StartsWith("isolate:", System.StringComparison.OrdinalIgnoreCase))
+            {
+                string want = token["isolate:".Length..];
+                while (overlay.IsolatedKind != want)
+                {
+                    string? before = overlay.IsolatedKind;
+                    overlay.IsolateNextKind();
+                    if (overlay.IsolatedKind == before)
+                    {
+                        GD.PrintErr($"[OBPGame] --overlay isolate:{want} — no such asset kind");
+                        break;
+                    }
+                }
+            }
+            else if (System.Enum.TryParse<DebugOverlay.Layer>(token, ignoreCase: true, out var layer))
+            {
+                overlay.Set(layer, true);
+            }
+            else
+            {
+                GD.PrintErr($"[OBPGame] unknown --overlay token '{token}'");
+            }
+        }
     }
 
     /// <summary>
@@ -708,53 +749,8 @@ public partial class OBPGame : Node3D
             $"TIE meshes: {r.TieInstances}   Shrub meshes: {r.ShrubInstances}   Moby meshes: {r.MobyInstances}" +
             (r.AnimatedMobies > 0 ? $"   Animated mobies: {r.AnimatedMobies}" : "") +
             (r.DynamicObjects > 0 ? $"   Dynamic objects: {r.DynamicObjects}" : "") +
+            $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}");
-    }
-
-    /// <summary>
-    /// Per-frame: resolve the GC hero lighting + per-region fog at the active
-    /// camera and apply it — the level's env sample points and env-transition
-    /// doorway volumes, evaluated at the player's position (Phase: dynamic
-    /// lighting). No-op for levels with no decoded lighting.
-    /// </summary>
-    private void UpdateHeroLighting()
-    {
-        if (_world?.Lighting is not { } lighting || _gcEnv?.Environment is not { } env
-            || _heroLight is null || !IsInstanceValid(_heroLight) || _activeCamera is null)
-        {
-            return;
-        }
-
-        // Godot camera position -> OBP space (X is mirrored by RuntimeWorldScene).
-        var g = _activeCamera.GlobalPosition;
-        var r = EnvProbe.Evaluate(lighting, new Vector3(-g.X, g.Y, g.Z));
-
-        _heroLight.Visible = r.HasHeroLight;
-        if (r.HasHeroLight)
-        {
-            _heroLight.LightColor = r.HeroColour;
-            // travel dir is OBP space; mirror X for Godot. A DirectionalLight3D
-            // shines down its local -Z, so aim -Z along the travel direction.
-            var godotTravel = new Vector3(-r.HeroTravelDir.X, r.HeroTravelDir.Y, r.HeroTravelDir.Z);
-            if (godotTravel.LengthSquared() > 1e-4f)
-            {
-                _heroLight.LookAtFromPosition(_heroLight.GlobalPosition, _heroLight.GlobalPosition + godotTravel, Vector3.Up);
-            }
-        }
-
-        // Ambient: lift toward white so the unlit world keeps its decoded colour.
-        env.AmbientLightColor = new Color(
-            0.5f + 0.5f * r.Ambient.R, 0.5f + 0.5f * r.Ambient.G, 0.5f + 0.5f * r.Ambient.B);
-
-        if (r.HasFog && r.FogFar > r.FogNear && r.FogFar > 0)
-        {
-            float span = (float)_world.Bounds.Diagonal;
-            env.FogEnabled = true;
-            env.FogLightColor = r.FogColour;
-            env.FogDepthBegin = System.Math.Max(1f, r.FogNear);
-            env.FogDepthEnd = System.Math.Max(System.Math.Max(r.FogNear + 1f, r.FogFar), span * 1.4f);
-            env.FogDensity = System.Math.Clamp((1f - r.FogFarVisibility) * 0.5f + 0.04f, 0.04f, 0.5f);
-        }
     }
 
     private void SetSelectorHint(string text)
@@ -911,64 +907,45 @@ public partial class OBPGame : Node3D
 
     private async System.Threading.Tasks.Task RunCaptureAsync(int frameArg)
     {
-        double seconds = System.Math.Max(0.25, frameArg / 60.0);
-        var watchdog = GetTree().CreateTimer(seconds + 20.0);
-        watchdog.Timeout += () =>
-        {
-            GD.PrintErr("[OBPGame] capture watchdog fired — quitting");
-            GetTree().Quit(2);
-        };
+        var meta = CaptureMetadata();
+        meta["capture"] = _sceneKind;
+        meta["captureFrameArg"] = frameArg;
 
-        await ToSignal(GetTree().CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-
-        var image = GetViewport().GetTexture().GetImage();
-        string outPath = _args.CaptureOut ?? $"captures/{_sceneKind}.png";
-        string pngPath = outPath.StartsWith("res://") || outPath.StartsWith("user://")
-            ? ProjectSettings.GlobalizePath(outPath)
-            : Path.GetFullPath(outPath);
-        string jsonPath = Path.ChangeExtension(pngPath, ".json");
-        Directory.CreateDirectory(Path.GetDirectoryName(pngPath)!);
-
-        Error err = image.SavePng(pngPath);
-        var r = _sceneResult;
-        var meta = new
-        {
-            capture = _sceneKind,
-            captureFrameArg = frameArg,
-            renderedFrames = _frame,
-            width = image.GetWidth(),
-            height = image.GetHeight(),
-            renderer = ActiveRenderer(),
-            engine = (string)Engine.GetVersionInfo()["string"],
-            authorityBuild = _world?.BuildId ?? Rac2Authority.Primary.BuildId,
-            game = _world?.Game,
-            planet = _world?.PlanetName,
-            location = _world?.LocationName,
-            levelId = _world?.LevelId,
-            worldSwitches = _worldSwitches,
-            camera = new { position = new[] { _activeCamera.GlobalPosition.X, _activeCamera.GlobalPosition.Y, _activeCamera.GlobalPosition.Z } },
-            meshInstances = r?.MeshInstances ?? 0,
-            triangles = r?.Triangles ?? 0,
-            textures = r?.Textures ?? 0,
-            collisionBodies = r?.CollisionBodies ?? 0,
-            collisionTriangles = r?.CollisionTriangles ?? 0,
-            tieInstances = r?.TieInstances ?? 0,
-            shrubInstances = r?.ShrubInstances ?? 0,
-            mobyInstances = r?.MobyInstances ?? 0,
-            dynamicObjects = r?.DynamicObjects ?? 0,
-            crateDebug = GetCrateDebugSnapshot(),
-            player = _player is { } pl && IsInstanceValid(pl)
-                ? new { position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z }, onFloor = pl.IsOnFloor() }
-                : null,
-            savePngResult = err.ToString(),
-        };
-        File.WriteAllText(jsonPath, JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = true }));
-
-        GD.Print($"[OBPGame] captured {pngPath} ({image.GetWidth()}x{image.GetHeight()}, {err}) + {Path.GetFileName(jsonPath)}");
-        GetTree().Quit(err == Error.Ok ? 0 : 1);
+        var result = await CaptureHarness.CaptureAsync(
+            this, _args.CaptureOut ?? $"captures/{_sceneKind}.png", frameArg, meta);
+        GetTree().Quit(result.Ok ? 0 : 1);
     }
 
-    private static string ActiveRenderer() =>
-        RenderingServer.GetRenderingDevice() is null ? "gl_compatibility" : "rendering_device";
+    /// <summary>The common world / render / player metadata for any capture (shot or single frame).</summary>
+    private System.Collections.Generic.Dictionary<string, object?> CaptureMetadata()
+    {
+        var r = _sceneResult;
+        return new System.Collections.Generic.Dictionary<string, object?>
+        {
+            ["renderedFrames"] = _frame,
+            ["renderer"] = CaptureHarness.ActiveRenderer(),
+            ["engine"] = (string)Engine.GetVersionInfo()["string"],
+            ["authorityBuild"] = _world?.BuildId ?? Rac2Authority.Primary.BuildId,
+            ["game"] = _world?.Game,
+            ["planet"] = _world?.PlanetName,
+            ["location"] = _world?.LocationName,
+            ["levelId"] = _world?.LevelId,
+            ["worldSwitches"] = _worldSwitches,
+            ["camera"] = new[] { _activeCamera.GlobalPosition.X, _activeCamera.GlobalPosition.Y, _activeCamera.GlobalPosition.Z },
+            ["overlays"] = _overlay?.StatusLine(),
+            ["meshInstances"] = r?.MeshInstances ?? 0,
+            ["triangles"] = r?.Triangles ?? 0,
+            ["textures"] = r?.Textures ?? 0,
+            ["collisionBodies"] = r?.CollisionBodies ?? 0,
+            ["collisionTriangles"] = r?.CollisionTriangles ?? 0,
+            ["tieInstances"] = r?.TieInstances ?? 0,
+            ["shrubInstances"] = r?.ShrubInstances ?? 0,
+            ["mobyInstances"] = r?.MobyInstances ?? 0,
+            ["dynamicObjects"] = r?.DynamicObjects ?? 0,
+            ["crateDebug"] = GetCrateDebugSnapshot(),
+            ["player"] = _player is { } pl && IsInstanceValid(pl)
+                ? new { position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z }, onFloor = pl.IsOnFloor() }
+                : null,
+        };
+    }
 }

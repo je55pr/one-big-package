@@ -122,9 +122,12 @@ tools/capture-planets.ps1 -Framed    # fixed overview camera instead
 
 Godot user args: `--gc-iso <path>` (→ selector), `--planet <name|id>` /
 `--direct` (skip the selector), `--test-scene player`, `--stress-switch <list>`,
-`--capture-frame N`, `--capture-out <path>`, `--collision-debug`, `--verify-hash`.
-In a loaded world, **Esc** returns to the selector; from the selector **Esc**
-quits.
+`--capture-frame N`, `--capture-out <path>`, `--collision-debug`, `--verify-hash`,
+`--overlay <layers>` (`kindtint,collisionwire,worldbounds,envgizmos,hidesky`,
+`isolate:<kind>`). In a loaded world, **Esc** returns to the selector; from the
+selector **Esc** quits. **F1**–**F7** toggle the debug-overlay layers
+(isolate kind / tint / collision wire / bounds / light gizmos / hide sky / clear)
+— see [`GODOT_PRESENTATION.md`](GODOT_PRESENTATION.md).
 
 ## Known visual gaps
 

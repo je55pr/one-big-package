@@ -3,8 +3,7 @@
 node_modules/
 
 # --- deterministic capture output ---
-captures/*.png
-captures/*.json
+captures/
 
 # --- retail source data (never committed) ---
 *.iso

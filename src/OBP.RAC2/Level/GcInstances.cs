@@ -33,13 +33,15 @@ public static class GcInstances
     /// Pos/rot/scale instance (moby). <see cref="LightColour"/> is the static
     /// ambient light baked at the instance (<c>Rgb96</c> @ 0x74, s32 per channel
     /// / 255); <see cref="LightIndex"/> (@ 0x80) selects the directional light in
-    /// <see cref="Gameplay.DirLights"/> (out of range = ambient only).
+    /// <see cref="Gameplay.DirLights"/> (out of range = ambient only). <see cref="MobyInstance.Uid"/>
+    /// is authored <c>+0x10</c>; <see cref="MobyInstance.Bolts"/> is authored <c>+0x14</c>.
+    /// Oozla retail loader dataflow copies their low 16 bits to live Moby <c>+0xB2/+0xB4</c>.
     /// </summary>
     public sealed record MobyInstance(
         int Index, int OClass, float Scale,
         (float X, float Y, float Z) Position, (float X, float Y, float Z) Rotation,
         (float R, float G, float B) LightColour, int LightIndex,
-        int Uid, int Raw0x14, int PVarIndex, int ModeBits,
+        int Uid, int Bolts, int PVarIndex, int ModeBits,
         byte[] RawInstance, byte[]? PVarData);
 
     /// <summary>
