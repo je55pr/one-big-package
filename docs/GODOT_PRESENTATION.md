@@ -98,10 +98,21 @@ load for a deterministic capture.
 
 ## Deterministic capture
 
-`OBPGame` runs a screenshot + JSON-sidecar pass under `--capture-frame` /
-`--capture-out`. `tools/capture.ps1`, `tools/capture-planets.ps1` wrap it. See
-those scripts for the argument surface. (A named shot-list harness + the material
-factory are the remaining Milestone-1 follow-up — see below.)
+`OBP.Godot.CaptureHarness` is the primitive: settle N frames → one
+`FramePostDraw` → grab the viewport → write a PNG + a JSON sidecar of the
+caller's metadata, with a watchdog. Both capture paths use it.
+
+- **Single frame** — `--capture-frame N --capture-out <path>`. `tools/capture.ps1`,
+  `tools/capture-planets.ps1` wrap it.
+- **Shot list** — `--shots <file.json> --shots-world <planet>` runs every named
+  `ShotSpec` in a `ShotList` in one process: set the framing (`showcase` /
+  `topDown` / `orbit`), apply the shot's `overlay` layers, settle, write
+  `<world>-<shot>.png` + sidecar. `tools/shots.ps1` wraps it;
+  `tools/shots.ps1 -Check` diffs each sidecar's deterministic keys against
+  `tools/shots/golden/` (via `tools/shots/check.py`). Default list:
+  `tools/shots/showcase.json`.
+
+`ShotSpec` / `ShotList` live in `OBP.Runtime.Presentation` (pure, JSON, tested).
 
 ## Milestone 1 status
 
@@ -110,4 +121,7 @@ factory are the remaining Milestone-1 follow-up — see below.)
 - [x] PR 3 `presentation-lighting` — `PresentationEnvironment`, AgX tone-map, ambient exposure, gentle grade.
 - [x] PR 4 `env-animation` — `RuntimeAmbientAnimation` contract, `AmbientAnimator`, `WorldHost` applier, synthesised sky drift.
 - [x] PR 5 `debug-overlays` — `DebugOverlay` runtime inspection layers (F1–F7) + `--overlay`.
-- [ ] PR 6 `capture-shots` — named shot-list harness + `WorldMaterialFactory` extraction (Milestone-1 follow-up).
+- [x] PR 6 `capture-shots` — `CaptureHarness` + `ShotSpec`/`ShotList` + `--shots` runner + `tools/shots.ps1` + golden sidecars.
+
+Deferred: extracting `WorldMaterialFactory` from `RuntimeWorldScene.Build` — a
+pure tidy-up with pixel-parity risk and no consumer that needs it yet.
