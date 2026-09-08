@@ -20,6 +20,8 @@
 - Run `./tools/test.ps1 -Configuration Release` on Windows or `./tools/test.sh Release` where supported.
 - Run `dotnet format OneBigPackage.sln --verify-no-changes --no-restore` before proposing a merge.
 - Keep generated retail evidence payload-free and reproducible.
+- For changes whose correctness depends on retail bytes, run ./tools/test-retail.ps1 on an authorized local machine before calling the change authority-validated.
+- Never upload retail media to GitHub Actions, artifacts, caches, releases, LFS, or other cloud storage as part of this workflow.
 
 ## TypeScript reference
 - `reference-ts/` is archaeology/equivalence code, not the product runtime.
