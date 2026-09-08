@@ -82,6 +82,8 @@ Retail GC development can additionally use the `-GcIso`, `-GcLevel`, `-Player`, 
 
 Retail authority remains local and user-supplied. Normal build/test CI is portable and does not require retail images; bounded retail archaeology is run explicitly on an authorized local development machine and only payload-free evidence is committed.
 
+Run the full local retail gate with [	ools/test-retail.ps1](tools/test-retail.ps1); see [docs/RETAIL_TESTING.md](docs/RETAIL_TESTING.md) for the environment contract and security boundary.
+
 ## Repository guide
 
 - [`docs/PROJECT_VISION.md`](docs/PROJECT_VISION.md) — what OBP is trying to become, with unresolved design questions kept explicit.
