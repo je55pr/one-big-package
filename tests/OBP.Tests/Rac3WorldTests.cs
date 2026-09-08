@@ -51,6 +51,33 @@ public sealed class Rac3WorldTests
         Assert.All(world.Meshes, m => Assert.All(m.Positions, v => Assert.True(double.IsFinite(v))));
     }
 
+    [SkippableTheory]
+    [InlineData(1, 370.285888671875, 78.89811706542969, 95.85699462890625, 0.8845519423484802)]
+    [InlineData(8, 174.20101928710938, 475.1811218261719, 170.3060760498047, 0.0)]
+    public void RetailCampaignRowsExposeCompatibleShipStart(int table, double x, double y, double z, double yaw)
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var ship = Rac3WorldImport.Build(reader, table).Ship;
+        Assert.NotNull(ship);
+        Assert.Equal(x, ship!.X, 5);
+        Assert.Equal(y, ship.Y, 5);
+        Assert.Equal(z, ship.Z, 5);
+        Assert.Equal(yaw, ship.Yaw, 5);
+    }
+
+    [SkippableTheory]
+    [InlineData(20)]
+    [InlineData(50)]
+    public void RetailDefaultShipTransformIsNotPromotedAsSpawn(int table)
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        Assert.Null(Rac3WorldImport.Build(reader, table).Ship);
+    }
+
     [SkippableFact]
     public void RetailAllObservedRowsMatchCommittedProductionCensus()
     {
@@ -61,6 +88,8 @@ public sealed class Rac3WorldTests
         JsonElement rows = document.RootElement.GetProperty("rows");
         Assert.Equal(51, rows.GetArrayLength());
         using var reader = new FileRandomAccessReader(iso!);
+        int admittedShipStarts = 0;
+        int defaultShipTransforms = 0;
         foreach (JsonElement row in rows.EnumerateArray())
         {
             int table = row.GetProperty("tableIndex").GetInt32();
@@ -75,6 +104,10 @@ public sealed class Rac3WorldTests
             Assert.Equal(row.GetProperty("tieInstanceCount").GetInt32(), result.TieInstanceCount);
             Assert.Equal(row.GetProperty("shrubInstanceCount").GetInt32(), result.ShrubInstanceCount);
             Assert.Equal(row.GetProperty("skyShellCount").GetInt32(), result.SkyShellCount);
+            if (world.Ship is null) defaultShipTransforms++;
+            else admittedShipStarts++;
         }
+        Assert.Equal(21, admittedShipStarts);
+        Assert.Equal(30, defaultShipTransforms);
     }
 }

@@ -87,7 +87,13 @@ public static class Rac3WorldImport
         var environment = new RuntimeEnvironment(settings.DeathHeight, settings.IsSphericalWorld, settings.BackgroundColour, settings.FogColour,
             settings.FogNearDistance, settings.FogFarDistance, settings.FogNearIntensity, settings.FogFarIntensity);
         int materialCount = texByKind.Values.Sum(x => x.Count) + (skyShellCount > 0 ? textures.Count(t => t.AssetKind == "sky") + 1 : 0);
-        var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, null, null, meshes, textures, materialCount, collision, bounds, environment, null,
+        // Shared GC/UYA/DL settings-layout compatibility: native Z-up ship/start transform -> OBP Y-up.
+        // UYA retail corroborates the 0x5c structure and all-row value pattern; exact executable field-name provenance remains open.
+        bool defaultShipTransform = settings.ShipPosition == (20f, 20f, 20f) && settings.ShipRotationZ == 0f;
+        RuntimeSpawn? ship = defaultShipTransform
+            ? null
+            : new RuntimeSpawn(settings.ShipPosition.X, settings.ShipPosition.Z, settings.ShipPosition.Y, settings.ShipRotationZ);
+        var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, null, null, meshes, textures, materialCount, collision, bounds, environment, ship,
             Lighting: null, AnimatedMeshes: null, DynamicObjects: dynamicObjects);
         return new ImportResult(world, tfrag.TfragCount, gameplay.TieInstances.Count, gameplay.ShrubInstances.Count, gameplay.MobyInstances.Count,
             gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
