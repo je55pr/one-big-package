@@ -30,9 +30,12 @@ The single owner of one loaded world's Godot side:
   under the caller's world root;
 - the world `WorldEnvironment` and the "hero" `DirectionalLight3D`;
 - the camera-followed sky root;
+- the resolved **ambient animations** (`RuntimeWorld.AmbientAnimations`, or a
+  synthesised gentle sky drift when a world declares none);
 - **the one per-frame presentation tick** — `Tick(delta, cameraGlobalPos)` —
-  which advances animated mobies, keeps the sky centred on the camera, and
-  resolves + applies the region hero light / ambient / fog via `EnvResolver`.
+  which advances animated mobies, keeps the sky centred on the camera, applies
+  the ambient animations, and resolves + applies the region hero light /
+  ambient / fog via `EnvResolver`.
 
 API: `Load(hostNode, sceneParent, world, name, options)` /
 `Unload()` (frees everything + `GC.Collect`, leak-verified by the stress
@@ -57,6 +60,7 @@ Pure, `OBP.Godot`-free, unit-tested (`tests/OBP.Tests/WorldPresentationTests`,
 | `WorldPresentation.Resolve` | `RuntimeEnvironment` → `PresentationState`: background (explicit → fog colour → default), ambient lift, load-time fog. |
 | `WorldPresentation.ResolveFog` / `FogFromResolved` | the one fog resolver — begin/end/density/curve, far-visibility drive, end-plane stretched past `bounds.Diagonal * 1.4`. |
 | `EnvResolver.Evaluate` | nearest env sample + fog fallback + env-transition doorway blend at a world point (`research/GC_LIGHTING.md`). |
+| `AmbientAnimator.Sample` | `RuntimeAmbientAnimation` (`UvScroll` / `Spin`) → `AmbientAnimationSample` at time _t_. Deterministic. |
 | `WorldPresentation.ResolveToneMap` | AgX + an exposure nudge from the baked ambient (dark planets open, bright pull back). |
 | `WorldPresentation.ResolveGrade` | a small fixed post-tone-map contrast/saturation lift. |
 | `PresentationState` / `EnvResolved` / `FogState` / `ToneMap` / `ColourGrade` / `Rgb` | engine-independent result records. |
@@ -83,5 +87,5 @@ those scripts for the argument surface.
 - [x] PR 1 `presentation-core` — extract the pure maths.
 - [x] PR 2 `world-host` — `WorldHost`, one presentation tick.
 - [x] PR 3 `presentation-lighting` — `PresentationEnvironment`, AgX tone-map, ambient exposure, gentle grade.
-- [ ] PR 4 `env-animation` — neutral ambient-animation contract + applier + sky motion.
+- [x] PR 4 `env-animation` — `RuntimeAmbientAnimation` contract, `AmbientAnimator`, `WorldHost` applier, synthesised sky drift.
 - [ ] PR 5 `debug-overlays-and-shots` — runtime overlay toggles + shot-list harness + material factory.
