@@ -20,6 +20,8 @@ public partial class OBPGame
     private byte? _crateDebugPvarC8;
     private string? _crateDebugRoute;
     private bool _crateDebugBroken;
+    private GcFreshBoltSession _crateBoltSession = new();
+    private string _crateRewardStatus = "off";
 
     private bool CrateDebugRequested => _args.CrateFocus || _args.CrateAutoStrike;
 
@@ -30,6 +32,8 @@ public partial class OBPGame
         _crateDebugPvarC8 = null;
         _crateDebugRoute = null;
         _crateDebugBroken = false;
+        _crateBoltSession = new GcFreshBoltSession();
+        _crateRewardStatus = "off";
     }
     private void ConfigureCrateDebugHarness()
     {
@@ -130,21 +134,40 @@ public partial class OBPGame
             throw new InvalidOperationException("The deterministic debug event no longer satisfies the recovered class-500 predicate.");
         }
 
-        var pvar = target.Source.NativePayloads?
-            .FirstOrDefault(p => p.Format == "rac2-pvar");
-        if (pvar is null || pvar.Data.Length <= 0xC8)
+        var authored = GcClass500Authority.Read(target.Source);
+        if (authored is null || authored.PvarC8 is not { } c8)
         {
-            _crateDebugStatus = "strike: target has no usable RAC2 PVar";
-            GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: missing PVar +0xC8");
+            _crateDebugStatus = "strike: target has no usable class-500 authority state";
+            GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: missing authored UID/Bolts/PVar+C8");
             return;
         }
 
-        byte c8 = pvar.Data[0xC8];
         var route = GcCrateInteraction.PostBreakRoute(c8);
         _crateDebugTarget = target;
         _crateDebugPvarC8 = c8;
         _crateDebugRoute = route.ToString();
         _crateDebugStatus = $"{source}: state 1 -> 3 -> {route}";
+
+        GcClass500Payout payout;
+        try
+        {
+            // Harness inputs are explicit deterministic choices within recovered
+            // native domains, not claims about arbitrary retail save state. A
+            // multiplier byte of zero is the neutral native case via max(1, byte).
+            payout = _crateBoltSession.PlanClass500Payout(
+                authored.Uid, authored.AuthoredBolts, rewardMultiplierByte: 0,
+                progressionLikeInput: 0, rngMod2: 1);
+        }
+        catch (InvalidOperationException ex)
+        {
+            _crateRewardStatus = ex.Message;
+            GD.PrintErr($"[crate-bolts] {target.Source.InteractionId}: {ex.Message}");
+            return;
+        }
+
+        SpawnCrateBoltPickups(target.Root.GlobalPosition, payout);
+        _crateRewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
+            $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 
         // The Oozla class-500 state-3 path immediately enters the native
         // deactivate helper when authored +0xC8 is zero. State 6 remains visible
@@ -193,7 +216,9 @@ public partial class OBPGame
         }
 
         string target = _crateDebugTarget?.Source.InteractionId ?? "none";
-        return $"Crate debug: {target}   {_crateDebugStatus}";
+        return $"Crate debug: {target}   {_crateDebugStatus}\n" +
+            $"Bolt payout: {_crateRewardStatus}   collected {_crateBoltSession.CollectedBolts}   " +
+            $"outstanding {_crateBoltSession.OutstandingPickupCount}   deferred {_crateBoltSession.DeferredBolts}";
     }
 
     private CrateDebugSnapshot? GetCrateDebugSnapshot()
@@ -214,7 +239,11 @@ public partial class OBPGame
             EventFlags: $"0x{DebugCrateEventFlags:X8}",
             EventScalar: DebugCrateEventScalar,
             PvarC8: _crateDebugPvarC8,
-            Route: _crateDebugRoute);
+            Route: _crateDebugRoute,
+            RewardStatus: _crateRewardStatus,
+            CollectedBolts: _crateBoltSession.CollectedBolts,
+            OutstandingPickups: _crateBoltSession.OutstandingPickupCount,
+            DeferredBolts: _crateBoltSession.DeferredBolts);
     }
 
     private sealed record CrateDebugSnapshot(
@@ -227,5 +256,9 @@ public partial class OBPGame
         string EventFlags,
         float EventScalar,
         byte? PvarC8,
-        string? Route);
+        string? Route,
+        string RewardStatus,
+        int CollectedBolts,
+        int OutstandingPickups,
+        int DeferredBolts);
 }
