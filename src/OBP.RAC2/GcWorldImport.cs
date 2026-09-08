@@ -4,6 +4,7 @@ using OBP.IO;
 using OBP.PS2.Collision;
 using OBP.PS2.Compression;
 using OBP.PS2.Iso;
+using OBP.PS2.Geometry;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Level;
 using OBP.Runtime;
@@ -146,7 +147,7 @@ public static class GcWorldImport
 
         // --- tie / shrub / moby instances ---
         var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
-        var mobyClasses = GcMoby.ReadClasses(Core());
+        var mobyClasses = GcMobyClasses.Read(Core());
 
         CollectTextures("tie", GcLevelTextures.Table.Tie);
         var tieClasses = GcTie.ReadClasses(Core());
@@ -384,14 +385,14 @@ public static class GcWorldImport
 
     /// <summary>
     /// Build the per-frame geometry for a small, bounded set of animated moby
-    /// instances (single-joint classes with a real <see cref="GcMoby.MobySequence"/>),
+    /// instances (single-joint classes with a real <see cref="GcUyaMoby.MobySequence"/>),
     /// kept out of the merged static soup so the host can play them over time.
     /// Also reports which instance indices were consumed so the static path can
     /// skip them.
     /// </summary>
     private static List<RuntimeAnimatedMesh> BuildAnimatedMeshes(
         GcInstances.Gameplay gameplay,
-        Dictionary<int, GcMoby.MobyClass> classes,
+        Dictionary<int, GcUyaMoby.MobyClass> classes,
         out HashSet<int> animatedInstances)
     {
         const int MaxAnimatedInstances = 12;
@@ -506,7 +507,7 @@ public static class GcWorldImport
     private static List<RuntimeDynamicObject> BuildDynamicMobyObjects(
         int level,
         GcInstances.Gameplay gameplay,
-        Dictionary<int, GcMoby.MobyClass> classes,
+        Dictionary<int, GcUyaMoby.MobyClass> classes,
         IReadOnlyList<GcInstances.DirLight> dirLights,
         IReadOnlyList<GcInstances.PointLight> pointLights,
         IReadOnlySet<int> dynamicClasses,
@@ -819,7 +820,7 @@ public static class GcWorldImport
 
     private static void PlaceMobyInstances(
         IReadOnlyList<GcInstances.MobyInstance> instances,
-        Dictionary<int, GcMoby.MobyClass> classes,
+        Dictionary<int, GcUyaMoby.MobyClass> classes,
         IReadOnlyList<GcInstances.DirLight> dirLights,
         IReadOnlyList<GcInstances.PointLight> pointLights,
         List<RuntimeMesh> meshes,
@@ -990,7 +991,7 @@ public static class GcWorldImport
 
     private static void AddMobyMarkers(
         IReadOnlyList<GcInstances.MobyInstance> instances,
-        Dictionary<int, GcMoby.MobyClass> classes,
+        Dictionary<int, GcUyaMoby.MobyClass> classes,
         List<RuntimeMesh> meshes,
         double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
     {

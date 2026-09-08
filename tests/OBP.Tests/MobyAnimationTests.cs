@@ -1,20 +1,20 @@
 using System.Numerics;
 using OBP.IO;
 using OBP.PS2.Iso;
+using OBP.PS2.Geometry;
 using OBP.RAC2.Animation;
-using OBP.RAC2.Geometry;
 using OBP.RAC2.Level;
 
 namespace OBP.Tests;
 
 /// <summary>
-/// Retail-backed validation of Going Commando <see cref="GcMoby.MobySequence"/>
+/// Retail-backed validation of Going Commando <see cref="GcUyaMoby.MobySequence"/>
 /// decode + engine-independent <see cref="MobyAnimation"/> pose evaluation.
 /// Retail-gated on <c>OBP_GC_ISO</c>. See <c>research/GC_MOBY.md</c>.
 /// </summary>
 public class MobyAnimationTests
 {
-    private static Dictionary<int, GcMoby.MobyClass> Classes(int level)
+    private static Dictionary<int, GcUyaMoby.MobyClass> Classes(int level)
     {
         var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
@@ -22,7 +22,7 @@ public class MobyAnimationTests
         var fs = Iso9660Filesystem.Open(reader);
         var wad = fs.OpenFile($"/G/LEVEL{level}.WAD")!;
         var header = GcLevelWad.ReadHeader(wad);
-        return GcMoby.ReadClasses(GcLevelCore.Open(GcLevelWad.RequireLump(wad, header, 0)));
+        return GcMobyClasses.Read(GcLevelCore.Open(GcLevelWad.RequireLump(wad, header, 0)));
     }
 
     [SkippableFact]
@@ -65,7 +65,7 @@ public class MobyAnimationTests
                 continue;
             }
 
-            var identity = new GcMoby.MobyFrame(0f, [Quaternion.Identity]);
+            var identity = new GcUyaMoby.MobyFrame(0f, [Quaternion.Identity]);
             var posed = MobyAnimation.Pose(cl.Mesh, cl.Joints, identity);
 
             Assert.Equal(cl.Mesh.Positions.Length, posed.Length);

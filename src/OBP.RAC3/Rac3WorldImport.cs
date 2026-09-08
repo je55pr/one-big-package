@@ -77,12 +77,23 @@ public static class Rac3WorldImport
             AddSkyMeshes(sky, meshes, minX, minY, minZ, maxX, maxY, maxZ, fallbackSkyColour);
         }
 
+        var mobyClasses = UyaAssets.ReadMobyClasses(core, texByKind["moby"].Count);
+        var referencedMobyClasses = gameplay.MobyInstances.Select(m => m.OClass).ToHashSet();
+        foreach (int oClass in referencedMobyClasses)
+        {
+            if (!mobyClasses.Decoded.ContainsKey(oClass) && !mobyClasses.ZeroLocalCoreClasses.Contains(oClass))
+                throw new InvalidDataException($"UYA Moby placement references undeclared class {oClass}.");
+        }
+        var mobyModels = BuildMobyModels(mobyClasses.Decoded, referencedMobyClasses);
         var dynamicObjects = gameplay.MobyInstances.Select(m =>
         {
             var payloads = new List<RuntimeOpaquePayload> { new("rac3-moby-instance-gc-layout-compat", m.RawInstance) };
             if (m.PvarData is { } pv) payloads.Add(new("rac3-pvar-gc-layout-compat", pv));
+            IReadOnlyList<RuntimeObjectMesh> objectMeshes = mobyModels.TryGetValue(m.OClass, out var modelMeshes)
+                ? modelMeshes
+                : Array.Empty<RuntimeObjectMesh>();
             return new RuntimeDynamicObject("rac3", m.OClass, m.Index, m.UidCompatibility, $"moby:{m.OClass}",
-                $"table:{tableIndex}:moby:{m.Index}", new RuntimeObjectTransform(UyaGameplay.MobyTransform(m)), Array.Empty<RuntimeObjectMesh>(), payloads);
+                $"table:{tableIndex}:moby:{m.Index}", new RuntimeObjectTransform(UyaGameplay.MobyTransform(m)), objectMeshes, payloads);
         }).ToArray();
 
         if (double.IsPositiveInfinity(minX)) { minX = minY = minZ = -1; maxX = maxY = maxZ = 1; }
@@ -102,6 +113,51 @@ public static class Rac3WorldImport
             gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
     }
 
+    private static IReadOnlyDictionary<int, IReadOnlyList<RuntimeObjectMesh>> BuildMobyModels(
+        IReadOnlyDictionary<int, UyaAssets.MobyVisualClass> classes,
+        IReadOnlySet<int> referencedClasses)
+    {
+        var models = new Dictionary<int, IReadOnlyList<RuntimeObjectMesh>>();
+        foreach (int oClass in referencedClasses.Order())
+        {
+            if (!classes.TryGetValue(oClass, out var cls)) continue;
+            var mesh = cls.Mesh;
+            if (mesh.Indices.Length == 0 || (mesh.Skinned && !mesh.SkinningApplied)) continue;
+
+            var surfaces = new List<RuntimeObjectMesh>();
+            foreach (var group in Enumerable.Range(0, cls.TriangleTextureIds.Length)
+                         .GroupBy(face => cls.TriangleTextureIds[face]).OrderBy(group => group.Key))
+            {
+                var remap = new Dictionary<int, int>();
+                var positions = new List<double>();
+                var uvs = new List<float>();
+                var indices = new List<int>();
+                foreach (int face in group)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int vertex = mesh.Indices[face * 3 + k];
+                        if (!remap.TryGetValue(vertex, out int outputVertex))
+                        {
+                            outputVertex = positions.Count / 3;
+                            remap[vertex] = outputVertex;
+                            positions.Add(mesh.Positions[vertex * 3]);
+                            positions.Add(mesh.Positions[vertex * 3 + 2]);
+                            positions.Add(mesh.Positions[vertex * 3 + 1]);
+                            uvs.Add(mesh.Uvs[vertex * 2]);
+                            uvs.Add(mesh.Uvs[vertex * 2 + 1]);
+                        }
+                        indices.Add(outputVertex);
+                    }
+                }
+
+                int textureId = group.Key == 0xff ? -1 : group.Key;
+                surfaces.Add(new RuntimeObjectMesh("moby", textureId, positions.ToArray(), uvs.ToArray(), indices.ToArray()));
+            }
+            if (surfaces.Count > 0) models.Add(oClass, surfaces);
+        }
+        return models;
+    }
     private static IEnumerable<RuntimeMesh> GroupTfrags(RcTfrag.Mesh mesh)
     {
         foreach (var group in Enumerable.Range(0, mesh.TriangleTextureIds.Length).GroupBy(f => mesh.TriangleTextureIds[f]).OrderBy(g => g.Key))

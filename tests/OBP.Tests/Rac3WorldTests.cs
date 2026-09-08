@@ -24,12 +24,12 @@ public sealed class Rac3WorldTests
     }
 
     [SkippableTheory]
-    [InlineData(1, 802, 1960, 1894, 735, 670, 8, 890426, 264313, 484)]
-    [InlineData(8, 2876, 646, 499, 777, 481, 3, 394555, 112813, 279)]
-    [InlineData(20, 383, 595, 1105, 200, 186, 6, 508483, 236309, 350)]
-    [InlineData(50, 525, 365, 85, 198, 191, 5, 85769, 222264, 327)]
+    [InlineData(1, 802, 1960, 1894, 735, 670, 8, 890426, 264313, 484, 221349, 36, 427)]
+    [InlineData(8, 2876, 646, 499, 777, 481, 3, 394555, 112813, 279, 231198, 43, 668)]
+    [InlineData(20, 383, 595, 1105, 200, 186, 6, 508483, 236309, 350, 77960, 30, 117)]
+    [InlineData(50, 525, 365, 85, 198, 191, 5, 85769, 222264, 327, 66802, 42, 182)]
     public void RetailRowsMatchProductionReferenceCensus(int table, int tfrags, int ties, int shrubs, int mobies, int pvars, int sky,
-        int renderTriangles, int collisionTriangles, int materials)
+        int renderTriangles, int collisionTriangles, int materials, int dynamicTriangles, int mobyModels, int linkedMobies)
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
@@ -48,6 +48,10 @@ public sealed class Rac3WorldTests
         Assert.Equal(renderTriangles, world.TotalRenderTriangles);
         Assert.Equal(collisionTriangles, world.TotalCollisionTriangles);
         Assert.Equal(materials, world.MaterialCount);
+        Assert.Equal(dynamicTriangles, world.TotalDynamicTriangles);
+        Assert.Equal(renderTriangles + dynamicTriangles, world.TotalRenderTriangles + world.TotalDynamicTriangles);
+        Assert.Equal(linkedMobies, world.DynamicObjects!.Count(o => o.Meshes.Count > 0));
+        Assert.Equal(mobyModels, world.DynamicObjects!.Where(o => o.Meshes.Count > 0).Select(o => o.NativeClassId).Distinct().Count());
         Assert.Equal(mobies, world.DynamicObjects!.Count);
         Assert.Equal(pvars, world.DynamicObjects.Count(o => o.NativePayloads?.Any(p => p.Format == "rac3-pvar-gc-layout-compat") == true));
         Assert.All(world.DynamicObjects, o => Assert.Equal(16, o.Transform.Matrix.Length));
@@ -138,6 +142,10 @@ public sealed class Rac3WorldTests
             Assert.Equal(row.GetProperty("worldRenderTriangles").GetInt32(), world.TotalRenderTriangles);
             Assert.Equal(row.GetProperty("collisionTriangles").GetInt32(), world.TotalCollisionTriangles);
             Assert.Equal(row.GetProperty("materialCount").GetInt32(), world.MaterialCount);
+            Assert.Equal(row.GetProperty("expandedMobyTriangles").GetInt32(), world.TotalDynamicTriangles);
+            Assert.Equal(row.GetProperty("totalVisibleTriangles").GetInt32(), world.TotalRenderTriangles + world.TotalDynamicTriangles);
+            Assert.Equal(row.GetProperty("linkedMobyInstanceCount").GetInt32(), world.DynamicObjects!.Count(o => o.Meshes.Count > 0));
+            Assert.Equal(row.GetProperty("mobyModelCount").GetInt32(), world.DynamicObjects!.Where(o => o.Meshes.Count > 0).Select(o => o.NativeClassId).Distinct().Count());
             Assert.Equal(row.GetProperty("mobyInstanceCount").GetInt32(), result.MobyInstanceCount);
             Assert.Equal(row.GetProperty("mobiesWithPvar").GetInt32(), result.MobiesWithPvar);
             Assert.Equal(row.GetProperty("tieInstanceCount").GetInt32(), result.TieInstanceCount);
