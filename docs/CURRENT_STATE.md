@@ -8,12 +8,12 @@ This document summarizes the current merged production baseline. Detailed format
 
 OBP's production direction is **Godot 4 + C#**. `reference-ts/` is temporary archaeology/equivalence code retained only where native parity is incomplete, most notably UYA/RAC3.
 
-The trilogy source/destination/provider architecture now has **two native production providers**: R&C1 and Going Commando. The native app can attach all three supported retail authorities, browse neutral destinations, reconstruct all 19 R&C1 worlds and arbitrary GC worlds through the same `RuntimeWorld`/Godot boundary, and repeatedly enter/leave them without a game-specific host rewrite. The merged cross-game Fusion Lab can also hold multiple provider worlds at once; its first retail proof loads R&C1 level 0 and GC Oozla simultaneously in one Godot scene.
+The trilogy source/destination/provider architecture now has **three native production providers**: R&C1, Going Commando and Up Your Arsenal. The native app can attach all three supported retail authorities, browse neutral destinations, reconstruct all 19 R&C1 worlds, arbitrary GC worlds and all 51 observed UYA main rows through the same `RuntimeWorld`/Godot boundary, and repeatedly enter/leave them without a game-specific host rewrite. The merged cross-game Fusion Lab can also hold multiple provider worlds at once; its first retail proof loads R&C1 level 0 and GC Oozla simultaneously in one Godot scene.
 
 ```text
-GC retail ISO
+trilogy retail ISO
   -> bounded disc/build identification
-  -> GC native importer
+  -> game-specific native importer
   -> neutral RuntimeWorld
   -> game-neutral Godot world builder
   -> planet selector / repeated load-unload
@@ -39,7 +39,7 @@ The architectural rule is unchanged: **Godot hosts OBP; Godot does not define Ra
 
 ### Trilogy source / destination / provider layer
 
-Merged `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. R&C1, Going Commando and Up Your Arsenal are all registered native providers.
+Merged `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. R&C1, Going Commando and Up Your Arsenal are all registered native providers. UYA's TypeScript/reference importer remains useful as equivalence evidence for behaviour not yet promoted natively, but it is no longer the production world-loading path.
 
 ### R&C1 native world provider
 
@@ -47,9 +47,11 @@ R&C1 NTSC-U (`SCUS-97199`) is now a second native provider rather than a referen
 
 ### Up Your Arsenal native world provider
 
-UYA NTSC-U (`SCUS-97353`, `rac3-ntscu-original`) exposes the 51 retail-observed sparse main-table rows through `Rac3WorldProvider`. The native C# path reconstructs tfrag terrain, decoded level textures, TIE/shrub authored static placement, strict UYA sky shells/textures, octree collision, first-part level atmosphere, compatible ship starts where retail settings do not carry the default sentinel transform, and authored Moby identity/PVars as neutral dynamic objects. Moby class geometry is not yet rendered on merged main.
+UYA NTSC-U (`SCUS-97353`, `rac3-ntscu-original`) exposes all 51 retail-observed sparse main-table rows through `Rac3WorldProvider`. The native C# path reconstructs tfrag terrain, decoded textures, TIE/shrub authored placement, strict UYA sky shells/textures, octree collision, first-part level atmosphere, compatible ship starts where retail settings do not carry the default sentinel transform, and authored Moby identity/PVars as neutral dynamic objects.
 
-The UYA sky path preserves shell rotation/angular-velocity/bloom evidence and renders the initial pose through the ordinary camera-pinned `SkyRoot`. Materialless/gouraud backdrop geometry is explicitly marked as evidence-safe untextured runtime geometry, uses the retained sky/background tint policy, and is ordered behind the textured cloud shells rather than being silently discarded. Retail table 1 remains 336 static meshes / 890,426 render triangles / 264,313 collision triangles, including all 4,348 sky triangles; the all-51-row production census remains the regression oracle.
+The UYA sky path preserves shell rotation/angular-velocity/bloom evidence and renders the initial pose through the ordinary camera-pinned `SkyRoot`. Materialless/gouraud backdrop geometry remains evidence-safe untextured runtime geometry, uses the retained sky/background tint policy, and is ordered behind the textured cloud shells. Retail table 1 remains 336 static meshes / 890,426 render triangles / 264,313 collision triangles, including all 4,348 sky triangles.
+
+A shared GC/UYA Moby codec lives in `OBP.PS2`; evidence-safe UYA class models are linked to individual `RuntimeDynamicObject` instances while zero-local-core classes and unresolved skinning remain deliberately meshless. The all-row retail gate reproduces the committed production census. Veldin row 1 preserves 735 authored Mobies, links 427 renderable instances across 36 referenced models and contributes 221,349 dynamic triangles. The deterministic Godot player-start capture renders those 427 dynamic objects through the neutral host while preserving the recovered UYA start position.
 
 ### Going Commando native reconstruction and planet hopping
 
@@ -91,7 +93,7 @@ The merged runtime includes:
 
 ### TypeScript archaeology role
 
-`reference-ts/` remains only to preserve evidence and working decoders that have not yet been promoted into native C#. Do not add new product/runtime architecture there. UYA/RAC3 is the main remaining dependency; once native parity and deterministic evidence are preserved, obsolete TypeScript code should be deleted.
+`reference-ts/` remains only to preserve evidence and working decoders that have not yet been promoted into native C#. Do not add new product/runtime architecture there. UYA/RAC3 still has important parity gaps in animation, semantics and effects, but its production world provider is now native C#; obsolete TypeScript components should be deleted only after their useful behaviour/evidence is preserved natively.
 
 ### Retail-authority development
 
@@ -108,8 +110,7 @@ Across the project, major work still includes:
 - vendors, economy, inventory and save semantics;
 - runtime audio;
 - exact GS material/blend fidelity and remaining sky/effect work;
-- broader R&C1/UYA promotion from research/reference code into the C# production stack;
-- promoting the remaining R&C1 static-instance/Moby layers and landing the UYA destination/world provider once its importer is ready;
+- broader R&C1/UYA promotion of remaining animation, gameplay semantics and effects from research/reference code into the C# production stack;
 - removing remaining GC-specific assumptions from legacy HUD/capture/regression paths after the neutral path is settled;
 - explicit cross-game fusion rules once enough native behaviour is understood.
 
@@ -121,7 +122,7 @@ These are capability goals, not a frozen campaign roadmap:
 
 1. Continue productionising GC world/runtime fidelity and dynamic behaviour.
 2. Promote stable R&C1 and UYA discoveries into engine-independent C# libraries with equivalence tests rather than re-reverse-engineering them.
-3. Use the now-working R&C1 + GC composition proof as the integration baseline, then promote UYA behind the same provider contract and move into cross-game Veldin alignment.
+3. Use the now-working three-provider runtime baseline to extend composition into UYA and move into cross-game Veldin alignment without weakening each game's native provenance.
 4. Gradually route old GC-only debug/HUD/capture code through the same neutral destination/runtime path rather than maintaining two architectures indefinitely.
 5. Keep using targeted local retail probes for questions where retail bytes/executable behaviour can settle ambiguity cheaply.
 6. Preserve the native-evidence / OBP-design boundary while gameplay archaeology expands.
