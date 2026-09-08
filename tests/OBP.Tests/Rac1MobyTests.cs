@@ -191,6 +191,112 @@ public sealed class Rac1MobyTests
     }
 
     [SkippableFact]
+    public void Level2_Class766_RigidHierarchyReproducesRestAndMovesFourJointMesh()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 2);
+        var cls = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Mobies[766];
+        Assert.Equal(4, cls.Joints.Count);
+        var rest = Assert.IsType<Rac1MobyAnimation.Sequence>(cls.Sequences[0].Value);
+        var animated = Assert.IsType<Rac1MobyAnimation.Sequence>(cls.Sequences[1].Value);
+        Assert.Single(rest.Frames);
+        Assert.Equal(16, animated.Frames.Count);
+        Assert.True(Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]));
+        Assert.True(Rac1MobyPose.IsRigidHierarchyRestAnchor(cls.Joints, rest.Frames[0]));
+        var posedRest = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]);
+        double restError = posedRest.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
+        Assert.InRange(restError, 0, 0.002);
+
+        var posedAnimated = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, animated.Frames[1]);
+        Assert.All(posedAnimated, value => Assert.True(double.IsFinite(value)));
+        double animatedDelta = posedAnimated.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
+        Assert.True(animatedDelta > 0.01,
+            $"Expected the retail four-joint animation to move, got max delta {animatedDelta}.");
+    }
+
+    [SkippableFact]
+    public void AllLevels_RigidHierarchyRestAnchorsReproduceStoredSurface()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var catalogue = Rac1DiscIndex.Read(reader);
+        int occurrences = 0;
+        long vertices = 0;
+        double maxRestError = 0;
+        foreach (var level in catalogue.Levels.OrderBy(l => l.LevelId))
+        {
+            var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level));
+            foreach (var cls in classes.Mobies.Values.Where(c => c.JointCount > 1))
+            {
+                var rest = cls.Sequences.SingleOrDefault(s => s.Index == 0)?.Value;
+                if (rest is null || rest.Frames.Count != 1 ||
+                    !Rac1MobyPose.IsRigidHierarchyRestAnchor(cls.Joints, rest.Frames[0])) continue;
+                Assert.True(Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]));
+                var posed = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]);
+                double error = posed.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
+                Assert.InRange(error, 0, 0.002);
+                maxRestError = Math.Max(maxRestError, error);
+                occurrences++;
+                vertices += cls.Mesh.Positions.Length / 3;
+            }
+        }
+        Assert.Equal(286, occurrences);
+        Assert.Equal(206_213L, vertices);
+        Assert.InRange(maxRestError, 0, 0.002);
+    }
+
+    [SkippableFact]
+    public void AllLevels_RigidHierarchyMovingSequencesStayFiniteAndBounded()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var catalogue = Rac1DiscIndex.Read(reader);
+        int occurrences = 0, sequences = 0, frames = 0;
+        double maxBoundRatio = 0;
+        foreach (var level in catalogue.Levels.OrderBy(l => l.LevelId))
+        {
+            var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level));
+            foreach (var cls in classes.Mobies.Values.Where(c => c.JointCount > 1))
+            {
+                var rest = cls.Sequences.SingleOrDefault(s => s.Index == 0)?.Value;
+                if (rest is null || rest.Frames.Count != 1 ||
+                    !Rac1MobyPose.IsRigidHierarchyRestAnchor(cls.Joints, rest.Frames[0])) continue;
+                var moving = cls.Sequences.Where(s => s.Value is { Frames.Count: > 1 }).Select(s => s.Value!).ToArray();
+                if (moving.Length == 0) continue;
+                occurrences++;
+                double restExtent = Math.Max(1e-6, cls.Mesh.Positions.Max(Math.Abs));
+                foreach (var sequence in moving)
+                {
+                    sequences++;
+                    foreach (var frame in sequence.Frames)
+                    {
+                        Assert.True(Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, frame));
+                        var posed = Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, frame);
+                        double posedExtent = 0;
+                        foreach (double value in posed)
+                        {
+                            Assert.True(double.IsFinite(value));
+                            posedExtent = Math.Max(posedExtent, Math.Abs(value));
+                        }
+                        double ratio = posedExtent / restExtent;
+                        maxBoundRatio = Math.Max(maxBoundRatio, ratio);
+                        Assert.InRange(ratio, 0, 1.26);
+                        frames++;
+                    }
+                }
+            }
+        }
+        Assert.Equal(35, occurrences);
+        Assert.Equal(130, sequences);
+        Assert.Equal(3_630, frames);
+        Assert.InRange(maxBoundRatio, 1.25, 1.26);
+    }
+
+    [SkippableFact]
     public void AllLevels_AnimationTimingMatchesRetailRateEquation()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

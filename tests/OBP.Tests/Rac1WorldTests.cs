@@ -119,4 +119,31 @@ public sealed class Rac1LevelTests_World
         });
     }
 
+    [SkippableFact]
+    public void Level2_PinnedClass766InstancesUseRigidHierarchyAnimatedMeshPath()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var world = Rac1WorldImport.Build(reader, 2);
+        Assert.Equal(347, world.Meshes.Count);
+        Assert.Equal(1_097_892, world.TotalRenderTriangles);
+        Assert.NotNull(world.AnimatedMeshes);
+        Assert.Equal(166, world.AnimatedMeshes!.Count);
+        Assert.Equal(5_560, world.AnimatedMeshes.Sum(m => m.TriangleCount));
+        Assert.Equal(1_103_452, world.TotalRenderTriangles + world.AnimatedMeshes.Sum(m => m.TriangleCount));
+
+        var hierarchy = world.AnimatedMeshes.Where(m => m.Name.StartsWith("moby766_", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(162, hierarchy.Length);
+        Assert.Equal(5_184, hierarchy.Sum(m => m.TriangleCount));
+        Assert.Equal(54, hierarchy.Select(m => m.Name.Split('_')[1]).Distinct().Count());
+        Assert.All(hierarchy, mesh =>
+        {
+            Assert.Equal("moby", mesh.AssetKind);
+            Assert.Equal(124, mesh.VertexCount);
+            Assert.Equal(16, mesh.Frames.Count);
+            Assert.Equal(15f, mesh.FramesPerSecond);
+            Assert.All(mesh.Frames, frame => Assert.Equal(mesh.VertexCount * 3, frame.Length));
+        });
+    }
 }

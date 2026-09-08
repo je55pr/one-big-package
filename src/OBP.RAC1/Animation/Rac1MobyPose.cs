@@ -3,9 +3,10 @@ using OBP.RAC1.Geometry;
 namespace OBP.RAC1.Animation;
 
 /// <summary>
-/// Conservative R&amp;C1 Moby pose evaluation for the retail-pinned one-joint
-/// subset. Multi-joint hierarchy and non-rigid bind transforms intentionally
-/// remain unsupported until their native transform composition is fully proved.
+/// Evidence-bounded R&amp;C1 Moby pose evaluation. The original one-joint path
+/// remains available, while rigid multi-joint hierarchies use the retail-pinned
+/// inverse-bind pivots and global frame orientations. Non-rigid bind transforms
+/// remain unsupported until their scale/shear semantics are independently proved.
 /// </summary>
 public static class Rac1MobyPose
 {
@@ -83,6 +84,173 @@ public static class Rac1MobyPose
         }
         return output;
     }
+
+    public static bool CanPoseRigidHierarchy(
+        Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame)
+    {
+        int n = mesh.JointCount;
+        if (n <= 0 || joints.Count != n || frame.JointRotations.Count != n ||
+            mesh.VertexJoints.Length != mesh.Positions.Length ||
+            mesh.VertexWeights.Length != mesh.Positions.Length)
+        {
+            return false;
+        }
+        for (int j = 0; j < n; j++)
+        {
+            if (!IsRigid(joints[j].NativeAffine)) return false;
+            if (j > 0 && (joints[j].ParentRecordIndex < 0 || joints[j].ParentRecordIndex >= j)) return false;
+        }
+        return true;
+    }
+
+    public static bool IsRigidHierarchyRestAnchor(
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame,
+        double tolerance = 0.002)
+    {
+        if (joints.Count == 0 || frame.JointRotations.Count != joints.Count) return false;
+        for (int j = 0; j < joints.Count; j++)
+        {
+            if (!IsRigid(joints[j].NativeAffine)) return false;
+            var skinLinear = Multiply(
+                QuaternionMatrix(frame.JointRotations[j]),
+                Affine3x3(joints[j].NativeAffine));
+            if (IdentityError(skinLinear) > tolerance) return false;
+        }
+        return true;
+    }
+
+    public static double[] PoseRigidHierarchy(
+        Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame)
+    {
+        if (!CanPoseRigidHierarchy(mesh, joints, frame))
+            throw new InvalidOperationException("R&C1 Moby pose is outside the pinned rigid-hierarchy subset.");
+        int n = joints.Count;
+        double k = mesh.Scale / 1024.0;
+        var inverseBind = new double[n][,];
+        var bindLinear = new double[n][,];
+        var rotation = new double[n][,];
+        var tail = new double[n][];
+        var bindPivot = new double[n][];
+        var localOffset = new double[n][];
+        var animatedPivot = new double[n][];
+        for (int j = 0; j < n; j++)
+        {
+            inverseBind[j] = Affine3x3(joints[j].NativeAffine);
+            bindLinear[j] = Inverse3x3(inverseBind[j]);
+            rotation[j] = QuaternionMatrix(frame.JointRotations[j]);
+            tail[j] = new[]
+            {
+                joints[j].NativeAffine[12] * k,
+                joints[j].NativeAffine[13] * k,
+                joints[j].NativeAffine[14] * k,
+            };
+            bindPivot[j] = Negate(Multiply(bindLinear[j], tail[j]));
+        }
+        for (int j = 0; j < n; j++)
+        {
+            if (j == 0)
+            {
+                localOffset[j] = bindPivot[j];
+                animatedPivot[j] = bindPivot[j];
+                continue;
+            }
+            int parent = joints[j].ParentRecordIndex;
+            localOffset[j] = Multiply(
+                inverseBind[parent],
+                Subtract(bindPivot[j], bindPivot[parent]));
+            animatedPivot[j] = Add(
+                animatedPivot[parent],
+                Multiply(rotation[parent], localOffset[j]));
+        }
+
+        var output = new double[mesh.Positions.Length];
+        int vertexCount = mesh.Positions.Length / 3;
+        for (int v = 0; v < vertexCount; v++)
+        {
+            var rest = new[]
+            {
+                mesh.Positions[v * 3],
+                mesh.Positions[v * 3 + 1],
+                mesh.Positions[v * 3 + 2],
+            };
+            var acc = new double[3];
+            double weightSum = 0;
+            for (int influence = 0; influence < 3; influence++)
+            {
+                double weight = mesh.VertexWeights[v * 3 + influence];
+                if (weight <= 0) continue;
+                int joint = mesh.VertexJoints[v * 3 + influence];
+                if (joint < 0 || joint >= n)
+                    throw new InvalidDataException($"R&C1 Moby vertex {v} references joint {joint} outside {n} joints.");
+                var bindLocal = Add(Multiply(inverseBind[joint], rest), tail[joint]);
+                var posed = Add(Multiply(rotation[joint], bindLocal), animatedPivot[joint]);
+                acc[0] += weight * posed[0];
+                acc[1] += weight * posed[1];
+                acc[2] += weight * posed[2];
+                weightSum += weight;
+            }
+            if (weightSum <= 0)
+            {
+                acc = rest;
+            }
+            else if (System.Math.Abs(weightSum - 1.0) > 1e-5)
+            {
+                acc[0] /= weightSum;
+                acc[1] /= weightSum;
+                acc[2] /= weightSum;
+            }
+            output[v * 3] = acc[0];
+            output[v * 3 + 1] = acc[1];
+            output[v * 3 + 2] = acc[2];
+        }
+        return output;
+    }
+
+    private static double IdentityError(double[,] matrix)
+    {
+        double error = 0;
+        for (int row = 0; row < 3; row++)
+            for (int col = 0; col < 3; col++)
+                error = System.Math.Max(error,
+                    System.Math.Abs(matrix[row, col] - (row == col ? 1.0 : 0.0)));
+        return error;
+    }
+
+    private static double[,] Inverse3x3(double[,] a)
+    {
+        double det =
+            a[0, 0] * (a[1, 1] * a[2, 2] - a[1, 2] * a[2, 1]) -
+            a[0, 1] * (a[1, 0] * a[2, 2] - a[1, 2] * a[2, 0]) +
+            a[0, 2] * (a[1, 0] * a[2, 1] - a[1, 1] * a[2, 0]);
+        if (System.Math.Abs(det) < 1e-12)
+            throw new InvalidDataException("R&C1 Moby inverse-bind 3x3 is singular.");
+        return new[,]
+        {
+            { (a[1,1]*a[2,2]-a[1,2]*a[2,1])/det, (a[0,2]*a[2,1]-a[0,1]*a[2,2])/det, (a[0,1]*a[1,2]-a[0,2]*a[1,1])/det },
+            { (a[1,2]*a[2,0]-a[1,0]*a[2,2])/det, (a[0,0]*a[2,2]-a[0,2]*a[2,0])/det, (a[0,2]*a[1,0]-a[0,0]*a[1,2])/det },
+            { (a[1,0]*a[2,1]-a[1,1]*a[2,0])/det, (a[0,1]*a[2,0]-a[0,0]*a[2,1])/det, (a[0,0]*a[1,1]-a[0,1]*a[1,0])/det },
+        };
+    }
+
+    private static double[] Multiply(double[,] matrix, double[] vector) =>
+    [
+        matrix[0,0]*vector[0] + matrix[0,1]*vector[1] + matrix[0,2]*vector[2],
+        matrix[1,0]*vector[0] + matrix[1,1]*vector[1] + matrix[1,2]*vector[2],
+        matrix[2,0]*vector[0] + matrix[2,1]*vector[1] + matrix[2,2]*vector[2],
+    ];
+
+    private static double[] Add(double[] a, double[] b) =>
+        [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+
+    private static double[] Subtract(double[] a, double[] b) =>
+        [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+
+    private static double[] Negate(double[] a) => [-a[0], -a[1], -a[2]];
 
     private static double[,] Affine3x3(float[] affine) => new[,]
     {

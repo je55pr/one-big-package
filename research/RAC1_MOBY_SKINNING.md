@@ -100,7 +100,13 @@ Sequence `+0x18` is the constant-rate fast path. All **586** sequences whose fra
 
 A conservative first pose path is nevertheless proven for a large one-joint subset. Of 389 one-joint geometry-bearing class occurrences, 377 first frames cancel the stored rigid inverse-bind orientation to retail quaternion tolerance. Nine of the twelve exceptions have non-rigid scale in the skeleton, and the remaining three are occurrences of special class `66`. Production `Rac1MobyPose` therefore accepts only one-joint, rigid, zero-tail classes and provides an explicit rest-anchor check. Level 1 class `1134` is the permanent specimen: sequence 0 reproduces the stored rest surface within `2e-5` native world units, while sequence 1 has 170 frames and its first frame is visibly distinct from rest.
 
-The native timing clock is now promoted for the proven constant-rate runtime specimen. Variable-rate playback and multi-joint deformation remain deliberately separate milestones.
+The native timing clock is promoted for the proven constant-rate runtime specimens. Variable-rate playback and non-rigid scale/shear deformation remain deliberately separate milestones.
+
+Rigid multi-joint deformation is now independently pinned. Across all 19 authority levels, **286 multi-joint class occurrences** have a one-frame sequence 0 where every frame quaternion cancels that joint's stored rigid inverse-bind 3x3. All 286, covering **206,213 vertices**, reproduce the decoded retail rest surface within `0.002` world units (observed worst error `0.00109782`) when evaluated by the production hierarchy path. This supports treating the frame quaternions as **global joint orientations for this proven rigid subset**, rather than importing GC's local-rotation hierarchy semantics.
+
+The rigid hierarchy derives each bind pivot directly from the native inverse-bind linear block and tail, derives child-local offsets from those bind pivots, then evaluates each influence as `posed = frameRotation * (inverseBind * rest + tail) + animatedPivot`. The existing exact 1/2/3-way skin weights are then combined by ordinary linear blend skinning. `common_trans` is not used as pose authority because candidate recurrence interpretations do not hold universally across retail.
+
+The moving population also survives a full stress census: **35 class occurrences / 20 distinct classes / 130 multi-frame sequences / 3,630 frames**, spanning **2 to 38 joints**, all pose to finite geometry; the worst posed extent is only **1.25558x** the corresponding rest extent. Level 2 class `766` is the first runtime specimen: 4 joints, 16 frames, constant rate `0.25` = **15 FPS** on the NTSC-U 60 Hz update path, and 54 placements. Those placements contribute 5,184 animated triangles while preserving the previous level total exactly. Deterministic Godot captures of the first instance at capture frames 10 and 40 use the same camera and differ across **81,172 pixels (8.81%)**, providing a visible multi-bone playback proof.
 
 ## Production C# promotion
 
@@ -113,11 +119,11 @@ Production C# now:
 - emits three joint indices plus normalized weights for every emitted vertex of geometry-bearing animated classes;
 - carries those bindings through the same persistent native vertex cache used by cross-packet duplicate emissions;
 - exposes the matching native `0x40 * jointCount` skeleton records and `0x10 * jointCount` common-transform records as 15 affine floats plus the proven packed metadata word, aligned parent byte offset / record index, local vector and raw `+0x0e` field;
-- deliberately does **not** apply multi-joint skeleton transforms to the bind/rest surface yet.
+- applies the retail-pinned rigid multi-joint hierarchy only when every inverse-bind 3x3 is rigid and the frame provides the complete joint quaternion set; non-rigid scale/shear remains excluded.
 
 The permanent retail-gated C# test now reproduces the complete animated census exactly: 1,407 geometry-bearing animated class occurrences, 16,963 packets, 1,314,409 in-file vertices, 4,310 pre-loop transfers, 47,245 two-way vertices, 16,245 three-way vertices, and 38 geometry-free special occurrences. It also checks that every emitted animated vertex has a normalized binding whose nonzero joint references are inside the class joint table. The full local retail-authority suite passes with all three supported authority ISOs.
 
-This checkpoint is intentionally animation-ready rather than animation-complete. The remaining blocker is the semantic interpretation of the non-identity R&C1 skeleton matrices and animation-frame data; those transforms must be retail-validated before production code deforms the recovered base surface.
+The rigid hierarchy is now animation-capable and retail-validated for the bounded population above. The remaining transform blocker is the non-rigid subset: R&C1 contains meaningful scale/shear in native inverse-bind matrices, and those semantics must be independently recovered before production expands beyond the rigid capability gate.
 
 ## R&C1 -> GC evolution implication
 
