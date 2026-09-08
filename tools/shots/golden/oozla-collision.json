@@ -1,0 +1,31 @@
+{
+  "authorityBuild": "rac2-ntscu-v1.01",
+  "camera": [
+    -45.80287,
+    346.70297,
+    763.30566
+  ],
+  "capture": "shot:collision",
+  "collisionBodies": 2,
+  "collisionTriangles": 328923,
+  "crateDebug": null,
+  "dynamicObjects": 190,
+  "game": "rac2",
+  "levelId": 1,
+  "location": "The Megacorp Outlet",
+  "meshInstances": 490,
+  "mobyInstances": 99,
+  "overlays": "overlays: CollisionWire WorldBounds",
+  "planet": "Oozla",
+  "player": null,
+  "shot": {
+    "camera": "Orbit",
+    "name": "collision",
+    "overlay": "collisionwire,worldbounds",
+    "settleFrames": 60
+  },
+  "shrubInstances": 38,
+  "textures": 396,
+  "tieInstances": 79,
+  "triangles": 1881731
+}

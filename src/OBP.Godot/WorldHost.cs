@@ -43,6 +43,13 @@ public sealed class WorldHost
 
         /// <summary>Hero light intensity.</summary>
         public float HeroLightEnergy { get; init; } = 1.1f;
+
+        /// <summary>
+        /// When the world declares no <see cref="RuntimeWorld.AmbientAnimations"/>,
+        /// synthesise a gentle drift on the sky shells so something is alive.
+        /// Turn off for frame-stable non-sky captures.
+        /// </summary>
+        public bool AnimateSky { get; init; } = true;
     }
 
     private Node? _hostNode;
@@ -50,6 +57,15 @@ public sealed class WorldHost
     private WorldEnvironment? _env;
     private DirectionalLight3D? _heroLight;
     private Node3D? _skyRoot;
+
+    private readonly System.Collections.Generic.List<AmbientAnimationTarget> _ambient = new();
+    private double _worldTime;
+
+    /// <summary>One resolved ambient animation bound to its Godot targets.</summary>
+    private sealed record AmbientAnimationTarget(
+        RuntimeAmbientAnimation Animation,
+        System.Collections.Generic.IReadOnlyList<StandardMaterial3D> Materials,
+        Node3D? SpinNode);
 
     public RuntimeWorld? World { get; private set; }
 
@@ -103,7 +119,100 @@ public sealed class WorldHost
         Result = result;
         _skyRoot = result.SkyRoot;
         sceneParent.AddChild(result.Root);
+
+        _worldTime = 0;
+        ResolveAmbientAnimations(world, options);
         return result;
+    }
+
+    // Very slow synthetic sky drift when a world declares no animations — cloud
+    // texture scroll plus a barely-there dome rotation.
+    private static readonly RuntimeAmbientAnimation[] SyntheticSky =
+    {
+        new("sky", null, RuntimeAmbientAnimationKind.UvScroll, (0.012, 0.003, 0)),
+        new("sky", null, RuntimeAmbientAnimationKind.Spin, (0, 0.01, 0)),
+    };
+
+    private void ResolveAmbientAnimations(RuntimeWorld world, Options options)
+    {
+        _ambient.Clear();
+        if (Result?.Root is not { } root)
+        {
+            return;
+        }
+
+        var declared = world.AmbientAnimations;
+        var source = declared is { Count: > 0 }
+            ? declared
+            : options.AnimateSky && _skyRoot is not null ? SyntheticSky : System.Array.Empty<RuntimeAmbientAnimation>();
+
+        foreach (var anim in source)
+        {
+            var materials = new System.Collections.Generic.List<StandardMaterial3D>();
+            var seen = new System.Collections.Generic.HashSet<ulong>();
+            Node3D? spinNode = null;
+
+            if (anim.Kind == RuntimeAmbientAnimationKind.Spin
+                && string.Equals(anim.TargetKind, "sky", System.StringComparison.Ordinal))
+            {
+                spinNode = _skyRoot;
+            }
+
+            if (anim.Kind == RuntimeAmbientAnimationKind.UvScroll)
+            {
+                foreach (var mi in MeshInstances(root))
+                {
+                    if (!TryParseKind(mi.Name, out string kind, out int textureId) || !anim.Matches(kind, textureId))
+                    {
+                        continue;
+                    }
+
+                    if (mi.MaterialOverride is StandardMaterial3D mat && seen.Add(mat.GetInstanceId()))
+                    {
+                        // A repeating sampler so the scrolled UV wraps instead of
+                        // sliding the texture off its shell.
+                        mat.TextureRepeat = true;
+                        materials.Add(mat);
+                    }
+                }
+            }
+
+            if (materials.Count > 0 || spinNode is not null)
+            {
+                _ambient.Add(new AmbientAnimationTarget(anim, materials, spinNode));
+            }
+        }
+    }
+
+    private static System.Collections.Generic.IEnumerable<MeshInstance3D> MeshInstances(Node node)
+    {
+        foreach (var child in node.GetChildren())
+        {
+            if (child is MeshInstance3D mi)
+            {
+                yield return mi;
+            }
+
+            foreach (var nested in MeshInstances(child))
+            {
+                yield return nested;
+            }
+        }
+    }
+
+    /// <summary><see cref="RuntimeWorldScene"/> names each mesh instance <c>"{kind}_{textureId}"</c>.</summary>
+    private static bool TryParseKind(string name, out string kind, out int textureId)
+    {
+        kind = string.Empty;
+        textureId = 0;
+        int underscore = name.LastIndexOf('_');
+        if (underscore <= 0 || !int.TryParse(name.AsSpan(underscore + 1), out textureId))
+        {
+            return false;
+        }
+
+        kind = name[..underscore];
+        return true;
     }
 
     /// <summary>Free the loaded world and everything it owns. Safe when nothing is loaded.</summary>
@@ -126,6 +235,8 @@ public sealed class WorldHost
         World = null;
         _hostNode = null;
         _sceneParent = null;
+        _ambient.Clear();
+        _worldTime = 0;
 
         // Drop the ArrayMesh / ImageTexture / ConcavePolygonShape resources the
         // freed nodes held so memory does not creep across world switches.
@@ -154,7 +265,39 @@ public sealed class WorldHost
 
         RuntimeWorldScene.AdvanceAnimated(result);
 
+        _worldTime += delta;
+        ApplyAmbientAnimations();
+
         UpdateRegionLighting(cameraGlobalPosition);
+    }
+
+    /// <summary>Evaluate every resolved ambient animation at the current world time and apply it.</summary>
+    private void ApplyAmbientAnimations()
+    {
+        foreach (var target in _ambient)
+        {
+            var s = AmbientAnimator.Sample(target.Animation, _worldTime);
+
+            if (target.Animation.Kind == RuntimeAmbientAnimationKind.UvScroll)
+            {
+                var offset = new Vector3((float)s.U, (float)s.V, 0f);
+                foreach (var mat in target.Materials)
+                {
+                    if (GodotObject.IsInstanceValid(mat))
+                    {
+                        mat.Uv1Offset = offset;
+                    }
+                }
+            }
+            else if (target.Animation.Kind == RuntimeAmbientAnimationKind.Spin
+                     && target.SpinNode is { } node && GodotObject.IsInstanceValid(node))
+            {
+                var axis = new Vector3((float)target.Animation.Rate.X, (float)target.Animation.Rate.Y, (float)target.Animation.Rate.Z);
+                node.Basis = axis.LengthSquared() > 1e-12f
+                    ? new Basis(axis.Normalized(), (float)s.Radians)
+                    : Basis.Identity;
+            }
+        }
     }
 
     /// <summary>

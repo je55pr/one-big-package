@@ -177,6 +177,7 @@ public partial class OBPGame
             ShowCollisionDebug = _args.CollisionDebug,
         });
         _sceneResult = result;
+        SetupOverlay(result, world);
         ConfigureCrateDebugHarness();
 
         if (framedCapture)
