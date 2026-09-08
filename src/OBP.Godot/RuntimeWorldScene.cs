@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Core.Math;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OBP.Godot;
 
@@ -84,63 +85,19 @@ public static class RuntimeWorldScene
         public bool OnlyAnimatedMobies { get; init; }
     }
 
-    // Fallback albedo for geometry with no decoded texture. Kept close to a
-    // neutral stone/earth so an untextured patch (e.g. Tabora's terrain, which
-    // ships as a moby whose GS texture state we don't yet track across strips —
-    // see docs/GC_PLANET_HOPPING.md) reads as ground rather than a bright blob.
-    private static readonly System.Collections.Generic.Dictionary<string, Color> KindTint = new()
-    {
-        ["tfrag"] = new Color(0.64f, 0.62f, 0.58f),
-        ["tie"] = new Color(0.68f, 0.64f, 0.57f),
-        ["shrub"] = new Color(0.40f, 0.52f, 0.34f),
-        ["moby"] = new Color(0.66f, 0.61f, 0.53f),
-        ["moby-marker"] = new Color(0.95f, 0.35f, 0.55f),
-        ["sky"] = new Color(0.42f, 0.52f, 0.62f),
-        ["death-plane"] = new Color(0.22f, 0.55f, 0.35f),
-    };
-
     public static Result Build(RuntimeWorld world, string name = "World", Options? options = null)
     {
         options ??= new Options();
         var root = new Node3D { Name = name };
         var skyRoot = new Node3D { Name = "Sky" };
 
-        var texCache = new System.Collections.Generic.Dictionary<(string, int), ImageTexture>();
-        var texHasAlpha = new System.Collections.Generic.HashSet<(string, int)>();
-        foreach (var t in world.Textures)
-        {
-            if (t.Width <= 0 || t.Height <= 0 || t.Rgba.Length != t.Width * t.Height * 4)
-            {
-                continue;
-            }
+        // Decoded textures + every Godot material for this world come from the
+        // single factory; material decisions live in OBP.Runtime.MaterialModel.
+        var mats = new WorldMaterialFactory(world);
 
-            // Whether the decoded texture actually has a cut-out (any texel below
-            // the PS2 "half" alpha). Fully-opaque textures skip alpha-scissor —
-            // it otherwise punches speckle holes in solid walls.
-            bool hasAlpha = false;
-            for (int i = 3; i < t.Rgba.Length; i += 4)
-            {
-                if (t.Rgba[i] < 128)
-                {
-                    hasAlpha = true;
-                    break;
-                }
-            }
-
-            if (hasAlpha)
-            {
-                texHasAlpha.Add((t.AssetKind, t.TextureId));
-            }
-
-            var image = Image.CreateFromData(t.Width, t.Height, false, Image.Format.Rgba8, t.Rgba);
-            texCache[(t.AssetKind, t.TextureId)] = ImageTexture.CreateFromImage(image);
-        }
-
-        var matCache = new System.Collections.Generic.Dictionary<(string, int), StandardMaterial3D>();
         int meshInstances = 0;
         int triangles = 0;
         int skyMeshes = 0;
-        var untexturedTris = new System.Collections.Generic.Dictionary<string, int>();
 
         foreach (var m in world.Meshes)
         {
@@ -160,12 +117,15 @@ public static class RuntimeWorldScene
                 continue;
             }
 
-            // Missing texture is not normally permission to render a sky surface.
-            // A source importer may explicitly authorise a materialless surface
-            // when retail evidence supplies its presentation semantics (for example,
-            // UYA's gouraud backdrop with importer-provided vertex colour).
+            // Missing texture is not normally permission to render a sky surface —
+            // without its per-vertex colours a bare shell renders as a flat faceted
+            // blob that swallows the view. A source importer may explicitly
+            // authorise a materialless surface when retail evidence supplies its
+            // presentation semantics (UYA's gouraud backdrop with importer-provided
+            // vertex colour); the camera-followed textured cloud layers stay, and
+            // the background clear colour is the backdrop.
             if (isSky &&
-                !texCache.ContainsKey((m.AssetKind, m.TextureId)) &&
+                mats.TextureFor(m.AssetKind, m.TextureId) is null &&
                 !m.RenderWithoutTexture)
             {
                 continue;
@@ -219,104 +179,32 @@ public static class RuntimeWorldScene
             bool hasColor = m.Colors is { } cc && cc.Length == vertexCount * 4;
             if (hasColor)
             {
-                // tfrag baked colours are the level's static lighting, stored in a
-                // dark gamma space. Mirror the TS reference viewer's curve: gamma
-                // lift, then map to (0.6 .. 1.4) so shadowed terrain never crushes
-                // to black and lit terrain still lifts. Moby vertex colours are an
-                // already-linear normal shade — pass those straight through.
-                bool tfragCurve = m.AssetKind == "tfrag";
+                // tfrag baked colours are the level's static lighting in a dark
+                // gamma space — MaterialModel.BakeCurve lifts them so shadowed
+                // terrain doesn't crush and lit terrain still lifts. Moby vertex
+                // colours are an already-linear normal shade — passed straight.
+                bool bake = MaterialModel.UsesBakeCurve(m.AssetKind);
                 var col = new Color[vertexCount];
                 for (int i = 0; i < vertexCount; i++)
                 {
                     float r = m.Colors![i * 4], g = m.Colors[i * 4 + 1], b = m.Colors[i * 4 + 2];
-                    if (tfragCurve)
+                    if (bake)
                     {
-                        r = Bake(r);
-                        g = Bake(g);
-                        b = Bake(b);
+                        r = MaterialModel.BakeCurve(r);
+                        g = MaterialModel.BakeCurve(g);
+                        b = MaterialModel.BakeCurve(b);
                     }
 
                     col[i] = new Color(r, g, b, m.Colors[i * 4 + 3]);
                 }
 
                 arrays[(int)Mesh.ArrayType.Color] = col;
-
-                static float Bake(float c) =>
-                    System.Math.Min(1f, 0.6f + 0.8f * (float)System.Math.Pow(System.Math.Clamp(c, 0f, 1f), 0.62));
             }
 
             var mesh = new ArrayMesh();
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 
-            if (!matCache.TryGetValue((m.AssetKind, m.TextureId), out var mat))
-            {
-                // Terrain + built structures (tfrag / tie) have consistent strip
-                // winding, so cull back-faces — otherwise the camera sees the
-                // inside of every building. Mobies stay 2-sided (skinned meshes
-                // are less predictable and a stray far face matters less on a
-                // crate than a whole missing wall); so do shrubs / sky / markers.
-                bool solid = m.AssetKind is "tfrag" or "tie";
-                mat = new StandardMaterial3D
-                {
-                    CullMode = solid ? BaseMaterial3D.CullModeEnum.Back : BaseMaterial3D.CullModeEnum.Disabled,
-                    ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-                    // Bilinear + mips (the PS2 filtered too) — nearest shimmered
-                    // detailed foliage / panel textures into moiré crosshatch.
-                    TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
-                    AlbedoColor = KindTint.GetValueOrDefault(m.AssetKind, Colors.White),
-                };
-
-                texCache.TryGetValue((m.AssetKind, m.TextureId), out var tex);
-                bool textured = hasUv && tex is not null;
-                if (!textured && m.AssetKind is "tfrag" or "tie" or "shrub" or "moby")
-                {
-                    untexturedTris[m.AssetKind] = untexturedTris.GetValueOrDefault(m.AssetKind) + m.TriangleCount;
-                }
-
-                if (textured)
-                {
-                    mat.AlbedoTexture = tex;
-                    mat.AlbedoColor = Colors.White;
-                    if (texHasAlpha.Contains((m.AssetKind, m.TextureId)))
-                    {
-                        mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
-                        mat.AlphaScissorThreshold = 0.5f;
-                    }
-                }
-
-                // Mobies carry a per-vertex shade (from their decoded normals —
-                // they have no baked colour) so a flat / flat-UV surface still
-                // reads as 3-D. Multiply it into the texture / tint.
-                if ((m.AssetKind == "moby" || m.AssetKind == "tfrag") && hasColor)
-                {
-                    mat.VertexColorUseAsAlbedo = true;
-                }
-
-                if (isSky)
-                {
-                    if (!textured && m.RenderWithoutTexture && hasColor)
-                    {
-                        // Importer-provided vertex RGB is the material colour, so do
-                        // not multiply it by the generic sky fallback tint.
-                        mat.AlbedoColor = Colors.White;
-                    }
-
-                    // Camera-centred backdrop: draw first and never write depth,
-                    // so it can't occlude the level. It DOES depth-test, so a
-                    // building in front of the (huge, camera-parked) dome hides
-                    // the clouds naturally — without that, an alpha-blended,
-                    // depth-test-off shell washes over everything past the dome
-                    // radius. The cloud layers carry per-vertex edge alpha.
-                    mat.RenderPriority = m.RenderWithoutTexture ? -9 : -8;
-                    mat.DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Disabled;
-                    mat.VertexColorUseAsAlbedo = true;
-                    mat.Transparency = hasColor
-                        ? BaseMaterial3D.TransparencyEnum.Alpha
-                        : BaseMaterial3D.TransparencyEnum.Disabled;
-                }
-
-                matCache[(m.AssetKind, m.TextureId)] = mat;
-            }
+            var mat = mats.StaticMesh(m.AssetKind, m.TextureId, hasUv, hasColor, isSky, m.RenderWithoutTexture, m.TriangleCount);
 
             var mi = new MeshInstance3D
             {
@@ -427,33 +315,7 @@ public static class RuntimeWorldScene
 
                     var mesh = new ArrayMesh();
                     mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-                    if (!matCache.TryGetValue((m.AssetKind, m.TextureId), out var mat))
-                    {
-                        texCache.TryGetValue((m.AssetKind, m.TextureId), out var tex);
-                        mat = new StandardMaterial3D
-                        {
-                            CullMode = BaseMaterial3D.CullModeEnum.Disabled,
-                            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-                            TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
-                            AlbedoColor = tex is null ? KindTint.GetValueOrDefault(m.AssetKind, Colors.White) : Colors.White,
-                        };
-                        if (tex is not null)
-                        {
-                            mat.AlbedoTexture = tex;
-                            if (texHasAlpha.Contains((m.AssetKind, m.TextureId)))
-                            {
-                                mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
-                                mat.AlphaScissorThreshold = 0.5f;
-                            }
-                        }
-
-                        if (hasColor)
-                        {
-                            mat.VertexColorUseAsAlbedo = true;
-                        }
-
-                        matCache[(m.AssetKind, m.TextureId)] = mat;
-                    }
+                    var mat = mats.Instanced(m.AssetKind, m.TextureId, hasColor);
 
                     objRoot.AddChild(new MeshInstance3D
                     {
@@ -525,33 +387,7 @@ public static class RuntimeWorldScene
                 frames[f] = dst;
             }
 
-            if (!matCache.TryGetValue((am.AssetKind, am.TextureId), out var mat))
-            {
-                texCache.TryGetValue((am.AssetKind, am.TextureId), out var tex);
-                mat = new StandardMaterial3D
-                {
-                    CullMode = BaseMaterial3D.CullModeEnum.Disabled,
-                    ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-                    TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmapsAnisotropic,
-                    AlbedoColor = tex is null ? KindTint.GetValueOrDefault(am.AssetKind, Colors.White) : Colors.White,
-                };
-                if (tex is not null)
-                {
-                    mat.AlbedoTexture = tex;
-                    if (texHasAlpha.Contains((am.AssetKind, am.TextureId)))
-                    {
-                        mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
-                        mat.AlphaScissorThreshold = 0.5f;
-                    }
-                }
-
-                if (hasCol)
-                {
-                    mat.VertexColorUseAsAlbedo = true;
-                }
-
-                matCache[(am.AssetKind, am.TextureId)] = mat;
-            }
+            var mat = mats.Instanced(am.AssetKind, am.TextureId, hasCol);
 
             var animMesh = new ArrayMesh();
             var mi = new MeshInstance3D
@@ -567,9 +403,9 @@ public static class RuntimeWorldScene
             triangles += am.TriangleCount;
         }
 
-        if (untexturedTris.Count > 0)
+        if (mats.UntexturedTriangleReport.Count > 0)
         {
-            string report = string.Join(", ", untexturedTris.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:N0}"));
+            string report = string.Join(", ", mats.UntexturedTriangleReport.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:N0}"));
             GD.Print($"[RuntimeWorldScene] untextured triangles (fallback tint): {report}");
         }
 
@@ -624,7 +460,7 @@ public static class RuntimeWorldScene
             skyMeshes > 0 ? skyRoot : null,
             meshInstances,
             triangles,
-            texCache.Count,
+            mats.TextureCount,
             collisionBodies,
             collisionTriangles,
             Kind("tie"),
