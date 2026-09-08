@@ -1,9 +1,11 @@
 using System.Text.Json;
 using Godot;
+using OBP.Core.Math;
 using OBP.Godot;
 using OBP.IO;
 using OBP.RAC2;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OneBigPackage;
 
@@ -727,15 +729,15 @@ public partial class OBPGame : Node3D
 
         // Godot camera position -> OBP space (X is mirrored by RuntimeWorldScene).
         var g = _activeCamera.GlobalPosition;
-        var r = EnvProbe.Evaluate(lighting, new Vector3(-g.X, g.Y, g.Z));
+        var r = EnvResolver.Evaluate(lighting, new Vec3(-g.X, g.Y, g.Z));
 
         _heroLight.Visible = r.HasHeroLight;
         if (r.HasHeroLight)
         {
-            _heroLight.LightColor = r.HeroColour;
+            _heroLight.LightColor = RuntimeWorldScene.ToColor(r.HeroColour);
             // travel dir is OBP space; mirror X for Godot. A DirectionalLight3D
             // shines down its local -Z, so aim -Z along the travel direction.
-            var godotTravel = new Vector3(-r.HeroTravelDir.X, r.HeroTravelDir.Y, r.HeroTravelDir.Z);
+            var godotTravel = new Vector3(-(float)r.HeroTravel.X, (float)r.HeroTravel.Y, (float)r.HeroTravel.Z);
             if (godotTravel.LengthSquared() > 1e-4f)
             {
                 _heroLight.LookAtFromPosition(_heroLight.GlobalPosition, _heroLight.GlobalPosition + godotTravel, Vector3.Up);
@@ -744,16 +746,16 @@ public partial class OBPGame : Node3D
 
         // Ambient: lift toward white so the unlit world keeps its decoded colour.
         env.AmbientLightColor = new Color(
-            0.5f + 0.5f * r.Ambient.R, 0.5f + 0.5f * r.Ambient.G, 0.5f + 0.5f * r.Ambient.B);
+            0.5f + (0.5f * (float)r.Ambient.R),
+            0.5f + (0.5f * (float)r.Ambient.G),
+            0.5f + (0.5f * (float)r.Ambient.B));
 
-        if (r.HasFog && r.FogFar > r.FogNear && r.FogFar > 0)
+        // Per-region fog: only override while the resolved region defines fog;
+        // leave the load-time fog (and its ease-in curve) otherwise.
+        var fog = WorldPresentation.FogFromResolved(r, _world.Bounds.Diagonal);
+        if (fog.Enabled)
         {
-            float span = (float)_world.Bounds.Diagonal;
-            env.FogEnabled = true;
-            env.FogLightColor = r.FogColour;
-            env.FogDepthBegin = System.Math.Max(1f, r.FogNear);
-            env.FogDepthEnd = System.Math.Max(System.Math.Max(r.FogNear + 1f, r.FogFar), span * 1.4f);
-            env.FogDensity = System.Math.Clamp((1f - r.FogFarVisibility) * 0.5f + 0.04f, 0.04f, 0.5f);
+            RuntimeWorldScene.ApplyFog(env, fog, setCurve: false);
         }
     }
 
