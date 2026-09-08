@@ -39,11 +39,18 @@ The architectural rule is unchanged: **Godot hosts OBP; Godot does not define Ra
 
 ### Trilogy source / destination / provider layer
 
-Merged `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. R&C1 and GC are registered native providers; UYA can attach as a source and already has a complete retail TypeScript/reference importer, but its native C# provider is still pending.
+Merged `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. R&C1, Going Commando and Up Your Arsenal are all registered native providers.
 
 ### R&C1 native world provider
 
 R&C1 NTSC-U (`SCUS-97199`) is now a second native provider rather than a reference-only world slice. All 19 authority levels load through `Rac1WorldProvider` and the same `ObpWorldProviderRegistry` used by GC. The merged C# path covers retail terrain/textures/collision, level settings, shared RC sky, and the current native TIE/shrub static-instance layer. Retail all-level gates exercise every destination, and `rac1:LEVEL0` has been captured through the generic Godot path with the debug player grounded on reconstructed collision.
+
+### Up Your Arsenal native world provider
+
+UYA NTSC-U (`SCUS-97353`, `rac3-ntscu-original`) exposes the 51 retail-observed sparse main-table rows through `Rac3WorldProvider`. The native C# path reconstructs tfrag terrain, decoded level textures, TIE/shrub authored static placement, strict UYA sky shells/textures, octree collision, first-part level atmosphere, compatible ship starts where retail settings do not carry the default sentinel transform, and authored Moby identity/PVars as neutral dynamic objects. Moby class geometry is not yet rendered on merged main.
+
+The UYA sky path preserves shell rotation/angular-velocity/bloom evidence and renders the initial pose through the ordinary camera-pinned `SkyRoot`. Materialless/gouraud backdrop geometry is explicitly marked as evidence-safe untextured runtime geometry, uses the retained sky/background tint policy, and is ordered behind the textured cloud shells rather than being silently discarded. Retail table 1 remains 336 static meshes / 890,426 render triangles / 264,313 collision triangles, including all 4,348 sky triangles; the all-51-row production census remains the regression oracle.
+
 ### Going Commando native reconstruction and planet hopping
 
 Going Commando NTSC-U v1.01 (`SCUS-97268`) is the deepest merged authority target.

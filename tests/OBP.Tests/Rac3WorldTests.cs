@@ -2,6 +2,9 @@ using System.Text.Json;
 using OBP.Core;
 using OBP.IO;
 using OBP.RAC3;
+using OBP.RAC3.Geometry;
+using OBP.RAC3.Level;
+using OBP.Runtime;
 using Xunit;
 
 namespace OBP.Tests;
@@ -76,6 +79,42 @@ public sealed class Rac3WorldTests
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         Assert.Null(Rac3WorldImport.Build(reader, table).Ship);
+    }
+
+    [SkippableFact]
+    public void RetailRow1SkyMatchesPinnedNativeEvidenceAndMateriallessBackdrop()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var opened = UyaLevelCore.Open(reader, 1);
+        var range = UyaLevelCore.SectionRange(opened.Core, opened.Core.Header.Sky);
+        Assert.NotNull(range);
+        Assert.Equal(2_731_712, range!.Value.Offset);
+        Assert.Equal(485_248, range.Value.Size);
+        byte[] bytes = opened.Core.Assets.AsSpan(range.Value.Offset, range.Value.Size).ToArray();
+        Assert.Equal(
+            "825afb60c18db867575bbaaa2ebe4bc911f242ad815e65c74d4d64cc29b98fb0",
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant());
+
+        var sky = UyaSky.Read(bytes);
+        Assert.Equal(10, sky.Textures.Count);
+        Assert.Equal(8, sky.Shells.Count);
+        Assert.Equal(181, sky.Shells.Sum(shell => shell.ClusterCount));
+        Assert.Equal(4_111, sky.Shells.Sum(shell => shell.Positions.Length / 3));
+        Assert.Equal(4_348, sky.Shells.Sum(shell => shell.Indices.Length / 3));
+        Assert.Equal(4, sky.Shells.Count(shell => shell.AngularVelocityRaw.Any(v => v != 0)));
+        Assert.DoesNotContain(sky.Shells, shell => shell.Bloom);
+        Assert.Equal(new short[] { 2, 3, 4, 5 }, sky.Shells
+            .Select(shell => shell.AngularVelocityRaw[2]).Where(v => v != 0).Order().ToArray());
+
+        RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
+        Assert.Equal(4_348, world.Meshes.Where(m => m.AssetKind == "sky").Sum(m => m.TriangleCount));
+        Assert.Equal(10, world.Textures.Count(t => t.AssetKind == "sky"));
+        RuntimeMesh backdrop = Assert.Single(world.Meshes, m => m.AssetKind == "sky" && m.RenderWithoutTexture);
+        Assert.Equal(-1, backdrop.TextureId);
+        Assert.Equal(1_596, backdrop.TriangleCount);
+        Assert.Equal(890_426, world.TotalRenderTriangles);
     }
 
     [SkippableFact]
