@@ -1,8 +1,7 @@
 using System.Buffers.Binary;
 using OBP.PS2.Vif;
-using OBP.RAC2.Level;
 
-namespace OBP.RAC2.Geometry;
+namespace OBP.PS2.Geometry;
 
 /// <summary>
 /// Going Commando / UYA <b>moby</b> class geometry — the dynamic objects (enemies,
@@ -17,7 +16,7 @@ namespace OBP.RAC2.Geometry;
 /// entries ahead of the vertex it binds. Translated from
 /// <c>reference-ts/packages/gc-moby</c>. See <c>research/GC_MOBY.md</c>.
 /// </summary>
-public static class GcMoby
+public static class GcUyaMoby
 {
     public const int ClassHeaderSize = 0x48;
     public const int ClassEntrySize = 0x20;
@@ -850,26 +849,31 @@ public static class GcMoby
     }
 
     /// <summary>
-    /// Parse moby classes from <c>LevelCoreHeader.mobyClasses</c>
-    /// (<c>MobyClassEntry</c> 0x20: offset, oClass, u32, u32, u8 textures[16]).
+    /// Parse the shared GC/UYA Moby class table. The enclosing level/core
+    /// container remains game-specific; callers provide the already-bounded
+    /// index/assets views and table range.
     /// </summary>
-    public static Dictionary<int, MobyClass> ReadClasses(GcLevelCore.Core core)
+    public readonly record struct ClassTable(int Count, int Offset);
+
+    public static Dictionary<int, MobyClass> ReadClasses(
+        byte[] index,
+        byte[] assets,
+        IReadOnlyList<int> sectionBoundaries,
+        ClassTable table)
     {
-        var table = core.Header.MobyClasses;
-        var boundaries = core.SectionBoundaries;
         var outp = new Dictionary<int, MobyClass>();
 
         for (int i = 0; i < table.Count; i++)
         {
             int at = table.Offset + i * ClassEntrySize;
-            if (at < 0 || at + ClassEntrySize > core.Index.Length)
+            if (at < 0 || at + ClassEntrySize > index.Length)
             {
                 break;
             }
 
-            int assetOffset = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at));
-            int oClass = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4));
-            if (assetOffset <= 0 || assetOffset >= core.Assets.Length)
+            int assetOffset = BinaryPrimitives.ReadInt32LittleEndian(index.AsSpan(at));
+            int oClass = BinaryPrimitives.ReadInt32LittleEndian(index.AsSpan(at + 4));
+            if (assetOffset <= 0 || assetOffset >= assets.Length)
             {
                 continue;
             }
@@ -877,13 +881,13 @@ public static class GcMoby
             var textures = new int[16];
             for (int t = 0; t < 16; t++)
             {
-                textures[t] = core.Index[at + 0x10 + t];
+                textures[t] = index[at + 0x10 + t];
             }
 
-            int end = boundaries.FirstOrDefault(b => b > assetOffset, core.Assets.Length);
+            int end = sectionBoundaries.FirstOrDefault(b => b > assetOffset, assets.Length);
             try
             {
-                var classBuf = core.Assets.AsSpan(assetOffset, end - assetOffset).ToArray();
+                var classBuf = assets.AsSpan(assetOffset, end - assetOffset).ToArray();
                 var mesh = ReadClass(classBuf);
                 var triTexIds = mesh.TriangleMaterialSlots
                     .Select(slot => slot >= 0 && slot < 16 ? textures[slot] : -1)
@@ -898,7 +902,7 @@ public static class GcMoby
             }
             catch
             {
-                // skip a class that fails to parse
+                // Preserve the established GC permissive class-table behavior.
             }
         }
 

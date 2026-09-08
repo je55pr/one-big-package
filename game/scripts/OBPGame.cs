@@ -907,12 +907,14 @@ public partial class OBPGame : Node3D
 
     private async System.Threading.Tasks.Task RunCaptureAsync(int frameArg)
     {
-        var meta = CaptureMetadata();
-        meta["capture"] = _sceneKind;
-        meta["captureFrameArg"] = frameArg;
-
         var result = await CaptureHarness.CaptureAsync(
-            this, _args.CaptureOut ?? $"captures/{_sceneKind}.png", frameArg, meta);
+            this, _args.CaptureOut ?? $"captures/{_sceneKind}.png", frameArg, () =>
+            {
+                var meta = CaptureMetadata();
+                meta["capture"] = _sceneKind;
+                meta["captureFrameArg"] = frameArg;
+                return meta;
+            });
         GetTree().Quit(result.Ok ? 0 : 1);
     }
 

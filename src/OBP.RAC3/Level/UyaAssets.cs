@@ -9,6 +9,11 @@ public static class UyaAssets
 {
     public enum TextureTable { Tfrag, Moby, Tie, Shrub }
     public sealed record StaticClass(int OClass, double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds);
+    public sealed record MobyVisualClass(int OClass, GcUyaMoby.Mesh Mesh, int[] TriangleTextureIds);
+    public sealed record MobyClassSet(
+        int DeclaredCount,
+        IReadOnlyDictionary<int, MobyVisualClass> Decoded,
+        IReadOnlySet<int> ZeroLocalCoreClasses);
 
     public static IReadOnlyList<RcLevelTextureTable.Texture> ReadTextures(UyaLevelCore.Core core, TextureTable table)
     {
@@ -24,6 +29,67 @@ public static class UyaAssets
             new RcLevelTextureTable.Range(r.Count, r.Offset), new RcLevelTextureTable.Options(1024, Strict: true));
     }
 
+    public static MobyClassSet ReadMobyClasses(UyaLevelCore.Core core, int textureCount)
+    {
+        var table = core.Header.MobyClasses;
+        if (table.Count < 0 || table.Offset < 0 ||
+            (long)table.Offset + (long)table.Count * GcUyaMoby.ClassEntrySize > core.Index.Length)
+        {
+            throw new InvalidDataException("UYA Moby class table lies outside the core index.");
+        }
+
+        var decoded = new Dictionary<int, MobyVisualClass>();
+        var zeroLocalCore = new HashSet<int>();
+        var seen = new HashSet<int>();
+        for (int i = 0; i < table.Count; i++)
+        {
+            int at = table.Offset + i * GcUyaMoby.ClassEntrySize;
+            int assetOffset = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at));
+            int oClass = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4));
+            if (!seen.Add(oClass))
+                throw new InvalidDataException($"UYA Moby class table repeats oClass {oClass}.");
+            if (assetOffset == 0)
+            {
+                zeroLocalCore.Add(oClass);
+                continue;
+            }
+            if (assetOffset < 0 || assetOffset + GcUyaMoby.ClassHeaderSize > core.Assets.Length)
+                throw new InvalidDataException($"UYA Moby class {oClass} has invalid asset offset 0x{assetOffset:x}.");
+
+            int end = core.SectionBoundaries.FirstOrDefault(b => b > assetOffset, core.Assets.Length);
+            if (end <= assetOffset)
+                throw new InvalidDataException($"UYA Moby class {oClass} has no bounded asset extent.");
+            byte[] classBytes = core.Assets.AsSpan(assetOffset, end - assetOffset).ToArray();
+            var mesh = GcUyaMoby.ReadClass(classBytes);
+            if (mesh.Positions.Any(v => !double.IsFinite(v)))
+                throw new InvalidDataException($"UYA Moby class {oClass} contains non-finite geometry.");
+            if (mesh.TriangleMaterialSlots.Length != mesh.Indices.Length / 3)
+                throw new InvalidDataException($"UYA Moby class {oClass} has inconsistent triangle materials.");
+
+            byte[] textureIds = core.Index.AsSpan(at + 0x10, 16).ToArray();
+            var mapped = new int[mesh.TriangleMaterialSlots.Length];
+            for (int face = 0; face < mapped.Length; face++)
+            {
+                int slot = mesh.TriangleMaterialSlots[face];
+                if (slot == -1)
+                {
+                    mapped[face] = -1;
+                    continue;
+                }
+                if (slot < 0 || slot >= textureIds.Length)
+                    throw new InvalidDataException($"UYA Moby class {oClass} triangle {face} references invalid material slot {slot}.");
+                int textureId = textureIds[slot];
+                if (textureId != 0xff && (textureId < 0 || textureId >= textureCount))
+                    throw new InvalidDataException($"UYA Moby class {oClass} references texture {textureId} outside 0..{textureCount - 1}.");
+                mapped[face] = textureId;
+            }
+            decoded.Add(oClass, new MobyVisualClass(oClass, mesh, mapped));
+        }
+
+        if (decoded.Count + zeroLocalCore.Count != table.Count)
+            throw new InvalidDataException($"UYA Moby table declares {table.Count} classes but classified {decoded.Count + zeroLocalCore.Count}.");
+        return new MobyClassSet(table.Count, decoded, zeroLocalCore);
+    }
     public static IReadOnlyDictionary<int, StaticClass> ReadTieClasses(UyaLevelCore.Core core)
         => ReadClasses(core, core.Header.TieClasses, RcTie.ClassEntrySize, 0x80,
             bytes =>

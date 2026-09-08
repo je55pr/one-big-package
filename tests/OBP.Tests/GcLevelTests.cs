@@ -6,6 +6,7 @@ using OBP.PS2.Collision;
 using OBP.PS2.Elf;
 using OBP.PS2.Compression;
 using OBP.PS2.Iso;
+using OBP.PS2.Geometry;
 using OBP.RAC2;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Gameplay;
@@ -385,7 +386,7 @@ public class GcLevelTests
 
         var (wad, header) = OpenLevelWad(iso!, 1);
         var core = GcLevelCore.Open(GcLevelWad.RequireLump(wad, header, 0));
-        var classes = GcMoby.ReadClasses(core);
+        var classes = GcMobyClasses.Read(core);
 
         Assert.Equal(180, classes.Count);
         Assert.Equal(172, classes.Count(kv => kv.Value.Mesh.Indices.Length > 0));
@@ -438,7 +439,7 @@ public class GcLevelTests
 
         var (wad, header) = OpenLevelWad(iso!, 1);
         var core = GcLevelCore.Open(GcLevelWad.RequireLump(wad, header, 0));
-        var classes = GcMoby.ReadClasses(core);
+        var classes = GcMobyClasses.Read(core);
 
         int jointTotal = classes.Sum(kv => kv.Value.Joints.Count);
         int seqFrames = classes.Sum(kv => kv.Value.Sequences.Sum(s => s.Frames.Count));

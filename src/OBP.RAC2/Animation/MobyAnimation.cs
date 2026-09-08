@@ -1,18 +1,18 @@
 using System.Numerics;
-using OBP.RAC2.Geometry;
+using OBP.PS2.Geometry;
 
 namespace OBP.RAC2.Animation;
 
 /// <summary>
-/// Engine-independent Going Commando <see cref="GcMoby.MobySequence"/> pose
+/// Engine-independent Going Commando <see cref="GcUyaMoby.MobySequence"/> pose
 /// evaluation. The moby decoder bakes the rest pose into
-/// <see cref="GcMoby.Mesh.Positions"/> and records each vertex's bone binding
-/// (<see cref="GcMoby.Mesh.VertexJoints"/> / <see cref="GcMoby.Mesh.VertexWeights"/>);
+/// <see cref="GcUyaMoby.Mesh.Positions"/> and records each vertex's bone binding
+/// (<see cref="GcUyaMoby.Mesh.VertexJoints"/> / <see cref="GcUyaMoby.Mesh.VertexWeights"/>);
 /// this re-poses those vertices for a given animation frame.
 ///
 /// <para>Model: every GC bind-pose joint rotation is identity, so a joint's bind
 /// global transform is the pure translation the rest-pose decoder subtracted
-/// (<see cref="GcMoby.MobyJoint.Bx"/>… = <c>-skeletonRow3</c>). A frame supplies
+/// (<see cref="GcUyaMoby.MobyJoint.Bx"/>… = <c>-skeletonRow3</c>). A frame supplies
 /// one local rotation quaternion per joint; the animated global transform is the
 /// usual hierarchy product, and the per-joint skinning transform is
 /// <c>animGlobal[j] · bindGlobal[j]⁻¹</c> (standard linear blend skinning).
@@ -30,7 +30,7 @@ public static class MobyAnimation
     /// frame, native Z-up) position by <c>skin[j]</c> to get its animated
     /// position for joint <c>j</c>. <paramref name="k"/> is <c>scale / 1024</c>.
     /// </summary>
-    public static Matrix4x4[] SkinMatrices(IReadOnlyList<GcMoby.MobyJoint> joints, GcMoby.MobyFrame frame, float k)
+    public static Matrix4x4[] SkinMatrices(IReadOnlyList<GcUyaMoby.MobyJoint> joints, GcUyaMoby.MobyFrame frame, float k)
     {
         int n = joints.Count;
         var bindGlobal = new Vector3[n];
@@ -61,11 +61,11 @@ public static class MobyAnimation
 
     /// <summary>
     /// Re-pose <paramref name="mesh"/> for <paramref name="frame"/>. Returns a
-    /// flat <c>XYZ</c> array the same length as <see cref="GcMoby.Mesh.Positions"/>,
+    /// flat <c>XYZ</c> array the same length as <see cref="GcUyaMoby.Mesh.Positions"/>,
     /// in the class's model frame (native Z-up). Identity-quaternion frames
-    /// reproduce <see cref="GcMoby.Mesh.Positions"/>.
+    /// reproduce <see cref="GcUyaMoby.Mesh.Positions"/>.
     /// </summary>
-    public static double[] Pose(GcMoby.Mesh mesh, IReadOnlyList<GcMoby.MobyJoint> joints, GcMoby.MobyFrame frame)
+    public static double[] Pose(GcUyaMoby.Mesh mesh, IReadOnlyList<GcUyaMoby.MobyJoint> joints, GcUyaMoby.MobyFrame frame)
     {
         var outp = new double[mesh.Positions.Length];
         int vc = mesh.Positions.Length / 3;

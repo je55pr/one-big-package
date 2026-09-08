@@ -23,11 +23,14 @@ public static class CaptureHarness
     /// is serialised next to the PNG; <c>width</c>/<c>height</c>/<c>savePngResult</c>
     /// are merged in.
     /// </summary>
+    public static System.Threading.Tasks.Task<Result> CaptureAsync(
+        Node node, string outPath, int settleFrames,
+        System.Collections.Generic.IDictionary<string, object?> metadata) =>
+        CaptureAsync(node, outPath, settleFrames, () => metadata);
+
     public static async System.Threading.Tasks.Task<Result> CaptureAsync(
-        Node node,
-        string outPath,
-        int settleFrames,
-        System.Collections.Generic.IDictionary<string, object?> metadata)
+        Node node, string outPath, int settleFrames,
+        System.Func<System.Collections.Generic.IDictionary<string, object?>> metadataFactory)
     {
         var tree = node.GetTree();
         double seconds = System.Math.Max(0.25, settleFrames / 60.0);
@@ -50,6 +53,7 @@ public static class CaptureHarness
         await node.ToSignal(tree.CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
         await node.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
 
+        var metadata = metadataFactory();
         var image = node.GetViewport().GetTexture().GetImage();
         string pngPath = outPath.StartsWith("res://") || outPath.StartsWith("user://")
             ? ProjectSettings.GlobalizePath(outPath)
