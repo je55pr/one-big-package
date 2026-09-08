@@ -71,7 +71,10 @@ public static class Rac3WorldImport
             var sky = UyaSky.Read(core.Assets.AsSpan(sr.Offset, sr.Size).ToArray());
             skyShellCount = sky.Shells.Count;
             textures.AddRange(sky.Textures.Select(t => new RuntimeTexture("sky", t.Index, t.Width, t.Height, t.Rgba)));
-            AddSkyMeshes(sky, meshes, minX, minY, minZ, maxX, maxY, maxZ);
+            var fallbackSkyColour = settings.BackgroundColour
+                ?? settings.FogColour
+                ?? (0.05, 0.06, 0.09);
+            AddSkyMeshes(sky, meshes, minX, minY, minZ, maxX, maxY, maxZ, fallbackSkyColour);
         }
 
         var dynamicObjects = gameplay.MobyInstances.Select(m =>
@@ -153,10 +156,12 @@ public static class Rac3WorldImport
         foreach (var (tex, g) in groups.OrderBy(k => k.Key)) meshes.Add(new RuntimeMesh(kind, tex, g.P.ToArray(), g.U.ToArray(), g.I.ToArray()));
     }
 
-    private static void AddSkyMeshes(UyaSky.Sky sky, List<RuntimeMesh> meshes, double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
+    private static void AddSkyMeshes(UyaSky.Sky sky, List<RuntimeMesh> meshes, double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
+        (double R, double G, double B) fallbackColour)
     {
         if (double.IsPositiveInfinity(minX)) return;
-        double cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+        bool hasNativeColour = sky.Colour.A > 0 || sky.Colour.R > 0 || sky.Colour.G > 0 || sky.Colour.B > 0;
+        var gouraudTint = hasNativeColour ? (sky.Colour.R, sky.Colour.G, sky.Colour.B) : fallbackColour;
         double radius = System.Math.Max(1, System.Math.Sqrt((maxX - minX) * (maxX - minX) + (maxY - minY) * (maxY - minY) + (maxZ - minZ) * (maxZ - minZ)) / 2);
         double shellMax = sky.Shells.SelectMany(s => s.Positions).Select(System.Math.Abs).DefaultIfEmpty(0).Max();
         double scale = shellMax > 0 ? radius * 1.7 / shellMax : 1;
@@ -168,10 +173,24 @@ public static class Rac3WorldImport
                     for (int k = 0; k < 3; k++)
                     {
                         int v = shell.Indices[face * 3 + k];
-                        if (!remap.TryGetValue(v, out int nv)) { nv = p.Count / 3; remap[v] = nv; p.Add(cx + shell.Positions[v * 3] * scale); p.Add(cy + shell.Positions[v * 3 + 2] * scale); p.Add(cz + shell.Positions[v * 3 + 1] * scale); u.Add(shell.Uvs[v * 2]); u.Add(shell.Uvs[v * 2 + 1]); c.Add(1); c.Add(1); c.Add(1); c.Add(shell.Alpha[v]); }
+                        if (!remap.TryGetValue(v, out int nv))
+                        {
+                            nv = p.Count / 3; remap[v] = nv;
+                            p.Add(shell.Positions[v * 3] * scale);
+                            p.Add(shell.Positions[v * 3 + 2] * scale);
+                            p.Add(shell.Positions[v * 3 + 1] * scale);
+                            u.Add(shell.Uvs[v * 2]); u.Add(shell.Uvs[v * 2 + 1]);
+                            bool materialless = group.Key < 0;
+                            c.Add(materialless ? (float)gouraudTint.Item1 : 1f);
+                            c.Add(materialless ? (float)gouraudTint.Item2 : 1f);
+                            c.Add(materialless ? (float)gouraudTint.Item3 : 1f);
+                            c.Add(shell.Alpha[v]);
+                        }
                         ind.Add(nv);
                     }
-                meshes.Add(new RuntimeMesh("sky", group.Key, p.ToArray(), u.ToArray(), ind.ToArray(), c.ToArray()));
+                meshes.Add(new RuntimeMesh(
+                    "sky", group.Key, p.ToArray(), u.ToArray(), ind.ToArray(), c.ToArray(),
+                    RenderWithoutTexture: group.Key < 0));
             }
     }
 
