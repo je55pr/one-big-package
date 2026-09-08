@@ -61,6 +61,11 @@ public sealed class WorldHost
     private readonly System.Collections.Generic.List<AmbientAnimationTarget> _ambient = new();
     private double _worldTime;
 
+    // Separate clock for moby animation so a debug pause (K) freezes the mobies
+    // without stopping the sky drift.
+    private double _animClock;
+    private bool _animPlaying = true;
+
     /// <summary>One resolved ambient animation bound to its Godot targets.</summary>
     private sealed record AmbientAnimationTarget(
         RuntimeAmbientAnimation Animation,
@@ -237,6 +242,8 @@ public sealed class WorldHost
         _sceneParent = null;
         _ambient.Clear();
         _worldTime = 0;
+        _animClock = 0;
+        _animPlaying = true;
 
         // Drop the ArrayMesh / ImageTexture / ConcavePolygonShape resources the
         // freed nodes held so memory does not creep across world switches.
@@ -263,13 +270,52 @@ public sealed class WorldHost
             sky.GlobalPosition = cameraGlobalPosition;
         }
 
-        RuntimeWorldScene.AdvanceAnimated(result);
-
         _worldTime += delta;
-        ApplyAmbientAnimations();
+        if (_animPlaying)
+        {
+            _animClock += delta;
+        }
 
+        RuntimeWorldScene.AdvanceAnimated(result, _animClock);
+        ApplyAmbientAnimations();
         UpdateRegionLighting(cameraGlobalPosition);
     }
+
+    /// <summary>Freeze / resume moby animation (a debug pause; the sky keeps drifting).</summary>
+    public void SetAnimationPlaying(bool playing) => _animPlaying = playing;
+
+    public bool AnimationPlaying => _animPlaying;
+
+    /// <summary>Seconds of unpaused animation clock since load — pins an animated capture's pose.</summary>
+    public double AnimationClockSeconds => _animClock;
+
+    /// <summary>Playback state for one animated mesh by name, or null.</summary>
+    public AnimationState? AnimationStateByName(string name)
+    {
+        foreach (var s in AnimationStates())
+        {
+            if (s.Name == name)
+            {
+                return s;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Per-animated-mesh playback state for the HUD / inspector.</summary>
+    public System.Collections.Generic.IReadOnlyList<AnimationState> AnimationStates()
+    {
+        var list = new System.Collections.Generic.List<AnimationState>();
+        foreach (var am in Result?.AnimatedMeshes ?? System.Array.Empty<AnimatedMesh>())
+        {
+            list.Add(new AnimationState(am.Name, am.FramesPerSecond, am.FrameCount, am.CurrentFrame, _animPlaying));
+        }
+
+        return list;
+    }
+
+    public readonly record struct AnimationState(string Name, float FramesPerSecond, int FrameCount, int CurrentFrame, bool Playing);
 
     /// <summary>Evaluate every resolved ambient animation at the current world time and apply it.</summary>
     private void ApplyAmbientAnimations()

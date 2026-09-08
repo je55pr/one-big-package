@@ -25,6 +25,7 @@ public sealed class DebugOverlay
         WorldBounds = 1 << 2,
         EnvGizmos = 1 << 3,
         HideSky = 1 << 4,
+        Skeleton = 1 << 5,
     }
 
     /// <summary>Cycle order for <see cref="IsolateNextKind"/> — null means "show every kind".</summary>
@@ -177,6 +178,69 @@ public sealed class DebugOverlay
         if (IsOn(Layer.EnvGizmos))
         {
             BuildEnvGizmos();
+        }
+
+        if (IsOn(Layer.Skeleton))
+        {
+            BuildSkeletons();
+        }
+    }
+
+    // --- skeleton view (dormant until a decoder populates RuntimeSkeleton) ---
+
+    private void BuildSkeletons()
+    {
+        var rigged = new System.Collections.Generic.List<RuntimeAnimatedMesh>();
+        foreach (var am in _world.AnimatedMeshes ?? System.Array.Empty<RuntimeAnimatedMesh>())
+        {
+            if (am.Skeleton is not null)
+            {
+                rigged.Add(am);
+            }
+        }
+
+        if (rigged.Count == 0)
+        {
+            GD.Print($"[DebugOverlay] {_world.DisplayName}: no RuntimeSkeleton data — multi-joint skinning is not decoded yet");
+            return;
+        }
+
+        var parent = Gizmos();
+        foreach (var am in rigged)
+        {
+            var sk = am.Skeleton!;
+            var pts = new System.Collections.Generic.List<Vector3>();
+            for (int j = 0; j < sk.Joints.Count; j++)
+            {
+                int p = sk.Joints[j].Parent;
+                if (p < 0 || p >= sk.Joints.Count)
+                {
+                    continue;
+                }
+
+                var bj = sk.Joints[j].BindTranslation;
+                var bp = sk.Joints[p].BindTranslation;
+                pts.Add(RuntimeWorldScene.ToScene(bp.X, bp.Y, bp.Z));
+                pts.Add(RuntimeWorldScene.ToScene(bj.X, bj.Y, bj.Z));
+            }
+
+            if (pts.Count < 2)
+            {
+                continue;
+            }
+
+            var arrays = new global::Godot.Collections.Array();
+            arrays.Resize((int)Mesh.ArrayType.Max);
+            arrays[(int)Mesh.ArrayType.Vertex] = pts.ToArray();
+            var mesh = new ArrayMesh();
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Lines, arrays);
+            parent.AddChild(new MeshInstance3D
+            {
+                Name = $"Skeleton_{am.Name}",
+                Mesh = mesh,
+                MaterialOverride = Unlit(new Color(1f, 0.4f, 0.9f)),
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            });
         }
     }
 

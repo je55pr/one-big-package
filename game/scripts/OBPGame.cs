@@ -55,6 +55,7 @@ public partial class OBPGame : Node3D
     private RuntimeWorld? _world;
     private RuntimeWorldScene.Result? _sceneResult;
     private DebugOverlay? _overlay;
+    private WorldInspectorPanel? _inspector;
     private DebugPlayer? _player;
     private int _worldSwitches;
 
@@ -192,13 +193,27 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        if (_mode == Mode.World && _overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
+        if (_mode != Mode.World)
+        {
+            return;
+        }
+
+        if (key.Keycode == Key.K)
+        {
+            _worldHost.SetAnimationPlaying(!_worldHost.AnimationPlaying);
+            UpdateWorldHud();
+        }
+        else if (key.Keycode == Key.I)
+        {
+            _inspector?.Toggle();
+        }
+        else if (_overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
         {
             UpdateWorldHud();
         }
     }
 
-    /// <summary>F1..F7 toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
+    /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
     private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)
     {
         switch (keycode)
@@ -210,6 +225,7 @@ public partial class OBPGame : Node3D
             case Key.F5: overlay.Toggle(DebugOverlay.Layer.EnvGizmos); return true;
             case Key.F6: overlay.Toggle(DebugOverlay.Layer.HideSky); return true;
             case Key.F7: overlay.Clear(); return true;
+            case Key.J: overlay.Toggle(DebugOverlay.Layer.Skeleton); return true;
             default: return false;
         }
     }
@@ -491,6 +507,8 @@ public partial class OBPGame : Node3D
 
         _sceneResult = null;
         _overlay = null; // its nodes live under the world sub-tree that was just freed
+        _inspector?.QueueFree();
+        _inspector = null;
         _world = null;
         ResetCrateDebugHarness();
     }
@@ -504,7 +522,16 @@ public partial class OBPGame : Node3D
     {
         _overlay = new DebugOverlay(result, world);
         ApplyOverlaySpec(_args.Overlay);
+
+        _inspector = new WorldInspectorPanel(result, world, _worldHost);
+        _ui.AddChild(_inspector);
+        if (_args.Inspect)
+        {
+            CallDeferred(nameof(OpenInspectorDeferred));
+        }
     }
+
+    private void OpenInspectorDeferred() => _inspector?.Toggle();
 
     /// <summary>
     /// Reset the overlay and apply a comma-separated layer / <c>isolate:&lt;kind&gt;</c>
@@ -942,6 +969,9 @@ public partial class OBPGame : Node3D
             ["worldSwitches"] = _worldSwitches,
             ["camera"] = new[] { _activeCamera.GlobalPosition.X, _activeCamera.GlobalPosition.Y, _activeCamera.GlobalPosition.Z },
             ["overlays"] = _overlay?.StatusLine(),
+            ["animClockSeconds"] = System.Math.Round(_worldHost.AnimationClockSeconds, 3),
+            ["animations"] = _worldHost.AnimationStates()
+                .Select(a => new { a.Name, a.CurrentFrame, a.FrameCount, a.Playing }).ToArray(),
             ["meshInstances"] = r?.MeshInstances ?? 0,
             ["triangles"] = r?.Triangles ?? 0,
             ["textures"] = r?.Textures ?? 0,
