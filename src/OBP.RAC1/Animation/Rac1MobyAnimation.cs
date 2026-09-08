@@ -21,8 +21,8 @@ public static class Rac1MobyAnimation
     }
 
     public sealed record Frame(
-        uint Unknown0Raw,
-        ushort Unknown4,
+        uint TransitionRateRaw,
+        ushort TimestampUnits,
         ushort DataSizeQwords,
         ushort JointDataSize,
         ushort Thing1Count,
@@ -30,7 +30,10 @@ public static class Rac1MobyAnimation
         ushort Thing2Count,
         IReadOnlyList<JointQuaternion> JointRotations,
         IReadOnlyList<ulong> Thing1,
-        IReadOnlyList<ulong> Thing2);
+        IReadOnlyList<ulong> Thing2)
+    {
+        public float TransitionRate => BitConverter.Int32BitsToSingle(unchecked((int)TransitionRateRaw));
+    }
 
     public sealed record Sequence(
         int Index,
@@ -42,10 +45,13 @@ public static class Rac1MobyAnimation
         byte TriggerCount,
         byte Unknown13,
         uint TriggerDataOffset,
-        uint AnimationInfo,
+        uint ConstantTransitionRateRaw,
         IReadOnlyList<uint> FrameEntries,
         IReadOnlyList<uint> Triggers,
-        IReadOnlyList<Frame> Frames);
+        IReadOnlyList<Frame> Frames)
+    {
+        public float ConstantTransitionRate => BitConverter.Int32BitsToSingle(unchecked((int)ConstantTransitionRateRaw));
+    }
 
     public sealed record SequenceSlot(int Index, Sequence? Value);
 
@@ -119,11 +125,11 @@ public static class Rac1MobyAnimation
             float sphereZ = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(sequenceOffset + 8));
             float sphereW = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(sequenceOffset + 12));
             uint triggerDataOffset = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(sequenceOffset + 0x14));
-            uint animationInfo = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(sequenceOffset + 0x18));
+            uint constantTransitionRateRaw = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(sequenceOffset + 0x18));
             slots.Add(new SequenceSlot(index, new Sequence(
                 index, sphereX, sphereY, sphereZ, sphereW,
                 soundCount, triggerCount, unknown13,
-                triggerDataOffset, animationInfo,
+                triggerDataOffset, constantTransitionRateRaw,
                 frameEntries, triggers, frames)));
         }
         return slots;
@@ -136,8 +142,8 @@ public static class Rac1MobyAnimation
             throw new InvalidDataException(
                 $"R&C1 Moby sequence {sequenceIndex} frame {frameIndex} offset {frameOffset} is out of range.");
         }
-        uint unknown0 = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(frameOffset));
-        ushort unknown4 = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(frameOffset + 4));
+        uint transitionRateRaw = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(frameOffset));
+        ushort timestampUnits = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(frameOffset + 4));
         ushort dataSizeQwords = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(frameOffset + 6));
         ushort jointDataSize = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(frameOffset + 8));
         ushort thing1Count = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(frameOffset + 0x0a));
@@ -184,7 +190,7 @@ public static class Rac1MobyAnimation
         }
 
         return new Frame(
-            unknown0, unknown4, dataSizeQwords, jointDataSize,
+            transitionRateRaw, timestampUnits, dataSizeQwords, jointDataSize,
             thing1Count, unknownC, thing2Count, rotations, thing1, thing2);
     }
 }

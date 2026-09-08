@@ -93,4 +93,30 @@ public sealed class Rac1LevelTests_World
         Assert.Null(world.Lighting);
         Assert.Null(world.AnimatedMeshes);
     }
+    [SkippableFact]
+    public void Level1_PinnedClass1134InstancesUseNativeAnimatedMeshPath()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var world = Rac1WorldImport.Build(reader, 1);
+        Assert.Equal(522, world.Meshes.Count);
+        Assert.Equal(1_645_516, world.TotalRenderTriangles);
+        Assert.Equal((139, 527_223),
+            (world.Meshes.Count(m => m.AssetKind == "moby"), world.Meshes.Where(m => m.AssetKind == "moby").Sum(m => m.TriangleCount)));
+        Assert.NotNull(world.AnimatedMeshes);
+        Assert.Equal(3, world.AnimatedMeshes!.Count);
+        Assert.Equal(282, world.AnimatedMeshes.Sum(m => m.TriangleCount));
+        Assert.Equal(1_645_798, world.TotalRenderTriangles + world.AnimatedMeshes.Sum(m => m.TriangleCount));
+        Assert.All(world.AnimatedMeshes, mesh =>
+        {
+            Assert.Equal("moby", mesh.AssetKind);
+            Assert.Equal(109, mesh.VertexCount);
+            Assert.Equal(94, mesh.TriangleCount);
+            Assert.Equal(170, mesh.Frames.Count);
+            Assert.Equal(30f, mesh.FramesPerSecond);
+            Assert.All(mesh.Frames, frame => Assert.Equal(mesh.VertexCount * 3, frame.Length));
+        });
+    }
+
 }

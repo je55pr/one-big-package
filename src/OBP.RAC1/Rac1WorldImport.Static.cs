@@ -11,6 +11,7 @@ public static partial class Rac1WorldImport
         byte[] gameplayBytes,
         List<RuntimeMesh> meshes,
         List<RuntimeTexture> textures,
+        List<RuntimeAnimatedMesh> animatedMeshes,
         ref double minX,
         ref double minY,
         ref double minZ,
@@ -31,6 +32,11 @@ public static partial class Rac1WorldImport
         var tieTextureIds = tieTextures.Select(t => t.TextureId).ToHashSet();
         var shrubTextureIds = shrubTextures.Select(t => t.TextureId).ToHashSet();
         var mobyTextureIds = mobyTextures.Select(t => t.TextureId).ToHashSet();
+
+        animatedMeshes.AddRange(BuildAnimatedMobyMeshes(
+            instances.MobyInstances, classes.Mobies, mobyTextureIds,
+            out var animatedMobyInstances,
+            ref minX, ref minY, ref minZ, ref maxX, ref maxY, ref maxZ));
 
         PlaceMatrixInstances(
             "tie",
@@ -58,6 +64,7 @@ public static partial class Rac1WorldImport
             instances.MobyInstances,
             classes.Mobies,
             mobyTextureIds,
+            animatedMobyInstances,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);

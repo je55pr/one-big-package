@@ -167,20 +167,26 @@ public partial class OBPGame
         bool framedCapture = _args.CaptureFrame is not null
             && (_args.DirectLoad || _args.Destination is not null)
             && _args.TestScene != "player"
+            && !_args.AnimSolo
             && !_args.CrateFocus && !_args.CrateAutoStrike;
 
         var result = _worldHost.Load(this, _worldRoot, world, $"World_{destination.Game}_{destination.NativeDestinationId}", new WorldHost.Options
         {
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
-            IncludeSky = true,
+            IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,
             ShowCollisionDebug = _args.CollisionDebug,
+            OnlyAnimatedMobies = _args.AnimSolo,
         });
         _sceneResult = result;
         SetupOverlay(result, world);
         ConfigureCrateDebugHarness();
 
-        if (framedCapture)
+        if (_args.AnimSolo)
+        {
+            FrameAnimatedMobies(world);
+        }
+        else if (framedCapture)
         {
             FrameShowcaseCamera(world);
         }
