@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/branding/obp-logo.png" alt="Ratchet &amp; Clank: One Big Package" width="900">
+</p>
+
 # Ratchet & Clank: One Big Package
 
 **One Big Package (OBP)** is a reverse-engineering and game-runtime project exploring how the original PS2 **Ratchet & Clank**, **Going Commando**, and **Up Your Arsenal** can be reconstructed into one shared runtime and, eventually, one deliberately combined game.
