@@ -9,7 +9,12 @@ public static class UyaAssets
 {
     public enum TextureTable { Tfrag, Moby, Tie, Shrub }
     public sealed record StaticClass(int OClass, double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds);
-    public sealed record MobyVisualClass(int OClass, GcUyaMoby.Mesh Mesh, int[] TriangleTextureIds);
+    public sealed record MobyVisualClass(
+        int OClass,
+        GcUyaMoby.Mesh Mesh,
+        int[] TriangleTextureIds,
+        IReadOnlyList<GcUyaMoby.MobyJoint> Joints,
+        IReadOnlyList<GcUyaMoby.MobySequence> Sequences);
     public sealed record MobyClassSet(
         int DeclaredCount,
         IReadOnlyDictionary<int, MobyVisualClass> Decoded,
@@ -83,7 +88,10 @@ public static class UyaAssets
                     throw new InvalidDataException($"UYA Moby class {oClass} references texture {textureId} outside 0..{textureCount - 1}.");
                 mapped[face] = textureId;
             }
-            decoded.Add(oClass, new MobyVisualClass(oClass, mesh, mapped));
+            int jointCount = classBytes[0x08];
+            var joints = GcUyaMoby.ReadJoints(classBytes, jointCount);
+            var sequences = joints.Count > 0 ? GcUyaMoby.ReadSequences(classBytes, jointCount) : [];
+            decoded.Add(oClass, new MobyVisualClass(oClass, mesh, mapped, joints, sequences));
         }
 
         if (decoded.Count + zeroLocalCore.Count != table.Count)
