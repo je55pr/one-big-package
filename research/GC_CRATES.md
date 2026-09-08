@@ -18,9 +18,22 @@ This document narrows the first interactive-object milestone to the native crate
 
 Classes `500/501/505/511/512` are **CONFIRMED** to share the authored `0x110`-byte PVar layout, mode `0x20`, and relative-pointer fixups at PVar `+0x00/+0x08`. Class 500 is authored 1,979 times across **18** retail level files. See [`GC_PVARS.md`](GC_PVARS.md).
 
-The packed GC Moby instance field at `+0x14` is retained by OBP as `Raw0x14`; pinned Wrench independently names this authored field `bolts`. The authority build gives class 500 a very reward-like range of **24 distinct values from 1 through 1000**. On Oozla specifically, 189 of the 190 class-500 instances carry `13` and one carries `14`. Thus `static Moby +0x14 = authored bolt value` is **CORROBORATED**; the exact loader copy into the live Moby is still being traced.
+The packed GC Moby instance field at `+0x14` is the authored Bolt reward value. The authority build gives class 500 **24 distinct values from 1 through 1000**; on Oozla, 189 of 190 class-500 instances carry `13` and one carries `14`. Oozla's loaded static-Moby population path directly copies this field into live Moby `+0xB4` (details below), so OBP exposes it as `MobyInstance.Bolts`. Pinned Wrench independently names the same authored field `bolts`.
 
 Class `502` is an important negative result: loaded crate code explicitly retains a class-502 branch, but the exact-authority census finds class 502 **not listed and not authored in any of the 27 retail gameplay files**. It is therefore a **CONFIRMED dormant/shared-code branch in this build's authored data**; dynamic reachability remains UNKNOWN.
+
+### Static instance -> live Moby bridge
+
+Oozla's loaded retail population code closes the authored/runtime identity directly. It reads gameplay pointer `+0x4C`, enters the Moby block, consumes the `0x10`-byte block header, and then walks the packed static records. In the per-record path:
+
+- `0x002F73C0`: `lw $s4,0($s2)` reads authored record `+0x10` (`uid`);
+- `0x002F73C8`: `lw $v0,0($s2)` reads authored record `+0x14`, then `0x002F73D4` preserves it in `$s1`;
+- the runtime Moby address is formed from the live pool base plus `index << 8`, confirming a `0x100`-byte live-Moby stride;
+- `0x002F769C` calls live-Moby initializer `0x00305FE0`;
+- `0x002F76A8`: `sh $s4,0xB2($s3)` writes the authored UID into live `+0xB2`;
+- `0x002F76C8`: `sh $s1,0xB4($s3)` writes the authored `+0x14` value into live `+0xB4`.
+
+Thus the mapping is **CONFIRMED retail dataflow**. The loader stores the low 16 bits into the live halfword fields; all observed class-500 UID/reward values used here fit that representation. Separately, live-Moby initialization at `0x0030608C` writes the native class ID to live `+0xAA`.
 
 ## Loaded runtime authority: one crate-family update routine per level
 
@@ -124,7 +137,7 @@ Loaded helper `0x002D9528` establishes the normal reward scaler. Retail code rea
 
 `scaledValue = percentage[selector & 7] * mobyRewardValue / 100`.
 
-Retail independently proves live Moby `+0xAA` is `oClass`. The scaler consumes the nearby live fields `+0xB2` as the UID-like selector input and `+0xB4` as the reward-value input. This lines up exactly with the authored GC instance's `uid` and publicly corroborated `bolts` fields, but the loader copy itself is not yet traced, so that static-to-live identity remains **CORROBORATED** rather than promoted to CONFIRMED.
+Retail independently proves live Moby `+0xAA` is `oClass`. The scaler consumes the nearby live fields `+0xB2` as its UID selector input and `+0xB4` as the reward-value input. The static-to-live population path is now traced directly: authored `+0x10` (`uid`) is copied to live `+0xB2`, and authored `+0x14` (`bolts`) is copied to live `+0xB4`. Therefore the scaler's inputs are **CONFIRMED** to be the authored UID and Bolt reward value.
 
 The two normal percentage banks reside at loaded `0x001B89C8` and `0x001B89D0`. They are BSS and therefore zero in the overlay image; their runtime initialization/values remain **UNKNOWN**. Oozla's class-500 nibble census is highly nonuniform: 144/190 crates use bank 0/index 0, while the remainder deliberately select other bank/index combinations.
 
@@ -233,6 +246,8 @@ All runs below verified the full retail ISO SHA-256 in the same job:
 - pipeline `2827610817`, job `16354155119` — indexed resource add/clamp service and resource selector;
 - pipeline `2827647584`, job `16354385800` — post-main-sync bounded Oozla count/selector/class-3291 disassembly, including the 56-slot structure and `-1` correction.
 
+On 2026-09-08, the static-to-live Moby bridge was re-derived locally on Jess-Laptop from the same exact authority build using the bounded level-overlay tooling. The retail bytes remain local; only instruction addresses, field relationships and derived facts are recorded here.
+
 ## Local deterministic interaction proof
 
 The Godot development harness can focus the first preserved class-500 object and feed it the known-good debug event (`flags=0x00000001`, scalar `1.0`). Target acquisition is explicitly a host/debug convenience; the break decision itself goes through `GcCrateInteraction.ShouldBreakClass500`.
@@ -245,10 +260,10 @@ On Jess-Laptop, two otherwise identical LEVEL1 captures at frame 120 target `lev
 Both runs use the same player/camera coordinates. The rendered before/after images also differ in the world region occupied by that crate, not only in HUD text. This proves the preserved dynamic instance can be removed through the recovered native class-500 predicate/deactivation route. Bolt reward spawning remains intentionally disabled until the runtime percentage-bank values are authoritative.
 ## What is proved now
 
-**CONFIRMED:** authored crate-family PVar structure; class-500 population; per-level shared crate-family update vtables; seven-state loaded state machine; class-500 event mask/exclusion/positive-scalar break predicate; class-500 break transition to state 3 and Oozla `+0xC8==0` deactivation path; runtime consumption of authored `+0xC8/+0xCC`; runtime `+0xC6/+0xCA/+0xCB` use; live `Moby+0xAA = oClass`; class-500's separate `0x0030F920 -> 0x003177C8` reward path; percentage-scaling helper `0x002D9528`; deferred reservoir add/release at `0x001A7A14`; modulo RNG at `0x003104E8`; progression-tier effect on the class-500 physical-piece budget; denomination decomposition `1000/500/100/50/20/5/1`; denomination-to-selector mapping `19..13`; dynamic class-3291 creation on the separate indexed-resource branch; class-3291 amount/index PVar fields; 56-slot indexed count structure; add/subtract/capacity mechanics; class-3291 successful-collection delta check; `-1` runtime-index substitution; class-502 authored absence.
+**CONFIRMED:** authored crate-family PVar structure; class-500 population; per-level shared crate-family update vtables; seven-state loaded state machine; class-500 event mask/exclusion/positive-scalar break predicate; class-500 break transition to state 3 and Oozla `+0xC8==0` deactivation path; runtime consumption of authored `+0xC8/+0xCC`; runtime `+0xC6/+0xCA/+0xCB` use; live `Moby+0xAA = oClass`; static Moby `+0x10 -> live +0xB2` UID mapping; static Moby `+0x14 -> live +0xB4` Bolt-reward mapping; class-500's separate `0x0030F920 -> 0x003177C8` reward path; percentage-scaling helper `0x002D9528`; deferred reservoir add/release at `0x001A7A14`; modulo RNG at `0x003104E8`; progression-tier effect on the class-500 physical-piece budget; denomination decomposition `1000/500/100/50/20/5/1`; denomination-to-selector mapping `19..13`; dynamic class-3291 creation on the separate indexed-resource branch; class-3291 amount/index PVar fields; 56-slot indexed count structure; add/subtract/capacity mechanics; class-3291 successful-collection delta check; `-1` runtime-index substitution; class-502 authored absence.
 
-**CORROBORATED:** `oClass 500 = Bolt Crate`; authored Moby `+0x14 = bolts`; the static `uid/bolts` pair aligns with live reward fields `+0xB2/+0xB4`; public TargetVars structural lead; public `Ammo[56]` matches the runtime selector's 56-slot domain.
+**CORROBORATED:** `oClass 500 = Bolt Crate`; public `bolts` naming for the now retail-proved `+0x14` reward field; public TargetVars structural lead; public `Ammo[56]` matches the runtime selector's 56-slot domain.
 
 **INFERRED:** `0x003922B0` is a break/destruction transition helper; selectors `13..19` are Bolt-denomination pickup identities; `0x001A7A32/+0x33` are the Challenge Mode bolt multiplier/sublevel; class 3291 is a generic indexed collectible/resource object; the 56-slot counter system is ammo/inventory-resource state.
 
-Still **UNKNOWN:** exact names of states `0..6`; public semantic name of the native break-event structure and its `+0x2C` scalar; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; semantic identity of progression-like `gp+0x3AC`; runtime initialization/values of the two 8-entry reward-percentage banks; exact loader copy into live Moby `+0xB2/+0xB4`; exact 56-slot resource names; debris/effect presentation; save/reload/persistence/respawn rules; exact GC identities of classes 501/505/511/512.
+Still **UNKNOWN:** exact names of states `0..6`; public semantic name of the native break-event structure and its `+0x2C` scalar; exact `+0xCC/+0xC6/+0xCA/+0xCB` semantics; broader meaning of `+0xC8` outside the proved Oozla deactivation branch; semantic identity of progression-like `gp+0x3AC`; runtime initialization/values of the two 8-entry reward-percentage banks; exact 56-slot resource names; debris/effect presentation; save/reload/persistence/respawn rules; exact GC identities of classes 501/505/511/512.

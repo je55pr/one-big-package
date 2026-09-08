@@ -185,6 +185,9 @@ public class GcLevelTests
             Assert.Equal(0x110, m.PVarData!.Length);
         });
         Assert.Equal(boltCrates.Length, boltCrates.Select(m => m.PVarIndex).Distinct().Count());
+        Assert.Equal(189, boltCrates.Count(m => m.Bolts == 13));
+        Assert.Single(boltCrates, m => m.Bolts == 14);
+        Assert.All(boltCrates, m => Assert.InRange(m.Bolts, 13, 14));
 
         // Directional lights (gameplay ptr 0x04) — the main GC light type.
         Assert.Equal(3, gameplay.DirLights.Count);
