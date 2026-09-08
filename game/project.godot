@@ -9,6 +9,12 @@ config/name="One Big Package"
 config/description="Native runtime for the PS2 Ratchet & Clank trilogy (Going Commando first)."
 run/main_scene="res://scenes/OBPGame.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+config/icon="res://assets/branding/obp-icon.png"
+config/windows_native_icon="res://assets/branding/obp-icon.ico"
+
+[autoload]
+
+UiBootstrap="*res://scripts/UiBootstrap.cs"
 
 [dotnet]
 

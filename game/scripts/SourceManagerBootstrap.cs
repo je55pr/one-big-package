@@ -84,9 +84,25 @@ public partial class SourceManagerBootstrap : Node
         // lands on the trilogy source manager. Deterministic harnesses always
         // pass --test-scene and therefore retain their existing smoke/player
         // behaviour. --test-scene picker is the deterministic source-screen path.
-        if (testScene == "picker" || (testScene is null && gcPath is null))
+        if (testScene == "picker")
         {
             _game.ShowSourceManagerFromBootstrap();
+            return;
+        }
+
+        if (testScene is null && gcPath is null)
+        {
+            // A plain double-click / "obp" launch: show the gamey title first,
+            // then fall through to Game Sources. --skip-title bypasses it.
+            if (System.Array.Exists(args, a => a == "--skip-title"))
+            {
+                _game.ShowSourceManagerFromBootstrap();
+                return;
+            }
+
+            var title = new TitleScreen();
+            title.Dismissed += () => _game?.ShowSourceManagerFromBootstrap();
+            _game.AddChild(title);
         }
     }
 

@@ -182,6 +182,32 @@ consume a `RuntimeWorld` from any provider. RAC1 and RAC3 populate core geometry
 hero light hides, F5 env-gizmos report "no decoded lighting", the HUD reads
 `LEVELn` / the native label. Per-game shot sets: `tools/shots/rac{1,2,3}.json`.
 
+## Showcase launcher / title screen
+
+For demoing the current production build there is a single entry point that a
+desktop shortcut points at:
+
+- **`tools/obp.cmd`** → `tools/launch-obp.ps1` — builds `game/` (Release, quiet),
+  refreshes the Godot asset import cache, then starts the app **windowed-maximised**
+  with no test-scene args and no developer console. `-SkipBuild` / `-Windowed`
+  for iteration.
+- **`tools/install-desktop-shortcut.ps1`** — puts *One Big Package.lnk* on the
+  desktop (icon `game/assets/branding/obp-icon.ico`, target `tools/obp.cmd`);
+  `-Uninstall` removes it. Re-run after moving the repo.
+
+A plain launch (no `--test-scene`, no `--*-iso`) now shows **`TitleScreen`** — the
+logo (`game/assets/branding/obp-logo.png`) over a graded backdrop with a
+"press any key" prompt — which fades into the existing **Game Sources** screen.
+`--skip-title` bypasses it. `--test-scene picker` and every deterministic
+harness path are unaffected (they never construct it — see
+`SourceManagerBootstrap`).
+
+`UiBootstrap` (autoload) installs one application-wide `Theme` (`UiTheme`) so the
+source manager, world browser, HUDs and title screen share fonts / colours /
+button styling; it also pins the window title. Cosmetic only — no layout,
+capture geometry or shot-sidecar keys change (local vizcompare UI baselines will
+need a one-off refresh).
+
 ## Milestone 2 status
 
 - [x] `m2-tooling-and-materials` — `tools/vizcompare/`; `WorldMaterialFactory` +
