@@ -100,8 +100,16 @@ public static class MaterialModel
         return (AlphaMode.Opaque, 0.5f);
     }
 
-    /// <summary>Terrain + built structure have consistent strip winding → cull back-faces. Everything else stays 2-sided.</summary>
-    public static bool BackFaceCull(string assetKind) => assetKind is "tfrag" or "tie";
+    /// <summary>
+    /// Whether a kind's geometry may be back-face culled. Currently <c>false</c>
+    /// for everything: the decoded winding is not reliably outward-facing across
+    /// terrain and built structure (whole regions — e.g. the Tabora desert
+    /// floor — end up visible only from below), so all world geometry renders
+    /// two-sided. That trades a little see-through at building interiors for no
+    /// missing surfaces. Re-enable per kind here if an importer guarantees
+    /// consistent outward winding.
+    /// </summary>
+    public static bool BackFaceCull(string assetKind) => false;
 
     /// <summary>tfrag / tie / sky texture atlases tile; keep repeat on for them (and for M1's sky UV scroll).</summary>
     public static bool TileTexture(string assetKind) => assetKind is "tfrag" or "tie" or "sky";

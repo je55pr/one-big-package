@@ -153,8 +153,9 @@ public static class RuntimeWorldScene
             }
 
             // ToScene negates X — a reflection — which reverses every triangle's
-            // winding. Swap two corners back so front-faces point outward again
-            // (lets solid geometry cull its back-faces; keeps normals sane).
+            // winding. Swap two corners back so the reflection is undone and
+            // face orientation matches the source data (all world materials are
+            // two-sided, so this is about keeping normals sane, not culling).
             var indices = new int[m.Indices.Length];
             for (int t = 0; t + 3 <= m.Indices.Length; t += 3)
             {

@@ -56,7 +56,7 @@ public class WorldObjectDescriptorTests
         Assert.Equal(7, d.TextureId);
         Assert.Equal(64, d.TextureWidth);
         Assert.Equal(32, d.TextureHeight);
-        Assert.True(d.BackFaceCulled);            // tfrag
+        Assert.False(d.BackFaceCulled);           // all world geometry is 2-sided
         Assert.Null(d.NativeClassId);
         Assert.Empty(d.Payloads);
         Assert.Null(d.Animation);
