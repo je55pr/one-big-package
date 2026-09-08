@@ -7,14 +7,21 @@ namespace OBP.RAC3;
 public static partial class Rac3WorldImport
 {
     private const int PreviewTable = 1;
-    private const int PreviewOClass = 6800;
-    private const int PreviewInstance = 665;
-    private const int PreviewSequence = 2;
+
+    private sealed record PreviewSpec(int OClass, int Sequence, int[] InstanceIds);
+
+    private static readonly PreviewSpec[] PreviewSpecs =
+    [
+        new(6800, 2, [665, 666, 667, 668]),
+        new(6577, 2, [513, 514, 515]),
+        new(6317, 4, [477, 478, 479]),
+        new(6886, 15, Enumerable.Range(672, 28).ToArray()),
+    ];
 
     /// <summary>
-    /// OBP showcase admission, not recovered gameplay state: one authored Veldin
-    /// instance is lifted onto the neutral frame-animation bridge using a retail
-    /// sequence whose every decoded frame remains inside its authored sphere.
+    /// OBP showcase admission, not recovered gameplay state: explicitly pinned
+    /// authored Veldin instances are lifted onto the neutral frame-animation
+    /// bridge only when every decoded frame remains inside its retail sphere.
     /// </summary>
     private static List<RuntimeAnimatedMesh> BuildAnimationPreview(
         int tableIndex,
@@ -24,40 +31,62 @@ public static partial class Rac3WorldImport
     {
         animatedInstances = [];
         var output = new List<RuntimeAnimatedMesh>();
-        if (tableIndex != PreviewTable || !classes.TryGetValue(PreviewOClass, out var cls)) return output;
-        if (!cls.Mesh.SkinStateFullyResolved || cls.Joints.Count <= 1) return output;
-        var sequence = cls.Sequences.FirstOrDefault(s => s.Index == PreviewSequence);
-        if (sequence is null || sequence.Frames.Count == 0 || sequence.BoundingSphere is null) return output;
+        if (tableIndex != PreviewTable) return output;
 
-        var classFrames = PoseAndValidateClassFrames(cls, sequence);
-        if (classFrames is null) return output;
-
-        var instance = instances.FirstOrDefault(i =>
-            i.OClass == PreviewOClass && i.Index == PreviewInstance);
-        if (instance is null) return output;
-        animatedInstances.Add(instance.Index);
-
-        double[] transform = UyaGameplay.MobyTransform(instance);
-        var worldFrames = classFrames.Select(frame => PlaceFrame(frame, transform)).ToArray();
-        float speed = sequence.Frames[0].Speed;
-        float fps = (float)Math.Clamp((speed <= 0 ? 0.125 : speed) * 60.0, 1.0, 60.0);
-
-        foreach (var group in Enumerable.Range(0, cls.TriangleTextureIds.Length)
-                     .GroupBy(face => cls.TriangleTextureIds[face]).OrderBy(group => group.Key))
+        foreach (var spec in PreviewSpecs)
         {
-            var indices = new List<int>();
-            foreach (int face in group)
+            if (!classes.TryGetValue(spec.OClass, out var cls)) continue;
+            if (!cls.Mesh.SkinStateFullyResolved || cls.Joints.Count <= 1) continue;
+            var sequence = cls.Sequences.FirstOrDefault(s => s.Index == spec.Sequence);
+            if (sequence is null || sequence.Frames.Count == 0 || sequence.BoundingSphere is null) continue;
+
+            var classFrames = PoseAndValidateClassFrames(cls, sequence);
+            if (classFrames is null) continue;
+
+            float speed = sequence.Frames[0].Speed;
+            float fps = (float)Math.Clamp((speed <= 0 ? 0.125 : speed) * 60.0, 1.0, 60.0);
+            var surfaces = BuildAnimationSurfaces(cls);
+            foreach (int instanceId in spec.InstanceIds)
             {
-                indices.Add(cls.Mesh.Indices[face * 3]);
-                indices.Add(cls.Mesh.Indices[face * 3 + 1]);
-                indices.Add(cls.Mesh.Indices[face * 3 + 2]);
+                var instance = instances.FirstOrDefault(i => i.OClass == spec.OClass && i.Index == instanceId);
+                if (instance is null) continue;
+
+                animatedInstances.Add(instance.Index);
+                double[] transform = UyaGameplay.MobyTransform(instance);
+                var worldFrames = classFrames.Select(frame => PlaceFrame(frame, transform)).ToArray();
+
+                foreach (var surface in surfaces)
+                {
+                    output.Add(new RuntimeAnimatedMesh(
+                        $"uya-preview-moby{spec.OClass}_i{instance.Index}_s{spec.Sequence}_t{surface.TextureId}",
+                        "moby", surface.TextureId, cls.Mesh.Uvs, surface.Indices, [], worldFrames, fps));
+                }
             }
-            int textureId = group.Key == 0xff ? -1 : group.Key;
-            output.Add(new RuntimeAnimatedMesh(
-                $"uya-preview-moby{PreviewOClass}_i{instance.Index}_s{PreviewSequence}_t{textureId}",
-                "moby", textureId, cls.Mesh.Uvs, indices.ToArray(), [], worldFrames, fps));
         }
         return output;
+    }
+
+    private sealed record AnimationSurface(int TextureId, int[] Indices);
+
+    private static AnimationSurface[] BuildAnimationSurfaces(UyaAssets.MobyVisualClass cls)
+    {
+        return Enumerable.Range(0, cls.TriangleTextureIds.Length)
+            .GroupBy(face => cls.TriangleTextureIds[face])
+            .OrderBy(group => group.Key)
+            .Select(group =>
+            {
+                var indices = new int[group.Count() * 3];
+                int at = 0;
+                foreach (int face in group)
+                {
+                    indices[at++] = cls.Mesh.Indices[face * 3];
+                    indices[at++] = cls.Mesh.Indices[face * 3 + 1];
+                    indices[at++] = cls.Mesh.Indices[face * 3 + 2];
+                }
+                int textureId = group.Key == 0xff ? -1 : group.Key;
+                return new AnimationSurface(textureId, indices);
+            })
+            .ToArray();
     }
 
     private static double[][]? PoseAndValidateClassFrames(

@@ -53,12 +53,12 @@ public sealed class Rac3WorldTests
         Assert.Equal(dynamicTriangles, world.TotalDynamicTriangles + animatedTriangles);
         Assert.Equal(renderTriangles + dynamicTriangles, world.TotalRenderTriangles + world.TotalDynamicTriangles + animatedTriangles);
         Assert.Equal(linkedMobies, world.DynamicObjects!.Count(o => o.Meshes.Count > 0) + animatedInstances);
-        Assert.Equal(mobyModels, world.DynamicObjects!.Where(o => o.Meshes.Count > 0).Select(o => o.NativeClassId).Distinct().Count());
+        Assert.Equal(mobyModels, ModelClassCount(world));
         Assert.Equal(mobies, world.DynamicObjects!.Count);
         Assert.Equal(pvars, world.DynamicObjects.Count(o => o.NativePayloads?.Any(p => p.Format == "rac3-pvar-gc-layout-compat") == true));
         Assert.All(world.DynamicObjects, o => Assert.Equal(16, o.Transform.Matrix.Length));
         Assert.All(world.Meshes, m => Assert.All(m.Positions, v => Assert.True(double.IsFinite(v))));
-        if (table == 1) Assert.Equal(2, world.AnimatedMeshes?.Count);
+        if (table == 1) Assert.Equal(45, world.AnimatedMeshes?.Count);
         else Assert.Empty(world.AnimatedMeshes ?? Array.Empty<RuntimeAnimatedMesh>());
     }
 
@@ -71,20 +71,42 @@ public sealed class Rac3WorldTests
         RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
         var animated = world.AnimatedMeshes;
         Assert.NotNull(animated);
-        Assert.Equal(2, animated!.Count);
-        Assert.Equal(2_390, animated.Sum(m => m.TriangleCount));
-        Assert.All(animated, m =>
+        Assert.Equal(45, animated!.Count);
+        Assert.Equal(34_301, animated.Sum(m => m.TriangleCount));
+        Assert.Equal(38, AnimatedInstanceCount(world));
+
+        var specs = new[]
         {
-            Assert.Contains("moby6800_i665_s2", m.Name, StringComparison.Ordinal);
-            Assert.Equal(9, m.Frames.Count);
-            Assert.Equal(7.5f, m.FramesPerSecond, 3);
-            Assert.All(m.Frames.SelectMany(f => f), v => Assert.True(double.IsFinite(v)));
-        });
-        var source = Assert.Single(world.DynamicObjects!, o => o.InstanceIndex == 665);
-        Assert.Equal(6800, source.NativeClassId);
-        Assert.Empty(source.Meshes);
-        Assert.NotEmpty(source.NativePayloads!);
-        Assert.Contains(animated[0].Frames.Skip(1), frame => frame.Where((v, i) => Math.Abs(v - animated[0].Frames[0][i]) > 1e-4).Any());
+            new { OClass = 6800, Sequence = 2, InstanceIds = new[] { 665, 666, 667, 668 }, Surfaces = 2, Frames = 9, Fps = 7.5f, Triangles = 2_390 },
+            new { OClass = 6577, Sequence = 2, InstanceIds = new[] { 513, 514, 515 }, Surfaces = 1, Frames = 11, Fps = 15f, Triangles = 2_457 },
+            new { OClass = 6317, Sequence = 4, InstanceIds = new[] { 477, 478, 479 }, Surfaces = 2, Frames = 25, Fps = 7.5f, Triangles = 2_290 },
+            new { OClass = 6886, Sequence = 15, InstanceIds = Enumerable.Range(672, 28).ToArray(), Surfaces = 1, Frames = 8, Fps = 15f, Triangles = 375 },
+        };
+
+        foreach (var spec in specs)
+        {
+            var classMeshes = animated.Where(m => m.Name.StartsWith($"uya-preview-moby{spec.OClass}_i", StringComparison.Ordinal)).ToArray();
+            Assert.Equal(spec.InstanceIds.Length * spec.Surfaces, classMeshes.Length);
+            Assert.Equal(spec.InstanceIds.Length * spec.Triangles, classMeshes.Sum(m => m.TriangleCount));
+            Assert.All(classMeshes, m =>
+            {
+                Assert.Contains($"_s{spec.Sequence}_", m.Name, StringComparison.Ordinal);
+                Assert.Equal(spec.Frames, m.Frames.Count);
+                Assert.Equal(spec.Fps, m.FramesPerSecond, 3);
+                Assert.All(m.Frames.SelectMany(f => f), v => Assert.True(double.IsFinite(v)));
+            });
+            Assert.Contains(classMeshes[0].Frames.Skip(1), frame =>
+                frame.Where((v, i) => Math.Abs(v - classMeshes[0].Frames[0][i]) > 1e-4).Any());
+
+            foreach (int instanceId in spec.InstanceIds)
+            {
+                var source = Assert.Single(world.DynamicObjects!, o => o.InstanceIndex == instanceId);
+                Assert.Equal(spec.OClass, source.NativeClassId);
+                Assert.Empty(source.Meshes);
+                Assert.NotEmpty(source.NativePayloads!);
+                Assert.Contains(classMeshes, m => m.Name.Contains($"_i{instanceId}_", StringComparison.Ordinal));
+            }
+        }
     }
 
     [SkippableTheory]
@@ -175,7 +197,7 @@ public sealed class Rac3WorldTests
             Assert.Equal(row.GetProperty("expandedMobyTriangles").GetInt32(), world.TotalDynamicTriangles + animatedTriangles);
             Assert.Equal(row.GetProperty("totalVisibleTriangles").GetInt32(), world.TotalRenderTriangles + world.TotalDynamicTriangles + animatedTriangles);
             Assert.Equal(row.GetProperty("linkedMobyInstanceCount").GetInt32(), world.DynamicObjects!.Count(o => o.Meshes.Count > 0) + AnimatedInstanceCount(world));
-            Assert.Equal(row.GetProperty("mobyModelCount").GetInt32(), world.DynamicObjects!.Where(o => o.Meshes.Count > 0).Select(o => o.NativeClassId).Distinct().Count());
+            Assert.Equal(row.GetProperty("mobyModelCount").GetInt32(), ModelClassCount(world));
             Assert.Equal(row.GetProperty("mobyInstanceCount").GetInt32(), result.MobyInstanceCount);
             Assert.Equal(row.GetProperty("mobiesWithPvar").GetInt32(), result.MobiesWithPvar);
             Assert.Equal(row.GetProperty("tieInstanceCount").GetInt32(), result.TieInstanceCount);
@@ -193,6 +215,19 @@ public sealed class Rac3WorldTests
             .Select(m => m.Name.Contains("_t", StringComparison.Ordinal) ? m.Name[..m.Name.LastIndexOf("_t", StringComparison.Ordinal)] : m.Name)
             .Distinct(StringComparer.Ordinal)
             .Count() ?? 0;
+    }
+
+    private static int ModelClassCount(RuntimeWorld world)
+    {
+        var classes = world.DynamicObjects!.Where(o => o.Meshes.Count > 0).Select(o => o.NativeClassId).ToHashSet();
+        const string prefix = "uya-preview-moby";
+        foreach (var mesh in world.AnimatedMeshes ?? Array.Empty<RuntimeAnimatedMesh>())
+        {
+            int end = mesh.Name.IndexOf("_i", prefix.Length, StringComparison.Ordinal);
+            if (mesh.Name.StartsWith(prefix, StringComparison.Ordinal) && end > prefix.Length &&
+                int.TryParse(mesh.Name[prefix.Length..end], out int oClass)) classes.Add(oClass);
+        }
+        return classes.Count;
     }
 
 }
