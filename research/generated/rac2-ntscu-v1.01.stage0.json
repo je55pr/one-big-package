@@ -1,0 +1,1532 @@
+{
+  "generator": "tools/disc-archaeology.mjs",
+  "generatedFrom": {
+    "isoFileName": "Ratchet & Clank - Going Commando (USA) (v1.01).iso",
+    "sizeBytes": 3828350976,
+    "sha256": "9db2e33e276133cc283647fa3279b37911955e123d6199d10065547eaa9b1ce5"
+  },
+  "buildId": "rac2-ntscu-v1.01",
+  "iso9660": {
+    "descriptorLba": 16,
+    "systemIdentifier": "PLAYSTATION",
+    "volumeIdentifier": "RATCHETANDCLANK2",
+    "volumeSpaceSize": 1869312,
+    "logicalBlockSize": 2048,
+    "rootDirectory": {
+      "extentLba": 261,
+      "dataLength": 442
+    }
+  },
+  "ps2Boot": {
+    "volumeIdentifier": "RATCHETANDCLANK2",
+    "bootKey": "BOOT2",
+    "bootPath": "cdrom0:\\SCUS_972.68;1",
+    "executableIsoPath": "SCUS_972.68;1",
+    "executableName": "SCUS_972.68",
+    "normalizedSerial": "SCUS-97268",
+    "executableSizeBytes": 2618684,
+    "systemCnf": {
+      "BOOT2": "cdrom0:\\SCUS_972.68;1",
+      "VER": "1.01",
+      "VMODE": "NTSC"
+    }
+  },
+  "bootElf": {
+    "endian": "little",
+    "type": 2,
+    "machine": 8,
+    "entryPoint": "0x00131ae8",
+    "programHeaderOffset": "0x00000034",
+    "programHeaderEntrySize": 32,
+    "programHeaderCount": 2,
+    "sectionHeaderOffset": "0x0027ea24",
+    "sectionHeaderCount": 71,
+    "flags": "0x20924001"
+  },
+  "programHeaders": [
+    {
+      "index": 0,
+      "type": "0x00000001",
+      "typeName": "PT_LOAD",
+      "offset": "0x00001000",
+      "virtualAddress": "0x00100080",
+      "fileSize": 2432832,
+      "memorySize": 2432832,
+      "flags": "RWX",
+      "alignment": "0x00001000"
+    },
+    {
+      "index": 1,
+      "type": "0x00000001",
+      "typeName": "PT_LOAD",
+      "offset": "0x00253000",
+      "virtualAddress": "0x01800000",
+      "fileSize": 88931,
+      "memorySize": 88931,
+      "flags": "RW-",
+      "alignment": "0x00001000"
+    }
+  ],
+  "ptLoad": [
+    {
+      "index": 0,
+      "virtualStart": "0x00100080",
+      "virtualEnd": "0x00351fc0",
+      "fileStart": "0x00001000",
+      "fileEnd": "0x00252f40",
+      "fileSize": 2432832,
+      "memorySize": 2432832,
+      "bssBytes": 0,
+      "flags": "RWX",
+      "alignment": "0x00001000"
+    },
+    {
+      "index": 1,
+      "virtualStart": "0x01800000",
+      "virtualEnd": "0x01815b63",
+      "fileStart": "0x00253000",
+      "fileEnd": "0x00268b63",
+      "fileSize": 88931,
+      "memorySize": 88931,
+      "bssBytes": 0,
+      "flags": "RW-",
+      "alignment": "0x00001000"
+    }
+  ],
+  "inventorySummary": {
+    "entryCount": 98,
+    "fileCount": 97,
+    "directoryCount": 1,
+    "totalFileBytes": 3826228977,
+    "largeContainerThresholdBytes": 1048576,
+    "largeContainerCount": 89,
+    "extensionHistogram": {
+      "68": 1,
+      "WAD": 92,
+      "CNF": 1,
+      "DUP": 1,
+      "HDR": 1,
+      "IMG": 1
+    }
+  },
+  "largeContainers": [
+    {
+      "path": "/G/MPEG1.WAD",
+      "sizeBytes": 1296228352,
+      "offset": 1080612864,
+      "extentLba": 527643
+    },
+    {
+      "path": "/G/MPEG.WAD",
+      "sizeBytes": 1075267584,
+      "offset": 5345280,
+      "extentLba": 2610
+    },
+    {
+      "path": "/G/MPEG2.WAD",
+      "sizeBytes": 114769924,
+      "offset": 2376841216,
+      "extentLba": 1160567
+    },
+    {
+      "path": "/G/AUDIO11.WAD",
+      "sizeBytes": 46747520,
+      "offset": 3157061632,
+      "extentLba": 1541534
+    },
+    {
+      "path": "/G/AUDIO2.WAD",
+      "sizeBytes": 43972480,
+      "offset": 2729527296,
+      "extentLba": 1332777
+    },
+    {
+      "path": "/G/HUD.WAD",
+      "sizeBytes": 37927695,
+      "offset": 2506455040,
+      "extentLba": 1223855
+    },
+    {
+      "path": "/G/AUDIO.WAD",
+      "sizeBytes": 35283296,
+      "offset": 2576146432,
+      "extentLba": 1257884
+    },
+    {
+      "path": "/Z6TAIL.DUP",
+      "sizeBytes": 33554432,
+      "offset": 3794792448,
+      "extentLba": 1852926
+    },
+    {
+      "path": "/G/BONUS.WAD",
+      "sizeBytes": 31762085,
+      "offset": 2544384000,
+      "extentLba": 1242375
+    },
+    {
+      "path": "/G/AUDIO19.WAD",
+      "sizeBytes": 30846848,
+      "offset": 3549665280,
+      "extentLba": 1733235
+    },
+    {
+      "path": "/G/AUDIO12.WAD",
+      "sizeBytes": 29833088,
+      "offset": 3229313024,
+      "extentLba": 1576813
+    },
+    {
+      "path": "/G/AUDIO16.WAD",
+      "sizeBytes": 29824896,
+      "offset": 3410323456,
+      "extentLba": 1665197
+    },
+    {
+      "path": "/G/SCENE20.WAD",
+      "sizeBytes": 29143040,
+      "offset": 3641341952,
+      "extentLba": 1777999
+    },
+    {
+      "path": "/G/AUDIO4.WAD",
+      "sizeBytes": 28120960,
+      "offset": 2856751104,
+      "extentLba": 1394898
+    },
+    {
+      "path": "/G/AUDIO3.WAD",
+      "sizeBytes": 27633536,
+      "offset": 2797805568,
+      "extentLba": 1366116
+    },
+    {
+      "path": "/G/AUDIO8.WAD",
+      "sizeBytes": 27549568,
+      "offset": 3020597248,
+      "extentLba": 1474901
+    },
+    {
+      "path": "/G/LEVEL19.WAD",
+      "sizeBytes": 25119448,
+      "offset": 3524544512,
+      "extentLba": 1720969
+    },
+    {
+      "path": "/G/AUDIO13.WAD",
+      "sizeBytes": 24883072,
+      "offset": 3289964544,
+      "extentLba": 1606428
+    },
+    {
+      "path": "/G/LEVEL4.WAD",
+      "sizeBytes": 24713692,
+      "offset": 2832035840,
+      "extentLba": 1382830
+    },
+    {
+      "path": "/G/AUDIO20.WAD",
+      "sizeBytes": 24485760,
+      "offset": 3616856064,
+      "extentLba": 1766043
+    },
+    {
+      "path": "/G/AUDIO14.WAD",
+      "sizeBytes": 23048064,
+      "offset": 3339124736,
+      "extentLba": 1630432
+    },
+    {
+      "path": "/G/AUDIO1.WAD",
+      "sizeBytes": 22517632,
+      "offset": 2682167296,
+      "extentLba": 1309652
+    },
+    {
+      "path": "/G/LEVEL11.WAD",
+      "sizeBytes": 22379168,
+      "offset": 3134681088,
+      "extentLba": 1530606
+    },
+    {
+      "path": "/G/LEVEL7.WAD",
+      "sizeBytes": 22281520,
+      "offset": 2957752320,
+      "extentLba": 1444215
+    },
+    {
+      "path": "/G/LEVEL1.WAD",
+      "sizeBytes": 21890388,
+      "offset": 2660276224,
+      "extentLba": 1298963
+    },
+    {
+      "path": "/G/LEVEL20.WAD",
+      "sizeBytes": 21377628,
+      "offset": 3595476992,
+      "extentLba": 1755604
+    },
+    {
+      "path": "/G/LEVEL2.WAD",
+      "sizeBytes": 20712440,
+      "offset": 2708813824,
+      "extentLba": 1322663
+    },
+    {
+      "path": "/G/LEVEL8.WAD",
+      "sizeBytes": 20602928,
+      "offset": 2999992320,
+      "extentLba": 1464840
+    },
+    {
+      "path": "/G/LEVEL6.WAD",
+      "sizeBytes": 19411936,
+      "offset": 2920413184,
+      "extentLba": 1425983
+    },
+    {
+      "path": "/G/LEVEL9.WAD",
+      "sizeBytes": 18821856,
+      "offset": 3062931456,
+      "extentLba": 1495572
+    },
+    {
+      "path": "/G/AUDIO17.WAD",
+      "sizeBytes": 18517888,
+      "offset": 3463319552,
+      "extentLba": 1691074
+    },
+    {
+      "path": "/G/LEVEL16.WAD",
+      "sizeBytes": 18357216,
+      "offset": 3391965184,
+      "extentLba": 1656233
+    },
+    {
+      "path": "/G/LEVEL13.WAD",
+      "sizeBytes": 17982128,
+      "offset": 3271981056,
+      "extentLba": 1597647
+    },
+    {
+      "path": "/G/LEVEL18.WAD",
+      "sizeBytes": 17691328,
+      "offset": 3487492096,
+      "extentLba": 1702877
+    },
+    {
+      "path": "/G/AUDIO21.WAD",
+      "sizeBytes": 17672064,
+      "offset": 3683846144,
+      "extentLba": 1798753
+    },
+    {
+      "path": "/G/LEVEL3.WAD",
+      "sizeBytes": 17643616,
+      "offset": 2780160000,
+      "extentLba": 1357500
+    },
+    {
+      "path": "/G/LEVEL12.WAD",
+      "sizeBytes": 17556112,
+      "offset": 3211755520,
+      "extentLba": 1568240
+    },
+    {
+      "path": "/G/LEVEL14.WAD",
+      "sizeBytes": 17356704,
+      "offset": 3321767936,
+      "extentLba": 1621957
+    },
+    {
+      "path": "/G/LEVEL17.WAD",
+      "sizeBytes": 16748576,
+      "offset": 3446568960,
+      "extentLba": 1682895
+    },
+    {
+      "path": "/G/LEVEL5.WAD",
+      "sizeBytes": 16685776,
+      "offset": 2894444544,
+      "extentLba": 1413303
+    },
+    {
+      "path": "/G/LEVEL0.WAD",
+      "sizeBytes": 15467136,
+      "offset": 2634334208,
+      "extentLba": 1286296
+    },
+    {
+      "path": "/G/AUDIO9.WAD",
+      "sizeBytes": 15118208,
+      "offset": 3081754624,
+      "extentLba": 1504763
+    },
+    {
+      "path": "/G/SCENE19.WAD",
+      "sizeBytes": 14964240,
+      "offset": 3580512256,
+      "extentLba": 1748297
+    },
+    {
+      "path": "/G/AUDIO22.WAD",
+      "sizeBytes": 14890880,
+      "offset": 3715141632,
+      "extentLba": 1814034
+    },
+    {
+      "path": "/G/MISC.WAD",
+      "sizeBytes": 14840496,
+      "offset": 2491613184,
+      "extentLba": 1216608
+    },
+    {
+      "path": "/G/SCENE8.WAD",
+      "sizeBytes": 14783056,
+      "offset": 3048146944,
+      "extentLba": 1488353
+    },
+    {
+      "path": "/G/LEVEL10.WAD",
+      "sizeBytes": 14395584,
+      "offset": 3109412864,
+      "extentLba": 1518268
+    },
+    {
+      "path": "/G/LEVEL15.WAD",
+      "sizeBytes": 14095808,
+      "offset": 3368505344,
+      "extentLba": 1644778
+    },
+    {
+      "path": "/G/AUDIO7.WAD",
+      "sizeBytes": 13776768,
+      "offset": 2980034560,
+      "extentLba": 1455095
+    },
+    {
+      "path": "/G/AUDIO18.WAD",
+      "sizeBytes": 13754240,
+      "offset": 3505184768,
+      "extentLba": 1711516
+    },
+    {
+      "path": "/G/LEVEL22.WAD",
+      "sizeBytes": 13616432,
+      "offset": 3701524480,
+      "extentLba": 1807385
+    },
+    {
+      "path": "/G/LEVEL21.WAD",
+      "sizeBytes": 13359328,
+      "offset": 3670484992,
+      "extentLba": 1792229
+    },
+    {
+      "path": "/G/SCENE12.WAD",
+      "sizeBytes": 12834816,
+      "offset": 3259146240,
+      "extentLba": 1591380
+    },
+    {
+      "path": "/G/LEVEL23.WAD",
+      "sizeBytes": 12603856,
+      "offset": 3730292736,
+      "extentLba": 1821432
+    },
+    {
+      "path": "/G/SCENE9.WAD",
+      "sizeBytes": 12539904,
+      "offset": 3096872960,
+      "extentLba": 1512145
+    },
+    {
+      "path": "/G/AUDIO6.WAD",
+      "sizeBytes": 12083072,
+      "offset": 2939826176,
+      "extentLba": 1435462
+    },
+    {
+      "path": "/G/LEVEL26.WAD",
+      "sizeBytes": 10990224,
+      "offset": 3777808384,
+      "extentLba": 1844633
+    },
+    {
+      "path": "/G/SPACE.WAD",
+      "sizeBytes": 10977664,
+      "offset": 2611431424,
+      "extentLba": 1275113
+    },
+    {
+      "path": "/G/SCENE4.WAD",
+      "sizeBytes": 9570528,
+      "offset": 2884872192,
+      "extentLba": 1408629
+    },
+    {
+      "path": "/G/LEVEL25.WAD",
+      "sizeBytes": 8642189,
+      "offset": 3762114560,
+      "extentLba": 1836970
+    },
+    {
+      "path": "/G/LEVEL24.WAD",
+      "sizeBytes": 8350423,
+      "offset": 3749648384,
+      "extentLba": 1830883
+    },
+    {
+      "path": "/G/SCENE11.WAD",
+      "sizeBytes": 7946240,
+      "offset": 3203809280,
+      "extentLba": 1564360
+    },
+    {
+      "path": "/G/AUDIO10.WAD",
+      "sizeBytes": 7044992,
+      "offset": 3123810304,
+      "extentLba": 1525298
+    },
+    {
+      "path": "/G/AUDIO25.WAD",
+      "sizeBytes": 7044992,
+      "offset": 3770757120,
+      "extentLba": 1841190
+    },
+    {
+      "path": "/G/SCENE13.WAD",
+      "sizeBytes": 6920192,
+      "offset": 3314847744,
+      "extentLba": 1618578
+    },
+    {
+      "path": "/G/AUDIO15.WAD",
+      "sizeBytes": 6758272,
+      "offset": 3382601728,
+      "extentLba": 1651661
+    },
+    {
+      "path": "/G/SCENE2.WAD",
+      "sizeBytes": 6660096,
+      "offset": 2773499904,
+      "extentLba": 1354248
+    },
+    {
+      "path": "/G/AUDIO5.WAD",
+      "sizeBytes": 6631296,
+      "offset": 2911131648,
+      "extentLba": 1421451
+    },
+    {
+      "path": "/G/SCENE3.WAD",
+      "sizeBytes": 6596608,
+      "offset": 2825439232,
+      "extentLba": 1379609
+    },
+    {
+      "path": "/G/AUDIO23.WAD",
+      "sizeBytes": 6434688,
+      "offset": 3742898176,
+      "extentLba": 1827587
+    },
+    {
+      "path": "/G/SCENE16.WAD",
+      "sizeBytes": 6419392,
+      "offset": 3440148480,
+      "extentLba": 1679760
+    },
+    {
+      "path": "/G/SCENE14.WAD",
+      "sizeBytes": 6331312,
+      "offset": 3362172928,
+      "extentLba": 1641686
+    },
+    {
+      "path": "/G/SCENE7.WAD",
+      "sizeBytes": 6180080,
+      "offset": 2993811456,
+      "extentLba": 1461822
+    },
+    {
+      "path": "/G/SCENE6.WAD",
+      "sizeBytes": 5842944,
+      "offset": 2951909376,
+      "extentLba": 1441362
+    },
+    {
+      "path": "/G/SCENE17.WAD",
+      "sizeBytes": 5654528,
+      "offset": 3481837568,
+      "extentLba": 1700116
+    },
+    {
+      "path": "/G/SCENE18.WAD",
+      "sizeBytes": 5605376,
+      "offset": 3518939136,
+      "extentLba": 1718232
+    },
+    {
+      "path": "/G/AUDIO0.WAD",
+      "sizeBytes": 5447552,
+      "offset": 2649802752,
+      "extentLba": 1293849
+    },
+    {
+      "path": "/G/SCENE0.WAD",
+      "sizeBytes": 5024416,
+      "offset": 2655250432,
+      "extentLba": 1296509
+    },
+    {
+      "path": "/G/GADGET.WAD",
+      "sizeBytes": 4972992,
+      "offset": 2626877440,
+      "extentLba": 1282655
+    },
+    {
+      "path": "/G/SCENE.WAD",
+      "sizeBytes": 4466256,
+      "offset": 2622410752,
+      "extentLba": 1280474
+    },
+    {
+      "path": "/G/AUDIO26.WAD",
+      "sizeBytes": 4210560,
+      "offset": 3788800000,
+      "extentLba": 1850000
+    },
+    {
+      "path": "/G/SCENE1.WAD",
+      "sizeBytes": 4127680,
+      "offset": 2704685056,
+      "extentLba": 1320647
+    },
+    {
+      "path": "/G/AUDIO24.WAD",
+      "sizeBytes": 4108160,
+      "offset": 3758000128,
+      "extentLba": 1834961
+    },
+    {
+      "path": "/G/SCENE10.WAD",
+      "sizeBytes": 3825136,
+      "offset": 3130855424,
+      "extentLba": 1528738
+    },
+    {
+      "path": "/G/SCENE5.WAD",
+      "sizeBytes": 2648784,
+      "offset": 2917763072,
+      "extentLba": 1424689
+    },
+    {
+      "path": "/SCUS_972.68",
+      "sizeBytes": 2618684,
+      "offset": 2459648,
+      "extentLba": 1201
+    },
+    {
+      "path": "/G/SCENE15.WAD",
+      "sizeBytes": 2605056,
+      "offset": 3389360128,
+      "extentLba": 1654961
+    },
+    {
+      "path": "/G/ARMOR.WAD",
+      "sizeBytes": 2480432,
+      "offset": 2631852032,
+      "extentLba": 1285084
+    },
+    {
+      "path": "/G/SCENE26.WAD",
+      "sizeBytes": 1781760,
+      "offset": 3793010688,
+      "extentLba": 1852056
+    }
+  ],
+  "inventory": [
+    {
+      "path": "/G",
+      "name": "G",
+      "isDirectory": true,
+      "extentLba": 262,
+      "offset": 536576,
+      "sizeBytes": 5656,
+      "version": null
+    },
+    {
+      "path": "/G/ARMOR.WAD",
+      "name": "ARMOR.WAD",
+      "isDirectory": false,
+      "extentLba": 1285084,
+      "offset": 2631852032,
+      "sizeBytes": 2480432,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO.WAD",
+      "name": "AUDIO.WAD",
+      "isDirectory": false,
+      "extentLba": 1257884,
+      "offset": 2576146432,
+      "sizeBytes": 35283296,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO0.WAD",
+      "name": "AUDIO0.WAD",
+      "isDirectory": false,
+      "extentLba": 1293849,
+      "offset": 2649802752,
+      "sizeBytes": 5447552,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO1.WAD",
+      "name": "AUDIO1.WAD",
+      "isDirectory": false,
+      "extentLba": 1309652,
+      "offset": 2682167296,
+      "sizeBytes": 22517632,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO10.WAD",
+      "name": "AUDIO10.WAD",
+      "isDirectory": false,
+      "extentLba": 1525298,
+      "offset": 3123810304,
+      "sizeBytes": 7044992,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO11.WAD",
+      "name": "AUDIO11.WAD",
+      "isDirectory": false,
+      "extentLba": 1541534,
+      "offset": 3157061632,
+      "sizeBytes": 46747520,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO12.WAD",
+      "name": "AUDIO12.WAD",
+      "isDirectory": false,
+      "extentLba": 1576813,
+      "offset": 3229313024,
+      "sizeBytes": 29833088,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO13.WAD",
+      "name": "AUDIO13.WAD",
+      "isDirectory": false,
+      "extentLba": 1606428,
+      "offset": 3289964544,
+      "sizeBytes": 24883072,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO14.WAD",
+      "name": "AUDIO14.WAD",
+      "isDirectory": false,
+      "extentLba": 1630432,
+      "offset": 3339124736,
+      "sizeBytes": 23048064,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO15.WAD",
+      "name": "AUDIO15.WAD",
+      "isDirectory": false,
+      "extentLba": 1651661,
+      "offset": 3382601728,
+      "sizeBytes": 6758272,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO16.WAD",
+      "name": "AUDIO16.WAD",
+      "isDirectory": false,
+      "extentLba": 1665197,
+      "offset": 3410323456,
+      "sizeBytes": 29824896,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO17.WAD",
+      "name": "AUDIO17.WAD",
+      "isDirectory": false,
+      "extentLba": 1691074,
+      "offset": 3463319552,
+      "sizeBytes": 18517888,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO18.WAD",
+      "name": "AUDIO18.WAD",
+      "isDirectory": false,
+      "extentLba": 1711516,
+      "offset": 3505184768,
+      "sizeBytes": 13754240,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO19.WAD",
+      "name": "AUDIO19.WAD",
+      "isDirectory": false,
+      "extentLba": 1733235,
+      "offset": 3549665280,
+      "sizeBytes": 30846848,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO2.WAD",
+      "name": "AUDIO2.WAD",
+      "isDirectory": false,
+      "extentLba": 1332777,
+      "offset": 2729527296,
+      "sizeBytes": 43972480,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO20.WAD",
+      "name": "AUDIO20.WAD",
+      "isDirectory": false,
+      "extentLba": 1766043,
+      "offset": 3616856064,
+      "sizeBytes": 24485760,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO21.WAD",
+      "name": "AUDIO21.WAD",
+      "isDirectory": false,
+      "extentLba": 1798753,
+      "offset": 3683846144,
+      "sizeBytes": 17672064,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO22.WAD",
+      "name": "AUDIO22.WAD",
+      "isDirectory": false,
+      "extentLba": 1814034,
+      "offset": 3715141632,
+      "sizeBytes": 14890880,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO23.WAD",
+      "name": "AUDIO23.WAD",
+      "isDirectory": false,
+      "extentLba": 1827587,
+      "offset": 3742898176,
+      "sizeBytes": 6434688,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO24.WAD",
+      "name": "AUDIO24.WAD",
+      "isDirectory": false,
+      "extentLba": 1834961,
+      "offset": 3758000128,
+      "sizeBytes": 4108160,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO25.WAD",
+      "name": "AUDIO25.WAD",
+      "isDirectory": false,
+      "extentLba": 1841190,
+      "offset": 3770757120,
+      "sizeBytes": 7044992,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO26.WAD",
+      "name": "AUDIO26.WAD",
+      "isDirectory": false,
+      "extentLba": 1850000,
+      "offset": 3788800000,
+      "sizeBytes": 4210560,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO3.WAD",
+      "name": "AUDIO3.WAD",
+      "isDirectory": false,
+      "extentLba": 1366116,
+      "offset": 2797805568,
+      "sizeBytes": 27633536,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO4.WAD",
+      "name": "AUDIO4.WAD",
+      "isDirectory": false,
+      "extentLba": 1394898,
+      "offset": 2856751104,
+      "sizeBytes": 28120960,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO5.WAD",
+      "name": "AUDIO5.WAD",
+      "isDirectory": false,
+      "extentLba": 1421451,
+      "offset": 2911131648,
+      "sizeBytes": 6631296,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO6.WAD",
+      "name": "AUDIO6.WAD",
+      "isDirectory": false,
+      "extentLba": 1435462,
+      "offset": 2939826176,
+      "sizeBytes": 12083072,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO7.WAD",
+      "name": "AUDIO7.WAD",
+      "isDirectory": false,
+      "extentLba": 1455095,
+      "offset": 2980034560,
+      "sizeBytes": 13776768,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO8.WAD",
+      "name": "AUDIO8.WAD",
+      "isDirectory": false,
+      "extentLba": 1474901,
+      "offset": 3020597248,
+      "sizeBytes": 27549568,
+      "version": 1
+    },
+    {
+      "path": "/G/AUDIO9.WAD",
+      "name": "AUDIO9.WAD",
+      "isDirectory": false,
+      "extentLba": 1504763,
+      "offset": 3081754624,
+      "sizeBytes": 15118208,
+      "version": 1
+    },
+    {
+      "path": "/G/BONUS.WAD",
+      "name": "BONUS.WAD",
+      "isDirectory": false,
+      "extentLba": 1242375,
+      "offset": 2544384000,
+      "sizeBytes": 31762085,
+      "version": 1
+    },
+    {
+      "path": "/G/GADGET.WAD",
+      "name": "GADGET.WAD",
+      "isDirectory": false,
+      "extentLba": 1282655,
+      "offset": 2626877440,
+      "sizeBytes": 4972992,
+      "version": 1
+    },
+    {
+      "path": "/G/HUD.WAD",
+      "name": "HUD.WAD",
+      "isDirectory": false,
+      "extentLba": 1223855,
+      "offset": 2506455040,
+      "sizeBytes": 37927695,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL0.WAD",
+      "name": "LEVEL0.WAD",
+      "isDirectory": false,
+      "extentLba": 1286296,
+      "offset": 2634334208,
+      "sizeBytes": 15467136,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL1.WAD",
+      "name": "LEVEL1.WAD",
+      "isDirectory": false,
+      "extentLba": 1298963,
+      "offset": 2660276224,
+      "sizeBytes": 21890388,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL10.WAD",
+      "name": "LEVEL10.WAD",
+      "isDirectory": false,
+      "extentLba": 1518268,
+      "offset": 3109412864,
+      "sizeBytes": 14395584,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL11.WAD",
+      "name": "LEVEL11.WAD",
+      "isDirectory": false,
+      "extentLba": 1530606,
+      "offset": 3134681088,
+      "sizeBytes": 22379168,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL12.WAD",
+      "name": "LEVEL12.WAD",
+      "isDirectory": false,
+      "extentLba": 1568240,
+      "offset": 3211755520,
+      "sizeBytes": 17556112,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL13.WAD",
+      "name": "LEVEL13.WAD",
+      "isDirectory": false,
+      "extentLba": 1597647,
+      "offset": 3271981056,
+      "sizeBytes": 17982128,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL14.WAD",
+      "name": "LEVEL14.WAD",
+      "isDirectory": false,
+      "extentLba": 1621957,
+      "offset": 3321767936,
+      "sizeBytes": 17356704,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL15.WAD",
+      "name": "LEVEL15.WAD",
+      "isDirectory": false,
+      "extentLba": 1644778,
+      "offset": 3368505344,
+      "sizeBytes": 14095808,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL16.WAD",
+      "name": "LEVEL16.WAD",
+      "isDirectory": false,
+      "extentLba": 1656233,
+      "offset": 3391965184,
+      "sizeBytes": 18357216,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL17.WAD",
+      "name": "LEVEL17.WAD",
+      "isDirectory": false,
+      "extentLba": 1682895,
+      "offset": 3446568960,
+      "sizeBytes": 16748576,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL18.WAD",
+      "name": "LEVEL18.WAD",
+      "isDirectory": false,
+      "extentLba": 1702877,
+      "offset": 3487492096,
+      "sizeBytes": 17691328,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL19.WAD",
+      "name": "LEVEL19.WAD",
+      "isDirectory": false,
+      "extentLba": 1720969,
+      "offset": 3524544512,
+      "sizeBytes": 25119448,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL2.WAD",
+      "name": "LEVEL2.WAD",
+      "isDirectory": false,
+      "extentLba": 1322663,
+      "offset": 2708813824,
+      "sizeBytes": 20712440,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL20.WAD",
+      "name": "LEVEL20.WAD",
+      "isDirectory": false,
+      "extentLba": 1755604,
+      "offset": 3595476992,
+      "sizeBytes": 21377628,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL21.WAD",
+      "name": "LEVEL21.WAD",
+      "isDirectory": false,
+      "extentLba": 1792229,
+      "offset": 3670484992,
+      "sizeBytes": 13359328,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL22.WAD",
+      "name": "LEVEL22.WAD",
+      "isDirectory": false,
+      "extentLba": 1807385,
+      "offset": 3701524480,
+      "sizeBytes": 13616432,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL23.WAD",
+      "name": "LEVEL23.WAD",
+      "isDirectory": false,
+      "extentLba": 1821432,
+      "offset": 3730292736,
+      "sizeBytes": 12603856,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL24.WAD",
+      "name": "LEVEL24.WAD",
+      "isDirectory": false,
+      "extentLba": 1830883,
+      "offset": 3749648384,
+      "sizeBytes": 8350423,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL25.WAD",
+      "name": "LEVEL25.WAD",
+      "isDirectory": false,
+      "extentLba": 1836970,
+      "offset": 3762114560,
+      "sizeBytes": 8642189,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL26.WAD",
+      "name": "LEVEL26.WAD",
+      "isDirectory": false,
+      "extentLba": 1844633,
+      "offset": 3777808384,
+      "sizeBytes": 10990224,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL3.WAD",
+      "name": "LEVEL3.WAD",
+      "isDirectory": false,
+      "extentLba": 1357500,
+      "offset": 2780160000,
+      "sizeBytes": 17643616,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL4.WAD",
+      "name": "LEVEL4.WAD",
+      "isDirectory": false,
+      "extentLba": 1382830,
+      "offset": 2832035840,
+      "sizeBytes": 24713692,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL5.WAD",
+      "name": "LEVEL5.WAD",
+      "isDirectory": false,
+      "extentLba": 1413303,
+      "offset": 2894444544,
+      "sizeBytes": 16685776,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL6.WAD",
+      "name": "LEVEL6.WAD",
+      "isDirectory": false,
+      "extentLba": 1425983,
+      "offset": 2920413184,
+      "sizeBytes": 19411936,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL7.WAD",
+      "name": "LEVEL7.WAD",
+      "isDirectory": false,
+      "extentLba": 1444215,
+      "offset": 2957752320,
+      "sizeBytes": 22281520,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL8.WAD",
+      "name": "LEVEL8.WAD",
+      "isDirectory": false,
+      "extentLba": 1464840,
+      "offset": 2999992320,
+      "sizeBytes": 20602928,
+      "version": 1
+    },
+    {
+      "path": "/G/LEVEL9.WAD",
+      "name": "LEVEL9.WAD",
+      "isDirectory": false,
+      "extentLba": 1495572,
+      "offset": 3062931456,
+      "sizeBytes": 18821856,
+      "version": 1
+    },
+    {
+      "path": "/G/MISC.WAD",
+      "name": "MISC.WAD",
+      "isDirectory": false,
+      "extentLba": 1216608,
+      "offset": 2491613184,
+      "sizeBytes": 14840496,
+      "version": 1
+    },
+    {
+      "path": "/G/MPEG.WAD",
+      "name": "MPEG.WAD",
+      "isDirectory": false,
+      "extentLba": 2610,
+      "offset": 5345280,
+      "sizeBytes": 1075267584,
+      "version": 1
+    },
+    {
+      "path": "/G/MPEG1.WAD",
+      "name": "MPEG1.WAD",
+      "isDirectory": false,
+      "extentLba": 527643,
+      "offset": 1080612864,
+      "sizeBytes": 1296228352,
+      "version": 1
+    },
+    {
+      "path": "/G/MPEG2.WAD",
+      "name": "MPEG2.WAD",
+      "isDirectory": false,
+      "extentLba": 1160567,
+      "offset": 2376841216,
+      "sizeBytes": 114769924,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE.WAD",
+      "name": "SCENE.WAD",
+      "isDirectory": false,
+      "extentLba": 1280474,
+      "offset": 2622410752,
+      "sizeBytes": 4466256,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE0.WAD",
+      "name": "SCENE0.WAD",
+      "isDirectory": false,
+      "extentLba": 1296509,
+      "offset": 2655250432,
+      "sizeBytes": 5024416,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE1.WAD",
+      "name": "SCENE1.WAD",
+      "isDirectory": false,
+      "extentLba": 1320647,
+      "offset": 2704685056,
+      "sizeBytes": 4127680,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE10.WAD",
+      "name": "SCENE10.WAD",
+      "isDirectory": false,
+      "extentLba": 1528738,
+      "offset": 3130855424,
+      "sizeBytes": 3825136,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE11.WAD",
+      "name": "SCENE11.WAD",
+      "isDirectory": false,
+      "extentLba": 1564360,
+      "offset": 3203809280,
+      "sizeBytes": 7946240,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE12.WAD",
+      "name": "SCENE12.WAD",
+      "isDirectory": false,
+      "extentLba": 1591380,
+      "offset": 3259146240,
+      "sizeBytes": 12834816,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE13.WAD",
+      "name": "SCENE13.WAD",
+      "isDirectory": false,
+      "extentLba": 1618578,
+      "offset": 3314847744,
+      "sizeBytes": 6920192,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE14.WAD",
+      "name": "SCENE14.WAD",
+      "isDirectory": false,
+      "extentLba": 1641686,
+      "offset": 3362172928,
+      "sizeBytes": 6331312,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE15.WAD",
+      "name": "SCENE15.WAD",
+      "isDirectory": false,
+      "extentLba": 1654961,
+      "offset": 3389360128,
+      "sizeBytes": 2605056,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE16.WAD",
+      "name": "SCENE16.WAD",
+      "isDirectory": false,
+      "extentLba": 1679760,
+      "offset": 3440148480,
+      "sizeBytes": 6419392,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE17.WAD",
+      "name": "SCENE17.WAD",
+      "isDirectory": false,
+      "extentLba": 1700116,
+      "offset": 3481837568,
+      "sizeBytes": 5654528,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE18.WAD",
+      "name": "SCENE18.WAD",
+      "isDirectory": false,
+      "extentLba": 1718232,
+      "offset": 3518939136,
+      "sizeBytes": 5605376,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE19.WAD",
+      "name": "SCENE19.WAD",
+      "isDirectory": false,
+      "extentLba": 1748297,
+      "offset": 3580512256,
+      "sizeBytes": 14964240,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE2.WAD",
+      "name": "SCENE2.WAD",
+      "isDirectory": false,
+      "extentLba": 1354248,
+      "offset": 2773499904,
+      "sizeBytes": 6660096,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE20.WAD",
+      "name": "SCENE20.WAD",
+      "isDirectory": false,
+      "extentLba": 1777999,
+      "offset": 3641341952,
+      "sizeBytes": 29143040,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE21.WAD",
+      "name": "SCENE21.WAD",
+      "isDirectory": false,
+      "extentLba": 1807382,
+      "offset": 3701518336,
+      "sizeBytes": 4988,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE22.WAD",
+      "name": "SCENE22.WAD",
+      "isDirectory": false,
+      "extentLba": 1821305,
+      "offset": 3730032640,
+      "sizeBytes": 260096,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE23.WAD",
+      "name": "SCENE23.WAD",
+      "isDirectory": false,
+      "extentLba": 1830729,
+      "offset": 3749332992,
+      "sizeBytes": 315392,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE24.WAD",
+      "name": "SCENE24.WAD",
+      "isDirectory": false,
+      "extentLba": 1836967,
+      "offset": 3762108416,
+      "sizeBytes": 4988,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE25.WAD",
+      "name": "SCENE25.WAD",
+      "isDirectory": false,
+      "extentLba": 1844630,
+      "offset": 3777802240,
+      "sizeBytes": 4988,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE26.WAD",
+      "name": "SCENE26.WAD",
+      "isDirectory": false,
+      "extentLba": 1852056,
+      "offset": 3793010688,
+      "sizeBytes": 1781760,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE3.WAD",
+      "name": "SCENE3.WAD",
+      "isDirectory": false,
+      "extentLba": 1379609,
+      "offset": 2825439232,
+      "sizeBytes": 6596608,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE4.WAD",
+      "name": "SCENE4.WAD",
+      "isDirectory": false,
+      "extentLba": 1408629,
+      "offset": 2884872192,
+      "sizeBytes": 9570528,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE5.WAD",
+      "name": "SCENE5.WAD",
+      "isDirectory": false,
+      "extentLba": 1424689,
+      "offset": 2917763072,
+      "sizeBytes": 2648784,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE6.WAD",
+      "name": "SCENE6.WAD",
+      "isDirectory": false,
+      "extentLba": 1441362,
+      "offset": 2951909376,
+      "sizeBytes": 5842944,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE7.WAD",
+      "name": "SCENE7.WAD",
+      "isDirectory": false,
+      "extentLba": 1461822,
+      "offset": 2993811456,
+      "sizeBytes": 6180080,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE8.WAD",
+      "name": "SCENE8.WAD",
+      "isDirectory": false,
+      "extentLba": 1488353,
+      "offset": 3048146944,
+      "sizeBytes": 14783056,
+      "version": 1
+    },
+    {
+      "path": "/G/SCENE9.WAD",
+      "name": "SCENE9.WAD",
+      "isDirectory": false,
+      "extentLba": 1512145,
+      "offset": 3096872960,
+      "sizeBytes": 12539904,
+      "version": 1
+    },
+    {
+      "path": "/G/SPACE.WAD",
+      "name": "SPACE.WAD",
+      "isDirectory": false,
+      "extentLba": 1275113,
+      "offset": 2611431424,
+      "sizeBytes": 10977664,
+      "version": 1
+    },
+    {
+      "path": "/IOPRP255.IMG",
+      "name": "IOPRP255.IMG",
+      "isDirectory": false,
+      "extentLba": 2480,
+      "offset": 5079040,
+      "sizeBytes": 264449,
+      "version": 1
+    },
+    {
+      "path": "/RC2.HDR",
+      "name": "RC2.HDR",
+      "isDirectory": false,
+      "extentLba": 1001,
+      "offset": 2050048,
+      "sizeBytes": 408444,
+      "version": 1
+    },
+    {
+      "path": "/SCUS_972.68",
+      "name": "SCUS_972.68",
+      "isDirectory": false,
+      "extentLba": 1201,
+      "offset": 2459648,
+      "sizeBytes": 2618684,
+      "version": 1
+    },
+    {
+      "path": "/SYSTEM.CNF",
+      "name": "SYSTEM.CNF",
+      "isDirectory": false,
+      "extentLba": 1000,
+      "offset": 2048000,
+      "sizeBytes": 60,
+      "version": 1
+    },
+    {
+      "path": "/Z6TAIL.DUP",
+      "name": "Z6TAIL.DUP",
+      "isDirectory": false,
+      "extentLba": 1852926,
+      "offset": 3794792448,
+      "sizeBytes": 33554432,
+      "version": 1
+    }
+  ]
+}

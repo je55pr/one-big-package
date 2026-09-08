@@ -1,0 +1,440 @@
+spec:
+  inputs:
+    run_mode:
+      type: string
+      default: 'none'
+      options:
+        - 'none'
+        - 'hosted-tests'
+        - 'local-tests'
+        - 'local-source-probe'
+        - 'local-ui-capture'
+        - 'local-smoke'
+        - 'local-inventory'
+        - 'local-stage0'
+        - 'local-full-hash'
+        - 'local-rac1-moby-transform'
+        - 'local-rac1-capture'
+        - 'local-rac1-native'
+        - 'local-gc-moby-census'
+        - 'local-gc-pvar-family'
+        - 'local-gc-exe-xrefs'
+        - 'local-gc-overlay-probe'
+        - 'local-gc-vtbl-probe'
+      description: 'Select no CI, hosted CI, or exactly one opt-in Jess-Laptop workflow.'
+    gc_moby_classes:
+      type: string
+      default: '500,501,505,511,512,4018'
+      description: 'Comma-separated GC oClasses to summarize from the retail Moby census.'
+    gc_exe_classes:
+      type: string
+      default: '500,501,505,511,512'
+      description: 'Comma-separated GC oClasses for the bounded executable xref probe.'
+    gc_exe_ranges:
+      type: string
+      default: '0x00310f80:0x00311240,0x00311f80:0x00312220,0x003123c0:0x00312500,0x00312740:0x00312820'
+      description: 'Comma-separated, aligned virtual-address windows for bounded GC executable disassembly.'
+    gc_exe_targets:
+      type: string
+      default: '0x003116e8,0x00311f70,0x003120c8,0x002e5da0,0x002e5cf8,0x003202e8'
+      description: 'Comma-separated executable addresses for exact JAL xref discovery.'
+    gc_overlay_levels:
+      type: string
+      default: '0-26'
+      description: 'GC levels whose runtime overlay sections should be compared.'
+    gc_overlay_ranges:
+      type: string
+      default: '0x0026f740:0x0026f780,0x00311f70:0x003120c8,0x003120c8:0x003125f8,0x0031fc60:0x003202e8,0x003202e8:0x00320540'
+      description: 'Bounded runtime virtual-address windows reconstructed from retail level overlays.'
+    gc_overlay_dump_level:
+      type: string
+      default: '1'
+      description: 'One selected level to disassemble from the reconstructed overlay windows.'
+    gc_vtbl_levels:
+      type: string
+      default: '0-26'
+      description: 'GC levels whose runtime Moby vtable should be correlated with the gameplay class list.'
+    gc_vtbl_classes:
+      type: string
+      default: '500,501,505,511,512,3291'
+      description: 'Comma-separated oClasses whose loaded Moby update pointers should be resolved and scanned as immediates.'
+    gc_vtbl_dump_level:
+      type: string
+      default: '1'
+      description: 'One selected level whose target update functions and loaded-code xrefs should be inspected.'
+    gc_vtbl_dump_bytes:
+      type: string
+      default: '768'
+      description: 'Bounded bytes to disassemble at each selected loaded Moby update pointer.'
+    gc_vtbl_xref_targets:
+      type: string
+      default: '0x003922b0,0x00392158,0x002c9738'
+      description: 'Comma-separated loaded overlay call targets for exact JAL xref discovery on the selected vtable dump level.'
+---
+
+stages: [test]
+
+# Normal pipelines create no jobs. Hosted and local workflows are explicit opt-ins.
+ts-reference:
+  stage: test
+  image: node:22-bookworm
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "hosted-tests"'
+    - when: never
+  script:
+    - cd reference-ts
+    - npm install --no-audit --no-fund
+    - node --check tools/gc-moby-census.mjs
+    - node --check tools/gc-pvar-family-probe.mjs
+    - node --check tools/gc-exe-class-xrefs.mjs
+    - node --check tools/gc-exe-window-probe.mjs
+    - node --check tools/gc-exe-call-xrefs.mjs
+    - node --check tools/gc-level-overlay-probe.mjs
+    - node --check tools/gc-level-vtbl-probe.mjs
+    - node --check tools/gc-level-overlay-xrefs.mjs
+    - npm run check
+
+dotnet:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "hosted-tests"'
+    - when: never
+  variables:
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - dotnet build OneBigPackage.sln -c Release
+    - dotnet test OneBigPackage.sln -c Release
+
+local-dotnet-tests:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-tests"'
+    - when: never
+  variables:
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - dotnet --version
+    - dotnet build OneBigPackage.sln -c Release --nologo
+    - if ($LASTEXITCODE -ne 0) { throw 'dotnet build failed' }
+    - dotnet test OneBigPackage.sln -c Release --no-build --nologo
+    - if ($LASTEXITCODE -ne 0) { throw 'dotnet test failed' }
+
+local-trilogy-source-probe:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-source-probe"'
+    - when: never
+  variables:
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $rac1 = Get-ChildItem -LiteralPath $isoRoot -File -Filter 'Ratchet & Clank (USA)*.iso' | Select-Object -First 1
+    - $rac2 = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - $rac3 = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Up Your Arsenal*.iso' | Select-Object -First 1
+    - if (-not $rac1 -or -not $rac2 -or -not $rac3) { throw 'One or more trilogy authority ISOs are missing from C:\ChatGPT\ISOs' }
+    - $env:OBP_RAC1_ISO = $rac1.FullName
+    - $env:OBP_GC_ISO = $rac2.FullName
+    - $env:OBP_UYA_ISO = $rac3.FullName
+    - Write-Host "SOURCE_PROBE rac1=$($rac1.Name) rac2=$($rac2.Name) rac3=$($rac3.Name)"
+    - dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --nologo --filter 'FullyQualifiedName=OBP.Tests.SourceLibraryTests.RetailTrilogySources_QuickProbeAuthorityFiles'
+    - if ($LASTEXITCODE -ne 0) { throw 'trilogy source probe failed' }
+
+local-trilogy-ui-capture:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-ui-capture"'
+    - when: never
+  variables:
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $rac1 = Get-ChildItem -LiteralPath $isoRoot -File -Filter 'Ratchet & Clank (USA)*.iso' | Select-Object -First 1
+    - $rac2 = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - $rac3 = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Up Your Arsenal*.iso' | Select-Object -First 1
+    - if (-not $rac1 -or -not $rac2 -or -not $rac3) { throw 'One or more trilogy authority ISOs are missing from C:\ChatGPT\ISOs' }
+    - $outDir = Join-Path $env:CI_PROJECT_DIR 'captures\ci'
+    - New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+    - ./tools/capture.ps1 -Picker -Rac1Iso $rac1.FullName -GcIso $rac2.FullName -UyaIso $rac3.FullName -Frame 45 -Out (Join-Path $outDir 'sources.png')
+    - if ($LASTEXITCODE -ne 0) { throw 'source-manager capture failed' }
+    - ./tools/capture.ps1 -Worlds -Rac1Iso $rac1.FullName -GcIso $rac2.FullName -UyaIso $rac3.FullName -Frame 45 -SkipBuild -Out (Join-Path $outDir 'worlds.png')
+    - if ($LASTEXITCODE -ne 0) { throw 'world-browser capture failed' }
+    - ./tools/capture.ps1 -Destination 'rac2:LEVEL1' -GcIso $rac2.FullName -Frame 150 -SkipBuild -Out (Join-Path $outDir 'oozla-neutral-entry.png')
+    - if ($LASTEXITCODE -ne 0) { throw 'neutral Oozla entry capture failed' }
+    - Get-ChildItem -LiteralPath $outDir -File | ForEach-Object { Write-Host "UI_CAPTURE file=$($_.Name) size=$($_.Length)" }
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - captures/ci/*.png
+      - captures/ci/*.json
+
+local-runner-smoke:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-smoke"'
+    - when: never
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - Write-Host "OBP local runner smoke"
+    - Write-Host "COMPUTERNAME=$env:COMPUTERNAME"
+    - Write-Host "USERNAME=$env:USERNAME"
+    - Write-Host "PWD=$(Get-Location)"
+    - Write-Host "PowerShell=$($PSVersionTable.PSVersion)"
+    - if (Get-Command node -ErrorAction SilentlyContinue) { node --version } else { Write-Host "node=not-found" }
+    - if (Get-Command git -ErrorAction SilentlyContinue) { git --version } else { Write-Host "git=not-found" }
+    - if (Get-Command dotnet -ErrorAction SilentlyContinue) { dotnet --version } else { Write-Host "dotnet=not-found" }
+    - $scratch = 'C:\ChatGPT\Scratch'
+    - New-Item -ItemType Directory -Force -Path $scratch | Out-Null
+    - Set-Content -LiteralPath (Join-Path $scratch 'smoke.txt') -Value 'runner-smoke-ok'
+    - if ((Get-Content -LiteralPath (Join-Path $scratch 'smoke.txt')) -ne 'runner-smoke-ok') { throw 'scratch round-trip failed' }
+    - Write-Host 'SCRATCH_ROUNDTRIP=PASS'
+
+local-iso-inventory:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-inventory"'
+    - when: never
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - $root = 'C:\ChatGPT'
+    - if (-not (Test-Path -LiteralPath $root -PathType Container)) { throw "Missing $root" }
+    - $isos = @(Get-ChildItem -LiteralPath $root -Recurse -File -Filter '*.iso' | Sort-Object FullName)
+    - Write-Host "ISO_COUNT=$($isos.Count)"
+    - foreach ($file in $isos) { Write-Host "ISO=$($file.FullName) SIZE=$($file.Length)"; $stream = [System.IO.File]::Open($file.FullName,[System.IO.FileMode]::Open,[System.IO.FileAccess]::Read,[System.IO.FileShare]::Read); try { $sampleLen = [int64][Math]::Min([int64]4096,[int64]$file.Length); $lastOffset = [int64]$file.Length - $sampleLen; $midOffset = [int64][Math]::Floor($lastOffset / 2.0); $offsets = @([int64]0,$midOffset,$lastOffset) | Select-Object -Unique; foreach ($offset in $offsets) { $stream.Position = [int64]$offset; $buf = New-Object byte[] ([int]$sampleLen); $read = $stream.Read($buf,0,$buf.Length); if ($read -ne $sampleLen) { throw "Short read at $offset for $($file.Name)" }; $sha = [System.Security.Cryptography.SHA256]::HashData($buf); $hex = [Convert]::ToHexString($sha).ToLowerInvariant(); Write-Host "SAMPLE file=$($file.Name) offset=$offset length=$sampleLen sha256=$hex" }; if ($file.Length -ge 34816) { $stream.Position = 32768; $pvd = New-Object byte[] 2048; $read = $stream.Read($pvd,0,$pvd.Length); if ($read -eq 2048) { $ident = [Text.Encoding]::ASCII.GetString($pvd,1,5); $vol = [Text.Encoding]::ASCII.GetString($pvd,40,32).Trim(); Write-Host "PVD file=$($file.Name) type=$($pvd[0]) ident=$ident volume=$vol" } } } finally { $stream.Dispose() } }
+
+local-trilogy-stage0:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-stage0"'
+    - when: never
+  hooks:
+    pre_get_sources_script:
+      - git config --global --add safe.directory "$env:CI_PROJECT_DIR"
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $outDir = 'C:\ChatGPT\OBP-Reports'
+    - New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+    - $targets = @(@{ pattern='*Going Commando*.iso'; build='rac2-local' }, @{ pattern='*Up Your Arsenal*.iso'; build='rac3-local' }, @{ pattern='Ratchet & Clank (USA)*.iso'; build='rac1-local' })
+    - foreach ($target in $targets) { $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter $target.pattern | Select-Object -First 1; if (-not $file) { throw "Missing ISO matching $($target.pattern)" }; Write-Host "RUN_STAGE0 build=$($target.build) file=$($file.Name)"; node tools/disc-archaeology.mjs "$($file.FullName)" --build $target.build --out-dir "$outDir" --large-bytes 1048576; if ($LASTEXITCODE -ne 0) { throw "disc-archaeology failed for $($target.build)" }; $report = Get-Content -LiteralPath (Join-Path $outDir "$($target.build).stage0.json") -Raw | ConvertFrom-Json; Write-Host "STAGE0 build=$($target.build) volume=$($report.iso9660.volumeIdentifier) serial=$($report.ps2Boot.normalizedSerial) boot=$($report.ps2Boot.executableName) bootSize=$($report.ps2Boot.executableSizeBytes) files=$($report.inventorySummary.fileCount) dirs=$($report.inventorySummary.directoryCount) ptLoad=$($report.ptLoad.Count)" }
+
+local-trilogy-full-hash:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-full-hash"'
+    - when: never
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $targets = @(@{ pattern='Ratchet & Clank (USA)*.iso'; build='rac1'; expected='ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d' }, @{ pattern='*Going Commando*.iso'; build='rac2'; expected='9db2e33e276133cc283647fa3279b37911955e123d6199d10065547eaa9b1ce5' }, @{ pattern='*Up Your Arsenal*.iso'; build='rac3'; expected='d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444' })
+    - foreach ($target in $targets) { $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter $target.pattern | Select-Object -First 1; if (-not $file) { throw "Missing ISO matching $($target.pattern)" }; Write-Host "HASH_START build=$($target.build) file=$($file.Name) size=$($file.Length)"; $actual = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant(); $match = $actual -eq $target.expected; Write-Host "HASH_RESULT build=$($target.build) sha256=$actual expected=$($target.expected) match=$match"; if (-not $match) { throw "Authority hash mismatch for $($target.build)" } }
+
+local-rac1-moby-transform:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-rac1-moby-transform"'
+    - when: never
+  hooks:
+    pre_get_sources_script:
+      - git config --global --add safe.directory "$env:CI_PROJECT_DIR"
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - $iso = Get-ChildItem -LiteralPath 'C:\ChatGPT\ISOs' -File -Filter 'Ratchet & Clank (USA)*.iso' | Select-Object -First 1
+    - if (-not $iso) { throw 'Missing local R&C1 authority ISO.' }
+    - $outDir = 'C:\ChatGPT\OBP-Reports'
+    - New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+    - node tools/rac1-moby-transform-archaeology.mjs "$($iso.FullName)" --build rac1-local --out-dir "$outDir" --max-candidates 24
+    - if ($LASTEXITCODE -ne 0) { throw 'R&C1 Moby transform archaeology probe failed.' }
+    - node tools/rac1-moby-transform-validation.mjs "$($iso.FullName)" "$outDir"
+    - if ($LASTEXITCODE -ne 0) { throw 'R&C1 all-level Moby transform validation failed.' }
+    - node tools/rac1-moby-stride-archaeology.mjs "$($iso.FullName)" "$outDir"
+    - if ($LASTEXITCODE -ne 0) { throw 'R&C1 Moby 0x78 stride archaeology probe failed.' }
+
+local-rac1-capture:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-rac1-capture"'
+    - when: never
+  hooks:
+    pre_get_sources_script:
+      - git config --global --add safe.directory "$env:CI_PROJECT_DIR"
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - $iso = Get-ChildItem -LiteralPath 'C:\ChatGPT\ISOs' -File -Filter 'Ratchet & Clank (USA)*.iso' | Select-Object -First 1
+    - if (-not $iso) { throw 'Missing local R&C1 authority ISO.' }
+    - New-Item -ItemType Directory -Force -Path captures | Out-Null
+    - $levels = @(2, 3, 5, 11, 13)
+    - $worlds = @()
+    - foreach ($level in $levels) { $out = Join-Path (Resolve-Path captures) "rac1-level$level.world.json"; node tools/rac1-world-export.mjs "$($iso.FullName)" $level "$out"; if ($LASTEXITCODE -ne 0) { throw "R&C1 retail world export failed for level $level." }; $worlds += $out }
+    - node tools/capture-rac1-worlds.mjs @worlds
+    - if ($LASTEXITCODE -ne 0) { throw 'R&C1 retail screenshot capture failed.' }
+    - foreach ($level in $levels) { $png = Get-Item -LiteralPath (Join-Path captures "rac1-level$level.png"); $meta = Get-Content -LiteralPath (Join-Path captures "rac1-level$level.capture.json") -Raw | ConvertFrom-Json; $worldMeta = Get-Content -LiteralPath (Join-Path captures "rac1-level$level.world-meta.json") -Raw | ConvertFrom-Json; Write-Host "RAC1_VISUAL level=$level pngBytes=$($png.Length) sha256=$($meta.sha256) models=$($worldMeta.models) instances=$($worldMeta.instances) linked=$($worldMeta.linkedInstances) textured=$($worldMeta.texturedMaterials)" }
+  artifacts:
+    when: always
+    expire_in: 1 day
+    paths:
+      - reference-ts/captures/rac1-level*.png
+      - reference-ts/captures/rac1-level*.capture.json
+      - reference-ts/captures/rac1-level*.world-meta.json
+
+# Native R&C1 promotion gate: direct retail checks for the shared codecs and
+# OBP.RAC1 C# parser. Also reruns GC's retail tfrag/texture equivalence so moving
+# an inner codec into OBP.PS2 cannot silently alter the mature GC path.
+local-rac1-native:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-rac1-native"'
+    - when: never
+  variables:
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $rac1 = Get-ChildItem -LiteralPath $isoRoot -File -Filter 'Ratchet & Clank (USA)*.iso' | Select-Object -First 1
+    - $rac2 = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - if (-not $rac1 -or -not $rac2) { throw 'R&C1 and GC authority ISOs are required.' }
+    - $env:OBP_RAC1_ISO = $rac1.FullName
+    - $env:OBP_GC_ISO = $rac2.FullName
+    - dotnet test tests/OBP.Tests/OBP.Tests.csproj -c Release --nologo --filter 'FullyQualifiedName~RcSharedCodecTests|FullyQualifiedName~Rac1LevelTests|FullyQualifiedName=OBP.Tests.GcLevelTests.Level1_Chunk0TfragsMatchTheBaseline|FullyQualifiedName~OBP.Tests.GcLevelTests.Level1_DecodedTexturesMatchTypeScriptPixels'
+    - if ($LASTEXITCODE -ne 0) { throw 'native R&C1/shared-codec retail gate failed' }
+
+local-gc-moby-census:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-gc-moby-census"'
+    - when: never
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - node --check tools/gc-moby-census.mjs
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $outDir = 'C:\ChatGPT\OBP-Reports'
+    - New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+    - $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - if (-not $file) { throw 'Missing Going Commando authority ISO.' }
+    - $out = Join-Path $outDir 'rac2-ntscu-v1.01.gc-moby-census.json'
+    - $classes = '$[[ inputs.gc_moby_classes ]]'
+    - Write-Host "GC_MOBY_AUTHORITY file=$($file.Name) size=$($file.Length) classes=$classes"
+    - node tools/gc-moby-census.mjs "$($file.FullName)" --verify-hash --out "$out" --summary-classes "$classes"
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-moby-census failed' }
+
+local-gc-pvar-family:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-gc-pvar-family"'
+    - when: never
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - node --check tools/gc-pvar-family-probe.mjs
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $outDir = 'C:\ChatGPT\OBP-Reports'
+    - New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+    - $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - if (-not $file) { throw 'Missing Going Commando authority ISO.' }
+    - $out = Join-Path $outDir 'rac2-ntscu-v1.01.gc-pvar-family.json'
+    - Write-Host "GC_PVAR_AUTHORITY file=$($file.Name) size=$($file.Length)"
+    - node tools/gc-pvar-family-probe.mjs "$($file.FullName)" --verify-hash --out "$out" --summary-json
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-pvar-family-probe failed' }
+
+local-gc-exe-xrefs:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-gc-exe-xrefs"'
+    - when: never
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - node --check tools/gc-exe-class-xrefs.mjs
+    - node --check tools/gc-exe-window-probe.mjs
+    - node --check tools/gc-exe-call-xrefs.mjs
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - if (-not $file) { throw 'Missing Going Commando authority ISO.' }
+    - $classes = '$[[ inputs.gc_exe_classes ]]'
+    - $ranges = '$[[ inputs.gc_exe_ranges ]]'
+    - $targets = '$[[ inputs.gc_exe_targets ]]'
+    - Write-Host "GC_EXE_AUTHORITY file=$($file.Name) size=$($file.Length) classes=$classes ranges=$ranges targets=$targets"
+    - node tools/gc-exe-class-xrefs.mjs "$($file.FullName)" --verify-hash --classes "$classes" --cluster-radius 1024 --context-radius 256
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-exe-class-xrefs failed' }
+    - node tools/gc-exe-call-xrefs.mjs "$($file.FullName)" --targets "$targets"
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-exe-call-xrefs failed' }
+    - node tools/gc-exe-window-probe.mjs "$($file.FullName)" --ranges "$ranges"
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-exe-window-probe failed' }
+
+local-gc-overlay-probe:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-gc-overlay-probe"'
+    - when: never
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - node --check tools/gc-level-overlay-probe.mjs
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - if (-not $file) { throw 'Missing Going Commando authority ISO.' }
+    - $levels = '$[[ inputs.gc_overlay_levels ]]'
+    - $ranges = '$[[ inputs.gc_overlay_ranges ]]'
+    - $dump = '$[[ inputs.gc_overlay_dump_level ]]'
+    - Write-Host "GC_OVERLAY_RUN file=$($file.Name) levels=$levels ranges=$ranges dump=$dump"
+    - node tools/gc-level-overlay-probe.mjs "$($file.FullName)" --verify-hash --levels "$levels" --ranges "$ranges" --dump-level "$dump"
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-level-overlay-probe failed' }
+
+local-gc-vtbl-probe:
+  stage: test
+  tags: [obp-local]
+  rules:
+    - if: '"$[[ inputs.run_mode ]]" == "local-gc-vtbl-probe"'
+    - when: never
+  script:
+    - Set-Location reference-ts
+    - npm install --no-audit --no-fund
+    - npm run build
+    - node --check tools/gc-level-vtbl-probe.mjs
+    - node --check tools/gc-level-overlay-xrefs.mjs
+    - $isoRoot = 'C:\ChatGPT\ISOs'
+    - $file = Get-ChildItem -LiteralPath $isoRoot -File -Filter '*Going Commando*.iso' | Select-Object -First 1
+    - if (-not $file) { throw 'Missing Going Commando authority ISO.' }
+    - $levels = '$[[ inputs.gc_vtbl_levels ]]'
+    - $classes = '$[[ inputs.gc_vtbl_classes ]]'
+    - $dump = '$[[ inputs.gc_vtbl_dump_level ]]'
+    - $dumpBytes = '$[[ inputs.gc_vtbl_dump_bytes ]]'
+    - $xrefTargets = '$[[ inputs.gc_vtbl_xref_targets ]]'
+    - Write-Host "GC_VTBL_RUN file=$($file.Name) levels=$levels classes=$classes dump=$dump dumpBytes=$dumpBytes xrefTargets=$xrefTargets"
+    - node tools/gc-level-vtbl-probe.mjs "$($file.FullName)" --verify-hash --levels "$levels" --classes "$classes" --dump-level "$dump" --dump-bytes "$dumpBytes"
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-level-vtbl-probe failed' }
+    - node tools/gc-level-overlay-xrefs.mjs "$($file.FullName)" --verify-hash --level "$dump" --immediates "$classes" --targets "$xrefTargets" --context-bytes 128
+    - if ($LASTEXITCODE -ne 0) { throw 'gc-level-overlay-xrefs failed' }

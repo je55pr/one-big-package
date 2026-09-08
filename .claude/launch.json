@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "obp-viewer",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/dev-server.mjs"],
+      "port": 4173
+    }
+  ]
+}

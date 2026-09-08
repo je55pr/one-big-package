@@ -1,0 +1,23 @@
+{
+  "name": "one-big-package",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:capture": "node tools/build-capture-bundle.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "validate": "npm run build && node tools/validate-fixtures.mjs",
+    "check": "npm run test && npm run validate && npm run build:capture",
+    "serve": "npm run build && node tools/dev-server.mjs",
+    "capture": "npm run build:capture && python tools/capture-viewer.py",
+    "reassemble": "node tools/reassemble-input.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "vite": "8.2.2"
+  }
+}

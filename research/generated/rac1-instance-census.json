@@ -1,0 +1,37 @@
+{
+  "authority": "rac1-ntscu-original",
+  "serial": "SCUS-97199",
+  "levels": [
+    {"level":0,"tie":1114,"shrub":1697,"moby":296,"spawnableMobyCount":256},
+    {"level":1,"tie":1508,"shrub":1208,"moby":983,"spawnableMobyCount":256},
+    {"level":2,"tie":3751,"shrub":1199,"moby":775,"spawnableMobyCount":256},
+    {"level":3,"tie":5105,"shrub":985,"moby":1029,"spawnableMobyCount":256},
+    {"level":4,"tie":1249,"shrub":835,"moby":536,"spawnableMobyCount":256},
+    {"level":5,"tie":1855,"shrub":1216,"moby":1431,"spawnableMobyCount":256},
+    {"level":6,"tie":1290,"shrub":519,"moby":766,"spawnableMobyCount":256},
+    {"level":7,"tie":1150,"shrub":817,"moby":649,"spawnableMobyCount":256},
+    {"level":8,"tie":3388,"shrub":1067,"moby":847,"spawnableMobyCount":256},
+    {"level":9,"tie":2153,"shrub":3511,"moby":908,"spawnableMobyCount":256},
+    {"level":10,"tie":1883,"shrub":1637,"moby":872,"spawnableMobyCount":256},
+    {"level":11,"tie":1331,"shrub":1307,"moby":720,"spawnableMobyCount":256},
+    {"level":12,"tie":4604,"shrub":1756,"moby":695,"spawnableMobyCount":256},
+    {"level":13,"tie":2040,"shrub":976,"moby":970,"spawnableMobyCount":256},
+    {"level":14,"tie":1773,"shrub":556,"moby":551,"spawnableMobyCount":256},
+    {"level":15,"tie":2501,"shrub":1095,"moby":910,"spawnableMobyCount":256},
+    {"level":16,"tie":3078,"shrub":1622,"moby":1569,"spawnableMobyCount":256},
+    {"level":17,"tie":1157,"shrub":511,"moby":734,"spawnableMobyCount":400},
+    {"level":18,"tie":3782,"shrub":3058,"moby":991,"spawnableMobyCount":256}
+  ],
+  "totals": {
+    "tieInstances": 44712,
+    "shrubInstances": 25572,
+    "mobyInstances": 16232,
+    "badTieClassIds": 0,
+    "badShrubClassIds": 0,
+    "badMobyClassIds": 0,
+    "badMatricesOrTransforms": 0,
+    "badMobySizeWords": 0,
+    "tieExactNativeBoundaryLevels": 19,
+    "shrubExactNativeBoundaryLevels": 19
+  }
+}

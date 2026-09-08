@@ -1,0 +1,27 @@
+{
+  "authority": "rac1-ntscu-original",
+  "serial": "SCUS-97199",
+  "recordSize": 80,
+  "levels": [
+    {"level":0,"background":[71,66,58],"fog":[47,26,15],"fogNear":0,"fogFar":240640,"fogNearIntensity":255,"fogFarIntensity":53.54999923706055,"deathHeight":27,"shipPosition":[20,20,20],"shipRotationZ":0},
+    {"level":1,"background":[100,255,255],"fog":[105,127,180],"fogNear":0,"fogFar":245760,"fogNearIntensity":255,"fogFarIntensity":102,"deathHeight":0,"shipPosition":[167.2265625,125.84651947021484,61.15489196777344],"shipRotationZ":1.5707963705062866},
+    {"level":2,"background":[15,25,75],"fog":[0,0,10],"fogNear":30720,"fogFar":153600,"fogNearIntensity":255,"fogFarIntensity":127.5,"deathHeight":0,"shipPosition":[205.3526153564453,153.97421264648438,26.614683151245117],"shipRotationZ":2.094395160675049},
+    {"level":3,"background":[70,80,100],"fog":[75,100,150],"fogNear":512,"fogFar":245760,"fogNearIntensity":255,"fogFarIntensity":153,"deathHeight":30,"shipPosition":[248.46194458007812,98.92123413085938,55.5],"shipRotationZ":-0.6922565698623657},
+    {"level":4,"background":[100,255,255],"fog":[114,190,200],"fogNear":51200,"fogFar":256000,"fogNearIntensity":249.89999389648438,"fogFarIntensity":63.75,"deathHeight":45,"shipPosition":[213.08126831054688,168.1170196533203,56.411582946777344],"shipRotationZ":1.660780906677246},
+    {"level":5,"background":[0,0,20],"fog":[0,36,63],"fogNear":0,"fogFar":296960,"fogNearIntensity":255,"fogFarIntensity":63.75,"deathHeight":0,"shipPosition":[357.6692810058594,104.55706024169922,62.123775482177734],"shipRotationZ":2.1711502075195312},
+    {"level":6,"background":[15,75,170],"fog":[0,0,0],"fogNear":1024,"fogFar":2048,"fogNearIntensity":252.4499969482422,"fogFarIntensity":249.89999389648438,"deathHeight":100,"shipPosition":[247.97543334960938,134.28346252441406,139],"shipRotationZ":1.605478048324585},
+    {"level":7,"background":[13,13,13],"fog":[0,0,14],"fogNear":0,"fogFar":186368,"fogNearIntensity":255,"fogFarIntensity":178.5,"deathHeight":0,"shipPosition":[275.250244140625,65.81365966796875,46.5],"shipRotationZ":2.429865837097168},
+    {"level":8,"background":[128,128,128],"fog":[20,20,25],"fogNear":40960,"fogFar":102400,"fogNearIntensity":255,"fogFarIntensity":127.5,"deathHeight":20,"shipPosition":[149.39556884765625,187.8350372314453,38.83050537109375],"shipRotationZ":0.6302685737609863},
+    {"level":9,"background":[249,143,28],"fog":[225,100,25],"fogNear":51200,"fogFar":204800,"fogNearIntensity":242.25,"fogFarIntensity":191.25,"deathHeight":0,"shipPosition":[312,400,36.75],"shipRotationZ":-1.9309022426605225},
+    {"level":10,"background":[117,170,25],"fog":[60,100,0],"fogNear":10240,"fogFar":102400,"fogNearIntensity":234.60000610351562,"fogFarIntensity":63.75,"deathHeight":0,"shipPosition":[231.69937133789062,190.99851989746094,49.75],"shipRotationZ":1.9787598848342896},
+    {"level":11,"background":[43,181,202],"fog":[0,86,127],"fogNear":0,"fogFar":209920,"fogNearIntensity":255,"fogFarIntensity":153,"deathHeight":0,"shipPosition":[490.0453796386719,403.26934814453125,230.75],"shipRotationZ":0.7467580437660217},
+    {"level":12,"background":[15,75,170],"fog":[65,120,170],"fogNear":51200,"fogFar":204800,"fogNearIntensity":249.89999389648438,"fogFarIntensity":170.85000610351562,"deathHeight":0,"shipPosition":[298.23016357421875,290.58868408203125,33.58399963378906],"shipRotationZ":1.3013429641723633},
+    {"level":13,"background":[15,25,75],"fog":[20,20,20],"fogNear":61440,"fogFar":153600,"fogNearIntensity":255,"fogFarIntensity":140.25,"deathHeight":230,"shipPosition":[507.8299560546875,365.986572265625,315.650390625],"shipRotationZ":-4.809980869293213},
+    {"level":14,"background":[128,128,128],"fog":[25,15,5],"fogNear":14336,"fogFar":179200,"fogNearIntensity":242.25,"fogFarIntensity":127.5,"deathHeight":25,"shipPosition":[260.368408203125,172.40699768066406,48.35371780395508],"shipRotationZ":2.2594289779663086},
+    {"level":15,"background":[13,49,28],"fog":[0,40,28],"fogNear":71680,"fogFar":307200,"fogNearIntensity":249.89999389648438,"fogFarIntensity":-2.842170943040401e-14,"deathHeight":22,"shipPosition":[317.48736572265625,203.0232696533203,31.940237045288086],"shipRotationZ":-2.6869406700134277},
+    {"level":16,"background":[43,181,202],"fog":[70,115,180],"fogNear":512,"fogFar":245760,"fogNearIntensity":255,"fogFarIntensity":153,"deathHeight":0,"shipPosition":[147,116.1251220703125,129.16390991210938],"shipRotationZ":1.5523256063461304},
+    {"level":17,"background":[0,0,0],"fog":[0,0,0],"fogNear":0,"fogFar":54272,"fogNearIntensity":255,"fogFarIntensity":252.4499969482422,"deathHeight":30,"shipPosition":[503.2134704589844,619.599365234375,152.5],"shipRotationZ":-2.356194496154785},
+    {"level":18,"background":[8,13,0],"fog":[8,13,0],"fogNear":0,"fogFar":184320,"fogNearIntensity":255,"fogFarIntensity":61.20000076293945,"deathHeight":78,"shipPosition":[331.8736267089844,630.9716186523438,87.33305358886719],"shipRotationZ":-0.4742189049720764}
+  ],
+  "invariants": {"exactNextBlockBoundaryLevels":19,"finiteNumericLevels":19,"zeroPadLevels":19}
+}

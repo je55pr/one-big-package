@@ -1,0 +1,21 @@
+; One Big Package — Godot project.
+; Engine version pinned by tools/bootstrap-godot.*; see docs/MIGRATION.md.
+
+config_version=5
+
+[application]
+
+config/name="One Big Package"
+config/description="Native runtime for the PS2 Ratchet & Clank trilogy (Going Commando first)."
+run/main_scene="res://scenes/OBPGame.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+
+[dotnet]
+
+project/assembly_name="OneBigPackage"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="gl_compatibility"
+; Sandboxes / headless CI pass --rendering-method gl_compatibility on the command line.

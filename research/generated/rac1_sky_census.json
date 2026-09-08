@@ -1,0 +1,26 @@
+{
+  "authority_build": "rac1-ntscu-original",
+  "levels": [
+    {"level":0,"sky_offset":1556416,"collision_offset":2090944,"size":534528,"shells":5,"textures":8,"fx":2,"clusters":118,"vertices":2211,"triangles":2366},
+    {"level":1,"sky_offset":2813376,"collision_offset":3035584,"size":222208,"shells":5,"textures":4,"fx":0,"clusters":98,"vertices":1118,"triangles":1024},
+    {"level":2,"sky_offset":2429440,"collision_offset":2759040,"size":329600,"shells":4,"textures":8,"fx":4,"clusters":93,"vertices":1491,"triangles":1472},
+    {"level":3,"sky_offset":4081600,"collision_offset":4232512,"size":150912,"shells":3,"textures":2,"fx":0,"clusters":74,"vertices":926,"triangles":896},
+    {"level":4,"sky_offset":2332352,"collision_offset":2498176,"size":165824,"shells":4,"textures":4,"fx":0,"clusters":99,"vertices":1705,"triangles":1280},
+    {"level":5,"sky_offset":2947200,"collision_offset":3186688,"size":239488,"shells":2,"textures":5,"fx":2,"clusters":50,"vertices":836,"triangles":768},
+    {"level":6,"sky_offset":5796416,"collision_offset":5990784,"size":194368,"shells":3,"textures":8,"fx":3,"clusters":98,"vertices":2426,"triangles":2688},
+    {"level":7,"sky_offset":2820608,"collision_offset":3146944,"size":326336,"shells":3,"textures":7,"fx":2,"clusters":57,"vertices":994,"triangles":962},
+    {"level":8,"sky_offset":2134656,"collision_offset":2301824,"size":167168,"shells":3,"textures":2,"fx":0,"clusters":74,"vertices":914,"triangles":896},
+    {"level":9,"sky_offset":4271296,"collision_offset":4575680,"size":304384,"shells":5,"textures":7,"fx":0,"clusters":120,"vertices":1886,"triangles":1664},
+    {"level":10,"sky_offset":3322880,"collision_offset":3565952,"size":243072,"shells":5,"textures":6,"fx":2,"clusters":90,"vertices":1208,"triangles":960},
+    {"level":11,"sky_offset":4570496,"collision_offset":4792512,"size":222016,"shells":5,"textures":4,"fx":0,"clusters":98,"vertices":1094,"triangles":1024},
+    {"level":12,"sky_offset":3694528,"collision_offset":3947840,"size":253312,"shells":5,"textures":4,"fx":0,"clusters":111,"vertices":1026,"triangles":768},
+    {"level":13,"sky_offset":3851200,"collision_offset":4099264,"size":248064,"shells":3,"textures":8,"fx":2,"clusters":88,"vertices":2062,"triangles":2176},
+    {"level":14,"sky_offset":4002368,"collision_offset":4179840,"size":177472,"shells":3,"textures":2,"fx":0,"clusters":87,"vertices":1526,"triangles":1536},
+    {"level":15,"sky_offset":4924288,"collision_offset":5128640,"size":204352,"shells":2,"textures":6,"fx":2,"clusters":27,"vertices":650,"triangles":704},
+    {"level":16,"sky_offset":4943168,"collision_offset":5171584,"size":228416,"shells":5,"textures":5,"fx":0,"clusters":98,"vertices":1182,"triangles":1088},
+    {"level":17,"sky_offset":3746304,"collision_offset":3994944,"size":248640,"shells":3,"textures":5,"fx":2,"clusters":85,"vertices":2041,"triangles":2176},
+    {"level":18,"sky_offset":3644288,"collision_offset":4132480,"size":488192,"shells":7,"textures":7,"fx":0,"clusters":135,"vertices":2053,"triangles":2048}
+  ],
+  "totals": {"levels":19,"shells":75,"textures":102,"vertices":27349,"triangles":26496},
+  "errors": []
+}

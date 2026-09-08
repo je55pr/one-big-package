@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "Example — two Going Commando worlds in one process",
+  "notes": "Single-source composition smoke case. Oozla is held at the origin (world A); Endako (world B) is offset so both are visible at once. See example-rac1-gc-two-world.json for the first cross-game provider proof.",
+  "comparison": { "activeWorldId": "endako", "fitScale": false, "overlayMode": "both" },
+  "worlds": [
+    { "id": "oozla", "sourceGame": "gc", "levelId": 1, "label": "Oozla — Megacorp Outlet",
+      "transform": { "translation": [0, 0, 0], "rotationYDegrees": 0, "scale": 1 } },
+    { "id": "endako", "sourceGame": "gc", "levelId": 3, "label": "Endako — Megapolis",
+      "transform": { "translation": [900, 0, 0], "rotationYDegrees": 0, "scale": 1 },
+      "debugTint": [0.2, 0.55, 1.0] }
+  ],
+  "anchors": []
+}

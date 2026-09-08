@@ -1,0 +1,16 @@
+<Project>
+  <!--
+    Shared MSBuild settings for the OBP native (C#) projects under src/, game/
+    and tests/. The TypeScript reference implementation in reference-ts/ has no
+    .csproj files and is unaffected.
+  -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+</Project>

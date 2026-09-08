@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>One Big Package · World Viewer</title>
+  <link rel="stylesheet" href="/apps/viewer/src/styles.css">
+</head>
+<body>
+  <header>
+    <h1>One Big Package · debug viewer</h1>
+    <label>World
+      <select id="world-select">
+        <option value="combined">R&C1 + R&C2 synthetic</option>
+        <option value="rac1">R&C1 synthetic</option>
+        <option value="rac2">R&C2 synthetic</option>
+      </select>
+    </label>
+    <label><input id="show-collision" type="checkbox" checked> Collision</label>
+    <label><input id="show-instances" type="checkbox" checked> Instances</label>
+    <label><input id="show-fog" type="checkbox" checked> Fog</label>
+    <label>Camera
+      <select id="camera-mode">
+        <option value="orbit">Orbit</option>
+        <option value="fly">Fly (WASD)</option>
+      </select>
+    </label>
+    <button id="reset-camera" type="button">Reset camera</button>
+    <label>Load world <input id="world-file" type="file" accept="application/json,.json"></label>
+  </header>
+  <main>
+    <canvas id="viewer" aria-label="OBP 3D debug viewer"></canvas>
+    <div class="overlay">
+      <div class="card" id="stats">Loading…</div>
+      <div class="card" id="storage-status">Storage probe…</div>
+      <div class="card" id="fly-hint" hidden>Fly — click the view to look around · <b>W A S D</b> move · <b>Q / E</b> down / up · <b>Shift</b> faster · wheel sets speed · <b>Esc</b> releases the mouse</div>
+    </div>
+  </main>
+  <script type="module" src="/.build/apps/viewer/src/main.js"></script>
+</body>
+</html>

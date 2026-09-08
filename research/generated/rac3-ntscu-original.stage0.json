@@ -1,0 +1,563 @@
+{
+  "generator": "tools/disc-archaeology.mjs",
+  "generatedFrom": {
+    "isoFileName": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso",
+    "sizeBytes": 4379377664,
+    "sha256": "d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444"
+  },
+  "buildId": "rac3-ntscu-original",
+  "iso9660": {
+    "descriptorLba": 16,
+    "systemIdentifier": "PLAYSTATION",
+    "volumeIdentifier": "RATCHETANDCLANK3",
+    "volumeSpaceSize": 2138368,
+    "logicalBlockSize": 2048,
+    "rootDirectory": {
+      "extentLba": 261,
+      "dataLength": 672
+    }
+  },
+  "ps2Boot": {
+    "volumeIdentifier": "RATCHETANDCLANK3",
+    "bootKey": "BOOT2",
+    "bootPath": "cdrom0:\\SCUS_973.53;1",
+    "executableIsoPath": "SCUS_973.53;1",
+    "executableName": "SCUS_973.53",
+    "normalizedSerial": "SCUS-97353",
+    "executableSizeBytes": 771008,
+    "systemCnf": {
+      "BOOT2": "cdrom0:\\SCUS_973.53;1",
+      "VER": "1.00",
+      "VMODE": "NTSC"
+    }
+  },
+  "bootElf": {
+    "endian": "little",
+    "type": 2,
+    "machine": 8,
+    "entryPoint": "0x00800008",
+    "programHeaderOffset": "0x00000034",
+    "programHeaderEntrySize": 32,
+    "programHeaderCount": 1,
+    "sectionHeaderOffset": "0x000bc258",
+    "sectionHeaderCount": 9,
+    "flags": "0x20924001"
+  },
+  "programHeaders": [
+    {
+      "index": 0,
+      "type": "0x00000001",
+      "typeName": "PT_LOAD",
+      "offset": "0x00001000",
+      "virtualAddress": "0x00800000",
+      "fileSize": 766458,
+      "memorySize": 771840,
+      "flags": "RWX",
+      "alignment": "0x00001000"
+    }
+  ],
+  "ptLoad": [
+    {
+      "index": 0,
+      "virtualStart": "0x00800000",
+      "virtualEnd": "0x008bc700",
+      "fileStart": "0x00001000",
+      "fileEnd": "0x000bc1fa",
+      "fileSize": 766458,
+      "memorySize": 771840,
+      "bssBytes": 5382,
+      "flags": "RWX",
+      "alignment": "0x00001000"
+    }
+  ],
+  "inventorySummary": {
+    "entryCount": 48,
+    "fileCount": 44,
+    "directoryCount": 4,
+    "totalFileBytes": 195414531,
+    "largeContainerThresholdBytes": 1048576,
+    "largeContainerCount": 5,
+    "extensionHistogram": {
+      "53": 1,
+      "IRX": 23,
+      "IMG": 4,
+      "ELF": 3,
+      "BIN": 2,
+      "PF": 2,
+      "RGB": 2,
+      "BD": 1,
+      "CNF": 1,
+      "DUP": 1,
+      "HD": 1,
+      "ICO": 1,
+      "SYS": 1,
+      "WAL": 1
+    }
+  },
+  "largeContainers": [
+    {
+      "path": "/SLY2/SLY2.WAL",
+      "sizeBytes": 147324928,
+      "offset": 4198471680,
+      "extentLba": 2050035
+    },
+    {
+      "path": "/Z6TAIL.DUP",
+      "sizeBytes": 33554432,
+      "offset": 4345796608,
+      "extentLba": 2121971
+    },
+    {
+      "path": "/NETGUI/NTGUI.ELF",
+      "sizeBytes": 4815512,
+      "offset": 4190724096,
+      "extentLba": 2046252
+    },
+    {
+      "path": "/SLY2/SLY2.ELF",
+      "sizeBytes": 2523008,
+      "offset": 4195948544,
+      "extentLba": 2048803
+    },
+    {
+      "path": "/NETGUI/BG2.RGB",
+      "sizeBytes": 1146880,
+      "offset": 4186945536,
+      "extentLba": 2044407
+    }
+  ],
+  "inventory": [
+    {
+      "path": "/CNF",
+      "name": "CNF",
+      "isDirectory": true,
+      "extentLba": 262,
+      "offset": 536576,
+      "sizeBytes": 216,
+      "version": null
+    },
+    {
+      "path": "/CNF/ICON_EN.SYS",
+      "name": "ICON_EN.SYS",
+      "isDirectory": false,
+      "extentLba": 2043969,
+      "offset": 4186048512,
+      "sizeBytes": 964,
+      "version": 1
+    },
+    {
+      "path": "/CNF/SYS_NET.ICO",
+      "name": "SYS_NET.ICO",
+      "isDirectory": false,
+      "extentLba": 2043970,
+      "offset": 4186050560,
+      "sizeBytes": 33688,
+      "version": 1
+    },
+    {
+      "path": "/DEV9.IRX",
+      "name": "DEV9.IRX",
+      "isDirectory": false,
+      "extentLba": 2508,
+      "offset": 5136384,
+      "sizeBytes": 14301,
+      "version": 1
+    },
+    {
+      "path": "/DNAS300.IMG",
+      "name": "DNAS300.IMG",
+      "isDirectory": false,
+      "extentLba": 2371,
+      "offset": 4855808,
+      "sizeBytes": 278641,
+      "version": 1
+    },
+    {
+      "path": "/I5BOOTN.ELF",
+      "name": "I5BOOTN.ELF",
+      "isDirectory": false,
+      "extentLba": 1840,
+      "offset": 3768320,
+      "sizeBytes": 809864,
+      "version": 1
+    },
+    {
+      "path": "/IOPRP300.IMG",
+      "name": "IOPRP300.IMG",
+      "isDirectory": false,
+      "extentLba": 2236,
+      "offset": 4579328,
+      "sizeBytes": 275345,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI",
+      "name": "NETGUI",
+      "isDirectory": true,
+      "extentLba": 263,
+      "offset": 538624,
+      "sizeBytes": 676,
+      "version": null
+    },
+    {
+      "path": "/NETGUI/BG.RGB",
+      "name": "BG.RGB",
+      "isDirectory": false,
+      "extentLba": 2043987,
+      "offset": 4186085376,
+      "sizeBytes": 860160,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/BG2.RGB",
+      "name": "BG2.RGB",
+      "isDirectory": false,
+      "extentLba": 2044407,
+      "offset": 4186945536,
+      "sizeBytes": 1146880,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/EFF.BD",
+      "name": "EFF.BD",
+      "isDirectory": false,
+      "extentLba": 2044967,
+      "offset": 4188092416,
+      "sizeBytes": 127536,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/EFF.HD",
+      "name": "EFF.HD",
+      "isDirectory": false,
+      "extentLba": 2045030,
+      "offset": 4188221440,
+      "sizeBytes": 560,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/EUROPEAN.PF",
+      "name": "EUROPEAN.PF",
+      "isDirectory": false,
+      "extentLba": 2045031,
+      "offset": 4188223488,
+      "sizeBytes": 637456,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/EUROPEAN_WH.PF",
+      "name": "EUROPEAN_WH.PF",
+      "isDirectory": false,
+      "extentLba": 2045343,
+      "offset": 4188862464,
+      "sizeBytes": 637456,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS",
+      "name": "IOPMODS",
+      "isDirectory": true,
+      "extentLba": 265,
+      "offset": 542720,
+      "sizeBytes": 1458,
+      "version": null
+    },
+    {
+      "path": "/NETGUI/IOPMODS/DEV9.IRX",
+      "name": "DEV9.IRX",
+      "isDirectory": false,
+      "extentLba": 2045655,
+      "offset": 4189501440,
+      "sizeBytes": 14309,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/EZMIDI.IRX",
+      "name": "EZMIDI.IRX",
+      "isDirectory": false,
+      "extentLba": 2045662,
+      "offset": 4189515776,
+      "sizeBytes": 11609,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/INET.IRX",
+      "name": "INET.IRX",
+      "isDirectory": false,
+      "extentLba": 2045668,
+      "offset": 4189528064,
+      "sizeBytes": 143661,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/INETCTL.IRX",
+      "name": "INETCTL.IRX",
+      "isDirectory": false,
+      "extentLba": 2045739,
+      "offset": 4189673472,
+      "sizeBytes": 24861,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/IOPRP300.IMG",
+      "name": "IOPRP300.IMG",
+      "isDirectory": false,
+      "extentLba": 2045752,
+      "offset": 4189700096,
+      "sizeBytes": 275345,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/LIBNET.IRX",
+      "name": "LIBNET.IRX",
+      "isDirectory": false,
+      "extentLba": 2045887,
+      "offset": 4189976576,
+      "sizeBytes": 6693,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/LIBSD.IRX",
+      "name": "LIBSD.IRX",
+      "isDirectory": false,
+      "extentLba": 2045891,
+      "offset": 4189984768,
+      "sizeBytes": 30085,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/MCMAN.IRX",
+      "name": "MCMAN.IRX",
+      "isDirectory": false,
+      "extentLba": 2045906,
+      "offset": 4190015488,
+      "sizeBytes": 96181,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/MCSERV.IRX",
+      "name": "MCSERV.IRX",
+      "isDirectory": false,
+      "extentLba": 2045953,
+      "offset": 4190111744,
+      "sizeBytes": 7385,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/MODHSYN.IRX",
+      "name": "MODHSYN.IRX",
+      "isDirectory": false,
+      "extentLba": 2045957,
+      "offset": 4190119936,
+      "sizeBytes": 63037,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/MODMIDI.IRX",
+      "name": "MODMIDI.IRX",
+      "isDirectory": false,
+      "extentLba": 2045988,
+      "offset": 4190183424,
+      "sizeBytes": 21941,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/MSIFRPC.IRX",
+      "name": "MSIFRPC.IRX",
+      "isDirectory": false,
+      "extentLba": 2045999,
+      "offset": 4190205952,
+      "sizeBytes": 8105,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/NETCNF.IRX",
+      "name": "NETCNF.IRX",
+      "isDirectory": false,
+      "extentLba": 2046003,
+      "offset": 4190214144,
+      "sizeBytes": 65909,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/NTGUI2.IRX",
+      "name": "NTGUI2.IRX",
+      "isDirectory": false,
+      "extentLba": 2046036,
+      "offset": 4190281728,
+      "sizeBytes": 31029,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/PADMAN.IRX",
+      "name": "PADMAN.IRX",
+      "isDirectory": false,
+      "extentLba": 2046052,
+      "offset": 4190314496,
+      "sizeBytes": 45925,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/PPP.IRX",
+      "name": "PPP.IRX",
+      "isDirectory": false,
+      "extentLba": 2046075,
+      "offset": 4190361600,
+      "sizeBytes": 102589,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/PPPOE.IRX",
+      "name": "PPPOE.IRX",
+      "isDirectory": false,
+      "extentLba": 2046126,
+      "offset": 4190466048,
+      "sizeBytes": 17305,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/SDRDRV.IRX",
+      "name": "SDRDRV.IRX",
+      "isDirectory": false,
+      "extentLba": 2046135,
+      "offset": 4190484480,
+      "sizeBytes": 9161,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/SIO2MAN.IRX",
+      "name": "SIO2MAN.IRX",
+      "isDirectory": false,
+      "extentLba": 2046140,
+      "offset": 4190494720,
+      "sizeBytes": 6641,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/SMAP.IRX",
+      "name": "SMAP.IRX",
+      "isDirectory": false,
+      "extentLba": 2046144,
+      "offset": 4190502912,
+      "sizeBytes": 17089,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/SPDUART.IRX",
+      "name": "SPDUART.IRX",
+      "isDirectory": false,
+      "extentLba": 2046153,
+      "offset": 4190521344,
+      "sizeBytes": 18537,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/USBD.IRX",
+      "name": "USBD.IRX",
+      "isDirectory": false,
+      "extentLba": 2046163,
+      "offset": 4190541824,
+      "sizeBytes": 34993,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/IOPMODS/USBKB.IRX",
+      "name": "USBKB.IRX",
+      "isDirectory": false,
+      "extentLba": 2046181,
+      "offset": 4190578688,
+      "sizeBytes": 12853,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/JIS2UCS.BIN",
+      "name": "JIS2UCS.BIN",
+      "isDirectory": false,
+      "extentLba": 2046188,
+      "offset": 4190593024,
+      "sizeBytes": 131072,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/NTGUI.ELF",
+      "name": "NTGUI.ELF",
+      "isDirectory": false,
+      "extentLba": 2046252,
+      "offset": 4190724096,
+      "sizeBytes": 4815512,
+      "version": 1
+    },
+    {
+      "path": "/NETGUI/UCS2JIS.BIN",
+      "name": "UCS2JIS.BIN",
+      "isDirectory": false,
+      "extentLba": 2048604,
+      "offset": 4195540992,
+      "sizeBytes": 131072,
+      "version": 1
+    },
+    {
+      "path": "/SCUS_973.53",
+      "name": "SCUS_973.53",
+      "isDirectory": false,
+      "extentLba": 1463,
+      "offset": 2996224,
+      "sizeBytes": 771008,
+      "version": 1
+    },
+    {
+      "path": "/SLY2",
+      "name": "SLY2",
+      "isDirectory": true,
+      "extentLba": 264,
+      "offset": 540672,
+      "sizeBytes": 274,
+      "version": null
+    },
+    {
+      "path": "/SLY2/IOPRP300.IMG",
+      "name": "IOPRP300.IMG",
+      "isDirectory": false,
+      "extentLba": 2048668,
+      "offset": 4195672064,
+      "sizeBytes": 275345,
+      "version": 1
+    },
+    {
+      "path": "/SLY2/SLY2.ELF",
+      "name": "SLY2.ELF",
+      "isDirectory": false,
+      "extentLba": 2048803,
+      "offset": 4195948544,
+      "sizeBytes": 2523008,
+      "version": 1
+    },
+    {
+      "path": "/SLY2/SLY2.WAL",
+      "name": "SLY2.WAL",
+      "isDirectory": false,
+      "extentLba": 2050035,
+      "offset": 4198471680,
+      "sizeBytes": 147324928,
+      "version": 1
+    },
+    {
+      "path": "/SYSTEM.CNF",
+      "name": "SYSTEM.CNF",
+      "isDirectory": false,
+      "extentLba": 1000,
+      "offset": 2048000,
+      "sizeBytes": 60,
+      "version": 1
+    },
+    {
+      "path": "/Z6TAIL.DUP",
+      "name": "Z6TAIL.DUP",
+      "isDirectory": false,
+      "extentLba": 2121971,
+      "offset": 4345796608,
+      "sizeBytes": 33554432,
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OBP.RAC1</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
+    <ProjectReference Include="../OBP.IO/OBP.IO.csproj" />
+    <ProjectReference Include="../OBP.PS2/OBP.PS2.csproj" />
+    <ProjectReference Include="../OBP.Runtime/OBP.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

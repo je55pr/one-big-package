@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OBP.Cli</RootNamespace>
+    <AssemblyName>obp</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
+    <ProjectReference Include="../OBP.IO/OBP.IO.csproj" />
+    <ProjectReference Include="../OBP.PS2/OBP.PS2.csproj" />
+    <ProjectReference Include="../OBP.RAC2/OBP.RAC2.csproj" />
+  </ItemGroup>
+
+</Project>

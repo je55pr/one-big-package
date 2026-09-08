@@ -1,0 +1,31 @@
+{
+  "authority": "rac1-ntscu-original",
+  "serial": "SCUS-97199",
+  "levels": 19,
+  "families": {
+    "core_0x18": {
+      "entryCount": 3641,
+      "classification": "rac1-moby-generation",
+      "sharedHighLevelHeader": true,
+      "gcPacketCompatibilityClaimed": false
+    },
+    "core_0x20": {
+      "entryCount": 1804,
+      "classification": "rac1-tie-header-shared-packets",
+      "validatedClasses": 1804,
+      "packetCount": 25385,
+      "stripCount": 127762,
+      "recoveredTriangles": 1062775,
+      "badTextureSlots": 0
+    },
+    "core_0x28": {
+      "entryCount": 551,
+      "classification": "shared-shrub-codec",
+      "validatedClasses": 551,
+      "packetCount": 5374,
+      "decodedVertices": 228315,
+      "recoveredTriangles": 190749,
+      "badTextureSlots": 0
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "buildId": "rac1-ntscu-original",
+  "serial": "SCUS-97199",
+  "payloadSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+  "sectorBytes": 2048,
+  "discIndex": {
+    "lba": 1500,
+    "version": 1,
+    "declaredSize": 10592,
+    "levelTableOffset": 10440,
+    "levelTableCount": 19
+  },
+  "nativeLevelHeader": {
+    "sizeBytes": 9268,
+    "prefixBytesDecoded": 40,
+    "semanticPolicy": "The first table word is confirmed headerLba. tableRawSecondWord and four core ranges remain raw/positional until retail or executable evidence establishes semantics."
+  },
+  "levels": [
+    {"tableSlot":0,"levelId":0,"headerLba":1885903,"tableRawSecondWord":19462,"ranges":[[1885908,6562],[1892470,210],[1892680,210],[1892890,7]],"compression":[{"slot":1,"compressedBytes":429708,"decompressedBytes":1113280},{"slot":2,"compressedBytes":429720,"decompressedBytes":1113280}]},
+    {"tableSlot":1,"levelId":1,"headerLba":1892897,"tableRawSecondWord":28979,"ranges":[[1892902,9113],[1902015,250],[1902265,250],[1902515,12]],"compression":[{"slot":1,"compressedBytes":510928,"decompressedBytes":1430528},{"slot":2,"compressedBytes":510871,"decompressedBytes":1430528}]},
+    {"tableSlot":2,"levelId":2,"headerLba":1902527,"tableRawSecondWord":27477,"ranges":[[1902532,8027],[1910559,257],[1910816,257],[1911073,19]],"compression":[{"slot":1,"compressedBytes":525709,"decompressedBytes":1894592},{"slot":2,"compressedBytes":525709,"decompressedBytes":1894592}]},
+    {"tableSlot":3,"levelId":3,"headerLba":1911092,"tableRawSecondWord":37363,"ranges":[[1911097,8349],[1919446,312],[1919758,312],[1920070,26]],"compression":[{"slot":1,"compressedBytes":637467,"decompressedBytes":2395648},{"slot":2,"compressedBytes":637467,"decompressedBytes":2395648}]},
+    {"tableSlot":4,"levelId":4,"headerLba":1920096,"tableRawSecondWord":17250,"ranges":[[1920101,7859],[1927960,220],[1928180,220],[1928400,9]],"compression":[{"slot":1,"compressedBytes":448555,"decompressedBytes":1216064},{"slot":2,"compressedBytes":448555,"decompressedBytes":1216064}]},
+    {"tableSlot":5,"levelId":5,"headerLba":1928409,"tableRawSecondWord":39290,"ranges":[[1928414,9033],[1937447,282],[1937729,282],[1938011,14]],"compression":[{"slot":1,"compressedBytes":576080,"decompressedBytes":1810176},{"slot":2,"compressedBytes":576080,"decompressedBytes":1810176}]},
+    {"tableSlot":6,"levelId":6,"headerLba":1938025,"tableRawSecondWord":30312,"ranges":[[1938030,9311],[1947341,283],[1947624,283],[1947907,15]],"compression":[{"slot":1,"compressedBytes":579052,"decompressedBytes":1439808},{"slot":2,"compressedBytes":579052,"decompressedBytes":1439808}]},
+    {"tableSlot":7,"levelId":7,"headerLba":1947922,"tableRawSecondWord":29527,"ranges":[[1947927,7855],[1955782,216],[1955998,216],[1956214,10]],"compression":[{"slot":1,"compressedBytes":441747,"decompressedBytes":1154560},{"slot":2,"compressedBytes":441747,"decompressedBytes":1154560}]},
+    {"tableSlot":8,"levelId":8,"headerLba":1956224,"tableRawSecondWord":33488,"ranges":[[1956229,7717],[1963946,360],[1964306,360],[1964666,17]],"compression":[{"slot":1,"compressedBytes":736150,"decompressedBytes":1930112},{"slot":2,"compressedBytes":736150,"decompressedBytes":1930112}]},
+    {"tableSlot":9,"levelId":9,"headerLba":1964683,"tableRawSecondWord":11275,"ranges":[[1964688,8255],[1972943,285],[1973228,285],[1973513,13]],"compression":[{"slot":1,"compressedBytes":583043,"decompressedBytes":1772096},{"slot":2,"compressedBytes":582997,"decompressedBytes":1772096}]},
+    {"tableSlot":10,"levelId":10,"headerLba":1973526,"tableRawSecondWord":21649,"ranges":[[1973531,8126],[1981657,273],[1981930,273],[1982203,13]],"compression":[{"slot":1,"compressedBytes":558111,"decompressedBytes":1743552},{"slot":2,"compressedBytes":558111,"decompressedBytes":1743552}]},
+    {"tableSlot":11,"levelId":11,"headerLba":1982216,"tableRawSecondWord":35236,"ranges":[[1982221,9027],[1991248,255],[1991503,255],[1991758,12]],"compression":[{"slot":1,"compressedBytes":522092,"decompressedBytes":1487424},{"slot":2,"compressedBytes":522092,"decompressedBytes":1487424}]},
+    {"tableSlot":12,"levelId":12,"headerLba":1991770,"tableRawSecondWord":25386,"ranges":[[1991775,8785],[2000560,358],[2000918,358],[2001276,24]],"compression":[{"slot":1,"compressedBytes":731237,"decompressedBytes":2305472},{"slot":2,"compressedBytes":731237,"decompressedBytes":2305472}]},
+    {"tableSlot":13,"levelId":13,"headerLba":2001300,"tableRawSecondWord":20245,"ranges":[[2001305,9047],[2010352,232],[2010584,232],[2010816,14]],"compression":[{"slot":1,"compressedBytes":473925,"decompressedBytes":1557696},{"slot":2,"compressedBytes":473925,"decompressedBytes":1557696}]},
+    {"tableSlot":14,"levelId":14,"headerLba":2010830,"tableRawSecondWord":25683,"ranges":[[2010835,8862],[2019697,262],[2019959,262],[2020221,12]],"compression":[{"slot":1,"compressedBytes":535645,"decompressedBytes":1444544},{"slot":2,"compressedBytes":535645,"decompressedBytes":1444544}]},
+    {"tableSlot":15,"levelId":15,"headerLba":2020233,"tableRawSecondWord":26282,"ranges":[[2020238,9094],[2029332,256],[2029588,256],[2029844,20]],"compression":[{"slot":1,"compressedBytes":523236,"decompressedBytes":1661184},{"slot":2,"compressedBytes":523236,"decompressedBytes":1661184}]},
+    {"tableSlot":16,"levelId":16,"headerLba":2029864,"tableRawSecondWord":26879,"ranges":[[2029869,8392],[2038261,365],[2038626,365],[2038991,21]],"compression":[{"slot":1,"compressedBytes":746863,"decompressedBytes":2204736},{"slot":2,"compressedBytes":746863,"decompressedBytes":2204736}]},
+    {"tableSlot":17,"levelId":17,"headerLba":2039012,"tableRawSecondWord":14518,"ranges":[[2039017,8065],[2047082,207],[2047289,207],[2047496,10]],"compression":[{"slot":1,"compressedBytes":423029,"decompressedBytes":1210752},{"slot":2,"compressedBytes":423029,"decompressedBytes":1210752}]},
+    {"tableSlot":18,"levelId":18,"headerLba":2047506,"tableRawSecondWord":33170,"ranges":[[2047511,8713],[2056224,357],[2056581,357],[2056938,21]],"compression":[{"slot":1,"compressedBytes":730428,"decompressedBytes":2204224},{"slot":2,"compressedBytes":730261,"decompressedBytes":2204224}]}
+  ],
+  "observedInvariants": {
+    "levelIdsAreTableSlots": true,
+    "allHeaderSizesAre0x2434": true,
+    "allFourRangesContiguousAfterFiveSectorHeader": true,
+    "nextHeaderStartsAtPreviousCoreEndForSlots0Through17": true,
+    "range1AndRange2WadLzStreamsDecoded": 38,
+    "range1AndRange2OutputsEqualWithinLevel": false,
+    "range1AndRange2DecompressedLengthsMatchWithinLevel": true
+  }
+}

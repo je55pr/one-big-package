@@ -1,0 +1,38 @@
+# --- TypeScript reference implementation (reference-ts/) ---
+.build/
+node_modules/
+package-lock.json
+
+# --- deterministic capture output ---
+captures/*.png
+captures/*.json
+
+# --- retail source data (never committed) ---
+*.iso
+*.bin
+*.img
+*.chd
+*.partial
+*.7z.*
+
+# --- .NET / C# ---
+bin/
+obj/
+*.user
+*.suo
+TestResults/
+
+# --- Godot ---
+.godot/
+.mono/
+*.translation
+# generated import metadata for assets; the project is code-first so these are transient
+game/**/*.import
+
+# --- pinned dev toolchain (downloaded by tools/bootstrap-*, not committed) ---
+.tools/
+
+.DS_Store
+
+# composition lab capture output (mirrors captures/ but under game/)
+game/captures/

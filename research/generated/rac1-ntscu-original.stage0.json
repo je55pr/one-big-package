@@ -1,0 +1,123 @@
+{
+  "generator": "tools/disc-archaeology.mjs",
+  "generatedFrom": {
+    "isoFileName": "Ratchet & Clank (USA) (En,Fr,De,Es,It).iso",
+    "sizeBytes": 4214095872,
+    "sha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d"
+  },
+  "buildId": "rac1-ntscu-original",
+  "iso9660": {
+    "descriptorLba": 16,
+    "systemIdentifier": "PLAYSTATION",
+    "volumeIdentifier": "RATCHETANDCLANK",
+    "volumeSpaceSize": 2057664,
+    "logicalBlockSize": 2048,
+    "rootDirectory": {
+      "extentLba": 261,
+      "dataLength": 278
+    }
+  },
+  "ps2Boot": {
+    "volumeIdentifier": "RATCHETANDCLANK",
+    "bootKey": "BOOT2",
+    "bootPath": "cdrom0:\\SCUS_971.99;1",
+    "executableIsoPath": "SCUS_971.99;1",
+    "executableName": "SCUS_971.99",
+    "normalizedSerial": "SCUS-97199",
+    "executableSizeBytes": 1383028,
+    "systemCnf": {
+      "BOOT2": "cdrom0:\\SCUS_971.99;1",
+      "VER": "1.00",
+      "VMODE": "NTSC"
+    }
+  },
+  "bootElf": {
+    "endian": "little",
+    "type": 2,
+    "machine": 8,
+    "entryPoint": "0x0012d728",
+    "programHeaderOffset": "0x00000034",
+    "programHeaderEntrySize": 32,
+    "programHeaderCount": 1,
+    "sectionHeaderOffset": "0x001510ec",
+    "sectionHeaderCount": 61,
+    "flags": "0x20924001"
+  },
+  "programHeaders": [
+    {
+      "index": 0,
+      "type": "0x00000001",
+      "typeName": "PT_LOAD",
+      "offset": "0x00001000",
+      "virtualAddress": "0x00100080",
+      "fileSize": 1299168,
+      "memorySize": 1299168,
+      "flags": "RWX",
+      "alignment": "0x00001000"
+    }
+  ],
+  "ptLoad": [
+    {
+      "index": 0,
+      "virtualStart": "0x00100080",
+      "virtualEnd": "0x0023d360",
+      "fileStart": "0x00001000",
+      "fileEnd": "0x0013e2e0",
+      "fileSize": 1299168,
+      "memorySize": 1299168,
+      "bssBytes": 0,
+      "flags": "RWX",
+      "alignment": "0x00001000"
+    }
+  ],
+  "inventorySummary": {
+    "entryCount": 3,
+    "fileCount": 3,
+    "directoryCount": 0,
+    "totalFileBytes": 1647536,
+    "largeContainerThresholdBytes": 1048576,
+    "largeContainerCount": 1,
+    "extensionHistogram": {
+      "99": 1,
+      "CNF": 1,
+      "IMG": 1
+    }
+  },
+  "largeContainers": [
+    {
+      "path": "/SCUS_971.99",
+      "sizeBytes": 1383028,
+      "offset": 593920,
+      "extentLba": 290
+    }
+  ],
+  "inventory": [
+    {
+      "path": "/IOPRP243.IMG",
+      "name": "IOPRP243.IMG",
+      "isDirectory": false,
+      "extentLba": 966,
+      "offset": 1978368,
+      "sizeBytes": 264449,
+      "version": 1
+    },
+    {
+      "path": "/SCUS_971.99",
+      "name": "SCUS_971.99",
+      "isDirectory": false,
+      "extentLba": 290,
+      "offset": 593920,
+      "sizeBytes": 1383028,
+      "version": 1
+    },
+    {
+      "path": "/SYSTEM.CNF",
+      "name": "SYSTEM.CNF",
+      "isDirectory": false,
+      "extentLba": 289,
+      "offset": 591872,
+      "sizeBytes": 59,
+      "version": 1
+    }
+  ]
+}

@@ -1,0 +1,1772 @@
+{
+  "authority": "rac1-ntscu-original",
+  "totals": {
+    "renderTriangles": 33040382,
+    "collisionTriangles": 3686240,
+    "mobyRenderTriangles": 9761535,
+    "tieInstances": 44712,
+    "shrubInstances": 25572,
+    "mobyInstances": 16232,
+    "mobyLinkedInstances": 15359,
+    "mobyRigidLinkedInstances": 9122,
+    "mobyAnimatedLinkedInstances": 6237,
+    "mobyUnlinkedInstances": 873,
+    "mobyPayloadClasses": 2968,
+    "mobyPackets": 22227,
+    "mobyClassVertices": 1920636,
+    "mobyClassTriangles": 1933983
+  },
+  "levels": [
+    {
+      "level": 0,
+      "meshCount": 319,
+      "renderTriangles": 900909,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 33,
+          "triangles": 149474
+        },
+        "shrub": {
+          "meshes": 70,
+          "triangles": 327841
+        },
+        "sky": {
+          "meshes": 7,
+          "triangles": 2366
+        },
+        "tfrag": {
+          "meshes": 78,
+          "triangles": 24520
+        },
+        "tie": {
+          "meshes": 131,
+          "triangles": 396708
+        }
+      },
+      "textureCount": 410,
+      "texturesByKind": {
+        "moby": 123,
+        "shrub": 70,
+        "sky": 8,
+        "tfrag": 78,
+        "tie": 131
+      },
+      "tieClasses": 63,
+      "shrubClasses": 33,
+      "mobyPayloadClasses": 96,
+      "mobyAnimatedPayloadClasses": 54,
+      "mobyClassPackets": 766,
+      "mobyClassVertices": 66569,
+      "mobyClassTriangles": 69810,
+      "tieInstances": 1114,
+      "shrubInstances": 1697,
+      "mobyInstances": 296,
+      "mobyLinkedInstances": 286,
+      "mobyRigidLinkedInstances": 133,
+      "mobyAnimatedLinkedInstances": 153,
+      "mobyUnlinkedInstances": 10,
+      "collision": {
+        "Octants": 5783,
+        "vertices": 109751,
+        "triangles": 86184,
+        "materials": [
+          9,
+          10,
+          12,
+          31
+        ]
+      },
+      "bounds": {
+        "min": [
+          2.5745086669921875,
+          -5.954422950744629,
+          -56.46558770118281
+        ],
+        "max": [
+          352.2431854769455,
+          101.66961976741732,
+          427.795684825629
+        ]
+      },
+      "environment": {
+        "deathHeight": 27,
+        "fogNear": 0,
+        "fogFar": 235,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 53.55
+      },
+      "ship": [
+        20,
+        20,
+        20,
+        0
+      ]
+    },
+    {
+      "level": 1,
+      "meshCount": 523,
+      "renderTriangles": 1645798,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 140,
+          "triangles": 527505
+        },
+        "shrub": {
+          "meshes": 90,
+          "triangles": 430644
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 1024
+        },
+        "tfrag": {
+          "meshes": 86,
+          "triangles": 61919
+        },
+        "tie": {
+          "meshes": 202,
+          "triangles": 624706
+        }
+      },
+      "textureCount": 620,
+      "texturesByKind": {
+        "moby": 237,
+        "shrub": 90,
+        "sky": 4,
+        "tfrag": 87,
+        "tie": 202
+      },
+      "tieClasses": 95,
+      "shrubClasses": 51,
+      "mobyPayloadClasses": 169,
+      "mobyAnimatedPayloadClasses": 83,
+      "mobyClassPackets": 1440,
+      "mobyClassVertices": 125923,
+      "mobyClassTriangles": 127773,
+      "tieInstances": 1508,
+      "shrubInstances": 1208,
+      "mobyInstances": 983,
+      "mobyLinkedInstances": 918,
+      "mobyRigidLinkedInstances": 332,
+      "mobyAnimatedLinkedInstances": 586,
+      "mobyUnlinkedInstances": 65,
+      "collision": {
+        "Octants": 14067,
+        "vertices": 201447,
+        "triangles": 182331,
+        "materials": [
+          0,
+          4,
+          8,
+          9,
+          10,
+          12,
+          31,
+          36,
+          42,
+          63,
+          72,
+          73,
+          74,
+          76,
+          95,
+          96,
+          127
+        ]
+      },
+      "bounds": {
+        "min": [
+          -179.72363977941274,
+          24.27023696899414,
+          27.52539581236801
+        ],
+        "max": [
+          363.0512564994974,
+          167.44282783284734,
+          739.8344330236828
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 0,
+        "fogFar": 240,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 102
+      },
+      "ship": [
+        167.2265625,
+        61.15489196777344,
+        125.84651947021484,
+        1.5707963705062866
+      ]
+    },
+    {
+      "level": 2,
+      "meshCount": 351,
+      "renderTriangles": 1103452,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 101,
+          "triangles": 416415
+        },
+        "shrub": {
+          "meshes": 52,
+          "triangles": 174718
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 1472
+        },
+        "tfrag": {
+          "meshes": 79,
+          "triangles": 41743
+        },
+        "tie": {
+          "meshes": 114,
+          "triangles": 469104
+        }
+      },
+      "textureCount": 447,
+      "texturesByKind": {
+        "moby": 194,
+        "shrub": 52,
+        "sky": 8,
+        "tfrag": 79,
+        "tie": 114
+      },
+      "tieClasses": 105,
+      "shrubClasses": 32,
+      "mobyPayloadClasses": 156,
+      "mobyAnimatedPayloadClasses": 87,
+      "mobyClassPackets": 1246,
+      "mobyClassVertices": 108229,
+      "mobyClassTriangles": 106086,
+      "tieInstances": 3751,
+      "shrubInstances": 1199,
+      "mobyInstances": 775,
+      "mobyLinkedInstances": 740,
+      "mobyRigidLinkedInstances": 260,
+      "mobyAnimatedLinkedInstances": 480,
+      "mobyUnlinkedInstances": 35,
+      "collision": {
+        "Octants": 9858,
+        "vertices": 140277,
+        "triangles": 119819,
+        "materials": [
+          2,
+          3,
+          8,
+          9,
+          10,
+          12,
+          31,
+          41,
+          63,
+          73,
+          74,
+          95,
+          105,
+          106,
+          127,
+          131
+        ]
+      },
+      "bounds": {
+        "min": [
+          -81.76559075980533,
+          -63.5,
+          -166.10432171254618
+        ],
+        "max": [
+          818.5605174861129,
+          142.12229601718082,
+          554.3952974698274
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 30,
+        "fogFar": 150,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 127.5
+      },
+      "ship": [
+        205.3526153564453,
+        26.614683151245117,
+        153.97421264648438,
+        2.094395160675049
+      ]
+    },
+    {
+      "level": 3,
+      "meshCount": 342,
+      "renderTriangles": 2104131,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 88,
+          "triangles": 454133
+        },
+        "shrub": {
+          "meshes": 58,
+          "triangles": 239946
+        },
+        "sky": {
+          "meshes": 3,
+          "triangles": 896
+        },
+        "tfrag": {
+          "meshes": 66,
+          "triangles": 61624
+        },
+        "tie": {
+          "meshes": 127,
+          "triangles": 1347532
+        }
+      },
+      "textureCount": 433,
+      "texturesByKind": {
+        "moby": 180,
+        "shrub": 58,
+        "sky": 2,
+        "tfrag": 66,
+        "tie": 127
+      },
+      "tieClasses": 127,
+      "shrubClasses": 30,
+      "mobyPayloadClasses": 174,
+      "mobyAnimatedPayloadClasses": 107,
+      "mobyClassPackets": 1271,
+      "mobyClassVertices": 110729,
+      "mobyClassTriangles": 110906,
+      "tieInstances": 5105,
+      "shrubInstances": 985,
+      "mobyInstances": 1029,
+      "mobyLinkedInstances": 994,
+      "mobyRigidLinkedInstances": 438,
+      "mobyAnimatedLinkedInstances": 556,
+      "mobyUnlinkedInstances": 35,
+      "collision": {
+        "Octants": 41004,
+        "vertices": 296407,
+        "triangles": 212570,
+        "materials": [
+          8,
+          9,
+          10,
+          12,
+          31,
+          63,
+          72,
+          73,
+          74,
+          76,
+          95,
+          106,
+          127,
+          136,
+          140,
+          159
+        ]
+      },
+      "bounds": {
+        "min": [
+          -272.56849617271854,
+          -82.36306055724873,
+          -269.28007433274644
+        ],
+        "max": [
+          761.7561181626496,
+          229.94329607421173,
+          776.5258395407118
+        ]
+      },
+      "environment": {
+        "deathHeight": 30,
+        "fogNear": 0.5,
+        "fogFar": 240,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 153
+      },
+      "ship": [
+        248.46194458007812,
+        55.5,
+        98.92123413085938,
+        -0.6922565698623657
+      ]
+    },
+    {
+      "level": 4,
+      "meshCount": 391,
+      "renderTriangles": 1431361,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 83,
+          "triangles": 527133
+        },
+        "shrub": {
+          "meshes": 86,
+          "triangles": 267214
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 1280
+        },
+        "tfrag": {
+          "meshes": 47,
+          "triangles": 43962
+        },
+        "tie": {
+          "meshes": 170,
+          "triangles": 591772
+        }
+      },
+      "textureCount": 485,
+      "texturesByKind": {
+        "moby": 178,
+        "shrub": 86,
+        "sky": 4,
+        "tfrag": 47,
+        "tie": 170
+      },
+      "tieClasses": 79,
+      "shrubClasses": 41,
+      "mobyPayloadClasses": 160,
+      "mobyAnimatedPayloadClasses": 99,
+      "mobyClassPackets": 1393,
+      "mobyClassVertices": 122369,
+      "mobyClassTriangles": 124232,
+      "tieInstances": 1249,
+      "shrubInstances": 835,
+      "mobyInstances": 536,
+      "mobyLinkedInstances": 504,
+      "mobyRigidLinkedInstances": 210,
+      "mobyAnimatedLinkedInstances": 294,
+      "mobyUnlinkedInstances": 32,
+      "collision": {
+        "Octants": 12736,
+        "vertices": 150444,
+        "triangles": 130364,
+        "materials": [
+          8,
+          9,
+          10,
+          12,
+          31,
+          41,
+          63,
+          95,
+          127
+        ]
+      },
+      "bounds": {
+        "min": [
+          -4.808959364891052,
+          -4.328989148139954,
+          -2.3665183332923334
+        ],
+        "max": [
+          569.057037531759,
+          109.1299426854085,
+          622.7310625259166
+        ]
+      },
+      "environment": {
+        "deathHeight": 45,
+        "fogNear": 50,
+        "fogFar": 250,
+        "fogNearIntensity": 249.9,
+        "fogFarIntensity": 63.75
+      },
+      "ship": [
+        213.08126831054688,
+        56.411582946777344,
+        168.1170196533203,
+        1.660780906677246
+      ]
+    },
+    {
+      "level": 5,
+      "meshCount": 402,
+      "renderTriangles": 2440025,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 106,
+          "triangles": 799019
+        },
+        "shrub": {
+          "meshes": 43,
+          "triangles": 220212
+        },
+        "sky": {
+          "meshes": 3,
+          "triangles": 768
+        },
+        "tfrag": {
+          "meshes": 81,
+          "triangles": 63344
+        },
+        "tie": {
+          "meshes": 169,
+          "triangles": 1356682
+        }
+      },
+      "textureCount": 506,
+      "texturesByKind": {
+        "moby": 207,
+        "shrub": 43,
+        "sky": 5,
+        "tfrag": 82,
+        "tie": 169
+      },
+      "tieClasses": 112,
+      "shrubClasses": 23,
+      "mobyPayloadClasses": 147,
+      "mobyAnimatedPayloadClasses": 74,
+      "mobyClassPackets": 1204,
+      "mobyClassVertices": 104115,
+      "mobyClassTriangles": 108437,
+      "tieInstances": 1855,
+      "shrubInstances": 1216,
+      "mobyInstances": 1431,
+      "mobyLinkedInstances": 1397,
+      "mobyRigidLinkedInstances": 888,
+      "mobyAnimatedLinkedInstances": 509,
+      "mobyUnlinkedInstances": 34,
+      "collision": {
+        "Octants": 33981,
+        "vertices": 308385,
+        "triangles": 218969,
+        "materials": [
+          0,
+          4,
+          5,
+          8,
+          9,
+          10,
+          12,
+          31,
+          63,
+          74,
+          95
+        ]
+      },
+      "bounds": {
+        "min": [
+          27,
+          7.96875,
+          20.955726422864245
+        ],
+        "max": [
+          468.23543003931223,
+          194.46534911148228,
+          534.095224964026
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 0,
+        "fogFar": 290,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 63.75
+      },
+      "ship": [
+        357.6692810058594,
+        62.123775482177734,
+        104.55706024169922,
+        2.1711502075195312
+      ]
+    },
+    {
+      "level": 6,
+      "meshCount": 495,
+      "renderTriangles": 1816769,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 127,
+          "triangles": 430410
+        },
+        "shrub": {
+          "meshes": 63,
+          "triangles": 217799
+        },
+        "sky": {
+          "meshes": 6,
+          "triangles": 2688
+        },
+        "tfrag": {
+          "meshes": 137,
+          "triangles": 115784
+        },
+        "tie": {
+          "meshes": 162,
+          "triangles": 1050088
+        }
+      },
+      "textureCount": 593,
+      "texturesByKind": {
+        "moby": 222,
+        "shrub": 63,
+        "sky": 8,
+        "tfrag": 138,
+        "tie": 162
+      },
+      "tieClasses": 97,
+      "shrubClasses": 29,
+      "mobyPayloadClasses": 165,
+      "mobyAnimatedPayloadClasses": 64,
+      "mobyClassPackets": 1207,
+      "mobyClassVertices": 103505,
+      "mobyClassTriangles": 103853,
+      "tieInstances": 1290,
+      "shrubInstances": 519,
+      "mobyInstances": 766,
+      "mobyLinkedInstances": 705,
+      "mobyRigidLinkedInstances": 414,
+      "mobyAnimatedLinkedInstances": 291,
+      "mobyUnlinkedInstances": 61,
+      "collision": {
+        "Octants": 6071,
+        "vertices": 158084,
+        "triangles": 158061,
+        "materials": [
+          1,
+          8,
+          9,
+          10,
+          12,
+          31,
+          63,
+          74,
+          95,
+          137,
+          140,
+          159
+        ]
+      },
+      "bounds": {
+        "min": [
+          63.939453125,
+          18.0419921875,
+          108.55705327111349
+        ],
+        "max": [
+          506.8670805194134,
+          272.241679570077,
+          545.9403505216179
+        ]
+      },
+      "environment": {
+        "deathHeight": 100,
+        "fogNear": 1,
+        "fogFar": 2,
+        "fogNearIntensity": 252.45,
+        "fogFarIntensity": 249.9
+      },
+      "ship": [
+        247.97543334960938,
+        139,
+        134.28346252441406,
+        1.605478048324585
+      ]
+    },
+    {
+      "level": 7,
+      "meshCount": 280,
+      "renderTriangles": 925524,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 91,
+          "triangles": 172503
+        },
+        "shrub": {
+          "meshes": 33,
+          "triangles": 222581
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 962
+        },
+        "tfrag": {
+          "meshes": 66,
+          "triangles": 42860
+        },
+        "tie": {
+          "meshes": 85,
+          "triangles": 486618
+        }
+      },
+      "textureCount": 391,
+      "texturesByKind": {
+        "moby": 200,
+        "shrub": 33,
+        "sky": 7,
+        "tfrag": 66,
+        "tie": 85
+      },
+      "tieClasses": 64,
+      "shrubClasses": 18,
+      "mobyPayloadClasses": 181,
+      "mobyAnimatedPayloadClasses": 71,
+      "mobyClassPackets": 1040,
+      "mobyClassVertices": 87981,
+      "mobyClassTriangles": 90447,
+      "tieInstances": 1150,
+      "shrubInstances": 817,
+      "mobyInstances": 649,
+      "mobyLinkedInstances": 608,
+      "mobyRigidLinkedInstances": 483,
+      "mobyAnimatedLinkedInstances": 125,
+      "mobyUnlinkedInstances": 41,
+      "collision": {
+        "Octants": 18293,
+        "vertices": 212083,
+        "triangles": 181410,
+        "materials": [
+          1,
+          8,
+          9,
+          10,
+          11,
+          12,
+          31,
+          40,
+          63,
+          95
+        ]
+      },
+      "bounds": {
+        "min": [
+          19.870069707676905,
+          21.335215941819154,
+          10.089626166850236
+        ],
+        "max": [
+          470.5744180309001,
+          176.10032749176025,
+          570.5964096238507
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 0,
+        "fogFar": 182,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 178.5
+      },
+      "ship": [
+        275.250244140625,
+        46.5,
+        65.81365966796875,
+        2.429865837097168
+      ]
+    },
+    {
+      "level": 8,
+      "meshCount": 317,
+      "renderTriangles": 1608400,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 114,
+          "triangles": 462876
+        },
+        "shrub": {
+          "meshes": 11,
+          "triangles": 346660
+        },
+        "sky": {
+          "meshes": 3,
+          "triangles": 896
+        },
+        "tfrag": {
+          "meshes": 41,
+          "triangles": 27548
+        },
+        "tie": {
+          "meshes": 148,
+          "triangles": 770420
+        }
+      },
+      "textureCount": 419,
+      "texturesByKind": {
+        "moby": 216,
+        "shrub": 11,
+        "sky": 2,
+        "tfrag": 42,
+        "tie": 148
+      },
+      "tieClasses": 109,
+      "shrubClasses": 12,
+      "mobyPayloadClasses": 181,
+      "mobyAnimatedPayloadClasses": 90,
+      "mobyClassPackets": 1201,
+      "mobyClassVertices": 103325,
+      "mobyClassTriangles": 105003,
+      "tieInstances": 3388,
+      "shrubInstances": 1067,
+      "mobyInstances": 847,
+      "mobyLinkedInstances": 795,
+      "mobyRigidLinkedInstances": 428,
+      "mobyAnimatedLinkedInstances": 367,
+      "mobyUnlinkedInstances": 52,
+      "collision": {
+        "Octants": 11333,
+        "vertices": 112930,
+        "triangles": 92121,
+        "materials": [
+          0,
+          2,
+          4,
+          8,
+          9,
+          12,
+          31,
+          63,
+          73,
+          76,
+          95,
+          127
+        ]
+      },
+      "bounds": {
+        "min": [
+          -66.37005106885226,
+          -7.389534834532386,
+          -129.31190506026505
+        ],
+        "max": [
+          445.5934885986168,
+          96.828125,
+          341.375
+        ]
+      },
+      "environment": {
+        "deathHeight": 20,
+        "fogNear": 40,
+        "fogFar": 100,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 127.5
+      },
+      "ship": [
+        149.39556884765625,
+        38.83050537109375,
+        187.8350372314453,
+        0.6302685737609863
+      ]
+    },
+    {
+      "level": 9,
+      "meshCount": 294,
+      "renderTriangles": 2436827,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 90,
+          "triangles": 557626
+        },
+        "shrub": {
+          "meshes": 43,
+          "triangles": 825043
+        },
+        "sky": {
+          "meshes": 8,
+          "triangles": 1664
+        },
+        "tfrag": {
+          "meshes": 59,
+          "triangles": 31532
+        },
+        "tie": {
+          "meshes": 94,
+          "triangles": 1020962
+        }
+      },
+      "textureCount": 395,
+      "texturesByKind": {
+        "moby": 192,
+        "shrub": 43,
+        "sky": 7,
+        "tfrag": 59,
+        "tie": 94
+      },
+      "tieClasses": 69,
+      "shrubClasses": 25,
+      "mobyPayloadClasses": 159,
+      "mobyAnimatedPayloadClasses": 71,
+      "mobyClassPackets": 1054,
+      "mobyClassVertices": 90711,
+      "mobyClassTriangles": 88365,
+      "tieInstances": 2153,
+      "shrubInstances": 3511,
+      "mobyInstances": 908,
+      "mobyLinkedInstances": 871,
+      "mobyRigidLinkedInstances": 481,
+      "mobyAnimatedLinkedInstances": 390,
+      "mobyUnlinkedInstances": 37,
+      "collision": {
+        "Octants": 28671,
+        "vertices": 291776,
+        "triangles": 222410,
+        "materials": [
+          1,
+          8,
+          9,
+          10,
+          12,
+          31,
+          63,
+          76,
+          95
+        ]
+      },
+      "bounds": {
+        "min": [
+          -252.22959379851727,
+          -39.897477694350805,
+          -387.5037247739781
+        ],
+        "max": [
+          869.6441097832687,
+          658.3544643210626,
+          836.9578711122406
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 50,
+        "fogFar": 200,
+        "fogNearIntensity": 242.25,
+        "fogFarIntensity": 191.25
+      },
+      "ship": [
+        312,
+        36.75,
+        400,
+        -1.9309022426605225
+      ]
+    },
+    {
+      "level": 10,
+      "meshCount": 331,
+      "renderTriangles": 1839729,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 100,
+          "triangles": 461189
+        },
+        "shrub": {
+          "meshes": 58,
+          "triangles": 488234
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 960
+        },
+        "tfrag": {
+          "meshes": 75,
+          "triangles": 51460
+        },
+        "tie": {
+          "meshes": 93,
+          "triangles": 837886
+        }
+      },
+      "textureCount": 428,
+      "texturesByKind": {
+        "moby": 196,
+        "shrub": 58,
+        "sky": 6,
+        "tfrag": 75,
+        "tie": 93
+      },
+      "tieClasses": 127,
+      "shrubClasses": 36,
+      "mobyPayloadClasses": 158,
+      "mobyAnimatedPayloadClasses": 72,
+      "mobyClassPackets": 1066,
+      "mobyClassVertices": 91080,
+      "mobyClassTriangles": 92932,
+      "tieInstances": 1883,
+      "shrubInstances": 1637,
+      "mobyInstances": 872,
+      "mobyLinkedInstances": 801,
+      "mobyRigidLinkedInstances": 547,
+      "mobyAnimatedLinkedInstances": 254,
+      "mobyUnlinkedInstances": 71,
+      "collision": {
+        "Octants": 16231,
+        "vertices": 262453,
+        "triangles": 215015,
+        "materials": [
+          1,
+          2,
+          8,
+          9,
+          10,
+          11,
+          12,
+          31,
+          44,
+          63,
+          72,
+          95,
+          105,
+          108,
+          127
+        ]
+      },
+      "bounds": {
+        "min": [
+          -56.35945722244418,
+          10.72746725184037,
+          1.2385331550106073
+        ],
+        "max": [
+          463.02002746435625,
+          142.22121377479743,
+          577.351536031646
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 10,
+        "fogFar": 100,
+        "fogNearIntensity": 234.6,
+        "fogFarIntensity": 63.75
+      },
+      "ship": [
+        231.69937133789062,
+        49.75,
+        190.99851989746094,
+        1.9787598848342896
+      ]
+    },
+    {
+      "level": 11,
+      "meshCount": 329,
+      "renderTriangles": 1500394,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 87,
+          "triangles": 475457
+        },
+        "shrub": {
+          "meshes": 48,
+          "triangles": 262399
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 1024
+        },
+        "tfrag": {
+          "meshes": 72,
+          "triangles": 52900
+        },
+        "tie": {
+          "meshes": 117,
+          "triangles": 708614
+        }
+      },
+      "textureCount": 439,
+      "texturesByKind": {
+        "moby": 198,
+        "shrub": 48,
+        "sky": 4,
+        "tfrag": 72,
+        "tie": 117
+      },
+      "tieClasses": 43,
+      "shrubClasses": 26,
+      "mobyPayloadClasses": 150,
+      "mobyAnimatedPayloadClasses": 70,
+      "mobyClassPackets": 1076,
+      "mobyClassVertices": 92392,
+      "mobyClassTriangles": 93998,
+      "tieInstances": 1331,
+      "shrubInstances": 1307,
+      "mobyInstances": 720,
+      "mobyLinkedInstances": 688,
+      "mobyRigidLinkedInstances": 376,
+      "mobyAnimatedLinkedInstances": 312,
+      "mobyUnlinkedInstances": 32,
+      "collision": {
+        "Octants": 27239,
+        "vertices": 305036,
+        "triangles": 227750,
+        "materials": [
+          0,
+          8,
+          9,
+          10,
+          12,
+          31,
+          32,
+          41,
+          63,
+          72,
+          76,
+          95,
+          127
+        ]
+      },
+      "bounds": {
+        "min": [
+          143.30107543366006,
+          124.390625,
+          178.24800056420224
+        ],
+        "max": [
+          949.7565859330299,
+          285.549892192184,
+          914.5824950930651
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 0,
+        "fogFar": 205,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 153
+      },
+      "ship": [
+        490.0453796386719,
+        230.75,
+        403.26934814453125,
+        0.7467580437660217
+      ]
+    },
+    {
+      "level": 12,
+      "meshCount": 465,
+      "renderTriangles": 2028618,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 121,
+          "triangles": 566924
+        },
+        "shrub": {
+          "meshes": 37,
+          "triangles": 341606
+        },
+        "sky": {
+          "meshes": 5,
+          "triangles": 768
+        },
+        "tfrag": {
+          "meshes": 142,
+          "triangles": 80160
+        },
+        "tie": {
+          "meshes": 160,
+          "triangles": 1039160
+        }
+      },
+      "textureCount": 564,
+      "texturesByKind": {
+        "moby": 221,
+        "shrub": 37,
+        "sky": 4,
+        "tfrag": 142,
+        "tie": 160
+      },
+      "tieClasses": 101,
+      "shrubClasses": 27,
+      "mobyPayloadClasses": 138,
+      "mobyAnimatedPayloadClasses": 69,
+      "mobyClassPackets": 1154,
+      "mobyClassVertices": 99825,
+      "mobyClassTriangles": 100348,
+      "tieInstances": 4604,
+      "shrubInstances": 1756,
+      "mobyInstances": 695,
+      "mobyLinkedInstances": 659,
+      "mobyRigidLinkedInstances": 321,
+      "mobyAnimatedLinkedInstances": 338,
+      "mobyUnlinkedInstances": 36,
+      "collision": {
+        "Octants": 13756,
+        "vertices": 227474,
+        "triangles": 191563,
+        "materials": [
+          7,
+          8,
+          9,
+          10,
+          12,
+          13,
+          31,
+          63,
+          71,
+          73,
+          95,
+          108,
+          127,
+          159
+        ]
+      },
+      "bounds": {
+        "min": [
+          -58.89161677383478,
+          -7.550349498438212,
+          5.855437993134725
+        ],
+        "max": [
+          486.1465323278712,
+          96.61428605700188,
+          689.1306750618434
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 50,
+        "fogFar": 200,
+        "fogNearIntensity": 249.9,
+        "fogFarIntensity": 170.85
+      },
+      "ship": [
+        298.23016357421875,
+        33.58399963378906,
+        290.58868408203125,
+        1.3013429641723633
+      ]
+    },
+    {
+      "level": 13,
+      "meshCount": 393,
+      "renderTriangles": 2135058,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 118,
+          "triangles": 965337
+        },
+        "shrub": {
+          "meshes": 35,
+          "triangles": 168416
+        },
+        "sky": {
+          "meshes": 7,
+          "triangles": 2176
+        },
+        "tfrag": {
+          "meshes": 88,
+          "triangles": 70444
+        },
+        "tie": {
+          "meshes": 145,
+          "triangles": 928685
+        }
+      },
+      "textureCount": 509,
+      "texturesByKind": {
+        "moby": 232,
+        "shrub": 35,
+        "sky": 8,
+        "tfrag": 89,
+        "tie": 145
+      },
+      "tieClasses": 120,
+      "shrubClasses": 45,
+      "mobyPayloadClasses": 183,
+      "mobyAnimatedPayloadClasses": 85,
+      "mobyClassPackets": 1464,
+      "mobyClassVertices": 126851,
+      "mobyClassTriangles": 125066,
+      "tieInstances": 2040,
+      "shrubInstances": 976,
+      "mobyInstances": 970,
+      "mobyLinkedInstances": 922,
+      "mobyRigidLinkedInstances": 729,
+      "mobyAnimatedLinkedInstances": 193,
+      "mobyUnlinkedInstances": 48,
+      "collision": {
+        "Octants": 35842,
+        "vertices": 328475,
+        "triangles": 243088,
+        "materials": [
+          2,
+          8,
+          9,
+          10,
+          12,
+          31,
+          63,
+          73,
+          74,
+          95
+        ]
+      },
+      "bounds": {
+        "min": [
+          -1.817061419133097,
+          -3.241894483566284,
+          -1.8102424315584358
+        ],
+        "max": [
+          4325.801252449484,
+          444.6875,
+          881.7885976757238
+        ]
+      },
+      "environment": {
+        "deathHeight": 230,
+        "fogNear": 60,
+        "fogFar": 150,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 140.25
+      },
+      "ship": [
+        507.8299560546875,
+        315.650390625,
+        365.986572265625,
+        -4.809980869293213
+      ]
+    },
+    {
+      "level": 14,
+      "meshCount": 309,
+      "renderTriangles": 1297113,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 89,
+          "triangles": 429585
+        },
+        "shrub": {
+          "meshes": 43,
+          "triangles": 147192
+        },
+        "sky": {
+          "meshes": 3,
+          "triangles": 1536
+        },
+        "tfrag": {
+          "meshes": 58,
+          "triangles": 52748
+        },
+        "tie": {
+          "meshes": 116,
+          "triangles": 666052
+        }
+      },
+      "textureCount": 402,
+      "texturesByKind": {
+        "moby": 183,
+        "shrub": 43,
+        "sky": 2,
+        "tfrag": 58,
+        "tie": 116
+      },
+      "tieClasses": 80,
+      "shrubClasses": 21,
+      "mobyPayloadClasses": 148,
+      "mobyAnimatedPayloadClasses": 73,
+      "mobyClassPackets": 1314,
+      "mobyClassVertices": 115950,
+      "mobyClassTriangles": 115212,
+      "tieInstances": 1773,
+      "shrubInstances": 556,
+      "mobyInstances": 551,
+      "mobyLinkedInstances": 431,
+      "mobyRigidLinkedInstances": 231,
+      "mobyAnimatedLinkedInstances": 200,
+      "mobyUnlinkedInstances": 120,
+      "collision": {
+        "Octants": 54258,
+        "vertices": 413149,
+        "triangles": 276051,
+        "materials": [
+          2,
+          7,
+          8,
+          10,
+          12,
+          31,
+          63,
+          74,
+          76,
+          95
+        ]
+      },
+      "bounds": {
+        "min": [
+          -52.44969393071658,
+          -93.81469698299145,
+          -79.48155573792468
+        ],
+        "max": [
+          582.4690918178654,
+          233.79516411306145,
+          589.4745023262149
+        ]
+      },
+      "environment": {
+        "deathHeight": 25,
+        "fogNear": 14,
+        "fogFar": 175,
+        "fogNearIntensity": 242.25,
+        "fogFarIntensity": 127.5
+      },
+      "ship": [
+        260.368408203125,
+        48.35371780395508,
+        172.40699768066406,
+        2.2594289779663086
+      ]
+    },
+    {
+      "level": 15,
+      "meshCount": 480,
+      "renderTriangles": 2631175,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 108,
+          "triangles": 697676
+        },
+        "shrub": {
+          "meshes": 48,
+          "triangles": 241294
+        },
+        "sky": {
+          "meshes": 4,
+          "triangles": 704
+        },
+        "tfrag": {
+          "meshes": 154,
+          "triangles": 78946
+        },
+        "tie": {
+          "meshes": 166,
+          "triangles": 1612555
+        }
+      },
+      "textureCount": 584,
+      "texturesByKind": {
+        "moby": 209,
+        "shrub": 48,
+        "sky": 6,
+        "tfrag": 155,
+        "tie": 166
+      },
+      "tieClasses": 112,
+      "shrubClasses": 21,
+      "mobyPayloadClasses": 152,
+      "mobyAnimatedPayloadClasses": 70,
+      "mobyClassPackets": 1225,
+      "mobyClassVertices": 106281,
+      "mobyClassTriangles": 105528,
+      "tieInstances": 2501,
+      "shrubInstances": 1095,
+      "mobyInstances": 910,
+      "mobyLinkedInstances": 864,
+      "mobyRigidLinkedInstances": 540,
+      "mobyAnimatedLinkedInstances": 324,
+      "mobyUnlinkedInstances": 46,
+      "collision": {
+        "Octants": 14369,
+        "vertices": 202310,
+        "triangles": 167246,
+        "materials": [
+          0,
+          4,
+          8,
+          9,
+          10,
+          11,
+          12,
+          31,
+          63,
+          95,
+          127,
+          140
+        ]
+      },
+      "bounds": {
+        "min": [
+          -17.652901527821086,
+          -2.8983926165739646,
+          -19.38716971629765
+        ],
+        "max": [
+          480.44224284697015,
+          134.15141864924226,
+          530.9443359375
+        ]
+      },
+      "environment": {
+        "deathHeight": 22,
+        "fogNear": 70,
+        "fogFar": 300,
+        "fogNearIntensity": 249.9,
+        "fogFarIntensity": -2.842171E-14
+      },
+      "ship": [
+        317.48736572265625,
+        31.940237045288086,
+        203.0232696533203,
+        -2.6869406700134277
+      ]
+    },
+    {
+      "level": 16,
+      "meshCount": 377,
+      "renderTriangles": 1745236,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 134,
+          "triangles": 573316
+        },
+        "shrub": {
+          "meshes": 55,
+          "triangles": 342921
+        },
+        "sky": {
+          "meshes": 6,
+          "triangles": 1088
+        },
+        "tfrag": {
+          "meshes": 73,
+          "triangles": 64466
+        },
+        "tie": {
+          "meshes": 109,
+          "triangles": 763445
+        }
+      },
+      "textureCount": 464,
+      "texturesByKind": {
+        "moby": 222,
+        "shrub": 55,
+        "sky": 5,
+        "tfrag": 73,
+        "tie": 109
+      },
+      "tieClasses": 124,
+      "shrubClasses": 31,
+      "mobyPayloadClasses": 155,
+      "mobyAnimatedPayloadClasses": 72,
+      "mobyClassPackets": 1074,
+      "mobyClassVertices": 92155,
+      "mobyClassTriangles": 92702,
+      "tieInstances": 3078,
+      "shrubInstances": 1622,
+      "mobyInstances": 1569,
+      "mobyLinkedInstances": 1534,
+      "mobyRigidLinkedInstances": 1188,
+      "mobyAnimatedLinkedInstances": 346,
+      "mobyUnlinkedInstances": 35,
+      "collision": {
+        "Octants": 26200,
+        "vertices": 303680,
+        "triangles": 246852,
+        "materials": [
+          5,
+          8,
+          9,
+          10,
+          12,
+          31,
+          95,
+          127
+        ]
+      },
+      "bounds": {
+        "min": [
+          -278.9147178164943,
+          46.3936398467049,
+          -316.6264944826435
+        ],
+        "max": [
+          790.1515434187362,
+          508.69413539873494,
+          809.3149883746751
+        ]
+      },
+      "environment": {
+        "deathHeight": 0,
+        "fogNear": 0.5,
+        "fogFar": 240,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 153
+      },
+      "ship": [
+        147,
+        129.16390991210938,
+        116.1251220703125,
+        1.5523256063461304
+      ]
+    },
+    {
+      "level": 17,
+      "meshCount": 318,
+      "renderTriangles": 1002766,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 120,
+          "triangles": 471165
+        },
+        "shrub": {
+          "meshes": 20,
+          "triangles": 93805
+        },
+        "sky": {
+          "meshes": 4,
+          "triangles": 2176
+        },
+        "tfrag": {
+          "meshes": 92,
+          "triangles": 63144
+        },
+        "tie": {
+          "meshes": 82,
+          "triangles": 372476
+        }
+      },
+      "textureCount": 422,
+      "texturesByKind": {
+        "moby": 223,
+        "shrub": 20,
+        "sky": 5,
+        "tfrag": 92,
+        "tie": 82
+      },
+      "tieClasses": 85,
+      "shrubClasses": 9,
+      "mobyPayloadClasses": 149,
+      "mobyAnimatedPayloadClasses": 65,
+      "mobyClassPackets": 963,
+      "mobyClassVertices": 81689,
+      "mobyClassTriangles": 80762,
+      "tieInstances": 1157,
+      "shrubInstances": 511,
+      "mobyInstances": 734,
+      "mobyLinkedInstances": 689,
+      "mobyRigidLinkedInstances": 437,
+      "mobyAnimatedLinkedInstances": 252,
+      "mobyUnlinkedInstances": 45,
+      "collision": {
+        "Octants": 33247,
+        "vertices": 341188,
+        "triangles": 271485,
+        "materials": [
+          0,
+          1,
+          2,
+          9,
+          31
+        ]
+      },
+      "bounds": {
+        "min": [
+          259.25,
+          100.234375,
+          105.22540950775146
+        ],
+        "max": [
+          750.7734375,
+          204.8568502097007,
+          717.5
+        ]
+      },
+      "environment": {
+        "deathHeight": 30,
+        "fogNear": 0,
+        "fogFar": 53,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 252.45
+      },
+      "ship": [
+        503.2134704589844,
+        152.5,
+        619.599365234375,
+        -2.356194496154785
+      ]
+    },
+    {
+      "level": 18,
+      "meshCount": 504,
+      "renderTriangles": 2447097,
+      "meshesByKind": {
+        "moby": {
+          "meshes": 128,
+          "triangles": 623792
+        },
+        "shrub": {
+          "meshes": 70,
+          "triangles": 670943
+        },
+        "sky": {
+          "meshes": 8,
+          "triangles": 2048
+        },
+        "tfrag": {
+          "meshes": 139,
+          "triangles": 61350
+        },
+        "tie": {
+          "meshes": 159,
+          "triangles": 1088964
+        }
+      },
+      "textureCount": 612,
+      "texturesByKind": {
+        "moby": 237,
+        "shrub": 70,
+        "sky": 7,
+        "tfrag": 139,
+        "tie": 159
+      },
+      "tieClasses": 92,
+      "shrubClasses": 41,
+      "mobyPayloadClasses": 147,
+      "mobyAnimatedPayloadClasses": 69,
+      "mobyClassPackets": 1069,
+      "mobyClassVertices": 90957,
+      "mobyClassTriangles": 92523,
+      "tieInstances": 3782,
+      "shrubInstances": 3058,
+      "mobyInstances": 991,
+      "mobyLinkedInstances": 953,
+      "mobyRigidLinkedInstances": 686,
+      "mobyAnimatedLinkedInstances": 267,
+      "mobyUnlinkedInstances": 38,
+      "collision": {
+        "Octants": 26545,
+        "vertices": 322399,
+        "triangles": 242951,
+        "materials": [
+          2,
+          8,
+          9,
+          10,
+          11,
+          12,
+          14,
+          31,
+          110
+        ]
+      },
+      "bounds": {
+        "min": [
+          -49.93108444384836,
+          14.993218421936035,
+          -230.44036781946076
+        ],
+        "max": [
+          867.0428602387806,
+          238.2413742358749,
+          1113.7871576900989
+        ]
+      },
+      "environment": {
+        "deathHeight": 78,
+        "fogNear": 0,
+        "fogFar": 180,
+        "fogNearIntensity": 255,
+        "fogFarIntensity": 61.2
+      },
+      "ship": [
+        331.8736267089844,
+        87.33305358886719,
+        630.9716186523438,
+        -0.4742189049720764
+      ]
+    }
+  ]
+}

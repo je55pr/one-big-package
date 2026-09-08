@@ -1,0 +1,21 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <RootNamespace>OneBigPackage</RootNamespace>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../src/OBP.Core/OBP.Core.csproj" />
+    <ProjectReference Include="../src/OBP.IO/OBP.IO.csproj" />
+    <ProjectReference Include="../src/OBP.PS2/OBP.PS2.csproj" />
+    <ProjectReference Include="../src/OBP.Runtime/OBP.Runtime.csproj" />
+    <ProjectReference Include="../src/OBP.Godot/OBP.Godot.csproj" />
+    <ProjectReference Include="../src/OBP.RAC1/OBP.RAC1.csproj" />
+    <ProjectReference Include="../src/OBP.RAC2/OBP.RAC2.csproj" />
+    <ProjectReference Include="../src/OBP.RAC3/OBP.RAC3.csproj" />
+  </ItemGroup>
+
+</Project>

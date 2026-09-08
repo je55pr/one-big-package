@@ -1,0 +1,4801 @@
+{
+  "schemaVersion": 1,
+  "evidenceStatus": "exact retail UYA level-overlay structure with public/GC-lineage section and dispatch-table labels; labels are not recovered native symbols",
+  "generator": "tools/uya-level-vtbl-probe.mjs",
+  "authority": {
+    "buildId": "rac3-ntscu-original",
+    "serial": "SCUS-97353",
+    "sizeBytes": 4379377664,
+    "expectedSha256": "d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444",
+    "sha256VerifiedThisRun": true,
+    "sha256": "d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444"
+  },
+  "selectedRows": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55
+  ],
+  "selectedClasses": [
+    500,
+    501,
+    502,
+    505,
+    511
+  ],
+  "totals": {
+    "rows": 51,
+    "sevenSectionRows": 51,
+    "dispatchSubsetOfGameplayRows": 51,
+    "selectedClassRecordRows": 96
+  },
+  "runtimeFamily": {
+    "classes": [
+      500,
+      501,
+      502,
+      505,
+      511
+    ],
+    "rowsWithRecords": 34,
+    "multiRecordRows": 24,
+    "sharedUpdateRows": 24,
+    "violations": []
+  },
+  "rows": [
+    {
+      "tableIndex": 1,
+      "publicNativeLevelIdHint": 1,
+      "gameplayClassCount": 265,
+      "dispatchRecordCount": 238,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 41248,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df800",
+          "copySize": 805952,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4480",
+          "copySize": 336784,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6880",
+          "copySize": 3660,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7700",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7800",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7880",
+          "copySize": 2253816,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xb28",
+      "updateKinds": {
+        ".text": 236,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 238
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033a5c0",
+            "aux": "0x002f7444",
+            "recordAddress": "0x002f6c04"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033a5c0",
+            "aux": "0x002f7468",
+            "recordAddress": "0x002f6c10"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033a5c0",
+            "aux": "0x002f748c",
+            "recordAddress": "0x002f6c1c"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033a5c0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 131,
+          "501": 14,
+          "502": 0,
+          "505": 0,
+          "511": 41
+        }
+      }
+    },
+    {
+      "tableIndex": 2,
+      "publicNativeLevelIdHint": 2,
+      "gameplayClassCount": 240,
+      "dispatchRecordCount": 218,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 35472,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de180",
+          "copySize": 806800,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3180",
+          "copySize": 332048,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f4300",
+          "copySize": 2880,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f4e80",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f4f80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f5000",
+          "copySize": 2068056,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xa38",
+      "updateKinds": {
+        ".text": 217,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 218
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00332e00",
+            "aux": "0x002f4d68",
+            "recordAddress": "0x002f4678"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00332e00",
+            "aux": "0x002f4d8c",
+            "recordAddress": "0x002f4684"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00332e00",
+            "aux": "0x002f4df8",
+            "recordAddress": "0x002f46a8"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00332e00"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 219,
+          "501": 10,
+          "502": 0,
+          "505": 0,
+          "511": 21
+        }
+      }
+    },
+    {
+      "tableIndex": 3,
+      "publicNativeLevelIdHint": 3,
+      "gameplayClassCount": 313,
+      "dispatchRecordCount": 287,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 39600,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df180",
+          "copySize": 805776,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3d80",
+          "copySize": 335760,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f5d80",
+          "copySize": 3744,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f6c80",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f6d80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f6e00",
+          "copySize": 2180320,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xd74",
+      "updateKinds": {
+        ".text": 285,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 287
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x003350a8",
+            "aux": "0x002f6b6c",
+            "recordAddress": "0x002f60e0"
+          },
+          {
+            "oClass": 511,
+            "update": "0x003350a8",
+            "aux": "0x002f6b90",
+            "recordAddress": "0x002f60ec"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x003350a8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 4
+        }
+      }
+    },
+    {
+      "tableIndex": 4,
+      "publicNativeLevelIdHint": 4,
+      "gameplayClassCount": 292,
+      "dispatchRecordCount": 259,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40736,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df600",
+          "copySize": 808448,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4c00",
+          "copySize": 337040,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f7100",
+          "copySize": 4164,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f8180",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f8280",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f8300",
+          "copySize": 2293464,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xc24",
+      "updateKinds": {
+        ".text": 257,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 259
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00342f60",
+            "aux": "0x002f7de4",
+            "recordAddress": "0x002f74b4"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00342f60",
+            "aux": "0x002f7e08",
+            "recordAddress": "0x002f74c0"
+          },
+          {
+            "oClass": 505,
+            "update": "0x00342f60",
+            "aux": "0x002f7e74",
+            "recordAddress": "0x002f74e4"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00342f60",
+            "aux": "0x002f7e98",
+            "recordAddress": "0x002f74f0"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00342f60"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 208,
+          "501": 29,
+          "502": 0,
+          "505": 4,
+          "511": 44
+        }
+      }
+    },
+    {
+      "tableIndex": 5,
+      "publicNativeLevelIdHint": 5,
+      "gameplayClassCount": 296,
+      "dispatchRecordCount": 265,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40112,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df380",
+          "copySize": 821312,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a7c00",
+          "copySize": 333328,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f9280",
+          "copySize": 3588,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002fa100",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002fa200",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002fa280",
+          "copySize": 2213768,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xc6c",
+      "updateKinds": {
+        ".text": 264,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 265
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033e1b0",
+            "aux": "0x002f9f40",
+            "recordAddress": "0x002f964c"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033e1b0",
+            "aux": "0x002f9f64",
+            "recordAddress": "0x002f9658"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0033e1b0",
+            "aux": "0x002f9fd0",
+            "recordAddress": "0x002f967c"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033e1b0",
+            "aux": "0x002f9ff4",
+            "recordAddress": "0x002f9688"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033e1b0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 323,
+          "501": 16,
+          "502": 0,
+          "505": 42,
+          "511": 21
+        }
+      }
+    },
+    {
+      "tableIndex": 6,
+      "publicNativeLevelIdHint": 6,
+      "gameplayClassCount": 270,
+      "dispatchRecordCount": 242,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 36576,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de580",
+          "copySize": 807344,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3780",
+          "copySize": 331984,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f4880",
+          "copySize": 3420,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f5600",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f5700",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f5780",
+          "copySize": 2145840,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xb58",
+      "updateKinds": {
+        ".text": 241,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 242
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x003322a8",
+            "aux": "0x002f5450",
+            "recordAddress": "0x002f4bd4"
+          },
+          {
+            "oClass": 501,
+            "update": "0x003322a8",
+            "aux": "0x002f5474",
+            "recordAddress": "0x002f4be0"
+          },
+          {
+            "oClass": 505,
+            "update": "0x003322a8",
+            "aux": "0x002f54e0",
+            "recordAddress": "0x002f4c04"
+          },
+          {
+            "oClass": 511,
+            "update": "0x003322a8",
+            "aux": "0x002f5528",
+            "recordAddress": "0x002f4c1c"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x003322a8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 87,
+          "501": 4,
+          "502": 0,
+          "505": 1,
+          "511": 8
+        }
+      }
+    },
+    {
+      "tableIndex": 7,
+      "publicNativeLevelIdHint": 7,
+      "gameplayClassCount": 270,
+      "dispatchRecordCount": 240,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 38112,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001deb80",
+          "copySize": 812864,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5300",
+          "copySize": 340752,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f8680",
+          "copySize": 3252,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f9380",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f9480",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f9500",
+          "copySize": 2241792,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xb40",
+      "updateKinds": {
+        ".text": 238,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 240
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00339540",
+            "aux": "0x002f9214",
+            "recordAddress": "0x002f89d4"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00339540",
+            "aux": "0x002f9238",
+            "recordAddress": "0x002f89e0"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00339540",
+            "aux": "0x002f9280",
+            "recordAddress": "0x002f89f8"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00339540"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 32,
+          "501": 5,
+          "502": 0,
+          "505": 0,
+          "511": 22
+        }
+      }
+    },
+    {
+      "tableIndex": 8,
+      "publicNativeLevelIdHint": 8,
+      "gameplayClassCount": 263,
+      "dispatchRecordCount": 228,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 37744,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001dea00",
+          "copySize": 811488,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4c00",
+          "copySize": 332560,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f5f80",
+          "copySize": 3108,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f6c00",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f6d00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f6d80",
+          "copySize": 2100664,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xab0",
+      "updateKinds": {
+        ".text": 227,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 228
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00339b18",
+            "aux": "0x002f6aa8",
+            "recordAddress": "0x002f6334"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00339b18",
+            "aux": "0x002f6acc",
+            "recordAddress": "0x002f6340"
+          },
+          {
+            "oClass": 505,
+            "update": "0x00339b18",
+            "aux": "0x002f6b14",
+            "recordAddress": "0x002f6358"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00339b18",
+            "aux": "0x002f6b38",
+            "recordAddress": "0x002f6364"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00339b18"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 206,
+          "501": 7,
+          "502": 0,
+          "505": 26,
+          "511": 14
+        }
+      }
+    },
+    {
+      "tableIndex": 9,
+      "publicNativeLevelIdHint": 9,
+      "gameplayClassCount": 283,
+      "dispatchRecordCount": 254,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 41376,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df880",
+          "copySize": 806656,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4780",
+          "copySize": 338192,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f7100",
+          "copySize": 3924,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f8080",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f8180",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f8200",
+          "copySize": 2328944,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xbe8",
+      "updateKinds": {
+        ".text": 252,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 254
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033f168",
+            "aux": "0x002f7d84",
+            "recordAddress": "0x002f7490"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033f168",
+            "aux": "0x002f7da8",
+            "recordAddress": "0x002f749c"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0033f168",
+            "aux": "0x002f7df0",
+            "recordAddress": "0x002f74b4"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033f168",
+            "aux": "0x002f7e14",
+            "recordAddress": "0x002f74c0"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033f168"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 461,
+          "501": 23,
+          "502": 0,
+          "505": 26,
+          "511": 44
+        }
+      }
+    },
+    {
+      "tableIndex": 10,
+      "publicNativeLevelIdHint": 10,
+      "gameplayClassCount": 254,
+      "dispatchRecordCount": 229,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 37904,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001deb00",
+          "copySize": 805616,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3600",
+          "copySize": 332496,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f4900",
+          "copySize": 3048,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f5500",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f5600",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f5680",
+          "copySize": 2142504,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xabc",
+      "updateKinds": {
+        ".text": 228,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 229
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00333de0",
+            "aux": "0x002f5410",
+            "recordAddress": "0x002f4c84"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00333de0",
+            "aux": "0x002f5434",
+            "recordAddress": "0x002f4c90"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00333de0",
+            "aux": "0x002f547c",
+            "recordAddress": "0x002f4ca8"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00333de0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 543,
+          "501": 11,
+          "502": 0,
+          "505": 0,
+          "511": 31
+        }
+      }
+    },
+    {
+      "tableIndex": 11,
+      "publicNativeLevelIdHint": 11,
+      "gameplayClassCount": 241,
+      "dispatchRecordCount": 216,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 36544,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de580",
+          "copySize": 827440,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a8600",
+          "copySize": 331728,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f9600",
+          "copySize": 2964,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002fa200",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002fa300",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002fa380",
+          "copySize": 2070760,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xa20",
+      "updateKinds": {
+        ".text": 215,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 216
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00336210",
+            "aux": "0x002fa074",
+            "recordAddress": "0x002f9954"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00336210",
+            "aux": "0x002fa098",
+            "recordAddress": "0x002f9960"
+          },
+          {
+            "oClass": 505,
+            "update": "0x00336210",
+            "aux": "0x002fa0e0",
+            "recordAddress": "0x002f9978"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00336210",
+            "aux": "0x002fa104",
+            "recordAddress": "0x002f9984"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00336210"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 23,
+          "501": 6,
+          "502": 0,
+          "505": 1,
+          "511": 15
+        }
+      }
+    },
+    {
+      "tableIndex": 12,
+      "publicNativeLevelIdHint": 12,
+      "gameplayClassCount": 253,
+      "dispatchRecordCount": 228,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40512,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df500",
+          "copySize": 806528,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4380",
+          "copySize": 337040,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6880",
+          "copySize": 3792,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7780",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7880",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7900",
+          "copySize": 2259264,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xab0",
+      "updateKinds": {
+        ".text": 226,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 228
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033b560",
+            "aux": "0x002f73cc",
+            "recordAddress": "0x002f6bd4"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033b560",
+            "aux": "0x002f73f0",
+            "recordAddress": "0x002f6be0"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0033b560",
+            "aux": "0x002f7414",
+            "recordAddress": "0x002f6bec"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033b560",
+            "aux": "0x002f7438",
+            "recordAddress": "0x002f6bf8"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033b560"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 130,
+          "501": 6,
+          "502": 0,
+          "505": 12,
+          "511": 11
+        }
+      }
+    },
+    {
+      "tableIndex": 13,
+      "publicNativeLevelIdHint": 13,
+      "gameplayClassCount": 254,
+      "dispatchRecordCount": 226,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 38576,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001ded80",
+          "copySize": 806528,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3c00",
+          "copySize": 332880,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f5080",
+          "copySize": 3264,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f5d80",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f5e80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f5f00",
+          "copySize": 2128232,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xa98",
+      "updateKinds": {
+        ".text": 225,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 226
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00333300",
+            "aux": "0x002f5b6c",
+            "recordAddress": "0x002f53ec"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00333300",
+            "aux": "0x002f5b90",
+            "recordAddress": "0x002f53f8"
+          },
+          {
+            "oClass": 505,
+            "update": "0x00333300",
+            "aux": "0x002f5bfc",
+            "recordAddress": "0x002f541c"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00333300",
+            "aux": "0x002f5c44",
+            "recordAddress": "0x002f5434"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00333300"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 185,
+          "501": 10,
+          "502": 0,
+          "505": 16,
+          "511": 14
+        }
+      }
+    },
+    {
+      "tableIndex": 14,
+      "publicNativeLevelIdHint": 14,
+      "gameplayClassCount": 251,
+      "dispatchRecordCount": 231,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 38912,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001dee80",
+          "copySize": 818656,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a6c80",
+          "copySize": 333840,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f8500",
+          "copySize": 3216,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f9200",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f9300",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f9380",
+          "copySize": 2158912,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xad4",
+      "updateKinds": {
+        ".text": 230,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 231
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00337e40",
+            "aux": "0x002f9028",
+            "recordAddress": "0x002f886c"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00337e40",
+            "aux": "0x002f904c",
+            "recordAddress": "0x002f8878"
+          },
+          {
+            "oClass": 505,
+            "update": "0x00337e40",
+            "aux": "0x002f90b8",
+            "recordAddress": "0x002f889c"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00337e40",
+            "aux": "0x002f90dc",
+            "recordAddress": "0x002f88a8"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00337e40"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 268,
+          "501": 8,
+          "502": 0,
+          "505": 26,
+          "511": 20
+        }
+      }
+    },
+    {
+      "tableIndex": 16,
+      "publicNativeLevelIdHint": 16,
+      "gameplayClassCount": 287,
+      "dispatchRecordCount": 260,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 41472,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df880",
+          "copySize": 853296,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002afe00",
+          "copySize": 336848,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x00302200",
+          "copySize": 3852,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x00303180",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x00303280",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x00303300",
+          "copySize": 2277000,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xc30",
+      "updateKinds": {
+        ".text": 258,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 260
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0034a150",
+            "aux": "0x00302ecc",
+            "recordAddress": "0x003025a8"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0034a150",
+            "aux": "0x00302ef0",
+            "recordAddress": "0x003025b4"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0034a150",
+            "aux": "0x00302f38",
+            "recordAddress": "0x003025cc"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0034a150",
+            "aux": "0x00302f5c",
+            "recordAddress": "0x003025d8"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0034a150"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 87,
+          "501": 11,
+          "502": 0,
+          "505": 42,
+          "511": 22
+        }
+      }
+    },
+    {
+      "tableIndex": 17,
+      "publicNativeLevelIdHint": 17,
+      "gameplayClassCount": 221,
+      "dispatchRecordCount": 202,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 37200,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de800",
+          "copySize": 846320,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002ad200",
+          "copySize": 331344,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002fe080",
+          "copySize": 2796,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002feb80",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002fec80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002fed00",
+          "copySize": 2064736,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x978",
+      "updateKinds": {
+        ".text": 201,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 202
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033add0",
+            "aux": "0x002fea4c",
+            "recordAddress": "0x002fe3e0"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033add0",
+            "aux": "0x002fea70",
+            "recordAddress": "0x002fe3ec"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0033add0",
+            "aux": "0x002feadc",
+            "recordAddress": "0x002fe410"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033add0",
+            "aux": "0x002feb00",
+            "recordAddress": "0x002fe41c"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033add0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 102,
+          "501": 8,
+          "502": 0,
+          "505": 26,
+          "511": 11
+        }
+      }
+    },
+    {
+      "tableIndex": 18,
+      "publicNativeLevelIdHint": 18,
+      "gameplayClassCount": 258,
+      "dispatchRecordCount": 238,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 41504,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df900",
+          "copySize": 806976,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4980",
+          "copySize": 337616,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f7080",
+          "copySize": 4092,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f8080",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f8180",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f8200",
+          "copySize": 2327320,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xb28",
+      "updateKinds": {
+        ".text": 236,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 238
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033eec8",
+            "aux": "0x002f7c8c",
+            "recordAddress": "0x002f73f8"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033eec8",
+            "aux": "0x002f7cb0",
+            "recordAddress": "0x002f7404"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0033eec8",
+            "aux": "0x002f7cd4",
+            "recordAddress": "0x002f7410"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033eec8",
+            "aux": "0x002f7cf8",
+            "recordAddress": "0x002f741c"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033eec8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 89,
+          "501": 15,
+          "502": 0,
+          "505": 16,
+          "511": 28
+        }
+      }
+    },
+    {
+      "tableIndex": 19,
+      "publicNativeLevelIdHint": 19,
+      "gameplayClassCount": 282,
+      "dispatchRecordCount": 257,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 38896,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001dee80",
+          "copySize": 816976,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a6600",
+          "copySize": 338528,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f9080",
+          "copySize": 3528,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f9e80",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f9f80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002fa000",
+          "copySize": 2183336,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xc0c",
+      "updateKinds": {
+        ".text": 256,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 257
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00342b80",
+            "aux": "0x002f9ce0",
+            "recordAddress": "0x002f9464"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00342b80",
+            "aux": "0x002f9d04",
+            "recordAddress": "0x002f9470"
+          },
+          {
+            "oClass": 502,
+            "update": "0x00342b80",
+            "aux": "0x002f9d28",
+            "recordAddress": "0x002f947c"
+          },
+          {
+            "oClass": 505,
+            "update": "0x00342b80",
+            "aux": "0x002f9d70",
+            "recordAddress": "0x002f9494"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00342b80",
+            "aux": "0x002f9d94",
+            "recordAddress": "0x002f94a0"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00342b80"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 223,
+          "501": 13,
+          "502": 28,
+          "505": 64,
+          "511": 12
+        }
+      }
+    },
+    {
+      "tableIndex": 20,
+      "publicNativeLevelIdHint": 20,
+      "gameplayClassCount": 270,
+      "dispatchRecordCount": 243,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 41696,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df980",
+          "copySize": 844688,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002add80",
+          "copySize": 337616,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x00300480",
+          "copySize": 3576,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x00301280",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x00301380",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x00301400",
+          "copySize": 2343616,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xb64",
+      "updateKinds": {
+        ".text": 240,
+        "zero": 3
+      },
+      "auxKinds": {
+        "lvl.vtbl": 243
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00347458",
+            "aux": "0x003010a4",
+            "recordAddress": "0x003007ec"
+          },
+          {
+            "oClass": 501,
+            "update": "0x00347458",
+            "aux": "0x003010c8",
+            "recordAddress": "0x003007f8"
+          },
+          {
+            "oClass": 511,
+            "update": "0x00347458",
+            "aux": "0x003010ec",
+            "recordAddress": "0x00300804"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00347458"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 12,
+          "501": 8,
+          "502": 0,
+          "505": 0,
+          "511": 19
+        }
+      }
+    },
+    {
+      "tableIndex": 21,
+      "publicNativeLevelIdHint": 21,
+      "gameplayClassCount": 228,
+      "dispatchRecordCount": 204,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 36528,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de580",
+          "copySize": 851168,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002ae280",
+          "copySize": 331792,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002ff300",
+          "copySize": 2748,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002ffe00",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002fff00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002fff80",
+          "copySize": 2050912,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x990",
+      "updateKinds": {
+        ".text": 203,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 204
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033d080",
+            "aux": "0x002ffce4",
+            "recordAddress": "0x002ff654"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033d080",
+            "aux": "0x002ffd08",
+            "recordAddress": "0x002ff660"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033d080",
+            "aux": "0x002ffd2c",
+            "recordAddress": "0x002ff66c"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033d080"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 1,
+          "502": 0,
+          "505": 0,
+          "511": 3
+        }
+      }
+    },
+    {
+      "tableIndex": 22,
+      "publicNativeLevelIdHint": 22,
+      "gameplayClassCount": 279,
+      "dispatchRecordCount": 250,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40560,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df500",
+          "copySize": 803840,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3900",
+          "copySize": 346384,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f8280",
+          "copySize": 3588,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f9100",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f9200",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f9280",
+          "copySize": 2274696,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xbb8",
+      "updateKinds": {
+        ".text": 248,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 250
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033ab50",
+            "aux": "0x002f8ed4",
+            "recordAddress": "0x002f85f8"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033ab50",
+            "aux": "0x002f8ef8",
+            "recordAddress": "0x002f8604"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033ab50",
+            "aux": "0x002f8f40",
+            "recordAddress": "0x002f861c"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033ab50"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 285,
+          "501": 5,
+          "502": 0,
+          "505": 0,
+          "511": 17
+        }
+      }
+    },
+    {
+      "tableIndex": 23,
+      "publicNativeLevelIdHint": 23,
+      "gameplayClassCount": 255,
+      "dispatchRecordCount": 229,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 37424,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de900",
+          "copySize": 813632,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5380",
+          "copySize": 337104,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f7880",
+          "copySize": 2940,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f8400",
+          "copySize": 140,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f8500",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f8580",
+          "copySize": 2135256,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xabc",
+      "updateKinds": {
+        ".text": 228,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 229
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x003371a8",
+            "aux": "0x002f836c",
+            "recordAddress": "0x002f7be0"
+          },
+          {
+            "oClass": 501,
+            "update": "0x003371a8",
+            "aux": "0x002f8390",
+            "recordAddress": "0x002f7bec"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x003371a8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 24,
+      "publicNativeLevelIdHint": 24,
+      "gameplayClassCount": 262,
+      "dispatchRecordCount": 236,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 38512,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001ded00",
+          "copySize": 803920,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3180",
+          "copySize": 332880,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f4600",
+          "copySize": 3096,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f5280",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f5380",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f5400",
+          "copySize": 2151984,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xb10",
+      "updateKinds": {
+        ".text": 235,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 236
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x003326c8",
+            "aux": "0x002f5164",
+            "recordAddress": "0x002f4918"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x003326c8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 16,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 26,
+      "publicNativeLevelIdHint": 26,
+      "gameplayClassCount": 247,
+      "dispatchRecordCount": 227,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40864,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df680",
+          "copySize": 805824,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4280",
+          "copySize": 336848,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6680",
+          "copySize": 3780,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7580",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7680",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7700",
+          "copySize": 2289808,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xaa4",
+      "updateKinds": {
+        ".text": 225,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 227
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033b010",
+            "aux": "0x002f71e4",
+            "recordAddress": "0x002f69d4"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033b010"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 27,
+      "publicNativeLevelIdHint": 27,
+      "gameplayClassCount": 233,
+      "dispatchRecordCount": 202,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 36448,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de500",
+          "copySize": 811344,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4680",
+          "copySize": 346256,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f8f80",
+          "copySize": 2580,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f9a00",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f9b00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f9b80",
+          "copySize": 2042864,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x978",
+      "updateKinds": {
+        ".text": 201,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 202
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x00338668",
+            "aux": "0x002f9928",
+            "recordAddress": "0x002f92e0"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x00338668"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 19,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 28,
+      "publicNativeLevelIdHint": 28,
+      "gameplayClassCount": 213,
+      "dispatchRecordCount": 194,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 36336,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001de480",
+          "copySize": 804608,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a2b80",
+          "copySize": 331280,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f3a00",
+          "copySize": 2520,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f4400",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f4500",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f4580",
+          "copySize": 2035424,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x918",
+      "updateKinds": {
+        ".text": 193,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 194
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x003302f0",
+            "aux": "0x002f4348",
+            "recordAddress": "0x002f3d6c"
+          },
+          {
+            "oClass": 501,
+            "update": "0x003302f0",
+            "aux": "0x002f436c",
+            "recordAddress": "0x002f3d78"
+          },
+          {
+            "oClass": 511,
+            "update": "0x003302f0",
+            "aux": "0x002f4390",
+            "recordAddress": "0x002f3d84"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x003302f0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 59,
+          "502": 0,
+          "505": 0,
+          "511": 153
+        }
+      }
+    },
+    {
+      "tableIndex": 29,
+      "publicNativeLevelIdHint": 29,
+      "gameplayClassCount": 250,
+      "dispatchRecordCount": 230,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40048,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df300",
+          "copySize": 807040,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a4380",
+          "copySize": 337232,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6900",
+          "copySize": 3924,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7880",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7980",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7a00",
+          "copySize": 2299592,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0xac8",
+      "updateKinds": {
+        ".text": 228,
+        "zero": 2
+      },
+      "auxKinds": {
+        "lvl.vtbl": 230
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0033add8",
+            "aux": "0x002f7488",
+            "recordAddress": "0x002f6c48"
+          },
+          {
+            "oClass": 501,
+            "update": "0x0033add8",
+            "aux": "0x002f74ac",
+            "recordAddress": "0x002f6c54"
+          },
+          {
+            "oClass": 502,
+            "update": "0x0033add8",
+            "aux": "0x002f74d0",
+            "recordAddress": "0x002f6c60"
+          },
+          {
+            "oClass": 505,
+            "update": "0x0033add8",
+            "aux": "0x002f74f4",
+            "recordAddress": "0x002f6c6c"
+          },
+          {
+            "oClass": 511,
+            "update": "0x0033add8",
+            "aux": "0x002f7518",
+            "recordAddress": "0x002f6c78"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0033add8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 100,
+          "501": 10,
+          "502": 1,
+          "505": 19,
+          "511": 18
+        }
+      }
+    },
+    {
+      "tableIndex": 30,
+      "publicNativeLevelIdHint": 30,
+      "gameplayClassCount": 220,
+      "dispatchRecordCount": 196,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 39008,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001def00",
+          "copySize": 806384,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a3d00",
+          "copySize": 332848,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f5180",
+          "copySize": 2472,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f5b80",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f5c80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f5d00",
+          "copySize": 2075592,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x930",
+      "updateKinds": {
+        ".text": 195,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 196
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032c190",
+            "aux": "0x002f5ae0",
+            "recordAddress": "0x002f5474"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032c190"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 31,
+      "publicNativeLevelIdHint": 31,
+      "gameplayClassCount": 226,
+      "dispatchRecordCount": 199,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 39200,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df000",
+          "copySize": 811120,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5080",
+          "copySize": 334000,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6980",
+          "copySize": 2508,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7380",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7480",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7500",
+          "copySize": 2067328,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x954",
+      "updateKinds": {
+        ".text": 198,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 199
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032c6f0",
+            "aux": "0x002f7304",
+            "recordAddress": "0x002f6c68"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032c6f0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 32,
+      "publicNativeLevelIdHint": 32,
+      "gameplayClassCount": 227,
+      "dispatchRecordCount": 204,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40784,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df600",
+          "copySize": 812832,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5d80",
+          "copySize": 332720,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f7180",
+          "copySize": 2568,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7c00",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7d00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7d80",
+          "copySize": 2103088,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x990",
+      "updateKinds": {
+        ".text": 203,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 204
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032e3b0",
+            "aux": "0x002f7b40",
+            "recordAddress": "0x002f7474"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032e3b0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 33,
+      "publicNativeLevelIdHint": 33,
+      "gameplayClassCount": 225,
+      "dispatchRecordCount": 200,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40096,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df380",
+          "copySize": 810752,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5280",
+          "copySize": 332848,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6700",
+          "copySize": 2520,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7100",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7200",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7280",
+          "copySize": 2075000,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x960",
+      "updateKinds": {
+        ".text": 199,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 200
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032c7b8",
+            "aux": "0x002f7090",
+            "recordAddress": "0x002f69f4"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032c7b8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 34,
+      "publicNativeLevelIdHint": 34,
+      "gameplayClassCount": 233,
+      "dispatchRecordCount": 207,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 39200,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df000",
+          "copySize": 813408,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5980",
+          "copySize": 332976,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6e80",
+          "copySize": 2604,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7900",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7a00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7a80",
+          "copySize": 2094368,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x9b4",
+      "updateKinds": {
+        ".text": 206,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 207
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032f0f0",
+            "aux": "0x002f7864",
+            "recordAddress": "0x002f7180"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032f0f0"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 35,
+      "publicNativeLevelIdHint": 35,
+      "gameplayClassCount": 228,
+      "dispatchRecordCount": 200,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 39440,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df100",
+          "copySize": 813216,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5a00",
+          "copySize": 333040,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f6f00",
+          "copySize": 2520,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7900",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7a00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7a80",
+          "copySize": 2070432,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x960",
+      "updateKinds": {
+        ".text": 199,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 200
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032eda8",
+            "aux": "0x002f7890",
+            "recordAddress": "0x002f71f4"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032eda8"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 36,
+      "publicNativeLevelIdHint": 36,
+      "gameplayClassCount": 233,
+      "dispatchRecordCount": 206,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x001d5680",
+          "copySize": 40032,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x001df300",
+          "copySize": 811184,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x002a5400",
+          "copySize": 334896,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x002f7080",
+          "copySize": 2592,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x002f7b00",
+          "copySize": 160,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x002f7c00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x002f7c80",
+          "copySize": 2093312,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x9a8",
+      "updateKinds": {
+        ".text": 205,
+        "zero": 1
+      },
+      "auxKinds": {
+        "lvl.vtbl": 206
+      },
+      "family": {
+        "records": [
+          {
+            "oClass": 500,
+            "update": "0x0032d288",
+            "aux": "0x002f7a58",
+            "recordAddress": "0x002f7374"
+          }
+        ],
+        "uniqueUpdateAddresses": [
+          "0x0032d288"
+        ],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 39,
+      "publicNativeLevelIdHint": 39,
+      "gameplayClassCount": 92,
+      "dispatchRecordCount": 87,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 40272,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x0024b900",
+          "copySize": 2131724,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x00454080",
+          "copySize": 385640,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x004b2300",
+          "copySize": 2568,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x004b2d80",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x004b2e80",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x004b2f00",
+          "copySize": 2276536,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x414",
+      "updateKinds": {
+        ".text": 65,
+        "zero": 22
+      },
+      "auxKinds": {
+        "lvl.vtbl": 87
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 40,
+      "publicNativeLevelIdHint": 40,
+      "gameplayClassCount": 142,
+      "dispatchRecordCount": 135,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25328,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e80",
+          "copySize": 1410432,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a0400",
+          "copySize": 146448,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003c4080",
+          "copySize": 4260,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003c5180",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003c5280",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003c5300",
+          "copySize": 1597928,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x654",
+      "updateKinds": {
+        ".text": 112,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 135
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 41,
+      "publicNativeLevelIdHint": 41,
+      "gameplayClassCount": 160,
+      "dispatchRecordCount": 150,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25792,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00248080",
+          "copySize": 1407168,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x0039f980",
+          "copySize": 146640,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003c3680",
+          "copySize": 4440,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003c4800",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003c4900",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003c4980",
+          "copySize": 1608816,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x708",
+      "updateKinds": {
+        ".text": 127,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 150
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 42,
+      "publicNativeLevelIdHint": 42,
+      "gameplayClassCount": 148,
+      "dispatchRecordCount": 139,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25520,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247f80",
+          "copySize": 1374400,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x00397880",
+          "copySize": 146640,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003bb580",
+          "copySize": 4380,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003bc700",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003bc800",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003bc880",
+          "copySize": 1599112,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x684",
+      "updateKinds": {
+        ".text": 116,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 139
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 43,
+      "publicNativeLevelIdHint": 43,
+      "gameplayClassCount": 141,
+      "dispatchRecordCount": 133,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25136,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e00",
+          "copySize": 1374400,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x00397700",
+          "copySize": 146448,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003bb380",
+          "copySize": 4200,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003bc400",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003bc500",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003bc580",
+          "copySize": 1589488,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x63c",
+      "updateKinds": {
+        ".text": 110,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 133
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 44,
+      "publicNativeLevelIdHint": 44,
+      "gameplayClassCount": 146,
+      "dispatchRecordCount": 137,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25328,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e80",
+          "copySize": 1373760,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x00397500",
+          "copySize": 146320,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003bb100",
+          "copySize": 4356,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003bc280",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003bc380",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003bc400",
+          "copySize": 1586800,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x66c",
+      "updateKinds": {
+        ".text": 114,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 137
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 45,
+      "publicNativeLevelIdHint": 45,
+      "gameplayClassCount": 141,
+      "dispatchRecordCount": 134,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25184,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e00",
+          "copySize": 1374400,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x00397700",
+          "copySize": 146384,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003bb300",
+          "copySize": 4284,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003bc400",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003bc500",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003bc580",
+          "copySize": 1576024,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x648",
+      "updateKinds": {
+        ".text": 111,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 134
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 46,
+      "publicNativeLevelIdHint": 46,
+      "gameplayClassCount": 111,
+      "dispatchRecordCount": 105,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 24192,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247a00",
+          "copySize": 1442752,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a7e00",
+          "copySize": 146000,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cb880",
+          "copySize": 3360,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cc600",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cc700",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cc780",
+          "copySize": 1508488,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x4ec",
+      "updateKinds": {
+        ".text": 82,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 105
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 47,
+      "publicNativeLevelIdHint": 47,
+      "gameplayClassCount": 114,
+      "dispatchRecordCount": 108,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 24384,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247b00",
+          "copySize": 1443392,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a8180",
+          "copySize": 146128,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cbc80",
+          "copySize": 3396,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cca00",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003ccb00",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003ccb80",
+          "copySize": 1517768,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x510",
+      "updateKinds": {
+        ".text": 85,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 108
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 48,
+      "publicNativeLevelIdHint": 48,
+      "gameplayClassCount": 112,
+      "dispatchRecordCount": 106,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 24400,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247b00",
+          "copySize": 1445440,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a8980",
+          "copySize": 146000,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cc400",
+          "copySize": 3372,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cd180",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cd280",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cd300",
+          "copySize": 1512584,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x4f8",
+      "updateKinds": {
+        ".text": 83,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 106
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 49,
+      "publicNativeLevelIdHint": 49,
+      "gameplayClassCount": 115,
+      "dispatchRecordCount": 108,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 24448,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247b00",
+          "copySize": 1442752,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a7f00",
+          "copySize": 146000,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cb980",
+          "copySize": 3432,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cc700",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cc800",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cc880",
+          "copySize": 1513544,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x510",
+      "updateKinds": {
+        ".text": 85,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 108
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 50,
+      "publicNativeLevelIdHint": 50,
+      "gameplayClassCount": 142,
+      "dispatchRecordCount": 135,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25328,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e80",
+          "copySize": 1480064,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003b1400",
+          "copySize": 146448,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003d5080",
+          "copySize": 4260,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003d6180",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003d6280",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003d6300",
+          "copySize": 1597928,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x654",
+      "updateKinds": {
+        ".text": 112,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 135
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 51,
+      "publicNativeLevelIdHint": 51,
+      "gameplayClassCount": 160,
+      "dispatchRecordCount": 150,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25792,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00248080",
+          "copySize": 1476800,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003b0980",
+          "copySize": 146640,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003d4680",
+          "copySize": 4440,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003d5800",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003d5900",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003d5980",
+          "copySize": 1608816,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x708",
+      "updateKinds": {
+        ".text": 127,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 150
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 52,
+      "publicNativeLevelIdHint": 52,
+      "gameplayClassCount": 148,
+      "dispatchRecordCount": 139,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25520,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247f80",
+          "copySize": 1444032,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a8880",
+          "copySize": 146640,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cc580",
+          "copySize": 4380,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cd700",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cd800",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cd880",
+          "copySize": 1599112,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x684",
+      "updateKinds": {
+        ".text": 116,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 139
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 53,
+      "publicNativeLevelIdHint": 53,
+      "gameplayClassCount": 141,
+      "dispatchRecordCount": 133,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25136,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e00",
+          "copySize": 1444032,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a8700",
+          "copySize": 146448,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cc380",
+          "copySize": 4200,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cd400",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cd500",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cd580",
+          "copySize": 1589488,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x63c",
+      "updateKinds": {
+        ".text": 110,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 133
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 54,
+      "publicNativeLevelIdHint": 54,
+      "gameplayClassCount": 146,
+      "dispatchRecordCount": 137,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25328,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e80",
+          "copySize": 1443392,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a8500",
+          "copySize": 146320,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cc100",
+          "copySize": 4356,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cd280",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cd380",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cd400",
+          "copySize": 1586800,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x66c",
+      "updateKinds": {
+        ".text": 114,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 137
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    },
+    {
+      "tableIndex": 55,
+      "publicNativeLevelIdHint": 55,
+      "gameplayClassCount": 141,
+      "dispatchRecordCount": 134,
+      "dispatchSubsetOfGameplayClasses": true,
+      "sectionCount": 7,
+      "sections": [
+        {
+          "index": 0,
+          "publicLabel": ".lit",
+          "destAddress": "0x00241b80",
+          "copySize": 25184,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 1,
+          "publicLabel": ".bss",
+          "destAddress": "0x00247e00",
+          "copySize": 1444032,
+          "sectionType": "0x00000008"
+        },
+        {
+          "index": 2,
+          "publicLabel": ".data",
+          "destAddress": "0x003a8700",
+          "copySize": 146384,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 3,
+          "publicLabel": "lvl.vtbl",
+          "destAddress": "0x003cc300",
+          "copySize": 4284,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 4,
+          "publicLabel": "lvl.camvtbl",
+          "destAddress": "0x003cd400",
+          "copySize": 180,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 5,
+          "publicLabel": "lvl.sndvtbl",
+          "destAddress": "0x003cd500",
+          "copySize": 96,
+          "sectionType": "0x00000001"
+        },
+        {
+          "index": 6,
+          "publicLabel": ".text",
+          "destAddress": "0x003cd580",
+          "copySize": 1576024,
+          "sectionType": "0x00000001"
+        }
+      ],
+      "dispatchTerminatorOffset": "0x648",
+      "updateKinds": {
+        ".text": 111,
+        "zero": 23
+      },
+      "auxKinds": {
+        "lvl.vtbl": 134
+      },
+      "family": {
+        "records": [],
+        "uniqueUpdateAddresses": [],
+        "sharedUpdateWhenMultiple": true,
+        "authoredInstanceCounts": {
+          "500": 0,
+          "501": 0,
+          "502": 0,
+          "505": 0,
+          "511": 0
+        }
+      }
+    }
+  ]
+}

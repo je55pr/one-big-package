@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "name": "Cross-game proof — R&C1 native level 0 + Going Commando Oozla",
+  "notes": "First two-source OBP composition proof. R&C1 remains evidence-safe LEVEL0 until its planet mapping is promoted; Oozla is offset for side-by-side inspection.",
+  "comparison": { "activeWorldId": "oozla", "fitScale": false, "overlayMode": "both" },
+  "worlds": [
+    { "id": "rac1-level0", "destinationId": "rac1:LEVEL0", "sourceGame": "rc1", "buildId": "rac1-ntscu-original", "levelId": 0, "label": "R&C1 native level 0",
+      "transform": { "translation": [0, 0, 0], "rotationYDegrees": 0, "scale": 1 },
+      "debugTint": [1.0, 0.55, 0.2] },
+    { "id": "oozla", "destinationId": "rac2:LEVEL1", "sourceGame": "gc", "buildId": "rac2-ntscu-v1.01", "levelId": 1, "label": "Oozla — The Megacorp Outlet",
+      "transform": { "translation": [900, 0, 0], "rotationYDegrees": 0, "scale": 1 },
+      "debugTint": [0.2, 0.55, 1.0] }
+  ],
+  "anchors": []
+}

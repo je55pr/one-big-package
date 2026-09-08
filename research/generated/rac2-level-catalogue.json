@@ -1,0 +1,1619 @@
+{
+  "generator": "tools/gc-level-wad.mjs",
+  "generatedFrom": {
+    "isoFileName": "Ratchet & Clank - Going Commando (USA) (v1.01).iso"
+  },
+  "sectorBytes": 2048,
+  "levelCount": 27,
+  "entries": [
+    {
+      "fileIndex": 0,
+      "file": "/G/LEVEL0.WAD",
+      "fileSizeBytes": 15467136,
+      "levelId": 0,
+      "unknown0x04": 0,
+      "unknown0x0c": 3,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 735,
+          "sizeSectors": 6484,
+          "offsetBytes": 1505280,
+          "sizeBytes": 13279232
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 734,
+          "offsetBytes": 2048,
+          "sizeBytes": 1503232
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7219,
+          "sizeSectors": 322,
+          "offsetBytes": 14784512,
+          "sizeBytes": 659456
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 7541,
+          "sizeSectors": 12,
+          "offsetBytes": 15443968,
+          "sizeBytes": 24576
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1408,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 1,
+      "file": "/G/LEVEL1.WAD",
+      "fileSizeBytes": 21890388,
+      "levelId": 1,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 8,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 636,
+          "sizeSectors": 7700,
+          "offsetBytes": 1302528,
+          "sizeBytes": 15769600
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 635,
+          "offsetBytes": 2048,
+          "sizeBytes": 1300480
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8336,
+          "sizeSectors": 396,
+          "offsetBytes": 17072128,
+          "sizeBytes": 811008
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8732,
+          "sizeSectors": 9,
+          "offsetBytes": 17883136,
+          "sizeBytes": 18432
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8741,
+          "sizeSectors": 1519,
+          "offsetBytes": 17901568,
+          "sizeBytes": 3110912
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 10260,
+          "sizeSectors": 116,
+          "offsetBytes": 21012480,
+          "sizeBytes": 237568
+        },
+        {
+          "slot": 7,
+          "offsetSectors": 10376,
+          "sizeSectors": 157,
+          "offsetBytes": 21250048,
+          "sizeBytes": 321536
+        },
+        {
+          "slot": 8,
+          "offsetSectors": 10533,
+          "sizeSectors": 156,
+          "offsetBytes": 21571584,
+          "sizeBytes": 319488
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 684,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 2,
+      "file": "/G/LEVEL2.WAD",
+      "fileSizeBytes": 20712440,
+      "levelId": 2,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 8,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 547,
+          "sizeSectors": 7368,
+          "offsetBytes": 1120256,
+          "sizeBytes": 15089664
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 546,
+          "offsetBytes": 2048,
+          "sizeBytes": 1118208
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7915,
+          "sizeSectors": 386,
+          "offsetBytes": 16209920,
+          "sizeBytes": 790528
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8301,
+          "sizeSectors": 14,
+          "offsetBytes": 17000448,
+          "sizeBytes": 28672
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8315,
+          "sizeSectors": 1214,
+          "offsetBytes": 17029120,
+          "sizeBytes": 2486272
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 9529,
+          "sizeSectors": 157,
+          "offsetBytes": 19515392,
+          "sizeBytes": 321536
+        },
+        {
+          "slot": 7,
+          "offsetSectors": 9686,
+          "sizeSectors": 214,
+          "offsetBytes": 19836928,
+          "sizeBytes": 438272
+        },
+        {
+          "slot": 8,
+          "offsetSectors": 9900,
+          "sizeSectors": 214,
+          "offsetBytes": 20275200,
+          "sizeBytes": 438272
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1032,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 3,
+      "file": "/G/LEVEL3.WAD",
+      "fileSizeBytes": 17643616,
+      "levelId": 3,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 834,
+          "sizeSectors": 7401,
+          "offsetBytes": 1708032,
+          "sizeBytes": 15157248
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 833,
+          "offsetBytes": 2048,
+          "sizeBytes": 1705984
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8235,
+          "sizeSectors": 366,
+          "offsetBytes": 16865280,
+          "sizeBytes": 749568
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8601,
+          "sizeSectors": 15,
+          "offsetBytes": 17614848,
+          "sizeBytes": 30720
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1952,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 4,
+      "file": "/G/LEVEL4.WAD",
+      "fileSizeBytes": 24713692,
+      "levelId": 4,
+      "unknown0x04": 0,
+      "unknown0x0c": 4,
+      "lumpCount": 8,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 605,
+          "sizeSectors": 7812,
+          "offsetBytes": 1239040,
+          "sizeBytes": 15998976
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 604,
+          "offsetBytes": 2048,
+          "sizeBytes": 1236992
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8417,
+          "sizeSectors": 469,
+          "offsetBytes": 17238016,
+          "sizeBytes": 960512
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8886,
+          "sizeSectors": 24,
+          "offsetBytes": 18198528,
+          "sizeBytes": 49152
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8910,
+          "sizeSectors": 1678,
+          "offsetBytes": 18247680,
+          "sizeBytes": 3436544
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 10588,
+          "sizeSectors": 1185,
+          "offsetBytes": 21684224,
+          "sizeBytes": 2426880
+        },
+        {
+          "slot": 7,
+          "offsetSectors": 11773,
+          "sizeSectors": 148,
+          "offsetBytes": 24111104,
+          "sizeBytes": 303104
+        },
+        {
+          "slot": 8,
+          "offsetSectors": 11921,
+          "sizeSectors": 147,
+          "offsetBytes": 24414208,
+          "sizeBytes": 301056
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1572,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 5,
+      "file": "/G/LEVEL5.WAD",
+      "fileSizeBytes": 16685776,
+      "levelId": 5,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 680,
+          "sizeSectors": 7213,
+          "offsetBytes": 1392640,
+          "sizeBytes": 14772224
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 679,
+          "offsetBytes": 2048,
+          "sizeBytes": 1390592
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7893,
+          "sizeSectors": 251,
+          "offsetBytes": 16164864,
+          "sizeBytes": 514048
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8144,
+          "sizeSectors": 4,
+          "offsetBytes": 16678912,
+          "sizeBytes": 8192
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1328,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 6,
+      "file": "/G/LEVEL6.WAD",
+      "fileSizeBytes": 19411936,
+      "levelId": 6,
+      "unknown0x04": 0,
+      "unknown0x0c": 3,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 816,
+          "sizeSectors": 8192,
+          "offsetBytes": 1671168,
+          "sizeBytes": 16777216
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 815,
+          "offsetBytes": 2048,
+          "sizeBytes": 1669120
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 9008,
+          "sizeSectors": 454,
+          "offsetBytes": 18448384,
+          "sizeBytes": 929792
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 9462,
+          "sizeSectors": 17,
+          "offsetBytes": 19378176,
+          "sizeBytes": 34816
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1056,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 7,
+      "file": "/G/LEVEL7.WAD",
+      "fileSizeBytes": 22281520,
+      "levelId": 7,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 6,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 761,
+          "sizeSectors": 7015,
+          "offsetBytes": 1558528,
+          "sizeBytes": 14366720
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 760,
+          "offsetBytes": 2048,
+          "sizeBytes": 1556480
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7776,
+          "sizeSectors": 311,
+          "offsetBytes": 15925248,
+          "sizeBytes": 636928
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8087,
+          "sizeSectors": 8,
+          "offsetBytes": 16562176,
+          "sizeBytes": 16384
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8095,
+          "sizeSectors": 1602,
+          "offsetBytes": 16578560,
+          "sizeBytes": 3280896
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 9697,
+          "sizeSectors": 1183,
+          "offsetBytes": 19859456,
+          "sizeBytes": 2422784
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 720,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 8,
+      "file": "/G/LEVEL8.WAD",
+      "fileSizeBytes": 20602928,
+      "levelId": 8,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 6,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 779,
+          "sizeSectors": 6531,
+          "offsetBytes": 1595392,
+          "sizeBytes": 13375488
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 778,
+          "offsetBytes": 2048,
+          "sizeBytes": 1593344
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7310,
+          "sizeSectors": 439,
+          "offsetBytes": 14970880,
+          "sizeBytes": 899072
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 7749,
+          "sizeSectors": 11,
+          "offsetBytes": 15869952,
+          "sizeBytes": 22528
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 7760,
+          "sizeSectors": 424,
+          "offsetBytes": 15892480,
+          "sizeBytes": 868352
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 8184,
+          "sizeSectors": 1877,
+          "offsetBytes": 16760832,
+          "sizeBytes": 3844096
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 2000,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 9,
+      "file": "/G/LEVEL9.WAD",
+      "fileSizeBytes": 18821856,
+      "levelId": 9,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 830,
+          "sizeSectors": 7926,
+          "offsetBytes": 1699840,
+          "sizeBytes": 16232448
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 829,
+          "offsetBytes": 2048,
+          "sizeBytes": 1697792
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8756,
+          "sizeSectors": 422,
+          "offsetBytes": 17932288,
+          "sizeBytes": 864256
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 9178,
+          "sizeSectors": 13,
+          "offsetBytes": 18796544,
+          "sizeBytes": 26624
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1312,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 10,
+      "file": "/G/LEVEL10.WAD",
+      "fileSizeBytes": 14395584,
+      "levelId": 10,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 3,
+      "slotsPresent": [
+        0,
+        1,
+        2
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 639,
+          "sizeSectors": 6103,
+          "offsetBytes": 1308672,
+          "sizeBytes": 12498944
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 638,
+          "offsetBytes": 2048,
+          "sizeBytes": 1306624
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 6742,
+          "sizeSectors": 288,
+          "offsetBytes": 13807616,
+          "sizeBytes": 589824
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1856,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 11,
+      "file": "/G/LEVEL11.WAD",
+      "fileSizeBytes": 22379168,
+      "levelId": 11,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 8,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        7,
+        8
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 485,
+          "sizeSectors": 7509,
+          "offsetBytes": 993280,
+          "sizeBytes": 15378432
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 484,
+          "offsetBytes": 2048,
+          "sizeBytes": 991232
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7994,
+          "sizeSectors": 505,
+          "offsetBytes": 16371712,
+          "sizeBytes": 1034240
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8499,
+          "sizeSectors": 25,
+          "offsetBytes": 17405952,
+          "sizeBytes": 51200
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8524,
+          "sizeSectors": 971,
+          "offsetBytes": 17457152,
+          "sizeBytes": 1988608
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 9495,
+          "sizeSectors": 743,
+          "offsetBytes": 19445760,
+          "sizeBytes": 1521664
+        },
+        {
+          "slot": 7,
+          "offsetSectors": 10238,
+          "sizeSectors": 344,
+          "offsetBytes": 20967424,
+          "sizeBytes": 704512
+        },
+        {
+          "slot": 8,
+          "offsetSectors": 10582,
+          "sizeSectors": 346,
+          "offsetBytes": 21671936,
+          "sizeBytes": 708608
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1376,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 12,
+      "file": "/G/LEVEL12.WAD",
+      "fileSizeBytes": 17556112,
+      "levelId": 12,
+      "unknown0x04": 0,
+      "unknown0x0c": 3,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 767,
+          "sizeSectors": 7391,
+          "offsetBytes": 1570816,
+          "sizeBytes": 15136768
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 766,
+          "offsetBytes": 2048,
+          "sizeBytes": 1568768
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8158,
+          "sizeSectors": 397,
+          "offsetBytes": 16707584,
+          "sizeBytes": 813056
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8555,
+          "sizeSectors": 18,
+          "offsetBytes": 17520640,
+          "sizeBytes": 36864
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1392,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 13,
+      "file": "/G/LEVEL13.WAD",
+      "fileSizeBytes": 17982128,
+      "levelId": 13,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 688,
+          "sizeSectors": 7667,
+          "offsetBytes": 1409024,
+          "sizeBytes": 15702016
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 687,
+          "offsetBytes": 2048,
+          "sizeBytes": 1406976
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8355,
+          "sizeSectors": 417,
+          "offsetBytes": 17111040,
+          "sizeBytes": 854016
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8772,
+          "sizeSectors": 9,
+          "offsetBytes": 17965056,
+          "sizeBytes": 18432
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1360,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 14,
+      "file": "/G/LEVEL14.WAD",
+      "fileSizeBytes": 17356704,
+      "levelId": 14,
+      "unknown0x04": 0,
+      "unknown0x0c": 3,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 826,
+          "sizeSectors": 7299,
+          "offsetBytes": 1691648,
+          "sizeBytes": 14948352
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 825,
+          "offsetBytes": 2048,
+          "sizeBytes": 1689600
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8125,
+          "sizeSectors": 338,
+          "offsetBytes": 16640000,
+          "sizeBytes": 692224
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8463,
+          "sizeSectors": 12,
+          "offsetBytes": 17332224,
+          "sizeBytes": 24576
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 96,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 15,
+      "file": "/G/LEVEL15.WAD",
+      "fileSizeBytes": 14095808,
+      "levelId": 15,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 722,
+          "sizeSectors": 5919,
+          "offsetBytes": 1478656,
+          "sizeBytes": 12122112
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 721,
+          "offsetBytes": 2048,
+          "sizeBytes": 1476608
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 6641,
+          "sizeSectors": 240,
+          "offsetBytes": 13600768,
+          "sizeBytes": 491520
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 6881,
+          "sizeSectors": 2,
+          "offsetBytes": 14092288,
+          "sizeBytes": 4096
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 576,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 16,
+      "file": "/G/LEVEL16.WAD",
+      "fileSizeBytes": 18357216,
+      "levelId": 16,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 809,
+          "sizeSectors": 7857,
+          "offsetBytes": 1656832,
+          "sizeBytes": 16091136
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 808,
+          "offsetBytes": 2048,
+          "sizeBytes": 1654784
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8666,
+          "sizeSectors": 291,
+          "offsetBytes": 17747968,
+          "sizeBytes": 595968
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8957,
+          "sizeSectors": 7,
+          "offsetBytes": 18343936,
+          "sizeBytes": 14336
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1056,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 17,
+      "file": "/G/LEVEL17.WAD",
+      "fileSizeBytes": 16748576,
+      "levelId": 17,
+      "unknown0x04": 0,
+      "unknown0x0c": 4,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 659,
+          "sizeSectors": 7117,
+          "offsetBytes": 1349632,
+          "sizeBytes": 14575616
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 658,
+          "offsetBytes": 2048,
+          "sizeBytes": 1347584
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7776,
+          "sizeSectors": 389,
+          "offsetBytes": 15925248,
+          "sizeBytes": 796672
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8165,
+          "sizeSectors": 14,
+          "offsetBytes": 16721920,
+          "sizeBytes": 28672
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 2016,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 18,
+      "file": "/G/LEVEL18.WAD",
+      "fileSizeBytes": 17691328,
+      "levelId": 18,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 730,
+          "sizeSectors": 7569,
+          "offsetBytes": 1495040,
+          "sizeBytes": 15501312
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 729,
+          "offsetBytes": 2048,
+          "sizeBytes": 1492992
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8299,
+          "sizeSectors": 330,
+          "offsetBytes": 16996352,
+          "sizeBytes": 675840
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8629,
+          "sizeSectors": 10,
+          "offsetBytes": 17672192,
+          "sizeBytes": 20480
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1344,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 19,
+      "file": "/G/LEVEL19.WAD",
+      "fileSizeBytes": 25119448,
+      "levelId": 19,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 10,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 768,
+          "sizeSectors": 7513,
+          "offsetBytes": 1572864,
+          "sizeBytes": 15386624
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 767,
+          "offsetBytes": 2048,
+          "sizeBytes": 1570816
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 8281,
+          "sizeSectors": 403,
+          "offsetBytes": 16959488,
+          "sizeBytes": 825344
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8684,
+          "sizeSectors": 23,
+          "offsetBytes": 17784832,
+          "sizeBytes": 47104
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8707,
+          "sizeSectors": 1588,
+          "offsetBytes": 17831936,
+          "sizeBytes": 3252224
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 10295,
+          "sizeSectors": 1339,
+          "offsetBytes": 21084160,
+          "sizeBytes": 2742272
+        },
+        {
+          "slot": 6,
+          "offsetSectors": 11634,
+          "sizeSectors": 497,
+          "offsetBytes": 23826432,
+          "sizeBytes": 1017856
+        },
+        {
+          "slot": 7,
+          "offsetSectors": 12131,
+          "sizeSectors": 45,
+          "offsetBytes": 24844288,
+          "sizeBytes": 92160
+        },
+        {
+          "slot": 8,
+          "offsetSectors": 12176,
+          "sizeSectors": 45,
+          "offsetBytes": 24936448,
+          "sizeBytes": 92160
+        },
+        {
+          "slot": 9,
+          "offsetSectors": 12221,
+          "sizeSectors": 45,
+          "offsetBytes": 25028608,
+          "sizeBytes": 92160
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1320,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 20,
+      "file": "/G/LEVEL20.WAD",
+      "fileSizeBytes": 21377628,
+      "levelId": 20,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 10,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 653,
+          "sizeSectors": 6952,
+          "offsetBytes": 1337344,
+          "sizeBytes": 14237696
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 652,
+          "offsetBytes": 2048,
+          "sizeBytes": 1335296
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 7605,
+          "sizeSectors": 407,
+          "offsetBytes": 15575040,
+          "sizeBytes": 833536
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 8012,
+          "sizeSectors": 18,
+          "offsetBytes": 16408576,
+          "sizeBytes": 36864
+        },
+        {
+          "slot": 4,
+          "offsetSectors": 8030,
+          "sizeSectors": 714,
+          "offsetBytes": 16445440,
+          "sizeBytes": 1462272
+        },
+        {
+          "slot": 5,
+          "offsetSectors": 8744,
+          "sizeSectors": 917,
+          "offsetBytes": 17907712,
+          "sizeBytes": 1878016
+        },
+        {
+          "slot": 6,
+          "offsetSectors": 9661,
+          "sizeSectors": 276,
+          "offsetBytes": 19785728,
+          "sizeBytes": 565248
+        },
+        {
+          "slot": 7,
+          "offsetSectors": 9937,
+          "sizeSectors": 167,
+          "offsetBytes": 20350976,
+          "sizeBytes": 342016
+        },
+        {
+          "slot": 8,
+          "offsetSectors": 10104,
+          "sizeSectors": 167,
+          "offsetBytes": 20692992,
+          "sizeBytes": 342016
+        },
+        {
+          "slot": 9,
+          "offsetSectors": 10271,
+          "sizeSectors": 168,
+          "offsetBytes": 21035008,
+          "sizeBytes": 344064
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1444,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 21,
+      "file": "/G/LEVEL21.WAD",
+      "fileSizeBytes": 13359328,
+      "levelId": 30,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 571,
+          "sizeSectors": 5724,
+          "offsetBytes": 1169408,
+          "sizeBytes": 11722752
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 570,
+          "offsetBytes": 2048,
+          "sizeBytes": 1167360
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 6295,
+          "sizeSectors": 219,
+          "offsetBytes": 12892160,
+          "sizeBytes": 448512
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 6514,
+          "sizeSectors": 10,
+          "offsetBytes": 13340672,
+          "sizeBytes": 20480
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1824,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 22,
+      "file": "/G/LEVEL22.WAD",
+      "fileSizeBytes": 13616432,
+      "levelId": 22,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 667,
+          "sizeSectors": 5705,
+          "offsetBytes": 1366016,
+          "sizeBytes": 11683840
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 666,
+          "offsetBytes": 2048,
+          "sizeBytes": 1363968
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 6372,
+          "sizeSectors": 272,
+          "offsetBytes": 13049856,
+          "sizeBytes": 557056
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 6644,
+          "sizeSectors": 5,
+          "offsetBytes": 13606912,
+          "sizeBytes": 10240
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 720,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 23,
+      "file": "/G/LEVEL23.WAD",
+      "fileSizeBytes": 12603856,
+      "levelId": 23,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 819,
+          "sizeSectors": 5085,
+          "offsetBytes": 1677312,
+          "sizeBytes": 10414080
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 818,
+          "offsetBytes": 2048,
+          "sizeBytes": 1675264
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 5904,
+          "sizeSectors": 247,
+          "offsetBytes": 12091392,
+          "sizeBytes": 505856
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 6151,
+          "sizeSectors": 4,
+          "offsetBytes": 12597248,
+          "sizeBytes": 8192
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1584,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 24,
+      "file": "/G/LEVEL24.WAD",
+      "fileSizeBytes": 8350423,
+      "levelId": 24,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 3,
+      "slotsPresent": [
+        0,
+        1,
+        2
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 459,
+          "sizeSectors": 3409,
+          "offsetBytes": 940032,
+          "sizeBytes": 6981632
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 458,
+          "offsetBytes": 2048,
+          "sizeBytes": 937984
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 3868,
+          "sizeSectors": 210,
+          "offsetBytes": 7921664,
+          "sizeBytes": 430080
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1321,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 25,
+      "file": "/G/LEVEL25.WAD",
+      "fileSizeBytes": 8642189,
+      "levelId": 25,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 3,
+      "slotsPresent": [
+        0,
+        1,
+        2
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 670,
+          "sizeSectors": 3346,
+          "offsetBytes": 1372160,
+          "sizeBytes": 6852608
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 669,
+          "offsetBytes": 2048,
+          "sizeBytes": 1370112
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 4016,
+          "sizeSectors": 204,
+          "offsetBytes": 8224768,
+          "sizeBytes": 417792
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 371,
+        "gaps": [],
+        "overlaps": []
+      }
+    },
+    {
+      "fileIndex": 26,
+      "file": "/G/LEVEL26.WAD",
+      "fileSizeBytes": 10990224,
+      "levelId": 26,
+      "unknown0x04": 0,
+      "unknown0x0c": 0,
+      "lumpCount": 4,
+      "slotsPresent": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "lumps": [
+        {
+          "slot": 0,
+          "offsetSectors": 525,
+          "sizeSectors": 4504,
+          "offsetBytes": 1075200,
+          "sizeBytes": 9224192
+        },
+        {
+          "slot": 1,
+          "offsetSectors": 1,
+          "sizeSectors": 524,
+          "offsetBytes": 2048,
+          "sizeBytes": 1073152
+        },
+        {
+          "slot": 2,
+          "offsetSectors": 5029,
+          "sizeSectors": 332,
+          "offsetBytes": 10299392,
+          "sizeBytes": 679936
+        },
+        {
+          "slot": 3,
+          "offsetSectors": 5361,
+          "sizeSectors": 6,
+          "offsetBytes": 10979328,
+          "sizeBytes": 12288
+        }
+      ],
+      "tiling": {
+        "contiguousFromSectorOne": true,
+        "tailOverrunBytes": 1392,
+        "gaps": [],
+        "overlaps": []
+      }
+    }
+  ]
+}

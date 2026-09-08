@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OBP.Godot</RootNamespace>
+    <!-- Loaded by the Godot runtime; the API surface comes from the GodotSharp package. -->
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GodotSharp" Version="4.7.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
+    <ProjectReference Include="../OBP.Runtime/OBP.Runtime.csproj" />
+    <ProjectReference Include="../OBP.Composition/OBP.Composition.csproj" />
+  </ItemGroup>
+
+</Project>

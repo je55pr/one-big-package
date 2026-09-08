@@ -1,0 +1,55 @@
+{
+  "authority_build": "rac1-ntscu-original",
+  "native_level_id": 0,
+  "table_slot": 0,
+  "level_header_lba": 1885903,
+  "level_header_size": 9268,
+  "outer_range0_lba": 1885908,
+  "outer_range0_sectors": 6562,
+  "core_index_size": 32160,
+  "core_data_compressed_size": 9515621,
+  "core_data_decompressed_size": 16766912,
+  "core_data_sha256": "a849d0554f38d7627c9a8f019de2dd6b983c24c85f113e1b94e2bdf686b910a4",
+  "tfrags": {
+    "offset": 0,
+    "end": 1130304,
+    "count": 460,
+    "vertices": 24758,
+    "triangles": 24520,
+    "native_declared_triangles": 24520,
+    "texture_ids": 78,
+    "bounds_obp_y_up": {
+      "min": [86.6689453125, 5.9990234375, 67.9599609375],
+      "max": [233.083984375, 43.5087890625, 307.4794921875]
+    }
+  },
+  "textures": {
+    "table_count": 78,
+    "used_ids": 78,
+    "dimensions": {
+      "128x128": 46,
+      "64x64": 30,
+      "32x32": 2
+    }
+  },
+  "collision": {
+    "offset": 2090944,
+    "end": 2889472,
+    "octants": 5783,
+    "vertices": 109751,
+    "triangles": 86184,
+    "native_type_ids": [9, 10, 12, 31],
+    "bounds_native_z_up": {
+      "min": [67.9375, 70.125, 10.1875],
+      "max": [207.9375, 311.1875, 82.0625]
+    },
+    "bounds_obp_y_up": {
+      "min": [67.9375, 10.1875, 70.125],
+      "max": [207.9375, 82.0625, 311.1875]
+    }
+  },
+  "world_bounds_obp_y_up": {
+    "min": [67.9375, 5.9990234375, 67.9599609375],
+    "max": [233.083984375, 82.0625, 311.1875]
+  }
+}

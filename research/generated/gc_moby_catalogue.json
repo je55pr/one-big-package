@@ -1,0 +1,92 @@
+{
+  "schema": "obp.gc-moby-gameplay-catalogue.v1",
+  "scope": "first interactive archaeology slice; not the full 976-class census",
+  "authority": {
+    "buildId": "rac2-ntscu-v1.01",
+    "serial": "SCUS-97268",
+    "isoSha256": "9db2e33e276133cc283647fa3279b37911955e123d6199d10065547eaa9b1ce5"
+  },
+  "evidence": {
+    "structuralCensusCommit": "d0533710cf225cebf35080fb8d6435b4fd257088",
+    "pvarFamilyCommit": "7bcfb568db6d4f60337d68bd3dbe0961332c9b71",
+    "loadedRuntimeCommit": "7bcfb568db6d4f60337d68bd3dbe0961332c9b71",
+    "loadedRuntimePipelines": [2827600082,2827602355,2827606692,2827607142,2827609920,2827610817,2827642036,2827645486,2827647584],
+    "loadedRuntimeJobs": [16354081451,16354095087,16354123617,16354126201,16354148745,16354155119,16354351180,16354372622,16354385800],
+    "publicWrenchCommit": "e67ea46e5e60ec52a0c31fcde1e3f46b20aa4cfb"
+  },
+  "resourceSystem": {
+    "confidence": "CONFIRMED_STRUCTURE_CORROBORATED_AMMO_INTERPRETATION",
+    "slotCount": 56,
+    "countBase": "0x00139688",
+    "descriptorMapBase": "0x00139568",
+    "descriptorBase": "0x002637a0",
+    "descriptorStride": 224,
+    "capacityOffset": 142,
+    "candidateEnableBase": "0x001a7af8",
+    "minusOneRule": "index -1 is replaced by runtime-selected index at 0x0019b068 before table access",
+    "corroborated": ["Pinned Wrench types_gc.h defines Ammo[56]."],
+    "unknowns": ["exact slot names","exact relationship between runtime counts and saved Ammo[56]"]
+  },
+  "classes": [
+    {
+      "oClass": 500,
+      "identity": "Bolt Crate",
+      "identityConfidence": "CORROBORATED",
+      "instanceCount": 1979,
+      "levelsObserved": [0,1,2,3,4,6,7,8,9,11,12,13,14,16,17,18,19,20],
+      "pvar": {"size":272,"modeBits":[32],"relativePointerOffsets":[0,8],"authoredVariableDwordOffsets":[],"subvarHeader":{"offset0":32,"offset8":80}},
+      "runtime": {
+        "loadedUpdateByLevel": {"1":"0x00391080","2":"0x003a52b8","8":"0x003ab1e8"},
+        "stateField": "Moby+0x20",
+        "stateCount": 7,
+        "pvarFieldEvidence": {"0xa0_0xa4":"linked Moby references","0xac":"mutable flags","0xb4":"mutable counter/timing-like word","0xc6":"runtime halfword","0xc8":"live authored input","0xca":"mutable runtime byte","0xcb":"resource-emission selector input","0xcc":"live authored input"},
+        "resourceBridge": ["loaded crate-family transition path","0x003922b0","0x00392158","0x003d3e28","oClass 3291","0x003d37a0","0x002c9738(index,amount)"]
+      },
+      "retailNotes": ["Every authored static class-500 PVar in the authority build is identical.","No per-instance authored bolt amount or destroyed flag is visible in the static 0x110 PVar image.","The loaded crate-family path reaches generic indexed-resource emission machinery."],
+      "unknowns": ["exact meanings of states 0..6","native class-500 hit/health threshold","Bolt Crate-specific resource index/amount/RNG","collision/effect ordering","persistence/reload/respawn"]
+    },
+    {"oClass":501,"identity":null,"identityConfidence":"UNKNOWN","instanceCount":131,"levelsObserved":[0,1,2,3,4,6,7,8,9,12,13,16,26],"pvar":{"size":272,"modeBits":[32],"relativePointerOffsets":[0,8],"authoredVariableDwordOffsets":[200,204]},"authoredBooleanCounts":{"0xc8_nonzero":16,"0xcc_nonzero":18},"runtime":{"loadedUpdateByLevel":{"1":"0x00391080","2":"0x003a52b8","8":"0x003ab1e8"}}},
+    {"oClass":502,"identity":null,"identityConfidence":"UNKNOWN","instanceCount":0,"levelsObserved":[],"classTableLevels":[],"pvar":null,"confirmedRelationships":["Not listed in any of the 27 retail gameplay Moby class tables and has zero authored static instances/PVars.","Loaded crate-family code still contains explicit class-502 branches."],"inferred":["dormant/shared-lineage crate code path"],"unknowns":["dynamic reachability","GC gameplay identity if ever instantiated"]},
+    {"oClass":505,"identity":null,"identityConfidence":"UNKNOWN","instanceCount":159,"levelsObserved":[2,3,7,9,13,14,17],"pvar":{"size":272,"modeBits":[32],"relativePointerOffsets":[0,8],"authoredVariableDwordOffsets":[]},"runtime":{"loadedUpdateByLevel":{"2":"0x003a52b8"},"notes":["Transition path writes PVar +0xca = 1."]}},
+    {"oClass":511,"identity":null,"identityConfidence":"UNKNOWN","instanceCount":423,"levelsObserved":[0,1,2,3,4,6,7,8,9,11,12,13,14,16,17,18,19,20,26],"pvar":{"size":272,"modeBits":[32],"relativePointerOffsets":[0,8],"authoredVariableDwordOffsets":[200,204]},"authoredBooleanCounts":{"0xc8_nonzero":32,"0xcc_nonzero":35},"runtime":{"loadedUpdateByLevel":{"1":"0x00391080","2":"0x003a52b8","8":"0x003ab1e8"},"notes":["Initialization sets runtime PVar +0xc6 to 100."]}},
+    {"oClass":512,"identity":null,"identityConfidence":"UNKNOWN","instanceCount":96,"levelsObserved":[8,9,11,12,13,14,16,17,18,19,20],"pvar":{"size":272,"modeBits":[32],"relativePointerOffsets":[0,8],"authoredVariableDwordOffsets":[200,204]},"authoredBooleanCounts":{"0xc8_nonzero":16,"0xcc_nonzero":16},"runtime":{"loadedUpdateByLevel":{"8":"0x003ab1e8"}}},
+    {
+      "oClass": 3291,
+      "identity": null,
+      "identityConfidence": "INFERRED_GENERIC_INDEXED_RESOURCE_OBJECT",
+      "instanceCount": 0,
+      "levelsObserved": [],
+      "classTableLevels": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26],
+      "pvar": null,
+      "runtimePvar": {"0x60":"amount supplied to indexed count increment","0x68":"indexed resource/count slot","0x6c":"runtime float; semantics unknown","0x70":"initialized to 16","0x78":"runtime float; semantics unknown"},
+      "confirmedRelationships": ["Listed in every retail level class table but has zero authored static instances.","Oozla lvl.vtbl resolves update 0x003d37a0.","Loaded 0x003d3e28 dynamically constructs oClass 3291.","Loaded crate helper 0x00392158 calls the constructor repeatedly.","The update reads countBase[index], calls 0x002c9738(index,amount), rereads the count, and only emits successful-collection feedback if it increased.","The indexed count/descriptor selector has 56 slots."],
+      "corroborated": ["Pinned Wrench defines Ammo[56]."],
+      "inferred": ["generic indexed collectible/resource object, likely within the ammo/inventory resource domain"],
+      "unknowns": ["specific resource index names","visual identity","collection trigger semantics","whether every 3291 use originates from crates"]
+    },
+    {
+      "oClass": 4018,
+      "identity": null,
+      "identityConfidence": "CORROBORATED_THERM_WATER_LEAD",
+      "instanceCount": 5,
+      "levelsObserved": [6],
+      "pvar": {"size":64,"modeBits":[0],"relativePointerOffsets":[],"mobyLinkOffsets":[]},
+      "runtime": {"loadedUpdateByLevel":{"6":"0x00456bb0"},"stateField":"Moby+0x20","stateCount":3},
+      "confirmedRelationships": ["f32 PVar +0x04 equals instance world Z for all five retail instances","f32 PVar +0x00 equals +0x04 or +0x04 + 10.0","f32 PVar +0x34 equals 4.5 for all five instances","Loaded class-4018 update directly consumes PVar +0x00 as a vertical-plane input and +0x34 as a float parameter."],
+      "corroborated": ["Pinned public Wrench contains a moby4018_therm_water lead."],
+      "inferred": ["+0x00 is an authored vertical-plane value in a Thermanator/water-related object"],
+      "unknowns": ["exact object semantics","meaning/consumer of authored +0x04/+0x0c","state 0/1/2 event semantics"]
+    },
+    {
+      "oClass": 4021,
+      "identity": null,
+      "identityConfidence": "UNKNOWN",
+      "instanceCount": 11,
+      "levelsObserved": [6],
+      "pvar": {"size":16,"modeBits":[0],"relativePointerOffsets":[],"mobyLinkOffsets":[],"allInstancesIdenticalDwords":[0,"0x42700000",103,0]},
+      "runtime": {"loadedUpdateByLevel":{"6":"0x00456f08"},"stateField":"Moby+0x20","stateCount":3},
+      "confirmedRelationships": ["All 11 instances share X/Y approximately 192.438,189.344 and form a vertical stack from Z 60.573 to 76.534.","Exact loaded JAL scans find no direct 4018-to-4021 or 4021-to-4018 update call."],
+      "unknowns": ["gameplay identity","relationship to class 4018"]
+    }
+  ]
+}

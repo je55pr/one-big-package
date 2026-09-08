@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "game": "rac3",
+  "buildId": "rac3-ntscu-original",
+  "title": "Ratchet & Clank: Up Your Arsenal",
+  "region": "NTSC-U",
+  "serial": "SCUS-97353",
+  "revision": "original retail",
+  "authority": "primary",
+  "payload": {
+    "filename": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso",
+    "sizeBytes": 4379377664,
+    "sha256": "d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444"
+  },
+  "transport": {
+    "format": "raw-iso-split",
+    "libraryPath": "/Ratchet & Clank/One Big Package/Inputs/Up Your Arsenal",
+    "verification": "chunk sizes and sequence match payload size; payload SHA-256 is authoritative but not rehashed from Library chunks in this sandbox",
+    "chunking": {
+      "scheme": "binary-concat",
+      "chunkSizeBytes": 503316480,
+      "chunks": [
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.001", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.002", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.003", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.004", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.005", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.006", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.007", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.008", "sizeBytes": 503316480, "sha256": null },
+        { "file": "Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso.009", "sizeBytes": 352845824, "sha256": null }
+      ]
+    }
+  }
+}
