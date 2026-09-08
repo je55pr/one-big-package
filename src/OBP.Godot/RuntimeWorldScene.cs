@@ -160,12 +160,13 @@ public static class RuntimeWorldScene
                 continue;
             }
 
-            // Skip the untextured gouraud backdrop shell — without its per-vertex
-            // colours it renders as a flat faceted blob that swallows the view
-            // wherever no level geometry is in front. The camera-followed
-            // textured cloud layers stay; the background clear colour is the
-            // backdrop.
-            if (isSky && !texCache.ContainsKey((m.AssetKind, m.TextureId)))
+            // Missing texture is not normally permission to render a sky surface.
+            // A source importer may explicitly authorise a materialless surface
+            // when retail evidence supplies its presentation semantics (for example,
+            // UYA's gouraud backdrop with importer-provided vertex colour).
+            if (isSky &&
+                !texCache.ContainsKey((m.AssetKind, m.TextureId)) &&
+                !m.RenderWithoutTexture)
             {
                 continue;
             }
@@ -293,13 +294,20 @@ public static class RuntimeWorldScene
 
                 if (isSky)
                 {
+                    if (!textured && m.RenderWithoutTexture && hasColor)
+                    {
+                        // Importer-provided vertex RGB is the material colour, so do
+                        // not multiply it by the generic sky fallback tint.
+                        mat.AlbedoColor = Colors.White;
+                    }
+
                     // Camera-centred backdrop: draw first and never write depth,
                     // so it can't occlude the level. It DOES depth-test, so a
                     // building in front of the (huge, camera-parked) dome hides
                     // the clouds naturally — without that, an alpha-blended,
                     // depth-test-off shell washes over everything past the dome
                     // radius. The cloud layers carry per-vertex edge alpha.
-                    mat.RenderPriority = -8;
+                    mat.RenderPriority = m.RenderWithoutTexture ? -9 : -8;
                     mat.DepthDrawMode = BaseMaterial3D.DepthDrawModeEnum.Disabled;
                     mat.VertexColorUseAsAlbedo = true;
                     mat.Transparency = hasColor

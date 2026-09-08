@@ -50,10 +50,13 @@ public sealed record RuntimeWorld(
 /// <summary>
 /// One welded, per-material render mesh. Positions are flat XYZ (OBP Y-up);
 /// <see cref="Indices"/> is 3 per triangle. <see cref="Colors"/>, when present, is
-/// flat RGBA (0..1) per vertex — currently only the sky shells carry it, to fade
-/// cloud-layer edges.
+/// flat RGBA (0..1) per vertex. <see cref="RenderWithoutTexture"/> is an explicit
+/// importer assertion that source evidence supports materialless rendering; hosts
+/// must not infer that permission merely from a missing decoded texture.
 /// </summary>
-public sealed record RuntimeMesh(string AssetKind, int TextureId, double[] Positions, float[] Uvs, int[] Indices, float[]? Colors = null)
+public sealed record RuntimeMesh(
+    string AssetKind, int TextureId, double[] Positions, float[] Uvs, int[] Indices,
+    float[]? Colors = null, bool RenderWithoutTexture = false)
 {
     public int TriangleCount => Indices.Length / 3;
 }
