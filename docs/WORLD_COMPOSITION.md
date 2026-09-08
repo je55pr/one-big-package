@@ -8,10 +8,17 @@ reconstruction**.
 
 First real target: R&C1 Veldin vs UYA Veldin, to find out quantitatively whether
 the two versions share a coordinate basis and can be combined into one larger OBP
-Veldin. The first **cross-game** composition proof is now part of the production
-baseline: R&C1 native level 0 and GC Oozla load simultaneously through their independent
-`IObpWorldProvider`s. UYA remains the missing native C# provider before the
-Veldin-vs-Veldin archaeology can begin.
+Veldin. The first **cross-game** composition proof is part of the production
+baseline: R&C1 native level 0 and GC Oozla load simultaneously through their
+independent `IObpWorldProvider`s. All three games now have native C# providers,
+so a UYA world can join any composition through the same
+`CompositionWorldLoader` path (`rac3:TABLE{n}`).
+
+Each world is built by its own **`OBP.Godot.WorldHost`** (geometry / collision /
+the per-frame animation tick) with `ManageEnvironment = false` — one viewport
+holds one environment, so the lab keeps a single neutral `LabEnvironment` for
+side-by-side comparison. Teardown is `WorldHost.Unload` per world; capture is the
+shared `CaptureHarness`.
 
 This is an engineering / debugging tool, not campaign gameplay.
 
@@ -23,9 +30,9 @@ This is an engineering / debugging tool, not campaign gameplay.
 CompositionLab                     (game/scripts/CompositionLab.cs — Godot host)
 ├── CompositionRoot
 │   ├── <worldId-A>                 WorldTransformRoot: Transform3D = placement transform
-│   │   └── RuntimeWorldScene_A     unmodified generic world build
+│   │   └── WorldHost_A             RuntimeWorldScene build (no env) + animation tick
 │   ├── <worldId-B>
-│   │   └── RuntimeWorldScene_B
+│   │   └── WorldHost_B
 │   └── …
 ├── AnchorMarkers
 └── CompositionDebugUi              (HUD)
