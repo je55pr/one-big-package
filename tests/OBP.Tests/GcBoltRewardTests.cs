@@ -14,6 +14,54 @@ public class GcBoltRewardTests
         Assert.Equal(expected, GcBoltReward.ScaleAuthoredValue(authoredValue, percentage));
     }
 
+    [Fact]
+    public void SelectorBlocksUseRecoveredRuntimeContextStride()
+    {
+        Assert.Equal(0x0019B4A8u, GcBoltReward.PackedSelectorTableAddress(0));
+        Assert.Equal(0x0019B8A8u, GcBoltReward.PackedSelectorTableAddress(1));
+        Assert.Equal(0x0019BCA8u, GcBoltReward.PackedSelectorTableAddress(2));
+    }
+
+    [Fact]
+    public void RetailPercentageBanksMatchRecoveredLiteralTables()
+    {
+        Assert.Equal(new byte[] { 100, 50, 40, 30, 25, 20, 15, 10 }, GcBoltReward.AuthoredBank0.ToArray());
+        Assert.Equal(Enumerable.Repeat((byte)100, 8), GcBoltReward.AuthoredBank1.ToArray());
+        Assert.Equal(new byte[] { 100, 50, 40, 30, 25, 20, 15, 10 }, GcBoltReward.EmissionBank0.ToArray());
+        Assert.Equal(new byte[] { 100, 30, 10, 10, 10, 10, 10, 10 }, GcBoltReward.EmissionBank1.ToArray());
+    }
+
+    [Theory]
+    [InlineData(0xA3, 0, 3)]
+    [InlineData(0xA3, 1, 10)]
+    [InlineData(0x70, 0, 0)]
+    [InlineData(0x70, 1, 7)]
+    public void PackedSelectorUsesUidParityForLowAndHighNibbles(int packed, int uid, int expected)
+    {
+        Assert.Equal(expected, GcBoltReward.ReadPackedSelector([(byte)packed], uid));
+    }
+
+    [Theory]
+    [InlineData(0, 100)]
+    [InlineData(1, 50)]
+    [InlineData(7, 10)]
+    [InlineData(8, 100)]
+    [InlineData(15, 100)]
+    public void AuthoredRewardSelectorChoosesRetailBankAndIndex(int selector, int expectedPercentage)
+    {
+        Assert.Equal(expectedPercentage, GcBoltReward.AuthoredPercentageForSelector(selector));
+    }
+
+    [Theory]
+    [InlineData(13, 0, 13)]
+    [InlineData(13, 1, 6)]
+    [InlineData(13, 7, 1)]
+    [InlineData(13, 8, 13)]
+    public void AuthoredRewardCanScaleDirectlyFromNativeSelector(int authoredValue, int selector, int expected)
+    {
+        Assert.Equal(expected, GcBoltReward.ScaleAuthoredValueForSelector(authoredValue, selector));
+    }
+
     [Theory]
     [InlineData(0, 0, 2)]
     [InlineData(10, 1, 3)]
@@ -71,6 +119,9 @@ public class GcBoltRewardTests
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.ScaleAuthoredValue(-1, 100));
         Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.ScaleAuthoredValue(1, 256));
+        Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.ReadPackedSelector([0], -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.ReadPackedSelector([0], 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.AuthoredPercentageForSelector(16));
         Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.PhysicalPieceBudget(0, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.PartitionPhysicalPieces(-1, 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => GcBoltReward.PartitionPhysicalPieces(1, -1));
