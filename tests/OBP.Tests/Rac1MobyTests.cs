@@ -190,4 +190,70 @@ public sealed class Rac1MobyTests
         Assert.True(animatedDelta > 0.5, $"Expected a visibly distinct retail animation pose, got max delta {animatedDelta}.");
     }
 
+    [SkippableFact]
+    public void AllLevels_AnimationTimingMatchesRetailRateEquation()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var catalogue = Rac1DiscIndex.Read(reader);
+        long adjacentPairs = 0, zeroDurationPairs = 0, variableRateSequences = 0;
+        foreach (var level in catalogue.Levels.OrderBy(l => l.LevelId))
+        {
+            var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level));
+            foreach (var sequence in classes.Mobies.Values.SelectMany(c => c.Sequences).Where(s => s.Value is not null).Select(s => s.Value!))
+            {
+                if (sequence.Frames.Select(f => f.TransitionRateRaw).Distinct().Skip(1).Any())
+                {
+                    variableRateSequences++;
+                    Assert.Equal(0u, sequence.ConstantTransitionRateRaw);
+                }
+                for (int i = 0; i + 1 < sequence.Frames.Count; i++)
+                {
+                    var frame = sequence.Frames[i];
+                    var next = sequence.Frames[i + 1];
+                    int delta = next.TimestampUnits - frame.TimestampUnits;
+                    Assert.True(delta >= 0, $"R&C1 animation timestamp regressed at level {level.LevelId}, sequence {sequence.Index}, frame {i}.");
+                    uint expected = delta == 0
+                        ? 0x7f800000u
+                        : unchecked((uint)BitConverter.SingleToInt32Bits(8f / delta));
+                    Assert.Equal(expected, frame.TransitionRateRaw);
+                    adjacentPairs++;
+                    if (delta == 0) zeroDurationPairs++;
+                }
+            }
+        }
+        Assert.Equal(98_411L, adjacentPairs);
+        Assert.Equal(5L, zeroDurationPairs);
+        Assert.Equal(586L, variableRateSequences);
+    }
+
+    [SkippableFact]
+    public void Levels1Through18_Class1134RemainsThePinnedRuntimeAnimationSpecimen()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var catalogue = Rac1DiscIndex.Read(reader);
+        int placements = 0;
+        foreach (var level in catalogue.Levels.Where(l => l.LevelId is >= 1 and <= 18).OrderBy(l => l.LevelId))
+        {
+            var core = Rac1LevelCore.Open(reader, level);
+            var classes = Rac1StaticClasses.Read(core);
+            var cls = classes.Mobies[1134];
+            var rest = Assert.IsType<Rac1MobyAnimation.Sequence>(cls.Sequences.Single(s => s.Index == 0).Value);
+            var animated = Assert.IsType<Rac1MobyAnimation.Sequence>(cls.Sequences.Single(s => s.Index == 1).Value);
+            Assert.Single(rest.Frames);
+            Assert.Equal(170, animated.Frames.Count);
+            Assert.Equal(0x3f000000u, animated.ConstantTransitionRateRaw);
+            Assert.Equal(0.5f, animated.ConstantTransitionRate);
+            Assert.True(Rac1MobyPose.CanPoseSingleJointRigid(cls.Mesh, cls.Joints, rest.Frames[0]));
+            Assert.True(Rac1MobyPose.IsRestAnchor(cls.Joints[0], rest.Frames[0]));
+            Assert.All(animated.Frames, frame => Assert.True(Rac1MobyPose.CanPoseSingleJointRigid(cls.Mesh, cls.Joints, frame)));
+            var gameplay = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level));
+            placements += gameplay.MobyInstances.Count(i => i.OClass == 1134);
+        }
+        Assert.Equal(40, placements);
+    }
+
 }
