@@ -153,8 +153,10 @@ public class PlanarAlignmentTests
         var pairs = SyntheticPairs(truth, new Vec3(0, 0, 0), new Vec3(9, 0, 1), new Vec3(-4, 0, 12)).ToList();
         pairs.Add(new AnchorPair
         {
-            WorldAId = "a", WorldBId = "b",
-            LocalA = new Vec3(999, 999, 999), LocalB = new Vec3(0, 0, 0),
+            WorldAId = "a",
+            WorldBId = "b",
+            LocalA = new Vec3(999, 999, 999),
+            LocalB = new Vec3(0, 0, 0),
             Enabled = false,
         });
 

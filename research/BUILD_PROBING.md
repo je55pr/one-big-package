@@ -39,7 +39,7 @@ The reference trilogy importer shells use source key `disc`, and may receive a b
 | Going Commando v1.01 | `rac2-ntscu-v1.01` | `SCUS-97268` | `9db2e33e276133cc283647fa3279b37911955e123d6199d10065547eaa9b1ce5` |
 | Up Your Arsenal | `rac3-ntscu-original` | `SCUS-97353` | `d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444` |
 
-The locally stored copies of all three have also been full-hash verified through the self-hosted `obp-local` runner; see [`../docs/LOCAL_RUNNER.md`](../docs/LOCAL_RUNNER.md).
+The locally stored copies of all three have also been full-hash verified on the authorized local development machine.
 
 ## Importer confidence guidance
 
@@ -58,4 +58,4 @@ The old TypeScript `importer-rac*` status should not be confused with the produc
 - The **TypeScript reference** still preserves its older public importer contracts and `reference-ts/tools/gc-world.mjs` world-assembly path for archaeology/equivalence.
 - R&C1 and UYA specialist branches are actively proving native world compatibility and formats; their branch-local progress is summarized in [`../docs/CURRENT_STATE.md`](../docs/CURRENT_STATE.md) until promoted/merged into the C# production stack.
 
-For agent-driven retail questions, prefer a narrow `obp-local` job against the verified local authority when the runner is online. ChatGPT sandbox materialisation and remote split/range transport remain fallbacks, not production architecture.
+For agent-driven retail questions, prefer a narrow direct local probe against the verified authority. Agent sandbox materialisation and remote split/range transport remain fallbacks, not production architecture.

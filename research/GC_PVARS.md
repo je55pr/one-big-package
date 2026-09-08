@@ -192,7 +192,7 @@ Status: class 4021's structure and loaded update are **CONFIRMED**; its gameplay
 
 ## Reproduction
 
-Bounded authority probes are explicit opt-ins through the project `obp-local` runner, including:
+Bounded authority probes are explicit local operations against the verified retail authority, including:
 
 ```text
 run_mode = local-gc-moby-census

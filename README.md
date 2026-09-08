@@ -2,7 +2,7 @@
 
 **One Big Package (OBP)** is a reverse-engineering and game-runtime project exploring how the original PS2 **Ratchet & Clank**, **Going Commando**, and **Up Your Arsenal** can be reconstructed into one shared runtime and, eventually, one deliberately combined game.
 
-The production runtime is now a **native desktop application built with Godot 4 + C#**. The earlier TypeScript/browser implementation is preserved under [`reference-ts/`](reference-ts/) as an archaeology, equivalence and comparison oracle; it is no longer the product runtime.
+The production runtime is a **native desktop application built with Godot 4 + C#**. `reference-ts/` is retained only as temporary archaeology/equivalence code where native parity is not complete, especially for UYA; it is not a product runtime.
 
 The long-term design remains intentionally open. OBP may preserve, interweave or substantially remix original story, level and progression structure. Retail data and executable behaviour remain the authority for what the source games actually did, and OBP-created design choices must stay distinguishable from recovered native behaviour.
 
@@ -22,9 +22,8 @@ The merged native baseline can already:
 - walk, jump, respawn and fly around reconstructed worlds with deterministic capture support;
 - load both chunked and unchunked GC levels through the native importer path.
 
-The original browser/TypeScript implementation remains useful because many C# ports are checked against the same synthetic fixtures and retail-derived deterministic baselines. It should be treated as executable research/reference code, not as an alternative production architecture.
+The remaining TypeScript archaeology should shrink as evidence-backed decoders are promoted into native C#. New product/runtime features belong in the native stack.
 
-R&C1 and UYA archaeology are advancing on dedicated specialist branches. Their branch-local findings should not be mistaken for capabilities already merged into `main`; [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) keeps that distinction explicit.
 
 ## Native architecture
 
@@ -79,21 +78,9 @@ Retail GC development can additionally use the `-GcIso`, `-GcLevel`, `-Player`, 
 ./tools/capture.sh smoke
 ```
 
-### TypeScript reference implementation
+## Retail-authority development
 
-```bash
-cd reference-ts
-npm install
-npm run check
-```
-
-## Retail-authority development bridge
-
-A project-scoped self-hosted Windows GitLab runner tagged `obp-local` can execute opt-in bounded archaeology jobs directly against Jess's locally stored retail images. Normal pipelines default to **no jobs**, so hosted compute and the local machine are used only when explicitly selected.
-
-The three local retail images have been full-hash verified against the repository manifests. Specialist branches can add task-specific `obp-local` probes and commit only bounded, sanitized evidence; retail payloads stay local.
-
-See [`docs/LOCAL_RUNNER.md`](docs/LOCAL_RUNNER.md).
+Retail authority remains local and user-supplied. Normal build/test CI is portable and does not require retail images; bounded retail archaeology is run explicitly on an authorized local development machine and only payload-free evidence is committed.
 
 ## Repository guide
 
@@ -101,7 +88,6 @@ See [`docs/LOCAL_RUNNER.md`](docs/LOCAL_RUNNER.md).
 - [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) — merged implementation state plus clearly labelled active-branch snapshots.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — native runtime/import boundaries and evidence rules.
 - [`docs/MIGRATION.md`](docs/MIGRATION.md) — record of the completed browser → native A–H migration milestone.
-- [`docs/LOCAL_RUNNER.md`](docs/LOCAL_RUNNER.md) — self-hosted retail-authority workflow and CI selectors.
 - [`docs/brainstorming/README.md`](docs/brainstorming/README.md) — non-binding cross-game design exploration.
 - [`research/README.md`](research/README.md) — index to retail archaeology, public cross-checks and generated evidence.
 - [`research/BUILD_PROBING.md`](research/BUILD_PROBING.md) — source identification and confidence rules.

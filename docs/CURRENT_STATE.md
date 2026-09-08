@@ -2,11 +2,11 @@
 
 _Last refreshed: 2026-09-08._
 
-This document distinguishes the **merged production baseline** from fast-moving work on specialist branches. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
+This document summarizes the current merged production baseline. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
 
 ## Headline
 
-OBP's production direction is **Godot 4 + C#**, with the older TypeScript implementation retained under [`../reference-ts/`](../reference-ts/) as an executable archaeology/equivalence oracle.
+OBP's production direction is **Godot 4 + C#**. `reference-ts/` is temporary archaeology/equivalence code retained only where native parity is incomplete, most notably UYA/RAC3.
 
 The trilogy source/destination/provider architecture now has **two native production providers**: R&C1 and Going Commando. The native app can attach all three supported retail authorities, browse neutral destinations, reconstruct all 19 R&C1 worlds and arbitrary GC worlds through the same `RuntimeWorld`/Godot boundary, and repeatedly enter/leave them without a game-specific host rewrite. The merged cross-game Fusion Lab can also hold multiple provider worlds at once; its first retail proof loads R&C1 level 0 and GC Oozla simultaneously in one Godot scene.
 
@@ -82,59 +82,14 @@ The merged runtime includes:
 - deterministic screenshots/capture metadata;
 - direct planet launch and multi-planet lifecycle stress arguments.
 
-### TypeScript reference role
+### TypeScript archaeology role
 
-[`../reference-ts/`](../reference-ts/) preserves the earlier browser implementation because it contains substantial archaeology and deterministic fixtures. It is useful for:
+`reference-ts/` remains only to preserve evidence and working decoders that have not yet been promoted into native C#. Do not add new product/runtime architecture there. UYA/RAC3 is the main remaining dependency; once native parity and deterministic evidence are preserved, obsolete TypeScript code should be deleted.
 
-- byte-for-byte / hash / count equivalence while C# decoders are ported;
-- targeted retail probes and research tools;
-- public-format cross-checks;
-- preserving already-understood behaviour while native code evolves.
+### Retail-authority development
 
-Browser `File`/`Blob`, OPFS and the WebGL viewer are therefore **reference implementation details**, not production runtime requirements.
+Portable CI runs without retail images. Retail-backed archaeology is executed explicitly on an authorized local development machine against user-owned sources, and only bounded payload-free evidence belongs in Git.
 
-### Local retail-authority infrastructure
-
-The project has a self-hosted Windows GitLab runner tagged `obp-local` with direct access to the three user-owned retail authority images. All three full images have been SHA-256 verified against the pinned manifests.
-
-`.gitlab-ci.yml` defaults to `run_mode: none`. Hosted tests and local retail jobs are explicit opt-ins. Shared local modes cover runner smoke, bounded ISO inventory, trilogy Stage-0 archaeology and full hashes; specialist branches add narrowly scoped retail probes when useful.
-
-This runner is now the preferred agent bridge for retail archaeology when online. See [`LOCAL_RUNNER.md`](LOCAL_RUNNER.md).
-
-## Specialist branch context
-
-These branches continue fast-moving archaeology and implementation around the merged baseline. Branch heads can move quickly; use Git history and the research docs for exact evidence.
-
-### `claude/*`
-
-Claude's `world-composition` work has been integrated into the production composition baseline: the engine-neutral composition core and Godot Fusion Lab route through the shared provider registry and have completed the first cross-game R&C1 + GC composition/lifecycle proof.
-
-### `chatgpt/rc1`
-
-R&C1 archaeology has moved substantially beyond authority probing. Retail-backed work includes:
-
-- the native raw-disc level index / `0x2434` level header path;
-- all 19 level cores using the shared WAD-LZ codec;
-- shared inner tfrag compatibility validated across the retail set;
-- shared octree collision compatibility across all 19 levels;
-- shared indexed texture decoding across the retail set;
-- native C# `RuntimeWorld` promotion for terrain, textures, collision and level settings;
-- the shared RC sky path and native TIE/shrub static-instance layer, now merged into the production R&C1 world;
-- ongoing executable-led Moby instance/transform/skinning archaeology.
-
-The specialist branch owns the native evidence and parser promotion. `chatgpt/obp` consumes only sufficiently mature pieces at the neutral provider/integration boundary.
-
-### `chatgpt/gc`
-
-A dedicated GC native-system archaeology branch complements Claude's production implementation. Its remit is gameplay truth rather than another renderer: Moby/PVar semantics, simple interactive objects, paths/grind rails, water/Thermanator, native movement, traversal gadgets, economy/weapons/save state and other systems as retail evidence permits.
-
-### `chatgpt/uya`
-
-UYA work is likewise beyond the old “probe-only” description. Current `main` now contains the complete retail-backed TypeScript/reference RAC3 world importer: all 51 observed main-level rows pass `validateWorld`, with tfrags, textures, collision, TIE/shrub placements, authored static Mobies/PVars, sky and level environment represented in the neutral reference world contract. The outer UYA level/container path remains game-specific and provenance questions remain explicit. The remaining OBP integration gap is promotion of that mature path into the native C# `OBP.RAC3` / `IObpWorldProvider` stack.
-
-### `chatgpt/obp`
-
-This remains the cross-game integration/design branch. Its source/destination/provider work, native R&C1 integration and first Fusion Lab milestone are now part of the production baseline described above. The next large integration target is the native C# UYA `IObpWorldProvider`, using the merged retail reference importer as evidence. Once that provider and an authority-backed Veldin mapping are available, the Fusion Lab can move directly into the planned R&C1-Veldin × UYA-Veldin alignment experiment. See [`TRILOGY_SOURCES.md`](TRILOGY_SOURCES.md) and [`WORLD_COMPOSITION.md`](WORLD_COMPOSITION.md).
 ## Known gaps / deliberately unfinished areas
 
 Across the project, major work still includes:
@@ -161,7 +116,7 @@ These are capability goals, not a frozen campaign roadmap:
 2. Promote stable R&C1 and UYA discoveries into engine-independent C# libraries with equivalence tests rather than re-reverse-engineering them.
 3. Use the now-working R&C1 + GC composition proof as the integration baseline, then promote UYA behind the same provider contract and move into cross-game Veldin alignment.
 4. Gradually route old GC-only debug/HUD/capture code through the same neutral destination/runtime path rather than maintaining two architectures indefinitely.
-5. Keep using targeted local-runner probes for questions where retail bytes/executable behaviour can settle ambiguity cheaply.
+5. Keep using targeted local retail probes for questions where retail bytes/executable behaviour can settle ambiguity cheaply.
 6. Preserve the native-evidence / OBP-design boundary while gameplay archaeology expands.
 7. Keep deterministic build/test/capture loops as the runtime becomes more game-like.
 

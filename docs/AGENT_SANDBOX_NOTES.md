@@ -2,11 +2,11 @@
 
 This document is fallback operational guidance for constrained ChatGPT development environments. It is **not** a production OBP runtime limit and should not be used to infer native local-machine capabilities.
 
-The canonical historical experiment log is [`../research/SANDBOX_MATERIALIZATION_TESTS.md`](../research/SANDBOX_MATERIALIZATION_TESTS.md). For current retail-authority development, prefer the self-hosted workflow in [`LOCAL_RUNNER.md`](LOCAL_RUNNER.md) whenever the runner is online.
+The canonical historical experiment log is [`../research/SANDBOX_MATERIALIZATION_TESTS.md`](../research/SANDBOX_MATERIALIZATION_TESTS.md). Current development should prefer direct authorized local-machine access for retail-backed work rather than materializing multi-gigabyte sources into agent sandboxes.
 
 ## Preferred path: do not move the retail image into the sandbox
 
-OBP now has a project-scoped `obp-local` GitLab runner with direct access to the verified user-owned retail images on Jess's laptop. A development chat can commit a bounded probe, run it on the exact branch through the local runner, and receive only the small sanitized result.
+Retail authority stays on the authorized local development machine. Agents should run bounded probes there directly and commit only sanitized, payload-free evidence.
 
 That path is preferable to materialising large ISO chunks into a disposable ChatGPT runtime because it:
 
@@ -40,7 +40,7 @@ A roughly 25-minute sandbox lifetime/failure pattern has also been repeatedly ob
 - Do not reconstruct a complete multi-gigabyte ISO in a ChatGPT sandbox merely to inspect a few headers or offsets.
 - When a large real-input materialisation is genuinely necessary, isolate the experiment, avoid opening several huge working sets at once, and persist useful results before continuing.
 - For native OBP itself, use seekable file/random-access readers; the production architecture has no browser `File`/`Blob` or OPFS requirement.
-- The old browser/split reader implementation remains available under `reference-ts/` as reference code and can still be useful for transport experiments.
+- `reference-ts/` is temporary archaeology/equivalence code; do not revive its browser transport/runtime architecture.
 - When local reassembly is needed on an unconstrained machine, stream incrementally and verify size/hash before trusting the result.
 
 If sandbox behaviour changes, update the canonical research log first and keep this file as a short fallback summary rather than letting sandbox quirks shape the production architecture.

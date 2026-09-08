@@ -17,7 +17,6 @@ When a document contains an unresolved hypothesis, it should say so explicitly.
 |---|---|---|
 | Source/build identity | [`INPUT_PROVENANCE.md`](INPUT_PROVENANCE.md), [`BUILD_PROBING.md`](BUILD_PROBING.md) | Current authority/provenance rules |
 | Retail trilogy disc structure | [`RETAIL_TRILOGY_DISC_LAYOUT.md`](RETAIL_TRILOGY_DISC_LAYOUT.md) | Bounded retail disc archaeology |
-| Local retail-authority access | [`../docs/LOCAL_RUNNER.md`](../docs/LOCAL_RUNNER.md) | Self-hosted runner, verified local authorities and agent probe contract |
 | GC level/file catalogue | [`GC_LEVEL_CATALOGUE.md`](GC_LEVEL_CATALOGUE.md), [`GC_PLANET_NAMES.md`](GC_PLANET_NAMES.md) | Retail-backed catalogue/name work |
 | GC level loading / RC2.HDR | [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) | Retail evidence with active RC2.HDR reconciliation note |
 | RC2.HDR reconciliation | [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) | **Verification target, not authority yet** |
@@ -55,7 +54,7 @@ The living cross-project snapshot in [`../docs/CURRENT_STATE.md`](../docs/CURREN
 
 [`SANDBOX_MATERIALIZATION_TESTS.md`](SANDBOX_MATERIALIZATION_TESTS.md) is the canonical investigation log for ChatGPT sandbox/materialisation behaviour. Individual `SANDBOX_PROBE_*` / recovery files are narrow experimental records and should be read through that canonical log rather than treated as project architecture.
 
-The concise fallback operational summary for agents lives in [`../docs/AGENT_SANDBOX_NOTES.md`](../docs/AGENT_SANDBOX_NOTES.md). When the local runner is available, [`../docs/LOCAL_RUNNER.md`](../docs/LOCAL_RUNNER.md) is the preferred retail-authority workflow.
+The concise fallback operational summary for agents lives in [`../docs/AGENT_SANDBOX_NOTES.md`](../docs/AGENT_SANDBOX_NOTES.md). Retail-backed work should use an explicitly authorized local development machine and commit only payload-free evidence.
 
 ## Keeping this index useful
 

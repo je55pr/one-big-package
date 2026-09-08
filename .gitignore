@@ -1,7 +1,6 @@
-# --- TypeScript reference implementation (reference-ts/) ---
+# --- TypeScript archaeology (reference-ts/) ---
 .build/
 node_modules/
-package-lock.json
 
 # --- deterministic capture output ---
 captures/*.png

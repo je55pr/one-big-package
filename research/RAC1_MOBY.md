@@ -123,7 +123,7 @@ Native class-sphere containment is retained as a diagnostic rather than used to 
 
 `rac1-world` now emits each parsed Moby placement as an `OBPInstance` with native `oClass` preserved as `sourceClass`, true Y-up position, equivalent Y-up Euler and uniform scale. **This does not yet bind a decoded class mesh to the instance.** OBP has no neutral model/prototype asset relation today, and putting class definitions in `world.meshes` would incorrectly render those definitions at world origin. Class geometry linkage therefore remains deliberately deferred rather than encoded as an importer-private `meshId` convention.
 
-The reproducible retail validator is `reference-ts/tools/rac1-moby-transform-validation.mjs`; its local-runner output is written outside the repository to `OBP-Reports` and contains no committed retail payload.
+The reproducible retail validator is `reference-ts/tools/rac1-moby-transform-validation.mjs`; its local output is written outside the repository and contains no committed retail payload.
 
 ## Animated skin-state archaeology
 

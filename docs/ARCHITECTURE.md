@@ -1,6 +1,6 @@
 # OBP architecture
 
-One Big Package's production architecture is now **native Godot 4 + C#**. The earlier TypeScript/browser implementation lives under [`../reference-ts/`](../reference-ts/) as archaeology and an equivalence oracle; browser storage and WebGL are no longer product constraints.
+One Big Package's production architecture is **native Godot 4 + C#**. `reference-ts/` is temporary archaeology/equivalence code where native parity is incomplete; browser storage and WebGL are not product constraints.
 
 This document is intentionally separate from [`PROJECT_VISION.md`](PROJECT_VISION.md): architecture should enable future trilogy fusion without quietly deciding story order, progression or cross-game rules.
 
@@ -120,7 +120,7 @@ A codec being shared does **not** imply that the enclosing R&C1, GC and UYA cont
 
 Going Commando currently has the deepest merged C# implementation. Its native path covers level WAD/core data, tfrags, textures, TIEs, shrubs, Mobies, sky, settings, collision and ship spawn. `GcIsoLoad` is the engine-free façade for identifying/verifying a supported disc and loading a level.
 
-R&C1 and UYA specialist branches are intentionally allowed to prove compatibility first in research/reference tooling. Stable findings should be promoted into the C# libraries only with deterministic equivalence/authority tests. Do not weaken a GC parser merely to make another game pass; either prove the shared structure or add the correct game-specific boundary.
+R&C1 and UYA archaeology may prove compatibility first in research/reference tooling. Stable findings should be promoted into the C# libraries only with deterministic equivalence/authority tests. Do not weaken a GC parser merely to make another game pass; either prove the shared structure or add the correct game-specific boundary.
 
 ## Runtime boundary
 
@@ -157,23 +157,13 @@ Current mechanisms include:
 - TypeScript/C# equivalence checks for already-understood formats;
 - `OBP.Cli` deterministic import summaries;
 - Godot command-line capture modes producing screenshots plus metadata;
-- self-hosted local-runner probes against exact retail authorities.
+- explicit local probes against exact retail authorities on an authorized development machine.
 
 A visual runtime feature should, where practical, have a repeatable capture or state assertion so an agent can change, run and inspect it without relying on a human play session for every iteration.
 
 ## Retail-authority agent bridge
 
-The project-scoped `obp-local` GitLab runner provides controlled access to the user-owned local retail images. It is infrastructure for archaeology, not a source-distribution mechanism.
-
-Branch-specific jobs may perform narrowly scoped probes against the exact checked-out commit. They should:
-
-1. remain explicit opt-ins;
-2. verify the expected authority identity when the result depends on exact retail bytes;
-3. prefer bounded/random reads unless a full hash is the actual task;
-4. emit/commit only sanitized findings, hashes, counts, offsets or other non-copyright payloads;
-5. never commit retail files, credentials or unrelated local-machine data.
-
-See [`LOCAL_RUNNER.md`](LOCAL_RUNNER.md).
+Retail-backed archaeology is run explicitly on an authorized local machine against user-owned sources. Portable CI must not depend on retail payloads, and only bounded payload-free evidence may be committed.
 
 ## Storage / cache boundary
 

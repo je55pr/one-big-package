@@ -1,7 +1,7 @@
 <Project>
   <!--
     Shared MSBuild settings for the OBP native (C#) projects under src/, game/
-    and tests/. The TypeScript reference implementation in reference-ts/ has no
+    and tests/. The temporary TypeScript archaeology tree in reference-ts/ has no
     .csproj files and is unaffected.
   -->
   <PropertyGroup>

@@ -5,7 +5,6 @@ ISO, pick a planet from a list, and it is reconstructed straight from the disc
 and rendered in Godot with a walkable debug player. Return to the selector, pick
 another, and it loads without restarting the process.
 
-Branch: `claude/gc-planet-hopping` (from `main` @ `5d211df`).
 
 ## Runtime pipeline
 

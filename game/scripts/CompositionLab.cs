@@ -867,7 +867,10 @@ public partial class CompositionLab : Node3D
             composition = _composition.Name,
             worlds = _composition.Worlds.Select(w => new
             {
-                w.Id, w.SourceGame, w.LevelId, w.Visible,
+                w.Id,
+                w.SourceGame,
+                w.LevelId,
+                w.Visible,
                 transform = new { t = new[] { w.Transform.TranslationX, w.Transform.TranslationY, w.Transform.TranslationZ }, ry = w.Transform.RotationYDegrees, s = w.Transform.Scale },
                 loaded = _worlds.ContainsKey(w.Id),
             }).ToArray(),

@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore OneBigPackage.sln
+      - run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
+      - run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror
+      - run: dotnet test OneBigPackage.sln -c Release --no-build --nologo
+
+  reference-typescript:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reference-ts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts
+      - run: npm run check

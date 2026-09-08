@@ -139,7 +139,7 @@ IObpWorldProvider
 - global destination ids must be unique;
 - destination lookup is case-insensitive for CLI/debug use.
 
-Merged `main` registers `GcWorldProvider`. The current `chatgpt/obp` integration branch registers both `Rac1WorldProvider` and `GcWorldProvider`; this is the first proof that the neutral registry/UI does not need source-game-specific rewrites when a second importer becomes production-usable.
+Current `main` registers both `Rac1WorldProvider` and `GcWorldProvider`; this proves that the neutral registry/UI does not need source-game-specific rewrites when another importer becomes production-usable.
 
 ## Generic Godot world entry
 
@@ -164,7 +164,7 @@ A normal interactive launch lands on **One Big Package — Game Sources**.
 
 Each trilogy source has attach/change/forget controls and reports whether a production world provider is available. If at least one attached game has a provider, **Browse available worlds ->** opens the neutral Worlds browser.
 
-On `chatgpt/obp` this now means:
+On current `main` this means:
 
 ```text
 Ratchet & Clank
@@ -231,7 +231,7 @@ Synthetic/unit coverage verifies:
 - provider rejection of foreign/invented destinations;
 - registry destination resolution and provider provenance.
 
-Retail-backed source validation is performed by the self-hosted `obp-local` runner. The bounded trilogy source probe has passed against all three real authority ISOs under `C:\ChatGPT\ISOs`.
+Retail-backed source validation is performed explicitly on an authorized local development machine. The bounded trilogy source probe has passed against all three verified authority ISOs; machine-specific source paths are not part of the repository contract.
 
 The provider-driven architecture through commit `0286f51a` passed a full local .NET solution build/test in pipeline **494** on 2026-09-07 after a missing `OBP.Godot` namespace import was caught and fixed.
 
@@ -241,7 +241,7 @@ The opt-in `local-ui-capture` acceptance gate then passed in pipeline **497** ag
 - `worlds.png` — neutral Worlds browser with one registered runtime provider;
 - `oozla-neutral-entry.png` — `rac2:LEVEL1` entered through `ObpWorldProviderRegistry -> GcWorldProvider -> RuntimeWorld` and rendered through the shared Godot builder.
 
-That neutral Oozla run imported 304 runtime meshes / 1,882,531 render triangles / 328,923 collision triangles before Godot scene assembly and successfully captured the resulting world. The capture artifacts are retained by GitLab for seven days.
+That neutral Oozla run imported 304 runtime meshes / 1,882,531 render triangles / 328,923 collision triangles before Godot scene assembly and successfully captured the resulting world. Capture artifacts are local/generated evidence and are not required by the repository.
 
 On 2026-09-08 the R&C1 provider was validated directly on Jess-Laptop against the exact `rac1-ntscu-original` authority image. The retail all-level census passes: every one of the 19 native R&C1 destinations loads through `IObpWorldProvider` with non-empty terrain, textures and collision. After the merged sky plus TIE/shrub static-instance promotion, `rac1:LEVEL0` imports 286 runtime meshes / 751,435 render triangles / 86,184 collision triangles, and the debug player can ground on reconstructed R&C1 collision.
 
