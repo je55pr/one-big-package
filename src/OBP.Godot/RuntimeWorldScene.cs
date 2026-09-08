@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Core.Math;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OBP.Godot;
 
@@ -664,59 +665,52 @@ public static class RuntimeWorldScene
         return new Transform3D(new Basis(x, y, z), origin);
     }
 
+    /// <summary>Linear <see cref="Rgb"/> → Godot <see cref="Color"/>.</summary>
+    public static Color ToColor(Rgb c) => new((float)c.R, (float)c.G, (float)c.B);
+
     /// <summary>
     /// Fill a Godot <see cref="global::Godot.Environment"/> from the runtime
-    /// world's atmosphere: background clear colour and depth fog. Different
-    /// planets get visibly different air; exact PS2 fog is not reproduced.
+    /// world's atmosphere: background clear colour, scene ambient and depth fog.
+    /// The maths lives in <see cref="WorldPresentation"/> (engine-independent and
+    /// unit-tested); this only translates the result to Godot. Exact PS2 fog is
+    /// not reproduced.
     /// </summary>
     public static void ConfigureEnvironment(global::Godot.Environment env, RuntimeWorld world)
     {
-        var e = world.Environment;
-        var bg = e?.BackgroundColour ?? e?.FogColour ?? (0.05, 0.06, 0.09);
-        var clear = new Color((float)bg.Item1, (float)bg.Item2, (float)bg.Item3);
+        var state = WorldPresentation.Resolve(world.Environment, world.Bounds);
 
         env.BackgroundMode = global::Godot.Environment.BGMode.Color;
-        env.BackgroundColor = clear;
+        env.BackgroundColor = ToColor(state.Background);
         env.AmbientLightSource = global::Godot.Environment.AmbientSource.Color;
-        // The nearest env sample point's "hero" colour is the scene ambient the
-        // game lights the player with; lift it toward white so the unlit world
-        // geometry keeps its decoded colour.
-        var amb = e?.AmbientColour;
-        env.AmbientLightColor = amb is { } a
-            ? new Color(
-                0.55f + 0.45f * (float)a.R,
-                0.55f + 0.45f * (float)a.G,
-                0.55f + 0.45f * (float)a.B)
-            : Colors.White;
-        env.AmbientLightEnergy = 1.0f;
+        env.AmbientLightColor = ToColor(state.Ambient);
+        env.AmbientLightEnergy = (float)state.AmbientEnergy;
 
-        if (e?.FogColour is { } fc && e.FogFarDistance > e.FogNearDistance && e.FogFarDistance > 0)
-        {
-            // Fog distances arrive in world units. The retail fog also has a
-            // *far intensity* (visibility 0..255) — most planets stay partly
-            // clear at the far plane (Oozla ≈ 0.70 visible) — so drive Godot's
-            // density from (1 − far visibility) and stretch the end plane past
-            // the level so distant scenery still reads.
-            float span = (float)(world.Bounds.Max - world.Bounds.Min is var d
-                ? System.Math.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z)
-                : 400.0);
-            float begin = System.Math.Max(1f, e.FogNearDistance);
-            float end = System.Math.Max(System.Math.Max(begin + 1f, e.FogFarDistance), span * 1.4f);
+        ApplyFog(env, state.Fog, setCurve: true);
+    }
 
-            env.FogEnabled = true;
-            env.FogMode = global::Godot.Environment.FogModeEnum.Depth;
-            env.FogLightColor = new Color((float)fc.R, (float)fc.G, (float)fc.B);
-            env.FogDepthBegin = begin;
-            env.FogDepthEnd = end;
-            env.FogDepthCurve = 1.6f; // ease in — near geometry stays clear
-            // Keep it a tint, not a wall: even a heavy-fog planet reads better
-            // with the scenery visible through it than washed to flat colour.
-            env.FogDensity = System.Math.Clamp((1f - e.FogFarVisibility) * 0.5f + 0.04f, 0.04f, 0.5f);
-            env.FogSkyAffect = 0.0f;
-        }
-        else
+    /// <summary>
+    /// Translate a resolved <see cref="FogState"/> onto a Godot environment.
+    /// <paramref name="setCurve"/> is false on the per-frame path so a live
+    /// region change never re-writes the load-time ease-in curve.
+    /// </summary>
+    public static void ApplyFog(global::Godot.Environment env, FogState fog, bool setCurve)
+    {
+        if (!fog.Enabled)
         {
             env.FogEnabled = false;
+            return;
+        }
+
+        env.FogEnabled = true;
+        env.FogMode = global::Godot.Environment.FogModeEnum.Depth;
+        env.FogLightColor = ToColor(fog.Colour);
+        env.FogDepthBegin = (float)fog.Begin;
+        env.FogDepthEnd = (float)fog.End;
+        env.FogDensity = (float)fog.Density;
+        env.FogSkyAffect = 0.0f;
+        if (setCurve)
+        {
+            env.FogDepthCurve = (float)fog.Curve;
         }
     }
 
