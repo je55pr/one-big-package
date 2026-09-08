@@ -54,6 +54,7 @@ public partial class OBPGame : Node3D
     private readonly WorldHost _worldHost = new();
     private RuntimeWorld? _world;
     private RuntimeWorldScene.Result? _sceneResult;
+    private DebugOverlay? _overlay;
     private DebugPlayer? _player;
     private int _worldSwitches;
 
@@ -164,19 +165,44 @@ public partial class OBPGame : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is InputEventKey { Pressed: true, Echo: false } key)
+        if (@event is not InputEventKey { Pressed: true, Echo: false } key)
         {
-            if (key.Keycode == Key.Escape)
+            return;
+        }
+
+        if (key.Keycode == Key.Escape)
+        {
+            if (_mode == Mode.World && _selector is null && _isoPath is not null && _args.CaptureFrame is null)
             {
-                if (_mode == Mode.World && _selector is null && _isoPath is not null && _args.CaptureFrame is null)
-                {
-                    ReturnToSelector();
-                }
-                else
-                {
-                    GetTree().Quit();
-                }
+                ReturnToSelector();
             }
+            else
+            {
+                GetTree().Quit();
+            }
+
+            return;
+        }
+
+        if (_mode == Mode.World && _overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
+        {
+            UpdateWorldHud();
+        }
+    }
+
+    /// <summary>F1..F7 toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
+    private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)
+    {
+        switch (keycode)
+        {
+            case Key.F1: overlay.IsolateNextKind(); return true;
+            case Key.F2: overlay.Toggle(DebugOverlay.Layer.KindTint); return true;
+            case Key.F3: overlay.Toggle(DebugOverlay.Layer.CollisionWire); return true;
+            case Key.F4: overlay.Toggle(DebugOverlay.Layer.WorldBounds); return true;
+            case Key.F5: overlay.Toggle(DebugOverlay.Layer.EnvGizmos); return true;
+            case Key.F6: overlay.Toggle(DebugOverlay.Layer.HideSky); return true;
+            case Key.F7: overlay.Clear(); return true;
+            default: return false;
         }
     }
 
@@ -322,6 +348,7 @@ public partial class OBPGame : Node3D
             OnlyAnimatedMobies = _args.AnimSolo,
         });
         _sceneResult = result;
+        SetupOverlay(result, world);
         ConfigureCrateDebugHarness();
 
         // spawn + camera
@@ -453,8 +480,48 @@ public partial class OBPGame : Node3D
         _worldHost.Unload(); // scene tree, environment, hero light + GC.Collect
 
         _sceneResult = null;
+        _overlay = null; // its nodes live under the world sub-tree that was just freed
         _world = null;
         ResetCrateDebugHarness();
+    }
+
+    /// <summary>
+    /// Attach the runtime inspection overlay to a freshly-built world and apply
+    /// any <c>--overlay</c> layers requested for a deterministic capture.
+    /// F1..F7 toggle the layers interactively; see <see cref="DebugOverlay"/>.
+    /// </summary>
+    private void SetupOverlay(RuntimeWorldScene.Result result, RuntimeWorld world)
+    {
+        _overlay = new DebugOverlay(result, world);
+        if (_args.Overlay is not { Length: > 0 } spec)
+        {
+            return;
+        }
+
+        foreach (string token in spec.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries))
+        {
+            if (token.StartsWith("isolate:", System.StringComparison.OrdinalIgnoreCase))
+            {
+                string want = token["isolate:".Length..];
+                while (_overlay.IsolatedKind != want)
+                {
+                    string? before = _overlay.IsolatedKind;
+                    _overlay.IsolateNextKind();
+                    if (_overlay.IsolatedKind == before)
+                    {
+                        break; // not a real kind — give up rather than loop
+                    }
+                }
+            }
+            else if (System.Enum.TryParse<DebugOverlay.Layer>(token, ignoreCase: true, out var layer))
+            {
+                _overlay.Set(layer, true);
+            }
+            else
+            {
+                GD.PrintErr($"[OBPGame] unknown --overlay token '{token}'");
+            }
+        }
     }
 
     /// <summary>
@@ -659,6 +726,7 @@ public partial class OBPGame : Node3D
             $"TIE meshes: {r.TieInstances}   Shrub meshes: {r.ShrubInstances}   Moby meshes: {r.MobyInstances}" +
             (r.AnimatedMobies > 0 ? $"   Animated mobies: {r.AnimatedMobies}" : "") +
             (r.DynamicObjects > 0 ? $"   Dynamic objects: {r.DynamicObjects}" : "") +
+            $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}");
     }
 

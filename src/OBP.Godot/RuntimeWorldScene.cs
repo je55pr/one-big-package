@@ -267,7 +267,6 @@ public static class RuntimeWorldScene
 
                 texCache.TryGetValue((m.AssetKind, m.TextureId), out var tex);
                 bool textured = hasUv && tex is not null;
-                bool kindDebug = System.Environment.GetEnvironmentVariable("OBP_KIND_DEBUG") == "1";
                 if (!textured && m.AssetKind is "tfrag" or "tie" or "shrub" or "moby")
                 {
                     untexturedTris[m.AssetKind] = untexturedTris.GetValueOrDefault(m.AssetKind) + m.TriangleCount;
@@ -306,22 +305,6 @@ public static class RuntimeWorldScene
                     mat.Transparency = hasColor
                         ? BaseMaterial3D.TransparencyEnum.Alpha
                         : BaseMaterial3D.TransparencyEnum.Disabled;
-                }
-
-                if (kindDebug)
-                {
-                    mat.AlbedoTexture = null;
-                    mat.VertexColorUseAsAlbedo = false;
-                    mat.Transparency = BaseMaterial3D.TransparencyEnum.Disabled;
-                    mat.AlbedoColor = m.AssetKind switch
-                    {
-                        "tfrag" => new Color(0.1f, 1f, 0.1f),
-                        "tie" => new Color(1f, 0.1f, 0.1f),
-                        "moby" => new Color(0.2f, 0.4f, 1f),
-                        "shrub" => new Color(1f, 1f, 0.1f),
-                        "sky" => new Color(0.3f, 0.3f, 0.3f),
-                        _ => new Color(1f, 0f, 1f),
-                    };
                 }
 
                 matCache[(m.AssetKind, m.TextureId)] = mat;
