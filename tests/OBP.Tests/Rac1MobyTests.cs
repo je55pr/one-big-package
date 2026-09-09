@@ -362,4 +362,155 @@ public sealed class Rac1MobyTests
         Assert.Equal(40, placements);
     }
 
+    [SkippableFact]
+    public void AllLevels_DedicatedRatchetSequencesMatchReferenceCensus()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var catalogue = Rac1DiscIndex.Read(reader);
+        int[] expectedSequences = [134, 88, 86, 79, 84, 100, 89, 98, 108, 79, 83, 96, 105, 86, 94, 89, 96, 99, 111];
+        int[] expectedFrames = [2558, 1753, 1617, 1489, 1632, 1856, 1596, 1808, 1976, 1521, 1589, 1759, 2073, 1617, 1701, 1731, 1726, 2023, 1952];
+        long present = 0, frames = 0, quaternions = 0, adjacentPairs = 0;
+        long variableRateSequences = 0, zeroDurationPairs = 0;
+
+        foreach (var level in catalogue.Levels.OrderBy(l => l.LevelId))
+        {
+            var core = Rac1LevelCore.Open(reader, level);
+            Assert.True(core.Header.RatchetSequencesOffset > 0);
+            var cls = Rac1StaticClasses.Read(core).Mobies[0];
+            Assert.Equal(111, cls.JointCount);
+            Assert.Equal(5_583, cls.Mesh.Positions.Length / 3);
+            Assert.Equal(6_856, cls.Mesh.Indices.Length / 3);
+            Assert.Equal(134, cls.Sequences.Count);
+            Assert.All(cls.Sequences, slot => Assert.Null(slot.Value));
+            var gameplay = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level));
+            var player = Assert.Single(gameplay.MobyInstances, i => i.OClass == 0);
+            Assert.Equal(0, player.Index);
+
+            var sequences = Rac1MobyAnimation.ReadRatchetSequences(
+                core.Assets, core.Index, core.Header.RatchetSequencesOffset, cls.JointCount);
+            Assert.Equal(256, sequences.Count);
+            int levelPresent = sequences.Count(s => s.Value is not null);
+            int levelFrames = sequences.Where(s => s.Value is not null).Sum(s => s.Value!.Frames.Count);
+            Assert.Equal(expectedSequences[level.LevelId], levelPresent);
+            Assert.Equal(expectedFrames[level.LevelId], levelFrames);
+            present += levelPresent;
+            frames += levelFrames;
+
+            foreach (var sequence in sequences.Where(s => s.Value is not null).Select(s => s.Value!))
+            {
+                Assert.All(sequence.FrameEntries, entry => Assert.Equal(0u, entry & 0xf0000000u));
+                if (sequence.Frames.Select(f => f.TransitionRateRaw).Distinct().Skip(1).Any())
+                {
+                    variableRateSequences++;
+                    Assert.Equal(0u, sequence.ConstantTransitionRateRaw);
+                }
+                foreach (var frame in sequence.Frames)
+                {
+                    Assert.Equal(888, frame.JointDataSize);
+                    Assert.Equal(111, frame.JointRotations.Count);
+                    foreach (var q in frame.JointRotations)
+                    {
+                        double norm = q.Xf * q.Xf + q.Yf * q.Yf + q.Zf * q.Zf + q.Wf * q.Wf;
+                        Assert.InRange(norm, 0.999, 1.001);
+                        quaternions++;
+                    }
+                }
+                for (int i = 0; i + 1 < sequence.Frames.Count; i++)
+                {
+                    var frame = sequence.Frames[i];
+                    var next = sequence.Frames[i + 1];
+                    int delta = next.TimestampUnits - frame.TimestampUnits;
+                    Assert.True(delta >= 0);
+                    uint expected = delta == 0
+                        ? 0x7f800000u
+                        : unchecked((uint)BitConverter.SingleToInt32Bits(8f / delta));
+                    Assert.Equal(expected, frame.TransitionRateRaw);
+                    adjacentPairs++;
+                    if (delta == 0) zeroDurationPairs++;
+                }
+            }
+        }
+        Assert.Equal(1_804L, present);
+        Assert.Equal(33_977L, frames);
+        Assert.Equal(3_771_447L, quaternions);
+        Assert.Equal(32_173L, adjacentPairs);
+        Assert.Equal(219L, variableRateSequences);
+        Assert.Equal(0L, zeroDurationPairs);
+    }
+
+    [SkippableFact]
+    public void Level0_RatchetSequence122_HasBindLinearAnchorAndMovesPlayerMesh()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 0);
+        var core = Rac1LevelCore.Open(reader, level);
+        var cls = Rac1StaticClasses.Read(core).Mobies[0];
+        var sequences = Rac1MobyAnimation.ReadRatchetSequences(
+            core.Assets, core.Index, core.Header.RatchetSequencesOffset, cls.JointCount);
+        var sequence = Assert.IsType<Rac1MobyAnimation.Sequence>(sequences[122].Value);
+
+        Assert.Equal(111, cls.Joints.Count);
+        Assert.Equal(21, sequence.Frames.Count);
+        Assert.Equal(0.5f, sequence.ConstantTransitionRate);
+        Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[0]));
+        Assert.True(Rac1MobyPose.IsRatchetHierarchyBindLinearAnchor(cls.Joints, sequence.Frames[0]));
+        var moved = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[1]);
+        Assert.All(moved, value => Assert.True(double.IsFinite(value)));
+        double movedDelta = moved.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
+        Assert.True(movedDelta > 0.04,
+            $"Expected native Ratchet frame 1 to move the player mesh, got max delta {movedDelta}.");
+    }
+
+    [SkippableFact]
+    public void AllLevels_RatchetStandingLoopAndIdleVariantsStayPinned()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var levels = Rac1DiscIndex.Read(reader).Levels.OrderBy(l => l.LevelId).ToArray();
+        Assert.Equal(19, levels.Length);
+
+        foreach (var level in levels)
+        {
+            var core = Rac1LevelCore.Open(reader, level);
+            var cls = Rac1StaticClasses.Read(core).Mobies[0];
+            var sequences = Rac1MobyAnimation.ReadRatchetSequences(
+                core.Assets, core.Index, core.Header.RatchetSequencesOffset, cls.JointCount);
+            var standing = Assert.IsType<Rac1MobyAnimation.Sequence>(sequences[0].Value);
+            var idleA = Assert.IsType<Rac1MobyAnimation.Sequence>(sequences[1].Value);
+            var idleB = Assert.IsType<Rac1MobyAnimation.Sequence>(sequences[2].Value);
+            var bind = Assert.IsType<Rac1MobyAnimation.Sequence>(sequences[122].Value);
+
+            Assert.Equal(10, standing.Frames.Count);
+            Assert.Equal(0x3e000000u, standing.ConstantTransitionRateRaw);
+            Assert.Equal(0.125f, standing.ConstantTransitionRate);
+            double restExtent = cls.Mesh.Positions.Max(Math.Abs);
+            Assert.All(standing.Frames, frame =>
+            {
+                Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, frame));
+                var posed = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, frame);
+                Assert.All(posed, value => Assert.True(double.IsFinite(value)));
+                double ratio = posed.Max(Math.Abs) / restExtent;
+                // Retail stores Ratchet matrices in row-vector layout. Treating their
+                // 3x3 blocks as column-vector transforms roughly doubles this extent.
+                Assert.InRange(ratio, 0.90, 1.05);
+            });
+
+            Assert.Equal(77, idleA.Frames.Count);
+            Assert.Equal(0u, idleA.ConstantTransitionRateRaw);
+            Assert.True(idleA.Frames.Select(f => f.TransitionRateRaw).Distinct().Skip(1).Any());
+            Assert.Equal(77, idleB.Frames.Count);
+            Assert.Equal(0u, idleB.ConstantTransitionRateRaw);
+            Assert.True(idleB.Frames.Select(f => f.TransitionRateRaw).Distinct().Skip(1).Any());
+
+            Assert.Equal(21, bind.Frames.Count);
+            Assert.Equal(0.5f, bind.ConstantTransitionRate);
+            Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, bind.Frames[0]));
+            Assert.True(Rac1MobyPose.IsRatchetHierarchyBindLinearAnchor(cls.Joints, bind.Frames[0]));
+        }
+    }
 }
