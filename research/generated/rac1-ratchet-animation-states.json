@@ -1,0 +1,257 @@
+{
+  "schema": 2,
+  "authority": {
+    "build": "R&C1 NTSC-U SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "playerSelector": {
+    "currentSequenceOffset": "Moby+0x53",
+    "nextSequenceOffset": "Moby+0x52"
+  },
+  "selectorStores": [
+    {
+      "address": "0x2048ec",
+      "baseRegister": 7,
+      "sourceRegister": 4
+    },
+    {
+      "address": "0x212f40",
+      "baseRegister": 16,
+      "sourceRegister": 7
+    },
+    {
+      "address": "0x213074",
+      "baseRegister": 16,
+      "sourceRegister": 19
+    },
+    {
+      "address": "0x2131c4",
+      "baseRegister": 16,
+      "sourceRegister": 19
+    },
+    {
+      "address": "0x22f018",
+      "baseRegister": 21,
+      "sourceRegister": 5
+    },
+    {
+      "address": "0x22f098",
+      "baseRegister": 21,
+      "sourceRegister": 3
+    },
+    {
+      "address": "0x230524",
+      "baseRegister": 2,
+      "sourceRegister": 5
+    }
+  ],
+  "selectorHelpers": [
+    "0x212ed8",
+    "0x212f90",
+    "0x2130d8"
+  ],
+  "helperCalls": [
+    {
+      "callSite": "0x219180",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x219548",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x219568",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x21e514",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x21e59c",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x22478c",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 6
+    },
+    {
+      "callSite": "0x224bc8",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 1
+    },
+    {
+      "callSite": "0x225038",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 1
+    },
+    {
+      "callSite": "0x225070",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 1
+    },
+    {
+      "callSite": "0x225094",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 1
+    },
+    {
+      "callSite": "0x2259cc",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226254",
+      "helper": "0x2130d8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x2262cc",
+      "helper": "0x2130d8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x2262e4",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": 1
+    },
+    {
+      "callSite": "0x226308",
+      "helper": "0x2130d8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226370",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226384",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226430",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226448",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226500",
+      "helper": "0x212ed8",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x226518",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x238004",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 2
+    },
+    {
+      "callSite": "0x23805c",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 3
+    },
+    {
+      "callSite": "0x2380b0",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x23814c",
+      "helper": "0x212f90",
+      "immediateA1Sequence": 2
+    },
+    {
+      "callSite": "0x2381d8",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x238250",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    },
+    {
+      "callSite": "0x2382c8",
+      "helper": "0x212f90",
+      "immediateA1Sequence": null
+    }
+  ],
+  "negativeControls": [
+    {
+      "sequenceId": 6,
+      "callSite": "0x22478c",
+      "gate": "oClass 0x25f at 0x224760..0x22476c",
+      "conclusion": "generic Moby selector evidence; not admissible as Ratchet"
+    }
+  ],
+  "admissions": [
+    {
+      "state": "standing",
+      "sequenceId": 0,
+      "status": "admit",
+      "evidence": "live+asset",
+      "frameCount": 10,
+      "rateMode": "constant",
+      "transitionRate": 0.125,
+      "fps": 7.5
+    },
+    {
+      "state": "idle_fidget_a",
+      "sequenceId": 1,
+      "status": "admit-neutral-only",
+      "evidence": "live+asset",
+      "frameCount": 77,
+      "rateMode": "variable",
+      "transitionRate": null,
+      "fps": null
+    },
+    {
+      "state": "idle_fidget_b",
+      "sequenceId": 2,
+      "status": "admit-neutral-only",
+      "evidence": "live+asset",
+      "frameCount": 77,
+      "rateMode": "variable",
+      "transitionRate": null,
+      "fps": null
+    },
+    {
+      "state": "bind_linear_anchor",
+      "sequenceId": 122,
+      "status": "diagnostic-only",
+      "evidence": "asset",
+      "frameCount": 21,
+      "rateMode": "constant",
+      "transitionRate": 0.5,
+      "fps": 30
+    }
+  ],
+  "unresolvedStates": [
+    "forward_locomotion",
+    "jump_rise",
+    "apex_or_fall",
+    "landing",
+    "square_wrench_attack",
+    "turning",
+    "crouch_turn"
+  ],
+  "liveTraceRequired": true,
+  "controllerOverlay": "time-varying post-animation pass; no frozen correction admitted"
+}

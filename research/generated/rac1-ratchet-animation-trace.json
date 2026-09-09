@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "authority": {
+    "build": "R&C1 NTSC-U SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "mode": "controlled read-only PCSX2/PINE class-0 selector trace",
+  "target": {
+    "level": "Veldin",
+    "playerClass": 0,
+    "instanceIndex": 0
+  },
+  "capture": {
+    "status": "not-captured",
+    "taskSliceObservation": "2026-09-10: no PCSX2 process was running on Jess-Laptop when inspected; no PINE reads were performed.",
+    "pineEndpointHint": {
+      "host": "127.0.0.1",
+      "slot": 28031,
+      "provenance": "local rc1-sol-2.6.3 agent profile; infrastructure only"
+    }
+  },
+  "sampleFields": [
+    "Moby+0x20",
+    "Moby+0x50",
+    "Moby+0x51",
+    "Moby+0x52",
+    "Moby+0x53",
+    "Moby+0x54",
+    "Moby+0x5c",
+    "Moby+0x74"
+  ],
+  "actions": [
+    {
+      "action": "forward_locomotion",
+      "trials": [],
+      "admission": "unresolved"
+    },
+    {
+      "action": "jump_rise",
+      "trials": [],
+      "admission": "unresolved"
+    },
+    {
+      "action": "apex_or_fall",
+      "trials": [],
+      "admission": "unresolved"
+    },
+    {
+      "action": "landing",
+      "trials": [],
+      "admission": "unresolved"
+    },
+    {
+      "action": "square_wrench_attack",
+      "trials": [],
+      "admission": "unresolved"
+    },
+    {
+      "action": "turning",
+      "trials": [],
+      "admission": "unresolved"
+    },
+    {
+      "action": "crouch_turn",
+      "trials": [],
+      "admission": "unresolved"
+    }
+  ],
+  "neutralWitnessAlreadyEstablished": {
+    "selectorCycle": [
+      0,
+      2,
+      0,
+      1
+    ],
+    "evidence": "prior untouched Veldin class-0 PINE witness preserved in RAC1_MOBY_SKINNING.md"
+  },
+  "admissionRule": "Only admit an action mapping after repeated class-0 live witnesses in isolated labelled trials. Static helper immediates and visual clip inspection are insufficient.",
+  "negativeControls": [
+    {
+      "sequenceId": 6,
+      "callSite": "0x22478c",
+      "gate": "oClass 0x25f at 0x224760..0x22476c",
+      "conclusion": "generic Moby selector evidence; not admissible as Ratchet"
+    }
+  ],
+  "controllerOverlay": "Sequence selection does not include the time-varying post-animation controller chain at Moby+0x64."
+}
