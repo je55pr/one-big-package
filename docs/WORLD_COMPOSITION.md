@@ -55,12 +55,11 @@ authoritative format.
 ### World loading
 
 `CompositionWorldLoader` holds no game knowledge. A `WorldPlacement` names a
-canonical destination id (`rac1:LEVEL0`, `rac2:LEVEL1`, later `rac3:…`), or the
+canonical destination id (`rac1:LEVEL0`, `rac2:LEVEL1`, `rac3:TABLE1`), or the
 `sourceGame` + `levelId` shorthand the loader synthesises one from. It calls
-`TrilogyWorldProviders.Registry.Load(sourcePath, destination)` — the same
-`ObpWorldProviderRegistry` the main `OBPGame` destination path uses. R&C1 and
-Going Commando enter the lab through this exact path; UYA will require no loader
-change when its native C# provider is registered.
+through the same `ObpWorldProviderRegistry` the main `OBPGame` destination path
+uses. R&C1, Going Commando, and UYA all enter the lab through this exact neutral
+provider path; composition adds placement/presentation only, never decode rules.
 
 Retail sources are registered per game from `--gc-iso` / `--rac1-iso` /
 `--uya-iso`.
@@ -216,11 +215,20 @@ The lab is a mode of the existing Godot host (`OBPGame`), entered with
 | `--composition <path>` | load a saved composition JSON |
 | `--compose-worlds <spec>` | seed worlds from `id=game:level,…` |
 | `--compose-solve` / `--compose-solve-scale` | run the rigid / uniform-scale solve on load and apply to world B |
-| `--composition-view <v>` | capture view: `overview` (default) · `top` · `a-only` · `b-only` · `overlay` |
+| `--composition-view <v>` | capture view: `overview` (default) · `top` · `a-only` · `b-only` · `overlay` · `a-start` · `b-start` · `start-overlay` · `start-side-by-side` |
 | `--capture-frame N` / `--capture-out <path>` | deterministic capture (writes `.png` + `.json` sidecar) |
 
-`captures/composition-*.json` sidecars record every world's transform, the anchor
-count and the last solve result for regression comparison.
+The `*-start` views are comparison helpers, not archaeology claims. `a-start` and
+`b-start` frame each authority around its own neutral `RuntimeWorld.Ship` point.
+`start-overlay` translates B so the two ship/start points coincide while
+preserving the preset rotation and scale. `start-side-by-side` uses the same
+translation-only anchor, then adds a fixed presentation-only +520 X offset to B.
+No semantic landmark, fitted rotation, fitted scale, or whole-map transform is
+introduced by these views.
+
+`captures/composition-*.json` sidecars record every world's effective capture
+transform, the anchor count, the last solve result, and a `placementNote` that
+states the capture-only placement contract.
 
 ---
 
@@ -251,10 +259,9 @@ Enter. World B aligns and the residuals print to the HUD + log.
 
 ## Known limitations
 
-- **UYA is still missing a native C# production world provider.** R&C1 is merged
-  and has already passed a cross-game lab run beside GC without any
-  composition-loader changes. UYA Veldin enters the same path once its
-  `IObpWorldProvider` lands. The schema already carries `destinationId` for that.
+- Start-point comparison views intentionally use only neutral `RuntimeWorld.Ship`
+  positions. They do not infer heading, semantic landmark identity, or a global
+  alignment from visual resemblance.
 - Anchor capture needs collision geometry under the crosshair; toggle collision
   back on for a world before picking anchors on it.
 - The Y alignment is a mean offset only — no height-field fitting.
@@ -300,15 +307,35 @@ two different source games rather than two GC worlds.
 
 ---
 
-## First Veldin findings
+## Veldin comparison showcase
 
-_Pending the native C# UYA `IObpWorldProvider` plus authority-backed Veldin destination
-mapping for the reconstructed R&C1/UYA levels._ When available: load
-`rc1-veldin` + `uya-veldin`, anchor Ratchet's garage / the start-area frog /
-matching roads / terrain corners, solve rigid first, and record here — solved
-translation + Y rotation, whether a rigid transform suffices, the scale estimate
-from a separate scale-fit run, per-landmark residuals, and where geometry
-genuinely diverges.
+`compositions/veldin-rac1-uya-comparison.json` pins the two retail authorities used
+by the current archaeology note: R&C1 `rac1:LEVEL0` and UYA `rac3:TABLE1`. The
+saved preset contains identity transforms, no anchors, and no fitted alignment.
+That is deliberate: current retail evidence supports strong local resemblance
+around the start area, but not one rigid full-map transform.
 
-Keep archaeological claims (measured residuals, solved transforms) clearly
-separate from visual guesses.
+For the deterministic local comparison pack, run:
+
+```powershell
+./tools/capture-veldin-comparison.ps1 -Rac1Iso <RAC1.iso> -UyaIso <UYA.iso>
+```
+
+The workflow builds once, captures `rac1-start`, `uya-start`, `start-overlay`, and
+`start-side-by-side`, then runs a three-cycle simultaneous-load teardown stress
+check by default. Overlay/side-by-side placement is computed only from each
+neutral `RuntimeWorld.Ship` position; the UYA world keeps the preset rotation and
+scale, and the side-by-side offset exists only to separate the two start-area
+views visually. Capture sidecars retain that explanation in `placementNote`.
+
+Retail validation on 2026-09-09 loaded both authorities simultaneously through
+the neutral providers: R&C1 LEVEL0 produced 315 meshes / 894,053 render triangles
+and UYA TABLE1 produced 336 meshes / 890,426 render triangles. All four capture
+views saved successfully at 1280x720. A three-cycle `--compose-reload 3` run was
+flat at 61.3 MB with 2,914 objects, 12 nodes, 0 orphans, and an empty
+`CompositionRoot` after every teardown.
+
+Archaeological interpretation remains in
+[`research/VELDIN_CROSS_GAME_ALIGNMENT.md`](../research/VELDIN_CROSS_GAME_ALIGNMENT.md):
+do not promote exploratory 5°, -8°, -18°, or scaled fits into this preset unless
+independent semantic landmarks later justify them.

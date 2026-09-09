@@ -12,11 +12,11 @@ namespace OneBigPackage;
 ///
 /// <para>
 /// The lab holds no game-specific knowledge: a placement names a canonical
-/// destination id (<c>rac1:LEVEL0</c>, <c>rac2:LEVEL1</c>, later <c>rac3:…</c>), the
+/// destination id (<c>rac1:LEVEL0</c>, <c>rac2:LEVEL1</c>, <c>rac3:TABLE1</c>), the
 /// registry routes it to the right <see cref="IObpWorldProvider"/>, and that
-/// provider decodes it from the registered retail source. R&amp;C1 and Going Commando
-/// are both exercised through this path on the OBP integration branch; UYA joins
-/// with no loader change when its provider is registered.
+/// provider decodes it from the registered retail source. R&amp;C1, Going Commando,
+/// and UYA are all exercised through this same neutral provider path; the loader
+/// contains no per-game decode or alignment behavior.
 /// </para>
 /// </summary>
 public sealed class CompositionWorldLoader
