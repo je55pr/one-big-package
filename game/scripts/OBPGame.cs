@@ -155,6 +155,7 @@ public partial class OBPGame : Node3D
         {
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
+            TickPlayerAvatar(delta);
             UpdateWorldHud();
         }
 
@@ -499,6 +500,7 @@ public partial class OBPGame : Node3D
     /// <summary>Free the current world sub-tree and everything it owns. Safe to call when nothing is loaded.</summary>
     private void TeardownWorld()
     {
+        ClearPlayerAvatarView();
         _player?.QueueFree();
         _player = null;
 
@@ -723,6 +725,7 @@ public partial class OBPGame : Node3D
         _camera.Current = false;
         _activeCamera = player.Camera;
         _player = player;
+        AttachRatchetPlayerVisual(player);
         ArmCrateDebugHarness(player);
     }
 
