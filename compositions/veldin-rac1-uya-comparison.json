@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "name": "Veldin comparison — R&C1 LEVEL0 + UYA TABLE1",
+  "notes": "Retail-authority comparison preset. Both worlds stay at neutral identity placement with no semantic anchors or fitted whole-map transform. Use the start-* capture views for translation-only ship/start anchoring and presentation-only side-by-side placement.",
+  "comparison": { "activeWorldId": "uya-table1", "fitScale": false, "overlayMode": "both" },
+  "worlds": [
+    { "id": "rac1-level0", "destinationId": "rac1:LEVEL0", "sourceGame": "rc1", "buildId": "rac1-ntscu-original", "levelId": 0, "label": "R&C1 retail LEVEL0 (Veldin authority)",
+      "transform": { "translation": [0, 0, 0], "rotationYDegrees": 0, "scale": 1 },
+      "opacity": 1, "debugTint": [1.0, 0.48, 0.18] },
+    { "id": "uya-table1", "destinationId": "rac3:TABLE1", "sourceGame": "uya", "buildId": "rac3-ntscu-original", "levelId": 1, "label": "UYA retail TABLE1 (Veldin authority)",
+      "transform": { "translation": [0, 0, 0], "rotationYDegrees": 0, "scale": 1 },
+      "opacity": 1, "debugTint": [0.25, 0.55, 1.0] }
+  ],
+  "anchors": []
+}

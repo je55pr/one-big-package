@@ -60,6 +60,7 @@ public partial class CompositionLab : Node3D
     // pending anchor capture: worldId -> local point, keyed by "slot" A/B
     private readonly System.Collections.Generic.List<(string Label, Vec3? A, Vec3? B)> _pendingAnchors = new();
     private string _status = string.Empty;
+    private string? _capturePlacementNote;
     private PlanarAlignmentResult? _lastSolve;
     private readonly System.Collections.Generic.List<MeshInstance3D> _anchorMarkers = new();
     private Node3D _markerRoot = null!;
@@ -846,6 +847,11 @@ public partial class CompositionLab : Node3D
             sb.AppendLine($"last solve: {s.Quality}  Ry={s.Transform.RotationYDegrees:0.##}°  s={s.Transform.Scale:0.####}  mean={s.MeanError:0.##}  max={s.MaxError:0.##}");
         }
 
+        if (_capturePlacementNote is { Length: > 0 } captureNote)
+        {
+            sb.AppendLine($"capture placement: {captureNote}");
+        }
+
         if (_status.Length > 0)
         {
             sb.AppendLine($"» {_status}");
@@ -870,6 +876,7 @@ public partial class CompositionLab : Node3D
                 ["capture"] = "composition",
                 ["view"] = view,
                 ["composition"] = _composition.Name,
+                ["placementNote"] = _capturePlacementNote,
                 ["renderer"] = CaptureHarness.ActiveRenderer(),
                 ["worlds"] = _composition.Worlds.Select(w => new
                 {
@@ -888,11 +895,52 @@ public partial class CompositionLab : Node3D
         GetTree().Quit(result.Ok ? 0 : 1);
     }
 
+    private const float StartCaptureRadius = 220f;
+    private const float StartSideBySideGap = 80f;
+
     private void ApplyCaptureView(string view)
     {
         var (aId, bId) = AlignmentPair();
+        _capturePlacementNote = null;
         switch (view)
         {
+            case "a-start":
+                SetOnlyVisible(aId);
+                _capturePlacementNote = $"{aId}: neutral RuntimeWorld ship/start framing. No cross-game alignment applied.";
+                FrameStartWorld(aId);
+                break;
+            case "b-start":
+                SetOnlyVisible(bId);
+                _capturePlacementNote = $"{bId}: neutral RuntimeWorld ship/start framing. No cross-game alignment applied.";
+                FrameStartWorld(bId);
+                break;
+            case "start-overlay":
+                SetAllVisible(opacity: 0.72);
+                if (ApplyStartAnchoredLayout(aId, bId, sideBySideOffsetX: 0))
+                {
+                    _capturePlacementNote = "Start-overlay: translation-only ship/start anchoring.\nPreset rotation=0/scale=1 preserved; no semantic landmark or whole-map fit.";
+                    FrameStartPair(aId, bId);
+                }
+                else
+                {
+                    _capturePlacementNote = "Start anchoring unavailable because one loaded authority has no RuntimeWorld ship/start point; showing neutral preset placement.";
+                    FrameAllWorlds();
+                }
+                break;
+            case "start-side-by-side":
+                SetAllVisible(opacity: 1.0);
+                double offset = StartCaptureRadius * 2.0 + StartSideBySideGap;
+                if (ApplyStartAnchoredLayout(aId, bId, offset))
+                {
+                    _capturePlacementNote = $"Side-by-side: translation-only start anchor + presentation-only +{offset:0} X on {bId}.\nNo rotation/scale fit, semantic landmark, or whole-map alignment claimed.";
+                    FrameStartPair(aId, bId);
+                }
+                else
+                {
+                    _capturePlacementNote = "Side-by-side start layout unavailable because one loaded authority has no RuntimeWorld ship/start point; showing neutral preset placement.";
+                    FrameAllWorlds();
+                }
+                break;
             case "a-only":
                 SetOnlyVisible(aId);
                 FrameAllWorlds();
@@ -902,34 +950,108 @@ public partial class CompositionLab : Node3D
                 FrameAllWorlds();
                 break;
             case "top":
-                foreach (var w in _worlds.Values)
-                {
-                    w.Placement = w.Placement with { Visible = true };
-                    CompositionView.ApplyDisplayState(w.Scene, w.Placement);
-                }
-
+                SetAllVisible();
                 FrameTopDown();
                 break;
             case "overlay":
             case "overview":
             default:
-                foreach (var w in _worlds.Values)
-                {
-                    w.Placement = w.Placement with { Visible = true };
-                    CompositionView.ApplyDisplayState(w.Scene, w.Placement);
-                }
-
+                SetAllVisible();
                 FrameAllWorlds();
                 break;
         }
     }
 
+    private bool ApplyStartAnchoredLayout(string aId, string bId, double sideBySideOffsetX)
+    {
+        if (!_worlds.TryGetValue(aId, out var a)
+            || !_worlds.TryGetValue(bId, out var b)
+            || a.World.Ship is not { } aStart
+            || b.World.Ship is not { } bStart)
+        {
+            return false;
+        }
+
+        var aPoint = a.Placement.Transform.Apply(new Vec3(aStart.X, aStart.Y, aStart.Z));
+        var bt = b.Placement.Transform;
+        var (bx, bz) = CompositionTransform.RotateY(bStart.X * bt.Scale, bStart.Z * bt.Scale, bt.RotationYDegrees);
+        var captureTransform = new CompositionTransform(
+            aPoint.X - bx + sideBySideOffsetX,
+            aPoint.Y - bStart.Y * bt.Scale,
+            aPoint.Z - bz,
+            bt.RotationYDegrees,
+            bt.Scale);
+        UpdatePlacement(bId, p => p with { Transform = captureTransform });
+        return true;
+    }
+
+    private void FrameStartWorld(string id)
+    {
+        if (_worlds.TryGetValue(id, out var world) && TryStartPoint(world, out var point))
+        {
+            FrameStartPoints(new[] { point });
+            return;
+        }
+
+        if (_worlds.TryGetValue(id, out world))
+        {
+            FrameBounds(world.World.Bounds, world.TransformRoot.Transform);
+        }
+    }
+
+    private void FrameStartPair(string aId, string bId)
+    {
+        var points = new System.Collections.Generic.List<Vector3>();
+        if (_worlds.TryGetValue(aId, out var a) && TryStartPoint(a, out var ap)) points.Add(ap);
+        if (_worlds.TryGetValue(bId, out var b) && TryStartPoint(b, out var bp)) points.Add(bp);
+        if (points.Count == 0)
+        {
+            FrameAllWorlds();
+            return;
+        }
+
+        FrameStartPoints(points);
+    }
+
+    private static bool TryStartPoint(LoadedWorld world, out Vector3 point)
+    {
+        if (world.World.Ship is not { } spawn)
+        {
+            point = default;
+            return false;
+        }
+
+        point = world.TransformRoot.Transform * new Vector3(-(float)spawn.X, (float)spawn.Y, (float)spawn.Z);
+        return true;
+    }
+
+    private void FrameStartPoints(System.Collections.Generic.IReadOnlyList<Vector3> points)
+    {
+        var min = points[0];
+        var max = points[0];
+        foreach (var point in points.Skip(1))
+        {
+            min = min.Min(point);
+            max = max.Max(point);
+        }
+
+        var padding = new Vector3(StartCaptureRadius, StartCaptureRadius * 0.45f, StartCaptureRadius);
+        FrameAabb(min - padding, max + padding);
+    }
+
+    private void SetAllVisible(double? opacity = null)
+    {
+        foreach (var id in _worlds.Keys.ToArray())
+        {
+            UpdatePlacement(id, p => p with { Visible = true, Opacity = opacity ?? p.Opacity });
+        }
+    }
+
     private void SetOnlyVisible(string id)
     {
-        foreach (var (wid, w) in _worlds)
+        foreach (var worldId in _worlds.Keys.ToArray())
         {
-            w.Placement = w.Placement with { Visible = wid == id };
-            CompositionView.ApplyDisplayState(w.Scene, w.Placement);
+            UpdatePlacement(worldId, p => p with { Visible = worldId == id, Opacity = 1.0 });
         }
     }
 }
