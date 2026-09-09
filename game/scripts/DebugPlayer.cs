@@ -43,6 +43,9 @@ public partial class DebugPlayer : CharacterBody3D
 
     public Camera3D Camera { get; private set; } = null!;
 
+    /// <summary>Presentation-only root; replacing its visual never changes controller physics.</summary>
+    public PlayerVisualRoot VisualRoot { get; private set; } = null!;
+
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
     private Label _hud = null!;
@@ -73,20 +76,9 @@ public partial class DebugPlayer : CharacterBody3D
             Position = new Vector3(0, height / 2f, 0),
         });
 
-        AddChild(new MeshInstance3D
-        {
-            Name = "Body",
-            Mesh = new CapsuleMesh { Radius = radius, Height = height },
-            Position = new Vector3(0, height / 2f, 0),
-            // Lit (unlike the decoded world, which is unshaded) so the capsule
-            // shows the GC "hero" directional light the host drives from the
-            // level's env sample points / transition volumes.
-            MaterialOverride = new StandardMaterial3D
-            {
-                AlbedoColor = new Color(1f, 0.74f, 0.15f),
-                Roughness = 0.7f,
-            },
-        });
+        VisualRoot = new PlayerVisualRoot { Name = "VisualRoot" };
+        AddChild(VisualRoot);
+        VisualRoot.ConfigureDebugFallback(radius, height);
 
         _yaw = new Node3D { Name = "Yaw" };
         AddChild(_yaw);

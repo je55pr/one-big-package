@@ -188,3 +188,13 @@ When a cross-game rule is chosen, document it as an OBP design decision and keep
 ## Current engineering principle
 
 Prefer a small evidence-backed capability with deterministic tests over a broad abstraction that guesses what the fused game will need. Preserve provenance, keep retail data local, keep game-native parsing out of Godot, and promote shared concepts only when the evidence justifies sharing them.
+
+## Player-avatar runtime boundary
+
+Playable character presentation is a separate runtime concern from world import. `OBP.Runtime/Player` carries stable avatar/model identity, decoded surface textures, per-surface UV/index groups, bounds/origin/axis metadata, and shared animation frames in **model-local space**. Those frames are deliberately not instance-placed or converted to OBP world axes.
+
+This differs from `RuntimeAnimatedMesh`: its `Frames` are already **OBP Y-up world-space** positions for a particular placed world object. Hosts must place/remap a `PlayerAvatar` themselves rather than treating its local frames as `RuntimeAnimatedMesh` data.
+
+Source-game providers own retail parsing. `Rac1PlayerAvatarProvider` reads the user-owned R&C1 authority independently of any loaded `RuntimeWorld`, decodes `Rac1RatchetAvatar`, and resolves Ratchet's Moby textures from explicit canonical native level 0. Retail-gated tests require Ratchet's decoded local animation and the four referenced texture payloads to remain identical across every present native R&C1 level, making that fixed carrier choice evidence-backed rather than a dependency on the current planet.
+
+Skeleton metadata is optional at this boundary. R&C1 currently leaves it absent because the integrated avatar exposes native hierarchy/affine records, but no neutral bind/animation-transform meaning has yet been established strongly enough to publish as shared runtime semantics.
