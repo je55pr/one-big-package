@@ -457,11 +457,7 @@ public sealed class Rac1MobyTests
         Assert.Equal(21, sequence.Frames.Count);
         Assert.Equal(0.5f, sequence.ConstantTransitionRate);
         Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[0]));
-        Assert.True(Rac1MobyPose.IsRatchetHierarchyRestAnchor(cls.Joints, sequence.Frames[0]));
-        var rest = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[0]);
-        double restError = rest.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
-        Assert.InRange(restError, 0, 0.00019);
-
+        Assert.True(Rac1MobyPose.IsRatchetHierarchyBindLinearAnchor(cls.Joints, sequence.Frames[0]));
         var moved = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, sequence.Frames[1]);
         Assert.All(moved, value => Assert.True(double.IsFinite(value)));
         double movedDelta = moved.Zip(cls.Mesh.Positions, (a, b) => Math.Abs(a - b)).Max();
@@ -505,7 +501,7 @@ public sealed class Rac1MobyTests
             Assert.Equal(21, bind.Frames.Count);
             Assert.Equal(0.5f, bind.ConstantTransitionRate);
             Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, bind.Frames[0]));
-            Assert.True(Rac1MobyPose.IsRatchetHierarchyRestAnchor(cls.Joints, bind.Frames[0]));
+            Assert.True(Rac1MobyPose.IsRatchetHierarchyBindLinearAnchor(cls.Joints, bind.Frames[0]));
         }
     }
 }

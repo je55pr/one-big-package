@@ -143,3 +143,11 @@ The rigid hierarchy and dedicated Ratchet player hierarchy are now animation-cap
 At the packet skin-state-machine layer, the current evidence supports a shared lineage: pre-loop transfers, 64 VU0 slots, two-way/three-way blending and exact 8-bit weights all match the later machinery conceptually. R&C1's already-established `8*u32` vertex-table header remains a separate generation.
 
 Do not infer that the **skeleton bind representation** is interchangeable with the current GC importer. R&C1 retail contains widespread non-identity skeleton rotations, so bind-pose reconstruction must be validated independently.
+
+## WIP correction: Ratchet sparse channels and post-sequence controllers
+
+Later live/executable archaeology supersedes the earlier Ratchet `static-stretch leaf` interpretation above. Dedicated Ratchet frames carry two sparse 8-byte channels: the first is tagged per-joint XYZ signed fixed-point scale (`/4096`), and the second is tagged per-joint XYZ signed translation. Frame `+0x0c` equals `joint_data_size + scale_count * 8`, identifying the translation-channel boundary. The retail bind-linear anchor selects `Scale * Quaternion`, with Ratchet's local rotation hierarchy still composing `local * parent`. Ratchet bind/local translation is recovered from the common-transform hierarchy rather than the skeleton tail floats.
+
+Visual comparison against an exact live sequence-0 retail witness also proves that raw dedicated-sequence evaluation is not the final player pose. Retail applies a second post-animation controller pass around executable `0x2111c4`, walking a 0x40-byte linked list at live Ratchet `Moby+0x64`. During the exact neutral sequence-0 frame 4->5 witness the persistent chain targets joints **110, 108, 106, 104, 18, 7, 2, 8**. Seven nodes carry quaternion corrections; joint 8 additionally carries uniform scale `0.92`; neutral-chain translations are zero. A separate temporary weighted controller chain appears in other states but is not active in this neutral witness and is outside the current promotion scope.
+
+The controller composition rule is not yet promoted. Until that pass is decoded and the resulting Godot pose matches retail, PR #36 remains a WIP checkpoint rather than merge-ready native Ratchet playback.

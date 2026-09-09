@@ -37,7 +37,7 @@ public static partial class Rac1WorldImport
 
         if (bind.Frames.Count != 21 || bind.ConstantTransitionRate != 0.5f ||
             !Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, bind.Frames[0]) ||
-            !Rac1MobyPose.IsRatchetHierarchyRestAnchor(cls.Joints, bind.Frames[0]))
+            !Rac1MobyPose.IsRatchetHierarchyBindLinearAnchor(cls.Joints, bind.Frames[0]))
         {
             throw new InvalidDataException("R&C1 Ratchet sequence 122 no longer matches the pinned bind anchor.");
         }
