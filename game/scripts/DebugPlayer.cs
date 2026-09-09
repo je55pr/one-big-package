@@ -49,6 +49,7 @@ public partial class DebugPlayer : CharacterBody3D
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
     private Label _hud = null!;
+    private float _cameraDistance = CamDistance;
     private double _time;
     private bool _landed;
     private bool _placed;
@@ -90,6 +91,7 @@ public partial class DebugPlayer : CharacterBody3D
         _yaw.AddChild(_pitch);
 
         float camBack = Scripted ? 13f : CamDistance;
+        _cameraDistance = camBack;
         Camera = new Camera3D { Name = "PlayerCamera", Position = new Vector3(0, 0, camBack), Far = 12000f, Near = 0.08f };
         _pitch.AddChild(Camera);
         Camera.MakeCurrent();
@@ -259,15 +261,15 @@ public partial class DebugPlayer : CharacterBody3D
     private void UpdateCameraDistance()
     {
         var pivot = _pitch.GlobalPosition;
-        var want = _pitch.GlobalTransform * new Vector3(0, 0, CamDistance);
+        var want = _pitch.GlobalTransform * new Vector3(0, 0, _cameraDistance);
         var query = PhysicsRayQueryParameters3D.Create(pivot, want);
         query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
         var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
 
-        float dist = CamDistance;
+        float dist = _cameraDistance;
         if (hit.Count > 0)
         {
-            dist = Mathf.Clamp(pivot.DistanceTo((Vector3)hit["position"]) - 0.3f, 1.2f, CamDistance);
+            dist = Mathf.Clamp(pivot.DistanceTo((Vector3)hit["position"]) - 0.3f, 1.2f, _cameraDistance);
         }
 
         Camera.Position = Camera.Position.Lerp(new Vector3(0, 0, dist), 0.35f);
@@ -283,6 +285,25 @@ public partial class DebugPlayer : CharacterBody3D
             $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X crate strike / F fly / R respawn / Tab cursor / Esc)";
     }
 
+    /// <summary>
+    /// Retune only the presentation camera for a real avatar while preserving the
+    /// debug controller's collision and movement. This is an OBP camera choice,
+    /// not a claim about the retail game's native camera constants.
+    /// </summary>
+    public void ConfigureAvatarPresentation(float avatarHeight)
+    {
+        if (!float.IsFinite(avatarHeight) || avatarHeight <= 0f)
+        {
+            return;
+        }
+
+        float height = Mathf.Clamp(avatarHeight, 0.8f, 3.5f);
+        float clearance = Scripted ? 1.0f : 0.65f;
+        float distanceScale = Scripted ? 5.5f : 4.5f;
+        _cameraDistance = Mathf.Clamp(height * distanceScale, 4.5f, Scripted ? 10f : 8f);
+        _pitch.Position = new Vector3(0f, height + clearance, 0f);
+        Camera.Position = new Vector3(0f, 0f, _cameraDistance);
+    }
     /// <summary>Drop the capsule exactly onto the collision surface under the spawn point (deterministic). Returns true once placed.</summary>
     private bool SnapToGroundBelow()
     {
