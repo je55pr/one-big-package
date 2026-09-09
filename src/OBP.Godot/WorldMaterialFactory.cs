@@ -172,8 +172,9 @@ public sealed class WorldMaterialFactory
 
     private void ApplyAlpha(StandardMaterial3D mat, (string, int) key)
     {
-        // Any texel below the PS2 "half" alpha → alpha-scissor. (A histogram-
-        // driven AlphaMode choice lands in the fidelity pass.)
+        // Keep the established production gate for now. The histogram model is
+        // intentionally staged until a representative trilogy capture set can
+        // prove it safe.
         if (_alpha.TryGetValue(key, out var profile) && profile.AnyBelowHalf)
         {
             mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
@@ -183,8 +184,20 @@ public sealed class WorldMaterialFactory
 
     private void ApplyEmission(StandardMaterial3D mat, (string, int) key)
     {
-        _ = mat;
-        _ = key;
-        // Emissive presentation lands in the fidelity pass.
+        if (!_luminance.TryGetValue(key, out var meanLuminance))
+        {
+            return;
+        }
+
+        double energy = MaterialModel.EmissionEnergy(meanLuminance);
+        if (energy <= 0 || mat.AlbedoTexture is null)
+        {
+            return;
+        }
+
+        mat.EmissionEnabled = true;
+        mat.Emission = Colors.White;
+        mat.EmissionTexture = mat.AlbedoTexture;
+        mat.EmissionEnergyMultiplier = (float)energy;
     }
 }

@@ -57,6 +57,14 @@ public class MaterialModelTests
     }
 
     [Fact]
+    public void ResolveAlpha_ThresholdEdgesStayConservative()
+    {
+        Assert.Equal(AlphaMode.Opaque, MaterialModel.ResolveAlpha(new AlphaProfile(0.998, 0.002, 0, true)).Mode);
+        Assert.Equal(AlphaMode.Scissor, MaterialModel.ResolveAlpha(new AlphaProfile(0.9979, 0.0021, 0, true)).Mode);
+        Assert.Equal(AlphaMode.Blend, MaterialModel.ResolveAlpha(new AlphaProfile(0.98, 0, 0.02, true)).Mode);
+    }
+
+    [Fact]
     public void Culling_And_Tiling_And_VertexColour_ByKind()
     {
         // All world geometry is two-sided — decoded winding is not reliably outward.
@@ -103,8 +111,9 @@ public class MaterialModelTests
         Assert.Equal((1.0 - 0.82) * 1.6, MaterialModel.EmissionEnergy(1.0), precision: 6);
         Assert.InRange(MaterialModel.EmissionEnergy(2.0), 0.0, 0.35); // clamp ceiling
 
-        // white texels -> ~1.0 luminance
+        // Luminance is colour-only: alpha does not create or suppress emission.
         Assert.Equal(1.0, MaterialModel.MeanLuminance(Rgba((255, 255, 255, 255))), precision: 3);
+        Assert.Equal(1.0, MaterialModel.MeanLuminance(Rgba((255, 255, 255, 0))), precision: 3);
         Assert.Equal(0.0, MaterialModel.MeanLuminance(Rgba((0, 0, 0, 255))), precision: 3);
     }
 }

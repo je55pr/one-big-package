@@ -85,10 +85,22 @@ and a texture `AlphaProfile`. World geometry stays `Unshaded` — baked PS2 vert
 colour is the lighting.
 
 `MaterialModel` also carries a histogram-driven `ResolveAlpha` (opaque / scissor
-/ blend from what the texture actually contains) and an emission model — wired
-and tested but **not yet switched on**: on the showcase set they move
-metal-city planets (Endako) more than a fidelity pass should without
-per-planet review. A focused follow-up turns them on with `vizcompare` evidence.
+/ blend from what the texture actually contains) and a mean-luminance emission
+model. The production gate is intentionally asymmetric after local trilogy
+validation on 2026-09-09:
+
+- **emission is enabled** for very-bright decoded textures. `WorldMaterialFactory`
+  reuses the albedo texture as emission, applies only the small pure-model energy,
+  and leaves the material `Unshaded`, two-sided rules and baked vertex-colour
+  multiplication unchanged;
+- **histogram alpha remains disabled in production**. A representative R&C1
+  `LEVEL0`, Going Commando Oozla and UYA `TABLE1` 13-shot run exceeded existing
+  `vizcompare` tolerances on every shot when `ResolveAlpha` replaced the legacy
+  below-half scissor gate, so the established production behavior stays in place
+  until a narrower evidence-backed rule is recovered.
+
+The same representative 13-shot set passed all existing `vizcompare` tolerances
+with emission enabled. Retail-derived PNG baselines remain local and gitignored.
 
 ## Visual regression — `tools/vizcompare/`
 
