@@ -441,7 +441,7 @@ public sealed class Rac1MobyTests
     }
 
     [SkippableFact]
-    public void Level0_RatchetSequence122_ReconstructsBindSurfaceAndMovesPlayerMesh()
+    public void Level0_RatchetSequence122_HasBindLinearAnchorAndMovesPlayerMesh()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
@@ -488,8 +488,17 @@ public sealed class Rac1MobyTests
             Assert.Equal(10, standing.Frames.Count);
             Assert.Equal(0x3e000000u, standing.ConstantTransitionRateRaw);
             Assert.Equal(0.125f, standing.ConstantTransitionRate);
+            double restExtent = cls.Mesh.Positions.Max(Math.Abs);
             Assert.All(standing.Frames, frame =>
-                Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, frame)));
+            {
+                Assert.True(Rac1MobyPose.CanPoseRatchetHierarchy(cls.Mesh, cls.Joints, frame));
+                var posed = Rac1MobyPose.PoseRatchetHierarchy(cls.Mesh, cls.Joints, frame);
+                Assert.All(posed, value => Assert.True(double.IsFinite(value)));
+                double ratio = posed.Max(Math.Abs) / restExtent;
+                // Retail stores Ratchet matrices in row-vector layout. Treating their
+                // 3x3 blocks as column-vector transforms roughly doubles this extent.
+                Assert.InRange(ratio, 0.90, 1.05);
+            });
 
             Assert.Equal(77, idleA.Frames.Count);
             Assert.Equal(0u, idleA.ConstantTransitionRateRaw);

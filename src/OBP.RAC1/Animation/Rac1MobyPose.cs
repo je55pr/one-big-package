@@ -6,7 +6,7 @@ namespace OBP.RAC1.Animation;
 /// Evidence-bounded R&amp;C1 Moby pose evaluation. The original one-joint path
 /// remains available, while rigid multi-joint hierarchies use the retail-pinned
 /// inverse-bind pivots and global frame orientations. The dedicated Ratchet path
-/// additionally supports retail-proven static stretch/shear on non-rigid leaf joints.
+/// additionally decodes its sparse native channels and row-vector transform convention.
 /// </summary>
 public static class Rac1MobyPose
 {
@@ -260,6 +260,9 @@ public static class Rac1MobyPose
 
         int n = joints.Count;
         double k = mesh.Scale / 1024.0;
+        // Retail stores Ratchet linear transforms for row-vector application.
+        // Multiply() consumes column vectors, so native linear blocks are transposed
+        // whenever they act on a position or hierarchy-local translation.
         var inverseBind = new double[n][,];
         var bindLinear = new double[n][,];
         var bindPivot = new double[n][];
@@ -278,8 +281,8 @@ public static class Rac1MobyPose
                 ? common
                 : Add(
                     bindPivot[joints[j].ParentRecordIndex],
-                    Multiply(bindLinear[joints[j].ParentRecordIndex], common));
-            bindTail[j] = Negate(Multiply(inverseBind[j], bindPivot[j]));
+                    Multiply(Transpose(bindLinear[joints[j].ParentRecordIndex]), common));
+            bindTail[j] = Negate(Multiply(Transpose(inverseBind[j]), bindPivot[j]));
         }
 
         var channels = DecodeRatchetFrameChannels(joints, frame);
@@ -304,7 +307,7 @@ public static class Rac1MobyPose
             animatedLinear[j] = Multiply(localLinear, animatedLinear[parent]);
             animatedPivot[j] = Add(
                 animatedPivot[parent],
-                Multiply(animatedLinear[parent], localTranslation));
+                Multiply(Transpose(animatedLinear[parent]), localTranslation));
         }
 
         var output = new double[mesh.Positions.Length];
@@ -327,8 +330,8 @@ public static class Rac1MobyPose
                 if (joint < 0 || joint >= n)
                     throw new InvalidDataException($"R&C1 Ratchet vertex {v} references joint {joint} outside {n} joints.");
 
-                var bindLocal = Add(Multiply(inverseBind[joint], rest), bindTail[joint]);
-                var posed = Add(Multiply(animatedLinear[joint], bindLocal), animatedPivot[joint]);
+                var bindLocal = Add(Multiply(Transpose(inverseBind[joint]), rest), bindTail[joint]);
+                var posed = Add(Multiply(Transpose(animatedLinear[joint]), bindLocal), animatedPivot[joint]);
                 acc[0] += weight * posed[0];
                 acc[1] += weight * posed[1];
                 acc[2] += weight * posed[2];
