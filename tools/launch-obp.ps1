@@ -6,7 +6,7 @@
 
 .DESCRIPTION
   This is the production-showcase entry point the desktop shortcut points at.
-  It quietly builds the game (Release), makes sure Godot + the asset import
+  It quietly builds the local Godot game assembly (Debug), makes sure Godot + the asset import
   cache are in place, then starts the app windowed-maximised with no developer
   console and no test-scene arguments. Pass -SkipBuild to launch faster when
   you know the build is current.
@@ -41,7 +41,9 @@ if (-not (Test-Path $gameExe)) { $gameExe = $consoleExe }
 # --- build --------------------------------------------------------------
 if (-not $SkipBuild) {
   Write-Host '  Building...' -ForegroundColor DarkGray
-  & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Release --nologo -v quiet
+  # An unexported Godot C# project loads .godot/mono/temp/bin/Debug.
+  # Building Release here can appear to work only when a stale Debug cache already exists.
+  & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo -v quiet
   if ($LASTEXITCODE -ne 0) {
     Write-Host ''
     Write-Warning 'Build failed - see the errors above.'
