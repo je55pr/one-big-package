@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "issue": 46,
+  "authority": {
+    "build": "R&C1 NTSC-U SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "target": {
+    "level": "Veldin",
+    "playerClass": 0,
+    "moby": "0x01845e80",
+    "locomotionSequence": 4
+  },
+  "method": "PINE read-only selector observation/reset plus HWND-targeted PostMessageW key input; no global keyboard injection",
+  "conclusion": "Stop selection is locomotion-cycle-phase dependent, not direction dependent. Sequence 20 is also selected in the middle phase. Exact game-tick/sub-frame boundaries remain unresolved because host key-up delivery and the emulated tick are asynchronous.",  "observedPhaseBands": [
+    { "postedReleaseFrame": "1-13", "observedOutcome": 5 },
+    { "postedReleaseFrame": "14-18", "observedOutcome": 20 },
+    { "postedReleaseFrame": "19-22", "observedOutcome": 6 }
+  ],
+  "crossDirectionWitnesses": [
+    { "key": "A", "frame": 4, "outcomes": [5, 5], "sha256": ["a22a8cd67168f30123a1ce22e2e25bb8c9d92dc5d294296885b1c6492f62064f", "782df118eed37b3423104585e86f3a4c211ccd89fabf3f28278f7ca269075cb4"] },
+    { "key": "A", "frame": 14, "outcomes": [20, 20], "sha256": ["15f52d218069c83f9627bf165e3137b7caadfa71e4d37e3a017258535d37ddb8", "81cbb4cbe850a51073ab572cc291d5dc0e0b79c37719d737896c3624755e0562"] },
+    { "key": "A", "frame": 20, "outcomes": [6, 6], "sha256": ["1b734665083a17b732f4d13bf7ebb77da449fb125656d07bd375ec812a6124fe", "e2972052fe95297ee8901567f5a2aec8a2c0fbe16f4aee3a30aed62af370ad8f"] },
+    { "key": "D", "frame": 4, "outcomes": [5, 5], "sha256": ["16615c068b6afbf74756db7934097436bcf3ed575bb6aa899816666eea0e77b9", "d3a1250bce4325bd8e7e6a10ce0b82b5a3bd589e2a14a40e1ec0f6f16d98e2a6"] },
+    { "key": "D", "frame": 14, "outcomes": [20, 20], "sha256": ["9d8a48bf67c55d712fb1c98ab919f34c0df18d3ae3fbbae3883729ab77de7261", "0beefb42e67a0bdfa4c824b7a8191b9831b920b076ccedaf75c2a7111b25529f"] },
+    { "key": "D", "frame": 20, "outcomes": [6, 6], "sha256": ["2b28bbf75a0c221b15e78079c22daa5c69ff4d242fb81e4b0ac57a2c731df1ec", "0ed61c7b31f202e7a599d4bf743191eb80c1548cef624e01a60bdf925b792187"] }
+  ],  "boundaryWitnesses": [
+    { "key": "W", "frame": 13, "outcomes": [5, 6], "sha256": ["76af0eb7deb520ee6ce7052fb298d041cc0c498b513c7e9918a13af0c955dba8", "0fb8622b760b9ae12b486939b57f2ac9ea240d4cd2e202b943ba7e8a21fd0bbc"] },
+    { "key": "W", "frame": 18, "outcomes": [20, 6], "sha256": ["a9a1df208a14c5262687ef574190d8c9af1bdafdf4aa92c879a5c620f05fe308", "bb318535164fd4fac0da455703505b2841b99941d91988de6d61b337231a6ba9"] }
+  ],
+  "specialEntry": "Posted release at sequence-4 frame 0 was not treated as an ordinary loop-frame witness because the entry state reported next=14 and could return directly toward standing.",
+  "admission": {
+    "directionRule": "rejected",
+    "phaseDependence": "admitted",
+    "sequence20StopSettleRole": "admitted from repeated class-0 live witnesses",
+    "exactBoundaryPredicate": "unresolved; do not encode gameplay selection from integer observer frames"
+  },
+  "rawEvidence": "Local-only under C:/ChatGPT/Shared/Scratch/obp46-targeted-cycle and obp46-targeted-verify; hashes above pin representative repeated witnesses without committing retail-derived memory samples."
+}

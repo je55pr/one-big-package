@@ -12,7 +12,7 @@ A controlled read-only PCSX2/PINE trace on Veldin's live class-0 Ratchet at Moby
 | delayed idle/fidgets | 1, 2 | 77 frames each, variable | prior neutral cycle `0 -> 2 -> 0 -> 1` | **ADMIT, neutral only** |
 | locomotion start | 3 | 33 frames, 0.25 = 15 FPS | precedes sustained movement in forward/left/right/run-jump trials | **ADMIT transition** |
 | sustained locomotion | 4 | 23 frames, 0.5 = 30 FPS | repeated while stick remains held | **ADMIT** |
-| locomotion stop variants | 5, 6 | 13 frames each, 0.25 = 15 FPS | 5 after left/right trials; 6 after forward/run-jump trials | **ADMIT transition-only; selection rule unresolved** |
+| locomotion stop/settle variants | 5, 20, 6 | 5/6 are 13 frames each at 0.25 = 15 FPS; 20 timing not yet promoted here | targeted class-0 release trials show phase-dependent 5/20/6 selection across W/A/D | **ADMIT transition-only; exact boundary predicate unresolved** |
 | stationary jump | 7 | 29 frames, variable | `2 -> 7 -> 0`, repeated | **ADMIT** |
 | moving jump | 8 | 16 frames, variable | `3 -> 4 -> 8 -> 4`, repeated | **ADMIT** |
 | crouch | 13 | 15 frames, 0.25 = 15 FPS | `2 -> 13 -> 0` | **ADMIT** |
@@ -29,11 +29,15 @@ That is positive evidence for selector behaviour, not proof that retail lacks pr
 
 Ordinary left/right stick trials use the same `3 -> 4` locomotion family as forward input. They do not establish a separate standing turn-in-place animation. Crouch-turn is distinct and direction-specific: right selects 14, left selects 15, both entered through crouch sequence 13.
 
-## Stop variants 5 and 6
+## Locomotion stop/settle phase family 5, 20, 6
 
-Sequence 6 has an important provenance correction. Earlier static executable archaeology rejected call site `0x22478c` as Ratchet evidence because that path is gated by `oClass == 0x25f`; that rejection remains correct. The new admission for sequence 6 comes from independent live class-0 Ratchet traces, not from rehabilitating that generic-Moby call site.
+Sequence 6 has an important provenance correction. Earlier static executable archaeology rejected call site `0x22478c` as Ratchet evidence because that path is gated by `oClass == 0x25f`; that rejection remains correct. The admission for sequence 6 comes from independent live class-0 Ratchet traces, not from rehabilitating that generic-Moby call site.
 
-The fixed focused-input set selected 6 after forward locomotion and after moving-jump locomotion release, while left/right stick-only trials selected 5. Both are therefore admitted only as locomotion stop/settle transitions. The native condition choosing 5 versus 6 remains unresolved and should not be guessed from direction labels alone.
+Issue #46 disproved the earlier tempting direction interpretation. HWND-targeted W/A/D release trials all produced the same broad phase family: early sequence-4 release witnesses select 5, middle-phase witnesses select 20, and late-phase witnesses select 6. Repeated A/D controls at observer frames 4, 14, and 20 reproduced 5, 20, and 6 respectively, so forward-versus-sideways direction is not the selection rule.
+
+The exact retail tick/sub-frame boundary is intentionally not promoted. Host key-up delivery is asynchronous with the emulated game tick: repeated W releases posted while observer frame 13 was visible produced both 5 and 6, and observer frame 18 produced both 20 and 6. Therefore integer observer frames are evidence for phase dependence, not a safe gameplay predicate. The payload-free summary and representative raw-trace hashes are preserved in `research/generated/rac1-ratchet-locomotion-stop-phase.json`; raw samples remain local-only.
+
+This bounded result closes the archaeology question without inventing behaviour: 5, 20, and 6 are admitted as context-sensitive locomotion stop/settle transitions, direction-only selection is rejected, and exact phase-boundary selection remains unresolved. OBP should continue to avoid choosing among these clips until a deterministic retail-side predicate is recovered.
 
 ## Evidence boundary
 
@@ -55,6 +59,6 @@ The controlled trials sampled `Moby+0x20`, `+0x50`, `+0x51`, `+0x52`, `+0x53`, `
 
 ## Runtime-facing admission
 
-A conservative first semantic binding now has enough authority for the next milestone: standing uses 0; sustained movement uses 4 with optional start transition 3; stationary and moving jump use 7 and 8 respectively; wrench uses 23. Semantic `Fall` may continue the launch-context jump clip because retail showed no selector split, and semantic `Land` must not claim a dedicated native clip yet. Sequences 5/6 are optional context-sensitive stop transitions until their selection predicate is recovered.
+A conservative first semantic binding now has enough authority for the next milestone: standing uses 0; sustained movement uses 4 with optional start transition 3; stationary and moving jump use 7 and 8 respectively; wrench uses 23. Semantic `Fall` may continue the launch-context jump clip because retail showed no selector split, and semantic `Land` must not claim a dedicated native clip yet. Sequences 5/20/6 are admitted context-sensitive stop/settle transitions, but OBP should not select among them until a deterministic retail-side phase predicate is recovered.
 
 This is sufficient to unblock a movement-fact-driven playable Ratchet animation binding without making animation the source of truth for physics or controller state.
