@@ -57,35 +57,7 @@ public sealed class Rac1PlayerStartProvider
             ratchet.Scale,
             ratchet.Position,
             ratchet.Rotation,
-            new RuntimeObjectTransform(ToObpMatrix(ratchet)));
+            new RuntimeObjectTransform(Rac1Instances.MobyTransform(ratchet)));
     }
 
-    private static double[] ToObpMatrix(Rac1Instances.MobyInstance instance)
-    {
-        double cx = Math.Cos(instance.Rotation.X), sx = Math.Sin(instance.Rotation.X);
-        double cy = Math.Cos(instance.Rotation.Y), sy = Math.Sin(instance.Rotation.Y);
-        double cz = Math.Cos(instance.Rotation.Z), sz = Math.Sin(instance.Rotation.Z);
-        double s = instance.Scale;
-
-        double r00 = cz * cy;
-        double r01 = cz * sy * sx - sz * cx;
-        double r02 = cz * sy * cx + sz * sx;
-        double r10 = sz * cy;
-        double r11 = sz * sy * sx + cz * cx;
-        double r12 = sz * sy * cx - cz * sx;
-        double r20 = -sy;
-        double r21 = cy * sx;
-        double r22 = cy * cx;
-
-        // Native is Z-up. OBP is Y-up with C:(x,y,z)->(x,z,y), so the
-        // equivalent linear transform is C * Rnative * C. Runtime matrices
-        // are column-major.
-        return
-        [
-            s * r00, s * r20, s * r10, 0,
-            s * r02, s * r22, s * r12, 0,
-            s * r01, s * r21, s * r11, 0,
-            instance.Position.X, instance.Position.Z, instance.Position.Y, 1,
-        ];
-    }
 }

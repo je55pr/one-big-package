@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 VOLATILE = {"renderedFrames", "engine", "renderer", "width", "height",
-            "savePngResult", "worldSwitches"}
+            "savePngResult", "worldSwitches", "animClockSeconds"}
 
 
 def stable(d: dict) -> dict:
@@ -34,7 +34,7 @@ def main() -> int:
             wrote += 1
             continue
 
-        gold = json.loads(gold_path.read_text())
+        gold = stable(json.loads(gold_path.read_text()))
         if cur == gold:
             print(f"  ok   {sidecar.name}")
             continue
