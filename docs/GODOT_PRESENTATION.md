@@ -137,6 +137,33 @@ pure `AnimationClock.FrameAt` (`Loop` / `PingPong` / `HoldLast`). A capture at a
 fixed settle time reproduces the same pose regardless of frame rate; the sidecar
 records `animClockSeconds` + per-mesh `currentFrame`.
 
+### Playable avatar animation
+
+`PlayerAvatar` is separate from placed world animation: it carries multiple **model-local**
+clips with neutral semantic roles and exact per-frame durations. `PlayerAvatarView`
+axis-remaps and base-aligns every clip through the same local transform, then implements
+`IPlayerAnimationStateSink` as a presentation-only selector. Native R&C1 sequence ids
+remain inside `OBP.RAC1`; neither the runtime contract nor Godot/game-facing state names
+depend on them.
+
+The first binding deliberately stays narrower than the decoded clip catalogue. `Idle`
+uses standing. `Walk` and `Run` both reuse the evidence-backed sustained-locomotion clip,
+which is an explicit OBP presentation policy rather than a claim that retail lacked
+speed-dependent controller work. Entering `JumpRise` from locomotion chooses moving jump;
+otherwise it chooses stationary jump. `Fall` keeps that already-selected airborne clip
+and clock origin because the retail trace showed no apex/fall selector split. `Land`
+hands directly to standing or sustained locomotion according to launch context because no
+distinct landing selector was witnessed. `Attack` plays the admitted wrench clip once and
+returns to the prior ground locomotion state.
+
+Locomotion start, both stop variants, crouch, and the two crouch-turn clips are exposed as
+neutral avatar data but are not assigned invented gameplay transitions. In particular,
+the two stop clips intentionally share `LocomotionStopVariant`; the retail 5-vs-6 selection
+predicate is unresolved. Variable-rate jump/attack clips preserve each decoded frame's
+native transition duration rather than collapsing them to one FPS value. See
+[`research/RAC1_PLAYER_ANIMATION_STATES.md`](../research/RAC1_PLAYER_ANIMATION_STATES.md)
+for the retail admission boundary.
+
 **Dormant skeleton hook:** `RuntimeAnimatedMesh.Skeleton` (`RuntimeSkeleton` —
 joints + parents + per-frame local rotations) is optional and **defaulted null**.
 `DebugOverlay` layer **J** draws bone lines when it's populated; until a decoder
