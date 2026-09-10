@@ -24,6 +24,7 @@ public enum PlayerAvatarAxisDirection
     PositiveY,
     PositiveZ,
 }
+
 public sealed record PlayerAvatarAxes(
     PlayerAvatarAxisDirection Right,
     PlayerAvatarAxisDirection Forward,
@@ -59,16 +60,15 @@ public sealed record PlayerAvatarSkeleton(IReadOnlyList<int> ParentIndices);
 /// <summary>
 /// Engine-independent playable-avatar presentation data.
 /// <para>
-/// <see cref="LocalAnimationFrames"/> are always MODEL/LOCAL-SPACE XYZ. They
-/// are not instance-placed, axis-remapped into a world, or controller-offset.
-/// This is intentionally different from <see cref="RuntimeAnimatedMesh"/>,
-/// whose frames are already OBP Y-up WORLD-SPACE positions.
+/// Every clip frame is MODEL/LOCAL-SPACE XYZ. Frames are not instance-placed,
+/// axis-remapped into a world, or controller-offset. This differs from
+/// <see cref="RuntimeAnimatedMesh"/>, whose frames are already OBP Y-up
+/// WORLD-SPACE positions.
 /// </para>
 /// </summary>
 public sealed record PlayerAvatar(
     PlayerAvatarIdentity Identity,
-    IReadOnlyList<double[]> LocalAnimationFrames,
-    float FramesPerSecond,
+    IReadOnlyList<PlayerAvatarAnimationClip> AnimationClips,
     IReadOnlyList<PlayerAvatarSurface> Surfaces,
     IReadOnlyList<PlayerAvatarTexture> Textures,
     PlayerAvatarBounds RestBounds,
@@ -78,7 +78,18 @@ public sealed record PlayerAvatar(
     PlayerAvatarAxes Axes,
     PlayerAvatarSkeleton? Skeleton = null)
 {
-    public int VertexCount => LocalAnimationFrames.Count > 0
-        ? LocalAnimationFrames[0].Length / 3
+    /// <summary>Compatibility view of the standing clip used by existing presentation callers.</summary>
+    public IReadOnlyList<double[]> LocalAnimationFrames =>
+        RequiredAnimationClip(PlayerAvatarAnimationRole.Standing).LocalFrames;
+
+    /// <summary>Constant standing FPS when available; variable-timed standing clips report zero.</summary>
+    public float FramesPerSecond =>
+        RequiredAnimationClip(PlayerAvatarAnimationRole.Standing).ConstantFramesPerSecond ?? 0f;
+
+    public int VertexCount => AnimationClips.Count > 0 && AnimationClips[0].LocalFrames.Count > 0
+        ? AnimationClips[0].LocalFrames[0].Length / 3
         : 0;
+
+    public PlayerAvatarAnimationClip RequiredAnimationClip(PlayerAvatarAnimationRole role) =>
+        AnimationClips.Single(clip => clip.Role == role);
 }
