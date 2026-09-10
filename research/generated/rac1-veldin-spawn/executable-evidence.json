@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "authority": {
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "executableEvidence": [
+    {
+      "address": "0x20c538",
+      "word": "0x26100100",
+      "meaning": "live-Moby scan advances s0 by 0x100"
+    },
+    {
+      "address": "0x20c550",
+      "word": "0x26100100",
+      "meaning": "second live-Moby scan branch advances s0 by 0x100"
+    },
+    {
+      "address": "0x20c5f4",
+      "word": "0x24060100",
+      "meaning": "live-Moby initializer supplies size 0x100"
+    },
+    {
+      "address": "0x20c60c",
+      "word": "0x0c07e5fa",
+      "meaning": "initializer calls the retail clear/copy helper at 0x1f97e8"
+    }
+  ],
+  "conclusion": "Retail live Mobies use a 0x100-byte record. This probe does not claim the authored 0x78-byte class-0 placement is copied into that record; that link remains to be proven."
+}
