@@ -52,6 +52,15 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
             if (state == CurrentAnimationState)
                 return;
 
+            // AttackRequested is a one-frame semantic pulse from the controller.
+            // Keep the native one-shot playing while subsequent movement facts
+            // update only the state we should return to when it completes.
+            if (CurrentAnimationState == PlayerAnimationState.Attack)
+            {
+                _attackReturnState = GroundContext(state);
+                return;
+            }
+
             PlayerAnimationState previous = CurrentAnimationState;
             switch (state)
             {

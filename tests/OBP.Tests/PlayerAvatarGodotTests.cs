@@ -176,6 +176,25 @@ public sealed class PlayerAvatarGodotTests
     }
 
     [Fact]
+    public void AttackPulseRemainsLatchedWhileMovementUpdatesReturnState()
+    {
+        var playback = new PlayerAvatarView.Playback(Avatar());
+        playback.SetAnimationState(PlayerAnimationState.Run);
+        playback.SetClock(0.2);
+        playback.SetAnimationState(PlayerAnimationState.Attack);
+
+        // Wave2D emits Attack for one controller tick, then resumes Run.
+        playback.SetAnimationState(PlayerAnimationState.Run);
+        playback.SetClock(0.45);
+        Assert.Equal(PlayerAnimationState.Attack, playback.CurrentAnimationState);
+        Assert.Equal(PlayerAvatarAnimationRole.PrimaryAttack, playback.CurrentClip.Role);
+
+        playback.SetClock(0.55);
+        Assert.Equal(PlayerAnimationState.Run, playback.CurrentAnimationState);
+        Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
+    }
+
+    [Fact]
     public void ViewImplementsAnimationStateSinkSeam()
     {
         Assert.True(typeof(IPlayerAnimationStateSink).IsAssignableFrom(typeof(PlayerAvatarView)));
