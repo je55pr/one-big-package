@@ -30,11 +30,16 @@ public sealed class Rac1PlayerStartProvider
     public Rac1PlayerStart Load(string sourcePath, int nativeLevelId)
     {
         using var reader = new FileRandomAccessReader(sourcePath);
-        var level = Rac1DiscIndex.Read(reader).Levels
+        return Load(reader, nativeLevelId);
+    }
+
+    public Rac1PlayerStart Load(IRandomAccessReader source, int nativeLevelId)
+    {
+        var level = Rac1DiscIndex.Read(source).Levels
             .SingleOrDefault(level => level.LevelId == nativeLevelId)
             ?? throw new ArgumentOutOfRangeException(
                 nameof(nativeLevelId), nativeLevelId, "R&C1 native level is absent from the source.");
-        byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+        byte[] gameplay = Rac1LevelSettings.ReadGameplay(source, level);
         var placements = Rac1Instances.Parse(gameplay).MobyInstances
             .Where(instance => instance.OClass == RatchetClass)
             .ToArray();

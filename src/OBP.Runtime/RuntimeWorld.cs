@@ -32,8 +32,11 @@ public sealed record RuntimeWorld(
     RuntimeLighting? Lighting = null,
     IReadOnlyList<RuntimeAnimatedMesh>? AnimatedMeshes = null,
     IReadOnlyList<RuntimeDynamicObject>? DynamicObjects = null,
-    IReadOnlyList<RuntimeAmbientAnimation>? AmbientAnimations = null)
+    IReadOnlyList<RuntimeAmbientAnimation>? AmbientAnimations = null,
+    RuntimeSpawn? PlayerStart = null)
 {
+    /// <summary>The preferred native player entry when one is known; otherwise the native ship park point.</summary>
+    public RuntimeSpawn? PreferredPlayerStart => PlayerStart ?? Ship;
     public int TotalRenderTriangles => Meshes.Sum(m => m.TriangleCount);
 
     public int TotalDynamicTriangles => (DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
@@ -184,7 +187,7 @@ public sealed record RuntimeEnvironment(
     public float FogFarVisibility => System.Math.Clamp(FogFarIntensity / 255f, 0f, 1f);
 }
 
-/// <summary>Where the player enters — the native ship park point. OBP Y-up; <see cref="Yaw"/> is radians about +Y.</summary>
+/// <summary>A neutral world-space placement/heading. OBP Y-up; <see cref="Yaw"/> is radians about +Y.</summary>
 public sealed record RuntimeSpawn(double X, double Y, double Z, double Yaw);
 
 // --- dynamic lighting (queried per-frame by the host, e.g. for the player) ---

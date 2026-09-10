@@ -649,21 +649,21 @@ public partial class OBPGame : Node3D
     private void SpawnPlayer(RuntimeWorld world)
     {
         var b = world.Bounds;
-        var ship = world.Ship;
-
-        bool shipInside = ship is { } s
-            && s.X > b.Min.X && s.X < b.Max.X && s.Z > b.Min.Z && s.Z < b.Max.Z
-            && s.Y > b.Min.Y - 4 && s.Y < b.Max.Y + 40;
+        var preferredStart = world.PreferredPlayerStart;
+        bool explicitPlayerStart = world.PlayerStart is not null;
+        bool nativeStartUsable = preferredStart is { } s
+            && (explicitPlayerStart
+                || (s.X > b.Min.X && s.X < b.Max.X && s.Z > b.Min.Z && s.Z < b.Max.Z
+                    && s.Y > b.Min.Y - 4 && s.Y < b.Max.Y + 40));
 
         Vector3 spawn;
         float yaw = 0f;
-        if (shipInside && ship is { } sp)
+        if (nativeStartUsable && preferredStart is { } sp)
         {
-            // native ship point → a safe grounded spawn a little above it; the
-            // capsule raycasts down onto the collision on its first frames.
             spawn = RuntimeWorldScene.ToScene(sp.X, sp.Y + 3.0, sp.Z);
             yaw = RuntimeWorldScene.ToSceneYaw(sp.Yaw);
-            GD.Print($"[OBPGame] spawn from native ship point ({sp.X:0},{sp.Y:0},{sp.Z:0})");
+            string source = explicitPlayerStart ? "explicit player start" : "native ship point";
+            GD.Print($"[OBPGame] spawn from {source} ({sp.X:0},{sp.Y:0},{sp.Z:0})");
         }
         else
         {
@@ -699,10 +699,9 @@ public partial class OBPGame : Node3D
 
         bool scripted = _args.CaptureFrame is not null;
 
-        // For a ship-less spawn (Aranos), a deterministic capture has no heading
-        // to use, so face the world centre; a real ship point already faces the
-        // way you fly in — the designers' intended view.
-        if (scripted && !shipInside)
+        // When no native player/ship start is usable, deterministic captures
+        // face the world centre because the bounds fallback has no authored heading.
+        if (scripted && !nativeStartUsable)
         {
             var centre = RuntimeWorldScene.ToScene(
                 (b.Min.X + b.Max.X) * 0.5, spawn.Y, (b.Min.Z + b.Max.Z) * 0.5);

@@ -4,6 +4,7 @@ using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
 using OBP.PS2.Textures;
 using OBP.RAC1.Level;
+using OBP.RAC1.Player;
 using OBP.Runtime;
 
 namespace OBP.RAC1;
@@ -89,6 +90,12 @@ public static partial class Rac1WorldImport
             settings.ShipPosition.Z,
             settings.ShipPosition.Y,
             settings.ShipRotationZ);
+        var recoveredPlayerStart = Rac1PlayerStartProvider.Instance.Load(disc, levelId);
+        var playerStart = new RuntimeSpawn(
+            recoveredPlayerStart.NativePosition.X,
+            recoveredPlayerStart.NativePosition.Z,
+            recoveredPlayerStart.NativePosition.Y,
+            recoveredPlayerStart.NativeRotation.Z);
 
         return new RuntimeWorld(
             Game: "rac1",
@@ -103,7 +110,8 @@ public static partial class Rac1WorldImport
             Bounds: new ObpBounds(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ)),
             Environment: environment,
             Ship: ship,
-            AnimatedMeshes: animatedMeshes.Count > 0 ? animatedMeshes : null);
+            AnimatedMeshes: animatedMeshes.Count > 0 ? animatedMeshes : null,
+            PlayerStart: playerStart);
     }
 
     private static IEnumerable<RuntimeMesh> ToTfragMeshes(RcTfrag.Mesh mesh, HashSet<int> textureIds)

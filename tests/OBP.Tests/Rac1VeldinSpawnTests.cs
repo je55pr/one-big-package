@@ -68,6 +68,17 @@ public sealed class Rac1VeldinSpawnTests
         var ship = Rac1LevelSettings.Parse(gameplay).ShipPosition;
 
         var start = Rac1PlayerStartProvider.Instance.Load(iso!, 0);
+        var world = Rac1WorldImport.Build(reader, 0);
+
+        Assert.NotNull(world.PlayerStart);
+        Assert.NotNull(world.Ship);
+        Assert.Equal((double)ratchet.Position.X, world.PlayerStart!.X, 6);
+        Assert.Equal((double)ratchet.Position.Z, world.PlayerStart.Y, 6);
+        Assert.Equal((double)ratchet.Position.Y, world.PlayerStart.Z, 6);
+        Assert.Equal((double)ratchet.Rotation.Z, world.PlayerStart.Yaw, 6);
+        Assert.Equal((double)ship.X, world.Ship!.X, 6);
+        Assert.Equal((double)ship.Z, world.Ship.Y, 6);
+        Assert.Equal((double)ship.Y, world.Ship.Z, 6);
 
         Assert.Equal(0, start.NativeLevelId);
         Assert.Equal(0, start.InstanceIndex);

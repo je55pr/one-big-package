@@ -118,7 +118,7 @@ A codec being shared does **not** imply that the enclosing R&C1, GC and UYA cont
 
 `OBP.RAC1`, `OBP.RAC2` and `OBP.RAC3` own game-specific native structures and assembly logic.
 
-Going Commando currently has the deepest merged C# implementation. Its native path covers level WAD/core data, tfrags, textures, TIEs, shrubs, Mobies, sky, settings, collision and ship spawn. `GcIsoLoad` is the engine-free façade for identifying/verifying a supported disc and loading a level.
+Going Commando currently has the deepest merged C# implementation. Its native path covers level WAD/core data, tfrags, textures, TIEs, shrubs, Mobies, sky, settings, collision and the native ship park point. `GcIsoLoad` is the engine-free façade for identifying/verifying a supported disc and loading a level.
 
 R&C1 and UYA archaeology may prove compatibility first in research/reference tooling. Stable findings should be promoted into the C# libraries only with deterministic equivalence/authority tests. Do not weaken a GC parser merely to make another game pass; either prove the shared structure or add the correct game-specific boundary.
 
@@ -131,6 +131,8 @@ R&C1 and UYA archaeology may prove compatibility first in research/reference too
 - environment/lighting state;
 - spawns and transforms;
 - future entity/state/gameplay concepts once their semantics are justified.
+
+`RuntimeWorld.Ship` preserves the source game's native ship park point. `RuntimeWorld.PlayerStart` is a separate optional player-entry transform; hosts prefer it when present and otherwise retain the existing ship/bounds fallback. R&C1 populates that field only from the retail-backed class-0 player-start provider, so Veldin no longer overloads its distant ship coordinates as Ratchet's start.
 
 This layer should be capable, in principle, of being consumed by a non-Godot front end without teaching that front end the retail file formats.
 
