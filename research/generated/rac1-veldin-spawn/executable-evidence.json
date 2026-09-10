@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "authority": {
     "build": "rac1-ntscu-original",
     "serial": "SCUS-97199",
@@ -10,23 +10,167 @@
     {
       "address": "0x20c538",
       "word": "0x26100100",
-      "meaning": "live-Moby scan advances s0 by 0x100"
+      "meaning": "boot live-Moby scan advances s0 by 0x100"
     },
     {
       "address": "0x20c550",
       "word": "0x26100100",
-      "meaning": "second live-Moby scan branch advances s0 by 0x100"
+      "meaning": "second boot live-Moby scan branch advances s0 by 0x100"
     },
     {
       "address": "0x20c5f4",
       "word": "0x24060100",
-      "meaning": "live-Moby initializer supplies size 0x100"
+      "meaning": "boot live-Moby initializer supplies size 0x100"
     },
     {
       "address": "0x20c60c",
       "word": "0x0c07e5fa",
-      "meaning": "initializer calls the retail clear/copy helper at 0x1f97e8"
+      "meaning": "boot initializer calls the retail clear/copy helper at 0x1f97e8"
     }
   ],
-  "conclusion": "Retail live Mobies use a 0x100-byte record. This probe does not claim the authored 0x78-byte class-0 placement is copied into that record; that link remains to be proven."
+  "loadedVeldinOverlayEvidence": {
+    "source": "read-only PCSX2 EE-memory witness from untouched retail Veldin gameplay",
+    "verifiedFromInput": true,
+    "signatures": [
+      {
+        "address": "0x242828",
+        "word": "0x8ca20044",
+        "meaning": "population reads gameplay Moby block pointer at gameplay +0x44"
+      },
+      {
+        "address": "0x242838",
+        "word": "0x8e300000",
+        "meaning": "population reads authored Moby count from the block header"
+      },
+      {
+        "address": "0x242878",
+        "word": "0x8e220000",
+        "meaning": "population reads the authored record declared size"
+      },
+      {
+        "address": "0x24288c",
+        "word": "0x02221021",
+        "meaning": "population computes next record as current + declared size"
+      },
+      {
+        "address": "0x242a54",
+        "word": "0x8fa90018",
+        "meaning": "population loads the emitted live-Moby index"
+      },
+      {
+        "address": "0x242a5c",
+        "word": "0x00091a00",
+        "meaning": "population multiplies live-Moby index by 0x100"
+      },
+      {
+        "address": "0x242a68",
+        "word": "0x8c42ffd8",
+        "meaning": "population loads the live-Moby pool base"
+      },
+      {
+        "address": "0x242a6c",
+        "word": "0x8e250000",
+        "meaning": "population reads authored oClass at record +0x18"
+      },
+      {
+        "address": "0x242a7c",
+        "word": "0x0c093a4c",
+        "meaning": "population calls the loaded live-Moby initializer at 0x24e930"
+      },
+      {
+        "address": "0x24e934",
+        "word": "0x24060100",
+        "meaning": "loaded initializer supplies live record size 0x100"
+      },
+      {
+        "address": "0x24e9b8",
+        "word": "0xa63000a6",
+        "meaning": "loaded initializer writes authored class to live +0xa6"
+      },
+      {
+        "address": "0x242aac",
+        "word": "0xc6210000",
+        "meaning": "population reads authored scale at record +0x1c"
+      },
+      {
+        "address": "0x242ab4",
+        "word": "0xe640002c",
+        "meaning": "population writes authored scale to live +0x2c"
+      },
+      {
+        "address": "0x242ad4",
+        "word": "0xc6200000",
+        "meaning": "population reads authored position X at record +0x30"
+      },
+      {
+        "address": "0x242ad8",
+        "word": "0xe6400010",
+        "meaning": "population writes position X to live +0x10"
+      },
+      {
+        "address": "0x242adc",
+        "word": "0xc6210004",
+        "meaning": "population reads authored position Y at record +0x34"
+      },
+      {
+        "address": "0x242ae0",
+        "word": "0xe6410014",
+        "meaning": "population writes position Y to live +0x14"
+      },
+      {
+        "address": "0x242ae4",
+        "word": "0xc6220008",
+        "meaning": "population reads authored position Z at record +0x38"
+      },
+      {
+        "address": "0x242aec",
+        "word": "0xe6420018",
+        "meaning": "population writes position Z to live +0x18"
+      },
+      {
+        "address": "0x242af0",
+        "word": "0xc6200000",
+        "meaning": "population reads authored rotation X at record +0x3c"
+      },
+      {
+        "address": "0x242af4",
+        "word": "0xe6400040",
+        "meaning": "population writes rotation X to live +0x40"
+      },
+      {
+        "address": "0x242af8",
+        "word": "0xc6210004",
+        "meaning": "population reads authored rotation Y at record +0x40"
+      },
+      {
+        "address": "0x242afc",
+        "word": "0xe6410044",
+        "meaning": "population writes rotation Y to live +0x44"
+      },
+      {
+        "address": "0x242b00",
+        "word": "0xc6200008",
+        "meaning": "population reads authored rotation Z at record +0x44"
+      },
+      {
+        "address": "0x242b08",
+        "word": "0xe6400048",
+        "meaning": "population writes rotation Z to live +0x48"
+      },
+      {
+        "address": "0x242c48",
+        "word": "0x8fb1001c",
+        "meaning": "population advances the authored cursor to the computed record end"
+      }
+    ],
+    "mapping": {
+      "authoredRecordSize": "0x78",
+      "liveRecordSize": "0x100",
+      "oClass": "authored +0x18 -> live +0xa6",
+      "scale": "authored +0x1c -> live +0x2c",
+      "position": "authored +0x30..+0x38 -> live +0x10..+0x18",
+      "rotation": "authored +0x3c..+0x44 -> live +0x40..+0x48"
+    }
+  },
+  "conclusion": "The loaded retail Veldin population path consumes each declared-size authored Moby record, derives a 0x100-strided live slot from its index, initializes it with the authored class, and copies scale/position/rotation directly. This closes the authored class-0 placement -> live Ratchet start-transform bridge."
 }

@@ -1,6 +1,7 @@
 using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Level;
+using OBP.RAC1.Player;
 
 namespace OBP.Tests;
 
@@ -54,6 +55,42 @@ public sealed class Rac1VeldinSpawnTests
             else Assert.True(distance < 30d, $"level {level.LevelId} ship/class-0 separation drifted to {distance:R}");
         }
     }
+
+    [SkippableFact]
+    public void RetailVeldin_PlayerStartProviderUsesAuthoredRatchetTransform()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == 0);
+        byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+        var ratchet = Assert.Single(Rac1Instances.Parse(gameplay).MobyInstances, moby => moby.OClass == 0);
+        var ship = Rac1LevelSettings.Parse(gameplay).ShipPosition;
+
+        var start = Rac1PlayerStartProvider.Instance.Load(iso!, 0);
+
+        Assert.Equal(0, start.NativeLevelId);
+        Assert.Equal(0, start.InstanceIndex);
+        Assert.Equal(ratchet.Position, start.NativePosition);
+        Assert.Equal(ratchet.Rotation, start.NativeRotation);
+        Assert.Equal(ratchet.Scale, start.Scale);
+        Assert.NotEqual((double)ship.X, start.Transform.Matrix[12]);
+        Assert.Equal((double)ratchet.Position.X, start.Transform.Matrix[12], 6);
+        Assert.Equal((double)ratchet.Position.Z, start.Transform.Matrix[13], 6);
+        Assert.Equal((double)ratchet.Position.Y, start.Transform.Matrix[14], 6);
+
+        var nativePoint = Rac1Instances.TransformMobyPoint(ratchet, 1.25, -2.5, 3.75);
+        var obpPoint = TransformPoint(start.Transform.Matrix, 1.25, 3.75, -2.5);
+        Assert.Equal(nativePoint.X, obpPoint.X, 6);
+        Assert.Equal(nativePoint.Z, obpPoint.Y, 6);
+        Assert.Equal(nativePoint.Y, obpPoint.Z, 6);
+    }
+
+    private static (double X, double Y, double Z) TransformPoint(double[] matrix, double x, double y, double z) =>
+        (
+            matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12],
+            matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13],
+            matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14]);
 
     private static FileRandomAccessReader OpenRetail()
     {
