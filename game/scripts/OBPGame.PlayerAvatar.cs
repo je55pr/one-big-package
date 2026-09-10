@@ -11,6 +11,7 @@ public partial class OBPGame
     private PlayerAvatar? _ratchetPlayerAvatar;
     private string? _ratchetPlayerAvatarSourcePath;
     private PlayerAvatarView? _playerAvatarView;
+    private IPlayerAnimationStateSink? _playerAvatarAnimationSink;
     private double _playerAvatarClock;
 
     /// <summary>
@@ -46,15 +47,19 @@ public partial class OBPGame
             {
                 Name = "RatchetAvatar",
             };
+            ClearPlayerAvatarView();
             player.VisualRoot.ReplaceVisual(view);
             player.ConfigureAvatarPresentation((float)_ratchetPlayerAvatar.AnimationBounds.Height);
             _playerAvatarView = view;
+            _playerAvatarAnimationSink = (object)view as IPlayerAnimationStateSink;
             _playerAvatarClock = 0;
+            _playerAvatarAnimationSink?.SetAnimationState(player.AnimationState);
             HideAuthoredWorldRatchetPresentation();
             GD.Print($"[player-avatar] attached Ratchet: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
         }
         catch (Exception ex)
         {
+            _playerAvatarAnimationSink = null;
             _playerAvatarView = null;
             _playerAvatarClock = 0;
             player.VisualRoot.ReplaceVisual(null);
@@ -69,12 +74,15 @@ public partial class OBPGame
             return;
         }
 
+        _playerAvatarAnimationSink?.SetAnimationState(_player?.AnimationState ?? PlayerAnimationState.Idle);
         _playerAvatarClock += Math.Max(0, delta);
         _playerAvatarView.SetClock(_playerAvatarClock);
     }
 
     private void ClearPlayerAvatarView()
     {
+        _playerAvatarAnimationSink?.SetAnimationState(PlayerAnimationState.Idle);
+        _playerAvatarAnimationSink = null;
         _playerAvatarView = null;
         _playerAvatarClock = 0;
     }
