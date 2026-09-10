@@ -1,0 +1,424 @@
+{
+  "schema": 2,
+  "authority": {
+    "build": "R&C1 NTSC-U SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "mode": "controlled read-only PCSX2/PINE class-0 selector trace",
+  "target": {
+    "level": "Veldin",
+    "playerClass": 0,
+    "instanceIndex": 0,
+    "moby": "0x01845e80"
+  },
+  "capture": {
+    "status": "captured-and-verified",
+    "trialCount": 16,
+    "trials": [
+      {
+        "file": "final-forward-1.json",
+        "sha256": "259804724d3fd0df9e47970c6175eefaaf8fe65f3daafca9113336b8db14d86e",
+        "sequencePath": [
+          2,
+          3,
+          4,
+          6,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:3",
+          "held:4",
+          "post:4",
+          "post:6",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-forward-2.json",
+        "sha256": "d40b51bef3e42fe98e6637d38969b47aa65f764246d8d30b2f595a0373a86101",
+        "sequencePath": [
+          2,
+          3,
+          4,
+          6,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:3",
+          "held:4",
+          "post:4",
+          "post:6",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-jump-1.json",
+        "sha256": "5f00cb65e400f3b35a1e9ed07689ad78d91da0976bd49f3c0e3e55e424206e2a",
+        "sequencePath": [
+          2,
+          7,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:7",
+          "post:7",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-jump-2.json",
+        "sha256": "b556eee25b9d27072152fa6dd3817b5d649451c79e4c847f9ab759ab48fd82b7",
+        "sequencePath": [
+          2,
+          7,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:7",
+          "post:7",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-wrench-1.json",
+        "sha256": "a2e171f1bbd36fabcebd1f2aa9a3683de7e42d86294baa23b0c5fe9f0da59c7b",
+        "sequencePath": [
+          2,
+          23,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:23",
+          "post:23",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-wrench-2.json",
+        "sha256": "3feb61ce422e32e0ee7c0638b005b82fa514f9e1a905efcbd58cf774259242d0",
+        "sequencePath": [
+          2,
+          23,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:23",
+          "post:23",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-crouch-1.json",
+        "sha256": "9a73de3682b266b39f674f8dc8322526c55d0fe1bfd20302c07f80d49cc448ed",
+        "sequencePath": [
+          2,
+          13,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:13",
+          "post:13",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-crouch-2.json",
+        "sha256": "0b38d80bcb811d31caa878161a67cb4caca6804ded7e566ce5f5768b035dc11b",
+        "sequencePath": [
+          2,
+          13,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:13",
+          "post:13",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-crouch-left-1.json",
+        "sha256": "e4aaabe1350184b8d08f20824cc8f0ce3be3dd52b761059b195f349ce78e2b40",
+        "sequencePath": [
+          2,
+          13,
+          15,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:13",
+          "held:15",
+          "post:15",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-crouch-left-2.json",
+        "sha256": "fac14999194f99f326bbf8394b08e6a156eac12facb0de42ff0ce18d1f86f69e",
+        "sequencePath": [
+          2,
+          13,
+          15,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:13",
+          "held:15",
+          "post:15",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-crouch-right-1.json",
+        "sha256": "d58e724dcf3ebecd6f6ab7787abee51e34594b469f1ba3a5592ebeb90153205b",
+        "sequencePath": [
+          2,
+          13,
+          14,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:13",
+          "held:14",
+          "post:14",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-crouch-right-2.json",
+        "sha256": "2e38b31f641eb0006b5c5cbb19e08003b9c4652039d837750a5f554dff34bf7d",
+        "sequencePath": [
+          2,
+          13,
+          14,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:13",
+          "held:14",
+          "post:14",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-turn-left-1.json",
+        "sha256": "367f3961c3d1513794bfd1c9cff1d5bfb8d29a1f7b7194c82d30d49e6ebf40ae",
+        "sequencePath": [
+          2,
+          3,
+          4,
+          5,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:3",
+          "held:4",
+          "post:4",
+          "post:5",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-turn-right-1.json",
+        "sha256": "43f5a9163e6364c98ead22efcc5c853649074cbf399c46db3be310ac4b650247",
+        "sequencePath": [
+          2,
+          3,
+          4,
+          5,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "held:2",
+          "held:3",
+          "held:4",
+          "post:4",
+          "post:5",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-runjump-1.json",
+        "sha256": "dbb05d02a690a0c079e289ce047dcf20c29b7897e84475c6a19c0224932792fe",
+        "sequencePath": [
+          2,
+          3,
+          4,
+          8,
+          4,
+          6,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "run:2",
+          "run:3",
+          "run:4",
+          "jump_press:4",
+          "jump_press:8",
+          "moving_air:8",
+          "moving_air:4",
+          "post:4",
+          "post:6",
+          "post:0"
+        ]
+      },
+      {
+        "file": "final-runjump-2.json",
+        "sha256": "519e55804f48ab4d8715fccc2ce97627b10c12f69b96b3bba7282300c2e17ded",
+        "sequencePath": [
+          2,
+          3,
+          4,
+          8,
+          4,
+          6,
+          0
+        ],
+        "phaseTransitions": [
+          "pre:2",
+          "run:2",
+          "run:3",
+          "run:4",
+          "jump_press:4",
+          "jump_press:8",
+          "moving_air:8",
+          "moving_air:4",
+          "post:4",
+          "post:6",
+          "post:0"
+        ]
+      }
+    ]
+  },
+  "sampleFields": [
+    "Moby+0x20",
+    "Moby+0x50",
+    "Moby+0x51",
+    "Moby+0x52",
+    "Moby+0x53",
+    "Moby+0x54",
+    "Moby+0x5c",
+    "Moby+0x74"
+  ],
+  "actions": [
+    {
+      "action": "forward_locomotion",
+      "trials": [
+        "final-forward-1.json",
+        "final-forward-2.json"
+      ],
+      "admission": "3=start, 4=sustained; release chose 6 in both forward trials"
+    },
+    {
+      "action": "stationary_jump",
+      "trials": [
+        "final-jump-1.json",
+        "final-jump-2.json"
+      ],
+      "admission": "7 throughout observed airborne interval; no separate apex/fall selector"
+    },
+    {
+      "action": "moving_jump",
+      "trials": [
+        "final-runjump-1.json",
+        "final-runjump-2.json"
+      ],
+      "admission": "8 airborne, then returns to 4 while movement remains held"
+    },
+    {
+      "action": "square_wrench_attack",
+      "trials": [
+        "final-wrench-1.json",
+        "final-wrench-2.json"
+      ],
+      "admission": "23, then standing 0"
+    },
+    {
+      "action": "turning_left_right",
+      "trials": [
+        "final-turn-left-1.json",
+        "final-turn-right-1.json"
+      ],
+      "admission": "same 3->4 locomotion family; no distinct turn-in-place selector witnessed"
+    },
+    {
+      "action": "crouch",
+      "trials": [
+        "final-crouch-1.json",
+        "final-crouch-2.json"
+      ],
+      "admission": "13"
+    },
+    {
+      "action": "crouch_turn_left",
+      "trials": [
+        "final-crouch-left-1.json"
+      ],
+      "admission": "13->15"
+    },
+    {
+      "action": "crouch_turn_right",
+      "trials": [
+        "final-crouch-right-1.json"
+      ],
+      "admission": "13->14"
+    },
+    {
+      "action": "landing",
+      "trials": [
+        "final-jump-1.json",
+        "final-jump-2.json",
+        "final-runjump-1.json",
+        "final-runjump-2.json"
+      ],
+      "admission": "no distinct landing selector witnessed; returns directly to 0 or 4"
+    }
+  ],
+  "neutralWitnessAlreadyEstablished": {
+    "selectorCycle": [
+      0,
+      2,
+      0,
+      1
+    ],
+    "evidence": "prior untouched Veldin class-0 PINE witness preserved in RAC1_MOBY_SKINNING.md"
+  },
+  "admissionRule": "Only admit mappings repeatedly witnessed on class-0 Ratchet in isolated labelled trials; static helper immediates remain insufficient.",
+  "negativeControls": [
+    {
+      "sequenceId": 6,
+      "callSite": "0x22478c",
+      "gate": "oClass 0x25f at 0x224760..0x22476c",
+      "conclusion": "That static call site remains invalid as Ratchet proof; sequence 6 is admitted only from later independent class-0 live traces."
+    }
+  ],
+  "controllerOverlay": "Sequence selection does not include the time-varying post-animation controller chain at Moby+0x64."
+}
