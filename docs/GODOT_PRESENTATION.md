@@ -147,20 +147,26 @@ remain inside `OBP.RAC1`; neither the runtime contract nor Godot/game-facing sta
 depend on them.
 
 The first binding deliberately stays narrower than the decoded clip catalogue. `Idle`
-uses standing. `Walk` and `Run` both reuse the evidence-backed sustained-locomotion clip,
-which is an explicit OBP presentation policy rather than a claim that retail lacked
+uses standing. Entering `Walk` or `Run` from grounded idle plays admitted R&C1 sequence 3
+(`LocomotionStart`) once at its decoded native per-frame timing, then hands to admitted
+sequence 4 (`SustainedLocomotion`). Repeated semantic `Walk`/`Run` updates do not restart or
+replace that start one-shot. After it completes, both `Walk` and `Run` reuse sequence 4;
+that reuse is explicitly an **OBP presentation policy**, not a claim that retail lacked
 speed-dependent controller work. Entering `JumpRise` from locomotion chooses moving jump;
 otherwise it chooses stationary jump. `Fall` keeps that already-selected airborne clip
 and clock origin because the retail trace showed no apex/fall selector split. `Land`
 hands directly to standing or sustained locomotion according to launch context because no
 distinct landing selector was witnessed. `Attack` plays the admitted wrench clip once and
-returns to the prior ground locomotion state.
+returns to the prior ground locomotion state. Jump or attack may interrupt locomotion-start;
+completion of those established one-shots returns through the existing moving context rather
+than speculatively replaying sequence 3.
 
-Locomotion start, both stop variants, crouch, and the two crouch-turn clips are exposed as
-neutral avatar data but are not assigned invented gameplay transitions. In particular,
-the two stop clips intentionally share `LocomotionStopVariant`; the retail 5-vs-6 selection
-predicate is unresolved. Variable-rate jump/attack clips preserve each decoded frame's
-native transition duration rather than collapsing them to one FPS value. See
+Both stop variants, crouch, and the two crouch-turn clips remain exposed as neutral avatar
+data without invented gameplay predicates. In particular, sequences 5 and 6 intentionally
+share `LocomotionStopVariant` because the retail 5-vs-6 selection rule is unresolved. Until
+that predicate is recovered, moving-to-idle returns directly to standing and gameplay never
+chooses either stop variant. All admitted clips preserve decoded per-frame native transition
+durations rather than collapsing variable timing to one FPS value. See
 [`research/RAC1_PLAYER_ANIMATION_STATES.md`](../research/RAC1_PLAYER_ANIMATION_STATES.md)
 for the retail admission boundary.
 

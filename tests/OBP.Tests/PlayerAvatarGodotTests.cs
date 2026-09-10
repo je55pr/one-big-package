@@ -88,20 +88,82 @@ public sealed class PlayerAvatarGodotTests
     }
 
     [Fact]
-    public void WalkAndRunReuseSustainedLocomotionWithoutRestartingClip()
+    public void IdleToLocomotionPlaysNativeTimedStartThenSustainedLocomotion()
     {
         var playback = new PlayerAvatarView.Playback(Avatar());
-        IPlayerAnimationStateSink sink = playback;
 
         playback.SetClock(1.0);
-        sink.SetAnimationState(PlayerAnimationState.Walk);
-        double started = playback.ClipStartedAtSeconds;
-        playback.SetClock(1.08);
-        sink.SetAnimationState(PlayerAnimationState.Run);
+        playback.SetAnimationState(PlayerAnimationState.Walk);
+        Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, playback.CurrentClip.Role);
+        Assert.Equal(1.0, playback.ClipStartedAtSeconds, 12);
 
-        Assert.Equal(PlayerAnimationState.Run, sink.CurrentAnimationState);
+        playback.SetClock(1.19);
+        Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, playback.CurrentClip.Role);
+
+        playback.SetClock(1.25);
+        Assert.Equal(PlayerAnimationState.Walk, playback.CurrentAnimationState);
         Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
-        Assert.Equal(started, playback.ClipStartedAtSeconds);
+        Assert.Equal(1.2, playback.ClipStartedAtSeconds, 12);
+        Assert.Equal(0.05, playback.ClipElapsedSeconds, 12);
+    }
+
+    [Fact]
+    public void WalkRunPulsesDoNotInterruptLocomotionStartOrSustainedClip()
+    {
+        var playback = new PlayerAvatarView.Playback(Avatar());
+
+        playback.SetClock(2.0);
+        playback.SetAnimationState(PlayerAnimationState.Walk);
+        double startOneShot = playback.ClipStartedAtSeconds;
+        playback.SetClock(2.05);
+        playback.SetAnimationState(PlayerAnimationState.Run);
+        playback.SetClock(2.10);
+        playback.SetAnimationState(PlayerAnimationState.Walk);
+
+        Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, playback.CurrentClip.Role);
+        Assert.Equal(startOneShot, playback.ClipStartedAtSeconds);
+
+        playback.SetClock(2.21);
+        double sustained = playback.ClipStartedAtSeconds;
+        playback.SetAnimationState(PlayerAnimationState.Run);
+        Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
+        Assert.Equal(sustained, playback.ClipStartedAtSeconds);
+    }
+
+    [Fact]
+    public void JumpAndAttackInterruptLocomotionStartWithoutResumingIt()
+    {
+        var jumping = new PlayerAvatarView.Playback(Avatar());
+        jumping.SetAnimationState(PlayerAnimationState.Run);
+        Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, jumping.CurrentClip.Role);
+        jumping.SetClock(0.05);
+        jumping.SetAnimationState(PlayerAnimationState.JumpRise);
+        Assert.Equal(PlayerAvatarAnimationRole.MovingJump, jumping.CurrentClip.Role);
+
+        var attacking = new PlayerAvatarView.Playback(Avatar());
+        attacking.SetAnimationState(PlayerAnimationState.Walk);
+        attacking.SetClock(0.05);
+        attacking.SetAnimationState(PlayerAnimationState.Attack);
+        Assert.Equal(PlayerAvatarAnimationRole.PrimaryAttack, attacking.CurrentClip.Role);
+        attacking.SetAnimationState(PlayerAnimationState.Walk);
+        attacking.SetClock(0.36);
+        Assert.Equal(PlayerAnimationState.Walk, attacking.CurrentAnimationState);
+        Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, attacking.CurrentClip.Role);
+    }
+
+    [Fact]
+    public void MovingToIdleReturnsDirectlyToStandingWithoutSelectingStopVariant()
+    {
+        var playback = new PlayerAvatarView.Playback(Avatar());
+        playback.SetAnimationState(PlayerAnimationState.Run);
+        playback.SetClock(0.21);
+        Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
+
+        playback.SetAnimationState(PlayerAnimationState.Idle);
+
+        Assert.Equal(PlayerAnimationState.Idle, playback.CurrentAnimationState);
+        Assert.Equal(PlayerAvatarAnimationRole.Standing, playback.CurrentClip.Role);
+        Assert.NotEqual(PlayerAvatarAnimationRole.LocomotionStopVariant, playback.CurrentClip.Role);
     }
 
     [Fact]

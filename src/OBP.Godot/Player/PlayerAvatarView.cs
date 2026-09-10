@@ -44,6 +44,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
             if (!double.IsFinite(clockSeconds))
                 throw new ArgumentOutOfRangeException(nameof(clockSeconds));
             _clockSeconds = Math.Max(0, clockSeconds);
+            CompleteLocomotionStartIfNeeded();
             CompleteAttackIfNeeded();
         }
 
@@ -61,6 +62,16 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
                 return;
             }
 
+            // LocomotionStart is a native-timed one-shot. Walk/Run are semantic
+            // controller facts, so pulses between them update return context
+            // without replacing or restarting the start clip.
+            if (_currentClip.Role == PlayerAvatarAnimationRole.LocomotionStart && IsLocomotion(state))
+            {
+                CurrentAnimationState = state;
+                _airborneReturnState = state;
+                return;
+            }
+
             PlayerAnimationState previous = CurrentAnimationState;
             switch (state)
             {
@@ -74,9 +85,14 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
                 case PlayerAnimationState.Run:
                     CurrentAnimationState = state;
                     _airborneReturnState = state;
+                    bool startFromGroundedIdle = previous == PlayerAnimationState.Idle &&
+                                                 _currentClip.Role == PlayerAvatarAnimationRole.Standing;
                     Select(
-                        PlayerAvatarAnimationRole.SustainedLocomotion,
-                        restart: _currentClip.Role != PlayerAvatarAnimationRole.SustainedLocomotion);
+                        startFromGroundedIdle
+                            ? PlayerAvatarAnimationRole.LocomotionStart
+                            : PlayerAvatarAnimationRole.SustainedLocomotion,
+                        restart: startFromGroundedIdle ||
+                                 _currentClip.Role != PlayerAvatarAnimationRole.SustainedLocomotion);
                     break;
 
                 case PlayerAnimationState.JumpRise:
@@ -125,6 +141,22 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state));
             }
+        }
+
+        private void CompleteLocomotionStartIfNeeded()
+        {
+            if (!IsLocomotion(CurrentAnimationState) ||
+                _currentClip.Role != PlayerAvatarAnimationRole.LocomotionStart ||
+                ClipElapsedSeconds < _currentClip.DurationSeconds)
+            {
+                return;
+            }
+
+            double completedAt = _clipStartedAtSeconds + _currentClip.DurationSeconds;
+            Select(
+                PlayerAvatarAnimationRole.SustainedLocomotion,
+                restart: true,
+                startAtSeconds: completedAt);
         }
 
         private void CompleteAttackIfNeeded()
@@ -290,6 +322,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
         PlayerAvatarAnimationRole[] requiredRoles =
         [
             PlayerAvatarAnimationRole.Standing,
+            PlayerAvatarAnimationRole.LocomotionStart,
             PlayerAvatarAnimationRole.SustainedLocomotion,
             PlayerAvatarAnimationRole.StationaryJump,
             PlayerAvatarAnimationRole.MovingJump,
