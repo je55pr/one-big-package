@@ -160,4 +160,20 @@ public static class Rac1Instances
             instance.Position.Y + instance.Scale * y3,
             instance.Position.Z + instance.Scale * z2);
     }
+
+    /// <summary>Build the retail-pinned R&C1 Moby transform as a column-major OBP Y-up matrix.</summary>
+    public static double[] MobyTransform(MobyInstance instance)
+    {
+        double cx = Math.Cos(instance.Rotation.X), sx = Math.Sin(instance.Rotation.X);
+        double cy = Math.Cos(instance.Rotation.Y), sy = Math.Sin(instance.Rotation.Y);
+        double cz = Math.Cos(instance.Rotation.Z), sz = Math.Sin(instance.Rotation.Z);
+        double scale = instance.Scale;
+        double r00 = cz * cy, r01 = cz * sy * sx - sz * cx, r02 = cz * sy * cx + sz * sx;
+        double r10 = sz * cy, r11 = sz * sy * sx + cz * cx, r12 = sz * sy * cx - cz * sx;
+        double r20 = -sy, r21 = cy * sx, r22 = cy * cx;
+        return [
+            scale*r00, scale*r20, scale*r10, 0, scale*r02, scale*r22, scale*r12, 0,
+            scale*r01, scale*r21, scale*r11, 0,
+            instance.Position.X, instance.Position.Z, instance.Position.Y, 1];
+    }
 }

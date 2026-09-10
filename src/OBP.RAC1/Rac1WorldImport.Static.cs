@@ -6,7 +6,7 @@ namespace OBP.RAC1;
 
 public static partial class Rac1WorldImport
 {
-    private static void AddPlacedStaticGeometry(
+    private static IReadOnlyList<RuntimeDynamicObject> AddPlacedStaticGeometry(
         Rac1LevelCore.Core core,
         byte[] gameplayBytes,
         List<RuntimeMesh> meshes,
@@ -60,14 +60,9 @@ public static partial class Rac1WorldImport
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
 
-        PlaceMobyInstances(
-            instances.MobyInstances,
-            classes.Mobies,
-            mobyTextureIds,
-            animatedMobyInstances,
-            meshes,
-            ref minX, ref minY, ref minZ,
-            ref maxX, ref maxY, ref maxZ);
+        return BuildMobyDynamicObjects(
+            instances.MobyInstances, classes.Mobies, mobyTextureIds, animatedMobyInstances,
+            ref minX, ref minY, ref minZ, ref maxX, ref maxY, ref maxZ);
     }
 
     private static List<RuntimeTexture> ReadRuntimeTextures(

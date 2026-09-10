@@ -13,7 +13,8 @@ namespace OBP.RAC1;
 /// Evidence-backed native R&amp;C1 world assembly. The production path currently
 /// carries retail tfrags, decoded textures, camera-centred sky shells, octree
 /// collision and the R&amp;C1-specific 0x50-byte level-settings generation into
-/// the neutral runtime. Placed Tie/Shrub/Moby geometry is promoted separately.
+/// the neutral runtime. Tie/Shrub geometry remains welded; authored Mobies are
+/// preserved as individual dynamic objects except for proven animated handoffs.
 /// </summary>
 public static partial class Rac1WorldImport
 {
@@ -70,7 +71,7 @@ public static partial class Rac1WorldImport
         // native geometry; RuntimeEnvironment always carries world units.
         var gameplay = Rac1LevelSettings.ReadGameplay(disc, level);
         var animatedMeshes = new List<RuntimeAnimatedMesh>();
-        AddPlacedStaticGeometry(
+        var dynamicObjects = AddPlacedStaticGeometry(
             core, gameplay, meshes, textures, animatedMeshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -111,6 +112,7 @@ public static partial class Rac1WorldImport
             Environment: environment,
             Ship: ship,
             AnimatedMeshes: animatedMeshes.Count > 0 ? animatedMeshes : null,
+            DynamicObjects: dynamicObjects,
             PlayerStart: playerStart);
     }
 

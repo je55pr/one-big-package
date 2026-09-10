@@ -1,4 +1,31 @@
 {
+  "animClockSeconds": 5.059,
+  "animations": [
+    {
+      "CurrentFrame": 7,
+      "FrameCount": 10,
+      "Name": "ratchet_i0_t0",
+      "Playing": true
+    },
+    {
+      "CurrentFrame": 7,
+      "FrameCount": 10,
+      "Name": "ratchet_i0_t1",
+      "Playing": true
+    },
+    {
+      "CurrentFrame": 7,
+      "FrameCount": 10,
+      "Name": "ratchet_i0_t2",
+      "Playing": true
+    },
+    {
+      "CurrentFrame": 7,
+      "FrameCount": 10,
+      "Name": "ratchet_i0_t3",
+      "Playing": true
+    }
+  ],
   "authorityBuild": "rac1-ntscu-original",
   "camera": [
     15.701828,
@@ -9,12 +36,12 @@
   "collisionBodies": 1,
   "collisionTriangles": 86184,
   "crateDebug": null,
-  "dynamicObjects": 0,
+  "dynamicObjects": 285,
   "game": "rac1",
   "levelId": 0,
   "location": null,
-  "meshInstances": 318,
-  "mobyInstances": 33,
+  "meshInstances": 796,
+  "mobyInstances": 0,
   "overlays": "overlays: KindTint",
   "planet": null,
   "player": null,

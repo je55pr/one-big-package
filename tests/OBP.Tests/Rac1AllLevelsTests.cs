@@ -1,21 +1,52 @@
+using System.Text.Json;
 using OBP.IO;
 using OBP.RAC1;
+using OBP.RAC1.Level;
 
 namespace OBP.Tests;
 
 /// <summary>All-level retail survival and structural invariants for the native R&C1 world path.</summary>
 public sealed class Rac1AllLevelsTests
 {
-    public static IEnumerable<object[]> NativeLevels => Enumerable.Range(0, 19).Select(level => new object[] { level });
+    public static IEnumerable<object[]> NativeLevels
+    {
+        get
+        {
+            string path = Path.Combine(RepoPaths.Root, "research", "generated", "rac1-dynamic-moby-runtime-census.json");
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            foreach (var row in doc.RootElement.GetProperty("levels").EnumerateArray())
+            {
+                yield return [row.GetProperty("level").GetInt32(), row.GetProperty("placements").GetInt32(),
+                    row.GetProperty("linkedInstances").GetInt32(), row.GetProperty("animatedHandoffInstances").GetInt32(),
+                    row.GetProperty("noGeometryInstances").GetInt32(), row.GetProperty("dynamicTriangles").GetInt32(),
+                    row.GetProperty("staticTriangles").GetInt32(), row.GetProperty("animatedTriangles").GetInt32()];
+            }
+        }
+    }
 
     [SkippableTheory]
     [MemberData(nameof(NativeLevels))]
-    public void NativeWorldBuildsWithFiniteLinkedGeometry(int levelId)
+    public void NativeWorldBuildsWithFiniteLinkedGeometry(
+        int levelId, int placements, int linkedInstances, int animatedHandoffs, int noGeometryInstances,
+        int dynamicTriangles, int staticTriangles, int animatedTriangles)
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var world = Rac1WorldImport.Build(reader, levelId);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == levelId);
+        var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Mobies;
+        var dynamicObjects = Assert.IsAssignableFrom<IReadOnlyList<OBP.Runtime.RuntimeDynamicObject>>(world.DynamicObjects);
+
+        Assert.Equal(placements, dynamicObjects.Count);
+        Assert.Equal(linkedInstances, dynamicObjects.Count(o => o.Meshes.Count > 0));
+        int noGeometry = dynamicObjects.Count(o => o.Meshes.Count == 0 &&
+            (!classes.TryGetValue(o.NativeClassId, out var cls) || cls.Mesh.Indices.Length == 0));
+        Assert.Equal(noGeometryInstances, noGeometry);
+        Assert.Equal(animatedHandoffs, dynamicObjects.Count - linkedInstances - noGeometry);
+        Assert.Equal(staticTriangles, world.TotalRenderTriangles);
+        Assert.Equal(dynamicTriangles, world.TotalDynamicTriangles);
+        Assert.Equal(animatedTriangles, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
 
         Assert.Equal("rac1", world.Game);
         Assert.Equal(levelId, world.LevelId);
@@ -60,6 +91,21 @@ public sealed class Rac1AllLevelsTests
         Assert.Contains(world.Meshes, mesh => mesh.AssetKind == "sky");
         Assert.Contains(world.Meshes, mesh => mesh.AssetKind == "tie");
         Assert.Contains(world.Meshes, mesh => mesh.AssetKind == "shrub");
-        Assert.Contains(world.Meshes, mesh => mesh.AssetKind == "moby");
+        Assert.NotNull(world.DynamicObjects);
+        Assert.Contains(world.DynamicObjects!, obj => obj.Meshes.Count > 0);
+        Assert.All(world.DynamicObjects!, obj =>
+        {
+            Assert.Equal("rac1", obj.SourceGame);
+            Assert.Equal(16, obj.Transform.Matrix.Length);
+            Assert.All(obj.Transform.Matrix, value => Assert.True(double.IsFinite(value)));
+            Assert.All(obj.Meshes, mesh =>
+            {
+                Assert.Equal("moby", mesh.AssetKind);
+                Assert.Equal(0, mesh.Positions.Length % 3);
+                Assert.Equal(0, mesh.Indices.Length % 3);
+                Assert.All(mesh.Indices, index => Assert.InRange(index, 0, mesh.Positions.Length / 3 - 1));
+                if (mesh.TextureId >= 0) Assert.Contains((mesh.AssetKind, mesh.TextureId), textureKeys);
+            });
+        });
     }
 }
