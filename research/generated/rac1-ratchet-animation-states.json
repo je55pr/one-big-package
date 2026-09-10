@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "authority": {
     "build": "R&C1 NTSC-U SCUS-97199",
     "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
@@ -9,6 +9,7 @@
     "currentSequenceOffset": "Moby+0x53",
     "nextSequenceOffset": "Moby+0x52"
   },
+  "playerMoby": "0x01845e80",
   "selectorStores": [
     {
       "address": "0x2048ec",
@@ -198,7 +199,7 @@
       "sequenceId": 6,
       "callSite": "0x22478c",
       "gate": "oClass 0x25f at 0x224760..0x22476c",
-      "conclusion": "generic Moby selector evidence; not admissible as Ratchet"
+      "conclusion": "That static call site remains invalid as Ratchet proof; sequence 6 is admitted only from later independent class-0 live traces."
     }
   ],
   "admissions": [
@@ -233,6 +234,110 @@
       "fps": null
     },
     {
+      "state": "locomotion_start",
+      "sequenceId": 3,
+      "status": "admit-transition",
+      "evidence": "controlled-live+asset",
+      "frameCount": 33,
+      "rateMode": "constant",
+      "transitionRate": 0.25,
+      "fps": 15
+    },
+    {
+      "state": "sustained_locomotion",
+      "sequenceId": 4,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 23,
+      "rateMode": "constant",
+      "transitionRate": 0.5,
+      "fps": 30
+    },
+    {
+      "state": "locomotion_stop_variant_a",
+      "sequenceId": 5,
+      "status": "admit-transition-only",
+      "evidence": "controlled-live+asset",
+      "frameCount": 13,
+      "rateMode": "constant",
+      "transitionRate": 0.25,
+      "fps": 15,
+      "notes": "Observed after left/right stick-only locomotion release; context-specific."
+    },
+    {
+      "state": "locomotion_stop_variant_b",
+      "sequenceId": 6,
+      "status": "admit-transition-only",
+      "evidence": "controlled-live+asset",
+      "frameCount": 13,
+      "rateMode": "constant",
+      "transitionRate": 0.25,
+      "fps": 15,
+      "notes": "Observed after forward and moving-jump locomotion release; context-specific."
+    },
+    {
+      "state": "stationary_jump",
+      "sequenceId": 7,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 29,
+      "rateMode": "variable",
+      "transitionRate": null,
+      "fps": null,
+      "notes": "No apex/fall selector split witnessed."
+    },
+    {
+      "state": "moving_jump",
+      "sequenceId": 8,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 16,
+      "rateMode": "variable",
+      "transitionRate": null,
+      "fps": null,
+      "notes": "Returns to sequence 4 while movement remains held."
+    },
+    {
+      "state": "crouch",
+      "sequenceId": 13,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 15,
+      "rateMode": "constant",
+      "transitionRate": 0.25,
+      "fps": 15
+    },
+    {
+      "state": "crouch_turn_right",
+      "sequenceId": 14,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 7,
+      "rateMode": "constant",
+      "transitionRate": 0.25,
+      "fps": 15
+    },
+    {
+      "state": "crouch_turn_left",
+      "sequenceId": 15,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 7,
+      "rateMode": "constant",
+      "transitionRate": 0.25,
+      "fps": 15
+    },
+    {
+      "state": "square_wrench_attack",
+      "sequenceId": 23,
+      "status": "admit",
+      "evidence": "controlled-live+asset",
+      "frameCount": 21,
+      "rateMode": "variable",
+      "transitionRate": null,
+      "fps": null
+    },
+    {
       "state": "bind_linear_anchor",
       "sequenceId": 122,
       "status": "diagnostic-only",
@@ -244,14 +349,14 @@
     }
   ],
   "unresolvedStates": [
-    "forward_locomotion",
-    "jump_rise",
-    "apex_or_fall",
-    "landing",
-    "square_wrench_attack",
-    "turning",
-    "crouch_turn"
+    "distinct_apex_or_fall_clip",
+    "distinct_landing_clip",
+    "stop_variant_5_vs_6_selection_rule"
   ],
-  "liveTraceRequired": true,
+  "liveTraceRequired": false,
+  "controlledTrace": {
+    "artifact": "research/generated/rac1-ratchet-animation-trace.json",
+    "note": "Hash-pinned reduced live evidence; use --trace-dir to reverify raw local traces."
+  },
   "controllerOverlay": "time-varying post-animation pass; no frozen correction admitted"
 }

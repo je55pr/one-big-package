@@ -1,7 +1,8 @@
 param(
     [string]$IsoPath = 'C:\ChatGPT\ISOs\Ratchet & Clank (USA) (En,Fr,De,Es,It).iso',
     [string]$OutputPath,
-    [string]$TraceOutputPath
+    [string]$TraceOutputPath,
+    [string]$TraceDir
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,10 +19,14 @@ if (-not $TraceOutputPath) {
 }
 if (-not (Test-Path -LiteralPath $IsoPath)) { throw "ISO not found: $IsoPath" }
 
-& node $probe --iso $IsoPath --out $OutputPath --trace-out $TraceOutputPath
+if ($TraceDir) {
+    & node $probe --iso $IsoPath --out $OutputPath --trace-out $TraceOutputPath --trace-dir $TraceDir
+} else {
+    & node $probe --iso $IsoPath --out $OutputPath
+}
 if ($LASTEXITCODE -ne 0) { throw "probe failed with exit code $LASTEXITCODE" }
 Get-Content -Raw -LiteralPath $OutputPath | ConvertFrom-Json | Out-Null
-Get-Content -Raw -LiteralPath $TraceOutputPath | ConvertFrom-Json | Out-Null
+if ($TraceDir) { Get-Content -Raw -LiteralPath $TraceOutputPath | ConvertFrom-Json | Out-Null }
 Write-Host "Wrote $OutputPath"
-Write-Host "Wrote $TraceOutputPath"
+if ($TraceDir) { Write-Host "Wrote $TraceOutputPath" }
 Write-Host 'RAC1 Ratchet animation static probe: PASS'

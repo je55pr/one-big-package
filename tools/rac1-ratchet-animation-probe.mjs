@@ -64,6 +64,7 @@ function readRootIsoFile(isoPath, wantedName) {
 const isoPath = arg('--iso', 'C:\\ChatGPT\\ISOs\\Ratchet & Clank (USA) (En,Fr,De,Es,It).iso');
 const outputPath = arg('--out');
 const traceOutputPath = arg('--trace-out');
+const traceDir = arg('--trace-dir');
 if (!fs.existsSync(isoPath)) throw new Error(`ISO not found: ${isoPath}`);
 const isoSha256 = await sha256(isoPath);
 if (isoSha256 !== EXPECTED_ISO_SHA256) {
@@ -134,55 +135,106 @@ const authority = {
   isoSha256: EXPECTED_ISO_SHA256,
   executableSha256: EXPECTED_EXE_SHA256,
 };
+const clip = (state, sequenceId, status, evidence, frameCount, transitionRate, notes = null) => ({
+  state, sequenceId, status, evidence, frameCount,
+  rateMode: transitionRate === 0 ? 'variable' : 'constant',
+  transitionRate: transitionRate || null,
+  fps: transitionRate ? transitionRate * 60 : null,
+  ...(notes ? { notes } : {}),
+});
 const admissions = [
-  { state: 'standing', sequenceId: 0, status: 'admit', evidence: 'live+asset', frameCount: 10, rateMode: 'constant', transitionRate: 0.125, fps: 7.5 },
-  { state: 'idle_fidget_a', sequenceId: 1, status: 'admit-neutral-only', evidence: 'live+asset', frameCount: 77, rateMode: 'variable', transitionRate: null, fps: null },
-  { state: 'idle_fidget_b', sequenceId: 2, status: 'admit-neutral-only', evidence: 'live+asset', frameCount: 77, rateMode: 'variable', transitionRate: null, fps: null },
-  { state: 'bind_linear_anchor', sequenceId: 122, status: 'diagnostic-only', evidence: 'asset', frameCount: 21, rateMode: 'constant', transitionRate: 0.5, fps: 30 },
+  clip('standing', 0, 'admit', 'live+asset', 10, 0.125),
+  clip('idle_fidget_a', 1, 'admit-neutral-only', 'live+asset', 77, 0),
+  clip('idle_fidget_b', 2, 'admit-neutral-only', 'live+asset', 77, 0),
+  clip('locomotion_start', 3, 'admit-transition', 'controlled-live+asset', 33, 0.25),
+  clip('sustained_locomotion', 4, 'admit', 'controlled-live+asset', 23, 0.5),
+  clip('locomotion_stop_variant_a', 5, 'admit-transition-only', 'controlled-live+asset', 13, 0.25, 'Observed after left/right stick-only locomotion release; context-specific.'),
+  clip('locomotion_stop_variant_b', 6, 'admit-transition-only', 'controlled-live+asset', 13, 0.25, 'Observed after forward and moving-jump locomotion release; context-specific.'),
+  clip('stationary_jump', 7, 'admit', 'controlled-live+asset', 29, 0, 'No apex/fall selector split witnessed.'),
+  clip('moving_jump', 8, 'admit', 'controlled-live+asset', 16, 0, 'Returns to sequence 4 while movement remains held.'),
+  clip('crouch', 13, 'admit', 'controlled-live+asset', 15, 0.25),
+  clip('crouch_turn_right', 14, 'admit', 'controlled-live+asset', 7, 0.25),
+  clip('crouch_turn_left', 15, 'admit', 'controlled-live+asset', 7, 0.25),
+  clip('square_wrench_attack', 23, 'admit', 'controlled-live+asset', 21, 0),
+  clip('bind_linear_anchor', 122, 'diagnostic-only', 'asset', 21, 0.5),
 ];
-const unresolvedStates = [
-  'forward_locomotion', 'jump_rise', 'apex_or_fall', 'landing',
-  'square_wrench_attack', 'turning', 'crouch_turn',
-];
+const unresolvedStates = ['distinct_apex_or_fall_clip', 'distinct_landing_clip', 'stop_variant_5_vs_6_selection_rule'];
 const negativeControls = [{
   sequenceId: 6,
   callSite: '0x22478c',
   gate: 'oClass 0x25f at 0x224760..0x22476c',
-  conclusion: 'generic Moby selector evidence; not admissible as Ratchet',
+  conclusion: 'That static call site remains invalid as Ratchet proof; sequence 6 is admitted only from later independent class-0 live traces.',
 }];
+function seqPath(samples) {
+  const out = [];
+  for (const row of samples) if (out.at(-1) !== row['53']) out.push(row['53']);
+  return out;
+}
+function phaseTransitions(samples) {
+  const out = [];
+  for (const row of samples) {
+    const item = `${row.phase}:${row['53']}`;
+    if (out.at(-1) !== item) out.push(item);
+  }
+  return out;
+}
+const expectedTracePaths = {
+  'final-forward-1.json': [2,3,4,6,0], 'final-forward-2.json': [2,3,4,6,0],
+  'final-jump-1.json': [2,7,0], 'final-jump-2.json': [2,7,0],
+  'final-wrench-1.json': [2,23,0], 'final-wrench-2.json': [2,23,0],
+  'final-crouch-1.json': [2,13,0], 'final-crouch-2.json': [2,13,0],
+  'final-crouch-left-1.json': [2,13,15,0], 'final-crouch-left-2.json': [2,13,15,0],
+  'final-crouch-right-1.json': [2,13,14,0], 'final-crouch-right-2.json': [2,13,14,0],
+  'final-turn-left-1.json': [2,3,4,5,0], 'final-turn-right-1.json': [2,3,4,5,0],
+  'final-runjump-1.json': [2,3,4,8,4,6,0], 'final-runjump-2.json': [2,3,4,8,4,6,0],
+};
+function readTraceSet(dir) {
+  if (!dir) return { status: 'not-reverified', trials: [] };
+  const trials = [];
+  for (const [name, expected] of Object.entries(expectedTracePaths)) {
+    const file = path.join(dir, name);
+    if (!fs.existsSync(file)) throw new Error(`missing controlled trace ${name}`);
+    const raw = fs.readFileSync(file);
+    const parsed = JSON.parse(raw.toString('utf8'));
+    if (parsed.moby.toLowerCase() !== '0x01845e80') throw new Error(`wrong Moby target in ${name}`);
+    const actual = seqPath(parsed.samples);
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+      throw new Error(`trace path drifted for ${name}: ${JSON.stringify(actual)}`);
+    }
+    trials.push({ file: name, sha256: bufferSha256(raw), sequencePath: actual, phaseTransitions: phaseTransitions(parsed.samples) });
+  }
+  return { status: 'captured-and-verified', trialCount: trials.length, trials };
+}
+const traceCapture = readTraceSet(traceDir);
 const stateReport = {
-  schema: 2,
-  authority,
+  schema: 3, authority,
   playerSelector: { currentSequenceOffset: 'Moby+0x53', nextSequenceOffset: 'Moby+0x52' },
-  selectorStores,
-  selectorHelpers: [...SELECTOR_HELPERS].map(hex),
-  helperCalls,
-  negativeControls,
-  admissions,
-  unresolvedStates,
-  liveTraceRequired: true,
+  playerMoby: '0x01845e80', selectorStores,
+  selectorHelpers: [...SELECTOR_HELPERS].map(hex), helperCalls, negativeControls,
+  admissions, unresolvedStates, liveTraceRequired: false,
+  controlledTrace: { artifact: 'research/generated/rac1-ratchet-animation-trace.json', note: 'Hash-pinned reduced live evidence; use --trace-dir to reverify raw local traces.' },
   controllerOverlay: 'time-varying post-animation pass; no frozen correction admitted',
 };
+const action = (name, files, admission) => ({ action: name, trials: files, admission });
 const traceReport = {
-  schema: 1,
-  authority,
+  schema: 2, authority,
   mode: 'controlled read-only PCSX2/PINE class-0 selector trace',
-  target: { level: 'Veldin', playerClass: 0, instanceIndex: 0 },
-  capture: {
-    status: 'not-captured',
-    taskSliceObservation: '2026-09-10: no PCSX2 process was running on Jess-Laptop when inspected; no PINE reads were performed.',
-    pineEndpointHint: { host: '127.0.0.1', slot: 28031, provenance: 'local rc1-sol-2.6.3 agent profile; infrastructure only' },
-  },
-  sampleFields: [
-    'Moby+0x20', 'Moby+0x50', 'Moby+0x51', 'Moby+0x52',
-    'Moby+0x53', 'Moby+0x54', 'Moby+0x5c', 'Moby+0x74',
+  target: { level: 'Veldin', playerClass: 0, instanceIndex: 0, moby: '0x01845e80' },
+  capture: traceCapture,
+  sampleFields: ['Moby+0x20','Moby+0x50','Moby+0x51','Moby+0x52','Moby+0x53','Moby+0x54','Moby+0x5c','Moby+0x74'],
+  actions: [
+    action('forward_locomotion', ['final-forward-1.json','final-forward-2.json'], '3=start, 4=sustained; release chose 6 in both forward trials'),
+    action('stationary_jump', ['final-jump-1.json','final-jump-2.json'], '7 throughout observed airborne interval; no separate apex/fall selector'),
+    action('moving_jump', ['final-runjump-1.json','final-runjump-2.json'], '8 airborne, then returns to 4 while movement remains held'),
+    action('square_wrench_attack', ['final-wrench-1.json','final-wrench-2.json'], '23, then standing 0'),
+    action('turning_left_right', ['final-turn-left-1.json','final-turn-right-1.json'], 'same 3->4 locomotion family; no distinct turn-in-place selector witnessed'),
+    action('crouch', ['final-crouch-1.json','final-crouch-2.json'], '13'),
+    action('crouch_turn_left', ['final-crouch-left-1.json'], '13->15'),
+    action('crouch_turn_right', ['final-crouch-right-1.json'], '13->14'),
+    action('landing', ['final-jump-1.json','final-jump-2.json','final-runjump-1.json','final-runjump-2.json'], 'no distinct landing selector witnessed; returns directly to 0 or 4'),
   ],
-  actions: unresolvedStates.map(action => ({ action, trials: [], admission: 'unresolved' })),
-  neutralWitnessAlreadyEstablished: {
-    selectorCycle: [0, 2, 0, 1],
-    evidence: 'prior untouched Veldin class-0 PINE witness preserved in RAC1_MOBY_SKINNING.md',
-  },
-  admissionRule: 'Only admit an action mapping after repeated class-0 live witnesses in isolated labelled trials. Static helper immediates and visual clip inspection are insufficient.',
+  neutralWitnessAlreadyEstablished: { selectorCycle: [0,2,0,1], evidence: 'prior untouched Veldin class-0 PINE witness preserved in RAC1_MOBY_SKINNING.md' },
+  admissionRule: 'Only admit mappings repeatedly witnessed on class-0 Ratchet in isolated labelled trials; static helper immediates remain insufficient.',
   negativeControls,
   controllerOverlay: 'Sequence selection does not include the time-varying post-animation controller chain at Moby+0x64.',
 };
