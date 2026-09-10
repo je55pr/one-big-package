@@ -1,5 +1,6 @@
 using OBP.IO;
 using OBP.RAC1;
+using OBP.RAC1.Animation;
 using OBP.RAC1.Level;
 using OBP.RAC1.Player;
 
@@ -8,13 +9,14 @@ namespace OBP.Tests;
 public sealed class Rac1RatchetAvatarTests
 {
     [SkippableFact]
-    public void Level0_StandingAvatarIsPinnedEngineIndependentLocalData()
+    public void Level0_AdmittedAvatarClipsArePinnedEngineIndependentLocalData()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 0);
-        var avatar = Rac1RatchetAvatar.Decode(Rac1LevelCore.Open(reader, level));
+        var core = Rac1LevelCore.Open(reader, level);
+        var avatar = Rac1RatchetAvatar.Decode(core);
 
         Assert.Equal(0, avatar.ClassId);
         Assert.Equal(111, avatar.JointCount);
@@ -22,8 +24,41 @@ public sealed class Rac1RatchetAvatarTests
         Assert.Equal(6_856, avatar.Mesh.Indices.Length / 3);
         Assert.Equal(5_583 * 2, avatar.Mesh.Uvs.Length);
         Assert.Equal(111, avatar.Skeleton.Count);
+        Assert.Equal(11, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.StandingFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
+
+        AssertClip(avatar, Rac1RatchetAvatar.StandingSequenceId, 10, 7.5f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.LocomotionStartSequenceId, 33, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.SustainedLocomotionSequenceId, 23, 30f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.LocomotionStopVariantASequenceId, 13, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.LocomotionStopVariantBSequenceId, 13, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.StationaryJumpSequenceId, 29, null, variable: true);
+        AssertClip(avatar, Rac1RatchetAvatar.MovingJumpSequenceId, 16, null, variable: true);
+        AssertClip(avatar, Rac1RatchetAvatar.CrouchSequenceId, 15, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.CrouchTurnRightSequenceId, 7, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.CrouchTurnLeftSequenceId, 7, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.WrenchAttackSequenceId, 21, null, variable: true);
+
+        var cls = Rac1StaticClasses.Read(core).Mobies[0];
+        var sequences = Rac1MobyAnimation.ReadRatchetSequences(
+            core.Assets,
+            core.Index,
+            core.Header.RatchetSequencesOffset,
+            cls.JointCount);
+        foreach (var clip in avatar.AnimationClips)
+        {
+            var source = Assert.IsType<Rac1MobyAnimation.Sequence>(sequences[clip.SequenceId].Value);
+            Assert.Equal(source.Frames.Count, clip.FrameDurationsSeconds.Count);
+            for (int frame = 0; frame < source.Frames.Count; frame++)
+            {
+                float rate = source.ConstantTransitionRateRaw != 0
+                    ? source.ConstantTransitionRate
+                    : source.Frames[frame].TransitionRate;
+                double expected = 1d / (rate * Rac1RatchetAvatar.NtscUpdateHz);
+                Assert.Equal(expected, clip.FrameDurationsSeconds[frame], 12);
+            }
+        }
 
         Assert.Equal(
             new[] { 130, 404, 966, 5_356 },
@@ -32,7 +67,7 @@ public sealed class Rac1RatchetAvatarTests
         Assert.Equal(new[] { 0, 1, 2, 3 }, avatar.TextureIds);
         Assert.All(avatar.Surfaces, surface =>
             Assert.All(surface.Indices, index => Assert.InRange(index, 0, 5_582)));
-        Assert.All(avatar.StandingFrames, frame =>
+        Assert.All(avatar.AnimationClips.SelectMany(clip => clip.LocalFrames), frame =>
         {
             Assert.Equal(5_583 * 3, frame.Length);
             Assert.All(frame, value => Assert.True(double.IsFinite(value)));
@@ -61,7 +96,7 @@ public sealed class Rac1RatchetAvatarTests
     }
 
     [SkippableFact]
-    public void Level0_LocalFramesMapExactlyToExistingWorldRatchetPath()
+    public void Level0_LocalStandingFramesMapExactlyToExistingWorldRatchetPath()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
@@ -103,6 +138,21 @@ public sealed class Rac1RatchetAvatarTests
                 Assert.Equal(R2(point.Y), placed[i + 2]);
             }
         }
+    }
+
+    private static void AssertClip(
+        Rac1RatchetAvatar.Asset avatar,
+        int sequenceId,
+        int frameCount,
+        float? fps,
+        bool variable)
+    {
+        var clip = avatar.Clip(sequenceId);
+        Assert.Equal(frameCount, clip.FrameCount);
+        Assert.Equal(variable, clip.HasVariableTiming);
+        Assert.Equal(fps, clip.ConstantFramesPerSecond);
+        Assert.Equal(frameCount, clip.FrameDurationsSeconds.Count);
+        Assert.All(clip.FrameDurationsSeconds, duration => Assert.True(duration > 0 && double.IsFinite(duration)));
     }
 
     private static double R2(double value) => Math.Floor(value * 100 + 0.5) / 100 + 0.0;

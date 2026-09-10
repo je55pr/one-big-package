@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -46,6 +47,9 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Presentation-only root; replacing its visual never changes controller physics.</summary>
     public PlayerVisualRoot VisualRoot { get; private set; } = null!;
 
+    /// <summary>Current engine-neutral presentation state, exposed for deterministic inspection.</summary>
+    public PlayerAnimationState AnimationState => _animationStateMachine.State;
+
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
     private Label _hud = null!;
@@ -57,6 +61,11 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _fly;
     private int _placeTries;
     private Vector3 _spawn;
+    private PlayerAnimationStateMachine _animationStateMachine = new();
+    private bool _animationGroundedInitialized;
+    private bool _animationWasGrounded;
+    private bool _attackRequested;
+    private bool _scriptAttacked;
 
     // last-jump measurement
     private bool _airborne;
@@ -139,18 +148,21 @@ public partial class DebugPlayer : CharacterBody3D
             }
             else if (key.Keycode == Key.X)
             {
+                _attackRequested = true;
                 CrateStrikeRequested?.Invoke();
             }
             else if (key.Keycode == Key.F)
             {
                 _fly = !_fly;
                 Velocity = Vector3.Zero;
+                ResetAnimationState();
                 GD.Print($"[DebugPlayer] fly mode {(_fly ? "on" : "off")}");
             }
             else if (key.Keycode == Key.R)
             {
                 GlobalPosition = _spawn;
                 Velocity = Vector3.Zero;
+                ResetAnimationState();
                 _placed = false;
                 _placeTries = 0;
             }
@@ -177,6 +189,7 @@ public partial class DebugPlayer : CharacterBody3D
 
         if (_fly)
         {
+            _attackRequested = false;
             FlyStep((float)delta);
             UpdateHud(true);
             return;
@@ -214,21 +227,46 @@ public partial class DebugPlayer : CharacterBody3D
 
         Velocity = velocity;
         MoveAndSlide();
+        bool isOnFloor = IsOnFloor();
+        UpdateAnimationState(isOnFloor);
 
         if (!Scripted)
         {
             UpdateCameraDistance();
         }
 
-        TrackJump(IsOnFloor());
+        TrackJump(isOnFloor);
 
-        if (!_landed && IsOnFloor())
+        if (!_landed && isOnFloor)
         {
             _landed = true;
             GD.Print($"[DebugPlayer] on the collision floor at {GlobalPosition} after {_time:0.00}s");
         }
 
-        UpdateHud(IsOnFloor());
+        UpdateHud(isOnFloor);
+    }
+
+    private void UpdateAnimationState(bool onFloor)
+    {
+        bool justLanded = _animationGroundedInitialized && !_animationWasGrounded && onFloor;
+        _animationGroundedInitialized = true;
+        _animationWasGrounded = onFloor;
+
+        bool attackRequested = _attackRequested;
+        _attackRequested = false;
+        float planarSpeed = new Vector2(Velocity.X, Velocity.Z).Length();
+        PlayerAnimationState previous = AnimationState;
+        PlayerAnimationState current = _animationStateMachine.Update(new PlayerAnimationFacts(
+            onFloor, planarSpeed, Velocity.Y, justLanded, attackRequested));
+        if (current != previous)
+            GD.Print($"[DebugPlayer] animation {previous} -> {current}");
+    }
+    private void ResetAnimationState()
+    {
+        _animationStateMachine = new PlayerAnimationStateMachine();
+        _animationGroundedInitialized = false;
+        _animationWasGrounded = false;
+        _attackRequested = false;
     }
 
     /// <summary>Measure each jump: air time, horizontal distance, apex height, net height change.</summary>
@@ -280,7 +318,8 @@ public partial class DebugPlayer : CharacterBody3D
         var p = GlobalPosition;
         float speed = new Vector2(Velocity.X, Velocity.Z).Length();
         _hud.Text =
-            $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}\n" +
+            $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
+            $"    anim {AnimationState}\n" +
             $"last jump: {_lastJump}\n" +
             $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X crate strike / F fly / R respawn / Tab cursor / Esc)";
     }
@@ -360,6 +399,12 @@ public partial class DebugPlayer : CharacterBody3D
         // edge-of-platform ship spawn doesn't walk the capsule off into a
         // crevasse before the capture frame.
         float forward = _time is > 0.7 and < 1.5 ? -1f : 0f;
+        if (!_scriptAttacked && _time > 1.0)
+        {
+            _scriptAttacked = true;
+            _attackRequested = true;
+        }
+
         bool jump = _time is > 1.7 and < 1.8;
         return (new Vector2(0f, forward), jump);
     }

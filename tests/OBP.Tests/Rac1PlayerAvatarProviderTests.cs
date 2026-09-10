@@ -32,10 +32,35 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal("rac1-ntscu-original", avatar.Identity.BuildId);
         Assert.Equal("ratchet", avatar.Identity.AvatarId);
         Assert.Equal("rac1:ratchet:moby-class-0", avatar.Identity.ModelId);
+        Assert.Equal(11, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.LocalAnimationFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
         Assert.Equal(5_583, avatar.VertexCount);
         Assert.Null(avatar.Skeleton);
+
+        Assert.Equal(
+            new[]
+            {
+                "standing",
+                "locomotion-start",
+                "sustained-locomotion",
+                "locomotion-stop-a",
+                "locomotion-stop-b",
+                "stationary-jump",
+                "moving-jump",
+                "crouch",
+                "crouch-turn-right",
+                "crouch-turn-left",
+                "primary-attack",
+            },
+            avatar.AnimationClips.Select(clip => clip.Id).ToArray());
+        Assert.Equal(2, avatar.AnimationClips.Count(
+            clip => clip.Role == PlayerAvatarAnimationRole.LocomotionStopVariant));
+        Assert.True(avatar.RequiredAnimationClip(PlayerAvatarAnimationRole.StationaryJump).HasVariableTiming);
+        Assert.True(avatar.RequiredAnimationClip(PlayerAvatarAnimationRole.MovingJump).HasVariableTiming);
+        Assert.True(avatar.RequiredAnimationClip(PlayerAvatarAnimationRole.PrimaryAttack).HasVariableTiming);
+        Assert.Equal(30f, avatar.RequiredAnimationClip(
+            PlayerAvatarAnimationRole.SustainedLocomotion).ConstantFramesPerSecond);
 
         Assert.Equal(new[] { 0, 1, 2, 3 }, avatar.Surfaces.Select(s => s.TextureId).ToArray());
         Assert.Equal(new[] { 0, 1, 2, 3 }, avatar.Textures.Select(t => t.TextureId).ToArray());
@@ -58,7 +83,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal(PlayerAvatarAxisDirection.PositiveY, avatar.Axes.Forward);
         Assert.Equal(PlayerAvatarAxisDirection.PositiveZ, avatar.Axes.Up);
         Assert.Equal(-0.03446032626043135, avatar.BaseHeight, 12);
-        Assert.All(avatar.LocalAnimationFrames, frame =>
+        Assert.All(avatar.AnimationClips.SelectMany(clip => clip.LocalFrames), frame =>
         {
             Assert.Equal(5_583 * 3, frame.Length);
             Assert.All(frame, value => Assert.True(double.IsFinite(value)));
@@ -68,9 +93,17 @@ public sealed class Rac1PlayerAvatarProviderTests
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level =>
             level.LevelId == Rac1PlayerAvatarProvider.CanonicalAvatarLevelId);
         var native = Rac1RatchetAvatar.Decode(Rac1LevelCore.Open(reader, level));
-        Assert.Equal(native.StandingFrames.Count, avatar.LocalAnimationFrames.Count);
-        for (int i = 0; i < native.StandingFrames.Count; i++)
-            Assert.Equal(native.StandingFrames[i], avatar.LocalAnimationFrames[i]);
+        AssertNeutralClip(avatar, "standing", native.Clip(Rac1RatchetAvatar.StandingSequenceId));
+        AssertNeutralClip(avatar, "locomotion-start", native.Clip(Rac1RatchetAvatar.LocomotionStartSequenceId));
+        AssertNeutralClip(avatar, "sustained-locomotion", native.Clip(Rac1RatchetAvatar.SustainedLocomotionSequenceId));
+        AssertNeutralClip(avatar, "locomotion-stop-a", native.Clip(Rac1RatchetAvatar.LocomotionStopVariantASequenceId));
+        AssertNeutralClip(avatar, "locomotion-stop-b", native.Clip(Rac1RatchetAvatar.LocomotionStopVariantBSequenceId));
+        AssertNeutralClip(avatar, "stationary-jump", native.Clip(Rac1RatchetAvatar.StationaryJumpSequenceId));
+        AssertNeutralClip(avatar, "moving-jump", native.Clip(Rac1RatchetAvatar.MovingJumpSequenceId));
+        AssertNeutralClip(avatar, "crouch", native.Clip(Rac1RatchetAvatar.CrouchSequenceId));
+        AssertNeutralClip(avatar, "crouch-turn-right", native.Clip(Rac1RatchetAvatar.CrouchTurnRightSequenceId));
+        AssertNeutralClip(avatar, "crouch-turn-left", native.Clip(Rac1RatchetAvatar.CrouchTurnLeftSequenceId));
+        AssertNeutralClip(avatar, "primary-attack", native.Clip(Rac1RatchetAvatar.WrenchAttackSequenceId));
     }
 
     [SkippableFact]
@@ -112,5 +145,17 @@ public sealed class Rac1PlayerAvatarProviderTests
                 Assert.Equal(expected.Rgba, actual.Rgba);
             }
         }
+    }
+
+    private static void AssertNeutralClip(
+        PlayerAvatar avatar,
+        string clipId,
+        Rac1RatchetAvatar.AnimationClip native)
+    {
+        var clip = Assert.Single(avatar.AnimationClips, clip => clip.Id == clipId);
+        Assert.Equal(native.LocalFrames.Count, clip.LocalFrames.Count);
+        Assert.Equal(native.FrameDurationsSeconds, clip.FrameDurationsSeconds);
+        for (int frame = 0; frame < native.LocalFrames.Count; frame++)
+            Assert.Equal(native.LocalFrames[frame], clip.LocalFrames[frame]);
     }
 }

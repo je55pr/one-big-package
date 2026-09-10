@@ -77,8 +77,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider
 
         return new PlayerAvatar(
             new PlayerAvatarIdentity(SourceGame, BuildId, RatchetAvatarId, RatchetModelId),
-            native.StandingFrames,
-            native.FramesPerSecond,
+            native.AnimationClips.Select(RuntimeClip).ToArray(),
             surfaces,
             textures,
             Bounds(native.RestBounds),
@@ -88,6 +87,32 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider
             new PlayerAvatarAxes(
                 Axis(native.RightAxis), Axis(native.ForwardAxis), Axis(native.UpAxis)),
             Skeleton: null);
+    }
+
+    private static PlayerAvatarAnimationClip RuntimeClip(Rac1RatchetAvatar.AnimationClip clip)
+    {
+        (string Id, PlayerAvatarAnimationRole Role) neutral = clip.SequenceId switch
+        {
+            Rac1RatchetAvatar.StandingSequenceId => ("standing", PlayerAvatarAnimationRole.Standing),
+            Rac1RatchetAvatar.LocomotionStartSequenceId => ("locomotion-start", PlayerAvatarAnimationRole.LocomotionStart),
+            Rac1RatchetAvatar.SustainedLocomotionSequenceId => ("sustained-locomotion", PlayerAvatarAnimationRole.SustainedLocomotion),
+            Rac1RatchetAvatar.LocomotionStopVariantASequenceId => ("locomotion-stop-a", PlayerAvatarAnimationRole.LocomotionStopVariant),
+            Rac1RatchetAvatar.LocomotionStopVariantBSequenceId => ("locomotion-stop-b", PlayerAvatarAnimationRole.LocomotionStopVariant),
+            Rac1RatchetAvatar.StationaryJumpSequenceId => ("stationary-jump", PlayerAvatarAnimationRole.StationaryJump),
+            Rac1RatchetAvatar.MovingJumpSequenceId => ("moving-jump", PlayerAvatarAnimationRole.MovingJump),
+            Rac1RatchetAvatar.CrouchSequenceId => ("crouch", PlayerAvatarAnimationRole.Crouch),
+            Rac1RatchetAvatar.CrouchTurnRightSequenceId => ("crouch-turn-right", PlayerAvatarAnimationRole.CrouchTurnRight),
+            Rac1RatchetAvatar.CrouchTurnLeftSequenceId => ("crouch-turn-left", PlayerAvatarAnimationRole.CrouchTurnLeft),
+            Rac1RatchetAvatar.WrenchAttackSequenceId => ("primary-attack", PlayerAvatarAnimationRole.PrimaryAttack),
+            _ => throw new InvalidDataException(
+                $"R&C1 Ratchet native sequence {clip.SequenceId} has no admitted neutral avatar role."),
+        };
+
+        return new PlayerAvatarAnimationClip(
+            neutral.Id,
+            neutral.Role,
+            clip.LocalFrames,
+            clip.FrameDurationsSeconds);
     }
 
     private static string MaterialId(int textureId) => $"rac1:moby:{textureId}";
