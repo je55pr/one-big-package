@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "rac1",
+    "buildId": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d"
+  },
+  "specimen": {
+    "level": 0,
+    "nativeClassId": 1781,
+    "authoredInstanceIndex": 234,
+    "liveMoby": "0x01854880",
+    "jointCount": 13,
+    "triangleCount": 768
+  },
+  "clip": {
+    "neutralRole": "Reaction",
+    "nativeSequenceId": 1,
+    "frameCount": 20,
+    "constantTransitionRate": 0.5,
+    "ntscFramesPerSecond": 30
+  },
+  "liveSelector": {
+    "updateRoutine": "0x002e3ca8",
+    "currentSequenceOffset": "Moby+0x53",
+    "nextSequenceOffset": "Moby+0x52",
+    "animationFlagsOffset": "Moby+0x70",
+    "returnToRestFlag": "0x02",
+    "playerPositionGlobal": "0x0013f3d0",
+    "playerMotionGlobal": "0x0013f450",
+    "triggerDistanceExclusive": 1.0,
+    "minimumPlayerMotionPerTickExclusive": 0.03333333333333333,
+    "selectorOrder": [
+      "if distance < 1.0 and motion > 1/30 and current != reaction: request reaction",
+      "if animationFlags & 0x02 and current == reaction: request rest"
+    ]
+  },
+  "liveObservations": {
+    "untouched": { "sequence": 0, "rate": 0.0 },
+    "approach": { "reactionSequence": 1, "runRate": 0.5 },
+    "return": { "sequence": 0, "transitionRateObserved": 0.16666667 },
+    "motionVector": "zero at rest; rises under movement; decays after release; also rises during wrench lunge"
+  },
+  "admissionPolicy": {
+    "admittedNativeClassIds": [1781],
+    "decodedButNotAdmitted": [766, 1134],
+    "reason": "A decoded clip is not runtime state evidence; native selector witness is required before admission."
+  },
+  "provenance": {
+    "selectorWitness": "read-only PCSX2/PINE observation plus loaded retail update-routine disassembly",
+    "assetWitness": "native C# authority decoder and retail-gated tests",
+    "committedRetailPayloadBytes": 0
+  }
+}

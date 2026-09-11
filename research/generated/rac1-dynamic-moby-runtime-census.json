@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "authority": {
     "game": "rac1",
     "buildId": "rac1-ntscu-original",
@@ -8,17 +8,19 @@
   },
   "definitions": {
     "linkedInstances": "authored Moby placements promoted with one or more local-space RuntimeObjectMesh surfaces",
-    "animatedHandoffInstances": "renderable placements intentionally meshless in DynamicObjects because the existing RuntimeAnimatedMesh path owns their visible geometry",
-    "noGeometryInstances": "placements whose recovered class is absent from the payload decoder or has zero recovered high-LOD geometry; no mesh is guessed"
+    "animatedHandoffInstances": "renderable placements intentionally meshless in DynamicObjects because an independently retail-admitted RuntimeAnimatedMesh path owns their visible geometry",
+    "noGeometryInstances": "placements whose recovered class is absent from the payload decoder or has zero recovered high-LOD geometry; no mesh is guessed",
+    "animationCapableInstances": "dynamic objects carrying one or more source-backed neutral RuntimeObjectAnimationClip capabilities; native sequence ids remain game-specific"
   },
   "totals": {
     "placements": 16232,
-    "linkedInstances": 15246,
-    "animatedHandoffInstances": 113,
+    "linkedInstances": 15340,
+    "animatedHandoffInstances": 19,
     "noGeometryInstances": 873,
-    "dynamicTriangles": 9622327,
+    "dynamicTriangles": 9631271,
     "staticTriangles": 23278847,
-    "animatedTriangles": 139208
+    "animatedTriangles": 130264,
+    "animationCapableInstances": 33
   },
   "levels": [
     {
@@ -30,205 +32,224 @@
       "linkedClasses": 15,
       "dynamicTriangles": 142618,
       "staticTriangles": 751435,
-      "animatedTriangles": 6856
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 33
     },
     {
       "level": 1,
       "placements": 983,
-      "linkedInstances": 914,
-      "animatedHandoffInstances": 4,
+      "linkedInstances": 917,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 65,
-      "linkedClasses": 63,
-      "dynamicTriangles": 520367,
+      "linkedClasses": 64,
+      "dynamicTriangles": 520649,
       "staticTriangles": 1118293,
-      "animatedTriangles": 7138
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 2,
       "placements": 775,
-      "linkedInstances": 681,
-      "animatedHandoffInstances": 59,
+      "linkedInstances": 739,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 35,
-      "linkedClasses": 50,
-      "dynamicTriangles": 403999,
+      "linkedClasses": 52,
+      "dynamicTriangles": 409559,
       "staticTriangles": 687037,
-      "animatedTriangles": 12416
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 3,
       "placements": 1029,
-      "linkedInstances": 990,
-      "animatedHandoffInstances": 4,
+      "linkedInstances": 993,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 35,
-      "linkedClasses": 50,
-      "dynamicTriangles": 446995,
+      "linkedClasses": 51,
+      "dynamicTriangles": 447277,
       "staticTriangles": 1649998,
-      "animatedTriangles": 7138
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 4,
       "placements": 536,
-      "linkedInstances": 502,
-      "animatedHandoffInstances": 2,
+      "linkedInstances": 503,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 32,
-      "linkedClasses": 43,
-      "dynamicTriangles": 520183,
+      "linkedClasses": 44,
+      "dynamicTriangles": 520277,
       "staticTriangles": 904228,
-      "animatedTriangles": 6950
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 5,
       "placements": 1431,
-      "linkedInstances": 1394,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 1396,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 34,
-      "linkedClasses": 51,
-      "dynamicTriangles": 791975,
+      "linkedClasses": 52,
+      "dynamicTriangles": 792163,
       "staticTriangles": 1641006,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 6,
       "placements": 766,
-      "linkedInstances": 702,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 704,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 61,
-      "linkedClasses": 50,
-      "dynamicTriangles": 423366,
+      "linkedClasses": 51,
+      "dynamicTriangles": 423554,
       "staticTriangles": 1386359,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 7,
       "placements": 649,
-      "linkedInstances": 605,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 607,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 41,
-      "linkedClasses": 71,
-      "dynamicTriangles": 165459,
+      "linkedClasses": 72,
+      "dynamicTriangles": 165647,
       "staticTriangles": 753021,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 8,
       "placements": 847,
-      "linkedInstances": 792,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 794,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 52,
-      "linkedClasses": 55,
-      "dynamicTriangles": 455832,
+      "linkedClasses": 56,
+      "dynamicTriangles": 456020,
       "staticTriangles": 1145524,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 9,
       "placements": 908,
-      "linkedInstances": 868,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 870,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 37,
-      "linkedClasses": 47,
-      "dynamicTriangles": 550582,
+      "linkedClasses": 48,
+      "dynamicTriangles": 550770,
       "staticTriangles": 1879201,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 10,
       "placements": 872,
-      "linkedInstances": 798,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 800,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 71,
-      "linkedClasses": 47,
-      "dynamicTriangles": 454145,
+      "linkedClasses": 48,
+      "dynamicTriangles": 454333,
       "staticTriangles": 1378540,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 11,
       "placements": 720,
-      "linkedInstances": 686,
-      "animatedHandoffInstances": 2,
+      "linkedInstances": 687,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 32,
-      "linkedClasses": 47,
-      "dynamicTriangles": 468507,
+      "linkedClasses": 48,
+      "dynamicTriangles": 468601,
       "staticTriangles": 1024937,
-      "animatedTriangles": 6950
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 12,
       "placements": 695,
-      "linkedInstances": 656,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 658,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 36,
-      "linkedClasses": 46,
-      "dynamicTriangles": 559880,
+      "linkedClasses": 47,
+      "dynamicTriangles": 560068,
       "staticTriangles": 1461694,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 13,
       "placements": 970,
-      "linkedInstances": 920,
-      "animatedHandoffInstances": 2,
+      "linkedInstances": 921,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 48,
-      "linkedClasses": 69,
-      "dynamicTriangles": 958387,
+      "linkedClasses": 70,
+      "dynamicTriangles": 958481,
       "staticTriangles": 1169721,
-      "animatedTriangles": 6950
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 14,
       "placements": 551,
-      "linkedInstances": 426,
-      "animatedHandoffInstances": 5,
+      "linkedInstances": 430,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 120,
-      "linkedClasses": 52,
-      "dynamicTriangles": 422353,
+      "linkedClasses": 53,
+      "dynamicTriangles": 422729,
       "staticTriangles": 867528,
-      "animatedTriangles": 7232
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 15,
       "placements": 910,
-      "linkedInstances": 861,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 863,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 46,
-      "linkedClasses": 44,
-      "dynamicTriangles": 690632,
+      "linkedClasses": 45,
+      "dynamicTriangles": 690820,
       "staticTriangles": 1933499,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 16,
       "placements": 1569,
-      "linkedInstances": 1531,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 1533,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 35,
-      "linkedClasses": 63,
-      "dynamicTriangles": 566272,
+      "linkedClasses": 64,
+      "dynamicTriangles": 566460,
       "staticTriangles": 1171920,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 17,
       "placements": 734,
-      "linkedInstances": 686,
-      "animatedHandoffInstances": 3,
+      "linkedInstances": 688,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 45,
-      "linkedClasses": 52,
-      "dynamicTriangles": 464121,
+      "linkedClasses": 53,
+      "dynamicTriangles": 464309,
       "staticTriangles": 531601,
-      "animatedTriangles": 7044
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     },
     {
       "level": 18,
       "placements": 991,
-      "linkedInstances": 949,
-      "animatedHandoffInstances": 4,
+      "linkedInstances": 952,
+      "animatedHandoffInstances": 1,
       "noGeometryInstances": 38,
-      "linkedClasses": 46,
-      "dynamicTriangles": 616654,
+      "linkedClasses": 47,
+      "dynamicTriangles": 616936,
       "staticTriangles": 1823305,
-      "animatedTriangles": 7138
+      "animatedTriangles": 6856,
+      "animationCapableInstances": 0
     }
   ]
 }

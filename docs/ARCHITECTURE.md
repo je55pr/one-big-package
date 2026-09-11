@@ -136,6 +136,8 @@ R&C1 and UYA archaeology may prove compatibility first in research/reference too
 
 This layer should be capable, in principle, of being consumed by a non-Godot front end without teaching that front end the retail file formats.
 
+Dynamic-object animation follows the same provenance rule. `RuntimeObjectAnimationSet` can advertise source-backed neutral roles such as `Reaction`, with per-surface model-local frames aligned to `RuntimeDynamicObject.Meshes`, but it does not carry source-game sequence ids or selector flags. R&C1 keeps those details in its provider. Advertising a clip is also distinct from owning mutable gameplay state: entity activation/lifecycle remains a separate runtime boundary rather than being hidden inside presentation data.
+
 ## Godot boundary
 
 `OBP.Godot` converts runtime/native-neutral data into Godot presentation objects:

@@ -1,6 +1,6 @@
 # One Big Package — Current State
 
-_Last refreshed: 2026-09-10._
+_Last refreshed: 2026-09-11._
 
 This document summarizes the current merged production baseline. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
 
@@ -55,7 +55,7 @@ The Godot side of a loaded world is a thin applier over engine-neutral, unit-tes
 
 ### R&C1 native world provider
 
-R&C1 NTSC-U (`SCUS-97199`) is now a second native provider rather than a reference-only world slice. All 19 authority levels load through `Rac1WorldProvider` and the same `ObpWorldProviderRegistry` used by GC. The merged C# path covers retail terrain/textures/collision, level settings, shared RC sky, native TIE/shrub placement, and authored Moby identity/model/texture linkage as neutral dynamic objects. Across the authority set all 16,232 Moby placements are preserved: 15,246 carry linked dynamic render geometry, 113 use the existing proven animated path, and 873 remain explicitly meshless because no recovered class geometry is available. Retail all-level gates exercise every destination, and `rac1:LEVEL0` is covered by the generic deterministic Godot capture path with the debug player grounded on reconstructed collision.
+R&C1 NTSC-U (`SCUS-97199`) is now a second native provider rather than a reference-only world slice. All 19 authority levels load through `Rac1WorldProvider` and the same `ObpWorldProviderRegistry` used by GC. The merged C# path covers retail terrain/textures/collision, level settings, shared RC sky, native TIE/shrub placement, and authored Moby identity/model/texture linkage as neutral dynamic objects. Across the authority set all 16,232 Moby placements are preserved: 15,340 carry linked dynamic render geometry, 19 hand off only to Ratchet's separately proven player animation path, and 873 remain explicitly meshless because no recovered class geometry is available. Veldin class 1781 is the first ordinary Moby with both a decoded clip and native state-selection witness: all 33 red-plant instances advertise a neutral 20-frame `Reaction` clip at 30 FPS, while sequence ids, selector flags and the retail distance/motion predicate remain inside `OBP.RAC1`. Decoded classes 766/1134 are deliberately static at runtime until their selectors are recovered. Retail all-level gates exercise every destination, and `rac1:LEVEL0` is covered by the generic deterministic Godot capture path with the debug player grounded on reconstructed collision.
 
 ### Up Your Arsenal native world provider
 
