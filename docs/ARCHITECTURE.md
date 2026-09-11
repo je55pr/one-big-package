@@ -138,6 +138,8 @@ This layer should be capable, in principle, of being consumed by a non-Godot fro
 
 Dynamic-object animation follows the same provenance rule. `RuntimeObjectAnimationSet` can advertise source-backed neutral roles such as `Reaction`, with per-surface model-local frames aligned to `RuntimeDynamicObject.Meshes`, but it does not carry source-game sequence ids or selector flags. R&C1 keeps those details in its provider. Advertising a clip is also distinct from owning mutable gameplay state: entity activation/lifecycle remains a separate runtime boundary rather than being hidden inside presentation data.
 
+Gameplay entity lifecycle now uses that separate boundary. `RuntimeDynamicObject` is the immutable authored definition; `RuntimeEntityState` is a replaceable live snapshot containing stable authored identity plus only current transform, neutral `Active`/`Inactive` presence and neutral object-animation role. Source-game modules own native state machines, PVar interpretation, health/AI semantics and transition reasons, and project only independently justified neutral effects. `RuntimeWorldScene.DynamicObjectNode` applies the neutral snapshot to Godot and never parses source payloads. R&C1 class 1781 (Rest/Reaction without deactivation) and GC class 500 (native state 1 -> 3 -> deactivate/state 6) are the first concrete witnesses; UYA currently corroborates authored identity/PVar preservation but has no recovered native lifecycle selector, so no UYA-specific mutable semantics are invented. See `research/TRILOGY_ENTITY_LIFECYCLE.md`.
+
 ## Godot boundary
 
 `OBP.Godot` converts runtime/native-neutral data into Godot presentation objects:

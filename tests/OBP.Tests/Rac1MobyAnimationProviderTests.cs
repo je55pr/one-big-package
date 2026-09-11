@@ -1,5 +1,6 @@
 using OBP.RAC1.Animation;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
@@ -30,6 +31,27 @@ public sealed class Rac1MobyAnimationProviderTests
     {
         Assert.Equal(1.0, Rac1MobyAnimationProvider.RedPlantTriggerDistance);
         Assert.Equal(1.0 / 30.0, Rac1MobyAnimationProvider.RedPlantMinimumPlayerMotionPerTick, 12);
+    }
+
+    [Fact]
+    public void RedPlantSelectorProjectsOnlyNeutralAnimationState()
+    {
+        var source = new RuntimeDynamicObject(
+            "rac1", Rac1MobyAnimationProvider.RedPlantClassId, 226, null,
+            $"moby:{Rac1MobyAnimationProvider.RedPlantClassId}", "moby:226",
+            new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>());
+        var state = RuntimeEntityState.FromAuthored(source);
+
+        var reacting = Rac1MobyAnimationProvider.AdvanceRedPlantEntityState(
+            source, state, 0.5, 0.1, 0);
+        Assert.Equal(RuntimeObjectAnimationRole.Reaction, reacting.Presentation.AnimationRole);
+        Assert.Equal(RuntimeEntityPresence.Active, reacting.Presentation.Presence);
+        Assert.Equal(state.Identity, reacting.Identity);
+
+        var resting = Rac1MobyAnimationProvider.AdvanceRedPlantEntityState(
+            source, reacting, 0.5, 0.1, Rac1MobyAnimationProvider.RedPlantReturnToRestFlag);
+        Assert.Equal(RuntimeObjectAnimationRole.Rest, resting.Presentation.AnimationRole);
+        Assert.Equal(RuntimeEntityPresence.Active, resting.Presentation.Presence);
     }
 
     private static RuntimeObjectAnimationRole Select(

@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Core.Math;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Godot;
@@ -47,8 +48,29 @@ public static class RuntimeWorldScene
         int DynamicObjects = 0,
         System.Collections.Generic.IReadOnlyList<DynamicObjectNode>? DynamicObjectNodes = null);
 
-    /// <summary>Godot node plus its neutral runtime identity for one preserved dynamic object.</summary>
-    public sealed record DynamicObjectNode(RuntimeDynamicObject Source, Node3D Root);
+    /// <summary>Godot presentation handle for one preserved gameplay entity.</summary>
+    public sealed class DynamicObjectNode
+    {
+        public RuntimeDynamicObject Source { get; }
+        public Node3D Root { get; }
+        public RuntimeEntityState State { get; private set; }
+
+        public DynamicObjectNode(RuntimeDynamicObject source, Node3D root)
+        {
+            Source = source;
+            Root = root;
+            State = RuntimeEntityState.FromAuthored(source);
+            ApplyState(State);
+        }
+
+        public void ApplyState(RuntimeEntityState state)
+        {
+            state.EnsureMatches(Source);
+            State = state;
+            Root.Visible = state.Presentation.Presence == RuntimeEntityPresence.Active;
+            Root.Transform = ToSceneTransform(state.Presentation.Transform);
+        }
+    }
 
     /// <summary>
     /// Pose every animated moby in <paramref name="result"/> for

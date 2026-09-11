@@ -2,6 +2,7 @@ using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Animation;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
@@ -25,6 +26,13 @@ public sealed class Rac1RedPlantAnimationTests
         var specimen = redPlants[0];
         Assert.NotNull(specimen.Animations);
         Assert.Equal(RuntimeObjectAnimationRole.Rest, specimen.Animations!.InitialRole);
+        var live = RuntimeEntityState.FromAuthored(specimen);
+        Assert.Equal(RuntimeEntityPresence.Active, live.Presentation.Presence);
+        Assert.Equal(RuntimeObjectAnimationRole.Rest, live.Presentation.AnimationRole);
+        var reacting = Rac1MobyAnimationProvider.AdvanceRedPlantEntityState(
+            specimen, live, playerDistance: 0.5, playerMotionPerTick: 0.1, nativeAnimationFlags: 0);
+        Assert.Equal(RuntimeObjectAnimationRole.Reaction, reacting.Presentation.AnimationRole);
+        Assert.Equal(RuntimeEntityPresence.Active, reacting.Presentation.Presence);
         var reaction = Assert.Single(specimen.Animations.Clips);
         Assert.Equal(("reaction", RuntimeObjectAnimationRole.Reaction), (reaction.Id, reaction.Role));
         Assert.Equal(20, reaction.FrameCount);

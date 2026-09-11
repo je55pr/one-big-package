@@ -1,5 +1,6 @@
 using OBP.RAC1.Level;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.RAC1.Animation;
 
@@ -48,6 +49,23 @@ public static class Rac1MobyAnimationProvider
             role = RuntimeObjectAnimationRole.Rest;
         }
         return role;
+    }
+
+    /// <summary>
+    /// Apply the recovered red-plant selector to a neutral live entity snapshot.
+    /// R&C1 native flags/thresholds remain game-owned; only the neutral animation
+    /// role crosses into shared runtime state.
+    /// </summary>
+    public static RuntimeEntityState AdvanceRedPlantEntityState(
+        RuntimeDynamicObject source, RuntimeEntityState current,
+        double playerDistance, double playerMotionPerTick, byte nativeAnimationFlags)
+    {
+        if (source.SourceGame != "rac1" || source.NativeClassId != RedPlantClassId)
+            throw new ArgumentException("Source is not an admitted R&C1 red plant.", nameof(source));
+        current.EnsureMatches(source);
+        var role = SelectRedPlantRole(new RedPlantSelectorObservation(
+            current.Presentation.AnimationRole, playerDistance, playerMotionPerTick, nativeAnimationFlags));
+        return current.WithAnimationRole(role);
     }
 
     /// <summary>
