@@ -156,7 +156,8 @@ public sealed record RuntimeDynamicObject(
     string InteractionId,
     RuntimeObjectTransform Transform,
     IReadOnlyList<RuntimeObjectMesh> Meshes,
-    IReadOnlyList<RuntimeOpaquePayload>? NativePayloads = null);
+    IReadOnlyList<RuntimeOpaquePayload>? NativePayloads = null,
+    RuntimeObjectAnimationSet? Animations = null);
 
 /// <summary>One decoded collision blob: OBP Y-up flat-XYZ positions, 3 indices per triangle, plus the native face type per triangle.</summary>
 public sealed record RuntimeCollisionBlob(int Octants, double[] Positions, int[] Indices, int[] TriangleMaterialIds)

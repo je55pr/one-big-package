@@ -19,7 +19,8 @@ public sealed class Rac1AllLevelsTests
                 yield return [row.GetProperty("level").GetInt32(), row.GetProperty("placements").GetInt32(),
                     row.GetProperty("linkedInstances").GetInt32(), row.GetProperty("animatedHandoffInstances").GetInt32(),
                     row.GetProperty("noGeometryInstances").GetInt32(), row.GetProperty("dynamicTriangles").GetInt32(),
-                    row.GetProperty("staticTriangles").GetInt32(), row.GetProperty("animatedTriangles").GetInt32()];
+                    row.GetProperty("staticTriangles").GetInt32(), row.GetProperty("animatedTriangles").GetInt32(),
+                    row.GetProperty("animationCapableInstances").GetInt32()];
             }
         }
     }
@@ -28,7 +29,7 @@ public sealed class Rac1AllLevelsTests
     [MemberData(nameof(NativeLevels))]
     public void NativeWorldBuildsWithFiniteLinkedGeometry(
         int levelId, int placements, int linkedInstances, int animatedHandoffs, int noGeometryInstances,
-        int dynamicTriangles, int staticTriangles, int animatedTriangles)
+        int dynamicTriangles, int staticTriangles, int animatedTriangles, int animationCapableInstances)
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
@@ -47,6 +48,8 @@ public sealed class Rac1AllLevelsTests
         Assert.Equal(staticTriangles, world.TotalRenderTriangles);
         Assert.Equal(dynamicTriangles, world.TotalDynamicTriangles);
         Assert.Equal(animatedTriangles, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
+        Assert.Equal(animationCapableInstances, dynamicObjects.Count(o => o.Animations is not null));
+        Assert.Equal(animationCapableInstances, dynamicObjects.Count(o => o.Animations is not null));
 
         Assert.Equal("rac1", world.Game);
         Assert.Equal(levelId, world.LevelId);
@@ -106,6 +109,27 @@ public sealed class Rac1AllLevelsTests
                 Assert.All(mesh.Indices, index => Assert.InRange(index, 0, mesh.Positions.Length / 3 - 1));
                 if (mesh.TextureId >= 0) Assert.Contains((mesh.AssetKind, mesh.TextureId), textureKeys);
             });
+            if (obj.Animations is { } animations)
+            {
+                Assert.Equal(OBP.Runtime.RuntimeObjectAnimationRole.Rest, animations.InitialRole);
+                Assert.NotEmpty(animations.Clips);
+                Assert.All(animations.Clips, clip =>
+                {
+                    Assert.Equal(clip.FrameCount, clip.FrameDurationsSeconds.Count);
+                    Assert.NotEmpty(clip.Surfaces);
+                    Assert.All(clip.FrameDurationsSeconds, duration => Assert.True(duration > 0 && double.IsFinite(duration)));
+                    Assert.All(clip.Surfaces, surface =>
+                    {
+                        Assert.InRange(surface.SurfaceIndex, 0, obj.Meshes.Count - 1);
+                        Assert.Equal(clip.FrameCount, surface.FrameCount);
+                        Assert.All(surface.LocalFrames, frame =>
+                        {
+                            Assert.Equal(obj.Meshes[surface.SurfaceIndex].Positions.Length, frame.Length);
+                            Assert.All(frame, value => Assert.True(double.IsFinite(value)));
+                        });
+                    });
+                });
+            }
         });
     }
 }

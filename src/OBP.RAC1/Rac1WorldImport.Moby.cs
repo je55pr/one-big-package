@@ -107,10 +107,6 @@ public static partial class Rac1WorldImport
         ref double minX, ref double minY, ref double minZ,
         ref double maxX, ref double maxY, ref double maxZ)
     {
-        const int ProvenSingleJointClass = 1134;
-        const int ProvenRigidHierarchyClass = 766;
-        const int ProvenSequence = 1;
-        const float NtscUpdateHz = 60f;
         animatedInstanceIndices = [];
         var output = new List<RuntimeAnimatedMesh>();
 
@@ -118,68 +114,6 @@ public static partial class Rac1WorldImport
             core, instances, classes, textureIds, output, animatedInstanceIndices,
             ref minX, ref minY, ref minZ, ref maxX, ref maxY, ref maxZ);
 
-        foreach (var instance in instances.Where(i =>
-            i.OClass is ProvenSingleJointClass or ProvenRigidHierarchyClass))
-        {
-            if (!classes.TryGetValue(instance.OClass, out var cls) || cls.Mesh.Indices.Length == 0)
-                throw new InvalidDataException($"R&C1 class {instance.OClass} retail animation surface is missing.");
-            var rest = cls.Sequences.Single(s => s.Index == 0).Value
-                ?? throw new InvalidDataException($"R&C1 class {instance.OClass} rest sequence is absent.");
-            var sequence = cls.Sequences.Single(s => s.Index == ProvenSequence).Value
-                ?? throw new InvalidDataException($"R&C1 class {instance.OClass} animated sequence is absent.");
-
-            bool rigidHierarchy = instance.OClass == ProvenRigidHierarchyClass;
-            bool restAnchor = rest.Frames.Count == 1 && (rigidHierarchy
-                ? Rac1MobyPose.CanPoseRigidHierarchy(cls.Mesh, cls.Joints, rest.Frames[0]) &&
-                    Rac1MobyPose.IsRigidHierarchyRestAnchor(cls.Joints, rest.Frames[0])
-                : Rac1MobyPose.CanPoseSingleJointRigid(cls.Mesh, cls.Joints, rest.Frames[0]) &&
-                    Rac1MobyPose.IsRestAnchor(cls.Joints[0], rest.Frames[0]));
-            if (!restAnchor)
-                throw new InvalidDataException($"R&C1 class {instance.OClass} is outside its pinned animation subset.");
-
-            int expectedFrames = rigidHierarchy ? 16 : 170;
-            float expectedRate = rigidHierarchy ? 0.25f : 0.5f;
-            float rate = sequence.ConstantTransitionRate;
-            if (sequence.Frames.Count != expectedFrames || rate != expectedRate || !float.IsFinite(rate))
-                throw new InvalidDataException($"R&C1 class {instance.OClass} sequence 1 no longer matches its retail timing specimen.");
-
-            var frames = new List<double[]>(sequence.Frames.Count);
-            foreach (var frame in sequence.Frames)
-            {
-                var posed = rigidHierarchy
-                    ? Rac1MobyPose.PoseRigidHierarchy(cls.Mesh, cls.Joints, frame)
-                    : Rac1MobyPose.PoseSingleJointRigid(cls.Mesh, cls.Joints, frame);
-                var world = new double[posed.Length];
-                for (int i = 0; i < posed.Length; i += 3)
-                {
-                    var (nx, ny, nz) = Rac1Instances.TransformMobyPoint(instance, posed[i], posed[i + 1], posed[i + 2]);
-                    world[i] = R2(nx); world[i + 1] = R2(nz); world[i + 2] = R2(ny);
-                    minX = System.Math.Min(minX, nx); minY = System.Math.Min(minY, nz); minZ = System.Math.Min(minZ, ny);
-                    maxX = System.Math.Max(maxX, nx); maxY = System.Math.Max(maxY, nz); maxZ = System.Math.Max(maxZ, ny);
-                }
-                frames.Add(world);
-            }
-            var byTexture = new SortedDictionary<int, List<int>>();
-            for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
-            {
-                int textureId = cls.TriangleTextureIds[face];
-                if (textureId < 0 || !textureIds.Contains(textureId))
-                    throw new InvalidDataException($"R&C1 class {instance.OClass} references missing texture {textureId}.");
-                if (!byTexture.TryGetValue(textureId, out var indices)) byTexture[textureId] = indices = [];
-                indices.Add(cls.Mesh.Indices[face * 3]);
-                indices.Add(cls.Mesh.Indices[face * 3 + 1]);
-                indices.Add(cls.Mesh.Indices[face * 3 + 2]);
-            }
-            foreach (var (textureId, indices) in byTexture)
-            {
-                output.Add(new RuntimeAnimatedMesh(
-                    Name: $"moby{instance.OClass}_i{instance.Index}_t{textureId}",
-                    AssetKind: "moby", TextureId: textureId,
-                    Uvs: cls.Mesh.Uvs, Indices: indices.ToArray(), Colors: [],
-                    Frames: frames, FramesPerSecond: rate * NtscUpdateHz));
-            }
-            animatedInstanceIndices.Add(instance.Index);
-        }
         return output;
     }
 
@@ -192,6 +126,7 @@ public static partial class Rac1WorldImport
         ref double maxX, ref double maxY, ref double maxZ)
     {
         var models = new Dictionary<int, IReadOnlyList<RuntimeObjectMesh>>();
+        var animationSets = new Dictionary<int, RuntimeObjectAnimationSet>();
         foreach (int oClass in instances.Select(i => i.OClass).Distinct().Order())
         {
             if (!classes.TryGetValue(oClass, out var cls) || cls.Mesh.Indices.Length == 0) continue;
@@ -237,6 +172,8 @@ public static partial class Rac1WorldImport
                     "moby", textureId, positions.ToArray(), uvs.ToArray(), indices.ToArray()));
             }
             models[oClass] = surfaces;
+            var animations = Rac1MobyAnimationProvider.BuildAdmittedAnimationSet(cls, surfaces);
+            if (animations is not null) animationSets[oClass] = animations;
         }
 
         var output = new List<RuntimeDynamicObject>(instances.Count);
@@ -260,7 +197,8 @@ public static partial class Rac1WorldImport
 
             output.Add(new RuntimeDynamicObject(
                 "rac1", instance.OClass, instance.Index, null, $"moby:{instance.OClass}",
-                $"moby:{instance.Index}", new RuntimeObjectTransform(Rac1Instances.MobyTransform(instance)), objectMeshes));
+                $"moby:{instance.Index}", new RuntimeObjectTransform(Rac1Instances.MobyTransform(instance)), objectMeshes,
+                Animations: animationSets.GetValueOrDefault(instance.OClass)));
         }
         return output;
     }

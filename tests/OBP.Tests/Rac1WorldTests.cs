@@ -143,7 +143,7 @@ public sealed class Rac1LevelTests_World
     }
 
     [SkippableFact]
-    public void Level1_PinnedClass1134InstancesUseNativeAnimatedMeshPath()
+    public void Level1_Class1134StaysAtRestUntilNativeSelectorIsRecovered()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
@@ -151,29 +151,18 @@ public sealed class Rac1LevelTests_World
         var world = Rac1WorldImport.Build(reader, 1);
         Assert.Equal(383, world.Meshes.Count);
         Assert.Equal(1_118_293, world.TotalRenderTriangles);
-        Assert.Equal((0, 0),
-            (world.Meshes.Count(m => m.AssetKind == "moby"), world.Meshes.Where(m => m.AssetKind == "moby").Sum(m => m.TriangleCount)));
-        Assert.Equal(520_367, world.TotalDynamicTriangles);
-        Assert.NotNull(world.AnimatedMeshes);
-        Assert.Equal(7, world.AnimatedMeshes!.Count);
-        Assert.Equal(7_138, world.AnimatedMeshes.Sum(m => m.TriangleCount));
-        Assert.Equal(1_645_798, world.TotalRenderTriangles + world.TotalDynamicTriangles + world.AnimatedMeshes.Sum(m => m.TriangleCount));
-        var class1134 = world.AnimatedMeshes.Where(m => m.Name.StartsWith("moby1134_", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(520_649, world.TotalDynamicTriangles);
+        Assert.Equal(6_856, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
+        Assert.Equal(1_645_798, world.TotalRenderTriangles + world.TotalDynamicTriangles + (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
+
+        var class1134 = world.DynamicObjects!.Where(o => o.NativeClassId == 1134).ToArray();
         Assert.Equal(3, class1134.Length);
-        Assert.Equal(282, class1134.Sum(m => m.TriangleCount));
-        Assert.All(class1134, mesh =>
-        {
-            Assert.Equal("moby", mesh.AssetKind);
-            Assert.Equal(109, mesh.VertexCount);
-            Assert.Equal(94, mesh.TriangleCount);
-            Assert.Equal(170, mesh.Frames.Count);
-            Assert.Equal(30f, mesh.FramesPerSecond);
-            Assert.All(mesh.Frames, frame => Assert.Equal(mesh.VertexCount * 3, frame.Length));
-        });
+        Assert.Equal(282, class1134.Sum(o => o.Meshes.Sum(m => m.TriangleCount)));
+        Assert.All(class1134, obj => Assert.Null(obj.Animations));
     }
 
     [SkippableFact]
-    public void Level2_PinnedClass766InstancesUseRigidHierarchyAnimatedMeshPath()
+    public void Level2_Class766StaysAtRestUntilNativeSelectorIsRecovered()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
@@ -181,23 +170,14 @@ public sealed class Rac1LevelTests_World
         var world = Rac1WorldImport.Build(reader, 2);
         Assert.Equal(250, world.Meshes.Count);
         Assert.Equal(687_037, world.TotalRenderTriangles);
-        Assert.NotNull(world.AnimatedMeshes);
-        Assert.Equal(170, world.AnimatedMeshes!.Count);
-        Assert.Equal(12_416, world.AnimatedMeshes.Sum(m => m.TriangleCount));
-        Assert.Equal(403_999, world.TotalDynamicTriangles);
-        Assert.Equal(1_103_452, world.TotalRenderTriangles + world.TotalDynamicTriangles + world.AnimatedMeshes.Sum(m => m.TriangleCount));
+        Assert.Equal(409_559, world.TotalDynamicTriangles);
+        Assert.Equal(6_856, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
+        Assert.Equal(1_103_452, world.TotalRenderTriangles + world.TotalDynamicTriangles + (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
 
-        var hierarchy = world.AnimatedMeshes.Where(m => m.Name.StartsWith("moby766_", StringComparison.Ordinal)).ToArray();
-        Assert.Equal(162, hierarchy.Length);
-        Assert.Equal(5_184, hierarchy.Sum(m => m.TriangleCount));
-        Assert.Equal(54, hierarchy.Select(m => m.Name.Split('_')[1]).Distinct().Count());
-        Assert.All(hierarchy, mesh =>
-        {
-            Assert.Equal("moby", mesh.AssetKind);
-            Assert.Equal(124, mesh.VertexCount);
-            Assert.Equal(16, mesh.Frames.Count);
-            Assert.Equal(15f, mesh.FramesPerSecond);
-            Assert.All(mesh.Frames, frame => Assert.Equal(mesh.VertexCount * 3, frame.Length));
-        });
+        var hierarchy = world.DynamicObjects!.Where(o => o.NativeClassId == 766).ToArray();
+        Assert.Equal(54, hierarchy.Length);
+        Assert.Equal(5_184, hierarchy.Sum(o => o.Meshes.Sum(m => m.TriangleCount)));
+        Assert.All(hierarchy, obj => Assert.Null(obj.Animations));
     }
+
 }
