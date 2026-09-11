@@ -11,6 +11,7 @@ using OBP.RAC2;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
@@ -600,6 +601,15 @@ public class GcLevelTests
             Assert.Contains(o.NativePayloads!, p => p.Format == "rac2-moby-instance-0x88" && p.Data.Length == 0x88);
             Assert.Contains(o.NativePayloads!, p => p.Format == "rac2-pvar" && p.Data.Length == 0x110);
         });
+
+        var showcaseRuntimeCrate = Assert.Single(dynamicCrates, o => o.InstanceIndex == 31);
+        var showcaseLifecycle = GcClass500Lifecycle.ApplyRecoveredBreak(
+            showcaseRuntimeCrate, RuntimeEntityState.FromAuthored(showcaseRuntimeCrate));
+        Assert.Equal(73, showcaseLifecycle.Authored.Uid);
+        Assert.Equal(13, showcaseLifecycle.Authored.AuthoredBolts);
+        Assert.Equal((byte?)0, showcaseLifecycle.Authored.PvarC8);
+        Assert.Equal(GcClass500PostBreakRoute.Deactivate, showcaseLifecycle.Route);
+        Assert.Equal(RuntimeEntityPresence.Inactive, showcaseLifecycle.EntityState.Presentation.Presence);
 
         // Collision — now carries the actual decoded geometry (OBP Y-up), the
         // surface the debug capsule stands on.

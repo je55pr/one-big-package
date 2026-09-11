@@ -134,15 +134,21 @@ public partial class OBPGame
             throw new InvalidOperationException("The deterministic debug event no longer satisfies the recovered class-500 predicate.");
         }
 
-        var authored = GcClass500Authority.Read(target.Source);
-        if (authored is null || authored.PvarC8 is not { } c8)
+        GcClass500LifecycleResult lifecycle;
+        try
+        {
+            lifecycle = GcClass500Lifecycle.ApplyRecoveredBreak(target.Source, target.State);
+        }
+        catch (InvalidDataException ex)
         {
             _crateDebugStatus = "strike: target has no usable class-500 authority state";
-            GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: missing authored UID/Bolts/PVar+C8");
+            GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: {ex.Message}");
             return;
         }
 
-        var route = GcCrateInteraction.PostBreakRoute(c8);
+        var authored = lifecycle.Authored;
+        byte c8 = authored.PvarC8!.Value;
+        var route = lifecycle.Route;
         _crateDebugTarget = target;
         _crateDebugPvarC8 = c8;
         _crateDebugRoute = route.ToString();
@@ -172,9 +178,9 @@ public partial class OBPGame
         // The Oozla class-500 state-3 path immediately enters the native
         // deactivate helper when authored +0xC8 is zero. State 6 remains visible
         // because that class-family behaviour has not yet been reconstructed.
+        target.ApplyState(lifecycle.EntityState);
         if (route == GcClass500PostBreakRoute.Deactivate)
         {
-            target.Root.Visible = false;
             _crateDebugBroken = true;
         }
         GD.Print($"[crate-debug] {target.Source.InteractionId} event=0x{DebugCrateEventFlags:X8}/{DebugCrateEventScalar:0.###} " +
