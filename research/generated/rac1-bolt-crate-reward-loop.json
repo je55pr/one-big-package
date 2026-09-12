@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "sha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d"
+  },
+  "crateFamilyCatalogue": {
+    "500": { "count": 3795, "pvarSize": 256, "distinctPvars": 10 },
+    "501": { "count": 214, "pvarSize": 256, "distinctPvars": 19 },
+    "502": { "count": 315, "pvarSize": 256, "distinctPvars": 2 },
+    "511": { "count": 431, "pvarSize": 256, "distinctPvars": 12 },
+    "allPvars": {
+      "relativePointerFixups": ["0x00", "0x08"],
+      "mobyLinkFixups": []
+    }
+  },
+  "veldinClass500": {
+    "authoredCount": 103,
+    "updateRoutine": "0x002cf218",
+    "pvarSize": 256,
+    "rewardCentres": { "10": 73, "15": 30 },
+    "nativeStates": {
+      "active": 1,
+      "breakTransition": 3,
+      "disabledObserved": 253
+    },
+    "authoredToLiveMatches": {
+      "placement+0x0c_to_moby+0xb2_uid": "103/103",
+      "placement+0x10_to_moby+0xb4_rewardCentre": "103/103"
+    },
+    "persistenceWitness": {
+      "activeState1_bitsClear": 77,
+      "disabledState253_bitsSet": 26,
+      "exceptions": 0,
+      "provenAcrossSavestateRestore": true,
+      "clearingEvent": "unknown"
+    }
+  },
+  "breakAndReward": {
+    "ordinaryClass500BreakPredicate": "positive recovered native damage value",
+    "breakRoute": ["0x002d09b8", "0x002d0538", "0x00257470", "0x00260a88"],
+    "representativeCentre10": {
+      "inclusiveSelectedTotalRange": [7, 13],
+      "observedParentLinkedTotals": [7, 8, 9, 11, 12]
+    }
+  },
+  "physicalPickups": {
+    "constructor": "0x002a7438",
+    "updateRoutine": "0x002a5dd8",
+    "nativeClassValues": {
+      "13": 1,
+      "14": 5,
+      "15": 20,
+      "16": 50
+    }
+  },
+  "collection": {
+    "representativeLowValuePartition": "emit value 5 while remainder >= 7, then value 1",
+    "helper": "0x002a6b70",
+    "boltCounterAddress": "0x0015ed98",
+    "threshold": {
+      "livePvarOffset": "0x64",
+      "kind": "dynamic",
+      "fixedAuthoredRadius": null
+    }
+  },
+  "representativeSpecimen": {
+    "level": 0,
+    "instanceIndex": 89,
+    "uid": 121,
+    "rewardCentre": 10,
+    "deterministicReplaySelectedTotal": 7,
+    "replayDenominations": [5, 1, 1]
+  },
+  "scopeNotes": {
+    "highValuePartition": "not generalized by this change",
+    "persistenceClearEvent": "unknown",
+    "fixedPickupRadius": "not supported by evidence"
+  },
+  "provenance": [
+    "native R&C1 gameplay parser/census",
+    "read-only PCSX2 PINE live-state sampling",
+    "loaded retail executable disassembly",
+    "Rac1BoltCrateRetailTests importer assertions"
+  ]
+}

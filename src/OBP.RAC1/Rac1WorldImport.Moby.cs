@@ -195,10 +195,16 @@ public static partial class Rac1WorldImport
                 }
             }
 
+            var nativePayloads = new List<RuntimeOpaquePayload>
+            {
+                new("rac1-moby-instance-0x78", instance.RawRecord),
+            };
+            if (instance.PVar is not null) nativePayloads.Add(new("rac1-pvar", instance.PVar));
+
             output.Add(new RuntimeDynamicObject(
-                "rac1", instance.OClass, instance.Index, null, $"moby:{instance.OClass}",
+                "rac1", instance.OClass, instance.Index, instance.Uid, $"moby:{instance.OClass}",
                 $"moby:{instance.Index}", new RuntimeObjectTransform(Rac1Instances.MobyTransform(instance)), objectMeshes,
-                Animations: animationSets.GetValueOrDefault(instance.OClass)));
+                nativePayloads, animationSets.GetValueOrDefault(instance.OClass)));
         }
         return output;
     }

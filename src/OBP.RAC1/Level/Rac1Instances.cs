@@ -34,7 +34,11 @@ public static class Rac1Instances
         int OClass,
         float Scale,
         (float X, float Y, float Z) Position,
-        (float X, float Y, float Z) Rotation);
+        (float X, float Y, float Z) Rotation,
+        int? Uid,
+        int PVarIndex,
+        byte[] RawRecord,
+        byte[]? PVar);
 
     public sealed record Gameplay(
         IReadOnlyList<TieInstance> TieInstances,
@@ -66,6 +70,8 @@ public static class Rac1Instances
             (long)blockOffset + 0x10L + (long)count * MobyRecordSize > data.Length)
             throw new InvalidDataException($"R&C1 gameplay moby count/range {count} is invalid.");
 
+        int pvarTableOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(0x54));
+        int pvarDataOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(0x58));
         var outp = new List<MobyInstance>(count);
         for (int i = 0; i < count; i++)
         {
@@ -78,9 +84,31 @@ public static class Rac1Instances
             var rot = (BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + 0x3c)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + 0x40)), BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + 0x44)));
             if (!float.IsFinite(scale) || !float.IsFinite(pos.Item1) || !float.IsFinite(pos.Item2) || !float.IsFinite(pos.Item3) || !float.IsFinite(rot.Item1) || !float.IsFinite(rot.Item2) || !float.IsFinite(rot.Item3))
                 throw new InvalidDataException($"R&C1 gameplay moby {i} has a non-finite transform.");
-            outp.Add(new MobyInstance(i, BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x18)), scale, pos, rot));
+            int oClass = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x18));
+            ushort class500Uid = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(at + 0x0c));
+            int? admittedUid = oClass == 500 && class500Uid < 0x8000 ? class500Uid : null;
+            int pvarIndex = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x58));
+            byte[] raw = data.AsSpan(at, MobyRecordSize).ToArray();
+            byte[]? pvar = ReadPVar(data, pvarTableOffset, pvarDataOffset, pvarIndex, i);
+            outp.Add(new MobyInstance(i, oClass, scale, pos, rot, admittedUid, pvarIndex, raw, pvar));
         }
         return outp;
+    }
+
+    private static byte[]? ReadPVar(byte[] data, int tableOffset, int dataOffset, int pvarIndex, int instanceIndex)
+    {
+        if (pvarIndex < 0) return null;
+        if (tableOffset <= 0 || dataOffset <= 0)
+            throw new InvalidDataException($"R&C1 gameplay moby {instanceIndex} references PVar {pvarIndex}, but the PVar table/data offsets are unavailable.");
+        long entry = (long)tableOffset + (long)pvarIndex * 8;
+        if (entry < 0 || entry + 8 > data.Length)
+            throw new InvalidDataException($"R&C1 gameplay moby {instanceIndex} PVar table entry {pvarIndex} is out of range.");
+        int relativeOffset = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan((int)entry));
+        int size = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan((int)entry + 4));
+        long start = (long)dataOffset + relativeOffset;
+        if (relativeOffset < 0 || size < 0 || size > 1_048_576 || start < 0 || start + size > data.Length)
+            throw new InvalidDataException($"R&C1 gameplay moby {instanceIndex} PVar {pvarIndex} range is invalid.");
+        return data.AsSpan((int)start, size).ToArray();
     }
 
     private sealed record Parsed(MatrixInstance Base, int Uid);

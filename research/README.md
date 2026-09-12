@@ -31,6 +31,7 @@ When a document contains an unresolved hypothesis, it should say so explicitly.
 | Moby geometry/skinning | [`GC_MOBY.md`](GC_MOBY.md) | Retail-backed, still partial for variants/animation |
 | GC gameplay Mobies / PVars | [`GC_PVARS.md`](GC_PVARS.md), [`GC_MOBY_CATALOGUE.md`](GC_MOBY_CATALOGUE.md) | Retail PVar structure, loaded `lvl.vtbl` behaviour and semantic class catalogue |
 | GC crates / resource pickups | [`GC_CRATES.md`](GC_CRATES.md) | Loaded crate-family state machine and indexed resource-emission archaeology |
+| R&C1 crates / bolts | [`RAC1_CRATES_PICKUPS.md`](RAC1_CRATES_PICKUPS.md) | Class-500 break, authored reward centre, physical bolt denominations, collection and persistence evidence |
 | Sky | [`GC_SKY.md`](GC_SKY.md) | Retail-backed shell geometry/settings; effects remain partial |
 | Level settings | [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md) | Retail-backed fixed settings fields |
 | UYA ship/start transform | [`UYA_RETAIL_SHIP_START_COMPATIBILITY.md`](UYA_RETAIL_SHIP_START_COMPATIBILITY.md) | Retail-corroborated shared-layout compatibility; executable field-name provenance remains open |

@@ -90,6 +90,9 @@ The gameplay Moby placement record is **0x78 bytes**. It is not the live Moby st
 - `+0x1c f32` uniform instance scale
 - `+0x30..+0x38` native XYZ position
 - `+0x3c..+0x44` native XYZ Euler radians
+- `+0x58 s32` PVar-table index; the importer now preserves the referenced PVar as opaque game-owned bytes
+
+The exact 0x78 authored record is also preserved as an opaque runtime payload. Class-specific semantics remain opt-in: class 500 independently proves packed `+0x0c` as its persistence UID and `+0x10` as its authored bolt-reward centre, but those offsets are not promoted as universal Moby fields. See `RAC1_CRATES_PICKUPS.md`.
 
 Executable archaeology independently identifies the live Moby as a **0x100-byte runtime record**. On the render/update path the supported retail executable uses, among other fields:
 
