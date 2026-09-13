@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199"
+  },
+  "motionOutput": {
+    "playerStateBase": "0x0013f3d0",
+    "displacementOffsets": [
+      "0x80",
+      "0x84",
+      "0x88"
+    ],
+    "updateHz": 60,
+    "liveMobyDeltaMatch": "component-for-component on sampled game updates"
+  },
+  "groundPlanar": {
+    "accelerationPerTick": 0.0020833333333333333,
+    "maximumStep": 0.09500919,
+    "releaseDecelerationPerTick": 0.0033333333333333335
+  },
+  "airPlanar": {
+    "accelerationPerTick": 0.005555555555555556,
+    "releaseDecelerationPerTick": 0.0008333333333333334,
+    "maximumStep": 0.09500919
+  },
+  "jump": {
+    "anticipationTicks": 8,
+    "launchStepByHeldTicks": [
+      0.0,
+      0.13816452026367188,
+      0.13816452026367188,
+      0.1420745849609375,
+      0.14589500427246094,
+      0.1496295928955078,
+      0.15328598022460938,
+      0.15686607360839844
+    ],
+    "releasedRiseGravityPerTick": 0.00825,
+    "fallGravityPerTick": 0.009652,
+    "heldRiseAssistTicks": 9,
+    "apexWitnesses": {
+      "shortTap": 1.2267837524414062,
+      "100ms": 1.501668930053711,
+      "maxHold": 2.0543766021728516
+    },
+    "maxHoldSaturatesByMs": 300
+  },
+  "runningJump100ms": {
+    "observedAirSeconds": 0.599474,
+    "observedHorizontal": 3.515286544470399,
+    "observedApex": 1.501668930053711,
+    "modelDisplacementTicks": 37,
+    "modelSampledAirSeconds": 0.6,
+    "modelHorizontal": 3.51534003
+  },
+  "crouch": {
+    "stationarySequence": 13,
+    "directionalTurnSequences": [
+      14,
+      15
+    ],
+    "stationaryTranslation": 0,
+    "residualPlanarDecelerationPerTick": 0.001802944
+  },
+  "respawn": {
+    "deathSequences": [
+      10,
+      11
+    ],
+    "veldinPosition": [
+      132.09,
+      115.48,
+      31.426616668701172
+    ],
+    "momentumPreserved": false
+  },
+  "turning": {
+    "liveMobyYawOffset": "0x48",
+    "rotationMatrixOffsets": [
+      "0xc0",
+      "0xc4",
+      "0xd0",
+      "0xd4"
+    ],
+    "startYawRad": 1.111041784286499,
+    "largestObservedYawStepRadPerTick": 0.142,
+    "exactEasingRecurrence": "unknown"
+  },
+  "scopeNotes": {
+    "collisionResponse": "host-owned",
+    "exactTurnEasing": "unknown",
+    "analogueDeadZone": "unknown",
+    "combatMovement": "separate milestone"
+  },
+  "provenance": [
+    "controlled PCSX2 authority execution",
+    "read-only PINE live-state sampling",
+    "loaded retail executable archaeology",
+    "portable deterministic recurrence tests",
+    "Godot Veldin integration capture"
+  ]
+}

@@ -1,4 +1,5 @@
 using Godot;
+using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
 namespace OneBigPackage;
@@ -39,6 +40,9 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Keep scripted captures stationary after ground placement.</summary>
     public bool ScriptedStill { get; set; }
 
+    /// <summary>Use the recovered R&amp;C1 native-tick movement core.</summary>
+    public bool UseRac1Movement { get; set; }
+
     /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
     public event Action? CrateStrikeRequested;
 
@@ -66,6 +70,9 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _animationWasGrounded;
     private bool _attackRequested;
     private bool _scriptAttacked;
+    private readonly Rac1RatchetMovementController _rac1Movement = new();
+    private bool _rac1JumpWasHeld;
+    private bool _rac1HitCeiling;
 
     // last-jump measurement
     private bool _airborne;
@@ -155,6 +162,8 @@ public partial class DebugPlayer : CharacterBody3D
             {
                 _fly = !_fly;
                 Velocity = Vector3.Zero;
+                _rac1Movement.Reset();
+                _rac1JumpWasHeld = false;
                 ResetAnimationState();
                 GD.Print($"[DebugPlayer] fly mode {(_fly ? "on" : "off")}");
             }
@@ -162,6 +171,8 @@ public partial class DebugPlayer : CharacterBody3D
             {
                 GlobalPosition = _spawn;
                 Velocity = Vector3.Zero;
+                _rac1Movement.Reset();
+                _rac1JumpWasHeld = false;
                 ResetAnimationState();
                 _placed = false;
                 _placeTries = 0;
@@ -195,37 +206,17 @@ public partial class DebugPlayer : CharacterBody3D
             return;
         }
 
-        Vector3 velocity = Velocity;
-        bool onFloor = IsOnFloor();
-        if (onFloor && velocity.Y < 0f)
-        {
-            velocity.Y = 0f;
-        }
-        else
-        {
-            velocity.Y = Mathf.Max(velocity.Y - Gravity * (float)delta, -TerminalVelocity);
-        }
-
         var (move, jump) = Scripted ? ScriptedInput() : LiveInput();
-
+        bool crouch = UseRac1Movement && !Scripted && Input.IsPhysicalKeyPressed(Key.C);
         Vector3 wish = _yaw.GlobalTransform.Basis * new Vector3(move.X, 0f, move.Y);
         wish.Y = 0f;
         wish = wish.LengthSquared() > 1e-4f ? wish.Normalized() : Vector3.Zero;
 
-        velocity.X = wish.X * MoveSpeed;
-        velocity.Z = wish.Z * MoveSpeed;
+        if (UseRac1Movement)
+            StepRac1Movement(wish, jump, crouch);
+        else
+            StepDebugMovement(wish, jump, (float)delta);
 
-        if (jump && onFloor)
-        {
-            velocity.Y = JumpVelocity;
-            if (Scripted && !_scriptJumped)
-            {
-                _scriptJumped = true;
-                GD.Print($"[DebugPlayer] jump from {GlobalPosition}");
-            }
-        }
-
-        Velocity = velocity;
         MoveAndSlide();
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
@@ -244,6 +235,49 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         UpdateHud(isOnFloor);
+    }
+
+    private void StepDebugMovement(Vector3 wish, bool jump, float delta)
+    {
+        Vector3 velocity = Velocity;
+        bool onFloor = IsOnFloor();
+        if (onFloor && velocity.Y < 0f)
+            velocity.Y = 0f;
+        else
+            velocity.Y = Mathf.Max(velocity.Y - Gravity * delta, -TerminalVelocity);
+
+        velocity.X = wish.X * MoveSpeed;
+        velocity.Z = wish.Z * MoveSpeed;
+        if (jump && onFloor)
+        {
+            velocity.Y = JumpVelocity;
+            if (Scripted && !_scriptJumped)
+            {
+                _scriptJumped = true;
+                GD.Print($"[DebugPlayer] jump from {GlobalPosition}");
+            }
+        }
+        Velocity = velocity;
+    }
+
+    private void StepRac1Movement(Vector3 wish, bool jump, bool crouch)
+    {
+        bool jumpPressed = jump && !_rac1JumpWasHeld;
+        _rac1JumpWasHeld = jump;
+        var step = _rac1Movement.Step(
+            new PlayerControlIntent(wish.X, wish.Z, jump, jumpPressed, crouch),
+            new PlayerContactFacts(IsOnFloor(), IsOnCeiling()));
+
+        const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
+        Velocity = new Vector3(
+            (float)step.PlanarX * nativeTicksPerSecond,
+            (float)step.Vertical * nativeTicksPerSecond,
+            (float)step.PlanarY * nativeTicksPerSecond);
+        if (Scripted && step.Vertical > 0d && !_scriptJumped)
+        {
+            _scriptJumped = true;
+            GD.Print($"[DebugPlayer] native R&C1 jump from {GlobalPosition}");
+        }
     }
 
     private void UpdateAnimationState(bool onFloor)
@@ -395,17 +429,25 @@ public partial class DebugPlayer : CharacterBody3D
             return (Vector2.Zero, false);
         }
 
-        // A short step in + a jump (for the telemetry) — kept brief so an
-        // edge-of-platform ship spawn doesn't walk the capsule off into a
-        // crevasse before the capture frame.
-        float forward = _time is > 0.7 and < 1.5 ? -1f : 0f;
+        if (UseRac1Movement)
+        {
+            // Veldin's authored start first settles from a higher collision
+            // surface. Wait for that contact, then exercise the retail-backed
+            // run -> maximum held jump -> fall -> release path.
+            float forward = _time is > 4.2 and < 7.2 ? -1f : 0f;
+            bool jump = _time is > 5.0 and < 5.3;
+            return (new Vector2(0f, forward), jump);
+        }
+
+        // Legacy debug-controller capture used by the other games.
+        float legacyForward = _time is > 0.7 and < 1.5 ? -1f : 0f;
         if (!_scriptAttacked && _time > 1.0)
         {
             _scriptAttacked = true;
             _attackRequested = true;
         }
 
-        bool jump = _time is > 1.7 and < 1.8;
-        return (new Vector2(0f, forward), jump);
+        bool legacyJump = _time is > 1.7 and < 1.8;
+        return (new Vector2(0f, legacyForward), legacyJump);
     }
 }
