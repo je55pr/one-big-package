@@ -717,6 +717,7 @@ public partial class OBPGame : Node3D
             Name = "DebugPlayer",
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
+            UseRac1Movement = world.Game == "rac1",
             Position = spawn,
         };
         _playerRoot.AddChild(player);

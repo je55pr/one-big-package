@@ -61,6 +61,8 @@ The Godot side of a loaded world is a thin applier over engine-neutral, unit-tes
 
 R&C1 NTSC-U (`SCUS-97199`) is now a second native provider rather than a reference-only world slice. All 19 authority levels load through `Rac1WorldProvider` and the same `ObpWorldProviderRegistry` used by GC. The merged C# path covers retail terrain/textures/collision, level settings, shared RC sky, native TIE/shrub placement, and authored Moby identity/model/texture linkage as neutral dynamic objects. Across the authority set all 16,232 Moby placements are preserved: 15,340 carry linked dynamic render geometry, 19 hand off only to Ratchet's separately proven player animation path, and 873 remain explicitly meshless because no recovered class geometry is available. Veldin class 1781 is the first ordinary Moby with both a decoded clip and native state-selection witness: all 33 red-plant instances advertise a neutral 20-frame `Reaction` clip at 30 FPS, while sequence ids, selector flags and the retail distance/motion predicate remain inside `OBP.RAC1`. Decoded classes 766/1134 are deliberately static at runtime until their selectors are recovered. R&C1 class 500 now also has the first recovered resource loop: authored UID/reward-centre and 0x100-byte PVar preservation, positive-damage break projection through `RuntimeEntityState`, centre-10 native payout range 7..13, physical 1/5/20/50-bolt classes, exact collection credit and UID-backed destruction persistence; the persistence clearing event and dynamic pickup-threshold evolution remain intentionally unresolved. Retail all-level gates exercise every destination, and `rac1:LEVEL0` is covered by the generic deterministic Godot capture path with the debug player grounded on reconstructed collision.
 
+R&C1 ordinary player movement now also leaves the provisional debug-physics path. `Rac1RatchetMovementController` reproduces the authority 60 Hz ground acceleration/stop recurrence, variable-height jump anticipation/hold, distinct rise/fall gravity, air control, ledge falling and recovered crouch slide-down. Godot remains collision authority. Controlled retail witnesses also pin respawn reset-to-player-start and the normal-facing yaw envelope; the exact turn-easing recurrence remains explicitly unresolved. See [`../research/RAC1_PLAYER_MOVEMENT.md`](../research/RAC1_PLAYER_MOVEMENT.md).
+
 ### Up Your Arsenal native world provider
 
 UYA NTSC-U (`SCUS-97353`, `rac3-ntscu-original`) exposes all 51 retail-observed sparse main-table rows through `Rac3WorldProvider`. The native C# path reconstructs tfrag terrain, decoded textures, TIE/shrub authored placement, strict UYA sky shells/textures, octree collision, first-part level atmosphere, compatible ship starts where retail settings do not carry the default sentinel transform, and authored Moby identity/PVars as neutral dynamic objects.
@@ -104,9 +106,9 @@ All 27 known GC level files have been exercised through the generic importer pat
 
 The merged runtime includes:
 
-- a provisional `CharacterBody3D` capsule with WASD, mouse look, gravity, jump, respawn and fly/noclip;
-- ship-spawn placement from retail settings, with a bounds-centre fallback where no usable native ship point exists;
-- movement telemetry and an empirically calibrated debug-controller baseline (not a claim about exact native Ratchet movement);
+- a `CharacterBody3D` host with WASD, mouse look, respawn and fly/noclip; R&C1 delegates ordinary run/jump/fall/crouch integration to its retail-backed 60 Hz controller while GC/UYA retain provisional debug physics;
+- ship/player-start placement from retail settings, with a bounds-centre fallback where no usable native point exists;
+- movement telemetry plus deterministic R&C1 recurrence tests; the old DebugPlayer calibration remains non-native and is used only outside the recovered R&C1 path;
 - deterministic screenshots/capture metadata;
 - direct planet launch and multi-planet lifecycle stress arguments.
 
@@ -122,7 +124,7 @@ Portable CI runs without retail images. Retail-backed archaeology is executed ex
 
 Across the project, major work still includes:
 
-- native Ratchet player movement/animation rather than the debug capsule;
+- broader Ratchet controller/presentation fidelity beyond the recovered R&C1 run/jump/fall/crouch slice, including exact turn easing and special traversal;
 - broader Moby animation/state selection and wider class/variant behaviour;
 - weapons, damage, AI and combat;
 - mission/story state, cutscenes and progression machinery;

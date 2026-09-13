@@ -151,7 +151,7 @@ Gameplay entity lifecycle now uses that separate boundary. `RuntimeDynamicObject
 
 `game/` owns application lifecycle and player-facing concerns such as the file picker, planet/world selection, input, debug/player controller, HUD and eventual audio/UI/gameplay presentation.
 
-The current `DebugPlayer` is explicit provisional OBP runtime behaviour. Its movement values are useful for traversing collision but are **not** claimed to reconstruct native Ratchet physics.
+The non-R&C1 `DebugPlayer` movement remains explicit provisional OBP runtime behaviour. R&C1 worlds now delegate planar/jump/crouch integration to `OBP.RAC1.Player.Rac1RatchetMovementController`, which consumes neutral `PlayerControlIntent` / `PlayerContactFacts` and emits native-world displacement per 60 Hz update. Godot converts that displacement to engine velocity and keeps ownership of collision, slopes and floor/ceiling contact. The old DebugPlayer calibration values are not treated as native Ratchet physics.
 
 ## Deterministic validation is part of the architecture
 
