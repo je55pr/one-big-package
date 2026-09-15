@@ -33,6 +33,7 @@ When a document contains an unresolved hypothesis, it should say so explicitly.
 | GC crates / resource pickups | [`GC_CRATES.md`](GC_CRATES.md) | Loaded crate-family state machine and indexed resource-emission archaeology |
 | R&C1 crates / bolts | [`RAC1_CRATES_PICKUPS.md`](RAC1_CRATES_PICKUPS.md) | Class-500 break, authored reward centre, physical bolt denominations, collection and persistence evidence |
 | R&C1 player movement | [`RAC1_PLAYER_MOVEMENT.md`](RAC1_PLAYER_MOVEMENT.md) | 60 Hz native displacement, run/stop, variable jump, air control, crouch, turning envelope and respawn evidence |
+| R&C1 Nanotech / damage / death | [`RAC1_NANOTECH_DAMAGE_DEATH.md`](RAC1_NANOTECH_DAMAGE_DEATH.md) | Retail-backed four-Nanotech Veldin witness, class-749 incoming damage, zero-health death and respawn restoration |
 | Sky | [`GC_SKY.md`](GC_SKY.md) | Retail-backed shell geometry/settings; effects remain partial |
 | Level settings | [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md) | Retail-backed fixed settings fields |
 | UYA ship/start transform | [`UYA_RETAIL_SHIP_START_COMPATIBILITY.md`](UYA_RETAIL_SHIP_START_COMPATIBILITY.md) | Retail-corroborated shared-layout compatibility; executable field-name provenance remains open |
