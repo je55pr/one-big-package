@@ -29,6 +29,31 @@ public sealed class Rac1WrenchCombatTests
         Assert.False(_controller.IsContactActive(0x13, 1, 20));
     }
 
+    [Theory]
+    [InlineData("rac1", Rac1BoltCrate.NativeClassId, true)]
+    [InlineData("rac1", Rac1Class749Hostile.NativeClassId, true)]
+    [InlineData("rac1", 1781, false)]
+    [InlineData("rac2", Rac1BoltCrate.NativeClassId, false)]
+    [InlineData("rac3", Rac1Class749Hostile.NativeClassId, false)]
+    public void Goal1LiveTargetAdmissionIsRac1Specific(string sourceGame, int nativeClassId, bool expected)
+    {
+        var source = new RuntimeDynamicObject(
+            sourceGame, nativeClassId, 7, null, $"moby:{nativeClassId}", "moby:7",
+            new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>());
+
+        var target = _controller.AdmitGoal1RuntimeTarget(source);
+        if (!expected)
+        {
+            Assert.Null(target);
+            return;
+        }
+
+        var admitted = Assert.IsType<Rac1WrenchContactTarget>(target);
+        Assert.Equal(nativeClassId, admitted.NativeClassId);
+        Assert.Equal(Rac1WrenchCombatController.DamageableMobyFlag, admitted.MobyFlags);
+        Assert.False(admitted.IsPlayerSelf);
+    }
+
     [Fact]
     public void Class500ToolTipSphereUsesRecoveredInsetAndRadius()
     {

@@ -156,6 +156,7 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
+            TickRac1Gameplay(delta);
             UpdateWorldHud();
         }
 
@@ -501,6 +502,7 @@ public partial class OBPGame : Node3D
     private void TeardownWorld()
     {
         ClearPlayerAvatarView();
+        ResetRac1Gameplay();
         _player?.QueueFree();
         _player = null;
 
@@ -727,6 +729,7 @@ public partial class OBPGame : Node3D
         _player = player;
         AttachRatchetPlayerVisual(player);
         ArmCrateDebugHarness(player);
+        ArmRac1Gameplay(player);
     }
 
     // --- HUD ---------------------------------------------------------------
@@ -772,6 +775,7 @@ public partial class OBPGame : Node3D
         }
 
         string crateDebug = GetCrateDebugHudLine();
+        string rac1Gameplay = GetRac1GameplayHudLine();
 
         _worldHud.Text =
             $"Game: {gameLabel}   Build: {w.BuildId}\n" +
@@ -783,7 +787,8 @@ public partial class OBPGame : Node3D
             (r.AnimatedMobies > 0 ? $"   Animated mobies: {r.AnimatedMobies}" : "") +
             (r.DynamicObjects > 0 ? $"   Dynamic objects: {r.DynamicObjects}" : "") +
             $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
-            (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}");
+            (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
+            (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}");
     }
 
     private void SetSelectorHint(string text)
@@ -984,6 +989,7 @@ public partial class OBPGame : Node3D
             ["mobyInstances"] = r?.MobyInstances ?? 0,
             ["dynamicObjects"] = r?.DynamicObjects ?? 0,
             ["crateDebug"] = GetCrateDebugSnapshot(),
+            ["rac1Gameplay"] = GetRac1GameplaySnapshot(),
             ["player"] = _player is { } pl && IsInstanceValid(pl)
                 ? new { position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z }, onFloor = pl.IsOnFloor() }
                 : null,

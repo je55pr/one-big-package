@@ -60,6 +60,11 @@ public partial class OBPGame
 
     private void ArmCrateDebugHarness(DebugPlayer player)
     {
+        if (_world?.Game != "rac2")
+        {
+            return;
+        }
+
         player.CrateStrikeRequested += OnDebugCrateStrikeRequested;
         if (_args.CrateAutoStrike && _crateDebugTarget is { } target)
         {

@@ -41,6 +41,17 @@ public sealed class Rac1WrenchCombatController
     public const double ToolTipSphereRadius = 0.35d;
     public const double ToolTipInset = 0.085d;
 
+    /// <summary>
+    /// Admit only the recovered Goal 1 live targets. This keeps native damageable-flag
+    /// eligibility in R&amp;C1 rather than asking the Godot host to manufacture it.
+    /// </summary>
+    public Rac1WrenchContactTarget? AdmitGoal1RuntimeTarget(RuntimeDynamicObject source)
+    {
+        if (source.SourceGame != "rac1") return null;
+        if (source.NativeClassId is not (Rac1BoltCrate.NativeClassId or Rac1Class749Hostile.NativeClassId)) return null;
+        return new Rac1WrenchContactTarget(source.NativeClassId, DamageableMobyFlag, IsPlayerSelf: false);
+    }
+
     public bool IsContactActive(int actionId, int profileId, double nativeAge)
     {
         if (!double.IsFinite(nativeAge))

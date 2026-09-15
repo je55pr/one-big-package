@@ -46,6 +46,9 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
     public event Action? CrateStrikeRequested;
 
+    /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host owns contact queries.</summary>
+    public event Action? WrenchAttackRequested;
+
     public Camera3D Camera { get; private set; } = null!;
 
     /// <summary>Presentation-only root; replacing its visual never changes controller physics.</summary>
@@ -156,7 +159,10 @@ public partial class DebugPlayer : CharacterBody3D
             else if (key.Keycode == Key.X)
             {
                 _attackRequested = true;
-                CrateStrikeRequested?.Invoke();
+                if (UseRac1Movement)
+                    WrenchAttackRequested?.Invoke();
+                else
+                    CrateStrikeRequested?.Invoke();
             }
             else if (key.Keycode == Key.F)
             {
@@ -355,7 +361,7 @@ public partial class DebugPlayer : CharacterBody3D
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
             $"last jump: {_lastJump}\n" +
-            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X crate strike / F fly / R respawn / Tab cursor / Esc)";
+            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X attack / F fly / R respawn / Tab cursor / Esc)";
     }
 
     /// <summary>
@@ -433,8 +439,14 @@ public partial class DebugPlayer : CharacterBody3D
         {
             // Veldin's authored start first settles from a higher collision
             // surface. Wait for that contact, then exercise the retail-backed
-            // run -> maximum held jump -> fall -> release path.
+            // run -> ordinary primary attack -> maximum held jump -> fall path.
             float forward = _time is > 4.2 and < 7.2 ? -1f : 0f;
+            if (!_scriptAttacked && _time > 4.7)
+            {
+                _scriptAttacked = true;
+                _attackRequested = true;
+                WrenchAttackRequested?.Invoke();
+            }
             bool jump = _time is > 5.0 and < 5.3;
             return (new Vector2(0f, forward), jump);
         }
