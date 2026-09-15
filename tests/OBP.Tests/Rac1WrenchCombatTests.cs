@@ -30,6 +30,30 @@ public sealed class Rac1WrenchCombatTests
     }
 
     [Theory]
+    [InlineData(1.111041784286499, 0.29766845703125, 0.6013565063476562)]
+    [InlineData(0.3777317404747009, 0.6141510009765625, 0.243621826171875)]
+    public void OrdinaryFirstSwingFacingMatchesRetailLunge(
+        double nativeYaw, double observedDeltaX, double observedDeltaY)
+    {
+        var facing = _controller.ResolveFirstSwingFacing(nativeYaw);
+        double observedLength = Math.Sqrt(
+            (observedDeltaX * observedDeltaX) + (observedDeltaY * observedDeltaY));
+
+        Assert.InRange(Math.Abs(facing.X - (observedDeltaX / observedLength)), 0d, 0.00013d);
+        Assert.InRange(Math.Abs(facing.Y - (observedDeltaY / observedLength)), 0d, 0.00013d);
+        Assert.Equal(0d, facing.Z);
+        Assert.Equal(1d, Math.Sqrt((facing.X * facing.X) + (facing.Y * facing.Y)), 12);
+    }
+
+    [Fact]
+    public void FirstSwingFacingRejectsNonFiniteYaw()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => _controller.ResolveFirstSwingFacing(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => _controller.ResolveFirstSwingFacing(double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => _controller.ResolveFirstSwingFacing(double.NegativeInfinity));
+    }
+
+    [Theory]
     [InlineData("rac1", Rac1BoltCrate.NativeClassId, true)]
     [InlineData("rac1", Rac1Class749Hostile.NativeClassId, true)]
     [InlineData("rac1", 1781, false)]

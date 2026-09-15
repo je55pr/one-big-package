@@ -11,6 +11,8 @@ public enum Rac1WrenchContactPath
 
 public readonly record struct Rac1WrenchPoint(double X, double Y, double Z);
 
+public readonly record struct Rac1WrenchDirection(double X, double Y, double Z);
+
 public readonly record struct Rac1WrenchSphere(Rac1WrenchPoint Center, double Radius);
 
 public readonly record struct Rac1WrenchContactTarget(
@@ -40,6 +42,22 @@ public sealed class Rac1WrenchCombatController
     public const uint NativeDamageFlags = 0x00010000;
     public const double ToolTipSphereRadius = 0.35d;
     public const double ToolTipInset = 0.085d;
+
+    /// <summary>
+    /// Resolve the ordinary first-swing planar attack axis from Ratchet's live native yaw.
+    /// Retail class-0 witnesses show the sequence-23 lunge preserving Moby +0x48 yaw
+    /// while translating along this axis; camera orientation is not an admitted input here.
+    /// </summary>
+    public Rac1WrenchDirection ResolveFirstSwingFacing(double nativePlayerYaw)
+    {
+        if (!double.IsFinite(nativePlayerYaw))
+            throw new ArgumentOutOfRangeException(nameof(nativePlayerYaw));
+
+        return new Rac1WrenchDirection(
+            Math.Cos(nativePlayerYaw),
+            Math.Sin(nativePlayerYaw),
+            0d);
+    }
 
     /// <summary>
     /// Admit only the recovered Goal 1 live targets. This keeps native damageable-flag
