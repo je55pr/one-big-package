@@ -60,6 +60,7 @@ public static class Rac1BombGlove
 public sealed class Rac1BombGloveSession
 {
     private readonly HashSet<long> _launchedProjectileIds = [];
+    private readonly Rac1WeaponInventory? _inventory;
     private int _ammo;
     private int _fireCooldownTicksRemaining;
     private int _projectileRearmTicksRemaining;
@@ -70,7 +71,25 @@ public sealed class Rac1BombGloveSession
     {
         if (initialAmmo is < 0 or > Rac1BombGlove.MaxAmmo) throw new ArgumentOutOfRangeException(nameof(initialAmmo));
         _ammo = initialAmmo;
-        if (_ammo > 0) _prearmedProjectile = CreateProjectile();
+        if (CurrentAmmo > 0) _prearmedProjectile = CreateProjectile();
+    }
+
+    /// <summary>
+    /// Bind Bomb Glove fire accounting to the RAC1 inventory that owns item 10.
+    /// This keeps one authoritative ammo counter when the live host composes the
+    /// recovered selection and projectile slices.
+    /// </summary>
+    public Rac1BombGloveSession(Rac1WeaponInventory inventory)
+    {
+        ArgumentNullException.ThrowIfNull(inventory);
+        if (!inventory.Owns(Rac1WeaponId.FirstRanged))
+            throw new ArgumentException("Bomb Glove item 10 must be owned by the supplied RAC1 inventory.", nameof(inventory));
+        if (inventory.FirstRangedAmmo > Rac1BombGlove.MaxAmmo)
+            throw new ArgumentOutOfRangeException(nameof(inventory),
+                $"Bomb Glove ammo cannot exceed recovered capacity {Rac1BombGlove.MaxAmmo}.");
+
+        _inventory = inventory;
+        if (CurrentAmmo > 0) _prearmedProjectile = CreateProjectile();
     }
 
     public Rac1BombGloveProbe Probe() => Snapshot();
@@ -81,7 +100,7 @@ public sealed class Rac1BombGloveSession
         if (_projectileRearmTicksRemaining > 0) _projectileRearmTicksRemaining--;
 
         if (_prearmedProjectile is null &&
-            _ammo > 0 &&
+            CurrentAmmo > 0 &&
             _projectileRearmTicksRemaining == 0)
         {
             _prearmedProjectile = CreateProjectile();
@@ -91,10 +110,11 @@ public sealed class Rac1BombGloveSession
         if (fireRequested &&
             _fireCooldownTicksRemaining == 0 &&
             _prearmedProjectile is { } projectile &&
-            _ammo >= Rac1BombGlove.AmmoCostPerShot)
+            CurrentAmmo >= Rac1BombGlove.AmmoCostPerShot &&
+            TryConsumeRound())
         {
-            int ammoBefore = _ammo;
-            _ammo -= Rac1BombGlove.AmmoCostPerShot;
+            int ammoAfter = CurrentAmmo;
+            int ammoBefore = ammoAfter + Rac1BombGlove.AmmoCostPerShot;
             _prearmedProjectile = null;
             _projectileRearmTicksRemaining = Rac1BombGlove.ProjectileRearmTicks;
             _fireCooldownTicksRemaining = Rac1BombGlove.FireCooldownTicks;
@@ -102,7 +122,7 @@ public sealed class Rac1BombGloveSession
             shot = new Rac1BombGloveShot(
                 projectile,
                 ammoBefore,
-                _ammo,
+                ammoAfter,
                 Rac1BombGlove.FireCooldownTicks,
                 Rac1BombGlove.ProjectileRearmTicks);
         }
@@ -126,6 +146,21 @@ public sealed class Rac1BombGloveSession
             Rac1BombGlove.NativeDamageFlags);
     }
 
+    private int CurrentAmmo => _inventory?.FirstRangedAmmo ?? _ammo;
+
+    private bool TryConsumeRound()
+    {
+        if (_inventory is not null)
+        {
+            return _inventory.Equipped == Rac1WeaponId.FirstRanged &&
+                   _inventory.TryUseEquipped();
+        }
+
+        if (_ammo < Rac1BombGlove.AmmoCostPerShot) return false;
+        _ammo -= Rac1BombGlove.AmmoCostPerShot;
+        return true;
+    }
+
     private Rac1BombGloveProjectile CreateProjectile() =>
         new(
             _nextProjectileId++,
@@ -135,7 +170,7 @@ public sealed class Rac1BombGloveSession
 
     private Rac1BombGloveProbe Snapshot(Rac1BombGloveShot? shot = null) =>
         new(
-            _ammo,
+            CurrentAmmo,
             _fireCooldownTicksRemaining,
             _projectileRearmTicksRemaining,
             _prearmedProjectile,
