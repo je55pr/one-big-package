@@ -196,6 +196,50 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Contains(terminal.NativeState, new[] { 0xfd, 0xfe });
         Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
     }
+    [Fact]
+    public void LiveHostCompositionKeepsRac1GameplayStateAuthoritative()
+    {
+        var inventory = new Rac1WeaponInventory(
+            ownsFirstRanged: true,
+            equipped: Rac1WeaponId.Wrench,
+            firstRangedAmmo: 6);
+        var bombGlove = new Rac1BombGloveSession(inventory);
+
+        Assert.Null(bombGlove.Step(fireRequested: true).Shot);
+        Assert.Equal(6, inventory.FirstRangedAmmo);
+        Assert.True(inventory.TryEquip(Rac1WeaponId.FirstRanged));
+        var shot = Assert.IsType<Rac1BombGloveShot>(bombGlove.Step(fireRequested: true).Shot);
+        Assert.Equal(5, inventory.FirstRangedAmmo);
+        Assert.Equal(inventory.FirstRangedAmmo, bombGlove.Probe().Ammo);
+
+        var hostile = Class749(instanceIndex: 149, health: 1f);
+        var hostiles = new Rac1Class749HostileSession();
+        var hostileProbe = hostiles.RegisterRepresentative(hostile, RuntimeEntityState.FromAuthored(hostile));
+        var bombDamage = Assert.IsType<Rac1BombGloveDamageResult>(
+            bombGlove.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, hostileProbe.NativeState));
+        hostileProbe = hostiles.ApplyBombGloveDamage(hostile, bombDamage);
+        Assert.Equal(0f, hostileProbe.Health);
+        hostileProbe = hostiles.ApplyTerminalStatus(hostile, Rac1Class749Hostile.TerminalNativeStateFd);
+        Assert.Equal(RuntimeEntityPresence.Inactive, hostileProbe.EntityState.Presentation.Presence);
+
+        var nanotech = new Rac1RatchetNanotechSession();
+        var afterHit = nanotech.ApplyClass749Attack(
+            new Rac1Class749AttackEvent(Rac1Class749Hostile.AttackMarker, Rac1Class749Hostile.AttackDamage));
+        Assert.Equal(3, afterHit.Nanotech);
+        Assert.False(afterHit.IsDead);
+
+        var dead = nanotech.ApplyEnvironmentalDeathReset();
+        Assert.Equal(0, dead.Nanotech);
+        Assert.True(dead.IsDead);
+        var respawned = nanotech.Respawn();
+        Assert.Equal(4, respawned.Nanotech);
+        Assert.False(respawned.IsDead);
+
+        var facing = new Rac1WrenchCombatController().ResolveFirstSwingFacing(0.6627015d);
+        Assert.Equal(Math.Cos(0.6627015d), facing.X, 12);
+        Assert.Equal(Math.Sin(0.6627015d), facing.Y, 12);
+    }
+
     private static RuntimeWorld CreateRepresentativeVeldinWorld()
     {
         var ship = new RuntimeSpawn(20d, 20d, 20d, 0d);

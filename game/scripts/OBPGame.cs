@@ -720,6 +720,7 @@ public partial class OBPGame : Node3D
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
             UseRac1Movement = world.Game == "rac1",
+            Rac1NativeYaw = world.Game == "rac1" ? -yaw : 0d,
             Position = spawn,
         };
         _playerRoot.AddChild(player);

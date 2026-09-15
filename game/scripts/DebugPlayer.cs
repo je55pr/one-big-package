@@ -1,4 +1,5 @@
 using Godot;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
@@ -46,8 +47,14 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
     public event Action? CrateStrikeRequested;
 
-    /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host owns contact queries.</summary>
-    public event Action? WrenchAttackRequested;
+    /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host resolves the equipped item.</summary>
+    public event Action? Rac1PrimaryAttackRequested;
+
+    /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
+    public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
+
+    /// <summary>Development host seam for the witnessed Veldin death/reset then respawn boundary.</summary>
+    public event Action? Rac1RespawnRequested;
 
     public Camera3D Camera { get; private set; } = null!;
 
@@ -56,6 +63,15 @@ public partial class DebugPlayer : CharacterBody3D
 
     /// <summary>Current engine-neutral presentation state, exposed for deterministic inspection.</summary>
     public PlayerAnimationState AnimationState => _animationStateMachine.State;
+
+    /// <summary>
+    /// Current R&amp;C1 native-space player yaw supplied to recovered combat-facing rules.
+    /// The host updates its target from planar travel; exact retail turn easing remains unresolved.
+    /// </summary>
+    public double Rac1NativeYaw { get; set; }
+
+    /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
+    public bool Rac1GameplayAlive { get; set; } = true;
 
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
@@ -158,11 +174,22 @@ public partial class DebugPlayer : CharacterBody3D
             }
             else if (key.Keycode == Key.X)
             {
-                _attackRequested = true;
-                if (UseRac1Movement)
-                    WrenchAttackRequested?.Invoke();
-                else
-                    CrateStrikeRequested?.Invoke();
+                if (!UseRac1Movement || Rac1GameplayAlive)
+                {
+                    _attackRequested = true;
+                    if (UseRac1Movement)
+                        Rac1PrimaryAttackRequested?.Invoke();
+                    else
+                        CrateStrikeRequested?.Invoke();
+                }
+            }
+            else if (UseRac1Movement && key.Keycode == Key.Key1)
+            {
+                Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.Wrench);
+            }
+            else if (UseRac1Movement && key.Keycode == Key.Key2)
+            {
+                Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.FirstRanged);
             }
             else if (key.Keycode == Key.F)
             {
@@ -175,13 +202,10 @@ public partial class DebugPlayer : CharacterBody3D
             }
             else if (key.Keycode == Key.R)
             {
-                GlobalPosition = _spawn;
-                Velocity = Vector3.Zero;
-                _rac1Movement.Reset();
-                _rac1JumpWasHeld = false;
-                ResetAnimationState();
-                _placed = false;
-                _placeTries = 0;
+                if (UseRac1Movement)
+                    Rac1RespawnRequested?.Invoke();
+                else
+                    ResetToSpawn();
             }
         }
     }
@@ -214,9 +238,17 @@ public partial class DebugPlayer : CharacterBody3D
 
         var (move, jump) = Scripted ? ScriptedInput() : LiveInput();
         bool crouch = UseRac1Movement && !Scripted && Input.IsPhysicalKeyPressed(Key.C);
+        if (UseRac1Movement && !Rac1GameplayAlive)
+        {
+            move = Vector2.Zero;
+            jump = false;
+            crouch = false;
+        }
         Vector3 wish = _yaw.GlobalTransform.Basis * new Vector3(move.X, 0f, move.Y);
         wish.Y = 0f;
         wish = wish.LengthSquared() > 1e-4f ? wish.Normalized() : Vector3.Zero;
+        if (UseRac1Movement && wish.LengthSquared() > 1e-4f)
+            SetRac1FacingFromSceneDirection(wish);
 
         if (UseRac1Movement)
             StepRac1Movement(wish, jump, crouch);
@@ -241,6 +273,37 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         UpdateHud(isOnFloor);
+    }
+
+    private void SetRac1FacingFromSceneDirection(Vector3 sceneDirection)
+    {
+        // Runtime/Godot presentation mirrors OBP X. Convert the host movement target
+        // back to native planar X/Y before feeding the recovered player-yaw seam.
+        double nativeX = -sceneDirection.X;
+        double nativeY = sceneDirection.Z;
+        Rac1NativeYaw = Math.Atan2(nativeY, nativeX);
+        UpdateRac1FacingPresentation();
+    }
+
+    private void UpdateRac1FacingPresentation()
+    {
+        if (!UseRac1Movement || VisualRoot is null) return;
+        // Presentation snaps to the recovered travel-aligned yaw target. Retail's
+        // exact easing recurrence is intentionally not fabricated here.
+        float sceneYaw = (float)-Rac1NativeYaw;
+        VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
+    }
+
+    public void ResetToSpawn()
+    {
+        GlobalPosition = _spawn;
+        Velocity = Vector3.Zero;
+        _rac1Movement.Reset();
+        _rac1JumpWasHeld = false;
+        Rac1GameplayAlive = true;
+        ResetAnimationState();
+        _placed = false;
+        _placeTries = 0;
     }
 
     private void StepDebugMovement(Vector3 wish, bool jump, float delta)
@@ -361,7 +424,7 @@ public partial class DebugPlayer : CharacterBody3D
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
             $"last jump: {_lastJump}\n" +
-            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X attack / F fly / R respawn / Tab cursor / Esc)";
+            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X attack / 1 wrench / 2 Bomb Glove / F fly / R Veldin death/respawn / Tab cursor / Esc)";
     }
 
     /// <summary>
@@ -445,7 +508,7 @@ public partial class DebugPlayer : CharacterBody3D
             {
                 _scriptAttacked = true;
                 _attackRequested = true;
-                WrenchAttackRequested?.Invoke();
+                Rac1PrimaryAttackRequested?.Invoke();
             }
             bool jump = _time is > 5.0 and < 5.3;
             return (new Vector2(0f, forward), jump);

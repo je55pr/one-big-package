@@ -20,30 +20,48 @@ public partial class OBPGame
     private const float Rac1DirectContactRadius = 1.25f;
     private const float Rac1CrateOriginPadding = 1.0f;
     private const float Rac1PickupCollectRadius = 1.4f;
+    // Host-only projectile travel/contact visualization. Retail trajectory equations remain unresolved.
+    private const float Rac1BombPresentationSpeed = 18f;
+    private const float Rac1BombPresentationLifetime = 2f;
+    private const float Rac1BombHostileContactRadius = 0.9f;
 
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
     private Rac1BoltCrateSession _rac1BoltCrates = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
+    private Rac1RatchetNanotechSession _rac1Nanotech = new();
+    private Rac1WeaponInventory _rac1Weapons = new(ownsFirstRanged: true, firstRangedAmmo: 6);
+    private Rac1BombGloveSession? _rac1BombGlove;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
+    private readonly Dictionary<long, Rac1HostedProjectile> _rac1Projectiles = [];
     private RuntimeWorldScene.DynamicObjectNode? _rac1HostileNode;
     private Rac1Class749HostProbe? _rac1HostileProbe;
     private bool _rac1SwingActive;
     private bool _rac1SwingResolved;
+    private bool _rac1BombFireRequested;
     private double _rac1SwingAge;
+    private double _rac1BombTickAccumulator;
     private string _rac1CombatStatus = "off";
 
     private void ResetRac1Gameplay()
     {
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
+        foreach (var projectile in _rac1Projectiles.Values)
+            if (IsInstanceValid(projectile.Node)) projectile.Node.QueueFree();
+        _rac1Projectiles.Clear();
         _rac1BoltCrates = new Rac1BoltCrateSession();
         _rac1Hostiles = new Rac1Class749HostileSession();
+        _rac1Nanotech = new Rac1RatchetNanotechSession();
+        _rac1Weapons = new Rac1WeaponInventory(ownsFirstRanged: true, firstRangedAmmo: 6);
+        _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
         _rac1HostileNode = null;
         _rac1HostileProbe = null;
         _rac1SwingActive = false;
         _rac1SwingResolved = false;
+        _rac1BombFireRequested = false;
         _rac1SwingAge = 0d;
+        _rac1BombTickAccumulator = 0d;
         _rac1CombatStatus = "off";
     }
 
@@ -143,13 +161,23 @@ public partial class OBPGame
 
     private void ArmRac1Gameplay(DebugPlayer player)
     {
-        if (_world?.Game == "rac1")
-        {
-            player.WrenchAttackRequested += OnRac1WrenchAttackRequested;
-        }
+        if (_world?.Game != "rac1") return;
+        player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
+        player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
+        player.Rac1RespawnRequested += OnRac1RespawnRequested;
+        player.Rac1GameplayAlive = !_rac1Nanotech.Probe().IsDead;
     }
-    private void OnRac1WrenchAttackRequested()
+
+    private void OnRac1PrimaryAttackRequested()
     {
+        if (_rac1Nanotech.Probe().IsDead) return;
+        if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged)
+        {
+            _rac1BombFireRequested = true;
+            _rac1CombatStatus = "Bomb Glove fire requested";
+            return;
+        }
+
         _rac1SwingActive = true;
         _rac1SwingResolved = false;
         _rac1SwingAge = 0d;
@@ -157,14 +185,42 @@ public partial class OBPGame
         GD.Print("[rac1-gameplay] primary attack -> ordinary wrench swing");
     }
 
-    private void TickRac1Gameplay(double delta)
+    private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
     {
-        if (_world?.Game != "rac1" || _player is null || !IsInstanceValid(_player))
+        if (_rac1Weapons.TryEquip(weapon))
         {
+            _rac1CombatStatus = weapon == Rac1WeaponId.Wrench ? "equipped wrench" : "equipped Bomb Glove item 10";
+            GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+        }
+    }
+
+    private void OnRac1RespawnRequested()
+    {
+        if (_player is null) return;
+        if (!_rac1Nanotech.Probe().IsDead)
+        {
+            // Development input exposes the recovered Veldin environmental reset boundary;
+            // it is not a claim about a retail controller mapping or arbitrary combat suicide.
+            var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
+            _player.Rac1GameplayAlive = false;
+            _rac1CombatStatus = $"Veldin reset witness: Nanotech {dead.Nanotech}, press R to respawn";
             return;
         }
 
+        var respawn = _rac1Nanotech.Respawn();
+        _player.ResetToSpawn();
+        _player.Rac1GameplayAlive = true;
+        _rac1CombatStatus = $"Veldin respawn: Nanotech {respawn.Nanotech}";
+        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+    }
+
+    private void TickRac1Gameplay(double delta)
+    {
+        if (_world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
+
         TickRac1Swing(delta);
+        TickRac1BombGlove(delta);
+        TickRac1Projectiles(delta);
         TickRac1Hostile();
         TickRac1Pickups();
     }
@@ -199,17 +255,11 @@ public partial class OBPGame
 
     private void ResolveRac1WrenchContact(double nativeAge)
     {
-        if (_player?.Camera is not { } camera)
-        {
-            return;
-        }
+        if (_player is null) return;
 
-        Vector3 forward = -camera.GlobalTransform.Basis.Z;
-        forward.Y = 0f;
-        if (forward.LengthSquared() <= 1e-5f)
-        {
-            return;
-        }
+        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1NativeYaw);
+        Vector3 forward = new(-(float)facing.X, 0f, (float)facing.Y);
+        if (forward.LengthSquared() <= 1e-5f) return;
         forward = forward.Normalized();
         Vector3 root = _player.GlobalPosition + Vector3.Up * 1.0f;
         Vector3 tip = root + forward * Rac1WrenchReach;
@@ -325,10 +375,104 @@ public partial class OBPGame
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
     }
+    private void TickRac1BombGlove(double delta)
+    {
+        if (_rac1BombGlove is null || _rac1Nanotech.Probe().IsDead) return;
+        _rac1BombTickAccumulator += Math.Max(0d, delta) * Rac1NativeTicksPerSecond;
+        while (_rac1BombTickAccumulator >= 1d)
+        {
+            bool fire = _rac1BombFireRequested;
+            var probe = _rac1BombGlove.Step(fire);
+            if (fire) _rac1BombFireRequested = false;
+            _rac1BombTickAccumulator -= 1d;
+            if (probe.Shot is { } shot)
+            {
+                SpawnRac1BombProjectile(shot);
+                _rac1CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
+                GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+            }
+        }
+    }
+
+    private void SpawnRac1BombProjectile(Rac1BombGloveShot shot)
+    {
+        if (_sceneResult is null || _player is null) return;
+        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1NativeYaw);
+        Vector3 direction = new(-(float)facing.X, 0f, (float)facing.Y);
+        if (direction.LengthSquared() <= 1e-5f) return;
+        direction = direction.Normalized();
+
+        var node = new Node3D { Name = $"rac1_bomb_projectile_{shot.Projectile.ProjectileId}" };
+        node.AddChild(new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = 0.22f, Height = 0.44f },
+            MaterialOverride = new StandardMaterial3D
+            {
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+                AlbedoColor = new Color(1f, 0.48f, 0.08f),
+            },
+        });
+        _sceneResult.Root.AddChild(node);
+        node.GlobalPosition = _player.GlobalPosition + Vector3.Up * 1.1f + direction * 0.8f;
+        _rac1Projectiles.Add(shot.Projectile.ProjectileId, new Rac1HostedProjectile(node, direction));
+    }
+
+    private void TickRac1Projectiles(double delta)
+    {
+        if (_rac1BombGlove is null || _rac1Projectiles.Count == 0) return;
+        foreach (var pair in _rac1Projectiles.ToArray())
+        {
+            var projectile = pair.Value;
+            if (!IsInstanceValid(projectile.Node))
+            {
+                _rac1Projectiles.Remove(pair.Key);
+                continue;
+            }
+
+            Vector3 start = projectile.Node.GlobalPosition;
+            Vector3 end = start + projectile.Direction * Rac1BombPresentationSpeed * (float)Math.Max(0d, delta);
+            projectile.Node.GlobalPosition = end;
+            projectile.Age += (float)Math.Max(0d, delta);
+
+            bool impacted = false;
+            if (_rac1HostileNode is { } hostile && _rac1HostileProbe is not null &&
+                IsInstanceValid(hostile.Root) && hostile.Root.Visible)
+            {
+                Vector3 segment = end - start;
+                Vector3 target = hostile.Root.GlobalPosition + Vector3.Up * 0.5f;
+                float t = segment.LengthSquared() <= 1e-6f
+                    ? 0f
+                    : Mathf.Clamp((target - start).Dot(segment) / segment.LengthSquared(), 0f, 1f);
+                if (target.DistanceTo(start + segment * t) <= Rac1BombHostileContactRadius)
+                {
+                    var damage = _rac1BombGlove.ResolveGoal1Impact(
+                        pair.Key, hostile.Source, _rac1HostileProbe.NativeState);
+                    if (damage is not null)
+                    {
+                        _rac1HostileProbe = _rac1Hostiles.ApplyBombGloveDamage(hostile.Source, damage);
+                        _rac1HostileProbe = _rac1Hostiles.ApplyTerminalStatus(
+                            hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
+                        hostile.ApplyState(_rac1HostileProbe.EntityState);
+                        _rac1CombatStatus = $"Bomb Glove hit class-749 i{hostile.Source.InstanceIndex}: terminal 0xfd";
+                        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+                        impacted = true;
+                    }
+                }
+            }
+
+            if (impacted || projectile.Age >= Rac1BombPresentationLifetime)
+            {
+                projectile.Node.QueueFree();
+                _rac1Projectiles.Remove(pair.Key);
+            }
+        }
+    }
+
     private void TickRac1Hostile()
     {
         if (_rac1HostileNode is not { } hostile || _rac1HostileProbe is null ||
-            _player is null || !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
+            _player is null || _rac1Nanotech.Probe().IsDead ||
+            !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
         {
             return;
         }
@@ -359,8 +503,12 @@ public partial class OBPGame
         }
         if (next.Attack is { } attack)
         {
-            GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}");
-            _rac1CombatStatus = $"hostile attack emitted ({attack.NativeDamage:0.###} native damage)";
+            var nanotech = _rac1Nanotech.ApplyClass749Attack(attack);
+            _player.Rac1GameplayAlive = !nanotech.IsDead;
+            GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
+            _rac1CombatStatus = nanotech.IsDead
+                ? "Nanotech 0: Ratchet dead; press R for Veldin respawn"
+                : $"class-749 hit: Nanotech {nanotech.Nanotech}/{nanotech.RespawnNanotech}";
         }
         _rac1HostileProbe = next;
     }
@@ -435,7 +583,11 @@ public partial class OBPGame
         string hostile = _rac1HostileProbe is null
             ? "class-749 unavailable"
             : $"class-749 i{Rac1RepresentativeHostileInstance} state {_rac1HostileProbe.NativeState} health {_rac1HostileProbe.Health:0.###}";
-        return $"R&C1 combat: X wrench · {_rac1CombatStatus}\n" +
+        var nanotech = _rac1Nanotech.Probe();
+        string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
+        return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · R Veldin death/respawn witness · {_rac1CombatStatus}\n" +
+            $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
+            $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
             $"Bolts collected: {_rac1BoltCrates.CollectedBolts}   pickups: {_rac1PickupNodes.Count}   {hostile}";
     }
 
@@ -451,6 +603,11 @@ public partial class OBPGame
             HostileState: _rac1HostileProbe?.NativeState,
             HostileHealth: _rac1HostileProbe?.Health,
             HostileVisible: _rac1HostileNode is { } hostile && IsInstanceValid(hostile.Root) && hostile.Root.Visible,
+            Nanotech: _rac1Nanotech.Probe().Nanotech,
+            LifeState: _rac1Nanotech.Probe().LifeState,
+            EquippedWeapon: _rac1Weapons.Equipped,
+            BombGloveAmmo: _rac1Weapons.FirstRangedAmmo,
+            HostedProjectiles: _rac1Projectiles.Count,
             Status: _rac1CombatStatus);
     }
 
@@ -463,5 +620,17 @@ public partial class OBPGame
         int? HostileState,
         float? HostileHealth,
         bool HostileVisible,
+        int Nanotech,
+        Rac1RatchetLifeState LifeState,
+        Rac1WeaponId EquippedWeapon,
+        int BombGloveAmmo,
+        int HostedProjectiles,
         string Status);
+
+    private sealed class Rac1HostedProjectile(Node3D node, Vector3 direction)
+    {
+        public Node3D Node { get; } = node;
+        public Vector3 Direction { get; } = direction;
+        public float Age { get; set; }
+    }
 }
