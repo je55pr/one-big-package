@@ -76,6 +76,9 @@ public sealed record CommandLineArgs
     /// <summary>Debug harness: feed one qualifying native break event to the focused/first class-500 crate.</summary>
     public bool CrateAutoStrike { get; init; }
 
+    /// <summary>Run the deterministic retail-backed R&amp;C1 live combat-loop smoke and quit.</summary>
+    public bool Rac1CombatSmoke { get; init; }
+
     /// <summary>Boot the multi-world composition / fusion lab. Optional value = a saved composition JSON to load on start.</summary>
     public bool Compose { get; init; }
 
@@ -128,6 +131,7 @@ public sealed record CommandLineArgs
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
+                "--rac1-combat-smoke" => result with { Rac1CombatSmoke = true },
                 "--compose" => result with { Compose = true },
                 "--composition" => result with { Compose = true, CompositionPath = Next() },
                 "--composition-view" => result with { CompositionView = Next() },

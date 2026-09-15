@@ -207,6 +207,11 @@ public partial class OBPGame
         _loadSummary = $"✓ {destination.DisplayName} · {result.MeshInstances} meshes / {result.Triangles:N0} tris / {result.CollisionBodies} colliders";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches})");
 
+        if (_args.Rac1CombatSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
+        {
+            _ = RunRac1CombatSmokeAsync();
+        }
+
         // Exact verification remains game-specific today. Preserve the mature GC
         // opt-in while avoiding an implicit multi-GB hash for other providers.
         if (_args.VerifyHash && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2)
