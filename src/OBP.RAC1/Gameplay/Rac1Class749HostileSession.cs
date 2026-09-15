@@ -86,15 +86,36 @@ public sealed class Rac1Class749HostileSession
             throw new NotSupportedException(
                 "Only the recovered ordinary forward wrench damage result is admitted for class 749.");
 
+        return ApplyRepresentativeDamage(source, damage.NativeDamage, "wrench");
+    }
+
+    public Rac1Class749HostProbe ApplyBombGloveDamage(
+        RuntimeDynamicObject source,
+        Rac1BombGloveDamageResult damage)
+    {
+        if (damage.TargetNativeClassId != Rac1Class749Hostile.NativeClassId ||
+            damage.NativeDamage != Rac1BombGlove.NativeDamage ||
+            damage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
+            throw new NotSupportedException(
+                "Only the recovered Bomb Glove impact record is admitted for class 749.");
+
+        return ApplyRepresentativeDamage(source, damage.NativeDamage, "Bomb Glove");
+    }
+
+    private Rac1Class749HostProbe ApplyRepresentativeDamage(
+        RuntimeDynamicObject source,
+        double nativeDamage,
+        string sourceLabel)
+    {
         var (key, entry) = RequireEntry(source);
         float healthBefore = Rac1Class749Hostile.ReadHealth(entry.PVar);
         if (healthBefore != 1f)
             throw new NotSupportedException(
-                $"R&C1 class-749 wrench consequence is proven only for representative health 1.0, not {healthBefore}.");
+                $"R&C1 class-749 {sourceLabel} consequence is proven only for representative health 1.0, not {healthBefore}.");
 
-        float healthAfter = healthBefore - checked((float)damage.NativeDamage);
+        float healthAfter = healthBefore - checked((float)nativeDamage);
         if (healthAfter != 0f)
-            throw new InvalidOperationException("Representative class-749 wrench damage did not produce health 0.0.");
+            throw new InvalidOperationException("Representative class-749 damage did not produce health 0.0.");
         Rac1Class749Hostile.WriteHealth(entry.PVar, healthAfter);
         entry.NativeState = Rac1Class749Hostile.DamageNativeState;
         entry.NativeSequence = null;
