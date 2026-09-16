@@ -64,11 +64,25 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Current engine-neutral presentation state, exposed for deterministic inspection.</summary>
     public PlayerAnimationState AnimationState => _animationStateMachine.State;
 
-    /// <summary>
-    /// Current R&amp;C1 native-space player yaw supplied to recovered combat-facing rules.
-    /// The host updates its target from planar travel; exact retail turn easing remains unresolved.
-    /// </summary>
-    public double Rac1NativeYaw { get; set; }
+    /// <summary>Current R&amp;C1 native-space control/view yaw.</summary>
+    public double Rac1ControlYaw => _rac1Yaw.ControlYaw;
+
+    /// <summary>Current ordinary-movement yaw target after control-relative input mapping.</summary>
+    public double Rac1MovementTargetYaw => _rac1Yaw.TargetYaw;
+
+    /// <summary>Live native player yaw; combat facing reads this rather than camera/control yaw.</summary>
+    public double Rac1CurrentYaw
+    {
+        get => _rac1Yaw.CurrentYaw;
+        set
+        {
+            _rac1Yaw.Reset(value);
+            UpdateRac1FacingPresentation();
+        }
+    }
+
+    /// <summary>Live native yaw recurrence velocity in radians per update.</summary>
+    public double Rac1YawVelocity => _rac1Yaw.YawVelocity;
 
     /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
     public bool Rac1GameplayAlive { get; set; } = true;
@@ -90,6 +104,7 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _attackRequested;
     private bool _scriptAttacked;
     private readonly Rac1RatchetMovementController _rac1Movement = new();
+    private readonly Rac1RatchetYawController _rac1Yaw = new();
     private bool _rac1JumpWasHeld;
     private bool _rac1HitCeiling;
 
@@ -247,11 +262,9 @@ public partial class DebugPlayer : CharacterBody3D
         Vector3 wish = _yaw.GlobalTransform.Basis * new Vector3(move.X, 0f, move.Y);
         wish.Y = 0f;
         wish = wish.LengthSquared() > 1e-4f ? wish.Normalized() : Vector3.Zero;
-        if (UseRac1Movement && wish.LengthSquared() > 1e-4f)
-            SetRac1FacingFromSceneDirection(wish);
 
         if (UseRac1Movement)
-            StepRac1Movement(wish, jump, crouch);
+            StepRac1Movement(move, wish, jump, crouch);
         else
             StepDebugMovement(wish, jump, (float)delta);
 
@@ -275,22 +288,22 @@ public partial class DebugPlayer : CharacterBody3D
         UpdateHud(isOnFloor);
     }
 
-    private void SetRac1FacingFromSceneDirection(Vector3 sceneDirection)
+    private double GetRac1ControlYaw()
     {
-        // Runtime/Godot presentation mirrors OBP X. Convert the host movement target
-        // back to native planar X/Y before feeding the recovered player-yaw seam.
-        double nativeX = -sceneDirection.X;
-        double nativeY = sceneDirection.Z;
-        Rac1NativeYaw = Math.Atan2(nativeY, nativeX);
-        UpdateRac1FacingPresentation();
+        // The host owns camera transforms, but RAC1 owns the native control-relative
+        // target construction. Recover control yaw from the camera pivot's planar forward.
+        Vector3 sceneForward = _yaw.GlobalTransform.Basis * new Vector3(0f, 0f, -1f);
+        sceneForward.Y = 0f;
+        if (sceneForward.LengthSquared() <= 1e-8f) return _rac1Yaw.ControlYaw;
+        sceneForward = sceneForward.Normalized();
+        double nativeForwardYaw = Math.Atan2(sceneForward.Z, -sceneForward.X);
+        return Rac1RatchetYawController.WrapPi(nativeForwardYaw + (Math.PI / 2d));
     }
 
     private void UpdateRac1FacingPresentation()
     {
         if (!UseRac1Movement || VisualRoot is null) return;
-        // Presentation snaps to the recovered travel-aligned yaw target. Retail's
-        // exact easing recurrence is intentionally not fabricated here.
-        float sceneYaw = (float)-Rac1NativeYaw;
+        float sceneYaw = (float)-_rac1Yaw.CurrentYaw;
         VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
     }
 
@@ -299,8 +312,10 @@ public partial class DebugPlayer : CharacterBody3D
         GlobalPosition = _spawn;
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
+        _rac1Yaw.Reset(_rac1Yaw.CurrentYaw);
         _rac1JumpWasHeld = false;
         Rac1GameplayAlive = true;
+        UpdateRac1FacingPresentation();
         ResetAnimationState();
         _placed = false;
         _placeTries = 0;
@@ -329,13 +344,17 @@ public partial class DebugPlayer : CharacterBody3D
         Velocity = velocity;
     }
 
-    private void StepRac1Movement(Vector3 wish, bool jump, bool crouch)
+    private void StepRac1Movement(Vector2 move, Vector3 wish, bool jump, bool crouch)
     {
+        bool grounded = IsOnFloor();
+        _rac1Yaw.Step(move.X, -move.Y, GetRac1ControlYaw(), grounded);
+        UpdateRac1FacingPresentation();
+
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
         var step = _rac1Movement.Step(
             new PlayerControlIntent(wish.X, wish.Z, jump, jumpPressed, crouch),
-            new PlayerContactFacts(IsOnFloor(), IsOnCeiling()));
+            new PlayerContactFacts(grounded, IsOnCeiling()));
 
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(
