@@ -153,6 +153,6 @@ public partial class OBPGame
         sceneDirection = sceneDirection.Normalized();
         _player.GlobalPosition = position;
         _player.Velocity = Vector3.Zero;
-        _player.Rac1NativeYaw = Math.Atan2(sceneDirection.Z, -sceneDirection.X);
+        _player.Rac1CurrentYaw = Math.Atan2(sceneDirection.Z, -sceneDirection.X);
     }
 }

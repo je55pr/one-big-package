@@ -292,7 +292,7 @@ public partial class OBPGame
     {
         if (_player is null) return;
 
-        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1NativeYaw);
+        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1CurrentYaw);
         Vector3 forward = new(-(float)facing.X, 0f, (float)facing.Y);
         if (forward.LengthSquared() <= 1e-5f) return;
         forward = forward.Normalized();
@@ -432,7 +432,7 @@ public partial class OBPGame
     private void SpawnRac1BombProjectile(Rac1BombGloveShot shot)
     {
         if (_sceneResult is null || _player is null) return;
-        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1NativeYaw);
+        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1CurrentYaw);
         Vector3 direction = new(-(float)facing.X, 0f, (float)facing.Y);
         if (direction.LengthSquared() <= 1e-5f) return;
         direction = direction.Normalized();
