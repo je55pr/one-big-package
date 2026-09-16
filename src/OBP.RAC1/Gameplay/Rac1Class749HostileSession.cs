@@ -37,39 +37,62 @@ public sealed class Rac1Class749HostileSession
 
     public Rac1Class749HostProbe Step(
         RuntimeDynamicObject source,
-        Rac1Class749TargetFacts target,
-        double nativeAnimationMarker)
+        Rac1Class749TargetFacts target)
     {
         ValidateTargetFacts(target);
-        if (!double.IsFinite(nativeAnimationMarker))
-            throw new ArgumentOutOfRangeException(nameof(nativeAnimationMarker));
 
         var (key, entry) = RequireEntry(source);
+        int statusSentinel = target.StatusSentinel ?? Rac1Class749Hostile.ReadStatusSentinel(entry.PVar);
         Rac1Class749AttackEvent? attack = null;
-        if (entry.NativeState == Rac1Class749Hostile.TargetSearchNativeState)
+
+        switch (entry.NativeState)
         {
-            if (target.TargetAcquired)
-                entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
-        }
-        else if (entry.NativeState == Rac1Class749Hostile.TargetedNativeState)
-        {
-            if (target.TargetAcquired &&
-                target.Distance < Rac1Class749Hostile.AttackDistanceExclusive &&
-                target.FacingError < Rac1Class749Hostile.AttackFacingErrorExclusive)
-            {
-                entry.NativeState = Rac1Class749Hostile.AttackNativeState;
-                entry.NativeSequence = Rac1Class749Hostile.AttackSequenceId;
-                entry.AttackEmitted = false;
-            }
-        }
-        else if (entry.NativeState == Rac1Class749Hostile.AttackNativeState &&
-                 !entry.AttackEmitted &&
-                 nativeAnimationMarker == Rac1Class749Hostile.AttackMarker)
-        {
-            attack = new Rac1Class749AttackEvent(
-                Rac1Class749Hostile.AttackMarker,
-                Rac1Class749Hostile.AttackDamage);
-            entry.AttackEmitted = true;
+            case Rac1Class749Hostile.TargetSearchNativeState:
+                if (statusSentinel != Rac1Class749Hostile.StatusSentinelTwo)
+                    entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
+                break;
+
+            case Rac1Class749Hostile.TargetedNativeState:
+                if (target.Distance < Rac1Class749Hostile.AttackDistanceExclusive &&
+                    target.FacingError < Rac1Class749Hostile.AttackFacingErrorExclusive)
+                {
+                    entry.NativeState = Rac1Class749Hostile.AttackNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.AttackSequenceId);
+                }
+                else if (statusSentinel == Rac1Class749Hostile.StatusSentinelTwo)
+                {
+                    entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
+                }
+                break;
+
+            case Rac1Class749Hostile.AttackNativeState:
+                attack = AdvanceAttackSequence(entry);
+                if (statusSentinel == Rac1Class749Hostile.StatusSentinelTwo)
+                {
+                    entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
+                }
+                else if (target.Distance > Rac1Class749Hostile.AttackRetainDistanceInclusive ||
+                         target.FacingError > Rac1Class749Hostile.AttackFacingErrorExclusive)
+                {
+                    entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
+                }
+                break;
+
+            case Rac1Class749Hostile.ReturnHomeNativeState:
+                double homeDistance = target.CurrentPosition.DistanceTo(
+                    Rac1Class749Hostile.ReadHomePosition(entry.PVar));
+                if (homeDistance < Rac1Class749Hostile.HomeDistanceExclusive)
+                {
+                    entry.NativeState = Rac1Class749Hostile.TargetSearchNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.StateFiveSequenceId);
+                }
+                else if (statusSentinel != Rac1Class749Hostile.StatusSentinelTwo)
+                {
+                    entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
+                }
+                break;
         }
 
         return Snapshot(key, entry, attack);
@@ -119,7 +142,7 @@ public sealed class Rac1Class749HostileSession
         Rac1Class749Hostile.WriteHealth(entry.PVar, healthAfter);
         entry.NativeState = Rac1Class749Hostile.DamageNativeState;
         entry.NativeSequence = null;
-        entry.AttackEmitted = false;
+        entry.NativeSequenceUpdate = 0;
         return Snapshot(key, entry);
     }
 
@@ -137,9 +160,34 @@ public sealed class Rac1Class749HostileSession
 
         entry.NativeState = nativeStatus;
         entry.NativeSequence = null;
-        entry.AttackEmitted = false;
+        entry.NativeSequenceUpdate = 0;
         entry.EntityState = entry.EntityState.WithPresence(RuntimeEntityPresence.Inactive);
         return Snapshot(key, entry);
+    }
+
+    private static Rac1Class749AttackEvent? AdvanceAttackSequence(Entry entry)
+    {
+        if (entry.NativeSequence != Rac1Class749Hostile.AttackSequenceId)
+            throw new InvalidOperationException("R&C1 class-749 state 7 requires native sequence 5.");
+
+        int previous = entry.NativeSequenceUpdate;
+        int next = previous + 1;
+        bool crossedMarker =
+            previous < Rac1Class749Hostile.AttackMarkerNativeUpdate &&
+            next >= Rac1Class749Hostile.AttackMarkerNativeUpdate;
+        if (next >= Rac1Class749Hostile.AttackSequenceNativeUpdates)
+            next -= Rac1Class749Hostile.AttackSequenceNativeUpdates;
+        entry.NativeSequenceUpdate = next;
+
+        return crossedMarker
+            ? new Rac1Class749AttackEvent(Rac1Class749Hostile.AttackMarker, Rac1Class749Hostile.AttackDamage)
+            : null;
+    }
+
+    private static void SetSequence(Entry entry, int sequence)
+    {
+        entry.NativeSequence = sequence;
+        entry.NativeSequenceUpdate = 0;
     }
 
     private (Rac1Class749Key Key, Entry Entry) RequireEntry(RuntimeDynamicObject source)
@@ -152,11 +200,16 @@ public sealed class Rac1Class749HostileSession
         entry.EntityState.EnsureMatches(source);
         return (key, entry);
     }
+
     private static void ValidateTargetFacts(Rac1Class749TargetFacts target)
     {
         if (!double.IsFinite(target.Distance) || target.Distance < 0d)
             throw new ArgumentOutOfRangeException(nameof(target));
         if (!double.IsFinite(target.FacingError) || target.FacingError < 0d)
+            throw new ArgumentOutOfRangeException(nameof(target));
+        if (!double.IsFinite(target.CurrentPosition.X) ||
+            !double.IsFinite(target.CurrentPosition.Y) ||
+            !double.IsFinite(target.CurrentPosition.Z))
             throw new ArgumentOutOfRangeException(nameof(target));
     }
 
@@ -169,6 +222,7 @@ public sealed class Rac1Class749HostileSession
             entry.NativeState,
             Rac1Class749Hostile.ReadHealth(entry.PVar),
             entry.NativeSequence,
+            entry.NativeSequenceUpdate,
             attack,
             entry.EntityState);
 
@@ -177,7 +231,7 @@ public sealed class Rac1Class749HostileSession
         public byte[] PVar { get; } = pvar;
         public int NativeState { get; set; } = nativeState;
         public int? NativeSequence { get; set; }
-        public bool AttackEmitted { get; set; }
+        public int NativeSequenceUpdate { get; set; }
         public RuntimeEntityState EntityState { get; set; } = entityState;
     }
 }

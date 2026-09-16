@@ -126,49 +126,47 @@ public sealed class Rac1Goal1PlayableSliceTests
 
         hostileProbe = hostileSession.Step(
             hostile,
-            new Rac1Class749TargetFacts(true, 3d, 0d),
-            nativeAnimationMarker: 0);
+            new Rac1Class749TargetFacts(3d, 0d, StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, hostileProbe.NativeState);
         Assert.Null(hostileProbe.NativeSequence);
 
         hostileProbe = hostileSession.Step(
             hostile,
-            new Rac1Class749TargetFacts(true, Rac1Class749Hostile.AttackDistanceExclusive, 0d),
-            nativeAnimationMarker: 0);
+            new Rac1Class749TargetFacts(Rac1Class749Hostile.AttackDistanceExclusive, 0d, StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, hostileProbe.NativeState);
         Assert.Null(hostileProbe.NativeSequence);
 
         hostileProbe = hostileSession.Step(
             hostile,
             new Rac1Class749TargetFacts(
-                true,
                 1d,
-                Rac1Class749Hostile.AttackFacingErrorExclusive),
-            nativeAnimationMarker: 0);
+                Rac1Class749Hostile.AttackFacingErrorExclusive,
+                StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, hostileProbe.NativeState);
         Assert.Null(hostileProbe.NativeSequence);
 
         hostileProbe = hostileSession.Step(
             hostile,
             new Rac1Class749TargetFacts(
-                true,
                 Math.BitDecrement(Rac1Class749Hostile.AttackDistanceExclusive),
-                Math.BitDecrement((double)Rac1Class749Hostile.AttackFacingErrorExclusive)),
-            nativeAnimationMarker: 0);
+                Math.BitDecrement((double)Rac1Class749Hostile.AttackFacingErrorExclusive),
+                StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.AttackNativeState, hostileProbe.NativeState);
         Assert.Equal(Rac1Class749Hostile.AttackSequenceId, hostileProbe.NativeSequence);
+        Assert.Equal(0, hostileProbe.NativeSequenceUpdate);
         Assert.Null(hostileProbe.Attack);
+
+        for (int nativeUpdate = 1; nativeUpdate < Rac1Class749Hostile.AttackMarkerNativeUpdate; nativeUpdate++)
+        {
+            hostileProbe = hostileSession.Step(
+                hostile,
+                new Rac1Class749TargetFacts(1d, 0d, StatusSentinel: 0));
+            Assert.Null(hostileProbe.Attack);
+        }
 
         hostileProbe = hostileSession.Step(
             hostile,
-            new Rac1Class749TargetFacts(true, 1d, 0d),
-            nativeAnimationMarker: Math.BitDecrement(Rac1Class749Hostile.AttackMarker));
-        Assert.Null(hostileProbe.Attack);
-
-        hostileProbe = hostileSession.Step(
-            hostile,
-            new Rac1Class749TargetFacts(true, 1d, 0d),
-            nativeAnimationMarker: Rac1Class749Hostile.AttackMarker);
+            new Rac1Class749TargetFacts(1d, 0d, StatusSentinel: 0));
         Assert.Equal(
             new Rac1Class749AttackEvent(
                 Rac1Class749Hostile.AttackMarker,

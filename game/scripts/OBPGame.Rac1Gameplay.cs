@@ -490,13 +490,13 @@ public partial class OBPGame
             facingError = Math.Abs(planarForward.SignedAngleTo(planarToPlayer, Vector3.Up));
         }
 
-        double marker = _rac1HostileProbe.NativeState == Rac1Class749Hostile.AttackNativeState
-            ? Rac1Class749Hostile.AttackMarker
-            : 0d;
+        Vector3 hostilePosition = hostile.Root.GlobalPosition;
         var next = _rac1Hostiles.Step(
             hostile.Source,
-            new Rac1Class749TargetFacts(TargetAcquired: true, distance, facingError),
-            marker);
+            new Rac1Class749TargetFacts(
+                distance,
+                facingError,
+                new Rac1Class749WorldPoint(hostilePosition.X, hostilePosition.Y, hostilePosition.Z)));
         if (next.NativeState != _rac1HostileProbe.NativeState)
         {
             GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: state {_rac1HostileProbe.NativeState} -> {next.NativeState}");
