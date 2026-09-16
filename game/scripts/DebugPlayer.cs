@@ -53,7 +53,7 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
     public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
 
-    /// <summary>Development host seam for the witnessed Veldin death/reset then respawn boundary.</summary>
+    /// <summary>Development host seam for respawning after the witnessed Veldin death/reset boundary.</summary>
     public event Action? Rac1RespawnRequested;
 
     public Camera3D Camera { get; private set; } = null!;
@@ -424,7 +424,7 @@ public partial class DebugPlayer : CharacterBody3D
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
             $"last jump: {_lastJump}\n" +
-            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X attack / 1 wrench / 2 Bomb Glove / F fly / R Veldin death/respawn / Tab cursor / Esc)";
+            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X attack / 1 wrench / 2 Bomb Glove / F fly / R Veldin respawn / Tab cursor / Esc)";
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 
 namespace OneBigPackage;
 
@@ -19,6 +20,7 @@ public partial class OBPGame
 
             GD.Print("[rac1-smoke] begin live Veldin combat loop");
             await Rac1SmokeWaitAsync(() => _player.IsOnFloor(), 240, "player grounding");
+            Vector3 authoredRespawnPosition = _player.GlobalPosition;
 
             var crate = _rac1CrateNodes
                 .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
@@ -79,19 +81,47 @@ public partial class OBPGame
                 throw new InvalidOperationException($"Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected 5.");
             GD.Print("[rac1-smoke] Bomb Glove projectile impact PASS; ammo=5");
 
-            OnRac1RespawnRequested();
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var environment = _world.Environment
+                ?? throw new InvalidOperationException("Veldin smoke requires the imported environment.");
+            if (_world.LevelId != 0 || Math.Abs(environment.DeathHeight - 27f) > 0.0001f)
+                throw new InvalidOperationException(
+                    $"Veldin smoke death height drifted: level={_world.LevelId}, height={environment.DeathHeight:R}.");
+
+            Vector3 fallStart = _player.GlobalPosition;
+            fallStart.Y = environment.DeathHeight + 0.5f;
+            _player.GlobalPosition = fallStart;
+            _player.Velocity = Vector3.Zero;
+            _rac1NativePlayerState20A4 = 0;
+            double fallSeparation = MeasureRac1ContactSeparation();
+            if (!(fallSeparation > Rac1RatchetNanotechSession.RetailVeldinDeathContactSeparationExclusive))
+                throw new InvalidOperationException(
+                    $"Natural fall setup contact separation was {fallSeparation:R}, expected >2.");
+
+            await Rac1SmokeWaitAsync(
+                () => _rac1Nanotech.Probe().IsDead,
+                180,
+                "natural Veldin death-plane crossing");
             var dead = _rac1Nanotech.Probe();
-            if (!dead.IsDead || dead.Nanotech != 0)
-                throw new InvalidOperationException("Veldin environmental reset did not reach Nanotech 0/dead.");
-            GD.Print("[rac1-smoke] Veldin death/reset PASS; Nanotech=0");
+            if (dead.Nanotech != 0 ||
+                dead.NativePlayerState != Rac1RatchetNanotechSession.RetailVeldinDeathNativeState ||
+                dead.NativeSequence != Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequence ||
+                dead.NativeSequenceFrame != Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequenceFrame)
+                throw new InvalidOperationException("Veldin death-plane crossing did not enter state 0x77 / sequence 11 frame 0.");
+            GD.Print("[rac1-smoke] natural Veldin death-plane crossing PASS; state=0x77 sequence=11 frame=0 Nanotech=0");
 
             OnRac1RespawnRequested();
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Rac1SmokeWaitAsync(
+                () => !_rac1Nanotech.Probe().IsDead && _player.IsOnFloor(),
+                240,
+                "authored Veldin respawn");
             var respawn = _rac1Nanotech.Probe();
-            if (respawn.IsDead || respawn.Nanotech != 4 || !_player.Rac1GameplayAlive)
+            if (respawn.Nanotech != 4 || !_player.Rac1GameplayAlive)
                 throw new InvalidOperationException("Veldin respawn did not restore four Nanotech/alive state.");
+            if (_player.GlobalPosition.DistanceTo(authoredRespawnPosition) > 0.2f)
+                throw new InvalidOperationException(
+                    $"Veldin respawn missed authored start: {_player.GlobalPosition} vs {authoredRespawnPosition}.");
 
+            GD.Print("[rac1-smoke] authored Veldin respawn PASS; Nanotech=4");
             GD.Print("[rac1-smoke] PASS: live combat loop complete; Nanotech=4, ammo=5");
             GetTree().Quit(0);
         }

@@ -41,6 +41,8 @@ public partial class OBPGame
     private bool _rac1BombFireRequested;
     private double _rac1SwingAge;
     private double _rac1BombTickAccumulator;
+    // Raw retail player-state word at +0x20a4. Its semantics remain intentionally unnamed.
+    private int _rac1NativePlayerState20A4;
     private string _rac1CombatStatus = "off";
 
     private void ResetRac1Gameplay()
@@ -62,6 +64,7 @@ public partial class OBPGame
         _rac1BombFireRequested = false;
         _rac1SwingAge = 0d;
         _rac1BombTickAccumulator = 0d;
+        _rac1NativePlayerState20A4 = 0;
         _rac1CombatStatus = "off";
     }
 
@@ -196,16 +199,9 @@ public partial class OBPGame
 
     private void OnRac1RespawnRequested()
     {
-        if (_player is null) return;
-        if (!_rac1Nanotech.Probe().IsDead)
-        {
-            // Development input exposes the recovered Veldin environmental reset boundary;
-            // it is not a claim about a retail controller mapping or arbitrary combat suicide.
-            var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
-            _player.Rac1GameplayAlive = false;
-            _rac1CombatStatus = $"Veldin reset witness: Nanotech {dead.Nanotech}, press R to respawn";
+        if (_world is not { Game: "rac1", LevelId: 0 } || _player is null ||
+            !_rac1Nanotech.Probe().IsDead)
             return;
-        }
 
         var respawn = _rac1Nanotech.Respawn();
         _player.ResetToSpawn();
@@ -218,11 +214,50 @@ public partial class OBPGame
     {
         if (_world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
 
+        TickRac1VeldinEnvironmentalDeath();
+        if (_rac1Nanotech.Probe().IsDead) return;
+
         TickRac1Swing(delta);
         TickRac1BombGlove(delta);
         TickRac1Projectiles(delta);
         TickRac1Hostile();
         TickRac1Pickups();
+    }
+
+    private void TickRac1VeldinEnvironmentalDeath()
+    {
+        if (_world is not { Game: "rac1", LevelId: 0, Environment: { } environment } ||
+            _player is null || _rac1Nanotech.Probe().IsDead)
+            return;
+
+        var dead = _rac1Nanotech.TryApplyVeldinEnvironmentalDeath(
+            new Rac1VeldinEnvironmentalDeathFacts(
+                NativeVerticalPosition: _player.GlobalPosition.Y,
+                DeathHeight: environment.DeathHeight,
+                ContactSeparation: MeasureRac1ContactSeparation(),
+                NativeSpecialPlayerState20A4: _rac1NativePlayerState20A4));
+        if (dead is null) return;
+
+        _player.Rac1GameplayAlive = false;
+        _rac1CombatStatus = $"Veldin death plane: state 0x{dead.NativePlayerState:x2}, sequence {dead.NativeSequence} frame {dead.NativeSequenceFrame}; Nanotech {dead.Nanotech}";
+        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+    }
+
+    private double MeasureRac1ContactSeparation()
+    {
+        if (_player is null) return double.NaN;
+
+        // DebugPlayer's CharacterBody origin is its feet. A downward ray therefore
+        // supplies the live host contact-gap fact without moving the recovered threshold.
+        Vector3 origin = _player.GlobalPosition;
+        var query = PhysicsRayQueryParameters3D.Create(
+            origin + Vector3.Up * 0.1f,
+            origin + Vector3.Down * 1024f);
+        query.Exclude = new global::Godot.Collections.Array<Rid> { _player.GetRid() };
+        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.Count == 0) return double.PositiveInfinity;
+
+        return Math.Max(0d, origin.Y - ((Vector3)hit["position"]).Y);
     }
 
     private void TickRac1Swing(double delta)
@@ -585,7 +620,7 @@ public partial class OBPGame
             : $"class-749 i{Rac1RepresentativeHostileInstance} state {_rac1HostileProbe.NativeState} health {_rac1HostileProbe.Health:0.###}";
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
-        return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · R Veldin death/respawn witness · {_rac1CombatStatus}\n" +
+        return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · R Veldin respawn · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
             $"Bolts collected: {_rac1BoltCrates.CollectedBolts}   pickups: {_rac1PickupNodes.Count}   {hostile}";

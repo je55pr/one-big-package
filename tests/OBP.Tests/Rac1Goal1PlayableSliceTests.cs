@@ -193,6 +193,24 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Equal(terminalStatus, terminal.NativeState);
         Assert.Contains(terminal.NativeState, new[] { 0xfd, 0xfe });
         Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
+
+        var environment = Assert.IsType<RuntimeEnvironment>(world.Environment);
+        Assert.Equal(27f, environment.DeathHeight);
+        var nanotech = new Rac1RatchetNanotechSession();
+        var death = Assert.IsType<Rac1RatchetNanotechSnapshot>(
+            nanotech.TryApplyVeldinEnvironmentalDeath(new Rac1VeldinEnvironmentalDeathFacts(
+                Math.BitDecrement((double)environment.DeathHeight),
+                environment.DeathHeight,
+                Math.BitIncrement(Rac1RatchetNanotechSession.RetailVeldinDeathContactSeparationExclusive),
+                NativeSpecialPlayerState20A4: 0)));
+        Assert.Equal(Rac1RatchetNanotechSession.RetailVeldinDeathNativeState, death.NativePlayerState);
+        Assert.Equal(Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequence, death.NativeSequence);
+        Assert.Equal(0, death.NativeSequenceFrame);
+
+        var respawned = nanotech.Respawn();
+        Assert.Equal(4, respawned.Nanotech);
+        var authoredRespawn = Assert.IsType<RuntimeSpawn>(world.PreferredPlayerStart);
+        Assert.Equal(spawn, authoredRespawn);
     }
     [Fact]
     public void LiveHostCompositionKeepsRac1GameplayStateAuthoritative()
@@ -226,7 +244,12 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Equal(3, afterHit.Nanotech);
         Assert.False(afterHit.IsDead);
 
-        var dead = nanotech.ApplyEnvironmentalDeathReset();
+        var dead = Assert.IsType<Rac1RatchetNanotechSnapshot>(
+            nanotech.TryApplyVeldinEnvironmentalDeath(new Rac1VeldinEnvironmentalDeathFacts(
+                NativeVerticalPosition: 26d,
+                DeathHeight: 27d,
+                ContactSeparation: 3d,
+                NativeSpecialPlayerState20A4: 0)));
         Assert.Equal(0, dead.Nanotech);
         Assert.True(dead.IsDead);
         var respawned = nanotech.Respawn();
@@ -253,7 +276,13 @@ public sealed class Rac1Goal1PlayableSliceTests
             MaterialCount: 0,
             CollisionMeshes: [],
             Bounds: new ObpBounds(Vec3.Zero, new Vec3(200, 200, 200)),
-            Environment: null,
+            Environment: new RuntimeEnvironment(
+                DeathHeight: 27f,
+                IsSphericalWorld: false,
+                BackgroundColour: null,
+                FogColour: null,
+                FogNearDistance: 0f,
+                FogFarDistance: 0f),
             Ship: ship,
             PlayerStart: playerStart);
     }
