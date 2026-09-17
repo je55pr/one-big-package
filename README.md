@@ -18,7 +18,7 @@ On Windows:
 ./tools/play.ps1
 ```
 
-`main` is the normal working branch. Work directly on it when nothing else can collide; concurrent workers use temporary isolated branches/worktrees and integrate the actual result back into `main`.
+`dev` is the normal working branch. Work directly on it when nothing else can collide; concurrent workers use temporary isolated branches/worktrees and integrate the actual result back into `dev`. `main` is only advanced to a known-good `dev` commit for releases.
 
 There is no separate browser or TypeScript implementation to maintain.
 
@@ -60,7 +60,7 @@ Useful project orientation:
 
 ## Validation
 
-Portable CI is C# only and runs on pushes to `main`, plus pull requests. Local retail-backed validation is explicit:
+Portable CI is C# only and runs on pushes to `dev`, plus pull requests. Local retail-backed validation is explicit:
 
 ```powershell
 ./tools/test-retail.ps1

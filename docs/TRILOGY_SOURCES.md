@@ -1,6 +1,6 @@
 # Trilogy retail source and world-provider architecture
 
-Status: **the trilogy source/destination/provider architecture is live on `main`, with native C# production providers for R&C1, Going Commando and Up Your Arsenal.**
+Status: **the trilogy source/destination/provider architecture is live on `dev`, with native C# production providers for R&C1, Going Commando and Up Your Arsenal.**
 
 OBP ultimately needs all three original PS2 games to coexist in one process. Source ownership, destination discovery and world loading therefore belong to separate application/runtime capabilities rather than to the Going Commando importer.
 
@@ -139,7 +139,7 @@ IObpWorldProvider
 - global destination ids must be unique;
 - destination lookup is case-insensitive for CLI/debug use.
 
-Current `main` registers `Rac1WorldProvider`, `GcWorldProvider` and `Rac3WorldProvider`; the neutral registry/UI does not need source-game-specific rewrites when switching between them.
+Current `dev` registers `Rac1WorldProvider`, `GcWorldProvider` and `Rac3WorldProvider`; the neutral registry/UI does not need source-game-specific rewrites when switching between them.
 
 ## Generic Godot world entry
 
@@ -164,7 +164,7 @@ A normal interactive launch lands on **One Big Package — Game Sources**.
 
 Each trilogy source has attach/change/forget controls and reports whether a production world provider is available. If at least one attached game has a provider, **Browse available worlds ->** opens the neutral Worlds browser.
 
-On current `main` this means:
+On current `dev` this means:
 
 ```text
 Ratchet & Clank

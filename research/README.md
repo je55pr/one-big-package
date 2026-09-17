@@ -45,7 +45,7 @@ When a document contains an unresolved hypothesis, it should say so explicitly. 
 
 ## Working research
 
-`main` is the integration baseline. Concurrent archaeology may use temporary isolated branches/worktrees, but accepted evidence and implementation should be integrated back into `main` rather than maintained as a parallel specialist branch.
+`dev` is the integration baseline. Concurrent archaeology may use temporary isolated branches/worktrees, but accepted evidence and implementation should be integrated back into `dev` rather than maintained as a parallel specialist branch.
 
 ## Generated evidence
 

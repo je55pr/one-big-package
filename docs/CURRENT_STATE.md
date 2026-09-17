@@ -20,7 +20,7 @@ trilogy retail ISO
   -> walk / jump / fly through reconstructed retail worlds
 ```
 
-## Current integration baseline (`main`)
+## Current integration baseline (`dev`)
 
 ### Native solution and boundaries
 
@@ -39,7 +39,7 @@ The architectural rule is unchanged: **Godot hosts OBP; Godot does not define Ra
 
 ### Trilogy source / destination / provider layer
 
-Current `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. **All three games have registered native C# providers** (`Rac1WorldProvider`, `GcWorldProvider`, `Rac3WorldProvider`) and load through the same Godot presentation spine — `WorldHost`, `PresentationEnvironment`, `DebugOverlay`, `CaptureHarness` — verified with per-game deterministic shot sets (`tools/shots/rac{1,2,3}.json`). GC is the deepest target (lighting, animated mobies, dynamic objects); RAC1/RAC3 populate core geometry/collision/environment, RAC3 also preserves dynamic objects, and Veldin now exposes one bounded evidence-safe multi-joint Moby preview through `AnimatedMeshes`. RAC3 `Lighting` remains null and the host continues to degrade gracefully where optional presentation data is absent.
+Current `dev` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. **All three games have registered native C# providers** (`Rac1WorldProvider`, `GcWorldProvider`, `Rac3WorldProvider`) and load through the same Godot presentation spine — `WorldHost`, `PresentationEnvironment`, `DebugOverlay`, `CaptureHarness` — verified with per-game deterministic shot sets (`tools/shots/rac{1,2,3}.json`). GC is the deepest target (lighting, animated mobies, dynamic objects); RAC1/RAC3 populate core geometry/collision/environment, RAC3 also preserves dynamic objects, and Veldin now exposes one bounded evidence-safe multi-joint Moby preview through `AnimatedMeshes`. RAC3 `Lighting` remains null and the host continues to degrade gracefully where optional presentation data is absent.
 
 ### Neutral gameplay entity lifecycle
 
