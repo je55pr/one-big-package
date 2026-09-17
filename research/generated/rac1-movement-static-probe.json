@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "literalSource": "exact binary32 constants currently used by Rac1RatchetYawController",
+  "floatAddresses": {
+    "ground_error_gain": [],
+    "ground_velocity_damping": [
+      "0x001d9ae4",
+      "0x001de0d8",
+      "0x001de164",
+      "0x001de1a0",
+      "0x001de1f0",
+      "0x001de204",
+      "0x001e0824",
+      "0x001e5ac8"
+    ],
+    "ground_maximum_step": [],
+    "air_error_gain": [
+      "0x001e6250"
+    ],
+    "air_velocity_damping": [
+      "0x0015f718",
+      "0x0016018c",
+      "0x00160f20",
+      "0x00160f24",
+      "0x00160fa8",
+      "0x001d9774",
+      "0x001dff00",
+      "0x001e043c",
+      "0x001e0440",
+      "0x001e045c",
+      "0x001e0460",
+      "0x001e047c",
+      "0x001e0480",
+      "0x001e049c",
+      "0x001e04a0",
+      "0x001e0564",
+      "0x001e0644",
+      "0x001e06a4",
+      "0x001e0744",
+      "0x001e0780",
+      "0x001e0794",
+      "0x001e07b4",
+      "0x001e5a38",
+      "0x001e5b88",
+      "0x001e5bb8",
+      "0x001e5c18",
+      "0x001e5d08",
+      "0x001e62d4"
+    ],
+    "air_maximum_step": [],
+    "snap_step_fraction": [
+      "0x001119b8",
+      "0x001cc17c",
+      "0x001cc180",
+      "0x001cc1cc",
+      "0x001cc1d0",
+      "0x001cc21c",
+      "0x001cc220",
+      "0x001e6218",
+      "0x001e621c",
+      "0x001e6224",
+      "0x001e6228"
+    ]
+  },
+  "reginfoGp": "0x00166c00",
+  "floatLoadSites": [],
+  "notes": [
+    "This probe is static executable archaeology only; load sites establish literal use, not gameplay semantics by themselves.",
+    "A recurrence is admitted only when surrounding dataflow and/or controlled live witnesses identify the player movement path."
+  ]
+}

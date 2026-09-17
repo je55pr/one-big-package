@@ -7,7 +7,7 @@ namespace OBP.Tests;
 public sealed class Rac1RatchetYawControllerTests
 {
     [Fact]
-    public void MovementTarget_UsesControlRelativeNativeFormula()
+    public void MovementTarget_UsesCurrentProvisionalControlRelativeFormula()
     {
         Assert.Equal(
             -Math.PI / 2d,
@@ -44,7 +44,7 @@ public sealed class Rac1RatchetYawControllerTests
     }
 
     [Fact]
-    public void GroundTurn_AppliesRecoveredAccelerationAndDamping()
+    public void GroundTurn_AppliesCurrentProvisionalAccelerationAndDamping()
     {
         var controller = new Rac1RatchetYawController();
         double controlYaw = 1d + (Math.PI / 2d);
@@ -61,7 +61,7 @@ public sealed class Rac1RatchetYawControllerTests
     }
 
     [Fact]
-    public void GroundTurn_EnforcesRecoveredMaximumStep()
+    public void GroundTurn_EnforcesCurrentProvisionalMaximumStep()
     {
         var controller = new Rac1RatchetYawController();
         for (int i = 0; i < 120; i++)
@@ -159,7 +159,7 @@ public sealed class Rac1RatchetYawControllerTests
     }
 
     [Fact]
-    public void AirTurn_UsesRecoveredRecurrenceAndMaximumStep()
+    public void AirTurn_UsesCurrentProvisionalRecurrenceAndMaximumStep()
     {
         var controller = new Rac1RatchetYawController();
         double controlYaw = 1d + (Math.PI / 2d);

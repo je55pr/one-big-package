@@ -34,6 +34,10 @@ The selected authority is already pinned by `research/RAC1_PLAYER_MOVEMENT.md` a
 
 This is enough to make the translational run/jump/fall/crouch core evidence-backed today. It is not enough to call the complete controller finished.
 
+This follow-up archaeology narrowed two remaining gaps without filling them speculatively. Full-scale cardinal input/release remains the calibrated input envelope; arbitrary analogue magnitude, dead-zone shaping and the camera/control-heading transform are still unproven. Separately, exact-binary32 scans of the authority boot ELF and a loaded Veldin savestate do not establish the constants currently used by `Rac1RatchetYawController` as one retail yaw recurrence: the alleged ground error gain and both alleged max-step values are absent from the boot ELF, the ground max-step literal is absent from loaded EE RAM, and the common damping/gain literals occur broadly outside any proven player-yaw dataflow. The yaw implementation is therefore explicitly provisional.
+
+Directional R1 crouch witnesses remain zero-translation turn-in-place states rather than moving crouch/strafe. No separate ordinary moving-strafe law has been established as part of baseline R&C1 locomotion.
+
 ## Remaining required archaeology
 
 The remaining work should stay surgical and close only the gaps that affect the common movement feel:

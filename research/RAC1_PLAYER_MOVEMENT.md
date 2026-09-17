@@ -10,6 +10,12 @@ OBP therefore models the R&C1 controller in **native world displacement per 60 H
 
 This separation is important: retail slope traces acquire vertical displacement while ordinary locomotion remains active. That vertical component is collision/terrain response, not evidence for a second controller gravity equation.
 
+## Planar input boundary
+
+The calibrated acceleration/speed witnesses use full-scale cardinal planar input and release. They prove the downstream displacement recurrence for those conditions, but they do **not** recover the retail stick dead-zone or post-dead-zone magnitude curve. `PlayerControlIntent.NormalizedPlanar()` is therefore only a deterministic full-scale/directional contract for the recovered controller today; it must not be cited as evidence that retail normalized every nonzero stick vector.
+
+Loaded Veldin player code near `0x00213e68` operates on the same `0x0013f3d0` player-state family and includes trigonometric planar calculations, making it a useful lead for input/control-heading archaeology. The current evidence does not yet prove which operands are conditioned stick input or camera/control yaw, so no camera-relative transform is promoted from that routine. Emulator binding dead-zone/axis-scale settings are likewise harness policy, not retail controller evidence.
+
 ## Ground locomotion
 
 From the fixed Veldin savestate, full planar input ramps from rest by approximately `1/480` native unit per tick (`0.002083333...`) until a sustained displacement magnitude of `0.09500919` unit/tick.
@@ -45,6 +51,10 @@ Entering crouch while already moving does not hard-stop Ratchet. Existing planar
 Normal facing is measured independently of animation. Live Ratchet Moby `+0x48` is a yaw angle, corroborated by the corresponding 2x2 rotation terms at `+0xc0/+0xc4/+0xd0/+0xd4`. Controlled A/D trials begin at yaw `1.11104 rad`, rotate toward the current planar travel vector, and settle with facing aligned to sustained travel.
 
 The largest observed single yaw update in these witnesses is about `0.142 rad/tick` (roughly `8.1 degrees/tick`). Retail visibly eases the turn; **the exact yaw-easing recurrence is not yet recovered**. OBP does not promote that maximum sample as a constant turn-rate law.
+
+A provenance audit now tests every exact binary32 literal currently used by `Rac1RatchetYawController` against both the authority boot ELF and a loaded Veldin savestate. The boot ELF contains no exact match for the alleged ground error gain (`0.00800000038`) or either alleged maximum yaw step (`0.165806278` / `0.250163853`). In loaded EE RAM the ground maximum-step literal is still absent, while the air maximum-step value occurs once as runtime data at `0x0013f764`. Common values such as `0.15`, `0.20`, `0.04` and `0.01` occur in many unrelated locations. These matches therefore do **not** establish the host spring/damping law as retail yaw behavior.
+
+The payload-free audit is reproducible with `tools/rac1-movement-probe.py` and `tools/rac1-savestate-movement-probe.py`; results are frozen in `research/generated/rac1-movement-static-probe.json` and `research/generated/rac1-movement-savestate-probe.json`. The latter records hashes and derived addresses only; no retail memory payload is committed.
 
 ## Respawn/reset
 

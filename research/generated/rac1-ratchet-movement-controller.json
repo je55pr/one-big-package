@@ -86,13 +86,31 @@
     ],
     "startYawRad": 1.111041784286499,
     "largestObservedYawStepRadPerTick": 0.142,
-    "exactEasingRecurrence": "unknown"
+    "exactEasingRecurrence": "unknown",
+    "literalProvenanceAudit": {
+      "bootElfMissingExact": [
+        "ground_error_gain",
+        "ground_maximum_step",
+        "air_maximum_step"
+      ],
+      "loadedSnapshotGroundMaximumStepMatches": 0,
+      "loadedSnapshotAirMaximumStepMatches": [
+        "0x0013f764"
+      ],
+      "coherentRetailYawLawEstablished": false,
+      "evidence": [
+        "research/generated/rac1-movement-static-probe.json",
+        "research/generated/rac1-movement-savestate-probe.json"
+      ]
+    }
   },
   "scopeNotes": {
     "collisionResponse": "host-owned",
     "exactTurnEasing": "unknown",
     "analogueDeadZone": "unknown",
-    "combatMovement": "separate milestone"
+    "combatMovement": "separate milestone",
+    "movingCrouch": "not observed; directional crouch witnesses are zero-translation turn-in-place",
+    "ordinaryStrafe": "not established as baseline R&C1 locomotion"
   },
   "provenance": [
     "controlled PCSX2 authority execution",
@@ -100,5 +118,12 @@
     "loaded retail executable archaeology",
     "portable deterministic recurrence tests",
     "Godot Veldin integration capture"
-  ]
+  ],
+  "inputBoundary": {
+    "calibratedInput": "full-scale cardinal planar input and release",
+    "analogueDeadZone": "unknown",
+    "postDeadZoneMagnitudeScaling": "unknown",
+    "cameraRelativeIntentTransform": "unknown",
+    "portableContract": "normalized/full-scale directional intent only; not evidence for arbitrary analogue magnitude"
+  }
 }

@@ -1,12 +1,17 @@
 namespace OBP.RAC1.Player;
 
 /// <summary>
-/// Retail-backed R&amp;C1 ordinary movement-facing recurrence.
-/// Camera/control yaw, movement target yaw, live player yaw, and yaw velocity
-/// remain distinct so presentation input cannot directly rewrite combat facing.
+/// Deterministic provisional R&amp;C1 movement-facing approximation.
+/// Retail witnesses prove target alignment and an eased turn envelope, but the
+/// exact yaw recurrence and native control-yaw transform remain unrecovered.
+/// Keep this separate from the retail-backed translational controller until
+/// those rules have direct R&amp;C1 provenance.
 /// </summary>
 public sealed class Rac1RatchetYawController
 {
+    // Approximation constants only. Exact-binary32 archaeology in
+    // research/generated/rac1-movement-*-probe.json does not establish this
+    // set as a coherent retail yaw law.
     public const double GroundErrorGain = 0.00800000038d;
     public const double GroundVelocityDamping = 0.150000006d;
     public const double GroundMaximumStep = 0.165806278d;
