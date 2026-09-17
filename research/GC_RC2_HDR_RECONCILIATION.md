@@ -1,14 +1,14 @@
 # `RC2.HDR` alignment / sector-padding reconciliation
 
-**Status:** public-source-derived verification target. Do not change the retail-backed parser/model until the tiny authority probes below are run.
+**Status:** retail-confirmed structural reconciliation for `rac2-ntscu-v1.01` as of 2026-09-18. The repeated per-file block is three sector-padded headers; deeper header-field and loader semantics remain separate archaeology.
 
-Current `main` documents a real retail observation in `GC_LEVEL_LOADING.md`: `/RC2.HDR` contains a regular per-level region with `0x3800`-byte stride, and bytes observed from `+0x5804` line up with the absolute LBA and fields of `LEVEL0.WAD`.
+A bounded authority probe confirmed `/RC2.HDR` contains a regular per-file region with `0x3800`-byte stride beginning at `+0x5800`. Row 0 and all 27 row boundaries agree with the three-header interpretation below. See [`AUDIO_FOUNDATION.md`](AUDIO_FOUNDATION.md) for the audio-selection context and payload-free probe hashes.
 
-The *interpretation* of that observation is likely off by four bytes. Public GC header sizes explain the whole `0x3800` stride exactly without requiring seven independent `0x800` asset-slot types.
+The earlier interpretation began four bytes late at `+0x5804`. The retail check now confirms the aligned `+0x5800` start and removes the need for seven independent `0x800` asset-slot types.
 
-## The alignment hypothesis
+## Confirmed alignment
 
-For GC, public Wrench/noclip structures give these top-level header sizes:
+Public Wrench/noclip structures originally supplied these top-level header sizes as the search lead:
 
 ```text
 LEVEL header = 0x0060
@@ -26,9 +26,9 @@ SCENE: ceil(0x137c / 0x800) = 3 sectors = 0x1800
                                              0x3800
 ```
 
-So the observed seven sectors per level can be explained much more simply as **three sector-padded headers occupying 1 + 3 + 3 sectors**.
+The authority bytes now confirm that the observed seven sectors per file row are **three sector-padded headers occupying 1 + 3 + 3 sectors**.
 
-Candidate aligned block 0:
+Confirmed aligned block 0:
 
 ```text
 RC2.HDR + 0x5800  LEVEL0 header, padded to 0x0800
@@ -64,23 +64,24 @@ If the real duplicated `GcUyaLevelWadHeader` starts four bytes earlier, those be
 
 That is a stronger explanation than saying the RC2 copy replaced/removes the ordinary header-size word. It also agrees with the retail-backed `0x60` standalone GC level-header layout now used elsewhere in OBP.
 
-## Four tiny authority probes
+## Authority result
 
-A local retail-disc check can settle the entire question without dumping any large data:
+The 2026-09-18 bounded retail check returned:
 
 ```text
-u32le(RC2.HDR + 0x5800)  expected 0x00000060
-u32le(RC2.HDR + 0x5804)  expected LEVEL0 absolute LBA (known: 0x0013a098)
-u32le(RC2.HDR + 0x6000)  expected 0x00001018
-u32le(RC2.HDR + 0x7800)  expected 0x0000137c
+u32le(RC2.HDR + 0x5800) = 0x00000060
+u32le(RC2.HDR + 0x5804) = 0x0013a098  // LEVEL0 absolute LBA
+u32le(RC2.HDR + 0x6000) = 0x00001018
+u32le(RC2.HDR + 0x7800) = 0x0000137c
+u32le(RC2.HDR + 0x9000) = 0x00000060  // next row
 ```
 
-If all four match, update `GC_LEVEL_LOADING.md` / `tools/rc2-hdr.mjs` to describe three padded header records rather than seven logical slots, and check the same boundaries for all 27 level blocks.
+The same row-boundary census was then run for all file indices `0..26`. Every row begins with `0x60`, every `+0x0800` associated header begins with `0x1018`, and every `+0x2000` associated header begins with `0x137c`: 27/27 for each boundary, with no mismatches.
 
-If the first/third/fourth probes do **not** match, keep the current retail model and record the mismatch; public header sizes are evidence, not authority.
+This confirms the structural packing for the supported authority. It does not by itself prove every inner AUDIO/SCENE field name or the executable loader's higher-level use of those fields.
 
-## Consequence if confirmed
+## Consequence
 
-The current apparent unknown per-level slots `2/3` and `5/6` would disappear as semantic objects: they are merely continuation sectors occupied by the larger AUDIO and SCENE headers. The `0x3800` stride remains correct; only its interpretation and the block's starting alignment change.
+The former apparent unknown per-level slots `2/3` and `5/6` are not semantic objects: they are continuation sectors occupied by the larger AUDIO and SCENE headers. The `0x3800` stride remains correct; only its interpretation and the block's starting alignment changed.
 
 This is exactly the kind of reconciliation public archaeology is useful for: it proposes a smaller explanation for already-observed retail bytes, but retail bytes still get the final vote.

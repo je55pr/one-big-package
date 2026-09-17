@@ -17,9 +17,10 @@ When a document contains an unresolved hypothesis, it should say so explicitly. 
 |---|---|---|
 | Source/build identity | [`INPUT_PROVENANCE.md`](INPUT_PROVENANCE.md), [`BUILD_PROBING.md`](BUILD_PROBING.md) | Current authority/provenance rules |
 | Retail trilogy disc structure | [`RETAIL_TRILOGY_DISC_LAYOUT.md`](RETAIL_TRILOGY_DISC_LAYOUT.md) | Bounded retail disc archaeology |
+| Native audio foundation | [`AUDIO_FOUNDATION.md`](AUDIO_FOUNDATION.md) | GC selected as first audio authority; bounded recovery/runtime boundary and provenance rules |
 | GC level/file catalogue | [`GC_LEVEL_CATALOGUE.md`](GC_LEVEL_CATALOGUE.md), [`GC_PLANET_NAMES.md`](GC_PLANET_NAMES.md) | Retail-backed catalogue/name work |
-| GC level loading / RC2.HDR | [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) | Retail evidence with active RC2.HDR reconciliation note |
-| RC2.HDR reconciliation | [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) | **Verification target, not authority yet** |
+| GC level loading / RC2.HDR | [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) | Retail-backed three-header row packing; deeper loader semantics remain open |
+| RC2.HDR reconciliation | [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) | Three-header packing retail-confirmed for GC NTSC-U v1.01 |
 | GC outer WAD | [`GC_LEVEL_WAD.md`](GC_LEVEL_WAD.md) | Retail-backed container/range layout |
 | GC decompressed core | [`GC_LEVEL_CORE.md`](GC_LEVEL_CORE.md) | Retail-backed core header/section work |
 | Coordinates/chunks | [`GC_COORDINATES_AND_CHUNKS.md`](GC_COORDINATES_AND_CHUNKS.md) | Coordinate rule plus unresolved chunk-plane equality detail |

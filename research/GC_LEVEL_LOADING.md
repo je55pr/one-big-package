@@ -2,7 +2,7 @@
 
 **Build:** `rac2-ntscu-v1.01` (`SCUS-97268`, SHA-256 `9db2e33e…a9b1ce5`).
 
-> **RC2.HDR reconciliation in progress:** the older `+0x5804` / seven semantic `0x800` slot interpretation below is not currently treated as final. [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) gives a strong cross-source hypothesis that the block begins at `0x5800` and is instead three sector-padded headers (LEVEL `0x0800`, AUDIO `0x1800`, SCENE `0x1800`). Four tiny retail reads at `0x5800`, `0x5804`, `0x6000` and `0x7800` can settle this. Until that authority check is run, preserve the observed bytes but do not build new semantics on the seven-slot labels.
+> **RC2.HDR packing update (2026-09-18):** a bounded authority probe confirmed the repeated file-number block begins at `+0x5800` and consists of three sector-padded headers: LEVEL `0x0800` (`0x60` header), AUDIO `0x1800` (`0x1018` header), SCENE `0x1800` (`0x137c` header). The same boundaries matched all 27 rows. The older seven-semantic-slot interpretation is superseded for this authority; deeper header-field/global-loader semantics remain open. See [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) and [`AUDIO_FOUNDATION.md`](AUDIO_FOUNDATION.md).
 
 ## Disc layout
 
@@ -48,9 +48,9 @@ The original retail read was described as seven sectors per `0x3800` level block
 
 That interpretation used `RC2.HDR + 0x5804 + n*0x3800` as the apparent level start.
 
-### Reconciliation hypothesis
+### Reconciliation result
 
-Public-format header sizes provide a simpler explanation of the same `0x3800` stride:
+Public-format header sizes suggested a simpler explanation of the same `0x3800` stride, and the 2026-09-18 authority probe confirmed it:
 
 ```text
 LEVEL header 0x0060 -> padded to 0x0800 (1 sector)
@@ -60,7 +60,7 @@ SCENE header 0x137c -> padded to 0x1800 (3 sectors)
                                       0x3800
 ```
 
-That predicts:
+That predicted the following boundaries:
 
 ```text
 RC2.HDR + 0x5800  LEVEL0 header (first word should be 0x00000060)
@@ -70,7 +70,7 @@ RC2.HDR + 0x7800  SCENE0 header (first word should be 0x0000137c)
 RC2.HDR + 0x9000  next 0x3800 block
 ```
 
-If the four tiny retail reads confirm those header-size words, the apparent unknown slots 2/3 and 5/6 are not separate semantic records at all; they are continuation sectors of padded AUDIO/SCENE headers. If the reads contradict the hypothesis, the retail bytes win and the older model must be revisited on that evidence.
+The bounded authority read returned exactly those row-0 words, and an all-row census found the same `0x60 / 0x1018 / 0x137c` starts on 27/27 rows. The apparent unknown slots 2/3 and 5/6 are therefore continuation sectors of the padded AUDIO/SCENE headers, not separate semantic records. This settles row packing only; inner AUDIO/SCENE field semantics and deeper loader behaviour remain separate work.
 
 See [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) for the full argument.
 
@@ -85,6 +85,6 @@ An ASCII-string scan found loader/CD-ROM strings but no contiguous `LEVEL%d.WAD`
 - Confirmed: all 27 `LEVEL<n>.WAD` files exist and the authority build uses the retail-backed `0x60` GC outer header described in [`GC_LEVEL_WAD.md`](GC_LEVEL_WAD.md).
 - Confirmed: file index is not always native level id; use [`GC_LEVEL_CATALOGUE.md`](GC_LEVEL_CATALOGUE.md) rather than assuming identity.
 - Confirmed: `RC2.HDR` contains repeated per-file-number LBA/directory data with `0x3800` stride and points at real retail assets.
-- **Pending authority check:** whether that `0x3800` block is seven semantic sectors beginning at `+0x5804`, or three padded headers beginning at `+0x5800`.
+- **Confirmed by bounded authority probe (2026-09-18):** the `0x3800` block is three padded headers beginning at `+0x5800`; `0x60 / 0x1018 / 0x137c` starts reproduce on all 27 file-number rows.
 - No longer a future target: native LEVEL content such as collision, tfrags, textures, TIEs, shrubs, Mobies, sky and level settings now has dedicated retail-backed research/packages. See [`README.md`](README.md) for the subsystem index.
-- Still open here: exact `RC2.HDR` packing semantics, global header region, AUDIO/SCENE internals and deeper executable loader behaviour.
+- Still open here: inner `RC2.HDR` field semantics, the global header region, AUDIO/SCENE internals and deeper executable loader behaviour.
