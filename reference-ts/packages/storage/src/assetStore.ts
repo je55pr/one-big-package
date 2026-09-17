@@ -75,7 +75,9 @@ export class OpfsAssetStore implements AssetStore {
     const { directory, filename } = await this.resolveParent(key, true);
     const handle = await directory.getFileHandle(filename, { create: true });
     const writable = await handle.createWritable();
-    await writable.write(data);
+    const writableData = new Uint8Array(data.length);
+    writableData.set(data);
+    await writable.write(writableData);
     await writable.close();
   }
 

@@ -69,7 +69,7 @@ export function decodePs2Paletted8(texture: Ps2PalettedTexture, options: DecodeO
   }
   if (pixels.length < width * height) throw new Error(`PS2 texture pixel buffer is ${pixels.length} bytes, need ${width * height}.`);
 
-  let palette = new Uint32Array(256);
+  let palette: Uint32Array = new Uint32Array(256);
   palette.set(texture.palette.subarray(0, 256));
   if (options.scaleAlpha ?? true) multiplyAlphas(palette);
   if (options.reorderPalette ?? true) palette = swizzlePalette(palette);
