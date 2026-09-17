@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank: Up Your Arsenal",
+    "build": "rac3-ntscu-original",
+    "serial": "SCUS-97353",
+    "version": "1.00",
+    "crc": "45FE0CC4"
+  },
+  "scope": "Payload-free controlled movement witnesses and executable-derived input facts; raw captures remain ignored.",
+  "playerGlobal": {
+    "base": "0x001A4BE0",
+    "state": "0x25C4",
+    "livePlayerPointer": "0x25C0",
+    "position": ["0x80", "0x84", "0x88"],
+    "velocityLike": ["0xF0", "0xF4", "0xF8"],
+    "conditionedInput": ["0x2260", "0x2264"],
+    "magnitude": "0x2838",
+    "angle": "0x2840"
+  },
+  "livePlayer": {
+    "position": ["0x10", "0x14", "0x18"],
+    "yaw": "0xF8"
+  },
+  "inputConditioning": {
+    "axisRoutine": "0x003A3158..0x003A31D0",
+    "rawCenter": 127,
+    "rawDeadzoneCounts": 48,
+    "outsideDeadzoneScaleDivisor": 76.0,
+    "formula": "sign * clamp((abs(raw - 127) - 48) / 76, 0, 1)",
+    "magnitudeRoutineCall": "0x003A37C4 -> 0x0038D200",
+    "angleRoutineCall": "0x003A37D4 -> 0x0038D488",
+    "magnitudeHistoryLength": 30,
+    "staticQuarterConstantAddress": "0x003A3848",
+    "staticQuarterValue": 0.25,
+    "quarterContext": "Only reached after current magnitude exceeds 0.9 and the previous history sample does not; scans earlier magnitude history for a value below 0.25 and raises an input-event bit.",
+    "quarterVerdict": "Confirmed as a rapid-stick/history threshold; rejected as the ordinary locomotion activation or dead-zone threshold."
+  },
+  "timing": {
+    "pcsx2ConfiguredNtscHz": 59.94,
+    "nominalDescription": "60 Hz is NTSC/game-math shorthand, not a measured 60.000 Hz wall clock.",
+    "wallClockCaptureMeanHz": {
+      "accelRelease": 59.9294484344558,
+      "jumpTap": 59.93680470798571,
+      "jumpHold": 59.929936010048266,
+      "turn90": 59.936549094349026,
+      "turn180": 59.915278788852746,
+      "normalRight": 59.89810457506209,
+      "l2Right": 59.92902383516917
+    },
+    "diagnosticUpdateCounter": {
+      "offset": "0x1E8",
+      "use": "Exact-update pacing for normal/jump/turn local captures only.",
+      "boundary": "Resets or stalls in the L2 strafe witness; not a universal retail frame counter and not part of the committed capture contract."
+    }
+  },
+  "groundFullStick": {
+    "trace": "sync2-accel-release",
+    "state": 2,
+    "conditionedInput": [0.0, 1.0],
+    "magnitude": 1.0,
+    "firstMotionStep": 0.01027679443359375,
+    "observedAccelerationStepDelta": 0.01027679443359375,
+    "speedCap": 0.1028289794921875,
+    "stepsToCap": 11,
+    "release": {
+      "firstResidualStep": 0.09810638427734375,
+      "stopTail": [0.0197906494140625, 0.0148773193359375, 0.00995635986328125, 0.00504302978515625, 0.0001220703125, 0.0],
+      "tailStepDeltaApprox": -0.004917144775390625,
+      "stateAfterConditionedInputClears": 0
+    }
+  },
+  "jump": {
+    "state": 7,
+    "groundVerticalLike": -0.015000000596046448,
+    "launchVerticalLike": 0.13939709961414337,
+    "releasedRiseDeltaPerUpdate": -0.00825,
+    "fallDeltaPerUpdate": -0.0096525,
+    "tapSixSamples": {
+      "trace": "sync2-jump-tap",
+      "keyDownSample": 15,
+      "state7Sample": 16,
+      "firstVerticalTranslationSample": 18,
+      "apexSample": 36,
+      "apexHeight": 1.4279327392578125,
+      "groundContactSample": 54,
+      "state0Sample": 65
+    },
+    "holdTwentyFourSamples": {
+      "trace": "sync2-jump-hold",
+      "keyDownSample": 15,
+      "state7Sample": 17,
+      "firstVerticalTranslationSample": 18,
+      "apexSample": 40,
+      "apexHeight": 1.8867340087890625,
+      "groundContactSample": 61,
+      "state0Sample": 73,
+      "heldRiseDeltaRange": [-0.005286186933517456, -0.004436463117599487]
+    },
+    "contactFinding": "Position clamps to the ground before state 7 returns to state 0; +0xF8 can retain the pre-contact downward recurrence for that sampled update."
+  },
+  "turning": {
+    "normalFacingRule": "Live-player +0xF8 converges to planar travel heading during ordinary locomotion.",
+    "rightCardinalWitness": {
+      "trace": "sync2-turn-90-refined",
+      "initialYaw": 1.5707610845565796,
+      "postReleaseYaw": -0.14267998933792114,
+      "postReleaseTravelHeading": -0.1427147159100865,
+      "alignmentErrorRad": 0.00003472657216535987,
+      "note": "Camera-relative right is not exactly a geometric 90-degree world turn from the savestate heading."
+    },
+    "reverseWitness": {
+      "trace": "sync2-turn-180",
+      "initialYaw": 1.5707610845565796,
+      "wrappedYawChangeByAlignment": -3.1152812242507935,
+      "alignedSample": 38,
+      "alignedYaw": -1.5445201396942139,
+      "alignedTravelHeading": -1.5446407368007287,
+      "alignmentErrorRad": 0.00012059710651479705,
+      "repeatedLargeYawStepRad": -0.1948951780796051,
+      "easing": "Large repeated steps during reversal then tapering steps approaching travel heading; exact recurrence not recovered from these witnesses."
+    }
+  },
+  "normalVsL2Strafe": {
+    "conditionedRightInput": [1.0, 0.0],
+    "magnitude": 1.0,
+    "normal": {
+      "trace": "normal-right-wall",
+      "stablePlanarStepMedian": 0.10282679673072945,
+      "yawMinusTravelHeadingMedianRad": -0.0000941061630901352
+    },
+    "l2": {
+      "trace": "l2-right-wall",
+      "stablePlanarStepMedian": 0.10282850314922973,
+      "yawMinusTravelHeadingMedianRad": 1.570764198147931,
+      "interpretation": "Same planar speed cap as normal movement while facing is held approximately pi/2 from travel, establishing a distinct strafe basis."
+    }
+  },
+  "fieldFindings": {
+    "globalPositionVsLivePosition": "Matches on settled samples; occasional one-update skew appears because the two PINE reads are not atomic.",
+    "globalF0F4": "Stayed zero during these controlled planar traces; do not treat +0xF0/+0xF4 as the complete planar velocity state.",
+    "globalF8": "Tracks vertical motion recurrence and ground bias, including jump rise/fall values.",
+    "livePlayerF8": "Yaw, corroborated by normal alignment with travel and L2's approximately pi/2 facing/travel separation."
+  },
+  "limitations": [
+    "The witnesses use digital full-stick keyboard bindings; partial-stick movement response was not dynamically swept.",
+    "The exact normal-turn easing recurrence is not recovered; live-object reads can be one update out of phase with player-global reads.",
+    "The L2 witness identifies a strafe basis but does not recover the complete lock-strafe state machine or camera contract.",
+    "Raw PINE traces, screenshots, PCSX2 binaries/configuration and retail media are intentionally not committed."
+  ],
+  "provenance": [
+    "authorized SCUS-97353 retail execution in a disposable PCSX2/PINE setup",
+    "controlled full-stick/rest/jump/turn/L2 input witnesses",
+    "loaded executable archaeology of the input-conditioning/history routine",
+    "payload-free distillation only"
+  ]
+}
