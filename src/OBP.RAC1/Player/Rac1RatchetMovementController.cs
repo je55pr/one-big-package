@@ -11,10 +11,32 @@ public enum Rac1RatchetMovementPhase
 }
 
 /// <summary>
+/// Presentation-facing locomotion state derived from the recovered controller.
+/// CrouchTurning is the retail zero-translation directional R1 state; it does
+/// not imply a recovered moving-strafe law.
+/// </summary>
+public enum Rac1RatchetLocomotionState
+{
+    Idle,
+    Moving,
+    Crouched,
+    CrouchTurning,
+    JumpAnticipation,
+    Rising,
+    Falling,
+}
+
+/// <summary>
 /// Bounded retail-backed R&amp;C1 Ratchet controller core.
 /// Values are native-world displacement per NTSC update, not engine velocity.
 /// Collision response remains owned by the host.
 /// </summary>
+/// <remarks>
+/// Constants and recurrences are frozen from
+/// research/generated/rac1-ratchet-movement-controller.json (SCUS-97199).
+/// Unrecovered camera/stick shaping and yaw easing are deliberately not
+/// invented here.
+/// </remarks>
 public sealed class Rac1RatchetMovementController
 {
     public const double UpdateHz = 60d;
@@ -67,6 +89,7 @@ public sealed class Rac1RatchetMovementController
     private int _heldRiseTicks;
 
     public Rac1RatchetMovementPhase Phase { get; private set; } = Rac1RatchetMovementPhase.Grounded;
+    public Rac1RatchetLocomotionState LocomotionState { get; private set; } = Rac1RatchetLocomotionState.Idle;
     public double PlanarX => _planarX;
     public double PlanarY => _planarY;
     public double VerticalStep => _verticalStep;
@@ -75,7 +98,8 @@ public sealed class Rac1RatchetMovementController
         double PlanarX,
         double PlanarY,
         double Vertical,
-        Rac1RatchetMovementPhase Phase)
+        Rac1RatchetMovementPhase Phase,
+        Rac1RatchetLocomotionState LocomotionState)
     {
         public double PlanarMagnitude =>
             System.Math.Sqrt((PlanarX * PlanarX) + (PlanarY * PlanarY));
@@ -85,7 +109,8 @@ public sealed class Rac1RatchetMovementController
     {
         UpdatePlanar(input, contact.IsGrounded);
         UpdateVertical(input, contact);
-        return new StepResult(_planarX, _planarY, _verticalStep, Phase);
+        UpdateLocomotionState(input, contact);
+        return new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState);
     }
 
     public void Reset()
@@ -97,6 +122,7 @@ public sealed class Rac1RatchetMovementController
         _jumpHeldTicks = 0;
         _heldRiseTicks = 0;
         Phase = Rac1RatchetMovementPhase.Grounded;
+        LocomotionState = Rac1RatchetLocomotionState.Idle;
     }
 
     private void UpdatePlanar(PlayerControlIntent input, bool grounded)
@@ -135,6 +161,23 @@ public sealed class Rac1RatchetMovementController
         double scale = amount / distance;
         x += dx * scale;
         y += dy * scale;
+    }
+
+    private void UpdateLocomotionState(PlayerControlIntent input, PlayerContactFacts contact)
+    {
+        LocomotionState = Phase switch
+        {
+            Rac1RatchetMovementPhase.JumpAnticipation => Rac1RatchetLocomotionState.JumpAnticipation,
+            Rac1RatchetMovementPhase.Rising => Rac1RatchetLocomotionState.Rising,
+            Rac1RatchetMovementPhase.Falling => Rac1RatchetLocomotionState.Falling,
+            _ when contact.IsGrounded && input.CrouchHeld =>
+                input.NormalizedPlanar() == (0d, 0d)
+                    ? Rac1RatchetLocomotionState.Crouched
+                    : Rac1RatchetLocomotionState.CrouchTurning,
+            _ when System.Math.Abs(_planarX) > 1e-12 || System.Math.Abs(_planarY) > 1e-12 =>
+                Rac1RatchetLocomotionState.Moving,
+            _ => Rac1RatchetLocomotionState.Idle,
+        };
     }
 
     private void UpdateVertical(PlayerControlIntent input, PlayerContactFacts contact)

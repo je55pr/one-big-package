@@ -84,6 +84,9 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Live native yaw recurrence velocity in radians per update.</summary>
     public double Rac1YawVelocity => _rac1Yaw.YawVelocity;
 
+    /// <summary>Retail-backed RAC1 locomotion state available to presentation code.</summary>
+    public Rac1RatchetLocomotionState Rac1LocomotionState => _rac1Movement.LocomotionState;
+
     /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
     public bool Rac1GameplayAlive { get; set; } = true;
 
