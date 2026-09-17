@@ -25,11 +25,9 @@ A source may be one seekable image or a validated numbered split set exposed thr
 
 Going Commando additionally exposes `OBP.RAC2.GcIsoLoad`: `Identify` performs the fast supported-build gate, `LoadLevel` imports through the native C# world path, and `Verify` performs the slower streamed SHA-256 authority check.
 
-## TypeScript reference probe contract
+## Legacy probe contract
 
-The older importer/probe abstractions remain under [`../reference-ts/`](../reference-ts/) as executable research/reference code. In that tree, probing runs before a build identity is resolved: `ProbeSourceSet` contains byte sources plus optional caller-verified identity hints, while `ImportSourceSet` requires a resolved `OBPBuildIdentity`.
-
-The reference trilogy importer shells use source key `disc`, and may receive a browser `File`/`Blob` or a `ConcatenatedRandomAccessReader` over ordered raw split parts. `packages/ps2-disc`, `packages/input-sources`, `packages/hashing` and `packages/source-verification` describe that historical/reference implementation. They are useful equivalence tools, but browser input semantics are no longer a production-runtime requirement.
+The retired TypeScript implementation used a probe/import split before build identity was resolved. That history is relevant only when reading older research; maintained probing and authority verification now live in the native C# stack.
 
 ## Current primary authorities
 
@@ -52,10 +50,6 @@ These labels originated in the TypeScript importer registry, but the evidence di
 
 ## Current world/import status
 
-The old TypeScript `importer-rac*` status should not be confused with the production native runtime:
-
-- The **merged C# GC path** already identifies, imports and renders supported retail Going Commando levels through `OBP.RAC2` / Godot; production integration is no longer waiting on a browser `OBPImporter.importWorld()` hook.
-- The **TypeScript reference** still preserves its older public importer contracts and `reference-ts/tools/gc-world.mjs` world-assembly path for archaeology/equivalence.
-- R&C1 and UYA specialist branches are actively proving native world compatibility and formats; their branch-local progress is summarized in [`../docs/CURRENT_STATE.md`](../docs/CURRENT_STATE.md) until promoted/merged into the C# production stack.
+All three trilogy games now identify, import and render through native C# production providers. The old TypeScript importer architecture is retired; older research references to it are historical provenance only. See [`../docs/CURRENT_STATE.md`](../docs/CURRENT_STATE.md) for the live capability snapshot.
 
 For agent-driven retail questions, prefer a narrow direct local probe against the verified authority. Agent sandbox materialisation and remote split/range transport remain fallbacks, not production architecture.

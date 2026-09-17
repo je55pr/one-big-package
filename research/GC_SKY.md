@@ -4,15 +4,9 @@
 
 The sky is `LevelCoreHeader.sky` — a byte range of the decompressed level-core asset blob (same blob as tfrags / collision; section end = the next section offset above it). It is a set of up to 8 concentric **shells**: a big untextured gouraud backdrop plus smaller textured cloud / haze layers. The game redraws it centred on the camera every frame with no depth write.
 
-The original decoder lives in the TypeScript reference as `reference-ts/packages/gc-sky` (`readGcSky(bytes)`, `readGcLevelSky(core)`), with the corresponding native C# implementation under `OBP.RAC2`.
+The original sky decoder was first established in the retired TypeScript reference; the maintained implementation is now under `OBP.RAC2`.
 
-Reference reproduction:
-
-```bash
-cd reference-ts
-node tools/gc-world.mjs "<GC iso>" --level 1 --out captures/level1.world.json
-# add --no-sky to omit it
-```
+Historical reproduction used the retired TypeScript `gc-world.mjs` tool. Current reproduction should use the native world importer and deterministic capture tooling.
 
 ## Layout
 
@@ -70,7 +64,7 @@ Sky parses for all 27 levels (probed). Every shell's positions fall in a `±31`-
 
 The shell geometry/texture decode above is retail-backed. **How a debug/runtime renderer places that shell is presentation policy.**
 
-The preserved TypeScript reference (`reference-ts/tools/gc-world.mjs` + `reference-ts/apps/viewer`) scales the shell set to a camera-centred backdrop and keeps it out of world bounds. The native Godot runtime also treats reconstructed sky shells as camera-relative presentation, and active GC runtime work continues to refine how individual shell types, alpha and atmosphere should be represented.
+The retired TypeScript reference scaled the shell set to a camera-centred backdrop and kept it out of world bounds. The native Godot runtime also treats reconstructed sky shells as camera-relative presentation, and active GC runtime work continues to refine how individual shell types, alpha and atmosphere should be represented.
 
 Do not turn a particular debug-viewer scale or camera trick into a claim about native level geometry. The level background/fog source data is documented separately in [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md).
 

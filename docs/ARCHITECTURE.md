@@ -1,6 +1,6 @@
 # OBP architecture
 
-One Big Package's production architecture is **native Godot 4 + C#**. `reference-ts/` is temporary archaeology/equivalence code where native parity is incomplete; browser storage and WebGL are not product constraints.
+One Big Package's production architecture is **native Godot 4 + C#**. The former browser/TypeScript reference tree has been retired; browser storage and WebGL are not product constraints.
 
 This document is intentionally separate from [`PROJECT_VISION.md`](PROJECT_VISION.md): architecture should enable future trilogy fusion without quietly deciding story order, progression or cross-game rules.
 
@@ -100,7 +100,7 @@ neutral/runtime world data
 
 `OBP.IO.FileRandomAccessReader`, `SubRangeReader` and `ConcatenatedRandomAccessReader` provide the native implementation. `SplitParts` validates numbered split inputs. Hashing and identity checks stream data rather than reconstructing an entire image in RAM.
 
-The earlier browser `File`/`Blob` and concatenated-reader code remains useful in `reference-ts`, but it is no longer an architectural requirement for the product.
+The earlier browser `File`/`Blob` implementation is historical only and is no longer part of the repository or product architecture.
 
 ## Shared PS2 boundary
 
@@ -177,7 +177,7 @@ Production OBP no longer depends on OPFS, IndexedDB or CacheStorage. Retail sour
 
 Derived caches may be added where they materially improve load time, but they must be rebuildable from verified source data and should not become a second source of truth. The exact native cache/save layout remains a runtime design decision rather than an archaeology assumption.
 
-The old `reference-ts/packages/storage` implementation remains useful historical/reference code only.
+The old browser storage implementation is historical only; native bounded/random-access IO is authoritative for maintained code.
 
 ## Gameplay/design boundary
 

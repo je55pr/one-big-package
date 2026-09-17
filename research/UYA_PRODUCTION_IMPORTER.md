@@ -7,13 +7,7 @@ Retail ISO SHA-256:
 
 This checkpoint promotes the evidence-backed UYA reconstruction path from archaeology-only tools into the normal OBP importer contract.
 
-Production entry points:
-
-- `reference-ts/packages/importer-rac3/src/index.ts`
-- `reference-ts/packages/rac3-world/src/index.ts`
-- `reference-ts/packages/rac3-world/src/geometry.ts`
-
-`rac3Importer.importWorld()` now consumes the verified random-access retail disc directly. A pre-generated multi-megabyte `OBPWorld` JSON is not required.
+Historical checkpoint entry points were the now-retired TypeScript RAC3 importer/world modules. The maintained production path is the native `OBP.RAC3` provider feeding `RuntimeWorld`; a pre-generated multi-megabyte world JSON is not required.
 
 ## Provenance boundary
 
@@ -74,7 +68,7 @@ Row 1 exactly reproduces the previous atmosphere+sky debug-tool visible triangle
 
 ## All-main-level production census
 
-`reference-ts/tools/rac3-import-census.mjs` exercises the same production world builder with texture image serialization disabled. It discovers rows from the observed candidate ToC rather than hard-coding the campaign subset.
+The retired TypeScript `rac3-import-census.mjs` tool exercised the same world builder with texture image serialization disabled. It discovers rows from the observed candidate ToC rather than hard-coding the campaign subset.
 
 All **51** retail main-level rows imported and passed `validateWorld`, spanning campaign, Vid-Comics, multiplayer, split-screen and the multiplayer-menu row with zero authored Mobies.
 
@@ -108,6 +102,6 @@ The tool first checks the pinned retail authority ToC-window hash.
 
 ## Validation
 
-At this checkpoint the full `reference-ts` suite passes **257/257** with zero failures. The production `rac3Importer.importWorld()` contract was also invoked directly against retail Veldin, yielding a valid world with 735 authored Moby instances, 670 PVars, and the expected 1,960 TIE / 1,894 shrub placements.
+At this historical checkpoint the legacy TypeScript suite passed **257/257** with zero failures. The production `rac3Importer.importWorld()` contract was also invoked directly against retail Veldin, yielding a valid world with 735 authored Moby instances, 670 PVars, and the expected 1,960 TIE / 1,894 shrub placements.
 
 This production importer is now a suitable foundation for RAC3 authored-gameplay/runtime work: an object can be selected by numeric class/instance identity while retaining its authored PVar and optional render model in the same neutral world representation.

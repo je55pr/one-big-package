@@ -37,7 +37,7 @@ The static GC Moby record is `0x88` bytes. Fields used by the archaeology probe:
 
 A PVar table entry is two little-endian `s32`s: offset relative to the PVar data block, then byte size. Both fixup tables are pairs `{ s32 pvar_index; u32 offset_within_pvar; }` terminated by a negative `pvar_index`.
 
-Reproducible parser: `reference-ts/packages/gc-pvars/src/index.ts`.
+Historical parser provenance: the retired TypeScript `gc-pvars` implementation. Current parsing lives in native C#.
 
 ## Retail census
 
@@ -72,7 +72,7 @@ Therefore the two substructure offsets are **CONFIRMED**; public names `TargetVa
 
 ## Crate-family authored fields
 
-Authority probe: `reference-ts/tools/gc-pvar-family-probe.mjs`.
+Historical authority-probe provenance: the retired TypeScript `gc-pvar-family-probe.mjs` tool.
 
 **CONFIRMED.** Across all 2,788 static instances of classes `500/501/505/511/512`, 66 of the 68 dwords in the `0x110`-byte PVar are identical across every class and level. The only authored dwords that vary are:
 

@@ -2,7 +2,7 @@
 
 OBP's production runtime has moved from the original browser/TypeScript application to a **native desktop game built with Godot 4 + C#**. The A–H migration milestone was merged into `main` on 2026-09-07.
 
-The TypeScript implementation was not discarded. It is preserved under [`../reference-ts/`](../reference-ts/) as an archaeology and equivalence oracle, with [`TS_REFERENCE_BASELINE.md`](TS_REFERENCE_BASELINE.md) recording the baseline used during the port.
+The original TypeScript implementation was retained during migration as an equivalence oracle, then removed after the native path became the sole maintained implementation. Historical research documents preserve the measurements that still matter.
 
 For the living project snapshot, use [`CURRENT_STATE.md`](CURRENT_STATE.md). This file records the migration decision and its acceptance gates.
 
@@ -28,7 +28,6 @@ retail ISO / game files
 | `src/OBP.*` | engine-independent and Godot-adapter C# libraries |
 | `game/` | Godot 4 C# application |
 | `tests/OBP.Tests/` | xUnit suite |
-| `reference-ts/` | preserved TypeScript archaeology/equivalence implementation |
 | `research/`, `docs/` | retail archaeology, provenance and project documentation |
 | `tools/` | bootstrap/build/test/play/capture wrappers |
 | `.tools/` | downloaded pinned toolchain binaries; git-ignored |

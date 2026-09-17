@@ -128,7 +128,7 @@ Native class-sphere containment is retained as a diagnostic rather than used to 
 
 Across all 19 authority levels this accounts for all **16,232** authored placements: **15,340** have linked dynamic render geometry, **19** hand off to the Ratchet animated path, and **873** remain no-geometry objects. Linked dynamic objects contribute **9,631,271** triangles. Level 0 additionally exposes **33** class-1781 objects with a neutral `Reaction` clip while retaining their rest mesh as ordinary dynamic geometry. Per-level counts are frozen in `research/generated/rac1-dynamic-moby-runtime-census.json`.
 
-The original transform validator remains `reference-ts/tools/rac1-moby-transform-validation.mjs`; the native all-level retail gate now also verifies the runtime-object linkage, finite transforms, texture references and explicit meshless/animated split. No retail payload is committed.
+The original transform validator was the retired TypeScript `rac1-moby-transform-validation.mjs`; the native all-level retail gate now verifies the runtime-object linkage, finite transforms, texture references and explicit meshless/animated split. No retail payload is committed.
 
 ## Animated skin-state archaeology
 

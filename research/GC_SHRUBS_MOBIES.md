@@ -6,14 +6,7 @@
 
 Beyond tfrags (terrain) and ties (structures — [`GC_TIES.md`](GC_TIES.md)), the gameplay lump also places **shrubs** (small foliage) and **mobies** (enemies, crates, the vendor, pickups). Oozla (`LEVEL1`): 2,825 shrub instances / 24 classes, 748 moby instances / ~227 classes.
 
-Reference reproduction path:
-
-```bash
-cd reference-ts
-node tools/gc-world.mjs "<GC iso>" --level 1 --no-collision --out captures/level1.world.json
-```
-
-The production C# runtime now contains corresponding GC instance/geometry decoders; this command remains useful as the TypeScript equivalence oracle.
+Historical reproduction used the now-retired TypeScript `gc-world.mjs` tool. The maintained C# runtime now contains the corresponding GC instance/geometry decoders; use the native tests and retail gate for current reproduction.
 
 ## Shrub instances — TypeScript reference `packages/gc-instances` + `packages/gc-shrub`
 

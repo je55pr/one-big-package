@@ -40,7 +40,6 @@ A roughly 25-minute sandbox lifetime/failure pattern has also been repeatedly ob
 - Do not reconstruct a complete multi-gigabyte ISO in a ChatGPT sandbox merely to inspect a few headers or offsets.
 - When a large real-input materialisation is genuinely necessary, isolate the experiment, avoid opening several huge working sets at once, and persist useful results before continuing.
 - For native OBP itself, use seekable file/random-access readers; the production architecture has no browser `File`/`Blob` or OPFS requirement.
-- `reference-ts/` is temporary archaeology/equivalence code; do not revive its browser transport/runtime architecture.
 - When local reassembly is needed on an unconstrained machine, stream incrementally and verify size/hash before trusting the result.
 
 If sandbox behaviour changes, update the canonical research log first and keep this file as a short fallback summary rather than letting sandbox quirks shape the production architecture.

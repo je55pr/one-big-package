@@ -1,6 +1,6 @@
 # Trilogy retail source and world-provider architecture
 
-Status: **trilogy source/destination/provider infrastructure is merged into `main`; R&C1 and Going Commando are native production providers, while UYA still awaits native C# provider promotion.**
+Status: **the trilogy source/destination/provider architecture is live on `main`, with native C# production providers for R&C1, Going Commando and Up Your Arsenal.**
 
 OBP ultimately needs all three original PS2 games to coexist in one process. Source ownership, destination discovery and world loading therefore belong to separate application/runtime capabilities rather than to the Going Commando importer.
 
@@ -28,7 +28,7 @@ launch OBP
   -> Godot world / collision / player
 ```
 
-R&C1 and Going Commando are both merged native production providers. R&C1 exposes all 19 authority destinations as `rac1:LEVEL0` through `rac1:LEVEL18` through the same `IObpWorldProvider` contract used by GC. UYA can already be attached and retained as a valid retail source, and its full retail TypeScript/reference importer is merged; its native C# `IObpWorldProvider` remains pending.
+All three games are native production providers behind the same `IObpWorldProvider` contract. R&C1 exposes all 19 authority destinations, GC exposes its native destination catalogue, and UYA exposes all 51 observed sparse main-table rows through the same neutral registry/runtime boundary.
 
 **Source availability, destination discovery and world-provider availability are intentionally separate capabilities.**
 
@@ -139,7 +139,7 @@ IObpWorldProvider
 - global destination ids must be unique;
 - destination lookup is case-insensitive for CLI/debug use.
 
-Current `main` registers both `Rac1WorldProvider` and `GcWorldProvider`; this proves that the neutral registry/UI does not need source-game-specific rewrites when another importer becomes production-usable.
+Current `main` registers `Rac1WorldProvider`, `GcWorldProvider` and `Rac3WorldProvider`; the neutral registry/UI does not need source-game-specific rewrites when switching between them.
 
 ## Generic Godot world entry
 
@@ -154,7 +154,7 @@ ObpDestination
   -> RuntimeWorldScene
 ```
 
-`AdoptRuntimeWorld` owns the host-side environment, shared Godot world builder, collision, spawn/camera and debug presentation. That is the seam future R&C1/UYA providers will use.
+`AdoptRuntimeWorld` owns the host-side environment, shared Godot world builder, collision, spawn/camera and debug presentation. All three production providers use this seam.
 
 The old GC-specific selector/direct-load path remains temporarily for existing GC regression, stress and compatibility tooling; it is not the architecture future providers should copy.
 
@@ -174,7 +174,7 @@ Going Commando
   source attached -> destinations available
 
 Up Your Arsenal
-  source attached -> runtime importer pending
+  source attached -> 51 observed native destinations available
 ```
 
 R&C1 destinations intentionally retain evidence-safe labels (`R&C1 native level N`) until the retail/executable level-to-planet mapping is promoted as authority. The provider does not invent names merely to make the browser prettier.

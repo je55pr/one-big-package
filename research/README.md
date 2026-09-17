@@ -9,7 +9,7 @@ This directory records evidence about the retail games, source provenance and ex
 3. Public tools such as Wrench/noclip are useful cross-checks, not authority over contradictory retail evidence.
 4. OBP-created behaviour belongs to game design, not archaeology.
 
-When a document contains an unresolved hypothesis, it should say so explicitly.
+When a document contains an unresolved hypothesis, it should say so explicitly. Older research can mention paths under the retired `reference-ts/` tree as historical provenance; those paths are not current tooling and should not be treated as runnable instructions.
 
 ## Start here
 
@@ -43,11 +43,9 @@ When a document contains an unresolved hypothesis, it should say so explicitly.
 | Wrench format comparison | [`WRENCH_FORMAT_MATRIX.md`](WRENCH_FORMAT_MATRIX.md) | Public-tool comparison matrix |
 | External-source policy | [`EXTERNAL_SOURCE_POLICY.md`](EXTERNAL_SOURCE_POLICY.md) | How non-retail sources may be used |
 
-## Specialist-branch research
+## Working research
 
-R&C1 and UYA archaeology currently advances on dedicated branches and can therefore contain research documents that do not yet exist on `main`. Treat a branch-local document as evidence for that branch/ref until it is reviewed/merged; do not silently copy changing specialist conclusions into unrelated branches.
-
-The living cross-project snapshot in [`../docs/CURRENT_STATE.md`](../docs/CURRENT_STATE.md) separates merged capabilities from those active branch findings.
+`main` is the integration baseline. Concurrent archaeology may use temporary isolated branches/worktrees, but accepted evidence and implementation should be integrated back into `main` rather than maintained as a parallel specialist branch.
 
 ## Generated evidence
 

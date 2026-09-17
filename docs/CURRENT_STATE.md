@@ -1,12 +1,12 @@
 # One Big Package — Current State
 
-_Last refreshed: 2026-09-12._
+_Last refreshed: 2026-09-17._
 
 This document summarizes the current merged production baseline. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
 
 ## Headline
 
-OBP's production direction is **Godot 4 + C#**. `reference-ts/` is temporary archaeology/equivalence code retained only where native parity is incomplete, most notably UYA/RAC3.
+OBP's production runtime is **Godot 4 + C#**. The old TypeScript reference tree has been removed; retained research documents record any historical equivalence evidence that still matters.
 
 The trilogy source/destination/provider architecture now has **three native production providers**: R&C1, Going Commando and Up Your Arsenal. The native app can attach all three supported retail authorities, browse neutral destinations, reconstruct all 19 R&C1 worlds, arbitrary GC worlds and all 51 observed UYA main rows through the same `RuntimeWorld`/Godot boundary, and repeatedly enter/leave them without a game-specific host rewrite. The merged cross-game Fusion Lab can also hold multiple provider worlds at once; its first retail proof loads R&C1 level 0 and GC Oozla simultaneously in one Godot scene.
 
@@ -20,7 +20,7 @@ trilogy retail ISO
   -> walk / jump / fly through reconstructed retail worlds
 ```
 
-## Merged production baseline (`main`)
+## Current integration baseline (`main`)
 
 ### Native solution and boundaries
 
@@ -39,7 +39,7 @@ The architectural rule is unchanged: **Godot hosts OBP; Godot does not define Ra
 
 ### Trilogy source / destination / provider layer
 
-Merged `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. **All three games have registered native C# providers** (`Rac1WorldProvider`, `GcWorldProvider`, `Rac3WorldProvider`) and load through the same Godot presentation spine — `WorldHost`, `PresentationEnvironment`, `DebugOverlay`, `CaptureHarness` — verified with per-game deterministic shot sets (`tools/shots/rac{1,2,3}.json`). GC is the deepest target (lighting, animated mobies, dynamic objects); RAC1/RAC3 populate core geometry/collision/environment, RAC3 also preserves dynamic objects, and Veldin now exposes one bounded evidence-safe multi-joint Moby preview through `AnimatedMeshes`. RAC3 `Lighting` remains null and the host continues to degrade gracefully where optional presentation data is absent. UYA's TypeScript/reference importer remains useful as equivalence evidence for behaviour not yet promoted natively, but it is no longer the production world-loading path.
+Current `main` treats retail-source ownership and world loading as trilogy-level application concepts rather than GC-specific state. `ObpSourceLibrary` can attach and restore all three primary authorities, `ObpDestination` keeps native destination identity separate from display labels, and `IObpWorldProvider` / `ObpWorldProviderRegistry` route a selected source-game destination to a neutral `RuntimeWorld`. **All three games have registered native C# providers** (`Rac1WorldProvider`, `GcWorldProvider`, `Rac3WorldProvider`) and load through the same Godot presentation spine — `WorldHost`, `PresentationEnvironment`, `DebugOverlay`, `CaptureHarness` — verified with per-game deterministic shot sets (`tools/shots/rac{1,2,3}.json`). GC is the deepest target (lighting, animated mobies, dynamic objects); RAC1/RAC3 populate core geometry/collision/environment, RAC3 also preserves dynamic objects, and Veldin now exposes one bounded evidence-safe multi-joint Moby preview through `AnimatedMeshes`. RAC3 `Lighting` remains null and the host continues to degrade gracefully where optional presentation data is absent.
 
 ### Neutral gameplay entity lifecycle
 
@@ -112,9 +112,9 @@ The merged runtime includes:
 - deterministic screenshots/capture metadata;
 - direct planet launch and multi-planet lifecycle stress arguments.
 
-### TypeScript archaeology role
+### Legacy reference removal
 
-`reference-ts/` remains only to preserve evidence and working decoders that have not yet been promoted into native C#. Do not add new product/runtime architecture there. UYA/RAC3 still has important parity gaps in animation, semantics and effects, but its production world provider is now native C#; obsolete TypeScript components should be deleted only after their useful behaviour/evidence is preserved natively.
+The former TypeScript/browser reference implementation has been removed. Native C# plus committed research/generated evidence is now the only maintained implementation surface. Historical research may still mention legacy TypeScript paths as provenance for old measurements; those paths are not current tooling.
 
 ### Retail-authority development
 
@@ -126,14 +126,14 @@ Across the project, major work still includes:
 
 - broader Ratchet controller/presentation fidelity beyond the recovered R&C1 run/jump/fall/crouch slice, including exact turn easing and special traversal;
 - broader Moby animation/state selection and wider class/variant behaviour;
-- weapons, damage, AI and combat;
-- mission/story state, cutscenes and progression machinery;
-- vendors, economy, inventory and save semantics;
+- broader weapons, damage, AI and combat beyond the first recovered R&C1 slices;
+- broader mission/story state, cutscenes and progression machinery beyond the first R&C1 campaign-state slice;
+- vendors, economy and save semantics, plus broader inventory state beyond the first R&C1 weapon-inventory slice;
 - runtime audio;
 - exact GS material/blend fidelity and remaining sky/effect work — including switching on the staged histogram alpha-mode and emissive presentation in `MaterialModel` once per-world visual review with `tools/vizcompare` clears them;
 - populating the dormant `RuntimeAnimatedMesh.Skeleton` debug/introspection hook for proven animation paths once its cross-game coordinate contract is pinned;
 - per-world debug overlays / inspector inside `CompositionLab` (F-keys and I currently act on the active world only);
-- broader R&C1/UYA promotion of remaining animation, gameplay semantics and effects from research/reference code into the C# production stack;
+- broader R&C1/UYA recovery of remaining animation, gameplay semantics and effects directly into the C# production stack;
 - removing remaining GC-specific assumptions from legacy HUD/capture/regression paths after the neutral path is settled;
 - explicit cross-game fusion rules once enough native behaviour is understood.
 
@@ -144,7 +144,7 @@ Across the project, major work still includes:
 These are capability goals, not a frozen campaign roadmap:
 
 1. Continue productionising GC world/runtime fidelity and dynamic behaviour.
-2. Promote stable R&C1 and UYA discoveries into engine-independent C# libraries with equivalence tests rather than re-reverse-engineering them.
+2. Promote stable R&C1 and UYA discoveries directly into engine-independent C# libraries with deterministic evidence tests.
 3. Use the now-working three-provider runtime baseline to extend composition into UYA and move into cross-game Veldin alignment without weakening each game's native provenance.
 4. Gradually route old GC-only debug/HUD/capture code through the same neutral destination/runtime path rather than maintaining two architectures indefinitely.
 5. Keep using targeted local retail probes for questions where retail bytes/executable behaviour can settle ambiguity cheaply.

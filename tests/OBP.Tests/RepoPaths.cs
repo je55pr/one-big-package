@@ -12,7 +12,9 @@ public static class RepoPaths
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (Directory.Exists(Path.Combine(dir.FullName, ".git")) &&
+            var gitMarker = Path.Combine(dir.FullName, ".git");
+            if ((Directory.Exists(gitMarker) || File.Exists(gitMarker)) &&
+                File.Exists(Path.Combine(dir.FullName, "OneBigPackage.sln")) &&
                 Directory.Exists(Path.Combine(dir.FullName, "research")))
             {
                 return dir.FullName;

@@ -1,4 +1,4 @@
-﻿# UYA retail gameplay block census
+# UYA retail gameplay block census
 
 **Authority:** `rac3-ntscu-original` / `SCUS-97353`
 **Retail ISO SHA-256:** `d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444`
@@ -19,7 +19,7 @@ Therefore the earlier Veldin observation of 32 non-zero top-level pointers is a 
 The catalogue still depends on the current candidate hidden-table discovery path. The bounded LBA-1001 bytes are retail-verified; executable provenance of that address remains provisional.
 ## Census method
 
-`reference-ts/packages/uya-gameplay-census/src/index.ts` treats each non-zero header word only as a candidate top-level pointer. For each unique pointer it records:
+The retired TypeScript gameplay-census implementation treated each non-zero header word only as a candidate top-level pointer. For each unique pointer it records:
 
 - header slot and raw pointer value;
 - the apparent extent to the next greater top-level pointer;
@@ -32,7 +32,7 @@ An apparent extent is a structural partition between top-level pointers, **not**
 
 All-level driver:
 
-`reference-ts/tools/uya-gameplay-block-census.mjs`
+Historical generator: retired TypeScript `uya-gameplay-block-census.mjs`
 
 Machine-readable output:
 

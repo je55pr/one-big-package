@@ -1,9 +1,5 @@
 <Project>
-  <!--
-    Shared MSBuild settings for the OBP native (C#) projects under src/, game/
-    and tests/. The temporary TypeScript archaeology tree in reference-ts/ has no
-    .csproj files and is unaffected.
-  -->
+  <!-- Shared MSBuild settings for the OBP C# projects under src/, game/ and tests/. -->
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

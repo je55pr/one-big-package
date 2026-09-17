@@ -1,4 +1,4 @@
-﻿# UYA retail PVar compatibility
+# UYA retail PVar compatibility
 
 **Authority:** `rac3-ntscu-original` / `SCUS-97353`
 **Retail ISO SHA-256:** `d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444`
@@ -9,7 +9,7 @@ This document records the retail evidence for reusing OBP's strict Going Command
 
 **RETAIL-COMPATIBILITY CONFIRMED across all 51 observed main-level rows.**
 
-The unchanged parser in `reference-ts/packages/gc-pvars/src/index.ts` accepts every retail UYA main gameplay lump after an independent UYA prerequisite census validates the relevant header pointers, class/Moby spans, PVar table/data spans, both fixup arrays, their terminators, and every fixup target offset.
+The retired TypeScript GC-PVar parser accepted every retail UYA main gameplay lump after an independent UYA prerequisite census validates the relevant header pointers, class/Moby spans, PVar table/data spans, both fixup arrays, their terminators, and every fixup target offset.
 
 This proves a shared structural layout. It does **not** by itself make the GC-derived semantic labels (`UID`, `oClass`, `mode bits`, `PVar Moby link`, and `relative pointer`) native UYA symbol names. Those names retain their existing provenance until UYA executable/dataflow evidence independently supports them.
 
@@ -25,7 +25,7 @@ The following UYA gameplay-header slots are populated coherently and pass the st
 | `+0x60` | PVar data | retail-compatible referenced spans |
 | `+0x64` | PVar relative-pointer fixups | retail-compatible terminated 8-byte pairs |
 
-The compatibility probe is `reference-ts/packages/uya-pvars-compat/src/index.ts`. It does not relax or fork `gc-pvars`; it validates UYA prerequisites independently and then applies `parseGcGameplayMobyPvars()` unchanged.
+The historical compatibility probe validated UYA prerequisites independently before applying the same GC PVar interpretation. The maintained implementation/evidence path is native C# plus committed generated reports.
 
 ## All-row census
 
@@ -74,19 +74,11 @@ Generated file SHA-256 at this checkpoint:
 
 Each row records the decompressed gameplay SHA-256, strict counts, maximum referenced PVar index, and raw gameplay-header pointer values. It contains derived metadata/hashes only, not retail payload bytes.
 
-Local reproduction:
-
-```text
-cd reference-ts
-npm run build
-node tools/uya-pvar-census.mjs "<retail UYA ISO>" --out "<report.json>"
-```
-
-The tool first verifies the pinned retail ToC-window identity, discovers the current 51 main-level rows from the bounded catalogue evidence, decompresses each gameplay WAD using the shared strict WAD-LZ codec, and refuses the run on any prerequisite or shared-parser disagreement.
+Historical reproduction used the retired TypeScript UYA PVar census tool. For current work, use native probes/tests and the committed generated evidence. The historical tool first verified the pinned retail ToC-window identity, discovers the current 51 main-level rows from the bounded catalogue evidence, decompresses each gameplay WAD using the shared strict WAD-LZ codec, and refuses the run on any prerequisite or shared-parser disagreement.
 
 ## Detailed Moby/PVar catalogue
 
-`reference-ts/tools/uya-moby-pvar-catalogue.mjs` emits a payload-free per-instance/per-PVar catalogue. The full local report contains all 23,221 static Moby records, all 19,017 referenced PVars, PVar size/content hashes, fixup offsets, and GC-compatibility field values. Retail PVar payload bytes are never embedded.
+The retired TypeScript `uya-moby-pvar-catalogue.mjs` tool emitted the payload-free per-instance/per-PVar catalogue. The full local report contains all 23,221 static Moby records, all 19,017 referenced PVars, PVar size/content hashes, fixup offsets, and GC-compatibility field values. Retail PVar payload bytes are never embedded.
 
 A compact source-controlled index is committed as `research/generated/rac3-ntscu-original.uya-moby-pvar-families.json`. It retains 892 observed numeric oClass families, row coverage, instance/PVar counts, PVar sizes and mode-value sets, plus hashes identifying the reproducible full report.
 

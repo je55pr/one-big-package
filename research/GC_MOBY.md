@@ -223,7 +223,7 @@ single-joint classes. The shared codec/evaluator now also supports bounded
 multi-joint playback; UYA Veldin has the first promoted evidence-safe preview.
 
 Equivalence: `GcLevelTests.Level1_MobySequencesMatchTypeScript` hashes joints +
-frames against `reference-ts` (180 classes / 1929 joints / 6476 frames on Oozla).
+frames against the legacy TypeScript reference (180 classes / 1929 joints / 6476 frames on Oozla).
 
 ## Limitations / next
 
