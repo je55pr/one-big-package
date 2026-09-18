@@ -818,6 +818,7 @@ public partial class OBPGame : Node3D
             (r.AnimatedMobies > 0 ? $"   Animated mobies: {r.AnimatedMobies}" : "") +
             (r.DynamicObjects > 0 ? $"   Dynamic objects: {r.DynamicObjects}" : "") +
             $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
+            (_worldHost.AudioDiagnostics.Count > 0 ? $"\n{_worldHost.AudioStatusLine}" : "") +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}");
     }

@@ -1,4 +1,5 @@
 using OBP.Core.Math;
+using OBP.Runtime.Audio;
 
 namespace OBP.Runtime;
 
@@ -33,7 +34,8 @@ public sealed record RuntimeWorld(
     IReadOnlyList<RuntimeAnimatedMesh>? AnimatedMeshes = null,
     IReadOnlyList<RuntimeDynamicObject>? DynamicObjects = null,
     IReadOnlyList<RuntimeAmbientAnimation>? AmbientAnimations = null,
-    RuntimeSpawn? PlayerStart = null)
+    RuntimeSpawn? PlayerStart = null,
+    IReadOnlyList<RuntimeAudioPlaybackIntent>? LevelAudio = null)
 {
     /// <summary>The preferred native player entry when one is known; otherwise the native ship park point.</summary>
     public RuntimeSpawn? PreferredPlayerStart => PlayerStart ?? Ship;

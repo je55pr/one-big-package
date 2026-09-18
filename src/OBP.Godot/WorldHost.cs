@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Core.Math;
 using OBP.Runtime;
+using OBP.Runtime.Audio;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Godot;
@@ -67,6 +68,7 @@ public sealed class WorldHost
     private Node3D? _skyRoot;
 
     private readonly System.Collections.Generic.List<AmbientAnimationTarget> _ambient = new();
+    private readonly RuntimeAudioHost _audio = new();
     private double _worldTime;
 
     // Separate clock for moby animation so a debug pause (K) freezes the mobies
@@ -91,6 +93,14 @@ public sealed class WorldHost
     public global::Godot.Environment? Environment => _env?.Environment;
 
     public bool IsLoaded => Result is not null;
+
+    public IReadOnlyList<RuntimeAudioHost.Diagnostic> AudioDiagnostics => _audio.Diagnostics;
+
+    public string AudioStatusLine => _audio.StatusLine;
+
+    /// <summary>Present one neutral gameplay sound effect in the loaded world.</summary>
+    public bool PlayEffect(RuntimeAudioPlaybackIntent intent) =>
+        IsLoaded && _hostNode is { } host && _audio.PlayEffect(host, intent);
 
     /// <summary>
     /// Build and attach a world. <paramref name="hostNode"/> parents the
@@ -138,6 +148,10 @@ public sealed class WorldHost
 
         _worldTime = 0;
         ResolveAmbientAnimations(world, options);
+        if (world.LevelAudio is { } levelAudio)
+        {
+            _audio.StartLevelAudio(hostNode, levelAudio);
+        }
         return result;
     }
 
@@ -234,6 +248,8 @@ public sealed class WorldHost
     /// <summary>Free the loaded world and everything it owns. Safe when nothing is loaded.</summary>
     public void Unload()
     {
+        _audio.StopAll();
+
         if (Result?.Root is { } root && GodotObject.IsInstanceValid(root))
         {
             root.QueueFree();
