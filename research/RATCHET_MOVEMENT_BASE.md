@@ -12,7 +12,7 @@ The authority decision is therefore:
 
 | Candidate | Evidence already available | Remaining path | Decision impact |
 | --- | --- | --- | --- |
-| R&C1 | Controlled live 60 Hz acceleration, stopping, jump/fall, air control, crouch and respawn witnesses; direct displacement output; portable recurrence tests | Close analogue/camera input, exact yaw recurrence and selected host-contact questions | **Selected**: shortest path with the most empirically calibrated core |
+| R&C1 | Controlled live 60 Hz acceleration, stopping, jump/fall, air control, crouch, locomotion-state yaw and respawn witnesses; direct displacement output; portable recurrence tests | Close analogue/camera input and selected host-contact questions | **Selected**: shortest path with the most empirically calibrated core |
 | GC / R&C2 | Exact player-global/state spine, camera-relative input path, strafe branch, target-speed smoothing, jump/fall setup and candidate constants | Live-calibrate runtime cap/scalars, jump hold/release, turn easing, landing/slopes and mode differences across roughly 25-40 relevant routines | Strong sequel-specific authority, but replacing R&C1 now would trade measured behaviour for inferred behaviour |
 | UYA / R&C3 | Outer hero tick, per-tick input path, centralized update/entry tables, shaped input, movement vectors and three-mode movement-basis selection | Label modes/states dynamically and recover precise recurrences across roughly 100 KB of closely related controller code | Recoverable, but not an archaeological shortcut to the common base |
 
@@ -29,12 +29,12 @@ The selected authority is already pinned by `research/RAC1_PLAYER_MOVEMENT.md` a
 - airborne planar acceleration is approximately `1/180` unit/tick toward the same planar cap, while released air movement decays at approximately `1/1200` unit/tick;
 - walking off a ledge enters the recovered falling recurrence immediately, while the final landing step may be collision-shortened by the host surface;
 - crouch is stationary in native sequence 13, directional crouch uses turn-in-place sequences 14/15, and residual planar motion decays by approximately `0.001802944` unit/tick;
-- live Ratchet Moby `+0x48` is proven yaw and normal facing converges toward planar travel, although the exact easing recurrence is not yet recovered;
+- live Ratchet Moby `+0x48` is proven yaw; fixed traces recover distinct startup-ground, run-ground, crouch-turn and air recurrences, plus ground/air caps and overshoot-to-target velocity reset;
 - Veldin death/reset witnesses show motion state is cleared on respawn and Ratchet returns near the authored player start rather than inheriting pre-death motion.
 
-This is enough to make the translational run/jump/fall/crouch core evidence-backed today. It is not enough to call the complete controller finished.
+This is enough to make the ordinary run/jump/fall/crouch and facing recurrence evidence-backed today. The remaining ordinary-controller uncertainty is concentrated in analogue/camera input shaping and selected host-contact behavior rather than the yaw easing law.
 
-This follow-up archaeology narrowed two remaining gaps without filling them speculatively. Full-scale cardinal input/release remains the calibrated input envelope; arbitrary analogue magnitude, dead-zone shaping and the camera/control-heading transform are still unproven. Separately, exact-binary32 scans of the authority boot ELF and a loaded Veldin savestate do not establish the constants currently used by `Rac1RatchetYawController` as one retail yaw recurrence: the alleged ground error gain and both alleged max-step values are absent from the boot ELF, the ground max-step literal is absent from loaded EE RAM, and the common damping/gain literals occur broadly outside any proven player-yaw dataflow. The yaw implementation is therefore explicitly provisional.
+Full-scale cardinal input/release remains the calibrated input envelope; arbitrary analogue magnitude, dead-zone shaping and the exact camera/control-heading target transform are still unproven. Fixed NTSC-U yaw traces resolve the earlier provenance conflict that static literal scans could not: startup ground is `0.9*v + 0.019*error`, run ground is `0.85*v + 0.008*error`, crouch turn is `0.93*v + 0.002*error`, and air is `0.8*v + 0.04*error`. The existing ground/air caps are verified, as is overshoot-to-target with velocity reset. The former standalone 1% early-snap threshold has no witness and is not part of the promoted native recurrence.
 
 Directional R1 crouch witnesses remain zero-translation turn-in-place states rather than moving crouch/strafe. No separate ordinary moving-strafe law has been established as part of baseline R&C1 locomotion.
 
@@ -42,10 +42,9 @@ Directional R1 crouch witnesses remain zero-translation turn-in-place states rat
 
 The remaining work should stay surgical and close only the gaps that affect the common movement feel:
 
-1. **Analogue input envelope and camera-relative intent.** Recover the native dead-zone, post-dead-zone magnitude scaling, camera/control-yaw transform, arbitrary-direction behaviour and reversal response. The current `PlayerControlIntent.NormalizedPlanar()` discards input magnitude, and DebugPlayer's camera rotation is host policy rather than retail evidence.
-2. **Facing and turn recurrence.** Recover ground and air yaw easing, snap/max-step behaviour and crouch-turn yaw from controlled Moby `+0x48` witnesses. The audit found that the present `Rac1RatchetYawController` constants outrun the admitted evidence, so those constants must not become the common-base authority merely because tests reproduce the implementation.
-3. **Contact and slope boundary.** Use a small set of controlled Veldin slopes, ledge departures and landings to determine the native facts the controller reacts to, especially uphill/downhill speed retention and landing/contact shortening. Godot still owns collision geometry, floor/ceiling detection and surface resolution.
-4. **Reset and cadence hardening.** Keep controller reset semantics deterministic, verify any feel-relevant respawn heading/state needed by ordinary play, and ensure OBP executes the native recurrence once per 60 Hz controller update rather than depending accidentally on an unspecified host physics rate.
+1. **Analogue input envelope and camera-relative intent.** Recover the native dead-zone, post-dead-zone magnitude scaling, exact camera/control-yaw target transform, arbitrary-direction behaviour and reversal response. The current `PlayerControlIntent.NormalizedPlanar()` discards input magnitude, and DebugPlayer's camera rotation is host policy rather than retail evidence.
+2. **Contact and slope boundary.** Use a small set of controlled Veldin slopes, ledge departures and landings to determine the native facts the controller reacts to, especially uphill/downhill speed retention and landing/contact shortening. Godot still owns collision geometry, floor/ceiling detection and surface resolution.
+3. **Reset and cadence hardening.** Keep controller reset semantics deterministic, verify any feel-relevant respawn heading/state needed by ordinary play, and ensure OBP executes the native recurrence once per 60 Hz controller update rather than depending accidentally on an unspecified host physics rate.
 
 Do not expand this recovery into combat, wrench lunges, gadgets, ledge grabs, special traversal, full native camera reconstruction, arbitrary checkpoint archaeology or sequel-only movement states. Those may have their own authorities and milestones.
 
@@ -60,7 +59,7 @@ The common movement implementation should preserve the existing architecture bou
 - `OBP.Godot` / `game/` owns device sampling, engine units, scene/camera presentation, collision geometry, `MoveAndSlide()` or equivalent resolution, floor/ceiling classification and feeding resulting contact facts back to the controller.
 - The controller output remains native-style deterministic movement for one controller update. Host conversion to engine velocity must not change the recurrence or become the place where source-game speed/gravity constants live.
 
-The existing `Rac1RatchetMovementController` is the natural implementation home for the recovered translational rules, but its contract may need to stop normalizing every nonzero planar vector once analogue magnitude is recovered. The separate yaw implementation must be reconciled against retail evidence before it is promoted as part of the authority base.
+The existing `Rac1RatchetMovementController` is the natural implementation home for the recovered translational rules, but its contract may need to stop normalizing every nonzero planar vector once analogue magnitude is recovered. The separate yaw controller now consumes a source-game `GroundStartup` / `GroundRun` / `CrouchTurn` / `Air` mode emitted by movement state, keeping the recovered recurrence out of Godot while leaving the unresolved target transform clearly bounded.
 
 ## Provenance rule
 
@@ -72,4 +71,4 @@ GC remains authoritative for GC-specific movement once separately recovered; UYA
 
 ## Decision boundary
 
-This document selects the authority and defines the recovery/implementation boundary only. It does not implement movement, bless unresolved yaw constants, replace collision policy, or assert trilogy-wide native equivalence. The next movement worker should finish the remaining R&C1 archaeology first, then implement only what that evidence supports.
+This document selects the authority and defines the recovery/implementation boundary. The ordinary translational and locomotion-state yaw recurrences now have R&C1 retail witnesses; unresolved analogue/camera shaping, contact policy and special traversal remain outside that claim. Nothing here asserts trilogy-wide native equivalence.

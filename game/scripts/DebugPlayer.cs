@@ -87,6 +87,9 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Retail-backed RAC1 locomotion state available to presentation code.</summary>
     public Rac1RatchetLocomotionState Rac1LocomotionState => _rac1Movement.LocomotionState;
 
+    /// <summary>Retail-backed RAC1 yaw recurrence mode for deterministic inspection.</summary>
+    public Rac1RatchetYawMode Rac1YawMode => _rac1Movement.YawMode;
+
     /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
     public bool Rac1GameplayAlive { get; set; } = true;
 
@@ -350,14 +353,14 @@ public partial class DebugPlayer : CharacterBody3D
     private void StepRac1Movement(Vector2 move, Vector3 wish, bool jump, bool crouch)
     {
         bool grounded = IsOnFloor();
-        _rac1Yaw.Step(move.X, -move.Y, GetRac1ControlYaw(), grounded);
-        UpdateRac1FacingPresentation();
-
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
         var step = _rac1Movement.Step(
             new PlayerControlIntent(wish.X, wish.Z, jump, jumpPressed, crouch),
             new PlayerContactFacts(grounded, IsOnCeiling()));
+
+        _rac1Yaw.Step(move.X, -move.Y, GetRac1ControlYaw(), step.YawMode);
+        UpdateRac1FacingPresentation();
 
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(

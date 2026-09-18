@@ -171,6 +171,8 @@ public sealed class Rac1RatchetMovementControllerTests
         controller.Reset();
 
         Assert.Equal(Rac1RatchetMovementPhase.Grounded, controller.Phase);
+        Assert.Equal(Rac1RatchetLocomotionState.Idle, controller.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.GroundStartup, controller.YawMode);
         Assert.Equal(0d, controller.PlanarX, 12);
         Assert.Equal(0d, controller.PlanarY, 12);
         Assert.Equal(0d, controller.VerticalStep, 12);

@@ -78,6 +78,7 @@ public sealed class Rac1RatchetMovementTraceTests
         Assert.Equal(-Rac1RatchetMovementController.FallGravityPerTick, first.Vertical, 12);
         Assert.Equal(-2d * Rac1RatchetMovementController.FallGravityPerTick, second.Vertical, 12);
         Assert.Equal(Rac1RatchetLocomotionState.Falling, second.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.Air, second.YawMode);
     }
 
     [Fact]
@@ -94,8 +95,10 @@ public sealed class Rac1RatchetMovementTraceTests
 
         Assert.Equal(0d, turning.PlanarMagnitude, 12);
         Assert.Equal(Rac1RatchetLocomotionState.CrouchTurning, turning.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.CrouchTurn, turning.YawMode);
         Assert.Equal(0d, stationary.PlanarMagnitude, 12);
         Assert.Equal(Rac1RatchetLocomotionState.Crouched, stationary.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.GroundStartup, stationary.YawMode);
     }
 
     [Fact]
@@ -123,5 +126,44 @@ public sealed class Rac1RatchetMovementTraceTests
 
         Assert.Equal(0.03d - (5d * Rac1RatchetMovementController.CrouchDecelerationPerTick), step.PlanarMagnitude, 12);
         Assert.Equal(Rac1RatchetLocomotionState.CrouchTurning, step.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.CrouchTurn, step.YawMode);
+    }
+
+    [Fact]
+    public void GroundAcceleration_CrossesObservedStartupToRunYawBoundaryOnNineteenthTick()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var run = new PlayerControlIntent(0, 1, false, false);
+
+        Rac1RatchetMovementController.StepResult step = default;
+        for (int tick = 0; tick < 18; tick++)
+            step = controller.Step(run, Grounded);
+
+        Assert.Equal(0.0375d, step.PlanarMagnitude, 12);
+        Assert.Equal(Rac1RatchetYawMode.GroundStartup, step.YawMode);
+
+        step = controller.Step(run, Grounded);
+
+        Assert.True(step.PlanarMagnitude >= Rac1RatchetMovementController.GroundRunYawMinimumPlanarStep);
+        Assert.Equal(Rac1RatchetYawMode.GroundRun, step.YawMode);
+    }
+
+    [Fact]
+    public void RunningJump_UsesSequenceSevenYawFromAnticipationThroughLaunch()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var run = new PlayerControlIntent(0, 1, false, false);
+        for (int tick = 0; tick < 80; tick++)
+            controller.Step(run, Grounded);
+
+        var step = controller.Step(new PlayerControlIntent(0, 1, true, true), Grounded);
+        Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, step.Phase);
+        Assert.Equal(Rac1RatchetYawMode.Air, step.YawMode);
+
+        for (int tick = 1; tick < Rac1RatchetMovementController.JumpAnticipationTicks; tick++)
+            step = controller.Step(new PlayerControlIntent(0, 1, true, false), Grounded);
+
+        Assert.Equal(Rac1RatchetMovementPhase.Rising, step.Phase);
+        Assert.Equal(Rac1RatchetYawMode.Air, step.YawMode);
     }
 }

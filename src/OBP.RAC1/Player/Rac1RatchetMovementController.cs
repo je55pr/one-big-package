@@ -34,8 +34,9 @@ public enum Rac1RatchetLocomotionState
 /// <remarks>
 /// Constants and recurrences are frozen from
 /// research/generated/rac1-ratchet-movement-controller.json (SCUS-97199).
-/// Unrecovered camera/stick shaping and yaw easing are deliberately not
-/// invented here.
+/// Unrecovered camera/stick shaping and the control-heading target transform
+/// are deliberately not invented here. The locomotion-state yaw recurrence is
+/// recovered separately in <see cref="Rac1RatchetYawController"/>.
 /// </remarks>
 public sealed class Rac1RatchetMovementController
 {
@@ -46,6 +47,11 @@ public sealed class Rac1RatchetMovementController
     public const double AirAccelerationPerTick = 1d / 180d;
     public const double AirDecelerationPerTick = 1d / 1200d;
     public const double CrouchDecelerationPerTick = 0.001802944d;
+
+    // Fixed yaw witnesses remain in startup sequence 3 at 0.037499697 and
+    // enter run sequence 4 at 0.039582664 native unit/tick.
+    public const double GroundRunYawMinimumPlanarStep = 0.039582664d;
+
     public const int JumpAnticipationTicks = 8;
 
     // Controlled Veldin taps establish this launch table. The first two held
@@ -90,6 +96,7 @@ public sealed class Rac1RatchetMovementController
 
     public Rac1RatchetMovementPhase Phase { get; private set; } = Rac1RatchetMovementPhase.Grounded;
     public Rac1RatchetLocomotionState LocomotionState { get; private set; } = Rac1RatchetLocomotionState.Idle;
+    public Rac1RatchetYawMode YawMode { get; private set; } = Rac1RatchetYawMode.GroundStartup;
     public double PlanarX => _planarX;
     public double PlanarY => _planarY;
     public double VerticalStep => _verticalStep;
@@ -99,7 +106,8 @@ public sealed class Rac1RatchetMovementController
         double PlanarY,
         double Vertical,
         Rac1RatchetMovementPhase Phase,
-        Rac1RatchetLocomotionState LocomotionState)
+        Rac1RatchetLocomotionState LocomotionState,
+        Rac1RatchetYawMode YawMode)
     {
         public double PlanarMagnitude =>
             System.Math.Sqrt((PlanarX * PlanarX) + (PlanarY * PlanarY));
@@ -110,7 +118,8 @@ public sealed class Rac1RatchetMovementController
         UpdatePlanar(input, contact.IsGrounded);
         UpdateVertical(input, contact);
         UpdateLocomotionState(input, contact);
-        return new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState);
+        UpdateYawMode(input, contact);
+        return new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState, YawMode);
     }
 
     public void Reset()
@@ -123,6 +132,7 @@ public sealed class Rac1RatchetMovementController
         _heldRiseTicks = 0;
         Phase = Rac1RatchetMovementPhase.Grounded;
         LocomotionState = Rac1RatchetLocomotionState.Idle;
+        YawMode = Rac1RatchetYawMode.GroundStartup;
     }
 
     private void UpdatePlanar(PlayerControlIntent input, bool grounded)
@@ -178,6 +188,32 @@ public sealed class Rac1RatchetMovementController
                 Rac1RatchetLocomotionState.Moving,
             _ => Rac1RatchetLocomotionState.Idle,
         };
+    }
+
+    private void UpdateYawMode(PlayerControlIntent input, PlayerContactFacts contact)
+    {
+        var desired = input.NormalizedPlanar();
+        bool airborne = !contact.IsGrounded ||
+            Phase is Rac1RatchetMovementPhase.JumpAnticipation or
+                Rac1RatchetMovementPhase.Rising or
+                Rac1RatchetMovementPhase.Falling;
+
+        if (airborne)
+        {
+            YawMode = Rac1RatchetYawMode.Air;
+            return;
+        }
+
+        if (input.CrouchHeld && desired != (0d, 0d))
+        {
+            YawMode = Rac1RatchetYawMode.CrouchTurn;
+            return;
+        }
+
+        double planarMagnitude = System.Math.Sqrt((_planarX * _planarX) + (_planarY * _planarY));
+        YawMode = planarMagnitude >= GroundRunYawMinimumPlanarStep
+            ? Rac1RatchetYawMode.GroundRun
+            : Rac1RatchetYawMode.GroundStartup;
     }
 
     private void UpdateVertical(PlayerControlIntent input, PlayerContactFacts contact)

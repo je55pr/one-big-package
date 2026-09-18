@@ -78,6 +78,8 @@
   },
   "turning": {
     "liveMobyYawOffset": "0x48",
+    "playerStateCurrentYawOffset": "G+0x18",
+    "playerStateTargetYawOffset": "G+0x100",
     "rotationMatrixOffsets": [
       "0xc0",
       "0xc4",
@@ -85,11 +87,63 @@
       "0xd4"
     ],
     "startYawRad": 1.111041784286499,
-    "largestObservedYawStepRadPerTick": 0.142,
-    "exactEasingRecurrence": "unknown",
+    "recurrences": {
+      "groundStartup": {
+        "nativeSequence": 3,
+        "velocityRetention": 0.9,
+        "errorGain": 0.019,
+        "rmsResidualRad": 7.96e-8
+      },
+      "groundRun": {
+        "nativeSequence": 4,
+        "velocityRetention": 0.85,
+        "errorGain": 0.008,
+        "rmsResidualRad": 8.88e-8
+      },
+      "crouchTurn": {
+        "nativeSequenceWitness": 14,
+        "velocityRetention": 0.93,
+        "errorGain": 0.002,
+        "rmsResidualRad": 5.10e-8
+      },
+      "air": {
+        "nativeSequence": 7,
+        "beginsDuringJumpAnticipation": true,
+        "velocityRetention": 0.8,
+        "errorGain": 0.04,
+        "rmsResidualRad": 9.3e-8
+      }
+    },
+    "groundStartupToRunBoundary": {
+      "lastObservedStartupPlanarStep": 0.037499697,
+      "firstObservedRunPlanarStep": 0.039582664,
+      "implementationRunMinimumPlanarStep": 0.039582664
+    },
+    "maximumYawStepRadPerTick": {
+      "groundImplementation": 0.165806278,
+      "groundObserved": 0.16580629348754883,
+      "airImplementation": 0.250163853,
+      "airObserved": 0.2501637935638428
+    },
+    "overshootToTarget": {
+      "verified": true,
+      "clearsYawVelocity": true
+    },
+    "earlySnapFraction": {
+      "formerImplementationValue": 0.01,
+      "retailWitness": false,
+      "runtimeBehavior": "removed; exact-target events are covered by verified overshoot clamping"
+    },
+    "localRawWitnesses": [
+      "right_release_zero.json",
+      "forward_release_zero.json",
+      "jump_air_forward.json",
+      "turn_to_crate.json"
+    ],
     "literalProvenanceAudit": {
+      "staticLiteralsAloneEstablishRecurrence": false,
       "bootElfMissingExact": [
-        "ground_error_gain",
+        "ground_run_error_gain",
         "ground_maximum_step",
         "air_maximum_step"
       ],
@@ -97,7 +151,6 @@
       "loadedSnapshotAirMaximumStepMatches": [
         "0x0013f764"
       ],
-      "coherentRetailYawLawEstablished": false,
       "evidence": [
         "research/generated/rac1-movement-static-probe.json",
         "research/generated/rac1-movement-savestate-probe.json"
@@ -106,7 +159,8 @@
   },
   "scopeNotes": {
     "collisionResponse": "host-owned",
-    "exactTurnEasing": "unknown",
+    "turnEasing": "recovered for ground startup, ground run, crouch turn and air",
+    "controlHeadingTargetTransform": "unknown",
     "analogueDeadZone": "unknown",
     "combatMovement": "separate milestone",
     "movingCrouch": "not observed; directional crouch witnesses are zero-translation turn-in-place",
@@ -115,6 +169,7 @@
   "provenance": [
     "controlled PCSX2 authority execution",
     "read-only PINE live-state sampling",
+    "fixed NTSC-U yaw recurrence traces",
     "loaded retail executable archaeology",
     "portable deterministic recurrence tests",
     "Godot Veldin integration capture"
