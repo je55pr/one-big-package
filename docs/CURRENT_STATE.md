@@ -110,7 +110,8 @@ The merged runtime includes:
 - ship/player-start placement from retail settings, with a bounds-centre fallback where no usable native point exists;
 - deterministic movement telemetry now records the selected common-controller label, recovered locomotion state, yaw mode and avatar animation state; the retired DebugPlayer speed/jump/gravity calibration is no longer used by ordinary trilogy play;
 - deterministic screenshots/capture metadata;
-- direct planet launch and multi-planet lifecycle stress arguments.
+- direct planet launch and multi-planet lifecycle stress arguments;
+- a game-neutral decoded-audio playback contract plus Godot 2D/3D playback; GC worlds now feed the ship-region environment music pair into level playback, while the development crate/Bolt harness uses one explicitly representative self-describing VAG to exercise non-positional and positional one-shots without claiming a recovered native event mapping.
 
 ### Legacy reference removal
 
@@ -129,7 +130,7 @@ Across the project, major work still includes:
 - broader weapons, damage, AI and combat beyond the first recovered R&C1 slices;
 - broader mission/story state, cutscenes and progression machinery beyond the first R&C1 campaign-state slice;
 - vendors, economy and save semantics, plus broader inventory state beyond the first R&C1 weapon-inventory slice;
-- runtime audio;
+- broader native audio beyond the first GC representative path: exact music loop/transition semantics, SBlk event remapping and pitch/rate conversion, native mixing/reverb/dialogue, and R&C1/UYA audio containers/event routing;
 - exact GS material/blend fidelity and remaining sky/effect work — including switching on the staged histogram alpha-mode and emissive presentation in `MaterialModel` once per-world visual review with `tools/vizcompare` clears them;
 - populating the dormant `RuntimeAnimatedMesh.Skeleton` debug/introspection hook for proven animation paths once its cross-game coordinate contract is pinned;
 - per-world debug overlays / inspector inside `CompositionLab` (F-keys and I currently act on the active world only);

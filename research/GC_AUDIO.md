@@ -330,10 +330,32 @@ The retail-gated witness checks, without committing payloads:
 The environment parser's existing retail baseline also asserts Oozla's exact
 ten-value `music_track` sequence shown above.
 
+## Runtime integration boundary
+
+The later representative-audio integration keeps native selection inside
+`OBP.RAC2` and hands only decoded neutral values to the runtime:
+
+- `GcWorldImport` selects the environment sample nearest the authored ship
+  position and resolves its `music_track` through the matching
+  `AUDIO<n>.WAD` pair. `GcRuntimeAudio` decodes the two mono VAG streams to
+  one stereo `RuntimeAudioClip`, and `RuntimeWorld.LevelAudio` lets the Godot
+  world host start it automatically.
+- Music currently plays one linear pass. The recovered raw VAG trailer markers
+  are not reinterpreted as a whole-track loop point or transition rule.
+- The self-describing native `UpgradeSample` VAG is decoded as
+  `RuntimeWorld.RepresentativeAudioOneShot`. The development crate harness
+  uses that clip only to prove both ordinary and positional effect playback:
+  Bolt collection plays it non-spatially, while the crate-break harness places
+  it at the crate's neutral runtime transform.
+- That representative cue is explicitly **not** a retail claim that the upgrade
+  sample is the crate-break or Bolt-pickup sound. Native SBlk event remapping
+  and one-shot pitch/rate conversion remain unresolved, so those associations
+  are not invented.
+
 ## Deliberate exclusions
 
-This slice does not implement playback, mixing, reverb, dialogue routing,
-cutscene/FMV audio, event dispatch, complete sound-remap semantics, every SBlk
-grain opcode, or R&C1/UYA containers. It also does not turn raw VAG trailer
-flags into an invented music-loop policy. Those behaviors require their own
-native evidence.
+The recovered path still does not implement native mixing, reverb, dialogue
+routing, cutscene/FMV audio, complete event-to-sound dispatch, complete
+sound-remap semantics, every SBlk grain opcode, or R&C1/UYA containers. It also
+does not turn raw VAG trailer flags into an invented music-loop policy. Those
+behaviors require their own native evidence.

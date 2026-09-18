@@ -35,7 +35,8 @@ public sealed record RuntimeWorld(
     IReadOnlyList<RuntimeDynamicObject>? DynamicObjects = null,
     IReadOnlyList<RuntimeAmbientAnimation>? AmbientAnimations = null,
     RuntimeSpawn? PlayerStart = null,
-    IReadOnlyList<RuntimeAudioPlaybackIntent>? LevelAudio = null)
+    IReadOnlyList<RuntimeAudioPlaybackIntent>? LevelAudio = null,
+    RuntimeAudioClip? RepresentativeAudioOneShot = null)
 {
     /// <summary>The preferred native player entry when one is known; otherwise the native ship park point.</summary>
     public RuntimeSpawn? PreferredPlayerStart => PlayerStart ?? Ship;

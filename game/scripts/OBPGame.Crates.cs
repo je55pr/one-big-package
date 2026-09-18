@@ -177,6 +177,7 @@ public partial class OBPGame
         }
 
         SpawnCrateBoltPickups(target.Root.GlobalPosition, payout);
+        PlayRepresentativeAudioOneShot(AudioPosition(target.Source));
         _crateRewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
             $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 

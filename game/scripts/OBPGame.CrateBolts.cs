@@ -69,6 +69,7 @@ public partial class OBPGame
 
         area.SetDeferred(Area3D.PropertyName.Monitoring, false);
         area.QueueFree();
+        PlayRepresentativeAudioOneShot();
         _crateRewardStatus = $"collected +{denomination}; session total {_crateBoltSession.CollectedBolts}; " +
             $"{_crateBoltSession.OutstandingPickupCount} physical remain, {_crateBoltSession.DeferredBolts} deferred";
         GD.Print($"[crate-bolts] pickup={pickup.PickupId} denomination={denomination} " +

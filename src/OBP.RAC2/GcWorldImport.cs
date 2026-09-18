@@ -5,9 +5,11 @@ using OBP.PS2.Collision;
 using OBP.PS2.Compression;
 using OBP.PS2.Iso;
 using OBP.PS2.Geometry;
+using OBP.RAC2.Audio;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Level;
 using OBP.Runtime;
+using OBP.Runtime.Audio;
 
 namespace OBP.RAC2;
 
@@ -238,6 +240,7 @@ public static class GcWorldImport
         // --- environment (level settings + nearest env sample point) ---
         RuntimeEnvironment? environment = null;
         RuntimeSpawn? ship = null;
+        short? levelMusicTrack = null;
         try
         {
             var s = GcLevelSettings.Read(GcLevelWad.RequireLump(wad, header, 2));
@@ -271,6 +274,7 @@ public static class GcWorldImport
             if (nearest is { } n)
             {
                 ambient = (n.HeroColour.R, n.HeroColour.G, n.HeroColour.B);
+                levelMusicTrack = n.MusicTrack;
             }
 
             if (nearestWithFog?.Fog is { } ef)
@@ -364,6 +368,54 @@ public static class GcWorldImport
 
         var lighting = BuildLighting(gameplay);
 
+        // --- representative runtime audio ---
+        // Music uses the environment sample nearest the authored ship position.
+        // The extra one-shot is deliberately only an integration cue: the GC
+        // SBlk event/remap path still lacks a proven gameplay-event mapping and
+        // playback-rate conversion, so do not label this as a crate/pickup sound.
+        IReadOnlyList<RuntimeAudioPlaybackIntent>? levelAudio = null;
+        RuntimeAudioClip? representativeOneShot = null;
+        GcLevelAudioWad? nativeAudio = null;
+        try
+        {
+            var audioReader = fs.OpenFile($"/G/AUDIO{level}.WAD");
+            if (audioReader is not null)
+            {
+                nativeAudio = GcLevelAudioWad.Open(audioReader);
+            }
+        }
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or OverflowException)
+        {
+            nativeAudio = null;
+        }
+
+        if (nativeAudio is not null)
+        {
+            if (levelMusicTrack is { } musicTrack)
+            {
+                try
+                {
+                    levelAudio = [GcRuntimeAudio.DecodeLevelMusic(nativeAudio, musicTrack)];
+                }
+                catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or OverflowException)
+                {
+                    levelAudio = null;
+                }
+            }
+
+            if (nativeAudio.UpgradeSample.Present)
+            {
+                try
+                {
+                    representativeOneShot = GcRuntimeAudio.DecodeRepresentativeOneShot(nativeAudio);
+                }
+                catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or OverflowException)
+                {
+                    representativeOneShot = null;
+                }
+            }
+        }
+
         var entry = GcPlanetCatalogue.Find(level);
         return new RuntimeWorld(
             Game: "rac2",
@@ -380,7 +432,9 @@ public static class GcWorldImport
             Ship: ship,
             Lighting: lighting,
             AnimatedMeshes: animatedMeshes,
-            DynamicObjects: dynamicObjects);
+            DynamicObjects: dynamicObjects,
+            LevelAudio: levelAudio,
+            RepresentativeAudioOneShot: representativeOneShot);
     }
 
     /// <summary>

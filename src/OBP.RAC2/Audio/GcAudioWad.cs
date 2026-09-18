@@ -81,6 +81,9 @@ public sealed class GcLevelAudioWad
 
     public Vagp.Stream OpenVag(int index) => Vagp.Open(OpenBin(index));
 
+    /// <summary>Open the native self-describing upgrade one-shot VAG.</summary>
+    public Vagp.Stream OpenUpgradeSample() => Vagp.Open(OpenRange(UpgradeSample, "upgrade"));
+
     /// <summary>
     /// Resolve the native environment <c>music_track</c> selector to its paired
     /// mono left/right VAG streams. GC selectors advance in units of four:
