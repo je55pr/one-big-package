@@ -59,7 +59,9 @@ The common movement implementation should preserve the existing architecture bou
 - `OBP.Godot` / `game/` owns device sampling, engine units, scene/camera presentation, collision geometry, `MoveAndSlide()` or equivalent resolution, floor/ceiling classification and feeding resulting contact facts back to the controller.
 - The controller output remains native-style deterministic movement for one controller update. Host conversion to engine velocity must not change the recurrence or become the place where source-game speed/gravity constants live.
 
-The existing `Rac1RatchetMovementController` is the natural implementation home for the recovered translational rules, but its contract may need to stop normalizing every nonzero planar vector once analogue magnitude is recovered. The separate yaw controller now consumes a source-game `GroundStartup` / `GroundRun` / `CrouchTurn` / `Air` mode emitted by movement state, keeping the recovered recurrence out of Godot while leaving the unresolved target transform clearly bounded.
+The existing `Rac1RatchetMovementController` is the implementation home for the recovered translational rules, but its contract may need to stop normalizing every nonzero planar vector once analogue magnitude is recovered. The separate yaw controller consumes a source-game `GroundStartup` / `GroundRun` / `CrouchTurn` / `Air` mode emitted by movement state, keeping the recovered recurrence out of Godot while leaving the unresolved target transform clearly bounded.
+
+The production Godot host now adopts this selected controller for ordinary Ratchet play in R&C1, GC and UYA worlds. Camera-relative planar intent and facing both pass through the existing bounded control-yaw seam: Godot supplies the camera/control basis, while `Rac1RatchetYawController` owns target construction and the recovered yaw recurrence. The former DebugPlayer speed/jump/gravity path is no longer an ordinary-play fallback; only development fly/noclip and manual respawn remain intentionally host-specific.
 
 ## Provenance rule
 

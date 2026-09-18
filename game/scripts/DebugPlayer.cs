@@ -6,29 +6,20 @@ using OBP.Runtime.Player;
 namespace OneBigPackage;
 
 /// <summary>
-/// Checkpoint H: the debug capsule. A plain <see cref="CharacterBody3D"/> with
-/// gravity, WASD + mouse-look, jump, an <c>F</c> fly / noclip toggle and an
-/// <c>R</c> respawn, moving against the decoded octree collision
-/// (<see cref="OBP.Godot.RuntimeWorldScene"/>'s <see cref="StaticBody3D"/> bodies).
-/// No Ratchet movement behaviour is reconstructed here — this is a stand-in so
-/// the reconstructed collision can be walked on, plus a HUD reporting position,
-/// speed and the last jump's air time / distance / apex for movement tuning.
+/// Godot host for ordinary Ratchet play against reconstructed world collision.
+/// Normal grounded/airborne movement always uses the retail-derived R&amp;C1
+/// controller as OBP's explicit cross-game trilogy default. That reuse is an OBP
+/// design choice, not evidence that GC or UYA used the same native controller.
 ///
-/// In headless capture (<see cref="Scripted"/>) it runs a fixed canned input so
-/// the screenshot deterministically shows it having walked and jumped.
+/// Godot owns collision, floor/ceiling contacts, camera transforms and scene-unit
+/// velocity. <c>F</c> fly/noclip and <c>R</c> manual respawn remain separate
+/// development features. Headless capture can supply deterministic canned input.
 /// </summary>
 public partial class DebugPlayer : CharacterBody3D
 {
-    // --- movement tuning -------------------------------------------------------
-    // Settled baseline for a bare debug controller (no double-jump / ledge grab),
-    // calibrated against two Oozla references: the debris-jump line by Ratchet's
-    // ship — a running jump just clears one gap — and the Dynamo ledge — a single
-    // jump must NOT clear it. Gives ~6.7 u reach, ~2.6 u apex (~1 body-height),
-    // 0.67 s air. Gravity + JumpVelocity set the arc; MoveSpeed sets the distance.
-    public float MoveSpeed { get; set; } = 10f;
-    public float JumpVelocity { get; set; } = 17f;
-    public float Gravity { get; set; } = 52f;
-    public float TerminalVelocity { get; set; } = 60f; // just a tunnel guard; real fall speed stays well under this
+    // --- host / development tuning ---------------------------------------------
+    // Ordinary movement constants live in OBP.RAC1.Player. Only presentation
+    // camera sensitivity and development-only fly speed remain host-tunable.
     public float MouseSensitivity { get; set; } = 0.0022f;
     public float FlySpeed { get; set; } = 45f;
 
@@ -41,8 +32,15 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Keep scripted captures stationary after ground placement.</summary>
     public bool ScriptedStill { get; set; }
 
-    /// <summary>Use the recovered R&amp;C1 native-tick movement core.</summary>
-    public bool UseRac1Movement { get; set; }
+    /// <summary>
+    /// Enable R&amp;C1-specific gameplay hooks such as native weapon selection and
+    /// the recovered Veldin respawn session. Movement is retail-derived in every
+    /// supported trilogy world regardless of this flag.
+    /// </summary>
+    public bool UseRac1Gameplay { get; set; }
+
+    /// <summary>Deterministic label exposed in capture telemetry.</summary>
+    public string MovementControllerLabel => "rac1-retail-derived-common-base";
 
     /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
     public event Action? CrateStrikeRequested;
@@ -112,7 +110,6 @@ public partial class DebugPlayer : CharacterBody3D
     private readonly Rac1RatchetMovementController _rac1Movement = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
     private bool _rac1JumpWasHeld;
-    private bool _rac1HitCeiling;
 
     // last-jump measurement
     private bool _airborne;
@@ -195,20 +192,20 @@ public partial class DebugPlayer : CharacterBody3D
             }
             else if (key.Keycode == Key.X)
             {
-                if (!UseRac1Movement || Rac1GameplayAlive)
+                if (!UseRac1Gameplay || Rac1GameplayAlive)
                 {
                     _attackRequested = true;
-                    if (UseRac1Movement)
+                    if (UseRac1Gameplay)
                         Rac1PrimaryAttackRequested?.Invoke();
                     else
                         CrateStrikeRequested?.Invoke();
                 }
             }
-            else if (UseRac1Movement && key.Keycode == Key.Key1)
+            else if (UseRac1Gameplay && key.Keycode == Key.Key1)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.Wrench);
             }
-            else if (UseRac1Movement && key.Keycode == Key.Key2)
+            else if (UseRac1Gameplay && key.Keycode == Key.Key2)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.FirstRanged);
             }
@@ -223,7 +220,7 @@ public partial class DebugPlayer : CharacterBody3D
             }
             else if (key.Keycode == Key.R)
             {
-                if (UseRac1Movement)
+                if (UseRac1Gameplay)
                     Rac1RespawnRequested?.Invoke();
                 else
                     ResetToSpawn();
@@ -258,8 +255,8 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         var (move, jump) = Scripted ? ScriptedInput() : LiveInput();
-        bool crouch = UseRac1Movement && !Scripted && Input.IsPhysicalKeyPressed(Key.C);
-        if (UseRac1Movement && !Rac1GameplayAlive)
+        bool crouch = !Scripted && Input.IsPhysicalKeyPressed(Key.C);
+        if (UseRac1Gameplay && !Rac1GameplayAlive)
         {
             move = Vector2.Zero;
             jump = false;
@@ -269,10 +266,7 @@ public partial class DebugPlayer : CharacterBody3D
         wish.Y = 0f;
         wish = wish.LengthSquared() > 1e-4f ? wish.Normalized() : Vector3.Zero;
 
-        if (UseRac1Movement)
-            StepRac1Movement(move, wish, jump, crouch);
-        else
-            StepDebugMovement(wish, jump, (float)delta);
+        StepRetailDerivedMovement(move, wish, jump, crouch);
 
         MoveAndSlide();
         bool isOnFloor = IsOnFloor();
@@ -308,7 +302,7 @@ public partial class DebugPlayer : CharacterBody3D
 
     private void UpdateRac1FacingPresentation()
     {
-        if (!UseRac1Movement || VisualRoot is null) return;
+        if (VisualRoot is null) return;
         float sceneYaw = (float)-_rac1Yaw.CurrentYaw;
         VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
     }
@@ -327,30 +321,7 @@ public partial class DebugPlayer : CharacterBody3D
         _placeTries = 0;
     }
 
-    private void StepDebugMovement(Vector3 wish, bool jump, float delta)
-    {
-        Vector3 velocity = Velocity;
-        bool onFloor = IsOnFloor();
-        if (onFloor && velocity.Y < 0f)
-            velocity.Y = 0f;
-        else
-            velocity.Y = Mathf.Max(velocity.Y - Gravity * delta, -TerminalVelocity);
-
-        velocity.X = wish.X * MoveSpeed;
-        velocity.Z = wish.Z * MoveSpeed;
-        if (jump && onFloor)
-        {
-            velocity.Y = JumpVelocity;
-            if (Scripted && !_scriptJumped)
-            {
-                _scriptJumped = true;
-                GD.Print($"[DebugPlayer] jump from {GlobalPosition}");
-            }
-        }
-        Velocity = velocity;
-    }
-
-    private void StepRac1Movement(Vector2 move, Vector3 wish, bool jump, bool crouch)
+    private void StepRetailDerivedMovement(Vector2 move, Vector3 wish, bool jump, bool crouch)
     {
         bool grounded = IsOnFloor();
         bool jumpPressed = jump && !_rac1JumpWasHeld;
@@ -376,16 +347,32 @@ public partial class DebugPlayer : CharacterBody3D
 
     private void UpdateAnimationState(bool onFloor)
     {
-        bool justLanded = _animationGroundedInitialized && !_animationWasGrounded && onFloor;
+        // Presentation follows the recovered controller state rather than the
+        // retired DebugPlayer tuning. Jump anticipation is already native-air
+        // presentation (sequence 7), while crouch states stay visually neutral
+        // until a dedicated crouch presentation state is exposed.
+        bool controllerAirborne = _rac1Movement.Phase != Rac1RatchetMovementPhase.Grounded;
+        bool animationGrounded = onFloor && !controllerAirborne;
+        bool justLanded = _animationGroundedInitialized && !_animationWasGrounded && animationGrounded;
         _animationGroundedInitialized = true;
-        _animationWasGrounded = onFloor;
+        _animationWasGrounded = animationGrounded;
 
         bool attackRequested = _attackRequested;
         _attackRequested = false;
         float planarSpeed = new Vector2(Velocity.X, Velocity.Z).Length();
+        if (_rac1Movement.LocomotionState is Rac1RatchetLocomotionState.Crouched or Rac1RatchetLocomotionState.CrouchTurning)
+            planarSpeed = 0f;
+        else if (_rac1Movement.LocomotionState == Rac1RatchetLocomotionState.Moving &&
+                 _rac1Movement.YawMode == Rac1RatchetYawMode.GroundRun)
+            planarSpeed = Math.Max(planarSpeed, (float)PlayerAnimationStateMachine.RunEnterSpeed);
+
+        double verticalPresentation = _rac1Movement.Phase == Rac1RatchetMovementPhase.JumpAnticipation
+            ? PlayerAnimationStateMachine.JumpRiseVelocity + 0.01d
+            : Velocity.Y;
+
         PlayerAnimationState previous = AnimationState;
         PlayerAnimationState current = _animationStateMachine.Update(new PlayerAnimationFacts(
-            onFloor, planarSpeed, Velocity.Y, justLanded, attackRequested));
+            animationGrounded, planarSpeed, verticalPresentation, justLanded, attackRequested));
         if (current != previous)
             GD.Print($"[DebugPlayer] animation {previous} -> {current}");
     }
@@ -448,8 +435,9 @@ public partial class DebugPlayer : CharacterBody3D
         _hud.Text =
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
+            $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
-            $"MoveSpeed {MoveSpeed:0.#}  JumpVelocity {JumpVelocity:0.#}  Gravity {Gravity:0.#}  (WASD / Space / X attack / 1 wrench / 2 Bomb Glove / F fly / R Veldin respawn / Tab cursor / Esc)";
+            $"WASD / Space / C crouch / X action / F fly / R respawn / Tab cursor / Esc";
     }
 
     /// <summary>
@@ -523,7 +511,7 @@ public partial class DebugPlayer : CharacterBody3D
             return (Vector2.Zero, false);
         }
 
-        if (UseRac1Movement)
+        if (UseRac1Gameplay)
         {
             // Veldin's authored start first settles from a higher collision
             // surface. Wait for that contact, then exercise the retail-backed

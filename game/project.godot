@@ -20,6 +20,11 @@ UiBootstrap="*res://scripts/UiBootstrap.cs"
 
 project/assembly_name="OneBigPackage"
 
+[physics]
+
+; The selected retail-derived Ratchet controller advances once per native NTSC update.
+common/physics_ticks_per_second=60
+
 [rendering]
 
 renderer/rendering_method="forward_plus"

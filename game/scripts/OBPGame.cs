@@ -719,8 +719,11 @@ public partial class OBPGame : Node3D
             Name = "DebugPlayer",
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
-            UseRac1Movement = world.Game == "rac1",
-            Rac1CurrentYaw = world.Game == "rac1" ? -yaw : 0d,
+            UseRac1Gameplay = world.Game == "rac1",
+            // OBP deliberately reuses the retail-derived R&C1 controller in
+            // all supported trilogy worlds; seed its facing from the authored
+            // host spawn heading regardless of source game.
+            Rac1CurrentYaw = -yaw,
             Position = spawn,
         };
         _playerRoot.AddChild(player);
@@ -992,7 +995,15 @@ public partial class OBPGame : Node3D
             ["crateDebug"] = GetCrateDebugSnapshot(),
             ["rac1Gameplay"] = GetRac1GameplaySnapshot(),
             ["player"] = _player is { } pl && IsInstanceValid(pl)
-                ? new { position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z }, onFloor = pl.IsOnFloor() }
+                ? new
+                {
+                    position = new[] { pl.GlobalPosition.X, pl.GlobalPosition.Y, pl.GlobalPosition.Z },
+                    onFloor = pl.IsOnFloor(),
+                    movementController = pl.MovementControllerLabel,
+                    locomotionState = pl.Rac1LocomotionState.ToString(),
+                    yawMode = pl.Rac1YawMode.ToString(),
+                    animationState = pl.AnimationState.ToString(),
+                }
                 : null,
         };
     }
