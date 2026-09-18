@@ -134,6 +134,34 @@ public sealed class HudTransientFeedbackTests
         Assert.Equal(0d, hidden.PromptOpacity);
     }
 
+    [Fact]
+    public void EmptyReplacementEpochClearsUnsupportedGameTransientState()
+    {
+        var adapter = new HudStateAdapter();
+        var animator = new HudTransientFeedbackAnimator();
+
+        animator.Accept(adapter.BeginSession(State(health: 4)));
+        animator.Accept(adapter.Publish(
+            State(health: 3),
+            new HudFeedbackDraft(HudFeedbackKind.Damage, "nanotech", -1),
+            new HudFeedbackDraft(HudFeedbackKind.Pickup, "bolts", 5)));
+
+        HudSnapshot unsupported = adapter.ResetSession();
+        HudTransientFeedbackState reset = animator.Accept(unsupported);
+
+        Assert.Null(unsupported.Health);
+        Assert.Null(unsupported.Bolts);
+        Assert.Null(unsupported.CurrentWeapon);
+        Assert.Null(unsupported.ContextPrompt);
+        Assert.Empty(unsupported.Feedback);
+        Assert.Equal(0d, reset.HealthPulse);
+        Assert.Null(reset.HealthDelta);
+        Assert.Equal(0d, reset.PickupPulse);
+        Assert.Null(reset.PickupDelta);
+        Assert.Equal(0d, reset.WeaponPulse);
+        Assert.Equal(0d, reset.PromptOpacity);
+    }
+
     private static HudPresentationState State(int health) => new(
         Health: new HudHealth(
             Current: health,

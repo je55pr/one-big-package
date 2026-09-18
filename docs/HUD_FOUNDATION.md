@@ -1,6 +1,6 @@
 # HUD foundation
 
-Status: foundation contract plus initial engine-independent state adapter. This document defines the smallest player-HUD presentation model needed by the current playable slices. The neutral snapshot lifecycle and R&C1 projection are implemented, but Godot HUD controls and retail-faithful artwork are not.
+Status: foundation contract, engine-independent state adapter, R&C1 projection and a non-interactive Godot renderer are implemented. This document defines the smallest player-HUD presentation model needed by the current playable slices. Retail-faithful artwork, layout and timing remain unresolved.
 
 ## Purpose and ownership
 
@@ -201,7 +201,7 @@ The model should be testable without Godot:
 - absent GC/UYA authority does not synthesize zero counters;
 - prompt action semantics do not contain physical device bindings.
 
-Godot capture tests can later verify placement and visual defaults separately. Such captures validate OBP presentation choices unless and until a retail-backed visual contract is recovered.
+Representative Godot world smokes now exercise the same lifecycle against retail-backed reconstructed worlds: R&C1 LEVEL0 publishes its bounded Nanotech and equipped-weapon projection, while GC LEVEL1 and UYA TABLE1 start fresh epochs with unsupported normal HUD fields absent. Capture metadata is the deterministic state oracle for these smokes; the rendered pixels still validate OBP presentation choices unless and until a retail-backed visual contract is recovered.
 
 ## Non-goals
 
@@ -214,6 +214,6 @@ This foundation does not:
 - discover interactable targets in UI code;
 - standardize source-game native ids, PVars, save layouts or health rules;
 - turn developer overlays/telemetry into player-facing design;
-- implement any Godot HUD visuals yet.
+- claim the current Godot HUD layout, artwork or animation defaults are retail-faithful.
 
 The narrow goal is a trustworthy glass pane over gameplay state: enough structure to render health/Nanotech, Bolts, current weapon/ammo, transient pickup/damage feedback and one contextual prompt without letting the glass pane become the game.
