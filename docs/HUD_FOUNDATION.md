@@ -1,6 +1,6 @@
 # HUD foundation
 
-Status: design boundary only. This document defines the smallest engine-independent player-HUD presentation model needed by the current playable slices. It does **not** implement Godot controls or claim retail-faithful HUD artwork.
+Status: foundation contract plus initial engine-independent state adapter. This document defines the smallest player-HUD presentation model needed by the current playable slices. The neutral snapshot lifecycle and R&C1 projection are implemented, but Godot HUD controls and retail-faithful artwork are not.
 
 ## Purpose and ownership
 
@@ -185,9 +185,9 @@ If a field changes from present to absent, the corresponding HUD element disappe
 
 ## Suggested implementation boundary
 
-When implementation begins, neutral data types belong with engine-independent presentation/runtime concepts, not in Godot controls. Source-game code should continue to own game-specific sessions; a thin projection layer can translate their public snapshots/events into the neutral HUD shape. `game/` then maps neutral presentation keys and semantic actions to Godot labels, textures, animation and live input glyphs.
+Neutral data types and the epoch/revision/event lifecycle adapter live in `OBP.Runtime/Presentation/HudState.cs`, outside Godot controls. `OBP.RAC1/Presentation/Rac1HudProjection.cs` translates the existing Nanotech and weapon inventory owners into that neutral shape; the application host publishes state changes and resets the epoch at world teardown. Bolt collection currently contributes only a transient pickup event because the crate-session total is not a canonical wallet.
 
-Do not make `OBP.Runtime` depend on `OBP.RAC1/2/3` to obtain HUD state. Dependency flow should remain source game -> neutral projection -> host.
+`game/` can now map neutral presentation keys and semantic actions to Godot labels, textures, animation and live input glyphs without moving gameplay authority into controls. `OBP.Runtime` does not depend on `OBP.RAC1/2/3`; dependency flow remains source game -> neutral projection -> host.
 
 ## Deterministic validation
 

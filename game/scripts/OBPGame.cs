@@ -3,6 +3,7 @@ using OBP.Godot;
 using OBP.IO;
 using OBP.RAC2;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OneBigPackage;
 
@@ -51,6 +52,7 @@ public partial class OBPGame : Node3D
 
     // the live world
     private readonly WorldHost _worldHost = new();
+    private readonly HudStateAdapter _hudState = new();
     private RuntimeWorld? _world;
     private RuntimeWorldScene.Result? _sceneResult;
     private DebugOverlay? _overlay;
@@ -503,6 +505,7 @@ public partial class OBPGame : Node3D
     {
         ClearPlayerAvatarView();
         ResetRac1Gameplay();
+        _hudState.ResetSession();
         _player?.QueueFree();
         _player = null;
 
@@ -994,6 +997,7 @@ public partial class OBPGame : Node3D
             ["dynamicObjects"] = r?.DynamicObjects ?? 0,
             ["crateDebug"] = GetCrateDebugSnapshot(),
             ["rac1Gameplay"] = GetRac1GameplaySnapshot(),
+            ["hud"] = _hudState.Current,
             ["player"] = _player is { } pl && IsInstanceValid(pl)
                 ? new
                 {

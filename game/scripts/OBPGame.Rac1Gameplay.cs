@@ -2,8 +2,10 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
+using OBP.Runtime.Presentation;
 
 namespace OneBigPackage;
 
@@ -76,6 +78,7 @@ public partial class OBPGame
             return;
         }
 
+        _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons));
         _rac1CombatStatus = "ready";
         foreach (var source in world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
         {
@@ -126,6 +129,12 @@ public partial class OBPGame
 
         GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted class-500 crates, " +
                  $"class-749 i{Rac1RepresentativeHostileInstance}={(_rac1HostileNode is null ? "missing" : "live")}");
+    }
+
+    private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
+    {
+        if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
+        _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons), feedback);
     }
 
     private static RuntimeWorldScene.DynamicObjectNode? FindPresentedDynamic(
@@ -193,6 +202,7 @@ public partial class OBPGame
         if (_rac1Weapons.TryEquip(weapon))
         {
             _rac1CombatStatus = weapon == Rac1WeaponId.Wrench ? "equipped wrench" : "equipped Bomb Glove item 10";
+            RefreshRac1HudState();
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
     }
@@ -207,6 +217,7 @@ public partial class OBPGame
         _player.ResetToSpawn();
         _player.Rac1GameplayAlive = true;
         _rac1CombatStatus = $"Veldin respawn: Nanotech {respawn.Nanotech}";
+        RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
     }
 
@@ -240,6 +251,7 @@ public partial class OBPGame
 
         _player.Rac1GameplayAlive = false;
         _rac1CombatStatus = $"Veldin death plane: state 0x{dead.NativePlayerState:x2}, sequence {dead.NativeSequence} frame {dead.NativeSequenceFrame}; Nanotech {dead.Nanotech}";
+        RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
     }
 
@@ -424,6 +436,7 @@ public partial class OBPGame
             {
                 SpawnRac1BombProjectile(shot);
                 _rac1CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
+                RefreshRac1HudState();
                 GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
             }
         }
@@ -538,12 +551,14 @@ public partial class OBPGame
         }
         if (next.Attack is { } attack)
         {
+            var beforeNanotech = _rac1Nanotech.Probe();
             var nanotech = _rac1Nanotech.ApplyClass749Attack(attack);
             _player.Rac1GameplayAlive = !nanotech.IsDead;
             GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
             _rac1CombatStatus = nanotech.IsDead
                 ? "Nanotech 0: Ratchet dead; press R for Veldin respawn"
                 : $"class-749 hit: Nanotech {nanotech.Nanotech}/{nanotech.RespawnNanotech}";
+            RefreshRac1HudState(Rac1HudProjection.DamageFeedback(beforeNanotech, nanotech));
         }
         _rac1HostileProbe = next;
     }
@@ -599,6 +614,7 @@ public partial class OBPGame
             pair.Value.QueueFree();
             collected.Add(pair.Key);
             _rac1CombatStatus = $"collected +{value} bolt{(value == 1 ? "" : "s")}";
+            RefreshRac1HudState(Rac1HudProjection.CollectedBoltFeedback(value));
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}; total {_rac1BoltCrates.CollectedBolts}");
         }
 
