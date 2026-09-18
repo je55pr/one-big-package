@@ -17,16 +17,25 @@ public partial class PlayerHud : Control
     private Label _healthKicker = null!;
     private Label _healthValue = null!;
     private Label _healthState = null!;
+    private Label _healthDelta = null!;
     private Label _boltsKicker = null!;
     private Label _boltsValue = null!;
+    private Label _boltsDelta = null!;
     private Label _weaponName = null!;
     private Label _ammo = null!;
+    private Label _ammoDelta = null!;
     private Label _promptAction = null!;
     private Label _promptMessage = null!;
     private ProgressBar _promptProgress = null!;
 
+    private readonly HudTransientFeedbackAnimator _feedback = new();
     private long _epoch = -1;
     private long _revision = -1;
+    private bool _hasHealth;
+    private bool _hasBolts;
+    private bool _hasWeapon;
+    private bool _hasPrompt;
+    private string? _boltsResourceKey;
 
     public override void _Ready()
     {
@@ -50,16 +59,21 @@ public partial class PlayerHud : Control
 
         _epoch = snapshot.Epoch;
         _revision = snapshot.Revision;
+        _feedback.Accept(snapshot);
 
         RenderHealth(snapshot.Health);
         RenderBolts(snapshot.Bolts);
         RenderWeapon(snapshot.CurrentWeapon);
         RenderPrompt(snapshot.ContextPrompt);
+        ApplyTransientFeedback();
+        UpdateVisibility();
+    }
 
-        Visible = _healthPanel.Visible ||
-                  _boltsPanel.Visible ||
-                  _weaponPanel.Visible ||
-                  _promptPanel.Visible;
+    public override void _Process(double delta)
+    {
+        _feedback.Advance(delta);
+        ApplyTransientFeedback();
+        UpdateVisibility();
     }
 
     private void BuildLayout()
@@ -132,9 +146,12 @@ public partial class PlayerHud : Control
         _healthKicker = Kicker("NANOTECH");
         _healthValue = ValueLabel();
         _healthState = SecondaryLabel();
+        _healthDelta = SecondaryLabel();
+        _healthDelta.Visible = false;
         box.AddChild(_healthKicker);
         box.AddChild(_healthValue);
         box.AddChild(_healthState);
+        box.AddChild(_healthDelta);
         return panel;
     }
 
@@ -145,7 +162,10 @@ public partial class PlayerHud : Control
         _boltsKicker = Kicker("BOLTS");
         box.AddChild(_boltsKicker);
         _boltsValue = ValueLabel();
+        _boltsDelta = SecondaryLabel();
+        _boltsDelta.Visible = false;
         box.AddChild(_boltsValue);
+        box.AddChild(_boltsDelta);
         return panel;
     }
 
@@ -156,8 +176,11 @@ public partial class PlayerHud : Control
         box.AddChild(Kicker("EQUIPPED"));
         _weaponName = ValueLabel();
         _ammo = SecondaryLabel();
+        _ammoDelta = SecondaryLabel();
+        _ammoDelta.Visible = false;
         box.AddChild(_weaponName);
         box.AddChild(_ammo);
+        box.AddChild(_ammoDelta);
         return panel;
     }
 
@@ -185,7 +208,8 @@ public partial class PlayerHud : Control
 
     private void RenderHealth(HudHealth? health)
     {
-        _healthPanel.Visible = health is not null;
+        _hasHealth = health is not null;
+        _healthPanel.Visible = _hasHealth;
         if (health is null)
         {
             return;
@@ -209,7 +233,10 @@ public partial class PlayerHud : Control
 
     private void RenderBolts(HudCurrency? bolts)
     {
-        _boltsPanel.Visible = bolts is not null;
+        _hasBolts = bolts is not null;
+        _boltsResourceKey = bolts?.CurrencyKey;
+        _boltsPanel.Visible = _hasBolts;
+        _boltsValue.Visible = _hasBolts;
         if (bolts is null)
         {
             return;
@@ -221,7 +248,8 @@ public partial class PlayerHud : Control
 
     private void RenderWeapon(HudWeapon? weapon)
     {
-        _weaponPanel.Visible = weapon is not null;
+        _hasWeapon = weapon is not null;
+        _weaponPanel.Visible = _hasWeapon;
         if (weapon is null)
         {
             return;
@@ -239,7 +267,7 @@ public partial class PlayerHud : Control
 
     private void RenderPrompt(HudContextPrompt? prompt)
     {
-        _promptPanel.Visible = prompt is not null;
+        _hasPrompt = prompt is not null;
         if (prompt is null)
         {
             return;
@@ -253,6 +281,85 @@ public partial class PlayerHud : Control
             _promptProgress.Value = Math.Clamp(progress, 0d, 1d);
         }
     }
+
+    private void ApplyTransientFeedback()
+    {
+        HudTransientFeedbackState feedback = _feedback.Current;
+
+        _healthPanel.Visible = _hasHealth;
+        _healthPanel.Modulate = _hasHealth
+            ? FeedbackTint(
+                feedback.HealthPulse,
+                feedback.HealthDelta is < 0 ? UiTheme.Warning : UiTheme.Ready,
+                0.30d)
+            : Colors.White;
+        _healthDelta.Visible = _hasHealth &&
+            feedback.HealthPulse > 0d &&
+            feedback.HealthDelta is not null;
+        if (feedback.HealthDelta is { } healthDelta)
+        {
+            _healthDelta.Text = $"NANOTECH {SignedDelta(healthDelta)}";
+            _healthDelta.Modulate = healthDelta < 0 ? UiTheme.Warning : UiTheme.Ready;
+        }
+
+        bool boltFeedback =
+            feedback.PickupPulse > 0d &&
+            feedback.PickupDelta is not null &&
+            (feedback.PickupResourceKey == _boltsResourceKey ||
+             feedback.PickupResourceKey == "bolts");
+        _boltsPanel.Visible = _hasBolts || boltFeedback;
+        _boltsPanel.Modulate = boltFeedback
+            ? FeedbackTint(feedback.PickupPulse, UiTheme.Accent, 0.28d)
+            : Colors.White;
+        _boltsDelta.Visible = boltFeedback;
+        if (boltFeedback && feedback.PickupDelta is { } boltDelta)
+        {
+            if (!_hasBolts)
+            {
+                _boltsKicker.Text = SemanticLabel(feedback.PickupResourceKey ?? "bolts");
+                _boltsValue.Visible = false;
+            }
+            _boltsDelta.Text = SignedDelta(boltDelta);
+            _boltsDelta.Modulate = boltDelta < 0 ? UiTheme.Warning : UiTheme.Accent;
+        }
+
+        _weaponPanel.Visible = _hasWeapon;
+        _weaponPanel.Modulate = _hasWeapon
+            ? FeedbackTint(feedback.WeaponPulse, UiTheme.Accent, 0.20d)
+            : Colors.White;
+        _ammoDelta.Visible = _hasWeapon &&
+            feedback.WeaponPulse > 0d &&
+            feedback.AmmoDelta is not null;
+        if (feedback.AmmoDelta is { } ammoDelta)
+        {
+            _ammoDelta.Text = $"AMMO {SignedDelta(ammoDelta)}";
+            _ammoDelta.Modulate = ammoDelta < 0 ? UiTheme.Warning : UiTheme.Ready;
+        }
+
+        Color promptTint = FeedbackTint(
+            feedback.PromptPulse,
+            UiTheme.Accent,
+            0.15d);
+        promptTint.A = (float)Math.Clamp(feedback.PromptOpacity, 0d, 1d);
+        _promptPanel.Modulate = promptTint;
+        _promptPanel.Visible = feedback.PromptOpacity > 0.001d;
+    }
+
+    private void UpdateVisibility()
+    {
+        Visible = _healthPanel.Visible ||
+                  _boltsPanel.Visible ||
+                  _weaponPanel.Visible ||
+                  _promptPanel.Visible;
+    }
+
+    private static string SignedDelta(int delta) =>
+        delta > 0 ? $"+{delta:N0}" : $"{delta:N0}";
+
+    private static Color FeedbackTint(double intensity, Color accent, double strength) =>
+        Colors.White.Lerp(
+            accent,
+            (float)Math.Clamp(intensity * strength, 0d, 1d));
 
     private static PanelContainer Card(string name, float minimumWidth)
     {
