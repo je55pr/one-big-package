@@ -67,6 +67,7 @@ public static class GcInstances
     public sealed record EnvSample(
         (float X, float Y, float Z) Position,
         int HeroLightIndex,
+        short MusicTrack,
         (float R, float G, float B) HeroColour,
         EnvFog? Fog);
 
@@ -360,6 +361,7 @@ public static class GcInstances
                 outp.Add(new EnvSample(
                     (S16(0x04) / 4f, S16(0x06) / 4f, S16(0x08) / 4f),
                     BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 0x00)),
+                    S16(0x0c),
                     (B(0x10) / 255f, B(0x11) / 255f, B(0x12) / 255f),
                     farD > nearD
                         ? new EnvFog((B(0x17) / 255f, B(0x18) / 255f, B(0x19) / 255f), nearD, farD, B(0x0e), B(0x0f))

@@ -317,6 +317,9 @@ public class GcLevelTests
 
         // Env sample points (gameplay ptr 0x8c) — the per-region atmosphere probes.
         Assert.Equal(10, gameplay.EnvSamples.Count);
+        Assert.Equal(
+            new short[] { 0, 0, 0, 4, 0, 0, 0, 4, 4, 0 },
+            gameplay.EnvSamples.Select(es => es.MusicTrack).ToArray());
         Assert.Equal(0, gameplay.EnvSamples[0].HeroLightIndex);
         Assert.Equal(new[] { 28 / 255f, 45 / 255f, 51 / 255f }, new[] { gameplay.EnvSamples[0].HeroColour.R, gameplay.EnvSamples[0].HeroColour.G, gameplay.EnvSamples[0].HeroColour.B });
         Assert.Null(gameplay.EnvSamples[0].Fog); // Oozla samples carry no fog override
