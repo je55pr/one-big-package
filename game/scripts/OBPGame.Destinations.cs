@@ -201,7 +201,9 @@ public partial class OBPGame
         }
 
         _mode = Mode.World;
+        EnsurePlayerHud();
         EnsureWorldHud();
+        UpdatePlayerHud();
         UpdateWorldHud();
 
         _loadSummary = $"✓ {destination.DisplayName} · {result.MeshInstances} meshes / {result.Triangles:N0} tris / {result.CollisionBodies} colliders";

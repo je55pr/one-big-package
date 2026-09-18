@@ -35,6 +35,9 @@ public static class UiTheme
         AddHeader(theme, "HeaderLarge", 34, Text);
         AddHeader(theme, "HeaderMedium", 22, Text);
         AddHeader(theme, "HeaderSmall", 16, Accent);
+        AddHeader(theme, "HudKicker", 13, Accent);
+        AddHeader(theme, "HudValue", 25, Text);
+        AddHeader(theme, "HudSecondary", 14, TextDim);
 
         StyleButtons(theme);
         StylePanels(theme);
@@ -109,5 +112,14 @@ public static class UiTheme
         card.ContentMarginTop = 17;
         card.ContentMarginBottom = 17;
         theme.SetStylebox("panel", "MenuCard", card);
+
+        theme.AddType("HudCard");
+        theme.SetTypeVariation("HudCard", "PanelContainer");
+        var hud = Box(new Color(0.035f, 0.045f, 0.065f, 0.82f), new Color(0.34f, 0.39f, 0.49f, 0.86f), 1, 7);
+        hud.ContentMarginLeft = 13;
+        hud.ContentMarginRight = 13;
+        hud.ContentMarginTop = 9;
+        hud.ContentMarginBottom = 9;
+        theme.SetStylebox("panel", "HudCard", hud);
     }
 }

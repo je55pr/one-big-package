@@ -65,6 +65,7 @@ public partial class OBPGame : Node3D
     private PanelContainer? _pickerPanel;
     private Label? _pickerStatus;
     private Label? _worldHud;
+    private PlayerHud? _playerHud;
     private volatile string? _verifyOutcome;
     private long _verifyProgressBits = -1;
     private string _loadSummary = string.Empty;
@@ -159,6 +160,7 @@ public partial class OBPGame : Node3D
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
             TickRac1Gameplay(delta);
+            UpdatePlayerHud();
             UpdateWorldHud();
         }
 
@@ -395,7 +397,9 @@ public partial class OBPGame : Node3D
         }
 
         _mode = Mode.World;
+        EnsurePlayerHud();
         EnsureWorldHud();
+        UpdatePlayerHud();
         UpdateWorldHud();
 
         _loadSummary = $"✓ {label} · {result.MeshInstances} meshes / {result.Triangles:N0} tris / {result.CollisionBodies} colliders";
@@ -506,6 +510,7 @@ public partial class OBPGame : Node3D
         ClearPlayerAvatarView();
         ResetRac1Gameplay();
         _hudState.ResetSession();
+        _playerHud?.Render(_hudState.Current);
         _player?.QueueFree();
         _player = null;
 
@@ -741,6 +746,25 @@ public partial class OBPGame : Node3D
 
     // --- HUD ---------------------------------------------------------------
 
+    private void EnsurePlayerHud()
+    {
+        if (_playerHud is not null && IsInstanceValid(_playerHud))
+        {
+            return;
+        }
+
+        _playerHud = new PlayerHud();
+        _ui.AddChild(_playerHud);
+    }
+
+    private void UpdatePlayerHud()
+    {
+        if (_playerHud is not null && IsInstanceValid(_playerHud))
+        {
+            _playerHud.Render(_hudState.Current);
+        }
+    }
+
     private void EnsureWorldHud()
     {
         if (_worldHud is not null && IsInstanceValid(_worldHud))
@@ -913,6 +937,29 @@ public partial class OBPGame : Node3D
         _camera.Position = new Vector3(4.5f, 3.5f, 5.5f);
         _camera.LookAt(new Vector3(0, 0.8f, 0), Vector3.Up);
         _ui.AddChild(new Label { Name = "Banner", Text = $"One Big Package — {scene}", Position = new Vector2(16, 12) });
+
+        if (scene.Equals("hud", StringComparison.OrdinalIgnoreCase))
+        {
+            BuildHudFixture();
+        }
+    }
+
+    private void BuildHudFixture()
+    {
+        EnsurePlayerHud();
+        var snapshot = _hudState.BeginSession(new HudPresentationState(
+            Health: new HudHealth(3, 6, "nanotech", HudLifeState.Alive),
+            Bolts: new HudCurrency("bolts", 12_450),
+            CurrentWeapon: new HudWeapon(
+                PresentationKey: "hud.fixture.vector-blaster",
+                NameKey: "Vector Blaster",
+                Ammo: new HudAmmo(7, 12)),
+            ContextPrompt: new HudContextPrompt(
+                PromptId: "hud-fixture-console",
+                ActionId: "interact",
+                MessageKey: "Activate test console",
+                Progress: 0.42)));
+        _playerHud!.Render(snapshot);
     }
 
     // --- authority verification (background) ----------------------------
