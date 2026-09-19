@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using OBP.PS2.Graphics;
 using OBP.PS2.Vif;
 
 namespace OBP.RAC1.Geometry;
@@ -38,6 +39,8 @@ public static class Rac1Moby
         public int TwoWayBlendVertexCount { get; init; }
         public int ThreeWayBlendVertexCount { get; init; }
         public int InFileVertexCount { get; init; }
+        public IReadOnlyList<RcMaterialState> Materials { get; init; } = [];
+        public int[] TriangleMaterialStateIndices { get; init; } = [];
     }
 
     /// <summary>
@@ -66,6 +69,7 @@ public static class Rac1Moby
     private sealed class Primitive
     {
         public int Material;
+        public int MaterialStateIndex = -1;
         public readonly List<int> Strip = [];
     }
 
@@ -73,7 +77,9 @@ public static class Rac1Moby
     {
         public readonly Dictionary<int, CachedVertex> VertexCache = [];
         public readonly SkinAttr?[] BlendCache = new SkinAttr?[64];
+        public readonly List<RcMaterialState> Materials = [];
         public int ActiveTexture;
+        public int ActiveMaterialStateIndex = -1;
     }
 
     private sealed record Packet(
@@ -81,6 +87,7 @@ public static class Rac1Moby
         float[] Uvs,
         int[] Indices,
         int[] MaterialSlots,
+        int[] MaterialStateIndices,
         int[] VertexJoints,
         float[] VertexWeights,
         int ActiveTexture,
@@ -264,6 +271,7 @@ public static class Rac1Moby
         var uvs = new List<float>();
         var indices = new List<int>();
         var materialSlots = new List<int>();
+        var materialStateIndices = new List<int>();
         var vertexJoints = new List<int>();
         var vertexWeights = new List<float>();
         int matrixTransfers = 0, twoWay = 0, threeWay = 0, inFileVertices = 0;
@@ -280,13 +288,14 @@ public static class Rac1Moby
                 indices.Add(vertexBase + index);
             }
             materialSlots.AddRange(packet.MaterialSlots);
+            materialStateIndices.AddRange(packet.MaterialStateIndices);
             matrixTransfers += packet.MatrixTransferCount;
             twoWay += packet.TwoWayBlendVertexCount;
             threeWay += packet.ThreeWayBlendVertexCount;
             inFileVertices += packet.InFileVertexCount;
             state.ActiveTexture = packet.ActiveTexture;
         }
-        if (indices.Count / 3 != materialSlots.Count)
+        if (indices.Count / 3 != materialSlots.Count || materialStateIndices.Count != materialSlots.Count)
         {
             throw new InvalidDataException("R&C1 Moby triangle/material counts diverged during bind-pose decode.");
         }
@@ -311,6 +320,8 @@ public static class Rac1Moby
             TwoWayBlendVertexCount = twoWay,
             ThreeWayBlendVertexCount = threeWay,
             InFileVertexCount = inFileVertices,
+            Materials = state.Materials,
+            TriangleMaterialStateIndices = materialStateIndices.ToArray(),
         };
     }
 
@@ -347,7 +358,7 @@ public static class Rac1Moby
         }
 
         var secretIndices = new List<int> { AsS8(indexData[2]) };
-        var packetTextures = new List<int>();
+        var packetTextures = new List<(int TextureId, int MaterialStateIndex)>();
         if (unpacks.Count == 3)
         {
             var textureData = unpacks[2].Data;
@@ -359,12 +370,15 @@ public static class Rac1Moby
             for (int i = 0; i < textureCount; i++)
             {
                 secretIndices.Add(AsS8(textureData[i * 0x10 + 0x0c]));
-                int slot = BinaryPrimitives.ReadInt32LittleEndian(textureData.AsSpan(i * 0x40 + 0x20));
-                if (slot < -1 || slot >= 16)
+                var materialState = RcMaterialState.ReadMoby(textureData.AsSpan(i * 0x40, 0x40));
+                int slot = materialState.TextureId;
+                if (slot < -3 || slot >= 16)
                 {
                     throw new InvalidDataException($"R&C1 Moby packet {packetIndex} uses invalid texture slot {slot}.");
                 }
-                packetTextures.Add(slot);
+                int stateIndex = state.Materials.Count;
+                state.Materials.Add(materialState);
+                packetTextures.Add((slot, stateIndex));
             }
         }
 
@@ -532,6 +546,7 @@ public static class Rac1Moby
         Primitive? primitive = null;
         int adGifIndex = 0;
         int activeTexture = state.ActiveTexture;
+        int activeMaterialStateIndex = state.ActiveMaterialStateIndex;
         var rawIndices = new List<int>(indexData.Count - 4);
         for (int i = 4; i < indexData.Count; i++) rawIndices.Add(AsS8(indexData[i]));
         for (int j = 0; j < rawIndices.Count; j++)
@@ -558,7 +573,8 @@ public static class Rac1Moby
                 {
                     throw new InvalidDataException($"R&C1 Moby packet {packetIndex} texture switch {adGifIndex} has no texture record.");
                 }
-                activeTexture = packetTextures[adGifIndex];
+                activeTexture = packetTextures[adGifIndex].TextureId;
+                activeMaterialStateIndex = packetTextures[adGifIndex].MaterialStateIndex;
                 adGifIndex++;
             }
 
@@ -566,7 +582,11 @@ public static class Rac1Moby
             {
                 if (j + 1 < rawIndices.Count && rawIndices[j + 1] <= 0)
                 {
-                    primitive = new Primitive { Material = activeTexture };
+                    primitive = new Primitive
+                    {
+                        Material = activeTexture,
+                        MaterialStateIndex = activeMaterialStateIndex,
+                    };
                     primitives.Add(primitive);
                 }
                 else
@@ -587,10 +607,11 @@ public static class Rac1Moby
 
         var indices = new List<int>();
         var materialSlots = new List<int>();
+        var materialStateIndices = new List<int>();
         int vertexCount = positions.Count / 3;
         foreach (var current in primitives)
         {
-            if (current.Material < -1 || current.Material >= 16)
+            if (current.Material < -3 || current.Material >= 16)
             {
                 throw new InvalidDataException($"R&C1 Moby packet {packetIndex} emits invalid material slot {current.Material}.");
             }
@@ -611,14 +632,17 @@ public static class Rac1Moby
                     indices.Add(b); indices.Add(a); indices.Add(c);
                 }
                 materialSlots.Add(current.Material);
+                materialStateIndices.Add(current.MaterialStateIndex);
             }
         }
 
+        state.ActiveMaterialStateIndex = activeMaterialStateIndex;
         return new Packet(
             positions.ToArray(),
             uvs.ToArray(),
             indices.ToArray(),
             materialSlots.ToArray(),
+            materialStateIndices.ToArray(),
             vertexJoints.ToArray(),
             vertexWeights.ToArray(),
             activeTexture,

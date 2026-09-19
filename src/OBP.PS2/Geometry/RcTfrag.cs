@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using OBP.PS2.Graphics;
 using OBP.PS2.Vif;
 
 namespace OBP.PS2.Geometry;
@@ -23,8 +24,11 @@ public static class RcTfrag
         double[] Positions,
         float[] Uvs,
         float[] Colors,
+        float[] VertexAlpha,
         int[] Indices,
         int[] TriangleTextureIds,
+        int[] TriangleMaterialIndices,
+        IReadOnlyList<RcMaterialState> Materials,
         int TfragCount,
         (double X, double Y, double Z) BoundsMin,
         (double X, double Y, double Z) BoundsMax,
@@ -57,8 +61,11 @@ public static class RcTfrag
         var positions = new List<double>();
         var uvs = new List<float>();
         var colors = new List<float>();
+        var vertexAlpha = new List<float>();
         var indices = new List<int>();
         var triangleTextureIds = new List<int>();
+        var triangleMaterialIndices = new List<int>();
+        var materials = new List<RcMaterialState>();
         var textureIdSet = new SortedSet<int>();
         double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
         double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
@@ -107,6 +114,8 @@ public static class RcTfrag
             int baseZ = BinaryPrimitives.ReadInt32LittleEndian(strow.AsSpan(8));
 
             var textures = ReadTexturePrimitives(commonUnpacks[1].Data);
+            int materialBase = materials.Count;
+            materials.AddRange(textures);
             var commonVertexInfo = ReadVertexInfo(commonUnpacks[2].Data);
             var commonPositions = ReadPositions(commonUnpacks[3].Data);
 
@@ -216,12 +225,14 @@ public static class RcTfrag
                     colors.Add(rgbas[pi][0] / 255f);
                     colors.Add(rgbas[pi][1] / 255f);
                     colors.Add(rgbas[pi][2] / 255f);
+                    vertexAlpha.Add(rgbas[pi][3] / 255f);
                 }
                 else
                 {
                     colors.Add(0.7f);
                     colors.Add(0.7f);
                     colors.Add(0.7f);
+                    vertexAlpha.Add(1f);
                 }
             }
 
@@ -230,7 +241,7 @@ public static class RcTfrag
                 throw new InvalidDataException($"RC tfrags exceeds maxVertices {options.MaxVertices}.");
             }
 
-            foreach (var (tri, texId) in RecoverFaces(strips, stripIndices, textures))
+            foreach (var (tri, texId, materialIndex) in RecoverFaces(strips, stripIndices, textures))
             {
                 if (tri.A >= allVertexInfo.Count || tri.B >= allVertexInfo.Count || tri.C >= allVertexInfo.Count)
                 {
@@ -241,6 +252,7 @@ public static class RcTfrag
                 indices.Add(vertexBase + tri.B);
                 indices.Add(vertexBase + tri.C);
                 triangleTextureIds.Add(texId);
+                triangleMaterialIndices.Add(materialIndex >= 0 ? materialBase + materialIndex : -1);
                 if (texId >= 0)
                 {
                     textureIdSet.Add(texId);
@@ -255,7 +267,8 @@ public static class RcTfrag
 
         bool empty = positions.Count == 0;
         return new Mesh(
-            positions.ToArray(), uvs.ToArray(), colors.ToArray(), indices.ToArray(), triangleTextureIds.ToArray(),
+            positions.ToArray(), uvs.ToArray(), colors.ToArray(), vertexAlpha.ToArray(), indices.ToArray(), triangleTextureIds.ToArray(),
+            triangleMaterialIndices.ToArray(), materials,
             tfragCount,
             empty ? (0, 0, 0) : (minX, minY, minZ),
             empty ? (0, 0, 0) : (maxX, maxY, maxZ),
@@ -294,13 +307,13 @@ public static class RcTfrag
         return outp;
     }
 
-    private static List<int> ReadTexturePrimitives(ArraySegment<byte> data)
+    private static List<RcMaterialState> ReadTexturePrimitives(ArraySegment<byte> data)
     {
         var span = data.AsSpan();
-        var outp = new List<int>();
+        var outp = new List<RcMaterialState>();
         for (int o = 0; o + 0x50 <= span.Length; o += 0x50)
         {
-            outp.Add(BinaryPrimitives.ReadInt32LittleEndian(span[o..]));
+            outp.Add(RcMaterialState.ReadTfrag(span.Slice(o, 0x50)));
         }
 
         return outp;
@@ -312,23 +325,26 @@ public static class RcTfrag
         for (int i = 0; i < count; i++)
         {
             int o = offset + i * 4;
-            if (o + 3 > blob.Length)
+            if (o + 4 > blob.Length)
             {
                 break;
             }
 
-            outp.Add([blob[o], blob[o + 1], blob[o + 2]]);
+            outp.Add([blob[o], blob[o + 1], blob[o + 2], blob[o + 3]]);
         }
 
         return outp;
     }
 
-    private static IEnumerable<((int A, int B, int C) Tri, int TexId)> RecoverFaces(byte[] strips, byte[] indices, List<int> textures)
+    private static IEnumerable<((int A, int B, int C) Tri, int TexId, int MaterialIndex)> RecoverFaces(
+        byte[] strips,
+        byte[] indices,
+        List<RcMaterialState> textures)
     {
         int activeAdGif = -1;
         int next = 0;
         int Idx(int i) => i >= 0 && i < indices.Length ? indices[i] : 0;
-        int TexFor() => activeAdGif >= 0 && activeAdGif < textures.Count ? textures[activeAdGif] : -1;
+        int TexFor() => activeAdGif >= 0 && activeAdGif < textures.Count ? textures[activeAdGif].TextureId : -1;
 
         for (int s = 0; s + 4 <= strips.Length; s += 4)
         {
@@ -359,8 +375,8 @@ public static class RcTfrag
                 for (int i = 0; i + 4 <= vc; i += 2)
                 {
                     int q0 = Idx(next + i), q1 = Idx(next + i + 1), q2 = Idx(next + i + 2), q3 = Idx(next + i + 3);
-                    yield return ((q2, q3, q1), TexFor());
-                    yield return ((q2, q1, q0), TexFor());
+                    yield return ((q2, q3, q1), TexFor(), activeAdGif);
+                    yield return ((q2, q1, q0), TexFor(), activeAdGif);
                 }
             }
             else
@@ -368,7 +384,7 @@ public static class RcTfrag
                 for (int i = 0; i + 3 <= vc; i++)
                 {
                     int t0 = Idx(next + i), t1 = Idx(next + i + 1), t2 = Idx(next + i + 2);
-                    yield return ((i & 1) != 0 ? (t1, t0, t2) : (t0, t1, t2), TexFor());
+                    yield return ((i & 1) != 0 ? (t1, t0, t2) : (t0, t1, t2), TexFor(), activeAdGif);
                 }
             }
 

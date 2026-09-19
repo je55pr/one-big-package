@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using OBP.PS2.Graphics;
 
 namespace OBP.PS2.Geometry;
 
@@ -15,7 +16,13 @@ public static class RcTie
     public const int GcClassHeaderSize = 0x80;
     public const int ClassEntrySize = 0x20;
 
-    public sealed record Mesh(double[] Positions, float[] Uvs, int[] Indices, int[] TriangleMaterialSlots, float Scale);
+    public sealed record Mesh(
+        double[] Positions,
+        float[] Uvs,
+        int[] Indices,
+        int[] TriangleMaterialSlots,
+        float Scale,
+        IReadOnlyList<RcMaterialState> Materials);
 
 
     private readonly record struct Vtx(int X, int Y, int Z, int Ofs, int S, int T);
@@ -27,10 +34,16 @@ public static class RcTie
         public readonly List<Vtx> Verts = [];
     }
 
-    public sealed record Layout(string Name, int HeaderSize, int PacketCountOffset, int ScaleOffset);
+    public sealed record Layout(
+        string Name,
+        int HeaderSize,
+        int PacketCountOffset,
+        int ScaleOffset,
+        int TextureCountOffset,
+        int AdGifOffsetOffset);
 
-    public static readonly Layout Rac1Layout = new("rac1", Rac1ClassHeaderSize, 0x20, 0x40);
-    public static readonly Layout GcLayout = new("gc-uya-dl", GcClassHeaderSize, 0x0c, 0x40);
+    public static readonly Layout Rac1Layout = new("rac1", Rac1ClassHeaderSize, 0x20, 0x40, 0x23, 0x2c);
+    public static readonly Layout GcLayout = new("gc-uya-dl", GcClassHeaderSize, 0x0c, 0x40, 0x0f, 0x1c);
 
     public static Mesh ReadClass(ReadOnlySpan<byte> buf, Layout layout)
     {
@@ -41,6 +54,17 @@ public static class RcTie
 
         float scale = BinaryPrimitives.ReadSingleLittleEndian(buf[layout.ScaleOffset..]);
         var primitives = new List<Primitive>();
+        var materials = new List<RcMaterialState>();
+        int textureCount = buf[layout.TextureCountOffset];
+        int adGifOffset = BinaryPrimitives.ReadInt32LittleEndian(buf[layout.AdGifOffsetOffset..]);
+        if (textureCount > 0)
+        {
+            if (adGifOffset <= 0 || (long)adGifOffset + (long)textureCount * 0x50 > buf.Length)
+                throw new InvalidDataException($"RC tie class ({layout.Name}) material table is out of range.");
+            for (int i = 0; i < textureCount; i++)
+                materials.Add(RcMaterialState.ReadTie(buf.Slice(adGifOffset + i * 0x50, 0x50)));
+        }
+
         int tableBase = BinaryPrimitives.ReadInt32LittleEndian(buf);
         int packetCount = buf[layout.PacketCountOffset];
 
@@ -216,7 +240,7 @@ public static class RcTie
             }
         }
 
-        return new Mesh(positions.ToArray(), uvs.ToArray(), indices.ToArray(), slots.ToArray(), scale);
+        return new Mesh(positions.ToArray(), uvs.ToArray(), indices.ToArray(), slots.ToArray(), scale, materials);
     }
 
 }

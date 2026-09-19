@@ -22,8 +22,11 @@ public sealed class RcSharedCodecTests
         Assert.Equal(shared.Positions, gc.Positions);
         Assert.Equal(shared.Uvs, gc.Uvs);
         Assert.Equal(shared.Colors, gc.Colors);
+        Assert.Equal(shared.VertexAlpha, gc.VertexAlpha);
         Assert.Equal(shared.Indices, gc.Indices);
         Assert.Equal(shared.TriangleTextureIds, gc.TriangleTextureIds);
+        Assert.Equal(shared.TriangleMaterialIndices, gc.TriangleMaterialIndices);
+        Assert.Equal(shared.Materials, gc.Materials);
         Assert.Equal(shared.TextureIds, gc.TextureIds);
         Assert.Equal(shared.BoundsMin, gc.BoundsMin);
         Assert.Equal(shared.BoundsMax, gc.BoundsMax);

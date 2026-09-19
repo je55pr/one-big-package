@@ -185,7 +185,7 @@ public static class Rac1StaticClasses
         for (int i = 0; i < slots.Length; i++)
         {
             int slot = slots[i];
-            if (slot == -1 && allowUntextured)
+            if (slot < 0 && allowUntextured)
             {
                 mapped[i] = -1;
                 continue;

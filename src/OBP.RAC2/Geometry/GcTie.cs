@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using OBP.PS2.Geometry;
+using OBP.PS2.Graphics;
 using OBP.RAC2.Level;
 
 namespace OBP.RAC2.Geometry;
@@ -15,7 +16,11 @@ public static class GcTie
         float[] Uvs,
         int[] Indices,
         int[] TriangleMaterialSlots,
-        float Scale);
+        float Scale)
+    {
+        public IReadOnlyList<RcMaterialState> Materials { get; init; } = [];
+        public int[] TriangleMaterialStateIndices { get; init; } = [];
+    }
 
     public sealed record TieClass(
         int OClass,
@@ -27,7 +32,11 @@ public static class GcTie
     public static Mesh ReadClass(ReadOnlySpan<byte> buf)
     {
         var mesh = RcTie.ReadClass(buf, RcTie.GcLayout);
-        return new Mesh(mesh.Positions, mesh.Uvs, mesh.Indices, mesh.TriangleMaterialSlots, mesh.Scale);
+        return new Mesh(mesh.Positions, mesh.Uvs, mesh.Indices, mesh.TriangleMaterialSlots, mesh.Scale)
+        {
+            Materials = mesh.Materials,
+            TriangleMaterialStateIndices = mesh.TriangleMaterialSlots,
+        };
     }
     public static Dictionary<int, TieClass> ReadClasses(GcLevelCore.Core core)
     {

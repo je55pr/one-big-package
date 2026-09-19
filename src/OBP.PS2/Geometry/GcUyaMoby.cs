@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using OBP.PS2.Graphics;
 using OBP.PS2.Vif;
 
 namespace OBP.PS2.Geometry;
@@ -61,6 +62,12 @@ public static class GcUyaMoby
 
         /// <summary>True only when every VU0 matrix-slot read and blend source was retail-valid.</summary>
         public bool SkinStateFullyResolved { get; init; } = true;
+
+        /// <summary>Native per-switch Moby material records, in decode order.</summary>
+        public IReadOnlyList<RcMaterialState> Materials { get; init; } = [];
+
+        /// <summary>One material-record index per emitted triangle; -1 means inherited state was unresolved.</summary>
+        public int[] TriangleMaterialStateIndices { get; init; } = [];
     }
 
     /// <summary>
@@ -106,6 +113,7 @@ public static class GcUyaMoby
     private sealed class MPrim
     {
         public int Material;
+        public int MaterialStateIndex = -1;
         public readonly List<int> Strip = [];
     }
 
@@ -578,6 +586,8 @@ public static class GcUyaMoby
         var vertexWeightsOut = new List<float>();
         var indices = new List<int>();
         var triangleMaterialSlots = new List<int>();
+        var triangleMaterialStateIndices = new List<int>();
+        var materials = new List<RcMaterialState>();
         bool skinned = false;
         bool skinningApplied = false;
 
@@ -587,6 +597,7 @@ public static class GcUyaMoby
         // One running value across every packet (init 0, matching Wrench's
         // recover_packets) — see research/GC_MOBY.md.
         int material = 0;
+        int materialStateIndex = -1;
 
         for (int pkt = 0; pkt < highLodCount; pkt++)
         {
@@ -634,14 +645,17 @@ public static class GcUyaMoby
                 idxBuf.Add((sbyte)idxData[i]);
             }
 
-            var textures = new List<int>();
+            var textures = new List<(int TextureId, int MaterialStateIndex)>();
             if (unpacks.Count >= 3)
             {
                 var td = unpacks[2].Data;
                 for (int i = 0; i * 0x40 + 0x40 <= td.Count; i++)
                 {
                     secretIndices.Add((sbyte)td[i * 0x10 + 0x0c]);
-                    textures.Add(BinaryPrimitives.ReadInt32LittleEndian(td.AsSpan(i * 0x40 + 0x20)));
+                    var state = RcMaterialState.ReadMoby(td.AsSpan(i * 0x40, 0x40));
+                    int stateIndex = materials.Count;
+                    materials.Add(state);
+                    textures.Add((state.TextureId, stateIndex));
                 }
             }
 
@@ -875,7 +889,11 @@ public static class GcUyaMoby
                     }
 
                     index = secret - 0x80;
-                    material = adGif < textures.Count ? textures[adGif] : material;
+                    if (adGif < textures.Count)
+                    {
+                        material = textures[adGif].TextureId;
+                        materialStateIndex = textures[adGif].MaterialStateIndex;
+                    }
                     adGif++;
                 }
 
@@ -883,7 +901,7 @@ public static class GcUyaMoby
                 {
                     if (j + 1 < idxBuf.Count && idxBuf[j + 1] <= 0)
                     {
-                        prim = new MPrim { Material = material };
+                        prim = new MPrim { Material = material, MaterialStateIndex = materialStateIndex };
                         prims.Add(prim);
                     }
                     else if (prim is { Strip.Count: >= 1 })
@@ -952,6 +970,7 @@ public static class GcUyaMoby
                     }
 
                     triangleMaterialSlots.Add(pr.Material);
+                    triangleMaterialStateIndices.Add(pr.MaterialStateIndex);
                 }
             }
         }
@@ -970,6 +989,8 @@ public static class GcUyaMoby
             VertexWeights = vertexWeightsOut.ToArray(),
             SkinLocalPositions = skinLocalPositionsOut.ToArray(),
             SkinStateFullyResolved = !skinned || (globalBind is not null && skinState.FullyResolved),
+            Materials = materials,
+            TriangleMaterialStateIndices = triangleMaterialStateIndices.ToArray(),
         };
     }
 

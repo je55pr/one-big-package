@@ -1,4 +1,5 @@
 using OBP.PS2.Geometry;
+using OBP.PS2.Graphics;
 
 namespace OBP.RAC2.Geometry;
 
@@ -17,8 +18,11 @@ public static class GcTfrag
         double[] Positions,
         float[] Uvs,
         float[] Colors,
+        float[] VertexAlpha,
         int[] Indices,
         int[] TriangleTextureIds,
+        int[] TriangleMaterialIndices,
+        IReadOnlyList<RcMaterialState> Materials,
         int TfragCount,
         (double X, double Y, double Z) BoundsMin,
         (double X, double Y, double Z) BoundsMax,
@@ -34,8 +38,11 @@ public static class GcTfrag
             mesh.Positions,
             mesh.Uvs,
             mesh.Colors,
+            mesh.VertexAlpha,
             mesh.Indices,
             mesh.TriangleTextureIds,
+            mesh.TriangleMaterialIndices,
+            mesh.Materials,
             mesh.TfragCount,
             mesh.BoundsMin,
             mesh.BoundsMax,

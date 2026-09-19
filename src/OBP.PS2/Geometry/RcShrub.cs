@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using OBP.PS2.Graphics;
 using OBP.PS2.Vif;
 
 namespace OBP.PS2.Geometry;
@@ -15,7 +16,15 @@ public static class RcShrub
     public const int ClassHeaderSize = 0x40;
     public const int ClassEntrySize = 0x30;
 
-    public sealed record Mesh(double[] Positions, float[] Uvs, int[] Indices, int[] TriangleMaterialSlots, float Scale);
+    public sealed record Mesh(
+        double[] Positions,
+        float[] Uvs,
+        int[] Indices,
+        int[] TriangleMaterialSlots,
+        int[] TriangleMaterialStateIndices,
+        bool?[] TriangleAlphaBlendEnabled,
+        float Scale,
+        IReadOnlyList<RcMaterialState> Materials);
 
 
     private readonly record struct SVtx(int X, int Y, int Z, int Ofs, int S, int T);
@@ -23,7 +32,9 @@ public static class RcShrub
     private sealed class SPrim
     {
         public int Material;
+        public int MaterialStateIndex = -1;
         public bool Strip;
+        public bool? AlphaBlendEnabled;
         public readonly List<SVtx> Verts = [];
     }
 
@@ -37,6 +48,7 @@ public static class RcShrub
         float scale = BinaryPrimitives.ReadSingleLittleEndian(buf[0x20..]);
         int packetCount = BinaryPrimitives.ReadInt16LittleEndian(buf[0x28..]);
         var primitives = new List<SPrim>();
+        var materials = new List<RcMaterialState>();
 
         for (int p = 0; p < packetCount; p++)
         {
@@ -68,7 +80,7 @@ public static class RcShrub
                 continue;
             }
 
-            var gifTags = new List<(bool PrimStrip, int Ofs)>();
+            var gifTags = new List<(bool PrimStrip, bool? AlphaBlendEnabled, int Ofs)>();
             for (int g = 0; g < gifTagCount; g++)
             {
                 int at = 0x10 + g * 0x10;
@@ -77,21 +89,28 @@ public static class RcShrub
                     break;
                 }
 
-                int primType = (int)((BinaryPrimitives.ReadUInt32LittleEndian(hd.AsSpan(at + 4)) >> 15) & 0b111);
-                gifTags.Add((primType == 0b100, BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(at + 0x0c))));
+                ulong tagLow = BinaryPrimitives.ReadUInt64LittleEndian(hd.AsSpan(at));
+                var primitiveState = RcGifPrimitiveState.Decode(tagLow);
+                gifTags.Add((
+                    primitiveState.PrimitiveType == 0b100,
+                    primitiveState.Pre ? primitiveState.AlphaBlendEnabled : null,
+                    BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(at + 0x0c))));
             }
 
-            var adGifs = new List<(int Ofs, int TexId)>();
+            var adGifs = new List<(int Ofs, int MaterialStateIndex, RcMaterialState State)>();
             int adGifBase = 0x10 + gifTagCount * 0x10;
             for (int a = 0; a < textureCount; a++)
             {
                 int at = adGifBase + a * 0x40;
-                if (at + 0x34 > hd.Count)
+                if (at + 0x40 > hd.Count)
                 {
                     break;
                 }
 
-                adGifs.Add((BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(at + 0x0c)), BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(at + 0x30))));
+                var state = RcMaterialState.ReadShrub(hd.AsSpan(at, 0x40));
+                int stateIndex = materials.Count;
+                materials.Add(state);
+                adGifs.Add((BinaryPrimitives.ReadInt32LittleEndian(hd.AsSpan(at + 0x0c)), stateIndex, state));
             }
 
             var d1 = unpacks[1].Data;
@@ -114,20 +133,24 @@ public static class RcShrub
             }
 
             int nextGifTag = 0, nextAdGif = 0, nextVertex = 0, nextOffset = 0, material = 0, guard = 0;
+            int materialStateIndex = -1;
             bool strip = true;
+            bool? alphaBlendEnabled = null;
             SPrim? prim = null;
             while ((nextGifTag < gifTags.Count || nextAdGif < adGifs.Count || nextVertex < verts.Count) && guard++ < 200_000)
             {
                 if (nextGifTag < gifTags.Count && gifTags[nextGifTag].Ofs == nextOffset)
                 {
                     strip = gifTags[nextGifTag].PrimStrip;
+                    alphaBlendEnabled = gifTags[nextGifTag].AlphaBlendEnabled;
                     prim = null;
                     nextGifTag++;
                     nextOffset += 1;
                 }
                 else if (nextAdGif < adGifs.Count && adGifs[nextAdGif].Ofs == nextOffset)
                 {
-                    material = adGifs[nextAdGif].TexId;
+                    material = adGifs[nextAdGif].State.TextureId;
+                    materialStateIndex = adGifs[nextAdGif].MaterialStateIndex;
                     prim = null;
                     nextAdGif++;
                     nextOffset += 5;
@@ -136,7 +159,13 @@ public static class RcShrub
                 {
                     if (prim is null)
                     {
-                        prim = new SPrim { Material = material, Strip = strip };
+                        prim = new SPrim
+                        {
+                            Material = material,
+                            MaterialStateIndex = materialStateIndex,
+                            Strip = strip,
+                            AlphaBlendEnabled = alphaBlendEnabled,
+                        };
                         primitives.Add(prim);
                     }
 
@@ -155,6 +184,8 @@ public static class RcShrub
         var uvs = new List<float>();
         var indices = new List<int>();
         var slots = new List<int>();
+        var materialStateIndices = new List<int>();
+        var alphaBlend = new List<bool?>();
         double k = scale / 1024.0;
 
         foreach (var prim in primitives)
@@ -182,6 +213,8 @@ public static class RcShrub
                     indices.Add(baseV + i + 1);
                     indices.Add(baseV + i + 2);
                     slots.Add(prim.Material);
+                    materialStateIndices.Add(prim.MaterialStateIndex);
+                    alphaBlend.Add(prim.AlphaBlendEnabled);
                 }
             }
             else
@@ -192,11 +225,21 @@ public static class RcShrub
                     indices.Add(baseV + i + 1);
                     indices.Add(baseV + i + 2);
                     slots.Add(prim.Material);
+                    materialStateIndices.Add(prim.MaterialStateIndex);
+                    alphaBlend.Add(prim.AlphaBlendEnabled);
                 }
             }
         }
 
-        return new Mesh(positions.ToArray(), uvs.ToArray(), indices.ToArray(), slots.ToArray(), scale);
+        return new Mesh(
+            positions.ToArray(),
+            uvs.ToArray(),
+            indices.ToArray(),
+            slots.ToArray(),
+            materialStateIndices.ToArray(),
+            alphaBlend.ToArray(),
+            scale,
+            materials);
     }
 
 }
