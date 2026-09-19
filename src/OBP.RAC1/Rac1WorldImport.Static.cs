@@ -1,6 +1,8 @@
+using OBP.PS2.Graphics;
 using OBP.PS2.Textures;
 using OBP.RAC1.Level;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OBP.RAC1;
 
@@ -42,7 +44,10 @@ public static partial class Rac1WorldImport
             "tie",
             instances.TieInstances.Select(i => (i.OClass, i.Matrix)),
             oClass => classes.Ties.TryGetValue(oClass, out var c)
-                ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds)
+                ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds,
+                    PresentationsFor(
+                        c.Mesh.Materials, c.Mesh.TriangleMaterialSlots, null,
+                        c.TriangleTextureIds.Length))
                 : null,
             tieTextureIds,
             meshes,
@@ -53,7 +58,10 @@ public static partial class Rac1WorldImport
             "shrub",
             instances.ShrubInstances.Select(i => (i.OClass, i.Matrix)),
             oClass => classes.Shrubs.TryGetValue(oClass, out var c)
-                ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds)
+                ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds,
+                    PresentationsFor(
+                        c.Mesh.Materials, c.Mesh.TriangleMaterialStateIndices,
+                        c.Mesh.TriangleAlphaBlendEnabled, c.TriangleTextureIds.Length))
                 : null,
             shrubTextureIds,
             meshes,
@@ -81,10 +89,51 @@ public static partial class Rac1WorldImport
             .ToList();
     }
 
+    private static RuntimeMaterialPresentation? PresentationFor(
+        IReadOnlyList<RcMaterialState> materials,
+        int[] stateIndices,
+        bool?[]? alphaBlendEnabled,
+        int face,
+        bool classifyMobySurface = false)
+    {
+        if ((uint)face >= (uint)stateIndices.Length)
+        {
+            return null;
+        }
+
+        int stateIndex = stateIndices[face];
+        if ((uint)stateIndex >= (uint)materials.Count)
+        {
+            return null;
+        }
+
+        bool? alphaBlend = alphaBlendEnabled is not null && (uint)face < (uint)alphaBlendEnabled.Length
+            ? alphaBlendEnabled[face]
+            : null;
+        var presentation = NativeMaterialPresentation.From(
+            materials[stateIndex], alphaBlend, classifyMobySurface);
+        return presentation.HasNativeEvidence ? presentation : null;
+    }
+
+    private static RuntimeMaterialPresentation?[] PresentationsFor(
+        IReadOnlyList<RcMaterialState> materials,
+        int[] stateIndices,
+        bool?[]? alphaBlendEnabled,
+        int faceCount)
+    {
+        var result = new RuntimeMaterialPresentation?[faceCount];
+        for (int face = 0; face < faceCount; face++)
+        {
+            result[face] = PresentationFor(materials, stateIndices, alphaBlendEnabled, face);
+        }
+
+        return result;
+    }
+
     private static void PlaceMatrixInstances(
         string kind,
         IEnumerable<(int OClass, float[] Matrix)> instances,
-        Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds)?> lookup,
+        Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds, RuntimeMaterialPresentation?[] TrianglePresentations)?> lookup,
         HashSet<int> textureIds,
         List<RuntimeMesh> meshes,
         ref double minX,
@@ -94,7 +143,7 @@ public static partial class Rac1WorldImport
         ref double maxY,
         ref double maxZ)
     {
-        var byTexture = new Dictionary<int, (
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (
             List<double> Positions,
             List<float> Uvs,
             List<int> Indices,
@@ -140,9 +189,13 @@ public static partial class Rac1WorldImport
                 {
                     throw new InvalidDataException($"R&C1 {kind} class {instance.OClass} references missing texture {textureId}.");
                 }
-                if (!byTexture.TryGetValue(textureId, out var group))
+                var presentation = (uint)face < (uint)cls.TrianglePresentations.Length
+                    ? cls.TrianglePresentations[face]
+                    : null;
+                var surface = (textureId, presentation);
+                if (!bySurface.TryGetValue(surface, out var group))
                 {
-                    byTexture[textureId] = group = (
+                    bySurface[surface] = group = (
                         [], [], [],
                         new Dictionary<(double, double, double, double, double), int>());
                 }
@@ -175,14 +228,17 @@ public static partial class Rac1WorldImport
             }
         }
 
-        foreach (var (textureId, group) in byTexture.OrderBy(kv => kv.Key))
+        foreach (var (surface, group) in bySurface
+                     .OrderBy(kv => kv.Key.TextureId)
+                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
         {
             meshes.Add(new RuntimeMesh(
                 kind,
-                textureId,
+                surface.TextureId,
                 group.Positions.ToArray(),
                 group.Uvs.ToArray(),
-                group.Indices.ToArray()));
+                group.Indices.ToArray(),
+                MaterialPresentation: surface.Presentation));
         }
     }
 }

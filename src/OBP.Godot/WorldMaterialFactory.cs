@@ -10,7 +10,9 @@ namespace OBP.Godot;
 /// neutral <see cref="RuntimeMesh"/> / <see cref="RuntimeObjectMesh"/> /
 /// <see cref="RuntimeAnimatedMesh"/>. The decisions (alpha handling, culling,
 /// vertex-colour use, the tfrag bake curve, emission) live in the engine-neutral
-/// <see cref="MaterialModel"/>; this only translates them to Godot.
+/// <see cref="MaterialModel"/>. Recovered native surface evidence arrives through
+/// <see cref="RuntimeMaterialPresentation"/>; this class only translates neutral
+/// presentation data to Godot.
 ///
 /// <para>World geometry is <see cref="BaseMaterial3D.ShadingModeEnum.Unshaded"/>
 /// throughout — the baked PS2 vertex colour is the lighting.</para>
@@ -31,7 +33,7 @@ public sealed class WorldMaterialFactory
     private readonly System.Collections.Generic.Dictionary<(string, int), ImageTexture> _textures = new();
     private readonly System.Collections.Generic.Dictionary<(string, int), AlphaProfile> _alpha = new();
     private readonly System.Collections.Generic.Dictionary<(string, int), double> _luminance = new();
-    private readonly System.Collections.Generic.Dictionary<(string, int), StandardMaterial3D> _cache = new();
+    private readonly System.Collections.Generic.Dictionary<(string, int, RuntimeMaterialPresentation?), StandardMaterial3D> _cache = new();
     private readonly System.Collections.Generic.Dictionary<string, int> _untexturedTris = new();
 
     public WorldMaterialFactory(RuntimeWorld world)
@@ -68,15 +70,16 @@ public sealed class WorldMaterialFactory
     /// the mesh has UVs and a decoded texture exists. Includes the sky backdrop
     /// handling.
     /// </summary>
-    public StandardMaterial3D StaticMesh(string assetKind, int textureId, bool hasUv, bool hasColour, bool isSky, bool renderWithoutTexture, int triangleCount)
+    public StandardMaterial3D StaticMesh(string assetKind, int textureId, bool hasUv, bool hasColour, bool isSky, bool renderWithoutTexture, int triangleCount, RuntimeMaterialPresentation? presentation)
     {
-        var key = (assetKind, textureId);
-        if (_cache.TryGetValue(key, out var cached))
+        var textureKey = (assetKind, textureId);
+        var cacheKey = (assetKind, textureId, presentation);
+        if (_cache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
         }
 
-        _textures.TryGetValue(key, out var tex);
+        _textures.TryGetValue(textureKey, out var tex);
         bool textured = hasUv && tex is not null;
 
         if (!textured && assetKind is "tfrag" or "tie" or "shrub" or "moby")
@@ -93,8 +96,8 @@ public sealed class WorldMaterialFactory
         {
             mat.AlbedoTexture = tex;
             mat.AlbedoColor = Colors.White;
-            ApplyAlpha(mat, key);
-            ApplyEmission(mat, key);
+            ApplyAlpha(mat, textureKey, presentation);
+            ApplyEmission(mat, textureKey);
         }
 
         if (MaterialModel.VertexColourAsAlbedo(assetKind, hasColour))
@@ -123,7 +126,8 @@ public sealed class WorldMaterialFactory
                 : BaseMaterial3D.TransparencyEnum.Disabled;
         }
 
-        _cache[key] = mat;
+        ApplyNativePresentation(mat, presentation);
+        _cache[cacheKey] = mat;
         return mat;
     }
 
@@ -132,15 +136,16 @@ public sealed class WorldMaterialFactory
     /// <see cref="RuntimeAnimatedMesh"/> — always 2-sided, textured whenever a
     /// decoded texture exists.
     /// </summary>
-    public StandardMaterial3D Instanced(string assetKind, int textureId, bool hasColour)
+    public StandardMaterial3D Instanced(string assetKind, int textureId, bool hasColour, RuntimeMaterialPresentation? presentation)
     {
-        var key = (assetKind, textureId);
-        if (_cache.TryGetValue(key, out var cached))
+        var textureKey = (assetKind, textureId);
+        var cacheKey = (assetKind, textureId, presentation);
+        if (_cache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
         }
 
-        _textures.TryGetValue(key, out var tex);
+        _textures.TryGetValue(textureKey, out var tex);
         var mat = NewBase(assetKind);
         mat.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
         mat.AlbedoColor = tex is null ? KindTint.GetValueOrDefault(assetKind, Colors.White) : Colors.White;
@@ -148,8 +153,8 @@ public sealed class WorldMaterialFactory
         if (tex is not null)
         {
             mat.AlbedoTexture = tex;
-            ApplyAlpha(mat, key);
-            ApplyEmission(mat, key);
+            ApplyAlpha(mat, textureKey, presentation);
+            ApplyEmission(mat, textureKey);
         }
 
         if (hasColour)
@@ -157,7 +162,8 @@ public sealed class WorldMaterialFactory
             mat.VertexColorUseAsAlbedo = true;
         }
 
-        _cache[key] = mat;
+        ApplyNativePresentation(mat, presentation);
+        _cache[cacheKey] = mat;
         return mat;
     }
 
@@ -170,15 +176,67 @@ public sealed class WorldMaterialFactory
         AlbedoColor = KindTint.GetValueOrDefault(assetKind, Colors.White),
     };
 
-    private void ApplyAlpha(StandardMaterial3D mat, (string, int) key)
+    private void ApplyAlpha(
+        StandardMaterial3D mat,
+        (string, int) key,
+        RuntimeMaterialPresentation? presentation)
     {
-        // Keep the established production gate for now. The histogram model is
-        // intentionally staged until a representative trilogy capture set can
-        // prove it safe.
+        if (presentation?.AlphaBlendEnabled is true)
+        {
+            mat.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+            return;
+        }
+
+        // Blend-disable does not prove alpha testing is disabled. Native
+        // alpha-test semantics remain unresolved, so preserve the established
+        // texture-content scissor fallback whenever blending is not enabled.
         if (_alpha.TryGetValue(key, out var profile) && profile.AnyBelowHalf)
         {
             mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
             mat.AlphaScissorThreshold = 0.5f;
+        }
+    }
+
+    private static void ApplyNativePresentation(
+        StandardMaterial3D mat,
+        RuntimeMaterialPresentation? presentation)
+    {
+        if (presentation is null)
+        {
+            return;
+        }
+
+        mat.TextureFilter = presentation.MinFilter switch
+        {
+            RuntimeTextureMinFilter.Nearest => BaseMaterial3D.TextureFilterEnum.Nearest,
+            RuntimeTextureMinFilter.Linear => BaseMaterial3D.TextureFilterEnum.Linear,
+            RuntimeTextureMinFilter.NearestMipmapNearest or RuntimeTextureMinFilter.NearestMipmapLinear
+                => BaseMaterial3D.TextureFilterEnum.NearestWithMipmaps,
+            RuntimeTextureMinFilter.LinearMipmapNearest or RuntimeTextureMinFilter.LinearMipmapLinear
+                => BaseMaterial3D.TextureFilterEnum.LinearWithMipmaps,
+            _ => mat.TextureFilter,
+        };
+
+        // StandardMaterial3D exposes repeat as one setting for both axes.
+        // Preserve mixed S/T evidence in the neutral contract rather than
+        // collapsing it to a host-specific approximation here.
+        if (presentation.WrapS == presentation.WrapT)
+        {
+            mat.TextureRepeat = presentation.WrapS switch
+            {
+                RuntimeTextureWrap.Repeat => true,
+                RuntimeTextureWrap.Clamp => false,
+                _ => mat.TextureRepeat,
+            };
+        }
+
+        // Fixed-alpha coefficients and chrome/glass selectors stay carried
+        // in RuntimeMaterialPresentation until an evidence-backed Godot mapping
+        // exists; do not invent a shader recipe for them here.
+        if (presentation.AlphaBlendEnabled is true
+            && presentation.BlendEquation == RuntimeBlendEquation.AdditiveSourceAlpha)
+        {
+            mat.BlendMode = BaseMaterial3D.BlendModeEnum.Add;
         }
     }
 

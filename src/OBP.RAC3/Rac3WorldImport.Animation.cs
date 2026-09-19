@@ -1,6 +1,7 @@
 using OBP.PS2.Geometry;
 using OBP.RAC3.Level;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OBP.RAC3;
 
@@ -59,33 +60,41 @@ public static partial class Rac3WorldImport
                 {
                     output.Add(new RuntimeAnimatedMesh(
                         $"uya-preview-moby{spec.OClass}_i{instance.Index}_s{spec.Sequence}_t{surface.TextureId}",
-                        "moby", surface.TextureId, cls.Mesh.Uvs, surface.Indices, [], worldFrames, fps));
+                        "moby", surface.TextureId, cls.Mesh.Uvs, surface.Indices, [], worldFrames, fps,
+                        MaterialPresentation: surface.MaterialPresentation));
                 }
             }
         }
         return output;
     }
 
-    private sealed record AnimationSurface(int TextureId, int[] Indices);
+    private sealed record AnimationSurface(int TextureId, int[] Indices, RuntimeMaterialPresentation? MaterialPresentation);
 
     private static AnimationSurface[] BuildAnimationSurfaces(UyaAssets.MobyVisualClass cls)
     {
-        return Enumerable.Range(0, cls.TriangleTextureIds.Length)
-            .GroupBy(face => cls.TriangleTextureIds[face])
-            .OrderBy(group => group.Key)
-            .Select(group =>
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
+        for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
+        {
+            int textureId = cls.TriangleTextureIds[face] == 0xff ? -1 : cls.TriangleTextureIds[face];
+            var presentation = PresentationFor(
+                cls.Mesh.Materials, cls.Mesh.TriangleMaterialStateIndices, null, face,
+                classifyMobySurface: true);
+            var surface = (textureId, presentation);
+            if (!bySurface.TryGetValue(surface, out var indices))
             {
-                var indices = new int[group.Count() * 3];
-                int at = 0;
-                foreach (int face in group)
-                {
-                    indices[at++] = cls.Mesh.Indices[face * 3];
-                    indices[at++] = cls.Mesh.Indices[face * 3 + 1];
-                    indices[at++] = cls.Mesh.Indices[face * 3 + 2];
-                }
-                int textureId = group.Key == 0xff ? -1 : group.Key;
-                return new AnimationSurface(textureId, indices);
-            })
+                bySurface[surface] = indices = [];
+            }
+
+            indices.Add(cls.Mesh.Indices[face * 3]);
+            indices.Add(cls.Mesh.Indices[face * 3 + 1]);
+            indices.Add(cls.Mesh.Indices[face * 3 + 2]);
+        }
+
+        return bySurface
+            .OrderBy(pair => pair.Key.TextureId)
+            .ThenBy(pair => pair.Key.Presentation?.ToString(), StringComparer.Ordinal)
+            .Select(pair => new AnimationSurface(
+                pair.Key.TextureId, pair.Value.ToArray(), pair.Key.Presentation))
             .ToArray();
     }
 

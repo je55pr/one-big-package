@@ -2,9 +2,11 @@ using OBP.Core.Math;
 using OBP.IO;
 using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
+using OBP.PS2.Graphics;
 using OBP.RAC3.Geometry;
 using OBP.RAC3.Level;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OBP.RAC3;
 
@@ -116,6 +118,32 @@ public static partial class Rac3WorldImport
             gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
     }
 
+    private static RuntimeMaterialPresentation? PresentationFor(
+        IReadOnlyList<RcMaterialState> materials,
+        int[] stateIndices,
+        bool?[]? alphaBlendEnabled,
+        int face,
+        bool classifyMobySurface = false)
+    {
+        if ((uint)face >= (uint)stateIndices.Length)
+        {
+            return null;
+        }
+
+        int stateIndex = stateIndices[face];
+        if ((uint)stateIndex >= (uint)materials.Count)
+        {
+            return null;
+        }
+
+        bool? alphaBlend = alphaBlendEnabled is not null && (uint)face < (uint)alphaBlendEnabled.Length
+            ? alphaBlendEnabled[face]
+            : null;
+        var presentation = NativeMaterialPresentation.From(
+            materials[stateIndex], alphaBlend, classifyMobySurface);
+        return presentation.HasNativeEvidence ? presentation : null;
+    }
+
     private static IReadOnlyDictionary<int, IReadOnlyList<RuntimeObjectMesh>> BuildMobyModels(
         IReadOnlyDictionary<int, UyaAssets.MobyVisualClass> classes,
         IReadOnlySet<int> referencedClasses)
@@ -127,15 +155,31 @@ public static partial class Rac3WorldImport
             var mesh = cls.Mesh;
             if (mesh.Indices.Length == 0 || (mesh.Skinned && !mesh.SkinningApplied)) continue;
 
+            var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
+            for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
+            {
+                int textureId = cls.TriangleTextureIds[face] == 0xff ? -1 : cls.TriangleTextureIds[face];
+                var presentation = PresentationFor(
+                    mesh.Materials, mesh.TriangleMaterialStateIndices, null, face,
+                    classifyMobySurface: true);
+                var surface = (textureId, presentation);
+                if (!bySurface.TryGetValue(surface, out var faces))
+                {
+                    bySurface[surface] = faces = [];
+                }
+                faces.Add(face);
+            }
+
             var surfaces = new List<RuntimeObjectMesh>();
-            foreach (var group in Enumerable.Range(0, cls.TriangleTextureIds.Length)
-                         .GroupBy(face => cls.TriangleTextureIds[face]).OrderBy(group => group.Key))
+            foreach (var (surface, faces) in bySurface
+                         .OrderBy(kv => kv.Key.TextureId)
+                         .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
             {
                 var remap = new Dictionary<int, int>();
                 var positions = new List<double>();
                 var uvs = new List<float>();
                 var indices = new List<int>();
-                foreach (int face in group)
+                foreach (int face in faces)
                 {
                     for (int k = 0; k < 3; k++)
                     {
@@ -154,8 +198,9 @@ public static partial class Rac3WorldImport
                     }
                 }
 
-                int textureId = group.Key == 0xff ? -1 : group.Key;
-                surfaces.Add(new RuntimeObjectMesh("moby", textureId, positions.ToArray(), uvs.ToArray(), indices.ToArray()));
+                surfaces.Add(new RuntimeObjectMesh(
+                    "moby", surface.TextureId, positions.ToArray(), uvs.ToArray(), indices.ToArray(),
+                    MaterialPresentation: surface.Presentation));
             }
             if (surfaces.Count > 0) models.Add(oClass, surfaces);
         }
@@ -167,6 +212,7 @@ public static partial class Rac3WorldImport
         {
             var remap = new Dictionary<int, int>(); var p = new List<double>(); var u = new List<float>(); var c = new List<float>(); var ind = new List<int>();
             bool colours = mesh.Colors.Length == mesh.Positions.Length;
+            bool alpha = mesh.VertexAlpha.Length == mesh.Positions.Length / 3;
             foreach (int face in group)
                 for (int k = 0; k < 3; k++)
                 {
@@ -174,7 +220,7 @@ public static partial class Rac3WorldImport
                     if (!remap.TryGetValue(v, out int nv))
                     {
                         nv = p.Count / 3; remap[v] = nv; p.Add(mesh.Positions[v * 3]); p.Add(mesh.Positions[v * 3 + 1]); p.Add(mesh.Positions[v * 3 + 2]); u.Add(mesh.Uvs[v * 2]); u.Add(mesh.Uvs[v * 2 + 1]);
-                        if (colours) { c.Add(mesh.Colors[v * 3]); c.Add(mesh.Colors[v * 3 + 1]); c.Add(mesh.Colors[v * 3 + 2]); c.Add(1f); }
+                        if (colours) { c.Add(mesh.Colors[v * 3]); c.Add(mesh.Colors[v * 3 + 1]); c.Add(mesh.Colors[v * 3 + 2]); c.Add(alpha ? mesh.VertexAlpha[v] : 1f); }
                     }
                     ind.Add(nv);
                 }
@@ -185,7 +231,7 @@ public static partial class Rac3WorldImport
     private static void PlaceStatics(string kind, IReadOnlyList<UyaGameplay.MatrixInstance> instances, IReadOnlyDictionary<int, UyaAssets.StaticClass> classes,
         int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow)
     {
-        var groups = new Dictionary<int, (List<double> P, List<float> U, List<int> I)>();
+        var groups = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (List<double> P, List<float> U, List<int> I)>();
         foreach (var inst in instances)
         {
             if (!classes.TryGetValue(inst.OClass, out var cls)) throw new InvalidDataException($"UYA {kind} instance {inst.Index} references missing class {inst.OClass}.");
@@ -198,12 +244,16 @@ public static partial class Rac3WorldImport
                 double z = inst.Matrix[2] * cls.Positions[v] + inst.Matrix[6] * cls.Positions[v + 1] + inst.Matrix[10] * cls.Positions[v + 2] + inst.Matrix[14];
                 world[v] = x; world[v + 1] = z; world[v + 2] = y; grow(x, z, y);
             }
-            var localRemaps = new Dictionary<int, Dictionary<int, int>>();
+            var localRemaps = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), Dictionary<int, int>>();
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
             {
                 int tex = cls.TriangleTextureIds[f];
-                if (!groups.TryGetValue(tex, out var g)) groups[tex] = g = ([], [], []);
-                if (!localRemaps.TryGetValue(tex, out var remap)) localRemaps[tex] = remap = [];
+                var presentation = PresentationFor(
+                    cls.Materials, cls.TriangleMaterialStateIndices,
+                    cls.TriangleAlphaBlendEnabled, f);
+                var surface = (tex, presentation);
+                if (!groups.TryGetValue(surface, out var g)) groups[surface] = g = ([], [], []);
+                if (!localRemaps.TryGetValue(surface, out var remap)) localRemaps[surface] = remap = [];
                 for (int k = 0; k < 3; k++)
                 {
                     int v = cls.Indices[f * 3 + k];
@@ -212,7 +262,12 @@ public static partial class Rac3WorldImport
                 }
             }
         }
-        foreach (var (tex, g) in groups.OrderBy(k => k.Key)) meshes.Add(new RuntimeMesh(kind, tex, g.P.ToArray(), g.U.ToArray(), g.I.ToArray()));
+        foreach (var (surface, g) in groups
+                     .OrderBy(k => k.Key.TextureId)
+                     .ThenBy(k => k.Key.Presentation?.ToString(), StringComparer.Ordinal))
+            meshes.Add(new RuntimeMesh(
+                kind, surface.TextureId, g.P.ToArray(), g.U.ToArray(), g.I.ToArray(),
+                MaterialPresentation: surface.Presentation));
     }
 
     private static void AddSkyMeshes(UyaSky.Sky sky, List<RuntimeMesh> meshes, double minX, double minY, double minZ, double maxX, double maxY, double maxZ,

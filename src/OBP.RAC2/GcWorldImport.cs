@@ -5,11 +5,13 @@ using OBP.PS2.Collision;
 using OBP.PS2.Compression;
 using OBP.PS2.Iso;
 using OBP.PS2.Geometry;
+using OBP.PS2.Graphics;
 using OBP.RAC2.Audio;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Level;
 using OBP.Runtime;
 using OBP.Runtime.Audio;
+using OBP.Runtime.Presentation;
 
 namespace OBP.RAC2;
 
@@ -154,13 +156,23 @@ public static class GcWorldImport
         CollectTextures("tie", GcLevelTextures.Table.Tie);
         var tieClasses = GcTie.ReadClasses(Core());
         PlaceMatrixInstances("tie", gameplay.TieInstances,
-            id => tieClasses.TryGetValue(id, out var c) ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds) : null,
+            id => tieClasses.TryGetValue(id, out var c)
+                ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds,
+                    PresentationsFor(
+                        c.Mesh.Materials, c.Mesh.TriangleMaterialStateIndices, null,
+                        c.TriangleTextureIds.Length))
+                : null,
             meshes, Grow, growBounds: true);
 
         CollectTextures("shrub", GcLevelTextures.Table.Shrub);
         var shrubClasses = GcShrub.ReadClasses(Core());
         PlaceMatrixInstances("shrub", gameplay.ShrubInstances,
-            id => shrubClasses.TryGetValue(id, out var c) ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds) : null,
+            id => shrubClasses.TryGetValue(id, out var c)
+                ? (c.Mesh.Positions, c.Mesh.Uvs, c.Mesh.Indices, c.TriangleTextureIds,
+                    PresentationsFor(
+                        c.Mesh.Materials, c.Mesh.TriangleMaterialStateIndices,
+                        c.Mesh.TriangleAlphaBlendEnabled, c.TriangleTextureIds.Length))
+                : null,
             meshes, Grow, growBounds: true);
 
         CollectTextures("moby", GcLevelTextures.Table.Moby);
@@ -519,13 +531,17 @@ public static class GcWorldImport
 
             // One animated mesh per triangle-texture group (mirrors the static
             // moby split); frames are reference-shared across the groups.
-            var byTex = new Dictionary<int, List<int>>();
+            var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
             {
                 int tex = cls.TriangleTextureIds[f];
-                if (!byTex.TryGetValue(tex, out var list))
+                var presentation = PresentationFor(
+                    cls.Mesh.Materials, cls.Mesh.TriangleMaterialStateIndices, null, f,
+                    classifyMobySurface: true);
+                var surface = (tex, presentation);
+                if (!bySurface.TryGetValue(surface, out var list))
                 {
-                    byTex[tex] = list = [];
+                    bySurface[surface] = list = [];
                 }
 
                 list.Add(cls.Mesh.Indices[f * 3]);
@@ -533,17 +549,20 @@ public static class GcWorldImport
                 list.Add(cls.Mesh.Indices[f * 3 + 2]);
             }
 
-            foreach (var (tex, tris) in byTex.OrderBy(kv => kv.Key))
+            foreach (var (surface, tris) in bySurface
+                         .OrderBy(kv => kv.Key.TextureId)
+                         .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
             {
                 outp.Add(new RuntimeAnimatedMesh(
-                    Name: $"moby{inst.OClass}_i{inst.Index}_t{tex}",
+                    Name: $"moby{inst.OClass}_i{inst.Index}_t{surface.TextureId}",
                     AssetKind: "moby",
-                    TextureId: tex,
+                    TextureId: surface.TextureId,
                     Uvs: cls.Mesh.Uvs,
                     Indices: tris.ToArray(),
                     Colors: colours,
                     Frames: frames,
-                    FramesPerSecond: fps));
+                    FramesPerSecond: fps,
+                    MaterialPresentation: surface.Presentation));
             }
 
             animatedInstances.Add(inst.Index);
@@ -655,13 +674,17 @@ public static class GcWorldImport
                 colours[v * 4 + 3] = 1f;
             }
 
-            var byTex = new Dictionary<int, List<int>>();
+            var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
             {
                 int tex = cls.TriangleTextureIds[f];
-                if (!byTex.TryGetValue(tex, out var tris))
+                var presentation = PresentationFor(
+                    meshData.Materials, meshData.TriangleMaterialStateIndices, null, f,
+                    classifyMobySurface: true);
+                var surface = (tex, presentation);
+                if (!bySurface.TryGetValue(surface, out var tris))
                 {
-                    byTex[tex] = tris = [];
+                    bySurface[surface] = tris = [];
                 }
 
                 tris.Add(meshData.Indices[f * 3]);
@@ -669,10 +692,12 @@ public static class GcWorldImport
                 tris.Add(meshData.Indices[f * 3 + 2]);
             }
 
-            var surfaces = byTex
-                .OrderBy(kv => kv.Key)
+            var surfaces = bySurface
+                .OrderBy(kv => kv.Key.TextureId)
+                .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal)
                 .Select(kv => new RuntimeObjectMesh(
-                    "moby", kv.Key, localPositions, meshData.Uvs, kv.Value.ToArray(), colours))
+                    "moby", kv.Key.TextureId, localPositions, meshData.Uvs, kv.Value.ToArray(), colours,
+                    kv.Key.Presentation))
                 .ToArray();
 
             var payloads = new List<RuntimeOpaquePayload>
@@ -748,6 +773,49 @@ public static class GcWorldImport
         return new RuntimeLighting(dir, samples, transitions);
     }
 
+    private static RuntimeMaterialPresentation? PresentationFor(
+        IReadOnlyList<RcMaterialState> materials,
+        int[] stateIndices,
+        bool?[]? alphaBlendEnabled,
+        int face,
+        bool classifyMobySurface = false)
+    {
+        if ((uint)face >= (uint)stateIndices.Length)
+        {
+            return null;
+        }
+
+        int stateIndex = stateIndices[face];
+        if ((uint)stateIndex >= (uint)materials.Count)
+        {
+            return null;
+        }
+
+        bool? alphaBlend = alphaBlendEnabled is not null && (uint)face < (uint)alphaBlendEnabled.Length
+            ? alphaBlendEnabled[face]
+            : null;
+        var presentation = NativeMaterialPresentation.From(
+            materials[stateIndex], alphaBlend, classifyMobySurface);
+        return presentation.HasNativeEvidence ? presentation : null;
+    }
+
+    private static RuntimeMaterialPresentation?[] PresentationsFor(
+        IReadOnlyList<RcMaterialState> materials,
+        int[] stateIndices,
+        bool?[]? alphaBlendEnabled,
+        int faceCount,
+        bool classifyMobySurface = false)
+    {
+        var result = new RuntimeMaterialPresentation?[faceCount];
+        for (int face = 0; face < faceCount; face++)
+        {
+            result[face] = PresentationFor(
+                materials, stateIndices, alphaBlendEnabled, face, classifyMobySurface);
+        }
+
+        return result;
+    }
+
     private static IEnumerable<RuntimeMesh> ToTfragMeshes(GcTfrag.Mesh mesh)
     {
         var byTex = new Dictionary<int, List<int>>();
@@ -765,6 +833,7 @@ public static class GcWorldImport
         }
 
         bool haveColours = mesh.Colors.Length == mesh.Positions.Length;
+        bool haveAlpha = mesh.VertexAlpha.Length == mesh.Positions.Length / 3;
         foreach (var (tex, tris) in byTex.OrderBy(kv => kv.Key))
         {
             var remap = new Dictionary<int, int>();
@@ -791,7 +860,7 @@ public static class GcWorldImport
                         colours.Add(mesh.Colors[v * 3]);
                         colours.Add(mesh.Colors[v * 3 + 1]);
                         colours.Add(mesh.Colors[v * 3 + 2]);
-                        colours.Add(1f);
+                        colours.Add(haveAlpha ? mesh.VertexAlpha[v] : 1f);
                     }
                 }
 
@@ -806,12 +875,13 @@ public static class GcWorldImport
     private static void PlaceMatrixInstances(
         string kind,
         IReadOnlyList<GcInstances.MatrixInstance> instances,
-        Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriTexIds)?> lookup,
+        Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriTexIds, RuntimeMaterialPresentation?[] TriPresentations)?> lookup,
         List<RuntimeMesh> meshes,
         Action<double, double, double> grow,
         bool growBounds)
     {
-        var byTex = new Dictionary<int, (List<double> P, List<float> U, List<int> I, Dictionary<(double, double, double, double, double), int> Weld)>();
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation),
+            (List<double> P, List<float> U, List<int> I, Dictionary<(double, double, double, double, double), int> Weld)>();
 
         foreach (var inst in instances)
         {
@@ -838,9 +908,13 @@ public static class GcWorldImport
             for (int f = 0; f < c.TriTexIds.Length; f++)
             {
                 int tex = c.TriTexIds[f];
-                if (!byTex.TryGetValue(tex, out var g))
+                var presentation = (uint)f < (uint)c.TriPresentations.Length
+                    ? c.TriPresentations[f]
+                    : null;
+                var surface = (tex, presentation);
+                if (!bySurface.TryGetValue(surface, out var g))
                 {
-                    byTex[tex] = g = ([], [], [], new Dictionary<(double, double, double, double, double), int>());
+                    bySurface[surface] = g = ([], [], [], new Dictionary<(double, double, double, double, double), int>());
                 }
 
                 for (int k = 0; k < 3; k++)
@@ -866,9 +940,13 @@ public static class GcWorldImport
             }
         }
 
-        foreach (var (tex, g) in byTex.OrderBy(kv => kv.Key))
+        foreach (var (surface, g) in bySurface
+                     .OrderBy(kv => kv.Key.TextureId)
+                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
         {
-            meshes.Add(new RuntimeMesh(kind, tex, g.P.ToArray(), g.U.ToArray(), g.I.ToArray()));
+            meshes.Add(new RuntimeMesh(
+                kind, surface.TextureId, g.P.ToArray(), g.U.ToArray(), g.I.ToArray(),
+                MaterialPresentation: surface.Presentation));
         }
     }
 
@@ -880,7 +958,9 @@ public static class GcWorldImport
         List<RuntimeMesh> meshes,
         HashSet<int> skipInstances)
     {
-        var byTex = new Dictionary<int, (List<double> P, List<float> U, List<float> C, List<int> I, Dictionary<(double, double, double, double, double, double, double, double), int> Weld)>();
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation),
+            (List<double> P, List<float> U, List<float> C, List<int> I,
+                Dictionary<(double, double, double, double, double, double, double, double), int> Weld)>();
 
         // Point lights in OBP Y-up space (they are stored native Z-up).
         var plYUp = pointLights
@@ -974,9 +1054,14 @@ public static class GcWorldImport
             for (int f = 0; f < cls.TriangleTextureIds.Length; f++)
             {
                 int tex = cls.TriangleTextureIds[f];
-                if (!byTex.TryGetValue(tex, out var g))
+                var presentation = PresentationFor(
+                    meshData.Materials, meshData.TriangleMaterialStateIndices, null, f,
+                    classifyMobySurface: true);
+                var surface = (tex, presentation);
+                if (!bySurface.TryGetValue(surface, out var g))
                 {
-                    byTex[tex] = g = ([], [], [], [], new Dictionary<(double, double, double, double, double, double, double, double), int>());
+                    bySurface[surface] = g = ([], [], [], [],
+                        new Dictionary<(double, double, double, double, double, double, double, double), int>());
                 }
 
                 for (int k = 0; k < 3; k++)
@@ -1007,9 +1092,13 @@ public static class GcWorldImport
             }
         }
 
-        foreach (var (tex, g) in byTex.OrderBy(kv => kv.Key))
+        foreach (var (surface, g) in bySurface
+                     .OrderBy(kv => kv.Key.TextureId)
+                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
         {
-            meshes.Add(new RuntimeMesh("moby", tex, g.P.ToArray(), g.U.ToArray(), g.I.ToArray(), g.C.ToArray()));
+            meshes.Add(new RuntimeMesh(
+                "moby", surface.TextureId, g.P.ToArray(), g.U.ToArray(), g.I.ToArray(), g.C.ToArray(),
+                MaterialPresentation: surface.Presentation));
         }
     }
 

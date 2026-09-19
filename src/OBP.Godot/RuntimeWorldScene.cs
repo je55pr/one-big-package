@@ -231,7 +231,7 @@ public static class RuntimeWorldScene
             var mesh = new ArrayMesh();
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 
-            var mat = mats.StaticMesh(m.AssetKind, m.TextureId, hasUv, hasColor, isSky, m.RenderWithoutTexture, m.TriangleCount);
+            var mat = mats.StaticMesh(m.AssetKind, m.TextureId, hasUv, hasColor, isSky, m.RenderWithoutTexture, m.TriangleCount, m.MaterialPresentation);
 
             var mi = new MeshInstance3D
             {
@@ -342,7 +342,7 @@ public static class RuntimeWorldScene
 
                     var mesh = new ArrayMesh();
                     mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-                    var mat = mats.Instanced(m.AssetKind, m.TextureId, hasColor);
+                    var mat = mats.Instanced(m.AssetKind, m.TextureId, hasColor, m.MaterialPresentation);
 
                     objRoot.AddChild(new MeshInstance3D
                     {
@@ -414,7 +414,7 @@ public static class RuntimeWorldScene
                 frames[f] = dst;
             }
 
-            var mat = mats.Instanced(am.AssetKind, am.TextureId, hasCol);
+            var mat = mats.Instanced(am.AssetKind, am.TextureId, hasCol, am.MaterialPresentation);
 
             var animMesh = new ArrayMesh();
             var mi = new MeshInstance3D

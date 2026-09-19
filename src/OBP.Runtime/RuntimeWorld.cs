@@ -1,5 +1,6 @@
 using OBP.Core.Math;
 using OBP.Runtime.Audio;
+using OBP.Runtime.Presentation;
 
 namespace OBP.Runtime;
 
@@ -62,7 +63,8 @@ public sealed record RuntimeWorld(
 /// </summary>
 public sealed record RuntimeMesh(
     string AssetKind, int TextureId, double[] Positions, float[] Uvs, int[] Indices,
-    float[]? Colors = null, bool RenderWithoutTexture = false)
+    float[]? Colors = null, bool RenderWithoutTexture = false,
+    RuntimeMaterialPresentation? MaterialPresentation = null)
 {
     public int TriangleCount => Indices.Length / 3;
 }
@@ -88,7 +90,8 @@ public sealed record RuntimeAnimatedMesh(
     float[] Colors,
     IReadOnlyList<double[]> Frames,
     float FramesPerSecond,
-    RuntimeSkeleton? Skeleton = null)
+    RuntimeSkeleton? Skeleton = null,
+    RuntimeMaterialPresentation? MaterialPresentation = null)
 {
     public int VertexCount => Frames.Count > 0 ? Frames[0].Length / 3 : 0;
 
@@ -132,7 +135,8 @@ public sealed record RuntimeObjectMesh(
     double[] Positions,
     float[] Uvs,
     int[] Indices,
-    float[]? Colors = null)
+    float[]? Colors = null,
+    RuntimeMaterialPresentation? MaterialPresentation = null)
 {
     public int TriangleCount => Indices.Length / 3;
 }

@@ -1,6 +1,7 @@
 using OBP.RAC1.Animation;
 using OBP.RAC1.Level;
 using OBP.Runtime;
+using OBP.Runtime.Presentation;
 
 namespace OBP.RAC1;
 
@@ -70,30 +71,37 @@ public static partial class Rac1WorldImport
             }
             frames.Add(world);
         }
-        var byTexture = new SortedDictionary<int, List<int>>();
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
         for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
         {
             int textureId = cls.TriangleTextureIds[face];
             if (textureId < 0 || !textureIds.Contains(textureId))
                 throw new InvalidDataException($"R&C1 Ratchet references missing texture {textureId}.");
-            if (!byTexture.TryGetValue(textureId, out var indices))
-                byTexture[textureId] = indices = [];
+            var presentation = PresentationFor(
+                cls.Mesh.Materials, cls.Mesh.TriangleMaterialStateIndices, null, face,
+                classifyMobySurface: true);
+            var surface = (textureId, presentation);
+            if (!bySurface.TryGetValue(surface, out var indices))
+                bySurface[surface] = indices = [];
             indices.Add(cls.Mesh.Indices[face * 3]);
             indices.Add(cls.Mesh.Indices[face * 3 + 1]);
             indices.Add(cls.Mesh.Indices[face * 3 + 2]);
         }
 
-        foreach (var pair in byTexture)
+        foreach (var (surface, indices) in bySurface
+                     .OrderBy(kv => kv.Key.TextureId)
+                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
         {
             output.Add(new RuntimeAnimatedMesh(
-                Name: $"ratchet_i{instance.Index}_t{pair.Key}",
+                Name: $"ratchet_i{instance.Index}_t{surface.TextureId}",
                 AssetKind: "moby",
-                TextureId: pair.Key,
+                TextureId: surface.TextureId,
                 Uvs: cls.Mesh.Uvs,
-                Indices: pair.Value.ToArray(),
+                Indices: indices.ToArray(),
                 Colors: [],
                 Frames: frames,
-                FramesPerSecond: standing.ConstantTransitionRate * NtscUpdateHz));
+                FramesPerSecond: standing.ConstantTransitionRate * NtscUpdateHz,
+                MaterialPresentation: surface.Presentation));
         }
         animatedInstanceIndices.Add(instance.Index);
     }
@@ -135,20 +143,26 @@ public static partial class Rac1WorldImport
                 mesh.Uvs.Length != mesh.Positions.Length / 3 * 2)
                 throw new InvalidDataException($"R&C1 moby class {oClass} has inconsistent surface arrays.");
 
-            var byTexture = new SortedDictionary<int, List<int>>();
+            var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
             for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
             {
                 int textureId = cls.TriangleTextureIds[face];
                 if (textureId >= 0 && !textureIds.Contains(textureId))
                     throw new InvalidDataException($"R&C1 moby class {oClass} references missing texture {textureId}.");
-                if (!byTexture.TryGetValue(textureId, out var indices)) byTexture[textureId] = indices = [];
+                var presentation = PresentationFor(
+                    mesh.Materials, mesh.TriangleMaterialStateIndices, null, face,
+                    classifyMobySurface: true);
+                var surface = (textureId, presentation);
+                if (!bySurface.TryGetValue(surface, out var indices)) bySurface[surface] = indices = [];
                 indices.Add(mesh.Indices[face * 3]);
                 indices.Add(mesh.Indices[face * 3 + 1]);
                 indices.Add(mesh.Indices[face * 3 + 2]);
             }
 
             var surfaces = new List<RuntimeObjectMesh>();
-            foreach (var (textureId, sourceIndices) in byTexture)
+            foreach (var (surface, sourceIndices) in bySurface
+                         .OrderBy(kv => kv.Key.TextureId)
+                         .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
             {
                 var remap = new Dictionary<int, int>();
                 var positions = new List<double>();
@@ -169,7 +183,8 @@ public static partial class Rac1WorldImport
                     indices.Add(outputVertex);
                 }
                 surfaces.Add(new RuntimeObjectMesh(
-                    "moby", textureId, positions.ToArray(), uvs.ToArray(), indices.ToArray()));
+                    "moby", surface.TextureId, positions.ToArray(), uvs.ToArray(), indices.ToArray(),
+                    MaterialPresentation: surface.Presentation));
             }
             models[oClass] = surfaces;
             var animations = Rac1MobyAnimationProvider.BuildAdmittedAnimationSet(cls, surfaces);

@@ -127,6 +127,7 @@ public static partial class Rac1WorldImport
             throw new InvalidDataException("R&C1 tfrag UV count does not match its vertex count.");
         }
         bool haveColours = mesh.Colors.Length == mesh.Positions.Length;
+        bool haveAlpha = mesh.VertexAlpha.Length == mesh.Positions.Length / 3;
         if (!haveColours)
         {
             throw new InvalidDataException("R&C1 tfrag baked-colour count does not match its vertex count.");
@@ -175,7 +176,7 @@ public static partial class Rac1WorldImport
                     colours.Add(mesh.Colors[sourceVertex * 3]);
                     colours.Add(mesh.Colors[sourceVertex * 3 + 1]);
                     colours.Add(mesh.Colors[sourceVertex * 3 + 2]);
-                    colours.Add(1f);
+                    colours.Add(haveAlpha ? mesh.VertexAlpha[sourceVertex] : 1f);
                 }
                 indices.Add(runtimeVertex);
             }
