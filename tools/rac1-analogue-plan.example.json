@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "segments": [
+    {"label": "neutral-a", "frames": 8, "left": [127, 127]},
+    {"label": "raw-y64", "frames": 20, "left": [127, 64]},
+    {"label": "neutral-b", "frames": 8, "left": [127, 127]},
+    {"label": "raw-y0", "frames": 20, "left": [127, 0]},
+    {"label": "neutral-c", "frames": 12, "left": [127, 127]}
+  ]
+}

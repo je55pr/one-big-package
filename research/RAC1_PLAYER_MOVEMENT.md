@@ -16,6 +16,23 @@ The calibrated acceleration/speed witnesses use full-scale cardinal planar input
 
 Loaded Veldin player code near `0x00213e68` operates on the same `0x0013f3d0` player-state family and includes trigonometric planar calculations, making it a useful lead for input/control-heading archaeology. The current evidence does not yet prove which operands are conditioned stick input or camera/control yaw, so the exact native camera-relative target transform remains unresolved. Emulator binding dead-zone/axis-scale settings are likewise harness policy, not retail controller evidence.
 
+### Deterministic analogue archaeology harness
+
+`tools/rac1-movement-probe.py` remains the loaded-executable/static probe and `tools/rac1-savestate-movement-probe.py` remains the offline savestate probe. `tools/rac1-analogue-movement-harness.py` adds the missing live experiment layer: it generates PCSX2 input-recording frames with literal DualShock 2 stick bytes, associates them with a fixed savestate, advances PCSX2 exactly one emulated frame at a time and takes one batched PINE sample after each advance.
+
+The input plan is data, not keyboard emulation. `tools/rac1-analogue-plan.example.json` is the live-validated 68-frame witness. `build` writes both the `.p2m2` movie and PCSX2's required `<movie>_SaveState.p2s` companion under ignored `captures/`; `prepare-profile` makes an isolated portable PCSX2 profile there with PINE and the F7 frame-advance hotkey enabled. On Windows, `tools/rac1-pcsx2-input-recording-picker.ps1` clears any stale filename field first, then uses UI Automation to invoke the `captures/...` folder/file items in PCSX2's native replay picker, avoiding game-input keyboard approximations and flaky synthetic path typing. `capture` records the known displacement, live position, yaw, target yaw and animation sequence fields plus raw 32-bit words across player-state `G+0x000..G+0x17c`. `derive` reduces that private capture to payload-free evidence suitable for Git.
+
+A clean NTSC-U run used fixed Veldin state SHA-256 `07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d` and generated movie SHA-256 `cf666f5f6743b974477bd5291c18fe0a1f9da939fb0bce75938ddaac21a3a8b4`. The anchor begins with zero XYZ displacement at live position approximately `(154.77104, 120.58263, 29.484375)` and yaw/target `1.1110418`. In this one controlled plan, twenty frames of literal left-stick `[127,64]` produced no displacement, while literal `[127,0]` produced movement and sequence transition `0 -> 3`; release returned `3 -> 0`. That is a reproducible byte-level observation, **not** yet proof of the native dead-zone boundary or post-dead-zone response curve.
+
+Raw movies, companion savestates and per-frame captures remain ignored under `captures/`. The retained reduction is `research/generated/rac1-analogue-movement-probe.json`. Re-run commands are:
+
+```text
+py -3.12 tools/rac1-analogue-movement-harness.py prepare-profile --source <pcsx2-profile> --out captures/rac1-analogue/pcsx2-profile --pine-port 28099
+py -3.12 tools/rac1-analogue-movement-harness.py build --plan tools/rac1-analogue-plan.example.json --savestate <flat-veldin.p2s> --movie captures/rac1-analogue/trial.p2m2
+py -3.12 tools/rac1-analogue-movement-harness.py capture --pid <pcsx2-pid> --pine-port 28099 --plan tools/rac1-analogue-plan.example.json --movie captures/rac1-analogue/trial.p2m2 --out captures/rac1-analogue/raw.json
+py -3.12 tools/rac1-analogue-movement-harness.py derive --capture captures/rac1-analogue/raw.json --out research/generated/rac1-analogue-movement-probe.json
+```
+
 ## Ground locomotion
 
 From the fixed Veldin savestate, full planar input ramps from rest by approximately `1/480` native unit per tick (`0.002083333...`) until a sustained displacement magnitude of `0.09500919` unit/tick.

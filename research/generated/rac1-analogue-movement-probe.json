@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / PCSX2 input recording + PINE",
+  "movieSha256": "cf666f5f6743b974477bd5291c18fe0a1f9da939fb0bce75938ddaac21a3a8b4",
+  "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+  "sampleCadence": "one PINE sample after each PCSX2 FrameAdvance(1)",
+  "playerStateBase": "0x0013f3d0",
+  "playerMoby": "0x01845e80",
+  "segments": [
+    {
+      "label": "neutral-a",
+      "frames": 8,
+      "left": [
+        127,
+        127
+      ],
+      "right": [
+        127,
+        127
+      ],
+      "netPlanarPositionDelta": 0.0,
+      "maxPlanarDisplacementPerUpdate": 0.0,
+      "yawStart": 1.111041784286499,
+      "yawEnd": 1.111041784286499,
+      "targetYawEnd": 1.111041784286499,
+      "sequencePath": [
+        0
+      ]
+    },
+    {
+      "label": "raw-y64",
+      "frames": 20,
+      "left": [
+        127,
+        64
+      ],
+      "right": [
+        127,
+        127
+      ],
+      "netPlanarPositionDelta": 0.0,
+      "maxPlanarDisplacementPerUpdate": 0.0,
+      "yawStart": 1.111041784286499,
+      "yawEnd": 1.111041784286499,
+      "targetYawEnd": 1.111041784286499,
+      "sequencePath": [
+        0
+      ]
+    },
+    {
+      "label": "neutral-b",
+      "frames": 8,
+      "left": [
+        127,
+        127
+      ],
+      "right": [
+        127,
+        127
+      ],
+      "netPlanarPositionDelta": 0.0,
+      "maxPlanarDisplacementPerUpdate": 0.0,
+      "yawStart": 1.111041784286499,
+      "yawEnd": 1.111041784286499,
+      "targetYawEnd": 1.111041784286499,
+      "sequencePath": [
+        0
+      ]
+    },
+    {
+      "label": "raw-y0",
+      "frames": 20,
+      "left": [
+        127,
+        0
+      ],
+      "right": [
+        127,
+        127
+      ],
+      "netPlanarPositionDelta": 0.31470243171923235,
+      "maxPlanarDisplacementPerUpdate": 0.03542313009835158,
+      "yawStart": 1.111041784286499,
+      "yawEnd": -2.533970594406128,
+      "targetYawEnd": -2.0737977027893066,
+      "sequencePath": [
+        0,
+        3
+      ]
+    },
+    {
+      "label": "neutral-c",
+      "frames": 12,
+      "left": [
+        127,
+        127
+      ],
+      "right": [
+        127,
+        127
+      ],
+      "netPlanarPositionDelta": 0.23757321871070483,
+      "maxPlanarDisplacementPerUpdate": 0.03750617568130938,
+      "yawStart": -2.381697416305542,
+      "yawEnd": -2.381697416305542,
+      "targetYawEnd": -2.381697416305542,
+      "sequencePath": [
+        3,
+        0
+      ]
+    }
+  ],
+  "sequencePath": [
+    0,
+    3,
+    0
+  ],
+  "changingCandidateFields": [
+    {
+      "offset": "0x000",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x004",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x018",
+      "distinctWords": 19
+    },
+    {
+      "offset": "0x040",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x044",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x050",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x054",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x060",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x064",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x068",
+      "distinctWords": 10
+    },
+    {
+      "offset": "0x080",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x084",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x090",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x094",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x098",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x0a8",
+      "distinctWords": 2
+    },
+    {
+      "offset": "0x0b0",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x0b4",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x0d0",
+      "distinctWords": 5
+    },
+    {
+      "offset": "0x0d4",
+      "distinctWords": 5
+    },
+    {
+      "offset": "0x0d8",
+      "distinctWords": 2
+    },
+    {
+      "offset": "0x0e0",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x0e4",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x0e8",
+      "distinctWords": 21
+    },
+    {
+      "offset": "0x0f0",
+      "distinctWords": 20
+    },
+    {
+      "offset": "0x0f4",
+      "distinctWords": 20
+    },
+    {
+      "offset": "0x0f8",
+      "distinctWords": 19
+    },
+    {
+      "offset": "0x0fc",
+      "distinctWords": 13
+    },
+    {
+      "offset": "0x100",
+      "distinctWords": 19
+    },
+    {
+      "offset": "0x104",
+      "distinctWords": 8
+    },
+    {
+      "offset": "0x108",
+      "distinctWords": 19
+    },
+    {
+      "offset": "0x110",
+      "distinctWords": 3
+    },
+    {
+      "offset": "0x114",
+      "distinctWords": 30
+    },
+    {
+      "offset": "0x118",
+      "distinctWords": 64
+    },
+    {
+      "offset": "0x11c",
+      "distinctWords": 64
+    },
+    {
+      "offset": "0x120",
+      "distinctWords": 64
+    },
+    {
+      "offset": "0x124",
+      "distinctWords": 64
+    },
+    {
+      "offset": "0x128",
+      "distinctWords": 21
+    },
+    {
+      "offset": "0x12c",
+      "distinctWords": 21
+    }
+  ]
+}
