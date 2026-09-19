@@ -102,6 +102,8 @@ public sealed class Rac1RatchetMovementController
     public double PlanarX => _planarX;
     public double PlanarY => _planarY;
     public double VerticalStep => _verticalStep;
+    public Rac1AnalogueInput.Conditioned AnalogueInput { get; private set; }
+    public double TargetPlanarStep { get; private set; }
 
     public readonly record struct StepResult(
         double PlanarX,
@@ -118,6 +120,7 @@ public sealed class Rac1RatchetMovementController
     public StepResult Step(PlayerControlIntent input, PlayerContactFacts contact)
     {
         var analogue = Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY);
+        AnalogueInput = analogue;
         UpdatePlanar(input, analogue, contact.IsGrounded);
         UpdateVertical(input, contact);
         UpdateLocomotionState(input, analogue, contact);
@@ -133,6 +136,8 @@ public sealed class Rac1RatchetMovementController
         _anticipationTicks = 0;
         _jumpHeldTicks = 0;
         _heldRiseTicks = 0;
+        AnalogueInput = default;
+        TargetPlanarStep = 0d;
         Phase = Rac1RatchetMovementPhase.Grounded;
         LocomotionState = Rac1RatchetLocomotionState.Idle;
         YawMode = Rac1RatchetYawMode.GroundStartup;
@@ -151,11 +156,13 @@ public sealed class Rac1RatchetMovementController
         if (hasIntent && outputLength <= 1e-12d)
             throw new ArgumentException("Active planar input requires a non-degenerate control basis.", nameof(input));
 
-        double targetStep = grounded && analogue.SpeedBand == Rac1AnalogueSpeedBand.Walk
-            ? WalkPlanarStep
-            : MaximumPlanarStep;
-        double targetX = hasIntent ? (output.X / outputLength) * targetStep : 0d;
-        double targetY = hasIntent ? (output.Y / outputLength) * targetStep : 0d;
+        TargetPlanarStep = hasIntent
+            ? grounded && analogue.SpeedBand == Rac1AnalogueSpeedBand.Walk
+                ? WalkPlanarStep
+                : MaximumPlanarStep
+            : 0d;
+        double targetX = hasIntent ? (output.X / outputLength) * TargetPlanarStep : 0d;
+        double targetY = hasIntent ? (output.Y / outputLength) * TargetPlanarStep : 0d;
         double amount = crouching
             ? CrouchDecelerationPerTick
             : hasIntent

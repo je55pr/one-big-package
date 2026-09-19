@@ -6,7 +6,8 @@ namespace OneBigPackage;
 /// <summary>
 /// Godot/SDL input boundary for ordinary player controls.
 /// Stick actions are read with GetActionRawStrength so action dead zones are bypassed;
-/// the resulting vectors are never normalized or curved here.
+/// the resulting vectors are never normalized or curved here. Buttons are consumed
+/// only through named InputMap actions, never vendor-specific physical button ids.
 /// </summary>
 internal sealed class RawGamepadInput
 {

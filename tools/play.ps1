@@ -2,9 +2,10 @@
 <#
 .SYNOPSIS
   Launch OBP in interactive player mode for quick game-feel testing: load a
-  Going Commando ISO, import a level, spawn the debug capsule. WASD move,
-  mouse look, Space jump, F fly / noclip (Space/E up, Ctrl/Q down, Shift
-  boost), R respawn, Tab free cursor, Esc quit. The on-screen HUD reports
+  Going Commando ISO, import a level, spawn the debug capsule. WASD / left
+  stick move, mouse / right stick look, Space / south-face jump, C / right
+  shoulder crouch, X / west-face action, F fly / noclip, R respawn, F8 input
+  diagnostics, Tab free cursor, Esc quit. The on-screen HUD reports
   position, speed and the last jump's air time / distance / apex.
 
 .DESCRIPTION
@@ -73,7 +74,7 @@ if (-not (Test-Path (Join-Path $root 'game/.godot'))) {
 }
 
 # --- run --------------------------------------------------------------------
-Write-Host "Controls: WASD - mouse look - Space jump - F fly - R respawn - Tab cursor - Esc quit`n" -ForegroundColor DarkGray
+Write-Host "Controls: WASD/left stick move - mouse/right stick look - Space/south-face jump - C/right-shoulder crouch - X/west-face action - F fly - R respawn - F8 input diagnostics - Tab cursor - Esc quit`n" -ForegroundColor DarkGray
 & $godot --path (Join-Path $root 'game') --rendering-method $RenderingMethod -- @sceneArgs
 $code = $LASTEXITCODE
 if ($code -ne 0) { Read-Host "`nGodot exited with $code - press Enter to close" }

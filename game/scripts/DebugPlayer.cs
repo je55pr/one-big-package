@@ -24,6 +24,11 @@ public partial class DebugPlayer : CharacterBody3D
     public float MouseSensitivity { get; set; } = 0.0022f;
     public float FlySpeed { get; set; } = 45f;
 
+    // OBP presentation policy only. These values are not recovered retail camera constants.
+    public const float GamepadCameraYawRadiansPerSecond = 2.4f;
+    public const float GamepadCameraPitchRadiansPerSecond = 2.0f;
+    public const float GamepadCameraDeadzone = 0.12f;
+
     /// <summary>Third-person camera distance behind the capsule (pulled in when it would clip geometry).</summary>
     public const float CamDistance = 10f;
 
@@ -107,6 +112,7 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _placed;
     private bool _scriptJumped;
     private bool _fly;
+    private bool _inputDiagnosticsVisible;
     private int _placeTries;
     private Vector3 _spawn;
     private PlayerAnimationStateMachine _animationStateMachine = new();
@@ -201,6 +207,10 @@ public partial class DebugPlayer : CharacterBody3D
                     ? Input.MouseModeEnum.Visible
                     : Input.MouseModeEnum.Captured;
             }
+            else if (key.Keycode == Key.F8)
+            {
+                _inputDiagnosticsVisible = !_inputDiagnosticsVisible;
+            }
             else if (UseRac1Gameplay && key.Keycode == Key.Key1)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.Wrench);
@@ -249,6 +259,7 @@ public partial class DebugPlayer : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read();
+            ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
             if (_liveInput.ActionJustPressed)
                 RequestPrimaryAction();
         }
@@ -445,6 +456,26 @@ public partial class DebugPlayer : CharacterBody3D
         }
     }
 
+    /// <summary>
+    /// Apply the right stick to OBP's existing third-person camera. This is host
+    /// policy only and deliberately does not claim the current rates/deadzone as
+    /// recovered R&amp;C1 camera behaviour.
+    /// </summary>
+    private void ApplyGamepadCamera(float delta, Vector2 rawIntent)
+    {
+        float magnitude = rawIntent.Length();
+        if (magnitude <= GamepadCameraDeadzone)
+            return;
+
+        Vector2 intent = magnitude > 1f ? rawIntent / magnitude : rawIntent;
+        _yaw.RotateY(-intent.X * GamepadCameraYawRadiansPerSecond * delta);
+        float pitch = Mathf.Clamp(
+            _pitch.Rotation.X - intent.Y * GamepadCameraPitchRadiansPerSecond * delta,
+            Mathf.DegToRad(-82f),
+            Mathf.DegToRad(55f));
+        _pitch.Rotation = new Vector3(pitch, 0f, 0f);
+    }
+
     /// <summary>Pull the third-person camera in when the line from the pivot to it is blocked by geometry.</summary>
     private void UpdateCameraDistance()
     {
@@ -467,14 +498,30 @@ public partial class DebugPlayer : CharacterBody3D
     {
         var p = GlobalPosition;
         float speed = new Vector2(Velocity.X, Velocity.Z).Length();
+        string diagnostics = _inputDiagnosticsVisible ? BuildInputDiagnostics() : string.Empty;
         _hud.Text =
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
             $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
-            $"camera intent raw ({RawCameraIntent.X:0.000},{RawCameraIntent.Y:0.000})\n" +
-            $"gamepad {(_liveInput.Diagnostic is { } pad ? pad.Format() : "none")}\n" +
-            $"WASD / left stick / Space-Cross jump / C-R1 crouch / X-Square action / F fly / R respawn / Tab cursor / Esc";
+            diagnostics +
+            $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face action\n" +
+            $"mouse / right stick camera / F fly / R respawn / F8 input diagnostics / Tab cursor / Esc";
+    }
+
+    private string BuildInputDiagnostics()
+    {
+        var analogue = _rac1Movement.AnalogueInput;
+        string pad = _liveInput.Diagnostic is { } diagnostic ? diagnostic.Format() : "none";
+        string inputLine = FormattableString.Invariant(
+            $"input raw right/forward=({_liveInput.Move.X:0.000000},{-_liveInput.Move.Y:0.000000}) conditioned=({analogue.X:0.000000},{analogue.Y:0.000000}) mag={analogue.Magnitude:0.000000} uncapped={analogue.UncappedMagnitude:0.000000} band={analogue.SpeedBand}\n");
+        string movementLine = FormattableString.Invariant(
+            $"native target step={_rac1Movement.TargetPlanarStep:0.00000000} actual step={Math.Sqrt((_rac1Movement.PlanarX * _rac1Movement.PlanarX) + (_rac1Movement.PlanarY * _rac1Movement.PlanarY)):0.00000000} locomotion={_rac1Movement.LocomotionState} yaw-mode={_rac1Movement.YawMode}\n");
+        string yawLine = FormattableString.Invariant(
+            $"yaw control={_rac1Yaw.ControlYaw:0.000000} target={_rac1Yaw.TargetYaw:0.000000} current={_rac1Yaw.CurrentYaw:0.000000} velocity={_rac1Yaw.YawVelocity:0.000000}\n");
+        string cameraLine = FormattableString.Invariant(
+            $"camera raw=({RawCameraIntent.X:0.000000},{RawCameraIntent.Y:0.000000}) host deadzone={GamepadCameraDeadzone:0.00} rates={GamepadCameraYawRadiansPerSecond:0.0}/{GamepadCameraPitchRadiansPerSecond:0.0} rad/s\n");
+        return inputLine + movementLine + yawLine + cameraLine + $"gamepad {pad}\n";
     }
 
     /// <summary>

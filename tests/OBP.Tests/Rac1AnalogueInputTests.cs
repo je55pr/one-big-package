@@ -99,6 +99,8 @@ public sealed class Rac1AnalogueInputTests
 
         Assert.Equal(0d, controller.PlanarX, 12);
         Assert.Equal(0d, controller.PlanarY, 12);
+        Assert.Equal(0d, controller.TargetPlanarStep, 12);
+        Assert.False(controller.AnalogueInput.IsActive);
         Assert.Equal(Rac1RatchetLocomotionState.Idle, controller.LocomotionState);
     }
 
@@ -116,6 +118,8 @@ public sealed class Rac1AnalogueInputTests
             step = controller.Step(input, Grounded);
 
         Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, step.PlanarMagnitude, 12);
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, controller.TargetPlanarStep, 12);
+        Assert.Equal(Rac1AnalogueSpeedBand.Walk, controller.AnalogueInput.SpeedBand);
     }
 
     [Theory]
@@ -132,6 +136,8 @@ public sealed class Rac1AnalogueInputTests
             step = controller.Step(input, Grounded);
 
         Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, step.PlanarMagnitude, 12);
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.TargetPlanarStep, 12);
+        Assert.Equal(Rac1AnalogueSpeedBand.Run, controller.AnalogueInput.SpeedBand);
     }
 
     [Fact]
@@ -175,6 +181,8 @@ public sealed class Rac1AnalogueInputTests
 
         var first = controller.Step(input, Airborne);
         Assert.Equal(Rac1RatchetMovementController.AirAccelerationPerTick, first.PlanarMagnitude, 12);
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.TargetPlanarStep, 12);
+        Assert.Equal(Rac1AnalogueSpeedBand.Walk, controller.AnalogueInput.SpeedBand);
 
         Rac1RatchetMovementController.StepResult step = first;
         for (int i = 0; i < 40; i++)
@@ -264,6 +272,7 @@ public sealed class Rac1AnalogueInputTests
         Assert.Equal(Rac1RatchetLocomotionState.CrouchTurning, active.LocomotionState);
         Assert.Equal(Rac1RatchetYawMode.CrouchTurn, active.YawMode);
         Assert.Equal(0d, active.PlanarMagnitude, 12);
+        Assert.Equal(0d, controller.TargetPlanarStep, 12);
     }
 
     private static PlayerControlIntent IntentFromRaw(
