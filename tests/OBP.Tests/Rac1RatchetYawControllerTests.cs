@@ -84,19 +84,23 @@ public sealed class Rac1RatchetYawControllerTests
         };
 
     [Fact]
-    public void MovementTarget_UsesCurrentProvisionalControlRelativeFormula()
+    public void MovementTarget_UsesRecoveredStickControlHeadingRule()
     {
         Assert.Equal(
-            -Math.PI / 2d,
+            0d,
             Rac1RatchetYawController.BuildMovementTarget(0d, 1d, 0d),
             12);
         Assert.Equal(
-            0d,
-            Rac1RatchetYawController.BuildMovementTarget(0d, 1d, Math.PI / 2d),
+            -Math.PI / 2d,
+            Rac1RatchetYawController.BuildMovementTarget(1d, 0d, 0d),
             12);
         Assert.Equal(
-            -Math.PI / 2d,
-            Rac1RatchetYawController.BuildMovementTarget(1d, 0d, Math.PI / 2d),
+            Math.PI / 2d,
+            Rac1RatchetYawController.BuildMovementTarget(-1d, 0d, 0d),
+            12);
+        Assert.Equal(
+            -Math.PI / 4d,
+            Rac1RatchetYawController.BuildMovementTarget(1d, 1d, 0d),
             12);
     }
 
@@ -138,7 +142,7 @@ public sealed class Rac1RatchetYawControllerTests
         var step = controller.Step(
             0d,
             1d,
-            target + (Math.PI / 2d),
+            target,
             Rac1RatchetYawMode.GroundStartup);
 
         Assert.Equal(target, step.TargetYaw, 12);
@@ -300,7 +304,7 @@ public sealed class Rac1RatchetYawControllerTests
             controller.Step(
                 0d,
                 1d,
-                target + (Math.PI / 2d),
+                target,
                 Rac1RatchetYawMode.GroundRun);
         }
 

@@ -298,14 +298,13 @@ public partial class DebugPlayer : CharacterBody3D
 
     private double GetRac1ControlYaw()
     {
-        // The host owns camera transforms, but RAC1 owns the native control-relative
-        // target construction. Recover control yaw from the camera pivot's planar forward.
+        // The host owns camera presentation. R&C1 owns how raw planar stick
+        // direction combines with this forward/control heading to form G+0x100.
         Vector3 sceneForward = _yaw.GlobalTransform.Basis * new Vector3(0f, 0f, -1f);
         sceneForward.Y = 0f;
         if (sceneForward.LengthSquared() <= 1e-8f) return _rac1Yaw.ControlYaw;
         sceneForward = sceneForward.Normalized();
-        double nativeForwardYaw = Math.Atan2(sceneForward.Z, -sceneForward.X);
-        return Rac1RatchetYawController.WrapPi(nativeForwardYaw + (Math.PI / 2d));
+        return Math.Atan2(sceneForward.Z, -sceneForward.X);
     }
 
     private void UpdateRac1FacingPresentation()

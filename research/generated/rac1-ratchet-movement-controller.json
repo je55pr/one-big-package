@@ -160,7 +160,8 @@
   "scopeNotes": {
     "collisionResponse": "host-owned",
     "turnEasing": "recovered for ground startup, ground run, crouch turn and air",
-    "controlHeadingTargetTransform": "unknown",
+    "controlHeadingTargetTransform": "G+0x100 = WrapPi(controlHeading - stickAngle) for fixed full-scale cardinals/diagonals",
+    "controlHeadingSource": "retail camera/control-heading production remains unrecovered; host supplies a neutral planar heading",
     "analogueDeadZone": "unknown",
     "combatMovement": "separate milestone",
     "movingCrouch": "not observed; directional crouch witnesses are zero-translation turn-in-place",
@@ -170,15 +171,17 @@
     "controlled PCSX2 authority execution",
     "read-only PINE live-state sampling",
     "fixed NTSC-U yaw recurrence traces",
+    "two fixed-savestate full-scale stick/control-heading matrices",
+    "fixed-forward changing-control-basis trace",
     "loaded retail executable archaeology",
     "portable deterministic recurrence tests",
     "Godot Veldin integration capture"
   ],
   "inputBoundary": {
-    "calibratedInput": "full-scale cardinal planar input and release",
+    "calibratedInput": "full-scale cardinal and diagonal planar input plus cardinal release",
     "analogueDeadZone": "unknown",
     "postDeadZoneMagnitudeScaling": "unknown",
-    "cameraRelativeIntentTransform": "unknown",
-    "portableContract": "normalized/full-scale directional intent only; not evidence for arbitrary analogue magnitude"
+    "cameraRelativeIntentTransform": "full-scale target transform recovered; G+0x0f0/+0x0f4/+0x0f8 retain the pitched 3D control-vector combination",
+    "portableContract": "recovered directional target construction with normalized/full-scale translation; not evidence for arbitrary analogue magnitude or retail camera follow"
   }
 }

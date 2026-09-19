@@ -1,10 +1,10 @@
 namespace OBP.RAC1.Player;
 
 /// <summary>
-/// Deterministic R&amp;C1 movement-facing recurrence recovered from fixed
-/// NTSC-U retail traces. The recurrence is native; the current control-relative
-/// target construction remains a bounded host seam until the retail stick/camera
-/// transform is recovered.
+/// Deterministic R&amp;C1 movement-facing controller recovered from fixed
+/// NTSC-U retail traces. Retail witnesses pin both the control-heading/stick
+/// target construction and the locomotion-state yaw recurrence. The host still
+/// supplies the presentation camera/control heading itself.
 /// </summary>
 public sealed class Rac1RatchetYawController
 {
@@ -117,7 +117,10 @@ public sealed class Rac1RatchetYawController
         if ((inputX * inputX) + (inputY * inputY) <= 1e-12d)
             throw new ArgumentException("Movement target requires non-zero planar input.");
 
-        return WrapPi(Math.Atan2(-inputY, -inputX) + controlYaw);
+        // Retail DS2 convention: forward is stick angle 0, right is +pi/2,
+        // and G+0x100 subtracts that planar angle from the control heading.
+        double stickAngle = Math.Atan2(inputX, inputY);
+        return WrapPi(controlYaw - stickAngle);
     }
 
     public static double WrapPi(double angle)

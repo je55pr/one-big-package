@@ -1,0 +1,488 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / fixed savestate + PCSX2 input recording + PINE",
+  "sample": "direction local-frame 1, the first frame with G+0x100 updated",
+  "playerState": {
+    "base": "0x0013f3d0",
+    "yaw": "G+0x018",
+    "controlVector": [
+      "G+0x0f0",
+      "G+0x0f4",
+      "G+0x0f8"
+    ],
+    "targetYaw": "G+0x100"
+  },
+  "coordinateConvention": {
+    "worldYaw": "atan2(+Y,+X), positive from +X toward +Y",
+    "stickBytes": "X high=right, X low=left, Y low=forward, Y high=back",
+    "targetRule": "WrapPi(controlHeading - stickAngle), where forward stickAngle=0 and right=+pi/2",
+    "vectorRule": "normalize(forward3d*forwardSign + right3d*rightSign)"
+  },
+  "matrices": [
+    {
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "controlHeadingRad": -2.073779821395874,
+      "basis": {
+        "forward3d": [
+          -0.48034167289733887,
+          -0.8730589747428894,
+          -0.08390384912490845
+        ],
+        "right3d": [
+          -0.8761483430862427,
+          0.4820413887500763,
+          0.0
+        ],
+        "forwardNorm": 0.999999975999447,
+        "rightNorm": 0.9999999097804312,
+        "dot": 1.7849721700713417e-10
+      },
+      "directions": [
+        {
+          "label": "forward",
+          "left": [
+            127,
+            0
+          ],
+          "stickAngleRad": 0.0,
+          "targetYaw": -2.073779821395874,
+          "targetDeltaFromForwardRad": 0.0,
+          "expectedTargetDeltaRad": -0.0,
+          "targetAngleErrorRad": 0.0,
+          "controlVector": [
+            -0.48034167289733887,
+            -0.8730589747428894,
+            -0.08390384912490845
+          ],
+          "controlVectorNorm": 0.999999975999447,
+          "basisCombinationError": 2.4000553032869303e-08,
+          "targetMinusProjectedVectorYawRad": -2.641325647090298e-07,
+          "movieSha256": "7b301a616977a168c362226d4147d031cf9f4a3dc71039c1338f3f18d6e026e3"
+        },
+        {
+          "label": "forward-right",
+          "left": [
+            255,
+            0
+          ],
+          "stickAngleRad": 0.7853981633974483,
+          "targetYaw": -2.859177589416504,
+          "targetDeltaFromForwardRad": -0.7853977680206299,
+          "expectedTargetDeltaRad": -0.7853981633974483,
+          "targetAngleErrorRad": 3.95376818396187e-07,
+          "controlVector": [
+            -0.9591832160949707,
+            -0.2764911651611328,
+            -0.05932897701859474
+          ],
+          "controlVectorNorm": 0.9999998669822536,
+          "basisCombinationError": 1.3302118752105764e-07,
+          "targetMinusProjectedVectorYawRad": 0.0017662830563387466,
+          "movieSha256": "e6565684d5fc97efa3e033ad03666fc06286796ff543286669e6366895832fe7"
+        },
+        {
+          "label": "right",
+          "left": [
+            255,
+            127
+          ],
+          "stickAngleRad": 1.5707963267948966,
+          "targetYaw": 2.6386094093322754,
+          "targetDeltaFromForwardRad": -1.570796076451437,
+          "expectedTargetDeltaRad": -1.5707963267948966,
+          "targetAngleErrorRad": 2.5034345951802095e-07,
+          "controlVector": [
+            -0.8761483430862427,
+            0.4820413887500763,
+            0.0
+          ],
+          "controlVectorNorm": 0.9999999097804312,
+          "basisCombinationError": 9.02195688020786e-08,
+          "targetMinusProjectedVectorYawRad": -1.396823412491699e-08,
+          "movieSha256": "50678b9517efec13c2886ca2f2e2171a8826672b0a10f438105cd65c00901261"
+        },
+        {
+          "label": "back-right",
+          "left": [
+            255,
+            255
+          ],
+          "stickAngleRad": 2.356194490192345,
+          "targetYaw": 1.8532114028930664,
+          "targetDeltaFromForwardRad": -2.3561940828906462,
+          "expectedTargetDeltaRad": -2.356194490192345,
+          "targetAngleErrorRad": 4.0730169859060084e-07,
+          "controlVector": [
+            -0.27987754344940186,
+            0.9582005739212036,
+            0.05932897701859474
+          ],
+          "controlVectorNorm": 0.9999998533521236,
+          "basisCombinationError": 1.471905550219319e-07,
+          "targetMinusProjectedVectorYawRad": -0.0017659958308584578,
+          "movieSha256": "be0d0e17a5a5fc560bfc3aa0a8d8f6b3453009e7e07484ca9dc9054e97aaab47"
+        },
+        {
+          "label": "back",
+          "left": [
+            127,
+            255
+          ],
+          "stickAngleRad": 3.141592653589793,
+          "targetYaw": 1.0678133964538574,
+          "targetDeltaFromForwardRad": -3.1415920893298552,
+          "expectedTargetDeltaRad": -3.141592653589793,
+          "targetAngleErrorRad": 5.642599378852253e-07,
+          "controlVector": [
+            0.48034167289733887,
+            0.8730589747428894,
+            0.08390384912490845
+          ],
+          "controlVectorNorm": 0.999999975999447,
+          "basisCombinationError": 2.4000553032869303e-08,
+          "targetMinusProjectedVectorYawRad": 3.0012737362028474e-07,
+          "movieSha256": "976340cffc8fb9a03289ea5d68fc6da49174ebeb529c7a3a0db552eced8ad8c9"
+        },
+        {
+          "label": "back-left",
+          "left": [
+            0,
+            255
+          ],
+          "stickAngleRad": -2.356194490192345,
+          "targetYaw": 0.28241491317749023,
+          "targetDeltaFromForwardRad": 2.3561947345733643,
+          "expectedTargetDeltaRad": 2.356194490192345,
+          "targetAngleErrorRad": 2.4438101942081403e-07,
+          "controlVector": [
+            0.9591832160949707,
+            0.2764911651611328,
+            0.05932897701859474
+          ],
+          "controlVectorNorm": 0.9999998669822536,
+          "basisCombinationError": 1.3302118752105764e-07,
+          "targetMinusProjectedVectorYawRad": 0.0017661320605395494,
+          "movieSha256": "42c1e5c9c8ae78ca3264350974b8ff19175a9a7b3166a7a849efca1f2d1c7f9a"
+        },
+        {
+          "label": "left",
+          "left": [
+            0,
+            127
+          ],
+          "stickAngleRad": -1.5707963267948966,
+          "targetYaw": -0.5029829740524292,
+          "targetDeltaFromForwardRad": 1.5707968473434448,
+          "expectedTargetDeltaRad": 1.5707963267948966,
+          "targetAngleErrorRad": 5.205485482662198e-07,
+          "controlVector": [
+            0.8761483430862427,
+            -0.4820413887500763,
+            0.0
+          ],
+          "controlVectorNorm": 0.9999999097804312,
+          "basisCombinationError": 9.02195688020786e-08,
+          "targetMinusProjectedVectorYawRad": 2.5623685462328183e-07,
+          "movieSha256": "a3da8ed834b93443e244147052f8bda8eb541fbc31908e62cc93ddc13ceaaefa"
+        },
+        {
+          "label": "forward-left",
+          "left": [
+            0,
+            0
+          ],
+          "stickAngleRad": -0.7853981633974483,
+          "targetYaw": -1.2883814573287964,
+          "targetDeltaFromForwardRad": 0.7853983640670776,
+          "expectedTargetDeltaRad": 0.7853981633974483,
+          "targetAngleErrorRad": 2.0066962935771926e-07,
+          "controlVector": [
+            0.27987754344940186,
+            -0.9582005739212036,
+            -0.05932897701859474
+          ],
+          "controlVectorNorm": 0.9999998533521236,
+          "basisCombinationError": 1.471905550219319e-07,
+          "targetMinusProjectedVectorYawRad": -0.0017662024629281348,
+          "movieSha256": "e2405ec3e7eea6d1f8825b01078b05791625b40352f115b1c277056001d75367"
+        }
+      ],
+      "maxTargetAngleErrorRad": 5.642599378852253e-07,
+      "maxControlVectorCombinationError": 1.471905550219319e-07,
+      "maxTargetMinusProjectedVectorYawAbsRad": 0.0017662830563387466
+    },
+    {
+      "stateSha256": "067e5ca260233fcccc958f54e412e3fad26f38406a2a7d2f13d8f6477e92a0aa",
+      "controlHeadingRad": 2.842167615890503,
+      "basis": {
+        "forward3d": [
+          -0.9500827193260193,
+          0.293296217918396,
+          -0.10639659315347672
+        ],
+        "right3d": [
+          0.2949705123901367,
+          0.9555063247680664,
+          0.0
+        ],
+        "forwardNorm": 1.0000000400209117,
+        "rightNorm": 0.9999999699257383,
+        "dot": 4.718970103567699e-09
+      },
+      "directions": [
+        {
+          "label": "forward",
+          "left": [
+            127,
+            0
+          ],
+          "stickAngleRad": 0.0,
+          "targetYaw": 2.842167615890503,
+          "targetDeltaFromForwardRad": 0.0,
+          "expectedTargetDeltaRad": -0.0,
+          "targetAngleErrorRad": 0.0,
+          "controlVector": [
+            -0.9500827193260193,
+            0.293296217918396,
+            -0.10639659315347672
+          ],
+          "controlVectorNorm": 1.0000000400209117,
+          "basisCombinationError": 4.002091166443252e-08,
+          "targetMinusProjectedVectorYawRad": -3.6586172580399534e-07,
+          "movieSha256": "115d1a6e5697c5376298209978143b47244dc1dfde9a582ab90c2101b53e85d0"
+        },
+        {
+          "label": "forward-right",
+          "left": [
+            255,
+            0
+          ],
+          "stickAngleRad": 0.7853981633974483,
+          "targetYaw": 2.056769609451294,
+          "targetDeltaFromForwardRad": -0.785398006439209,
+          "expectedTargetDeltaRad": -0.7853981633974483,
+          "targetAngleErrorRad": 1.569582392946245e-07,
+          "controlVector": [
+            -0.4632342755794525,
+            0.8830366730690002,
+            -0.07523375004529953
+          ],
+          "controlVectorNorm": 0.9999999386011317,
+          "basisCombinationError": 6.696586966339248e-08,
+          "targetMinusProjectedVectorYawRad": 0.0028459105410547636,
+          "movieSha256": "7103a98b9abfc7f834b14ae07d898c25a4520f5ddd7c12f18800eb3e9282363a"
+        },
+        {
+          "label": "right",
+          "left": [
+            255,
+            127
+          ],
+          "stickAngleRad": 1.5707963267948966,
+          "targetYaw": 1.2713712453842163,
+          "targetDeltaFromForwardRad": -1.5707963705062866,
+          "expectedTargetDeltaRad": -1.5707963267948966,
+          "targetAngleErrorRad": 4.371139006309477e-08,
+          "controlVector": [
+            0.2949705123901367,
+            0.9555063247680664,
+            0.0
+          ],
+          "controlVectorNorm": 0.9999999699257383,
+          "basisCombinationError": 3.007426169364573e-08,
+          "targetMinusProjectedVectorYawRad": -4.143190246441719e-07,
+          "movieSha256": "d349b1ba5e5ad8155190d46cd2fe1ded4ac9055679cd3bd27b32d7ce19c1152e"
+        },
+        {
+          "label": "back-right",
+          "left": [
+            255,
+            255
+          ],
+          "stickAngleRad": 2.356194490192345,
+          "targetYaw": 0.4859733581542969,
+          "targetDeltaFromForwardRad": -2.356194257736206,
+          "expectedTargetDeltaRad": -2.356194490192345,
+          "targetAngleErrorRad": 2.3245613878231097e-07,
+          "controlVector": [
+            0.8803855180740356,
+            0.4682531952857971,
+            0.07523375004529953
+          ],
+          "controlVectorNorm": 0.9999999162378592,
+          "basisCombinationError": 8.724501133028537e-08,
+          "targetMinusProjectedVectorYawRad": -0.0028462601567274537,
+          "movieSha256": "81ff39c00fa272e8a16b958e389d2265aa4f3b69cba4e087182dd754ce12f724"
+        },
+        {
+          "label": "back",
+          "left": [
+            127,
+            255
+          ],
+          "stickAngleRad": 3.141592653589793,
+          "targetYaw": -0.2994246482849121,
+          "targetDeltaFromForwardRad": -3.141592264175415,
+          "expectedTargetDeltaRad": -3.141592653589793,
+          "targetAngleErrorRad": 3.8941437807693546e-07,
+          "controlVector": [
+            0.9500827193260193,
+            -0.293296217918396,
+            0.10639659315347672
+          ],
+          "controlVectorNorm": 1.0000000400209117,
+          "basisCombinationError": 4.002091166443252e-08,
+          "targetMinusProjectedVectorYawRad": 2.355265238396242e-08,
+          "movieSha256": "ec049ee7efa4e189d8542e0377092b4e5bb966636e205474be77fc6e1492d6d8"
+        },
+        {
+          "label": "back-left",
+          "left": [
+            0,
+            255
+          ],
+          "stickAngleRad": -2.356194490192345,
+          "targetYaw": -1.0848231315612793,
+          "targetDeltaFromForwardRad": 2.3561945597278044,
+          "expectedTargetDeltaRad": 2.356194490192345,
+          "targetAngleErrorRad": 6.953545961252416e-08,
+          "controlVector": [
+            0.4632342755794525,
+            -0.8830366730690002,
+            0.07523375004529953
+          ],
+          "controlVectorNorm": 0.9999999386011317,
+          "basisCombinationError": 6.696586966339248e-08,
+          "targetMinusProjectedVectorYawRad": 0.0028458231182746374,
+          "movieSha256": "6f070e36533b1ff5018f34a2c0c7f5a559701fc39d9f4b56cc966da9feedab30"
+        },
+        {
+          "label": "left",
+          "left": [
+            0,
+            127
+          ],
+          "stickAngleRad": -1.5707963267948966,
+          "targetYaw": -1.8702211380004883,
+          "targetDeltaFromForwardRad": 1.5707965532885952,
+          "expectedTargetDeltaRad": 1.5707963267948966,
+          "targetAngleErrorRad": 2.2649369868510405e-07,
+          "controlVector": [
+            -0.2949705123901367,
+            -0.9555063247680664,
+            0.0
+          ],
+          "controlVectorNorm": 0.9999999699257383,
+          "basisCombinationError": 3.007426169364573e-08,
+          "targetMinusProjectedVectorYawRad": -1.441139361180177e-07,
+          "movieSha256": "4b158465bb824090355782feb3f769a8973fe42ce2fa646a7456ee4a15584f81"
+        },
+        {
+          "label": "forward-left",
+          "left": [
+            0,
+            0
+          ],
+          "stickAngleRad": -0.7853981633974483,
+          "targetYaw": -2.6556196212768555,
+          "targetDeltaFromForwardRad": 0.7853980700122281,
+          "expectedTargetDeltaRad": 0.7853981633974483,
+          "targetAngleErrorRad": 9.338522022339646e-08,
+          "controlVector": [
+            -0.8803855180740356,
+            -0.4682531952857971,
+            -0.07523375004529953
+          ],
+          "controlVectorNorm": 0.9999999162378592,
+          "basisCombinationError": 8.724501133028537e-08,
+          "targetMinusProjectedVectorYawRad": -0.002846585998086404,
+          "movieSha256": "3ed78ef522014cdd88f1173898c5c3e402911f742d845706d88c2e90a7ad7fbe"
+        }
+      ],
+      "maxTargetAngleErrorRad": 3.8941437807693546e-07,
+      "maxControlVectorCombinationError": 8.724501133028537e-08,
+      "maxTargetMinusProjectedVectorYawAbsRad": 0.002846585998086404
+    }
+  ],
+  "proven": [
+    "G+0x100 is the planar facing target consumed by the already-recovered yaw recurrence.",
+    "Cardinals and diagonals apply exact signed 45-degree increments around the sampled control heading.",
+    "G+0x0f0/+0x0f4/+0x0f8 form an orthogonal 3D control basis combination for the same stick direction.",
+    "Diagonal G+0x100 is planar angle composition, not merely atan2 of the pitched 3D control vector.",
+    "With forward stick held fixed, G+0x100 follows the changing projected control vector while the native control basis rotates."
+  ],
+  "notProven": [
+    "The retail chase-camera follow/recenter/obstruction law.",
+    "The exact right-stick-to-control-heading response law or turn rate.",
+    "Partial-stick dead-zone and post-dead-zone magnitude shaping."
+  ],
+  "fixedForwardStickControlBasisChange": {
+    "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+    "movieSha256": "1e9ad68fcae564a2a18442dd540edbc870ff85bfbf25d8e1ddf7492c273a05d8",
+    "left": [
+      127,
+      0
+    ],
+    "samples": 62,
+    "startTargetYaw": -2.073779821395874,
+    "endTargetYaw": -1.8556746244430542,
+    "targetDeltaRad": 0.21810519695281982,
+    "startControlVector": [
+      -0.48034167289733887,
+      -0.8730589747428894,
+      -0.08390384912490845
+    ],
+    "endControlVector": [
+      -0.2801808714866638,
+      -0.9567615985870361,
+      -0.07814108580350876
+    ],
+    "maxTargetMinusProjectedControlVectorYawAbsRad": 6.092272022417689e-07,
+    "segments": [
+      {
+        "label": "forward-base",
+        "right": [
+          127,
+          127
+        ],
+        "samples": 9,
+        "startTargetYaw": -2.073779821395874,
+        "endTargetYaw": -2.0738182067871094,
+        "targetDeltaRad": -3.838539123535156e-05
+      },
+      {
+        "label": "forward-camera-left",
+        "right": [
+          0,
+          127
+        ],
+        "samples": 23,
+        "startTargetYaw": -2.0738091468811035,
+        "endTargetYaw": -1.862230896949768,
+        "targetDeltaRad": 0.21157824993133548
+      },
+      {
+        "label": "forward-hold-a",
+        "right": [
+          127,
+          127
+        ],
+        "samples": 7,
+        "startTargetYaw": -1.828989028930664,
+        "endTargetYaw": -1.7408785820007324,
+        "targetDeltaRad": 0.08811044692993164
+      },
+      {
+        "label": "forward-camera-right",
+        "right": [
+          255,
+          127
+        ],
+        "samples": 23,
+        "startTargetYaw": -1.719046711921692,
+        "endTargetYaw": -1.8556746244430542,
+        "targetDeltaRad": -0.1366279125213623
+      }
+    ]
+  }
+}
