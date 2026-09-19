@@ -144,6 +144,12 @@ The post-respawn controller does not inherit the pre-death motion. `Rac1RatchetM
 
 A real Godot `rac1:LEVEL0` authority run completed `Idle -> Walk -> Run -> JumpRise -> Fall -> Land -> Run` against reconstructed collision. The engine trace is an integration witness; exact timing/velocity assertions live in portable recurrence tests so terrain does not contaminate the numeric comparison.
 
+### Manual paired Joy-Con feel check (2026-09-19, non-authoritative)
+
+A brief human check of the live `rac1:LEVEL0` build with a Godot-recognized paired Joy-Con reported that lateral translation went in the intended direction while Ratchet's presented body faced the opposite direction, producing a visible moonwalk effect. The same runtime session exercised ordinary walk, run, jump and attack states without exposing a corresponding displacement failure.
+
+This is dispositioned as a **host presentation defect**, not as evidence against the recovered native displacement, stick-conditioning or yaw-recurrence laws. The suspect seam is the native-yaw-to-`VisualRoot` scene rotation conversion in `DebugPlayer`; no movement constants or retail-derived controller behavior are changed on the strength of this qualitative review. Follow-up work must correct and regression-test the presentation sign/basis conversion without modifying `Rac1RatchetMovementController` or `Rac1RatchetYawController`.
+
 Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-movement-controller.json`, with the dense raw-stick reduction in `research/generated/rac1-analogue-input-law.json` and the independent control-heading matrices in `research/generated/rac1-stick-heading-probe.json`. Local raw PINE traces and screenshots remain outside Git.
 
 ## Deliberately unresolved
