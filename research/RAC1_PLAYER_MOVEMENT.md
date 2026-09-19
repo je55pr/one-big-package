@@ -40,6 +40,8 @@ The input plan is data, not keyboard emulation. `tools/rac1-analogue-plan.exampl
 
 `tools/rac1-stick-heading-matrix.py` builds on that harness for the heading experiment. Its `capture` command restores the same savestate for each of eight literal full-scale cardinals/diagonals, and `derive` verifies the signed target-angle lattice plus the orthogonal 3D basis construction across one or more independently headed matrices. The retained reduction is `research/generated/rac1-stick-heading-probe.json`; raw movies, savestates and frame samples remain ignored under `captures/`.
 
+`tools/rac1-ground-turn-response.py` builds fixed-savestate steering movies on the same harness. It captures steady run and walk 45/90/135/180-degree turns, mirrored 45/90/135 turns, both directions of left/right and forward/back reversals, and release-then-90/180 cases. Its reducer retains per-update planar speed, travel heading, native yaw, target yaw and animation sequence plus vertical-contact summaries while leaving movies, savestates and raw PINE payloads under ignored `captures/`. The retained reduction is `research/generated/rac1-ground-turn-response.json`.
+
 A clean NTSC-U run used fixed Veldin state SHA-256 `07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d` and generated movie SHA-256 `cf666f5f6743b974477bd5291c18fe0a1f9da939fb0bce75938ddaac21a3a8b4`. The anchor begins with zero XYZ displacement at live position approximately `(154.77104, 120.58263, 29.484375)` and yaw/target `1.1110418`. In this initial controlled plan, twenty frames of literal left-stick `[127,64]` produced no displacement, while literal `[127,0]` produced movement and sequence transition `0 -> 3`; release returned `3 -> 0`. The later dense sweeps supersede that coarse bracket and recover the byte remap plus locomotion thresholds.
 
 Raw movies, companion savestates and per-frame captures remain ignored under `captures/`. The retained reduction is `research/generated/rac1-analogue-movement-probe.json`. Re-run commands are:
@@ -53,6 +55,8 @@ py -3.12 tools/rac1-analogue-movement-harness.py capture --pid <pcsx2-pid> --pin
 py -3.12 tools/rac1-analogue-movement-harness.py derive --capture captures/rac1-analogue/raw.json --out research/generated/rac1-analogue-movement-probe.json
 py -3.12 tools/rac1-stick-heading-matrix.py capture --pid <pcsx2-pid> --pine-port 28099 --savestate <state.p2s> --out-dir captures/rac1-heading/state-a
 py -3.12 tools/rac1-stick-heading-matrix.py derive --matrix-dir captures/rac1-heading/state-a --matrix-dir captures/rac1-heading/state-b --fixed-stick-capture captures/rac1-heading/fixed-forward.raw.json --out research/generated/rac1-stick-heading-probe.json
+py -3.12 tools/rac1-ground-turn-response.py capture --pid <pcsx2-pid> --pine-port 28099 --savestate <flat-veldin.p2s> --out-dir captures/rac1-ground-turns
+py -3.12 tools/rac1-ground-turn-response.py derive --capture-dir captures/rac1-ground-turns --out research/generated/rac1-ground-turn-response.json
 ```
 
 ### Recovered analogue law
@@ -75,7 +79,15 @@ Facing-aligned walk inputs from remapped magnitude 19 through 62 repeatedly sett
 
 Release is stateful. A steady run does not apply `1/300` immediately: the retained fixed aligned `forward_release_zero` trace gives the sequence-4/5 handoff planar steps `0.095009189508`, `0.092646040782`, `0.090283567728`, `0.085735093521`. From the following sequence-5 update onward the decay is the existing approximately `1/300` unit/tick until exact zero; the sustained median decrement is `0.003332469` with sampled range `0.003325785..0.003339829`. Releasing the approximately `0.015` walk plateau instead transitions `3 -> 0` through four neutral outputs `0.012627291`, `0.010271503`, `0.00230833`, `0.0`. These are bounded empirical transitions, not fitted recurrences, and are not extrapolated to partially accelerated startup releases.
 
-Large facing changes can temporarily produce planar displacement below the aligned walk plateau while the yaw recurrence catches up. Those turn transients are not additional analogue speed bands.
+### Grounded steering while moving
+
+A fixed-savestate steering matrix now separates translation direction from facing-target error. On flat ground, steady forward-origin run turns at 45/90/135/180 degrees and mirrored 45/90-degree turns retain their pre-turn planar speed to within a ratio of `0.999807..1.000110`, even while `|targetYaw-yaw|` reaches about `3.1164 rad`. Their displacement heading follows the current native yaw with worst retained error `0.0001531 rad`. Flat walk-band turns, including both sides and the 180-degree reversal, retain `0.999055..1.000512` of the plateau and follow current yaw within `0.0009843 rad`. Therefore ordinary held-input ground translation rotates the displacement vector with **current facing/yaw** each update. It does not preserve the prior world-space velocity direction, snap translation to the new target yaw, or apply a general cosine/projection speed penalty based only on facing error.
+
+The reversal controls rule out a single facing-error scalar law. Full-run forward-to-back and left-to-right reversals stay at the run cap while heading continues to follow yaw, but the flat right-to-left reversal drops from about `0.0950` to `0.069631942` before recovering with a median positive step of `0.002083784`, again matching the existing `1/480` acceleration. The opposite back-to-forward run trial is terrain-contaminated (`disp_z` reaches about `0.06144`) and is not used to infer a steering scalar. The right-to-left run slowdown occurs at constant Z with sequence 4 throughout, so it is retained as a real direction/history-dependent scalar transient whose exact trigger is not yet recovered. Walk-band reversals in both directions remain on the plateau while tracking yaw.
+
+Release-then-turn trials expose state-specific restart behavior rather than changing the steady-turn rule. After four neutral updates from a steady run, a 90-degree command follows sequence `4 -> 5 -> 3 -> 4`; speed falls through `0.082402625`, `0.079062797`, `0.075730328` and then resumes an approximately `1/480` rise (median `0.002082801`) while displacement continues to follow yaw. The 180-degree run restart shares the `4 -> 5 -> 3 -> 4` state path but resets the remaining `0.075730328` step to `0.002084892`; subsequent steps rise by median `0.002083046`. After that reset, the next moving outputs align to target yaw to within roughly `0.002 rad` while body yaw catches up, making this opposite-direction restart an explicit exception to the steady moving facing-aligned path. Walk release-then-90/180 instead follows `3 -> 0 -> 3`, reaches exact zero, restarts by approximately `1/480`, and its displacement remains aligned with current yaw.
+
+These trials preserve the existing straight-line `1/480` acceleration, walk plateau, run cap and release witnesses. They add a steering-direction contract plus bounded exceptions; they do not justify replacing those recurrences with a new facing-error speed formula. Per-update payload-free witnesses are retained in `research/generated/rac1-ground-turn-response.json`.
 
 ## Ground locomotion
 
@@ -150,11 +162,11 @@ A brief human check of the live `rac1:LEVEL0` build with a Godot-recognized pair
 
 This is dispositioned as a **host presentation defect**, not as evidence against the recovered native displacement, stick-conditioning or yaw-recurrence laws. The suspect seam is the native-yaw-to-`VisualRoot` scene rotation conversion in `DebugPlayer`; no movement constants or retail-derived controller behavior are changed on the strength of this qualitative review. Follow-up work must correct and regression-test the presentation sign/basis conversion without modifying `Rac1RatchetMovementController` or `Rac1RatchetYawController`.
 
-Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-movement-controller.json`, with the dense raw-stick reduction in `research/generated/rac1-analogue-input-law.json` and the independent control-heading matrices in `research/generated/rac1-stick-heading-probe.json`. Local raw PINE traces and screenshots remain outside Git.
+Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-movement-controller.json`, with the dense raw-stick reduction in `research/generated/rac1-analogue-input-law.json`, the independent control-heading matrices in `research/generated/rac1-stick-heading-probe.json`, and the moving-turn/reversal reduction in `research/generated/rac1-ground-turn-response.json`. Local raw PINE traces and screenshots remain outside Git.
 
 ## Deliberately unresolved
 
-- the exact translational walk/run selector inside the retained 62/63 live bracket, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
+- the exact translational walk/run selector inside the retained 62/63 live bracket, the trigger behind the flat sequence-4 right-to-left run slowdown and the special run-release 180-degree target-aligned restart, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
 - broader death/checkpoint selection beyond the witnessed Veldin reset-to-player-start behavior;
 - collision details such as ledge grabs, wall interactions and special traversal abilities;
 - combat movement, wrench lunges and hit volumes, which belong to the separate combat milestone.
