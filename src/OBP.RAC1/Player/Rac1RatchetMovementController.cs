@@ -34,14 +34,16 @@ public enum Rac1RatchetLocomotionState
 /// <remarks>
 /// Constants and recurrences are frozen from
 /// research/generated/rac1-ratchet-movement-controller.json (SCUS-97199).
-/// Unrecovered camera/stick shaping and the control-heading target transform
-/// are deliberately not invented here. The locomotion-state yaw recurrence is
+/// The recovered raw-axis conditioner and walk/run magnitude witnesses are
+/// applied before native acceleration. The locomotion-state yaw recurrence is
 /// recovered separately in <see cref="Rac1RatchetYawController"/>.
 /// </remarks>
 public sealed class Rac1RatchetMovementController
 {
     public const double UpdateHz = 60d;
     public const double MaximumPlanarStep = 0.09500919d;
+    // Retained live walk plateau. No exact retail literal has yet been identified.
+    public const double WalkPlanarStep = 0.015d;
     public const double GroundAccelerationPerTick = 1d / 480d;
     public const double GroundDecelerationPerTick = 1d / 300d;
     public const double AirAccelerationPerTick = 1d / 180d;
@@ -115,10 +117,11 @@ public sealed class Rac1RatchetMovementController
 
     public StepResult Step(PlayerControlIntent input, PlayerContactFacts contact)
     {
-        UpdatePlanar(input, contact.IsGrounded);
+        var analogue = Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY);
+        UpdatePlanar(input, analogue, contact.IsGrounded);
         UpdateVertical(input, contact);
-        UpdateLocomotionState(input, contact);
-        UpdateYawMode(input, contact);
+        UpdateLocomotionState(input, analogue, contact);
+        UpdateYawMode(input, analogue, contact);
         return new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState, YawMode);
     }
 
@@ -135,13 +138,24 @@ public sealed class Rac1RatchetMovementController
         YawMode = Rac1RatchetYawMode.GroundStartup;
     }
 
-    private void UpdatePlanar(PlayerControlIntent input, bool grounded)
+    private void UpdatePlanar(
+        PlayerControlIntent input,
+        Rac1AnalogueInput.Conditioned analogue,
+        bool grounded)
     {
-        var desired = input.NormalizedPlanar();
         bool crouching = grounded && input.CrouchHeld;
-        bool hasIntent = !crouching && desired != (0d, 0d);
-        double targetX = hasIntent ? desired.X * MaximumPlanarStep : 0d;
-        double targetY = hasIntent ? desired.Y * MaximumPlanarStep : 0d;
+        bool hasIntent = !crouching && analogue.IsActive;
+        var desired = analogue.Direction;
+        var output = input.EffectivePlanarBasis.Transform(desired.X, desired.Y);
+        double outputLength = System.Math.Sqrt((output.X * output.X) + (output.Y * output.Y));
+        if (hasIntent && outputLength <= 1e-12d)
+            throw new ArgumentException("Active planar input requires a non-degenerate control basis.", nameof(input));
+
+        double targetStep = grounded && analogue.SpeedBand == Rac1AnalogueSpeedBand.Walk
+            ? WalkPlanarStep
+            : MaximumPlanarStep;
+        double targetX = hasIntent ? (output.X / outputLength) * targetStep : 0d;
+        double targetY = hasIntent ? (output.Y / outputLength) * targetStep : 0d;
         double amount = crouching
             ? CrouchDecelerationPerTick
             : hasIntent
@@ -173,7 +187,10 @@ public sealed class Rac1RatchetMovementController
         y += dy * scale;
     }
 
-    private void UpdateLocomotionState(PlayerControlIntent input, PlayerContactFacts contact)
+    private void UpdateLocomotionState(
+        PlayerControlIntent input,
+        Rac1AnalogueInput.Conditioned analogue,
+        PlayerContactFacts contact)
     {
         LocomotionState = Phase switch
         {
@@ -181,18 +198,20 @@ public sealed class Rac1RatchetMovementController
             Rac1RatchetMovementPhase.Rising => Rac1RatchetLocomotionState.Rising,
             Rac1RatchetMovementPhase.Falling => Rac1RatchetLocomotionState.Falling,
             _ when contact.IsGrounded && input.CrouchHeld =>
-                input.NormalizedPlanar() == (0d, 0d)
-                    ? Rac1RatchetLocomotionState.Crouched
-                    : Rac1RatchetLocomotionState.CrouchTurning,
+                analogue.IsActive
+                    ? Rac1RatchetLocomotionState.CrouchTurning
+                    : Rac1RatchetLocomotionState.Crouched,
             _ when System.Math.Abs(_planarX) > 1e-12 || System.Math.Abs(_planarY) > 1e-12 =>
                 Rac1RatchetLocomotionState.Moving,
             _ => Rac1RatchetLocomotionState.Idle,
         };
     }
 
-    private void UpdateYawMode(PlayerControlIntent input, PlayerContactFacts contact)
+    private void UpdateYawMode(
+        PlayerControlIntent input,
+        Rac1AnalogueInput.Conditioned analogue,
+        PlayerContactFacts contact)
     {
-        var desired = input.NormalizedPlanar();
         bool airborne = !contact.IsGrounded ||
             Phase is Rac1RatchetMovementPhase.JumpAnticipation or
                 Rac1RatchetMovementPhase.Rising or
@@ -204,7 +223,7 @@ public sealed class Rac1RatchetMovementController
             return;
         }
 
-        if (input.CrouchHeld && desired != (0d, 0d))
+        if (input.CrouchHeld && analogue.IsActive)
         {
             YawMode = Rac1RatchetYawMode.CrouchTurn;
             return;

@@ -138,7 +138,7 @@ The post-respawn controller does not inherit the pre-death motion. `Rac1RatchetM
 
 ## Runtime promotion
 
-`Rac1RatchetMovementController` is engine-independent and owns only recovered native-tick movement state. `PlayerControlIntent` carries desired planar direction, jump held/pressed and optional crouch held; `PlayerContactFacts` carries grounded/ceiling contact supplied by the host. The movement result also exposes `GroundStartup`, `GroundRun`, `CrouchTurn` or `Air` yaw mode so `Rac1RatchetYawController` can apply the retail state-specific recurrence without Godot inventing gameplay state.
+`Rac1RatchetMovementController` is engine-independent and owns only recovered native-tick movement state. `PlayerControlIntent` carries unconditioned signed right/forward axis magnitude, an optional engine-neutral planar basis, jump held/pressed and optional crouch held; `PlayerContactFacts` carries grounded/ceiling contact supplied by the host. `OBP.RAC1` applies the recovered 48/76 component conditioner and radial activation before mapping the conditioned direction through the supplied planar basis. Ground inputs in the retained walk witnesses target the approximately `0.015` plateau, while run witnesses retain the canonical `0.09500919` cap and both use the existing recovered acceleration recurrence. The movement result also exposes `GroundStartup`, `GroundRun`, `CrouchTurn` or `Air` yaw mode so `Rac1RatchetYawController` can apply the retail state-specific recurrence without Godot inventing gameplay state.
 
 `DebugPlayer` now uses this controller for ordinary grounded/airborne play in R&C1, GC and UYA reconstructed worlds. That trilogy-wide reuse is an **OBP-created design choice** and is not evidence that GC or UYA used the R&C1 native controller. The host supplies its presentation camera's planar forward heading; `Rac1RatchetYawController` combines that neutral fact with raw stick direction using the recovered `WrapPi(controlHeading - stickAngle)` rule, then applies the recovered yaw recurrence. The host separately converts native per-tick displacement to Godot units/second at 60 Hz and calls `MoveAndSlide()`, so Godot remains collision/contact authority. **C** uses the recovered crouch state across the common base, while **F** fly/noclip and **R** manual respawn remain separate development features. Capture metadata records the common-controller label, recovered locomotion/yaw state and avatar animation state for deterministic inspection.
 
@@ -148,7 +148,7 @@ Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-mov
 
 ## Deliberately unresolved
 
-- promotion of the recovered raw-byte magnitude shaping into the host input boundary, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
+- the exact translational walk/run selector inside the retained 62/63 live bracket, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
 - broader death/checkpoint selection beyond the witnessed Veldin reset-to-player-start behavior;
 - collision details such as ledge grabs, wall interactions and special traversal abilities;
 - combat movement, wrench lunges and hit volumes, which belong to the separate combat milestone.

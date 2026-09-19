@@ -269,12 +269,7 @@ public partial class DebugPlayer : CharacterBody3D
             jump = false;
             crouch = false;
         }
-        Vector3 wish = _yaw.GlobalTransform.Basis * new Vector3(move.X, 0f, move.Y);
-        wish.Y = 0f;
-        // Preserve analogue magnitude at the host boundary. The currently recovered
-        // R&C1 controller still owns its existing full-scale directional semantics.
-
-        StepRetailDerivedMovement(move, wish, jump, crouch);
+        StepRetailDerivedMovement(move, jump, crouch);
 
         MoveAndSlide();
         bool isOnFloor = IsOnFloor();
@@ -307,6 +302,21 @@ public partial class DebugPlayer : CharacterBody3D
         return Math.Atan2(sceneForward.Z, -sceneForward.X);
     }
 
+    private PlayerPlanarBasis GetRac1PlanarBasis()
+    {
+        Vector3 sceneRight = _yaw.GlobalTransform.Basis * Vector3.Right;
+        Vector3 sceneForward = _yaw.GlobalTransform.Basis * new Vector3(0f, 0f, -1f);
+        sceneRight.Y = 0f;
+        sceneForward.Y = 0f;
+        sceneRight = sceneRight.Normalized();
+        sceneForward = sceneForward.Normalized();
+        return new PlayerPlanarBasis(
+            sceneRight.X,
+            sceneRight.Z,
+            sceneForward.X,
+            sceneForward.Z);
+    }
+
     private void UpdateRac1FacingPresentation()
     {
         if (VisualRoot is null) return;
@@ -328,13 +338,19 @@ public partial class DebugPlayer : CharacterBody3D
         _placeTries = 0;
     }
 
-    private void StepRetailDerivedMovement(Vector2 move, Vector3 wish, bool jump, bool crouch)
+    private void StepRetailDerivedMovement(Vector2 move, bool jump, bool crouch)
     {
         bool grounded = IsOnFloor();
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
         var step = _rac1Movement.Step(
-            new PlayerControlIntent(wish.X, wish.Z, jump, jumpPressed, crouch),
+            new PlayerControlIntent(
+                move.X,
+                -move.Y,
+                jump,
+                jumpPressed,
+                crouch,
+                GetRac1PlanarBasis()),
             new PlayerContactFacts(grounded, IsOnCeiling()));
 
         _rac1Yaw.Step(move.X, -move.Y, GetRac1ControlYaw(), step.YawMode);

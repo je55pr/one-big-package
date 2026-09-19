@@ -52,8 +52,9 @@ public sealed class Rac1RatchetYawController
         if (!double.IsFinite(controlYaw)) throw new ArgumentOutOfRangeException(nameof(controlYaw));
 
         ControlYaw = WrapPi(controlYaw);
-        TargetYaw = (inputX * inputX) + (inputY * inputY) > 1e-12d
-            ? BuildMovementTarget(inputX, inputY, ControlYaw)
+        var analogue = Rac1AnalogueInput.ConditionUnitAxes(inputX, inputY);
+        TargetYaw = analogue.IsActive
+            ? BuildMovementTarget(analogue.X, analogue.Y, ControlYaw)
             : CurrentYaw;
         Mode = mode;
 
@@ -109,6 +110,10 @@ public sealed class Rac1RatchetYawController
         return new RecurrenceStep(WrapPi(currentYaw + velocity), velocity);
     }
 
+    /// <summary>
+    /// Build the recovered control-heading target from an already conditioned,
+    /// active right/forward stick vector.
+    /// </summary>
     public static double BuildMovementTarget(double inputX, double inputY, double controlYaw)
     {
         if (!double.IsFinite(inputX)) throw new ArgumentOutOfRangeException(nameof(inputX));
