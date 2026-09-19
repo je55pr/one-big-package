@@ -156,18 +156,21 @@ public sealed class Rac1RatchetMovementController
         if (hasIntent && outputLength <= 1e-12d)
             throw new ArgumentException("Active planar input requires a non-degenerate control basis.", nameof(input));
 
+        bool usesAirPlanarLaw = !grounded || Phase != Rac1RatchetMovementPhase.Grounded;
         TargetPlanarStep = hasIntent
-            ? grounded && analogue.SpeedBand == Rac1AnalogueSpeedBand.Walk
-                ? WalkPlanarStep
-                : MaximumPlanarStep
+            ? usesAirPlanarLaw
+                ? MaximumPlanarStep * analogue.Magnitude
+                : analogue.SpeedBand == Rac1AnalogueSpeedBand.Walk
+                    ? WalkPlanarStep
+                    : MaximumPlanarStep
             : 0d;
         double targetX = hasIntent ? (output.X / outputLength) * TargetPlanarStep : 0d;
         double targetY = hasIntent ? (output.Y / outputLength) * TargetPlanarStep : 0d;
         double amount = crouching
             ? CrouchDecelerationPerTick
             : hasIntent
-                ? grounded ? GroundAccelerationPerTick : AirAccelerationPerTick
-                : grounded ? GroundDecelerationPerTick : AirDecelerationPerTick;
+                ? usesAirPlanarLaw ? AirAccelerationPerTick : GroundAccelerationPerTick
+                : usesAirPlanarLaw ? AirDecelerationPerTick : GroundDecelerationPerTick;
 
         MoveToward(ref _planarX, ref _planarY, targetX, targetY, amount);
     }

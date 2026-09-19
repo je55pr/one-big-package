@@ -173,22 +173,89 @@ public sealed class Rac1AnalogueInputTests
         Assert.Equal(0d, step.PlanarY, 12);
     }
 
-    [Fact]
-    public void WalkBandInput_PreservesRecoveredAirControlRecurrence()
+    [Theory]
+    [InlineData(127, 60, 0.023759150)]
+    [InlineData(189, 60, 0.029516687)]
+    [InlineData(219, 219, 0.077775483)]
+    [InlineData(127, 238, 0.078740573)]
+    [InlineData(220, 220, 0.079549722)]
+    public void PartialStickAirControl_ScalesTargetByConditionedMagnitude(
+        byte rawX,
+        byte rawY,
+        double observedRetailStep)
     {
         var controller = new Rac1RatchetMovementController();
-        var input = IntentFromRaw(127, 60);
+        var input = IntentFromRaw(rawX, rawY);
+        var conditioned = Rac1AnalogueInput.ConditionRawLeftStick(rawX, rawY);
+
+        double expectedTarget =
+            Rac1RatchetMovementController.MaximumPlanarStep * conditioned.Magnitude;
 
         var first = controller.Step(input, Airborne);
         Assert.Equal(Rac1RatchetMovementController.AirAccelerationPerTick, first.PlanarMagnitude, 12);
-        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.TargetPlanarStep, 12);
-        Assert.Equal(Rac1AnalogueSpeedBand.Walk, controller.AnalogueInput.SpeedBand);
+        Assert.Equal(expectedTarget, controller.TargetPlanarStep, 12);
+        Assert.Equal(conditioned.SpeedBand, controller.AnalogueInput.SpeedBand);
 
         Rac1RatchetMovementController.StepResult step = first;
         for (int i = 0; i < 40; i++)
             step = controller.Step(input, Airborne);
 
-        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, step.PlanarMagnitude, 12);
+        Assert.Equal(expectedTarget, step.PlanarMagnitude, 12);
+        Assert.InRange(step.PlanarMagnitude, observedRetailStep - 0.00004d, observedRetailStep + 0.00004d);
+
+        var released = controller.Step(new PlayerControlIntent(0, 0, false, false), Airborne);
+        Assert.Equal(
+            expectedTarget - Rac1RatchetMovementController.AirDecelerationPerTick,
+            released.PlanarMagnitude,
+            12);
+    }
+
+    [Fact]
+    public void JumpAnticipation_UsesAirPlanarRecurrenceAfterNativeStateTransition()
+    {
+        var controller = new Rac1RatchetMovementController();
+        controller.Step(new PlayerControlIntent(0, 0, true, true), Grounded);
+        Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, controller.Phase);
+
+        var partial = new PlayerControlIntent(
+            RightUnit(127),
+            ForwardUnit(60),
+            true,
+            false);
+        var first = controller.Step(partial, Grounded);
+        var second = controller.Step(partial, Grounded);
+
+        Assert.Equal(Rac1RatchetMovementController.AirAccelerationPerTick, first.PlanarMagnitude, 12);
+        Assert.Equal(2d * Rac1RatchetMovementController.AirAccelerationPerTick, second.PlanarMagnitude, 12);
+        Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, second.Phase);
+    }
+
+    [Fact]
+    public void PartialStickLedgeFall_UsesAirMagnitudeTargetWithoutTerrainTerms()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var input = IntentFromRaw(127, 237);
+
+        for (int i = 0; i < 20; i++)
+            controller.Step(input, Grounded);
+
+        double groundStep = Math.Sqrt(
+            (controller.PlanarX * controller.PlanarX) +
+            (controller.PlanarY * controller.PlanarY));
+        var firstFall = controller.Step(input, Airborne);
+        var secondFall = controller.Step(input, Airborne);
+
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, groundStep, 12);
+        Assert.Equal(Rac1RatchetMovementPhase.Falling, firstFall.Phase);
+        Assert.Equal(-Rac1RatchetMovementController.FallGravityPerTick, firstFall.Vertical, 12);
+        Assert.Equal(
+            groundStep + Rac1RatchetMovementController.AirAccelerationPerTick,
+            firstFall.PlanarMagnitude,
+            12);
+        Assert.Equal(
+            firstFall.PlanarMagnitude + Rac1RatchetMovementController.AirAccelerationPerTick,
+            secondFall.PlanarMagnitude,
+            12);
     }
 
     [Fact]

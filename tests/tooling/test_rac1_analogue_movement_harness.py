@@ -24,7 +24,10 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
                 "schema": 1,
                 "segments": [
                     {"label": "neutral", "frames": 1, "left": [127, 127]},
-                    {"label": "raw", "frames": 2, "left": [64, 192], "right": [1, 254]},
+                    {
+                        "label": "raw", "frames": 2,
+                        "left": [64, 192], "right": [1, 254], "buttons": ["cross"],
+                    },
                 ],
             }), encoding="utf-8")
             state.write_bytes(b"local-state-fixture")
@@ -35,8 +38,22 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
             self.assertEqual(len(data), 570 + 3 * 36)
             self.assertEqual(data[570:576], bytes((255, 255, 127, 127, 127, 127)))
             second = 570 + 36
-            self.assertEqual(data[second:second + 6], bytes((255, 255, 1, 254, 64, 192)))
+            self.assertEqual(data[second:second + 6], bytes((255, 191, 1, 254, 64, 192)))
+            self.assertEqual(manifest["segments"][1]["buttons"], ["cross"])
             self.assertTrue(pathlib.Path(f"{movie}_SaveState.p2s").exists())
+
+    def test_unknown_button_is_rejected(self):
+        HARNESS.CAPTURES.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=HARNESS.CAPTURES) as directory:
+            plan = pathlib.Path(directory) / "plan.json"
+            plan.write_text(json.dumps({
+                "schema": 1,
+                "segments": [
+                    {"frames": 1, "left": [127, 127], "buttons": ["not-a-button"]},
+                ],
+            }), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unknown buttons"):
+                HARNESS.load_plan(plan)
 
     def test_picker_helper_receives_absolute_movie_path(self):
         HARNESS.CAPTURES.mkdir(exist_ok=True)

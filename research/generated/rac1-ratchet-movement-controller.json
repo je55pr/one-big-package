@@ -25,7 +25,12 @@
   "airPlanar": {
     "accelerationPerTick": 0.005555555555555556,
     "releaseDecelerationPerTick": 0.0008333333333333334,
-    "maximumStep": 0.09500919
+    "maximumStep": 0.09500919,
+    "targetStep": "maximumStep * min(conditionedMagnitude, 1)",
+    "continuousConditionedMagnitude": true,
+    "jumpAnticipationUsesAirPlanarLaw": true,
+    "partialStickEvidence": "research/generated/rac1-analogue-input-law.json",
+    "collisionProjectionExcludedFromFit": true
   },
   "jump": {
     "anticipationTicks": 8,

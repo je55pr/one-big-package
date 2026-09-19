@@ -25,6 +25,7 @@ PLAYER_STATE = 0x0013F3D0
 PLAYER_MOBY = 0x01845E80
 READ32 = 2
 NEUTRAL = 127
+BUTTON_MASKS = {"cross": 0x4000}
 FRAME_ADVANCE_VK = 0x76  # F7
 PWSH_RUNNER = Path(r"C:\ChatGPT\Tools\pwsh-runner.cmd")
 PICKER_HELPER = ROOT / "tools" / "rac1-pcsx2-input-recording-picker.ps1"
@@ -67,15 +68,20 @@ def load_plan(path: Path) -> list[dict[str, object]]:
         frames = int(item["frames"])
         left = tuple(int(value) for value in item["left"])
         right = tuple(int(value) for value in item.get("right", [NEUTRAL, NEUTRAL]))
+        buttons = tuple(str(value).lower() for value in item.get("buttons", []))
         if frames <= 0 or len(left) != 2 or len(right) != 2:
             raise ValueError(f"invalid segment {index}")
         if any(value < 0 or value > 255 for value in (*left, *right)):
             raise ValueError(f"stick byte outside 0..255 in segment {index}")
+        unknown_buttons = sorted(set(buttons) - BUTTON_MASKS.keys())
+        if unknown_buttons:
+            raise ValueError(f"unknown buttons in segment {index}: {unknown_buttons}")
         result.append({
             "label": str(item.get("label", f"segment-{index}")),
             "frames": frames,
             "left": left,
             "right": right,
+            "buttons": buttons,
         })
     return result
 
@@ -89,9 +95,16 @@ def _fixed_ascii(value: str, size: int) -> bytes:
     encoded = value.encode("ascii", errors="replace")[: size - 1]
     return encoded + bytes(size - len(encoded))
 
-def pad_bytes(left: tuple[int, int], right: tuple[int, int]) -> bytes:
-    # PCSX2 PadData v1: flags, RXY, LXY, then 12 pressure bytes.
-    return bytes((0xFF, 0xFF, right[0], right[1], left[0], left[1])) + bytes(12)
+def pad_bytes(
+    left: tuple[int, int],
+    right: tuple[int, int],
+    buttons: tuple[str, ...] = (),
+) -> bytes:
+    # PCSX2 PadData v1: active-low DS2 button flags, RXY, LXY, then 12 pressure bytes.
+    flags = 0xFFFF
+    for button in buttons:
+        flags &= ~BUTTON_MASKS[button]
+    return struct.pack("<H", flags) + bytes((right[0], right[1], left[0], left[1])) + bytes(12)
 
 def build_movie(plan_path: Path, savestate: Path, movie: Path) -> dict[str, object]:
     movie = capture_path(movie)
@@ -107,7 +120,7 @@ def build_movie(plan_path: Path, savestate: Path, movie: Path) -> dict[str, obje
     neutral_port = pad_bytes((NEUTRAL, NEUTRAL), (NEUTRAL, NEUTRAL))
     body = bytearray()
     for frame in frames:
-        body += pad_bytes(frame["left"], frame["right"])
+        body += pad_bytes(frame["left"], frame["right"], frame["buttons"])
         body += neutral_port
     movie.parent.mkdir(parents=True, exist_ok=True)
     movie.write_bytes(header + body)
@@ -127,6 +140,7 @@ def build_movie(plan_path: Path, savestate: Path, movie: Path) -> dict[str, obje
                 "frames": segment["frames"],
                 "left": list(segment["left"]),
                 "right": list(segment["right"]),
+                "buttons": list(segment["buttons"]),
             }
             for segment in plan
         ],
@@ -384,6 +398,7 @@ def capture_trial(
                 "local_frame": command["local_frame"],
                 "left": list(command["left"]),
                 "right": list(command["right"]),
+                "buttons": list(command["buttons"]),
                 "sample": observed,
             })
     finally:
@@ -431,6 +446,7 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
             "frames": len(group),
             "left": first["left"],
             "right": first["right"],
+            "buttons": first.get("buttons", []),
             "netPlanarPositionDelta": math.hypot(dx, dy),
             "maxPlanarDisplacementPerUpdate": max_planar,
             "yawStart": first["sample"]["yaw"],

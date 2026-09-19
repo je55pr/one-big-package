@@ -64,6 +64,58 @@
     "variesWithStickMagnitude": false,
     "note": "Facing-aligned trials use the same approximately 1/480 recurrence; stick magnitude changes the selected speed band, not the measured acceleration."
   },
+  "airborneAnalogue": {
+    "targetFormula": "0.09500919 * min(conditionedMagnitude, 1)",
+    "conditionedMagnitude": "hypot(conditionedX, conditionedY) after the recovered 48/76 per-axis conditioning",
+    "canonicalAccelerationPerTick": 0.005555555555555556,
+    "canonicalNeutralReleaseDecelerationPerTick": 0.0008333333333333334,
+    "jumpAnticipationUsesAirPlanarLaw": true,
+    "surfaceResponsePolicy": "Landing clips and uneven ledge-edge planar/vertical spikes are collision response and are excluded from controller-equation fitting.",
+    "selectedWitnesses": [
+      {
+        "rawLeft": [127, 60],
+        "observedSteadyPlanarStep": 0.02375915,
+        "movieSha256": "691229a698a38c90df15a95927414f122fa5a84a58f0c1b98b89b8849bc89c72"
+      },
+      {
+        "rawLeft": [189, 60],
+        "observedSteadyPlanarStep": 0.029516687,
+        "movieSha256": "bffb5b9a2f6d7b316f266bdf83479239933d499afed9db54d60997d7bba6c4bd"
+      },
+      {
+        "rawLeft": [219, 219],
+        "observedSteadyPlanarStep": 0.077775483,
+        "movieSha256": "1c7c50153a22797bf8573f22c5d916ba25088e9a47bafe5800eee018031513c4"
+      },
+      {
+        "rawLeft": [127, 238],
+        "observedSteadyPlanarStep": 0.078740573,
+        "movieSha256": "5e7d174bc7fece3fb99fc1b0784658d994e2f840bbf88be0be6f359652ebd47a"
+      },
+      {
+        "rawLeft": [220, 220],
+        "observedSteadyPlanarStep": 0.079549722,
+        "movieSha256": "918635e38aa6ff0a65b24dc883337012f9c50118bb56ec76179e53ef9e36a12a"
+      }
+    ],
+    "anticipationWitnesses": [
+      {
+        "rawLeft": [127, 60],
+        "movieSha256": "fc94c64033a57b80cd17b54e5f00d15aede954197abce506fbed618b94c47b50",
+        "note": "sequence 7 begins before vertical launch; subsequent planar increments are approximately 1/180"
+      },
+      {
+        "rawLeft": [220, 220],
+        "movieSha256": "29334f11cb9acc0b1b0e016008d17c93cbc1c8174996c656a0f6cd80b69b46b9",
+        "note": "diagonal run-boundary witness shows the same pre-launch air acceleration recurrence"
+      }
+    ],
+    "ledgeTransitionWitness": {
+      "rawLeft": [127, 237],
+      "movieSha256": "f8ce57d52444369330c0512f3ed0929b63cad418e1c848e1ab800f9350ce53b0",
+      "note": "walk-band route reaches the unsupported/death fall, but local surface-projection spikes are retained only as contact evidence, not controller constants"
+    }
+  },
   "walkRunTransition": {
     "lastCardinalWalkRemappedMagnitude": 62,
     "firstCardinalRunRemappedMagnitude": 63,
