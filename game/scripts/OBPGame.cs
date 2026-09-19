@@ -100,7 +100,15 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        if (_args.GcIso is { } iso)
+        if (_args.Destination is not null)
+        {
+            // The neutral source bootstrap owns canonical trilogy destinations.
+            // Do not pre-load the legacy GC path merely because --gc-iso is also
+            // attached; the deferred bootstrap will attach all supplied sources
+            // and enter exactly the requested destination before frames advance.
+            EnsurePlainEnvironment();
+        }
+        else if (_args.GcIso is { } iso)
         {
             _isoPath = iso;
             if (!IdentifyDisc(iso))

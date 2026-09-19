@@ -214,6 +214,11 @@ public partial class OBPGame
             _ = RunRac1CombatSmokeAsync();
         }
 
+        if (_args.MovementSmoke && _worldSwitches == 1)
+        {
+            _ = RunMovementSmokeAsync(destination);
+        }
+
         // Exact verification remains game-specific today. Preserve the mature GC
         // opt-in while avoiding an implicit multi-GB hash for other providers.
         if (_args.VerifyHash && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2)

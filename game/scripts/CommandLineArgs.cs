@@ -79,6 +79,9 @@ public sealed record CommandLineArgs
     /// <summary>Run the deterministic retail-backed R&amp;C1 live combat-loop smoke and quit.</summary>
     public bool Rac1CombatSmoke { get; init; }
 
+    /// <summary>Run the cross-game Godot analogue/input smoke against the selected destination and quit.</summary>
+    public bool MovementSmoke { get; init; }
+
     /// <summary>Boot the multi-world composition / fusion lab. Optional value = a saved composition JSON to load on start.</summary>
     public bool Compose { get; init; }
 
@@ -132,6 +135,7 @@ public sealed record CommandLineArgs
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--rac1-combat-smoke" => result with { Rac1CombatSmoke = true },
+                "--movement-smoke" => result with { MovementSmoke = true },
                 "--compose" => result with { Compose = true },
                 "--composition" => result with { Compose = true, CompositionPath = Next() },
                 "--composition-view" => result with { CompositionView = Next() },

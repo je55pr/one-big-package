@@ -48,6 +48,18 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Deterministic label exposed in capture telemetry.</summary>
     public string MovementControllerLabel => "rac1-retail-derived-common-base";
 
+    /// <summary>Development-only fly state, exposed for deterministic host smoke coverage.</summary>
+    public bool DevelopmentFlyEnabled => _fly;
+
+    /// <summary>Host spawn remembered by the development respawn seam.</summary>
+    public Vector3 DebugSpawnPosition => _spawn;
+
+    /// <summary>Current conditioned left-stick magnitude from the common R&amp;C1 controller.</summary>
+    public double Rac1AnalogueMagnitude => _rac1Movement.AnalogueInput.Magnitude;
+
+    /// <summary>Current native planar target step after analogue conditioning.</summary>
+    public double Rac1TargetPlanarStep => _rac1Movement.TargetPlanarStep;
+
     /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
     public event Action? CrateStrikeRequested;
 
@@ -230,7 +242,7 @@ public partial class DebugPlayer : CharacterBody3D
             }
             else if (key.Keycode == Key.R)
             {
-                if (UseRac1Gameplay)
+                if (UseRac1Gameplay && !Rac1GameplayAlive)
                     Rac1RespawnRequested?.Invoke();
                 else
                     ResetToSpawn();
