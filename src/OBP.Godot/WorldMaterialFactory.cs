@@ -19,6 +19,24 @@ namespace OBP.Godot;
 /// </summary>
 public sealed class WorldMaterialFactory
 {
+    public readonly record struct NativePresentationPlan(
+        BaseMaterial3D.TextureFilterEnum? TextureFilter,
+        bool? TextureRepeat,
+        BaseMaterial3D.TransparencyEnum? Transparency,
+        BaseMaterial3D.BlendModeEnum BlendMode,
+        float? FixedAlphaFactor,
+        bool ScaleRgbByFixedAlpha);
+
+    private readonly record struct MaterialCacheKey(
+        string AssetKind,
+        int TextureId,
+        RuntimeMaterialPresentation? Presentation,
+        bool Instanced,
+        bool HasUv,
+        bool HasColour,
+        bool IsSky,
+        bool RenderWithoutTexture);
+
     private static readonly System.Collections.Generic.Dictionary<string, Color> KindTint = new()
     {
         ["tfrag"] = new Color(0.64f, 0.62f, 0.58f),
@@ -33,7 +51,7 @@ public sealed class WorldMaterialFactory
     private readonly System.Collections.Generic.Dictionary<(string, int), ImageTexture> _textures = new();
     private readonly System.Collections.Generic.Dictionary<(string, int), AlphaProfile> _alpha = new();
     private readonly System.Collections.Generic.Dictionary<(string, int), double> _luminance = new();
-    private readonly System.Collections.Generic.Dictionary<(string, int, RuntimeMaterialPresentation?), StandardMaterial3D> _cache = new();
+    private readonly System.Collections.Generic.Dictionary<MaterialCacheKey, StandardMaterial3D> _cache = new();
     private readonly System.Collections.Generic.Dictionary<string, int> _untexturedTris = new();
 
     public WorldMaterialFactory(RuntimeWorld world)
@@ -49,6 +67,7 @@ public sealed class WorldMaterialFactory
             _alpha[key] = AlphaProfile.Analyse(t.Rgba);
             _luminance[key] = MaterialModel.MeanLuminance(t.Rgba);
             var image = Image.CreateFromData(t.Width, t.Height, false, Image.Format.Rgba8, t.Rgba);
+            image.GenerateMipmaps();
             _textures[key] = ImageTexture.CreateFromImage(image);
         }
     }
@@ -73,7 +92,13 @@ public sealed class WorldMaterialFactory
     public StandardMaterial3D StaticMesh(string assetKind, int textureId, bool hasUv, bool hasColour, bool isSky, bool renderWithoutTexture, int triangleCount, RuntimeMaterialPresentation? presentation)
     {
         var textureKey = (assetKind, textureId);
-        var cacheKey = (assetKind, textureId, presentation);
+        var cacheKey = new MaterialCacheKey(
+            assetKind, textureId, presentation,
+            Instanced: false,
+            HasUv: hasUv,
+            HasColour: hasColour,
+            IsSky: isSky,
+            RenderWithoutTexture: renderWithoutTexture);
         if (_cache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
@@ -139,7 +164,13 @@ public sealed class WorldMaterialFactory
     public StandardMaterial3D Instanced(string assetKind, int textureId, bool hasColour, RuntimeMaterialPresentation? presentation)
     {
         var textureKey = (assetKind, textureId);
-        var cacheKey = (assetKind, textureId, presentation);
+        var cacheKey = new MaterialCacheKey(
+            assetKind, textureId, presentation,
+            Instanced: true,
+            HasUv: true,
+            HasColour: hasColour,
+            IsSky: false,
+            RenderWithoutTexture: false);
         if (_cache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
@@ -197,6 +228,67 @@ public sealed class WorldMaterialFactory
         }
     }
 
+    /// <summary>
+    /// Resolve the neutral recovered state into the subset StandardMaterial3D can
+    /// express directly. Mixed-axis wrap and the GS distinction between nearest
+    /// and linear mip selection deliberately remain unresolved here.
+    /// </summary>
+    public static NativePresentationPlan ResolveNativePresentation(
+        RuntimeMaterialPresentation? presentation)
+    {
+        if (presentation is null)
+        {
+            return new NativePresentationPlan(
+                TextureFilter: null,
+                TextureRepeat: null,
+                Transparency: null,
+                BlendMode: BaseMaterial3D.BlendModeEnum.Mix,
+                FixedAlphaFactor: null,
+                ScaleRgbByFixedAlpha: false);
+        }
+
+        BaseMaterial3D.TextureFilterEnum? filter = presentation.MinFilter switch
+        {
+            RuntimeTextureMinFilter.Nearest => BaseMaterial3D.TextureFilterEnum.Nearest,
+            RuntimeTextureMinFilter.Linear => BaseMaterial3D.TextureFilterEnum.Linear,
+            RuntimeTextureMinFilter.NearestMipmapNearest or RuntimeTextureMinFilter.NearestMipmapLinear
+                => BaseMaterial3D.TextureFilterEnum.NearestWithMipmaps,
+            RuntimeTextureMinFilter.LinearMipmapNearest or RuntimeTextureMinFilter.LinearMipmapLinear
+                => BaseMaterial3D.TextureFilterEnum.LinearWithMipmaps,
+            _ => null,
+        };
+
+        bool? repeat = presentation.WrapS == presentation.WrapT
+            ? presentation.WrapS switch
+            {
+                RuntimeTextureWrap.Repeat => true,
+                RuntimeTextureWrap.Clamp => false,
+                _ => null,
+            }
+            : null;
+
+        var blendMode = presentation.BlendEquation is
+            RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha
+                ? BaseMaterial3D.BlendModeEnum.Add
+                : BaseMaterial3D.BlendModeEnum.Mix;
+
+        float? fixedAlpha = presentation.BlendEquation is
+            RuntimeBlendEquation.FixedAlpha or RuntimeBlendEquation.AdditiveFixedAlpha
+                ? presentation.FixedAlphaFactor is double factor ? (float)factor : null
+                : null;
+
+        return new NativePresentationPlan(
+            filter,
+            repeat,
+            presentation.AlphaBlendEnabled is true
+                ? BaseMaterial3D.TransparencyEnum.Alpha
+                : null,
+            blendMode,
+            fixedAlpha,
+            presentation.BlendEquation == RuntimeBlendEquation.AdditiveFixedAlpha
+                && fixedAlpha is not null);
+    }
+
     private static void ApplyNativePresentation(
         StandardMaterial3D mat,
         RuntimeMaterialPresentation? presentation)
@@ -206,37 +298,58 @@ public sealed class WorldMaterialFactory
             return;
         }
 
-        mat.TextureFilter = presentation.MinFilter switch
+        var plan = ResolveNativePresentation(presentation);
+        if (plan.TextureFilter is { } filter)
         {
-            RuntimeTextureMinFilter.Nearest => BaseMaterial3D.TextureFilterEnum.Nearest,
-            RuntimeTextureMinFilter.Linear => BaseMaterial3D.TextureFilterEnum.Linear,
-            RuntimeTextureMinFilter.NearestMipmapNearest or RuntimeTextureMinFilter.NearestMipmapLinear
-                => BaseMaterial3D.TextureFilterEnum.NearestWithMipmaps,
-            RuntimeTextureMinFilter.LinearMipmapNearest or RuntimeTextureMinFilter.LinearMipmapLinear
-                => BaseMaterial3D.TextureFilterEnum.LinearWithMipmaps,
-            _ => mat.TextureFilter,
-        };
-
-        // StandardMaterial3D exposes repeat as one setting for both axes.
-        // Preserve mixed S/T evidence in the neutral contract rather than
-        // collapsing it to a host-specific approximation here.
-        if (presentation.WrapS == presentation.WrapT)
-        {
-            mat.TextureRepeat = presentation.WrapS switch
-            {
-                RuntimeTextureWrap.Repeat => true,
-                RuntimeTextureWrap.Clamp => false,
-                _ => mat.TextureRepeat,
-            };
+            mat.TextureFilter = filter;
         }
 
-        // Fixed-alpha coefficients and chrome/glass selectors stay carried
-        // in RuntimeMaterialPresentation until an evidence-backed Godot mapping
-        // exists; do not invent a shader recipe for them here.
-        if (presentation.AlphaBlendEnabled is true
-            && presentation.BlendEquation == RuntimeBlendEquation.AdditiveSourceAlpha)
+        if (plan.TextureRepeat is { } repeat)
         {
-            mat.BlendMode = BaseMaterial3D.BlendModeEnum.Add;
+            mat.TextureRepeat = repeat;
+        }
+
+        if (plan.Transparency is { } transparency)
+        {
+            mat.Transparency = transparency;
+        }
+
+        // A decoded equation is only active when the native primitive enabled
+        // blending. Keeping this gate avoids turning preserved-but-inactive GS
+        // state into host transparency.
+        if (presentation.AlphaBlendEnabled is not true)
+        {
+            return;
+        }
+
+        mat.BlendMode = plan.BlendMode;
+
+        if (plan.FixedAlphaFactor is not float fixedAlpha)
+        {
+            return;
+        }
+
+        var colour = mat.AlbedoColor;
+        if (plan.ScaleRgbByFixedAlpha)
+        {
+            // Godot additive blend has no constant blend coefficient. Scaling
+            // source RGB is equivalent for the recovered Cs * FIX + Cd form.
+            mat.AlbedoColor = new Color(
+                colour.R * fixedAlpha,
+                colour.G * fixedAlpha,
+                colour.B * fixedAlpha,
+                colour.A);
+        }
+        else
+        {
+            // StandardMaterial3D has no independent fixed-alpha coefficient for
+            // MIX. Albedo alpha is the closest direct mapping; the neutral fixed
+            // factor remains preserved if a custom shader becomes warranted.
+            mat.AlbedoColor = new Color(
+                colour.R,
+                colour.G,
+                colour.B,
+                colour.A * fixedAlpha);
         }
     }
 
