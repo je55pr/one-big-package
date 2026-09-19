@@ -1,4 +1,6 @@
 using OBP.Godot.Player;
+using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 using Xunit;
 
@@ -29,6 +31,38 @@ public sealed class PlayerAvatarGodotTests
         Assert.Equal(2, mapped.Length);
         Assert.Equal(new global::Godot.Vector3(1, 3, -2), mapped[0]);
         Assert.Equal(new global::Godot.Vector3(-4, 6, -5), mapped[1]);
+    }
+
+    [Theory]
+    [InlineData(0d, 1d)]
+    [InlineData(1d, 0d)]
+    [InlineData(-1d, 0d)]
+    [InlineData(0d, -1d)]
+    [InlineData(1d, 1d)]
+    [InlineData(-1d, 1d)]
+    [InlineData(1d, -1d)]
+    [InlineData(-1d, -1d)]
+    public void Rac1VisualForwardMatchesNativeFacingAndMovement(double inputX, double inputY)
+    {
+        double nativeYaw = Rac1RatchetYawController.BuildMovementTarget(inputX, inputY, controlYaw: 0d);
+        float sceneYaw = PlayerAvatarFacing.NativeZUpYawToGodotSceneYaw(nativeYaw);
+        var visualForward = (new global::Godot.Basis(global::Godot.Vector3.Up, sceneYaw) *
+                             global::Godot.Vector3.Forward).Normalized();
+
+        var nativeFacing = new Rac1WrenchCombatController().ResolveFirstSwingFacing(nativeYaw);
+        var wrenchForward = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
+            nativeFacing.X, nativeFacing.Y).Normalized();
+
+        var movement = new Rac1RatchetMovementController();
+        var movementBasis = new PlayerPlanarBasis(0d, -1d, -1d, 0d);
+        var step = movement.Step(
+            new PlayerControlIntent(inputX, inputY, false, false, false, movementBasis),
+            new PlayerContactFacts(true));
+        var movementForward = new global::Godot.Vector3(
+            (float)step.PlanarX, 0f, (float)step.PlanarY).Normalized();
+
+        Assert.InRange((visualForward - wrenchForward).Length(), 0f, 0.00001f);
+        Assert.InRange((visualForward - movementForward).Length(), 0f, 0.00001f);
     }
 
     [Fact]

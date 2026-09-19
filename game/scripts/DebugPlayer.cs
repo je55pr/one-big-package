@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot.Controls;
+using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
@@ -343,7 +344,7 @@ public partial class DebugPlayer : CharacterBody3D
     private void UpdateRac1FacingPresentation()
     {
         if (VisualRoot is null) return;
-        float sceneYaw = (float)-_rac1Yaw.CurrentYaw;
+        float sceneYaw = PlayerAvatarFacing.NativeZUpYawToGodotSceneYaw(_rac1Yaw.CurrentYaw);
         VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
     }
 
