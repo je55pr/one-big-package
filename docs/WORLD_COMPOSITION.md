@@ -296,8 +296,10 @@ now `Free()`d, which also helps the single-world planet-hopping path.)
 Jess-Laptop it loaded the exact R&C1 authority (`rac1:LEVEL0`) beside the exact GC
 authority (`rac2:LEVEL1` / Oozla) in one Godot scene. After the merged R&C1
 static-instance promotion, level 0 imports 286 runtime meshes / 751,435 triangles
-in ~0.6 s; current GC main imports Oozla as 302 meshes / 1,860,879 triangles in
-~1.4-1.8 s. A deterministic overview capture succeeded with both worlds visible simultaneously.
+in ~0.6 s; current GC main imports Oozla as 304 meshes / 1,860,879 triangles in
+~1.4-1.8 s. The two extra runtime meshes are the evidence-backed material-presentation
+split of same-texture Moby surfaces; triangle and resource totals are unchanged. A deterministic
+overview capture succeeded with both worlds visible simultaneously.
 
 A three-cycle `--compose-reload 3` stress run rebuilt and tore down both games
 each cycle with **0 orphans**, 11 nodes after teardown, an empty

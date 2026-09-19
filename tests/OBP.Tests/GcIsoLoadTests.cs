@@ -72,8 +72,9 @@ public class GcIsoLoadTests
         Assert.True(load.Identity.Supported);
         Assert.True(load.Identity.SizeMatches);
         // 2 oc1134 instances are lifted out as animated mobies; class-500 Bolt
-        // Crates are preserved separately as dynamic gameplay objects.
-        Assert.Equal(302, load.World.Meshes.Count);
+        // Crates are preserved separately as dynamic gameplay objects. Native material
+        // presentation splits two same-texture Moby surface buckets without adding triangles.
+        Assert.Equal(304, load.World.Meshes.Count);
         Assert.Equal(1_860_879, load.World.TotalRenderTriangles);
         Assert.Equal(21_470, load.World.TotalDynamicTriangles);
         Assert.Equal(1_882_349, load.World.TotalRenderTriangles + load.World.TotalDynamicTriangles);

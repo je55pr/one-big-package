@@ -97,7 +97,7 @@
     {
       "tableIndex": 2,
       "publicNativeLevelIdHint": 2,
-      "worldMeshCount": 215,
+      "worldMeshCount": 217,
       "worldRenderTriangles": 696215,
       "expandedMobyTriangles": 265139,
       "totalVisibleTriangles": 961354,
@@ -131,7 +131,7 @@
     {
       "tableIndex": 4,
       "publicNativeLevelIdHint": 4,
-      "worldMeshCount": 238,
+      "worldMeshCount": 242,
       "worldRenderTriangles": 1139103,
       "expandedMobyTriangles": 463930,
       "totalVisibleTriangles": 1603033,
@@ -301,7 +301,7 @@
     {
       "tableIndex": 14,
       "publicNativeLevelIdHint": 14,
-      "worldMeshCount": 221,
+      "worldMeshCount": 223,
       "worldRenderTriangles": 604436,
       "expandedMobyTriangles": 236543,
       "totalVisibleTriangles": 840979,
@@ -573,7 +573,7 @@
     {
       "tableIndex": 32,
       "publicNativeLevelIdHint": 32,
-      "worldMeshCount": 164,
+      "worldMeshCount": 166,
       "worldRenderTriangles": 206369,
       "expandedMobyTriangles": 34310,
       "totalVisibleTriangles": 240679,
@@ -828,7 +828,7 @@
     {
       "tableIndex": 49,
       "publicNativeLevelIdHint": 49,
-      "worldMeshCount": 142,
+      "worldMeshCount": 143,
       "worldRenderTriangles": 108059,
       "expandedMobyTriangles": 5390,
       "totalVisibleTriangles": 113449,

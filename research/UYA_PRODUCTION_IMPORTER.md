@@ -72,6 +72,8 @@ The retired TypeScript `rac3-import-census.mjs` tool exercised the same world bu
 
 All **51** retail main-level rows imported and passed `validateWorld`, spanning campaign, Vid-Comics, multiplayer, split-screen and the multiplayer-menu row with zero authored Mobies.
 
+After the native material-presentation surface split in `749a2f2`, five rows gain only evidence-backed TIE surface buckets: tables 2/4/14/32/49 now import as 217/242/223/166/143 runtime meshes rather than the earlier texture-only 215/238/221/164/142. In every case, each added mesh is a same-texture TIE bucket with a distinct native material presentation. Render-triangle, material, collision, linked-Moby, texture/resource and provenance baselines remain unchanged.
+
 Aggregate retail output across those 51 imports:
 
 - 34,433,048 visible render triangles after expanding linked Moby models
@@ -89,7 +91,7 @@ Committed census artefact:
 `research/generated/rac3-ntscu-original.production-import-census.json`
 
 - bytes: 26,758
-- SHA-256: `95cca47405b7ffe7b5cc6b7c2ce5263a8bcb34880cf042faa7b8395300993489`
+- SHA-256: `efe29838293c8334e41e1313dc5681dbd658287619b16b509bf888ce48ed7ca3`
 
 Reproduce locally with:
 

@@ -570,8 +570,9 @@ public class GcLevelTests
 
         // Render geometry. tfrags now come from every chunk slot (spatial tiles),
         // not just chunk 0 — chunk 0 alone is only the region around the ship.
-        // 2 oc1134 instances are lifted out as animated mobies (below).
-        Assert.Equal(302, world.Meshes.Count);
+        // 2 oc1134 instances are lifted out as animated mobies (below). Native material
+        // presentation splits two same-texture Moby surface buckets without adding triangles.
+        Assert.Equal(304, world.Meshes.Count);
         Assert.Equal(1_860_879, world.TotalRenderTriangles);
         Assert.Equal(21_470, world.TotalDynamicTriangles);
         Assert.Equal(1_882_349, world.TotalRenderTriangles + world.TotalDynamicTriangles);
@@ -583,7 +584,7 @@ public class GcLevelTests
         Assert.Equal((80, 27_384), (Meshes("tfrag"), Tris("tfrag"))); // chunk 0: 77 / 26,192 + chunk 1: 3 / 1,192
         Assert.Equal((79, 674_252), (Meshes("tie"), Tris("tie")));
         Assert.Equal((38, 852_785), (Meshes("shrub"), Tris("shrub")));
-        Assert.Equal((99, 304_186), (Meshes("moby"), Tris("moby")));
+        Assert.Equal((101, 304_186), (Meshes("moby"), Tris("moby")));
         Assert.Equal((1, 576), (Meshes("moby-marker"), Tris("moby-marker")));
         Assert.Equal((4, 1_694), (Meshes("sky"), Tris("sky")));
         Assert.Equal((1, 2), (Meshes("death-plane"), Tris("death-plane")));
@@ -656,8 +657,9 @@ public class GcLevelTests
         Assert.Equal(1.78391385, world.Ship.Yaw, 5);
         Assert.InRange(world.Ship.Y, world.Bounds.Min.Y, world.Bounds.Max.Y);
 
-        // Every tfrag mesh carries the baked per-vertex RGBA (the level's static
-        // lighting / AO) — one float4 per vertex, alpha 1, channels in 0..1.
+        // Every tfrag mesh carries the native baked per-vertex RGBA (the level's static
+        // lighting / AO) — one float4 per vertex, channels in 0..1. Oozla's authored
+        // fourth byte is uniformly 0x80, preserved as 128/255 rather than forced opaque.
         foreach (var m in world.Meshes.Where(m => m.AssetKind == "tfrag"))
         {
             Assert.NotNull(m.Colors);
@@ -665,7 +667,7 @@ public class GcLevelTests
             for (int i = 0; i < m.Colors.Length; i += 4)
             {
                 Assert.InRange(m.Colors[i], 0f, 1f);
-                Assert.Equal(1f, m.Colors[i + 3]);
+                Assert.Equal(128 / 255f, m.Colors[i + 3]);
             }
         }
 
