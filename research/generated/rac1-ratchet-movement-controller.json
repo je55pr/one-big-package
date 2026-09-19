@@ -19,7 +19,9 @@
     "accelerationPerTick": 0.0020833333333333333,
     "walkSteadyStepApprox": 0.015,
     "maximumStep": 0.09500919,
-    "releaseDecelerationPerTick": 0.0033333333333333335,
+    "sustainedRunReleaseDecelerationPerTick": 0.0033333333333333335,
+    "releaseTransitionModel": "steady walk uses the retained four-update empirical 3->0 stop; steady run uses the retained 4->5 handoff before sustained 1/300 decay; partial startup release remains unfitted",
+    "releaseEvidence": "research/generated/rac1-analogue-input-law.json",
     "rawStickLawEvidence": "research/generated/rac1-analogue-input-law.json"
   },
   "airPlanar": {

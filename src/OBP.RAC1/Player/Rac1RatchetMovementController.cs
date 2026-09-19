@@ -50,6 +50,26 @@ public sealed class Rac1RatchetMovementController
     public const double AirDecelerationPerTick = 1d / 1200d;
     public const double CrouchDecelerationPerTick = 0.001802944d;
 
+    // Retained aligned release samples. These are bounded transition witnesses,
+    // not fitted recurrences: walk sequence 3 -> 0 uses the four neutral outputs
+    // below after its ~0.015 plateau, while run sequence 4 -> 5 uses the short
+    // handoff below before the sustained 1/300 sequence-5 decay.
+    private static readonly double[] WalkReleasePlanarSteps =
+    [
+        0.012627291d,
+        0.010271503d,
+        0.00230833d,
+        0d,
+    ];
+
+    private static readonly double[] RunReleaseHandoffPlanarSteps =
+    [
+        0.09500918950800079d,
+        0.09264604078218618d,
+        0.09028356772803570d,
+        0.08573509352062955d,
+    ];
+
     // Fixed yaw witnesses remain in startup sequence 3 at 0.037499697 and
     // enter run sequence 4 at 0.039582664 native unit/tick.
     public const double GroundRunYawMinimumPlanarStep = 0.039582664d;
@@ -95,6 +115,8 @@ public sealed class Rac1RatchetMovementController
     private int _anticipationTicks;
     private int _jumpHeldTicks;
     private int _heldRiseTicks;
+    private Rac1AnalogueSpeedBand _lastGroundedActiveSpeedBand;
+    private int _groundReleaseSampleIndex = -1;
 
     public Rac1RatchetMovementPhase Phase { get; private set; } = Rac1RatchetMovementPhase.Grounded;
     public Rac1RatchetLocomotionState LocomotionState { get; private set; } = Rac1RatchetLocomotionState.Idle;
@@ -136,6 +158,8 @@ public sealed class Rac1RatchetMovementController
         _anticipationTicks = 0;
         _jumpHeldTicks = 0;
         _heldRiseTicks = 0;
+        _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
+        _groundReleaseSampleIndex = -1;
         AnalogueInput = default;
         TargetPlanarStep = 0d;
         Phase = Rac1RatchetMovementPhase.Grounded;
@@ -164,6 +188,21 @@ public sealed class Rac1RatchetMovementController
                     ? WalkPlanarStep
                     : MaximumPlanarStep
             : 0d;
+
+        if (hasIntent && !usesAirPlanarLaw)
+        {
+            _lastGroundedActiveSpeedBand = analogue.SpeedBand;
+            _groundReleaseSampleIndex = -1;
+        }
+        else if (hasIntent || crouching || usesAirPlanarLaw)
+        {
+            _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
+            _groundReleaseSampleIndex = -1;
+        }
+
+        if (!hasIntent && !crouching && !usesAirPlanarLaw && TryApplyGroundReleaseTransition())
+            return;
+
         double targetX = hasIntent ? (output.X / outputLength) * TargetPlanarStep : 0d;
         double targetY = hasIntent ? (output.Y / outputLength) * TargetPlanarStep : 0d;
         double amount = crouching
@@ -173,6 +212,53 @@ public sealed class Rac1RatchetMovementController
                 : usesAirPlanarLaw ? AirDecelerationPerTick : GroundDecelerationPerTick;
 
         MoveToward(ref _planarX, ref _planarY, targetX, targetY, amount);
+    }
+
+    private bool TryApplyGroundReleaseTransition()
+    {
+        double magnitude = System.Math.Sqrt((_planarX * _planarX) + (_planarY * _planarY));
+        if (_groundReleaseSampleIndex < 0)
+        {
+            bool startsWalkStop = _lastGroundedActiveSpeedBand == Rac1AnalogueSpeedBand.Walk &&
+                System.Math.Abs(magnitude - WalkPlanarStep) <= 1e-9d;
+            bool startsRunHandoff = _lastGroundedActiveSpeedBand == Rac1AnalogueSpeedBand.Run &&
+                System.Math.Abs(magnitude - MaximumPlanarStep) <= 1e-9d;
+            if (!startsWalkStop && !startsRunHandoff)
+                return false;
+            _groundReleaseSampleIndex = 0;
+        }
+
+        double[] samples = _lastGroundedActiveSpeedBand == Rac1AnalogueSpeedBand.Walk
+            ? WalkReleasePlanarSteps
+            : RunReleaseHandoffPlanarSteps;
+        if (_groundReleaseSampleIndex >= samples.Length)
+        {
+            _groundReleaseSampleIndex = -1;
+            return false;
+        }
+
+        double targetMagnitude = samples[_groundReleaseSampleIndex++];
+        SetPlanarMagnitude(ref _planarX, ref _planarY, targetMagnitude);
+        if (targetMagnitude <= 1e-12d)
+        {
+            _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
+            _groundReleaseSampleIndex = -1;
+        }
+        return true;
+    }
+
+    private static void SetPlanarMagnitude(ref double x, ref double y, double targetMagnitude)
+    {
+        double magnitude = System.Math.Sqrt((x * x) + (y * y));
+        if (targetMagnitude <= 1e-12d || magnitude <= 1e-12d)
+        {
+            x = 0d;
+            y = 0d;
+            return;
+        }
+        double scale = targetMagnitude / magnitude;
+        x *= scale;
+        y *= scale;
     }
 
     private static void MoveToward(

@@ -148,13 +148,28 @@
         0.00230833,
         0.0
       ],
-      "model": "short non-uniform startup-to-idle stop; do not fit the run deceleration constant to these transition frames"
+      "preReleasePlateauWitness": 0.01499044009698121,
+      "neutralReleaseOutputs": [
+        0.012627291,
+        0.010271503,
+        0.00230833,
+        0.0
+      ],
+      "model": "bounded four-update empirical startup-to-idle stop from the steady walk plateau; do not fit the run deceleration constant or extrapolate this table to partial startup releases"
     },
     "run": {
       "sequencePath": [
         4,
         5
       ],
+      "handoffPlanarSteps": [
+        0.09500918950800079,
+        0.09264604078218618,
+        0.0902835677280357,
+        0.08573509352062955
+      ],
+      "handoffSource": "retained fixed aligned forward_release_zero retail trace; planar position deltas agree with player-state G+0x80/+0x84 displacement words",
+      "handoffSourceSha256": "4706a193cdaf6ba0978efd42008d506b7daaa73624248ddf425b356062460574",
       "canonicalSustainedDecelerationPerTick": 0.0033333333333333335,
       "observedSustainedMedianPerTick": 0.0033324687679476116,
       "observedSustainedRangePerTick": [

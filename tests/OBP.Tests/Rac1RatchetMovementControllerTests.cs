@@ -26,7 +26,35 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
-    public void GroundRelease_DeceleratesToExactlyZero()
+    public void GroundWalkRelease_ReplaysRetainedNonUniformStop()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var walk = new PlayerControlIntent(0, 0.75, false, false);
+        for (int i = 0; i < 12; i++)
+            controller.Step(walk, Grounded);
+
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, controller.PlanarY, 12);
+
+        var release = new PlayerControlIntent(0, 0, false, false);
+        double[] expected =
+        [
+            0.012627291d,
+            0.010271503d,
+            0.00230833d,
+            0d,
+        ];
+
+        foreach (double expectedStep in expected)
+        {
+            var step = controller.Step(release, Grounded);
+            Assert.Equal(expectedStep, step.PlanarMagnitude, 12);
+        }
+
+        Assert.Equal(0d, controller.Step(release, Grounded).PlanarMagnitude, 12);
+    }
+
+    [Fact]
+    public void GroundRunRelease_ReplaysHandoffThenUsesSustainedDecayToExactZero()
     {
         var controller = new Rac1RatchetMovementController();
         var run = new PlayerControlIntent(0, 1, false, false);
@@ -34,14 +62,27 @@ public sealed class Rac1RatchetMovementControllerTests
             controller.Step(run, Grounded);
 
         var release = new PlayerControlIntent(0, 0, false, false);
-        var first = controller.Step(release, Grounded);
+        double[] handoff =
+        [
+            0.09500918950800079d,
+            0.09264604078218618d,
+            0.09028356772803570d,
+            0.08573509352062955d,
+        ];
+
+        foreach (double expectedStep in handoff)
+        {
+            var handoffStep = controller.Step(release, Grounded);
+            Assert.Equal(expectedStep, handoffStep.PlanarMagnitude, 12);
+        }
+
+        var sustained = controller.Step(release, Grounded);
         Assert.Equal(
-            Rac1RatchetMovementController.MaximumPlanarStep -
-            Rac1RatchetMovementController.GroundDecelerationPerTick,
-            first.PlanarMagnitude,
+            handoff[^1] - Rac1RatchetMovementController.GroundDecelerationPerTick,
+            sustained.PlanarMagnitude,
             12);
 
-        Rac1RatchetMovementController.StepResult step = first;
+        Rac1RatchetMovementController.StepResult step = sustained;
         for (int i = 0; i < 40; i++)
             step = controller.Step(release, Grounded);
 

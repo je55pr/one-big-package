@@ -435,10 +435,11 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         group = [row for row in rows if row["segment"] == label]
         first = group[0]
         last = group[-1]
-        max_planar = max(
+        planar_steps = [
             math.hypot(float(row["sample"]["disp_x"]), float(row["sample"]["disp_y"]))
             for row in group
-        )
+        ]
+        max_planar = max(planar_steps)
         dx = float(last["sample"]["pos_x"]) - float(first["sample"]["pos_x"])
         dy = float(last["sample"]["pos_y"]) - float(first["sample"]["pos_y"])
         segments.append({
@@ -449,6 +450,8 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
             "buttons": first.get("buttons", []),
             "netPlanarPositionDelta": math.hypot(dx, dy),
             "maxPlanarDisplacementPerUpdate": max_planar,
+            "planarDisplacementPerUpdate": planar_steps,
+            "sequenceSamples": [int(row["sample"]["sequence"]) for row in group],
             "yawStart": first["sample"]["yaw"],
             "yawEnd": last["sample"]["yaw"],
             "targetYawEnd": last["sample"]["target_yaw"],

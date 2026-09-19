@@ -115,6 +115,8 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
         self.assertEqual(report["sequencePath"], [0, 3, 4])
         self.assertEqual(report["segments"][1]["left"], [127, 64])
         self.assertEqual(report["segments"][1]["maxPlanarDisplacementPerUpdate"], 0.25)
+        self.assertEqual(report["segments"][1]["planarDisplacementPerUpdate"], [0.25, 0.25])
+        self.assertEqual(report["segments"][1]["sequenceSamples"], [3, 4])
         self.assertEqual(report["changingCandidateFields"], [
             {"offset": "0x000", "distinctWords": 3}
         ])

@@ -73,7 +73,7 @@ Once active, the remapped components also extend the source commit's full-scale 
 
 Facing-aligned walk inputs from remapped magnitude 19 through 62 repeatedly settle near `0.015`. Run inputs from magnitude 63 upward accelerate toward the existing `0.09500919` cap. The clean full-scale cardinal sweep reached `0.094995147` and the retained run-band samples reach up to `0.095000645`, within about `1.4e-5` of the earlier canonical maximum witness rather than establishing a different cap. Measured acceleration in both bands remains approximately `1/480` unit/tick; there is no supported magnitude-dependent acceleration term. Run-band input still starts in sequence 3 and reaches sequence 4 only when actual planar displacement crosses the separately recovered startup/run speed boundary, so the input threshold and animation transition are distinct.
 
-Release is stateful. A steady run enters sequence 5 and, after the short 4-to-5 transition, decays at the existing approximately `1/300` unit/tick until exact zero. The fixed aligned witness gives a sustained median decrement of `0.003332469` with sampled range `0.003325785..0.003339829`. Releasing the approximately `0.015` walk plateau instead transitions `3 -> 0` and reaches zero within four sampled updates through a non-uniform stop; that short walk-stop transition is retained as evidence rather than force-fit to the run deceleration constant.
+Release is stateful. A steady run does not apply `1/300` immediately: the retained fixed aligned `forward_release_zero` trace gives the sequence-4/5 handoff planar steps `0.095009189508`, `0.092646040782`, `0.090283567728`, `0.085735093521`. From the following sequence-5 update onward the decay is the existing approximately `1/300` unit/tick until exact zero; the sustained median decrement is `0.003332469` with sampled range `0.003325785..0.003339829`. Releasing the approximately `0.015` walk plateau instead transitions `3 -> 0` through four neutral outputs `0.012627291`, `0.010271503`, `0.00230833`, `0.0`. These are bounded empirical transitions, not fitted recurrences, and are not extrapolated to partially accelerated startup releases.
 
 Large facing changes can temporarily produce planar displacement below the aligned walk plateau while the yaw recurrence catches up. Those turn transients are not additional analogue speed bands.
 
@@ -81,7 +81,7 @@ Large facing changes can temporarily produce planar displacement below the align
 
 From the fixed Veldin savestate, full planar input ramps from rest by approximately `1/480` native unit per tick (`0.002083333...`) until a sustained displacement magnitude of `0.09500919` unit/tick.
 
-Releasing planar input enters the native locomotion-stop path rather than zeroing motion. Flat-ground displacement decays by approximately `1/300` unit/tick (`0.003333333...`) until exactly zero.
+Releasing planar input enters the native locomotion-stop path rather than zeroing motion. The steady walk and steady run boundaries first use the retained transition samples above; only sustained sequence-5 run release is modeled by the canonical `1/300` unit/tick (`0.003333333...`) decay to exact zero. Releases during partially accelerated startup remain on the previous conservative fallback until a retail transition law is recovered.
 
 The production controller preserves those native-tick values. It does not relabel the former DebugPlayer `MoveSpeed=10` value as retail Ratchet speed.
 
