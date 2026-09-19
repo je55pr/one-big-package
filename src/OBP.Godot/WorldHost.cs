@@ -54,11 +54,11 @@ public sealed class WorldHost
         public bool ManageEnvironment { get; init; } = true;
 
         /// <summary>
-        /// When the world declares no <see cref="RuntimeWorld.AmbientAnimations"/>,
-        /// synthesise a gentle drift on the sky shells so something is alive.
-        /// Turn off for frame-stable non-sky captures.
+        /// Opt in to an OBP presentation fallback that synthesises gentle sky
+        /// drift when the world declares no native ambient animation. Disabled by
+        /// default so normal trilogy presentation does not imply recovered motion.
         /// </summary>
-        public bool AnimateSky { get; init; } = true;
+        public bool AnimateSky { get; init; } = false;
     }
 
     private Node? _hostNode;

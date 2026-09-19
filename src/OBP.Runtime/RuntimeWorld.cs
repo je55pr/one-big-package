@@ -174,11 +174,21 @@ public sealed record RuntimeCollisionBlob(int Octants, double[] Positions, int[]
 }
 
 /// <summary>
+/// Provenance for one atmosphere value carried by <see cref="RuntimeEnvironment"/>.
+/// Presentation fallbacks are deliberately distinct from values decoded from retail metadata.
+/// </summary>
+public enum RuntimeAtmosphereSource
+{
+    NativeLevelSettings,
+    NativeEnvironmentSample,
+    PresentationFallback,
+}
+
+/// <summary>
 /// Level atmosphere: kill plane, spherical-gravity flag, background colour,
 /// scene ambient colour, and fog (colour, <b>world-unit</b> near/far distances,
-/// 0..255 near/far visibility intensities). The importer resolves the fog and
-/// ambient from the nearest environment sample point where the level has them,
-/// falling back to the global level settings.
+/// 0..255 near/far visibility intensities). Source tags keep native metadata
+/// distinct from OBP presentation fallbacks.
 /// </summary>
 public sealed record RuntimeEnvironment(
     float DeathHeight,
@@ -189,8 +199,14 @@ public sealed record RuntimeEnvironment(
     float FogFarDistance,
     float FogNearIntensity = 255f,
     float FogFarIntensity = 255f,
-    (double R, double G, double B)? AmbientColour = null)
+    (double R, double G, double B)? AmbientColour = null,
+    RuntimeAtmosphereSource BackgroundSource = RuntimeAtmosphereSource.NativeLevelSettings,
+    RuntimeAtmosphereSource FogSource = RuntimeAtmosphereSource.NativeLevelSettings,
+    RuntimeAtmosphereSource AmbientSource = RuntimeAtmosphereSource.PresentationFallback)
 {
+    /// <summary>Visibility at the near fog plane, 0 (opaque) .. 1 (clear). Retail intensities are 0..255.</summary>
+    public float FogNearVisibility => System.Math.Clamp(FogNearIntensity / 255f, 0f, 1f);
+
     /// <summary>Visibility at the far fog plane, 0 (opaque) .. 1 (clear). Retail intensities are 0..255.</summary>
     public float FogFarVisibility => System.Math.Clamp(FogFarIntensity / 255f, 0f, 1f);
 }
@@ -247,9 +263,9 @@ public enum RuntimeAmbientAnimationKind
 /// <summary>
 /// A neutral, engine-independent description of a looping ambient animation the
 /// host applies without any game-format knowledge. Deterministic: a pure
-/// function of elapsed time. An importer may emit these; when a world emits
-/// none, the host may synthesise a gentle sky drift (see the Godot
-/// <c>WorldHost</c>).
+/// function of elapsed time. An importer may emit these. The Godot host also
+/// exposes an opt-in synthetic sky drift, explicitly as presentation fallback
+/// rather than native animation evidence.
 /// </summary>
 /// <param name="TargetKind">The <see cref="RuntimeMesh.AssetKind"/> the animation applies to ("sky", "tfrag", …).</param>
 /// <param name="TargetTextureId">A specific <see cref="RuntimeMesh.TextureId"/>, or null for every mesh of <paramref name="TargetKind"/>.</param>

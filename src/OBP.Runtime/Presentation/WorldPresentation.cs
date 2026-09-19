@@ -15,77 +15,80 @@ public static class WorldPresentation
     /// <summary>Clear colour when a level defines neither a background nor a fog colour.</summary>
     public static readonly Rgb DefaultBackground = new(0.05, 0.06, 0.09);
 
-    /// <summary>Depth-fog ease-in curve — near geometry stays clear, the wall builds with distance.</summary>
-    public const double FogCurve = 1.6;
+    /// <summary>Linear depth interpolation is the closest simple Godot mapping to the recovered PS2 fog ramp.</summary>
+    public const double FogCurve = 1.0;
 
     /// <summary>
-    /// Tone-mapper for the world viewport. AgX rolls bright texels and sky off
-    /// smoothly instead of the hard clip a linear map gives, which is the single
-    /// biggest "pleasant" win over the historical default. Change here to retune
-    /// the whole trilogy at once.
+    /// Keep world tone mapping neutral. Atmosphere work should not masquerade as
+    /// recovered native post-processing; any future grade belongs to an explicit
+    /// presentation option.
     /// </summary>
-    public const ToneMapMode WorldToneMap = ToneMapMode.Agx;
+    public const ToneMapMode WorldToneMap = ToneMapMode.Linear;
 
     /// <summary>
-    /// The load-time presentation for a world. <paramref name="bounds"/> is the
-    /// full world bounds; its diagonal stretches the fog end-plane past the level
-    /// so distant scenery still reads through heavy fog.
+    /// Resolve load-time atmosphere without inventing level-specific tuning.
+    /// Native metadata is passed through directly; missing background/ambient
+    /// values use explicit presentation fallbacks and carry that provenance.
     /// </summary>
     public static PresentationState Resolve(RuntimeEnvironment? env, ObpBounds bounds)
     {
-        Rgb background =
-            env?.BackgroundColour is { } bg ? Rgb.From(bg)
-            : env?.FogColour is { } fc ? Rgb.From(fc)
-            : DefaultBackground;
+        Rgb background;
+        RuntimeAtmosphereSource backgroundSource;
+        if (env?.BackgroundColour is { } bg)
+        {
+            background = Rgb.From(bg).Clamp01();
+            backgroundSource = env.BackgroundSource;
+        }
+        else if (env?.FogColour is { } fc)
+        {
+            background = Rgb.From(fc).Clamp01();
+            backgroundSource = env.FogSource;
+        }
+        else
+        {
+            background = DefaultBackground;
+            backgroundSource = RuntimeAtmosphereSource.PresentationFallback;
+        }
 
-        // The nearest env sample's baked "hero" colour is the ambient the game
-        // lights the player with; lift it toward white so unlit (unshaded) world
-        // geometry keeps its decoded colour instead of being crushed by a dim
-        // ambient. Mirrors the historical ConfigureEnvironment behaviour.
-        Rgb ambient = env?.AmbientColour is { } a
-            ? new Rgb(0.55 + (0.45 * a.R), 0.55 + (0.45 * a.G), 0.55 + (0.45 * a.B))
-            : Rgb.White;
+        Rgb ambient = env?.AmbientColour is { } a ? Rgb.From(a).Clamp01() : Rgb.White;
+        RuntimeAtmosphereSource ambientSource = env?.AmbientColour is not null
+            ? env.AmbientSource
+            : RuntimeAtmosphereSource.PresentationFallback;
+        var fog = ResolveFog(env, bounds);
 
         return new PresentationState(
             background,
             ambient,
             1.0,
-            ResolveFog(env, bounds),
-            ResolveToneMap(env),
-            ResolveGrade(env));
+            fog,
+            ToneMap.Neutral,
+            ColourGrade.Neutral,
+            backgroundSource,
+            ambientSource,
+            fog.Enabled ? env!.FogSource : null);
     }
 
     /// <summary>
-    /// AgX tone-map plus a small exposure nudge from the level's baked ambient:
-    /// dark planets open up a little, bright ones pull back, so worlds read at a
-    /// more consistent brightness without touching the decoded colours.
+    /// Compatibility hook retained for callers that previously asked for a
+    /// presentation tone map. Atmosphere recovery keeps it neutral.
     /// </summary>
     public static ToneMap ResolveToneMap(RuntimeEnvironment? env)
     {
-        double exposure = 1.0;
-        if (env?.AmbientColour is { } a)
-        {
-            double ambLum = System.Math.Clamp(new Rgb(a.R, a.G, a.B).Luminance, 0.0, 1.0);
-            exposure = System.Math.Clamp(1.0 + ((0.32 - ambLum) * 0.5), 0.9, 1.15);
-        }
-
-        return new ToneMap(WorldToneMap, exposure, 1.0);
+        _ = env;
+        return ToneMap.Neutral;
     }
 
-    /// <summary>
-    /// A fixed, gentle post-tone-map lift — the unshaded PS2 palette is a touch
-    /// flat, so a small contrast + saturation bump helps it read. Kept subtle and
-    /// level-independent so it never fights the decoded look.
-    /// </summary>
+    /// <summary>Atmosphere recovery does not apply a colour grade.</summary>
     public static ColourGrade ResolveGrade(RuntimeEnvironment? env)
     {
         _ = env;
-        return new ColourGrade(1.0, 1.04, 1.05);
+        return ColourGrade.Neutral;
     }
 
     /// <summary>Load-time depth fog straight from the level settings / nearest fog sample.</summary>
     public static FogState ResolveFog(RuntimeEnvironment? env, ObpBounds bounds)
     {
+        _ = bounds; // retained in the public contract; native fog planes are not stretched to fit OBP bounds.
         if (env?.FogColour is not { } fc
             || env.FogFarDistance <= env.FogNearDistance
             || env.FogFarDistance <= 0)
@@ -93,33 +96,31 @@ public static class WorldPresentation
             return FogState.Disabled;
         }
 
-        return BuildFog(Rgb.From(fc), env.FogNearDistance, env.FogFarDistance, env.FogFarVisibility, bounds.Diagonal);
+        return BuildFog(Rgb.From(fc), env.FogNearDistance, env.FogFarDistance, env.FogFarVisibility);
     }
 
     /// <summary>
     /// Per-frame depth fog for a region already resolved by <see cref="EnvResolver"/>.
-    /// Same maths as <see cref="ResolveFog"/>; the host applies begin/end/density
-    /// and leaves the curve as the load-time value.
+    /// Godot cannot express the PS2's independent endpoint visibility exactly,
+    /// so this simple mapping preserves the native colour and near/far planes and
+    /// derives density only from the recovered far visibility.
     /// </summary>
     public static FogState FogFromResolved(EnvResolved r, double worldDiagonal)
     {
+        _ = worldDiagonal;
         if (!r.HasFog || r.FogFar <= r.FogNear || r.FogFar <= 0)
         {
             return FogState.Disabled;
         }
 
-        return BuildFog(r.FogColour, r.FogNear, r.FogFar, r.FogFarVisibility, worldDiagonal);
+        return BuildFog(r.FogColour, r.FogNear, r.FogFar, r.FogFarVisibility);
     }
 
-    private static FogState BuildFog(Rgb colour, double near, double far, double farVisibility, double worldDiagonal)
+    private static FogState BuildFog(Rgb colour, double near, double far, double farVisibility)
     {
-        double begin = System.Math.Max(1.0, near);
-        double end = System.Math.Max(System.Math.Max(begin + 1.0, far), worldDiagonal * 1.4);
-
-        // Retail fog carries a far-plane visibility (0 opaque .. 1 clear); most
-        // planets stay partly clear at the far plane, so drive Godot's density
-        // from (1 - far visibility) and keep it a tint rather than a flat wall.
-        double density = System.Math.Clamp(((1.0 - farVisibility) * 0.5) + 0.04, 0.04, 0.5);
-        return new FogState(true, colour, begin, end, density, FogCurve);
+        double begin = System.Math.Max(0.0, near);
+        double end = System.Math.Max(begin + 0.001, far);
+        double density = System.Math.Clamp(1.0 - farVisibility, 0.0, 1.0);
+        return new FogState(true, colour.Clamp01(), begin, end, density, FogCurve);
     }
 }

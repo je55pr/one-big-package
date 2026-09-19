@@ -266,6 +266,7 @@ public static class GcWorldImport
             float fogFar = s.FogFarDistance * settingsFogScale;
             float fogNearI = s.FogNearIntensity;
             float fogFarI = s.FogFarIntensity;
+            var fogSource = RuntimeAtmosphereSource.NativeLevelSettings;
             (double R, double G, double B)? ambient = null;
 
             // Environment sample points are per-region atmosphere probes. Use the
@@ -296,11 +297,24 @@ public static class GcWorldImport
                 fogFar = ef.FarDistance;
                 fogNearI = ef.NearIntensity;
                 fogFarI = ef.FarIntensity;
+                fogSource = RuntimeAtmosphereSource.NativeEnvironmentSample;
             }
 
             environment = new RuntimeEnvironment(
-                s.DeathHeight, s.IsSphericalWorld, s.BackgroundColour, fogColour,
-                fogNear, fogFar, fogNearI, fogFarI, ambient);
+                DeathHeight: s.DeathHeight,
+                IsSphericalWorld: s.IsSphericalWorld,
+                BackgroundColour: s.BackgroundColour,
+                FogColour: fogColour,
+                FogNearDistance: fogNear,
+                FogFarDistance: fogFar,
+                FogNearIntensity: fogNearI,
+                FogFarIntensity: fogFarI,
+                AmbientColour: ambient,
+                BackgroundSource: RuntimeAtmosphereSource.NativeLevelSettings,
+                FogSource: fogSource,
+                AmbientSource: ambient is not null
+                    ? RuntimeAtmosphereSource.NativeEnvironmentSample
+                    : RuntimeAtmosphereSource.PresentationFallback);
 
             // Native Z-up -> OBP Y-up; native rotation about +Z becomes yaw about +Y.
             ship = new RuntimeSpawn(s.ShipPosition.X, s.ShipPosition.Z, s.ShipPosition.Y, s.ShipRotationZ);

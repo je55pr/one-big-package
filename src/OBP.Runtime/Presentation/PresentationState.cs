@@ -79,7 +79,10 @@ public sealed record PresentationState(
     double AmbientEnergy,
     FogState Fog,
     ToneMap ToneMap,
-    ColourGrade Grade);
+    ColourGrade Grade,
+    RuntimeAtmosphereSource BackgroundSource,
+    RuntimeAtmosphereSource AmbientSource,
+    RuntimeAtmosphereSource? FogSource);
 
 /// <summary>
 /// Per-region lighting / fog resolved at one world point (the player or camera),

@@ -103,8 +103,25 @@ public static partial class Rac3WorldImport
 
         if (double.IsPositiveInfinity(minX)) { minX = minY = minZ = -1; maxX = maxY = maxZ = 1; }
         var bounds = new ObpBounds(new Vec3(minX, minY, minZ), new Vec3(maxX, maxY, maxZ));
-        var environment = new RuntimeEnvironment(settings.DeathHeight, settings.IsSphericalWorld, settings.BackgroundColour, settings.FogColour,
-            settings.FogNearDistance, settings.FogFarDistance, settings.FogNearIntensity, settings.FogFarIntensity);
+
+        // UYA retail corroborates the shared GC/UYA 0x5c settings prefix. OBP
+        // applies the same /1024 presentation conversion used by R&C1/GC so
+        // RuntimeEnvironment stays in world units; exact UYA native distance-unit
+        // provenance remains provisional (research/WORLD_ATMOSPHERE.md).
+        const float settingsFogScale = 1f / 1024f;
+        var environment = new RuntimeEnvironment(
+            DeathHeight: settings.DeathHeight,
+            IsSphericalWorld: settings.IsSphericalWorld,
+            BackgroundColour: settings.BackgroundColour,
+            FogColour: settings.FogColour,
+            FogNearDistance: settings.FogNearDistance * settingsFogScale,
+            FogFarDistance: settings.FogFarDistance * settingsFogScale,
+            FogNearIntensity: settings.FogNearIntensity,
+            FogFarIntensity: settings.FogFarIntensity,
+            AmbientColour: null,
+            BackgroundSource: RuntimeAtmosphereSource.NativeLevelSettings,
+            FogSource: RuntimeAtmosphereSource.NativeLevelSettings,
+            AmbientSource: RuntimeAtmosphereSource.PresentationFallback);
         int materialCount = texByKind.Values.Sum(x => x.Count) + (skyShellCount > 0 ? textures.Count(t => t.AssetKind == "sky") + 1 : 0);
         // Shared GC/UYA/DL settings-layout compatibility: native Z-up ship/start transform -> OBP Y-up.
         // UYA retail corroborates the 0x5c structure and all-row value pattern; exact executable field-name provenance remains open.

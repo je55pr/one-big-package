@@ -7,11 +7,11 @@ namespace OBP.Godot;
 
 /// <summary>
 /// Translates the engine-independent <see cref="PresentationState"/> /
-/// <see cref="EnvResolved"/> onto a Godot <see cref="GodotEnvironment"/>: the
-/// clear colour, scene ambient, tone-map + exposure, the gentle colour grade,
-/// and depth fog. All of the decision-making is in
-/// <see cref="WorldPresentation"/> (unit-tested); this is purely the Godot-facing
-/// side. Exact PS2 GS blend / fog is not reproduced.
+/// <see cref="EnvResolved"/> onto a Godot <see cref="GodotEnvironment"/>: clear
+/// colour, scene ambient and depth fog. Tone-map/grade fields remain neutral
+/// compatibility hooks. All decision-making is in <see cref="WorldPresentation"/>
+/// (unit-tested); this is purely the Godot-facing side. Exact PS2 GS fog is not
+/// reproduced.
 /// </summary>
 public static class PresentationEnvironment
 {
@@ -57,17 +57,13 @@ public static class PresentationEnvironment
     }
 
     /// <summary>
-    /// Per-frame: apply a resolved region — lift the scene ambient toward white
-    /// (so the unshaded world keeps its decoded colour) and, only where the
-    /// region defines fog, override the depth fog. The load-time ease-in curve is
-    /// left untouched.
+    /// Per-frame: apply the recovered region ambient directly and, only where
+    /// the region defines fog, override the depth fog. Unshaded world materials
+    /// are unaffected by scene ambient, so no synthetic white lift is needed.
     /// </summary>
     public static void ApplyResolvedRegion(GodotEnvironment env, EnvResolved r, double worldDiagonal)
     {
-        env.AmbientLightColor = new Color(
-            0.5f + (0.5f * (float)r.Ambient.R),
-            0.5f + (0.5f * (float)r.Ambient.G),
-            0.5f + (0.5f * (float)r.Ambient.B));
+        env.AmbientLightColor = ToColor(r.Ambient.Clamp01());
 
         var fog = WorldPresentation.FogFromResolved(r, worldDiagonal);
         if (fog.Enabled)

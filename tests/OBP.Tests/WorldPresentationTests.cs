@@ -34,59 +34,48 @@ public class WorldPresentationTests
     [Fact]
     public void Background_PrefersExplicitColour_ThenFog_ThenDefault()
     {
-        Assert.Equal(new Rgb(0.1, 0.2, 0.3),
-            WorldPresentation.Resolve(Env(background: (0.1, 0.2, 0.3), fog: (0.9, 0.9, 0.9)), UnitBounds).Background);
+        var explicitBackground = WorldPresentation.Resolve(
+            Env(background: (0.1, 0.2, 0.3), fog: (0.9, 0.9, 0.9)), UnitBounds);
+        Assert.Equal(new Rgb(0.1, 0.2, 0.3), explicitBackground.Background);
+        Assert.Equal(RuntimeAtmosphereSource.NativeLevelSettings, explicitBackground.BackgroundSource);
 
-        Assert.Equal(new Rgb(0.4, 0.5, 0.6),
-            WorldPresentation.Resolve(Env(fog: (0.4, 0.5, 0.6)), UnitBounds).Background);
+        var fogBackground = WorldPresentation.Resolve(Env(fog: (0.4, 0.5, 0.6)), UnitBounds);
+        Assert.Equal(new Rgb(0.4, 0.5, 0.6), fogBackground.Background);
+        Assert.Equal(RuntimeAtmosphereSource.NativeLevelSettings, fogBackground.BackgroundSource);
 
-        Assert.Equal(WorldPresentation.DefaultBackground,
-            WorldPresentation.Resolve(Env(), UnitBounds).Background);
+        var fallback = WorldPresentation.Resolve(Env(), UnitBounds);
+        Assert.Equal(WorldPresentation.DefaultBackground, fallback.Background);
+        Assert.Equal(RuntimeAtmosphereSource.PresentationFallback, fallback.BackgroundSource);
 
-        Assert.Equal(WorldPresentation.DefaultBackground,
-            WorldPresentation.Resolve(null, UnitBounds).Background);
+        Assert.Equal(WorldPresentation.DefaultBackground, WorldPresentation.Resolve(null, UnitBounds).Background);
     }
 
     [Fact]
-    public void Ambient_LiftsTowardWhite_AndDefaultsToWhite()
+    public void Ambient_PreservesRecoveredValue_AndLabelsWhiteFallback()
     {
-        Assert.Equal(new Rgb(0.55, 0.55, 0.55),
-            WorldPresentation.Resolve(Env(ambient: (0, 0, 0)), UnitBounds).Ambient);
+        var native = Env(ambient: (0.11, 0.18, 0.20)) with
+        {
+            AmbientSource = RuntimeAtmosphereSource.NativeEnvironmentSample,
+        };
+        var nativeState = WorldPresentation.Resolve(native, UnitBounds);
+        Assert.Equal(new Rgb(0.11, 0.18, 0.20), nativeState.Ambient);
+        Assert.Equal(RuntimeAtmosphereSource.NativeEnvironmentSample, nativeState.AmbientSource);
 
-        Assert.Equal(Rgb.White, WorldPresentation.Resolve(Env(ambient: (1, 1, 1)), UnitBounds).Ambient);
-
-        Assert.Equal(Rgb.White, WorldPresentation.Resolve(Env(), UnitBounds).Ambient);
-        Assert.Equal(1.0, WorldPresentation.Resolve(Env(), UnitBounds).AmbientEnergy);
+        var fallback = WorldPresentation.Resolve(Env(), UnitBounds);
+        Assert.Equal(Rgb.White, fallback.Ambient);
+        Assert.Equal(RuntimeAtmosphereSource.PresentationFallback, fallback.AmbientSource);
+        Assert.Equal(1.0, fallback.AmbientEnergy);
     }
 
     [Fact]
-    public void ToneMap_IsAgx_WithNeutralExposure_WhenNoAmbient()
+    public void Atmosphere_DoesNotInventToneMapExposureOrGrade()
     {
-        var tm = WorldPresentation.Resolve(Env(), UnitBounds).ToneMap;
-        Assert.Equal(ToneMapMode.Agx, tm.Mode);
-        Assert.Equal(1.0, tm.Exposure);
-    }
+        var state = WorldPresentation.Resolve(Env(ambient: (0.11, 0.18, 0.20)), UnitBounds);
 
-    [Fact]
-    public void ToneMap_Exposure_OpensDarkPlanetsAndPullsBackBrightOnes()
-    {
-        double dark = WorldPresentation.ResolveToneMap(Env(ambient: (0.11, 0.18, 0.20))).Exposure;
-        double bright = WorldPresentation.ResolveToneMap(Env(ambient: (0.7, 0.7, 0.7))).Exposure;
-
-        Assert.True(dark > 1.0, $"dark ambient should raise exposure, got {dark}");
-        Assert.True(bright < 1.0, $"bright ambient should lower exposure, got {bright}");
-        Assert.InRange(dark, 0.9, 1.15);
-        Assert.InRange(bright, 0.9, 1.15);
-    }
-
-    [Fact]
-    public void Grade_IsAGentleFixedLift()
-    {
-        var grade = WorldPresentation.Resolve(Env(ambient: (0.2, 0.2, 0.2)), UnitBounds).Grade;
-        Assert.False(grade.IsNeutral);
-        Assert.Equal(1.0, grade.Brightness);
-        Assert.InRange(grade.Contrast, 1.0, 1.15);
-        Assert.InRange(grade.Saturation, 1.0, 1.15);
+        Assert.Equal(ToneMap.Neutral, state.ToneMap);
+        Assert.Equal(ColourGrade.Neutral, state.Grade);
+        Assert.Equal(ToneMap.Neutral, WorldPresentation.ResolveToneMap(Env(ambient: (0.7, 0.7, 0.7))));
+        Assert.Equal(ColourGrade.Neutral, WorldPresentation.ResolveGrade(Env()));
     }
 
     [Theory]
@@ -100,24 +89,28 @@ public class WorldPresentationTests
     }
 
     [Fact]
-    public void Fog_EndPlane_StretchedPastTheWorldDiagonal()
+    public void Fog_PreservesRecoveredNearAndFarPlanes()
     {
-        // near/far are tiny but the world is large: the end plane must reach past
-        // 1.4x the diagonal so distant scenery still reads.
         var big = new ObpBounds(new Vec3(0, 0, 0), new Vec3(1000, 0, 0));
-        var fog = WorldPresentation.ResolveFog(Env(fog: (0.5, 0.5, 0.5), fogNear: 5, fogFar: 20), big);
+        var environment = Env(fog: (0.5, 0.5, 0.5), fogNear: 5, fogFar: 20) with
+        {
+            FogSource = RuntimeAtmosphereSource.NativeEnvironmentSample,
+        };
+        var state = WorldPresentation.Resolve(environment, big);
+        var fog = state.Fog;
 
         Assert.True(fog.Enabled);
         Assert.Equal(5.0, fog.Begin);
-        Assert.Equal(1000.0 * 1.4, fog.End, precision: 6);
-        Assert.Equal(WorldPresentation.FogCurve, fog.Curve);
+        Assert.Equal(20.0, fog.End, precision: 6);
+        Assert.Equal(1.0, fog.Curve);
+        Assert.Equal(RuntimeAtmosphereSource.NativeEnvironmentSample, state.FogSource);
     }
 
     [Theory]
-    [InlineData(255f, 0.04)]      // fully visible at the far plane -> minimum density
-    [InlineData(0f, 0.5)]         // opaque at the far plane -> clamped maximum
-    [InlineData(128f, 0.289020)]  // (1 - 128/255) * 0.5 + 0.04
-    public void Fog_Density_DrivenByFarVisibility_AndClamped(float farIntensity, double expected)
+    [InlineData(255f, 0.0)]
+    [InlineData(0f, 1.0)]
+    [InlineData(128f, 0.498039)]
+    public void Fog_Density_UsesRecoveredFarVisibility(float farIntensity, double expected)
     {
         var fog = WorldPresentation.ResolveFog(
             Env(fog: (0.5, 0.5, 0.5), fogNear: 5, fogFar: 400, fogFarIntensity: farIntensity), UnitBounds);
@@ -142,8 +135,8 @@ public class WorldPresentationTests
         Assert.True(fog.Enabled);
         Assert.Equal(new Rgb(0.6, 0.65, 0.47), fog.Colour);
         Assert.Equal(50.0, fog.Begin);
-        Assert.Equal(System.Math.Max(250.0, UnitBounds.Diagonal * 1.4), fog.End, precision: 6);
-        Assert.InRange(fog.Density, 0.04, 0.5);
+        Assert.Equal(250.0, fog.End, precision: 6);
+        Assert.Equal(0.5, fog.Density, precision: 6);
     }
 
     [Fact]

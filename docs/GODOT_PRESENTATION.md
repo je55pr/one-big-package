@@ -30,8 +30,9 @@ The single owner of one loaded world's Godot side:
   under the caller's world root;
 - the world `WorldEnvironment` and the "hero" `DirectionalLight3D`;
 - the camera-followed sky root;
-- the resolved **ambient animations** (`RuntimeWorld.AmbientAnimations`, or a
-  synthesised gentle sky drift when a world declares none);
+- the resolved **ambient animations** (`RuntimeWorld.AmbientAnimations`); an
+  optional synthetic sky drift exists only as an explicitly enabled presentation
+  fallback and is disabled by default;
 - **the one per-frame presentation tick** — `Tick(delta, cameraGlobalPos)` —
   which advances animated mobies, keeps the sky centred on the camera, applies
   the ambient animations, and resolves + applies the region hero light /
@@ -59,17 +60,17 @@ Pure, `OBP.Godot`-free, unit-tested (`tests/OBP.Tests/WorldPresentationTests`,
 
 | Type | Role |
 |---|---|
-| `WorldPresentation.Resolve` | `RuntimeEnvironment` → `PresentationState`: background (explicit → fog colour → default), ambient lift, load-time fog. |
-| `WorldPresentation.ResolveFog` / `FogFromResolved` | the one fog resolver — begin/end/density/curve, far-visibility drive, end-plane stretched past `bounds.Diagonal * 1.4`. |
+| `WorldPresentation.Resolve` | `RuntimeEnvironment` → `PresentationState`: native background/ambient pass-through, explicitly tagged fallbacks, load-time fog. |
+| `WorldPresentation.ResolveFog` / `FogFromResolved` | preserves recovered colour + near/far planes; Godot density is the bounded approximation `1 - farVisibility`. |
 | `EnvResolver.Evaluate` | nearest env sample + fog fallback + env-transition doorway blend at a world point (`research/GC_LIGHTING.md`). |
 | `AmbientAnimator.Sample` | `RuntimeAmbientAnimation` (`UvScroll` / `Spin`) → `AmbientAnimationSample` at time _t_. Deterministic. |
-| `WorldPresentation.ResolveToneMap` | AgX + an exposure nudge from the baked ambient (dark planets open, bright pull back). |
-| `WorldPresentation.ResolveGrade` | a small fixed post-tone-map contrast/saturation lift. |
+| `WorldPresentation.ResolveToneMap` / `ResolveGrade` | neutral compatibility hooks; atmosphere recovery does not claim native post-processing. |
 | `PresentationState` / `EnvResolved` / `FogState` / `ToneMap` / `ColourGrade` / `Rgb` | engine-independent result records. |
 
 `OBP.Godot.PresentationEnvironment` translates that onto a Godot `Environment`
-(clear colour, ambient, tone-map + exposure, adjustment grade, depth fog) at load
-and applies the per-region ambient lift + fog each frame.
+(clear colour, ambient and depth fog) at load and applies recovered per-region
+ambient + fog each frame. See `research/WORLD_ATMOSPHERE.md` for provenance and
+the deliberate approximation boundary.
 
 ## Materials — `OBP.Godot.WorldMaterialFactory`
 

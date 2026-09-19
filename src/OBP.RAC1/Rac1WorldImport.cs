@@ -85,7 +85,11 @@ public static partial class Rac1WorldImport
             FogNearDistance: settings.FogNearDistance * FogDistanceScale,
             FogFarDistance: settings.FogFarDistance * FogDistanceScale,
             FogNearIntensity: settings.FogNearIntensity,
-            FogFarIntensity: settings.FogFarIntensity);
+            FogFarIntensity: settings.FogFarIntensity,
+            AmbientColour: null,
+            BackgroundSource: RuntimeAtmosphereSource.NativeLevelSettings,
+            FogSource: RuntimeAtmosphereSource.NativeLevelSettings,
+            AmbientSource: RuntimeAtmosphereSource.PresentationFallback);
         var ship = new RuntimeSpawn(
             settings.ShipPosition.X,
             settings.ShipPosition.Z,
