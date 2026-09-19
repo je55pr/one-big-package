@@ -21,8 +21,10 @@ and is disabled for normal world loads.
 
 R&C1, GC and sampled UYA levels all expose native level-settings background RGB.
 When that value is absent, OBP may use the recovered fog colour as the clear
-colour. Only when neither exists does it use the dark blue
-`WorldPresentation.DefaultBackground`, tagged `PresentationFallback`.
+colour, but that clear-colour choice is tagged `PresentationFallback` because
+native evidence only establishes the fog use of that RGB. When neither exists it
+uses the dark blue `WorldPresentation.DefaultBackground`, also tagged
+`PresentationFallback`.
 
 ## Fog
 

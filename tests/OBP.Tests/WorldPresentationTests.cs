@@ -41,7 +41,7 @@ public class WorldPresentationTests
 
         var fogBackground = WorldPresentation.Resolve(Env(fog: (0.4, 0.5, 0.6)), UnitBounds);
         Assert.Equal(new Rgb(0.4, 0.5, 0.6), fogBackground.Background);
-        Assert.Equal(RuntimeAtmosphereSource.NativeLevelSettings, fogBackground.BackgroundSource);
+        Assert.Equal(RuntimeAtmosphereSource.PresentationFallback, fogBackground.BackgroundSource);
 
         var fallback = WorldPresentation.Resolve(Env(), UnitBounds);
         Assert.Equal(WorldPresentation.DefaultBackground, fallback.Background);

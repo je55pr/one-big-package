@@ -42,7 +42,9 @@ public static class WorldPresentation
         else if (env?.FogColour is { } fc)
         {
             background = Rgb.From(fc).Clamp01();
-            backgroundSource = env.FogSource;
+            // Reusing fog RGB as a clear colour is an OBP presentation choice,
+            // even though the colour value itself came from native metadata.
+            backgroundSource = RuntimeAtmosphereSource.PresentationFallback;
         }
         else
         {

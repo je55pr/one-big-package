@@ -403,7 +403,7 @@ public sealed class WorldHost
             }
         }
 
-        // Scene ambient lift + per-region fog override.
+        // Native per-region ambient + fog override.
         PresentationEnvironment.ApplyResolvedRegion(env, r, World.Bounds.Diagonal);
     }
 }
