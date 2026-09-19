@@ -1,20 +1,23 @@
 param(
     [Parameter(Mandatory=$true, Position=0)][long]$DialogHandle,
-    [Parameter(Mandatory=$true, Position=1)][string]$RelativePath
+    [Parameter(Mandatory=$true, Position=1)][string]$MoviePath
 )
 
-Add-Type -AssemblyName UIAutomationClient
-Add-Type -AssemblyName UIAutomationTypes
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public static class Rac1PickerNative {
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
-    public static extern bool SetDlgItemText(IntPtr hDlg, int nIDDlgItem, string lpString);
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hWnd);
     [DllImport("user32.dll")]
     public static extern IntPtr GetDlgItem(IntPtr hDlg, int nIDDlgItem);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+    public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr childAfter, string className, string windowName);
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")]
+    public static extern IntPtr SetFocus(IntPtr hWnd);
     [DllImport("user32.dll")]
     public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 }
@@ -23,44 +26,31 @@ public static class Rac1PickerNative {
 $handle = [IntPtr]$DialogHandle
 if (-not [Rac1PickerNative]::IsWindow($handle)) { throw 'input-recording picker handle is not valid' }
 
-# A native QFileDialog can retain a prior filename. Clear it first so path
-# components are never concatenated with stale text.
-if (-not [Rac1PickerNative]::SetDlgItemText($handle, 1148, '')) {
-    throw 'failed to clear input-recording filename field'
+$absolutePath = [System.IO.Path]::GetFullPath($MoviePath)
+if (-not [System.IO.File]::Exists($absolutePath)) {
+    throw ('input-recording movie does not exist: ' + $absolutePath)
 }
 
-$dialog = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
-if (-not $dialog) { throw 'UI Automation could not attach to input-recording picker' }
+# PCSX2's native QFileDialog remembers directories and virtualizes off-screen
+# rows. Target the real filename Edit instead: clear stale text first, type the
+# already-resolved absolute path as keyboard input so Qt receives its normal
+# change events, then accept it with Enter.
+$comboEx = [Rac1PickerNative]::GetDlgItem($handle, 1148)
+$combo = [Rac1PickerNative]::FindWindowEx($comboEx, [IntPtr]::Zero, 'ComboBox', $null)
+$edit = [Rac1PickerNative]::FindWindowEx($combo, [IntPtr]::Zero, 'Edit', $null)
+if ($edit -eq [IntPtr]::Zero) { throw 'input-recording filename edit control not found' }
 
-$parts = @($RelativePath -split '[\\/]' | Where-Object { $_.Length -gt 0 })
-if ($parts.Count -eq 0) { throw 'relative movie path has no components' }
+[Rac1PickerNative]::SetForegroundWindow($handle) | Out-Null
+[Rac1PickerNative]::SetFocus($edit) | Out-Null
+Start-Sleep -Milliseconds 80
+[System.Windows.Forms.SendKeys]::SendWait('^a')
+[System.Windows.Forms.SendKeys]::SendWait('{BACKSPACE}')
+$escapedPath = $absolutePath -replace '([+^%~()\[\]{}])', '{$1}'
+[System.Windows.Forms.SendKeys]::SendWait($escapedPath)
+[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')
 
-$started = $false
-for ($index = 0; $index -lt $parts.Count; $index++) {
-    $part = $parts[$index]
-    $nameCondition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::NameProperty, $part)
-    $typeCondition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-        [System.Windows.Automation.ControlType]::ListItem)
-    $condition = New-Object System.Windows.Automation.AndCondition($nameCondition, $typeCondition)
-    $item = $dialog.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    if (-not $item) {
-        # QFileDialog remembers its last directory. Leading components may
-        # therefore already be represented by the current directory itself.
-        if (-not $started -and $index -lt ($parts.Count - 1)) { continue }
-        throw ('picker path component not found: ' + $part)
-    }
-
-    $started = $true
-    $invoke = $item.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern)
-    $invoke.Invoke()
-    Start-Sleep -Milliseconds 450
-}
-
-# Invoking an ExistingFile item normally accepts the QFileDialog. Some Qt
-# builds only select it, so explicitly click the native OK/Open button as a
-# deterministic fallback before declaring the replay picker stuck.
+# Enter normally accepts the ExistingFile path. Preserve the newer source
+# fallback for Qt builds that leave the picker open after selection.
 for ($i = 0; $i -lt 5 -and [Rac1PickerNative]::IsWindow($handle); $i++) {
     Start-Sleep -Milliseconds 100
 }

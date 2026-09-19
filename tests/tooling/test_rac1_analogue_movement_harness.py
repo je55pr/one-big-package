@@ -3,6 +3,7 @@ import json
 import pathlib
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "tools" / "rac1-analogue-movement-harness.py"
@@ -36,6 +37,33 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
             second = 570 + 36
             self.assertEqual(data[second:second + 6], bytes((255, 255, 1, 254, 64, 192)))
             self.assertTrue(pathlib.Path(f"{movie}_SaveState.p2s").exists())
+
+    def test_picker_helper_receives_absolute_movie_path(self):
+        HARNESS.CAPTURES.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=HARNESS.CAPTURES) as directory:
+            root = pathlib.Path(directory)
+            movie = root / "trial.p2m2"
+            runner = root / "pwsh-runner.cmd"
+            helper = root / "picker.ps1"
+            movie.write_bytes(b"movie")
+            runner.write_text("", encoding="utf-8")
+            helper.write_text("", encoding="utf-8")
+
+            previous_runner = HARNESS.PWSH_RUNNER
+            previous_helper = HARNESS.PICKER_HELPER
+            try:
+                HARNESS.PWSH_RUNNER = runner
+                HARNESS.PICKER_HELPER = helper
+                completed = mock.Mock(returncode=0, stdout="", stderr="")
+                with mock.patch.object(HARNESS.subprocess, "run", return_value=completed) as run:
+                    HARNESS._invoke_picker_path(1234, movie)
+
+                argv = run.call_args.args[0]
+                self.assertEqual(argv[-1], str(movie.resolve()))
+                self.assertEqual(run.call_args.kwargs["cwd"], HARNESS.ROOT)
+            finally:
+                HARNESS.PWSH_RUNNER = previous_runner
+                HARNESS.PICKER_HELPER = previous_helper
 
     def test_capture_paths_cannot_escape_ignored_capture_root(self):
         with self.assertRaises(ValueError):

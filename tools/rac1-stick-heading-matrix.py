@@ -266,7 +266,7 @@ def derive_report(
         "notProven": [
             "The retail chase-camera follow/recenter/obstruction law.",
             "The exact right-stick-to-control-heading response law or turn rate.",
-            "Partial-stick dead-zone and post-dead-zone magnitude shaping.",
+            "This heading-matrix probe does not itself establish partial-stick magnitude shaping; see research/generated/rac1-analogue-input-law.json.",
         ],
     }
     if fixed_stick_capture is not None:

@@ -12,7 +12,7 @@ This separation is important: retail slope traces acquire vertical displacement 
 
 ## Planar input boundary
 
-The calibrated acceleration/speed witnesses use full-scale cardinal planar input and release. They prove the downstream displacement recurrence for those conditions, but they do **not** recover the retail stick dead-zone or post-dead-zone magnitude curve. `PlayerControlIntent.NormalizedPlanar()` is therefore only a deterministic full-scale/directional contract for the recovered controller today; it must not be cited as evidence that retail normalized every nonzero stick vector.
+Dense fixed-savestate DualShock 2 byte sweeps now recover the native left-stick magnitude/direction conditioning before the downstream displacement recurrence. With neutral byte `127`, each raw axis is trimmed by 48 counts and saturates after 76 remapped counts; the Euclidean magnitude of the remapped pair then selects idle below `19`, the approximately `0.015` walk plateau for `19 <= magnitude < 63`, and the existing `0.09500919` run cap for `magnitude >= 63`. Facing-aligned walk and run trials use the same approximately `1/480` ground acceleration, so stick magnitude selects a speed band rather than scaling acceleration continuously.
 
 Two fixed-savestate, eight-direction live matrices now recover the full-scale stick-to-control-heading transform. The authority states are SHA-256 `07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d` and `067e5ca260233fcccc958f54e412e3fad26f38406a2a7d2f13d8f6477e92a0aa`; their independently sampled forward/control headings are `-2.073779821` and `+2.842167616 rad`. In both states, define planar stick angle with forward `0`, right `+pi/2`, back `pi` and left `-pi/2`. Retail writes `G+0x100 = WrapPi(controlHeading - stickAngle)`. Cardinals and diagonals fit that rule with worst error below `5.7e-7 rad` across the sixteen reset trials. Literal DualShock 2 bytes use X high for right, X low for left, Y low for forward and Y high for back.
 
@@ -22,17 +22,19 @@ That pitched 3D vector is not itself the facing-angle source. On diagonals, `ata
 
 A fixed-forward trace covers the changing-basis case directly. With left stick held at literal `[127,0]`, `G+0x100` and the projected `G+0x0f0/+0x0f4/+0x0f8` control vector stay aligned within `6.1e-7 rad` while the basis rotates by a net `0.2181052 rad`. During the right-stick-left segment the target advances `+0.2115783 rad`; it continues another `+0.0881104 rad` during the following neutral-right-stick hold, then reverses by `-0.1366279 rad` with right stick held right. This proves that a fixed movement stick continues to track a changing native control basis and that horizontal right-stick input can bias that basis, but the neutral drift shows chase follow/recenter is simultaneously active.
 
-This does **not** recover the retail chase-camera follow, recenter, obstruction law, exact right-stick turn rate or the upstream source field that owns the control heading. A stationary horizontal right-stick prelude also did not rotate the sampled basis in these states, so the camera/control-heading state machine remains outside this recovery. The retail stick dead-zone and post-dead-zone magnitude curve likewise remain unresolved; emulator binding dead-zone/axis-scale settings are harness policy, not retail controller evidence.
+This does **not** recover the retail chase-camera follow, recenter, obstruction law, exact right-stick turn rate or the upstream source field that owns the control heading. A stationary horizontal right-stick prelude also did not rotate the sampled basis in these states, so the camera/control-heading state machine remains outside this recovery. The later dense partial-stick sweeps do recover the left-stick byte conditioning and speed-band thresholds; emulator binding dead-zone/axis-scale settings remain harness policy, not retail controller evidence.
+
+The partial-stick sweeps extend the same planar target construction below full scale. Let `dx = rawX - 127`, `dy = rawY - 127`, remap each signed component by subtracting 48 counts and clamping its magnitude to 76, and define forward-positive `fy = -remappedY`. For active input, `stickAngle = atan2(remappedX, fy)` and the full target remains `WrapPi(controlHeading - stickAngle)`. The fixed back-axis sweep is the same relation expressed around the back target: its measured offsets fit `atan2(remappedX, remappedBack)` with maximum residual about `6.6e-7 rad`, including mirrored negative-X witnesses.
 
 ### Deterministic analogue archaeology harness
 
 `tools/rac1-movement-probe.py` remains the loaded-executable/static probe and `tools/rac1-savestate-movement-probe.py` remains the offline savestate probe. `tools/rac1-analogue-movement-harness.py` adds the missing live experiment layer: it generates PCSX2 input-recording frames with literal DualShock 2 stick bytes, associates them with a fixed savestate, advances PCSX2 exactly one emulated frame at a time and takes one batched PINE sample after each advance.
 
-The input plan is data, not keyboard emulation. `tools/rac1-analogue-plan.example.json` is the live-validated 68-frame witness. `build` writes both the `.p2m2` movie and PCSX2's required `<movie>_SaveState.p2s` companion under ignored `captures/`; `prepare-profile` makes an isolated portable PCSX2 profile there with PINE and the F7 frame-advance hotkey enabled. On Windows, `tools/rac1-pcsx2-input-recording-picker.ps1` clears stale filename state, tolerates QFileDialog's remembered directory and explicitly accepts a selected replay when Qt does not close the picker itself. `capture` records displacement, live position, yaw, `G+0x0f0/+0x0f4/+0x0f8`, target yaw and animation sequence plus raw 32-bit words across player-state `G+0x000..G+0x17c`. `derive` reduces that private capture to payload-free evidence suitable for Git.
+The input plan is data, not keyboard emulation. `tools/rac1-analogue-plan.example.json` is the live-validated 68-frame witness. `build` writes both the `.p2m2` movie and PCSX2's required `<movie>_SaveState.p2s` companion under ignored `captures/`; `prepare-profile` makes an isolated portable PCSX2 profile there with PINE and the F7 frame-advance hotkey enabled. On Windows, `tools/rac1-pcsx2-input-recording-picker.ps1` targets the native replay picker's filename edit, clears stale text, types the already-resolved absolute movie path as keyboard input, accepts it with Enter, and retains a native Open-button fallback if Qt leaves the picker open. This avoids QFileDialog remembered-directory/off-screen-row virtualization while keeping gameplay input entirely in the movie. `capture` records displacement, live position, yaw, `G+0x0f0/+0x0f4/+0x0f8`, target yaw and animation sequence plus raw 32-bit words across player-state `G+0x000..G+0x17c`. `derive` reduces that private capture to payload-free evidence suitable for Git.
 
 `tools/rac1-stick-heading-matrix.py` builds on that harness for the heading experiment. Its `capture` command restores the same savestate for each of eight literal full-scale cardinals/diagonals, and `derive` verifies the signed target-angle lattice plus the orthogonal 3D basis construction across one or more independently headed matrices. The retained reduction is `research/generated/rac1-stick-heading-probe.json`; raw movies, savestates and frame samples remain ignored under `captures/`.
 
-A clean NTSC-U run used fixed Veldin state SHA-256 `07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d` and generated movie SHA-256 `cf666f5f6743b974477bd5291c18fe0a1f9da939fb0bce75938ddaac21a3a8b4`. The anchor begins with zero XYZ displacement at live position approximately `(154.77104, 120.58263, 29.484375)` and yaw/target `1.1110418`. In this one controlled plan, twenty frames of literal left-stick `[127,64]` produced no displacement, while literal `[127,0]` produced movement and sequence transition `0 -> 3`; release returned `3 -> 0`. That is a reproducible byte-level observation, **not** yet proof of the native dead-zone boundary or post-dead-zone response curve.
+A clean NTSC-U run used fixed Veldin state SHA-256 `07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d` and generated movie SHA-256 `cf666f5f6743b974477bd5291c18fe0a1f9da939fb0bce75938ddaac21a3a8b4`. The anchor begins with zero XYZ displacement at live position approximately `(154.77104, 120.58263, 29.484375)` and yaw/target `1.1110418`. In this initial controlled plan, twenty frames of literal left-stick `[127,64]` produced no displacement, while literal `[127,0]` produced movement and sequence transition `0 -> 3`; release returned `3 -> 0`. The later dense sweeps supersede that coarse bracket and recover the byte remap plus locomotion thresholds.
 
 Raw movies, companion savestates and per-frame captures remain ignored under `captures/`. The retained reduction is `research/generated/rac1-analogue-movement-probe.json`. Re-run commands are:
 
@@ -44,6 +46,26 @@ py -3.12 tools/rac1-analogue-movement-harness.py derive --capture captures/rac1-
 py -3.12 tools/rac1-stick-heading-matrix.py capture --pid <pcsx2-pid> --pine-port 28099 --savestate <state.p2s> --out-dir captures/rac1-heading/state-a
 py -3.12 tools/rac1-stick-heading-matrix.py derive --matrix-dir captures/rac1-heading/state-a --matrix-dir captures/rac1-heading/state-b --fixed-stick-capture captures/rac1-heading/fixed-forward.raw.json --out research/generated/rac1-stick-heading-probe.json
 ```
+
+### Recovered analogue law
+
+The dense sweep retains its payload-free reduction in `research/generated/rac1-analogue-input-law.json`. The raw byte law is two-stage. First, each signed axis component independently subtracts a 48-count deadband and saturates at 76 remapped counts. Then the Euclidean magnitude of the remapped pair chooses locomotion:
+
+| Remapped magnitude | Retail result |
+| --- | --- |
+| `< 19` | no locomotion |
+| `19 .. <63` | walk band, steady aligned planar step approximately `0.015` |
+| `>= 63` | run band, canonical planar cap `0.09500919` |
+
+The threshold brackets hold in both cardinal and diagonal probes. Cardinal remapped magnitude 18 is inactive while 19 moves; equal-axis `(13,13)` (radius `18.3848`) is inactive while `(14,14)` (radius `19.7990`) moves. Likewise cardinal remapped magnitude 62 stays walk and 63 enters run; equal-axis `(44,44)` (radius `62.2254`) stays walk while `(45,45)` (radius `63.6396`) enters run. Thus raw input is not described correctly by either a simple radial dead zone or an independent per-axis movement gate: component trim happens first, followed by radial magnitude thresholds.
+
+Once active, the remapped components also extend the source commit's full-scale target lattice to partial input. Using forward-positive Y, `stickAngle = atan2(remappedX, remappedForward)`, and `G+0x100 = WrapPi(controlHeading - stickAngle)`. The retained partial-angle witnesses fit the equivalent back-relative form within about `6.6e-7 rad`, including mirrored negative-X samples. Remapped component 76 is already saturated by raw delta 124, so raw 124 and 128 produce the same 45-degree diagonal target. Full diagonal planar speed remains at the same run cap rather than receiving a square-stick speed boost.
+
+Facing-aligned walk inputs from remapped magnitude 19 through 62 repeatedly settle near `0.015`. Run inputs from magnitude 63 upward accelerate toward the existing `0.09500919` cap. The clean full-scale cardinal sweep reached `0.094995147` and the retained run-band samples reach up to `0.095000645`, within about `1.4e-5` of the earlier canonical maximum witness rather than establishing a different cap. Measured acceleration in both bands remains approximately `1/480` unit/tick; there is no supported magnitude-dependent acceleration term. Run-band input still starts in sequence 3 and reaches sequence 4 only when actual planar displacement crosses the separately recovered startup/run speed boundary, so the input threshold and animation transition are distinct.
+
+Release is stateful. A steady run enters sequence 5 and, after the short 4-to-5 transition, decays at the existing approximately `1/300` unit/tick until exact zero. The fixed aligned witness gives a sustained median decrement of `0.003332469` with sampled range `0.003325785..0.003339829`. Releasing the approximately `0.015` walk plateau instead transitions `3 -> 0` and reaches zero within four sampled updates through a non-uniform stop; that short walk-stop transition is retained as evidence rather than force-fit to the run deceleration constant.
+
+Large facing changes can temporarily produce planar displacement below the aligned walk plateau while the yaw recurrence catches up. Those turn transients are not additional analogue speed bands.
 
 ## Ground locomotion
 
@@ -112,11 +134,11 @@ The post-respawn controller does not inherit the pre-death motion. `Rac1RatchetM
 
 A real Godot `rac1:LEVEL0` authority run completed `Idle -> Walk -> Run -> JumpRise -> Fall -> Land -> Run` against reconstructed collision. The engine trace is an integration witness; exact timing/velocity assertions live in portable recurrence tests so terrain does not contaminate the numeric comparison.
 
-Payload-free evidence is frozen in `research/generated/rac1-ratchet-movement-controller.json`. Local raw PINE traces and screenshots remain outside Git.
+Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-movement-controller.json`, with the dense raw-stick reduction in `research/generated/rac1-analogue-input-law.json` and the independent control-heading matrices in `research/generated/rac1-stick-heading-probe.json`. Local raw PINE traces and screenshots remain outside Git.
 
 ## Deliberately unresolved
 
-- native dead-zone and post-dead-zone magnitude shaping for partial-stick input, plus the retail camera/control-heading source and follow policy;
+- promotion of the recovered raw-byte magnitude shaping into the host input boundary, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
 - broader death/checkpoint selection beyond the witnessed Veldin reset-to-player-start behavior;
 - collision details such as ledge grabs, wall interactions and special traversal abilities;
 - combat movement, wrench lunges and hit volumes, which belong to the separate combat milestone.

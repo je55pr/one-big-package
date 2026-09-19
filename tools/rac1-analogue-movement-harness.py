@@ -304,14 +304,14 @@ def _wait_for_input_recording_picker(pid: int, timeout: float = 4.0) -> int:
     raise TimeoutError(f"input-recording picker not found for pid {pid}")
 
 def _invoke_picker_path(dialog: int, movie: Path) -> None:
-    relative = movie.resolve().relative_to(ROOT.resolve())
+    absolute = movie.resolve()
     if not PWSH_RUNNER.exists():
         raise FileNotFoundError(f"PowerShell runner not found: {PWSH_RUNNER}")
     completed = subprocess.run(
         [
             "cmd.exe", "/d", "/s", "/c",
             str(PWSH_RUNNER), "-File", str(PICKER_HELPER),
-            str(dialog), str(relative),
+            str(dialog), str(absolute),
         ],
         cwd=ROOT,
         text=True,

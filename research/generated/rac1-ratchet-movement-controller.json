@@ -17,8 +17,10 @@
   },
   "groundPlanar": {
     "accelerationPerTick": 0.0020833333333333333,
+    "walkSteadyStepApprox": 0.015,
     "maximumStep": 0.09500919,
-    "releaseDecelerationPerTick": 0.0033333333333333335
+    "releaseDecelerationPerTick": 0.0033333333333333335,
+    "rawStickLawEvidence": "research/generated/rac1-analogue-input-law.json"
   },
   "airPlanar": {
     "accelerationPerTick": 0.005555555555555556,
@@ -160,15 +162,16 @@
   "scopeNotes": {
     "collisionResponse": "host-owned",
     "turnEasing": "recovered for ground startup, ground run, crouch turn and air",
-    "controlHeadingTargetTransform": "G+0x100 = WrapPi(controlHeading - stickAngle) for fixed full-scale cardinals/diagonals",
+    "controlHeadingTargetTransform": "G+0x100 = WrapPi(controlHeading - stickAngle); full-scale matrices plus partial-stick remap witnesses",
     "controlHeadingSource": "retail camera/control-heading production remains unrecovered; host supplies a neutral planar heading",
-    "analogueDeadZone": "unknown",
+    "analogueDeadZone": "recovered two-stage law: signed per-axis 48-count trim / 76-count clamp, then radial magnitude thresholds 19 and 63",
     "combatMovement": "separate milestone",
     "movingCrouch": "not observed; directional crouch witnesses are zero-translation turn-in-place",
     "ordinaryStrafe": "not established as baseline R&C1 locomotion"
   },
   "provenance": [
     "controlled PCSX2 authority execution",
+    "fixed-savestate literal DualShock 2 analogue byte sweeps",
     "read-only PINE live-state sampling",
     "fixed NTSC-U yaw recurrence traces",
     "two fixed-savestate full-scale stick/control-heading matrices",
@@ -178,10 +181,21 @@
     "Godot Veldin integration capture"
   ],
   "inputBoundary": {
-    "calibratedInput": "full-scale cardinal and diagonal planar input plus cardinal release",
-    "analogueDeadZone": "unknown",
-    "postDeadZoneMagnitudeScaling": "unknown",
-    "cameraRelativeIntentTransform": "full-scale target transform recovered; G+0x0f0/+0x0f4/+0x0f8 retain the pitched 3D control-vector combination",
-    "portableContract": "recovered directional target construction with normalized/full-scale translation; not evidence for arbitrary analogue magnitude or retail camera follow"
+    "calibratedInput": "dense raw-byte cardinal/diagonal magnitude sweeps plus two full-scale heading matrices and release traces",
+    "rawNeutralByte": 127,
+    "axisRemap": "sign(delta) * clamp(abs(delta) - 48, 0, 76), with forward-positive Y obtained by negating the raw Y remap",
+    "movementThresholdRemappedMagnitude": 19,
+    "runThresholdRemappedMagnitude": 63,
+    "walkSteadyPlanarStepApprox": 0.015,
+    "stickAngle": "atan2(remappedX, remappedForward)",
+    "cameraRelativeIntentTransform": "G+0x100 = WrapPi(controlHeading - stickAngle); G+0x0f0/+0x0f4/+0x0f8 separately retain the pitched 3D control-vector combination",
+    "diagonalSpeedBoost": false,
+    "accelerationVariesWithMagnitude": false,
+    "controlHeadingSource": "unknown retail camera/control-heading state machine",
+    "portableContract": "directional target construction is promoted; raw-byte magnitude shaping is recovered but not yet promoted into the host PlayerControlIntent boundary",
+    "evidence": [
+      "research/generated/rac1-analogue-input-law.json",
+      "research/generated/rac1-stick-heading-probe.json"
+    ]
   }
 }

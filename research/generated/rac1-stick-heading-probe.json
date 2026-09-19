@@ -414,7 +414,7 @@
   "notProven": [
     "The retail chase-camera follow/recenter/obstruction law.",
     "The exact right-stick-to-control-heading response law or turn rate.",
-    "Partial-stick dead-zone and post-dead-zone magnitude shaping."
+    "This heading-matrix probe does not itself establish partial-stick magnitude shaping; see research/generated/rac1-analogue-input-law.json."
   ],
   "fixedForwardStickControlBasisChange": {
     "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
