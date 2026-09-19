@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Godot.Controls;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
@@ -91,6 +92,12 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
     public bool Rac1GameplayAlive { get; set; } = true;
 
+    /// <summary>Unconditioned right-stick camera intent; presentation scaling is intentionally unresolved.</summary>
+    public Vector2 RawCameraIntent => _liveInput.CameraIntent;
+
+    /// <summary>Current SDL/Godot controller diagnostic, when a joypad is connected.</summary>
+    public RawGamepadDiagnostic? RawGamepadDiagnostic => _liveInput.Diagnostic;
+
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
     private Label _hud = null!;
@@ -109,6 +116,8 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _scriptAttacked;
     private readonly Rac1RatchetMovementController _rac1Movement = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
+    private readonly RawGamepadInput _rawInput = new();
+    private RawPlayerInputFrame _liveInput;
     private bool _rac1JumpWasHeld;
 
     // last-jump measurement
@@ -174,6 +183,8 @@ public partial class DebugPlayer : CharacterBody3D
             return;
         }
 
+        _rawInput.Observe(@event);
+
         if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
             _yaw.RotateY(-motion.Relative.X * MouseSensitivity);
@@ -189,17 +200,6 @@ public partial class DebugPlayer : CharacterBody3D
                 Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
                     ? Input.MouseModeEnum.Visible
                     : Input.MouseModeEnum.Captured;
-            }
-            else if (key.Keycode == Key.X)
-            {
-                if (!UseRac1Gameplay || Rac1GameplayAlive)
-                {
-                    _attackRequested = true;
-                    if (UseRac1Gameplay)
-                        Rac1PrimaryAttackRequested?.Invoke();
-                    else
-                        CrateStrikeRequested?.Invoke();
-                }
             }
             else if (UseRac1Gameplay && key.Keycode == Key.Key1)
             {
@@ -246,16 +246,23 @@ public partial class DebugPlayer : CharacterBody3D
 
         _time += delta;
 
+        if (!Scripted)
+        {
+            _liveInput = _rawInput.Read();
+            if (_liveInput.ActionJustPressed)
+                RequestPrimaryAction();
+        }
+
         if (_fly)
         {
             _attackRequested = false;
-            FlyStep((float)delta);
+            FlyStep((float)delta, _liveInput.Move);
             UpdateHud(true);
             return;
         }
 
-        var (move, jump) = Scripted ? ScriptedInput() : LiveInput();
-        bool crouch = !Scripted && Input.IsPhysicalKeyPressed(Key.C);
+        var (move, jump) = Scripted ? ScriptedInput() : (_liveInput.Move, _liveInput.JumpHeld);
+        bool crouch = !Scripted && _liveInput.CrouchHeld;
         if (UseRac1Gameplay && !Rac1GameplayAlive)
         {
             move = Vector2.Zero;
@@ -264,7 +271,8 @@ public partial class DebugPlayer : CharacterBody3D
         }
         Vector3 wish = _yaw.GlobalTransform.Basis * new Vector3(move.X, 0f, move.Y);
         wish.Y = 0f;
-        wish = wish.LengthSquared() > 1e-4f ? wish.Normalized() : Vector3.Zero;
+        // Preserve analogue magnitude at the host boundary. The currently recovered
+        // R&C1 controller still owns its existing full-scale directional semantics.
 
         StepRetailDerivedMovement(move, wish, jump, crouch);
 
@@ -376,6 +384,18 @@ public partial class DebugPlayer : CharacterBody3D
         if (current != previous)
             GD.Print($"[DebugPlayer] animation {previous} -> {current}");
     }
+    private void RequestPrimaryAction()
+    {
+        if (UseRac1Gameplay && !Rac1GameplayAlive)
+            return;
+
+        _attackRequested = true;
+        if (UseRac1Gameplay)
+            Rac1PrimaryAttackRequested?.Invoke();
+        else
+            CrateStrikeRequested?.Invoke();
+    }
+
     private void ResetAnimationState()
     {
         _animationStateMachine = new PlayerAnimationStateMachine();
@@ -437,7 +457,9 @@ public partial class DebugPlayer : CharacterBody3D
             $"    anim {AnimationState}\n" +
             $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
-            $"WASD / Space / C crouch / X action / F fly / R respawn / Tab cursor / Esc";
+            $"camera intent raw ({RawCameraIntent.X:0.000},{RawCameraIntent.Y:0.000})\n" +
+            $"gamepad {(_liveInput.Diagnostic is { } pad ? pad.Format() : "none")}\n" +
+            $"WASD / left stick / Space-Cross jump / C-R1 crouch / X-Square action / F fly / R respawn / Tab cursor / Esc";
     }
 
     /// <summary>
@@ -478,9 +500,8 @@ public partial class DebugPlayer : CharacterBody3D
     }
 
     /// <summary>Free 6-DOF camera-relative movement, no gravity or collision — for exploring an imported level.</summary>
-    private void FlyStep(float delta)
+    private void FlyStep(float delta, Vector2 move)
     {
-        var (move, _) = LiveInput();
         float lift = (Input.IsPhysicalKeyPressed(Key.Space) || Input.IsPhysicalKeyPressed(Key.E) ? 1f : 0f)
                      - (Input.IsPhysicalKeyPressed(Key.Ctrl) || Input.IsPhysicalKeyPressed(Key.Q) ? 1f : 0f);
         bool boost = Input.IsPhysicalKeyPressed(Key.Shift);
@@ -493,14 +514,6 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         Velocity = Vector3.Zero;
-    }
-
-    private (Vector2 Move, bool Jump) LiveInput()
-    {
-        var move = new Vector2(
-            (Input.IsPhysicalKeyPressed(Key.D) ? 1f : 0f) - (Input.IsPhysicalKeyPressed(Key.A) ? 1f : 0f),
-            (Input.IsPhysicalKeyPressed(Key.S) ? 1f : 0f) - (Input.IsPhysicalKeyPressed(Key.W) ? 1f : 0f));
-        return (move, Input.IsPhysicalKeyPressed(Key.Space));
     }
 
     /// <summary>Fixed timeline: drop + settle, walk forward, jump mid-stride, veer — so the capture shows motion + air time.</summary>
