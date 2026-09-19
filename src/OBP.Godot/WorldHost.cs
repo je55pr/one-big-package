@@ -182,10 +182,11 @@ public sealed class WorldHost
             var seen = new System.Collections.Generic.HashSet<ulong>();
             Node3D? spinNode = null;
 
-            if (anim.Kind == RuntimeAmbientAnimationKind.Spin
-                && string.Equals(anim.TargetKind, "sky", System.StringComparison.Ordinal))
+            if (anim.Kind == RuntimeAmbientAnimationKind.Spin)
             {
-                spinNode = _skyRoot;
+                spinNode = anim.TargetGroup is { Length: > 0 } group
+                    ? FindPresentationGroup(root, group)
+                    : string.Equals(anim.TargetKind, "sky", System.StringComparison.Ordinal) ? _skyRoot : null;
             }
 
             if (anim.Kind == RuntimeAmbientAnimationKind.UvScroll)
@@ -228,6 +229,18 @@ public sealed class WorldHost
                 yield return nested;
             }
         }
+    }
+
+    private static Node3D? FindPresentationGroup(Node node, string group)
+    {
+        string targetName = RuntimeWorldScene.PresentationGroupNodeName(group);
+        foreach (var child in node.GetChildren())
+        {
+            if (child is Node3D node3D && child.Name.ToString() == targetName) return node3D;
+            var nested = FindPresentationGroup(child, group);
+            if (nested is not null) return nested;
+        }
+        return null;
     }
 
     /// <summary><see cref="RuntimeWorldScene"/> names each mesh instance <c>"{kind}_{textureId}"</c>.</summary>
@@ -365,7 +378,8 @@ public sealed class WorldHost
             else if (target.Animation.Kind == RuntimeAmbientAnimationKind.Spin
                      && target.SpinNode is { } node && GodotObject.IsInstanceValid(node))
             {
-                var axis = new Vector3((float)target.Animation.Rate.X, (float)target.Animation.Rate.Y, (float)target.Animation.Rate.Z);
+                var axis = RuntimeWorldScene.ToSceneRotationAxis(
+                    target.Animation.Rate.X, target.Animation.Rate.Y, target.Animation.Rate.Z);
                 node.Basis = axis.LengthSquared() > 1e-12f
                     ? new Basis(axis.Normalized(), (float)s.Radians)
                     : Basis.Identity;

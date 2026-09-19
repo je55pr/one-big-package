@@ -32,6 +32,12 @@ public static class RuntimeWorldScene
     /// <summary>OBP-space yaw (radians about +Y) → Godot yaw after the X flip.</summary>
     public static float ToSceneYaw(double obpYaw) => (float)(-obpYaw);
 
+    /// <summary>OBP-space rotation axis → Godot after the X reflection (axial-vector transform).</summary>
+    public static Vector3 ToSceneRotationAxis(double x, double y, double z) => new((float)x, (float)-y, (float)-z);
+
+    /// <summary>Stable node name used to keep independently animated presentation groups separate.</summary>
+    public static string PresentationGroupNodeName(string group) => $"PresentationGroup_{group}";
+
     public sealed record Result(
         Node3D Root,
         Node3D? SkyRoot,
@@ -116,6 +122,7 @@ public static class RuntimeWorldScene
         options ??= new Options();
         var root = new Node3D { Name = name };
         var skyRoot = new Node3D { Name = "Sky" };
+        var presentationGroups = new System.Collections.Generic.Dictionary<(Node3D Parent, string Group), Node3D>();
 
         // Decoded textures + every Godot material for this world come from the
         // single factory; material decisions live in OBP.Runtime.MaterialModel.
@@ -241,16 +248,25 @@ public static class RuntimeWorldScene
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             };
 
+            Node3D parent = isSky ? skyRoot : root;
+            if (m.PresentationGroup is { Length: > 0 } group)
+            {
+                var key = (parent, group);
+                if (!presentationGroups.TryGetValue(key, out var groupNode))
+                {
+                    groupNode = new Node3D { Name = PresentationGroupNodeName(group) };
+                    parent.AddChild(groupNode);
+                    presentationGroups[key] = groupNode;
+                }
+                parent = groupNode;
+            }
+
             if (isSky)
             {
                 mi.Layers = 1;
-                skyRoot.AddChild(mi);
                 skyMeshes++;
             }
-            else
-            {
-                root.AddChild(mi);
-            }
+            parent.AddChild(mi);
 
             meshInstances++;
             triangles += m.TriangleCount;

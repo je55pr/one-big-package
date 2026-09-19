@@ -72,6 +72,7 @@ public class AmbientAnimatorTests
     {
         var anyTex = new RuntimeAmbientAnimation("sky", null, RuntimeAmbientAnimationKind.UvScroll, (0, 0, 0));
         var oneTex = new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0, 0, 0));
+        var oneGroup = new RuntimeAmbientAnimation("sky", null, RuntimeAmbientAnimationKind.Spin, (0, 1, 0), TargetGroup: "shell-3");
 
         Assert.True(anyTex.Matches("sky", 0));
         Assert.True(anyTex.Matches("sky", 9));
@@ -79,5 +80,9 @@ public class AmbientAnimatorTests
 
         Assert.True(oneTex.Matches("sky", 3));
         Assert.False(oneTex.Matches("sky", 4));
+
+        Assert.True(oneGroup.Matches("sky", 3, "shell-3"));
+        Assert.False(oneGroup.Matches("sky", 3, "shell-4"));
+        Assert.False(oneGroup.Matches("sky", 3));
     }
 }

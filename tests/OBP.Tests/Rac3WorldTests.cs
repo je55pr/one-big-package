@@ -165,6 +165,9 @@ public sealed class Rac3WorldTests
 
         RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
         Assert.Equal(4_348, world.Meshes.Where(m => m.AssetKind == "sky").Sum(m => m.TriangleCount));
+        Assert.Equal(8, world.Meshes.Where(m => m.AssetKind == "sky").Select(m => m.PresentationGroup).Distinct().Count());
+        Assert.Equal(4, world.AmbientAnimations?.Count);
+        Assert.All(world.AmbientAnimations!, anim => Assert.StartsWith("uya-sky-shell-", anim.TargetGroup));
         Assert.Equal(10, world.Textures.Count(t => t.AssetKind == "sky"));
         RuntimeMesh backdrop = Assert.Single(world.Meshes, m => m.AssetKind == "sky" && m.RenderWithoutTexture);
         Assert.Equal(-1, backdrop.TextureId);

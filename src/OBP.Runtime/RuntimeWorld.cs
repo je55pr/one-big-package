@@ -60,11 +60,14 @@ public sealed record RuntimeWorld(
 /// flat RGBA (0..1) per vertex. <see cref="RenderWithoutTexture"/> is an explicit
 /// importer assertion that source evidence supports materialless rendering; hosts
 /// must not infer that permission merely from a missing decoded texture.
+/// <see cref="RuntimeMesh.PresentationGroup"/> optionally keeps several material
+/// meshes under one independently animated native presentation node.
 /// </summary>
 public sealed record RuntimeMesh(
     string AssetKind, int TextureId, double[] Positions, float[] Uvs, int[] Indices,
     float[]? Colors = null, bool RenderWithoutTexture = false,
-    RuntimeMaterialPresentation? MaterialPresentation = null)
+    RuntimeMaterialPresentation? MaterialPresentation = null,
+    string? PresentationGroup = null)
 {
     public int TriangleCount => Indices.Length / 3;
 }
@@ -275,14 +278,17 @@ public enum RuntimeAmbientAnimationKind
 ///   <see cref="RuntimeAmbientAnimationKind.Spin"/>: radians per second; the vector is the axis (its length is the speed).
 /// </param>
 /// <param name="Phase">Constant offset added to the evaluated value (UV units, or radians).</param>
+/// <param name="TargetGroup">Optional <see cref="RuntimeMesh.PresentationGroup"/> selector for independently moving surfaces.</param>
 public sealed record RuntimeAmbientAnimation(
     string TargetKind,
     int? TargetTextureId,
     RuntimeAmbientAnimationKind Kind,
     (double X, double Y, double Z) Rate,
-    double Phase = 0)
+    double Phase = 0,
+    string? TargetGroup = null)
 {
-    public bool Matches(string assetKind, int textureId) =>
+    public bool Matches(string assetKind, int textureId, string? presentationGroup = null) =>
         string.Equals(assetKind, TargetKind, System.StringComparison.Ordinal)
-        && (TargetTextureId is null || TargetTextureId.Value == textureId);
+        && (TargetTextureId is null || TargetTextureId.Value == textureId)
+        && (TargetGroup is null || string.Equals(TargetGroup, presentationGroup, System.StringComparison.Ordinal));
 }

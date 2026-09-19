@@ -31,6 +31,7 @@ public static partial class Rac3WorldImport
         var meshes = new List<RuntimeMesh>();
         var textures = new List<RuntimeTexture>();
         var collision = new List<RuntimeCollisionBlob>();
+        var ambientAnimations = new List<RuntimeAmbientAnimation>();
         double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
         double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
         void Grow(double x, double y, double z) { minX = System.Math.Min(minX, x); minY = System.Math.Min(minY, y); minZ = System.Math.Min(minZ, z); maxX = System.Math.Max(maxX, x); maxY = System.Math.Max(maxY, y); maxZ = System.Math.Max(maxZ, z); }
@@ -76,7 +77,7 @@ public static partial class Rac3WorldImport
             var fallbackSkyColour = settings.BackgroundColour
                 ?? settings.FogColour
                 ?? (0.05, 0.06, 0.09);
-            AddSkyMeshes(sky, meshes, minX, minY, minZ, maxX, maxY, maxZ, fallbackSkyColour);
+            AddSkyMeshes(sky, meshes, ambientAnimations, minX, minY, minZ, maxX, maxY, maxZ, fallbackSkyColour);
         }
 
         var mobyClasses = UyaAssets.ReadMobyClasses(core, texByKind["moby"].Count);
@@ -130,7 +131,7 @@ public static partial class Rac3WorldImport
             ? null
             : new RuntimeSpawn(settings.ShipPosition.X, settings.ShipPosition.Z, settings.ShipPosition.Y, settings.ShipRotationZ);
         var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, null, null, meshes, textures, materialCount, collision, bounds, environment, ship,
-            Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects);
+            Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects, AmbientAnimations: ambientAnimations);
         return new ImportResult(world, tfrag.TfragCount, gameplay.TieInstances.Count, gameplay.ShrubInstances.Count, gameplay.MobyInstances.Count,
             gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
     }
@@ -287,7 +288,8 @@ public static partial class Rac3WorldImport
                 MaterialPresentation: surface.Presentation));
     }
 
-    private static void AddSkyMeshes(UyaSky.Sky sky, List<RuntimeMesh> meshes, double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
+    private static void AddSkyMeshes(UyaSky.Sky sky, List<RuntimeMesh> meshes, List<RuntimeAmbientAnimation> ambientAnimations,
+        double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
         (double R, double G, double B) fallbackColour)
     {
         if (double.IsPositiveInfinity(minX)) return;
@@ -296,7 +298,10 @@ public static partial class Rac3WorldImport
         double radius = System.Math.Max(1, System.Math.Sqrt((maxX - minX) * (maxX - minX) + (maxY - minY) * (maxY - minY) + (maxZ - minZ) * (maxZ - minZ)) / 2);
         double shellMax = sky.Shells.SelectMany(s => s.Positions).Select(System.Math.Abs).DefaultIfEmpty(0).Max();
         double scale = shellMax > 0 ? radius * 1.7 / shellMax : 1;
-        foreach (var shell in sky.Shells)
+        for (int shellIndex = 0; shellIndex < sky.Shells.Count; shellIndex++)
+        {
+            var shell = sky.Shells[shellIndex];
+            string groupName = UyaSkyPresentation.GroupName(shellIndex);
             foreach (var group in Enumerable.Range(0, shell.TriangleTextureIds.Length).GroupBy(f => shell.TriangleTextureIds[f]).OrderBy(g => g.Key))
             {
                 var remap = new Dictionary<int, int>(); var p = new List<double>(); var u = new List<float>(); var c = new List<float>(); var ind = new List<int>();
@@ -321,8 +326,15 @@ public static partial class Rac3WorldImport
                     }
                 meshes.Add(new RuntimeMesh(
                     "sky", group.Key, p.ToArray(), u.ToArray(), ind.ToArray(), c.ToArray(),
-                    RenderWithoutTexture: group.Key < 0));
+                    RenderWithoutTexture: group.Key < 0,
+                    PresentationGroup: groupName));
             }
+
+            if (UyaSkyPresentation.SpinFor(shell, shellIndex) is { } spin)
+            {
+                ambientAnimations.Add(spin);
+            }
+        }
     }
 
     private static void ValidateTextureIds(string kind, IEnumerable<int> ids, int count)
