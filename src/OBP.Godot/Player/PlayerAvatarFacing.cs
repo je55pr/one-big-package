@@ -18,6 +18,11 @@ public static class PlayerAvatarFacing
     {
         if (!double.IsFinite(nativeYaw)) throw new ArgumentOutOfRangeException(nameof(nativeYaw));
         Vector3 sceneForward = NativeZUpPlanarDirectionToGodot(Math.Cos(nativeYaw), Math.Sin(nativeYaw));
-        return Mathf.Atan2(-sceneForward.X, -sceneForward.Z);
+
+        // The reconstructed Ratchet mesh's visible neutral facing is local +X,
+        // not Godot's conventional local -Z. Rotate the presentation root by
+        // an additional +90 degrees so the mesh's nose, rather than the node's
+        // abstract Forward vector, follows the recovered native facing.
+        return Mathf.Atan2(-sceneForward.X, -sceneForward.Z) + (Mathf.Pi / 2f);
     }
 }

@@ -42,12 +42,13 @@ public sealed class PlayerAvatarGodotTests
     [InlineData(-1d, 1d)]
     [InlineData(1d, -1d)]
     [InlineData(-1d, -1d)]
-    public void Rac1VisualForwardMatchesNativeFacingAndMovement(double inputX, double inputY)
+    public void Rac1VisibleMeshFacingMatchesNativeFacingAndMovement(double inputX, double inputY)
     {
         double nativeYaw = Rac1RatchetYawController.BuildMovementTarget(inputX, inputY, controlYaw: 0d);
         float sceneYaw = PlayerAvatarFacing.NativeZUpYawToGodotSceneYaw(nativeYaw);
+        // Ratchet's reconstructed neutral mesh visibly faces local +X.
         var visualForward = (new global::Godot.Basis(global::Godot.Vector3.Up, sceneYaw) *
-                             global::Godot.Vector3.Forward).Normalized();
+                             global::Godot.Vector3.Right).Normalized();
 
         var nativeFacing = new Rac1WrenchCombatController().ResolveFirstSwingFacing(nativeYaw);
         var wrenchForward = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
