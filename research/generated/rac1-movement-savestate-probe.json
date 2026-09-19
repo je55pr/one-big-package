@@ -308,9 +308,70 @@
     ]
   },
   "absoluteFloatLoadSites": [],
+  "analogueDataflow": {
+    "loadedOverlaySignaturesVerified": 12,
+    "inputStateBase": "0x0013c940",
+    "conditionedAxes": {
+      "rightX": "I+0x100",
+      "rightY": "I+0x104",
+      "leftX": "I+0x108",
+      "leftY": "I+0x10c",
+      "formula": "sign(raw-127) * clamp((abs(raw-127)-48)/76, 0, 1)",
+      "routine": "0x00267270..0x002672e0"
+    },
+    "playerGlobalBase": "0x0013f350",
+    "playerStateBase": "0x0013f3d0",
+    "magnitude": {
+      "currentConditionedVector": "P+0x1d20/+0x1d24",
+      "activationComparison": "length(currentConditionedVector) < 0.25 falls back to digital/zero input",
+      "activationThresholdNormalized": 0.25,
+      "activationThresholdRemappedCounts": 19.0,
+      "cappedMagnitudeSample": "P+0x229c",
+      "cappedMagnitudeRoutine": "0x00211830..0x00211868",
+      "highMagnitudeFacingComparison": "0.82 < P+0x229c selects the high-magnitude facing-controller branch at 0x0021c254",
+      "highMagnitudeThresholdNormalized": 0.8199999928474426,
+      "highMagnitudeThresholdRemappedCounts": 62.31999945640564,
+      "firstIntegerCardinalAboveHighMagnitudeThreshold": 63,
+      "pipelineNote": "P+0x229c is computed before the current conditioned pair is copied into P+0x1d20/+0x1d24, so it is a cached prior-vector magnitude within this update path.",
+      "boundaryNote": "The 0.82 branch is proven to select facing-controller coefficients. Its numerical agreement with the live 62/63 speed-band bracket does not by itself prove that it is the translational run-speed selector."
+    },
+    "heading": {
+      "controlHeadingAddress": "0x00166dd8",
+      "controlHeadingValue": -2.073779582977295,
+      "independentLiveHeading": -2.073779821,
+      "loadedMinusLiveHeading": 2.3802270510131507e-07,
+      "targetYaw": "G+0x100",
+      "construction": "ordinary mode computes stick term atan2(-conditionedX, -conditionedY), then WrapPi(stickTerm + controlHeading)",
+      "equivalentLiveConvention": "G+0x100 = WrapPi(controlHeading - stickAngle)",
+      "angleRoutine": "0x001ff8b0",
+      "wrapAddRoutine": "0x002000e8",
+      "targetRoutine": "0x002118c8..0x00211be4"
+    },
+    "unresolved": [
+      "The state machine that produces 0x00166dd8, including camera chase/recenter/right-stick policy, is not established here.",
+      "Special target-construction modes inside 0x002118c8 are not promoted as ordinary locomotion semantics.",
+      "The exact walk-speed plateau remains a live witness; this report establishes input conditioning and magnitude branch thresholds, not every downstream speed constant."
+    ]
+  },
   "notes": [
     "The savestate and eeMemory payload remain user-local and are never emitted.",
     "eeMemory.bin offsets are EE virtual addresses for ordinary RAM.",
     "Literal matches and absolute load sites are candidates only; gameplay semantics still require dataflow or controlled live traces."
+  ],
+  "analogueDataflowComparison": [
+    {
+      "savestateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "controlHeadingValue": -2.073779582977295,
+      "independentLiveHeading": -2.073779821,
+      "loadedMinusLiveHeading": 2.3802270510131507e-07,
+      "highMagnitudeThresholdNormalized": 0.8199999928474426
+    },
+    {
+      "savestateSha256": "067e5ca260233fcccc958f54e412e3fad26f38406a2a7d2f13d8f6477e92a0aa",
+      "controlHeadingValue": 2.842167854309082,
+      "independentLiveHeading": 2.842167616,
+      "loadedMinusLiveHeading": 2.3830908224553582e-07,
+      "highMagnitudeThresholdNormalized": 0.8199999928474426
+    }
   ]
 }

@@ -94,26 +94,26 @@
         "nativeSequence": 3,
         "velocityRetention": 0.9,
         "errorGain": 0.019,
-        "rmsResidualRad": 7.96e-8
+        "rmsResidualRad": 7.96e-08
       },
       "groundRun": {
         "nativeSequence": 4,
         "velocityRetention": 0.85,
         "errorGain": 0.008,
-        "rmsResidualRad": 8.88e-8
+        "rmsResidualRad": 8.88e-08
       },
       "crouchTurn": {
         "nativeSequenceWitness": 14,
         "velocityRetention": 0.93,
         "errorGain": 0.002,
-        "rmsResidualRad": 5.10e-8
+        "rmsResidualRad": 5.1e-08
       },
       "air": {
         "nativeSequence": 7,
         "beginsDuringJumpAnticipation": true,
         "velocityRetention": 0.8,
         "errorGain": 0.04,
-        "rmsResidualRad": 9.3e-8
+        "rmsResidualRad": 9.3e-08
       }
     },
     "groundStartupToRunBoundary": {
@@ -162,9 +162,9 @@
   "scopeNotes": {
     "collisionResponse": "host-owned",
     "turnEasing": "recovered for ground startup, ground run, crouch turn and air",
-    "controlHeadingTargetTransform": "G+0x100 = WrapPi(controlHeading - stickAngle); full-scale matrices plus partial-stick remap witnesses",
-    "controlHeadingSource": "retail camera/control-heading production remains unrecovered; host supplies a neutral planar heading",
-    "analogueDeadZone": "recovered two-stage law: signed per-axis 48-count trim / 76-count clamp, then radial magnitude thresholds 19 and 63",
+    "controlHeadingTargetTransform": "G+0x100 = WrapPi(controlHeading - stickAngle); live matrices plus loaded-overlay angle/wrap dataflow",
+    "controlHeadingSource": "consumer field 0x00166dd8 is identified and matches both independent live headings; the retail camera/control-heading state machine that produces it remains unrecovered",
+    "analogueDeadZone": "loaded overlay proves signed per-axis center 127 / 48-count trim / divide-by-76 clamp plus exact normalized radial activation >=0.25 (19 remapped counts); translational walk/run remains a live 62/63 cardinal bracket",
     "combatMovement": "separate milestone",
     "movingCrouch": "not observed; directional crouch witnesses are zero-translation turn-in-place",
     "ordinaryStrafe": "not established as baseline R&C1 locomotion"
@@ -177,25 +177,40 @@
     "two fixed-savestate full-scale stick/control-heading matrices",
     "fixed-forward changing-control-basis trace",
     "loaded retail executable archaeology",
+    "loaded-overlay analogue/heading dataflow signatures",
     "portable deterministic recurrence tests",
     "Godot Veldin integration capture"
   ],
   "inputBoundary": {
     "calibratedInput": "dense raw-byte cardinal/diagonal magnitude sweeps plus two full-scale heading matrices and release traces",
     "rawNeutralByte": 127,
-    "axisRemap": "sign(delta) * clamp(abs(delta) - 48, 0, 76), with forward-positive Y obtained by negating the raw Y remap",
+    "axisRemap": "loaded code: sign(delta) * clamp((abs(delta) - 48) / 76, 0, 1); retained live remapped-count convention multiplies the normalized component by 76",
     "movementThresholdRemappedMagnitude": 19,
-    "runThresholdRemappedMagnitude": 63,
     "walkSteadyPlanarStepApprox": 0.015,
     "stickAngle": "atan2(remappedX, remappedForward)",
     "cameraRelativeIntentTransform": "G+0x100 = WrapPi(controlHeading - stickAngle); G+0x0f0/+0x0f4/+0x0f8 separately retain the pitched 3D control-vector combination",
     "diagonalSpeedBoost": false,
     "accelerationVariesWithMagnitude": false,
-    "controlHeadingSource": "unknown retail camera/control-heading state machine",
+    "controlHeadingSource": "ordinary target construction consumes float 0x00166dd8; producer camera/recenter/right-stick policy remains unknown",
     "portableContract": "directional target construction is promoted; raw-byte magnitude shaping is recovered but not yet promoted into the host PlayerControlIntent boundary",
     "evidence": [
       "research/generated/rac1-analogue-input-law.json",
-      "research/generated/rac1-stick-heading-probe.json"
-    ]
+      "research/generated/rac1-stick-heading-probe.json",
+      "research/generated/rac1-movement-savestate-probe.json"
+    ],
+    "walkRunLiveBracket": {
+      "lastCardinalWalkRemappedMagnitude": 62,
+      "firstCardinalRunRemappedMagnitude": 63,
+      "diagonalWalkMagnitudeWitness": 62.22539674441618,
+      "diagonalRunMagnitudeWitness": 63.63961030678928,
+      "exactTranslationalThresholdProven": false
+    },
+    "highMagnitudeFacingThreshold": {
+      "normalized": 0.8199999928474426,
+      "remappedCounts": 62.31999945640564,
+      "codeSite": "0x0021c254",
+      "provenConsumer": "facing-controller coefficient branch; not promoted as translational run selector"
+    },
+    "controlHeadingField": "0x00166dd8"
   }
 }

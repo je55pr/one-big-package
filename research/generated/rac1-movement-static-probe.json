@@ -71,8 +71,31 @@
   },
   "reginfoGp": "0x00166c00",
   "floatLoadSites": [],
+  "loadedOverlayBoundary": [
+    {
+      "address": "0x002116c0",
+      "bootElfContainsAddress": true,
+      "bootElfMatchesLoadedOverlaySignature": false
+    },
+    {
+      "address": "0x00211b5c",
+      "bootElfContainsAddress": true,
+      "bootElfMatchesLoadedOverlaySignature": false
+    },
+    {
+      "address": "0x0021c254",
+      "bootElfContainsAddress": true,
+      "bootElfMatchesLoadedOverlaySignature": false
+    },
+    {
+      "address": "0x00267274",
+      "bootElfContainsAddress": false,
+      "bootElfMatchesLoadedOverlaySignature": false
+    }
+  ],
   "notes": [
     "This probe is static executable archaeology only; load sites establish literal use, not gameplay semantics by themselves.",
-    "A recurrence is admitted only when surrounding dataflow and/or controlled live witnesses identify the player movement path."
+    "A recurrence is admitted only when surrounding dataflow and/or controlled live witnesses identify the player movement path.",
+    "The active analogue/player routines are loaded overlays: overlapping boot-ELF virtual addresses do not match the loaded signatures, and the conditioner lies beyond the boot PT_LOAD range."
   ]
 }

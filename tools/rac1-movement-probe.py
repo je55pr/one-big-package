@@ -21,6 +21,16 @@ FLOATS = {
     "snap_step_fraction": 0.01,
 }
 
+# Active loaded-memory signatures verified by rac1-savestate-movement-probe.py.
+# Comparing them with the boot ELF prevents same-VA boot bytes from being
+# mistaken for the gameplay overlay implementation.
+LOADED_OVERLAY_SIGNATURES = {
+    0x002116C0: 0x3C013E80,
+    0x00211B5C: 0xC44D6DD8,
+    0x0021C254: 0xC440BDC4,
+    0x00267274: 0x2445FF81,
+}
+
 
 def sha256(data):
     return hashlib.sha256(data).hexdigest()
@@ -70,6 +80,28 @@ def load_segments(exe):
         offset, vaddr, _paddr, filesz, _memsz, flags, _align = struct.unpack_from("<7I", exe, at + 4)
         segments.append({"offset": offset, "vaddr": vaddr, "size": filesz, "flags": flags})
     return segments
+
+
+def word_at_vaddr(exe, segments, address):
+    for segment in segments:
+        start = segment["vaddr"]
+        end = start + segment["size"]
+        if start <= address and address + 4 <= end:
+            offset = segment["offset"] + (address - start)
+            return struct.unpack_from("<I", exe, offset)[0]
+    return None
+
+
+def overlay_boundary_report(exe, segments):
+    rows = []
+    for address, loaded_word in LOADED_OVERLAY_SIGNATURES.items():
+        boot_word = word_at_vaddr(exe, segments, address)
+        rows.append({
+            "address": f"0x{address:08x}",
+            "bootElfContainsAddress": boot_word is not None,
+            "bootElfMatchesLoadedOverlaySignature": boot_word == loaded_word,
+        })
+    return rows
 
 
 def locate_float_addresses(exe, segments):
@@ -187,9 +219,11 @@ def build_report(iso_path):
         },
         "reginfoGp": f"0x{gp:08x}",
         "floatLoadSites": xrefs,
+        "loadedOverlayBoundary": overlay_boundary_report(exe, segments),
         "notes": [
             "This probe is static executable archaeology only; load sites establish literal use, not gameplay semantics by themselves.",
             "A recurrence is admitted only when surrounding dataflow and/or controlled live witnesses identify the player movement path.",
+            "The active analogue/player routines are loaded overlays: overlapping boot-ELF virtual addresses do not match the loaded signatures, and the conditioner lies beyond the boot PT_LOAD range.",
         ],
     }
 

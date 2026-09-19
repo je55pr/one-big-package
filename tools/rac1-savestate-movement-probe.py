@@ -20,6 +20,34 @@ FLOATS = {
     "snap_step_fraction": 0.01,
 }
 
+INPUT_STATE = 0x0013C940
+PLAYER_GLOBAL = 0x0013F350
+PLAYER_STATE = 0x0013F3D0
+CONTROL_HEADING = 0x00166DD8
+HIGH_MAGNITUDE_THRESHOLD = 0x0017BDC4
+
+# Small instruction signatures only. They prove the active loaded overlay/dataflow
+# without retaining any executable or savestate payload.
+ANALOGUE_SIGNATURES = {
+    0x00267274: 0x2445FF81,  # raw byte - 127
+    0x00267284: 0x28A30030,  # abs delta < 48
+    0x00267294: 0x24A4FFD0,  # abs delta - 48
+    0x002672A0: 0x2404004C,  # divisor 76
+    0x002672CC: 0x2C42007F,  # restore sign from raw < 127
+    0x002116AC: 0xC6010108,  # conditioned left X
+    0x002116B0: 0xC600010C,  # conditioned left Y
+    0x002116C0: 0x3C013E80,  # exact 0.25f activation threshold
+    0x00211B5C: 0xC44D6DD8,  # separate control-heading field
+    0x00211B60: 0x0C08003A,  # wrapped-angle add helper
+    0x0021C1D8: 0xC443229C,  # capped magnitude sample
+    0x0021C254: 0xC440BDC4,  # exact 0.82f high-magnitude facing threshold
+}
+
+HEADING_WITNESSES = {
+    "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d": -2.073779821,
+    "067e5ca260233fcccc958f54e412e3fad26f38406a2a7d2f13d8f6477e92a0aa": 2.842167616,
+}
+
 
 def sha256(data):
     return hashlib.sha256(data).hexdigest()
@@ -107,9 +135,81 @@ def disassembly_windows(memory, refs, radius=10):
     return rows
 
 
+def f32_at(memory, address):
+    return struct.unpack_from("<f", memory, address)[0]
+
+
+def verify_analogue_signatures(memory):
+    mismatches = []
+    for address, expected in ANALOGUE_SIGNATURES.items():
+        actual = struct.unpack_from("<I", memory, address)[0]
+        if actual != expected:
+            mismatches.append({
+                "address": f"0x{address:08x}",
+                "expected": f"0x{expected:08x}",
+                "actual": f"0x{actual:08x}",
+            })
+    if mismatches:
+        raise RuntimeError(f"loaded analogue dataflow signatures changed: {mismatches}")
+
+
+def analogue_report(memory, state_sha256):
+    verify_analogue_signatures(memory)
+    heading = f32_at(memory, CONTROL_HEADING)
+    expected_heading = HEADING_WITNESSES.get(state_sha256)
+    heading_delta = None if expected_heading is None else heading - expected_heading
+    high_magnitude_threshold = f32_at(memory, HIGH_MAGNITUDE_THRESHOLD)
+    return {
+        "loadedOverlaySignaturesVerified": len(ANALOGUE_SIGNATURES),
+        "inputStateBase": f"0x{INPUT_STATE:08x}",
+        "conditionedAxes": {
+            "rightX": "I+0x100",
+            "rightY": "I+0x104",
+            "leftX": "I+0x108",
+            "leftY": "I+0x10c",
+            "formula": "sign(raw-127) * clamp((abs(raw-127)-48)/76, 0, 1)",
+            "routine": "0x00267270..0x002672e0",
+        },
+        "playerGlobalBase": f"0x{PLAYER_GLOBAL:08x}",
+        "playerStateBase": f"0x{PLAYER_STATE:08x}",
+        "magnitude": {
+            "currentConditionedVector": "P+0x1d20/+0x1d24",
+            "activationComparison": "length(currentConditionedVector) < 0.25 falls back to digital/zero input",
+            "activationThresholdNormalized": 0.25,
+            "activationThresholdRemappedCounts": 19.0,
+            "cappedMagnitudeSample": "P+0x229c",
+            "cappedMagnitudeRoutine": "0x00211830..0x00211868",
+            "highMagnitudeFacingComparison": "0.82 < P+0x229c selects the high-magnitude facing-controller branch at 0x0021c254",
+            "highMagnitudeThresholdNormalized": high_magnitude_threshold,
+            "highMagnitudeThresholdRemappedCounts": high_magnitude_threshold * 76.0,
+            "firstIntegerCardinalAboveHighMagnitudeThreshold": 63,
+            "pipelineNote": "P+0x229c is computed before the current conditioned pair is copied into P+0x1d20/+0x1d24, so it is a cached prior-vector magnitude within this update path.",
+            "boundaryNote": "The 0.82 branch is proven to select facing-controller coefficients. Its numerical agreement with the live 62/63 speed-band bracket does not by itself prove that it is the translational run-speed selector.",
+        },
+        "heading": {
+            "controlHeadingAddress": f"0x{CONTROL_HEADING:08x}",
+            "controlHeadingValue": heading,
+            "independentLiveHeading": expected_heading,
+            "loadedMinusLiveHeading": heading_delta,
+            "targetYaw": "G+0x100",
+            "construction": "ordinary mode computes stick term atan2(-conditionedX, -conditionedY), then WrapPi(stickTerm + controlHeading)",
+            "equivalentLiveConvention": "G+0x100 = WrapPi(controlHeading - stickAngle)",
+            "angleRoutine": "0x001ff8b0",
+            "wrapAddRoutine": "0x002000e8",
+            "targetRoutine": "0x002118c8..0x00211be4",
+        },
+        "unresolved": [
+            "The state machine that produces 0x00166dd8, including camera chase/recenter/right-stick policy, is not established here.",
+            "Special target-construction modes inside 0x002118c8 are not promoted as ordinary locomotion semantics.",
+            "The exact walk-speed plateau remains a live witness; this report establishes input conditioning and magnitude branch thresholds, not every downstream speed constant.",
+        ],
+    }
+
+
 def build_report(savestate_path, zstd_dll):
     raw = savestate_path.read_bytes()
     memory = read_zip_entry(savestate_path, "eeMemory.bin", zstd_dll)
+    state_sha256 = sha256(raw)
     float_addresses = scan_float_addresses(memory)
     wanted = {address for values in float_addresses.values() for address in values}
     refs = scan_lui_lwc1_refs(memory, wanted)
@@ -125,7 +225,7 @@ def build_report(savestate_path, zstd_dll):
             "serial": "SCUS-97199",
         },
         "literalSource": "exact binary32 constants currently used by Rac1RatchetYawController",
-        "savestateSha256": sha256(raw),
+        "savestateSha256": state_sha256,
         "eeMemorySha256": sha256(memory),
         "eeMemoryBytes": len(memory),
         "floatAddresses": {
@@ -141,6 +241,7 @@ def build_report(savestate_path, zstd_dll):
             }
             for lui_pc, load_pc, address in refs
         ],
+        "analogueDataflow": analogue_report(memory, state_sha256),
         "notes": [
             "The savestate and eeMemory payload remain user-local and are never emitted.",
             "eeMemory.bin offsets are EE virtual addresses for ordinary RAM.",
@@ -149,13 +250,35 @@ def build_report(savestate_path, zstd_dll):
     }
 
 
+def comparison_report(paths, zstd_dll):
+    rows = []
+    for path in paths:
+        raw = path.read_bytes()
+        state_sha256 = sha256(raw)
+        memory = read_zip_entry(path, "eeMemory.bin", zstd_dll)
+        dataflow = analogue_report(memory, state_sha256)
+        rows.append({
+            "savestateSha256": state_sha256,
+            "controlHeadingValue": dataflow["heading"]["controlHeadingValue"],
+            "independentLiveHeading": dataflow["heading"]["independentLiveHeading"],
+            "loadedMinusLiveHeading": dataflow["heading"]["loadedMinusLiveHeading"],
+            "highMagnitudeThresholdNormalized": dataflow["magnitude"]["highMagnitudeThresholdNormalized"],
+        })
+    return rows
+
+
 def main():
     parser = argparse.ArgumentParser(description="Probe loaded R&C1 EE memory for movement constants")
     parser.add_argument("--savestate", required=True, type=Path)
+    parser.add_argument("--compare-savestate", action="append", default=[], type=Path)
     parser.add_argument("--zstd-dll", required=True, type=Path)
     parser.add_argument("--out", type=Path)
     args = parser.parse_args()
     report = build_report(args.savestate, args.zstd_dll)
+    if args.compare_savestate:
+        report["analogueDataflowComparison"] = comparison_report(
+            [args.savestate, *args.compare_savestate], args.zstd_dll,
+        )
     rendered = json.dumps(report, indent=2) + "\n"
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -10,23 +10,28 @@
   "rawStickLaw": {
     "neutralByte": 127,
     "axisRemap": {
-      "formula": "sign(raw - 127) * clamp(abs(raw - 127) - 48, 0, 76)",
+      "formula": "retained count convention: sign(raw - 127) * clamp(abs(raw - 127) - 48, 0, 76)",
       "componentDeadbandCounts": 48,
       "maximumRemappedComponent": 76,
       "signSymmetryVerified": true,
-      "maximumObservedAngleFitResidualRad": 6.550497826940394e-7
+      "maximumObservedAngleFitResidualRad": 6.550497826940394e-07,
+      "loadedCodeNormalizedFormula": "sign(raw - 127) * clamp((abs(raw - 127) - 48) / 76, 0, 1)",
+      "loadedCodeRoutine": "0x00267270..0x002672e0"
     },
     "remappedMagnitude": "hypot(remappedX, remappedY)",
     "movementThreshold": {
       "minimumActiveMagnitude": 19,
       "largestInactiveCardinalMagnitude": 18,
       "inactiveDiagonalMagnitudeWitness": 18.384776310850235,
-      "activeDiagonalMagnitudeWitness": 19.79898987322333
+      "activeDiagonalMagnitudeWitness": 19.79898987322333,
+      "exactNormalizedActivationThreshold": 0.25,
+      "loadedCodePath": "0x002116ac..0x00211724; magnitude < 0.25 falls back to digital/zero input"
     },
     "speedBands": {
-      "idle": "remappedMagnitude < 19",
-      "walk": "19 <= remappedMagnitude < 63",
-      "run": "remappedMagnitude >= 63",
+      "idle": "remappedMagnitude < 19; exact code-backed analogue activation boundary",
+      "walkLiveWitnesses": "cardinal 19..62 and diagonal radius 62.22539674441618 settle on the approximately 0.015 walk plateau",
+      "runLiveWitnesses": "cardinal 63+ and diagonal radius 63.63961030678928 reach run behavior/cap in the retained sweeps",
+      "walkRunBoundaryStatus": "live displacement bracket only; exact translational selector not yet traced",
       "walkSteadyPlanarStepApprox": 0.015,
       "walkObservedSteadyRange": [
         0.01499044009698121,
@@ -46,8 +51,10 @@
       "fullDiagonalSpeedBoostObserved": false,
       "fullScaleCardinalObservedMax": 0.09499514738350542,
       "fullScaleDiagonalObservedMax": 0.09500049188850841,
-      "controlHeadingSource": "retail camera/control-heading production remains unrecovered",
-      "headingEvidence": "research/generated/rac1-stick-heading-probe.json"
+      "controlHeadingSource": "ordinary target routine consumes 0x00166dd8; upstream camera/control-heading production remains unrecovered",
+      "headingEvidence": "research/generated/rac1-stick-heading-probe.json",
+      "controlHeadingField": "0x00166dd8",
+      "loadedTargetDataflow": "0x002118c8..0x00211be4 with angle helper 0x001ff8b0 and WrapPi add helper 0x002000e8"
     }
   },
   "groundAcceleration": {
@@ -67,7 +74,14 @@
       3,
       4
     ],
-    "note": "Run-band input still accelerates through native sequence 3; sequence 4 begins when actual planar motion reaches the separately recovered startup-to-run speed boundary."
+    "note": "Run-band input still accelerates through native sequence 3; sequence 4 begins when actual planar motion reaches the separately recovered startup-to-run speed boundary.",
+    "exactTranslationalThresholdProven": false,
+    "nearbyCodeProvenFacingThreshold": {
+      "normalized": 0.8199999928474426,
+      "remappedCounts": 62.31999945640564,
+      "codeSite": "0x0021c254",
+      "note": "lies between live walk/run witnesses but established consumer is the facing-controller coefficient branch"
+    }
   },
   "release": {
     "walk": {
@@ -102,62 +116,96 @@
   "selectedWitnesses": [
     {
       "claim": "cardinal remapped magnitude 18 is inactive",
-      "rawLeft": [127, 61],
+      "rawLeft": [
+        127,
+        61
+      ],
       "movieSha256": "fbb4d0fffb4b98b9a817bac5887f67b96253fa968c39f515306b0d11b60af335"
     },
     {
       "claim": "cardinal remapped magnitude 19 is active",
-      "rawLeft": [127, 60],
+      "rawLeft": [
+        127,
+        60
+      ],
       "movieSha256": "cec6539705854562c09dce4fa77cf836b4af43b4283313633dc0a50d80c6ca7e"
     },
     {
       "claim": "diagonal remapped radius 18.385 is inactive",
-      "rawLeft": [188, 188],
+      "rawLeft": [
+        188,
+        188
+      ],
       "movieSha256": "d4d8e698c9c72b8acef15bd25199a4dfbb967855b3edfbb5b6413f1de9a16430"
     },
     {
       "claim": "diagonal remapped radius 19.799 is active",
-      "rawLeft": [189, 189],
+      "rawLeft": [
+        189,
+        189
+      ],
       "movieSha256": "cab142825019179f552931849a6b6ef00fc41ce81e858e5f3b0c25723d676cd3"
     },
     {
       "claim": "cardinal remapped magnitude 62 stays walk",
-      "rawLeft": [127, 237],
+      "rawLeft": [
+        127,
+        237
+      ],
       "movieSha256": "401360441210558f9a6475f2100da898155fcc2ac1741a5983b32ee3a06cc0a6"
     },
     {
       "claim": "cardinal remapped magnitude 63 enters run",
-      "rawLeft": [127, 238],
+      "rawLeft": [
+        127,
+        238
+      ],
       "movieSha256": "3f836e22d570a814e73292798382ea5f9736850438aed6c43d43f9d856e13d4d"
     },
     {
       "claim": "diagonal remapped radius 62.225 stays walk",
-      "rawLeft": [219, 219],
+      "rawLeft": [
+        219,
+        219
+      ],
       "movieSha256": "a0c3a97b3a881ba6068d1e37ec2f4b4d4d59d9107050e6c18b9408e65fbe8ca6"
     },
     {
       "claim": "diagonal remapped radius 63.640 enters run",
-      "rawLeft": [220, 220],
+      "rawLeft": [
+        220,
+        220
+      ],
       "movieSha256": "c770e818ac6a2f421b28d14054cd8f9389e996d282408271e3bfab6318976529"
     },
     {
       "claim": "full-scale cardinal run cap",
-      "rawLeft": [127, 255],
+      "rawLeft": [
+        127,
+        255
+      ],
       "movieSha256": "040fbafade6164b1f88b2a76ae4013426a382ac210d5ab514679e362c1da6aef"
     },
     {
       "claim": "full-scale diagonal has no planar speed boost",
-      "rawLeft": [255, 255],
+      "rawLeft": [
+        255,
+        255
+      ],
       "movieSha256": "e16930d57187f7fa3aeb749e847df47f0f6f580f9ebb64ca21d50d70b05b0906"
     },
     {
       "claim": "negative component remap is symmetric",
-      "rawLeft": [63, 255],
+      "rawLeft": [
+        63,
+        255
+      ],
       "movieSha256": "71d721eb517e2f585eb071223730a6c952904ce2bea9cf2542dc782d76400028"
     }
   ],
   "unresolved": [
-    "The upstream retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response remain unrecovered; the target construction itself is recovered.",
+    "The consumer control-heading field is identified as 0x00166dd8, but the upstream retail camera/control-heading producer, chase follow/recenter, obstruction law and exact right-stick response remain unrecovered.",
+    "The exact translational walk/run selector is not yet identified in code; cardinal 62/63 and diagonal 62.225/63.640 remain live displacement brackets. The nearby exact 0.82 comparison is proven only in the facing-controller path.",
     "The approximately 0.015 walk plateau is repeatedly observed but no exact retail literal is asserted.",
     "Transient displacement while Ratchet is making a large facing correction can be below the aligned walk plateau and should not be treated as a separate analogue speed band.",
     "The recovered raw-byte magnitude shaping is not yet promoted into the host PlayerControlIntent boundary."
@@ -167,6 +215,7 @@
     "fixed retail savestate reload for every trial",
     "frame-by-frame PINE displacement/yaw/target-yaw/sequence sampling",
     "cross-check against research/generated/rac1-stick-heading-probe.json for the controlHeading - stickAngle target convention",
+    "loaded-overlay instruction/dataflow verification from research/generated/rac1-movement-savestate-probe.json",
     "raw movies and captures remain ignored under captures/"
   ]
 }
