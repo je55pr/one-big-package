@@ -197,7 +197,7 @@
     "diagonalSpeedBoost": false,
     "accelerationVariesWithMagnitude": false,
     "controlHeadingSource": "ordinary target construction consumes float 0x00166dd8; producer camera/recenter/right-stick policy remains unknown",
-    "portableContract": "directional target construction is promoted; raw-byte magnitude shaping is recovered but not yet promoted into the host PlayerControlIntent boundary",
+    "portableContract": "Godot supplies unconditioned normalized signed action axes through PlayerControlIntent; Rac1RatchetMovementController.Step applies Rac1AnalogueInput.ConditionUnitAxes, reproducing the recovered 48/76 conditioner and radial activation while literal DualShock 2 bytes remain archaeology/harness evidence rather than a host boundary format",
     "evidence": [
       "research/generated/rac1-analogue-input-law.json",
       "research/generated/rac1-stick-heading-probe.json",

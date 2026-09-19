@@ -89,6 +89,21 @@ public sealed class Rac1AnalogueInputTests
     }
 
     [Fact]
+    public void PlayerControlIntentBoundary_ConditionsInsideRac1Controller()
+    {
+        var intent = IntentFromRaw(220, 220);
+        var literal = Rac1AnalogueInput.ConditionRawLeftStick(220, 220);
+        var controller = new Rac1RatchetMovementController();
+
+        Assert.NotEqual(literal.X, intent.PlanarX);
+        Assert.NotEqual(literal.Y, intent.PlanarY);
+
+        controller.Step(intent, Grounded);
+
+        Assert.Equal(literal, controller.AnalogueInput);
+    }
+
+    [Fact]
     public void GroundDeadZone_NonzeroRawIntentDoesNotMove()
     {
         var controller = new Rac1RatchetMovementController();
