@@ -19,13 +19,17 @@ public enum Rac1LevelVisitState : byte
 /// </summary>
 public sealed class Rac1CampaignState
 {
+    /// <summary>Serialized VisitedPlanets, GalacticMap, and per-level record capacity.</summary>
     public const int NativeLevelCapacity = 20;
 
+    /// <summary>Retail gameplay accepts native level/destination ids 0 through 18.</summary>
+    public const int NativeDestinationCount = 19;
+
     private readonly byte[] _visitedPlanets = new byte[NativeLevelCapacity];
-    private readonly byte[] _galacticMap = new byte[NativeLevelCapacity];
+    private readonly int[] _galacticMap = new int[NativeLevelCapacity];
     private readonly Rac1LevelVisitState[] _levelStates = new Rac1LevelVisitState[NativeLevelCapacity];
     private readonly IReadOnlyList<byte> _visitedPlanetsView;
-    private readonly IReadOnlyList<byte> _galacticMapView;
+    private readonly IReadOnlyList<int> _galacticMapView;
     private readonly IReadOnlyList<Rac1LevelVisitState> _levelStatesView;
     private int _admittedDestinationCount;
 
@@ -42,7 +46,7 @@ public sealed class Rac1CampaignState
     public int CurrentLevel { get; private set; }
     public int AdmittedDestinationCount => _admittedDestinationCount;
     public IReadOnlyList<byte> VisitedPlanets => _visitedPlanetsView;
-    public IReadOnlyList<byte> GalacticMap => _galacticMapView;
+    public IReadOnlyList<int> GalacticMap => _galacticMapView;
     public IReadOnlyList<Rac1LevelVisitState> LevelStates => _levelStatesView;
 
     /// <summary>
@@ -55,7 +59,7 @@ public sealed class Rac1CampaignState
         if (_visitedPlanets[destinationId] != 0)
             return false;
 
-        _galacticMap[_admittedDestinationCount++] = checked((byte)destinationId);
+        _galacticMap[_admittedDestinationCount++] = destinationId;
         _visitedPlanets[destinationId] = 1;
         return true;
     }
@@ -104,7 +108,7 @@ public sealed class Rac1CampaignState
 
     private static void ValidateLevelId(int levelId)
     {
-        if ((uint)levelId >= NativeLevelCapacity)
+        if ((uint)levelId >= NativeDestinationCount)
             throw new ArgumentOutOfRangeException(nameof(levelId));
     }
 }

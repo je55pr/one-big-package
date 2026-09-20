@@ -17,8 +17,9 @@ public sealed class Rac1CampaignStateTests
         Assert.All(state.VisitedPlanets, value => Assert.Equal(0, value));
         Assert.All(state.GalacticMap, value => Assert.Equal(0, value));
         Assert.Equal(Rac1LevelVisitState.Visited, state.GetLevelState(0));
-        for (int levelId = 1; levelId < Rac1CampaignState.NativeLevelCapacity; levelId++)
+        for (int levelId = 1; levelId < Rac1CampaignState.NativeDestinationCount; levelId++)
             Assert.Equal(Rac1LevelVisitState.Unvisited, state.GetLevelState(levelId));
+        Assert.Equal(Rac1LevelVisitState.Unvisited, state.LevelStates[19]);
     }
 
     [Fact]
@@ -84,6 +85,7 @@ public sealed class Rac1CampaignStateTests
 
     [Theory]
     [InlineData(-1)]
+    [InlineData(Rac1CampaignState.NativeDestinationCount)]
     [InlineData(Rac1CampaignState.NativeLevelCapacity)]
     public void InvalidLevelIdsAreRejected(int levelId)
     {

@@ -1,0 +1,415 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "notes": [
+    "No ISO, executable, EE-memory, savestate, or memory-card payload bytes are emitted.",
+    "Runtime descriptors and code references are read from the authorized SCUS-97199 savestate.",
+    "Campaign destination ids are not asserted to be disc LEVELn identities without a direct loader bridge."
+  ],
+  "runtime": {
+    "savestateFile": "SCUS-97199 (CE4933D0).01.p2s",
+    "savestateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+    "gameDescriptors": {
+      "currentLevel": {
+        "descriptorAddress": "0x001845c0",
+        "runtimeAddress": "0x0015ed84",
+        "size": 4,
+        "blockId": 0,
+        "reserved": 0
+      },
+      "visitedPlanets": {
+        "descriptorAddress": "0x001846a0",
+        "runtimeAddress": "0x0013dd40",
+        "size": 20,
+        "blockId": 14,
+        "reserved": 0
+      },
+      "galacticMap": {
+        "descriptorAddress": "0x001846b0",
+        "runtimeAddress": "0x0013d510",
+        "size": 80,
+        "blockId": 20,
+        "reserved": 0
+      }
+    },
+    "perLevelVisitedDescriptor": {
+      "descriptorAddress": "0x001848c0",
+      "runtimeAddress": "0x0013dd58",
+      "size": 1,
+      "blockId": 3001,
+      "reserved": 0
+    },
+    "openingState": {
+      "currentLevel": 0,
+      "visitedPlanets": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "galacticMap": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "perLevelState": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "selectedDestination": 0
+    },
+    "runtimeOwners": {
+      "selectedDestination": "0x00184414",
+      "galacticMapNavigationPointer": {
+        "owner": "0x001602a0",
+        "value": "0x0013d510"
+      }
+    },
+    "code": {
+      "admissionRoutine": "0x002607d0",
+      "admissionCallers": [
+        "0x0023d16c",
+        "0x00283340",
+        "0x002d6a20"
+      ],
+      "scriptAdmissionCall": "0x00283340",
+      "transitionCore": "0x0024d430",
+      "transitionCallers": [
+        "0x00202b70",
+        "0x0027ffd0",
+        "0x0028ee78",
+        "0x002d6af4",
+        "0x002e0680"
+      ],
+      "travelRoutine": "0x0028ed58",
+      "travelCallers": [
+        "0x00276d38"
+      ],
+      "shipTravelCall": "0x00276d38",
+      "completionWrite": "0x0029340c",
+      "directRefs": {
+        "visitedPlanets": [
+          "0x00203524",
+          "0x0024dde8",
+          "0x0028ff44",
+          "0x002d60d0",
+          "0x002d6128",
+          "0x002d6300"
+        ],
+        "galacticMap": [
+          "0x00260824"
+        ],
+        "perLevelState": [
+          "0x0020350c",
+          "0x0024d52c",
+          "0x0024d614",
+          "0x0024e288",
+          "0x00279d58",
+          "0x0029340c"
+        ]
+      }
+    }
+  },
+  "memoryCard": {
+    "memoryCardSha256": "e3c403570266a8cea3a397f626331063a7fe781d6c042cdbd2c3bc858665deba",
+    "slotName": "save0.bin",
+    "slotSha256": "7ab4e16a917b4b8ae53de917f1392b26add43e6acc2541193dc15699d3e435f2",
+    "directory": {
+      "entryOffset": "0x13c00",
+      "size": 59912,
+      "startCluster": "0x27"
+    },
+    "slotHeader": {
+      "gameDataSize": 5424,
+      "levelDataSize": 2724,
+      "levelRecordCount": 20
+    },
+    "gameBlocks": {
+      "currentLevel": {
+        "id": 0,
+        "size": 4,
+        "offset": "0x18",
+        "value": 2
+      },
+      "visitedPlanets": {
+        "id": 14,
+        "size": 20,
+        "offset": "0x260",
+        "values": [
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "galacticMap": {
+        "id": 20,
+        "size": 80,
+        "offset": "0x27c",
+        "values": [
+          1,
+          2,
+          3,
+          4,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "levelRecords": [
+      {
+        "record": 0,
+        "streamOffset": "0x1538",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x1548",
+        "visited": 2
+      },
+      {
+        "record": 1,
+        "streamOffset": "0x1fdc",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x1fec",
+        "visited": 2
+      },
+      {
+        "record": 2,
+        "streamOffset": "0x2a80",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x2a90",
+        "visited": 1
+      },
+      {
+        "record": 3,
+        "streamOffset": "0x3524",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x3534",
+        "visited": 2
+      },
+      {
+        "record": 4,
+        "streamOffset": "0x3fc8",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x3fd8",
+        "visited": 0
+      },
+      {
+        "record": 5,
+        "streamOffset": "0x4a6c",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x4a7c",
+        "visited": 0
+      },
+      {
+        "record": 6,
+        "streamOffset": "0x5510",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x5520",
+        "visited": 0
+      },
+      {
+        "record": 7,
+        "streamOffset": "0x5fb4",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x5fc4",
+        "visited": 0
+      },
+      {
+        "record": 8,
+        "streamOffset": "0x6a58",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x6a68",
+        "visited": 0
+      },
+      {
+        "record": 9,
+        "streamOffset": "0x74fc",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x750c",
+        "visited": 0
+      },
+      {
+        "record": 10,
+        "streamOffset": "0x7fa0",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x7fb0",
+        "visited": 0
+      },
+      {
+        "record": 11,
+        "streamOffset": "0x8a44",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x8a54",
+        "visited": 0
+      },
+      {
+        "record": 12,
+        "streamOffset": "0x94e8",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x94f8",
+        "visited": 0
+      },
+      {
+        "record": 13,
+        "streamOffset": "0x9f8c",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0x9f9c",
+        "visited": 0
+      },
+      {
+        "record": 14,
+        "streamOffset": "0xaa30",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0xaa40",
+        "visited": 0
+      },
+      {
+        "record": 15,
+        "streamOffset": "0xb4d4",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0xb4e4",
+        "visited": 0
+      },
+      {
+        "record": 16,
+        "streamOffset": "0xbf78",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0xbf88",
+        "visited": 0
+      },
+      {
+        "record": 17,
+        "streamOffset": "0xca1c",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0xca2c",
+        "visited": 0
+      },
+      {
+        "record": 18,
+        "streamOffset": "0xd4c0",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0xd4d0",
+        "visited": 0
+      },
+      {
+        "record": 19,
+        "streamOffset": "0xdf64",
+        "streamSize": 2724,
+        "checksumPayloadSize": 2716,
+        "visitedOffset": "0xdf74",
+        "visited": 0
+      }
+    ],
+    "gameChecksumPayloadSize": 5416,
+    "smallestSpecificRevisit": [
+      2,
+      1,
+      2
+    ]
+  }
+}
