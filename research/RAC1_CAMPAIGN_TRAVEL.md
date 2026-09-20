@@ -159,3 +159,17 @@ at the late commit, and completion of level initialization clears transition
 activity. Persistent discovery, GalacticMap order, completion state, and the
 serialized CurrentLevel remain owned by `Rac1CampaignState`; the raw pending
 slot is intentionally not treated as durable campaign state.
+
+## OBP persistence migration/default policy
+
+`Rac1CampaignSavePolicy` keeps host persistence versioning outside the recovered
+`Rac1CampaignPersistentState` payload, so migration metadata cannot become a
+second source of campaign truth. Schema version 1 is exactly the four recovered
+persistent fields above.
+
+For an OBP save that has no R&C1 campaign payload because it predates this
+contract, the field defaults to the recovered opening state: `CurrentLevel=0`,
+no admitted destinations, and level 0 in native `Visited` state. Existing
+unversioned `Rac1CampaignPersistentState` snapshots migrate to schema v1 without
+changing any campaign value. Unknown schema versions are rejected rather than
+being guessed or partially defaulted.
