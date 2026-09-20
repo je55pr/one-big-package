@@ -58,15 +58,16 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
             path.write_text(json.dumps({
                 "schema": 1,
                 "fields": {
-                    "camera_position_x": {"address": "0x00167000", "kind": "f32"},
-                    "camera_forward_x": {"address": "0x00167010", "kind": "f32"},
+                    "camera_probe_position_x": {"address": "0x00167000", "kind": "f32"},
+                    "camera_probe_forward_x": {"address": "0x00167010", "kind": "f32"},
                 },
                 "candidateRanges": [
                     {"start": "0x00167100", "bytes": 16},
                 ],
             }), encoding="utf-8")
             fields, ranges = CAMERA.load_field_map(path)
-            self.assertEqual(fields["camera_position_x"], (0x00167000, "f32"))
+            self.assertEqual(fields["camera_probe_position_x"], (0x00167000, "f32"))
+            self.assertEqual(fields["camera_probe_forward_x"], (0x00167010, "f32"))
             self.assertEqual(ranges, [(0x00167100, 16)])
 
             path.write_text(json.dumps({
@@ -79,8 +80,8 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
                 CAMERA.load_field_map(path)
     def test_sample_frame_batches_known_camera_and_candidate_words(self):
         extra = {
-            "camera_position_x": (0x00167000, "f32"),
-            "camera_yaw": (0x00167004, "f32"),
+            "camera_probe_position_x": (0x00167000, "f32"),
+            "camera_probe_yaw": (0x00167004, "f32"),
         }
         ranges = [(0x00167100, 8)]
         values = {
@@ -95,8 +96,8 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
 
         sample = CAMERA.sample_frame(pine, extra, ranges)
 
-        self.assertAlmostEqual(sample["camera_position_x"], 12.5)
-        self.assertAlmostEqual(sample["camera_yaw"], -0.25)
+        self.assertAlmostEqual(sample["camera_probe_position_x"], 12.5)
+        self.assertAlmostEqual(sample["camera_probe_yaw"], -0.25)
         self.assertEqual(sample["candidate_words"]["0x00167100"], 0x12345678)
         self.assertIn(CAMERA.CONTROL_HEADING, pine.addresses)
         self.assertIn(CAMERA.INPUT_STATE + 0x100, pine.addresses)
@@ -104,7 +105,8 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
 
     def test_producer_probe_verifies_directional_heading_step_contract(self):
         memory = bytearray(0x00200134 + 4)
-        for address, word in CAMERA.CAMERA_PRODUCER_SIGNATURES.items():
+        signatures = {**CAMERA.CAMERA_PRODUCER_SIGNATURES, **CAMERA.CHASE_FOLLOW_SIGNATURES}
+        for address, word in signatures.items():
             struct.pack_into("<I", memory, address, word)
         struct.pack_into("<H", memory, CAMERA.PLAYER_STATE + 0x288, 0)
         struct.pack_into("<f", memory, CAMERA.CAMERA_STATE_BASE + 0x80, 0.0)
@@ -129,11 +131,42 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
             CAMERA.HARNESS.sha256 = original_sha
 
         branch = report["directionalHeadingStepBranch"]
-        self.assertEqual(report["loadedOverlaySignaturesVerified"], len(CAMERA.CAMERA_PRODUCER_SIGNATURES))
+        self.assertEqual(report["loadedOverlaySignaturesVerified"], len(signatures))
         self.assertAlmostEqual(branch["stepIncrementRad"], 0.0020000000949949026)
         self.assertAlmostEqual(branch["stepClampAbsRad"], 0.03999999910593033)
         self.assertEqual(branch["releaseDivisor"], 1.5)
         self.assertEqual(branch["headingUpdate"], "WrapPi(controlHeading - stepField)")
+        chase = report["ordinaryChaseFollowBranch"]
+        self.assertAlmostEqual(chase["verticalAcceleration"], 0.0075)
+        self.assertAlmostEqual(chase["verticalDamping"], 0.175)
+        self.assertEqual(chase["dampedStepHelper"], "0x001eb240..0x001eb320")
+
+    def test_camera_framing_reduces_native_geometry_and_vertical_follow_law(self):
+        pitch = 0.1
+        forward = (math.cos(pitch), 0.0, -math.sin(pitch))
+        def row(frame, player_z, follow_z, raw_z, velocity):
+            sample = {
+                "control_heading": 0.0,
+                "player_pos_x": 0.0, "player_pos_y": 0.0, "player_pos_z": player_z,
+                "camera_position_x": -6.0, "camera_position_y": 0.0, "camera_position_z": player_z + 2.0,
+                "camera_pitch": pitch,
+                "camera_forward_x": forward[0], "camera_forward_y": forward[1], "camera_forward_z": forward[2],
+                "camera_follow_x": 0.0, "camera_follow_y": 0.0, "camera_follow_z": follow_z,
+                "camera_follow_raw_z": raw_z, "camera_follow_z_velocity": velocity,
+                "camera_raw_player_x": 0.0, "camera_raw_player_y": 0.0, "camera_raw_player_z": player_z,
+            }
+            return {"frame": frame, "sample": sample}
+
+        rows = [
+            row(0, 0.0, 0.0, 0.0, 0.0),
+            row(1, 1.0, CAMERA.CHASE_Z_ACCEL, 1.0, CAMERA.CHASE_Z_ACCEL),
+        ]
+        report = CAMERA.camera_framing_summary(rows)
+        self.assertAlmostEqual(report["planarDistance"]["min"], 6.0)
+        self.assertLess(report["maxEyeRayYawErrorRad"], 1e-12)
+        self.assertLess(report["maxForwardBasisComponentError"], 1e-12)
+        self.assertEqual(report["maxRawPlayerCopyError"], 0.0)
+        self.assertLess(report["verticalFollowLaw"]["maxAbsResidual"], 1e-12)
 
     def test_reducer_keeps_camera_summaries_but_not_raw_candidate_words(self):
         def row(frame, right, heading, yaw, px, camera_x, candidate):

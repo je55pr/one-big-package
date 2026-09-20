@@ -2,12 +2,16 @@
   "schema": 1,
   "authority": "R&C1 NTSC-U SCUS-97199 loaded EE savestate",
   "savestateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
-  "loadedOverlaySignaturesVerified": 18,
+  "loadedOverlaySignaturesVerified": 38,
   "addresses": {
     "inputState": "0x0013c940",
     "inputDirectionFlags": "0x0013cae0",
     "cameraStateBase": "0x0016c058",
     "cameraControlBasisBase": "0x00166c80",
+    "cameraPositionBase": "0x00166dc0",
+    "cameraPitch": "0x00166dd4",
+    "cameraFollowBase": "0x00166e10",
+    "cameraRawPlayerBase": "0x00166e70",
     "controlHeading": "0x00166dd8"
   },
   "savestateWitness": {
@@ -26,6 +30,17 @@
     "releaseDivisor": 1.5,
     "headingUpdate": "WrapPi(controlHeading - stepField)",
     "wrapDifferenceHelper": "0x00200130"
+  },
+  "ordinaryChaseFollowBranch": {
+    "producerRoutine": "0x001eca70..0x001ecde8",
+    "dampedStepHelper": "0x001eb240..0x001eb320",
+    "filteredTarget": "cameraControlBasis+0x190",
+    "rawPlayerCopy": "cameraControlBasis+0x1f0",
+    "ordinaryXY": "filtered X/Y copy player X/Y directly",
+    "verticalAcceleration": 0.007499999832361937,
+    "verticalDamping": 0.17499999701976776,
+    "verticalStep": "v += accel * (target - current) - damping * v; clamp v to remaining delta; current += v",
+    "modeBranch": "state+0x2284 == 0x50 and state+0x2084 != 0x11 takes an alternate follow path"
   },
   "uncertainty": [
     "This branch explains direction-flag-driven heading change, but it is not the complete manual-camera producer.",

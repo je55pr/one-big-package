@@ -28,7 +28,16 @@ PLAYER_MOBY = 0x01845E80
 CONTROL_HEADING = 0x00166DD8
 CONTROL_BASIS_BASE = 0x00166C80
 CAMERA_STATE_BASE = 0x0016C058
+CAMERA_POSITION_BASE = CONTROL_BASIS_BASE + 0x140
+CAMERA_PITCH = CONTROL_BASIS_BASE + 0x154
+CAMERA_FOLLOW_BASE = CONTROL_BASIS_BASE + 0x190
+CAMERA_RAW_PLAYER_BASE = CONTROL_BASIS_BASE + 0x1F0
+CAMERA_FOLLOW_RAW_Z = CAMERA_FOLLOW_BASE + 0x0C
+CAMERA_FOLLOW_Z_VELOCITY = CAMERA_FOLLOW_BASE + 0x10
 INPUT_DIRECTION_FLAGS = INPUT_STATE + 0x1A0
+CHASE_Z_ACCEL = struct.unpack("<f", struct.pack("<I", 0x3BF5C28F))[0]
+CHASE_Z_DAMPING = struct.unpack("<f", struct.pack("<I", 0x3E333333))[0]
+CHASE_SCENARIO_IDS = ("fixed-heading", "moving", "turning", "idle", "turn-release")
 DEFAULT_CANDIDATE_START = 0x00166C00
 DEFAULT_CANDIDATE_BYTES = 0x400
 KNOWN_FIELDS = {
@@ -41,6 +50,21 @@ KNOWN_FIELDS = {
     "control_heading": (CONTROL_HEADING, "f32"),
     "camera_heading_sin": (CONTROL_BASIS_BASE, "f32"),
     "camera_heading_cos": (CONTROL_BASIS_BASE + 0x364, "f32"),
+    "camera_forward_x": (CONTROL_BASIS_BASE + 0x08, "f32"),
+    "camera_forward_y": (CONTROL_BASIS_BASE + 0x18, "f32"),
+    "camera_forward_z": (CONTROL_BASIS_BASE + 0x28, "f32"),
+    "camera_position_x": (CAMERA_POSITION_BASE + 0x00, "f32"),
+    "camera_position_y": (CAMERA_POSITION_BASE + 0x04, "f32"),
+    "camera_position_z": (CAMERA_POSITION_BASE + 0x08, "f32"),
+    "camera_pitch": (CAMERA_PITCH, "f32"),
+    "camera_follow_x": (CAMERA_FOLLOW_BASE + 0x00, "f32"),
+    "camera_follow_y": (CAMERA_FOLLOW_BASE + 0x04, "f32"),
+    "camera_follow_z": (CAMERA_FOLLOW_BASE + 0x08, "f32"),
+    "camera_follow_raw_z": (CAMERA_FOLLOW_RAW_Z, "f32"),
+    "camera_follow_z_velocity": (CAMERA_FOLLOW_Z_VELOCITY, "f32"),
+    "camera_raw_player_x": (CAMERA_RAW_PLAYER_BASE + 0x00, "f32"),
+    "camera_raw_player_y": (CAMERA_RAW_PLAYER_BASE + 0x04, "f32"),
+    "camera_raw_player_z": (CAMERA_RAW_PLAYER_BASE + 0x08, "f32"),
     "input_direction_flags": (INPUT_DIRECTION_FLAGS, "u32"),
     "right_conditioned_x": (INPUT_STATE + 0x100, "f32"),
     "right_conditioned_y": (INPUT_STATE + 0x104, "f32"),
@@ -67,6 +91,28 @@ CAMERA_PRODUCER_SIGNATURES = {
     0x001F3F40: 0x3C013FC0,  # release divisor 1.5f
     0x00200130: 0x460D6001,  # f0 = f12 - f13
 }
+CHASE_FOLLOW_SIGNATURES = {
+    0x001ECA90: 0x3C170016,  # s7 high half for camera globals
+    0x001ECAA0: 0x26F56E10,  # s5 = filtered follow target
+    0x001ECC6C: 0x8E822284,  # state-dependent follow-mode discriminator
+    0x001ECC78: 0x8E832084,  # secondary mode discriminator
+    0x001ECCA0: 0xE6E16E10,  # filtered target X = player X
+    0x001ECCA4: 0x3C013BF5,  # 0.0075 acceleration high half
+    0x001ECCA8: 0x3421C28F,  # 0.0075 acceleration low half
+    0x001ECCB0: 0x3C013E33,  # 0.175 damping high half
+    0x001ECCB4: 0x34213333,  # 0.175 damping low half
+    0x001ECCBC: 0x0C07AC90,  # call damped follow helper 0x001eb240
+    0x001ECCC0: 0xE6A00004,  # filtered target Y = player Y
+    0x001ECCC8: 0xE6A00008,  # store filtered target Z
+    0x001ECCD0: 0xE6A1000C,  # retain raw target Z
+    0x001EB260: 0x46156D01,  # delta = target - current
+    0x001EB26C: 0x46147382,  # accel * delta
+    0x001EB270: 0x46017BC2,  # damping * velocity
+    0x001EB274: 0x460F7381,  # accel term - damping term
+    0x001EB278: 0x460E0840,  # velocity += correction
+    0x001EB280: 0xE6010000,  # store updated velocity
+    0x001EB30C: 0x4600A800,  # return current + velocity
+}
 
 
 def wrap_pi(value: float) -> float:
@@ -84,7 +130,8 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
     probe = _movement_probe()
     memory = probe.read_zip_entry(savestate, "eeMemory.bin", zstd_dll)
     mismatches: list[dict[str, str]] = []
-    for address, expected in CAMERA_PRODUCER_SIGNATURES.items():
+    signatures = {**CAMERA_PRODUCER_SIGNATURES, **CHASE_FOLLOW_SIGNATURES}
+    for address, expected in signatures.items():
         actual = struct.unpack_from("<I", memory, address)[0]
         if actual != expected:
             mismatches.append({
@@ -102,12 +149,16 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
         "schema": 1,
         "authority": "R&C1 NTSC-U SCUS-97199 loaded EE savestate",
         "savestateSha256": HARNESS.sha256(savestate),
-        "loadedOverlaySignaturesVerified": len(CAMERA_PRODUCER_SIGNATURES),
+        "loadedOverlaySignaturesVerified": len(signatures),
         "addresses": {
             "inputState": f"0x{INPUT_STATE:08x}",
             "inputDirectionFlags": f"0x{INPUT_DIRECTION_FLAGS:08x}",
             "cameraStateBase": f"0x{CAMERA_STATE_BASE:08x}",
             "cameraControlBasisBase": f"0x{CONTROL_BASIS_BASE:08x}",
+            "cameraPositionBase": f"0x{CAMERA_POSITION_BASE:08x}",
+            "cameraPitch": f"0x{CAMERA_PITCH:08x}",
+            "cameraFollowBase": f"0x{CAMERA_FOLLOW_BASE:08x}",
+            "cameraRawPlayerBase": f"0x{CAMERA_RAW_PLAYER_BASE:08x}",
             "controlHeading": f"0x{CONTROL_HEADING:08x}",
         },
         "savestateWitness": {
@@ -126,6 +177,17 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
             "releaseDivisor": 1.5,
             "headingUpdate": "WrapPi(controlHeading - stepField)",
             "wrapDifferenceHelper": "0x00200130",
+        },
+        "ordinaryChaseFollowBranch": {
+            "producerRoutine": "0x001eca70..0x001ecde8",
+            "dampedStepHelper": "0x001eb240..0x001eb320",
+            "filteredTarget": "cameraControlBasis+0x190",
+            "rawPlayerCopy": "cameraControlBasis+0x1f0",
+            "ordinaryXY": "filtered X/Y copy player X/Y directly",
+            "verticalAcceleration": CHASE_Z_ACCEL,
+            "verticalDamping": CHASE_Z_DAMPING,
+            "verticalStep": "v += accel * (target - current) - damping * v; clamp v to remaining delta; current += v",
+            "modeBranch": "state+0x2284 == 0x50 and state+0x2084 != 0x11 takes an alternate follow path",
         },
         "uncertainty": [
             "This branch explains direction-flag-driven heading change, but it is not the complete manual-camera producer.",
@@ -533,6 +595,100 @@ def movement_target_error(rows: list[dict[str, object]]) -> dict[str, object]:
     }
 
 
+def camera_framing_summary(rows: list[dict[str, object]]) -> dict[str, object] | None:
+    required = {
+        "control_heading", "player_pos_x", "player_pos_y", "player_pos_z",
+        "camera_position_x", "camera_position_y", "camera_position_z", "camera_pitch",
+        "camera_forward_x", "camera_forward_y", "camera_forward_z",
+        "camera_follow_x", "camera_follow_y", "camera_follow_z",
+        "camera_follow_raw_z", "camera_follow_z_velocity",
+        "camera_raw_player_x", "camera_raw_player_y", "camera_raw_player_z",
+    }
+    if not rows or not required.issubset(rows[0]["sample"]):
+        return None
+
+    distances: list[float] = []
+    eye_heights: list[float] = []
+    yaw_errors: list[float] = []
+    forward_errors: list[float] = []
+    pitch_values: list[float] = []
+    look_height_over_filtered: list[float] = []
+    follow_planar_errors: list[float] = []
+    raw_player_errors: list[float] = []
+    z_lag: list[float] = []
+    camera_steps: list[float] = []
+    vertical_law_errors: list[float] = []
+
+    for index, row in enumerate(rows):
+        sample = row["sample"]
+        heading = float(sample["control_heading"])
+        pitch = float(sample["camera_pitch"])
+        dx = float(sample["player_pos_x"]) - float(sample["camera_position_x"])
+        dy = float(sample["player_pos_y"]) - float(sample["camera_position_y"])
+        distance = math.hypot(dx, dy)
+        distances.append(distance)
+        eye_heights.append(float(sample["camera_position_z"]) - float(sample["player_pos_z"]))
+        yaw_errors.append(abs(wrap_pi(math.atan2(dy, dx) - heading)))
+        pitch_values.append(pitch)
+
+        cos_pitch = math.cos(pitch)
+        expected_forward = (
+            math.cos(heading) * cos_pitch,
+            math.sin(heading) * cos_pitch,
+            -math.sin(pitch),
+        )
+        actual_forward = tuple(float(sample[f"camera_forward_{axis}"]) for axis in "xyz")
+        forward_errors.append(max(abs(a - b) for a, b in zip(actual_forward, expected_forward)))
+        planar_forward = math.hypot(actual_forward[0], actual_forward[1])
+        if planar_forward:
+            look_z = float(sample["camera_position_z"]) + distance * actual_forward[2] / planar_forward
+            look_height_over_filtered.append(look_z - float(sample["camera_follow_z"]))
+
+        follow_planar_errors.append(math.hypot(
+            float(sample["camera_follow_x"]) - float(sample["player_pos_x"]),
+            float(sample["camera_follow_y"]) - float(sample["player_pos_y"]),
+        ))
+        raw_player_errors.append(math.sqrt(sum(
+            (float(sample[f"camera_raw_player_{axis}"]) - float(sample[f"player_pos_{axis}"])) ** 2
+            for axis in "xyz"
+        )))
+        z_lag.append(float(sample["camera_follow_raw_z"]) - float(sample["camera_follow_z"]))
+
+        if index:
+            previous = rows[index - 1]["sample"]
+            camera_steps.append(math.hypot(
+                float(sample["camera_position_x"]) - float(previous["camera_position_x"]),
+                float(sample["camera_position_y"]) - float(previous["camera_position_y"]),
+            ))
+            previous_z = float(previous["camera_follow_z"])
+            previous_velocity = float(previous["camera_follow_z_velocity"])
+            target_z = float(sample["camera_follow_raw_z"])
+            delta = target_z - previous_z
+            velocity = previous_velocity + CHASE_Z_ACCEL * delta - CHASE_Z_DAMPING * previous_velocity
+            if abs(velocity) > abs(delta):
+                velocity = math.copysign(abs(delta), velocity)
+            vertical_law_errors.append(abs(previous_z + velocity - float(sample["camera_follow_z"])))
+
+    return {
+        "planarDistance": numeric_summary(distances),
+        "eyeHeightAbovePlayer": numeric_summary(eye_heights),
+        "pitchRad": numeric_summary(pitch_values),
+        "maxEyeRayYawErrorRad": max(yaw_errors),
+        "maxForwardBasisComponentError": max(forward_errors),
+        "lookHeightAboveFilteredTarget": numeric_summary(look_height_over_filtered),
+        "maxFollowPlanarErrorToPlayer": max(follow_planar_errors),
+        "maxRawPlayerCopyError": max(raw_player_errors),
+        "filteredZLag": numeric_summary(z_lag),
+        "planarCameraStep": numeric_summary(camera_steps) if camera_steps else None,
+        "verticalFollowLaw": {
+            "acceleration": CHASE_Z_ACCEL,
+            "damping": CHASE_Z_DAMPING,
+            "samples": len(vertical_law_errors),
+            "maxAbsResidual": max(vertical_law_errors) if vertical_law_errors else None,
+        },
+    }
+
+
 def segment_summary(rows: list[dict[str, object]]) -> dict[str, object]:
     heading_minus_yaw = [
         wrap_pi(float(row["sample"]["control_heading"]) - float(row["sample"]["player_yaw"]))
@@ -550,6 +706,7 @@ def segment_summary(rows: list[dict[str, object]]) -> dict[str, object]:
             int(row["sample"]["input_direction_flags"]) for row in rows
         ]),
         "targetHeadingRelation": movement_target_error(rows),
+        "cameraFraming": camera_framing_summary(rows),
     }
 
 
@@ -586,7 +743,11 @@ def derive_scenario(
     rows = list(capture["samples"])
     if not rows:
         raise ValueError(f"{scenario_id} capture contains no samples")
-    field_names = [*KNOWN_FIELDS.keys(), *capture.get("fieldMap", {}).keys()]
+    present = rows[0]["sample"]
+    field_names = [
+        name for name in [*KNOWN_FIELDS.keys(), *capture.get("fieldMap", {}).keys()]
+        if name in present
+    ]
     fields = {
         name: numeric_summary([row["sample"][name] for row in rows])
         for name in field_names
@@ -659,9 +820,10 @@ def derive_scenario(
         },
         "cameraFields": {
             name: fields[name]
-            for name in capture.get("fieldMap", {})
+            for name in field_names
             if name.startswith("camera_")
         },
+        "cameraFraming": camera_framing_summary(rows),
         "candidateFields": candidate_summary(rows) if include_candidates else [],
     }
 
@@ -713,10 +875,70 @@ def derive_suite(capture_dir: Path, include_candidates: bool = True) -> dict[str
             "0x00166c80/0x00166fe4 are retained horizontal basis witnesses because live values match sin/cos(controlHeading)",
             "movementTargetRelation checks P+0x100 against controlHeading plus the conditioned left-stick term",
             "the direction-flag heading-step branch is statically recovered, but the exact right-stick producer feeding camera orientation remains unresolved",
-            "cameraFields contains only optional field-map additions; the default candidate span is not otherwise semantically labeled",
+            "cameraFields contains promoted native camera fields plus independently supplied field-map additions; the default candidate span is not otherwise semantically labeled",
             "raw words and per-frame captures remain under ignored captures/; this report retains only derived summaries",
         ],
     }
+
+
+def derive_chase_suite(capture_dir: Path) -> dict[str, object]:
+    scenarios: list[dict[str, object]] = []
+    missing: list[str] = []
+    for scenario_id in CHASE_SCENARIO_IDS:
+        raw_path = capture_dir / scenario_id / "raw.json"
+        if not raw_path.exists():
+            missing.append(scenario_id)
+            continue
+        raw = json.loads(raw_path.read_text(encoding="utf-8"))
+        derived = derive_scenario(scenario_id, raw, include_candidates=False)
+        scenarios.append({
+            "id": derived["id"],
+            "samples": derived["samples"],
+            "stateSha256": derived["stateSha256"],
+            "movieSha256": derived["movieSha256"],
+            "controlHeadingAngular": derived["controlHeadingAngular"],
+            "playerPosition": derived["playerPosition"],
+            "cameraFraming": derived["cameraFraming"],
+            "segments": [{
+                "label": segment["label"],
+                "frames": segment["frames"],
+                "left": segment["left"],
+                "right": segment["right"],
+                "controlHeading": segment["controlHeading"],
+                "cameraFraming": segment["cameraFraming"],
+            } for segment in derived["segments"]],
+        })
+    return {
+        "schema": 1,
+        "authority": "R&C1 NTSC-U SCUS-97199 / fixed savestate + input recording + PINE",
+        "scope": "ordinary unobstructed chase framing/follow only; manual right-stick and obstruction behavior excluded",
+        "sampleCadence": "one batched PINE sample after each PCSX2 FrameAdvance(1)",
+        "scenarios": scenarios,
+        "missingScenarios": missing,
+        "nativeFollowContract": {
+            "producerRoutine": "0x001eca70..0x001ecde8",
+            "dampedStepHelper": "0x001eb240..0x001eb320",
+            "verticalAcceleration": CHASE_Z_ACCEL,
+            "verticalDamping": CHASE_Z_DAMPING,
+            "ordinaryXY": "filtered target X/Y copy current player X/Y directly",
+            "verticalStep": "v += accel * (target - current) - damping * v; clamp v to remaining delta; current += v",
+            "alternateModeGate": "state+0x2284 == 0x50 and state+0x2084 != 0x11",
+        },
+        "evidenceBoundary": [
+            "stationary ordinary framing settles near six planar units behind Ratchet with pitch near 0.084 rad",
+            "the eye-to-Ratchet planar ray and forward basis use controlHeading; no separate yaw-lagged eye ray was observed",
+            "movement changes radial distance and pitch, so stationary distance/pitch are not global invariant constants",
+            "vertical follow is executable-backed and dynamically validated; the complete horizontal radial producer remains unresolved",
+            "raw movies and per-frame samples remain below ignored captures/",
+        ],
+    }
+
+
+def write_chase_derived(capture_dir: Path, out: Path) -> dict[str, object]:
+    report = derive_chase_suite(capture_dir)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
 
 
 def write_derived(
@@ -752,6 +974,10 @@ def build_parser() -> argparse.ArgumentParser:
     derive.add_argument("--out", type=Path, required=True)
     derive.add_argument("--semantic-only", action="store_true")
 
+    chase = sub.add_parser("derive-chase")
+    chase.add_argument("--capture-dir", type=Path, required=True)
+    chase.add_argument("--out", type=Path, required=True)
+
     probe = sub.add_parser("probe-producer")
     probe.add_argument("--savestate", type=Path, required=True)
     probe.add_argument("--zstd-dll", type=Path, required=True)
@@ -782,6 +1008,15 @@ def main() -> int:
             args.settle,
             args.reload_wait,
         )
+        return 0
+
+    if args.command == "derive-chase":
+        report = write_chase_derived(args.capture_dir, args.out)
+        print(json.dumps({
+            "out": str(args.out),
+            "scenarios": len(report["scenarios"]),
+            "missingScenarios": report["missingScenarios"],
+        }, indent=2))
         return 0
 
     if args.command == "probe-producer":

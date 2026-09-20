@@ -1,0 +1,1181 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / fixed savestate + input recording + PINE",
+  "scope": "ordinary unobstructed chase framing/follow only; manual right-stick and obstruction behavior excluded",
+  "sampleCadence": "one batched PINE sample after each PCSX2 FrameAdvance(1)",
+  "scenarios": [
+    {
+      "id": "fixed-heading",
+      "samples": 120,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "5091dadd7debd81f0a91a1316d7537423585be604b97f7b56f43c78c4362aefe",
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.073779582977295,
+        "delta": 0.0,
+        "unwrappedRange": 0.0,
+        "changes": 0
+      },
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "netPlanarDelta": 0.0,
+        "zRange": 0.0
+      },
+      "cameraFraming": {
+        "planarDistance": {
+          "start": 5.9999552097750435,
+          "end": 5.9999552097750435,
+          "min": 5.9999552097750435,
+          "max": 5.9999552097750435,
+          "range": 0.0,
+          "changes": 0
+        },
+        "eyeHeightAbovePlayer": {
+          "start": 2.0052490234375,
+          "end": 2.0052490234375,
+          "min": 2.0052490234375,
+          "max": 2.0052490234375,
+          "range": 0.0,
+          "changes": 0
+        },
+        "pitchRad": {
+          "start": 0.08400285243988037,
+          "end": 0.08400285243988037,
+          "min": 0.08400285243988037,
+          "max": 0.08400285243988037,
+          "range": 0.0,
+          "changes": 0
+        },
+        "maxEyeRayYawErrorRad": 6.475667557737097e-09,
+        "maxForwardBasisComponentError": 2.4410227938975737e-07,
+        "lookHeightAboveFilteredTarget": {
+          "start": 1.500082595836556,
+          "end": 1.500082595836556,
+          "min": 1.500082595836556,
+          "max": 1.500082595836556,
+          "range": 0.0,
+          "changes": 0
+        },
+        "maxFollowPlanarErrorToPlayer": 0.0,
+        "maxRawPlayerCopyError": 0.0,
+        "filteredZLag": {
+          "start": 3.4332275390625e-05,
+          "end": 3.4332275390625e-05,
+          "min": 3.4332275390625e-05,
+          "max": 3.4332275390625e-05,
+          "range": 0.0,
+          "changes": 0
+        },
+        "planarCameraStep": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "verticalFollowLaw": {
+          "acceleration": 0.007499999832361937,
+          "damping": 0.17499999701976776,
+          "samples": 119,
+          "maxAbsResidual": 1.4713833458301906e-06
+        }
+      },
+      "segments": [
+        {
+          "label": "baseline",
+          "frames": 120,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.9999552097750435,
+              "end": 5.9999552097750435,
+              "min": 5.9999552097750435,
+              "max": 5.9999552097750435,
+              "range": 0.0,
+              "changes": 0
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0052490234375,
+              "end": 2.0052490234375,
+              "min": 2.0052490234375,
+              "max": 2.0052490234375,
+              "range": 0.0,
+              "changes": 0
+            },
+            "pitchRad": {
+              "start": 0.08400285243988037,
+              "end": 0.08400285243988037,
+              "min": 0.08400285243988037,
+              "max": 0.08400285243988037,
+              "range": 0.0,
+              "changes": 0
+            },
+            "maxEyeRayYawErrorRad": 6.475667557737097e-09,
+            "maxForwardBasisComponentError": 2.4410227938975737e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.500082595836556,
+              "end": 1.500082595836556,
+              "min": 1.500082595836556,
+              "max": 1.500082595836556,
+              "range": 0.0,
+              "changes": 0
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 3.4332275390625e-05,
+              "min": 3.4332275390625e-05,
+              "max": 3.4332275390625e-05,
+              "range": 0.0,
+              "changes": 0
+            },
+            "planarCameraStep": {
+              "start": 0.0,
+              "end": 0.0,
+              "min": 0.0,
+              "max": 0.0,
+              "range": 0.0,
+              "changes": 0
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 119,
+              "maxAbsResidual": 1.4713833458301906e-06
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving",
+      "samples": 200,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "54b0903c2513204a546dee99bc46bbcd2c51e0343358b75b1db3e3abee4ee67b",
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.0740227699279785,
+        "delta": -0.00024318695068359375,
+        "unwrappedRange": 0.0003838539123535156,
+        "changes": 174
+      },
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          147.8593292236328,
+          108.03363800048828,
+          31.513916015625
+        ],
+        "netPlanarDelta": 14.326509697842695,
+        "zRange": 2.029542922973633
+      },
+      "cameraFraming": {
+        "planarDistance": {
+          "start": 5.9999552097750435,
+          "end": 5.8433421474649245,
+          "min": 5.8433421474649245,
+          "max": 6.479576789376225,
+          "range": 0.6362346419113001,
+          "changes": 177
+        },
+        "eyeHeightAbovePlayer": {
+          "start": 2.0052490234375,
+          "end": 1.6114158630371094,
+          "min": 1.5658740997314453,
+          "max": 2.0052490234375,
+          "range": 0.4393749237060547,
+          "changes": 164
+        },
+        "pitchRad": {
+          "start": 0.08400285243988037,
+          "end": 0.08604860305786133,
+          "min": 0.07775276899337769,
+          "max": 0.08604860305786133,
+          "range": 0.008295834064483643,
+          "changes": 176
+        },
+        "maxEyeRayYawErrorRad": 2.2606633987010127e-07,
+        "maxForwardBasisComponentError": 3.1413270863700493e-07,
+        "lookHeightAboveFilteredTarget": {
+          "start": 1.500082595836556,
+          "end": 1.8028968871938034,
+          "min": 1.5000575004700458,
+          "max": 1.8028968871938034,
+          "range": 0.30283938672375754,
+          "changes": 177
+        },
+        "maxFollowPlanarErrorToPlayer": 0.0,
+        "maxRawPlayerCopyError": 0.0,
+        "filteredZLag": {
+          "start": 3.4332275390625e-05,
+          "end": 0.6955356597900391,
+          "min": 3.24249267578125e-05,
+          "max": 0.6955356597900391,
+          "range": 0.6955032348632812,
+          "changes": 90
+        },
+        "planarCameraStep": {
+          "start": 0.0,
+          "end": 0.09090483133406735,
+          "min": 0.0,
+          "max": 0.10348385309771439,
+          "range": 0.10348385309771439,
+          "changes": 177
+        },
+        "verticalFollowLaw": {
+          "acceleration": 0.007499999832361937,
+          "damping": 0.17499999701976776,
+          "samples": 199,
+          "maxAbsResidual": 1.9000454258844002e-06
+        }
+      },
+      "segments": [
+        {
+          "label": "settle",
+          "frames": 20,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.9999552097750435,
+              "end": 5.9999552097750435,
+              "min": 5.9999552097750435,
+              "max": 5.9999552097750435,
+              "range": 0.0,
+              "changes": 0
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0052490234375,
+              "end": 2.0052490234375,
+              "min": 2.0052490234375,
+              "max": 2.0052490234375,
+              "range": 0.0,
+              "changes": 0
+            },
+            "pitchRad": {
+              "start": 0.08400285243988037,
+              "end": 0.08400285243988037,
+              "min": 0.08400285243988037,
+              "max": 0.08400285243988037,
+              "range": 0.0,
+              "changes": 0
+            },
+            "maxEyeRayYawErrorRad": 6.475667557737097e-09,
+            "maxForwardBasisComponentError": 2.4410227938975737e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.500082595836556,
+              "end": 1.500082595836556,
+              "min": 1.500082595836556,
+              "max": 1.500082595836556,
+              "range": 0.0,
+              "changes": 0
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 3.4332275390625e-05,
+              "min": 3.4332275390625e-05,
+              "max": 3.4332275390625e-05,
+              "range": 0.0,
+              "changes": 0
+            },
+            "planarCameraStep": {
+              "start": 0.0,
+              "end": 0.0,
+              "min": 0.0,
+              "max": 0.0,
+              "range": 0.0,
+              "changes": 0
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 19,
+              "maxAbsResidual": 1.4713833458301906e-06
+            }
+          }
+        },
+        {
+          "label": "move",
+          "frames": 180,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.0740227699279785,
+            "delta": -0.00024318695068359375,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 174
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.9999552097750435,
+              "end": 5.8433421474649245,
+              "min": 5.8433421474649245,
+              "max": 6.479576789376225,
+              "range": 0.6362346419113001,
+              "changes": 177
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0052490234375,
+              "end": 1.6114158630371094,
+              "min": 1.5658740997314453,
+              "max": 2.0052490234375,
+              "range": 0.4393749237060547,
+              "changes": 164
+            },
+            "pitchRad": {
+              "start": 0.08400285243988037,
+              "end": 0.08604860305786133,
+              "min": 0.07775276899337769,
+              "max": 0.08604860305786133,
+              "range": 0.008295834064483643,
+              "changes": 176
+            },
+            "maxEyeRayYawErrorRad": 2.2606633987010127e-07,
+            "maxForwardBasisComponentError": 3.1413270863700493e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.500082595836556,
+              "end": 1.8028968871938034,
+              "min": 1.5000575004700458,
+              "max": 1.8028968871938034,
+              "range": 0.30283938672375754,
+              "changes": 177
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 0.6955356597900391,
+              "min": 3.24249267578125e-05,
+              "max": 0.6955356597900391,
+              "range": 0.6955032348632812,
+              "changes": 90
+            },
+            "planarCameraStep": {
+              "start": 0.0,
+              "end": 0.09090483133406735,
+              "min": 0.0,
+              "max": 0.10348385309771439,
+              "range": 0.10348385309771439,
+              "changes": 177
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 179,
+              "maxAbsResidual": 1.9000454258844002e-06
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "turning",
+      "samples": 170,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "254977e687e19cac00ea56509afe5671af95e7fd1aaabd7e1e3e861a4cab1b42",
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": 2.5877432823181152,
+        "delta": -1.621662441884176,
+        "unwrappedRange": 1.621662441884176,
+        "changes": 165
+      },
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          148.7113037109375,
+          126.43179321289062,
+          29.845184326171875
+        ],
+        "netPlanarDelta": 8.4221837804868,
+        "zRange": 0.360809326171875
+      },
+      "cameraFraming": {
+        "planarDistance": {
+          "start": 5.9999552097750435,
+          "end": 5.076682227296917,
+          "min": 5.076682227296917,
+          "max": 6.47472407281124,
+          "range": 1.3980418455143226,
+          "changes": 166
+        },
+        "eyeHeightAbovePlayer": {
+          "start": 2.0052490234375,
+          "end": 1.7977657318115234,
+          "min": 1.7712993621826172,
+          "max": 2.0052490234375,
+          "range": 0.2339496612548828,
+          "changes": 153
+        },
+        "pitchRad": {
+          "start": 0.08400285243988037,
+          "end": 0.09896743297576904,
+          "min": 0.07781565189361572,
+          "max": 0.09896743297576904,
+          "range": 0.02115178108215332,
+          "changes": 166
+        },
+        "maxEyeRayYawErrorRad": 3.0175384768682534e-07,
+        "maxForwardBasisComponentError": 3.1413270863700493e-07,
+        "lookHeightAboveFilteredTarget": {
+          "start": 1.500082595836556,
+          "end": 1.563532299223997,
+          "min": 1.5000575004700458,
+          "max": 1.563532299223997,
+          "range": 0.06347479875395123,
+          "changes": 166
+        },
+        "maxFollowPlanarErrorToPlayer": 0.0,
+        "maxRawPlayerCopyError": 0.0,
+        "filteredZLag": {
+          "start": 3.4332275390625e-05,
+          "end": 0.2698383331298828,
+          "min": 3.4332275390625e-05,
+          "max": 0.2805633544921875,
+          "range": 0.2805290222167969,
+          "changes": 19
+        },
+        "planarCameraStep": {
+          "start": 0.0,
+          "end": 0.03179651932669752,
+          "min": 0.0,
+          "max": 0.09543243024236313,
+          "range": 0.09543243024236313,
+          "changes": 166
+        },
+        "verticalFollowLaw": {
+          "acceleration": 0.007499999832361937,
+          "damping": 0.17499999701976776,
+          "samples": 169,
+          "maxAbsResidual": 1.7632854607541049e-06
+        }
+      },
+      "segments": [
+        {
+          "label": "prelude",
+          "frames": 50,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.0740816593170166,
+            "delta": -0.0003020763397216797,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 45
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.9999552097750435,
+              "end": 6.447714865179751,
+              "min": 5.997907627170786,
+              "max": 6.447714865179751,
+              "range": 0.44980723800896527,
+              "changes": 46
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0052490234375,
+              "end": 2.004953384399414,
+              "min": 2.004953384399414,
+              "max": 2.0052490234375,
+              "range": 0.0002956390380859375,
+              "changes": 33
+            },
+            "pitchRad": {
+              "start": 0.08400285243988037,
+              "end": 0.07815009355545044,
+              "min": 0.07815009355545044,
+              "max": 0.08403253555297852,
+              "range": 0.005882441997528076,
+              "changes": 46
+            },
+            "maxEyeRayYawErrorRad": 1.9206268531135606e-07,
+            "maxForwardBasisComponentError": 3.1413270863700493e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.500082595836556,
+              "end": 1.5000711186830173,
+              "min": 1.5000575004700458,
+              "max": 1.5000864146904114,
+              "range": 2.8914220365550136e-05,
+              "changes": 46
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 3.4332275390625e-05,
+              "min": 3.4332275390625e-05,
+              "max": 3.4332275390625e-05,
+              "range": 0.0,
+              "changes": 0
+            },
+            "planarCameraStep": {
+              "start": 0.0,
+              "end": 0.08390074824653411,
+              "min": 0.0,
+              "max": 0.08390074824653411,
+              "range": 0.08390074824653411,
+              "changes": 46
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 49,
+              "maxAbsResidual": 1.4713833458301906e-06
+            }
+          }
+        },
+        {
+          "label": "turn",
+          "frames": 120,
+          "left": [
+            255,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.0740561485290527,
+            "end": 2.5877432823181152,
+            "delta": -1.6213858763324183,
+            "unwrappedRange": 1.6213858763324183,
+            "changes": 119
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 6.45703033857262,
+              "end": 5.076682227296917,
+              "min": 5.076682227296917,
+              "max": 6.47472407281124,
+              "range": 1.3980418455143226,
+              "changes": 119
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0049400329589844,
+              "end": 1.7977657318115234,
+              "min": 1.7712993621826172,
+              "max": 2.0049400329589844,
+              "range": 0.2336406707763672,
+              "changes": 119
+            },
+            "pitchRad": {
+              "start": 0.07803457975387573,
+              "end": 0.09896743297576904,
+              "min": 0.07781565189361572,
+              "max": 0.09896743297576904,
+              "range": 0.02115178108215332,
+              "changes": 119
+            },
+            "maxEyeRayYawErrorRad": 3.0175384768682534e-07,
+            "maxForwardBasisComponentError": 3.0913854077996294e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.5000778568944497,
+              "end": 1.563532299223997,
+              "min": 1.5000628914285876,
+              "max": 1.563532299223997,
+              "range": 0.06346940779540944,
+              "changes": 119
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 0.2698383331298828,
+              "min": 3.4332275390625e-05,
+              "max": 0.2805633544921875,
+              "range": 0.2805290222167969,
+              "changes": 19
+            },
+            "planarCameraStep": {
+              "start": 0.0874244129965813,
+              "end": 0.03179651932669752,
+              "min": 0.03154487367907034,
+              "max": 0.09543243024236313,
+              "range": 0.06388755656329279,
+              "changes": 118
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 119,
+              "maxAbsResidual": 1.7632854607541049e-06
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "idle",
+      "samples": 240,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "d246235c7f54486431942f7d13bea7985f86026f56320a1eb9b82414257c2e13",
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.073779582977295,
+        "delta": 0.0,
+        "unwrappedRange": 0.0,
+        "changes": 0
+      },
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "netPlanarDelta": 0.0,
+        "zRange": 0.0
+      },
+      "cameraFraming": {
+        "planarDistance": {
+          "start": 5.9999552097750435,
+          "end": 5.9999552097750435,
+          "min": 5.9999552097750435,
+          "max": 5.9999552097750435,
+          "range": 0.0,
+          "changes": 0
+        },
+        "eyeHeightAbovePlayer": {
+          "start": 2.0052490234375,
+          "end": 2.0052490234375,
+          "min": 2.0052490234375,
+          "max": 2.0052490234375,
+          "range": 0.0,
+          "changes": 0
+        },
+        "pitchRad": {
+          "start": 0.08400285243988037,
+          "end": 0.08400285243988037,
+          "min": 0.08400285243988037,
+          "max": 0.08400285243988037,
+          "range": 0.0,
+          "changes": 0
+        },
+        "maxEyeRayYawErrorRad": 6.475667557737097e-09,
+        "maxForwardBasisComponentError": 2.4410227938975737e-07,
+        "lookHeightAboveFilteredTarget": {
+          "start": 1.500082595836556,
+          "end": 1.500082595836556,
+          "min": 1.500082595836556,
+          "max": 1.500082595836556,
+          "range": 0.0,
+          "changes": 0
+        },
+        "maxFollowPlanarErrorToPlayer": 0.0,
+        "maxRawPlayerCopyError": 0.0,
+        "filteredZLag": {
+          "start": 3.4332275390625e-05,
+          "end": 3.4332275390625e-05,
+          "min": 3.4332275390625e-05,
+          "max": 3.4332275390625e-05,
+          "range": 0.0,
+          "changes": 0
+        },
+        "planarCameraStep": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "verticalFollowLaw": {
+          "acceleration": 0.007499999832361937,
+          "damping": 0.17499999701976776,
+          "samples": 239,
+          "maxAbsResidual": 1.4713833458301906e-06
+        }
+      },
+      "segments": [
+        {
+          "label": "idle",
+          "frames": 240,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.9999552097750435,
+              "end": 5.9999552097750435,
+              "min": 5.9999552097750435,
+              "max": 5.9999552097750435,
+              "range": 0.0,
+              "changes": 0
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0052490234375,
+              "end": 2.0052490234375,
+              "min": 2.0052490234375,
+              "max": 2.0052490234375,
+              "range": 0.0,
+              "changes": 0
+            },
+            "pitchRad": {
+              "start": 0.08400285243988037,
+              "end": 0.08400285243988037,
+              "min": 0.08400285243988037,
+              "max": 0.08400285243988037,
+              "range": 0.0,
+              "changes": 0
+            },
+            "maxEyeRayYawErrorRad": 6.475667557737097e-09,
+            "maxForwardBasisComponentError": 2.4410227938975737e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.500082595836556,
+              "end": 1.500082595836556,
+              "min": 1.500082595836556,
+              "max": 1.500082595836556,
+              "range": 0.0,
+              "changes": 0
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 3.4332275390625e-05,
+              "min": 3.4332275390625e-05,
+              "max": 3.4332275390625e-05,
+              "range": 0.0,
+              "changes": 0
+            },
+            "planarCameraStep": {
+              "start": 0.0,
+              "end": 0.0,
+              "min": 0.0,
+              "max": 0.0,
+              "range": 0.0,
+              "changes": 0
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 239,
+              "maxAbsResidual": 1.4713833458301906e-06
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "turn-release",
+      "samples": 220,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "42b993c665e88b183987b72d541918083ab718bcbe9a8a59d23aee7997f27127",
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -3.06227445602417,
+        "delta": -0.988494873046875,
+        "unwrappedRange": 0.9893274307250977,
+        "changes": 215
+      },
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          142.6043243408203,
+          122.08422088623047,
+          29.484375
+        ],
+        "netPlanarDelta": 12.259029391050491,
+        "zRange": 0.010122299194335938
+      },
+      "cameraFraming": {
+        "planarDistance": {
+          "start": 5.9999552097750435,
+          "end": 4.705896553120689,
+          "min": 4.705896553120689,
+          "max": 6.397680633195614,
+          "range": 1.6917840800749255,
+          "changes": 216
+        },
+        "eyeHeightAbovePlayer": {
+          "start": 2.0052490234375,
+          "end": 2.0037803649902344,
+          "min": 1.9943656921386719,
+          "max": 2.0052490234375,
+          "range": 0.010883331298828125,
+          "changes": 200
+        },
+        "pitchRad": {
+          "start": 0.08400285243988037,
+          "end": 0.10662031173706055,
+          "min": 0.0787651538848877,
+          "max": 0.10662031173706055,
+          "range": 0.02785515785217285,
+          "changes": 216
+        },
+        "maxEyeRayYawErrorRad": 3.549532907598518e-07,
+        "maxForwardBasisComponentError": 3.526430505940148e-07,
+        "lookHeightAboveFilteredTarget": {
+          "start": 1.500082595836556,
+          "end": 1.4999112758960997,
+          "min": 1.4999015253747103,
+          "max": 1.5004338759235267,
+          "range": 0.000532350548816396,
+          "changes": 216
+        },
+        "maxFollowPlanarErrorToPlayer": 0.0,
+        "maxRawPlayerCopyError": 0.0,
+        "filteredZLag": {
+          "start": 3.4332275390625e-05,
+          "end": -0.0002155303955078125,
+          "min": -0.000514984130859375,
+          "max": 0.00998687744140625,
+          "range": 0.010501861572265625,
+          "changes": 33
+        },
+        "planarCameraStep": {
+          "start": 0.0,
+          "end": 0.0034699573348841357,
+          "min": 0.0,
+          "max": 0.09781292030515341,
+          "range": 0.09781292030515341,
+          "changes": 216
+        },
+        "verticalFollowLaw": {
+          "acceleration": 0.007499999832361937,
+          "damping": 0.17499999701976776,
+          "samples": 219,
+          "maxAbsResidual": 1.786044208529347e-06
+        }
+      },
+      "segments": [
+        {
+          "label": "prelude",
+          "frames": 40,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.074097156524658,
+            "delta": -0.00031757354736328125,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 35
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.9999552097750435,
+              "end": 6.340000213296229,
+              "min": 5.997907627170786,
+              "max": 6.340000213296229,
+              "range": 0.34209258612544335,
+              "changes": 36
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0052490234375,
+              "end": 2.005086898803711,
+              "min": 2.005086898803711,
+              "max": 2.0052490234375,
+              "range": 0.0001621246337890625,
+              "changes": 23
+            },
+            "pitchRad": {
+              "start": 0.08400285243988037,
+              "end": 0.07949274778366089,
+              "min": 0.07949274778366089,
+              "max": 0.08403253555297852,
+              "range": 0.004539787769317627,
+              "changes": 36
+            },
+            "maxEyeRayYawErrorRad": 1.9206268531135606e-07,
+            "maxForwardBasisComponentError": 3.1413270863700493e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.500082595836556,
+              "end": 1.5000734402539138,
+              "min": 1.500066851875296,
+              "max": 1.5000864146904114,
+              "range": 1.9562815115392596e-05,
+              "changes": 36
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 3.4332275390625e-05,
+              "min": 3.4332275390625e-05,
+              "max": 3.4332275390625e-05,
+              "range": 0.0,
+              "changes": 0
+            },
+            "planarCameraStep": {
+              "start": 0.0,
+              "end": 0.06540674191571066,
+              "min": 0.0,
+              "max": 0.06540674191571066,
+              "range": 0.06540674191571066,
+              "changes": 36
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 39,
+              "maxAbsResidual": 1.4713833458301906e-06
+            }
+          }
+        },
+        {
+          "label": "turn",
+          "frames": 60,
+          "left": [
+            255,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.074087142944336,
+            "end": -2.8422861099243164,
+            "delta": -0.7681989669799805,
+            "unwrappedRange": 0.7681989669799805,
+            "changes": 59
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 6.34979771661389,
+              "end": 5.309542326466882,
+              "min": 5.309542326466882,
+              "max": 6.397680633195614,
+              "range": 1.088138306728732,
+              "changes": 59
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0050735473632812,
+              "end": 2.004457473754883,
+              "min": 2.004457473754883,
+              "max": 2.0050735473632812,
+              "range": 0.0006160736083984375,
+              "changes": 59
+            },
+            "pitchRad": {
+              "start": 0.07936966419219971,
+              "end": 0.0947192907333374,
+              "min": 0.0787651538848877,
+              "max": 0.0947192907333374,
+              "range": 0.015954136848449707,
+              "changes": 59
+            },
+            "maxEyeRayYawErrorRad": 2.1480164225096132e-07,
+            "maxForwardBasisComponentError": 3.2134042528275675e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.5000672426092798,
+              "end": 1.500067667371603,
+              "min": 1.5000618030482045,
+              "max": 1.50008264222366,
+              "range": 2.0839175455478198e-05,
+              "changes": 59
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": 3.4332275390625e-05,
+              "min": 3.4332275390625e-05,
+              "max": 3.4332275390625e-05,
+              "range": 0.0,
+              "changes": 0
+            },
+            "planarCameraStep": {
+              "start": 0.06914231514144599,
+              "end": 0.03377546745980462,
+              "min": 0.03207588462332808,
+              "max": 0.08172292468246296,
+              "range": 0.04964704005913488,
+              "changes": 58
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 59,
+              "maxAbsResidual": 1.4713833458301906e-06
+            }
+          }
+        },
+        {
+          "label": "follow",
+          "frames": 120,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.8562662601470947,
+            "end": -3.06227445602417,
+            "delta": -0.2060081958770752,
+            "unwrappedRange": 0.20684075355529785,
+            "changes": 119
+          },
+          "cameraFraming": {
+            "planarDistance": {
+              "start": 5.304758424247032,
+              "end": 4.705896553120689,
+              "min": 4.705896553120689,
+              "max": 6.010223949831921,
+              "range": 1.3043273967112325,
+              "changes": 119
+            },
+            "eyeHeightAbovePlayer": {
+              "start": 2.0044498443603516,
+              "end": 2.0037803649902344,
+              "min": 1.9943656921386719,
+              "max": 2.0048961639404297,
+              "range": 0.010530471801757812,
+              "changes": 116
+            },
+            "pitchRad": {
+              "start": 0.09480226039886475,
+              "end": 0.10662031173706055,
+              "min": 0.08370178937911987,
+              "max": 0.10662031173706055,
+              "range": 0.022918522357940674,
+              "changes": 119
+            },
+            "maxEyeRayYawErrorRad": 3.549532907598518e-07,
+            "maxForwardBasisComponentError": 3.526430505940148e-07,
+            "lookHeightAboveFilteredTarget": {
+              "start": 1.5000696839832663,
+              "end": 1.4999112758960997,
+              "min": 1.4999015253747103,
+              "max": 1.5004338759235267,
+              "range": 0.000532350548816396,
+              "changes": 119
+            },
+            "maxFollowPlanarErrorToPlayer": 0.0,
+            "maxRawPlayerCopyError": 0.0,
+            "filteredZLag": {
+              "start": 3.4332275390625e-05,
+              "end": -0.0002155303955078125,
+              "min": -0.000514984130859375,
+              "max": 0.00998687744140625,
+              "range": 0.010501861572265625,
+              "changes": 33
+            },
+            "planarCameraStep": {
+              "start": 0.03380221737172947,
+              "end": 0.0034699573348841357,
+              "min": 0.0034699573348841357,
+              "max": 0.09781292030515341,
+              "range": 0.09434296297026928,
+              "changes": 118
+            },
+            "verticalFollowLaw": {
+              "acceleration": 0.007499999832361937,
+              "damping": 0.17499999701976776,
+              "samples": 119,
+              "maxAbsResidual": 1.786044208529347e-06
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "missingScenarios": [],
+  "nativeFollowContract": {
+    "producerRoutine": "0x001eca70..0x001ecde8",
+    "dampedStepHelper": "0x001eb240..0x001eb320",
+    "verticalAcceleration": 0.007499999832361937,
+    "verticalDamping": 0.17499999701976776,
+    "ordinaryXY": "filtered target X/Y copy current player X/Y directly",
+    "verticalStep": "v += accel * (target - current) - damping * v; clamp v to remaining delta; current += v",
+    "alternateModeGate": "state+0x2284 == 0x50 and state+0x2084 != 0x11"
+  },
+  "evidenceBoundary": [
+    "stationary ordinary framing settles near six planar units behind Ratchet with pitch near 0.084 rad",
+    "the eye-to-Ratchet planar ray and forward basis use controlHeading; no separate yaw-lagged eye ray was observed",
+    "movement changes radial distance and pitch, so stationary distance/pitch are not global invariant constants",
+    "vertical follow is executable-backed and dynamically validated; the complete horizontal radial producer remains unresolved",
+    "raw movies and per-frame samples remain below ignored captures/"
+  ]
+}

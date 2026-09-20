@@ -1,10 +1,10 @@
 # R&C1 camera archaeology harness
 
 Authority: NTSC-U retail `SCUS-97199`. The capture harness remains generic,
-but this note now also retains the ordinary horizontal camera/control-heading
-contract proven by the fixed savestate, loaded-overlay signatures and
-frame-advanced input movies. Unresolved producer stages are called out rather
-than inferred.
+but this note now retains both the ordinary horizontal camera/control-heading
+contract and the unobstructed chase framing/follow contract proven by the fixed
+savestate, loaded-overlay signatures and frame-advanced input movies. Unresolved
+producer stages are called out rather than inferred.
 
 ## Known live fields
 
@@ -21,6 +21,12 @@ The fixed fields are already supported by retained R&C1 evidence:
 - ordinary control-heading source: `0x00166dd8`
 - horizontal camera/control basis witnesses: `0x00166c80 = sin(controlHeading)`
   and `0x00166fe4 = cos(controlHeading)`
+- camera forward basis: `0x00166c88/+0x18/+0x28` relative to `0x00166c80`
+- final eye position: `0x00166dc0/+0x04/+0x08`
+- camera pitch: `0x00166dd4`
+- filtered chase target: `0x00166e10/+0x04/+0x08`, raw target Z at `+0x0c`,
+  and stored vertical-follow velocity at `+0x10`
+- raw player-position copy: `0x00166e70/+0x04/+0x08`
 - conditioned native right stick: `I+0x100/+0x104`, where `I=0x0013c940`
 - conditioned native left stick: `I+0x108/+0x10c`
 - native directional flags consumed by the heading-step branch: `I+0x1a0`
@@ -72,33 +78,61 @@ one producer stage: live right-stick motion changes `controlHeading` while
 `I+0x1a0` continues to report the left-stick forward flag, so the exact
 right-stick-to-camera producer remains unresolved elsewhere in the overlay.
 
+## Recovered unobstructed chase framing and follow
+
+The same authority savestate was replayed through five ordinary, unobstructed
+scenarios: fixed heading, straight movement, left-stick turning, long idle and
+forward follow after a turn. Together they retain 950 frame-advanced samples.
+Manual right-stick behavior and obstruction correction are outside this slice.
+
+At stationary fixed-heading/idle equilibrium, the final eye is `5.999955`
+planar units from Ratchet, `2.005249` units above his origin, with pitch
+`0.08400285` rad. Projecting the recovered forward basis back to Ratchet's XY
+places the stationary look height at filtered-target Z `+ 1.500083`. Treat
+these as ordinary stationary framing witnesses, not universal constants.
+
+Across all representative movement cases the eye-to-Ratchet planar ray remains
+locked to `controlHeading` to sub-microradian precision. The forward basis is
+also consistent with:
+
+`forward = (cos(yaw)*cos(pitch), sin(yaw)*cos(pitch), -sin(pitch))`
+
+There is therefore no evidence in this matrix for a separately lagged ordinary
+eye azimuth. Movement-follow instead changes camera translation, radial
+separation and pitch while yaw follows the recovered control heading. Straight
+movement reaches roughly `5.843..6.480` planar units and per-update planar eye
+steps up to `0.103484`; turn/follow cases widen the radial excursion further.
+Do not replace this with a fitted single exponential coefficient: that model
+does not explain the observed radial behavior.
+
+The ordinary follow producer at `0x001eca70..0x001ecde8` is stronger evidence.
+Its ordinary branch copies player X/Y directly into `0x00166e10/+0x04`, while
+Z is advanced by helper `0x001eb240..0x001eb320` using a stored velocity:
+
+`v += 0.0075 * (targetZ - currentZ) - 0.175 * v`
+
+The helper clamps the step against overshooting the remaining Z delta, then
+returns `currentZ + v`. Replaying that law against the three moving traces
+reproduces the retained filtered Z to within about `2e-6` world units per
+sample. The producer also has a distinct alternate path gated when
+`state+0x2284 == 0x50` and `state+0x2084 != 0x11`; consequently the recovered
+ordinary constants must not be promoted as all-mode camera constants.
+
+The complete horizontal radial-position producer is not yet decoded. The
+measured eye geometry and fixed-step-like motion are retained, but no curve-fit
+law is promoted in place of missing executable dataflow.
+
 ## Semantic camera field map
 
-When executable tracing or a controlled live witness establishes camera fields,
-pass a small JSON map to `--field-map`. Names beginning with `camera_` are
-reported separately in the payload-free reduction. A position/orientation map
-can use names such as:
+The recovered eye, forward basis, pitch, filtered target and raw player-copy
+addresses above are now built-in semantic fields in the harness. They no longer
+need an external field-map file. `--field-map` remains available only for new
+candidate fields that have independent executable or controlled-runtime
+provenance; it cannot override a promoted built-in name.
 
-```json
-{
-  "schema": 1,
-  "fields": {
-    "camera_position_x": {"address": "0x00123400", "kind": "f32"},
-    "camera_position_y": {"address": "0x00123404", "kind": "f32"},
-    "camera_position_z": {"address": "0x00123408", "kind": "f32"},
-    "camera_forward_x": {"address": "0x00123410", "kind": "f32"},
-    "camera_forward_y": {"address": "0x00123414", "kind": "f32"},
-    "camera_forward_z": {"address": "0x00123418", "kind": "f32"}
-  },
-  "candidateRanges": [
-    {"start": "0x00166c00", "bytes": 1024}
-  ]
-}
-```
-
-The addresses above are schema examples only. They are intentionally not
-shipped as a field-map file because no retained evidence in this branch proves
-those example addresses.
+The default candidate scan remains useful for discovery, but candidate words
+are never treated as semantic fields solely because they sit near the camera
+structure.
 ## Repeatable scenarios
 
 `tools/rac1-camera-archaeology.py` builds the following literal DualShock 2
@@ -137,7 +171,10 @@ The committed reducer keeps only:
 - control-heading, player yaw, movement target and per-segment angular deltas;
 - camera/control-basis consistency against `sin/cos(controlHeading)`;
 - active-stick error against the recovered camera-relative target-yaw formula;
-- min/max/range/change-count summaries for explicitly mapped camera fields;
+- min/max/range/change-count summaries for recovered camera fields;
+- chase framing summaries for planar distance, eye height, pitch, forward-basis
+  error, eye-ray yaw error, filtered-Z lag and per-update planar camera step;
+- executable-backed vertical-follow residuals against the `0.0075/0.175` law;
 - candidate address change counts and plausible-float ranges;
 - a cross-scenario shortlist when a candidate changes more under recenter,
   turning or obstruction than the corresponding neutral baseline.
@@ -152,6 +189,7 @@ py -3.12 tools/rac1-camera-archaeology.py scenarios
 py -3.12 tools/rac1-camera-archaeology.py probe-producer --savestate <authority.p2s> --zstd-dll <zstd.dll>
 py -3.12 tools/rac1-camera-archaeology.py capture --pid <pcsx2-pid> --pine-port 28099 --savestate <authority.p2s> --obstruction-savestate <obstructed.p2s> --field-map <camera-fields.json> --out-dir captures/rac1-camera
 py -3.12 tools/rac1-camera-archaeology.py derive --capture-dir captures/rac1-camera --out research/generated/rac1-camera-control-heading.json
+py -3.12 tools/rac1-camera-archaeology.py derive-chase --capture-dir captures/rac1-camera --out research/generated/rac1-camera-chase-framing.json
 ```
 
 The built-in semantic fields above are justified by the executable/runtime
