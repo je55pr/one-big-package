@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 loaded EE savestate",
+  "savestateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+  "loadedOverlaySignaturesVerified": 18,
+  "addresses": {
+    "inputState": "0x0013c940",
+    "inputDirectionFlags": "0x0013cae0",
+    "cameraStateBase": "0x0016c058",
+    "cameraControlBasisBase": "0x00166c80",
+    "controlHeading": "0x00166dd8"
+  },
+  "savestateWitness": {
+    "cameraModeHalfword": 0,
+    "headingStep": 0.0,
+    "controlHeading": -2.073779582977295
+  },
+  "directionalHeadingStepBranch": {
+    "routine": "0x001f3aa0..0x001f3f7c",
+    "directionFlags": "I+0x1a0",
+    "stepField": "cameraState+0x80",
+    "directionMask": "0x0000a000",
+    "negativeDirectionBit": "0x00008000",
+    "stepIncrementRad": 0.0020000000949949026,
+    "stepClampAbsRad": 0.03999999910593033,
+    "releaseDivisor": 1.5,
+    "headingUpdate": "WrapPi(controlHeading - stepField)",
+    "wrapDifferenceHelper": "0x00200130"
+  },
+  "uncertainty": [
+    "This branch explains direction-flag-driven heading change, but it is not the complete manual-camera producer.",
+    "Live right-stick input changes controlHeading while I+0x1a0 remains on the left-stick forward flag, so right-stick production occurs elsewhere."
+  ]
+}

@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import math
 import pathlib
 import struct
 import tempfile
@@ -31,7 +32,17 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         specs = CAMERA.scenario_specs()
         self.assertEqual(
             [spec["id"] for spec in specs],
-            ["fixed-heading", "moving", "turning", "idle", "recenter", "obstruction"],
+            [
+                "fixed-heading",
+                "moving",
+                "turning",
+                "idle",
+                "manual-idle-left",
+                "manual-idle-right",
+                "recenter",
+                "turn-release",
+                "obstruction",
+            ],
         )
         recenter = next(spec for spec in specs if spec["id"] == "recenter")
         self.assertEqual(
@@ -90,17 +101,57 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         self.assertIn(CAMERA.CONTROL_HEADING, pine.addresses)
         self.assertIn(CAMERA.INPUT_STATE + 0x100, pine.addresses)
         self.assertEqual(len(pine.addresses), len(CAMERA.KNOWN_FIELDS) + 4)
+
+    def test_producer_probe_verifies_directional_heading_step_contract(self):
+        memory = bytearray(0x00200134 + 4)
+        for address, word in CAMERA.CAMERA_PRODUCER_SIGNATURES.items():
+            struct.pack_into("<I", memory, address, word)
+        struct.pack_into("<H", memory, CAMERA.PLAYER_STATE + 0x288, 0)
+        struct.pack_into("<f", memory, CAMERA.CAMERA_STATE_BASE + 0x80, 0.0)
+        struct.pack_into("<f", memory, CAMERA.CONTROL_HEADING, -2.0)
+
+        class FakeProbe:
+            @staticmethod
+            def read_zip_entry(_state, _entry, _zstd):
+                return bytes(memory)
+
+        original_probe = CAMERA._movement_probe
+        original_sha = CAMERA.HARNESS.sha256
+        CAMERA._movement_probe = lambda: FakeProbe
+        CAMERA.HARNESS.sha256 = lambda _path: "state"
+        try:
+            report = CAMERA.probe_camera_producer(
+                pathlib.Path("state.p2s"),
+                pathlib.Path("zstd.dll"),
+            )
+        finally:
+            CAMERA._movement_probe = original_probe
+            CAMERA.HARNESS.sha256 = original_sha
+
+        branch = report["directionalHeadingStepBranch"]
+        self.assertEqual(report["loadedOverlaySignaturesVerified"], len(CAMERA.CAMERA_PRODUCER_SIGNATURES))
+        self.assertAlmostEqual(branch["stepIncrementRad"], 0.0020000000949949026)
+        self.assertAlmostEqual(branch["stepClampAbsRad"], 0.03999999910593033)
+        self.assertEqual(branch["releaseDivisor"], 1.5)
+        self.assertEqual(branch["headingUpdate"], "WrapPi(controlHeading - stepField)")
+
     def test_reducer_keeps_camera_summaries_but_not_raw_candidate_words(self):
         def row(frame, right, heading, yaw, px, camera_x, candidate):
             sample = {
                 "player_yaw": yaw,
+                "player_target_yaw": heading,
                 "player_pos_x": px,
                 "player_pos_y": 2.0,
                 "player_pos_z": 3.0,
                 "player_moby_yaw": yaw,
                 "control_heading": heading,
+                "camera_heading_sin": math.sin(heading),
+                "camera_heading_cos": math.cos(heading),
+                "input_direction_flags": 0x1000,
                 "right_conditioned_x": 0.0 if right[0] == 127 else -1.0,
                 "right_conditioned_y": 0.0,
+                "left_conditioned_x": 0.0,
+                "left_conditioned_y": -1.0,
                 "camera_position_x": camera_x,
                 "camera_forward_x": 1.0,
                 "candidate_words": {
@@ -141,6 +192,10 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         self.assertAlmostEqual(report["controlHeading"]["range"], 0.2)
         self.assertAlmostEqual(report["playerPosition"]["netPlanarDelta"], 0.2)
         self.assertAlmostEqual(report["cameraFields"]["camera_position_x"]["range"], 0.4)
+        self.assertAlmostEqual(report["cameraHeadingBasis"]["maxSinError"], 0.0)
+        self.assertAlmostEqual(report["cameraHeadingBasis"]["maxCosError"], 0.0)
+        self.assertAlmostEqual(report["movementTargetRelation"]["maxAbsErrorRad"], 0.0)
+        self.assertEqual(report["segments"][0]["inputDirectionFlagPath"], ["0x00001000"])
         changing = next(
             field for field in report["candidateFields"]
             if field["address"] == "0x00166c00"
@@ -163,13 +218,19 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
                     candidate = f32_word(float(frame if changing else 0))
                     sample = {
                         "player_yaw": 0.0,
+                        "player_target_yaw": 0.0,
                         "player_pos_x": 0.0,
                         "player_pos_y": 0.0,
                         "player_pos_z": 0.0,
                         "player_moby_yaw": 0.0,
                         "control_heading": 0.0,
+                        "camera_heading_sin": 0.0,
+                        "camera_heading_cos": 1.0,
+                        "input_direction_flags": 0,
                         "right_conditioned_x": 0.0,
                         "right_conditioned_y": 0.0,
+                        "left_conditioned_x": 0.0,
+                        "left_conditioned_y": 0.0,
                         "candidate_words": {"0x00166c00": candidate},
                     }
                     rows.append({

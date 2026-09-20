@@ -1,0 +1,1821 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / fixed savestate + input recording + PINE",
+  "sampleCadence": "one batched PINE sample after each PCSX2 FrameAdvance(1)",
+  "knownFields": {
+    "player_yaw": {
+      "address": "0x0013f3e8",
+      "kind": "f32"
+    },
+    "player_target_yaw": {
+      "address": "0x0013f4d0",
+      "kind": "f32"
+    },
+    "player_pos_x": {
+      "address": "0x01845e90",
+      "kind": "f32"
+    },
+    "player_pos_y": {
+      "address": "0x01845e94",
+      "kind": "f32"
+    },
+    "player_pos_z": {
+      "address": "0x01845e98",
+      "kind": "f32"
+    },
+    "player_moby_yaw": {
+      "address": "0x01845ec8",
+      "kind": "f32"
+    },
+    "control_heading": {
+      "address": "0x00166dd8",
+      "kind": "f32"
+    },
+    "camera_heading_sin": {
+      "address": "0x00166c80",
+      "kind": "f32"
+    },
+    "camera_heading_cos": {
+      "address": "0x00166fe4",
+      "kind": "f32"
+    },
+    "input_direction_flags": {
+      "address": "0x0013cae0",
+      "kind": "u32"
+    },
+    "right_conditioned_x": {
+      "address": "0x0013ca40",
+      "kind": "f32"
+    },
+    "right_conditioned_y": {
+      "address": "0x0013ca44",
+      "kind": "f32"
+    },
+    "left_conditioned_x": {
+      "address": "0x0013ca48",
+      "kind": "f32"
+    },
+    "left_conditioned_y": {
+      "address": "0x0013ca4c",
+      "kind": "f32"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "fixed-heading",
+      "samples": 120,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "5091dadd7debd81f0a91a1316d7537423585be604b97f7b56f43c78c4362aefe",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -2.073779582977295,
+        "min": -2.073779582977295,
+        "max": -2.073779582977295,
+        "range": 0.0,
+        "changes": 0
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.073779582977295,
+        "delta": 0.0,
+        "unwrappedRange": 0.0,
+        "changes": 0
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "movementTargetRelation": {
+        "activeSamples": 0,
+        "maxAbsErrorRad": null,
+        "previousHeadingSamples": 0,
+        "previousHeadingMaxAbsErrorRad": null,
+        "previousHeadingP95AbsErrorRad": null,
+        "previousHeadingSamplesWithin1eMinus5Rad": 0
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 6.656417850248175e-08,
+        "maxCosError": 6.617578135470481e-08
+      },
+      "segments": [
+        {
+          "label": "baseline",
+          "frames": 120,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 3.0983639399157923,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "netPlanarDelta": 0.0,
+        "zRange": 0.0
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "moving",
+      "samples": 200,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "54b0903c2513204a546dee99bc46bbcd2c51e0343358b75b1db3e3abee4ee67b",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": -1.0,
+          "min": -1.0,
+          "max": 0.0,
+          "range": 1.0,
+          "changes": 1
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000",
+        "0x00001000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -2.0740227699279785,
+        "min": -2.0741634368896484,
+        "max": -2.073779582977295,
+        "range": 0.0003838539123535156,
+        "changes": 174
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.0740227699279785,
+        "delta": -0.00024318695068359375,
+        "unwrappedRange": 0.0003838539123535156,
+        "changes": 174
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": -2.0740513801574707,
+        "min": -3.023371934890747,
+        "max": 3.0940074920654297,
+        "range": 6.117379426956177,
+        "changes": 175
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": -2.0740513801574707,
+        "min": -2.0741636753082275,
+        "max": 1.111041784286499,
+        "range": 3.1852054595947266,
+        "changes": 174
+      },
+      "movementTargetRelation": {
+        "activeSamples": 179,
+        "maxAbsErrorRad": 0.0002791881561279297,
+        "previousHeadingSamples": 179,
+        "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+        "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+        "previousHeadingSamplesWithin1eMinus5Rad": 179
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 1.4358080580034738e-07,
+        "maxCosError": 1.8390662853695616e-07
+      },
+      "segments": [
+        {
+          "label": "settle",
+          "frames": 20,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 3.0983639399157923,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        },
+        {
+          "label": "move",
+          "frames": 180,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.0740227699279785,
+            "delta": -0.00024318695068359375,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 174
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": -2.0740513801574707,
+            "delta": 3.0980921427356165,
+            "unwrappedRange": 3.098135773335592,
+            "changes": 175
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 2.86102294921875e-05,
+            "delta": -3.0983353296863,
+            "unwrappedRange": 3.0983970800982874,
+            "changes": 177
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000",
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 179,
+            "maxAbsErrorRad": 0.0002791881561279297,
+            "previousHeadingSamples": 179,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 179
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          147.8593292236328,
+          108.03363800048828,
+          31.513916015625
+        ],
+        "netPlanarDelta": 14.326509697842695,
+        "zRange": 2.029542922973633
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "turning",
+      "samples": 170,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "254977e687e19cac00ea56509afe5671af95e7fd1aaabd7e1e3e861a4cab1b42",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 1.0,
+          "min": 0.0,
+          "max": 1.0,
+          "range": 1.0,
+          "changes": 1
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": -1.0,
+          "max": 0.0,
+          "range": 1.0,
+          "changes": 2
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000",
+        "0x00001000",
+        "0x00002000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": 2.5877432823181152,
+        "min": -3.139425039291382,
+        "max": 3.1293673515319824,
+        "range": 6.268792390823364,
+        "changes": 163
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": 2.5877432823181152,
+        "delta": -1.621662441884176,
+        "unwrappedRange": 1.621662441884176,
+        "changes": 163
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": 1.2790528535842896,
+        "min": -3.1192846298217773,
+        "max": 3.0940074920654297,
+        "range": 6.213292121887207,
+        "changes": 164
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": 1.031927466392517,
+        "min": -2.0741636753082275,
+        "max": 2.6383328437805176,
+        "range": 4.712496519088745,
+        "changes": 163
+      },
+      "movementTargetRelation": {
+        "activeSamples": 168,
+        "maxAbsErrorRad": 0.016069662574905053,
+        "previousHeadingSamples": 168,
+        "previousHeadingMaxAbsErrorRad": 0.014534755549158618,
+        "previousHeadingP95AbsErrorRad": 2.8212996916465727e-07,
+        "previousHeadingSamplesWithin1eMinus5Rad": 164
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 3.2668681290703994e-07,
+        "maxCosError": 1.642835081860916e-07
+      },
+      "segments": [
+        {
+          "label": "prelude",
+          "frames": 50,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.0740816593170166,
+            "delta": -0.0003020763397216797,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 45
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": -2.0740654468536377,
+            "delta": 3.0980780760394495,
+            "unwrappedRange": 3.0980780760394495,
+            "changes": 46
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": -1.621246337890625e-05,
+            "delta": -3.098380152379171,
+            "unwrappedRange": 3.0983861128436487,
+            "changes": 46
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000",
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 48,
+            "maxAbsErrorRad": 0.0002791881561279297,
+            "previousHeadingSamples": 48,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 48
+          }
+        },
+        {
+          "label": "turn",
+          "frames": 120,
+          "left": [
+            255,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.0740561485290527,
+            "end": 2.5877432823181152,
+            "delta": -1.6213858763324183,
+            "unwrappedRange": 1.6213858763324183,
+            "changes": 117
+          },
+          "playerYaw": {
+            "start": -2.0740818977355957,
+            "end": 1.2790528535842896,
+            "delta": -2.930050555859701,
+            "unwrappedRange": 2.930050555859701,
+            "changes": 117
+          },
+          "headingMinusPlayerYaw": {
+            "start": 2.574920654296875e-05,
+            "end": 1.3086904287338257,
+            "delta": 1.3086646795272827,
+            "unwrappedRange": 1.5549071470843714,
+            "changes": 117
+          },
+          "inputDirectionFlagPath": [
+            "0x00001000",
+            "0x00002000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 120,
+            "maxAbsErrorRad": 0.016069662574905053,
+            "previousHeadingSamples": 119,
+            "previousHeadingMaxAbsErrorRad": 0.014534755549158618,
+            "previousHeadingP95AbsErrorRad": 2.8212996916465727e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 115
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          148.7113037109375,
+          126.43179321289062,
+          29.845184326171875
+        ],
+        "netPlanarDelta": 8.4221837804868,
+        "zRange": 0.360809326171875
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "idle",
+      "samples": 240,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "d246235c7f54486431942f7d13bea7985f86026f56320a1eb9b82414257c2e13",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -2.073779582977295,
+        "min": -2.073779582977295,
+        "max": -2.073779582977295,
+        "range": 0.0,
+        "changes": 0
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.073779582977295,
+        "delta": 0.0,
+        "unwrappedRange": 0.0,
+        "changes": 0
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "movementTargetRelation": {
+        "activeSamples": 0,
+        "maxAbsErrorRad": null,
+        "previousHeadingSamples": 0,
+        "previousHeadingMaxAbsErrorRad": null,
+        "previousHeadingP95AbsErrorRad": null,
+        "previousHeadingSamplesWithin1eMinus5Rad": 0
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 6.656417850248175e-08,
+        "maxCosError": 6.617578135470481e-08
+      },
+      "segments": [
+        {
+          "label": "idle",
+          "frames": 240,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 3.0983639399157923,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "netPlanarDelta": 0.0,
+        "zRange": 0.0
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "manual-idle-left",
+      "samples": 166,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "6b13597d341d3202e35bc8dadc1bda68a85ae1c6f3433df404c0cccd31d8efd4",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ],
+        [
+          0,
+          127
+        ],
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": -1.0,
+          "max": 0.0,
+          "range": 1.0,
+          "changes": 2
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -1.256879210472107,
+        "min": -2.073779582977295,
+        "max": -1.256601333618164,
+        "range": 0.8171782493591309,
+        "changes": 135
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -1.256879210472107,
+        "delta": 0.816900372505188,
+        "unwrappedRange": 0.8171782493591309,
+        "changes": 135
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "movementTargetRelation": {
+        "activeSamples": 0,
+        "maxAbsErrorRad": null,
+        "previousHeadingSamples": 0,
+        "previousHeadingMaxAbsErrorRad": null,
+        "previousHeadingP95AbsErrorRad": null,
+        "previousHeadingSamplesWithin1eMinus5Rad": 0
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 1.1158025048363385e-07,
+        "maxCosError": 3.8063678584054905e-07
+      },
+      "segments": [
+        {
+          "label": "settle",
+          "frames": 30,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 3.0983639399157923,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        },
+        {
+          "label": "right-stick-left",
+          "frames": 36,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            0,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -1.561213493347168,
+            "delta": 0.512566089630127,
+            "unwrappedRange": 0.512566089630127,
+            "changes": 35
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": -2.672255277633667,
+            "delta": 0.512566089630127,
+            "unwrappedRange": 0.512566089630127,
+            "changes": 35
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        },
+        {
+          "label": "release",
+          "frames": 100,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -1.538680911064148,
+            "end": -1.256879210472107,
+            "delta": 0.281801700592041,
+            "unwrappedRange": 0.2820795774459839,
+            "changes": 99
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": -2.649722695350647,
+            "end": -2.367920994758606,
+            "delta": 0.281801700592041,
+            "unwrappedRange": 0.2820795774459839,
+            "changes": 99
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "netPlanarDelta": 0.0,
+        "zRange": 0.0
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "manual-idle-right",
+      "samples": 166,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "645f6f77f6f79908172cc303bd76f1128740e95cf10dbbbc98252a91c1a21e43",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ],
+        [
+          255,
+          127
+        ],
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "range": 1.0,
+          "changes": 2
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -2.8899714946746826,
+        "min": -2.8899714946746826,
+        "max": -2.073779582977295,
+        "range": 0.8161919116973877,
+        "changes": 66
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -2.8899714946746826,
+        "delta": -0.8161919116973877,
+        "unwrappedRange": 0.8161919116973877,
+        "changes": 66
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": 1.111041784286499,
+        "min": 1.111041784286499,
+        "max": 1.111041784286499,
+        "range": 0.0,
+        "changes": 0
+      },
+      "movementTargetRelation": {
+        "activeSamples": 0,
+        "maxAbsErrorRad": null,
+        "previousHeadingSamples": 0,
+        "previousHeadingMaxAbsErrorRad": null,
+        "previousHeadingP95AbsErrorRad": null,
+        "previousHeadingSamplesWithin1eMinus5Rad": 0
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 2.796715637409797e-07,
+        "maxCosError": 1.6049519652172606e-07
+      },
+      "segments": [
+        {
+          "label": "settle",
+          "frames": 30,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.073779582977295,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 3.0983639399157923,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        },
+        {
+          "label": "right-stick-right",
+          "frames": 36,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            255,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.5862832069396973,
+            "delta": -0.5125036239624023,
+            "unwrappedRange": 0.5125036239624023,
+            "changes": 35
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 2.58586031595339,
+            "delta": -0.5125036239624023,
+            "unwrappedRange": 0.5125036239624023,
+            "changes": 35
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        },
+        {
+          "label": "release",
+          "frames": 100,
+          "left": [
+            127,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.608811855316162,
+            "end": -2.8899714946746826,
+            "delta": -0.2811596393585205,
+            "unwrappedRange": 0.2811596393585205,
+            "changes": 30
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": 1.111041784286499,
+            "delta": 0.0,
+            "unwrappedRange": 0.0,
+            "changes": 0
+          },
+          "headingMinusPlayerYaw": {
+            "start": 2.563331667576925,
+            "end": 2.2821720282184046,
+            "delta": -0.2811596393585205,
+            "unwrappedRange": 0.2811596393585205,
+            "changes": 30
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 0,
+            "maxAbsErrorRad": null,
+            "previousHeadingSamples": 0,
+            "previousHeadingMaxAbsErrorRad": null,
+            "previousHeadingP95AbsErrorRad": null,
+            "previousHeadingSamplesWithin1eMinus5Rad": 0
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "netPlanarDelta": 0.0,
+        "zRange": 0.0
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "recenter",
+      "samples": 226,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "507cecd8765549158bae165af46db40a5be321b124d4fa7eb38fc163a0f88d8a",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ],
+        [
+          0,
+          127
+        ],
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": -1.0,
+          "max": 0.0,
+          "range": 1.0,
+          "changes": 2
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": -1.0,
+          "min": -1.0,
+          "max": 0.0,
+          "range": 1.0,
+          "changes": 1
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000",
+        "0x00001000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -1.525413155555725,
+        "min": -2.0741634368896484,
+        "max": -1.5253947973251343,
+        "range": 0.5487686395645142,
+        "changes": 221
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -1.525413155555725,
+        "delta": 0.5483664274215698,
+        "unwrappedRange": 0.5487686395645142,
+        "changes": 221
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": -1.5253950357437134,
+        "min": -3.023371934890747,
+        "max": 3.0940074920654297,
+        "range": 6.117379426956177,
+        "changes": 222
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": -1.5253950357437134,
+        "min": -2.0741636753082275,
+        "max": 1.111041784286499,
+        "range": 3.1852054595947266,
+        "changes": 221
+      },
+      "movementTargetRelation": {
+        "activeSamples": 224,
+        "maxAbsErrorRad": 0.015538811683654785,
+        "previousHeadingSamples": 224,
+        "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+        "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+        "previousHeadingSamplesWithin1eMinus5Rad": 224
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 1.2426714346425172e-07,
+        "maxCosError": 3.638022883847847e-07
+      },
+      "segments": [
+        {
+          "label": "prelude",
+          "frames": 40,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.074097156524658,
+            "delta": -0.00031757354736328125,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 35
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": -2.0741069316864014,
+            "delta": 3.098036591206686,
+            "unwrappedRange": 3.0980470816241663,
+            "changes": 36
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 9.775161743164062e-06,
+            "delta": -3.098354164754049,
+            "unwrappedRange": 3.0983861128436487,
+            "changes": 36
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000",
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 38,
+            "maxAbsErrorRad": 0.0002791881561279297,
+            "previousHeadingSamples": 38,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 38
+          }
+        },
+        {
+          "label": "right-stick-left",
+          "frames": 36,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            0,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.074087142944336,
+            "end": -1.6978442668914795,
+            "delta": 0.37624287605285645,
+            "unwrappedRange": 0.37624287605285645,
+            "changes": 35
+          },
+          "playerYaw": {
+            "start": -2.0740973949432373,
+            "end": -1.938033103942871,
+            "delta": 0.1360642910003662,
+            "unwrappedRange": 0.1360642910003662,
+            "changes": 35
+          },
+          "headingMinusPlayerYaw": {
+            "start": 1.0251998901367188e-05,
+            "end": 0.2401888370513916,
+            "delta": 0.24017858505249023,
+            "unwrappedRange": 0.24017858505249023,
+            "changes": 35
+          },
+          "inputDirectionFlagPath": [
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 36,
+            "maxAbsErrorRad": 0.015524983406066895,
+            "previousHeadingSamples": 35,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 35
+          }
+        },
+        {
+          "label": "recenter",
+          "frames": 150,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -1.6823056936264038,
+            "end": -1.525413155555725,
+            "delta": 0.1568925380706787,
+            "unwrappedRange": 0.15691089630126953,
+            "changes": 149
+          },
+          "playerYaw": {
+            "start": -1.927275538444519,
+            "end": -1.5253950357437134,
+            "delta": 0.40188050270080566,
+            "unwrappedRange": 0.40188050270080566,
+            "changes": 149
+          },
+          "headingMinusPlayerYaw": {
+            "start": 0.24496984481811523,
+            "end": -1.811981201171875e-05,
+            "delta": -0.24498796463012695,
+            "unwrappedRange": 0.25635993480682373,
+            "changes": 149
+          },
+          "inputDirectionFlagPath": [
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 150,
+            "maxAbsErrorRad": 0.015538811683654785,
+            "previousHeadingSamples": 149,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 149
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          152.50418090820312,
+          102.60208892822266,
+          32.17517852783203
+        ],
+        "netPlanarDelta": 18.122869097819763,
+        "zRange": 2.690805435180664
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    },
+    {
+      "id": "turn-release",
+      "samples": 220,
+      "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+      "movieSha256": "42b993c665e88b183987b72d541918083ab718bcbe9a8a59d23aee7997f27127",
+      "rightStickCommandPath": [
+        [
+          127,
+          127
+        ]
+      ],
+      "conditionedRightStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        },
+        "y": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "range": 0.0,
+          "changes": 0
+        }
+      },
+      "conditionedLeftStick": {
+        "x": {
+          "start": 0.0,
+          "end": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "range": 1.0,
+          "changes": 2
+        },
+        "y": {
+          "start": 0.0,
+          "end": -1.0,
+          "min": -1.0,
+          "max": 0.0,
+          "range": 1.0,
+          "changes": 3
+        }
+      },
+      "inputDirectionFlagPath": [
+        "0x00000000",
+        "0x00001000",
+        "0x00002000",
+        "0x00001000"
+      ],
+      "controlHeading": {
+        "start": -2.073779582977295,
+        "end": -3.06227445602417,
+        "min": -3.0631070137023926,
+        "max": -2.073779582977295,
+        "range": 0.9893274307250977,
+        "changes": 215
+      },
+      "controlHeadingAngular": {
+        "start": -2.073779582977295,
+        "end": -3.06227445602417,
+        "delta": -0.988494873046875,
+        "unwrappedRange": 0.9893274307250977,
+        "changes": 215
+      },
+      "playerYaw": {
+        "start": 1.111041784286499,
+        "end": -3.0331854820251465,
+        "min": -3.1188154220581055,
+        "max": 3.1196353435516357,
+        "range": 6.238450765609741,
+        "changes": 216
+      },
+      "playerTargetYaw": {
+        "start": 1.111041784286499,
+        "end": -3.0599563121795654,
+        "min": -3.0631072521209717,
+        "max": 2.6383018493652344,
+        "range": 5.701409101486206,
+        "changes": 215
+      },
+      "movementTargetRelation": {
+        "activeSamples": 218,
+        "maxAbsErrorRad": 0.01579786539472927,
+        "previousHeadingSamples": 218,
+        "previousHeadingMaxAbsErrorRad": 2.5034345974006555e-07,
+        "previousHeadingP95AbsErrorRad": 2.5034345974006555e-07,
+        "previousHeadingSamplesWithin1eMinus5Rad": 218
+      },
+      "cameraHeadingBasis": {
+        "sinAddress": "0x00166c80",
+        "cosAddress": "0x00166fe4",
+        "maxSinError": 3.628696205182358e-07,
+        "maxCosError": 1.8998061912522957e-07
+      },
+      "segments": [
+        {
+          "label": "prelude",
+          "frames": 40,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.073779582977295,
+            "end": -2.074097156524658,
+            "delta": -0.00031757354736328125,
+            "unwrappedRange": 0.0003838539123535156,
+            "changes": 35
+          },
+          "playerYaw": {
+            "start": 1.111041784286499,
+            "end": -2.0741069316864014,
+            "delta": 3.098036591206686,
+            "unwrappedRange": 3.0980470816241663,
+            "changes": 36
+          },
+          "headingMinusPlayerYaw": {
+            "start": 3.0983639399157923,
+            "end": 9.775161743164062e-06,
+            "delta": -3.098354164754049,
+            "unwrappedRange": 3.0983861128436487,
+            "changes": 36
+          },
+          "inputDirectionFlagPath": [
+            "0x00000000",
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 38,
+            "maxAbsErrorRad": 0.0002791881561279297,
+            "previousHeadingSamples": 38,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 38
+          }
+        },
+        {
+          "label": "turn",
+          "frames": 60,
+          "left": [
+            255,
+            127
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.074087142944336,
+            "end": -2.8422861099243164,
+            "delta": -0.7681989669799805,
+            "unwrappedRange": 0.7681989669799805,
+            "changes": 59
+          },
+          "playerYaw": {
+            "start": -2.0740973949432373,
+            "end": 2.132201910018921,
+            "delta": -2.076886002217428,
+            "unwrappedRange": 2.076886002217428,
+            "changes": 59
+          },
+          "headingMinusPlayerYaw": {
+            "start": 1.0251998901367188e-05,
+            "end": 1.308697287236349,
+            "delta": 1.3086870352374476,
+            "unwrappedRange": 1.555176321660177,
+            "changes": 59
+          },
+          "inputDirectionFlagPath": [
+            "0x00001000",
+            "0x00002000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 60,
+            "maxAbsErrorRad": 0.01579786539472927,
+            "previousHeadingSamples": 59,
+            "previousHeadingMaxAbsErrorRad": 2.5034345974006555e-07,
+            "previousHeadingP95AbsErrorRad": 2.5034345974006555e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 59
+          }
+        },
+        {
+          "label": "follow",
+          "frames": 120,
+          "left": [
+            127,
+            0
+          ],
+          "right": [
+            127,
+            127
+          ],
+          "controlHeading": {
+            "start": -2.8562662601470947,
+            "end": -3.06227445602417,
+            "delta": -0.2060081958770752,
+            "unwrappedRange": 0.20684075355529785,
+            "changes": 119
+          },
+          "playerYaw": {
+            "start": 2.118443727493286,
+            "end": -3.0331854820251465,
+            "delta": 1.1315560976611536,
+            "unwrappedRange": 1.2253766695605677,
+            "changes": 119
+          },
+          "headingMinusPlayerYaw": {
+            "start": 1.3084753195392054,
+            "end": -0.029088973999023438,
+            "delta": -1.3375642935382288,
+            "unwrappedRange": 1.381336275731222,
+            "changes": 119
+          },
+          "inputDirectionFlagPath": [
+            "0x00002000",
+            "0x00001000"
+          ],
+          "targetHeadingRelation": {
+            "activeSamples": 120,
+            "maxAbsErrorRad": 0.013980162147658959,
+            "previousHeadingSamples": 119,
+            "previousHeadingMaxAbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingP95AbsErrorRad": 2.384185791015625e-07,
+            "previousHeadingSamplesWithin1eMinus5Rad": 119
+          }
+        }
+      ],
+      "playerPosition": {
+        "start": [
+          154.7710418701172,
+          120.58262634277344,
+          29.484375
+        ],
+        "end": [
+          142.6043243408203,
+          122.08422088623047,
+          29.484375
+        ],
+        "netPlanarDelta": 12.259029391050491,
+        "zRange": 0.010122299194335938
+      },
+      "cameraFields": {},
+      "candidateFields": []
+    }
+  ],
+  "missingScenarios": [
+    "obstruction"
+  ],
+  "candidateReduction": "omitted",
+  "candidateShortlist": [],
+  "evidenceBoundary": [
+    "rightStickCommandPath is literal DS2 movie input; conditionedRightStick is native I+0x100/+0x104 state",
+    "controlHeading is the proven ordinary target-construction source at 0x00166dd8",
+    "0x00166c80/0x00166fe4 are retained horizontal basis witnesses because live values match sin/cos(controlHeading)",
+    "movementTargetRelation checks P+0x100 against controlHeading plus the conditioned left-stick term",
+    "the direction-flag heading-step branch is statically recovered, but the exact right-stick producer feeding camera orientation remains unresolved",
+    "cameraFields contains only optional field-map additions; the default candidate span is not otherwise semantically labeled",
+    "raw words and per-frame captures remain under ignored captures/; this report retains only derived summaries"
+  ]
+}
