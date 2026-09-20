@@ -10,11 +10,12 @@
   "notes": [
     "No ISO, executable, EE-memory, savestate, or memory-card payload bytes are emitted.",
     "Runtime descriptors and code references are read from the authorized SCUS-97199 savestate.",
-    "Campaign destination ids are not asserted to be disc LEVELn identities without a direct loader bridge."
+    "The recovered loader bridge indexes the retail 19-pair disc level table directly by campaign destination id.",
+    "The pending target slot is only authoritative while the separately recovered travel-active flag is set."
   ],
   "runtime": {
     "savestateFile": "SCUS-97199 (CE4933D0).01.p2s",
-    "savestateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+    "savestateSha256": "e0d954575ab62e481605a75697d782d8aef7d7dbdc011c3a675670ed7a15e863",
     "gameDescriptors": {
       "currentLevel": {
         "descriptorAddress": "0x001845c0",
@@ -113,7 +114,114 @@
         0,
         0
       ],
-      "selectedDestination": 0
+      "selectedDestination": 0,
+      "pendingDestinationStorage": 0,
+      "travelActive": 0
+    },
+    "levelLoader": {
+      "discIndexBase": "0x00137b80",
+      "levelTableOffset": "0x28c8",
+      "levelTableAddress": "0x0013a448",
+      "levelHeaderBuffer": "0x0013a4e0",
+      "loadedHeaderNativeLevelId": 0,
+      "loadedHeaderSize": 9268,
+      "levelTable": [
+        {
+          "index": 0,
+          "headerLba": 1885903,
+          "rawSecondWord": 19462
+        },
+        {
+          "index": 1,
+          "headerLba": 1892897,
+          "rawSecondWord": 28979
+        },
+        {
+          "index": 2,
+          "headerLba": 1902527,
+          "rawSecondWord": 27477
+        },
+        {
+          "index": 3,
+          "headerLba": 1911092,
+          "rawSecondWord": 37363
+        },
+        {
+          "index": 4,
+          "headerLba": 1920096,
+          "rawSecondWord": 17250
+        },
+        {
+          "index": 5,
+          "headerLba": 1928409,
+          "rawSecondWord": 39290
+        },
+        {
+          "index": 6,
+          "headerLba": 1938025,
+          "rawSecondWord": 30312
+        },
+        {
+          "index": 7,
+          "headerLba": 1947922,
+          "rawSecondWord": 29527
+        },
+        {
+          "index": 8,
+          "headerLba": 1956224,
+          "rawSecondWord": 33488
+        },
+        {
+          "index": 9,
+          "headerLba": 1964683,
+          "rawSecondWord": 11275
+        },
+        {
+          "index": 10,
+          "headerLba": 1973526,
+          "rawSecondWord": 21649
+        },
+        {
+          "index": 11,
+          "headerLba": 1982216,
+          "rawSecondWord": 35236
+        },
+        {
+          "index": 12,
+          "headerLba": 1991770,
+          "rawSecondWord": 25386
+        },
+        {
+          "index": 13,
+          "headerLba": 2001300,
+          "rawSecondWord": 20245
+        },
+        {
+          "index": 14,
+          "headerLba": 2010830,
+          "rawSecondWord": 25683
+        },
+        {
+          "index": 15,
+          "headerLba": 2020233,
+          "rawSecondWord": 26282
+        },
+        {
+          "index": 16,
+          "headerLba": 2029864,
+          "rawSecondWord": 26879
+        },
+        {
+          "index": 17,
+          "headerLba": 2039012,
+          "rawSecondWord": 14518
+        },
+        {
+          "index": 18,
+          "headerLba": 2047506,
+          "rawSecondWord": 33170
+        }
+      ]
     },
     "runtimeOwners": {
       "selectedDestination": "0x00184414",
@@ -228,7 +336,22 @@
       "travelCallers": [
         "0x00276d38"
       ],
-      "shipTravelCall": "0x00276d38",
+      "planetTravel": {
+        "shipMapCurrentLevelLoad": "0x002762e8",
+        "shipMapSelectedStore": "0x00276320",
+        "shipTravelCall": "0x00276d38",
+        "shipTravelSelectedLoad": "0x00276d3c",
+        "travelActiveSet": "0x0028ed8c",
+        "pendingDestinationStore": "0x0028ee8c",
+        "sourceSnapshotStore": "0x0024d51c",
+        "temporaryTargetCurrentLevelStore": "0x0024d528",
+        "sourceCurrentLevelRestore": "0x0024d628",
+        "loaderSelectorStore": "0x00293034",
+        "pendingCommitLoad": "0x0029341c",
+        "currentLevelCommit": "0x00293434",
+        "levelLoaderCall": "0x00293444",
+        "travelActiveClear": "0x00291df8"
+      },
       "completionWrite": "0x0029340c",
       "completionValueSetup": "0x00293408",
       "completionStateStore": "0x00293414",

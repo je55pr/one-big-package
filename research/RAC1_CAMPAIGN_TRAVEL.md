@@ -75,21 +75,34 @@ idempotence. It also proves that the 20-byte storage capacity is not the valid
 destination range: retail gameplay bounds destinations/levels with `<19`.
 The model therefore retains 20 serialized slots but accepts IDs only `0..18`.
 
-## Travel and per-level mutation
+## Travel and source/target transition
 
-The ship/map UI keeps its selected destination at `0x00184414`. The ship
-state path at `0x00276d38` loads that value and calls `0x0028ed58`.
-The travel routine compares the destination against CurrentLevel and, when
-different, passes it unchanged as the destination argument to transition core
-`0x0024d430`.
+The ship/map UI keeps its selected destination at `0x00184414`. On map setup,
+`0x002762e8` loads CurrentLevel and `0x00276320` seeds that selected value
+from it. The launch path at `0x00276d38/0x00276d3c` then passes the selected
+destination unchanged as argument 0 to travel routine `0x0028ed58`.
 
-The transition core stores the selected ID into `0x0015ed84`. For IDs
-`<19`, it indexes `0x0013dd58 + id` and promotes state `0 -> 1`; state
-`2` is not demoted. Completion is a separate path: `0x00293408` prepares
-value `2`, `0x0029340c` forms the per-level-state base, and
-`0x00293414` stores that byte for the current level, with additional retail
-gates for IDs 7 and 14. No VisitedPlanets or GalacticMap mutation occurs in
-that completion write.
+Different-level travel is a two-phase handoff, not an immediate CurrentLevel
+assignment. The travel routine raises a transition-active scalar at
+`0x0015f5d8`, calls transition core `0x0024d430`, then stores the requested
+target at `0x0015f5c0`. Inside the transition core, retail snapshots the source
+CurrentLevel, temporarily installs the target while swapping/loading per-level
+state, restores the target's previous visit byte, and finally restores the
+source CurrentLevel at `0x0024d628`. The temporary `0 -> 1` byte write at
+`0x0024d544` is therefore transition bookkeeping, not evidence that campaign
+visit progression becomes durable at that instruction.
+
+Later, `0x00293034` copies the pending target into the loader selector.
+`0x0029341c` reloads the pending target and `0x00293434` is the late
+CurrentLevel commit. New-level initialization eventually reaches
+`0x00291df8`, which clears the transition-active scalar. The pending-target
+storage is not required to be zeroed at that point, so it is semantically live
+only while the active flag is set.
+
+Completion remains separate: `0x00293408` prepares value `2`,
+`0x0029340c` forms the per-level-state base, and `0x00293414` stores that
+byte for the current level, with additional retail gates for IDs 7 and 14.
+No VisitedPlanets or GalacticMap mutation occurs in that completion write.
 
 The populated save admits destinations 1, 2, 3, and 4 while CurrentLevel is 2,
 so the smallest concrete revisit supported by that save and the proven travel
@@ -111,15 +124,38 @@ model deliberately contains no checkpoint field because no checkpoint owner or
 serialization block is established by this evidence. Discovery, travel,
 completion, and checkpoint state therefore remain separate contracts.
 
-## Destination identity boundary
+## Destination identity and native level-entry selector
 
-Campaign destination IDs are proven to flow unchanged through admission,
-planet selection, CurrentLevel, and per-level-state indexing. Separately, the
-retail disc index contains 19 native level headers with native level IDs
-0 through 18.
+The direct loader bridge closes the former namespace gap. Runtime disc index
+base `0x00137b80` contains the 19-pair level table at offset `0x28c8`,
+therefore address `0x0013a448`. Loader routine `0x0012f368` multiplies
+its argument by eight, indexes that exact table, reads the pair's first word as
+the header LBA, reads five sectors, and copies exactly `0x2434` bytes to
+`0x0013a4e0`. The late travel handoff calls it at `0x00293444` with the
+loader selector as argument 0.
 
-This work does **not** yet contain a direct SCUS-97199 loader trace proving
-that campaign destination ID `n` selects disc-index/native `LEVELn`.
-Accordingly, `Rac1CampaignDestinationIdentity` planet names and the neutral
-`rac1:LEVEL0..18` world catalogue remain separate namespaces. No campaign
-ordering or bridge is inferred from the debug browser or unit-test examples.
+The live table contents match the independently decoded retail disc-index
+census byte-for-byte. That census proves table slot `n` points to a native
+header whose first word is level id `n`, for all `0..18`. Consequently the
+normal campaign destination/current-level/loader identity is the same native
+level-id namespace used by `rac1:LEVEL0..18`; this is no longer inferred from
+display order or the debug browser.
+
+## Player entry and session boundary
+
+After a native level header selects the target world, ordinary authored player
+placement remains the class-0 instance-0 contract documented in
+`research/RAC1_VELDIN_SPAWN.md`. Retail gameplay data has exactly one
+class-0 Moby at instance 0 for every native level `0..18`; OBP's
+`Rac1PlayerStartProvider` uses that authored transform and deliberately does
+not substitute the separate ship position. Planet travel therefore selects the
+native level first, then level-local authored player-start data supplies the
+entry transform.
+
+`Rac1PlanetTravelSession` models only the recovered transient handoff:
+map selection starts from CurrentLevel, a different admitted destination becomes
+the pending/loader target while the source remains current, CurrentLevel changes
+at the late commit, and completion of level initialization clears transition
+activity. Persistent discovery, GalacticMap order, completion state, and the
+serialized CurrentLevel remain owned by `Rac1CampaignState`; the raw pending
+slot is intentionally not treated as durable campaign state.

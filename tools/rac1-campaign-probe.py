@@ -24,6 +24,13 @@ GALACTIC_MAP = 0x0013D510
 PER_LEVEL_STATE = 0x0013DD58
 SELECTED_DESTINATION = 0x00184414
 MAP_NAV_OWNER = 0x001602A0
+PENDING_DESTINATION = 0x0015F5C0
+TRAVEL_ACTIVE = 0x0015F5D8
+
+DISC_INDEX_BASE = 0x00137B80
+LEVEL_TABLE_OFFSET = 0x28C8
+LEVEL_TABLE = DISC_INDEX_BASE + LEVEL_TABLE_OFFSET
+LEVEL_HEADER_BUFFER = LEVEL_TABLE + 19 * 8
 
 GAME_DESCRIPTOR_TABLE = 0x001845C0
 LEVEL_VISITED_DESCRIPTOR = 0x001848C0
@@ -40,7 +47,32 @@ DISCOVERY_EVENT_OFFSET = 0x24
 INITIAL_CURRENT_LEVEL_LOAD = 0x0023D160
 INITIAL_CURRENT_LEVEL_ZERO_SKIP = 0x0023D164
 INITIAL_ADMISSION_CALL = 0x0023D16C
+SHIP_MAP_CURRENT_LOAD = 0x002762E8
+SHIP_MAP_SELECTED_STORE = 0x00276320
 SHIP_TRAVEL_CALL = 0x00276D38
+SHIP_TRAVEL_SELECTED_LOAD = 0x00276D3C
+TRAVEL_ACTIVE_SET = 0x0028ED8C
+TRAVEL_CURRENT_LEVEL_LOAD = 0x0028EDE8
+TRAVEL_TRANSITION_CALL = 0x0028EE78
+PENDING_DESTINATION_STORE = 0x0028EE8C
+TRANSITION_SOURCE_SNAPSHOT_STORE = 0x0024D51C
+TRANSITION_TEMP_TARGET_STORE = 0x0024D528
+TRANSITION_TEMP_VISIT_STORE = 0x0024D544
+TRANSITION_VISIT_RESTORE = 0x0024D620
+TRANSITION_SOURCE_RESTORE = 0x0024D628
+LOADER_SELECTOR_STORE = 0x00293034
+LEVEL_LOADER_ROUTINE = 0x0012F368
+LEVEL_LOADER_CALL = 0x00293444
+LEVEL_LOADER_ARGUMENT = 0x00293448
+CURRENT_LEVEL_COMMIT = 0x00293434
+PENDING_DESTINATION_COMMIT_LOAD = 0x0029341C
+TRAVEL_ACTIVE_CLEAR = 0x00291DF8
+LEVEL_TABLE_INDEX_SHIFT = 0x0012F380
+LEVEL_TABLE_BASE_ADD = 0x0012F388
+LEVEL_TABLE_ENTRY_LOAD = 0x0012F3A8
+LEVEL_HEADER_SECTOR_COUNT = 0x0012F3B0
+LEVEL_HEADER_BUFFER_BASE_ADD = 0x0012F3FC
+LEVEL_HEADER_COPY_BOUND = 0x0012F410
 COMPLETION_WRITE = 0x0029340C
 COMPLETION_VALUE_SETUP = 0x00293408
 COMPLETION_STATE_STORE = 0x00293414
@@ -140,6 +172,14 @@ def expect_i(memory, address, opcode, rs, rt, immediate, label):
         raise RuntimeError(f"{label} signature mismatch at 0x{address:08x}: {actual} != {expected}")
 
 
+def expect_word(memory, address, expected, label):
+    actual = u32(memory, address)
+    if actual != expected:
+        raise RuntimeError(
+            f"{label} signature mismatch at 0x{address:08x}: 0x{actual:08x} != 0x{expected:08x}"
+        )
+
+
 def expect_jal(memory, address, target, label):
     word = u32(memory, address)
     if word >> 26 != 3:
@@ -170,6 +210,46 @@ def verify_destination_discovery(memory):
         raise RuntimeError("completion state store signature mismatch")
 
 
+def verify_planet_travel(memory):
+    # Ship/map entry seeds the UI selection from CurrentLevel. The launch call
+    # then forwards that selected destination unchanged as a0 to the travel routine.
+    expect_i(memory, SHIP_MAP_CURRENT_LOAD, 35, 5, 5, -0x127C, "ship map CurrentLevel load")
+    expect_i(memory, SHIP_MAP_SELECTED_STORE, 43, 2, 5, 0x4414, "ship map selected store")
+    expect_jal(memory, SHIP_TRAVEL_CALL, TRAVEL_ROUTINE, "ship selected travel")
+    expect_i(memory, SHIP_TRAVEL_SELECTED_LOAD, 35, 16, 4, 0x224, "ship selected destination load")
+
+    # Different-level travel is a two-phase handoff. Setup raises an active flag,
+    # snapshots source state, temporarily swaps target context, then restores source.
+    expect_i(memory, TRAVEL_ACTIVE_SET, 43, 1, 3, -0xA28, "travel active set")
+    expect_i(memory, TRAVEL_CURRENT_LEVEL_LOAD, 35, 2, 2, -0x127C, "travel CurrentLevel load")
+    expect_jal(memory, TRAVEL_TRANSITION_CALL, TRANSITION_CORE, "travel transition core")
+    expect_i(memory, PENDING_DESTINATION_STORE, 43, 1, 16, -0xA40, "pending destination store")
+    expect_i(memory, TRANSITION_SOURCE_SNAPSHOT_STORE, 43, 5, 2, 0xC8, "source snapshot store")
+    expect_i(memory, TRANSITION_TEMP_TARGET_STORE, 43, 1, 17, -0x127C, "temporary target CurrentLevel store")
+    expect_i(memory, TRANSITION_TEMP_VISIT_STORE, 40, 3, 2, 0, "temporary target visit store")
+    expect_i(memory, TRANSITION_VISIT_RESTORE, 40, 2, 18, 0, "target visit restore")
+    expect_i(memory, TRANSITION_SOURCE_RESTORE, 43, 1, 4, -0x127C, "source CurrentLevel restore")
+
+    # The later handoff copies pending target into the loader selector, commits
+    # CurrentLevel only after load admission, and clears the transfer-active flag.
+    expect_i(memory, LOADER_SELECTOR_STORE, 43, 28, 2, -0x7E7C, "loader selector store")
+    expect_i(memory, PENDING_DESTINATION_COMMIT_LOAD, 35, 2, 2, -0xA40, "pending destination commit load")
+    expect_i(memory, CURRENT_LEVEL_COMMIT, 43, 1, 2, -0x127C, "CurrentLevel commit")
+    expect_jal(memory, LEVEL_LOADER_CALL, LEVEL_LOADER_ROUTINE, "native level header load")
+    expect_i(memory, LEVEL_LOADER_ARGUMENT, 35, 28, 4, -0x7E7C, "native level selector argument")
+    expect_i(memory, TRAVEL_ACTIVE_CLEAR, 43, 1, 0, -0xA28, "travel active clear")
+
+    # LEVELn is not a guessed filename convention: the loader indexes the final
+    # 19 disc-index pairs by selector * 8, reads that pair's LBA, reads five sectors,
+    # then copies the exact 0x2434-byte native header to the buffer after the table.
+    expect_word(memory, LEVEL_TABLE_INDEX_SHIFT, 0x000420C0, "level table selector shift")
+    expect_i(memory, LEVEL_TABLE_BASE_ADD, 9, 2, 2, -0x5BB8, "level table base")
+    expect_i(memory, LEVEL_TABLE_ENTRY_LOAD, 35, 17, 4, 0, "level table LBA load")
+    expect_i(memory, LEVEL_HEADER_SECTOR_COUNT, 9, 0, 5, 5, "level header sector count")
+    expect_i(memory, LEVEL_HEADER_BUFFER_BASE_ADD, 9, 2, 6, -0x5B20, "level header buffer")
+    expect_i(memory, LEVEL_HEADER_COPY_BOUND, 11, 5, 2, 0x2434, "level header copy bound")
+
+
 def runtime_report(savestate, zstd_dll):
     helper = load_helper()
     memory = helper.read_zip_entry(savestate, "eeMemory.bin", zstd_dll)
@@ -189,6 +269,15 @@ def runtime_report(savestate, zstd_dll):
         raise RuntimeError("per-level descriptor at 0x001848c0 is not block 3001")
 
     verify_destination_discovery(memory)
+    verify_planet_travel(memory)
+    level_table = [
+        {
+            "index": index,
+            "headerLba": u32(memory, LEVEL_TABLE + index * 8),
+            "rawSecondWord": u32(memory, LEVEL_TABLE + index * 8 + 4),
+        }
+        for index in range(19)
+    ]
 
     return {
         "savestateFile": savestate.name,
@@ -201,6 +290,17 @@ def runtime_report(savestate, zstd_dll):
             "galacticMap": s32_array(memory, GALACTIC_MAP, 20),
             "perLevelState": list(memory[PER_LEVEL_STATE:PER_LEVEL_STATE + 20]),
             "selectedDestination": s32(memory, SELECTED_DESTINATION),
+            "pendingDestinationStorage": s32(memory, PENDING_DESTINATION),
+            "travelActive": s32(memory, TRAVEL_ACTIVE),
+        },
+        "levelLoader": {
+            "discIndexBase": f"0x{DISC_INDEX_BASE:08x}",
+            "levelTableOffset": f"0x{LEVEL_TABLE_OFFSET:04x}",
+            "levelTableAddress": f"0x{LEVEL_TABLE:08x}",
+            "levelHeaderBuffer": f"0x{LEVEL_HEADER_BUFFER:08x}",
+            "loadedHeaderNativeLevelId": s32(memory, LEVEL_HEADER_BUFFER),
+            "loadedHeaderSize": u32(memory, LEVEL_HEADER_BUFFER + 4),
+            "levelTable": level_table,
         },
         "runtimeOwners": {
             "selectedDestination": f"0x{SELECTED_DESTINATION:08x}",
@@ -233,7 +333,22 @@ def runtime_report(savestate, zstd_dll):
             "transitionCallers": [f"0x{x:08x}" for x in jal_callers(memory, TRANSITION_CORE)],
             "travelRoutine": f"0x{TRAVEL_ROUTINE:08x}",
             "travelCallers": [f"0x{x:08x}" for x in jal_callers(memory, TRAVEL_ROUTINE)],
-            "shipTravelCall": f"0x{SHIP_TRAVEL_CALL:08x}",
+            "planetTravel": {
+                "shipMapCurrentLevelLoad": f"0x{SHIP_MAP_CURRENT_LOAD:08x}",
+                "shipMapSelectedStore": f"0x{SHIP_MAP_SELECTED_STORE:08x}",
+                "shipTravelCall": f"0x{SHIP_TRAVEL_CALL:08x}",
+                "shipTravelSelectedLoad": f"0x{SHIP_TRAVEL_SELECTED_LOAD:08x}",
+                "travelActiveSet": f"0x{TRAVEL_ACTIVE_SET:08x}",
+                "pendingDestinationStore": f"0x{PENDING_DESTINATION_STORE:08x}",
+                "sourceSnapshotStore": f"0x{TRANSITION_SOURCE_SNAPSHOT_STORE:08x}",
+                "temporaryTargetCurrentLevelStore": f"0x{TRANSITION_TEMP_TARGET_STORE:08x}",
+                "sourceCurrentLevelRestore": f"0x{TRANSITION_SOURCE_RESTORE:08x}",
+                "loaderSelectorStore": f"0x{LOADER_SELECTOR_STORE:08x}",
+                "pendingCommitLoad": f"0x{PENDING_DESTINATION_COMMIT_LOAD:08x}",
+                "currentLevelCommit": f"0x{CURRENT_LEVEL_COMMIT:08x}",
+                "levelLoaderCall": f"0x{LEVEL_LOADER_CALL:08x}",
+                "travelActiveClear": f"0x{TRAVEL_ACTIVE_CLEAR:08x}",
+            },
             "completionWrite": f"0x{COMPLETION_WRITE:08x}",
             "completionValueSetup": f"0x{COMPLETION_VALUE_SETUP:08x}",
             "completionStateStore": f"0x{COMPLETION_STATE_STORE:08x}",
@@ -364,7 +479,8 @@ def main():
         "notes": [
             "No ISO, executable, EE-memory, savestate, or memory-card payload bytes are emitted.",
             "Runtime descriptors and code references are read from the authorized SCUS-97199 savestate.",
-            "Campaign destination ids are not asserted to be disc LEVELn identities without a direct loader bridge.",
+            "The recovered loader bridge indexes the retail 19-pair disc level table directly by campaign destination id.",
+            "The pending target slot is only authoritative while the separately recovered travel-active flag is set.",
         ],
     }
     if args.savestate is not None:
