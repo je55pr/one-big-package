@@ -2,7 +2,7 @@
   "schema": 1,
   "authority": "R&C1 NTSC-U SCUS-97199 loaded EE savestate",
   "savestateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
-  "loadedOverlaySignaturesVerified": 38,
+  "loadedOverlaySignaturesVerified": 69,
   "addresses": {
     "inputState": "0x0013c940",
     "inputDirectionFlags": "0x0013cae0",
@@ -12,12 +12,33 @@
     "cameraPitch": "0x00166dd4",
     "cameraFollowBase": "0x00166e10",
     "cameraRawPlayerBase": "0x00166e70",
+    "activeCameraObjectPointer": "0x00166e00",
+    "cameraProfilePointer": "0x00168fc0",
+    "cameraDispatchTable": "0x001ea880",
     "controlHeading": "0x00166dd8"
   },
   "savestateWitness": {
     "cameraModeHalfword": 0,
     "headingStep": 0.0,
-    "controlHeading": -2.073779582977295
+    "controlHeading": -2.073779582977295,
+    "activeCameraObject": "0x00167290",
+    "activeCameraType": 0,
+    "activeCameraState": "0x00169110",
+    "dispatchEntry": "0x001ea880",
+    "initCallback": "0x002e6d60",
+    "updateCallback": "0x002e9c28",
+    "cameraProfile": "0x00169610",
+    "objectEye": [
+      157.66326904296875,
+      125.8394775390625,
+      31.4896240234375
+    ],
+    "globalEye": [
+      157.66326904296875,
+      125.8394775390625,
+      31.4896240234375
+    ],
+    "maxObjectGlobalEyeError": 0.0
   },
   "directionalHeadingStepBranch": {
     "routine": "0x001f3aa0..0x001f3f7c",
@@ -42,8 +63,88 @@
     "verticalStep": "v += accel * (target - current) - damping * v; clamp v to remaining delta; current += v",
     "modeBranch": "state+0x2284 == 0x50 and state+0x2084 != 0x11 takes an alternate follow path"
   },
+  "ordinaryChaseFramingProducer": {
+    "mainUpdateRoutine": "0x001ed0a8..0x001ed2cc",
+    "cameraDispatcher": "0x001eba20..0x001ebb30",
+    "cameraType": 0,
+    "type0InitCallback": "0x002e6d60",
+    "type0UpdateCallback": "0x002e9c28",
+    "corePipeline": "0x002e9bb0",
+    "framingRoutine": "0x002e9720..0x002e9a9c",
+    "profileTransitionRoutine": "0x002e5e38..0x002e5ffc",
+    "finalHeightRoutine": "0x002e9010..0x002e944c",
+    "linearDampedStepHelper": "0x001eb240..0x001eb320",
+    "wrappedAngularStepHelper": "0x001eb328..0x001eb440",
+    "vectorAddHelper": "0x001ff278",
+    "persistentState": "0x00169110",
+    "stateWitness": {
+      "currentLookHeight": 1.5000041723251343,
+      "currentEyeHeight": 1.999987244606018,
+      "lookHeightVelocity": -4.7683720083568915e-08,
+      "eyeHeightVelocity": 1.0728837906981425e-07,
+      "eyeAnchor": [
+        154.7710418701172,
+        120.58262634277344,
+        31.48436737060547
+      ],
+      "radialOffset": [
+        2.8922369480133057,
+        5.2568511962890625,
+        0.0052544670179486275
+      ],
+      "radialOffsetMagnitude": 5.999962222614632,
+      "radialVelocity": 9.059903050001594e-07,
+      "preferredRadius": 5.999970436096191,
+      "preferredEyeHeight": 1.9999926090240479,
+      "radiusOverrideFlag": 0,
+      "eyeHeightOverrideFlag": 0,
+      "preferredRadiusVelocity": 4.434585889612208e-07,
+      "radiusTransitionAcceleration": 0.003000000026077032,
+      "preferredEyeHeightVelocity": 1.108646472403052e-07,
+      "eyeHeightTransitionAcceleration": 0.003000000026077032,
+      "constructorRadiusReference": 4.639999866485596,
+      "unobstructedRadialCorrection": 0.0,
+      "profileRadiusWitness": 4.639999866485596,
+      "profileEyeHeightWitness": 2.0
+    },
+    "geometryWitness": {
+      "player": [
+        154.7710418701172,
+        120.58262634277344,
+        29.484375
+      ],
+      "eyeAnchorPlusRadialOffset": [
+        157.6632788181305,
+        125.8394775390625,
+        31.489621837623417
+      ],
+      "maxComposedGlobalEyeError": 9.775161743164062e-06,
+      "preferredRadiusMinusOffsetMagnitude": 8.213481559771196e-06
+    },
+    "constructorDefaults": {
+      "radius": 4.639999866485596,
+      "eyeHeight": 2.0,
+      "profileTransitionAcceleration": 0.003000000026077032
+    },
+    "finalHeightFollow": {
+      "acceleration": 0.004000000189989805,
+      "damping": 0.20000000298023224,
+      "eyeHeightCurrent": "state+0x28",
+      "eyeHeightTarget": "state+0x160",
+      "eyeHeightVelocity": "state+0x30",
+      "lookHeightCurrent": "state+0x24",
+      "lookHeightVelocity": "state+0x2c"
+    },
+    "radialFollow": [
+      "0x002e5e38 damps state+0x15c preferred radius toward a profile/override source using state+0x178 acceleration and state+0x174 velocity",
+      "0x002e9720 damps the magnitude of state+0x140 toward state+0x15c minus state+0x200, using coefficients selected by 0x002e9518 and state+0x158 velocity",
+      "0x002e9a40..0x002e9a4c composes camera object +0x30 from the resolved anchor plus state+0x140; the main update then publishes object +0x30 to global eye 0x00166dc0"
+    ]
+  },
   "uncertainty": [
     "This branch explains direction-flag-driven heading change, but it is not the complete manual-camera producer.",
-    "Live right-stick input changes controlHeading while I+0x1a0 remains on the left-stick forward flag, so right-stick production occurs elsewhere."
+    "Live right-stick input changes controlHeading while I+0x1a0 remains on the left-stick forward flag, so right-stick production occurs elsewhere.",
+    "The constructor/profile radius witness is 4.64 while this authority snapshot has a settled preferred radius near 6.0; do not promote 4.64 as the ordinary chase distance without resolving the intervening profile/mode source.",
+    "0x002e7d20 is a separate world/contact correction path and is intentionally outside this unobstructed-camera task."
   ]
 }

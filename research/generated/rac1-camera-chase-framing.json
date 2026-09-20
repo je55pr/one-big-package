@@ -1175,7 +1175,8 @@
     "stationary ordinary framing settles near six planar units behind Ratchet with pitch near 0.084 rad",
     "the eye-to-Ratchet planar ray and forward basis use controlHeading; no separate yaw-lagged eye ray was observed",
     "movement changes radial distance and pitch, so stationary distance/pitch are not global invariant constants",
-    "vertical follow is executable-backed and dynamically validated; the complete horizontal radial producer remains unresolved",
+    "vertical follow is executable-backed and dynamically validated; the horizontal type-0 radial producer is traced through its two-stage stateful smoother and final eye composition",
+    "the profile/mode source that moves preferred radius away from the 4.64 constructor/profile witness, plus the GP-relative preferred-radius damping, remain evidence-gated",
     "raw movies and per-frame samples remain below ignored captures/"
   ]
 }

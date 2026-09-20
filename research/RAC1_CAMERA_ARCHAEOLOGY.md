@@ -118,9 +118,51 @@ sample. The producer also has a distinct alternate path gated when
 `state+0x2284 == 0x50` and `state+0x2084 != 0x11`; consequently the recovered
 ordinary constants must not be promoted as all-mode camera constants.
 
-The complete horizontal radial-position producer is not yet decoded. The
-measured eye geometry and fixed-step-like motion are retained, but no curve-fit
-law is promoted in place of missing executable dataflow.
+The horizontal framing producer is now traced far enough to replace that
+curve-fit boundary with executable dataflow. Main update `0x001ed0a8..0x001ed2cc`
+first runs the filtered-player follow producer, then dispatches the active
+camera object through `0x001eba20..0x001ebb30`. The authority state points
+`0x00166e00` at object `0x00167290`, whose type halfword is `0`; dispatch entry
+`0x001ea880` selects init callback `0x002e6d60` and update callback
+`0x002e9c28`. The object's `+0x30` eye equals global eye `0x00166dc0` exactly
+in the authority state, and the main update publishes that object eye after the
+type-specific update.
+
+Type 0 owns persistent state through object `+0x70`; the authority witness is
+`0x00169110`. In the unobstructed stationary state, `state+0x90` is the eye
+anchor and `state+0x140` is the radial offset. Their vector sum reproduces the
+global eye within `9.8e-6` units. The offset magnitude is `5.999962`, while
+`state+0x15c` holds preferred radius `5.999970`; `state+0x200`, subtracted from
+the preferred radius before the radial step, is zero in this unobstructed
+witness.
+
+The radius is explicitly two-stage. `0x002e5e38..0x002e5ffc` damps
+`state+0x15c` toward a profile or temporary override source using
+`state+0x174` velocity and `state+0x178` acceleration; the latter is `0.003` in
+the authority state. `0x002e9720..0x002e9a9c` then damps the magnitude of
+`state+0x140` toward `state+0x15c - state+0x200`, storing radial velocity at
+`state+0x158`. Its acceleration/damping pair is selected by `0x002e9518`, so a
+single global horizontal smoothing constant is not justified. The routine
+finally composes camera object `+0x30` from the resolved anchor plus
+`state+0x140` through vector-add helper `0x001ff278`.
+
+Height is layered similarly. `state+0x160` is the preferred eye height; its
+profile transition uses `state+0x180` velocity and `state+0x184 = 0.003`
+acceleration. The final ordinary height pass at `0x002e9010..0x002e944c`
+damps current eye height `state+0x28` toward `state+0x160`, with velocity at
+`state+0x30`, acceleration `0.004` and damping `0.2`. The stationary witness is
+`1.999987` current versus `1.999993` preferred. Current look height at
+`state+0x24` is `1.500004`, with its own velocity at `state+0x2c`.
+
+Constructor `0x002e6d60` seeds radius `4.64`, eye height `2.0`, and profile
+transition acceleration `0.003`. Do **not** treat `4.64` as the ordinary chase
+distance: the same authority snapshot has preferred radius near `6.0`, while a
+separate profile witness at `0x00169610+0x15c` still reads `4.64`. The
+intervening profile/mode source and the GP-relative damping used by the
+preferred-radius transition remain evidence-gated. This is exactly why chase
+framing should be implemented from state transitions rather than one tuned
+distance constant. Obstruction/contact routine `0x002e7d20` remains outside
+this task by design.
 
 ## Semantic camera field map
 

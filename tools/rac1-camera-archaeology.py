@@ -34,9 +34,18 @@ CAMERA_FOLLOW_BASE = CONTROL_BASIS_BASE + 0x190
 CAMERA_RAW_PLAYER_BASE = CONTROL_BASIS_BASE + 0x1F0
 CAMERA_FOLLOW_RAW_Z = CAMERA_FOLLOW_BASE + 0x0C
 CAMERA_FOLLOW_Z_VELOCITY = CAMERA_FOLLOW_BASE + 0x10
+ACTIVE_CAMERA_OBJECT_PTR = CONTROL_BASIS_BASE + 0x180
+CAMERA_PROFILE_PTR = 0x00168FC0
+CAMERA_DISPATCH_TABLE = 0x001EA880
+CAMERA_DISPATCH_STRIDE = 0x14
 INPUT_DIRECTION_FLAGS = INPUT_STATE + 0x1A0
 CHASE_Z_ACCEL = struct.unpack("<f", struct.pack("<I", 0x3BF5C28F))[0]
 CHASE_Z_DAMPING = struct.unpack("<f", struct.pack("<I", 0x3E333333))[0]
+CHASE_CONSTRUCTOR_RADIUS = struct.unpack("<f", struct.pack("<I", 0x40947AE1))[0]
+CHASE_CONSTRUCTOR_EYE_HEIGHT = 2.0
+CHASE_PROFILE_TRANSITION_ACCEL = struct.unpack("<f", struct.pack("<I", 0x3B449BA6))[0]
+CHASE_EYE_HEIGHT_ACCEL = struct.unpack("<f", struct.pack("<I", 0x3B83126F))[0]
+CHASE_EYE_HEIGHT_DAMPING = struct.unpack("<f", struct.pack("<I", 0x3E4CCCCD))[0]
 CHASE_SCENARIO_IDS = ("fixed-heading", "moving", "turning", "idle", "turn-release")
 DEFAULT_CANDIDATE_START = 0x00166C00
 DEFAULT_CANDIDATE_BYTES = 0x400
@@ -113,6 +122,39 @@ CHASE_FOLLOW_SIGNATURES = {
     0x001EB280: 0xE6010000,  # store updated velocity
     0x001EB30C: 0x4600A800,  # return current + velocity
 }
+CHASE_FRAMING_SIGNATURES = {
+    0x001ED108: 0x0C07B29C,  # update filtered player follow target first
+    0x001ED110: 0x0C07AE88,  # dispatch active camera object update
+    0x001ED164: 0x26050140,  # global eye destination = camera globals +0x140
+    0x001EBA2C: 0x8C506E00,  # active camera object pointer at 0x00166e00
+    0x001EBAD4: 0x8C51000C,  # per-type update callback from 20-byte dispatch entry
+    0x001EBAE0: 0x0220F809,  # invoke type-specific camera update
+    0x002E9C88: 0x0C0BA6EC,  # type-0 ordinary camera core pipeline
+    0x002E5EBC: 0xC60C002C,  # current preferred radius state+0x15c
+    0x002E5EC0: 0xC66D002C,  # profile/override radius target
+    0x002E5EC4: 0xC60E0048,  # radius transition acceleration state+0x178
+    0x002E5EC8: 0x0C07AC90,  # damp preferred radius through 0x001eb240
+    0x002E5ED0: 0xE600002C,  # store preferred radius state+0x15c
+    0x002E5EEC: 0xC60C0030,  # current preferred eye height state+0x160
+    0x002E5EF0: 0xC66D0030,  # profile/override eye-height target
+    0x002E5EF4: 0xC60E0054,  # height transition acceleration state+0x184
+    0x002E5EFC: 0x0C07AC90,  # damp preferred eye height through 0x001eb240
+    0x002E5F04: 0xE6000030,  # store preferred eye height state+0x160
+    0x002E6E20: 0x3C014094,  # constructor 4.64 radius high half
+    0x002E6E24: 0x34217AE1,  # constructor 4.64 radius low half
+    0x002E6E3C: 0x3C014000,  # constructor 2.0 eye height
+    0x002E97E4: 0x0C07AC90,  # damp current offset magnitude toward preferred radius
+    0x002E97E8: 0x26840158,  # radial velocity state+0x158
+    0x002E9A40: 0x27C40030,  # final eye destination = camera object +0x30
+    0x002E9A48: 0x0C07FC9E,  # vector add helper 0x001ff278
+    0x002E9A4C: 0x26A60010,  # final offset source = state+0x140
+    0x002E91B8: 0x3C013B83,  # final height-follow 0.004 accel high half
+    0x002E91BC: 0x3421126F,  # final height-follow 0.004 accel low half
+    0x002E91C4: 0x3C013E4C,  # final height-follow 0.2 damping high half
+    0x002E91C8: 0x3421CCCD,  # final height-follow 0.2 damping low half
+    0x002E91E8: 0x0C07AC90,  # damp current eye height toward preferred height
+    0x002E9210: 0x0C07AC90,  # damp current look height toward its target
+}
 
 
 def wrap_pi(value: float) -> float:
@@ -130,7 +172,7 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
     probe = _movement_probe()
     memory = probe.read_zip_entry(savestate, "eeMemory.bin", zstd_dll)
     mismatches: list[dict[str, str]] = []
-    signatures = {**CAMERA_PRODUCER_SIGNATURES, **CHASE_FOLLOW_SIGNATURES}
+    signatures = {**CAMERA_PRODUCER_SIGNATURES, **CHASE_FOLLOW_SIGNATURES, **CHASE_FRAMING_SIGNATURES}
     for address, expected in signatures.items():
         actual = struct.unpack_from("<I", memory, address)[0]
         if actual != expected:
@@ -145,6 +187,27 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
     camera_mode = struct.unpack_from("<H", memory, PLAYER_STATE + 0x288)[0]
     heading_step = struct.unpack_from("<f", memory, CAMERA_STATE_BASE + 0x80)[0]
     control_heading = struct.unpack_from("<f", memory, CONTROL_HEADING)[0]
+    active_camera = struct.unpack_from("<I", memory, ACTIVE_CAMERA_OBJECT_PTR)[0]
+    camera_type = struct.unpack_from("<H", memory, active_camera + 0x8C)[0]
+    camera_state = struct.unpack_from("<I", memory, active_camera + 0x70)[0]
+    dispatch_entry = CAMERA_DISPATCH_TABLE + camera_type * CAMERA_DISPATCH_STRIDE
+    init_callback = struct.unpack_from("<I", memory, dispatch_entry + 0x08)[0]
+    update_callback = struct.unpack_from("<I", memory, dispatch_entry + 0x0C)[0]
+    camera_profile = struct.unpack_from("<I", memory, CAMERA_PROFILE_PTR)[0]
+
+    def f32(address: int) -> float:
+        return struct.unpack_from("<f", memory, address)[0]
+
+    def vec3(address: int) -> list[float]:
+        return [f32(address + offset) for offset in (0, 4, 8)]
+
+    object_eye = vec3(active_camera + 0x30)
+    global_eye = vec3(CAMERA_POSITION_BASE)
+    player = vec3(CAMERA_RAW_PLAYER_BASE)
+    eye_anchor = vec3(camera_state + 0x90)
+    radial_offset = vec3(camera_state + 0x140)
+    composed_eye = [eye_anchor[index] + radial_offset[index] for index in range(3)]
+    radial_magnitude = math.sqrt(sum(value * value for value in radial_offset))
     return {
         "schema": 1,
         "authority": "R&C1 NTSC-U SCUS-97199 loaded EE savestate",
@@ -159,12 +222,25 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
             "cameraPitch": f"0x{CAMERA_PITCH:08x}",
             "cameraFollowBase": f"0x{CAMERA_FOLLOW_BASE:08x}",
             "cameraRawPlayerBase": f"0x{CAMERA_RAW_PLAYER_BASE:08x}",
+            "activeCameraObjectPointer": f"0x{ACTIVE_CAMERA_OBJECT_PTR:08x}",
+            "cameraProfilePointer": f"0x{CAMERA_PROFILE_PTR:08x}",
+            "cameraDispatchTable": f"0x{CAMERA_DISPATCH_TABLE:08x}",
             "controlHeading": f"0x{CONTROL_HEADING:08x}",
         },
         "savestateWitness": {
             "cameraModeHalfword": camera_mode,
             "headingStep": heading_step,
             "controlHeading": control_heading,
+            "activeCameraObject": f"0x{active_camera:08x}",
+            "activeCameraType": camera_type,
+            "activeCameraState": f"0x{camera_state:08x}",
+            "dispatchEntry": f"0x{dispatch_entry:08x}",
+            "initCallback": f"0x{init_callback:08x}",
+            "updateCallback": f"0x{update_callback:08x}",
+            "cameraProfile": f"0x{camera_profile:08x}",
+            "objectEye": object_eye,
+            "globalEye": global_eye,
+            "maxObjectGlobalEyeError": max(abs(left - right) for left, right in zip(object_eye, global_eye)),
         },
         "directionalHeadingStepBranch": {
             "routine": "0x001f3aa0..0x001f3f7c",
@@ -189,9 +265,73 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
             "verticalStep": "v += accel * (target - current) - damping * v; clamp v to remaining delta; current += v",
             "modeBranch": "state+0x2284 == 0x50 and state+0x2084 != 0x11 takes an alternate follow path",
         },
+        "ordinaryChaseFramingProducer": {
+            "mainUpdateRoutine": "0x001ed0a8..0x001ed2cc",
+            "cameraDispatcher": "0x001eba20..0x001ebb30",
+            "cameraType": camera_type,
+            "type0InitCallback": "0x002e6d60",
+            "type0UpdateCallback": "0x002e9c28",
+            "corePipeline": "0x002e9bb0",
+            "framingRoutine": "0x002e9720..0x002e9a9c",
+            "profileTransitionRoutine": "0x002e5e38..0x002e5ffc",
+            "finalHeightRoutine": "0x002e9010..0x002e944c",
+            "linearDampedStepHelper": "0x001eb240..0x001eb320",
+            "wrappedAngularStepHelper": "0x001eb328..0x001eb440",
+            "vectorAddHelper": "0x001ff278",
+            "persistentState": f"0x{camera_state:08x}",
+            "stateWitness": {
+                "currentLookHeight": f32(camera_state + 0x24),
+                "currentEyeHeight": f32(camera_state + 0x28),
+                "lookHeightVelocity": f32(camera_state + 0x2C),
+                "eyeHeightVelocity": f32(camera_state + 0x30),
+                "eyeAnchor": eye_anchor,
+                "radialOffset": radial_offset,
+                "radialOffsetMagnitude": radial_magnitude,
+                "radialVelocity": f32(camera_state + 0x158),
+                "preferredRadius": f32(camera_state + 0x15C),
+                "preferredEyeHeight": f32(camera_state + 0x160),
+                "radiusOverrideFlag": struct.unpack_from("<H", memory, camera_state + 0x16C)[0],
+                "eyeHeightOverrideFlag": struct.unpack_from("<H", memory, camera_state + 0x16E)[0],
+                "preferredRadiusVelocity": f32(camera_state + 0x174),
+                "radiusTransitionAcceleration": f32(camera_state + 0x178),
+                "preferredEyeHeightVelocity": f32(camera_state + 0x180),
+                "eyeHeightTransitionAcceleration": f32(camera_state + 0x184),
+                "constructorRadiusReference": f32(camera_state + 0x188),
+                "unobstructedRadialCorrection": f32(camera_state + 0x200),
+                "profileRadiusWitness": f32(camera_profile + 0x15C),
+                "profileEyeHeightWitness": f32(camera_profile + 0x160),
+            },
+            "geometryWitness": {
+                "player": player,
+                "eyeAnchorPlusRadialOffset": composed_eye,
+                "maxComposedGlobalEyeError": max(abs(left - right) for left, right in zip(composed_eye, global_eye)),
+                "preferredRadiusMinusOffsetMagnitude": f32(camera_state + 0x15C) - radial_magnitude,
+            },
+            "constructorDefaults": {
+                "radius": CHASE_CONSTRUCTOR_RADIUS,
+                "eyeHeight": CHASE_CONSTRUCTOR_EYE_HEIGHT,
+                "profileTransitionAcceleration": CHASE_PROFILE_TRANSITION_ACCEL,
+            },
+            "finalHeightFollow": {
+                "acceleration": CHASE_EYE_HEIGHT_ACCEL,
+                "damping": CHASE_EYE_HEIGHT_DAMPING,
+                "eyeHeightCurrent": "state+0x28",
+                "eyeHeightTarget": "state+0x160",
+                "eyeHeightVelocity": "state+0x30",
+                "lookHeightCurrent": "state+0x24",
+                "lookHeightVelocity": "state+0x2c",
+            },
+            "radialFollow": [
+                "0x002e5e38 damps state+0x15c preferred radius toward a profile/override source using state+0x178 acceleration and state+0x174 velocity",
+                "0x002e9720 damps the magnitude of state+0x140 toward state+0x15c minus state+0x200, using coefficients selected by 0x002e9518 and state+0x158 velocity",
+                "0x002e9a40..0x002e9a4c composes camera object +0x30 from the resolved anchor plus state+0x140; the main update then publishes object +0x30 to global eye 0x00166dc0",
+            ],
+        },
         "uncertainty": [
             "This branch explains direction-flag-driven heading change, but it is not the complete manual-camera producer.",
             "Live right-stick input changes controlHeading while I+0x1a0 remains on the left-stick forward flag, so right-stick production occurs elsewhere.",
+            "The constructor/profile radius witness is 4.64 while this authority snapshot has a settled preferred radius near 6.0; do not promote 4.64 as the ordinary chase distance without resolving the intervening profile/mode source.",
+            "0x002e7d20 is a separate world/contact correction path and is intentionally outside this unobstructed-camera task.",
         ],
     }
 
@@ -928,7 +1068,8 @@ def derive_chase_suite(capture_dir: Path) -> dict[str, object]:
             "stationary ordinary framing settles near six planar units behind Ratchet with pitch near 0.084 rad",
             "the eye-to-Ratchet planar ray and forward basis use controlHeading; no separate yaw-lagged eye ray was observed",
             "movement changes radial distance and pitch, so stationary distance/pitch are not global invariant constants",
-            "vertical follow is executable-backed and dynamically validated; the complete horizontal radial producer remains unresolved",
+            "vertical follow is executable-backed and dynamically validated; the horizontal type-0 radial producer is traced through its two-stage stateful smoother and final eye composition",
+            "the profile/mode source that moves preferred radius away from the 4.64 constructor/profile witness, plus the GP-relative preferred-radius damping, remain evidence-gated",
             "raw movies and per-frame samples remain below ignored captures/",
         ],
     }

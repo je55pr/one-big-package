@@ -104,13 +104,45 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         self.assertEqual(len(pine.addresses), len(CAMERA.KNOWN_FIELDS) + 4)
 
     def test_producer_probe_verifies_directional_heading_step_contract(self):
-        memory = bytearray(0x00200134 + 4)
-        signatures = {**CAMERA.CAMERA_PRODUCER_SIGNATURES, **CAMERA.CHASE_FOLLOW_SIGNATURES}
+        memory = bytearray(0x002E9C8C + 4)
+        signatures = {
+            **CAMERA.CAMERA_PRODUCER_SIGNATURES,
+            **CAMERA.CHASE_FOLLOW_SIGNATURES,
+            **CAMERA.CHASE_FRAMING_SIGNATURES,
+        }
         for address, word in signatures.items():
             struct.pack_into("<I", memory, address, word)
         struct.pack_into("<H", memory, CAMERA.PLAYER_STATE + 0x288, 0)
         struct.pack_into("<f", memory, CAMERA.CAMERA_STATE_BASE + 0x80, 0.0)
         struct.pack_into("<f", memory, CAMERA.CONTROL_HEADING, -2.0)
+
+        active_camera = 0x3000
+        camera_state = 0x4000
+        camera_profile = 0x5000
+        struct.pack_into("<I", memory, CAMERA.ACTIVE_CAMERA_OBJECT_PTR, active_camera)
+        struct.pack_into("<I", memory, active_camera + 0x70, camera_state)
+        struct.pack_into("<H", memory, active_camera + 0x8C, 0)
+        struct.pack_into("<I", memory, CAMERA.CAMERA_DISPATCH_TABLE + 0x08, 0x002E6D60)
+        struct.pack_into("<I", memory, CAMERA.CAMERA_DISPATCH_TABLE + 0x0C, 0x002E9C28)
+        struct.pack_into("<I", memory, CAMERA.CAMERA_PROFILE_PTR, camera_profile)
+        for base, values in (
+            (active_camera + 0x30, (4.0, 6.0, 3.0)),
+            (CAMERA.CAMERA_POSITION_BASE, (4.0, 6.0, 3.0)),
+            (CAMERA.CAMERA_RAW_PLAYER_BASE, (1.0, 2.0, 1.0)),
+            (camera_state + 0x90, (1.0, 2.0, 3.0)),
+            (camera_state + 0x140, (3.0, 4.0, 0.0)),
+        ):
+            for index, value in enumerate(values):
+                struct.pack_into("<f", memory, base + index * 4, value)
+        for offset, value in (
+            (0x24, 1.5), (0x28, 2.0), (0x2C, 0.0), (0x30, 0.0),
+            (0x158, 0.0), (0x15C, 5.0), (0x160, 2.0), (0x174, 0.0),
+            (0x178, 0.003), (0x180, 0.0), (0x184, 0.003), (0x188, 4.64),
+            (0x200, 0.0),
+        ):
+            struct.pack_into("<f", memory, camera_state + offset, value)
+        struct.pack_into("<f", memory, camera_profile + 0x15C, 4.64)
+        struct.pack_into("<f", memory, camera_profile + 0x160, 2.0)
 
         class FakeProbe:
             @staticmethod
@@ -140,6 +172,16 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         self.assertAlmostEqual(chase["verticalAcceleration"], 0.0075)
         self.assertAlmostEqual(chase["verticalDamping"], 0.175)
         self.assertEqual(chase["dampedStepHelper"], "0x001eb240..0x001eb320")
+        framing = report["ordinaryChaseFramingProducer"]
+        self.assertEqual(report["savestateWitness"]["activeCameraType"], 0)
+        self.assertEqual(report["savestateWitness"]["updateCallback"], "0x002e9c28")
+        self.assertAlmostEqual(framing["stateWitness"]["radialOffsetMagnitude"], 5.0)
+        self.assertAlmostEqual(framing["stateWitness"]["preferredRadius"], 5.0)
+        self.assertAlmostEqual(framing["geometryWitness"]["maxComposedGlobalEyeError"], 0.0)
+        self.assertEqual(framing["constructorDefaults"]["radius"], CAMERA.CHASE_CONSTRUCTOR_RADIUS)
+        self.assertAlmostEqual(framing["constructorDefaults"]["profileTransitionAcceleration"], 0.003)
+        self.assertAlmostEqual(framing["finalHeightFollow"]["acceleration"], 0.004)
+        self.assertAlmostEqual(framing["finalHeightFollow"]["damping"], 0.2)
 
     def test_camera_framing_reduces_native_geometry_and_vertical_follow_law(self):
         pitch = 0.1
