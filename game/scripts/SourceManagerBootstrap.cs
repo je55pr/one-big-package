@@ -29,8 +29,25 @@ public partial class SourceManagerBootstrap : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (@event is not InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape }
-            || _game is null)
+        if (_game is null)
+        {
+            return;
+        }
+
+        if (@event.IsActionPressed("obp_planet_map"))
+        {
+            if (_game.TryCloseRac1PlanetMap() || _game.TryOpenRac1PlanetMap())
+                GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (@event.IsActionPressed("ui_cancel") && _game.TryCloseRac1PlanetMap())
+        {
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (@event is not InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
         {
             return;
         }

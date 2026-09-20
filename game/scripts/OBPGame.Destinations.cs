@@ -9,9 +9,16 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private DestinationSelectorUi? _destinationSelector;
+    private Rac1PlanetTravelUi? _rac1PlanetTravelUi;
+    private DebugPlayer? _rac1PlanetMapPausedPlayer;
+    private Node.ProcessModeEnum? _rac1PlanetMapPreviousPlayerMode;
+    private Input.MouseModeEnum _rac1PlanetMapPreviousMouseMode;
     private ObpDestination? _activeDestination;
     private string? _currentDestinationId;
     private bool _genericNavigationActive;
+
+    private bool Rac1PlanetMapOpen =>
+        _rac1PlanetTravelUi is not null && IsInstanceValid(_rac1PlanetTravelUi);
 
     /// <summary>Open the neutral world browser from the trilogy source screen.</summary>
     private void BrowseWorlds() => ShowDestinationSelector();
@@ -70,6 +77,83 @@ public partial class OBPGame
             OnDestinationChosen(destination);
 
         return start;
+    }
+
+    /// <summary>
+    /// Open the ordinary R&C1 campaign destination presentation without entering
+    /// the developer world browser. The native session supplies both unlock order
+    /// and current selection; Godot only renders and forwards a travel request.
+    /// </summary>
+    public bool TryOpenRac1PlanetMap()
+    {
+        if (Rac1PlanetMapOpen)
+            return true;
+        if (_mode != Mode.World || _args.CaptureFrame is not null ||
+            _world is not { Game: "rac1" } current ||
+            current.LevelId != _rac1CampaignSession.Campaign.CurrentLevel ||
+            _rac1CampaignSession.Travel.TransitionActive)
+            return false;
+
+        Rac1PlanetMapSnapshot map = _rac1CampaignSession.Travel.OpenPlanetMap();
+
+        _rac1PlanetMapPausedPlayer = _player is not null && IsInstanceValid(_player)
+            ? _player
+            : null;
+        if (_rac1PlanetMapPausedPlayer is { } player)
+        {
+            _rac1PlanetMapPreviousPlayerMode = player.ProcessMode;
+            player.ProcessMode = Node.ProcessModeEnum.Disabled;
+        }
+
+        _rac1PlanetMapPreviousMouseMode = Input.MouseMode;
+        Input.MouseMode = Input.MouseModeEnum.Visible;
+
+        _rac1PlanetTravelUi = new Rac1PlanetTravelUi();
+        _rac1PlanetTravelUi.TravelRequested += OnRac1PlanetTravelRequested;
+        _rac1PlanetTravelUi.BackRequested += () => TryCloseRac1PlanetMap();
+        AddChild(_rac1PlanetTravelUi);
+        _rac1PlanetTravelUi.Populate(map);
+
+        GD.Print($"[rac1-travel] planet map shown — {map.UnlockedDestinations.Count} recovered destination(s)");
+        return true;
+    }
+
+    public bool TryCloseRac1PlanetMap()
+    {
+        if (!Rac1PlanetMapOpen)
+            return false;
+
+        _rac1PlanetTravelUi!.QueueFree();
+        _rac1PlanetTravelUi = null;
+
+        if (_rac1PlanetMapPausedPlayer is { } player &&
+            IsInstanceValid(player) &&
+            _rac1PlanetMapPreviousPlayerMode is { } previousMode)
+        {
+            player.ProcessMode = previousMode;
+        }
+
+        _rac1PlanetMapPausedPlayer = null;
+        _rac1PlanetMapPreviousPlayerMode = null;
+        Input.MouseMode = _rac1PlanetMapPreviousMouseMode;
+        return true;
+    }
+
+    private void OnRac1PlanetTravelRequested(int nativeLevelId)
+    {
+        Rac1PlanetTravelStartResult result = TravelRac1CampaignTo(nativeLevelId);
+        switch (result)
+        {
+            case Rac1PlanetTravelStartResult.Started:
+                TryCloseRac1PlanetMap();
+                break;
+            case Rac1PlanetTravelStartResult.AlreadyCurrentLevel:
+                _rac1PlanetTravelUi?.SetHint("That is the current world.", error: true);
+                break;
+            case Rac1PlanetTravelStartResult.DestinationUnavailable:
+                _rac1PlanetTravelUi?.SetHint("That destination is no longer available.", error: true);
+                break;
+        }
     }
 
     private void ShowDestinationSelector()

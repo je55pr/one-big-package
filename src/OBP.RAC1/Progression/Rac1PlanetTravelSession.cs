@@ -8,6 +8,16 @@ public enum Rac1PlanetTravelStartResult
 }
 
 /// <summary>
+/// Native campaign facts exposed to the host planet-map presentation.
+/// UnlockedDestinations preserves the recovered GalacticMap admission order;
+/// CurrentLevel remains separate because opening level 0 is not auto-admitted.
+/// </summary>
+public sealed record Rac1PlanetMapSnapshot(
+    int CurrentLevel,
+    int SelectedDestination,
+    IReadOnlyList<int> UnlockedDestinations);
+
+/// <summary>
 /// Native-shaped R&C1 planet-travel session state. Persistent campaign state stays
 /// in <see cref="Rac1CampaignState"/>; this object models the ship/map selection
 /// and the two-phase source-to-target handoff recovered from SCUS-97199.
@@ -35,12 +45,33 @@ public sealed class Rac1PlanetTravelSession
     /// </summary>
     public int? ActiveTarget => TransitionActive ? PendingDestinationStorage : null;
 
-    public void OpenPlanetMap()
+    public Rac1PlanetMapSnapshot OpenPlanetMap()
     {
         if (TransitionActive)
             throw new InvalidOperationException("Cannot reopen the planet map during an active travel handoff.");
 
         SelectedDestination = _campaign.CurrentLevel;
+        return CapturePlanetMap();
+    }
+
+    private Rac1PlanetMapSnapshot CapturePlanetMap()
+    {
+        int count = _campaign.AdmittedDestinationCount;
+        var unlocked = new int[count];
+        for (int slot = 0; slot < count; slot++)
+        {
+            int destinationId = _campaign.GalacticMap[slot];
+            if (!_campaign.CanSelectDestination(destinationId))
+                throw new InvalidOperationException(
+                    $"R&C1 GalacticMap slot {slot} points to destination {destinationId}, which is not admitted.");
+
+            unlocked[slot] = destinationId;
+        }
+
+        return new Rac1PlanetMapSnapshot(
+            _campaign.CurrentLevel,
+            SelectedDestination,
+            Array.AsReadOnly(unlocked));
     }
 
     public bool TrySelectDestination(int destinationId)

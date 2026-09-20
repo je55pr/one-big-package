@@ -160,6 +160,23 @@ activity. Persistent discovery, GalacticMap order, completion state, and the
 serialized CurrentLevel remain owned by `Rac1CampaignState`; the raw pending
 slot is intentionally not treated as durable campaign state.
 
+## Player-facing map presentation boundary
+
+`Rac1PlanetTravelSession.OpenPlanetMap` now returns a
+`Rac1PlanetMapSnapshot`: `CurrentLevel`, the selection seeded from that current
+level, and only the admitted destination IDs copied from `GalacticMap` in their
+recovered admission order. The Godot `Rac1PlanetTravelUi` renders that snapshot
+and forwards the chosen native destination ID back to
+`Rac1CampaignRuntimeSession.BeginTravel`; it never reads the provider catalogue
+to decide what is unlocked.
+
+The current list/menu styling and the OBP `M` / controller Start shortcut are
+host presentation choices, not claims about retail pixels or the original ship
+menu binding. The normal opening campaign state therefore presents no fabricated
+travel targets: level 0 is current but is not auto-admitted, exactly as the
+recovered opening save/runtime state requires. Provider availability is checked
+only after native campaign admission, at the host loading boundary.
+
 ## OBP persistence migration/default policy
 
 `Rac1CampaignSavePolicy` keeps host persistence versioning outside the recovered

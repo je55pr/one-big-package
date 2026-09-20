@@ -6,6 +6,23 @@ namespace OBP.Tests;
 public sealed class Rac1CampaignRuntimeSessionTests
 {
     [Fact]
+    public void PlanetMapSnapshotUsesRecoveredAdmissionOrderAndKeepsCurrentSeparate()
+    {
+        var campaign = new Rac1CampaignState();
+        campaign.AdmitDestination(3);
+        campaign.AdmitDestination(1);
+        var session = CreateSession(campaign);
+
+        Rac1PlanetMapSnapshot map = session.Travel.OpenPlanetMap();
+
+        Assert.Equal(0, map.CurrentLevel);
+        Assert.Equal(0, map.SelectedDestination);
+        Assert.Equal(new[] { 3, 1 }, map.UnlockedDestinations);
+        Assert.Equal(0, campaign.CurrentLevel);
+        Assert.False(session.Travel.TransitionActive);
+    }
+
+    [Fact]
     public void OrdinaryTravelPreservesCampaignAndWeaponInventoryAcrossLateEntry()
     {
         var campaign = new Rac1CampaignState();
