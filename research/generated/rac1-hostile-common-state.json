@@ -1,0 +1,426 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "savestate": {
+    "file": "SCUS-97199 (CE4933D0).01.p2s",
+    "sha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+    "eeMemorySize": 33554432
+  },
+  "liveMobyCommon": {
+    "poolBase": "0x01845e80",
+    "stride": 256,
+    "fields": {
+      "stateByte": "+0x20",
+      "classUpdateRoutine": "+0x74",
+      "damageRecordSlot": "+0xa4",
+      "nativeClass": "+0xa6"
+    },
+    "crossClassWitnesses": {
+      "500": {
+        "count": 103,
+        "firstLiveAddress": "0x01847d80",
+        "updateRoutine": "0x002cf218",
+        "stateHistogram": {
+          "0x01": 77,
+          "0xfd": 26
+        },
+        "damageSlotHistogram": {
+          "0xff": 103
+        },
+        "livePlus78": {
+          "nonzeroCount": 103,
+          "pointerRange": [
+            "0x018718d0",
+            "0x01877ed0"
+          ]
+        }
+      },
+      "749": {
+        "count": 16,
+        "firstLiveAddress": "0x0184ed80",
+        "updateRoutine": "0x002d4610",
+        "stateHistogram": {
+          "0x01": 1,
+          "0x05": 13,
+          "0xfd": 2
+        },
+        "damageSlotHistogram": {
+          "0xff": 16
+        },
+        "livePlus78": {
+          "nonzeroCount": 16,
+          "pointerRange": [
+            "0x01878820",
+            "0x0187ada0"
+          ]
+        },
+        "classSpecific": {
+          "healthHistogram": {
+            "0.0": 2,
+            "1.0": 14
+          },
+          "statusHistogram": {
+            "0": 7,
+            "2": 9
+          },
+          "targetMobyHistogram": {
+            "none": 5,
+            "player": 11
+          },
+          "homeDistanceRange": [
+            0.00691986083984375,
+            6.460807322689717
+          ],
+          "nonTerminalPlayerDistanceRangeByStatus": {
+            "0": [
+              84.15509652640819,
+              139.88594103023127
+            ],
+            "2": [
+              31.26700184718033,
+              122.30578130049157
+            ]
+          },
+          "terminalHealthValues": [
+            0.0
+          ]
+        }
+      },
+      "1781": {
+        "count": 33,
+        "firstLiveAddress": "0x01854080",
+        "updateRoutine": "0x002e3ca8",
+        "stateHistogram": {
+          "0x00": 33
+        },
+        "damageSlotHistogram": {
+          "0xff": 33
+        },
+        "livePlus78": {
+          "nonzeroCount": 0,
+          "pointerRange": null
+        }
+      }
+    },
+    "livePlus78Boundary": "class 500 and class 749 use +0x78 as a PVar pointer in this witness; class 1781 leaves it null, so +0x78 is not promoted as a universal Moby field"
+  },
+  "engineCommonMechanisms": {
+    "damageRecord": {
+      "constructor": "0x00259bc8",
+      "lookup": "0x0025a420",
+      "consumer": "0x0025a478",
+      "lookupCallerCountInLoadedImage": 11,
+      "consumerCallerCountInLoadedImage": 3,
+      "sharedWitnessCallers": {
+        "class500": [
+          "0x002cf2ec",
+          "0x002cf340"
+        ],
+        "class749": [
+          "0x002d51d8",
+          "0x002d5200"
+        ]
+      },
+      "recordFields": {
+        "damage": "+0x2c f32",
+        "victimMoby": "+0x34 pointer",
+        "victimSlot": "Moby+0xa4 u8; 0xff means no queued record"
+      }
+    },
+    "terminalizeMoby": {
+      "routine": "0x0024eb68",
+      "callerCountInLoadedImage": 70,
+      "sharedWitnessCallers": {
+        "class500": "0x002cf820",
+        "class749": "0x002d5060"
+      },
+      "result": "writes native state 0xfd or 0xfe to Moby+0x20, then performs common cleanup"
+    }
+  },
+  "class749Script": {
+    "updateRoutine": "0x002d4610",
+    "stateDispatch": {
+      "0": "0x002d46c4",
+      "1": "0x002d4884",
+      "2": "0x002d493c",
+      "3": "0x002d49b8",
+      "4": "0x002d49f0",
+      "5": "0x002d4a9c",
+      "6": "0x002d4b88",
+      "7": "0x002d4c74",
+      "8": "0x002d4da0",
+      "9": "0x002d4864",
+      "10": "0x002d4e08",
+      "11": "0x002d4fcc",
+      "12": "0x002d501c"
+    },
+    "recoveredStates": {
+      "5": "class-local search/roam state; calls 0x261630 with PVar+0x240 and reads PVar+0x1c4",
+      "6": "pursues PVar+0x180 destination through class-local helper 0x2d54c8 and gates attack on range/facing",
+      "7": "attack state; marker 34.0 enters the generic damage-record path",
+      "8": "returns toward PVar+0x1d0 home through the same class-local locomotion helper",
+      "12": "hit/death reaction state reached after class-specific PVar health subtraction"
+    },
+    "targetAcquisition": {
+      "playerMobyGlobal": "0x001413d0",
+      "playerMoby": "0x01845e80",
+      "targetPointer": "PVar+0x1c0",
+      "behavior": "if target pointer is null, class-749 pre-dispatch code stores the current player Moby"
+    },
+    "activationBoundary": {
+      "statusField": "PVar+0x1c4",
+      "mainUpdateAccesses": [
+        {
+          "address": "0x002d49b8",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4a40",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4b1c",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4bac",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4c38",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4cd4",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4dd0",
+          "kind": "load"
+        },
+        {
+          "address": "0x002d4f60",
+          "kind": "load"
+        }
+      ],
+      "directStoresInMainUpdate": 0,
+      "conclusion": "state consumers are proven, but the writer/meaning of this status and any universal aggro radius remain evidence-gated"
+    },
+    "locomotionBoundary": {
+      "state5Helper": "0x00261630",
+      "state5HelperCallerCountInLoadedImage": 1,
+      "state6And8Helper": "0x002d54c8",
+      "state6And8HelperCallerCountInLoadedImage": 5,
+      "conclusion": "these helpers are local to the loaded class-749 overlay; do not promote their tuning as engine-common hostile motion"
+    },
+    "healthDamageBoundary": {
+      "health": "PVar+0x20 f32 for class 749",
+      "hitReactionState": 12,
+      "behavior": "common damage record is consumed first; class 749 then subtracts returned damage from its own PVar health and enters state 12"
+    }
+  },
+  "instructionEvidence": [
+    {
+      "address": "0x002d4630",
+      "word": "0x0c0b5458",
+      "meaning": "class-749 update calls its pre-dispatch damage/status helper"
+    },
+    {
+      "address": "0x002d4634",
+      "word": "0x8e320078",
+      "meaning": "class-749 update loads live Moby +0x78 as its PVar pointer"
+    },
+    {
+      "address": "0x002d469c",
+      "word": "0x92230020",
+      "meaning": "class-749 dispatch reads live Moby state byte +0x20"
+    },
+    {
+      "address": "0x002d4b10",
+      "word": "0x26450240",
+      "meaning": "state 5 supplies PVar +0x240 to its class-local roaming/search helper"
+    },
+    {
+      "address": "0x002d4b14",
+      "word": "0x0c09858c",
+      "meaning": "state 5 calls loaded helper 0x261630"
+    },
+    {
+      "address": "0x002d4b1c",
+      "word": "0x8e4301c4",
+      "meaning": "state 5 reads PVar +0x1c4 status"
+    },
+    {
+      "address": "0x002d4b94",
+      "word": "0x0c0b5532",
+      "meaning": "state 6 calls class-749 locomotion helper 0x2d54c8"
+    },
+    {
+      "address": "0x002d4b98",
+      "word": "0x26450180",
+      "meaning": "state 6 supplies PVar +0x180 target destination"
+    },
+    {
+      "address": "0x002d4c74",
+      "word": "0x3c014208",
+      "meaning": "state 7 materializes native attack marker 34.0"
+    },
+    {
+      "address": "0x002d4c7c",
+      "word": "0x0c098636",
+      "meaning": "state 7 tests the attack marker"
+    },
+    {
+      "address": "0x002d4cb4",
+      "word": "0x0c09667a",
+      "meaning": "state 7 calls the generic damage-record creation path"
+    },
+    {
+      "address": "0x002d4dac",
+      "word": "0x0c0b5532",
+      "meaning": "state 8 reuses the class-749 locomotion helper"
+    },
+    {
+      "address": "0x002d4db0",
+      "word": "0x264501d0",
+      "meaning": "state 8 supplies PVar +0x1d0 home position"
+    },
+    {
+      "address": "0x002d51d8",
+      "word": "0x0c096908",
+      "meaning": "class-749 pre-dispatch path calls common damage lookup 0x25a420"
+    },
+    {
+      "address": "0x002d51ec",
+      "word": "0x26260020",
+      "meaning": "class-749 passes PVar +0x20 to the common damage consumer"
+    },
+    {
+      "address": "0x002d5200",
+      "word": "0x0c09691e",
+      "meaning": "class-749 calls common damage consumer 0x25a478"
+    },
+    {
+      "address": "0x002d5274",
+      "word": "0xc6200020",
+      "meaning": "class-749 loads its PVar +0x20 health scalar"
+    },
+    {
+      "address": "0x002d5288",
+      "word": "0x46070001",
+      "meaning": "class-749 subtracts returned native damage from health"
+    },
+    {
+      "address": "0x002d52a4",
+      "word": "0xe6200020",
+      "meaning": "class-749 stores the resulting PVar health"
+    },
+    {
+      "address": "0x002d5320",
+      "word": "0xa2550020",
+      "meaning": "class-749 enters native hit-reaction state 12"
+    },
+    {
+      "address": "0x002d5344",
+      "word": "0xa24200a4",
+      "meaning": "class-749 clears live Moby damage-record slot +0xa4 to 0xff"
+    },
+    {
+      "address": "0x002d53e4",
+      "word": "0x8e2201c0",
+      "meaning": "class-749 loads PVar +0x1c0 target Moby"
+    },
+    {
+      "address": "0x002d53e8",
+      "word": "0x14400007",
+      "meaning": "non-null class-749 target Moby skips target initialization"
+    },
+    {
+      "address": "0x002d53ec",
+      "word": "0x3c030014",
+      "meaning": "class-749 target initialization starts player-global address"
+    },
+    {
+      "address": "0x002d53f0",
+      "word": "0x2463f350",
+      "meaning": "class-749 target initialization forms base 0x0013f350"
+    },
+    {
+      "address": "0x002d53f4",
+      "word": "0x8c642080",
+      "meaning": "class-749 target initialization loads 0x001413d0"
+    },
+    {
+      "address": "0x002d53fc",
+      "word": "0xae2401c0",
+      "meaning": "class-749 stores the player Moby into PVar +0x1c0"
+    },
+    {
+      "address": "0x002cf2ec",
+      "word": "0x0c096908",
+      "meaning": "class-500 update also calls common damage lookup 0x25a420"
+    },
+    {
+      "address": "0x002cf340",
+      "word": "0x0c09691e",
+      "meaning": "class-500 update also calls common damage consumer 0x25a478"
+    },
+    {
+      "address": "0x002cf820",
+      "word": "0x0c093ada",
+      "meaning": "class-500 update calls common Moby terminalizer 0x24eb68"
+    },
+    {
+      "address": "0x002d5060",
+      "word": "0x0c093ada",
+      "meaning": "class-749 state 12 calls common Moby terminalizer 0x24eb68"
+    },
+    {
+      "address": "0x0024eb88",
+      "word": "0x240200fd",
+      "meaning": "common terminalizer selects native state 0xfd on one pool side"
+    },
+    {
+      "address": "0x0024eb8c",
+      "word": "0x240200fe",
+      "meaning": "common terminalizer selects native state 0xfe on the other pool side"
+    },
+    {
+      "address": "0x0024eb90",
+      "word": "0xa0620020",
+      "meaning": "common terminalizer writes the chosen value to Moby +0x20"
+    },
+    {
+      "address": "0x00259c0c",
+      "word": "0x924300a4",
+      "meaning": "damage constructor reads victim Moby +0xa4 slot"
+    },
+    {
+      "address": "0x00259c64",
+      "word": "0xe62c002c",
+      "meaning": "damage constructor writes record +0x2c damage"
+    },
+    {
+      "address": "0x00259c68",
+      "word": "0xae320034",
+      "meaning": "damage constructor writes record +0x34 victim Moby"
+    },
+    {
+      "address": "0x00259cc4",
+      "word": "0xa25300a4",
+      "meaning": "damage constructor assigns the record slot to victim Moby +0xa4"
+    }
+  ],
+  "notes": [
+    "No ISO, executable, EE-memory, savestate, or PVar payload bytes are emitted.",
+    "Class 500 and class 1781 are non-hostile controls for live-Moby field ownership; their update pointers independently match existing retail archaeology.",
+    "Moby +0x20/+0x74/+0xa4/+0xa6 and the damage/terminal helpers are engine/common mechanisms. Live +0x78 is class-bound, not universal; class-749 state numbers, PVar layout, health subtraction, targeting and locomotion policy remain class-specific.",
+    "Native 0xfd/0xfe are written by common terminalizer 0x24eb68. Calling them terminal/inactive states is justified; immediate allocation/free timing is not inferred."
+  ]
+}
