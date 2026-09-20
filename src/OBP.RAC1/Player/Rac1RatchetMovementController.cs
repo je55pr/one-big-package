@@ -35,8 +35,10 @@ public enum Rac1RatchetLocomotionState
 /// Constants and recurrences are frozen from
 /// research/generated/rac1-ratchet-movement-controller.json (SCUS-97199).
 /// The recovered raw-axis conditioner and walk/run magnitude witnesses are
-/// applied before native acceleration. The locomotion-state yaw recurrence is
-/// recovered separately in <see cref="Rac1RatchetYawController"/>.
+/// applied before native acceleration. Grounded translation magnitude follows
+/// that scalar law, while its direction is resolved from the same-update native
+/// facing produced by <see cref="Rac1RatchetYawController"/>. Air control keeps
+/// its separately recovered vector recurrence.
 /// </remarks>
 public sealed class Rac1RatchetMovementController
 {
@@ -111,6 +113,7 @@ public sealed class Rac1RatchetMovementController
 
     private double _planarX;
     private double _planarY;
+    private double _planarMagnitude;
     private double _verticalStep;
     private int _anticipationTicks;
     private int _jumpHeldTicks;
@@ -123,6 +126,7 @@ public sealed class Rac1RatchetMovementController
     public Rac1RatchetYawMode YawMode { get; private set; } = Rac1RatchetYawMode.GroundStartup;
     public double PlanarX => _planarX;
     public double PlanarY => _planarY;
+    public double PlanarMagnitude => _planarMagnitude;
     public double VerticalStep => _verticalStep;
     public Rac1AnalogueInput.Conditioned AnalogueInput { get; private set; }
     public double TargetPlanarStep { get; private set; }
@@ -139,14 +143,26 @@ public sealed class Rac1RatchetMovementController
             System.Math.Sqrt((PlanarX * PlanarX) + (PlanarY * PlanarY));
     }
 
-    public StepResult Step(PlayerControlIntent input, PlayerContactFacts contact)
+    public StepResult Step(
+        PlayerControlIntent input,
+        PlayerContactFacts contact,
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null)
     {
         var analogue = Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY);
         AnalogueInput = analogue;
-        UpdatePlanar(input, analogue, contact.IsGrounded);
+        bool alignGroundTranslationToFacing = UpdatePlanar(input, analogue, contact.IsGrounded);
         UpdateVertical(input, contact);
         UpdateLocomotionState(input, analogue, contact);
         UpdateYawMode(input, analogue, contact);
+
+        double? nativeFacingYaw = resolveNativeFacingYaw?.Invoke(YawMode);
+        if (alignGroundTranslationToFacing)
+        {
+            if (!nativeFacingYaw.HasValue || !double.IsFinite(nativeFacingYaw.Value))
+                throw new InvalidOperationException("Active grounded movement requires same-update native facing yaw.");
+            AlignGroundTranslationToFacing(nativeFacingYaw.Value, input.EffectiveNativePlanarBasis);
+        }
+
         return new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState, YawMode);
     }
 
@@ -154,6 +170,7 @@ public sealed class Rac1RatchetMovementController
     {
         _planarX = 0d;
         _planarY = 0d;
+        _planarMagnitude = 0d;
         _verticalStep = 0d;
         _anticipationTicks = 0;
         _jumpHeldTicks = 0;
@@ -167,19 +184,13 @@ public sealed class Rac1RatchetMovementController
         YawMode = Rac1RatchetYawMode.GroundStartup;
     }
 
-    private void UpdatePlanar(
+    private bool UpdatePlanar(
         PlayerControlIntent input,
         Rac1AnalogueInput.Conditioned analogue,
         bool grounded)
     {
         bool crouching = grounded && input.CrouchHeld;
         bool hasIntent = !crouching && analogue.IsActive;
-        var desired = analogue.Direction;
-        var output = input.EffectivePlanarBasis.Transform(desired.X, desired.Y);
-        double outputLength = System.Math.Sqrt((output.X * output.X) + (output.Y * output.Y));
-        if (hasIntent && outputLength <= 1e-12d)
-            throw new ArgumentException("Active planar input requires a non-degenerate control basis.", nameof(input));
-
         bool usesAirPlanarLaw = !grounded || Phase != Rac1RatchetMovementPhase.Grounded;
         TargetPlanarStep = hasIntent
             ? usesAirPlanarLaw
@@ -193,30 +204,59 @@ public sealed class Rac1RatchetMovementController
         {
             _lastGroundedActiveSpeedBand = analogue.SpeedBand;
             _groundReleaseSampleIndex = -1;
+            _planarMagnitude = MoveScalarToward(
+                _planarMagnitude,
+                TargetPlanarStep,
+                GroundAccelerationPerTick);
+            return true;
         }
-        else if (hasIntent || crouching || usesAirPlanarLaw)
+
+        if (hasIntent || crouching || usesAirPlanarLaw)
         {
             _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
             _groundReleaseSampleIndex = -1;
         }
 
-        if (!hasIntent && !crouching && !usesAirPlanarLaw && TryApplyGroundReleaseTransition())
-            return;
+        if (!hasIntent && !crouching && !usesAirPlanarLaw)
+        {
+            if (TryApplyGroundReleaseTransition())
+                return false;
+
+            _planarMagnitude = MoveScalarToward(
+                _planarMagnitude,
+                0d,
+                GroundDecelerationPerTick);
+            SetPlanarMagnitude(ref _planarX, ref _planarY, _planarMagnitude);
+            return false;
+        }
+
+        if (crouching)
+        {
+            _planarMagnitude = MoveScalarToward(
+                _planarMagnitude,
+                0d,
+                CrouchDecelerationPerTick);
+            SetPlanarMagnitude(ref _planarX, ref _planarY, _planarMagnitude);
+            return false;
+        }
+
+        var desired = analogue.Direction;
+        var output = input.EffectivePlanarBasis.Transform(desired.X, desired.Y);
+        double outputLength = System.Math.Sqrt((output.X * output.X) + (output.Y * output.Y));
+        if (hasIntent && outputLength <= 1e-12d)
+            throw new ArgumentException("Active air input requires a non-degenerate control basis.", nameof(input));
 
         double targetX = hasIntent ? (output.X / outputLength) * TargetPlanarStep : 0d;
         double targetY = hasIntent ? (output.Y / outputLength) * TargetPlanarStep : 0d;
-        double amount = crouching
-            ? CrouchDecelerationPerTick
-            : hasIntent
-                ? usesAirPlanarLaw ? AirAccelerationPerTick : GroundAccelerationPerTick
-                : usesAirPlanarLaw ? AirDecelerationPerTick : GroundDecelerationPerTick;
-
-        MoveToward(ref _planarX, ref _planarY, targetX, targetY, amount);
+        double amount = hasIntent ? AirAccelerationPerTick : AirDecelerationPerTick;
+        MoveAirToward(ref _planarX, ref _planarY, targetX, targetY, amount);
+        _planarMagnitude = System.Math.Sqrt((_planarX * _planarX) + (_planarY * _planarY));
+        return false;
     }
 
     private bool TryApplyGroundReleaseTransition()
     {
-        double magnitude = System.Math.Sqrt((_planarX * _planarX) + (_planarY * _planarY));
+        double magnitude = _planarMagnitude;
         if (_groundReleaseSampleIndex < 0)
         {
             bool startsWalkStop = _lastGroundedActiveSpeedBand == Rac1AnalogueSpeedBand.Walk &&
@@ -238,6 +278,7 @@ public sealed class Rac1RatchetMovementController
         }
 
         double targetMagnitude = samples[_groundReleaseSampleIndex++];
+        _planarMagnitude = targetMagnitude;
         SetPlanarMagnitude(ref _planarX, ref _planarY, targetMagnitude);
         if (targetMagnitude <= 1e-12d)
         {
@@ -261,7 +302,26 @@ public sealed class Rac1RatchetMovementController
         y *= scale;
     }
 
-    private static void MoveToward(
+    private void AlignGroundTranslationToFacing(double nativeYaw, PlayerPlanarBasis nativePlanarBasis)
+    {
+        var output = nativePlanarBasis.Transform(System.Math.Cos(nativeYaw), System.Math.Sin(nativeYaw));
+        double outputLength = System.Math.Sqrt((output.X * output.X) + (output.Y * output.Y));
+        if (outputLength <= 1e-12d)
+            throw new ArgumentException("Native planar basis must preserve a non-zero facing direction.", nameof(nativePlanarBasis));
+
+        _planarX = (output.X / outputLength) * _planarMagnitude;
+        _planarY = (output.Y / outputLength) * _planarMagnitude;
+    }
+
+    private static double MoveScalarToward(double value, double target, double amount)
+    {
+        double delta = target - value;
+        if (System.Math.Abs(delta) <= amount)
+            return target;
+        return value + (System.Math.Sign(delta) * amount);
+    }
+
+    private static void MoveAirToward(
         ref double x,
         ref double y,
         double targetX,
@@ -297,7 +357,7 @@ public sealed class Rac1RatchetMovementController
                 analogue.IsActive
                     ? Rac1RatchetLocomotionState.CrouchTurning
                     : Rac1RatchetLocomotionState.Crouched,
-            _ when System.Math.Abs(_planarX) > 1e-12 || System.Math.Abs(_planarY) > 1e-12 =>
+            _ when _planarMagnitude > 1e-12d =>
                 Rac1RatchetLocomotionState.Moving,
             _ => Rac1RatchetLocomotionState.Idle,
         };
@@ -325,8 +385,7 @@ public sealed class Rac1RatchetMovementController
             return;
         }
 
-        double planarMagnitude = System.Math.Sqrt((_planarX * _planarX) + (_planarY * _planarY));
-        YawMode = planarMagnitude >= GroundRunYawMinimumPlanarStep
+        YawMode = _planarMagnitude >= GroundRunYawMinimumPlanarStep
             ? Rac1RatchetYawMode.GroundRun
             : Rac1RatchetYawMode.GroundStartup;
     }

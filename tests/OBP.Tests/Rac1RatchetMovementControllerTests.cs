@@ -7,6 +7,46 @@ public sealed class Rac1RatchetMovementControllerTests
 {
     private static readonly PlayerContactFacts Grounded = new(true);
     private static readonly PlayerContactFacts Airborne = new(false);
+    private static readonly PlayerPlanarBasis RetailTargetBasis = new(0d, -1d, 1d, 0d);
+
+    public static TheoryData<double, double> RunTurnInputs =>
+        new()
+        {
+            { 1d, 1d },
+            { 1d, 0d },
+            { 1d, -1d },
+            { 0d, -1d },
+            { -1d, -1d },
+            { -1d, 0d },
+            { -1d, 1d },
+        };
+
+    private static Rac1RatchetMovementController.StepResult StepCoupledGround(
+        Rac1RatchetMovementController movement,
+        Rac1RatchetYawController yaw,
+        double inputX,
+        double inputY)
+    {
+        var input = new PlayerControlIntent(
+            inputX,
+            inputY,
+            false,
+            false,
+            PlanarBasis: RetailTargetBasis,
+            NativePlanarBasis: PlayerPlanarBasis.Identity);
+        return movement.Step(
+            input,
+            Grounded,
+            mode => yaw.Step(inputX, inputY, 0d, mode).CurrentYaw);
+    }
+
+    private static void AssertPlanarTracksYaw(
+        Rac1RatchetMovementController.StepResult step,
+        Rac1RatchetYawController yaw)
+    {
+        Assert.Equal(System.Math.Cos(yaw.CurrentYaw) * step.PlanarMagnitude, step.PlanarX, 12);
+        Assert.Equal(System.Math.Sin(yaw.CurrentYaw) * step.PlanarMagnitude, step.PlanarY, 12);
+    }
 
     [Fact]
     public void GroundRun_AcceleratesToRetailPlateau()
@@ -14,12 +54,12 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         var input = new PlayerControlIntent(0, 1, false, false);
 
-        var first = controller.Step(input, Grounded);
+        var first = controller.Step(input, Grounded, _ => Math.PI / 2d);
         Assert.Equal(Rac1RatchetMovementController.GroundAccelerationPerTick, first.PlanarMagnitude, 12);
 
         Rac1RatchetMovementController.StepResult step = first;
         for (int i = 1; i < 80; i++)
-            step = controller.Step(input, Grounded);
+            step = controller.Step(input, Grounded, _ => Math.PI / 2d);
 
         Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, step.PlanarMagnitude, 12);
         Assert.Equal(0.09500919d, step.PlanarMagnitude, 8);
@@ -31,7 +71,7 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         var walk = new PlayerControlIntent(0, 0.75, false, false);
         for (int i = 0; i < 12; i++)
-            controller.Step(walk, Grounded);
+            controller.Step(walk, Grounded, _ => Math.PI / 2d);
 
         Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, controller.PlanarY, 12);
 
@@ -46,7 +86,7 @@ public sealed class Rac1RatchetMovementControllerTests
 
         foreach (double expectedStep in expected)
         {
-            var step = controller.Step(release, Grounded);
+            var step = controller.Step(release, Grounded, _ => Math.PI / 2d);
             Assert.Equal(expectedStep, step.PlanarMagnitude, 12);
         }
 
@@ -59,7 +99,7 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         var run = new PlayerControlIntent(0, 1, false, false);
         for (int i = 0; i < 80; i++)
-            controller.Step(run, Grounded);
+            controller.Step(run, Grounded, _ => Math.PI / 2d);
 
         var release = new PlayerControlIntent(0, 0, false, false);
         double[] handoff =
@@ -72,11 +112,11 @@ public sealed class Rac1RatchetMovementControllerTests
 
         foreach (double expectedStep in handoff)
         {
-            var handoffStep = controller.Step(release, Grounded);
+            var handoffStep = controller.Step(release, Grounded, _ => Math.PI / 2d);
             Assert.Equal(expectedStep, handoffStep.PlanarMagnitude, 12);
         }
 
-        var sustained = controller.Step(release, Grounded);
+        var sustained = controller.Step(release, Grounded, _ => Math.PI / 2d);
         Assert.Equal(
             handoff[^1] - Rac1RatchetMovementController.GroundDecelerationPerTick,
             sustained.PlanarMagnitude,
@@ -84,7 +124,7 @@ public sealed class Rac1RatchetMovementControllerTests
 
         Rac1RatchetMovementController.StepResult step = sustained;
         for (int i = 0; i < 40; i++)
-            step = controller.Step(release, Grounded);
+            step = controller.Step(release, Grounded, _ => Math.PI / 2d);
 
         Assert.Equal(0d, step.PlanarMagnitude, 12);
     }
@@ -128,11 +168,11 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         for (int tick = 0; tick < Rac1RatchetMovementController.JumpAnticipationTicks - 1; tick++)
         {
-            var step = controller.Step(new PlayerControlIntent(0, 0, true, tick == 0), Grounded);
+            var step = controller.Step(new PlayerControlIntent(0, 0, true, tick == 0), Grounded, _ => Math.PI / 2d);
             Assert.Equal(0d, step.Vertical);
         }
 
-        var launch = controller.Step(new PlayerControlIntent(0, 0, true, false), Grounded);
+        var launch = controller.Step(new PlayerControlIntent(0, 0, true, false), Grounded, _ => Math.PI / 2d);
         Assert.Equal(Rac1RatchetMovementPhase.Rising, launch.Phase);
         Assert.True(launch.Vertical > 0d);
     }
@@ -173,15 +213,15 @@ public sealed class Rac1RatchetMovementControllerTests
     public void Landing_ClearsVerticalMotionButPreservesPlanarMotion()
     {
         var controller = new Rac1RatchetMovementController();
-        controller.Step(new PlayerControlIntent(0, 1, true, true), Grounded);
+        controller.Step(new PlayerControlIntent(0, 1, true, true), Grounded, _ => Math.PI / 2d);
         for (int i = 1; i < Rac1RatchetMovementController.JumpAnticipationTicks; i++)
-            controller.Step(new PlayerControlIntent(0, 1, true, false), Grounded);
+            controller.Step(new PlayerControlIntent(0, 1, true, false), Grounded, _ => Math.PI / 2d);
 
         var airborne = controller.Step(new PlayerControlIntent(0, 1, false, false), Airborne);
         Assert.NotEqual(0d, airborne.Vertical);
         double planar = airborne.PlanarMagnitude;
 
-        var landed = controller.Step(new PlayerControlIntent(0, 1, false, false), Grounded);
+        var landed = controller.Step(new PlayerControlIntent(0, 1, false, false), Grounded, _ => Math.PI / 2d);
         Assert.Equal(Rac1RatchetMovementPhase.Grounded, landed.Phase);
         Assert.Equal(0d, landed.Vertical);
         Assert.True(landed.PlanarMagnitude >= planar);
@@ -192,7 +232,7 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         var crouch = new PlayerControlIntent(1, 0, true, true, CrouchHeld: true);
 
-        var step = controller.Step(crouch, Grounded);
+        var step = controller.Step(crouch, Grounded, _ => Math.PI / 2d);
 
         Assert.Equal(0d, step.PlanarMagnitude, 12);
         Assert.Equal(0d, step.Vertical, 12);
@@ -204,9 +244,9 @@ public sealed class Rac1RatchetMovementControllerTests
     {
         var controller = new Rac1RatchetMovementController();
         var runJump = new PlayerControlIntent(0, 1, true, true);
-        controller.Step(runJump, Grounded);
+        controller.Step(runJump, Grounded, _ => Math.PI / 2d);
         for (int i = 1; i < Rac1RatchetMovementController.JumpAnticipationTicks; i++)
-            controller.Step(new PlayerControlIntent(0, 1, true, false), Grounded);
+            controller.Step(new PlayerControlIntent(0, 1, true, false), Grounded, _ => Math.PI / 2d);
         controller.Step(new PlayerControlIntent(0, 1, false, false), Airborne);
 
         controller.Reset();
@@ -225,13 +265,53 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         var run = new PlayerControlIntent(0, 1, false, false);
         for (int i = 0; i < 32; i++)
-            controller.Step(run, Grounded);
+            controller.Step(run, Grounded, _ => Math.PI / 2d);
 
         double before = controller.PlanarY;
-        var crouched = controller.Step(new PlayerControlIntent(0, 1, false, false, CrouchHeld: true), Grounded);
+        var crouched = controller.Step(new PlayerControlIntent(0, 1, false, false, CrouchHeld: true), Grounded, _ => Math.PI / 2d);
 
         Assert.Equal(before - Rac1RatchetMovementController.CrouchDecelerationPerTick, crouched.PlanarY, 9);
         Assert.True(crouched.PlanarMagnitude < before);
+    }
+
+    [Fact]
+    public void GroundedActiveInput_RequiresSameUpdateFacingResolution()
+    {
+        var controller = new Rac1RatchetMovementController();
+
+        Assert.Throws<InvalidOperationException>(() =>
+            controller.Step(new PlayerControlIntent(0d, 1d, false, false), Grounded));
+    }
+
+    [Theory]
+    [MemberData(nameof(RunTurnInputs))]
+    public void GroundRun_TurnsRotateWithSameUpdateFacingWithoutVectorSpeedLoss(
+        double turnX,
+        double turnY)
+    {
+        var movement = new Rac1RatchetMovementController();
+        var yaw = new Rac1RatchetYawController();
+        for (int i = 0; i < 80; i++)
+            StepCoupledGround(movement, yaw, 0d, 1d);
+
+        var turned = StepCoupledGround(movement, yaw, turnX, turnY);
+
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, turned.PlanarMagnitude, 12);
+        AssertPlanarTracksYaw(turned, yaw);
+    }
+
+    [Fact]
+    public void GroundWalk_LeftRightReversalKeepsPlateauAndTracksFacing()
+    {
+        var movement = new Rac1RatchetMovementController();
+        var yaw = new Rac1RatchetYawController();
+        for (int i = 0; i < 16; i++)
+            StepCoupledGround(movement, yaw, 0.75d, 0d);
+
+        var reversed = StepCoupledGround(movement, yaw, -0.75d, 0d);
+
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, reversed.PlanarMagnitude, 12);
+        AssertPlanarTracksYaw(reversed, yaw);
     }
 
     [Fact]
@@ -240,13 +320,13 @@ public sealed class Rac1RatchetMovementControllerTests
         var controller = new Rac1RatchetMovementController();
         var run = new PlayerControlIntent(0, 1, false, false);
         for (int i = 0; i < 80; i++)
-            controller.Step(run, Grounded);
+            controller.Step(run, Grounded, _ => Math.PI / 2d);
 
         Rac1RatchetMovementController.StepResult step = default;
         for (int tick = 0; tick < Rac1RatchetMovementController.JumpAnticipationTicks; tick++)
         {
             bool held = tick < 6;
-            step = controller.Step(new PlayerControlIntent(0, 1, held, tick == 0), Grounded);
+            step = controller.Step(new PlayerControlIntent(0, 1, held, tick == 0), Grounded, _ => Math.PI / 2d);
         }
 
         double height = step.Vertical;

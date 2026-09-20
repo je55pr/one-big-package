@@ -4,6 +4,8 @@ namespace OBP.Runtime.Player;
 /// Engine-neutral player input for one deterministic controller update.
 /// Planar components preserve unconditioned signed control-axis magnitude;
 /// source-game controllers own dead zones, shaping and acceleration semantics.
+/// PlanarBasis maps right/forward control space; NativePlanarBasis separately
+/// maps source-game planar world axes when recovered behavior depends on facing.
 /// </summary>
 public readonly record struct PlayerControlIntent(
     double PlanarX,
@@ -11,15 +13,17 @@ public readonly record struct PlayerControlIntent(
     bool JumpHeld,
     bool JumpPressed,
     bool CrouchHeld = false,
-    PlayerPlanarBasis? PlanarBasis = null)
+    PlayerPlanarBasis? PlanarBasis = null,
+    PlayerPlanarBasis? NativePlanarBasis = null)
 {
     public PlayerPlanarBasis EffectivePlanarBasis => PlanarBasis ?? PlayerPlanarBasis.Identity;
+    public PlayerPlanarBasis EffectiveNativePlanarBasis => NativePlanarBasis ?? PlayerPlanarBasis.Identity;
 }
 
 /// <summary>
-/// Engine-neutral 2D control basis. Right/forward control-space input can be
-/// transformed into the host's horizontal output plane without exposing any
-/// presentation-engine type to a native controller.
+/// Engine-neutral 2D planar basis. It can map right/forward control space or
+/// source-game planar world axes into the host horizontal plane without
+/// exposing any presentation-engine type to a native controller.
 /// </summary>
 public readonly record struct PlayerPlanarBasis(
     double RightX,

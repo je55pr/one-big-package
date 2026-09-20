@@ -56,9 +56,11 @@ public sealed class PlayerAvatarGodotTests
 
         var movement = new Rac1RatchetMovementController();
         var movementBasis = new PlayerPlanarBasis(0d, -1d, -1d, 0d);
+        var nativeBasis = new PlayerPlanarBasis(-1d, 0d, 0d, 1d);
         var step = movement.Step(
-            new PlayerControlIntent(inputX, inputY, false, false, false, movementBasis),
-            new PlayerContactFacts(true));
+            new PlayerControlIntent(inputX, inputY, false, false, false, movementBasis, nativeBasis),
+            new PlayerContactFacts(true),
+            _ => nativeYaw);
         var movementForward = new global::Godot.Vector3(
             (float)step.PlanarX, 0f, (float)step.PlanarY).Normalized();
 

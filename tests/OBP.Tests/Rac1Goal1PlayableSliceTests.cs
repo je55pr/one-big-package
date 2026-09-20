@@ -33,18 +33,33 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.NotSame(world.Ship, spawn);
 
         var movement = new Rac1RatchetMovementController();
-        var run = new PlayerControlIntent(0, 1, false, false);
+        var yaw = new Rac1RatchetYawController(spawn.Yaw);
+        var controlBasis = new PlayerPlanarBasis(
+            -Math.Sin(spawn.Yaw),
+            Math.Cos(spawn.Yaw),
+            Math.Cos(spawn.Yaw),
+            Math.Sin(spawn.Yaw));
+        var run = new PlayerControlIntent(0, 1, false, false, PlanarBasis: controlBasis);
         Rac1RatchetMovementController.StepResult move = default;
         for (int tick = 0; tick < 80; tick++)
-            move = movement.Step(run, Grounded);
+            move = movement.Step(
+                run,
+                Grounded,
+                mode => yaw.Step(run.PlanarX, run.PlanarY, spawn.Yaw, mode).CurrentYaw);
 
         Assert.Equal(Rac1RatchetMovementPhase.Grounded, move.Phase);
         Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, move.PlanarMagnitude, 12);
 
-        var jump = movement.Step(new PlayerControlIntent(0, 1, true, true), Grounded);
+        var jump = movement.Step(
+            new PlayerControlIntent(0, 1, true, true, PlanarBasis: controlBasis),
+            Grounded,
+            mode => yaw.Step(0d, 1d, spawn.Yaw, mode).CurrentYaw);
         Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, jump.Phase);
         for (int tick = 1; tick < Rac1RatchetMovementController.JumpAnticipationTicks; tick++)
-            jump = movement.Step(new PlayerControlIntent(0, 1, true, false), Grounded);
+            jump = movement.Step(
+                new PlayerControlIntent(0, 1, true, false, PlanarBasis: controlBasis),
+                Grounded,
+                mode => yaw.Step(0d, 1d, spawn.Yaw, mode).CurrentYaw);
 
         Assert.Equal(Rac1RatchetMovementPhase.Rising, jump.Phase);
         Assert.True(jump.Vertical > 0d);

@@ -98,7 +98,7 @@ public sealed class Rac1AnalogueInputTests
         Assert.NotEqual(literal.X, intent.PlanarX);
         Assert.NotEqual(literal.Y, intent.PlanarY);
 
-        controller.Step(intent, Grounded);
+        controller.Step(intent, Grounded, _ => 0d);
 
         Assert.Equal(literal, controller.AnalogueInput);
     }
@@ -130,7 +130,7 @@ public sealed class Rac1AnalogueInputTests
         Rac1RatchetMovementController.StepResult step = default;
 
         for (int i = 0; i < 20; i++)
-            step = controller.Step(input, Grounded);
+            step = controller.Step(input, Grounded, _ => 0d);
 
         Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, step.PlanarMagnitude, 12);
         Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, controller.TargetPlanarStep, 12);
@@ -148,7 +148,7 @@ public sealed class Rac1AnalogueInputTests
         var input = IntentFromRaw(rawX, rawY);
         Rac1RatchetMovementController.StepResult step = default;
         for (int i = 0; i < 80; i++)
-            step = controller.Step(input, Grounded);
+            step = controller.Step(input, Grounded, _ => 0d);
 
         Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, step.PlanarMagnitude, 12);
         Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.TargetPlanarStep, 12);
@@ -163,7 +163,7 @@ public sealed class Rac1AnalogueInputTests
         Rac1RatchetMovementController.StepResult step = default;
 
         for (int i = 0; i < 80; i++)
-            step = controller.Step(input, Grounded);
+            step = controller.Step(input, Grounded, _ => -Math.PI / 4d);
 
         double component = Rac1RatchetMovementController.MaximumPlanarStep / Math.Sqrt(2d);
         Assert.Equal(component, step.PlanarX, 12);
@@ -172,7 +172,7 @@ public sealed class Rac1AnalogueInputTests
     }
 
     [Fact]
-    public void ConditionerRunsBeforeEngineNeutralPlanarBasis()
+    public void AirConditionerRunsBeforeEngineNeutralControlBasis()
     {
         var controller = new Rac1RatchetMovementController();
         var input = new PlayerControlIntent(
@@ -182,9 +182,9 @@ public sealed class Rac1AnalogueInputTests
             false,
             PlanarBasis: new PlayerPlanarBasis(0d, 1d, -1d, 0d));
 
-        var step = controller.Step(input, Grounded);
+        var step = controller.Step(input, Airborne);
 
-        Assert.Equal(-Rac1RatchetMovementController.GroundAccelerationPerTick, step.PlanarX, 12);
+        Assert.Equal(-Rac1RatchetMovementController.AirAccelerationPerTick, step.PlanarX, 12);
         Assert.Equal(0d, step.PlanarY, 12);
     }
 
@@ -252,7 +252,7 @@ public sealed class Rac1AnalogueInputTests
         var input = IntentFromRaw(127, 237);
 
         for (int i = 0; i < 20; i++)
-            controller.Step(input, Grounded);
+            controller.Step(input, Grounded, _ => -Math.PI / 2d);
 
         double groundStep = Math.Sqrt(
             (controller.PlanarX * controller.PlanarX) +

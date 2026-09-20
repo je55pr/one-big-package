@@ -341,6 +341,9 @@ public partial class DebugPlayer : CharacterBody3D
             sceneForward.Z);
     }
 
+    private static PlayerPlanarBasis GetRac1NativePlanarBasis() =>
+        new(-1d, 0d, 0d, 1d);
+
     private void UpdateRac1FacingPresentation()
     {
         if (VisualRoot is null) return;
@@ -367,6 +370,7 @@ public partial class DebugPlayer : CharacterBody3D
         bool grounded = IsOnFloor();
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
+        double controlYaw = GetRac1ControlYaw();
         var step = _rac1Movement.Step(
             new PlayerControlIntent(
                 move.X,
@@ -374,10 +378,11 @@ public partial class DebugPlayer : CharacterBody3D
                 jump,
                 jumpPressed,
                 crouch,
-                GetRac1PlanarBasis()),
-            new PlayerContactFacts(grounded, IsOnCeiling()));
+                GetRac1PlanarBasis(),
+                GetRac1NativePlanarBasis()),
+            new PlayerContactFacts(grounded, IsOnCeiling()),
+            mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw);
 
-        _rac1Yaw.Step(move.X, -move.Y, GetRac1ControlYaw(), step.YawMode);
         UpdateRac1FacingPresentation();
 
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
