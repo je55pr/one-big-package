@@ -516,7 +516,7 @@ public partial class OBPGame : Node3D
     private void TeardownWorld()
     {
         ClearPlayerAvatarView();
-        ResetRac1Gameplay();
+        ResetRac1LevelGameplay();
         _hudState.ResetSession();
         _playerHud?.Render(_hudState.Current);
         _player?.QueueFree();

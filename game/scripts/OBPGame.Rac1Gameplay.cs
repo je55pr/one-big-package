@@ -3,6 +3,7 @@ using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
+using OBP.RAC1.Progression;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
@@ -31,7 +32,10 @@ public partial class OBPGame
     private Rac1BoltCrateSession _rac1BoltCrates = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
     private Rac1RatchetNanotechSession _rac1Nanotech = new();
-    private Rac1WeaponInventory _rac1Weapons = new(ownsFirstRanged: true, firstRangedAmmo: 6);
+    private readonly Rac1CampaignRuntimeSession _rac1CampaignSession = new(
+        new Rac1CampaignState(),
+        new Rac1WeaponInventory(ownsFirstRanged: true, firstRangedAmmo: 6));
+    private Rac1WeaponInventory _rac1Weapons => _rac1CampaignSession.Weapons;
     private Rac1BombGloveSession? _rac1BombGlove;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
@@ -47,7 +51,7 @@ public partial class OBPGame
     private int _rac1NativePlayerState20A4;
     private string _rac1CombatStatus = "off";
 
-    private void ResetRac1Gameplay()
+    private void ResetRac1LevelGameplay()
     {
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
@@ -57,7 +61,6 @@ public partial class OBPGame
         _rac1BoltCrates = new Rac1BoltCrateSession();
         _rac1Hostiles = new Rac1Class749HostileSession();
         _rac1Nanotech = new Rac1RatchetNanotechSession();
-        _rac1Weapons = new Rac1WeaponInventory(ownsFirstRanged: true, firstRangedAmmo: 6);
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
         _rac1HostileNode = null;
         _rac1HostileProbe = null;
@@ -72,7 +75,7 @@ public partial class OBPGame
 
     private void ConfigureRac1Gameplay(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        ResetRac1Gameplay();
+        ResetRac1LevelGameplay();
         if (world.Game != "rac1")
         {
             return;

@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Core;
 using OBP.Godot;
+using OBP.RAC1.Progression;
 using OBP.Runtime;
 
 namespace OneBigPackage;
@@ -41,6 +42,34 @@ public partial class OBPGame
 
         _genericNavigationActive = _args.CaptureFrame is null;
         OnDestinationChosen(destination);
+    }
+
+    /// <summary>
+    /// Ordinary R&C1 campaign travel entry point for ship/map gameplay. The target
+    /// must already be admitted by recovered progression and the active world must
+    /// match campaign CurrentLevel. Loading still uses the normal provider/world
+    /// teardown, import, adoption and player-spawn path.
+    /// </summary>
+    public Rac1PlanetTravelStartResult TravelRac1CampaignTo(int nativeLevelId)
+    {
+        EnsureSourceLibraryInitialized();
+
+        if (_world is not { Game: "rac1" } current ||
+            current.LevelId != _rac1CampaignSession.Campaign.CurrentLevel)
+            return Rac1PlanetTravelStartResult.DestinationUnavailable;
+
+        var destination = TrilogyWorldProviders.Resolve($"rac1:LEVEL{nativeLevelId}");
+        var provider = destination is null ? null : TrilogyWorldProviders.Find(destination.Game);
+        var source = _sources.Get(ObpSourceGame.Rac1);
+        if (destination is null || destination.Game != ObpSourceGame.Rac1 ||
+            provider is null || source is null || !provider.CanLoad(destination))
+            return Rac1PlanetTravelStartResult.DestinationUnavailable;
+
+        Rac1PlanetTravelStartResult start = _rac1CampaignSession.BeginTravel(nativeLevelId);
+        if (start == Rac1PlanetTravelStartResult.Started)
+            OnDestinationChosen(destination);
+
+        return start;
     }
 
     private void ShowDestinationSelector()
@@ -139,6 +168,12 @@ public partial class OBPGame
         catch (Exception ex)
         {
             GD.PrintErr($"[destinations] import of {destination.DestinationId} failed: {ex.Message}\n{ex.StackTrace}");
+            if (destination.Game == ObpSourceGame.Rac1 &&
+                _rac1CampaignSession.Travel.TransitionActive &&
+                !_rac1CampaignSession.Travel.CurrentLevelCommitted)
+            {
+                _rac1CampaignSession.AbandonUncommittedHostLoad();
+            }
             _world = null;
             if (_args.CaptureFrame is not null)
             {
@@ -179,6 +214,9 @@ public partial class OBPGame
             ShowCollisionDebug = _args.CollisionDebug,
             OnlyAnimatedMobies = _args.AnimSolo,
         });
+        Rac1LevelEntryKind? rac1Entry = world.Game == "rac1"
+            ? _rac1CampaignSession.CommitLoadedLevel(world.LevelId)
+            : null;
         _sceneResult = result;
         SetupOverlay(result, world);
         ConfigureCrateDebugHarness();
@@ -199,6 +237,9 @@ public partial class OBPGame
         {
             SpawnPlayer(world);
         }
+
+        if (rac1Entry is { } completedRac1Entry)
+            _rac1CampaignSession.FinishLoadedLevel(completedRac1Entry);
 
         _mode = Mode.World;
         EnsurePlayerHud();
