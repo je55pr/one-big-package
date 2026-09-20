@@ -54,12 +54,21 @@ Record `i` begins at `0x1538 + i * 0x0aa4`; its block-3001 byte is at
 5. calls the follow-up at `0x00262d38` only when `d != CurrentLevel`.
 
 Direct callers are `0x0023d16c`, `0x00283340`, and `0x002d6a20`.
-The caller at `0x00283340` is especially explicit: dispatcher values
-`0x25..0x36` are reduced by `0x24`, producing destination IDs `1..18`,
-then passed to the admission primitive. The initialization path at
-`0x0023d16c` admits the nonzero current level. The third caller takes its
-destination from a gameplay-state data field; no stronger semantic label is
-claimed here.
+The normal progression dispatcher is exact: `0x002832f4` forms
+`destination = event - 0x24`; `0x00283330..0x00283338` admits only
+`(event - 0x25) < 0x12`; and `0x00283340` calls the admission primitive.
+Therefore dispatcher values `0x25..0x36` discover destination IDs `1..18`
+one-for-one. These are retained as progression-dispatch values, not relabelled
+as mission-completion or checkpoint events without a separate witness.
+
+The initialization path is also explicit: `0x0023d160` loads CurrentLevel,
+`0x0023d164` skips admission when it is zero, and `0x0023d16c` otherwise
+calls the same admission primitive. This explains the opening snapshot:
+CurrentLevel is 0 and per-level state 0 is already `Visited`, while
+VisitedPlanets and GalacticMap are entirely zero. Starting on level 0 is
+therefore not destination discovery. The third direct caller at `0x002d6a20`
+takes its destination from a gameplay-state data field; no stronger semantic
+label is claimed here.
 
 This proves the existing `Rac1CampaignState.AdmitDestination` ordering and
 idempotence. It also proves that the 20-byte storage capacity is not the valid
@@ -76,13 +85,31 @@ different, passes it unchanged as the destination argument to transition core
 
 The transition core stores the selected ID into `0x0015ed84`. For IDs
 `<19`, it indexes `0x0013dd58 + id` and promotes state `0 -> 1`; state
-`2` is not demoted. Completion code at `0x0029340c` writes `2` to the
-current level's state, with additional retail gates for IDs 7 and 14.
+`2` is not demoted. Completion is a separate path: `0x00293408` prepares
+value `2`, `0x0029340c` forms the per-level-state base, and
+`0x00293414` stores that byte for the current level, with additional retail
+gates for IDs 7 and 14. No VisitedPlanets or GalacticMap mutation occurs in
+that completion write.
 
 The populated save admits destinations 1, 2, 3, and 4 while CurrentLevel is 2,
 so the smallest concrete revisit supported by that save and the proven travel
 path is `2 -> 1 -> 2`. Revisit does not append another GalacticMap entry or
 change VisitedPlanets.
+
+## Persistence boundary
+
+Destination discovery persists in the game-save blocks VisitedPlanets (14) and
+GalacticMap (20). CurrentLevel persists independently in block 0, while the
+0/1/2 per-level state persists in block 3001 inside each level record. The
+tracked populated memory-card witness proves all four survive serialization
+together without collapsing their meanings.
+
+`Rac1CampaignState` now exposes those four fields through
+`Rac1CampaignPersistentState`, and restore derives the next GalacticMap append
+slot the same way retail does: by counting nonzero VisitedPlanets bytes. The
+model deliberately contains no checkpoint field because no checkpoint owner or
+serialization block is established by this evidence. Discovery, travel,
+completion, and checkpoint state therefore remain separate contracts.
 
 ## Destination identity boundary
 

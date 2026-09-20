@@ -42,6 +42,37 @@ public sealed class Rac1CampaignRetailWitnessTests
     }
 
     [Fact]
+    public void WitnessFreezesDestinationDiscoveryDispatcherAndOpeningSeparation()
+    {
+        JsonElement runtime = Witness().GetProperty("runtime");
+        JsonElement opening = runtime.GetProperty("openingState");
+        JsonElement code = runtime.GetProperty("code");
+        JsonElement discovery = code.GetProperty("destinationDiscovery");
+
+        Assert.Equal(0, opening.GetProperty("currentLevel").GetInt32());
+        Assert.All(opening.GetProperty("visitedPlanets").EnumerateArray(), value => Assert.Equal(0, value.GetInt32()));
+        Assert.All(opening.GetProperty("galacticMap").EnumerateArray(), value => Assert.Equal(0, value.GetInt32()));
+        Assert.Equal(1, opening.GetProperty("perLevelState")[0].GetInt32());
+
+        Assert.Equal(0x25, discovery.GetProperty("firstEvent").GetInt32());
+        Assert.Equal(0x36, discovery.GetProperty("lastEvent").GetInt32());
+        Assert.Equal(0x24, discovery.GetProperty("destinationOffset").GetInt32());
+        JsonElement[] events = discovery.GetProperty("events").EnumerateArray().ToArray();
+        Assert.Equal(18, events.Length);
+        for (int index = 0; index < events.Length; index++)
+        {
+            Assert.Equal(0x25 + index, events[index].GetProperty("event").GetInt32());
+            Assert.Equal(1 + index, events[index].GetProperty("destination").GetInt32());
+        }
+
+        JsonElement initialAdmission = code.GetProperty("initialAdmission");
+        Assert.Equal("0x0023d160", initialAdmission.GetProperty("currentLevelLoad").GetString());
+        Assert.Equal("0x0023d164", initialAdmission.GetProperty("zeroSkipBranch").GetString());
+        Assert.Equal("0x0023d16c", initialAdmission.GetProperty("admissionCall").GetString());
+        Assert.Equal("0x00293414", code.GetProperty("completionStateStore").GetString());
+    }
+
+    [Fact]
     public void ModelReproducesRecoveredFourDestinationSaveAndRevisit()
     {
         JsonElement witness = Witness().GetProperty("memoryCard");
@@ -78,6 +109,45 @@ public sealed class Rac1CampaignRetailWitnessTests
         Assert.Equal(2, state.CurrentLevel);
         Assert.Equal(expectedVisited, state.VisitedPlanets.Select(value => (int)value));
         Assert.Equal(expectedMap, state.GalacticMap.Select(value => (int)value));
+    }
+
+    [Fact]
+    public void PersistentModelRestoresRecoveredMemoryCardBlocksExactly()
+    {
+        JsonElement witness = Witness().GetProperty("memoryCard");
+        JsonElement blocks = witness.GetProperty("gameBlocks");
+
+        byte[] visited = blocks.GetProperty("visitedPlanets").GetProperty("values")
+            .EnumerateArray().Select(value => checked((byte)value.GetInt32())).ToArray();
+        int[] map = blocks.GetProperty("galacticMap").GetProperty("values")
+            .EnumerateArray().Select(value => value.GetInt32()).ToArray();
+        Rac1LevelVisitState[] levelStates = witness.GetProperty("levelRecords")
+            .EnumerateArray()
+            .Select(record => (Rac1LevelVisitState)record.GetProperty("visited").GetByte())
+            .ToArray();
+
+        var persistent = new Rac1CampaignPersistentState(
+            blocks.GetProperty("currentLevel").GetProperty("value").GetInt32(),
+            visited,
+            map,
+            levelStates);
+        Rac1CampaignState state = Rac1CampaignState.RestorePersistentState(persistent);
+
+        Assert.Equal(2, state.CurrentLevel);
+        Assert.Equal(4, state.AdmittedDestinationCount);
+        Assert.Equal(visited, state.VisitedPlanets);
+        Assert.Equal(map, state.GalacticMap);
+        Assert.Equal(levelStates, state.LevelStates);
+
+        Rac1CampaignPersistentState captured = state.CapturePersistentState();
+        Assert.Equal(visited, captured.VisitedPlanets);
+        Assert.Equal(map, captured.GalacticMap);
+        Assert.Equal(levelStates, captured.LevelStates);
+
+        Assert.Equal(Rac1DestinationDiscoveryResult.Discovered, state.ApplyProgressionEvent(0x29));
+        Assert.Equal(5, state.GalacticMap[4]);
+        Assert.Equal(2, state.CurrentLevel);
+        Assert.Equal(Rac1LevelVisitState.Unvisited, state.GetLevelState(5));
     }
 
     [Fact]

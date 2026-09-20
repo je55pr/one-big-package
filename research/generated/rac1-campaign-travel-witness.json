@@ -129,7 +129,93 @@
         "0x00283340",
         "0x002d6a20"
       ],
-      "scriptAdmissionCall": "0x00283340",
+      "destinationDiscovery": {
+        "eventSubtractAddress": "0x002832f4",
+        "eventRangeAddress": "0x00283330",
+        "admissionCall": "0x00283340",
+        "firstEvent": 37,
+        "lastEvent": 54,
+        "destinationOffset": 36,
+        "events": [
+          {
+            "event": 37,
+            "destination": 1
+          },
+          {
+            "event": 38,
+            "destination": 2
+          },
+          {
+            "event": 39,
+            "destination": 3
+          },
+          {
+            "event": 40,
+            "destination": 4
+          },
+          {
+            "event": 41,
+            "destination": 5
+          },
+          {
+            "event": 42,
+            "destination": 6
+          },
+          {
+            "event": 43,
+            "destination": 7
+          },
+          {
+            "event": 44,
+            "destination": 8
+          },
+          {
+            "event": 45,
+            "destination": 9
+          },
+          {
+            "event": 46,
+            "destination": 10
+          },
+          {
+            "event": 47,
+            "destination": 11
+          },
+          {
+            "event": 48,
+            "destination": 12
+          },
+          {
+            "event": 49,
+            "destination": 13
+          },
+          {
+            "event": 50,
+            "destination": 14
+          },
+          {
+            "event": 51,
+            "destination": 15
+          },
+          {
+            "event": 52,
+            "destination": 16
+          },
+          {
+            "event": 53,
+            "destination": 17
+          },
+          {
+            "event": 54,
+            "destination": 18
+          }
+        ]
+      },
+      "initialAdmission": {
+        "currentLevelLoad": "0x0023d160",
+        "zeroSkipBranch": "0x0023d164",
+        "admissionCall": "0x0023d16c"
+      },
       "transitionCore": "0x0024d430",
       "transitionCallers": [
         "0x00202b70",
@@ -144,6 +230,8 @@
       ],
       "shipTravelCall": "0x00276d38",
       "completionWrite": "0x0029340c",
+      "completionValueSetup": "0x00293408",
+      "completionStateStore": "0x00293414",
       "directRefs": {
         "visitedPlanets": [
           "0x00203524",

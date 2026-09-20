@@ -2,6 +2,7 @@
 .build/
 node_modules/
 .tools/
+__pycache__/
 
 # deterministic capture output
 captures/

@@ -32,8 +32,18 @@ ADMISSION_ROUTINE = 0x002607D0
 TRANSITION_CORE = 0x0024D430
 TRAVEL_ROUTINE = 0x0028ED58
 SCRIPT_ADMISSION_CALL = 0x00283340
+DISCOVERY_EVENT_SUBTRACT = 0x002832F4
+DISCOVERY_EVENT_RANGE = 0x00283330
+FIRST_DISCOVERY_EVENT = 0x25
+LAST_DISCOVERY_EVENT = 0x36
+DISCOVERY_EVENT_OFFSET = 0x24
+INITIAL_CURRENT_LEVEL_LOAD = 0x0023D160
+INITIAL_CURRENT_LEVEL_ZERO_SKIP = 0x0023D164
+INITIAL_ADMISSION_CALL = 0x0023D16C
 SHIP_TRAVEL_CALL = 0x00276D38
 COMPLETION_WRITE = 0x0029340C
+COMPLETION_VALUE_SETUP = 0x00293408
+COMPLETION_STATE_STORE = 0x00293414
 
 
 def load_helper():
@@ -117,6 +127,49 @@ def jal_callers(memory, target, start=0x00100000, end=0x00320000):
     return refs
 
 
+def signed_imm(word):
+    value = word & 0xFFFF
+    return value - 0x10000 if value & 0x8000 else value
+
+
+def expect_i(memory, address, opcode, rs, rt, immediate, label):
+    word = u32(memory, address)
+    actual = (word >> 26, (word >> 21) & 31, (word >> 16) & 31, signed_imm(word))
+    expected = (opcode, rs, rt, immediate)
+    if actual != expected:
+        raise RuntimeError(f"{label} signature mismatch at 0x{address:08x}: {actual} != {expected}")
+
+
+def expect_jal(memory, address, target, label):
+    word = u32(memory, address)
+    if word >> 26 != 3:
+        raise RuntimeError(f"{label} is not JAL at 0x{address:08x}")
+    resolved = ((address + 4) & 0xF0000000) | ((word & 0x03FFFFFF) << 2)
+    if resolved != target:
+        raise RuntimeError(f"{label} target mismatch: 0x{resolved:08x} != 0x{target:08x}")
+
+
+def verify_destination_discovery(memory):
+    # a0 = dispatcher value - 0x24
+    expect_i(memory, DISCOVERY_EVENT_SUBTRACT, 9, 7, 4, -DISCOVERY_EVENT_OFFSET, "discovery subtract")
+    # (dispatcher value - 0x25) < 0x12, i.e. inclusive 0x25..0x36.
+    expect_i(memory, DISCOVERY_EVENT_RANGE, 9, 7, 2, -FIRST_DISCOVERY_EVENT, "discovery range subtract")
+    expect_i(memory, DISCOVERY_EVENT_RANGE + 4, 11, 2, 2, 0x12, "discovery range width")
+    expect_jal(memory, SCRIPT_ADMISSION_CALL, ADMISSION_ROUTINE, "script discovery admission")
+
+    # Startup loads CurrentLevel, skips zero, and otherwise feeds it to the same primitive.
+    expect_i(memory, INITIAL_CURRENT_LEVEL_LOAD, 35, 4, 4, -0x127C, "startup CurrentLevel load")
+    expect_i(memory, INITIAL_CURRENT_LEVEL_ZERO_SKIP, 4, 4, 0, 5, "startup zero-level skip")
+    expect_jal(memory, INITIAL_ADMISSION_CALL, ADMISSION_ROUTINE, "startup admission")
+
+    # Completion is a separate per-level state-2 store, not destination discovery.
+    expect_i(memory, COMPLETION_VALUE_SETUP, 9, 0, 3, 2, "completion state value")
+    expect_i(memory, COMPLETION_WRITE, 9, 2, 2, -0x22A8, "completion state base")
+    completion_store = u32(memory, COMPLETION_STATE_STORE)
+    if (completion_store >> 26, (completion_store >> 21) & 31, (completion_store >> 16) & 31, completion_store & 0xFFFF) != (40, 2, 3, 0):
+        raise RuntimeError("completion state store signature mismatch")
+
+
 def runtime_report(savestate, zstd_dll):
     helper = load_helper()
     memory = helper.read_zip_entry(savestate, "eeMemory.bin", zstd_dll)
@@ -134,6 +187,8 @@ def runtime_report(savestate, zstd_dll):
     level_descriptor = descriptor(memory, LEVEL_VISITED_DESCRIPTOR)
     if level_descriptor["blockId"] != 3001:
         raise RuntimeError("per-level descriptor at 0x001848c0 is not block 3001")
+
+    verify_destination_discovery(memory)
 
     return {
         "savestateFile": savestate.name,
@@ -157,13 +212,31 @@ def runtime_report(savestate, zstd_dll):
         "code": {
             "admissionRoutine": f"0x{ADMISSION_ROUTINE:08x}",
             "admissionCallers": [f"0x{x:08x}" for x in jal_callers(memory, ADMISSION_ROUTINE)],
-            "scriptAdmissionCall": f"0x{SCRIPT_ADMISSION_CALL:08x}",
+            "destinationDiscovery": {
+                "eventSubtractAddress": f"0x{DISCOVERY_EVENT_SUBTRACT:08x}",
+                "eventRangeAddress": f"0x{DISCOVERY_EVENT_RANGE:08x}",
+                "admissionCall": f"0x{SCRIPT_ADMISSION_CALL:08x}",
+                "firstEvent": FIRST_DISCOVERY_EVENT,
+                "lastEvent": LAST_DISCOVERY_EVENT,
+                "destinationOffset": DISCOVERY_EVENT_OFFSET,
+                "events": [
+                    {"event": event, "destination": event - DISCOVERY_EVENT_OFFSET}
+                    for event in range(FIRST_DISCOVERY_EVENT, LAST_DISCOVERY_EVENT + 1)
+                ],
+            },
+            "initialAdmission": {
+                "currentLevelLoad": f"0x{INITIAL_CURRENT_LEVEL_LOAD:08x}",
+                "zeroSkipBranch": f"0x{INITIAL_CURRENT_LEVEL_ZERO_SKIP:08x}",
+                "admissionCall": f"0x{INITIAL_ADMISSION_CALL:08x}",
+            },
             "transitionCore": f"0x{TRANSITION_CORE:08x}",
             "transitionCallers": [f"0x{x:08x}" for x in jal_callers(memory, TRANSITION_CORE)],
             "travelRoutine": f"0x{TRAVEL_ROUTINE:08x}",
             "travelCallers": [f"0x{x:08x}" for x in jal_callers(memory, TRAVEL_ROUTINE)],
             "shipTravelCall": f"0x{SHIP_TRAVEL_CALL:08x}",
             "completionWrite": f"0x{COMPLETION_WRITE:08x}",
+            "completionValueSetup": f"0x{COMPLETION_VALUE_SETUP:08x}",
+            "completionStateStore": f"0x{COMPLETION_STATE_STORE:08x}",
             "directRefs": {
                 "visitedPlanets": [f"0x{x:08x}" for x in pointer_refs(memory, VISITED_PLANETS)],
                 "galacticMap": [f"0x{x:08x}" for x in pointer_refs(memory, GALACTIC_MAP)],
