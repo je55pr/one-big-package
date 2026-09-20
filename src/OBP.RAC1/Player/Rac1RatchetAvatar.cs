@@ -12,17 +12,17 @@ namespace OBP.RAC1.Player;
 public static class Rac1RatchetAvatar
 {
     public const int RatchetClassId = 0;
-    public const int StandingSequenceId = 0;
-    public const int LocomotionStartSequenceId = 3;
-    public const int SustainedLocomotionSequenceId = 4;
-    public const int LocomotionStopVariantASequenceId = 5;
-    public const int LocomotionStopVariantBSequenceId = 6;
-    public const int StationaryJumpSequenceId = 7;
-    public const int MovingJumpSequenceId = 8;
-    public const int CrouchSequenceId = 13;
-    public const int CrouchTurnRightSequenceId = 14;
-    public const int CrouchTurnLeftSequenceId = 15;
-    public const int WrenchAttackSequenceId = 23;
+    public const int StandingSequenceId = Rac1RatchetSequenceSelection.StandingSequenceId;
+    public const int LocomotionStartSequenceId = Rac1RatchetSequenceSelection.LocomotionStartSequenceId;
+    public const int SustainedLocomotionSequenceId = Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId;
+    public const int LocomotionStopVariantASequenceId = Rac1RatchetSequenceSelection.LocomotionStopEarlySequenceId;
+    public const int LocomotionStopVariantBSequenceId = Rac1RatchetSequenceSelection.LocomotionStopLateSequenceId;
+    public const int StationaryJumpSequenceId = Rac1RatchetSequenceSelection.StationaryJumpSequenceId;
+    public const int MovingJumpSequenceId = Rac1RatchetSequenceSelection.MovingJumpSequenceId;
+    public const int CrouchSequenceId = Rac1RatchetSequenceSelection.CrouchSequenceId;
+    public const int CrouchTurnRightSequenceId = Rac1RatchetSequenceSelection.CrouchTurnRightSequenceId;
+    public const int CrouchTurnLeftSequenceId = Rac1RatchetSequenceSelection.CrouchTurnLeftSequenceId;
+    public const int WrenchAttackSequenceId = Rac1RatchetSequenceSelection.WrenchAttackSequenceId;
     public const int BindAnchorSequenceId = 122;
     public const float NtscUpdateHz = 60f;
 

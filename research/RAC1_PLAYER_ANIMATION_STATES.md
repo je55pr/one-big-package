@@ -18,12 +18,22 @@ A controlled read-only PCSX2/PINE trace on Veldin's live class-0 Ratchet at Moby
 | crouch | 13 | 15 frames, 0.25 = 15 FPS | `2 -> 13 -> 0` | **ADMIT** |
 | crouch-turn right | 14 | 7 frames, 0.25 = 15 FPS | `2 -> 13 -> 14 -> 0` | **ADMIT** |
 | crouch-turn left | 15 | 7 frames, 0.25 = 15 FPS | `2 -> 13 -> 15 -> 0` | **ADMIT** |
-| Square wrench attack | 23 | 21 frames, variable | `2 -> 23 -> 0`, repeated | **ADMIT** |
+| Square wrench attack | 23 | 21 frames, variable | `2 -> 23 -> 0`, repeated; action state `0x13` | **ADMIT** |
+| accepted first-ranged fire (native item 10) | 44 | not promoted by this selection recovery | isolated retail inventory witness: each accepted Circle use enters 44 while ammo decrements; zero ammo does not enter 44 | **ADMIT accepted-fire selector only** |
+| player damage reaction | unresolved | not promoted | class-749 marker-34 damage-1 -> one Nanotech is proven, but no class-0 hit-reaction selector has a retained witness | **EVIDENCE-GATED; do not invent a clip** |
+| combat death at zero Nanotech | unresolved | not promoted | zero Nanotech enters the proven death boundary, but no class-0 combat-death presentation sequence is retained | **EVIDENCE-GATED; do not reuse environmental death** |
+| Veldin environmental death | 10 -> 11 | not promoted by this selection recovery | three fall-off trials enter 10 then 11 while Nanotech remains 4; terminal recovered state is `0x77` / sequence 11 | **ADMIT for witnessed environmental-death path only** |
 | bind-linear anchor | 122 | 21 frames, 0.5 = 30 FPS | decoded asset/rest archaeology | diagnostic only |
+
+## Selection versus playback boundary
+
+Sequence selection and playback metadata are deliberately separate. `Rac1RatchetSequenceSelection` carries only recovered gameplay-state-to-sequence facts: neutral cycle, locomotion entry and stop family, launch-context jump choice, crouch direction, wrench, accepted first-ranged fire, and the bounded environmental-death path. It contains no frame counts, transition rates, FPS values, or animation durations.
+
+`Rac1RatchetAvatar` remains the owner of separately decoded playback clips and their asset timing. A sequence can therefore be admitted for state selection without becoming a presentation clip. In particular, this recovery does **not** promote playback timing for stop sequence 20, ranged-fire sequence 44, or environmental-death sequences 10/11. The missing player damage-reaction selector remains explicitly unresolved rather than being inferred from Nanotech timing or hostile attack timing.
 
 ## Airborne and landing boundary
 
-Stationary jump stays on sequence 7 throughout the observed airborne interval and returns directly to 0. Moving jump stays on sequence 8 while airborne and returns directly to sustained locomotion 4 when movement remains held. No separate selector change was witnessed at jump apex, during fall, or at touchdown.
+Stationary jump selects sequence 7 directly from neutral and stays there throughout the observed airborne interval before returning to 0. Moving jump selects sequence 8 from the locomotion family, stays there while airborne, and returns directly to sustained locomotion 4 when movement remains held. No separate selector was witnessed for a distinct anticipation phase, at jump apex, during fall, or at touchdown.
 
 That is positive evidence for selector behaviour, not proof that retail lacks procedural airborne/landing work elsewhere. The semantic runtime may still distinguish `JumpRise`, `Fall`, and `Land` from controller facts, but it must not invent separate native clip ids from this trace. For a first binding, rise/fall may share the witnessed jump sequence selected from launch context, while `Land` is a semantic transition with no independently admitted native landing clip.
 
@@ -59,6 +69,8 @@ The controlled trials sampled `Moby+0x20`, `+0x50`, `+0x51`, `+0x52`, `+0x53`, `
 
 ## Runtime-facing admission
 
-A conservative first semantic binding now has enough authority for the next milestone: standing uses 0; sustained movement uses 4 with optional start transition 3; stationary and moving jump use 7 and 8 respectively; wrench uses 23. Semantic `Fall` may continue the launch-context jump clip because retail showed no selector split, and semantic `Land` must not claim a dedicated native clip yet. Sequences 5/20/6 are admitted context-sensitive stop/settle transitions, but OBP should not select among them until a deterministic retail-side phase predicate is recovered.
+The runtime-facing selector contract now records the recovered state families without importing clip timing: neutral uses the witnessed 0/2/0/1 cycle; locomotion enters 3 then sustains 4; release may select 5/20/6 from unresolved cycle phase; stationary and moving jump select 7 and 8 from launch context; crouch selects 13 with direction-specific 14/15 turns; wrench selects 23; an accepted native-item-10 ranged shot selects 44; and the bounded Veldin environmental-death path selects 10 then 11. The class-0 damage-reaction selector remains unresolved.
 
-This is sufficient to unblock a movement-fact-driven playable Ratchet animation binding without making animation the source of truth for physics or controller state.
+Semantic `Fall` may continue the launch-context jump clip because retail showed no selector split, while semantic `Land` must not claim a dedicated native clip. The selector contract deliberately does not expose playback timing for sequence 20, 44, or 10/11, and it does not choose among 5/20/6 until a deterministic retail-side phase predicate is recovered.
+
+This is sufficient to expose recovered R&C1 state selection without making animation the source of truth for physics, combat timing, or controller state.

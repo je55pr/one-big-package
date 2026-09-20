@@ -1,5 +1,5 @@
 {
-  "schema": 3,
+  "schema": 4,
   "authority": {
     "build": "R&C1 NTSC-U SCUS-97199",
     "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
@@ -202,7 +202,73 @@
       "conclusion": "That static call site remains invalid as Ratchet proof; sequence 6 is admitted only from later independent class-0 live traces."
     }
   ],
-  "admissions": [
+  "selectionAdmissions": {
+    "neutral": {
+      "actionState": 0,
+      "selectorCycle": [
+        0,
+        2,
+        0,
+        1
+      ],
+      "predicate": "delayed neutral fidget choice/timer unresolved"
+    },
+    "locomotion": {
+      "entry": [
+        3,
+        4
+      ],
+      "stopFamily": [
+        5,
+        20,
+        6
+      ],
+      "stopPredicate": "locomotion-cycle phase dependent; exact retail sub-frame boundaries unresolved",
+      "ordinaryTurningUsesLocomotionFamily": true
+    },
+    "jump": {
+      "actionState": 7,
+      "stationarySequence": 7,
+      "movingSequence": 8,
+      "distinctAnticipationSequence": null,
+      "apexOrFallSequence": null,
+      "landingSequence": null,
+      "conclusion": "no intermediate selector was witnessed before launch-context 7/8; that sequence remains selected through observed rise/apex/fall and returns directly to 0 or 4"
+    },
+    "crouch": {
+      "actionState": 4,
+      "baseSequence": 13,
+      "turnRightSequence": 14,
+      "turnLeftSequence": 15
+    },
+    "wrench": {
+      "actionState": 19,
+      "sequence": 23
+    },
+    "firstRangedFire": {
+      "nativeItemId": 10,
+      "acceptedSequence": 44,
+      "zeroAmmoSequence": null,
+      "evidence": "isolated live inventory/ammo witness retained in RAC1_WEAPON_INVENTORY.md"
+    },
+    "damageReaction": {
+      "sequence": null,
+      "evidence": "class-749 marker-34 damage-1 -> one Nanotech is proven; class-0 reaction selector is not retained"
+    },
+    "combatDeath": {
+      "sequence": null,
+      "evidence": "zero Nanotech is a proven death boundary; class-0 combat-death presentation is not retained"
+    },
+    "veldinEnvironmentalDeath": {
+      "sequencePath": [
+        10,
+        11
+      ],
+      "terminalNativeState": 119,
+      "evidence": "three controlled Veldin fall trials; Nanotech remains 4 through sequences 10/11"
+    }
+  },
+  "playbackMetadata": [
     {
       "state": "standing",
       "sequenceId": 0,
@@ -348,10 +414,14 @@
       "fps": 30
     }
   ],
+  "separation": "selectionAdmissions records gameplay-state selection only; playbackMetadata records separately decoded asset timing and is not a selector predicate",
   "unresolvedStates": [
+    "distinct_jump_anticipation_clip",
     "distinct_apex_or_fall_clip",
     "distinct_landing_clip",
-    "stop_variant_5_vs_6_selection_rule"
+    "stop_settle_exact_phase_predicate",
+    "player_damage_reaction_sequence",
+    "combat_death_sequence"
   ],
   "liveTraceRequired": false,
   "controlledTrace": {

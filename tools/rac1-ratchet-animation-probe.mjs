@@ -158,7 +158,57 @@ const admissions = [
   clip('square_wrench_attack', 23, 'admit', 'controlled-live+asset', 21, 0),
   clip('bind_linear_anchor', 122, 'diagnostic-only', 'asset', 21, 0.5),
 ];
-const unresolvedStates = ['distinct_apex_or_fall_clip', 'distinct_landing_clip', 'stop_variant_5_vs_6_selection_rule'];
+const selectionAdmissions = {
+  neutral: {
+    actionState: 0,
+    selectorCycle: [0, 2, 0, 1],
+    predicate: 'delayed neutral fidget choice/timer unresolved',
+  },
+  locomotion: {
+    entry: [3, 4],
+    stopFamily: [5, 20, 6],
+    stopPredicate: 'locomotion-cycle phase dependent; exact retail sub-frame boundaries unresolved',
+    ordinaryTurningUsesLocomotionFamily: true,
+  },
+  jump: {
+    actionState: 7,
+    stationarySequence: 7,
+    movingSequence: 8,
+    distinctAnticipationSequence: null,
+    apexOrFallSequence: null,
+    landingSequence: null,
+    conclusion: 'no intermediate selector was witnessed before launch-context 7/8; that sequence remains selected through observed rise/apex/fall and returns directly to 0 or 4',
+  },
+  crouch: { actionState: 4, baseSequence: 13, turnRightSequence: 14, turnLeftSequence: 15 },
+  wrench: { actionState: 0x13, sequence: 23 },
+  firstRangedFire: {
+    nativeItemId: 10,
+    acceptedSequence: 44,
+    zeroAmmoSequence: null,
+    evidence: 'isolated live inventory/ammo witness retained in RAC1_WEAPON_INVENTORY.md',
+  },
+  damageReaction: {
+    sequence: null,
+    evidence: 'class-749 marker-34 damage-1 -> one Nanotech is proven; class-0 reaction selector is not retained',
+  },
+  combatDeath: {
+    sequence: null,
+    evidence: 'zero Nanotech is a proven death boundary; class-0 combat-death presentation is not retained',
+  },
+  veldinEnvironmentalDeath: {
+    sequencePath: [10, 11],
+    terminalNativeState: 0x77,
+    evidence: 'three controlled Veldin fall trials; Nanotech remains 4 through sequences 10/11',
+  },
+};
+const unresolvedStates = [
+  'distinct_jump_anticipation_clip',
+  'distinct_apex_or_fall_clip',
+  'distinct_landing_clip',
+  'stop_settle_exact_phase_predicate',
+  'player_damage_reaction_sequence',
+  'combat_death_sequence',
+];
 const negativeControls = [{
   sequenceId: 6,
   callSite: '0x22478c',
@@ -207,11 +257,14 @@ function readTraceSet(dir) {
 }
 const traceCapture = readTraceSet(traceDir);
 const stateReport = {
-  schema: 3, authority,
+  schema: 4, authority,
   playerSelector: { currentSequenceOffset: 'Moby+0x53', nextSequenceOffset: 'Moby+0x52' },
   playerMoby: '0x01845e80', selectorStores,
   selectorHelpers: [...SELECTOR_HELPERS].map(hex), helperCalls, negativeControls,
-  admissions, unresolvedStates, liveTraceRequired: false,
+  selectionAdmissions,
+  playbackMetadata: admissions,
+  separation: 'selectionAdmissions records gameplay-state selection only; playbackMetadata records separately decoded asset timing and is not a selector predicate',
+  unresolvedStates, liveTraceRequired: false,
   controlledTrace: { artifact: 'research/generated/rac1-ratchet-animation-trace.json', note: 'Hash-pinned reduced live evidence; use --trace-dir to reverify raw local traces.' },
   controllerOverlay: 'time-varying post-animation pass; no frozen correction admitted',
 };
