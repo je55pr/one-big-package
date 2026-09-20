@@ -32,7 +32,7 @@ public partial class OBPGame
     private Rac1BoltCrateSession _rac1BoltCrates = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
     private Rac1RatchetNanotechSession _rac1Nanotech = new();
-    private readonly Rac1CampaignRuntimeSession _rac1CampaignSession = new(
+    private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
         new Rac1CampaignState(),
         new Rac1WeaponInventory(ownsFirstRanged: true, firstRangedAmmo: 6));
     private Rac1WeaponInventory _rac1Weapons => _rac1CampaignSession.Weapons;

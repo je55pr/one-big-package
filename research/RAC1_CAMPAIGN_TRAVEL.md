@@ -190,3 +190,47 @@ no admitted destinations, and level 0 in native `Visited` state. Existing
 unversioned `Rac1CampaignPersistentState` snapshots migrate to schema v1 without
 changing any campaign value. Unknown schema versions are rejected rather than
 being guessed or partially defaulted.
+
+## Bounded playable loop and reload smoke
+
+The Godot host now persists the schema-v1 campaign envelope in an OBP-owned JSON
+file (`user://rac1-campaign.json` by default). The JSON shape, file location and
+save timing are host policy only. The payload remains exactly the recovered
+`CurrentLevel`, `VisitedPlanets`, `GalacticMap` and per-level state blocks.
+Successful ordinary campaign travel is saved only after the late CurrentLevel
+commit and new-world initialization finish. External/debug provider loads still
+do not change or save campaign progression.
+
+`tools/rac1-campaign-smoke.ps1` uses an isolated temporary host save and two fresh
+Godot processes against the supported retail source. Its bounded route is:
+
+1. Start from the recovered opening state at native level 0 with no admitted
+   destinations.
+2. Feed progression-dispatch values `0x25` and `0x26`, whose recovered branch
+   admits native destinations 1 and 2 in that order.
+3. Travel through the ordinary provider/session path `0 -> 1 -> 2 -> 1`.
+4. Start a fresh process, restore `CurrentLevel=1` plus admission order `[1,2]`,
+   and revisit `1 -> 2 -> 1`.
+
+The smoke checks the loaded `RuntimeWorld`, campaign `CurrentLevel`, completed
+two-phase handoff and a fresh read of the persisted envelope after each bounded
+phase. Revisit does not duplicate `VisitedPlanets` or `GalacticMap` admissions.
+The second process enters the persisted current level without mutating campaign
+state before exercising ordinary travel again.
+
+### Remaining campaign-script boundary
+
+This smoke deliberately supplies recovered dispatcher inputs directly. It does
+**not** claim that a Veldin objective, NPC, gadget, cutscene or other hosted
+gameplay event emits `0x25` or `0x26`. No production mission/objective owner is
+currently wired to `ApplyRac1CampaignProgressionEvent`, because the retail
+producer-side trigger mapping is not yet recovered. Consequently the ordinary
+opening gameplay still exposes zero travel targets until an evidence-backed
+progression producer exists or previously persisted campaign state already
+contains admissions.
+
+Per-level `Completed` remains a distinct recovered persistent value, but no host
+mission script currently decides when to set it. Checkpoint selection/spawn state
+is also still outside this model, as are any unrecovered reset/teleport semantics.
+The neutral Worlds browser remains a developer/external load route and cannot be
+used to manufacture discovery, completion or campaign travel.

@@ -52,6 +52,17 @@ public partial class OBPGame
     }
 
     /// <summary>
+    /// Smoke/bootstrap convenience that enters the persisted native CurrentLevel
+    /// through the ordinary provider route without changing campaign state.
+    /// </summary>
+    public void OpenRac1CampaignCurrentFromBootstrap()
+    {
+        EnsureSourceLibraryInitialized();
+        OpenDestinationFromBootstrap(
+            $"rac1:LEVEL{_rac1CampaignSession.Campaign.CurrentLevel}");
+    }
+
+    /// <summary>
     /// Ordinary R&C1 campaign travel entry point for ship/map gameplay. The target
     /// must already be admitted by recovered progression and the active world must
     /// match campaign CurrentLevel. Loading still uses the normal provider/world
@@ -323,7 +334,11 @@ public partial class OBPGame
         }
 
         if (rac1Entry is { } completedRac1Entry)
+        {
             _rac1CampaignSession.FinishLoadedLevel(completedRac1Entry);
+            if (completedRac1Entry == Rac1LevelEntryKind.CampaignTravel)
+                PersistRac1CampaignState("completed campaign travel");
+        }
 
         _mode = Mode.World;
         EnsurePlayerHud();
@@ -337,6 +352,11 @@ public partial class OBPGame
         if (_args.Rac1CombatSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
         {
             _ = RunRac1CombatSmokeAsync();
+        }
+
+        if (_args.Rac1CampaignSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
+        {
+            _ = RunRac1CampaignSmokeAsync();
         }
 
         if (_args.MovementSmoke && _worldSwitches == 1)

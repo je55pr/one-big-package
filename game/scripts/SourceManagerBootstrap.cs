@@ -71,6 +71,7 @@ public partial class SourceManagerBootstrap : Node
         string? uyaPath = ValueAfter(args, "--uya-iso");
         string? destinationId = ValueAfter(args, "--destination");
         string? testScene = ValueAfter(args, "--test-scene");
+        bool rac1CampaignSmoke = System.Array.Exists(args, a => a == "--rac1-campaign-smoke");
 
         if (rac1Path is not null)
         {
@@ -83,6 +84,12 @@ public partial class SourceManagerBootstrap : Node
         if (uyaPath is not null)
         {
             _game.RememberCommandLineSource(ObpSourceGame.Rac3, uyaPath);
+        }
+
+        if (rac1CampaignSmoke)
+        {
+            _game.OpenRac1CampaignCurrentFromBootstrap();
+            return;
         }
 
         if (destinationId is not null)

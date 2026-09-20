@@ -79,6 +79,12 @@ public sealed record CommandLineArgs
     /// <summary>Run the deterministic retail-backed R&amp;C1 live combat-loop smoke and quit.</summary>
     public bool Rac1CombatSmoke { get; init; }
 
+    /// <summary>Run the two-pass evidence-backed R&amp;C1 campaign travel/persistence smoke.</summary>
+    public bool Rac1CampaignSmoke { get; init; }
+
+    /// <summary>Override the OBP host campaign-state file. Used by isolated campaign smoke runs.</summary>
+    public string? Rac1CampaignSavePath { get; init; }
+
     /// <summary>Run the cross-game Godot analogue/input smoke against the selected destination and quit.</summary>
     public bool MovementSmoke { get; init; }
 
@@ -135,6 +141,8 @@ public sealed record CommandLineArgs
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--rac1-combat-smoke" => result with { Rac1CombatSmoke = true },
+                "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
+                "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },
                 "--compose" => result with { Compose = true },
                 "--composition" => result with { Compose = true, CompositionPath = Next() },

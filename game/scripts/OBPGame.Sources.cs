@@ -64,6 +64,7 @@ public partial class OBPGame
 
         _sources = new ObpSourceLibrary(TrilogySourceDefinitions.All);
         _sourceConfigPath = ProjectSettings.GlobalizePath("user://sources.json");
+        EnsureRac1CampaignPersistenceInitialized();
         _sourcesInitialized = true;
         RestoreRememberedSources();
     }
