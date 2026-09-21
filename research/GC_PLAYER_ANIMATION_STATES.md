@@ -52,7 +52,7 @@ The names are not used as evidence for sequence ids.
 | 3 skid | `0x002BF338` | Chooses **5** only when helper `0x002A72C8` returns 4 and native scalar `+0xC38` is strictly `3 < x < 16`; otherwise chooses **6**. |
 | 4 crouch | `0x002BF48C` | Crouch entry can select **13** when its transition-source check agrees with the current weapon-context base sequence. In the shared state handler, directional crouch movement switches to **15** when native scalar `+0x1A4 < 0`, otherwise **14**, once the movement-activation predicate has fired. |
 | 6 fall | `0x002BF718` | Native scalar `+0x31C > 1.75` selects **11**; all other values select **10**. |
-| 7 jump | `0x002BF990` | The shared jump-family initializer does not directly call `0x002C7928`. The ordinary jump-launch sequence is therefore **unresolved** rather than guessed from R&C1. |
+| 7 jump | `0x002BF990` | Ordinary Cross jump selects **7**. The direct transition path loads sequence 7 at `0x002C696C`, calls the player sequence setter at `0x002C6974`, then writes state 7 at `0x002C697C..0x002C6980`. A deterministic Oozla input-recording/PINE witness independently observes state **0 / sequence 0 -> state 7 / sequence 7** on the Cross transition. |
 | 8 glide | `0x002BF91C` | Selects **19**. |
 | 19 combo attack | `0x002C0A48` | Shared combat initializer derives a modulo-three combo stage and selects **23 + stage**, i.e. **23/24/25**. |
 | 20 jump attack | `0x002C0A48` | The state-20 branch selects **43**. This corrects an earlier scratch interpretation that had swapped the state-20/state-21 clip roles. |
@@ -72,6 +72,22 @@ sequence-id swap. Ordinary targeting movement therefore preserves the
 weapon-context sequence selected on entry; assigning fixed left/right strafe
 sequence ids would be an invention.
 
+## Deterministic ordinary-jump witness
+
+The retained local GC authority state was replayed with PCSX2 2.6.3 input
+recording and PINE, using only payload-free results in Git. The savestate SHA-256
+is `7d787fd8fe82613fe7e0c9fa39d003e9bc5cc0e2005014a477b7c3e83b86abaf`.
+The generated 92-frame movie SHA-256 is
+`53bf52c4e83a8c0dbca9296ae139a1555026145758def81cb4efb79c97ec7659`:
+4 neutral frames, 8 frames holding Cross, then 80 neutral-release frames.
+
+The initial witness is player **state 0 / sequence 0**. At movie frame **5**,
+while Cross is held, retail changes directly to **state 7 / sequence 7** with
+previous-sequence byte `0xFF`. By frame **10** the transition settles to
+previous/current sequence **7/7**, and the observed trace contains only states
+`0,7` and sequences `0,7`. This independently matches the executable handoff
+at `0x002C696C..0x002C6980`.
+
 ## Dedicated sequence witnesses
 
 The Oozla Ratchet table contains the mapped slots with these retail frame counts:
@@ -82,6 +98,7 @@ The Oozla Ratchet table contains the mapped slots with these retail frame counts
 | 3 | 33 | ordinary state-2 walk |
 | 5 | 13 | skid conditional variant |
 | 6 | 13 | skid default variant |
+| 7 | 29 | ordinary Cross jump |
 | 10 | 1 | fall low branch |
 | 11 | 6 | fall high branch |
 | 13 | 15 | crouch |
@@ -105,7 +122,7 @@ as selector predicates or playback timing rules.
 The recovered persistence and unresolved boundaries stay explicit:
 
 - `WalkSequenceId == SustainedWalkSequenceId == 3`
-- `JumpLaunchSequenceId == null`
+- `JumpSequenceId == JumpLaunchSequenceId == 7`
 - `TargetingPreservesContextSequence == true`
 - `TargetingDirectionalSequenceId == null`
 - `GunWaitingPreservesContextSequence == true`
@@ -127,18 +144,17 @@ dotnet test tests/OBP.Tests/OBP.Tests.csproj --filter GcRatchetSequenceSelection
 The retail-gated test reads `LEVEL1.WAD`, verifies the state-init and
 state-update jump tables, checks Oozla's 256-slot Ratchet table has 102 populated
 entries, verifies the mapped slots' frame counts, freezes all 15 aligned
-`Moby+0x43` sequence-write sites, and proves the ordinary walk handler plus the
-state-29 targeting path do not call any recovered player/generic sequence setter.
-No retail bytes or asset payloads are committed. The payload-free normalized
-evidence is also retained in
+`Moby+0x43` sequence-write sites, proves the ordinary walk/targeting persistence
+boundaries, and pins the sequence-7/state-7 instruction handoff at
+`0x002C696C..0x002C6980`. No retail bytes, savestate bytes, movie bytes or asset
+payloads are committed. The payload-free normalized evidence is retained in
 `research/generated/gc-ratchet-animation-states.json`.
 
 ## Remaining boundary
 
-The remaining selector question in the ordinary categories is the exact
-**jump-launch presentation handoff**. State 7's initializer, state-change common
-epilogue, and ordinary state-7 update handler contain no player sequence setter;
-the only nested `+0x43` copy path in that handler is guarded by other jump-family
-states, not state 7. A live witness or deeper procedural-player-animation trace
-is needed before assigning a base sequence. GC player model/avatar admission
-remains the separate player-avatar recovery task.
+The ordinary selector categories requested here are now source-backed: idle/base
+context, walking, skid/stop, crouch directional movement, jump/fall/glide,
+ordinary attacks, hit reaction, targeting movement and death. GC-native player
+model/avatar admission and production playback remain the separate avatar
+recovery/integration boundary; special traversal and unenumerated weapon-specific
+presentation are not promoted by this selector contract.

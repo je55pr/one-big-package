@@ -235,10 +235,11 @@ frames against the legacy TypeScript reference (180 classes / 1929 joints / 6476
    state is pinned for the normal GC/UYA family, but per-frame `thing1` / `thing2`
    channels remain unresolved. GC player sequence selection now has a bounded
    retail-backed contract for ordinary idle/walk/skid/crouch/fall/glide,
-   combat/get-hit/death and the targeting-state boundary. State-2 walk is now
-   pinned to sequence 3 for the state's lifetime, while targeting preserves its
-   weapon-context sequence rather than selecting fixed strafe clips. Ordinary
-   jump launch remains unresolved. See
+   combat/get-hit/death and the targeting-state boundary. State-2 walk is
+   pinned to sequence 3 for the state's lifetime, targeting preserves its
+   weapon-context sequence rather than selecting fixed strafe clips, and a
+   deterministic retail witness plus executable handoff pins ordinary Cross
+   jump to sequence 7/state 7. See
    [`GC_PLAYER_ANIMATION_STATES.md`](GC_PLAYER_ANIMATION_STATES.md).
    Special format variants such as GC `LEVEL21` oClass 2131 remain fail-closed.
 3. Low-LOD and metal packets, bangles, the corncob, per-instance pvars.

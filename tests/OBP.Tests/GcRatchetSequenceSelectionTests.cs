@@ -94,8 +94,11 @@ public sealed class GcRatchetSequenceSelectionTests
         Assert.Equal(
             GcRatchetSequenceSelection.WalkSequenceId,
             GcRatchetSequenceSelection.SustainedWalkSequenceId);
+        Assert.Equal(7, GcRatchetSequenceSelection.JumpSequenceId);
+        Assert.Equal(
+            GcRatchetSequenceSelection.JumpSequenceId,
+            GcRatchetSequenceSelection.JumpLaunchSequenceId);
         Assert.Equal(19, GcRatchetSequenceSelection.GlideSequenceId);
-        Assert.Null(GcRatchetSequenceSelection.JumpLaunchSequenceId);
         Assert.True(GcRatchetSequenceSelection.TargetingPreservesContextSequence);
         Assert.Null(GcRatchetSequenceSelection.TargetingDirectionalSequenceId);
         Assert.True(GcRatchetSequenceSelection.GunWaitingPreservesContextSequence);
@@ -170,6 +173,7 @@ public sealed class GcRatchetSequenceSelectionTests
             [3] = 33,
             [5] = 13,
             [6] = 13,
+            [7] = 29,
             [10] = 1,
             [11] = 6,
             [13] = 15,
@@ -234,6 +238,11 @@ public sealed class GcRatchetSequenceSelectionTests
             overlay.ReadVirtual(address, sizeof(uint)));
         Assert.Equal(0x24020004u, VirtualWord(0x002BA394u));
         Assert.Equal(0x54620062u, VirtualWord(0x002BA398u));
+
+        Assert.Equal(0x24040007u, VirtualWord(0x002C696Cu));
+        Assert.Equal(0x0C0B1E4Au, VirtualWord(0x002C6974u));
+        Assert.Equal(0x24020007u, VirtualWord(0x002C697Cu));
+        Assert.Equal(0xAE022294u, VirtualWord(0x002C6980u));
 
         var sequenceWriters = new List<uint>();
         foreach (var section in overlay.Sections)

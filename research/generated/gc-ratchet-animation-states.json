@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "authority": {
     "game": "Ratchet & Clank: Going Commando",
     "region": "NTSC-U",
@@ -33,6 +33,21 @@
     ],
     "automaticClipEndSequenceReassignment": false,
     "playerRestoreHelperCallers": ["0x002A6EE4", "0x002B9A10"]
+  },
+  "ordinaryJumpLiveWitness": {
+    "transport": "PCSX2 2.6.3 input recording + PINE",
+    "savestateSha256": "7d787fd8fe82613fe7e0c9fa39d003e9bc5cc0e2005014a477b7c3e83b86abaf",
+    "movieSha256": "53bf52c4e83a8c0dbca9296ae139a1555026145758def81cb4efb79c97ec7659",
+    "plan": [
+      {"label": "neutral", "frames": 4},
+      {"label": "cross", "frames": 8},
+      {"label": "release", "frames": 80}
+    ],
+    "initial": {"state": 0, "sequence": 0, "previousSequence": 0},
+    "transition": {"movieFrame": 5, "state": 7, "sequence": 7, "previousSequence": 255},
+    "settled": {"movieFrame": 10, "state": 7, "sequence": 7, "previousSequence": 7},
+    "observedStates": [0, 7],
+    "observedSequences": [0, 7]
   },
   "states": [
     {
@@ -96,9 +111,11 @@
       "name": "JUMP",
       "init": "0x002BF990",
       "selection": {
-        "kind": "unresolved",
-        "sequence": null,
-        "reason": "shared jump-family initializer does not directly call recovered sequence setter"
+        "kind": "fixed-live-and-static",
+        "sequence": 7,
+        "sequenceLoadVirtualAddress": "0x002C696C",
+        "sequenceSetterCallVirtualAddress": "0x002C6974",
+        "stateStoreVirtualAddress": "0x002C6980"
       }
     },
     {
@@ -185,6 +202,7 @@
     "3": 33,
     "5": 13,
     "6": 13,
+    "7": 29,
     "10": 1,
     "11": 6,
     "13": 15,
@@ -205,7 +223,6 @@
     "role": "names only; sequence ids and selector predicates are retail-derived"
   },
   "unresolved": [
-    "ordinary jump-launch presentation handoff",
     "GC-native player avatar/model admission and production binding"
   ]
 }

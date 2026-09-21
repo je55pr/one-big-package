@@ -109,11 +109,15 @@ public static class GcRatchetSequenceSelection
         };
 
     /// <summary>
-    /// The ordinary jump-family initializer shared by states 7 and several jump
-    /// variants does not call the recovered sequence setter directly. The exact
-    /// jump-launch sequence remains unresolved.
+    /// Ordinary Cross jump selects sequence 7 as player state 7 is entered.
+    /// Retail code at 0x002C696C loads sequence 7, calls the player sequence
+    /// setter at 0x002C6974, loads state value 7 at 0x002C697C, then stores
+    /// it to the player-state field at 0x002C6980.
+    /// A deterministic Oozla input-recording witness independently observes
+    /// state 0/sequence 0 -> state 7/sequence 7 on the Cross transition.
     /// </summary>
-    public static int? JumpLaunchSequenceId => null;
+    public const int JumpSequenceId = 7;
+    public const int JumpLaunchSequenceId = JumpSequenceId;
 
     /// <summary>
     /// State 29 (targeting) re-selects the current weapon-context base sequence
