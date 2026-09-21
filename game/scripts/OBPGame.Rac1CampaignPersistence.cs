@@ -1,4 +1,6 @@
 using Godot;
+using OBP.RAC1.Gameplay;
+using OBP.RAC1.Presentation;
 using OBP.RAC1.Progression;
 
 namespace OneBigPackage;
@@ -28,13 +30,14 @@ public partial class OBPGame
 
         _rac1CampaignSession = new Rac1CampaignRuntimeSession(
             restored.Campaign,
-            _rac1CampaignSession.Weapons);
+            restored.Weapons);
         _rac1CampaignRestoreKind = restored.Kind;
         _rac1CampaignPersistenceInitialized = true;
 
         GD.Print(
             $"[rac1-campaign] host state {restored.Kind}: current={restored.Campaign.CurrentLevel}, " +
-            $"admitted={restored.Campaign.AdmittedDestinationCount}");
+            $"admitted={restored.Campaign.AdmittedDestinationCount}, " +
+            $"item10-owned={restored.Weapons.OwnsFirstRanged}, ammo={restored.Weapons.FirstRangedAmmo}");
     }
 
     /// <summary>
@@ -54,6 +57,50 @@ public partial class OBPGame
         return result;
     }
 
+    /// <summary>
+    /// Apply an already-identified native item-acquisition event. This is the
+    /// recovered common acquisition prefix only; vendor price/payment and the
+    /// unresolved quick-select insertion predicate stay outside this boundary.
+    /// </summary>
+    public Rac1ItemAcquisitionResult ApplyRac1ItemAcquisition(int nativeItemId)
+    {
+        EnsureSourceLibraryInitialized();
+        EnsureRac1CampaignPersistenceInitialized();
+
+        Rac1ItemAcquisitionResult result =
+            _rac1CampaignSession.Weapons.AcquireNativeItem(nativeItemId);
+        PersistRac1CampaignState($"item acquisition {nativeItemId}");
+
+        if (nativeItemId == (int)Rac1WeaponId.FirstRanged && result.IsFirstAcquisition)
+        {
+            RefreshRac1HudState(Rac1HudProjection.BombGloveAcquiredFeedback(result.AmmoGranted));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Apply an already-recovered native ammo amount through the generic retail
+    /// clamp helper. Selection of which pickup refills which item, and by how
+    /// much, remains a separate class-511 recovery problem.
+    /// </summary>
+    public Rac1AmmoGrantResult ApplyRac1AmmoGrant(int nativeItemId, int amount)
+    {
+        EnsureSourceLibraryInitialized();
+        EnsureRac1CampaignPersistenceInitialized();
+
+        Rac1AmmoGrantResult result =
+            _rac1CampaignSession.Weapons.GrantAmmoClamped(nativeItemId, amount);
+        if (result.Changed)
+        {
+            PersistRac1CampaignState($"ammo grant item {nativeItemId}");
+            if (nativeItemId == (int)Rac1WeaponId.FirstRanged)
+                RefreshRac1HudState(Rac1HudProjection.BombGloveAmmoPickupFeedback(result.AmmoGranted));
+        }
+
+        return result;
+    }
+
     private void PersistRac1CampaignState(string reason)
     {
         if (!_rac1CampaignPersistenceInitialized)
@@ -61,9 +108,12 @@ public partial class OBPGame
 
         Rac1CampaignSaveFile.Save(
             _rac1CampaignSavePath,
-            _rac1CampaignSession.Campaign);
+            _rac1CampaignSession.Campaign,
+            _rac1CampaignSession.Weapons);
         GD.Print(
             $"[rac1-campaign] persisted {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +
-            $"admitted={_rac1CampaignSession.Campaign.AdmittedDestinationCount}");
+            $"admitted={_rac1CampaignSession.Campaign.AdmittedDestinationCount}, " +
+            $"item10-owned={_rac1CampaignSession.Weapons.OwnsFirstRanged}, " +
+            $"ammo={_rac1CampaignSession.Weapons.FirstRangedAmmo}");
     }
 }

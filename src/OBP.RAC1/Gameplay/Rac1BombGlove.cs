@@ -131,15 +131,13 @@ public sealed class Rac1BombGloveSession
     }
 
     /// <summary>
-    /// Bind Bomb Glove fire accounting to the RAC1 inventory that owns item 10.
-    /// This keeps one authoritative ammo counter when the live host composes the
-    /// recovered selection and projectile slices.
+    /// Bind Bomb Glove fire accounting to the RAC1 inventory that owns item 10 state.
+    /// The inventory may begin unowned so a later recovered acquisition event can
+    /// activate the same level-lifetime weapon session without duplicating ammo.
     /// </summary>
     public Rac1BombGloveSession(Rac1WeaponInventory inventory)
     {
         ArgumentNullException.ThrowIfNull(inventory);
-        if (!inventory.Owns(Rac1WeaponId.FirstRanged))
-            throw new ArgumentException("Bomb Glove item 10 must be owned by the supplied RAC1 inventory.", nameof(inventory));
         if (inventory.FirstRangedAmmo > Rac1BombGlove.MaxAmmo)
             throw new ArgumentOutOfRangeException(nameof(inventory),
                 $"Bomb Glove ammo cannot exceed recovered capacity {Rac1BombGlove.MaxAmmo}.");

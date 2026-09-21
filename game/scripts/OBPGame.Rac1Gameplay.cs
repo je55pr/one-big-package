@@ -37,7 +37,7 @@ public partial class OBPGame
     private Rac1RatchetNanotechSession _rac1Nanotech = new();
     private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
         new Rac1CampaignState(),
-        new Rac1WeaponInventory(ownsFirstRanged: true, firstRangedAmmo: 6));
+        Rac1WeaponInventory.CreateOpeningVeldinWitness());
     private Rac1WeaponInventory _rac1Weapons => _rac1CampaignSession.Weapons;
     private Rac1BombGloveSession? _rac1BombGlove;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
@@ -486,6 +486,7 @@ public partial class OBPGame
             if (probe.Shot is { } shot)
             {
                 SpawnRac1BombProjectile(shot);
+                PersistRac1CampaignState("Bomb Glove ammo consumption");
                 _rac1CombatStatus =
                     $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}; sequence {shot.Admission.NativePlayerSequenceId}";
                 RefreshRac1HudState();

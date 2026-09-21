@@ -14,6 +14,7 @@ public static class Rac1HudProjection
     public const string BoltsResourceKey = "bolts";
     public const string WrenchPresentationKey = "rac1.weapon.wrench";
     public const string BombGlovePresentationKey = "rac1.weapon.bomb-glove";
+    public const string BombGloveAmmoResourceKey = "rac1.weapon.bomb-glove.ammo";
     public const string WrenchNameKey = "weapon.wrench";
     public const string BombGloveNameKey = "weapon.bomb-glove";
 
@@ -84,5 +85,29 @@ public static class Rac1HudProjection
             Kind: HudFeedbackKind.Pickup,
             ResourceKey: BoltsResourceKey,
             Delta: collectedValue);
+    }
+
+    public static HudFeedbackDraft BombGloveAcquiredFeedback(int ammoGranted)
+    {
+        if (ammoGranted < 0)
+            throw new ArgumentOutOfRangeException(nameof(ammoGranted));
+
+        return new HudFeedbackDraft(
+            Kind: HudFeedbackKind.Pickup,
+            ResourceKey: ammoGranted > 0 ? BombGloveAmmoResourceKey : null,
+            Delta: ammoGranted > 0 ? ammoGranted : null,
+            SubjectKey: BombGloveNameKey);
+    }
+
+    public static HudFeedbackDraft BombGloveAmmoPickupFeedback(int ammoGranted)
+    {
+        if (ammoGranted <= 0)
+            throw new ArgumentOutOfRangeException(nameof(ammoGranted));
+
+        return new HudFeedbackDraft(
+            Kind: HudFeedbackKind.Pickup,
+            ResourceKey: BombGloveAmmoResourceKey,
+            Delta: ammoGranted,
+            SubjectKey: BombGloveNameKey);
     }
 }

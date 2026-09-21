@@ -1,11 +1,12 @@
 using System.Text.Json;
+using OBP.RAC1.Gameplay;
 
 namespace OBP.RAC1.Progression;
 
 /// <summary>
-/// OBP host-file persistence for the recovered R&C1 campaign payload. JSON is an
-/// OBP container only; native campaign meaning remains owned by
-/// <see cref="Rac1CampaignSavePolicy"/> and <see cref="Rac1CampaignState"/>.
+/// OBP host-file persistence for recovered R&C1 campaign and weapon inventory
+/// payloads. JSON is an OBP container only; native meaning remains owned by the
+/// source-specific campaign and inventory models.
 /// </summary>
 public static class Rac1CampaignSaveFile
 {
@@ -31,11 +32,15 @@ public static class Rac1CampaignSaveFile
         return Rac1CampaignSavePolicy.RestoreOrDefault(envelope);
     }
 
-    public static void Save(string path, Rac1CampaignState campaign)
+    public static void Save(
+        string path,
+        Rac1CampaignState campaign,
+        Rac1WeaponInventory weapons)
     {
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Campaign save path is required.", nameof(path));
         ArgumentNullException.ThrowIfNull(campaign);
+        ArgumentNullException.ThrowIfNull(weapons);
 
         string fullPath = Path.GetFullPath(path);
         string? directory = Path.GetDirectoryName(fullPath);
@@ -45,7 +50,7 @@ public static class Rac1CampaignSaveFile
         string temporaryPath = fullPath + ".tmp";
         try
         {
-            Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(campaign);
+            Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(campaign, weapons);
             using (FileStream stream = new(
                 temporaryPath,
                 FileMode.Create,

@@ -57,6 +57,15 @@ public readonly record struct Rac1ItemAcquisitionResult(
     public int AmmoGranted => AmmoAfter - AmmoBefore;
 }
 
+public readonly record struct Rac1AmmoGrantResult(
+    int NativeItemId,
+    int AmmoBefore,
+    int AmmoAfter)
+{
+    public int AmmoGranted => AmmoAfter - AmmoBefore;
+    public bool Changed => AmmoAfter != AmmoBefore;
+}
+
 public static class Rac1ItemAmmoDescriptors
 {
     private static readonly int[] FirstAcquisitionAmmoGate =
@@ -179,6 +188,12 @@ public sealed class Rac1WeaponInventory
     public bool OwnsFirstRanged => OwnsNativeItem((int)Rac1WeaponId.FirstRanged);
     public int FirstRangedAmmo => GetAmmo((int)Rac1WeaponId.FirstRanged);
 
+    public static Rac1WeaponInventory CreateOpeningVeldinWitness() =>
+        new(
+            ownsFirstRanged: true,
+            equipped: Rac1WeaponId.Wrench,
+            firstRangedAmmo: 6);
+
     /// <summary>
     /// Compatibility view for the currently implemented weapon-use slice.
     /// Callers that need arbitrary retail ids should use CurrentItemId.
@@ -275,19 +290,23 @@ public sealed class Rac1WeaponInventory
         return true;
     }
 
-    public int AddAmmoClamped(int nativeItemId, int amount)
+    public Rac1AmmoGrantResult GrantAmmoClamped(int nativeItemId, int amount)
     {
         ValidateItemId(nativeItemId);
         if (amount < 0)
             throw new ArgumentOutOfRangeException(nameof(amount));
 
+        int ammoBefore = _ammo[nativeItemId];
         int maxAmmo = Rac1ItemAmmoDescriptors.Get(nativeItemId).MaxAmmo;
-        long increased = (long)_ammo[nativeItemId] + amount;
+        long increased = (long)ammoBefore + amount;
         _ammo[nativeItemId] = maxAmmo == 0
             ? checked((int)increased)
             : (int)Math.Min(increased, maxAmmo);
-        return _ammo[nativeItemId];
+        return new Rac1AmmoGrantResult(nativeItemId, ammoBefore, _ammo[nativeItemId]);
     }
+
+    public int AddAmmoClamped(int nativeItemId, int amount) =>
+        GrantAmmoClamped(nativeItemId, amount).AmmoAfter;
 
     public Rac1WeaponPersistentState CapturePersistentState() =>
         new(

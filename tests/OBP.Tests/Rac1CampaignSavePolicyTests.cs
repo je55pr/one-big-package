@@ -1,3 +1,4 @@
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Progression;
 
 namespace OBP.Tests;
@@ -20,6 +21,9 @@ public sealed class Rac1CampaignSavePolicyTests
             restored.Campaign.GetLevelState(0));
         Assert.All(restored.Campaign.VisitedPlanets, value => Assert.Equal(0, value));
         Assert.All(restored.Campaign.GalacticMap, value => Assert.Equal(0, value));
+        Assert.True(restored.Weapons.OwnsFirstRanged);
+        Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
     }
 
     [Fact]
@@ -39,9 +43,12 @@ public sealed class Rac1CampaignSavePolicyTests
 
         Assert.Equal(Rac1CampaignSavePolicy.CurrentSchemaVersion, migrated.SchemaVersion);
         Assert.Same(legacy, migrated.Campaign);
+        Assert.NotNull(migrated.Weapons);
         Assert.Equal(
             Rac1CampaignRestoreKind.MigratedLegacyUnversioned,
             restored.Kind);
+        Assert.True(restored.Weapons.OwnsFirstRanged);
+        Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
         Assert.Equal(campaign.CurrentLevel, restored.Campaign.CurrentLevel);
         Assert.Equal(campaign.VisitedPlanets, restored.Campaign.VisitedPlanets);
         Assert.Equal(campaign.GalacticMap, restored.Campaign.GalacticMap);
@@ -59,8 +66,12 @@ public sealed class Rac1CampaignSavePolicyTests
             Rac1DestinationDiscoveryResult.Discovered,
             campaign.ApplyProgressionEvent(0x25));
         Assert.True(campaign.BeginTravel(3));
+        var weapons = Rac1WeaponInventory.CreateOpeningVeldinWitness();
+        Assert.True(weapons.TryEquip(Rac1WeaponId.FirstRanged));
+        Assert.True(weapons.TryUseEquipped());
+        Assert.True(weapons.TryUseEquipped());
 
-        Rac1CampaignSaveEnvelope save = Rac1CampaignSavePolicy.Capture(campaign);
+        Rac1CampaignSaveEnvelope save = Rac1CampaignSavePolicy.Capture(campaign, weapons);
         Rac1CampaignRestoreResult restored =
             Rac1CampaignSavePolicy.RestoreOrDefault(save);
         var travel = new Rac1PlanetTravelSession(restored.Campaign);
@@ -68,6 +79,8 @@ public sealed class Rac1CampaignSavePolicyTests
         Assert.Equal(
             Rac1CampaignRestoreKind.RestoredCurrentSchema,
             restored.Kind);
+        Assert.Equal(4, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
         Assert.Equal(new[] { 3, 1 }, restored.Campaign.GalacticMap.Take(2));
         Assert.True(travel.TrySelectDestination(1));
         Assert.Equal(
@@ -94,6 +107,25 @@ public sealed class Rac1CampaignSavePolicyTests
         Assert.Equal(2, restored.Campaign.AdmittedDestinationCount);
         Assert.Equal(1, restored.Campaign.VisitedPlanets[1]);
         Assert.Equal(1, restored.Campaign.VisitedPlanets[3]);
+    }
+
+    [Fact]
+    public void CampaignOnlySchemaOneMigratesWithExplicitOpeningInventoryFallback()
+    {
+        var campaign = new Rac1CampaignState();
+        Assert.True(campaign.AdmitDestination(2));
+        var save = new Rac1CampaignSaveEnvelope(
+            SchemaVersion: 1,
+            Campaign: campaign.CapturePersistentState());
+
+        Rac1CampaignRestoreResult restored =
+            Rac1CampaignSavePolicy.RestoreOrDefault(save);
+
+        Assert.Equal(Rac1CampaignRestoreKind.MigratedCampaignOnlySchema1, restored.Kind);
+        Assert.True(restored.Campaign.CanSelectDestination(2));
+        Assert.True(restored.Weapons.OwnsFirstRanged);
+        Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
     }
 
     [Fact]

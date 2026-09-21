@@ -101,6 +101,17 @@ public sealed class HudStateAdapterTests
     }
 
     [Fact]
+    public void BombGlovePickupFeedbackReportsEffectiveAmmoDelta()
+    {
+        HudFeedbackDraft feedback = Rac1HudProjection.BombGloveAmmoPickupFeedback(2);
+
+        Assert.Equal(HudFeedbackKind.Pickup, feedback.Kind);
+        Assert.Equal(Rac1HudProjection.BombGloveAmmoResourceKey, feedback.ResourceKey);
+        Assert.Equal(2, feedback.Delta);
+        Assert.Equal(Rac1HudProjection.BombGloveNameKey, feedback.SubjectKey);
+    }
+
+    [Fact]
     public void BoltPickupFeedbackDoesNotInventAPlayerWallet()
     {
         var publisher = new HudStateAdapter();

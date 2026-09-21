@@ -213,6 +213,30 @@ public sealed class Rac1WeaponInventoryTests
     }
 
     [Fact]
+    public void AmmoGrantReportsEffectiveDeltaAfterRetailCapacityClamp()
+    {
+        var inventory = new Rac1WeaponInventory(
+            ownsFirstRanged: true,
+            firstRangedAmmo: 38);
+
+        Rac1AmmoGrantResult first = inventory.GrantAmmoClamped(
+            (int)Rac1WeaponId.FirstRanged,
+            amount: 10);
+        Rac1AmmoGrantResult capped = inventory.GrantAmmoClamped(
+            (int)Rac1WeaponId.FirstRanged,
+            amount: 10);
+
+        Assert.Equal(38, first.AmmoBefore);
+        Assert.Equal(40, first.AmmoAfter);
+        Assert.Equal(2, first.AmmoGranted);
+        Assert.True(first.Changed);
+        Assert.Equal(40, capped.AmmoBefore);
+        Assert.Equal(40, capped.AmmoAfter);
+        Assert.Equal(0, capped.AmmoGranted);
+        Assert.False(capped.Changed);
+    }
+
+    [Fact]
     public void WrenchUseDoesNotConsumeRangedAmmo()
     {
         var inventory = new Rac1WeaponInventory(true, firstRangedAmmo: 6);

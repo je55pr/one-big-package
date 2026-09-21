@@ -111,6 +111,30 @@ public sealed class Rac1BombGloveTests
     }
 
     [Fact]
+    public void InventoryBackedSessionCanActivateAfterFirstAcquisition()
+    {
+        var inventory = new Rac1WeaponInventory(
+            ownsFirstRanged: false,
+            equipped: Rac1WeaponId.Wrench,
+            firstRangedAmmo: 0);
+        var session = new Rac1BombGloveSession(inventory);
+
+        Assert.Null(session.Probe().PrearmedProjectile);
+        Rac1ItemAcquisitionResult acquired =
+            inventory.AcquireNativeItem((int)Rac1WeaponId.FirstRanged);
+        Assert.Equal(10, acquired.AmmoGranted);
+
+        var activated = session.Step(fireRequested: false);
+        Assert.Equal(10, activated.Ammo);
+        Assert.NotNull(activated.PrearmedProjectile);
+        Assert.True(inventory.TryEquip(Rac1WeaponId.FirstRanged));
+
+        var fired = session.Step(fireRequested: true);
+        Assert.NotNull(fired.Shot);
+        Assert.Equal(9, inventory.FirstRangedAmmo);
+    }
+
+    [Fact]
     public void ZeroAmmoCannotPrearmOrFire()
     {
         var session = new Rac1BombGloveSession(initialAmmo: 0);

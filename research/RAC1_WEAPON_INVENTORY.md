@@ -210,6 +210,28 @@ Godot keyboard 1/2 selection remains a host-only convenience. Retail
 quick-select persistence and current-item state are now represented without
 claiming that those keys are native input semantics.
 
+The live host now persists the six recovered weapon/inventory save blocks beside
+campaign state in host schema 2. Missing host state and older campaign-only schema
+1 files use the retained opening Veldin witness explicitly: item 10 owned/unlocked,
+six rounds, quick-select/equipped-gadget slot 0 = 10, and transient current item =
+wrench. After that migration boundary, acquisition flags and generic ammo grants
+persist immediately, and each accepted Bomb Glove shot persists the post-consumption
+ammo table, so player-visible ammo no longer resets on a later host reload.
+
+Two host entry points deliberately consume only already-identified native facts:
+`ApplyRac1ItemAcquisition(nativeItemId)` runs the recovered common acquisition
+prefix, while `ApplyRac1AmmoGrant(nativeItemId, amount)` runs the recovered generic
+clamped add helper and reports the effective post-cap delta to HUD presentation.
+Neither entry point claims where a shop, script, crate or loose pickup obtains its
+item id or amount.
+
+Class 511 remains only an authored ammo-crate family at this boundary. Its break
+requirements, refill target policy, refill amount, emitted resource/pickup identity
+and collection semantics are not recovered here, so production does not connect
+class 511 to the generic ammo-grant entry point. Vendor prices/payment and the
+acquisition routine's conditional quick-select insertion likewise remain outside
+the promoted contract.
+
 ## Verification
 
 Rac1WeaponInventoryTests freezes the source-specific layout, all recovered ammo
