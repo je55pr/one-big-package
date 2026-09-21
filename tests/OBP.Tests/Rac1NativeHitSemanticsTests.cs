@@ -1,4 +1,5 @@
 using OBP.RAC1.Gameplay;
+using OBP.Runtime;
 
 namespace OBP.Tests;
 
@@ -35,6 +36,31 @@ public sealed class Rac1NativeHitSemanticsTests
     {
         Assert.False(Rac1NativeHitSemantics.IsDistinctContactCandidate(isSourceMoby: true));
         Assert.True(Rac1NativeHitSemantics.IsDistinctContactCandidate(isSourceMoby: false));
+    }
+
+    [Fact]
+    public void HostContactFactsCarryTargetStateWithoutOwningCollisionGeometry()
+    {
+        var target = new RuntimeDynamicObject(
+            "rac1",
+            Rac1Class749Hostile.NativeClassId,
+            149,
+            null,
+            "moby:749",
+            "moby:149",
+            new RuntimeObjectTransform(new double[16]),
+            Array.Empty<RuntimeObjectMesh>());
+
+        var sourceSelf = new Rac1MobyContactFacts(
+            target,
+            Rac1Class749Hostile.TargetSearchNativeState,
+            IsSourceMoby: true);
+        var distinct = sourceSelf with { IsSourceMoby = false };
+
+        Assert.Same(target, sourceSelf.Target);
+        Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, sourceSelf.TargetNativeState);
+        Assert.False(Rac1NativeHitSemantics.IsDistinctContactCandidate(sourceSelf));
+        Assert.True(Rac1NativeHitSemantics.IsDistinctContactCandidate(distinct));
     }
 
     [Fact]

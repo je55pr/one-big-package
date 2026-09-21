@@ -23,19 +23,19 @@ public sealed class Rac1WeaponInventoryTests
     [Fact]
     public void RetailDescriptorAmmoFieldsCoverAllThirtySevenSlots()
     {
-        var expected = new Dictionary<int, (int Initial, int Max)>
+        var expected = new Dictionary<int, (int Gate, int Initial, int Max)>
         {
-            [10] = (10, 40),
-            [11] = (10, 20),
-            [13] = (10, 20),
-            [15] = (100, 200),
-            [16] = (120, 240),
-            [17] = (25, 50),
-            [19] = (120, 240),
-            [20] = (3, 10),
-            [23] = (25, 50),
-            [24] = (3, 10),
-            [25] = (10, 20),
+            [10] = (5, 10, 40),
+            [11] = (50, 10, 20),
+            [13] = (100, 10, 20),
+            [15] = (1, 100, 200),
+            [16] = (1, 120, 240),
+            [17] = (5, 25, 50),
+            [19] = (1, 120, 240),
+            [20] = (40, 3, 10),
+            [23] = (20, 25, 50),
+            [24] = (40, 3, 10),
+            [25] = (10, 10, 20),
         };
 
         for (int itemId = 0; itemId < Rac1NativeInventoryLayout.ItemCount; itemId++)
@@ -44,12 +44,16 @@ public sealed class Rac1WeaponInventoryTests
             if (expected.TryGetValue(itemId, out var values))
             {
                 Assert.True(descriptor.UsesAmmo);
+                Assert.True(descriptor.AppliesFirstAcquisitionAmmoFloor);
+                Assert.Equal(values.Gate, descriptor.FirstAcquisitionAmmoGate);
                 Assert.Equal(values.Initial, descriptor.FirstAcquisitionAmmoFloor);
                 Assert.Equal(values.Max, descriptor.MaxAmmo);
             }
             else
             {
                 Assert.False(descriptor.UsesAmmo);
+                Assert.False(descriptor.AppliesFirstAcquisitionAmmoFloor);
+                Assert.Equal(0, descriptor.FirstAcquisitionAmmoGate);
                 Assert.Equal(0, descriptor.FirstAcquisitionAmmoFloor);
                 Assert.Equal(0, descriptor.MaxAmmo);
             }
@@ -153,6 +157,47 @@ public sealed class Rac1WeaponInventoryTests
         Assert.Equal(0, inventory.FirstRangedAmmo);
         Assert.False(inventory.TryUseEquipped());
         Assert.Equal(0, inventory.FirstRangedAmmo);
+    }
+
+    [Fact]
+    public void FirstAcquisitionSetsPersistentFlagsAndDescriptorAmmoFloor()
+    {
+        var inventory = new Rac1WeaponInventory(
+            CreatePersistent(),
+            currentItemId: (int)Rac1WeaponId.Wrench);
+
+        var acquired = inventory.AcquireNativeItem((int)Rac1WeaponId.FirstRanged);
+
+        Assert.True(acquired.IsFirstAcquisition);
+        Assert.False(acquired.WasPersistentlyOwned);
+        Assert.Equal(0, acquired.AmmoBefore);
+        Assert.Equal(10, acquired.AmmoAfter);
+        Assert.Equal(10, acquired.AmmoGranted);
+        Assert.True(inventory.OwnsNativeItem((int)Rac1WeaponId.FirstRanged));
+        Assert.True(inventory.HasUnlockFlag((int)Rac1WeaponId.FirstRanged));
+        Assert.Equal(10, inventory.FirstRangedAmmo);
+        Assert.All(inventory.QuickSelect, itemId => Assert.Equal(0, itemId));
+        Assert.Equal((int)Rac1WeaponId.Wrench, inventory.CurrentItemId);
+    }
+
+    [Fact]
+    public void ReacquisitionSetsUnlockFlagWithoutReapplyingFirstAcquisitionFloor()
+    {
+        var inventory = new Rac1WeaponInventory(
+            CreatePersistent(
+                ammo: new Dictionary<int, int> { [10] = 2 },
+                owned: [10]),
+            currentItemId: (int)Rac1WeaponId.Wrench);
+
+        var acquired = inventory.AcquireNativeItem(10);
+
+        Assert.False(acquired.IsFirstAcquisition);
+        Assert.True(acquired.WasPersistentlyOwned);
+        Assert.Equal(2, acquired.AmmoBefore);
+        Assert.Equal(2, acquired.AmmoAfter);
+        Assert.Equal(0, acquired.AmmoGranted);
+        Assert.True(inventory.HasUnlockFlag(10));
+        Assert.Equal(2, inventory.GetAmmo(10));
     }
 
     [Fact]

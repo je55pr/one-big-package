@@ -34,6 +34,19 @@ public sealed record Rac1BombGloveDamageResult(
         Rac1NativeDamageHandoff.ContactVolume(DamageEnvelope);
 }
 
+/// <summary>
+/// Engine-neutral result of one host-supplied contact-volume query. Candidate
+/// geometry remains host-owned; native target admission and contact-driven
+/// projectile completion remain R&C1-owned.
+/// </summary>
+public sealed record Rac1BombGloveContactResolution(
+    long ProjectileId,
+    IReadOnlyList<Rac1BombGloveDamageResult> DamageResults,
+    bool ProjectileCompleted)
+{
+    public int AdmittedContactCount => DamageResults.Count;
+}
+
 public sealed record Rac1BombGloveProbe(
     int Ammo,
     int FireCooldownTicksRemaining,
@@ -83,10 +96,16 @@ public static class Rac1BombGlove
         WeaponPvarStagedProjectileOffset,
         UsesDedicatedWeaponLaunchFrame: true);
 
-    public static bool IsGoal1ContactTarget(RuntimeDynamicObject target, int targetNativeState) =>
-        target.SourceGame == "rac1" &&
-        target.NativeClassId == Rac1Class749Hostile.NativeClassId &&
-        !Rac1MobyRuntime.IsTerminalState(targetNativeState);
+    public static bool IsGoal1ContactTarget(Rac1MobyContactFacts facts)
+    {
+        ArgumentNullException.ThrowIfNull(facts);
+        facts.Validate();
+
+        return Rac1NativeHitSemantics.IsDistinctContactCandidate(facts) &&
+               facts.Target.SourceGame == "rac1" &&
+               facts.Target.NativeClassId == Rac1Class749Hostile.NativeClassId &&
+               !Rac1MobyRuntime.IsTerminalState(facts.TargetNativeState);
+    }
 }
 
 /// <summary>
@@ -199,19 +218,52 @@ public sealed class Rac1BombGloveSession
 
     public Rac1BombGloveDamageResult? ResolveGoal1Contact(
         long projectileId,
-        RuntimeDynamicObject target,
-        int targetNativeState)
+        Rac1MobyContactFacts facts)
     {
+        ArgumentNullException.ThrowIfNull(facts);
+        facts.Validate();
         if (!_launchedProjectileIds.Contains(projectileId)) return null;
-        if (!Rac1BombGlove.IsGoal1ContactTarget(target, targetNativeState)) return null;
+        if (!Rac1BombGlove.IsGoal1ContactTarget(facts)) return null;
 
         return new Rac1BombGloveDamageResult(
             projectileId,
-            target.NativeClassId,
+            facts.Target.NativeClassId,
             Rac1BombGlove.NativeDamage,
             Rac1BombGlove.NativeDamageFlags);
     }
 
+    public Rac1BombGloveContactResolution ResolveGoal1ContactVolume(
+        long projectileId,
+        IReadOnlyList<Rac1MobyContactFacts> contacts)
+    {
+        ArgumentNullException.ThrowIfNull(contacts);
+        if (!_launchedProjectileIds.Contains(projectileId))
+        {
+            return new Rac1BombGloveContactResolution(
+                projectileId,
+                Array.Empty<Rac1BombGloveDamageResult>(),
+                ProjectileCompleted: false);
+        }
+
+        var damageResults = new List<Rac1BombGloveDamageResult>();
+        foreach (var facts in contacts)
+        {
+            var damage = ResolveGoal1Contact(projectileId, facts);
+            if (damage is not null) damageResults.Add(damage);
+        }
+
+        bool completed = damageResults.Count > 0 &&
+                         _launchedProjectileIds.Remove(projectileId);
+        return new Rac1BombGloveContactResolution(
+            projectileId,
+            damageResults.AsReadOnly(),
+            completed);
+    }
+
+    /// <summary>
+    /// Explicit host cleanup for a projectile removed for presentation-only
+    /// reasons such as the current unresolved visible lifetime fallback.
+    /// </summary>
     public bool CompleteProjectile(long projectileId) =>
         _launchedProjectileIds.Remove(projectileId);
 

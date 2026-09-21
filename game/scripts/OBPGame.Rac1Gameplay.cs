@@ -567,28 +567,32 @@ public partial class OBPGame
                 .ThenBy(candidate => candidate.Hostile.Source.InstanceIndex)
                 .ToArray();
 
-            int admittedContacts = 0;
-            foreach (var contact in contacts)
-            {
-                var hostile = contact.Hostile;
-                var probe = _rac1HostileProbes[hostile.Source.InstanceIndex];
-                var damage = _rac1BombGlove.ResolveGoal1Contact(
-                    pair.Key, hostile.Source, probe.NativeState);
-                if (damage is not null) admittedContacts++;
-            }
+            var contactFacts = contacts
+                .Select(contact =>
+                {
+                    var hostile = contact.Hostile;
+                    var probe = _rac1HostileProbes[hostile.Source.InstanceIndex];
+                    return new Rac1MobyContactFacts(
+                        hostile.Source,
+                        probe.NativeState,
+                        IsSourceMoby: false);
+                })
+                .ToArray();
+            var contactResolution = _rac1BombGlove.ResolveGoal1ContactVolume(
+                pair.Key,
+                contactFacts);
 
-            if (admittedContacts > 0)
+            if (contactResolution.ProjectileCompleted)
             {
-                _rac1BombGlove.CompleteProjectile(pair.Key);
                 _rac1CombatStatus =
-                    $"Bomb Glove contact: {admittedContacts} class-749 candidate(s); native consequence unresolved";
+                    $"Bomb Glove contact: {contactResolution.AdmittedContactCount} class-749 candidate(s); native consequence unresolved";
                 GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
                 impacted = true;
             }
 
             if (impacted || projectile.Age >= Rac1BombPresentationLifetime)
             {
-                _rac1BombGlove.CompleteProjectile(pair.Key);
+                if (!impacted) _rac1BombGlove.CompleteProjectile(pair.Key);
                 projectile.Node.QueueFree();
                 _rac1Projectiles.Remove(pair.Key);
             }

@@ -1,4 +1,23 @@
+using OBP.Runtime;
+
 namespace OBP.RAC1.Gameplay;
+
+/// <summary>
+/// Geometry-neutral contact fact supplied by the host after it has chosen and
+/// executed an engine collision query. Native gameplay owns candidate filtering
+/// from this point forward; the host does not need to name the query primitive.
+/// </summary>
+public sealed record Rac1MobyContactFacts(
+    RuntimeDynamicObject Target,
+    int TargetNativeState,
+    bool IsSourceMoby)
+{
+    public Rac1MobyContactFacts Validate()
+    {
+        ArgumentNullException.ThrowIfNull(Target);
+        return this;
+    }
+}
 
 /// <summary>
 /// Native damage handoff shape recovered from the R&amp;C1 engine/common paths.
@@ -88,4 +107,11 @@ public static class Rac1NativeHitSemantics
 {
     public static bool IsDistinctContactCandidate(bool isSourceMoby) =>
         !isSourceMoby;
+
+    public static bool IsDistinctContactCandidate(Rac1MobyContactFacts facts)
+    {
+        ArgumentNullException.ThrowIfNull(facts);
+        facts.Validate();
+        return IsDistinctContactCandidate(facts.IsSourceMoby);
+    }
 }

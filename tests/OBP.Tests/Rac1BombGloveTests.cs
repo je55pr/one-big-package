@@ -129,9 +129,16 @@ public sealed class Rac1BombGloveTests
         var crate = Dynamic(Rac1BoltCrate.NativeClassId, instanceIndex: 89);
         var hostile = Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex: 149);
 
-        Assert.Null(session.ResolveGoal1Contact(shot.Projectile.ProjectileId, crate, Rac1BoltCrate.ActiveNativeState));
+        Assert.Null(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId,
+            Contact(crate, Rac1BoltCrate.ActiveNativeState)));
+        Assert.Null(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId,
+            Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState, isSourceMoby: true)));
         var damage = Assert.IsType<Rac1BombGloveDamageResult>(
-            session.ResolveGoal1Contact(shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
+            session.ResolveGoal1Contact(
+                shot.Projectile.ProjectileId,
+                Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState)));
 
         Assert.Equal(Rac1Class749Hostile.NativeClassId, damage.TargetNativeClassId);
         Assert.Equal(2d, damage.NativeDamage);
@@ -141,10 +148,38 @@ public sealed class Rac1BombGloveTests
         Assert.False(damage.DamageHandoff.VictimIsPreselected);
         Assert.True(damage.DamageHandoff.ExcludesSourceMobyFromCandidates);
         Assert.NotNull(session.ResolveGoal1Contact(
-            shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
+            shot.Projectile.ProjectileId,
+            Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState)));
         Assert.True(session.CompleteProjectile(shot.Projectile.ProjectileId));
         Assert.Null(session.ResolveGoal1Contact(
-            shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
+            shot.Projectile.ProjectileId,
+            Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState)));
+    }
+
+    [Fact]
+    public void ContactVolumeBatchOwnsCandidateAdmissionAndContactDrivenCompletion()
+    {
+        var session = new Rac1BombGloveSession(initialAmmo: 1);
+        var shot = Assert.IsType<Rac1BombGloveShot>(session.Step(true).Shot);
+        var crate = Dynamic(Rac1BoltCrate.NativeClassId, instanceIndex: 89);
+        var hostile = Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex: 149);
+
+        var resolution = session.ResolveGoal1ContactVolume(
+            shot.Projectile.ProjectileId,
+            [
+                Contact(crate, Rac1BoltCrate.ActiveNativeState),
+                Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState, isSourceMoby: true),
+                Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState),
+            ]);
+
+        Assert.True(resolution.ProjectileCompleted);
+        Assert.Equal(1, resolution.AdmittedContactCount);
+        Assert.Single(resolution.DamageResults);
+        Assert.Equal(Rac1Class749Hostile.NativeClassId, resolution.DamageResults[0].TargetNativeClassId);
+        Assert.False(session.CompleteProjectile(shot.Projectile.ProjectileId));
+        Assert.Null(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId,
+            Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState)));
     }
 
     [Theory]
@@ -156,8 +191,16 @@ public sealed class Rac1BombGloveTests
         var shot = Assert.IsType<Rac1BombGloveShot>(session.Step(true).Shot);
         var hostile = Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex: 149);
 
-        Assert.Null(session.ResolveGoal1Contact(shot.Projectile.ProjectileId, hostile, terminalState));
+        Assert.Null(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId,
+            Contact(hostile, terminalState)));
     }
+
+    private static Rac1MobyContactFacts Contact(
+        RuntimeDynamicObject target,
+        int nativeState,
+        bool isSourceMoby = false) =>
+        new(target, nativeState, isSourceMoby);
 
     private static RuntimeDynamicObject Dynamic(
         int nativeClassId,

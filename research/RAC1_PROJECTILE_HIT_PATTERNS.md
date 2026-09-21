@@ -67,7 +67,14 @@ The exact geometric primitive is unresolved. The call sites do not justify namin
 
 - `DirectVictimRecord`: source retained, one victim preselected;
 - `ContactVolume`: source retained, victims query-discovered, source excluded from candidates;
+- `Rac1MobyContactFacts`: a geometry-neutral host contact result carrying the candidate, native state and source-self fact;
 - `Rac1NativeProjectileMotion`: position-plus-step ballistic recurrence with caller-owned vertical decrement.
+
+For the bounded Goal 1 Bomb Glove slice, the host supplies a batch of those contact
+facts after its collision query. `Rac1BombGloveSession` owns candidate admission
+and retires the launched projectile when at least one contact is admitted, matching
+the recovered contact-driven termination path. The current visible timeout remains
+an explicitly host-owned presentation fallback because natural expiry is unresolved.
 
 The generic layer deliberately does **not** assign universal launch speed, lifetime, radius, damage scalar, damage flags, faction filtering or post-contact state machine. Those remain projectile/weapon owned.
 For Bomb Glove specifically, `Rac1BombGlove` freezes class `0x79`, source PVar `+0x50`, state `1 -> 2`, observed terminal `0xfe`, authority-state float32 vertical decrement `0.003055555745959282`, countdown values `300/30`, fire gate `20`, and splash envelope `2.0 / 0x00830000`.

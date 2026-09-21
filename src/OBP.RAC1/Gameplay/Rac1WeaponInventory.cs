@@ -35,14 +35,38 @@ public static class Rac1NativeInventoryLayout
 /// </summary>
 public readonly record struct Rac1ItemAmmoDescriptor(
     int NativeItemId,
+    int FirstAcquisitionAmmoGate,
     int FirstAcquisitionAmmoFloor,
     int MaxAmmo)
 {
+    public bool AppliesFirstAcquisitionAmmoFloor => FirstAcquisitionAmmoGate != 0;
     public bool UsesAmmo => MaxAmmo > 0;
+}
+
+/// <summary>
+/// Observable consequences of the generic native acquisition path before its
+/// separately-conditional quick-select insertion branch.
+/// </summary>
+public readonly record struct Rac1ItemAcquisitionResult(
+    int NativeItemId,
+    bool WasPersistentlyOwned,
+    int AmmoBefore,
+    int AmmoAfter)
+{
+    public bool IsFirstAcquisition => !WasPersistentlyOwned;
+    public int AmmoGranted => AmmoAfter - AmmoBefore;
 }
 
 public static class Rac1ItemAmmoDescriptors
 {
+    private static readonly int[] FirstAcquisitionAmmoGate =
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        5, 50, 0, 100, 0, 1, 1, 5, 0, 1,
+        40, 0, 0, 20, 40, 10, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0,
+    ];
+
     private static readonly int[] FirstAcquisitionAmmoFloor =
     [
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -64,6 +88,7 @@ public static class Rac1ItemAmmoDescriptors
         ValidateItemId(nativeItemId);
         return new Rac1ItemAmmoDescriptor(
             nativeItemId,
+            FirstAcquisitionAmmoGate[nativeItemId],
             FirstAcquisitionAmmoFloor[nativeItemId],
             MaxAmmo[nativeItemId]);
     }
@@ -181,6 +206,39 @@ public sealed class Rac1WeaponInventory
     {
         ValidateItemId(nativeItemId);
         return _ammo[nativeItemId];
+    }
+
+    /// <summary>
+    /// Apply the recovered common item-acquisition prefix: set the secondary
+    /// acquisition flag, set the persistent ownership byte on first acquisition,
+    /// and raise ammo to the descriptor floor when its +0x08 gate is nonzero.
+    /// The later quick-select insertion is intentionally not modeled here because
+    /// its complete admission predicate has not been recovered.
+    /// </summary>
+    public Rac1ItemAcquisitionResult AcquireNativeItem(int nativeItemId)
+    {
+        ValidateItemId(nativeItemId);
+
+        bool wasPersistentlyOwned = _items[nativeItemId] != 0;
+        int ammoBefore = _ammo[nativeItemId];
+        _unlockFlags[nativeItemId] = 1;
+
+        if (!wasPersistentlyOwned)
+        {
+            _items[nativeItemId] = 1;
+            var descriptor = Rac1ItemAmmoDescriptors.Get(nativeItemId);
+            if (descriptor.AppliesFirstAcquisitionAmmoFloor &&
+                _ammo[nativeItemId] < descriptor.FirstAcquisitionAmmoFloor)
+            {
+                _ammo[nativeItemId] = descriptor.FirstAcquisitionAmmoFloor;
+            }
+        }
+
+        return new Rac1ItemAcquisitionResult(
+            nativeItemId,
+            wasPersistentlyOwned,
+            ammoBefore,
+            _ammo[nativeItemId]);
     }
 
     public bool TryEquip(Rac1WeaponId weapon)

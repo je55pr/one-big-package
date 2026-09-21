@@ -192,7 +192,12 @@ Rac1WeaponInventory now preserves the source-specific 37-slot ammo/item/unlock
 shape, eight quick-select entries, block-21 previous/last gadget value, seven
 persisted equipped-gadget entries, and a separate transient CurrentItemId.
 
-The generic model exposes descriptor-backed raw ammo consumption and addition.
+The generic model exposes the recovered descriptor gate/floor/cap fields,
+descriptor-backed raw ammo consumption/addition, and the common acquisition prefix
+that sets the secondary flag, first-acquisition ownership byte, and gated ammo
+floor. It intentionally stops before the later quick-select insertion because that
+branch's complete admission predicate remains unresolved.
+
 It intentionally keeps weapon-use consequences narrow:
 
 - native id 8: Wrench, ammo-free;
