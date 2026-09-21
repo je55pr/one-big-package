@@ -212,7 +212,26 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
-    public void RegistersRecoveredFamilyInstancesAsIndependentRuntimeEntries()
+    public void RuntimeWitnessGateDoesNotGeneralizeByClassOrPvarResemblance()
+    {
+        var witness = Class749(
+            Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex,
+            health: 1f);
+        var sameClassDifferentInstance = Class749(
+            Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex + 1,
+            health: 1f);
+
+        Assert.True(Rac1Class749Hostile.IsRetainedRuntimeWitness(
+            Rac1Class749Hostile.RetainedRuntimeWitnessLevelId,
+            witness));
+        Assert.False(Rac1Class749Hostile.IsRetainedRuntimeWitness(
+            Rac1Class749Hostile.RetainedRuntimeWitnessLevelId,
+            sameClassDifferentInstance));
+        Assert.False(Rac1Class749Hostile.IsRetainedRuntimeWitness(18, witness));
+    }
+
+    [Fact]
+    public void SessionCanTrackSyntheticClass749EntriesIndependently()
     {
         var session = new Rac1Class749HostileSession();
         var sources = Enumerable.Range(140, 16)

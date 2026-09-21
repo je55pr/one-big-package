@@ -18,7 +18,7 @@ namespace OneBigPackage;
 /// </summary>
 public partial class OBPGame
 {
-    private const int Rac1WitnessHostileInstance = 149;
+    private const int Rac1WitnessHostileInstance = Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex;
     private const double Rac1NativeTicksPerSecond = Rac1RatchetMovementController.UpdateHz;
     private const float Rac1WrenchReach = 2.35f;
     private const float Rac1DirectContactRadius = 1.25f;
@@ -43,6 +43,7 @@ public partial class OBPGame
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
     private readonly Dictionary<long, Rac1HostedProjectile> _rac1Projectiles = [];
+    private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1Class749PresentationNodes = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1HostileNodes = [];
     private readonly Dictionary<int, Rac1Class749HostProbe> _rac1HostileProbes = [];
     private bool _rac1SwingActive;
@@ -65,6 +66,7 @@ public partial class OBPGame
         _rac1Hostiles = new Rac1Class749HostileSession();
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
+        _rac1Class749PresentationNodes.Clear();
         _rac1HostileNodes.Clear();
         _rac1HostileProbes.Clear();
         _rac1SwingActive = false;
@@ -113,17 +115,25 @@ public partial class OBPGame
             _rac1CrateNodes.Add(node);
         }
 
+        int authoredClass749 = 0;
         int rejectedHostiles = 0;
         foreach (var hostileSource in (world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
             .Where(source => source.NativeClassId == Rac1Class749Hostile.NativeClassId))
         {
+            authoredClass749++;
+            var node = FindPresentedDynamic(result, hostileSource)
+                ?? CreateRac1FallbackNode(result, hostileSource, crate: false);
+            _rac1Class749PresentationNodes.Add(node);
+            if (!Rac1Class749Hostile.IsRetainedRuntimeWitness(world.LevelId, hostileSource))
+            {
+                continue;
+            }
+
             try
             {
                 _ = Rac1Class749Hostile.ReadAuthored(hostileSource)
                     ?? throw new InvalidDataException("Class-749 source failed its authored-state contract.");
-                var node = FindPresentedDynamic(result, hostileSource)
-                    ?? CreateRac1FallbackNode(result, hostileSource, crate: false);
-                var probe = _rac1Hostiles.Register(hostileSource, node.State);
+                var probe = _rac1Hostiles.RegisterRepresentative(hostileSource, node.State);
                 _rac1HostileNodes.Add(hostileSource.InstanceIndex, node);
                 _rac1HostileProbes.Add(hostileSource.InstanceIndex, probe);
             }
@@ -135,25 +145,18 @@ public partial class OBPGame
         }
 
         GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted class-500 crates, " +
-                 $"{_rac1HostileNodes.Count} class-749 hostiles ({rejectedHostiles} rejected)");
+                 $"{_rac1HostileNodes.Count} active class-749 runtime witness(es) from " +
+                 $"{authoredClass749} authored placements ({rejectedHostiles} rejected)");
     }
 
     private bool TryGetRac1RepresentativeHostile(
         out RuntimeWorldScene.DynamicObjectNode? node,
         out Rac1Class749HostProbe? probe)
     {
-        if (_rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out node) &&
+        if (_world is { Game: "rac1", LevelId: Rac1Class749Hostile.RetainedRuntimeWitnessLevelId } &&
+            _rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out node) &&
             _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out probe))
             return true;
-
-        foreach (var pair in _rac1HostileNodes.OrderBy(pair => pair.Key))
-        {
-            if (_rac1HostileProbes.TryGetValue(pair.Key, out probe))
-            {
-                node = pair.Value;
-                return true;
-            }
-        }
 
         node = null;
         probe = null;

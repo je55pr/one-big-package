@@ -54,9 +54,12 @@ public partial class OBPGame
                 "bolt collection");
             GD.Print($"[rac1-smoke] bolt collection PASS; total={_rac1BoltCrates.CollectedBolts}");
 
-            if (_rac1HostileNodes.Count != 16 || _rac1HostileProbes.Count != 16)
+            if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
                 throw new InvalidOperationException(
-                    $"Veldin class-749 family count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected 16/16.");
+                    $"Veldin class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
+            if (_rac1HostileNodes.Count != 1 || _rac1HostileProbes.Count != 1)
+                throw new InvalidOperationException(
+                    $"Veldin active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected witness-only 1/1.");
             if (!_rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out var hostile) ||
                 !_rac1HostileProbes.ContainsKey(Rac1WitnessHostileInstance) ||
                 !IsInstanceValid(hostile.Root) ||
@@ -80,16 +83,28 @@ public partial class OBPGame
             Rac1SmokePlaceFacing(bombPose, hostileForward);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
+                () => _rac1Weapons.FirstRangedAmmo == 5 && _rac1Projectiles.Count == 0,
+                180,
+                "Bomb Glove projectile contact");
+            if (!_rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var postBombProbe) ||
+                postBombProbe.Health != 1f ||
+                !hostile.Root.Visible)
+                throw new InvalidOperationException(
+                    "Bomb Glove host contact invented an unrecovered class-749 damage consequence.");
+            GD.Print("[rac1-smoke] Bomb Glove contact PASS; ammo=5 and class-749 consequence remains unresolved");
+
+            Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
+            OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
+            OnRac1PrimaryAttackRequested();
+            await Rac1SmokeWaitAsync(
                 () => _rac1HostileProbes.TryGetValue(
                         Rac1WitnessHostileInstance,
                         out var witnessProbe) &&
                     witnessProbe.Health == 0f &&
                     !hostile.Root.Visible,
-                180,
-                "Bomb Glove projectile impact");
-            if (_rac1Weapons.FirstRangedAmmo != 5)
-                throw new InvalidOperationException($"Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected 5.");
-            GD.Print("[rac1-smoke] Bomb Glove projectile impact PASS; ammo=5");
+                120,
+                "wrench hostile terminalization");
+            GD.Print("[rac1-smoke] wrench hostile terminalization PASS");
 
             var environment = _world.Environment
                 ?? throw new InvalidOperationException("Veldin smoke requires the imported environment.");
@@ -133,10 +148,10 @@ public partial class OBPGame
 
             GD.Print("[rac1-smoke] authored Veldin respawn PASS; Nanotech=4");
 
-            await RunRac1Level18HostileSmokeAsync();
+            await RunRac1Level18Class749GateSmokeAsync();
             await RunRac1HostileLifecycleSmokeAsync();
 
-            GD.Print("[rac1-smoke] PASS: authored class-749 families verified across LEVEL0, LEVEL18 and empty-level unload/reload");
+            GD.Print("[rac1-smoke] PASS: class-749 runtime stays witness-gated while authored presentation survives LEVEL0/LEVEL18/unload-reload");
             GetTree().Quit(0);
         }
         catch (Exception ex)
@@ -146,7 +161,7 @@ public partial class OBPGame
         }
     }
 
-    private async Task RunRac1Level18HostileSmokeAsync()
+    private async Task RunRac1Level18Class749GateSmokeAsync()
     {
         OpenDestinationFromBootstrap("rac1:LEVEL18");
         await Rac1SmokeWaitAsync(
@@ -157,58 +172,18 @@ public partial class OBPGame
             360,
             "LEVEL18 load and grounding");
 
-        if (_rac1HostileNodes.Count != 90 || _rac1HostileProbes.Count != 90)
+        int authored = CountRac1AuthoredClass749();
+        int presented = CountRac1PresentedClass749();
+        if (authored != 90 || presented != 90)
             throw new InvalidOperationException(
-                $"LEVEL18 class-749 family count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected 90/90.");
-
-        var hostile = _rac1HostileNodes.Values
-            .Where(node =>
-            {
-                if (!IsInstanceValid(node.Root) || !node.Root.Visible ||
-                    !_rac1HostileProbes.TryGetValue(node.Source.InstanceIndex, out var probe) ||
-                    probe.Health != 1f)
-                    return false;
-
-                Vector3 forward = -node.Root.GlobalTransform.Basis.Z;
-                forward.Y = 0f;
-                return forward.LengthSquared() > 1e-5f;
-            })
-            .OrderBy(node => node.Root.GlobalPosition.DistanceTo(_player!.GlobalPosition))
-            .ThenBy(node => node.Source.InstanceIndex)
-            .FirstOrDefault()
-            ?? throw new InvalidOperationException("LEVEL18 has no active authored class-749 placement.");
-
-        Vector3 authoredPosition = hostile.Root.GlobalPosition;
-        Vector3 hostileForward = -hostile.Root.GlobalTransform.Basis.Z;
-        hostileForward.Y = 0f;
-        hostileForward = hostileForward.Normalized();
-
-        int nanotechBefore = _rac1Nanotech.Probe().Nanotech;
-        if (nanotechBefore <= 0)
-            throw new InvalidOperationException("LEVEL18 player died before representative hostile contact.");
-
-        Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
-        await Rac1SmokeWaitAsync(
-            () => _rac1Nanotech.Probe().Nanotech < nanotechBefore,
-            180,
-            "LEVEL18 class-749 incoming damage");
-
-        if (hostile.Root.GlobalPosition.DistanceTo(authoredPosition) > 0.001f)
+                $"LEVEL18 class-749 census/presentation was {authored}/{presented}, expected 90/90.");
+        if (_rac1HostileNodes.Count != 0 || _rac1HostileProbes.Count != 0 ||
+            TryGetRac1RepresentativeHostile(out _, out _))
             throw new InvalidOperationException(
-                $"LEVEL18 class-749 i{hostile.Source.InstanceIndex} moved away from its authored placement without recovered motion.");
-
-        OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
-        OnRac1PrimaryAttackRequested();
-        await Rac1SmokeWaitAsync(
-            () => _rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var probe) &&
-                probe.Health == 0f &&
-                !hostile.Root.Visible,
-            120,
-            "LEVEL18 wrench hostile contact");
+                $"LEVEL18 promoted unsupported class-749 runtime behavior: {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count} active.");
 
         GD.Print(
-            $"[rac1-smoke] LEVEL18 family PASS; 90 authored placements, " +
-            $"i{hostile.Source.InstanceIndex} damaged Ratchet then accepted wrench terminalization");
+            "[rac1-smoke] LEVEL18 class-749 gate PASS; 90 authored/presented placements, 0 active runtime hostiles");
     }
 
     private async Task RunRac1HostileLifecycleSmokeAsync()
@@ -241,18 +216,28 @@ public partial class OBPGame
             360,
             "LEVEL0 reload and grounding");
 
-        if (_rac1HostileNodes.Count != 16 || _rac1HostileProbes.Count != 16)
+        if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
             throw new InvalidOperationException(
-                $"LEVEL0 reload class-749 count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected 16/16.");
-        if (_rac1HostileNodes.Values.Any(node => !IsInstanceValid(node.Root) || !node.Root.Visible))
+                $"LEVEL0 reload class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
+        if (_rac1HostileNodes.Count != 1 || _rac1HostileProbes.Count != 1 ||
+            !TryGetRac1RepresentativeHostile(out var hostile, out _) ||
+            hostile is null || !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
             throw new InvalidOperationException(
-                "LEVEL0 reload inherited an inactive hostile from a previous level-local session.");
+                $"LEVEL0 reload active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected witness-only 1/1.");
         if (_rac1Weapons.FirstRangedAmmo != 5)
             throw new InvalidOperationException(
                 $"Process-lifetime Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected persistent value 5.");
 
-        GD.Print("[rac1-smoke] LEVEL0 reload PASS; 16 authored hostiles restored and inventory remained process-lifetime");
+        GD.Print("[rac1-smoke] LEVEL0 reload PASS; 16 authored/presented placements, witness-only runtime restored, inventory persisted");
     }
+
+    private int CountRac1AuthoredClass749() =>
+        _world?.DynamicObjects?.Count(source =>
+            source.NativeClassId == Rac1Class749Hostile.NativeClassId) ?? 0;
+
+    private int CountRac1PresentedClass749() =>
+        _rac1Class749PresentationNodes.Count(node =>
+            IsInstanceValid(node.Root) && node.Root.Visible);
 
     private async Task Rac1SmokeWaitAsync(Func<bool> condition, int maxFrames, string label)
     {

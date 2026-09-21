@@ -11,6 +11,8 @@ namespace OBP.RAC1.Gameplay;
 public static class Rac1Class749Hostile
 {
     public const int NativeClassId = 749;
+    public const int RetainedRuntimeWitnessLevelId = 0;
+    public const int RetainedRuntimeWitnessInstanceIndex = 149;
     public const string PVarPayloadFormat = "rac1-pvar";
     public const int PVarSize = 0x280;
     public const int HealthOffset = 0x20;
@@ -43,6 +45,17 @@ public static class Rac1Class749Hostile
     public const int AttackMarkerNativeUpdate = 68;
     public const double AttackMarker = 34d;
     public const double AttackDamage = 1d;
+
+    /// <summary>
+    /// Evidence-policy gate for the retained loaded-Veldin runtime witness.
+    /// Other class-749 placements remain authored/presented data until their live activation
+    /// inputs are independently recovered.
+    /// </summary>
+    public static bool IsRetainedRuntimeWitness(int levelId, RuntimeDynamicObject source) =>
+        levelId == RetainedRuntimeWitnessLevelId &&
+        source.SourceGame == "rac1" &&
+        source.NativeClassId == NativeClassId &&
+        source.InstanceIndex == RetainedRuntimeWitnessInstanceIndex;
 
     public static Rac1Class749AuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {

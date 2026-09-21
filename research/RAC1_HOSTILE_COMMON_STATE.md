@@ -78,11 +78,19 @@ LEVEL0 has 16 placements and LEVEL18 has 90. The other 17 levels have none.
 All 106 imported instances carry the exact `0x280` class-749 PVar contract,
 with authored health `1.0` and initial `+0x1c4` value `0`.
 
-This census is retained as a retail assertion in
-`Rac1Class749HostileRetailTests.AllNativeLevelsRegisterOnlyAuthoredClass749Placements`.
-It does not infer a mission gate, spawn condition, or planet label for LEVEL18.
-The live host therefore activates class-749 behavior only for placements that
-already exist in the imported world and pass the recovered PVar contract.
+That authored `+0x1c4` value is not a live activation state. The retained Veldin
+witness has a 7/9 live split between values `0` and `2`, while the writer and
+meaning of the field remain unresolved. Feeding the authored zero into every
+placement would therefore manufacture an immediate state `5 -> 6` transition.
+
+The retail census is retained by
+`Rac1Class749HostileRetailTests.AllNativeLevelsRetainAuthoredClass749PlacementsWithoutExpandingRuntimeWitness`.
+The Godot host keeps all authored placements available to presentation, but
+active class-749 simulation is restricted to the retained LEVEL0 instance-149
+runtime witness. The other Veldin placements and all 90 LEVEL18 placements are
+not registered with the hostile session. No LEVEL18 aggression, mission gate,
+spawn condition, planet label, or activation radius is inferred from class/PVar
+resemblance alone.
 
 ## Reusable boundary
 
