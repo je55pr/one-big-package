@@ -74,19 +74,29 @@ The loaded overlay also contains a verified direction-flag heading-step branch
 at `0x001f3aa0..0x001f3f7c`. It consumes `I+0x1a0`, keeps a step at
 `0x0016c058+0x80`, uses a `0.002` increment, clamps to `+/-0.04`, divides
 the released step by `1.5`, and writes
-`WrapPi(controlHeading - step)` through helper `0x00200130`. This is only
-one producer stage: live right-stick motion changes `controlHeading` while
-`I+0x1a0` continues to report the left-stick forward flag, so the exact
-right-stick-to-camera producer remains unresolved elsewhere in the overlay.
+`WrapPi(controlHeading - step)` through helper `0x00200130`. This remains a
+separate producer stage because its invocation/flag selection is not equivalent
+to raw right-stick input.
+
+The ordinary type-0 manual-input path is now independently bounded. Update
+`0x002e9c28` reaches core `0x002e9bb0`; `0x002e89b0` selects conditioned
+right-stick X/Y when present and only falls back to camera-state commands when
+the manual axis is neutral. `0x002e8bb8` then applies the native damped helper
+with `0.02` acceleration and `0.2` damping. The retained horizontal
+pulse/release traces are reproduced by the recovered `0.022689279` heading
+scale, including the continued same-direction release tail. Vertical input has
+a second `+/-0.3` dead zone and remaps the remaining travel across a
+`0.69813168` rad span.
 
 ## Recovered unobstructed chase framing and follow
 
 The same authority savestate was replayed through five ordinary, unobstructed
 scenarios: fixed heading, straight movement, left-stick turning, long idle and
 forward follow after a turn. Together they retain 950 frame-advanced samples.
-Manual right-stick behavior remains outside this slice; the obstruction contract
-below comes from the loaded overlay plus a fixed-state clear-line control, not a
-retained physical wall-contact movie.
+Separate retained stationary left/right right-stick pulse movies now cover the
+manual producer and release inertia. The obstruction contract below comes from
+the loaded overlay plus a fixed-state clear-line control, not a retained
+physical wall-contact movie.
 
 At stationary fixed-heading/idle equilibrium, the final eye is `5.999955`
 planar units from Ratchet, `2.005249` units above his origin, with pitch
@@ -258,12 +268,31 @@ ordinary vertical-follow and final eye-height damped steps, radial working-value
 pull-in, lateral-side classification / one-degree correction, recursive clear-line
 cosine release, and the final `1.5` effective-radius guard.
 
-This is intentionally not a guessed complete camera update. The manual
-right-stick producer, profile/mode source that selects preferred radius and eye
-height, radial-follow coefficient selector, exact contact primitive and full
-multi-update lateral convergence remain unresolved. The existing Godot camera
-fallback therefore stays a host presentation path until those producer stages
-are recovered; it is not re-labelled as retail behavior by this contract.
+`Rac1OrdinaryCameraController` now owns the normal free-camera type-0 state used
+by Godot: recovered right-stick damping and release inertia, the retained
+stationary framing/profile witness, vertical chase follow, radial response and
+obstruction state. The Godot physics query supplies only contact/orientation
+facts; the source-game recurrence decides pull-in, release and lateral response.
+Normal R&C1 play consumes this source state after movement each physics update,
+so movement reads the previously published control heading just as the retained
+PINE ordering witnesses do. The old yaw/pitch/distance camera remains reachable
+only through the explicit F9/fly development escape path.
+
+The remaining ordinary boundary is narrower. Neutral right-stick input does
+not imply an always-on recenter writer: the fallback command at
+`state+0x1c4` is cleared by the ordinary update and its explicit producer route
+is conditional on low right-stick magnitude, a long dwell and a valid target
+pointer. All retained ordinary free-camera witnesses have that target pointer
+null, so normal neutral play intentionally performs no synthetic recenter.
+
+The active profile pointer is `0x00168fc0`; profile fields feed look height,
+preferred radius and preferred eye height, while short-lived mode overrides can
+replace those targets before consumption. The radial selector has recovered
+baseline/fast coefficient families and a retained transition state. The
+ordinary runtime uses the retained settled type-0 authority profile and keeps
+selector-specific modes outside that baseline until their gameplay trigger is
+independently exposed. Exact ray-versus-swept contact geometry and full
+multi-update lateral convergence remain intentionally unpromoted.
 
 ## Repeatable scenarios
 

@@ -1,4 +1,6 @@
 using Godot;
+using OBP.Core.Math;
+using OBP.Godot;
 using OBP.Godot.Camera;
 using OBP.Godot.Controls;
 using OBP.Godot.Player;
@@ -127,7 +129,7 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
     public bool Rac1GameplayAlive { get; set; } = true;
 
-    /// <summary>Unconditioned right-stick intent retained for the unresolved native producer and debug fallback.</summary>
+    /// <summary>Unconditioned right-stick intent feeding the recovered type-0 producer or debug fallback.</summary>
     public Vector2 RawCameraIntent => _liveInput.CameraIntent;
 
     /// <summary>Current SDL/Godot controller diagnostic, when a joypad is connected.</summary>
@@ -135,14 +137,24 @@ public partial class DebugPlayer : CharacterBody3D
 
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
     public string CameraControllerLabel =>
-        HasActiveRecoveredCamera ? "rac1-recovered-state" : "host-debug-fallback";
+        HasActiveRecoveredCamera ? "rac1-native-type0" : "host-debug-fallback";
 
     /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
     public bool HasActiveRecoveredCamera =>
-        UseRac1Gameplay && !_forceHostCamera && _rac1RuntimeCameraState is not null;
+        UseRac1Gameplay && !_fly && !_forceHostCamera && _rac1RuntimeCameraState is not null;
 
     /// <summary>Latest recovered engine-neutral camera state, if one has been supplied.</summary>
     public RuntimeCameraState? Rac1RuntimeCameraState => _rac1RuntimeCameraState;
+
+    /// <summary>Recovered type-0 horizontal manual-input state.</summary>
+    public double Rac1CameraManualYaw => _rac1Camera.ManualYawState;
+
+    /// <summary>Recovered type-0 vertical manual-input state.</summary>
+    public double Rac1CameraManualPitch => _rac1Camera.ManualPitchState;
+
+    /// <summary>Recovered obstruction radial correction and release timer.</summary>
+    public double Rac1CameraObstructionCorrection => _rac1Camera.ObstructionCorrection;
+    public int Rac1CameraObstructionReleaseTicks => _rac1Camera.ObstructionReleaseTicks;
 
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
@@ -163,10 +175,12 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _scriptAttacked;
     private readonly Rac1RatchetMovementController _rac1Movement = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
+    private readonly Rac1OrdinaryCameraController _rac1Camera = new();
     private readonly RawGamepadInput _rawInput = new();
     private RawPlayerInputFrame _liveInput;
     private bool _rac1JumpWasHeld;
     private RuntimeCameraState? _rac1RuntimeCameraState;
+    private bool _rac1CameraInitialized;
     private bool _forceHostCamera;
 
     // last-jump measurement
@@ -280,6 +294,10 @@ public partial class DebugPlayer : CharacterBody3D
                 _rac1Movement.Reset();
                 _rac1JumpWasHeld = false;
                 ResetAnimationState();
+                if (_fly)
+                    RestoreHostCameraPresentation();
+                else if (HasActiveRecoveredCamera)
+                    ApplyRecoveredCameraPresentation();
                 GD.Print($"[DebugPlayer] fly mode {(_fly ? "on" : "off")}");
             }
             else if (key.Keycode == Key.R)
@@ -309,6 +327,8 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         _time += delta;
+        if (UseRac1Gameplay && !_fly)
+            EnsureRac1CameraInitialized();
 
         if (!Scripted)
         {
@@ -346,6 +366,9 @@ public partial class DebugPlayer : CharacterBody3D
             UpdateCameraDistance();
         }
 
+        if (UseRac1Gameplay && !_fly)
+            StepRac1Camera(Scripted ? Vector2.Zero : _liveInput.CameraIntent);
+
         TrackJump(isOnFloor);
 
         if (!_landed && isOnFloor)
@@ -356,6 +379,69 @@ public partial class DebugPlayer : CharacterBody3D
 
         UpdateHud(isOnFloor);
     }
+
+    private void EnsureRac1CameraInitialized()
+    {
+        if (_rac1CameraInitialized)
+            return;
+
+        Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
+        double initialHeading = GetRac1ControlYaw();
+        _rac1Camera.Reset(nativePlayer, initialHeading);
+        var state = _rac1Camera.Step(new Rac1OrdinaryCameraController.Input(
+            nativePlayer,
+            0d,
+            0d,
+            default));
+        _rac1CameraInitialized = true;
+        ApplyRac1CameraState(state);
+    }
+
+    private void StepRac1Camera(Vector2 rawCameraIntent)
+    {
+        Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
+        RuntimeCameraObstructionFacts obstruction = ProbeRac1CameraObstruction();
+        var state = _rac1Camera.Step(new Rac1OrdinaryCameraController.Input(
+            nativePlayer,
+            rawCameraIntent.X,
+            -rawCameraIntent.Y,
+            obstruction));
+        ApplyRac1CameraState(state);
+    }
+
+    private RuntimeCameraObstructionFacts ProbeRac1CameraObstruction()
+    {
+        // The exact retail contact primitive is still intentionally unpromoted.
+        // Godot supplies only contact/orientation facts; RAC1 owns the response law.
+        double heading = _rac1Camera.ControlHeading;
+        Vector3 from = GlobalPosition + Vector3.Up * (float)Rac1OrdinaryCameraController.OrdinaryLookHeight;
+        Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
+        var desiredEyeNative = new Vec3(
+            nativePlayer.X - (Math.Cos(heading) * Rac1OrdinaryCameraController.OrdinaryPreferredRadius),
+            nativePlayer.Y - (Math.Sin(heading) * Rac1OrdinaryCameraController.OrdinaryPreferredRadius),
+            nativePlayer.Z + Rac1OrdinaryCameraController.OrdinaryEyeHeight);
+        Vector3 to = RuntimeWorldScene.ToScene(
+            desiredEyeNative.X,
+            desiredEyeNative.Z,
+            desiredEyeNative.Y);
+
+        var query = PhysicsRayQueryParameters3D.Create(from, to);
+        query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.Count == 0)
+            return default;
+
+        Vector3 normal = (Vector3)hit["normal"];
+        Vector3 sceneRight = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
+            Math.Sin(heading),
+            -Math.Cos(heading));
+        return new RuntimeCameraObstructionFacts(
+            true,
+            normal.Dot(sceneRight));
+    }
+
+    private static Vec3 ScenePlayerToNative(Vector3 scene) =>
+        new(-scene.X, scene.Z, scene.Y);
 
     /// <summary>
     /// Supplies a recovered R&amp;C1 camera snapshot. When ordinary R&amp;C1 play
@@ -453,6 +539,8 @@ public partial class DebugPlayer : CharacterBody3D
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         _rac1Yaw.Reset(_rac1Yaw.CurrentYaw);
+        _rac1CameraInitialized = false;
+        _rac1RuntimeCameraState = null;
         _rac1JumpWasHeld = false;
         Rac1GameplayAlive = true;
         UpdateRac1FacingPresentation();
@@ -644,7 +732,7 @@ public partial class DebugPlayer : CharacterBody3D
                 $" control={state.ControlHeadingRadians:0.000000} preferred={state.PreferredDistance:0.000} effective={state.EffectiveDistance:0.000}")
             : string.Empty;
         string cameraLine = FormattableString.Invariant(
-            $"camera mode={CameraControllerLabel}{cameraState} raw=({RawCameraIntent.X:0.000000},{RawCameraIntent.Y:0.000000})\n");
+            $"camera mode={CameraControllerLabel}{cameraState} manual=({_rac1Camera.ManualYawState:0.000000},{_rac1Camera.ManualPitchState:0.000000}) obstruction={_rac1Camera.ObstructionCorrection:0.000}/{_rac1Camera.ObstructionReleaseTicks} raw=({RawCameraIntent.X:0.000000},{RawCameraIntent.Y:0.000000})\n");
         return inputLine + movementLine + yawLine + cameraLine + $"gamepad {pad}\n";
     }
 
