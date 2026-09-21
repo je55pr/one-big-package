@@ -1,8 +1,11 @@
 using Godot;
+using OBP.Godot.Camera;
 using OBP.Godot.Controls;
 using OBP.Godot.Player;
+using OBP.RAC1.Camera;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.Runtime.Camera;
 using OBP.Runtime.Player;
 
 namespace OneBigPackage;
@@ -13,9 +16,11 @@ namespace OneBigPackage;
 /// controller as OBP's explicit cross-game trilogy default. That reuse is an OBP
 /// design choice, not evidence that GC or UYA used the same native controller.
 ///
-/// Godot owns collision, floor/ceiling contacts, camera transforms and scene-unit
-/// velocity. <c>F</c> fly/noclip and <c>R</c> manual respawn remain separate
-/// development features. Headless capture can supply deterministic canned input.
+/// Godot owns collision, floor/ceiling contacts and scene-unit velocity. Recovered
+/// R&amp;C1 camera snapshots can own ordinary camera pose and control heading through
+/// the neutral camera contract; the old chase nodes remain a debug fallback.
+/// <c>F</c> fly/noclip and <c>R</c> manual respawn remain separate development
+/// features. Headless capture can supply deterministic canned input.
 /// </summary>
 public partial class DebugPlayer : CharacterBody3D
 {
@@ -25,7 +30,8 @@ public partial class DebugPlayer : CharacterBody3D
     public float MouseSensitivity { get; set; } = 0.0022f;
     public float FlySpeed { get; set; } = 45f;
 
-    // OBP presentation policy only. These values are not recovered retail camera constants.
+    // Development fallback only. Normal RAC1 camera state must come through
+    // ApplyRac1CameraState; these values are not retail camera constants.
     public const float GamepadCameraYawRadiansPerSecond = 2.4f;
     public const float GamepadCameraPitchRadiansPerSecond = 2.0f;
     public const float GamepadCameraDeadzone = 0.12f;
@@ -121,11 +127,22 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
     public bool Rac1GameplayAlive { get; set; } = true;
 
-    /// <summary>Unconditioned right-stick camera intent; presentation scaling is intentionally unresolved.</summary>
+    /// <summary>Unconditioned right-stick intent retained for the unresolved native producer and debug fallback.</summary>
     public Vector2 RawCameraIntent => _liveInput.CameraIntent;
 
     /// <summary>Current SDL/Godot controller diagnostic, when a joypad is connected.</summary>
     public RawGamepadDiagnostic? RawGamepadDiagnostic => _liveInput.Diagnostic;
+
+    /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
+    public string CameraControllerLabel =>
+        HasActiveRecoveredCamera ? "rac1-recovered-state" : "host-debug-fallback";
+
+    /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
+    public bool HasActiveRecoveredCamera =>
+        UseRac1Gameplay && !_forceHostCamera && _rac1RuntimeCameraState is not null;
+
+    /// <summary>Latest recovered engine-neutral camera state, if one has been supplied.</summary>
+    public RuntimeCameraState? Rac1RuntimeCameraState => _rac1RuntimeCameraState;
 
     private Node3D _yaw = null!;
     private Node3D _pitch = null!;
@@ -149,6 +166,8 @@ public partial class DebugPlayer : CharacterBody3D
     private readonly RawGamepadInput _rawInput = new();
     private RawPlayerInputFrame _liveInput;
     private bool _rac1JumpWasHeld;
+    private RuntimeCameraState? _rac1RuntimeCameraState;
+    private bool _forceHostCamera;
 
     // last-jump measurement
     private bool _airborne;
@@ -215,7 +234,9 @@ public partial class DebugPlayer : CharacterBody3D
 
         _rawInput.Observe(@event);
 
-        if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
+        if (@event is InputEventMouseMotion motion &&
+            Input.MouseMode == Input.MouseModeEnum.Captured &&
+            !HasActiveRecoveredCamera)
         {
             _yaw.RotateY(-motion.Relative.X * MouseSensitivity);
             float p = Mathf.Clamp(
@@ -234,6 +255,15 @@ public partial class DebugPlayer : CharacterBody3D
             else if (key.Keycode == Key.F8)
             {
                 _inputDiagnosticsVisible = !_inputDiagnosticsVisible;
+            }
+            else if (key.Keycode == Key.F9)
+            {
+                _forceHostCamera = !_forceHostCamera;
+                if (HasActiveRecoveredCamera)
+                    ApplyRecoveredCameraPresentation();
+                else
+                    RestoreHostCameraPresentation();
+                GD.Print($"[DebugPlayer] camera {CameraControllerLabel}");
             }
             else if (UseRac1Gameplay && key.Keycode == Key.Key1)
             {
@@ -283,7 +313,8 @@ public partial class DebugPlayer : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read();
-            ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
+            if (!HasActiveRecoveredCamera)
+                ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
             if (_liveInput.ActionJustPressed)
                 RequestPrimaryAction();
         }
@@ -310,7 +341,7 @@ public partial class DebugPlayer : CharacterBody3D
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
 
-        if (!Scripted)
+        if (!Scripted && !HasActiveRecoveredCamera)
         {
             UpdateCameraDistance();
         }
@@ -326,10 +357,48 @@ public partial class DebugPlayer : CharacterBody3D
         UpdateHud(isOnFloor);
     }
 
+    /// <summary>
+    /// Supplies a recovered R&amp;C1 camera snapshot. When ordinary R&amp;C1 play
+    /// owns the camera, this state drives both the visible pose and movement's
+    /// control-relative heading/basis.
+    /// </summary>
+    public void ApplyRac1CameraState(Rac1CameraState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        _rac1RuntimeCameraState = state.ToRuntimeState();
+        if (HasActiveRecoveredCamera)
+            ApplyRecoveredCameraPresentation();
+    }
+
+    /// <summary>Drop recovered camera ownership and return to the debug host camera.</summary>
+    public void ClearRac1CameraState()
+    {
+        _rac1RuntimeCameraState = null;
+        RestoreHostCameraPresentation();
+    }
+
+    private void ApplyRecoveredCameraPresentation()
+    {
+        if (_rac1RuntimeCameraState is null)
+            return;
+        Camera.TopLevel = true;
+        RuntimeCameraSceneAdapter.Apply(Camera, _rac1RuntimeCameraState);
+    }
+
+    private void RestoreHostCameraPresentation()
+    {
+        Camera.TopLevel = false;
+        Camera.Position = new Vector3(0f, 0f, _cameraDistance);
+        Camera.Rotation = Vector3.Zero;
+    }
+
     private double GetRac1ControlYaw()
     {
-        // The host owns camera presentation. R&C1 owns how raw planar stick
-        // direction combines with this forward/control heading to form G+0x100.
+        if (HasActiveRecoveredCamera)
+            return _rac1RuntimeCameraState!.ControlHeadingRadians;
+
+        // Development fallback only. R&C1 owns how raw planar stick direction
+        // combines with the supplied forward/control heading to form G+0x100.
         Vector3 sceneForward = _yaw.GlobalTransform.Basis * new Vector3(0f, 0f, -1f);
         sceneForward.Y = 0f;
         if (sceneForward.LengthSquared() <= 1e-8f) return _rac1Yaw.ControlYaw;
@@ -339,6 +408,22 @@ public partial class DebugPlayer : CharacterBody3D
 
     private PlayerPlanarBasis GetRac1PlanarBasis()
     {
+        if (HasActiveRecoveredCamera)
+        {
+            double heading = _rac1RuntimeCameraState!.ControlHeadingRadians;
+            Vector3 recoveredForward = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
+                Math.Cos(heading),
+                Math.Sin(heading)).Normalized();
+            Vector3 recoveredRight = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
+                Math.Sin(heading),
+                -Math.Cos(heading)).Normalized();
+            return new PlayerPlanarBasis(
+                recoveredRight.X,
+                recoveredRight.Z,
+                recoveredForward.X,
+                recoveredForward.Z);
+        }
+
         Vector3 sceneRight = _yaw.GlobalTransform.Basis * Vector3.Right;
         Vector3 sceneForward = _yaw.GlobalTransform.Basis * new Vector3(0f, 0f, -1f);
         sceneRight.Y = 0f;
@@ -541,7 +626,7 @@ public partial class DebugPlayer : CharacterBody3D
             $"last jump: {_lastJump}\n" +
             diagnostics +
             $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face action\n" +
-            $"mouse / right stick camera / F fly / R respawn / F8 input diagnostics / Tab cursor / Esc";
+            $"mouse / right stick debug camera / F fly / R respawn / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
     }
 
     private string BuildInputDiagnostics()
@@ -554,8 +639,12 @@ public partial class DebugPlayer : CharacterBody3D
             $"native target step={_rac1Movement.TargetPlanarStep:0.00000000} actual step={Math.Sqrt((_rac1Movement.PlanarX * _rac1Movement.PlanarX) + (_rac1Movement.PlanarY * _rac1Movement.PlanarY)):0.00000000} locomotion={_rac1Movement.LocomotionState} yaw-mode={_rac1Movement.YawMode}\n");
         string yawLine = FormattableString.Invariant(
             $"yaw control={_rac1Yaw.ControlYaw:0.000000} target={_rac1Yaw.TargetYaw:0.000000} current={_rac1Yaw.CurrentYaw:0.000000} velocity={_rac1Yaw.YawVelocity:0.000000}\n");
+        string cameraState = _rac1RuntimeCameraState is { } state
+            ? FormattableString.Invariant(
+                $" control={state.ControlHeadingRadians:0.000000} preferred={state.PreferredDistance:0.000} effective={state.EffectiveDistance:0.000}")
+            : string.Empty;
         string cameraLine = FormattableString.Invariant(
-            $"camera raw=({RawCameraIntent.X:0.000000},{RawCameraIntent.Y:0.000000}) host deadzone={GamepadCameraDeadzone:0.00} rates={GamepadCameraYawRadiansPerSecond:0.0}/{GamepadCameraPitchRadiansPerSecond:0.0} rad/s\n");
+            $"camera mode={CameraControllerLabel}{cameraState} raw=({RawCameraIntent.X:0.000000},{RawCameraIntent.Y:0.000000})\n");
         return inputLine + movementLine + yawLine + cameraLine + $"gamepad {pad}\n";
     }
 
@@ -576,7 +665,8 @@ public partial class DebugPlayer : CharacterBody3D
         float distanceScale = Scripted ? 5.5f : 4.5f;
         _cameraDistance = Mathf.Clamp(height * distanceScale, 4.5f, Scripted ? 10f : 8f);
         _pitch.Position = new Vector3(0f, height + clearance, 0f);
-        Camera.Position = new Vector3(0f, 0f, _cameraDistance);
+        if (!HasActiveRecoveredCamera)
+            Camera.Position = new Vector3(0f, 0f, _cameraDistance);
     }
     /// <summary>Drop the capsule exactly onto the collision surface under the spawn point (deterministic). Returns true once placed.</summary>
     private bool SnapToGroundBelow()

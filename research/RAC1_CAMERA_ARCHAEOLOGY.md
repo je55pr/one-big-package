@@ -243,6 +243,14 @@ contains only two endpoints and deliberately does not choose ray versus swept
 geometry; `RuntimeCameraObstructionFacts` returns contact plus the signed
 orientation dot consumed by source-game camera rules.
 
+The Godot host now has a matching consumption seam rather than another camera
+model. `RuntimeCameraSceneAdapter` performs only the established OBP-to-Godot
+handedness correction. `DebugPlayer.ApplyRac1CameraState` lets a recovered
+source controller atomically own visible pose plus movement control-heading and
+planar basis; F9 deliberately restores the old host chase camera as a development
+fallback. Capture telemetry exposes only mode, heading and preferred/effective
+distance, not retail memory payloads.
+
 `OBP.RAC1.Camera.Rac1CameraState` retains the recovered native Z-up control,
 follow, framing and obstruction fields. `Rac1CameraRecurrence` implements only
 producer stages established above: the `I+0x1a0` heading-step recurrence, the
