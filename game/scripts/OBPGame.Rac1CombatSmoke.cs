@@ -40,6 +40,11 @@ public partial class OBPGame
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
+                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.WrenchAttackSequenceId &&
+                      PlayerAvatarPresentationIsSynchronized(),
+                30,
+                "wrench player-avatar sequence 23");
+            await Rac1SmokeWaitAsync(
                 () => _rac1BoltCrates.DestroyedCrateCount > 0,
                 120,
                 "wrench crate break");
@@ -75,9 +80,20 @@ public partial class OBPGame
             hostileForward = hostileForward.Normalized();
             Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
             await Rac1SmokeWaitAsync(
+                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
+                      PlayerAvatarPresentationIsSynchronized(),
+                120,
+                "incoming-damage standing presentation");
+            await Rac1SmokeWaitAsync(
                 () => _rac1Nanotech.Probe().Nanotech < 4,
                 180,
                 "class-749 incoming damage");
+            if (CurrentPlayerAvatarSourceSequence() != Rac1RatchetSequenceSelection.StandingSequenceId ||
+                !PlayerAvatarPresentationIsSynchronized())
+            {
+                throw new InvalidOperationException(
+                    "incoming damage invented an unrecovered player-avatar reaction sequence");
+            }
             GD.Print($"[rac1-smoke] class-749 incoming damage PASS; Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
 
             int bombAmmoBeforeFire = _rac1Weapons.FirstRangedAmmo;
@@ -97,6 +113,9 @@ public partial class OBPGame
                 () => _rac1Weapons.FirstRangedAmmo == bombAmmoAfterFire,
                 60,
                 "Bomb Glove fire admission");
+            if (CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.WrenchAttackSequenceId)
+                throw new InvalidOperationException(
+                    "Bomb Glove fire incorrectly reused the wrench player-avatar sequence 23");
             AssertRac1SmokeHudWeapon(
                 Rac1HudProjection.BombGlovePresentationKey,
                 bombAmmoAfterFire);
@@ -140,6 +159,11 @@ public partial class OBPGame
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
+                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.WrenchAttackSequenceId &&
+                      PlayerAvatarPresentationIsSynchronized(),
+                30,
+                "terminal wrench player-avatar sequence 23");
+            await Rac1SmokeWaitAsync(
                 () => _rac1HostileProbes.TryGetValue(
                         Rac1WitnessHostileInstance,
                         out var witnessProbe) &&
@@ -175,6 +199,15 @@ public partial class OBPGame
                 dead.NativeSequence != Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequence ||
                 dead.NativeSequenceFrame != Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequenceFrame)
                 throw new InvalidOperationException("Veldin death-plane crossing did not enter state 0x77 / sequence 11 frame 0.");
+            if (CurrentPlayerAvatarSourceSequence() is
+                Rac1RatchetSequenceSelection.EnvironmentalDeathStartSequenceId or
+                Rac1RatchetSequenceSelection.EnvironmentalDeathTerminalSequenceId)
+            {
+                throw new InvalidOperationException(
+                    "Godot player avatar invented unrecovered environmental-death playback");
+            }
+            if (!PlayerAvatarPresentationIsSynchronized())
+                throw new InvalidOperationException("player-avatar presentation desynchronized at the death boundary");
             GD.Print("[rac1-smoke] natural Veldin death-plane crossing PASS; state=0x77 sequence=11 frame=0 Nanotech=0");
 
             OnRac1RespawnRequested();
@@ -182,6 +215,11 @@ public partial class OBPGame
                 () => !_rac1Nanotech.Probe().IsDead && _player.IsOnFloor(),
                 240,
                 "authored Veldin respawn");
+            await Rac1SmokeWaitAsync(
+                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
+                      PlayerAvatarPresentationIsSynchronized(),
+                120,
+                "respawn standing player-avatar presentation");
             var respawn = _rac1Nanotech.Probe();
             if (respawn.Nanotech != 4 || !_player.Rac1GameplayAlive)
                 throw new InvalidOperationException("Veldin respawn did not restore four Nanotech/alive state.");

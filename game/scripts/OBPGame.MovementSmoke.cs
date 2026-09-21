@@ -1,5 +1,7 @@
 using Godot;
 using OBP.Core;
+using OBP.RAC1.Player;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -22,6 +24,28 @@ public partial class OBPGame
                 player.MovementControllerLabel == "rac1-retail-derived-common-base",
                 "unexpected ordinary movement controller");
 
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                Require(
+                    _playerAvatarView is not null &&
+                    GodotObject.IsInstanceValid(_playerAvatarView) &&
+                    _playerAvatarAnimationController is Rac1PlayerAnimationPresentationController &&
+                    _playerAvatarAnimationSink is not null,
+                    "R&C1 did not attach its source-aware native player avatar");
+                await WaitForPlayerAvatarSequenceAsync(
+                    Rac1RatchetSequenceSelection.StandingSequenceId,
+                    60,
+                    "grounded standing");
+            }
+            else
+            {
+                Require(
+                    _playerAvatarView is null &&
+                    _playerAvatarAnimationController is null &&
+                    _playerAvatarAnimationSink is null,
+                    $"{destination.Game} unexpectedly attached a borrowed/native player avatar");
+            }
+
             SetAnalogueSmokeInput(0f, 0.60f);
             await PhysicsFramesAsync(48);
             float walkSpeed = HorizontalSpeed(player);
@@ -30,6 +54,17 @@ public partial class OBPGame
             Require(walkMagnitude >= 0.25d && walkMagnitude < 0.83d, "low stick did not land in the recovered walk band");
             Require(walkTarget > 0d && walkTarget < 0.03d, "low stick did not select the walk plateau");
             Require(walkSpeed > 0.1f, "low stick produced no host movement");
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                Require(
+                    CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.LocomotionStartSequenceId &&
+                    PlayerAvatarPresentationIsSynchronized(),
+                    "R&C1 locomotion-start sequence 3 did not preserve its decoded one-shot duration");
+                await WaitForPlayerAvatarSequenceAsync(
+                    Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
+                    180,
+                    "native-timed sustained low-stick locomotion");
+            }
 
             SetAnalogueSmokeInput(0f, 1f);
             await PhysicsFramesAsync(48);
@@ -44,13 +79,43 @@ public partial class OBPGame
             Require(
                 Math.Abs(WrapAngle(diagonalYaw - cardinalYaw)) > 0.15d,
                 "arbitrary-angle stick input did not change steering target");
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                await WaitForPlayerAvatarSequenceAsync(
+                    Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
+                    30,
+                    "ordinary turning locomotion");
+            }
+
+            float movingJump = await MeasureJumpAsync(
+                player,
+                holdFrames: 8,
+                applyPartialAirControl: false,
+                movingAtLaunch: true);
+            Require(movingJump > 0.5f, "moving jump produced no useful apex");
 
             ClearMovementSmokeInput();
+            await WaitForAnimationStateAsync(player, PlayerAnimationState.Idle, 120, "post-run idle");
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                await WaitForPlayerAvatarSequenceAsync(
+                    Rac1RatchetSequenceSelection.StandingSequenceId,
+                    30,
+                    "post-run standing");
+            }
+
             Input.ActionPress(RawGamepadInput.Crouch);
             await PhysicsFramesAsync(4);
             Require(
                 player.Rac1LocomotionState.ToString() is "Crouched" or "CrouchTurning",
                 "crouch action did not reach the common controller");
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                await WaitForPlayerAvatarSequenceAsync(
+                    Rac1RatchetSequenceSelection.StandingSequenceId,
+                    30,
+                    "crouch neutral presentation boundary");
+            }
             Input.ActionRelease(RawGamepadInput.Crouch);
             await PhysicsFramesAsync(4);
 
@@ -96,7 +161,7 @@ public partial class OBPGame
 
             GD.Print(
                 $"[movement-smoke] PASS {destination.DestinationId} " +
-                $"walk={walkSpeed:0.000} run={runSpeed:0.000} shortJump={shortJump:0.000} " +
+                $"walk={walkSpeed:0.000} run={runSpeed:0.000} movingJump={movingJump:0.000} shortJump={shortJump:0.000} " +
                 $"longJump={longJump:0.000} partialAir={partialAirTravel:0.000} keyboard={keyboardSpeed:0.000} " +
                 $"fly={flyTravel:0.000} respawnError={respawnError:0.000}");
             GetTree().Quit(0);
@@ -117,7 +182,8 @@ public partial class OBPGame
     private async System.Threading.Tasks.Task<float> MeasureJumpAsync(
         DebugPlayer player,
         int holdFrames,
-        bool applyPartialAirControl)
+        bool applyPartialAirControl,
+        bool movingAtLaunch = false)
     {
         float baseline = player.GlobalPosition.Y;
         float apex = baseline;
@@ -132,7 +198,17 @@ public partial class OBPGame
             await PhysicsFramesAsync(1);
             if (!player.IsOnFloor())
             {
-                sawAir = true;
+                if (!sawAir)
+                {
+                    sawAir = true;
+                    if (_activeDestination?.Game == ObpSourceGame.Rac1)
+                    {
+                        await WaitForPlayerAvatarSequenceAsync(
+                            Rac1RatchetSequenceSelection.SelectJumpSequence(movingAtLaunch),
+                            30,
+                            movingAtLaunch ? "moving jump" : "stationary jump");
+                    }
+                }
                 if (applyPartialAirControl && frame == 0)
                     SetAnalogueSmokeInput(0.58f, 0f);
             }
@@ -189,6 +265,43 @@ public partial class OBPGame
         }
 
         throw new InvalidOperationException("player did not reach Godot floor contact within smoke timeout");
+    }
+
+    private async System.Threading.Tasks.Task WaitForAnimationStateAsync(
+        DebugPlayer player,
+        PlayerAnimationState expected,
+        int maxFrames,
+        string label)
+    {
+        for (int frame = 0; frame < maxFrames; frame++)
+        {
+            await PhysicsFramesAsync(1);
+            if (player.AnimationState == expected)
+                return;
+        }
+
+        throw new InvalidOperationException(
+            $"{label} did not reach animation state {expected}; current={player.AnimationState}");
+    }
+
+    private async System.Threading.Tasks.Task WaitForPlayerAvatarSequenceAsync(
+        int expectedSequence,
+        int maxFrames,
+        string label)
+    {
+        for (int frame = 0; frame < maxFrames; frame++)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            if (CurrentPlayerAvatarSourceSequence() == expectedSequence &&
+                PlayerAvatarPresentationIsSynchronized())
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"{label} did not reach synchronized player-avatar sequence {expectedSequence}; " +
+            $"current={CurrentPlayerAvatarSourceSequence()?.ToString() ?? "none"}");
     }
 
     private async System.Threading.Tasks.Task PhysicsFramesAsync(int count)

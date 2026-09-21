@@ -118,6 +118,22 @@ public partial class OBPGame
         _playerAvatarView.SetClock(_playerAvatarClock);
     }
 
+    private int? CurrentPlayerAvatarSourceSequence()
+    {
+        string? key = _playerAvatarAnimationSink?.CurrentAnimationPresentation.SourceSequenceKey;
+        return int.TryParse(
+            key,
+            System.Globalization.NumberStyles.Integer,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out int sequenceId)
+            ? sequenceId
+            : null;
+    }
+
+    private bool PlayerAvatarPresentationIsSynchronized() =>
+        _playerAvatarAnimationSink?.CurrentAnimationPresentation ==
+        _playerAvatarAnimationController?.Current;
+
     private void ClearPlayerAvatarView()
     {
         _playerAvatarAnimationSink = null;
