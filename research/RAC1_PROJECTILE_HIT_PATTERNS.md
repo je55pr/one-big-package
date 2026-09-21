@@ -79,6 +79,8 @@ an explicitly host-owned presentation fallback because natural expiry is unresol
 The generic layer deliberately does **not** assign universal launch speed, lifetime, radius, damage scalar, damage flags, faction filtering or post-contact state machine. Those remain projectile/weapon owned.
 For Bomb Glove specifically, `Rac1BombGlove` freezes class `0x79`, source PVar `+0x50`, state `1 -> 2`, observed terminal `0xfe`, authority-state float32 vertical decrement `0.003055555745959282`, countdown values `300/30`, fire gate `20`, and splash envelope `2.0 / 0x00830000`.
 
+The separately retained class-`0x4a` family is now represented by `Rac1Class4aWeaponFamilySession`. It keeps its recovered `0 -> 1` projectile launch, PVar `+0x30` source ownership, 10/20 staging/fire cadence and `1.0 / 0x00010000` direct-victim envelope, but deliberately has no `Rac1WeaponId`, ammo capacity, target filter or implicit projectile-completion rule. Those remain blocked on item/family binding evidence.
+
 The previously promoted class-749 Bomb consequence has been withdrawn: the retained class-749 witness proves a `1.0 -> 0.0` consequence, while the actual Bomb splash envelope is `2.0`. No retail witness yet proves how that envelope maps onto the representative class-749 health state.
 
 ## Reproduction

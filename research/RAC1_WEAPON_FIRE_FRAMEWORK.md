@@ -60,7 +60,9 @@ and then applies the recovered vertical-step recurrence documented in `RAC1_PROJ
 
 The complete item-10 **launch-vector initialization and launch-origin formula remain unresolved**. The Godot host therefore maps native Ratchet yaw directly for visible direction and keeps its muzzle offset as an explicit presentation fallback.
 
-This supersedes an earlier attribution from another class-`0xc0` path rooted at `0x002c1ad0`, constructor `0x002a9ed0`, class `0x4a`, and launch helper `0x002aa008`. That separate path remains valid retail evidence: it has class-`0x4a` ownership at projectile PVar `+0x30`, a 10/20-tick pair, and the previously decoded yaw/radius/height origin construction. Controlled item-10 replay proves it is **not** the Bomb Glove carrier, so those constants are retained as separate-family archaeology rather than exposed through `Rac1BombGlove`.
+This supersedes an earlier attribution from another class-`0xc0` path rooted at `0x002c1ad0`, constructor `0x002a9ed0`, class `0x4a`, and launch helper `0x002aa008`. That separate path remains valid retail evidence: it has class-`0x4a` ownership at projectile PVar `+0x30`, a 10/20-tick pair, and the previously decoded yaw/radius/height origin construction. Controlled item-10 replay proves it is **not** the Bomb Glove carrier.
+
+`Rac1Class4aWeaponFamilySession` now promotes the safe reusable subset of that separate path: staged class `0x4a` state `0 -> 1`, the 10-tick replacement gate, the 20-tick fire gate, retained source ownership at PVar `+0x30`, and the `1.0 / 0x00010000` direct-victim damage handoff. The session deliberately requires an external `stagingAdmitted` fact and does not consume inventory ammo, because no retained witness binds this family to a native item id, descriptor capacity or acquisition state. It is therefore a native-runtime family contract, not a selectable Godot weapon yet.
 
 ## Wrench contrast
 
