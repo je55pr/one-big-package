@@ -8,6 +8,13 @@ public enum Rac1RatchetLifeState
     Dead,
 }
 
+public enum Rac1RatchetDeathCause
+{
+    None,
+    CombatZeroNanotech,
+    VeldinEnvironmental,
+}
+
 /// <summary>
 /// Bounded retail-backed R&C1 Ratchet Nanotech state.
 /// This does not generalize health semantics across the trilogy.
@@ -25,6 +32,7 @@ public sealed class Rac1RatchetNanotechSession
 
     private int _nanotech = RetailVeldinRespawnNanotech;
     private Rac1RatchetLifeState _lifeState = Rac1RatchetLifeState.Alive;
+    private Rac1RatchetDeathCause _deathCause = Rac1RatchetDeathCause.None;
     private int? _nativePlayerState;
     private int? _nativeSequence;
     private int? _nativeSequenceFrame;
@@ -43,7 +51,10 @@ public sealed class Rac1RatchetNanotechSession
 
         _nanotech = Math.Max(0, _nanotech - 1);
         if (_nanotech == 0)
+        {
             _lifeState = Rac1RatchetLifeState.Dead;
+            _deathCause = Rac1RatchetDeathCause.CombatZeroNanotech;
+        }
         return Snapshot();
     }
 
@@ -84,16 +95,25 @@ public sealed class Rac1RatchetNanotechSession
 
         _nanotech = 0;
         _lifeState = Rac1RatchetLifeState.Dead;
+        _deathCause = Rac1RatchetDeathCause.VeldinEnvironmental;
         return Snapshot();
     }
 
+    /// <summary>
+    /// Applies only the recovered opening-Veldin environmental restart. Combat
+    /// zero-Nanotech is a proven death boundary, but its native restart/checkpoint
+    /// path is not recovered and therefore cannot use this reset.
+    /// </summary>
     public Rac1RatchetNanotechSnapshot Respawn()
     {
-        if (_lifeState != Rac1RatchetLifeState.Dead)
-            throw new InvalidOperationException("R&C1 Ratchet respawn requires a dead state.");
+        if (_lifeState != Rac1RatchetLifeState.Dead ||
+            _deathCause != Rac1RatchetDeathCause.VeldinEnvironmental)
+            throw new InvalidOperationException(
+                "R&C1 recovered respawn is limited to Veldin environmental death.");
 
         _nanotech = RetailVeldinRespawnNanotech;
         _lifeState = Rac1RatchetLifeState.Alive;
+        _deathCause = Rac1RatchetDeathCause.None;
         _nativePlayerState = null;
         _nativeSequence = null;
         _nativeSequenceFrame = null;
@@ -105,6 +125,7 @@ public sealed class Rac1RatchetNanotechSession
             _nanotech,
             RetailVeldinRespawnNanotech,
             _lifeState,
+            _deathCause,
             _nativePlayerState,
             _nativeSequence,
             _nativeSequenceFrame);
@@ -120,9 +141,13 @@ public sealed record Rac1RatchetNanotechSnapshot(
     int Nanotech,
     int RespawnNanotech,
     Rac1RatchetLifeState LifeState,
+    Rac1RatchetDeathCause DeathCause,
     int? NativePlayerState = null,
     int? NativeSequence = null,
     int? NativeSequenceFrame = null)
 {
     public bool IsDead => LifeState == Rac1RatchetLifeState.Dead;
+
+    public bool HasRecoveredVeldinEnvironmentalRespawn =>
+        IsDead && DeathCause == Rac1RatchetDeathCause.VeldinEnvironmental;
 }

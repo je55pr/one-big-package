@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "openingVeldinEnvironmentalRestart": {
+    "scope": "controlled retail Veldin fall witness only",
+    "nanotechBefore": 4,
+    "deathSequencesObserved": [10, 11],
+    "reset": {
+      "nativePlayerState": "0x77",
+      "nativeSequence": 11,
+      "nativeSequenceFrame": 0,
+      "nanotech": 0
+    },
+    "restoredNanotech": 4,
+    "restoredNativePositionApprox": [132.09, 115.48, 31.4266],
+    "positionMatches": "authored class-0 instance-0 Veldin player start",
+    "motionReset": true,
+    "authoredClass0YawRadians": 0.6627015,
+    "postDeathYawResetProven": false
+  },
+  "stateSemantics": {
+    "nanotech": "reset-to-4-proven",
+    "playerPosition": "reset-to-opening-veldin-authored-class0-proven",
+    "playerMotion": "reset-proven",
+    "playerYaw": "unresolved",
+    "checkpointSelector": "unresolved-beyond-opening-veldin",
+    "equippedWeapon": "unresolved-across-death",
+    "ammo": "unresolved-across-death",
+    "boltWallet": "unresolved-across-death",
+    "transientBoltPickups": "unresolved-across-death",
+    "class500UidPersistence": "unresolved-across-death",
+    "enemyState": "unresolved-across-death",
+    "levelScriptState": "unresolved-across-death",
+    "campaignState": "separate-persistent-contract-not-a-proven-death-checkpoint-contract"
+  },
+  "separateRecoveredStorage": {
+    "nanotech": "0x001415f8",
+    "item10Ammo": "0x0013d450",
+    "boltCounter": "0x0015ed98",
+    "currentLevel": "0x0015ed84",
+    "visitedPlanets": "0x0013dd40",
+    "galacticMap": "0x0013d510",
+    "perLevelState": "0x0013dd58"
+  },
+  "combatDeathBoundary": {
+    "class749CanReduceNanotechToZero": true,
+    "combatDeathPresentationRecovered": false,
+    "combatCheckpointOrRestartRecovered": false,
+    "mustNotReuseEnvironmentalSequencesOrRespawn": true
+  },
+  "class500PersistenceBoundary": {
+    "destroyedUidBitsCorrelateExactlyInFixedVeldinWitness": true,
+    "survivesSavestateRestore": true,
+    "deathClearEventProven": false,
+    "checkpointClearEventProven": false,
+    "planetReloadClearEventProven": false
+  },
+  "implementationBoundary": {
+    "deathCauses": ["CombatZeroNanotech", "VeldinEnvironmental"],
+    "recoveredRespawnAdmitsOnly": "VeldinEnvironmental",
+    "hostRespawnDoesNotClaimUnresolvedStatePreservation": true
+  },
+  "evidenceSources": [
+    "research/RAC1_NANOTECH_DAMAGE_DEATH.md",
+    "research/RAC1_PLAYER_MOVEMENT.md",
+    "research/RAC1_VELDIN_SPAWN.md",
+    "research/RAC1_WEAPON_INVENTORY.md",
+    "research/RAC1_CRATES_PICKUPS.md",
+    "research/RAC1_HOSTILE_COMMON_STATE.md",
+    "research/RAC1_CAMPAIGN_TRAVEL.md"
+  ],
+  "notes": [
+    "No ISO, executable, EE-memory, savestate, memory-card, PVar, or other proprietary payload bytes are retained.",
+    "Unresolved entries require controlled retail before/death/restart evidence; host behavior is not evidence."
+  ]
+}

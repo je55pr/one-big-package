@@ -212,8 +212,9 @@ public partial class OBPGame
 
     private void OnRac1RespawnRequested()
     {
+        var death = _rac1Nanotech.Probe();
         if (_world is not { Game: "rac1", LevelId: 0 } || _player is null ||
-            !_rac1Nanotech.Probe().IsDead)
+            !death.HasRecoveredVeldinEnvironmentalRespawn)
             return;
 
         var respawn = _rac1Nanotech.Respawn();
@@ -559,7 +560,7 @@ public partial class OBPGame
             _player.Rac1GameplayAlive = !nanotech.IsDead;
             GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
             _rac1CombatStatus = nanotech.IsDead
-                ? "Nanotech 0: Ratchet dead; press R for Veldin respawn"
+                ? "Nanotech 0: combat-death restart/checkpoint semantics unresolved"
                 : $"class-749 hit: Nanotech {nanotech.Nanotech}/{nanotech.RespawnNanotech}";
             RefreshRac1HudState(Rac1HudProjection.DamageFeedback(beforeNanotech, nanotech));
         }
@@ -639,7 +640,12 @@ public partial class OBPGame
             : $"class-749 i{Rac1RepresentativeHostileInstance} state {_rac1HostileProbe.NativeState} health {_rac1HostileProbe.Health:0.###}";
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
-        return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · R Veldin respawn · {_rac1CombatStatus}\n" +
+        string restart = nanotech.HasRecoveredVeldinEnvironmentalRespawn
+            ? "R Veldin environmental respawn"
+            : nanotech.IsDead
+                ? "combat restart unresolved"
+                : "Veldin environmental respawn evidence only";
+        return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
             $"Bolts collected: {_rac1BoltCrates.CollectedBolts}   pickups: {_rac1PickupNodes.Count}   {hostile}";

@@ -24,9 +24,9 @@ The previously recovered movement work independently establishes that respawn pl
 
 ## Runtime promotion
 
-`Rac1RatchetNanotechSession` is RAC1-owned and engine-independent. It starts at the witnessed Veldin value `4`, accepts only the recovered class-749 marker-34/damage-1 event, reaches dead state at zero, models the witnessed environmental reset boundary, and restores `4` on respawn.
+`Rac1RatchetNanotechSession` is RAC1-owned and engine-independent. It starts at the witnessed Veldin value `4`, accepts only the recovered class-749 marker-34/damage-1 event, reaches dead state at zero, and records whether that boundary came from combat zero-Nanotech or the separately witnessed Veldin environmental path. Only the latter may use the recovered respawn operation that restores `4`.
 
-The API deliberately rejects unproven attack shapes and does not add shared Runtime or Godot health semantics.
+This distinction prevents the host from aliasing the Veldin fall restart onto combat death. The API deliberately rejects unproven attack shapes and does not add shared Runtime or Godot health semantics. The broader preservation/reset matrix is retained in `RAC1_DEATH_RESPAWN.md`.
 
 ## Deliberately unresolved
 
