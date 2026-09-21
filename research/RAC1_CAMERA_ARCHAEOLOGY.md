@@ -233,6 +233,30 @@ provenance; it cannot override a promoted built-in name.
 The default candidate scan remains useful for discovery, but candidate words
 are never treated as semantic fields solely because they sit near the camera
 structure.
+
+## Runtime contract boundary
+
+The promoted engine-neutral hand-off now lives under `OBP.Runtime.Camera`.
+`RuntimeCameraState` carries only an OBP Y-up eye/forward pose, a world-up
+control heading and preferred/effective distance. `RuntimeCameraObstructionProbe`
+contains only two endpoints and deliberately does not choose ray versus swept
+geometry; `RuntimeCameraObstructionFacts` returns contact plus the signed
+orientation dot consumed by source-game camera rules.
+
+`OBP.RAC1.Camera.Rac1CameraState` retains the recovered native Z-up control,
+follow, framing and obstruction fields. `Rac1CameraRecurrence` implements only
+producer stages established above: the `I+0x1a0` heading-step recurrence, the
+ordinary vertical-follow and final eye-height damped steps, radial working-value
+pull-in, lateral-side classification / one-degree correction, recursive clear-line
+cosine release, and the final `1.5` effective-radius guard.
+
+This is intentionally not a guessed complete camera update. The manual
+right-stick producer, profile/mode source that selects preferred radius and eye
+height, radial-follow coefficient selector, exact contact primitive and full
+multi-update lateral convergence remain unresolved. The existing Godot camera
+fallback therefore stays a host presentation path until those producer stages
+are recovered; it is not re-labelled as retail behavior by this contract.
+
 ## Repeatable scenarios
 
 `tools/rac1-camera-archaeology.py` builds the following literal DualShock 2
