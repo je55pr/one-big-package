@@ -1,10 +1,12 @@
+using OBP.Core;
+
 namespace OBP.Runtime.Player;
 
 /// <summary>
 /// Stable, source-game-neutral identity for a playable avatar/model.
 /// </summary>
 public sealed record PlayerAvatarIdentity(
-    string SourceGame,
+    ObpSourceGame SourceGame,
     string BuildId,
     string AvatarId,
     string ModelId);

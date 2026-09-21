@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.IO;
 using OBP.PS2.Textures;
 using OBP.RAC1.Level;
@@ -25,15 +26,16 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
 
     private Rac1PlayerAvatarProvider() { }
 
-    public string SourceGame => "rac1";
+    public ObpSourceGame SourceGame => ObpSourceGame.Rac1;
     public string BuildId => Rac1Authority.Primary.BuildId;
+    public string DefaultAvatarId => RatchetAvatarId;
 
     public bool CanLoad(string avatarId) =>
         string.Equals(avatarId, RatchetAvatarId, StringComparison.Ordinal);
 
     public IPlayerAnimationPresentationController CreateAnimationController(PlayerAvatar avatar)
     {
-        if (!string.Equals(avatar.Identity.SourceGame, SourceGame, StringComparison.Ordinal) ||
+        if (avatar.Identity.SourceGame != SourceGame ||
             !CanLoad(avatar.Identity.AvatarId))
         {
             throw new ArgumentException("Avatar does not belong to the R&C1 player provider.", nameof(avatar));

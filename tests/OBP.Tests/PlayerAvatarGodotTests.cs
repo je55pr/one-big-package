@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
@@ -377,7 +378,7 @@ public sealed class PlayerAvatarGodotTests
             Clip("primary-attack", PlayerAvatarAnimationRole.PrimaryAttack, [0.1, 0.2]),
         ];
         return new PlayerAvatar(
-            new PlayerAvatarIdentity("test", "test", "avatar", "model"),
+            new PlayerAvatarIdentity(ObpSourceGame.Synthetic, "test", "avatar", "model"),
             clips,
             [surface],
             textures,

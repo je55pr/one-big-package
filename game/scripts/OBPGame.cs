@@ -747,7 +747,7 @@ public partial class OBPGame : Node3D
         _camera.Current = false;
         _activeCamera = player.Camera;
         _player = player;
-        AttachRatchetPlayerVisual(player);
+        AttachPlayerAvatarVisual(player);
         ArmCrateDebugHarness(player);
         ArmRac1Gameplay(player);
     }

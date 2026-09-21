@@ -1,3 +1,5 @@
+using OBP.Core;
+
 namespace OBP.Runtime.Player;
 
 /// <summary>
@@ -7,8 +9,9 @@ namespace OBP.Runtime.Player;
 /// </summary>
 public interface IPlayerAvatarProvider
 {
-    string SourceGame { get; }
+    ObpSourceGame SourceGame { get; }
     string BuildId { get; }
+    string DefaultAvatarId { get; }
 
     bool CanLoad(string avatarId);
 

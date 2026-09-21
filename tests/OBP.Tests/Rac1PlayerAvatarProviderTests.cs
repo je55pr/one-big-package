@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.IO;
 using OBP.PS2.Textures;
 using OBP.RAC1.Level;
@@ -13,11 +14,25 @@ public sealed class Rac1PlayerAvatarProviderTests
     {
         IPlayerAvatarProvider provider = Rac1PlayerAvatarProvider.Instance;
 
-        Assert.Equal("rac1", provider.SourceGame);
+        Assert.Equal(ObpSourceGame.Rac1, provider.SourceGame);
         Assert.Equal("rac1-ntscu-original", provider.BuildId);
+        Assert.Equal(Rac1PlayerAvatarProvider.RatchetAvatarId, provider.DefaultAvatarId);
         Assert.True(provider.CanLoad(Rac1PlayerAvatarProvider.RatchetAvatarId));
         Assert.False(provider.CanLoad("clank"));
         Assert.IsAssignableFrom<IPlayerAnimationControllerProvider>(provider);
+    }
+
+    [Fact]
+    public void ProviderRegistryRoutesBySourceAndNeverBorrowsRac1ForLaterGames()
+    {
+        IPlayerAvatarProvider provider = Rac1PlayerAvatarProvider.Instance;
+        var registry = new PlayerAvatarProviderRegistry([provider]);
+
+        Assert.Same(provider, registry.Get(ObpSourceGame.Rac1));
+        Assert.Null(registry.Get(ObpSourceGame.Rac2));
+        Assert.Null(registry.Get(ObpSourceGame.Rac3));
+        Assert.Throws<ArgumentException>(() =>
+            new PlayerAvatarProviderRegistry([provider, provider]));
     }
 
     [SkippableFact]
@@ -29,7 +44,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         var avatar = Rac1PlayerAvatarProvider.Instance.Load(
             iso!, Rac1PlayerAvatarProvider.RatchetAvatarId);
 
-        Assert.Equal("rac1", avatar.Identity.SourceGame);
+        Assert.Equal(ObpSourceGame.Rac1, avatar.Identity.SourceGame);
         Assert.Equal("rac1-ntscu-original", avatar.Identity.BuildId);
         Assert.Equal("ratchet", avatar.Identity.AvatarId);
         Assert.Equal("rac1:ratchet:moby-class-0", avatar.Identity.ModelId);

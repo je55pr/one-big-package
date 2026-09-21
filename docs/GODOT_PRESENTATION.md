@@ -148,16 +148,23 @@ the same local transform and implements only `IPlayerAnimationPresentationSink`:
 the supplied clip id, clock origin and loop policy. Optional source sequence/state keys are
 opaque provenance carried by Runtime and never interpreted by Godot.
 
-The first source-aware controller deliberately stays narrower than the decoded R&C1 clip
-catalogue. `Rac1PlayerAnimationPresentationController` owns the retained selector behavior:
+The first renderable source-aware controller deliberately stays narrower than the decoded R&C1
+clip catalogue. `Rac1PlayerAnimationPresentationController` owns the retained selector behavior:
 grounded locomotion enters through native sequence 3 and hands to sequence 4 at decoded timing;
 launch context chooses sequence 7 or 8 and the selected jump clip persists through fall; landing
 returns directly to standing or sustained locomotion because no distinct landing selector was
 witnessed; and the admitted sequence-23 wrench attack plays once before returning to the prior
 ground context. These are source-owned decisions, not Godot rules. The generic Runtime fallback
-exists only for an avatar provider that explicitly lacks a native selector. GC and UYA currently
-lack native player-avatar providers, so their worlds keep the debug capsule instead of receiving
-an R&C1 Ratchet presentation.
+exists only for an avatar provider that explicitly lacks a native selector.
+
+Provider composition is now keyed by `ObpSourceGame`, not by a hard-coded R&C1 lookup. GC and
+UYA both have retained native player state/sequence-selection contracts
+(`GcRatchetSequenceSelection` and `UyaRatchetSequenceSelection`), but neither currently has a
+renderable native player-avatar provider. GC still needs its dedicated Ratchet carrier decoded
+into `PlayerAvatar`; UYA additionally has unresolved special `0xF` player-frame pose bodies.
+Those worlds therefore keep the debug capsule and do not borrow the R&C1 model, clips, controller,
+or sequence semantics. The recovered GC/UYA selectors remain source-owned evidence for their
+future providers rather than being projected through the host's generic movement classifier.
 
 Both stop variants, crouch, and the two crouch-turn clips remain exposed as neutral avatar
 data without invented gameplay predicates. In particular, sequences 5 and 6 intentionally

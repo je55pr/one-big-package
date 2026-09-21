@@ -8,68 +8,76 @@ namespace OneBigPackage;
 
 public partial class OBPGame
 {
-    private PlayerAvatar? _ratchetPlayerAvatar;
-    private string? _ratchetPlayerAvatarSourcePath;
+    private static readonly PlayerAvatarProviderRegistry PlayerAvatarProviders = new(
+        [Rac1PlayerAvatarProvider.Instance]);
+
+    private PlayerAvatar? _playerAvatar;
+    private string? _playerAvatarSourcePath;
+    private ObpSourceGame? _playerAvatarSourceGame;
     private PlayerAvatarView? _playerAvatarView;
     private IPlayerAnimationPresentationSink? _playerAvatarAnimationSink;
     private IPlayerAnimationPresentationController? _playerAvatarAnimationController;
     private double _playerAvatarClock;
 
     /// <summary>
-    /// Replace the debug capsule presentation with the retail-backed R&C1 Ratchet
-    /// avatar whenever that source is attached. Controller/collision stay on
-    /// DebugPlayer and remain deliberately independent from avatar presentation.
+    /// Resolve player presentation from the active source game. A missing native
+    /// avatar provider is an explicit unsupported boundary: keep the debug capsule
+    /// rather than borrowing another game's model, clips, or animation selector.
+    /// Controller/collision stay on DebugPlayer and remain independent from visuals.
     /// </summary>
-    private void AttachRatchetPlayerVisual(DebugPlayer player)
+    private void AttachPlayerAvatarVisual(DebugPlayer player)
     {
-        if (_activeDestination?.Game != ObpSourceGame.Rac1)
+        if (_activeDestination is not { } destination)
+            return;
+
+        IPlayerAvatarProvider? provider = PlayerAvatarProviders.Get(destination.Game);
+        if (provider is null)
         {
-            GD.Print("[player-avatar] native player avatar is not recovered for this source game; keeping debug capsule visual");
+            GD.Print($"[player-avatar] {destination.Game} has no decoded native player-avatar provider; keeping debug capsule visual");
             return;
         }
 
         EnsureSourceLibraryInitialized();
-        IPlayerAvatarProvider provider = Rac1PlayerAvatarProvider.Instance;
-        var source = _sources.Get(ObpSourceGame.Rac1);
+        var source = _sources.Get(destination.Game);
         if (source is null)
         {
-            GD.Print("[player-avatar] R&C1 source is not attached; keeping debug capsule visual");
+            GD.Print($"[player-avatar] {destination.Game} source is not attached; keeping debug capsule visual");
             return;
         }
 
         try
         {
-            if (_ratchetPlayerAvatar is null ||
-                !string.Equals(_ratchetPlayerAvatarSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
+            if (_playerAvatar is null ||
+                _playerAvatarSourceGame != destination.Game ||
+                !string.Equals(_playerAvatarSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                _ratchetPlayerAvatar = provider.Load(
-                    source.Path,
-                    Rac1PlayerAvatarProvider.RatchetAvatarId);
-                _ratchetPlayerAvatarSourcePath = source.Path;
+                _playerAvatar = provider.Load(source.Path, provider.DefaultAvatarId);
+                _playerAvatarSourcePath = source.Path;
+                _playerAvatarSourceGame = destination.Game;
                 sw.Stop();
-                GD.Print($"[player-avatar] loaded {_ratchetPlayerAvatar.Identity.ModelId} in {sw.ElapsedMilliseconds} ms");
+                GD.Print($"[player-avatar] loaded {_playerAvatar.Identity.ModelId} in {sw.ElapsedMilliseconds} ms");
             }
 
             IPlayerAnimationPresentationController animationController =
-                CreatePlayerAnimationController(provider, _ratchetPlayerAvatar);
+                CreatePlayerAnimationController(provider, _playerAvatar);
             animationController.SetAnimationState(player.AnimationState);
             var view = new PlayerAvatarView(
-                _ratchetPlayerAvatar,
+                _playerAvatar,
                 animationController.Current,
                 alignGeometricBase: true)
             {
-                Name = "RatchetAvatar",
+                Name = "PlayerAvatar",
             };
             ClearPlayerAvatarView();
             player.VisualRoot.ReplaceVisual(view);
-            player.ConfigureAvatarPresentation((float)_ratchetPlayerAvatar.AnimationBounds.Height);
+            player.ConfigureAvatarPresentation((float)_playerAvatar.AnimationBounds.Height);
             _playerAvatarView = view;
             _playerAvatarAnimationSink = view;
             _playerAvatarAnimationController = animationController;
             _playerAvatarClock = 0;
             HideAuthoredWorldRatchetPresentation();
-            GD.Print($"[player-avatar] attached Ratchet: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
+            GD.Print($"[player-avatar] attached {_playerAvatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
         }
         catch (Exception ex)
         {
@@ -78,7 +86,7 @@ public partial class OBPGame
             _playerAvatarView = null;
             _playerAvatarClock = 0;
             player.VisualRoot.ReplaceVisual(null);
-            GD.PrintErr($"[player-avatar] could not attach Ratchet; keeping debug capsule: {ex.Message}");
+            GD.PrintErr($"[player-avatar] could not attach native avatar; keeping debug capsule: {ex.Message}");
         }
     }
 
