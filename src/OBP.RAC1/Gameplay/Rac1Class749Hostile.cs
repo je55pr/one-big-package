@@ -26,8 +26,8 @@ public static class Rac1Class749Hostile
     public const int StateSixOrEightSequenceId = 4;
     public const int AttackSequenceId = 5;
     public const int DamageNativeState = 12;
-    public const int TerminalNativeStateFd = 0xfd;
-    public const int TerminalNativeStateFe = 0xfe;
+    public const int TerminalNativeStateFd = Rac1MobyRuntime.TerminalNativeStateFd;
+    public const int TerminalNativeStateFe = Rac1MobyRuntime.TerminalNativeStateFe;
 
     public const double AttackDistanceExclusive = 2d;
     public const double AttackRetainDistanceInclusive = 1.5d;
@@ -139,19 +139,35 @@ public readonly record struct Rac1Class749TargetFacts(
     Rac1Class749WorldPoint CurrentPosition = default,
     int? StatusSentinel = null);
 
+public enum Rac1Class749NavigationIntentKind
+{
+    PursueRecoveredTarget,
+    ReturnHome,
+}
+
+public sealed record Rac1Class749NavigationIntent(
+    Rac1Class749NavigationIntentKind Kind,
+    Rac1Class749WorldPoint? Destination = null) : IRac1MobyHostIntent;
+
 public sealed record Rac1Class749AttackEvent(
     double NativeMarker,
-    double NativeDamage);
+    double NativeDamage) : IRac1MobyHostEvent;
 
 /// <summary>
-/// Deterministic engine-independent probe returned to a host. Native semantics stay here;
-/// only the embedded RuntimeEntityState carries the independently justified neutral lifetime projection.
+/// Deterministic engine-independent probe returned to a host. Class-specific
+/// policy stays here while the embedded live-Moby state carries only recovered
+/// engine-common native state and neutral lifetime projection.
 /// </summary>
 public sealed record Rac1Class749HostProbe(
     Rac1Class749Key Key,
-    int NativeState,
     float Health,
     int? NativeSequence,
     int NativeSequenceUpdate,
     Rac1Class749AttackEvent? Attack,
-    RuntimeEntityState EntityState);
+    Rac1MobyRuntimeState RuntimeState,
+    IReadOnlyList<IRac1MobyHostIntent> HostIntents,
+    IReadOnlyList<IRac1MobyHostEvent> HostEvents)
+{
+    public int NativeState => RuntimeState.NativeState;
+    public RuntimeEntityState EntityState => RuntimeState.EntityState;
+}

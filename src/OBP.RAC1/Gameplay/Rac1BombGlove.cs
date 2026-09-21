@@ -19,7 +19,10 @@ public sealed record Rac1BombGloveDamageResult(
     long ProjectileId,
     int TargetNativeClassId,
     double NativeDamage,
-    uint NativeDamageFlags);
+    uint NativeDamageFlags)
+{
+    public Rac1NativeDamageEnvelope DamageEnvelope => new(NativeDamage, NativeDamageFlags);
+}
 
 public sealed record Rac1BombGloveProbe(
     int Ammo,

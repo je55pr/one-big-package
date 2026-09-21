@@ -24,7 +24,10 @@ public sealed record Rac1WrenchDamageResult(
     Rac1WrenchContactPath ContactPath,
     double NativeDamage,
     uint NativeDamageFlags,
-    Rac1BoltCrateBreakResult? BoltCrateBreak = null);
+    Rac1BoltCrateBreakResult? BoltCrateBreak = null)
+{
+    public Rac1NativeDamageEnvelope DamageEnvelope => new(NativeDamage, NativeDamageFlags);
+}
 
 /// <summary>
 /// Bounded retail-backed contact rules for Ratchet's ordinary first wrench swing.

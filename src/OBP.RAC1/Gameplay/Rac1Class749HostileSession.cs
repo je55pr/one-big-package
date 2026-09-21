@@ -21,8 +21,10 @@ public sealed class Rac1Class749HostileSession
 
         var entry = new Entry(
             Rac1Class749Hostile.RequirePVar(source),
-            Rac1Class749Hostile.TargetSearchNativeState,
-            current);
+            Rac1MobyRuntime.Create(
+                source,
+                Rac1Class749Hostile.TargetSearchNativeState,
+                current));
         if (!_entries.TryAdd(authored.Key, entry))
             throw new InvalidOperationException(
                 $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
@@ -42,8 +44,11 @@ public sealed class Rac1Class749HostileSession
         ValidateTargetFacts(target);
 
         var (key, entry) = RequireEntry(source);
+        int nativeStateBefore = entry.NativeState;
         int statusSentinel = target.StatusSentinel ?? Rac1Class749Hostile.ReadStatusSentinel(entry.PVar);
         Rac1Class749AttackEvent? attack = null;
+        IReadOnlyList<IRac1MobyHostIntent> hostIntents =
+            HostIntentsForDispatch(nativeStateBefore, entry.PVar);
 
         switch (entry.NativeState)
         {
@@ -95,7 +100,12 @@ public sealed class Rac1Class749HostileSession
                 break;
         }
 
-        return Snapshot(key, entry, attack);
+        var hostEvents = HostEventsForStep(
+            entry.RuntimeState.Key,
+            nativeStateBefore,
+            entry.NativeState,
+            attack);
+        return Snapshot(key, entry, attack, hostIntents, hostEvents);
     }
 
     public Rac1Class749HostProbe ApplyWrenchDamage(
@@ -109,7 +119,7 @@ public sealed class Rac1Class749HostileSession
             throw new NotSupportedException(
                 "Only the recovered ordinary forward wrench damage result is admitted for class 749.");
 
-        return ApplyRepresentativeDamage(source, damage.NativeDamage, "wrench");
+        return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "wrench");
     }
 
     public Rac1Class749HostProbe ApplyBombGloveDamage(
@@ -122,28 +132,38 @@ public sealed class Rac1Class749HostileSession
             throw new NotSupportedException(
                 "Only the recovered Bomb Glove impact record is admitted for class 749.");
 
-        return ApplyRepresentativeDamage(source, damage.NativeDamage, "Bomb Glove");
+        return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "Bomb Glove");
     }
 
     private Rac1Class749HostProbe ApplyRepresentativeDamage(
         RuntimeDynamicObject source,
-        double nativeDamage,
+        Rac1NativeDamageEnvelope damage,
         string sourceLabel)
     {
         var (key, entry) = RequireEntry(source);
+        int nativeStateBefore = entry.NativeState;
         float healthBefore = Rac1Class749Hostile.ReadHealth(entry.PVar);
         if (healthBefore != 1f)
             throw new NotSupportedException(
                 $"R&C1 class-749 {sourceLabel} consequence is proven only for representative health 1.0, not {healthBefore}.");
 
-        float healthAfter = healthBefore - checked((float)nativeDamage);
+        float healthAfter = healthBefore - checked((float)damage.NativeDamage);
         if (healthAfter != 0f)
             throw new InvalidOperationException("Representative class-749 damage did not produce health 0.0.");
         Rac1Class749Hostile.WriteHealth(entry.PVar, healthAfter);
         entry.NativeState = Rac1Class749Hostile.DamageNativeState;
         entry.NativeSequence = null;
         entry.NativeSequenceUpdate = 0;
-        return Snapshot(key, entry);
+
+        IReadOnlyList<IRac1MobyHostEvent> hostEvents =
+        [
+            new Rac1MobyDamageConsumedEvent(entry.RuntimeState.Key, damage),
+            new Rac1MobyNativeStateChangedEvent(
+                entry.RuntimeState.Key,
+                nativeStateBefore,
+                entry.NativeState),
+        ];
+        return Snapshot(key, entry, hostEvents: hostEvents);
     }
 
     public Rac1Class749HostProbe ApplyTerminalStatus(RuntimeDynamicObject source, int nativeStatus)
@@ -158,11 +178,21 @@ public sealed class Rac1Class749HostileSession
             throw new InvalidOperationException(
                 $"R&C1 class-749 terminal status cannot follow native state {entry.NativeState}.");
 
-        entry.NativeState = nativeStatus;
+        int nativeStateBefore = entry.NativeState;
+        entry.RuntimeState = Rac1MobyRuntime.Terminalize(entry.RuntimeState, nativeStatus);
         entry.NativeSequence = null;
         entry.NativeSequenceUpdate = 0;
-        entry.EntityState = entry.EntityState.WithPresence(RuntimeEntityPresence.Inactive);
-        return Snapshot(key, entry);
+
+        var hostEvents = new List<IRac1MobyHostEvent>();
+        if (nativeStateBefore != nativeStatus)
+        {
+            hostEvents.Add(new Rac1MobyNativeStateChangedEvent(
+                entry.RuntimeState.Key,
+                nativeStateBefore,
+                nativeStatus));
+        }
+        hostEvents.Add(new Rac1MobyTerminalizedEvent(entry.RuntimeState.Key, nativeStatus));
+        return Snapshot(key, entry, hostEvents: hostEvents);
     }
 
     private static Rac1Class749AttackEvent? AdvanceAttackSequence(Entry entry)
@@ -188,6 +218,38 @@ public sealed class Rac1Class749HostileSession
     {
         entry.NativeSequence = sequence;
         entry.NativeSequenceUpdate = 0;
+    }
+
+    private static IReadOnlyList<IRac1MobyHostIntent> HostIntentsForDispatch(
+        int nativeState,
+        ReadOnlySpan<byte> pvar) =>
+        nativeState switch
+        {
+            Rac1Class749Hostile.TargetedNativeState =>
+            [
+                new Rac1Class749NavigationIntent(
+                    Rac1Class749NavigationIntentKind.PursueRecoveredTarget),
+            ],
+            Rac1Class749Hostile.ReturnHomeNativeState =>
+            [
+                new Rac1Class749NavigationIntent(
+                    Rac1Class749NavigationIntentKind.ReturnHome,
+                    Rac1Class749Hostile.ReadHomePosition(pvar)),
+            ],
+            _ => Array.Empty<IRac1MobyHostIntent>(),
+        };
+
+    private static IReadOnlyList<IRac1MobyHostEvent> HostEventsForStep(
+        Rac1MobyRuntimeKey key,
+        int nativeStateBefore,
+        int nativeStateAfter,
+        Rac1Class749AttackEvent? attack)
+    {
+        var events = new List<IRac1MobyHostEvent>(2);
+        if (attack is not null) events.Add(attack);
+        if (nativeStateBefore != nativeStateAfter)
+            events.Add(new Rac1MobyNativeStateChangedEvent(key, nativeStateBefore, nativeStateAfter));
+        return events;
     }
 
     private (Rac1Class749Key Key, Entry Entry) RequireEntry(RuntimeDynamicObject source)
@@ -216,22 +278,30 @@ public sealed class Rac1Class749HostileSession
     private static Rac1Class749HostProbe Snapshot(
         Rac1Class749Key key,
         Entry entry,
-        Rac1Class749AttackEvent? attack = null) =>
+        Rac1Class749AttackEvent? attack = null,
+        IReadOnlyList<IRac1MobyHostIntent>? hostIntents = null,
+        IReadOnlyList<IRac1MobyHostEvent>? hostEvents = null) =>
         new(
             key,
-            entry.NativeState,
             Rac1Class749Hostile.ReadHealth(entry.PVar),
             entry.NativeSequence,
             entry.NativeSequenceUpdate,
             attack,
-            entry.EntityState);
+            entry.RuntimeState,
+            hostIntents ?? Array.Empty<IRac1MobyHostIntent>(),
+            hostEvents ?? Array.Empty<IRac1MobyHostEvent>());
 
-    private sealed class Entry(byte[] pvar, int nativeState, RuntimeEntityState entityState)
+    private sealed class Entry(byte[] pvar, Rac1MobyRuntimeState runtimeState)
     {
         public byte[] PVar { get; } = pvar;
-        public int NativeState { get; set; } = nativeState;
+        public Rac1MobyRuntimeState RuntimeState { get; set; } = runtimeState;
+        public int NativeState
+        {
+            get => RuntimeState.NativeState;
+            set => RuntimeState = Rac1MobyRuntime.WithNativeState(RuntimeState, value);
+        }
         public int? NativeSequence { get; set; }
         public int NativeSequenceUpdate { get; set; }
-        public RuntimeEntityState EntityState { get; set; } = entityState;
+        public RuntimeEntityState EntityState => RuntimeState.EntityState;
     }
 }
