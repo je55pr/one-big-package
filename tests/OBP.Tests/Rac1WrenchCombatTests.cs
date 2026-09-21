@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -8,6 +9,21 @@ namespace OBP.Tests;
 public sealed class Rac1WrenchCombatTests
 {
     private readonly Rac1WrenchCombatController _controller = new();
+
+    [Fact]
+    public void OrdinaryWrenchUseHasOwnAdmissionWithoutRangedCadenceOrAmmo()
+    {
+        var rejected = _controller.AdmitOrdinaryUse(weaponEquipped: false);
+        Assert.False(rejected.Accepted);
+        Assert.Equal(Rac1WeaponUseRejection.NotEquipped, rejected.Rejection);
+
+        var accepted = _controller.AdmitOrdinaryUse(weaponEquipped: true);
+        Assert.True(accepted.Accepted);
+        Assert.Equal(Rac1WeaponId.Wrench, accepted.WeaponId);
+        Assert.Null(accepted.AmmoBefore);
+        Assert.Null(accepted.AmmoAfter);
+        Assert.Equal(Rac1RatchetSequenceSelection.WrenchAttackSequenceId, accepted.NativePlayerSequenceId);
+    }
 
     [Theory]
     [InlineData(16.5, false)]

@@ -47,6 +47,18 @@ public sealed class Rac1WrenchCombatController
     public const double ToolTipInset = 0.085d;
 
     /// <summary>
+    /// Wrench admission shares the semantic use-result envelope with ranged
+    /// weapons, but has no recovered ammo or ranged cooldown gate. Its timing
+    /// remains the action/profile/contact window below.
+    /// </summary>
+    public Rac1WeaponUseAdmission AdmitOrdinaryUse(bool weaponEquipped) =>
+        weaponEquipped
+            ? Rac1WeaponUseAdmission.AcceptWrench()
+            : Rac1WeaponUseAdmission.Reject(
+                Rac1WeaponId.Wrench,
+                Rac1WeaponUseRejection.NotEquipped);
+
+    /// <summary>
     /// Resolve the ordinary first-swing planar attack axis from Ratchet's live native yaw.
     /// Retail class-0 witnesses show the sequence-23 lunge preserving Moby +0x48 yaw
     /// while translating along this axis; camera orientation is not an admitted input here.

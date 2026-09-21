@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot;
+using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
@@ -216,10 +217,18 @@ public partial class OBPGame
             return;
         }
 
+        var use = _rac1Wrench.AdmitOrdinaryUse(_rac1Weapons.Equipped == Rac1WeaponId.Wrench);
+        if (!use.Accepted)
+        {
+            _rac1CombatStatus = $"wrench use rejected: {use.Rejection}";
+            return;
+        }
+
         _rac1SwingActive = true;
         _rac1SwingResolved = false;
         _rac1SwingAge = 0d;
-        _rac1CombatStatus = "wrench swing";
+        _player?.NotifyRac1WrenchAttackAccepted();
+        _rac1CombatStatus = $"wrench swing: sequence {use.NativePlayerSequenceId}";
         GD.Print("[rac1-gameplay] primary attack -> ordinary wrench swing");
     }
 
@@ -475,8 +484,14 @@ public partial class OBPGame
             if (probe.Shot is { } shot)
             {
                 SpawnRac1BombProjectile(shot);
-                _rac1CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
+                _rac1CombatStatus =
+                    $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}; sequence {shot.Admission.NativePlayerSequenceId}";
                 RefreshRac1HudState();
+                GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+            }
+            else if (fire && probe.UseAdmission is { Accepted: false } rejected)
+            {
+                _rac1CombatStatus = $"Bomb Glove use rejected: {rejected.Rejection}";
                 GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
             }
         }
@@ -485,8 +500,23 @@ public partial class OBPGame
     private void SpawnRac1BombProjectile(Rac1BombGloveShot shot)
     {
         if (_sceneResult is null || _player is null) return;
-        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1CurrentYaw);
-        Vector3 direction = new(-(float)facing.X, 0f, (float)facing.Y);
+
+        // The class-0xc0 update constructs an exact launch origin from Ratchet's
+        // position/yaw. Its downstream aim vector remains separately unresolved,
+        // so only projectile direction stays on the explicit host fallback.
+        double nativeYaw = _player.Rac1CurrentYaw;
+        var nativeOriginOffset = Rac1BombGlove.ResolveLaunchOrigin(
+            new Rac1BombGloveNativePoint(0, 0, 0),
+            nativeYaw);
+        Vector3 sceneOriginOffset =
+            PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
+                nativeOriginOffset.X,
+                nativeOriginOffset.Y) +
+            (Vector3.Up * (float)nativeOriginOffset.Z);
+
+        Vector3 direction = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
+            Math.Cos(nativeYaw),
+            Math.Sin(nativeYaw));
         if (direction.LengthSquared() <= 1e-5f) return;
         direction = direction.Normalized();
 
@@ -501,7 +531,7 @@ public partial class OBPGame
             },
         });
         _sceneResult.Root.AddChild(node);
-        node.GlobalPosition = _player.GlobalPosition + Vector3.Up * 1.1f + direction * 0.8f;
+        node.GlobalPosition = _player.GlobalPosition + sceneOriginOffset;
         _rac1Projectiles.Add(shot.Projectile.ProjectileId, new Rac1HostedProjectile(node, direction));
     }
 

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -16,6 +17,11 @@ public sealed class Rac1BombGloveTests
         Assert.Equal(0x4a, prearmed.NativeClassId);
         Assert.Equal(0, prearmed.CreationNativeState);
         Assert.Equal(1, prearmed.LaunchedNativeState);
+        Assert.Equal(Rac1BombGlove.NativeWeaponClassId, prearmed.Ownership.OwnerNativeClassId);
+        Assert.Equal(Rac1BombGlove.NativeProjectileClassId, prearmed.Ownership.SpawnedNativeClassId);
+        Assert.Equal(0x30, prearmed.Ownership.SpawnedPvarOwnerPointerOffset);
+        Assert.Equal(0x50, prearmed.Ownership.OwnerPvarStagedObjectOffset);
+        Assert.True(prearmed.Ownership.UsesDedicatedWeaponLaunchFrame);
 
         var fired = session.Step(fireRequested: true);
         var shot = Assert.IsType<Rac1BombGloveShot>(fired.Shot);
@@ -27,6 +33,43 @@ public sealed class Rac1BombGloveTests
         Assert.Equal(20, fired.FireCooldownTicksRemaining);
         Assert.Equal(10, fired.ProjectileRearmTicksRemaining);
         Assert.Null(fired.PrearmedProjectile);
+        var use = Assert.IsType<Rac1WeaponUseAdmission>(fired.UseAdmission);
+        Assert.True(use.Accepted);
+        Assert.Equal(Rac1WeaponUseRejection.None, use.Rejection);
+        Assert.Equal(Rac1RatchetSequenceSelection.FirstRangedFireSequenceId, use.NativePlayerSequenceId);
+        Assert.Same(use, shot.Admission);
+    }
+
+    [Fact]
+    public void LaunchOriginMatchesRecoveredVeldinPlayerPositionAndYawWitness()
+    {
+        Assert.Equal(0xbeb953dfu, Rac1BombGlove.LaunchOriginYawOffsetBits);
+        Assert.Equal(0x3f5be9fbu, Rac1BombGlove.LaunchOriginPlanarRadiusBits);
+        Assert.Equal(0x3efb4cc2u, Rac1BombGlove.LaunchOriginHeightBits);
+
+        var origin = Rac1BombGlove.ResolveLaunchOrigin(
+            new Rac1BombGloveNativePoint(
+                154.4383087158203,
+                119.9104232788086,
+                29.484375),
+            nativePlayerYaw: 1.111041784286499);
+
+        Assert.Equal(155.0674000824857, origin.X, 10);
+        Assert.Equal(120.49539513344217, origin.Y, 10);
+        Assert.Equal(29.975194990634918, origin.Z, 10);
+    }
+
+    [Fact]
+    public void LaunchOriginRejectsNonFinitePlayerFacts()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1BombGlove.ResolveLaunchOrigin(
+                new Rac1BombGloveNativePoint(double.NaN, 0, 0),
+                0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1BombGlove.ResolveLaunchOrigin(
+                new Rac1BombGloveNativePoint(0, 0, 0),
+                double.PositiveInfinity));
     }
 
     [Fact]
@@ -39,6 +82,9 @@ public sealed class Rac1BombGloveTests
         {
             var probe = session.Step(fireRequested: true);
             Assert.Null(probe.Shot);
+            var rejected = Assert.IsType<Rac1WeaponUseAdmission>(probe.UseAdmission);
+            Assert.False(rejected.Accepted);
+            Assert.Equal(Rac1WeaponUseRejection.CadenceBlocked, rejected.Rejection);
             if (tick == Rac1BombGlove.ProjectileRearmTicks)
             {
                 Assert.NotNull(probe.PrearmedProjectile);
@@ -70,7 +116,9 @@ public sealed class Rac1BombGloveTests
             firstRangedAmmo: 6);
         var session = new Rac1BombGloveSession(inventory);
 
-        Assert.Null(session.Step(fireRequested: true).Shot);
+        var unequipped = session.Step(fireRequested: true);
+        Assert.Null(unequipped.Shot);
+        Assert.Equal(Rac1WeaponUseRejection.NotEquipped, unequipped.UseAdmission?.Rejection);
         Assert.Equal(6, inventory.FirstRangedAmmo);
         Assert.True(inventory.TryEquip(Rac1WeaponId.FirstRanged));
 
@@ -87,7 +135,9 @@ public sealed class Rac1BombGloveTests
     {
         var session = new Rac1BombGloveSession(initialAmmo: 0);
         Assert.Null(session.Probe().PrearmedProjectile);
-        Assert.Null(session.Step(fireRequested: true).Shot);
+        var rejected = session.Step(fireRequested: true);
+        Assert.Null(rejected.Shot);
+        Assert.Equal(Rac1WeaponUseRejection.NoAmmo, rejected.UseAdmission?.Rejection);
         Assert.Equal(0, session.Probe().Ammo);
     }
 

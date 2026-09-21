@@ -81,6 +81,17 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Current engine-neutral presentation state, exposed for deterministic inspection.</summary>
     public PlayerAnimationState AnimationState => _animationStateMachine.State;
 
+    /// <summary>
+    /// Present the admitted ordinary wrench attack. Ranged item 10 deliberately
+    /// does not call this seam: its recovered selector is sequence 44, while the
+    /// only admitted PrimaryAttack playback clip is wrench sequence 23.
+    /// </summary>
+    public void NotifyRac1WrenchAttackAccepted()
+    {
+        if (UseRac1Gameplay && Rac1GameplayAlive)
+            _attackRequested = true;
+    }
+
     /// <summary>Current R&amp;C1 native-space control/view yaw.</summary>
     public double Rac1ControlYaw => _rac1Yaw.ControlYaw;
 
@@ -433,11 +444,17 @@ public partial class DebugPlayer : CharacterBody3D
         if (UseRac1Gameplay && !Rac1GameplayAlive)
             return;
 
-        _attackRequested = true;
         if (UseRac1Gameplay)
+        {
+            // R&C1 presentation is admitted by the equipped weapon path. In
+            // particular, a rejected item-10 request must not play wrench seq 23.
             Rac1PrimaryAttackRequested?.Invoke();
+        }
         else
+        {
+            _attackRequested = true;
             CrateStrikeRequested?.Invoke();
+        }
     }
 
     private void ResetAnimationState()
@@ -613,7 +630,6 @@ public partial class DebugPlayer : CharacterBody3D
             if (!_scriptAttacked && _time > 4.7)
             {
                 _scriptAttacked = true;
-                _attackRequested = true;
                 Rac1PrimaryAttackRequested?.Invoke();
             }
             bool jump = _time is > 5.0 and < 5.3;
