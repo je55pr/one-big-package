@@ -19,9 +19,17 @@ sequence lists:
 - Sequence payloads live in the core asset blob. Their header byte `+0x10` is
   the frame count, matching the established GC/UYA Moby sequence container.
 - The loaded player Moby pointer is the existing player-global `+0x2290`.
-- Native helper **0x002C7928** is the recovered sequence setter. At
+- Native helper **0x002C7928** is the recovered player sequence setter. At
   **0x002C7A08** it writes the requested sequence id to player-Moby byte
   **+0x43** after setting up transition metadata.
+- A second player-specific helper at **0x002C7B80** can restore an exact
+  sequence/frame and writes `+0x43` at **0x002C7BD8**. Its only retail callers
+  are player initialization (`0x002A6EE4`) and a reset path (`0x002B9A10`)
+  which re-applies the already-current sequence/frame.
+- A full aligned-write census of the Oozla overlay finds 15 `sb *, +0x43(*)`
+  sites. Outside the two player helpers they are explicit generic setters,
+  animation-state copies, object initialization, or level-object code; there is
+  no automatic clip-end sequence-id reassignment writer.
 
 The state-change routine is **0x002BEB90**. It stores the new state at
 player-global `+0x2294`, then indexes the 148-entry state-initializer jump
@@ -40,7 +48,7 @@ The names are not used as evidence for sequence ids.
 | State | Retail init | Recovered sequence rule |
 |---|---:|---|
 | 0 idle | `0x002BED6C` | Calls the weapon-context selector `0x002A7248` and passes that result to the animation setter. With no special weapon context the helper falls back to **0**. Idle is therefore context-sensitive, not a universal fixed-0 claim. |
-| 2 walk | `0x002BF010` | Ordinary entry reaches **3**. No later fixed sustained-walk sequence has been proved from the state-2 handler; specifically, GC sequence 4 is **not** assigned the R&C1 sustained-locomotion role by analogy. |
+| 2 walk | `0x002BF010` | Selects **3**. The complete state-2 update handler (`0x002BBCDC..0x002BC66F`) calls none of the player/generic sequence setters, and the full `+0x43` writer census has no automatic clip-end reassignment path. Sequence **3 therefore remains selected while ordinary state 2 persists**; GC sequence 4 is not assigned an R&C1 role by analogy. |
 | 3 skid | `0x002BF338` | Chooses **5** only when helper `0x002A72C8` returns 4 and native scalar `+0xC38` is strictly `3 < x < 16`; otherwise chooses **6**. |
 | 4 crouch | `0x002BF48C` | Crouch entry can select **13** when its transition-source check agrees with the current weapon-context base sequence. In the shared state handler, directional crouch movement switches to **15** when native scalar `+0x1A4 < 0`, otherwise **14**, once the movement-activation predicate has fired. |
 | 6 fall | `0x002BF718` | Native scalar `+0x31C > 1.75` selects **11**; all other values select **10**. |
@@ -50,18 +58,19 @@ The names are not used as evidence for sequence ids.
 | 20 jump attack | `0x002C0A48` | The state-20 branch selects **43**. This corrects an earlier scratch interpretation that had swapped the state-20/state-21 clip roles. |
 | 21 throw attack | `0x002C0A48` | The state-21 branch selects **26**. Context changes the transition-rate argument, not this sequence id. |
 | 22 get hit | `0x002C126C` | Selects **16**. |
-| 29 targeting | `0x002C165C` | Entry reuses the weapon-context base selector. The shared movement handler has no recovered fixed directional sequence write for state 29, so no dedicated strafe clip id is promoted. |
-| 30 gun waiting | `0x002C16A4` | Entry also reuses the weapon-context base selector; no fixed clip id is promoted. |
+| 29 targeting | `0x002C165C` | Entry reuses the weapon-context base selector. State 29's targeting-only block and the shared movement tail issue no sequence write; the state therefore **preserves that context-selected sequence while strafing/targeting**, with no fixed left/right strafe sequence id promoted. |
+| 30 gun waiting | `0x002C16A4` | Entry also reuses the weapon-context base selector and the shared handler does not replace it with a fixed GC clip id. |
 | 57 death | `0x002BEEE0` | Selects **69**. |
 
 The targeting finding is the important GC strafe boundary. GC does have
 targeting-specific movement handling: state 29 takes the special path at
-`0x002BA294..0x002BA36C` in the shared player handler. But that path does not
-directly select a fixed directional animation through `0x002C7928`. The only
-direct sequence writes in the nearby shared locomotion section are the crouch
-14/15 selectors guarded by state 4. Until a lower animation layer or another
-selector is recovered, representing GC targeting as a fixed left/right strafe
-clip would be an invention.
+`0x002BA294..0x002BA36C` in the shared player handler. That block contains no
+sequence-setter call, then state 29 skips the state-4-only crouch selector block
+at `0x002BA394..0x002BA523` and enters a shared tail with no sequence setter.
+The full `+0x43` writer census independently rules out an automatic clip-end
+sequence-id swap. Ordinary targeting movement therefore preserves the
+weapon-context sequence selected on entry; assigning fixed left/right strafe
+sequence ids would be an invention.
 
 ## Dedicated sequence witnesses
 
@@ -70,7 +79,7 @@ The Oozla Ratchet table contains the mapped slots with these retail frame counts
 | Sequence | Frames | Recovered role |
 |---:|---:|---|
 | 0 | 10 | default no-special-context idle/base |
-| 3 | 33 | walk entry |
+| 3 | 33 | ordinary state-2 walk |
 | 5 | 13 | skid conditional variant |
 | 6 | 13 | skid default variant |
 | 10 | 1 | fall low branch |
@@ -93,11 +102,13 @@ as selector predicates or playback timing rules.
 ## Retained contract
 
 `OBP.RAC2.Player.GcRatchetSequenceSelection` exposes only the facts above.
-Context-dependent or unresolved categories stay explicit:
+The recovered persistence and unresolved boundaries stay explicit:
 
-- `SustainedWalkSequenceId == null`
+- `WalkSequenceId == SustainedWalkSequenceId == 3`
 - `JumpLaunchSequenceId == null`
+- `TargetingPreservesContextSequence == true`
 - `TargetingDirectionalSequenceId == null`
+- `GunWaitingPreservesContextSequence == true`
 - `GunWaitingSequenceId == null`
 
 That boundary prevents the current cross-game R&C1 avatar fallback from becoming
@@ -113,16 +124,21 @@ With `OBP_GC_ISO` pointing at the authorized v1.01 retail image:
 dotnet test tests/OBP.Tests/OBP.Tests.csproj --filter GcRatchetSequenceSelectionTests
 ```
 
-The retail-gated test reads `LEVEL1.WAD`, verifies the state-init jump-table
-destinations above, checks Oozla's 256-slot Ratchet table has 102 populated
-entries, and verifies the mapped slots' frame counts. No retail bytes or asset
-payloads are committed. The payload-free normalized evidence is also retained in
+The retail-gated test reads `LEVEL1.WAD`, verifies the state-init and
+state-update jump tables, checks Oozla's 256-slot Ratchet table has 102 populated
+entries, verifies the mapped slots' frame counts, freezes all 15 aligned
+`Moby+0x43` sequence-write sites, and proves the ordinary walk handler plus the
+state-29 targeting path do not call any recovered player/generic sequence setter.
+No retail bytes or asset payloads are committed. The payload-free normalized
+evidence is also retained in
 `research/generated/gc-ratchet-animation-states.json`.
 
 ## Remaining boundary
 
-The next useful archaeology is narrow: find the exact ordinary jump-launch
-sequence handoff and determine whether sustained walk or targeting strafe uses a
-lower-layer animation selector rather than the recovered `0x002C7928` path.
-Those are selector questions only; GC player model/avatar admission remains the
-separate player-avatar recovery task.
+The remaining selector question in the ordinary categories is the exact
+**jump-launch presentation handoff**. State 7's initializer, state-change common
+epilogue, and ordinary state-7 update handler contain no player sequence setter;
+the only nested `+0x43` copy path in that handler is guarded by other jump-family
+states, not state 7. A live witness or deeper procedural-player-animation trace
+is needed before assigning a base sequence. GC player model/avatar admission
+remains the separate player-avatar recovery task.

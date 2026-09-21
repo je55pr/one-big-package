@@ -31,11 +31,15 @@ public static class GcRatchetSequenceSelection
     public const int DefaultIdleSequenceId = 0;
 
     /// <summary>
-    /// State 2 enters ordinary walk on sequence 3. No later fixed sustained-walk
-    /// sequence has been recovered from the state-2 handler, so callers must not
-    /// alias R&amp;C1 sequence 4 into GC.
+    /// State 2 selects sequence 3 on entry. Its complete retail update handler
+    /// contains no player or generic sequence-setter call, and the overlay's
+    /// sequence-write census contains no automatic clip-end reassignment path.
+    /// Sequence 3 therefore remains selected for ordinary state-2 walking until
+    /// gameplay changes state or explicitly selects another sequence.
     /// </summary>
-    public const int WalkEntrySequenceId = 3;
+    public const int WalkSequenceId = 3;
+    public const int WalkEntrySequenceId = WalkSequenceId;
+    public const int SustainedWalkSequenceId = WalkSequenceId;
 
     public const int SkidMidSpeedSequenceId = 5;
     public const int SkidDefaultSequenceId = 6;
@@ -105,12 +109,6 @@ public static class GcRatchetSequenceSelection
         };
 
     /// <summary>
-    /// The state-2 entry selector is proven, but a distinct fixed sustained-walk
-    /// selector is not. In particular, sequence 4 must not be imported from R&amp;C1.
-    /// </summary>
-    public static int? SustainedWalkSequenceId => null;
-
-    /// <summary>
     /// The ordinary jump-family initializer shared by states 7 and several jump
     /// variants does not call the recovered sequence setter directly. The exact
     /// jump-launch sequence remains unresolved.
@@ -119,14 +117,17 @@ public static class GcRatchetSequenceSelection
 
     /// <summary>
     /// State 29 (targeting) re-selects the current weapon-context base sequence
-    /// on entry. Its shared movement handler has no recovered fixed directional
-    /// sequence write for targeting, so no dedicated strafe sequence is promoted.
+    /// on entry. Its targeting-only movement path and the shared tail issue no
+    /// sequence write, so directional targeting preserves that context sequence
+    /// rather than selecting a fixed left/right strafe clip.
     /// </summary>
+    public const bool TargetingPreservesContextSequence = true;
     public static int? TargetingDirectionalSequenceId => null;
 
     /// <summary>
     /// State 30 (gun waiting) also obtains its entry sequence through the
-    /// weapon-context selector rather than a fixed GC sequence id.
+    /// weapon-context selector and has no fixed GC sequence id.
     /// </summary>
+    public const bool GunWaitingPreservesContextSequence = true;
     public static int? GunWaitingSequenceId => null;
 }

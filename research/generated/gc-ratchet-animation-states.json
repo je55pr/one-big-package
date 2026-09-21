@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "authority": {
     "game": "Ratchet & Clank: Going Commando",
     "region": "NTSC-U",
@@ -12,12 +12,27 @@
   "selector": {
     "stateChangeVirtualAddress": "0x002BEB90",
     "stateInitJumpTableVirtualAddress": "0x002A1F30",
+    "stateUpdateJumpTableVirtualAddress": "0x002A1CE0",
     "sequenceSetterVirtualAddress": "0x002C7928",
     "sequenceWriteVirtualAddress": "0x002C7A08",
+    "sequenceRestoreHelperVirtualAddress": "0x002C7B80",
+    "sequenceRestoreWriteVirtualAddress": "0x002C7BD8",
     "playerMobySequenceOffset": "0x43",
     "ratchetSequenceTableIndexOffset": "0x80E0",
     "slotCount": 256,
     "oozlaPopulatedSlots": 102
+  },
+  "sequenceWriteCensus": {
+    "instruction": "sb *, +0x43(*)",
+    "alignedWriteCount": 15,
+    "virtualAddresses": [
+      "0x002C7A08", "0x002C7BD8", "0x002D1354", "0x002FA340",
+      "0x003100CC", "0x00310240", "0x003103B0", "0x00318C50",
+      "0x00358A08", "0x00358B60", "0x0035B840", "0x0036F938",
+      "0x00370634", "0x00370744", "0x003815D4"
+    ],
+    "automaticClipEndSequenceReassignment": false,
+    "playerRestoreHelperCallers": ["0x002A6EE4", "0x002B9A10"]
   },
   "states": [
     {
@@ -34,9 +49,12 @@
       "name": "WALK",
       "init": "0x002BF010",
       "selection": {
-        "kind": "fixed-entry",
+        "kind": "fixed-persistent",
         "sequence": 3,
-        "sustainedSequence": null
+        "sustainedSequence": 3,
+        "updateHandler": "0x002BBCDC",
+        "updateHandlerEndExclusive": "0x002BC670",
+        "updateHandlerCallsSequenceSetter": false
       }
     },
     {
@@ -133,8 +151,12 @@
       "name": "TARGETING",
       "init": "0x002C165C",
       "selection": {
-        "kind": "weapon-context",
-        "directionalSequence": null
+        "kind": "weapon-context-persistent",
+        "preservesContextSequence": true,
+        "directionalSequence": null,
+        "updateHandler": "0x002BA23C",
+        "stateSpecificBlock": "0x002BA294..0x002BA393",
+        "stateFourSelectorGuardWord": "0x54620062"
       }
     },
     {
@@ -142,8 +164,10 @@
       "name": "GUN_WAITING",
       "init": "0x002C16A4",
       "selection": {
-        "kind": "weapon-context",
-        "sequence": null
+        "kind": "weapon-context-persistent",
+        "preservesContextSequence": true,
+        "sequence": null,
+        "updateHandler": "0x002BA23C"
       }
     },
     {
@@ -181,9 +205,7 @@
     "role": "names only; sequence ids and selector predicates are retail-derived"
   },
   "unresolved": [
-    "fixed sustained-walk sequence after state-2 entry",
-    "ordinary jump-launch sequence handoff",
-    "fixed directional targeting/strafe sequence, if any",
+    "ordinary jump-launch presentation handoff",
     "GC-native player avatar/model admission and production binding"
   ]
 }
