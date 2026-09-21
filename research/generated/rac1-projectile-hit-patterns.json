@@ -1,0 +1,463 @@
+{
+  "schema": 2,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "savestate": {
+    "file": "SCUS-97199 (CE4933D0).01.p2s",
+    "sha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+    "eeMemorySize": 33554432,
+    "liveClass0x79Count": 0,
+    "liveClass0x79StateHistogram": {},
+    "liveClass0x4aCount": 0,
+    "liveClass0x4aStateHistogram": {}
+  },
+  "item10Bomb": {
+    "weaponNativeClass": "0x00c0",
+    "weaponUpdate": "0x002c26c8",
+    "projectileNativeClass": "0x0079",
+    "constructor": "0x002ace70",
+    "launchRoutine": "0x002acfd8",
+    "projectileUpdate": "0x002adb30",
+    "sourceOwnership": "projectile PVar+0x50 retains the firing weapon Moby",
+    "launchState": 1,
+    "contactState": 2,
+    "observedTerminalState": "0xfe",
+    "replacementStaging": "weapon tail can stage a replacement in the same accepted-fire update",
+    "fireGateTicks": 20
+  },
+  "motionAndExpiryBoundary": {
+    "positionStep": "Moby position = Moby position + projectile PVar[0x00..0x08]",
+    "frameScaleAddress": "0x0015ed70",
+    "frameScaleInAuthority": 0.00027777778450399637,
+    "verticalStepDeltaAtAuthorityScale": 0.003055555745959282,
+    "verticalStepDeltaFloat32Word": "0x3b483fb8",
+    "verticalStepLaw": "PVar+0x08 -= float32(frameScale * 11.0) each state-1 update",
+    "longCountdown": {
+      "offset": "+0x54",
+      "launchValue": 300,
+      "decrementHelper": "0x001fef98"
+    },
+    "shortCountdown": {
+      "offset": "+0x6a",
+      "launchValue": 30
+    },
+    "lifetimeConclusion": "unresolved: the 30-derived countdown reaches zero while flight continues, and the controlled shot contacts at long-countdown 235 before any natural expiry is witnessed"
+  },
+  "damageHandoffs": {
+    "item10Splash": {
+      "contactRoutine": "0x001f2868",
+      "distributor": "0x0025a9f8",
+      "perVictimWriter": "0x00259a88",
+      "nativeDamage": 2.0,
+      "nativeDamageFlags": "0x00830000",
+      "source": "class-0x79 projectile Moby",
+      "victims": "candidate Mobies discovered by common contact query; source candidate skipped"
+    },
+    "separateDirectRepresentative": {
+      "nativeClass": "0x004a",
+      "writer": "0x00259bc8",
+      "nativeDamage": 1.0,
+      "nativeDamageFlags": "0x00010000",
+      "source": "class-0x4a projectile Moby",
+      "victim": "preselected Moby",
+      "boundary": "this is not the item-10 Bomb carrier"
+    }
+  },
+  "ownershipAndFriendlyFiltering": {
+    "item10SourcePvarOffset": "+0x50",
+    "commonSelfFilter": "contact candidates equal to source Moby are skipped",
+    "friendlyFilterBoundary": "no broader team/faction/ally immunity is promoted; remaining bitmask/filter logic inside the common routine is unresolved"
+  },
+  "environmentCollisionPattern": {
+    "sharedWorldQuery": "0x001efc70",
+    "item10LaunchCallers": [
+      "0x002ad370",
+      "0x002ad5f8",
+      "0x002ad818"
+    ],
+    "item10UpdateCallers": [
+      "0x002ae1b0"
+    ],
+    "class0x4aUpdateCallers": [
+      "0x002a85f8",
+      "0x002a8be8",
+      "0x002a8d1c",
+      "0x002a941c"
+    ],
+    "boundary": "call sites prove shared world-contact querying, not whether the primitive is a ray, segment, sweep, or expanded shape"
+  },
+  "genericContract": {
+    "shared": [
+      "source-owned native damage transport",
+      "direct preselected-victim damage records",
+      "source-aware contact-volume handoff with source-self exclusion",
+      "shared world-contact query pattern",
+      "position-plus-step ballistic recurrence where the owning projectile supplies the step"
+    ],
+    "callerOwnedOrUnresolved": [
+      "projectile launch-vector initialization",
+      "terminal lifetime/expiry law",
+      "contact geometry/radius",
+      "damage scalar and flags",
+      "team/faction/friendly filtering beyond source-self exclusion",
+      "weapon-specific state machines and unusual effects"
+    ]
+  },
+  "controlledLiveWitness": {
+    "authority": "managed PCSX2 replay from fixed retained SCUS-97199 Veldin state",
+    "equippedItemTransition": [
+      8,
+      10
+    ],
+    "ammoTransition": [
+      6,
+      5
+    ],
+    "launchedMoby": "0x01858b80",
+    "nativeClass": 121,
+    "stateTransitions": [
+      {
+        "frame": 41,
+        "state": 1,
+        "longCountdown": 300,
+        "shortCountdown": 30,
+        "position": [
+          155.40013122558594,
+          121.16759490966797,
+          29.975194931030273
+        ]
+      },
+      {
+        "frame": 107,
+        "state": 2,
+        "longCountdown": 235,
+        "shortCountdown": 0,
+        "position": [
+          159.54039001464844,
+          129.53054809570312,
+          29.484375
+        ]
+      },
+      {
+        "frame": 122,
+        "state": 254,
+        "longCountdown": 235,
+        "shortCountdown": 0,
+        "position": [
+          159.54039001464844,
+          129.53054809570312,
+          29.484375
+        ]
+      }
+    ],
+    "firstState1Step": [
+      0.06286147236824036,
+      0.12695619463920593,
+      0.09166651964187622
+    ],
+    "secondState1Step": [
+      0.06286147236824036,
+      0.12695619463920593,
+      0.08861096203327179
+    ],
+    "sourceMoby": "0x01858a80"
+  },
+  "instructionEvidence": [
+    {
+      "address": "0x0024e9b8",
+      "word": "0xa63000a6",
+      "meaning": "allocator stores requested native class at Moby+0xa6"
+    },
+    {
+      "address": "0x002c28d0",
+      "word": "0x0c08cf6e",
+      "meaning": "item-10 fire path consumes one current-weapon ammo"
+    },
+    {
+      "address": "0x002c28d8",
+      "word": "0x24030003",
+      "meaning": "accepted item-10 fire selects weapon state 3"
+    },
+    {
+      "address": "0x002c3004",
+      "word": "0x8e850050",
+      "meaning": "weapon state 3 loads staged projectile from PVar+0x50"
+    },
+    {
+      "address": "0x002c3014",
+      "word": "0x0c0ab39c",
+      "meaning": "item-10 weapon calls class-0x79 constructor"
+    },
+    {
+      "address": "0x002c3024",
+      "word": "0x0c0ab3f6",
+      "meaning": "item-10 weapon calls class-0x79 launch helper"
+    },
+    {
+      "address": "0x002c30cc",
+      "word": "0xae800050",
+      "meaning": "launch path clears weapon PVar+0x50"
+    },
+    {
+      "address": "0x002c30d0",
+      "word": "0x0c07fbc8",
+      "meaning": "launch path calls native time helper for fire gate"
+    },
+    {
+      "address": "0x002c316c",
+      "word": "0x0c0ab39c",
+      "meaning": "weapon tail can stage a replacement class-0x79 object"
+    },
+    {
+      "address": "0x002c3174",
+      "word": "0xae820050",
+      "meaning": "weapon tail stores replacement at PVar+0x50"
+    },
+    {
+      "address": "0x002ace8c",
+      "word": "0x24040079",
+      "meaning": "item-10 constructor requests native class 0x79"
+    },
+    {
+      "address": "0x002ace98",
+      "word": "0x0c093a0e",
+      "meaning": "item-10 constructor calls the common Moby allocator"
+    },
+    {
+      "address": "0x002acf28",
+      "word": "0xae120050",
+      "meaning": "class-0x79 PVar+0x50 stores firing weapon Moby"
+    },
+    {
+      "address": "0x002acffc",
+      "word": "0x2404001e",
+      "meaning": "launch helper requests native time value 30"
+    },
+    {
+      "address": "0x002ad01c",
+      "word": "0x0c07fbc8",
+      "meaning": "launch helper calls time helper for short countdown"
+    },
+    {
+      "address": "0x002ad024",
+      "word": "0xa642006a",
+      "meaning": "short countdown is stored at projectile PVar+0x6a"
+    },
+    {
+      "address": "0x002ad334",
+      "word": "0x2404012c",
+      "meaning": "launch helper requests native time value 300"
+    },
+    {
+      "address": "0x002ad338",
+      "word": "0x0c07fbc8",
+      "meaning": "launch helper calls time helper for long countdown"
+    },
+    {
+      "address": "0x002ad340",
+      "word": "0xa6420054",
+      "meaning": "long countdown is stored at projectile PVar+0x54"
+    },
+    {
+      "address": "0x002ad370",
+      "word": "0x0c07bf1c",
+      "meaning": "launch helper calls shared world query"
+    },
+    {
+      "address": "0x002ae014",
+      "word": "0x03c0202d",
+      "meaning": "state-1 motion uses Moby position as vector-add destination"
+    },
+    {
+      "address": "0x002ae018",
+      "word": "0x03c0282d",
+      "meaning": "state-1 motion uses current Moby position as vector-add lhs"
+    },
+    {
+      "address": "0x002ae01c",
+      "word": "0x0c07fc9e",
+      "meaning": "state-1 motion calls common vector-add helper"
+    },
+    {
+      "address": "0x002ae020",
+      "word": "0x02c0302d",
+      "meaning": "state-1 motion uses projectile PVar base as step vector"
+    },
+    {
+      "address": "0x002ae034",
+      "word": "0xc420ed70",
+      "meaning": "state-1 gravity reads native frame-scale source"
+    },
+    {
+      "address": "0x002ae038",
+      "word": "0x3c014130",
+      "meaning": "state-1 gravity materializes scalar 11.0"
+    },
+    {
+      "address": "0x002ae040",
+      "word": "0xc6c10008",
+      "meaning": "state-1 gravity reads vertical step from PVar+0x08"
+    },
+    {
+      "address": "0x002ae044",
+      "word": "0x46020002",
+      "meaning": "state-1 gravity multiplies frame scale by 11.0"
+    },
+    {
+      "address": "0x002ae048",
+      "word": "0x46000841",
+      "meaning": "state-1 gravity subtracts that delta from vertical step"
+    },
+    {
+      "address": "0x002ae050",
+      "word": "0xe6c10008",
+      "meaning": "state-1 gravity stores vertical step back to PVar+0x08"
+    },
+    {
+      "address": "0x002ae1b0",
+      "word": "0x0c07bf1c",
+      "meaning": "class-0x79 state-1 update calls shared world query"
+    },
+    {
+      "address": "0x002ae444",
+      "word": "0x0c07fbe6",
+      "meaning": "class-0x79 update calls signed-16 countdown helper"
+    },
+    {
+      "address": "0x002ae448",
+      "word": "0x26c40054",
+      "meaning": "that countdown helper receives projectile PVar+0x54"
+    },
+    {
+      "address": "0x002ae4f0",
+      "word": "0x0c07ca1a",
+      "meaning": "class-0x79 contact path calls common gameplay contact routine"
+    },
+    {
+      "address": "0x002ae500",
+      "word": "0x3c014000",
+      "meaning": "item-10 contact path materializes native damage scalar 2.0"
+    },
+    {
+      "address": "0x002ae518",
+      "word": "0x0280202d",
+      "meaning": "item-10 contact path retains projectile Moby as source"
+    },
+    {
+      "address": "0x002ae520",
+      "word": "0x3c090083",
+      "meaning": "item-10 contact path materializes damage flag high word 0x0083"
+    },
+    {
+      "address": "0x002ae530",
+      "word": "0x0c096a7e",
+      "meaning": "item-10 contact path calls splash distributor 0x25a9f8"
+    },
+    {
+      "address": "0x002ae53c",
+      "word": "0xa2820020",
+      "meaning": "contact path writes projectile native state 2"
+    },
+    {
+      "address": "0x002af274",
+      "word": "0x0c093ada",
+      "meaning": "class-0x79 update calls common Moby terminalizer"
+    },
+    {
+      "address": "0x0025aa78",
+      "word": "0x8e030000",
+      "meaning": "splash distributor loads one candidate Moby"
+    },
+    {
+      "address": "0x0025aa7c",
+      "word": "0x5077001f",
+      "meaning": "splash distributor skips candidate equal to retained source"
+    },
+    {
+      "address": "0x0025aa94",
+      "word": "0xe7b7002c",
+      "meaning": "splash descriptor retains caller damage scalar"
+    },
+    {
+      "address": "0x0025aae0",
+      "word": "0x8e040000",
+      "meaning": "splash distributor passes candidate Moby as victim"
+    },
+    {
+      "address": "0x0025aaf0",
+      "word": "0x0c0966a2",
+      "meaning": "splash distributor calls per-victim writer 0x259a88"
+    },
+    {
+      "address": "0x00259b48",
+      "word": "0x8e630010",
+      "meaning": "per-victim writer reads retained source Moby"
+    },
+    {
+      "address": "0x00259b58",
+      "word": "0xae430020",
+      "meaning": "per-victim damage record +0x20 stores source Moby"
+    },
+    {
+      "address": "0x00259b5c",
+      "word": "0x8e620014",
+      "meaning": "per-victim writer reads retained damage flags"
+    },
+    {
+      "address": "0x00259b7c",
+      "word": "0xc660001c",
+      "meaning": "per-victim writer reads retained damage scalar"
+    },
+    {
+      "address": "0x00259b8c",
+      "word": "0xae420030",
+      "meaning": "per-victim record stores caller field at +0x30"
+    },
+    {
+      "address": "0x00259b90",
+      "word": "0xae540034",
+      "meaning": "per-victim record +0x34 stores victim Moby"
+    },
+    {
+      "address": "0x001f28ac",
+      "word": "0x20d20000",
+      "meaning": "common contact routine retains source Moby a2"
+    },
+    {
+      "address": "0x001f29f0",
+      "word": "0x1312fff7",
+      "meaning": "common contact scan skips candidate equal to source Moby"
+    },
+    {
+      "address": "0x002a8c6c",
+      "word": "0x3c013f80",
+      "meaning": "separate class-0x4a path materializes direct damage 1.0"
+    },
+    {
+      "address": "0x002a8c74",
+      "word": "0x0260282d",
+      "meaning": "class-0x4a direct path supplies projectile as source"
+    },
+    {
+      "address": "0x002a8c7c",
+      "word": "0x3c060001",
+      "meaning": "class-0x4a direct path supplies flags 0x00010000"
+    },
+    {
+      "address": "0x002a8c84",
+      "word": "0x0c0966f2",
+      "meaning": "class-0x4a direct path calls writer 0x259bc8"
+    }
+  ],
+  "notes": [
+    "No ISO, executable, EE-memory, savestate, Moby, or PVar payload bytes are emitted.",
+    "Instruction witnesses are isolated 32-bit words retained only to make semantic claims reproducible.",
+    "The managed live witness stores only derived scalar/state observations and addresses.",
+    "Class 0x4a remains useful as a direct-damage representative but is not the item-10 Bomb projectile."
+  ]
+}

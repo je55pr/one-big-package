@@ -1,25 +1,39 @@
-using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime;
-using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
 public sealed class Rac1BombGloveTests
 {
     [Fact]
+    public void ProjectileContractMatchesControlledItem10Witness()
+    {
+        Assert.Equal(0x79, Rac1BombGlove.NativeProjectileClassId);
+        Assert.Equal(1, Rac1BombGlove.ProjectileLaunchedNativeState);
+        Assert.Equal(2, Rac1BombGlove.ProjectileContactNativeState);
+        Assert.Equal(0xfe, Rac1BombGlove.ProjectileTerminalNativeState);
+        Assert.Equal(0x50, Rac1BombGlove.ProjectilePvarOwnerPointerOffset);
+        Assert.Equal(0x50, Rac1BombGlove.WeaponPvarStagedProjectileOffset);
+        Assert.Equal(300, Rac1BombGlove.ProjectileLongCountdownTicks);
+        Assert.Equal(30, Rac1BombGlove.ProjectileShortCountdownTicks);
+        Assert.Equal(0.003055555745959282d, Rac1BombGlove.NativeVerticalStepDeltaAtAuthorityScale);
+        Assert.Equal(2d, Rac1BombGlove.NativeDamage);
+        Assert.Equal(0x00830000u, Rac1BombGlove.NativeDamageFlags);
+    }
+
+    [Fact]
     public void FireConsumesExactlyOneRoundAndLaunchesPrearmedProjectile()
     {
         var session = new Rac1BombGloveSession(initialAmmo: 6);
         var ready = session.Probe();
         var prearmed = Assert.IsType<Rac1BombGloveProjectile>(ready.PrearmedProjectile);
-        Assert.Equal(0x4a, prearmed.NativeClassId);
+        Assert.Equal(0x79, prearmed.NativeClassId);
         Assert.Equal(0, prearmed.CreationNativeState);
         Assert.Equal(1, prearmed.LaunchedNativeState);
         Assert.Equal(Rac1BombGlove.NativeWeaponClassId, prearmed.Ownership.OwnerNativeClassId);
         Assert.Equal(Rac1BombGlove.NativeProjectileClassId, prearmed.Ownership.SpawnedNativeClassId);
-        Assert.Equal(0x30, prearmed.Ownership.SpawnedPvarOwnerPointerOffset);
+        Assert.Equal(0x50, prearmed.Ownership.SpawnedPvarOwnerPointerOffset);
         Assert.Equal(0x50, prearmed.Ownership.OwnerPvarStagedObjectOffset);
         Assert.True(prearmed.Ownership.UsesDedicatedWeaponLaunchFrame);
 
@@ -31,45 +45,15 @@ public sealed class Rac1BombGloveTests
         Assert.Equal(5, shot.AmmoAfter);
         Assert.Equal(5, fired.Ammo);
         Assert.Equal(20, fired.FireCooldownTicksRemaining);
-        Assert.Equal(10, fired.ProjectileRearmTicksRemaining);
-        Assert.Null(fired.PrearmedProjectile);
+        Assert.Equal(0, fired.ProjectileRearmTicksRemaining);
+        var replacement = Assert.IsType<Rac1BombGloveProjectile>(fired.PrearmedProjectile);
+        Assert.NotEqual(prearmed.ProjectileId, replacement.ProjectileId);
+        Assert.Equal(0x79, replacement.NativeClassId);
         var use = Assert.IsType<Rac1WeaponUseAdmission>(fired.UseAdmission);
         Assert.True(use.Accepted);
         Assert.Equal(Rac1WeaponUseRejection.None, use.Rejection);
         Assert.Equal(Rac1RatchetSequenceSelection.FirstRangedFireSequenceId, use.NativePlayerSequenceId);
         Assert.Same(use, shot.Admission);
-    }
-
-    [Fact]
-    public void LaunchOriginMatchesRecoveredVeldinPlayerPositionAndYawWitness()
-    {
-        Assert.Equal(0xbeb953dfu, Rac1BombGlove.LaunchOriginYawOffsetBits);
-        Assert.Equal(0x3f5be9fbu, Rac1BombGlove.LaunchOriginPlanarRadiusBits);
-        Assert.Equal(0x3efb4cc2u, Rac1BombGlove.LaunchOriginHeightBits);
-
-        var origin = Rac1BombGlove.ResolveLaunchOrigin(
-            new Rac1BombGloveNativePoint(
-                154.4383087158203,
-                119.9104232788086,
-                29.484375),
-            nativePlayerYaw: 1.111041784286499);
-
-        Assert.Equal(155.0674000824857, origin.X, 10);
-        Assert.Equal(120.49539513344217, origin.Y, 10);
-        Assert.Equal(29.975194990634918, origin.Z, 10);
-    }
-
-    [Fact]
-    public void LaunchOriginRejectsNonFinitePlayerFacts()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1BombGlove.ResolveLaunchOrigin(
-                new Rac1BombGloveNativePoint(double.NaN, 0, 0),
-                0));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            Rac1BombGlove.ResolveLaunchOrigin(
-                new Rac1BombGloveNativePoint(0, 0, 0),
-                double.PositiveInfinity));
     }
 
     [Fact]
@@ -85,12 +69,8 @@ public sealed class Rac1BombGloveTests
             var rejected = Assert.IsType<Rac1WeaponUseAdmission>(probe.UseAdmission);
             Assert.False(rejected.Accepted);
             Assert.Equal(Rac1WeaponUseRejection.CadenceBlocked, rejected.Rejection);
-            if (tick == Rac1BombGlove.ProjectileRearmTicks)
-            {
-                Assert.NotNull(probe.PrearmedProjectile);
-                Assert.Equal(10, probe.FireCooldownTicksRemaining);
-                Assert.Equal(0, probe.ProjectileRearmTicksRemaining);
-            }
+            Assert.NotNull(probe.PrearmedProjectile);
+            Assert.Equal(0, probe.ProjectileRearmTicksRemaining);
         }
 
         var second = session.Step(fireRequested: true);
@@ -142,81 +122,41 @@ public sealed class Rac1BombGloveTests
     }
 
     [Fact]
-    public void ImpactAdmitsOnlyRepresentativeGoalOneHostileAndOnlyOnce()
+    public void ContactAdmitsOnlyRepresentativeGoalOneHostileUntilProjectileCompletes()
     {
         var session = new Rac1BombGloveSession(initialAmmo: 2);
         var shot = Assert.IsType<Rac1BombGloveShot>(session.Step(true).Shot);
         var crate = Dynamic(Rac1BoltCrate.NativeClassId, instanceIndex: 89);
         var hostile = Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex: 149);
 
-        Assert.Null(session.ResolveGoal1Impact(shot.Projectile.ProjectileId, crate, Rac1BoltCrate.ActiveNativeState));
+        Assert.Null(session.ResolveGoal1Contact(shot.Projectile.ProjectileId, crate, Rac1BoltCrate.ActiveNativeState));
         var damage = Assert.IsType<Rac1BombGloveDamageResult>(
-            session.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
+            session.ResolveGoal1Contact(shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
 
         Assert.Equal(Rac1Class749Hostile.NativeClassId, damage.TargetNativeClassId);
-        Assert.Equal(1d, damage.NativeDamage);
-        Assert.Equal(0x00010000u, damage.NativeDamageFlags);
-        Assert.Null(session.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
+        Assert.Equal(2d, damage.NativeDamage);
+        Assert.Equal(0x00830000u, damage.NativeDamageFlags);
+        Assert.Equal(Rac1NativeDamageHandoffKind.ContactVolume, damage.DamageHandoff.Kind);
+        Assert.True(damage.DamageHandoff.RetainsSourceMoby);
+        Assert.False(damage.DamageHandoff.VictimIsPreselected);
+        Assert.True(damage.DamageHandoff.ExcludesSourceMobyFromCandidates);
+        Assert.NotNull(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
+        Assert.True(session.CompleteProjectile(shot.Projectile.ProjectileId));
+        Assert.Null(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
     }
 
     [Theory]
     [InlineData(Rac1Class749Hostile.TerminalNativeStateFd)]
     [InlineData(Rac1Class749Hostile.TerminalNativeStateFe)]
-    public void ImpactRejectsRecoveredTerminalTargetStates(int terminalState)
+    public void ContactRejectsRecoveredTerminalTargetStates(int terminalState)
     {
         var session = new Rac1BombGloveSession(initialAmmo: 1);
         var shot = Assert.IsType<Rac1BombGloveShot>(session.Step(true).Shot);
         var hostile = Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex: 149);
 
-        Assert.Null(session.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, terminalState));
-    }
-
-    [Fact]
-    public void RepresentativeImpactDrivesRecoveredClass749DamageState()
-    {
-        var hostile = Class749(instanceIndex: 149, health: 1f);
-        var hostileSession = Registered(hostile);
-        var weapon = new Rac1BombGloveSession(initialAmmo: 1);
-        var shot = Assert.IsType<Rac1BombGloveShot>(weapon.Step(true).Shot);
-        var damage = Assert.IsType<Rac1BombGloveDamageResult>(
-            weapon.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
-
-        var damaged = hostileSession.ApplyBombGloveDamage(hostile, damage);
-        Assert.Equal(0f, damaged.Health);
-        Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.NativeState);
-        Assert.Equal(RuntimeEntityPresence.Active, damaged.EntityState.Presentation.Presence);
-    }
-
-    [Fact]
-    public void UnprovenClass749HealthStillRefusesBombGloveConsequence()
-    {
-        var hostile = Class749(instanceIndex: 149, health: 2f);
-        var hostileSession = Registered(hostile);
-        var weapon = new Rac1BombGloveSession(initialAmmo: 1);
-        var shot = Assert.IsType<Rac1BombGloveShot>(weapon.Step(true).Shot);
-        var damage = Assert.IsType<Rac1BombGloveDamageResult>(
-            weapon.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, Rac1Class749Hostile.TargetSearchNativeState));
-
-        Assert.Throws<NotSupportedException>(() =>
-            hostileSession.ApplyBombGloveDamage(hostile, damage));
-        Assert.Equal(2f, hostileSession.Probe(hostile).Health);
-    }
-
-    private static Rac1Class749HostileSession Registered(RuntimeDynamicObject source)
-    {
-        var session = new Rac1Class749HostileSession();
-        session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
-        return session;
-    }
-
-    private static RuntimeDynamicObject Class749(int instanceIndex, float health)
-    {
-        var pvar = new byte[Rac1Class749Hostile.PVarSize];
-        BinaryPrimitives.WriteInt32LittleEndian(
-            pvar.AsSpan(Rac1Class749Hostile.HealthOffset, sizeof(int)),
-            BitConverter.SingleToInt32Bits(health));
-        return Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex,
-            [new RuntimeOpaquePayload(Rac1Class749Hostile.PVarPayloadFormat, pvar)]);
+        Assert.Null(session.ResolveGoal1Contact(shot.Projectile.ProjectileId, hostile, terminalState));
     }
 
     private static RuntimeDynamicObject Dynamic(

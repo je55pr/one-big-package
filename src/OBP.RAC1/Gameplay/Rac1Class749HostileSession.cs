@@ -129,19 +129,6 @@ public sealed class Rac1Class749HostileSession
         return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "wrench");
     }
 
-    public Rac1Class749HostProbe ApplyBombGloveDamage(
-        RuntimeDynamicObject source,
-        Rac1BombGloveDamageResult damage)
-    {
-        if (damage.TargetNativeClassId != Rac1Class749Hostile.NativeClassId ||
-            damage.NativeDamage != Rac1BombGlove.NativeDamage ||
-            damage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
-            throw new NotSupportedException(
-                "Only the recovered Bomb Glove impact record is admitted for class 749.");
-
-        return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "Bomb Glove");
-    }
-
     private Rac1Class749HostProbe ApplyRepresentativeDamage(
         RuntimeDynamicObject source,
         Rac1NativeDamageEnvelope damage,

@@ -247,11 +247,12 @@ public sealed class Rac1Goal1PlayableSliceTests
         var hostiles = new Rac1Class749HostileSession();
         var hostileProbe = hostiles.RegisterRepresentative(hostile, RuntimeEntityState.FromAuthored(hostile));
         var bombDamage = Assert.IsType<Rac1BombGloveDamageResult>(
-            bombGlove.ResolveGoal1Impact(shot.Projectile.ProjectileId, hostile, hostileProbe.NativeState));
-        hostileProbe = hostiles.ApplyBombGloveDamage(hostile, bombDamage);
-        Assert.Equal(0f, hostileProbe.Health);
-        hostileProbe = hostiles.ApplyTerminalStatus(hostile, Rac1Class749Hostile.TerminalNativeStateFd);
-        Assert.Equal(RuntimeEntityPresence.Inactive, hostileProbe.EntityState.Presentation.Presence);
+            bombGlove.ResolveGoal1Contact(shot.Projectile.ProjectileId, hostile, hostileProbe.NativeState));
+        Assert.Equal(2d, bombDamage.NativeDamage);
+        Assert.Equal(0x00830000u, bombDamage.NativeDamageFlags);
+        Assert.Equal(Rac1NativeDamageHandoffKind.ContactVolume, bombDamage.DamageHandoff.Kind);
+        Assert.True(bombGlove.CompleteProjectile(shot.Projectile.ProjectileId));
+        Assert.Equal(1f, hostiles.Probe(hostile).Health);
 
         var nanotech = new Rac1RatchetNanotechSession();
         var afterHit = nanotech.ApplyClass749Attack(

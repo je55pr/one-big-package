@@ -11,75 +11,56 @@ The reusable boundary is a **weapon-use admission result**, not one universal we
 | ammo | no ranged-ammo mutation | one round per accepted use |
 | recovered timing owner | player action/contact window | class-`0xc0` weapon object |
 | admitted player presentation | action `0x13`, sequence 23 | accepted-fire sequence 44 |
-| projectile staging | none in recovered ordinary swing | class `0x4a`, state 0, staged before use |
-| repeated-use gate | no common ranged cooldown promoted | independent 20-tick fire gate and 10-tick projectile rearm |
-| facing/origin | first-swing lunge follows live Ratchet yaw | exact class-`0xc0` launch origin recovered from Ratchet position/yaw; downstream aim vector remains a separate weapon path |
+| projectile staging | none in recovered ordinary swing | class `0x79`, state 0, staged by the class-`0xc0` owner |
+| repeated-use gate | no common ranged cooldown promoted | 20-tick accepted-fire gate; replacement staging is immediate |
+| facing/origin | first-swing lunge follows live Ratchet yaw | dedicated weapon launch/step frame; exact item-10 origin remains unresolved |
 
-Accordingly `Rac1WeaponUseAdmission` is intentionally small. It reports accepted/rejected use, optional ammo delta, and an independently recovered native player sequence id. Numeric cadence and contact/spawn state stay in their weapon-specific controllers.
+Accordingly `Rac1WeaponUseAdmission` is intentionally small. It reports accepted/rejected use, optional ammo delta, and an independently recovered native player sequence id. Numeric cadence and projectile/contact state stay in their weapon-specific controllers.
 
 ## Item-10 admission and ammo ordering
 
-The loaded item-10 weapon update starts at `0x002c1ad0`. The accepted-use branch at `0x002c1c28..0x002c1cd8` first consults the weapon's fire timer at PVar `+0x58`, applies the surrounding player/input gates, and only reaches the use consequence when those gates pass.
+The controlled item-10 weapon uses native class `0xc0` with loaded update `0x002c26c8`. Its accepted-use path consumes one round through `0x00233db8(-1, 1)` at `0x002c28d0` and enters native weapon state `3`.
 
-The accepted branch then:
+Separately controlled class-0 Ratchet traces prove that accepted item-10 use selects sequence 44 and that zero ammo does not enter sequence 44. Therefore sequence 44 belongs on the accepted-use result without making animation playback authoritative for fire cadence.
 
-1. calls `0x00216de8` with argument `0x1a` and zero as its second argument;
-2. calls `0x00233db8(-1, 1)`, the already-recovered one-round ammo consumer;
-3. writes native weapon state `3` to class-`0xc0` Moby `+0x20`.
-
-The `0x1a` argument is retained only as an executable fact here. This recovery does **not** promote a semantic name for that helper call. Separately controlled class-0 Ratchet traces prove that every accepted item-10 use selects sequence 44 and that zero ammo does not enter sequence 44. Therefore sequence 44 belongs on the accepted-use result without making animation playback authoritative for fire cadence.
-
-A rejected request consumes no ammo and starts no new 20/10-tick gates.
+A rejected request consumes no ammo. `Rac1WeaponUseAdmission` distinguishes not-equipped, no-ammo, cadence-blocked and spawn-not-ready failures while leaving their native timing owners weapon-specific.
 
 ## Projectile staging and ownership
 
-The item-10 weapon object owns staging rather than asking a host projectile service to invent it.
+The controlled item-10 weapon object owns staging rather than asking a host projectile service to invent it.
 
-At `0x002c2420..0x002c2444`, when the class-`0xc0` weapon has no staged object and its rearm/ammo gates permit one, it calls constructor `0x002a9ed0`. The constructor:
+Weapon state `3` loads the staged object from owner PVar `+0x50`, calls constructor `0x002ace70`, and launches through `0x002acfd8`. The constructor:
 
-- creates native class `0x4a`;
-- initializes its native state byte to `0`;
-- receives the class-`0xc0` weapon Moby as its first argument;
-- stores that owner Moby pointer at projectile PVar `+0x30`.
+- requests native class `0x79`;
+- initializes native projectile state `0`;
+- receives the class-`0xc0` weapon Moby as its source;
+- stores that source Moby pointer at projectile PVar `+0x50`.
 
-The constructor result is stored by the owner at weapon PVar `+0x50`. Thus the retained ownership chain is explicit:
+The retained ownership chain is therefore:
 
 ```text
 class 0xc0 weapon Moby
-  PVar +0x50 -> staged class 0x4a Moby
-                   PVar +0x30 -> owner class 0xc0 Moby
+  PVar +0x50 -> staged class 0x79 Moby
+                   PVar +0x50 -> source class 0xc0 Moby
 ```
 
-State 3 later loads exactly that staged pointer from owner PVar `+0x50`, passes it to `0x002aa008`, clears `+0x50`, and the launch routine writes projectile state `1`. This is why `Rac1WeaponSpawnOwnership` is attached to the Bomb Glove projectile instead of represented as a game-wide projectile assumption.
+Launch writes projectile state `1`. The same accepted-fire update can stage a replacement class-`0x79` object immediately after the launched pointer is handed off. The controlled live trace shows the launched object and replacement staging object simultaneously on the ammo-decrement frame.
 
-After launch, the owner writes the time-helper result for 10 ticks to PVar `+0x54` and 20 ticks to PVar `+0x58`, then enters native weapon state 4. These are distinct gates: a replacement projectile may be staged before a new fire use is admitted.
+The weapon still retains a recovered 20-native-tick accepted-fire gate. The earlier 10-tick rearm claim belonged to a different class-`0xc0` / class-`0x4a` path and is not item-10 Bomb Glove timing.
 
-## Origin, muzzle and facing boundary
+`Rac1WeaponSpawnOwnership` remains the reusable source/spawn envelope. For item 10 it now records class `0xc0 -> 0x79`, staged offset `+0x50`, projectile source offset `+0x50`, state `0 -> 1`, and a dedicated weapon launch frame.
 
-Retail disproves the current temptation to reuse the wrench-facing helper for item 10, and the launch **origin** is now recovered numerically.
+## Launch-frame boundary
 
-The class-`0xc0` update builds `sp+0x70` at `0x002c1db8..0x002c1e4c`. Its sources resolve against the already-recovered player-global base `P = 0x0013f350`:
+The controlled item-10 class-`0x79` projectile owns a dedicated step vector at PVar `+0x00..+0x08`. Its state-1 update advances:
 
-- `P+0x80 = 0x0013f3d0` is Ratchet's native XYZ world position;
-- `P+0x670/+0x674 = 0x0013f9c0/+4` is the planar heading pair;
-- the fixed savestate has heading `(0.4437280595, 0.8961613774)` while live Ratchet `Moby+0x48 = 1.1110417843`, agreeing with `(cos(yaw), sin(yaw))` to below `1e-7`.
+`position = position + step`
 
-The update calls the retained quadrant-aware angle helper `0x001ff8b0` on that heading, wraps an added raw-f32 angle `0xbeb953df = -0.3619680107` through `0x002000e8`, then uses the retained cosine helper `0x001ff7e8` plus its adjacent complementary planar-trig helper to construct a radius-`0x3f5be9fb = 0.8590390086` XY offset. It vector-adds Ratchet's position through `0x001ff278`, then adds raw-f32 native-Z lift `0x3efb4cc2 = 0.4908199906`.
+and then applies the recovered vertical-step recurrence documented in `RAC1_PROJECTILE_HIT_PATTERNS.md`.
 
-Thus the equivalent recovered origin law is:
+The complete item-10 **launch-vector initialization and launch-origin formula remain unresolved**. The Godot host therefore maps native Ratchet yaw directly for visible direction and keeps its muzzle offset as an explicit presentation fallback.
 
-```text
-launchYaw = yaw - 0.3619680107
-origin.x = player.x + cos(launchYaw) * 0.8590390086
-origin.y = player.y + sin(launchYaw) * 0.8590390086
-origin.z = player.z + 0.4908199906
-```
-
-For the retained Veldin witness `player=(154.4383087158,119.9104232788,29.484375)`, `yaw=1.1110417843`, this yields `(155.0674000825,120.4953951334,29.9751949906)`. `Rac1BombGlove.ResolveLaunchOrigin` freezes that formula and the three raw f32 constants. The Godot host now applies this recovered relative origin through the existing native-Z-up planar basis conversion instead of the former synthetic `+1.1/+0.8` muzzle offset.
-
-State 3 then calls `0x002c1928` with `a0 = sp+0x70`, `a1 = sp+0x80`, and the projectile PVar. That routine writes the launch-direction fields in the projectile PVar before `0x002aa008` receives the origin, staged projectile, and PVar. The upstream `sp+0x80` aim point depends on another class-`0xc0` vector path through `sp+0x100`; that **direction/aim construction remains unresolved**. OBP therefore uses the recovered muzzle origin but keeps visible projectile direction as an explicit yaw-derived host fallback until the aim path or ballistics task recovers it.
-
-The pre-arm constructor is separately called with the owner Moby, owner PVar `+0x40`, and `sp+0x100`. The core spawn contract retains `UsesDedicatedWeaponLaunchFrame = true` so later weapon work cannot collapse these separate origin/aim paths into the wrench-facing rule.
+This supersedes an earlier attribution from another class-`0xc0` path rooted at `0x002c1ad0`, constructor `0x002a9ed0`, class `0x4a`, and launch helper `0x002aa008`. That separate path remains valid retail evidence: it has class-`0x4a` ownership at projectile PVar `+0x30`, a 10/20-tick pair, and the previously decoded yaw/radius/height origin construction. Controlled item-10 replay proves it is **not** the Bomb Glove carrier, so those constants are retained as separate-family archaeology rather than exposed through `Rac1BombGlove`.
 
 ## Wrench contrast
 
@@ -89,7 +70,7 @@ Ordinary wrench use remains a player-action/contact contract:
 - admitted player sequence 23;
 - first-swing contact age `17..23`;
 - first-swing movement/facing evidence follows live Ratchet yaw;
-- no item-10 ammo mutation, class-`0x4a` staging, or 10/20-tick ranged gate is promoted onto it.
+- no item-10 ammo mutation or projectile staging is promoted onto it.
 
 `Rac1WrenchCombatController.AdmitOrdinaryUse` therefore returns the same semantic admission envelope but keeps all wrench timing in the existing action/contact controller.
 
@@ -105,11 +86,13 @@ This keeps three clocks separate: movement/controller state, weapon-use/contact 
 
 ## Reproduction
 
-The retained addresses can be reproduced by loading the authorized SCUS-97199 savestate EE memory and disassembling these ranges:
+The corrected item-10 path is reproduced by the payload-free probe in `tools/rac1-projectile-hit-pattern-probe.py` and the retained managed live witness. Key loaded ranges are:
 
-- `0x002c1ad0..0x002c2470` — class-`0xc0` update, admission, staging and state dispatch;
-- `0x002a9ed0..0x002aa008` — class-`0x4a` constructor and owner link;
-- `0x002aa008..0x002aa2a8` — state-3 launch handoff and projectile state 1;
-- `0x00216de8..0x00216e44` — helper called by the accepted-fire branch.
+- `0x002c26c8..` — controlled item-10 class-`0xc0` update/admission;
+- `0x002ace70..` — class-`0x79` constructor/source ownership;
+- `0x002acfd8..` — item-10 launch handoff;
+- `0x002adb30..` — class-`0x79` ballistic/contact update.
 
-Unit coverage freezes the promoted contract in `Rac1BombGloveTests` and `Rac1WrenchCombatTests`.
+The older `0x002c1ad0 / 0x002a9ed0 / 0x002aa008` path is retained only as separate class-`0x4a` family evidence.
+
+Unit coverage freezes the integrated admission/spawn contract in `Rac1BombGloveTests` and `Rac1WrenchCombatTests`.

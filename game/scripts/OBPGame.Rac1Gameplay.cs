@@ -24,7 +24,9 @@ public partial class OBPGame
     private const float Rac1DirectContactRadius = 1.25f;
     private const float Rac1CrateOriginPadding = 1.0f;
     private const float Rac1PickupCollectRadius = 1.4f;
-    // Host-only projectile travel/contact visualization. Retail trajectory equations remain unresolved.
+    // Host-only launch-vector/contact/expiry presentation. The native class-0x79
+    // ballistic recurrence is recovered in OBP.RAC1, but host launch initialization,
+    // contact geometry and a terminal lifetime consumer remain unresolved.
     private const float Rac1BombPresentationSpeed = 18f;
     private const float Rac1BombPresentationLifetime = 2f;
     private const float Rac1BombHostileContactRadius = 0.9f;
@@ -501,19 +503,11 @@ public partial class OBPGame
     {
         if (_sceneResult is null || _player is null) return;
 
-        // The class-0xc0 update constructs an exact launch origin from Ratchet's
-        // position/yaw. Its downstream aim vector remains separately unresolved,
-        // so only projectile direction stays on the explicit host fallback.
+        // The corrected item-10 path has a recovered dedicated launch/step frame,
+        // but its full launch-origin construction is not yet promoted. Keep only
+        // the direct native-yaw direction mapping and retain the existing visible
+        // muzzle offset as an explicit host presentation fallback.
         double nativeYaw = _player.Rac1CurrentYaw;
-        var nativeOriginOffset = Rac1BombGlove.ResolveLaunchOrigin(
-            new Rac1BombGloveNativePoint(0, 0, 0),
-            nativeYaw);
-        Vector3 sceneOriginOffset =
-            PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
-                nativeOriginOffset.X,
-                nativeOriginOffset.Y) +
-            (Vector3.Up * (float)nativeOriginOffset.Z);
-
         Vector3 direction = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
             Math.Cos(nativeYaw),
             Math.Sin(nativeYaw));
@@ -531,7 +525,7 @@ public partial class OBPGame
             },
         });
         _sceneResult.Root.AddChild(node);
-        node.GlobalPosition = _player.GlobalPosition + sceneOriginOffset;
+        node.GlobalPosition = _player.GlobalPosition + Vector3.Up * 1.1f + direction * 0.8f;
         _rac1Projectiles.Add(shot.Projectile.ProjectileId, new Rac1HostedProjectile(node, direction));
     }
 
@@ -554,7 +548,7 @@ public partial class OBPGame
 
             bool impacted = false;
             Vector3 segment = end - start;
-            var hit = _rac1HostileNodes.Values
+            var contacts = _rac1HostileNodes.Values
                 .Where(hostile =>
                     _rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) &&
                     IsInstanceValid(hostile.Root) &&
@@ -571,29 +565,30 @@ public partial class OBPGame
                 .Where(candidate => candidate.Separation <= Rac1BombHostileContactRadius)
                 .OrderBy(candidate => candidate.T)
                 .ThenBy(candidate => candidate.Hostile.Source.InstanceIndex)
-                .FirstOrDefault();
-            if (hit is not null)
+                .ToArray();
+
+            int admittedContacts = 0;
+            foreach (var contact in contacts)
             {
-                var hostile = hit.Hostile;
+                var hostile = contact.Hostile;
                 var probe = _rac1HostileProbes[hostile.Source.InstanceIndex];
-                var damage = _rac1BombGlove.ResolveGoal1Impact(
+                var damage = _rac1BombGlove.ResolveGoal1Contact(
                     pair.Key, hostile.Source, probe.NativeState);
-                if (damage is not null)
-                {
-                    probe = _rac1Hostiles.ApplyBombGloveDamage(hostile.Source, damage);
-                    _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
-                    probe = _rac1Hostiles.ApplyTerminalStatus(
-                        hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
-                    _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
-                    hostile.ApplyState(probe.EntityState);
-                    _rac1CombatStatus = $"Bomb Glove hit class-749 i{hostile.Source.InstanceIndex}: terminal 0xfd";
-                    GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
-                    impacted = true;
-                }
+                if (damage is not null) admittedContacts++;
+            }
+
+            if (admittedContacts > 0)
+            {
+                _rac1BombGlove.CompleteProjectile(pair.Key);
+                _rac1CombatStatus =
+                    $"Bomb Glove contact: {admittedContacts} class-749 candidate(s); native consequence unresolved";
+                GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+                impacted = true;
             }
 
             if (impacted || projectile.Age >= Rac1BombPresentationLifetime)
             {
+                _rac1BombGlove.CompleteProjectile(pair.Key);
                 projectile.Node.QueueFree();
                 _rac1Projectiles.Remove(pair.Key);
             }

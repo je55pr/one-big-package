@@ -2,8 +2,6 @@ using OBP.Runtime;
 
 namespace OBP.RAC1.Gameplay;
 
-public readonly record struct Rac1BombGloveNativePoint(double X, double Y, double Z);
-
 public readonly record struct Rac1BombGloveProjectile(
     long ProjectileId,
     int NativeClassId,
@@ -26,6 +24,14 @@ public sealed record Rac1BombGloveDamageResult(
     uint NativeDamageFlags)
 {
     public Rac1NativeDamageEnvelope DamageEnvelope => new(NativeDamage, NativeDamageFlags);
+
+    /// <summary>
+    /// The retained item-10 representative uses the native contact-volume path:
+    /// the projectile Moby remains the source and the common contact routine
+    /// discovers victim Mobies while excluding the source itself.
+    /// </summary>
+    public Rac1NativeDamageHandoff DamageHandoff =>
+        Rac1NativeDamageHandoff.ContactVolume(DamageEnvelope);
 }
 
 public sealed record Rac1BombGloveProbe(
@@ -38,38 +44,35 @@ public sealed record Rac1BombGloveProbe(
 
 /// <summary>
 /// Retail-backed Bomb Glove facts recovered from the loaded Veldin executable.
-/// Native class 0x4a is named only as the projectile carrier owned by the weapon path;
-/// external model labels are deliberately not promoted as gameplay semantics.
+/// The controlled item-10 carrier is native class 0x79; external model labels are
+/// deliberately not promoted as gameplay semantics.
 /// </summary>
 public static class Rac1BombGlove
 {
     public const int NativeWeaponClassId = 0xc0;
-    public const int NativeProjectileClassId = 0x4a;
+    public const int NativeProjectileClassId = 0x79;
     public const int ProjectileCreationNativeState = 0;
     public const int ProjectileLaunchedNativeState = 1;
+    public const int ProjectileContactNativeState = 2;
+    public const int ProjectileTerminalNativeState = 0xfe;
     public const int AmmoCostPerShot = 1;
     public const int MaxAmmo = 40;
-    public const int ProjectileRearmTicks = 10;
+    public const int ProjectileRearmTicks = 0;
     public const int FireCooldownTicks = 20;
-    public const int ProjectilePvarOwnerPointerOffset = 0x30;
+    public const int ProjectilePvarOwnerPointerOffset = 0x50;
     public const int WeaponPvarStagedProjectileOffset = 0x50;
-    public const uint LaunchOriginYawOffsetBits = 0xbeb953df;
-    public const uint LaunchOriginPlanarRadiusBits = 0x3f5be9fb;
-    public const uint LaunchOriginHeightBits = 0x3efb4cc2;
-    public static readonly double LaunchOriginYawOffsetRadians =
-        BitConverter.Int32BitsToSingle(unchecked((int)LaunchOriginYawOffsetBits));
-    public static readonly double LaunchOriginPlanarRadius =
-        BitConverter.Int32BitsToSingle(unchecked((int)LaunchOriginPlanarRadiusBits));
-    public static readonly double LaunchOriginHeight =
-        BitConverter.Int32BitsToSingle(unchecked((int)LaunchOriginHeightBits));
-    public const double NativeDamage = 1d;
-    public const uint NativeDamageFlags = 0x00010000;
+    public const int ProjectileLongCountdownTicks = 300;
+    public const int ProjectileShortCountdownTicks = 30;
+    // float32(0x3991a2b4 * 11.0f) = float32 word 0x3b483fb8.
+    public const double NativeVerticalStepDeltaAtAuthorityScale = 0.003055555745959282d;
+    public const double NativeDamage = 2d;
+    public const uint NativeDamageFlags = 0x00830000;
 
     /// <summary>
-    /// The class-0xc0 update constructs and owns class-0x4a, stores the staged
-    /// object at owner PVar +0x50, and the constructor writes the owner Moby
-    /// pointer to projectile PVar +0x30. Launch receives a dedicated vector
-    /// produced by the weapon update; it is not the recovered wrench-yaw rule.
+    /// The controlled item-10 class-0xc0 update constructs and owns class-0x79,
+    /// stores the staged object at owner PVar +0x50, and the constructor writes
+    /// the owner Moby pointer to projectile PVar +0x50. Launch owns a dedicated
+    /// projectile step vector; it is not the recovered wrench-yaw rule.
     /// </summary>
     public static readonly Rac1WeaponSpawnOwnership SpawnOwnership = new(
         NativeWeaponClassId,
@@ -80,38 +83,10 @@ public static class Rac1BombGlove
         WeaponPvarStagedProjectileOffset,
         UsesDedicatedWeaponLaunchFrame: true);
 
-    /// <summary>
-    /// Replays the recovered class-0xc0 launch-origin construction. The loaded
-    /// update reads Ratchet's native world position and the planar heading pair
-    /// matching cos/sin(Moby+0x48), rotates that heading by the retained offset,
-    /// applies the retained planar radius, then adds the retained native-Z lift.
-    /// Projectile aim beyond this origin remains a separate weapon-update path.
-    /// </summary>
-    public static Rac1BombGloveNativePoint ResolveLaunchOrigin(
-        Rac1BombGloveNativePoint playerPosition,
-        double nativePlayerYaw)
-    {
-        if (!double.IsFinite(playerPosition.X) ||
-            !double.IsFinite(playerPosition.Y) ||
-            !double.IsFinite(playerPosition.Z))
-        {
-            throw new ArgumentOutOfRangeException(nameof(playerPosition));
-        }
-
-        if (!double.IsFinite(nativePlayerYaw))
-            throw new ArgumentOutOfRangeException(nameof(nativePlayerYaw));
-
-        double launchYaw = nativePlayerYaw + LaunchOriginYawOffsetRadians;
-        return new Rac1BombGloveNativePoint(
-            playerPosition.X + (Math.Cos(launchYaw) * LaunchOriginPlanarRadius),
-            playerPosition.Y + (Math.Sin(launchYaw) * LaunchOriginPlanarRadius),
-            playerPosition.Z + LaunchOriginHeight);
-    }
-
-    public static bool IsGoal1ImpactTarget(RuntimeDynamicObject target, int targetNativeState) =>
+    public static bool IsGoal1ContactTarget(RuntimeDynamicObject target, int targetNativeState) =>
         target.SourceGame == "rac1" &&
         target.NativeClassId == Rac1Class749Hostile.NativeClassId &&
-        targetNativeState is not (Rac1Class749Hostile.TerminalNativeStateFd or Rac1Class749Hostile.TerminalNativeStateFe);
+        !Rac1MobyRuntime.IsTerminalState(targetNativeState);
 }
 
 /// <summary>
@@ -205,10 +180,10 @@ public sealed class Rac1BombGloveSession
             {
                 int ammoAfter = CurrentAmmo;
                 admission = Rac1WeaponUseAdmission.AcceptFirstRanged(ammoBefore, ammoAfter);
-                _prearmedProjectile = null;
                 _projectileRearmTicksRemaining = Rac1BombGlove.ProjectileRearmTicks;
                 _fireCooldownTicksRemaining = Rac1BombGlove.FireCooldownTicks;
                 _launchedProjectileIds.Add(projectile.ProjectileId);
+                _prearmedProjectile = CurrentAmmo > 0 ? CreateProjectile() : null;
                 shot = new Rac1BombGloveShot(
                     projectile,
                     ammoBefore,
@@ -222,21 +197,23 @@ public sealed class Rac1BombGloveSession
         return Snapshot(shot, admission);
     }
 
-    public Rac1BombGloveDamageResult? ResolveGoal1Impact(
+    public Rac1BombGloveDamageResult? ResolveGoal1Contact(
         long projectileId,
         RuntimeDynamicObject target,
         int targetNativeState)
     {
         if (!_launchedProjectileIds.Contains(projectileId)) return null;
-        if (!Rac1BombGlove.IsGoal1ImpactTarget(target, targetNativeState)) return null;
+        if (!Rac1BombGlove.IsGoal1ContactTarget(target, targetNativeState)) return null;
 
-        _launchedProjectileIds.Remove(projectileId);
         return new Rac1BombGloveDamageResult(
             projectileId,
             target.NativeClassId,
             Rac1BombGlove.NativeDamage,
             Rac1BombGlove.NativeDamageFlags);
     }
+
+    public bool CompleteProjectile(long projectileId) =>
+        _launchedProjectileIds.Remove(projectileId);
 
     private int CurrentAmmo => _inventory?.FirstRangedAmmo ?? _ammo;
 

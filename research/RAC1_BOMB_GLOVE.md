@@ -1,39 +1,59 @@
 # R&C1 Bomb Glove firing slice
 
-Authority: NTSC-U original retail (`SCUS-97199`, build `rac1-ntscu-original`, ISO SHA-256 `ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d`). Loaded Veldin retail state is used for overlay/runtime code that is not present in the boot ELF. Public tooling is used only to corroborate the familiar name **Bomb Glove** for native item `10`; gameplay promotion below comes from retail evidence.
+Authority: NTSC-U original retail (`SCUS-97199`, build `rac1-ntscu-original`, ISO SHA-256 `ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d`). Loaded Veldin retail state supplies overlay/runtime code absent from the boot ELF. The controlled live witness uses the retained fixed Veldin state plus a managed PCSX2 movie/PINE trace; committed evidence remains payload-free.
 
-## Candidate selection and ammo
+## Candidate selection, input and ammo
 
-The controlled Veldin witness has native item `10` selected, item `10` as the only unlocked ranged weapon in that early state, and an ammo count of `6`. That makes it the smallest evidence-rich candidate for the Goal 1 ranged loop rather than choosing a later weapon by familiarity.
+Native item `10` is the early-state ranged weapon identified publicly as Bomb Glove. Ammo remains indexed at `0x0013d428 + itemId * 4`, so item `10` uses `0x0013d450`; its descriptor maximum is `40`.
 
-Retail indexes ammo at `0x0013d428 + itemId * 4`, so item `10` uses `0x0013d450`. Its descriptor is `0x001c40b0 + itemId * 0x18`; item `10` therefore starts at `0x001c41a0`, and the descriptor maximum-ammo field at `+0x0e` is `40`.
+The fixed state begins with item `8` equipped and item-10 ammo `6`. A deterministic two-frame Circle input changes both equipped-id mirrors to `10` without consuming ammo. After the equip settles, a second two-frame Circle input consumes one round, `6 -> 5`. This is a controlled input witness, not a complete quick-select/input-state model.
 
-`0x00233e98(-1)` queries ammo for the current weapon. The accepted fire path calls `0x00233db8(-1, 1)` at `0x002c1cc8..0x002c1cd0`; the helper resolves the current item, requires sufficient ammo, and subtracts exactly one round. The bounded OBP session therefore admits initial ammo only in `0..40` and spends exactly one round per accepted shot.
-
-## Input and fire acceptance
-
-The held weapon uses native class `0xc0` and loaded update `0x002c1ad0`. The path at `0x002c1c64..0x002c1cd8` reads the native player input/action mask, requires its weapon-fire gate plus available ammo, invokes the one-round consumption helper, then writes weapon native state `3`.
-
-The physical PS2 pad bit that feeds that native action mask was not uniquely recovered in this lane. `OBP.RAC1` therefore accepts a host-resolved `fireRequested` boolean; this is an input seam, not a claim that an arbitrary Godot button is retail truth.
+The live item-10 weapon is native class `0xc0` with loaded update `0x002c26c8`. Its accepted fire path calls `0x00233db8(-1, 1)` at `0x002c28d0` and enters weapon native state `3`.
 
 ## Projectile ownership and launch
 
-When no projectile is staged and current-weapon ammo is available, the tail of the weapon update (`0x002c2420..0x002c2444`) calls the Bomb Glove projectile constructor and stores the resulting object at weapon PVar `+0x50`. The constructed carrier is native class `0x4a` in native state `0`.
+Weapon state `3` loads its staged object from weapon PVar `+0x50`, calls constructor `0x002ace70`, and launches through `0x002acfd8`. The constructor requests native class **`0x79` (121)** from the common Moby allocator. This corrects the earlier class-`0x4a` attribution.
 
-Weapon state `3` dispatches at `0x002c22b4`. It reads that exact stored object, calls `0x002aa008`, then clears weapon PVar `+0x50`. `0x002aa008` writes the projectile to native state `1` at `0x002aa098`. This closes a retail creation-to-launch path without assigning an external class name or inventing projectile travel equations.
+The class-`0x79` constructor stores the firing weapon Moby at projectile PVar `+0x50`. The launch helper writes projectile native state `1`, establishing the source chain:
 
-After launch the weapon writes two recovered timers. It stores `0x001fef20(10)` at weapon PVar `+0x54` and `0x001fef20(20)` at `+0x58`, then enters native state `4`. In the normal Veldin authority state the helper's time-scale source is `1.0`, giving 10 native ticks before a replacement projectile may be staged and 20 native ticks before another shot may be accepted. OBP preserves those native-tick gates directly.
+`class-0xc0 weapon Moby -> class-0x79 projectile -> projectile PVar+0x50 source`.
+The accepted-fire update clears the old staged pointer, then the weapon tail can immediately construct and store a replacement class-`0x79` object at weapon PVar `+0x50`. The controlled live trace shows the launched carrier at `0x01858b80` while the replacement is already staged at `0x01858c80` on the ammo-decrement frame. The older 10-tick rearm claim belonged to a different class-`0xc0` update and is not Bomb Glove truth.
 
-## Hit filtering and damage record
+The weapon retains a recovered 20-native-tick fire gate. OBP therefore keeps the 20-tick accepted-shot gate, but no longer models a 10-tick projectile rearm delay.
 
-Native class `0x4a` dispatches through loaded update `0x002a84c8`. Its post-launch candidate scan walks live Mobies and rejects terminal native states `0xfd` and `0xfe` before later class/distance/contact helpers. The broader retail exclusion list and collision geometry are intentionally not generalized by this milestone.
+## Ballistic motion and countdown boundary
 
-On the recovered impact path, the class-`0x4a` update calls record writer `0x00259bc8` with scalar `1.0` and flag word `0x00010000`. The existing representative Veldin class-749 hostile has a separately recovered one-health damage consequence: `1.0 -> 0.0`, entering native damage state `12` before a later terminal `0xfd/0xfe` status.
+The controlled projectile uses loaded update `0x002adb30`. In native state `1`, the update calls common vector-add helper `0x001ff278` with:
 
-For Goal 1, `Rac1BombGloveSession` therefore admits only the already-bounded R&C1 class-749 hostile, rejects recovered terminal target states, emits the proven `1.0 / 0x00010000` result once per launched projectile, and delegates that result to `Rac1Class749HostileSession`. The class-749 restriction is an OBP milestone admission, **not** a claim that retail Bomb Glove can damage only that class.
+- destination = Moby position;
+- left-hand vector = current Moby position;
+- right-hand vector = projectile PVar `+0x00..+0x08`.
+
+So ordinary ballistic motion is `position = position + step` once per native update.
+
+The same branch reads native frame-scale `0x0015ed70`, whose authority-state float32 value is `0.00027777778450399637` (`0x3991a2b4`, approximately `1/3600`). Native single-precision multiplication by `11.0f` rounds to float32 word `0x3b483fb8`, or `0.003055555745959282`; that rounded value is subtracted from PVar `+0x08` per native update.
+
+The managed live trace agrees. At launch the step is approximately `(0.06286147, 0.12695619, 0.09166652)`; one update later the horizontal components are unchanged and the vertical component is approximately `0.08861096`.
+
+Launch also initializes two countdown-like fields:
+
+- PVar `+0x54 = time(300)`, decremented by `0x001fef98`;
+- PVar `+0x6a = time(30)`.
+Neither field is promoted as a generic projectile lifetime. The short countdown reaches zero while the controlled projectile continues flying. The representative shot contacts while the long countdown is still `235`, so the trace does not witness natural expiry at zero.
+
+## Contact, splash damage and terminalization
+
+The class-`0x79` state-1 path calls shared world query `0x001efc70` and common gameplay contact routine `0x001f2868`. On the retained contact branch it supplies native damage scalar **`2.0`** and flag word **`0x00830000`**, retains the class-`0x79` projectile Moby as source, then calls splash distributor `0x0025a9f8`.
+
+The distributor iterates candidate Mobies and calls per-victim damage writer `0x00259a88`. It explicitly skips a candidate whose Moby pointer equals the retained source. The per-victim record retains source, damage flags, scalar and victim. This is a source-aware **contact-volume/splash** handoff, not the earlier direct-victim `1.0 / 0x00010000` record.
+
+The controlled shot follows native states `1 -> 2 -> 0xfe`: state `1` begins on trace frame 41, contact state `2` begins on frame 107, and common terminal state `0xfe` appears on frame 122. Position is stationary during the state-2 interval in this witness.
+
+The class-`0x4a` `1.0 / 0x00010000` direct-record path remains valid evidence for a **separate projectile family**. It is no longer used as Bomb Glove provenance.
 
 ## Promotion boundary
 
-Promoted into `OBP.RAC1`: item-10 ammo capacity/accounting, class-`0xc0` firing ownership, class-`0x4a` staged projectile identity and `0 -> 1` launch state, 10/20 native-tick gates, terminal-target rejection, and the representative Goal 1 impact/damage consequence.
+Promoted into `OBP.RAC1`: item-10 ammo accounting, class-`0xc0` weapon ownership, class-`0x79` projectile identity, `0 -> 1` launch, immediate replacement staging, 20-tick fire gate, source ownership at projectile PVar `+0x50`, position-plus-step ballistic recurrence, authority-state float32 vertical decrement `0.003055555745959282`, the 300/30 countdown fields as countdowns only, state-`2` contact transition, observed `0xfe` terminalization, and the `2.0 / 0x00830000` contact-volume damage envelope.
+Deliberately unpromoted: a universal launch-vector formula, natural lifetime/expiry at either countdown, native contact radius/shape, a generic explosion radius, class-749 health consequence for the `2.0` splash envelope, faction/team/friendly immunity beyond source-self exclusion, visual/audio effects, and any claim that unrelated class-`0x4a` behavior is Bomb Glove behavior.
 
-Deliberately unpromoted: physical controller button mapping, exact projectile trajectory/ballistics, generic explosion radius, the full native class exclusion list, arbitrary target classes or health values, visual/audio effects, and any claim that the community names for class `0x4a` describe this retail carrier. Godot remains responsible for input mapping, collision queries and presentation; `OBP.RAC1` remains responsible for admitted gameplay truth.
+The live Godot host therefore still owns unresolved presentation launch geometry, contact geometry and timeout presentation. It no longer converts the recovered Bomb splash envelope into the previously assumed class-749 `1.0 -> 0.0` consequence.
