@@ -39,7 +39,7 @@ A clean 32-byte record at 0x0013e090..0x0013e0af contains the grounded opening p
 
 A controlled causality test changed only this record to a different XYZ/yaw, then triggered the same environmental death. Retail overwrote the edited record back to the authored Veldin values at the restart boundary and placed Ratchet at those authored values. The edited record never redirected the restart.
 
-Accordingly this record is a downstream reset snapshot/output. It must not be promoted as a checkpoint transform. The 0x00160540 gate is zero in retained states .01 through .06; its broader meaning is not recovered and it is not named as a checkpoint selector.
+Accordingly this record is a downstream reset snapshot/output. It must not be promoted as a checkpoint transform. The 0x00160540 gate is zero in retained states .01 through .06 and a second loaded consumer further argues against naming it as a generic checkpoint selector: 0x00243670..0x002436cc only reaches the gate when CurrentLevel is 13 and the reset/context halfword at +0x26 equals 2, then uses that selector to read native class 0x215 from the table at 0x00160548. A full retail authored-Moby census finds the table's nonzero class family (0x213, 0x214, 0x215, 0x217, 0x218, 0x219) collapses to exactly one authored match anywhere on disc: level 13 instance 801, class 0x215, at approximately (467.16425, 584.96655, 316.71402) with a 16-byte PVar. The broader level-13 behavior remains unrecovered, but this is level-specific object logic rather than evidence for a cross-level checkpoint selector.
 
 ## Local state across the exact restart
 
@@ -58,7 +58,7 @@ Run:
 
 py -3.12 tools/rac1-checkpoint-boundary-probe.py --savestate "<authorized SCUS-97199 Veldin state>" --zstd-dll "<zstd.dll>" --out "<payload-free report.json>"
 
-It verifies the loaded reset instruction signatures, identifies the player, class-0 Moby, reset snapshot and UID-map addresses, and emits only hashes, scalars and derived state. Raw savestates, EE memory and controlled PINE traces remain under ignored local capture storage.
+It verifies the loaded reset instruction signatures plus the level-13 gate-consumer signatures, identifies the player, class-0 Moby, reset snapshot and UID-map addresses, and emits only hashes, scalars and derived state. `Rac1CheckpointRetailTests` independently replays the gate-class authored census from the authorized retail ISO. Raw savestates, EE memory and controlled PINE traces remain under ignored local capture storage.
 
 The current .05 authority savestate SHA-256 is 58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec.
 

@@ -21,6 +21,11 @@ PLAYER_MOBY = 0x01845E80
 NANOTECH = 0x001415F8
 RESET_SNAPSHOT = 0x0013E090
 RESET_GATE = 0x00160540
+RESET_CONTEXT = 0x0013E030
+CURRENT_LEVEL = 0x0015ED84
+LEVEL13_CLASS_TABLE = 0x00160548
+LEVEL13_SELECTOR = 2
+LEVEL13_CLASS_ID = 0x215
 LEVEL_UID_BITS = 0x0014C190
 LOCAL_UID_BITS = 0x001BA4D0
 UID_BYTES = 0x100
@@ -39,6 +44,18 @@ RESET_SIGNATURES = {
     0x00204DD0: 0x7E420000,  # SQ to 0x0013e090
     0x00204DD4: 0x7A820000,  # LQ second player-state vector
     0x00204DD8: 0x7E620000,  # SQ to 0x0013e0a0
+}
+
+GATE_CONTEXT_SIGNATURES = {
+    0x00243670: 0x8C63ED84,  # current level from 0x0015ed84
+    0x00243674: 0x2402000D,  # special path requires native level 13
+    0x00243680: 0x84830026,  # selector from reset/context structure +0x26
+    0x00243684: 0x24020002,  # special path requires selector 2
+    0x00243690: 0x3C020016,  # gate address upper half
+    0x00243694: 0x8C420540,  # same 0x00160540 gate
+    0x002436B8: 0x24840548,  # class table base 0x00160548
+    0x002436C4: 0x00031880,  # selector * 4
+    0x002436CC: 0x8C620000,  # selected native class id
 }
 
 
@@ -77,9 +94,13 @@ def bit_count(data: bytes) -> int:
     return sum(value.bit_count() for value in data)
 
 
-def verify_reset_signatures(memory: bytes | bytearray) -> None:
+def _verify_signatures(
+    memory: bytes | bytearray,
+    signatures: dict[int, int],
+    label: str,
+) -> None:
     mismatches = []
-    for address, expected in RESET_SIGNATURES.items():
+    for address, expected in signatures.items():
         actual = u32_at(memory, address)
         if actual != expected:
             mismatches.append({
@@ -88,21 +109,41 @@ def verify_reset_signatures(memory: bytes | bytearray) -> None:
                 "actual": f"0x{actual:08x}",
             })
     if mismatches:
-        raise RuntimeError(f"loaded R&C1 reset signatures changed: {mismatches}")
+        raise RuntimeError(f"loaded R&C1 {label} signatures changed: {mismatches}")
+
+
+def verify_reset_signatures(memory: bytes | bytearray) -> None:
+    _verify_signatures(memory, RESET_SIGNATURES, "reset")
+
+
+def verify_gate_context_signatures(memory: bytes | bytearray) -> None:
+    _verify_signatures(memory, GATE_CONTEXT_SIGNATURES, "reset-gate context")
+    selected_class = u32_at(memory, LEVEL13_CLASS_TABLE + LEVEL13_SELECTOR * 4)
+    if selected_class != LEVEL13_CLASS_ID:
+        raise RuntimeError(
+            "loaded R&C1 reset-gate class table changed: "
+            f"selector {LEVEL13_SELECTOR} expected 0x{LEVEL13_CLASS_ID:x}, "
+            f"actual 0x{selected_class:x}"
+        )
 
 
 def checkpoint_report(memory: bytes | bytearray) -> dict[str, object]:
     verify_reset_signatures(memory)
+    verify_gate_context_signatures(memory)
     level_bits = bytes(memory[LEVEL_UID_BITS:LEVEL_UID_BITS + UID_BYTES])
     local_bits = bytes(memory[LOCAL_UID_BITS:LOCAL_UID_BITS + UID_BYTES])
     return {
         "loadedResetSignaturesVerified": len(RESET_SIGNATURES),
+        "loadedGateContextSignaturesVerified": len(GATE_CONTEXT_SIGNATURES),
         "addresses": {
             "playerState": f"0x{PLAYER_STATE:08x}",
             "class0LiveMoby": f"0x{PLAYER_MOBY:08x}",
             "nanotech": f"0x{NANOTECH:08x}",
             "resetSnapshot": f"0x{RESET_SNAPSHOT:08x}",
             "resetSnapshotGate": f"0x{RESET_GATE:08x}",
+            "resetContext": f"0x{RESET_CONTEXT:08x}",
+            "currentLevel": f"0x{CURRENT_LEVEL:08x}",
+            "level13ClassTable": f"0x{LEVEL13_CLASS_TABLE:08x}",
             "levelUidBits": f"0x{LEVEL_UID_BITS:08x}",
             "localUidBits": f"0x{LOCAL_UID_BITS:08x}",
         },
@@ -113,6 +154,12 @@ def checkpoint_report(memory: bytes | bytearray) -> dict[str, object]:
             "class0Moby": transform_at(memory, PLAYER_MOBY + 0x10, PLAYER_MOBY + 0x48),
             "resetSnapshot": transform_at(memory, RESET_SNAPSHOT, RESET_SNAPSHOT + 0x18),
             "resetSnapshotGate": u32_at(memory, RESET_GATE),
+            "currentLevel": u32_at(memory, CURRENT_LEVEL),
+            "resetContextSelector": u16_at(memory, RESET_CONTEXT + 0x26),
+            "level13SelectedClassId": u32_at(
+                memory,
+                LEVEL13_CLASS_TABLE + LEVEL13_SELECTOR * 4,
+            ),
             "uidPersistence": {
                 "mapsEqual": level_bits == local_bits,
                 "levelSetBits": bit_count(level_bits),
@@ -129,8 +176,21 @@ def checkpoint_report(memory: bytes | bytearray) -> dict[str, object]:
             "snapshot": "when 0x00160540 == 0, the first 32 bytes of rebuilt player state are copied to 0x0013e090",
             "snapshotAuthority": False,
         },
+        "resetSnapshotGateContext": {
+            "resetConsumer": "0x00204dc0 suppresses the downstream 0x0013e090 snapshot copy when nonzero",
+            "verifiedSecondaryConsumer": "0x00243670..0x002436cc",
+            "secondaryConsumerConditions": {
+                "currentLevel": 13,
+                "resetContextSelector": LEVEL13_SELECTOR,
+            },
+            "secondaryConsumerClassTable": f"0x{LEVEL13_CLASS_TABLE:08x}",
+            "secondaryConsumerSelectedClassId": f"0x{LEVEL13_CLASS_ID:x}",
+            "genericCheckpointSelectorSupported": False,
+            "boundary": "the secondary consumer is a level-13 native-class object path; its broader gameplay meaning remains unrecovered",
+        },
         "boundary": [
             "This probe verifies the Veldin reset dataflow; it does not identify a generic checkpoint selector.",
+            "The 0x00160540 gate is also consumed by a level-13 selector-2 native-class path resolving to class 0x215, which is evidence against treating it as a generic checkpoint selector.",
             "The reset snapshot is downstream state. A controlled mutation was overwritten by retail before respawn and did not redirect placement.",
             "UID-map equality in one savestate is state evidence only; death preservation requires the separately retained controlled live transition.",
         ],

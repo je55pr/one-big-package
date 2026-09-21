@@ -55,6 +55,41 @@
       "retailOverwroteEditedSnapshotAtRestart": true
     }
   },
+  "resetSnapshotGateContext": {
+    "gate": "0x00160540",
+    "verifiedSecondaryConsumer": "0x00243670..0x002436cc",
+    "conditions": {
+      "currentLevel": 13,
+      "resetContextSelector": 2
+    },
+    "classTableBase": "0x00160548",
+    "selectedClassId": "0x215",
+    "gateContextSignatureWords": {
+      "0x00243670": "0x8c63ed84",
+      "0x00243674": "0x2402000d",
+      "0x00243680": "0x84830026",
+      "0x00243684": "0x24020002",
+      "0x00243690": "0x3c020016",
+      "0x00243694": "0x8c420540",
+      "0x002436b8": "0x24840548",
+      "0x002436c4": "0x00031880",
+      "0x002436cc": "0x8c620000"
+    },
+    "retailAuthoredClassCensus": {
+      "tableNonzeroClasses": ["0x213", "0x214", "0x215", "0x217", "0x218", "0x219"],
+      "matchesAcrossLevels0To18": 1,
+      "onlyMatch": {
+        "levelId": 13,
+        "instanceIndex": 801,
+        "classId": "0x215",
+        "position": [467.16425, 584.96655, 316.71402],
+        "pvarIndex": 736,
+        "pvarBytes": 16
+      }
+    },
+    "genericCheckpointSelectorSupported": false,
+    "broaderLevel13GameplayMeaning": "unresolved"
+  },
   "class500UidPersistence": {
     "levelMapBase": "0x0014c190",
     "localMapBase": "0x001ba4d0",

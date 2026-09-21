@@ -18,8 +18,15 @@ class Rac1CheckpointBoundaryProbeTests(unittest.TestCase):
             PROBE.LOCAL_UID_BITS + PROBE.UID_BYTES,
         )
         memory = bytearray(size)
-        for address, word in PROBE.RESET_SIGNATURES.items():
-            struct.pack_into("<I", memory, address, word)
+        for signatures in (PROBE.RESET_SIGNATURES, PROBE.GATE_CONTEXT_SIGNATURES):
+            for address, word in signatures.items():
+                struct.pack_into("<I", memory, address, word)
+        struct.pack_into(
+            "<I",
+            memory,
+            PROBE.LEVEL13_CLASS_TABLE + PROBE.LEVEL13_SELECTOR * 4,
+            PROBE.LEVEL13_CLASS_ID,
+        )
         struct.pack_into("<I", memory, PROBE.NANOTECH, 4)
         struct.pack_into("<H", memory, PROBE.PLAYER_MOBY + 0xA6, 0)
         for base in (PROBE.PLAYER_STATE, PROBE.PLAYER_MOBY + 0x10, PROBE.RESET_SNAPSHOT):
@@ -35,6 +42,10 @@ class Rac1CheckpointBoundaryProbeTests(unittest.TestCase):
         report = PROBE.checkpoint_report(self.make_memory())
 
         self.assertEqual(report["loadedResetSignaturesVerified"], len(PROBE.RESET_SIGNATURES))
+        self.assertEqual(
+            report["loadedGateContextSignaturesVerified"],
+            len(PROBE.GATE_CONTEXT_SIGNATURES),
+        )
         self.assertEqual(report["witness"]["liveClassId"], 0)
         self.assertEqual(report["witness"]["nanotech"], 4)
         self.assertEqual(report["witness"]["resetSnapshotGate"], 0)
@@ -44,6 +55,11 @@ class Rac1CheckpointBoundaryProbeTests(unittest.TestCase):
         self.assertEqual(report["resetDataflow"]["routine"], "0x00204c60")
         self.assertFalse(report["resetDataflow"]["snapshotAuthority"])
         self.assertIn("class-0 Moby", report["resetDataflow"]["placement"])
+        gate = report["resetSnapshotGateContext"]
+        self.assertEqual(gate["secondaryConsumerConditions"]["currentLevel"], 13)
+        self.assertEqual(gate["secondaryConsumerConditions"]["resetContextSelector"], 2)
+        self.assertEqual(gate["secondaryConsumerSelectedClassId"], "0x215")
+        self.assertFalse(gate["genericCheckpointSelectorSupported"])
 
     def test_changed_loaded_signature_fails_closed(self):
         memory = self.make_memory()
@@ -51,6 +67,17 @@ class Rac1CheckpointBoundaryProbeTests(unittest.TestCase):
         struct.pack_into("<I", memory, address, 0)
         with self.assertRaises(RuntimeError):
             PROBE.verify_reset_signatures(memory)
+
+    def test_changed_gate_context_fails_closed(self):
+        memory = self.make_memory()
+        struct.pack_into(
+            "<I",
+            memory,
+            PROBE.LEVEL13_CLASS_TABLE + PROBE.LEVEL13_SELECTOR * 4,
+            0,
+        )
+        with self.assertRaises(RuntimeError):
+            PROBE.verify_gate_context_signatures(memory)
 
 
 if __name__ == "__main__":
