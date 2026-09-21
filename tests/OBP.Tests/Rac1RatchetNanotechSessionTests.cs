@@ -17,7 +17,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.Equal(Rac1RatchetLifeState.Alive, probe.LifeState);
         Assert.Equal(Rac1RatchetDeathCause.None, probe.DeathCause);
         Assert.False(probe.IsDead);
-        Assert.False(probe.HasRecoveredVeldinEnvironmentalRespawn);
+        Assert.False(probe.HasRecoveredEnvironmentalRespawn);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.Equal(Rac1RatchetLifeState.Dead, probe.LifeState);
         Assert.Equal(Rac1RatchetDeathCause.CombatZeroNanotech, probe.DeathCause);
         Assert.True(probe.IsDead);
-        Assert.False(probe.HasRecoveredVeldinEnvironmentalRespawn);
+        Assert.False(probe.HasRecoveredEnvironmentalRespawn);
         Assert.Throws<InvalidOperationException>(() =>
             session.ApplyClass749Attack(RecoveredClass749Attack()));
         Assert.Throws<InvalidOperationException>(() => session.Respawn());
@@ -69,9 +69,9 @@ public sealed class Rac1RatchetNanotechSessionTests
 
         var dead = session.ApplyEnvironmentalDeathReset();
         Assert.Equal(0, dead.Nanotech);
-        Assert.Equal(Rac1RatchetDeathCause.VeldinEnvironmental, dead.DeathCause);
+        Assert.Equal(Rac1RatchetDeathCause.RecoveredEnvironmental, dead.DeathCause);
         Assert.True(dead.IsDead);
-        Assert.True(dead.HasRecoveredVeldinEnvironmentalRespawn);
+        Assert.True(dead.HasRecoveredEnvironmentalRespawn);
 
         var respawned = session.Respawn();
         Assert.Equal(4, respawned.Nanotech);
@@ -140,7 +140,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.Equal(4, respawn.Nanotech);
         Assert.Equal(Rac1RatchetLifeState.Alive, respawn.LifeState);
         Assert.Equal(Rac1RatchetDeathCause.None, respawn.DeathCause);
-        Assert.False(respawn.HasRecoveredVeldinEnvironmentalRespawn);
+        Assert.False(respawn.HasRecoveredEnvironmentalRespawn);
         Assert.Null(respawn.NativePlayerState);
         Assert.Null(respawn.NativeSequence);
         Assert.Null(respawn.NativeSequenceFrame);

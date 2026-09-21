@@ -7,11 +7,12 @@
   Builds the Godot host once, then launches it twice against an isolated temporary
   campaign-state file. Pass one starts from the recovered opening campaign state,
   injects only the proven destination-discovery dispatcher events 0x25 and 0x26,
-  travels 0 -> 1 -> 2 -> 1, and persists. Pass two starts a fresh process,
-  restores CurrentLevel/unlock order, and revisits 1 -> 2 -> 1.
+  travels 0 -> 1 -> 2, explicitly injects the retained level-2 checkpoint/death
+  witness, reloads level 2, returns to 1, and persists. Pass two starts a fresh
+  process, restores CurrentLevel/unlock order, and revisits 1 -> 2 -> 1.
 
-  The injected dispatcher values are test inputs, not a claim about unrecovered
-  mission/objective triggers.
+  The dispatcher values and level-2 checkpoint activation/death are test inputs,
+  not claims about unrecovered mission/objective/checkpoint trigger producers.
 #>
 param(
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,

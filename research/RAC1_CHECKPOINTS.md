@@ -106,6 +106,24 @@ claim. Same-world state such as class-500 UID bits, ammo, Bolts, hostiles, picku
 and scripts is not folded into the checkpoint model without its own restart
 witness.
 
+## Hosted multi-level smoke boundary
+
+`tools/rac1-campaign-smoke.ps1` now exercises the checkpoint session through
+actual Godot world teardown/entry on representative levels 0, 1 and 2. The first
+process verifies fresh inactive class-0 sessions on 0 -> 1 -> 2, explicitly
+injects the retained level-2 active record and environmental-death witness, and
+observes the live host restart at the recovered checkpoint transform/yaw. A full
+same-level reload of level 2 then starts a fresh inactive class-0 session. The
+second process restores campaign state and revisits 1 -> 2 -> 1, with every full
+entry again starting inactive.
+
+The level-2 checkpoint activation and environmental death are test inputs copied
+from the retained retail witness. This smoke does not identify or emulate the
+native gameplay writer, trigger volume, objective condition or broader script
+state that creates the record. Reload/revisit clearing remains the conservative
+OBP lifetime policy while native checkpoint serialization/planet-reload semantics
+are unresolved.
+
 ## Remaining checkpoint boundary
 
 A level-2 checkpoint record, its loaded player-placement consumer, and a controlled death restart to that non-class-0 transform are now proven. The retained Veldin route remains a valid negative witness: it has no demonstrated mid-route checkpoint activation and restarts from authored class 0 while preserving the measured class-500 UID maps.

@@ -84,9 +84,11 @@
   "implementationBoundary": {
     "deathCauses": [
       "CombatZeroNanotech",
-      "VeldinEnvironmental"
+      "RecoveredEnvironmental"
     ],
-    "recoveredRespawnAdmitsOnly": "VeldinEnvironmental",
+    "recoveredRespawnAdmitsOnly": "RecoveredEnvironmental",
+    "automaticEnvironmentalDeathProducer": "level-0 Veldin gate only",
+    "level2EnvironmentalDeathAdmission": "retained-witness smoke/test injection only; gameplay trigger unresolved",
     "hostRespawnDoesNotClaimUnresolvedStatePreservation": true
   },
   "evidenceSources": [

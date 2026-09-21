@@ -252,18 +252,20 @@ public partial class OBPGame
     private void OnRac1RespawnRequested()
     {
         var death = _rac1Nanotech.Probe();
-        if (_world is not { Game: "rac1", LevelId: 0 } || _player is null ||
-            _rac1CampaignSession.LevelCheckpoint is not { NativeLevelId: 0 } checkpoint ||
-            !death.HasRecoveredVeldinEnvironmentalRespawn)
+        if (_world is not { Game: "rac1" } world || _player is null ||
+            _rac1CampaignSession.LevelCheckpoint is not { } checkpoint ||
+            checkpoint.NativeLevelId != world.LevelId ||
+            !death.HasRecoveredEnvironmentalRespawn)
             return;
 
         // The recovered restart boundary resets Nanotech, placement, heading and
-        // player motion. Other same-world owners stay untouched unless separately
-        // proven; in particular, the measured class-500 UID maps survive this path.
+        // player motion. Godot does not infer a checkpoint trigger: level 0 reaches
+        // this naturally through the recovered Veldin gate; level 2 is admitted only
+        // when a separately identified checkpoint/death witness has been supplied.
         Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
         var respawn = _rac1Nanotech.Respawn();
         _player.ApplyRecoveredRac1Restart(restart.Placement);
-        _rac1CombatStatus = $"Veldin respawn ({restart.Kind}): Nanotech {respawn.Nanotech}";
+        _rac1CombatStatus = $"environmental respawn L{world.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";
         RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
     }
@@ -746,11 +748,11 @@ public partial class OBPGame
             : $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active)";
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
-        string restart = nanotech.HasRecoveredVeldinEnvironmentalRespawn
-            ? "R Veldin environmental respawn"
+        string restart = nanotech.HasRecoveredEnvironmentalRespawn
+            ? "R recovered environmental respawn"
             : nanotech.IsDead
                 ? "combat restart unresolved"
-                : "Veldin environmental respawn evidence only";
+                : "environmental restart evidence: levels 0 and 2 only";
         return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +

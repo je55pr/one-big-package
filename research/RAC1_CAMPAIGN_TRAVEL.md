@@ -257,18 +257,26 @@ and neither route serializes the level-local checkpoint session.
 Godot processes against the supported retail source. Its bounded route is:
 
 1. Start from the recovered opening state at native level 0 with no admitted
-   destinations.
+   destinations and a fresh inactive level-local checkpoint session.
 2. Feed progression-dispatch values `0x25` and `0x26`, whose recovered branch
    admits native destinations 1 and 2 in that order.
-3. Travel through the ordinary provider/session path `0 -> 1 -> 2 -> 1`.
-4. Start a fresh process, restore `CurrentLevel=1` plus admission order `[1,2]`,
-   and revisit `1 -> 2 -> 1`.
+3. Travel through the ordinary provider/session path `0 -> 1 -> 2`, verifying a
+   fresh class-0 checkpoint baseline after each full level entry.
+4. On level 2 only, explicitly inject the retained active checkpoint record and
+   recovered environmental death/reset witness, verify restart to the recovered
+   checkpoint transform/yaw, then fully reload level 2 and require a fresh inactive
+   class-0 checkpoint session.
+5. Travel back to level 1 and persist. Start a fresh process, restore
+   `CurrentLevel=1` plus admission order `[1,2]`, and revisit `1 -> 2 -> 1`, again
+   requiring fresh inactive checkpoint sessions on each full entry.
 
 The smoke checks the loaded `RuntimeWorld`, campaign `CurrentLevel`, completed
-two-phase handoff and a fresh read of the persisted envelope after each bounded
-phase. Revisit does not duplicate `VisitedPlanets` or `GalacticMap` admissions.
-The second process enters the persisted current level without mutating campaign
-state before exercising ordinary travel again.
+two-phase handoff, checkpoint-session lifetime, and a fresh read of the persisted
+envelope after each bounded phase. Revisit does not duplicate `VisitedPlanets` or
+`GalacticMap` admissions. The second process enters the persisted current level
+without mutating campaign state before exercising ordinary travel again. The
+level-2 checkpoint/death injection is a test input sourced from retained retail
+evidence, not a producer-side trigger implementation.
 
 ### Remaining campaign-script boundary
 
@@ -283,11 +291,13 @@ contains admissions.
 
 Per-level `Completed` remains a distinct recovered persistent value, but no host
 mission script currently decides when to set it. `Rac1LevelCheckpointSession`
-now models the separately recovered restart-placement branch: inactive uses the
-authored class-0 seed, while an explicitly supplied active record redirects death
-restart placement. No production gameplay trigger activates a checkpoint yet,
-because the retail writer/activation event remains unrecovered. Full reload and
-revisit therefore start fresh inactive checkpoint sessions instead of inventing
-serialization. The neutral Worlds browser remains a developer/external load route
-and cannot manufacture discovery, completion, checkpoint activation or campaign
-travel.
+models the separately recovered restart-placement branch: inactive uses the
+authored class-0 seed, while an explicitly supplied active record redirects a
+recovered environmental restart. No production gameplay trigger activates a
+checkpoint yet, because the retail writer/activation event remains unrecovered;
+likewise only Veldin has an automatic hosted environmental-death gate. The
+campaign smoke injects the retained level-2 checkpoint/death witness directly and
+labels that injection as test-only. Full reload and revisit start fresh inactive
+checkpoint sessions instead of inventing serialization. The neutral Worlds browser
+remains a developer/external load route and cannot manufacture discovery,
+completion, checkpoint activation or campaign travel.

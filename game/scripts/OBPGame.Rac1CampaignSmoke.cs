@@ -1,12 +1,15 @@
 using Godot;
+using OBP.Godot.Player;
 using OBP.RAC1.Progression;
+using OBP.Runtime;
 
 namespace OneBigPackage;
 
 /// <summary>
-/// Two-process host smoke for the recovered R&C1 campaign slice. The first pass
-/// injects only proven destination-discovery dispatcher values, travels, revisits,
-/// and saves. The second pass restores that host file and repeats a revisit.
+/// Two-process host smoke for the recovered R&C1 campaign/checkpoint slice. The
+/// first pass injects proven destination-discovery values plus the retained level-2
+/// checkpoint/death witness, verifies reload clearing, revisits, and saves. The
+/// second pass restores that host file and repeats a revisit with fresh checkpoints.
 /// </summary>
 public partial class OBPGame
 {
@@ -58,6 +61,8 @@ public partial class OBPGame
 
         await Rac1CampaignSmokeTravelAsync(1);
         await Rac1CampaignSmokeTravelAsync(2);
+        ExerciseRecoveredLevel2CheckpointRestart();
+        await ReloadCurrentRac1CampaignSmokeLevelAsync(2);
         await Rac1CampaignSmokeTravelAsync(1);
 
         RequireRac1CampaignSmokeState(1, [1, 2]);
@@ -97,8 +102,89 @@ public partial class OBPGame
         RequireRac1CampaignSmoke(
             !_rac1CampaignSession.Travel.TransitionActive,
             $"Travel to destination {destinationId} left transition active.");
+        RequireFreshRac1CheckpointSmoke(destinationId);
 
-        GD.Print($"[rac1-campaign-smoke] travel PASS: current={destinationId}");
+        GD.Print($"[rac1-campaign-smoke] travel PASS: current={destinationId}; checkpoint=fresh");
+    }
+
+    private void ExerciseRecoveredLevel2CheckpointRestart()
+    {
+        const int levelId = 2;
+        RequireRac1CampaignSmoke(
+            _world is { Game: "rac1", LevelId: levelId } && _player is not null,
+            "Level-2 checkpoint smoke requires the live level-2 player.");
+
+        Rac1LevelCheckpointSession checkpoint = _rac1CampaignSession.LevelCheckpoint
+            ?? throw new InvalidOperationException("Level-2 checkpoint session is missing.");
+        var recoveredPlacement = new RuntimeSpawn(
+            205.5801544189453,
+            26.059293746948242,
+            163.04751586914062,
+            0.7809665203094482);
+        RequireRac1CampaignSmoke(
+            checkpoint.Activate(new Rac1CheckpointActivation(levelId, recoveredPlacement)),
+            "Recovered level-2 checkpoint activation was not accepted.");
+
+        // Test-only injection of the retained level-2 environmental reset witness.
+        // The gameplay writer/trigger that creates this checkpoint remains unknown.
+        var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
+        _player!.Rac1GameplayAlive = false;
+        RequireRac1CampaignSmoke(
+            dead.Nanotech == 0 && dead.HasRecoveredEnvironmentalRespawn,
+            "Level-2 environmental death injection did not enter the recovered reset state.");
+
+        OnRac1RespawnRequested();
+
+        var respawn = _rac1Nanotech.Probe();
+        RuntimeSpawnScenePose scenePose = RuntimeSpawnSceneAdapter.ToScenePose(recoveredPlacement);
+        RequireRac1CampaignSmoke(
+            respawn.Nanotech == 4 && _player.Rac1GameplayAlive,
+            "Level-2 recovered environmental restart did not restore Nanotech/alive state.");
+        RequireRac1CampaignSmoke(
+            _player.GlobalPosition.DistanceTo(scenePose.Position) < 0.001f,
+            $"Level-2 checkpoint restart missed recovered placement: {_player.GlobalPosition} vs {scenePose.Position}.");
+        RequireRac1CampaignSmoke(
+            Math.Abs(_player.Rac1CurrentYaw - recoveredPlacement.Yaw) < 1e-9,
+            "Level-2 checkpoint restart did not restore the recovered yaw.");
+
+        GD.Print("[rac1-campaign-smoke] level-2 checkpoint PASS: explicit activation -> death -> recovered placement");
+    }
+
+    private async Task ReloadCurrentRac1CampaignSmokeLevelAsync(int levelId)
+    {
+        int currentBefore = _rac1CampaignSession.Campaign.CurrentLevel;
+        OpenDestinationFromBootstrap($"rac1:LEVEL{levelId}");
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        RequireRac1CampaignSmoke(
+            _rac1CampaignSession.Campaign.CurrentLevel == currentBefore,
+            "Same-level host reload mutated campaign CurrentLevel.");
+        RequireFreshRac1CheckpointSmoke(levelId);
+        RequireRac1CampaignSmoke(
+            _rac1Nanotech.Probe().Nanotech == 4 && !_rac1Nanotech.Probe().IsDead,
+            "Same-level host reload did not start a fresh alive level-local gameplay session.");
+        GD.Print($"[rac1-campaign-smoke] level-{levelId} reload PASS: checkpoint activation cleared");
+    }
+
+    private void RequireFreshRac1CheckpointSmoke(int expectedLevel)
+    {
+        RuntimeSpawn authoredClass0 = _world?.PlayerStart
+            ?? throw new InvalidOperationException("R&C1 smoke world has no authored class-0 start.");
+        Rac1LevelCheckpointSession checkpoint = _rac1CampaignSession.LevelCheckpoint
+            ?? throw new InvalidOperationException("R&C1 smoke checkpoint session is missing.");
+
+        RequireRac1CampaignSmoke(
+            checkpoint.NativeLevelId == expectedLevel,
+            $"Checkpoint session level {checkpoint.NativeLevelId}, expected {expectedLevel}.");
+        RequireRac1CampaignSmoke(
+            checkpoint.ActiveCheckpoint is null,
+            $"Level {expectedLevel} unexpectedly carried an active checkpoint across full entry.");
+        RequireRac1CampaignSmoke(
+            checkpoint.AuthoredClass0 == authoredClass0,
+            $"Level {expectedLevel} checkpoint baseline does not match RuntimeWorld.PlayerStart.");
+        RequireRac1CampaignSmoke(
+            checkpoint.ResolveEnvironmentalRestart().Kind == Rac1RestartPlacementKind.AuthoredClass0,
+            $"Level {expectedLevel} fresh checkpoint session did not resolve to authored class 0.");
     }
 
     private void RequireRac1CampaignSmokeState(
@@ -120,6 +206,7 @@ public partial class OBPGame
             map.UnlockedDestinations.SequenceEqual(expectedUnlocked),
             $"Unlocked order [{string.Join(",", map.UnlockedDestinations)}], " +
             $"expected [{string.Join(",", expectedUnlocked)}].");
+        RequireFreshRac1CheckpointSmoke(expectedCurrent);
     }
 
     private void RequirePersistedRac1CampaignSmokeState(

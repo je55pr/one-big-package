@@ -11,8 +11,10 @@ The payload-free machine-readable boundary is frozen in
 
 ## Proven opening-Veldin environmental restart
 
-The controlled retail Veldin fall witness is the only restart path currently
-strong enough to promote.
+The controlled retail Veldin fall witness is the only restart path with a
+recovered automatic gameplay-side death gate. Level 2 separately proves an
+environmental death/restart redirect once an active checkpoint record already
+exists, but its checkpoint writer/activation trigger remains unrecovered.
 
 - Ratchet enters native death sequences 10 then 11 while Nanotech remains 4.
 - At the recovered reset boundary the player enters native state `0x77`,
@@ -88,18 +90,21 @@ selection and restart transition are not retained, however. Environmental
 sequences 10/11 must therefore not be aliased onto combat death.
 
 `Rac1RatchetNanotechSession` records this distinction explicitly:
-`CombatZeroNanotech` versus `VeldinEnvironmental`. Its recovered
-`Respawn()` operation accepts only the Veldin environmental cause. The Godot
-host likewise no longer turns class-749 zero-health into the old development
-"Veldin respawn" convenience.
+`CombatZeroNanotech` versus `RecoveredEnvironmental`. Its recovered `Respawn()`
+operation accepts only the environmental cause. The only automatic host producer
+remains the recovered Veldin death-plane gate; level 2 is exercised only by an
+explicit retained-witness smoke injection because its gameplay trigger is still
+unknown. The Godot host therefore still cannot turn class-749 zero-health into an
+environmental restart.
 
 ## Host placement boundary
 
-R&C1 level entry and the admitted Veldin environmental restart now consume the
+R&C1 level entry and recovered environmental restart placement consume the
 engine-neutral `Rac1LevelCheckpointSession` rather than `DebugPlayer`'s cached
 development spawn. A full level load starts a fresh session from decoded authored
 class 0; same-world environmental restart resolves that session and therefore
 uses an active recovered checkpoint when one has independently been supplied.
+The host does not infer checkpoint activation from position or script state.
 
 Godot remains presentation/collision hosting only. `RuntimeSpawnSceneAdapter`
 mirrors the engine-neutral transform into Godot and adds the existing +3 unit

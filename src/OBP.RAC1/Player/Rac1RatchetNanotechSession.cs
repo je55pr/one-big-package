@@ -12,7 +12,7 @@ public enum Rac1RatchetDeathCause
 {
     None,
     CombatZeroNanotech,
-    VeldinEnvironmental,
+    RecoveredEnvironmental,
 }
 
 /// <summary>
@@ -85,8 +85,10 @@ public sealed class Rac1RatchetNanotechSession
     }
 
     /// <summary>
-    /// Applies the witnessed Veldin environmental-death reset boundary. Retail leaves
-    /// Nanotech unchanged through death sequences 10/11, then zeroes it at reset.
+    /// Applies the recovered environmental-death reset boundary after a source-specific
+    /// path has independently established that this is one of the retained witnesses.
+    /// Veldin supplies an automatic gate above; level 2 is currently smoke/test-injected
+    /// from its retained checkpoint/death witness because its gameplay trigger is unknown.
     /// </summary>
     public Rac1RatchetNanotechSnapshot ApplyEnvironmentalDeathReset()
     {
@@ -95,21 +97,21 @@ public sealed class Rac1RatchetNanotechSession
 
         _nanotech = 0;
         _lifeState = Rac1RatchetLifeState.Dead;
-        _deathCause = Rac1RatchetDeathCause.VeldinEnvironmental;
+        _deathCause = Rac1RatchetDeathCause.RecoveredEnvironmental;
         return Snapshot();
     }
 
     /// <summary>
-    /// Applies only the recovered opening-Veldin environmental restart. Combat
-    /// zero-Nanotech is a proven death boundary, but its native restart/checkpoint
-    /// path is not recovered and therefore cannot use this reset.
+    /// Applies only a recovered environmental restart. Combat zero-Nanotech is a
+    /// proven death boundary, but its native restart/checkpoint path is not recovered
+    /// and therefore cannot use this reset.
     /// </summary>
     public Rac1RatchetNanotechSnapshot Respawn()
     {
         if (_lifeState != Rac1RatchetLifeState.Dead ||
-            _deathCause != Rac1RatchetDeathCause.VeldinEnvironmental)
+            _deathCause != Rac1RatchetDeathCause.RecoveredEnvironmental)
             throw new InvalidOperationException(
-                "R&C1 recovered respawn is limited to Veldin environmental death.");
+                "R&C1 recovered respawn requires a recovered environmental death.");
 
         _nanotech = RetailVeldinRespawnNanotech;
         _lifeState = Rac1RatchetLifeState.Alive;
@@ -148,6 +150,6 @@ public sealed record Rac1RatchetNanotechSnapshot(
 {
     public bool IsDead => LifeState == Rac1RatchetLifeState.Dead;
 
-    public bool HasRecoveredVeldinEnvironmentalRespawn =>
-        IsDead && DeathCause == Rac1RatchetDeathCause.VeldinEnvironmental;
+    public bool HasRecoveredEnvironmentalRespawn =>
+        IsDead && DeathCause == Rac1RatchetDeathCause.RecoveredEnvironmental;
 }
