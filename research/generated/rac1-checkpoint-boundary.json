@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "authority": {
     "game": "Ratchet & Clank",
     "build": "rac1-ntscu-original",
@@ -16,11 +16,19 @@
     "nearbySingletonCheckpointObjectProven": false
   },
   "controlledEnvironmentalRestart": {
-    "preDeathPosition": [106.52737426757812, 230.34225463867188, 34.403656005859375],
+    "preDeathPosition": [
+      106.52737426757812,
+      230.34225463867188,
+      34.403656005859375
+    ],
     "preDeathNanotech": 1,
     "deathBoundaryNanotech": 0,
     "restoredNanotech": 4,
-    "restoredPosition": [132.08999633789062, 115.4800033569336, 31.426616668701172],
+    "restoredPosition": [
+      132.08999633789062,
+      115.4800033569336,
+      31.426616668701172
+    ],
     "restoredYawRadians": 0.6627014875411987,
     "restoredTransformMatchesAuthoredClass0": true
   },
@@ -76,13 +84,24 @@
       "0x002436cc": "0x8c620000"
     },
     "retailAuthoredClassCensus": {
-      "tableNonzeroClasses": ["0x213", "0x214", "0x215", "0x217", "0x218", "0x219"],
+      "tableNonzeroClasses": [
+        "0x213",
+        "0x214",
+        "0x215",
+        "0x217",
+        "0x218",
+        "0x219"
+      ],
       "matchesAcrossLevels0To18": 1,
       "onlyMatch": {
         "levelId": 13,
         "instanceIndex": 801,
         "classId": "0x215",
-        "position": [467.16425, 584.96655, 316.71402],
+        "position": [
+          467.16425,
+          584.96655,
+          316.71402
+        ],
         "pvarIndex": 736,
         "pvarBytes": 16
       }
@@ -102,20 +121,101 @@
   },
   "unresolved": [
     "generic R&C1 checkpoint definition and selector",
-    "checkpoint activation condition outside this negative Veldin witness",
-    "checkpoint-specific spawn table, if one exists",
+    "gameplay event/writer that activates or populates the level-2 checkpoint record",
+    "whether other levels share the level-2 checkpoint storage/consumer shape",
     "equipped weapon and ammo semantics across checkpoint restart",
     "Bolt wallet and transient pickup semantics across checkpoint restart",
+    "class-500 UID-map semantics across the level-2 checkpoint restart",
     "hostile and broader level-script reset semantics"
   ],
   "provenance": [
     "retail Veldin gameplay-data archaeology",
     "loaded retail executable reset-path archaeology",
     "controlled isolated PCSX2/PINE environmental death",
-    "controlled reset-snapshot mutation causality test"
+    "controlled reset-snapshot mutation causality test",
+    "synthetic harness entry into native loaded level-2 runtime, explicitly excluded from ordinary ship-travel evidence",
+    "controlled isolated PCSX2/PINE level-2 environmental death and checkpoint redirect",
+    "loaded level-2 checkpoint-record consumer archaeology"
   ],
   "notes": [
     "No ISO, executable, savestate, EE-memory or raw PINE payload is committed.",
-    "The negative activation result is scoped to the retained Veldin route and must not be generalized to all levels."
-  ]
+    "The negative activation result is scoped to the retained Veldin route and must not be generalized to all levels.",
+    "The positive level-2 checkpoint result proves restart placement/consumption, not the still-unrecovered gameplay activation writer or trigger."
+  ],
+  "level2CheckpointRestartWitness": {
+    "entryProvenance": {
+      "loadedStateSavestateSha256": "74bd2afd45e8e0796f5bf056aeb30f2a71b76fd0a9977e0cfd61a2dc911c775a",
+      "levelEntry": "synthetic harness handoff into native loaded LEVEL2 runtime from populated save state; not evidence for ordinary ship-travel sequencing",
+      "deathRestartTransition": "controlled native retail environmental death after level initialization"
+    },
+    "liveClass0": {
+      "poolPointer": "0x0015ffd8",
+      "poolBase": "0x01cec780",
+      "index": 0,
+      "classId": 0,
+      "position": [
+        210.54315185546875,
+        170.20379638671875,
+        25.33272361755371
+      ],
+      "yawRadians": 2.309513807296753
+    },
+    "checkpointRecord": {
+      "base": "0x001bb830",
+      "activeFlag": 1,
+      "transformAddress": "0x001bb840",
+      "position": [
+        205.5801544189453,
+        163.04751586914062,
+        26.059293746948242
+      ],
+      "yawRadians": 0.7809665203094482,
+      "distanceFromClass0": 8.739084537532225,
+      "transformDiffersFromClass0": true
+    },
+    "controlledEnvironmentalRestart": {
+      "stimulus": "player-state Z and live class-0 Moby Z set to 20.0; retail owns the subsequent transition",
+      "preDeathNanotech": 4,
+      "deathBoundaryNanotech": 0,
+      "defaultRebuildPosition": [
+        210.41000366210938,
+        170.35000610351562,
+        25.34482765197754
+      ],
+      "defaultRebuildYawRadians": 2.309995651245117,
+      "restoredNanotech": 4,
+      "checkpointRedirectPosition": [
+        205.5801544189453,
+        163.04751586914062,
+        26.059293746948242
+      ],
+      "checkpointRedirectYawRadians": 0.7809665203094482,
+      "redirectAfterDefaultRebuildApproxMs": 11,
+      "restoredTransformMatchesAuthoredClass0": false,
+      "restoredTransformMatchesCheckpointRecord": true
+    },
+    "loadedConsumer": {
+      "routine": "0x00286520",
+      "activeGate": "0x001bb830 != 0",
+      "playerState": "0x0013f3d0",
+      "placementCopy": "0x0028657c..0x00286598 copies checkpoint record +0x10..+0x2f into player state 0x0013f3d0..+0x1f",
+      "signatureWords": {
+        "0x00286520": "0x27bdffc0",
+        "0x00286524": "0x3c02001c",
+        "0x00286534": "0x8c43b830",
+        "0x00286538": "0x2450b830",
+        "0x0028657c": "0x26030010",
+        "0x00286580": "0x2484f3d0",
+        "0x00286584": "0x78620000",
+        "0x00286588": "0x7c820000",
+        "0x0028658c": "0x24850010",
+        "0x00286590": "0x26030020",
+        "0x00286594": "0x78620000",
+        "0x00286598": "0x7ca20000",
+        "0x00286650": "0x8ca5ffd8"
+      }
+    },
+    "checkpointRestartPlacementProven": true,
+    "activationWriterOrTriggerRecovered": false
+  }
 }

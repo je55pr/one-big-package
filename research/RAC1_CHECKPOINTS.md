@@ -1,8 +1,8 @@
 # R&C1 checkpoint and environmental-restart boundary
 
-Authority: NTSC-U original retail (SCUS-97199, build rac1-ntscu-original). This note records the checkpoint evidence that survives controlled Veldin death/restart experiments. It deliberately distinguishes a proven default player-start restart from an inferred checkpoint system.
+Authority: NTSC-U original retail (SCUS-97199, build rac1-ntscu-original). This note retains both the negative Veldin checkpoint boundary and a positive level-2 checkpoint/restart witness. It distinguishes the proven restart placement/consumer from the still-unrecovered gameplay event that activates or populates the checkpoint record.
 
-The payload-free machine-readable witness is research/generated/rac1-checkpoint-boundary.json.
+The aggregate payload-free witness is research/generated/rac1-checkpoint-boundary.json. The level-2 loaded-state reduction is independently reproducible as research/generated/rac1-level2-checkpoint.json.
 
 ## Result for the retained Veldin route
 
@@ -14,7 +14,30 @@ The retained early-Veldin route does **not** demonstrate activation of a mid-rou
 
 The restart yaw is now independently witnessed, rather than inferred from the authored placement.
 
-This changes the interpretation of the earlier .03/.04 route differences: they are not evidence of a stored checkpoint transform. Any true checkpoint definition or activation mechanism beyond this default Veldin restart remains unrecovered.
+This changes the interpretation of the earlier .03/.04 route differences: they are not evidence of a stored checkpoint transform. That negative result remains scoped to Veldin and does not conflict with the positive level-2 witness below.
+
+## Positive level-2 checkpoint restart witness
+
+A populated save was brought into loaded level 2 by a synthetic harness handoff into the already-recovered native level loader. That entry method is **not** evidence for ordinary ship-travel sequencing. Once level 2 was initialized, however, the checkpoint and death/restart observations below are direct retail runtime state and an ordinary controlled environmental-death transition.
+
+The loaded live-Moby pool pointer at `0x0015ffd8` resolves to `0x01cec780`. Live index 0 is native class 0 and matches the initial level-2 player transform exactly: position `(210.5431518555, 170.2037963867, 25.3327236176)`, yaw `2.3095138073` rad. This is the level's default authored class-0 restart baseline.
+
+Before death, a separate active record exists at `0x001bb830`. Its active word is `1`; its transform at `0x001bb840` is position `(205.5801544189, 163.0475158691, 26.0592937469)`, with yaw `0.7809665203` rad at record `+0x28`. The checkpoint position is about `8.7391` native units from the class-0 position, so the two restart candidates are unambiguously distinct.
+
+The controlled death used the same bounded environmental stimulus as the retained Veldin witness: only player-state Z and the corresponding live class-0 Moby Z were set to `20.0`, after which retail owned the transition. The observed boundary was:
+
+- Nanotech `4 -> 0`, with player state cleared at the death boundary;
+- retail first rebuilt class 0 near `(210.4100036621, 170.3500061035, 25.3448276520)`, yaw `2.3099956512`;
+- Nanotech returned to `4`;
+- roughly 11 ms later, retail redirected both player and live Moby to `(205.5801544189, 163.0475158691, 26.0592937469)`, yaw `0.7809665203`, exactly matching the pre-existing `0x001bb830` record.
+
+This satisfies the earlier acceptance criterion for a checkpoint witness: the native death restart demonstrably finishes at a transform different from the target level's authored class-0 placement. It proves a level-2 checkpoint/restart placement. It does **not** yet identify the gameplay trigger, writer, script policy, or selector that originally activated/populated the record.
+
+## Native level-2 checkpoint consumer
+
+Loaded level-2 routine `0x00286520` closes the record-to-player dataflow. It reads the active word at `0x001bb830`; when nonzero, `0x0028657c..0x00286598` copies record `+0x10..+0x2f` into player state `0x0013f3d0..+0x1f`. The same routine later reloads the live-Moby pool through `0x0015ffd8` and carries additional record metadata into reset setup. Small retained instruction signatures in `tools/rac1-level2-checkpoint-probe.py` fail closed if this loaded path changes.
+
+The exact writer/activation event for `0x001bb830` is still unrecovered. Accordingly, this evidence supports checkpoint **restart placement and consumption**, not a guessed trigger volume or mission-script activation rule.
 
 ## Authored trigger/data exclusions
 
@@ -50,7 +73,7 @@ The two independently recovered class-500 UID persistence maps are:
 
 In the .05 authority state both maps are identical and contain 46 set bits. High-frequency sampling across the exact death/restart transition shows both maps remain byte-identical while Nanotech reaches zero and while Ratchet is rebuilt at class 0. Thus destroyed-crate UID persistence is **preserved across this controlled Veldin environmental restart**.
 
-This does not prove its reset event on planet reload, campaign transition, or a future independently recovered checkpoint activation. Equipped weapon, ammo, Bolt wallet, transient pickups, hostile state and broader level-script state also remain outside this checkpoint contract until separately measured.
+This does not prove its reset event on planet reload, campaign transition, or the newly recovered level-2 checkpoint restart. The level-2 trial did not sample these UID maps. Equipped weapon, ammo, Bolt wallet, transient pickups, hostile state and broader level-script state also remain outside this checkpoint contract until separately measured.
 
 ## Reproduction
 
@@ -58,12 +81,14 @@ Run:
 
 py -3.12 tools/rac1-checkpoint-boundary-probe.py --savestate "<authorized SCUS-97199 Veldin state>" --zstd-dll "<zstd.dll>" --out "<payload-free report.json>"
 
-It verifies the loaded reset instruction signatures plus the level-13 gate-consumer signatures, identifies the player, class-0 Moby, reset snapshot and UID-map addresses, and emits only hashes, scalars and derived state. `Rac1CheckpointRetailTests` independently replays the gate-class authored census from the authorized retail ISO. Raw savestates, EE memory and controlled PINE traces remain under ignored local capture storage.
+py -3.12 tools/rac1-level2-checkpoint-probe.py --savestate "<authorized SCUS-97199 level-2 state>" --zstd-dll "<zstd.dll>" --out "<payload-free level2-report.json>"
 
-The current .05 authority savestate SHA-256 is 58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec.
+The Veldin probe verifies its loaded reset signatures plus the level-13 gate-consumer signatures. The level-2 probe independently verifies the active checkpoint record, dynamic live-Moby pool/class-0 transform and the loaded `0x00286520` placement consumer. Both emit only hashes, addresses, scalars and derived state. `Rac1CheckpointRetailTests` independently replays the gate-class authored census from the authorized retail ISO. Raw savestates, EE memory and controlled PINE traces remain under ignored local capture storage.
+
+The current .05 Veldin authority savestate SHA-256 is 58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec. The retained level-2 loaded-state savestate SHA-256 is 74bd2afd45e8e0796f5bf056aeb30f2a71b76fd0a9977e0cfd61a2dc911c775a; its synthetic level-entry provenance must not be promoted as ordinary ship travel.
 
 ## Remaining checkpoint boundary
 
-No generic R&C1 checkpoint definition, selector, activation condition or checkpoint-specific spawn table is promoted by this work. The strongest result is instead negative and specific: the retained Veldin route has no proven mid-route checkpoint activation, and its controlled environmental restart uses the authored class-0 start while preserving the proven class-500 UID maps.
+A level-2 checkpoint record, its loaded player-placement consumer, and a controlled death restart to that non-class-0 transform are now proven. The retained Veldin route remains a valid negative witness: it has no demonstrated mid-route checkpoint activation and restarts from authored class 0 while preserving the measured class-500 UID maps.
 
-A future checkpoint witness must first demonstrate a death restart to a transform different from the target level's authored class-0 placement. Only then should differences around the activation event be attributed to a checkpoint rather than ordinary mission/script activity.
+Still unresolved are the generic R&C1 checkpoint definition/selector, the gameplay event or writer that activates/populates `0x001bb830`, and whether other levels share this exact storage/consumer shape. Checkpoint-specific semantics for weapon/ammo, Bolts, pickups, enemies, UID maps and broader script state likewise require their own controlled before/death/restart measurements. The level-2 evidence must therefore not be stretched into a generic activation policy.

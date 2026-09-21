@@ -40,7 +40,8 @@ Persistence correlation is exact in the Veldin savestate:
 - all 26 disabled `0xfd` crates have both bits set;
 - exceptions: zero.
 
-Loading the savestate reproduces the same state, so persistence across savestate restore is proven. The event that clears these native bitfields is **not** proven: death, checkpoint reload and planet reload are not assigned reset semantics by OBP until a retail witness distinguishes them.
+Loading the savestate reproduces the same state, so persistence across savestate restore is proven. The later controlled Veldin environmental restart also keeps both recovered UID maps byte-identical through the death/class-0 rebuild boundary. A clear event remains **unproven** for the positive level-2 checkpoint restart and for planet reload because those transitions were not sampled for these maps; see `RAC1_CHECKPOINTS.md`.
+
 ## Reward selection and physical bolt pieces
 
 The class-500 authored `+0x10` value is a reward **centre**, not an exact deterministic payout. Retail forms a native RNG interval around it before entering the physical-bolt service. For the representative Veldin centre 10, the recovered inclusive interval is 7..13.

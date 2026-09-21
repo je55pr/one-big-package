@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "authority": {
     "game": "Ratchet & Clank",
     "build": "rac1-ntscu-original",
@@ -10,7 +10,10 @@
   "openingVeldinEnvironmentalRestart": {
     "scope": "controlled retail Veldin fall witness only",
     "nanotechBefore": 4,
-    "deathSequencesObserved": [10, 11],
+    "deathSequencesObserved": [
+      10,
+      11
+    ],
     "reset": {
       "nativePlayerState": "0x77",
       "nativeSequence": 11,
@@ -18,14 +21,22 @@
       "nanotech": 0
     },
     "restoredNanotech": 4,
-    "restoredNativePositionApprox": [132.09, 115.48, 31.4266],
+    "restoredNativePositionApprox": [
+      132.09,
+      115.48,
+      31.4266
+    ],
     "positionMatches": "authored class-0 instance-0 Veldin player start",
     "motionReset": true,
     "authoredClass0YawRadians": 0.6627015,
     "postDeathYawResetProven": true,
     "controlledMidRouteWitness": {
       "savestateSha256": "58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec",
-      "preDeathPosition": [106.52737426757812, 230.34225463867188, 34.403656005859375],
+      "preDeathPosition": [
+        106.52737426757812,
+        230.34225463867188,
+        34.403656005859375
+      ],
       "preDeathNanotech": 1,
       "restoredYawRadians": 0.6627014875411987,
       "restoredTransformMatchesAuthoredClass0": true
@@ -36,7 +47,7 @@
     "playerPosition": "reset-to-opening-veldin-authored-class0-proven",
     "playerMotion": "reset-proven",
     "playerYaw": "reset-to-opening-veldin-authored-class0-proven",
-    "checkpointSelector": "no-mid-route-checkpoint-proven-in-retained-veldin-witness; generic-selector-unresolved",
+    "checkpointSelector": "level2-checkpoint-record-and-restart-placement-proven; generic-selector-and-activation-trigger-unresolved",
     "equippedWeapon": "unresolved-across-death",
     "ammo": "unresolved-across-death",
     "boltWallet": "unresolved-across-death",
@@ -71,7 +82,10 @@
     "planetReloadClearEventProven": false
   },
   "implementationBoundary": {
-    "deathCauses": ["CombatZeroNanotech", "VeldinEnvironmental"],
+    "deathCauses": [
+      "CombatZeroNanotech",
+      "VeldinEnvironmental"
+    ],
     "recoveredRespawnAdmitsOnly": "VeldinEnvironmental",
     "hostRespawnDoesNotClaimUnresolvedStatePreservation": true
   },
@@ -87,6 +101,30 @@
   ],
   "notes": [
     "No ISO, executable, EE-memory, savestate, memory-card, PVar, or other proprietary payload bytes are retained.",
-    "Unresolved entries require controlled retail before/death/restart evidence; host behavior is not evidence."
-  ]
+    "Unresolved entries require controlled retail before/death/restart evidence; host behavior is not evidence.",
+    "The level-2 checkpoint trial did not sample class-500 UID maps or other unresolved inventory/world state across the checkpoint redirect."
+  ],
+  "level2CheckpointRestart": {
+    "entryProvenance": "synthetic level-entry harness into native loaded level 2; death/restart transition itself is native retail",
+    "loadedStateSavestateSha256": "74bd2afd45e8e0796f5bf056aeb30f2a71b76fd0a9977e0cfd61a2dc911c775a",
+    "liveClass0Position": [
+      210.54315185546875,
+      170.20379638671875,
+      25.33272361755371
+    ],
+    "liveClass0YawRadians": 2.309513807296753,
+    "checkpointRecord": "0x001bb830",
+    "checkpointActiveFlag": 1,
+    "checkpointPosition": [
+      205.5801544189453,
+      163.04751586914062,
+      26.059293746948242
+    ],
+    "checkpointYawRadians": 0.7809665203094482,
+    "deathBoundaryNanotech": 0,
+    "restoredNanotech": 4,
+    "restartRedirectsBeyondClass0": true,
+    "loadedConsumerRoutine": "0x00286520",
+    "activationWriterOrTriggerRecovered": false
+  }
 }

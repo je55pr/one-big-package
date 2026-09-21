@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199"
+  },
+  "savestateSha256": "74bd2afd45e8e0796f5bf056aeb30f2a71b76fd0a9977e0cfd61a2dc911c775a",
+  "eeMemorySha256": "7e3415e7fe6770a3bf2e1d858761d7a14b40b04e95d3283652e760c6d0c272b7",
+  "eeMemoryBytes": 33554432,
+  "checkpoint": {
+    "loadedConsumerSignaturesVerified": 13,
+    "addresses": {
+      "currentLevel": "0x0015ed84",
+      "playerState": "0x0013f3d0",
+      "nanotech": "0x001415f8",
+      "liveMobyPoolPointer": "0x0015ffd8",
+      "checkpointRecord": "0x001bb830",
+      "checkpointTransform": "0x001bb840"
+    },
+    "witness": {
+      "currentLevel": 2,
+      "nanotech": 4,
+      "liveMobyPool": "0x01cec780",
+      "liveClass0Index": 0,
+      "liveClass0Address": "0x01cec780",
+      "liveClass0Transform": {
+        "position": [
+          210.54315185546875,
+          170.20379638671875,
+          25.33272361755371
+        ],
+        "yawRadians": 2.309513807296753
+      },
+      "checkpointActiveFlag": 1,
+      "checkpointTransform": {
+        "position": [
+          205.5801544189453,
+          163.04751586914062,
+          26.059293746948242
+        ],
+        "yawRadians": 0.7809665203094482
+      },
+      "checkpointDistanceFromClass0": 8.739084537532225,
+      "checkpointTransformDiffersFromClass0": true
+    },
+    "loadedConsumer": {
+      "routine": "0x00286520",
+      "activeGate": "0x001bb830 != 0",
+      "placementCopy": "0x0028657c..0x00286598 copies checkpoint record +0x10..+0x2f into player state 0x0013f3d0..+0x1f",
+      "activationWriterRecovered": false
+    },
+    "boundary": [
+      "This proves a loaded level-2 checkpoint/restart record and its player-placement consumer.",
+      "It does not recover the gameplay event or policy that originally activates/populates the record.",
+      "Ordinary ship-travel sequencing is separate from this checkpoint evidence."
+    ]
+  },
+  "notes": [
+    "The savestate and EE-memory payload remain user-local and are never emitted.",
+    "Small instruction signatures are retained only to fail closed if the loaded retail path changes."
+  ]
+}

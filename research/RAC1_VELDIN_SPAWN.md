@@ -46,8 +46,9 @@ level-entry archaeology retained in `research/RAC1_CAMPAIGN_TRAVEL.md` proves
 the common target-level population path seeds authored Moby transforms without
 directly consulting the recovered campaign fields. Class 0 is therefore the
 default seed for restored-current, first-travel, and revisit loads. A later
-checkpoint or level-script relocation remains a separate unrecovered override;
-there is deliberately still no ship fallback.
+checkpoint or level-script relocation is a separate runtime override: level 2 now
+proves one checkpoint-directed relocation after death, while its activation policy
+remains unrecovered. There is deliberately still no ship fallback.
 
 ## Reproduction
 

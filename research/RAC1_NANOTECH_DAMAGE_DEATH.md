@@ -30,7 +30,7 @@ This distinction prevents the host from aliasing the Veldin fall restart onto co
 
 ## Deliberately unresolved
 
-- broader checkpoint selection outside the witnessed Veldin authored start;
+- generic checkpoint selector/activation policy beyond the proven level-2 active restart record;
 - invulnerability windows, knockback and combat death presentation;
 - Nanotech upgrades or health rules outside this bounded early-game witness;
 - damage consequences for enemy classes other than the recovered class-749 representative.

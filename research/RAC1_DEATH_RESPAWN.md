@@ -44,7 +44,7 @@ rather than inferred from the authored record.
 | player position | **reset to authored Veldin class-0 position** | post-restart position matches class-0 / instance-0 start |
 | player/controller motion | **reset** | retained movement witness observes momentum cleared |
 | player yaw | **reset to authored Veldin class-0 yaw** | controlled `.05` environmental restart restores `0.6627014875 rad`, matching authored class 0 |
-| checkpoint selector/record | **no mid-route checkpoint proven in retained Veldin witness** | controlled `.05` death still rebuilds from authored class 0; generic selector/record remains unresolved |
+| checkpoint selector/record | **level-2 active record and non-class-0 restart placement proven; generic selector/activation trigger unresolved** | Veldin `.05` still rebuilds from class 0, while level 2 consumes active `0x001bb830` through loaded routine `0x00286520` and redirects restart to its stored transform |
 | equipped weapon | **unresolved across death** | live equipped ids are recovered separately, not their death semantics |
 | ammo | **unresolved across death** | item-10 ammo storage/accounting is recovered separately |
 | Bolt wallet | **unresolved across death** | global Bolt counter is recovered separately |
@@ -69,8 +69,16 @@ The tempting record at `0x0013e090..0x0013e0af` is not checkpoint authority.
 When global `0x00160540` is zero, `0x00204dcc..0x00204dd8` copies the rebuilt
 player-state prefix into that record. Editing only its XYZ/yaw before a controlled
 death does not redirect respawn: retail overwrites the edit with authored Veldin
-values at restart. `RAC1_CHECKPOINTS.md` retains the full negative checkpoint
-boundary and cuboid/object exclusions.
+values at restart. `RAC1_CHECKPOINTS.md` retains that negative Veldin boundary
+alongside the positive level-2 checkpoint restart witness and its still-unresolved activation trigger.
+
+## Positive level-2 checkpoint restart boundary
+
+A separate controlled level-2 environmental death now proves checkpoint-directed restart placement. The loaded live class-0 start is `(210.5431519, 170.2037964, 25.3327236)`, yaw `2.3095138`, while an active record at `0x001bb830` stores `(205.5801544, 163.0475159, 26.0592937)`, yaw `0.7809665`. Retail reaches Nanotech `0`, briefly rebuilds the class-0 start, restores Nanotech to `4`, then redirects player/live-Moby state to the record transform about 11 ms later.
+
+Loaded level-2 routine `0x00286520` independently consumes the active record and copies record `+0x10..+0x2f` into player state at `0x0013f3d0`. This proves checkpoint restart placement/consumption, but not the gameplay writer, trigger or policy that originally activates/populates the record. The level itself was entered through a synthetic harness handoff into the native loader, so that entry path is not ordinary ship-travel evidence; the subsequent death/restart transition is native retail runtime behavior.
+
+No level-2 checkpoint claims are made here for equipped weapon, ammo, Bolts, transient pickups, class-500 UID maps, hostiles or broader script state because those fields were not sampled across this checkpoint redirect.
 
 ## Combat death is a separate boundary
 
@@ -116,9 +124,7 @@ remain untouched because their native death semantics are unresolved.
 - `RAC1_HOSTILE_COMMON_STATE.md`: representative class-749 live state/health.
 - `RAC1_CAMPAIGN_TRAVEL.md`: campaign/save ownership explicitly separate from
   checkpoint state.
-- `RAC1_CHECKPOINTS.md`: controlled `.05` death, class-0 rebuild dataflow,
-  reset-snapshot causality and retained-route checkpoint exclusions.
+- `RAC1_CHECKPOINTS.md`: controlled `.05` Veldin death, class-0 rebuild dataflow,
+  positive level-2 checkpoint restart/consumer, reset-snapshot causality and retained-route exclusions.
 
-A future checkpoint-recovery lane can replace individual `unresolved` entries
-only with a controlled death/restart comparison. It must not derive reset rules
-from the debug host, memory-card persistence, or savestate restoration alone.
+Further checkpoint work may replace individual `unresolved` entries only with controlled retail before/death/restart evidence. The recovered level-2 placement must not be generalized into an activation policy, and reset rules must not be derived from the debug host, memory-card persistence, or savestate restoration alone.
