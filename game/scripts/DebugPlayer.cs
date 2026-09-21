@@ -7,6 +7,7 @@ using OBP.Godot.Player;
 using OBP.RAC1.Camera;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.Runtime;
 using OBP.Runtime.Camera;
 using OBP.Runtime.Player;
 
@@ -533,12 +534,29 @@ public partial class DebugPlayer : CharacterBody3D
         VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
     }
 
+    /// <summary>
+    /// Apply a recovered R&amp;C1 restart transform. RuntimeSpawn remains the game-state
+    /// authority; the scene adapter adds only Godot collision/grounding clearance.
+    /// </summary>
+    public void ApplyRecoveredRac1Restart(RuntimeSpawn placement)
+    {
+        RuntimeSpawnScenePose pose = RuntimeSpawnSceneAdapter.ToScenePose(placement);
+        GlobalPosition = pose.Position;
+        Rotation = new Vector3(0f, pose.SceneYaw, 0f);
+        ResetAfterPlacement(placement.Yaw);
+    }
+
     public void ResetToSpawn()
     {
         GlobalPosition = _spawn;
+        ResetAfterPlacement(_rac1Yaw.CurrentYaw);
+    }
+
+    private void ResetAfterPlacement(double nativeYaw)
+    {
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
-        _rac1Yaw.Reset(_rac1Yaw.CurrentYaw);
+        _rac1Yaw.Reset(nativeYaw);
         _rac1CameraInitialized = false;
         _rac1RuntimeCameraState = null;
         _rac1JumpWasHeld = false;

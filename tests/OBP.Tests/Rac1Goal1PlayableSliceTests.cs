@@ -3,6 +3,7 @@ using OBP.Core.Math;
 using OBP.RAC1.Animation;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Progression;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
@@ -31,6 +32,13 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Equal(115.48d, spawn.Z, 2);
         Assert.Equal(0.6627015d, spawn.Yaw, 7);
         Assert.NotSame(world.Ship, spawn);
+
+        var campaignRuntime = new Rac1CampaignRuntimeSession(
+            new Rac1CampaignState(),
+            Rac1WeaponInventory.CreateOpeningVeldinWitness());
+        Rac1LevelCheckpointSession checkpoint =
+            campaignRuntime.StartLevelCheckpointSession(world.LevelId, spawn);
+        Assert.Equal(spawn, checkpoint.AuthoredClass0);
 
         var movement = new Rac1RatchetMovementController();
         var yaw = new Rac1RatchetYawController(spawn.Yaw);
@@ -222,10 +230,13 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Equal(Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequence, death.NativeSequence);
         Assert.Equal(0, death.NativeSequenceFrame);
 
+        Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
         var respawned = nanotech.Respawn();
         Assert.Equal(4, respawned.Nanotech);
-        var authoredRespawn = Assert.IsType<RuntimeSpawn>(world.PreferredPlayerStart);
-        Assert.Equal(spawn, authoredRespawn);
+        Assert.Equal(Rac1RestartPlacementKind.AuthoredClass0, restart.Kind);
+        Assert.Equal(spawn, restart.Placement);
+        Assert.Equal(1, crateSession.DestroyedCrateCount);
+        Assert.Equal(12, crateSession.CollectedBolts);
     }
     [Fact]
     public void LiveHostCompositionKeepsRac1GameplayStateAuthoritative()

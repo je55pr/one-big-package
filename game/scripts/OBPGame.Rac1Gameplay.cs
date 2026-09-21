@@ -253,13 +253,17 @@ public partial class OBPGame
     {
         var death = _rac1Nanotech.Probe();
         if (_world is not { Game: "rac1", LevelId: 0 } || _player is null ||
+            _rac1CampaignSession.LevelCheckpoint is not { NativeLevelId: 0 } checkpoint ||
             !death.HasRecoveredVeldinEnvironmentalRespawn)
             return;
 
+        // The recovered restart boundary resets Nanotech, placement, heading and
+        // player motion. Other same-world owners stay untouched unless separately
+        // proven; in particular, the measured class-500 UID maps survive this path.
+        Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
         var respawn = _rac1Nanotech.Respawn();
-        _player.ResetToSpawn();
-        _player.Rac1GameplayAlive = true;
-        _rac1CombatStatus = $"Veldin respawn: Nanotech {respawn.Nanotech}";
+        _player.ApplyRecoveredRac1Restart(restart.Placement);
+        _rac1CombatStatus = $"Veldin respawn ({restart.Kind}): Nanotech {respawn.Nanotech}";
         RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
     }

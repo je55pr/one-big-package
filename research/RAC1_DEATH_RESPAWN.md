@@ -95,23 +95,25 @@ host likewise no longer turns class-749 zero-health into the old development
 
 ## Host placement boundary
 
-`DebugPlayer.ResetToSpawn()` remains a host placement/movement seam. In the
-Veldin world its stored spawn originates from the decoded class-0 player start,
-then Godot applies its existing presentation/grounding placement policy. Calling
-that method after the admitted Veldin environmental death is consistent with
-the recovered position/momentum witness.
+R&C1 level entry and the admitted Veldin environmental restart now consume the
+engine-neutral `Rac1LevelCheckpointSession` rather than `DebugPlayer`'s cached
+development spawn. A full level load starts a fresh session from decoded authored
+class 0; same-world environmental restart resolves that session and therefore
+uses an active recovered checkpoint when one has independently been supplied.
 
-The method currently preserves the live RAC1 yaw controller value rather than
-asserting the authored class-0 yaw as a retail death reset. The new controlled
-retail witness closes that evidence gap for Veldin: preserving arbitrary live
-yaw is now an implementation limitation, not the recovered native restart law.
+Godot remains presentation/collision hosting only. `RuntimeSpawnSceneAdapter`
+mirrors the engine-neutral transform into Godot and adds the existing +3 unit
+collision/grounding lift before the player is snapped to collision. Restart also
+zeros host velocity/controller state and restores the recovered restart yaw;
+those hosting details do not become native checkpoint fields.
 
-No pickup, hostile, Bolt-wallet, weapon-ammo, campaign or level-script session
-is recreated by the admitted host respawn. That implementation fact is **not**
-promoted as retail preservation. Class-500 UID persistence is now the one
-independently measured local-state exception: its two recovered maps remain
-byte-identical across the controlled retail Veldin restart. The other fields
-remain untouched because their native death semantics are unresolved.
+The admitted restart resets only the state supported by retained evidence:
+Nanotech and player placement/heading/motion. It does not recreate the level-local
+crate, pickup, hostile or script owners, and it does not reload campaign/weapon
+persistence. Class-500 UID persistence is the one independently measured local
+exception: its two recovered maps remain byte-identical across the controlled
+Veldin restart. Other untouched fields remain conservative implementation policy,
+not promoted retail preservation semantics.
 
 ## Related retained evidence
 

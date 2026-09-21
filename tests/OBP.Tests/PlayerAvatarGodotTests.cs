@@ -2,6 +2,7 @@ using OBP.Core;
 using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.Runtime;
 using OBP.Runtime.Player;
 using Xunit;
 
@@ -13,6 +14,23 @@ public sealed class PlayerAvatarGodotTests
         PlayerAvatarAxisDirection.PositiveX,
         PlayerAvatarAxisDirection.PositiveY,
         PlayerAvatarAxisDirection.PositiveZ);
+
+    [Fact]
+    public void RecoveredRuntimeSpawnAddsOnlyHostGroundingLiftAndSceneMirror()
+    {
+        var spawn = new RuntimeSpawn(
+            132.09,
+            31.4266167,
+            115.48,
+            0.6627014875);
+
+        RuntimeSpawnScenePose pose = RuntimeSpawnSceneAdapter.ToScenePose(spawn);
+
+        Assert.Equal((float)-spawn.X, pose.Position.X);
+        Assert.Equal((float)(spawn.Y + RuntimeSpawnSceneAdapter.GroundingLift), pose.Position.Y);
+        Assert.Equal((float)spawn.Z, pose.Position.Z);
+        Assert.Equal((float)-spawn.Yaw, pose.SceneYaw);
+    }
 
     [Fact]
     public void Rac1LocalAxesMapToGodotRightUpForwardAndAlignBase()

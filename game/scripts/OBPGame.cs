@@ -1,6 +1,8 @@
 using Godot;
 using OBP.Godot;
+using OBP.Godot.Player;
 using OBP.IO;
+using OBP.RAC1.Progression;
 using OBP.RAC2;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
@@ -667,8 +669,18 @@ public partial class OBPGame : Node3D
     private void SpawnPlayer(RuntimeWorld world)
     {
         var b = world.Bounds;
-        var preferredStart = world.PreferredPlayerStart;
-        bool explicitPlayerStart = world.PlayerStart is not null;
+        RuntimeSpawn? rac1LevelEntryStart = null;
+        if (world.Game == "rac1")
+        {
+            Rac1LevelCheckpointSession checkpoint = _rac1CampaignSession.LevelCheckpoint
+                ?? throw new InvalidOperationException("R&C1 level entry is missing its checkpoint/progress session.");
+            if (checkpoint.NativeLevelId != world.LevelId)
+                throw new InvalidOperationException("R&C1 checkpoint/progress session does not match the loaded world.");
+            rac1LevelEntryStart = checkpoint.AuthoredClass0;
+        }
+
+        var preferredStart = rac1LevelEntryStart ?? world.PreferredPlayerStart;
+        bool explicitPlayerStart = rac1LevelEntryStart is not null || world.PlayerStart is not null;
         bool nativeStartUsable = preferredStart is { } s
             && (explicitPlayerStart
                 || (s.X > b.Min.X && s.X < b.Max.X && s.Z > b.Min.Z && s.Z < b.Max.Z
@@ -678,9 +690,12 @@ public partial class OBPGame : Node3D
         float yaw = 0f;
         if (nativeStartUsable && preferredStart is { } sp)
         {
-            spawn = RuntimeWorldScene.ToScene(sp.X, sp.Y + 3.0, sp.Z);
-            yaw = RuntimeWorldScene.ToSceneYaw(sp.Yaw);
-            string source = explicitPlayerStart ? "explicit player start" : "native ship point";
+            RuntimeSpawnScenePose pose = RuntimeSpawnSceneAdapter.ToScenePose(sp);
+            spawn = pose.Position;
+            yaw = pose.SceneYaw;
+            string source = rac1LevelEntryStart is not null
+                ? "R&C1 checkpoint/progress class-0 entry"
+                : explicitPlayerStart ? "explicit player start" : "native ship point";
             GD.Print($"[OBPGame] spawn from {source} ({sp.X:0},{sp.Y:0},{sp.Z:0})");
         }
         else
