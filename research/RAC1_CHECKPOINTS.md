@@ -87,6 +87,25 @@ The Veldin probe verifies its loaded reset signatures plus the level-13 gate-con
 
 The current .05 Veldin authority savestate SHA-256 is 58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec. The retained level-2 loaded-state savestate SHA-256 is 74bd2afd45e8e0796f5bf056aeb30f2a71b76fd0a9977e0cfd61a2dc911c775a; its synthetic level-entry provenance must not be promoted as ordinary ship travel.
 
+## OBP engine-neutral checkpoint/progress boundary
+
+`Rac1LevelCheckpointSession` now carries only the placement state justified by
+these witnesses. A full R&C1 level entry creates a fresh session from the decoded
+authored class-0 `RuntimeSpawn`. `Activate` accepts an already-identified native
+checkpoint event/record and never tries to infer a trigger from position, cuboids,
+mission state or campaign progress. `ResolveEnvironmentalRestart` selects the
+active record when present and otherwise returns authored class 0, matching the
+retained level-2 positive witness and Veldin negative witness respectively.
+
+The session is deliberately absent from `Rac1CampaignSaveEnvelope`. Schema 2
+continues to persist only the recovered campaign and weapon owners. Because
+checkpoint serialization and planet-reload/revisit lifetime are still unrecovered,
+OBP starts a fresh inactive checkpoint session on every full level load. That
+reload/revisit clearing is an explicit conservative host default, not a retail
+claim. Same-world state such as class-500 UID bits, ammo, Bolts, hostiles, pickups
+and scripts is not folded into the checkpoint model without its own restart
+witness.
+
 ## Remaining checkpoint boundary
 
 A level-2 checkpoint record, its loaded player-placement consumer, and a controlled death restart to that non-class-0 transform are now proven. The retained Veldin route remains a valid negative witness: it has no demonstrated mid-route checkpoint activation and restarts from authored class 0 while preserving the measured class-500 UID maps.

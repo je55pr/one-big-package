@@ -312,6 +312,12 @@ public partial class OBPGame
         Rac1LevelEntryKind? rac1Entry = world.Game == "rac1"
             ? _rac1CampaignSession.CommitLoadedLevel(world.LevelId)
             : null;
+        if (world.Game == "rac1")
+        {
+            RuntimeSpawn authoredClass0 = world.PlayerStart
+                ?? throw new InvalidDataException("R&C1 world is missing its recovered authored class-0 player start.");
+            _rac1CampaignSession.StartLevelCheckpointSession(world.LevelId, authoredClass0);
+        }
         _sceneResult = result;
         SetupOverlay(result, world);
         ConfigureCrateDebugHarness();

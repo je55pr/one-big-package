@@ -19,7 +19,8 @@ public sealed record Rac1PlayerStart(
 /// authored-Moby population path copies each target-level transform into live storage
 /// without directly consulting CurrentLevel, destination discovery, or per-level visit
 /// state. Every retail level 0..18 has exactly one class-0 placement at instance 0.
-/// A later checkpoint/script relocation is a separate, currently unrecovered contract.
+/// A later checkpoint/script relocation remains a separate level-session contract:
+/// level-2 restart placement is recovered, while its activation writer is not.
 /// </summary>
 public sealed class Rac1PlayerStartProvider
 {

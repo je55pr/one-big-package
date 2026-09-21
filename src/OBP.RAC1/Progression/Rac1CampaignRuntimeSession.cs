@@ -1,4 +1,5 @@
 using OBP.RAC1.Gameplay;
+using OBP.Runtime;
 
 namespace OBP.RAC1.Progression;
 
@@ -28,6 +29,21 @@ public sealed class Rac1CampaignRuntimeSession
     public Rac1CampaignState Campaign { get; }
     public Rac1WeaponInventory Weapons { get; }
     public Rac1PlanetTravelSession Travel { get; private set; }
+    public Rac1LevelCheckpointSession? LevelCheckpoint { get; private set; }
+
+    /// <summary>
+    /// Start the level-local checkpoint owner for a completed host level entry.
+    /// Every full load receives a fresh inactive session: retail checkpoint
+    /// serialization across reload/revisit is not yet recovered, so OBP does not
+    /// carry an active checkpoint across this boundary.
+    /// </summary>
+    public Rac1LevelCheckpointSession StartLevelCheckpointSession(
+        int nativeLevelId,
+        RuntimeSpawn authoredClass0)
+    {
+        ValidateDestination(nativeLevelId);
+        return LevelCheckpoint = new Rac1LevelCheckpointSession(nativeLevelId, authoredClass0);
+    }
 
     /// <summary>
     /// Begin ordinary map travel. Selection always starts from CurrentLevel and only

@@ -223,26 +223,35 @@ only after native campaign admission, at the host loading boundary.
 ## OBP persistence migration/default policy
 
 `Rac1CampaignSavePolicy` keeps host persistence versioning outside the recovered
-`Rac1CampaignPersistentState` payload, so migration metadata cannot become a
-second source of campaign truth. Schema version 1 is exactly the four recovered
-persistent fields above.
+native-shaped payloads, so migration metadata cannot become a second source of
+campaign truth. Current schema version 2 stores the four recovered campaign fields
+above plus the separately recovered persistent weapon inventory. Schema version 1
+is the earlier campaign-only OBP envelope.
 
-For an OBP save that has no R&C1 campaign payload because it predates this
-contract, the field defaults to the recovered opening state: `CurrentLevel=0`,
-no admitted destinations, and level 0 in native `Visited` state. Existing
-unversioned `Rac1CampaignPersistentState` snapshots migrate to schema v1 without
-changing any campaign value. Unknown schema versions are rejected rather than
-being guessed or partially defaulted.
+For an OBP save with no R&C1 state, the explicit default is the recovered opening
+campaign plus opening-Veldin weapon witness: `CurrentLevel=0`, no admitted
+destinations, level 0 in native `Visited` state, Wrench equipped, Bomb Glove
+owned with six rounds. Schema-1 campaign-only saves preserve all campaign values
+and receive that same opening weapon fallback. Older unversioned
+`Rac1CampaignPersistentState` snapshots migrate without changing campaign
+meaning and receive the same explicit weapon fallback. Unknown schema versions
+are rejected rather than guessed or partially defaulted.
+
+The level-local checkpoint session is intentionally absent from every save schema.
+Its retail memory-card ownership and reload/revisit lifetime remain unrecovered,
+so adding the checkpoint model does not bump schema 2. Every full R&C1 level entry
+starts a fresh inactive checkpoint session seeded from the target level's authored
+class-0 placement. Clearing checkpoint state on full reload/revisit is an explicit
+conservative OBP default, not a claim about retail serialization.
 
 ## Bounded playable loop and reload smoke
 
-The Godot host now persists the schema-v1 campaign envelope in an OBP-owned JSON
-file (`user://rac1-campaign.json` by default). The JSON shape, file location and
-save timing are host policy only. The payload remains exactly the recovered
-`CurrentLevel`, `VisitedPlanets`, `GalacticMap` and per-level state blocks.
-Successful ordinary campaign travel is saved only after the late CurrentLevel
-commit and new-world initialization finish. External/debug provider loads still
-do not change or save campaign progression.
+The Godot host now persists the schema-v2 campaign/weapon envelope in an OBP-owned
+JSON file (`user://rac1-campaign.json` by default). The JSON shape, file location
+and save timing are host policy only. Successful ordinary campaign travel is saved
+only after the late CurrentLevel commit and new-world initialization finish.
+External/debug provider loads still do not change or save campaign progression,
+and neither route serializes the level-local checkpoint session.
 
 `tools/rac1-campaign-smoke.ps1` uses an isolated temporary host save and two fresh
 Godot processes against the supported retail source. Its bounded route is:
@@ -273,7 +282,12 @@ progression producer exists or previously persisted campaign state already
 contains admissions.
 
 Per-level `Completed` remains a distinct recovered persistent value, but no host
-mission script currently decides when to set it. Checkpoint selection/spawn state
-is also still outside this model, as are any unrecovered reset/teleport semantics.
-The neutral Worlds browser remains a developer/external load route and cannot be
-used to manufacture discovery, completion or campaign travel.
+mission script currently decides when to set it. `Rac1LevelCheckpointSession`
+now models the separately recovered restart-placement branch: inactive uses the
+authored class-0 seed, while an explicitly supplied active record redirects death
+restart placement. No production gameplay trigger activates a checkpoint yet,
+because the retail writer/activation event remains unrecovered. Full reload and
+revisit therefore start fresh inactive checkpoint sessions instead of inventing
+serialization. The neutral Worlds browser remains a developer/external load route
+and cannot manufacture discovery, completion, checkpoint activation or campaign
+travel.

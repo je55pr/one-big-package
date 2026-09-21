@@ -14,7 +14,8 @@ public enum Rac1CampaignRestoreKind
 /// Versioned host persistence envelope for recovered R&C1 campaign and weapon
 /// inventory blocks. The envelope is an OBP container only; both payloads keep
 /// their native-shaped source-specific layouts and the currently held item stays
-/// transient session state.
+/// transient session state. Level checkpoint state is deliberately absent: its
+/// retail serialization/reload lifetime is not recovered.
 /// </summary>
 public sealed record Rac1CampaignSaveEnvelope(
     int SchemaVersion,
@@ -27,7 +28,9 @@ public sealed record Rac1CampaignRestoreResult(
     Rac1CampaignRestoreKind Kind);
 
 /// <summary>
-/// Persistence policy for engine-neutral R&C1 campaign state.
+/// Persistence policy for engine-neutral R&C1 campaign state. Schema 2 remains
+/// the current development-save format when checkpoint sessions are introduced
+/// because those sessions are explicitly level-local and never serialized.
 /// </summary>
 public static class Rac1CampaignSavePolicy
 {
