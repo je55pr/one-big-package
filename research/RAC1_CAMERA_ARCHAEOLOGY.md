@@ -1,10 +1,11 @@
 # R&C1 camera archaeology harness
 
 Authority: NTSC-U retail `SCUS-97199`. The capture harness remains generic,
-but this note now retains both the ordinary horizontal camera/control-heading
-contract and the unobstructed chase framing/follow contract proven by the fixed
-savestate, loaded-overlay signatures and frame-advanced input movies. Unresolved
-producer stages are called out rather than inferred.
+but this note now retains the ordinary horizontal camera/control-heading,
+unobstructed chase framing/follow, and executable-backed obstruction-response
+contracts proven by the fixed savestate, loaded-overlay signatures and
+frame-advanced trials. Unresolved producer stages are called out rather than
+inferred.
 
 ## Known live fields
 
@@ -83,7 +84,9 @@ right-stick-to-camera producer remains unresolved elsewhere in the overlay.
 The same authority savestate was replayed through five ordinary, unobstructed
 scenarios: fixed heading, straight movement, left-stick turning, long idle and
 forward follow after a turn. Together they retain 950 frame-advanced samples.
-Manual right-stick behavior and obstruction correction are outside this slice.
+Manual right-stick behavior remains outside this slice; the obstruction contract
+below comes from the loaded overlay plus a fixed-state clear-line control, not a
+retained physical wall-contact movie.
 
 At stationary fixed-heading/idle equilibrium, the final eye is `5.999955`
 planar units from Ratchet, `2.005249` units above his origin, with pitch
@@ -161,8 +164,63 @@ separate profile witness at `0x00169610+0x15c` still reads `4.64`. The
 intervening profile/mode source and the GP-relative damping used by the
 preferred-radius transition remain evidence-gated. This is exactly why chase
 framing should be implemented from state transitions rather than one tuned
-distance constant. Obstruction/contact routine `0x002e7d20` remains outside
-this task by design.
+distance constant.
+
+## Recovered obstruction response
+
+Type-0 core `0x002e9bb0` calls obstruction/contact routine
+`0x002e7d20..0x002e8368` immediately before radial follow
+`0x002e9720..0x002e9a9c`. The obstruction stage therefore computes persistent
+camera correction first; ordinary framing then consumes
+`effectiveRadius = state+0x15c - state+0x200`. In the fixed clear-line authority
+state, preferred radius is `5.999970`, radial correction `state+0x200` is zero,
+release timer `state+0x204` is zero, and signed lateral side `state+0x208` is
+zero.
+
+The active pull-in branch subtracts `0.075 * frameScale` from its radial working
+value per camera update. The fixed authority has `frameScale = 1.0` at
+`0x0015ed60`. That branch arms `state+0x204` with `0x884` through native time
+helper `0x001fef20`; the already-retained helper calibration makes this exactly
+`2180` native ticks at unit time scale. The inner solver uses a `0.2` radial
+floor. A later final guard enforces
+`preferredRadius - correction >= 1.5`; when that guard clamps, it arms a
+`0x7d0`, or `2000`-native-tick, release timer.
+
+Clear-line release has a distinct slow-path rather than mirroring pull-in. On
+the recovered no-contact arm, signed-16 helper `0x001fef98` decrements
+`state+0x204`, the remaining timer is divided by the `2000`-tick duration, and
+`0x00257e58` updates `state+0x200` with
+`CosineEase(0, currentCorrection, remaining/duration)`, where the helper is
+`a + (b-a) * 0.5 * (1 - cos(pi*t))`. Because the current correction is fed back
+as the interpolation endpoint, this is a stateful recursive release, not a
+single linear lerp. A controlled clear-state perturbation confirmed that a bare
+synthetic `state+0x200` correction with no matching contact state is rejected by
+the native obstruction stage; it is retained only as a control and not treated
+as a physical wall trial.
+
+Lateral handling is also explicit but only partially closed. Helper
+`0x002e7318` classifies a signed side field at `state+0x208`: dot values above
+`+0.75` select `+1`, below `-0.75` select `-1`, otherwise `0`. A qualifying
+contact branch then invokes rotation helper `0x0025fc08` with exactly
+`+/-0.017453292` rad (`+/-1 degree`) chosen from contact orientation. This proves
+a native lateral correction mechanism, but without a retained physical
+obstruction route the full multi-update lateral convergence law is not promoted.
+
+The final visible world-contact call is `0x001efc70`. At this call site the
+camera passes two position pointers plus query context and an owner/exclusion
+object; there is no explicit scalar camera-radius argument. That is compatible
+with a segment-style query at this layer, but the helper internals are not yet
+decoded far enough to distinguish an infinitesimal ray from swept or expanded
+geometry. Nearby/contact candidate construction through `0x00259888` and
+`0x00259a88` is therefore kept separate from the final geometric assumption.
+
+This camera collision path is distinct from gameplay collision. During the
+camera pass, the routine temporarily clears candidate Moby field `+0x94` for
+selected objects, retains those objects in a scratch list, and restores the
+field before return. Eight hard-coded class IDs bypass that temporary masking:
+`0x72`, `0x0b`, `0x2c`, `0x9a`, `0xff`, `0x392`, `0x452`, and `0x353`. The
+field's broader gameplay meaning is not inferred here; the important proven
+boundary is that this mutation is scoped inside camera obstruction processing.
 
 ## Semantic camera field map
 

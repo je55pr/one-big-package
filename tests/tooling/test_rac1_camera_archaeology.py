@@ -109,12 +109,14 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
             **CAMERA.CAMERA_PRODUCER_SIGNATURES,
             **CAMERA.CHASE_FOLLOW_SIGNATURES,
             **CAMERA.CHASE_FRAMING_SIGNATURES,
+            **CAMERA.CAMERA_OBSTRUCTION_SIGNATURES,
         }
         for address, word in signatures.items():
             struct.pack_into("<I", memory, address, word)
         struct.pack_into("<H", memory, CAMERA.PLAYER_STATE + 0x288, 0)
         struct.pack_into("<f", memory, CAMERA.CAMERA_STATE_BASE + 0x80, 0.0)
         struct.pack_into("<f", memory, CAMERA.CONTROL_HEADING, -2.0)
+        struct.pack_into("<f", memory, 0x0015ED60, 1.0)
 
         active_camera = 0x3000
         camera_state = 0x4000
@@ -182,6 +184,18 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         self.assertAlmostEqual(framing["constructorDefaults"]["profileTransitionAcceleration"], 0.003)
         self.assertAlmostEqual(framing["finalHeightFollow"]["acceleration"], 0.004)
         self.assertAlmostEqual(framing["finalHeightFollow"]["damping"], 0.2)
+        obstruction = report["cameraObstructionProducer"]
+        self.assertEqual(obstruction["persistentState"]["clearWitnessReleaseTimer"], 0)
+        self.assertEqual(obstruction["persistentState"]["clearWitnessLateralSide"], 0)
+        self.assertAlmostEqual(obstruction["radialPullIn"]["stepPerCameraUpdate"], 0.075)
+        self.assertEqual(obstruction["radialPullIn"]["activeContactTimerTicksAtUnitScale"], 0x884)
+        self.assertEqual(obstruction["radialPullIn"]["minimumRadiusTimerTicksAtUnitScale"], 0x7D0)
+        self.assertAlmostEqual(obstruction["radialPullIn"]["innerSolverRadiusFloor"], 0.2)
+        self.assertAlmostEqual(obstruction["radialPullIn"]["finalEffectiveRadiusFloor"], 1.5)
+        self.assertAlmostEqual(obstruction["radialPullIn"]["frameScaleWitness"], 1.0)
+        self.assertEqual(obstruction["lateralCorrection"]["sideEncoding"], "+1 above +0.75, -1 below -0.75, otherwise 0")
+        self.assertAlmostEqual(obstruction["lateralCorrection"]["angularStepRad"], math.pi / 180.0)
+        self.assertIn("segment-like", obstruction["contactGeometry"]["boundary"])
 
     def test_camera_framing_reduces_native_geometry_and_vertical_follow_law(self):
         pitch = 0.1

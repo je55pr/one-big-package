@@ -46,6 +46,13 @@ CHASE_CONSTRUCTOR_EYE_HEIGHT = 2.0
 CHASE_PROFILE_TRANSITION_ACCEL = struct.unpack("<f", struct.pack("<I", 0x3B449BA6))[0]
 CHASE_EYE_HEIGHT_ACCEL = struct.unpack("<f", struct.pack("<I", 0x3B83126F))[0]
 CHASE_EYE_HEIGHT_DAMPING = struct.unpack("<f", struct.pack("<I", 0x3E4CCCCD))[0]
+OBSTRUCTION_PULL_IN_STEP = struct.unpack("<f", struct.pack("<I", 0x3D99999A))[0]
+OBSTRUCTION_INNER_RADIUS_FLOOR = struct.unpack("<f", struct.pack("<I", 0x3E4CCCCD))[0]
+OBSTRUCTION_FINAL_RADIUS_FLOOR = 1.5
+OBSTRUCTION_SIDE_THRESHOLD = 0.75
+OBSTRUCTION_LATERAL_STEP_RAD = struct.unpack("<f", struct.pack("<I", 0x3C8EFA35))[0]
+OBSTRUCTION_PULL_IN_TIMER_TICKS = 0x884
+OBSTRUCTION_MIN_RADIUS_TIMER_TICKS = 0x7D0
 CHASE_SCENARIO_IDS = ("fixed-heading", "moving", "turning", "idle", "turn-release")
 DEFAULT_CANDIDATE_START = 0x00166C00
 DEFAULT_CANDIDATE_BYTES = 0x400
@@ -155,6 +162,30 @@ CHASE_FRAMING_SIGNATURES = {
     0x002E91E8: 0x0C07AC90,  # damp current eye height toward preferred height
     0x002E9210: 0x0C07AC90,  # damp current look height toward its target
 }
+CAMERA_OBSTRUCTION_SIGNATURES = {
+    0x002E9BEC: 0x0C0B9F48,  # type-0 core calls obstruction/contact stage
+    0x002E7218: 0xC780B0B8,  # load 0.075 pull-in step
+    0x002E721C: 0x24040884,  # arm 2180-tick release timer
+    0x002E7234: 0xA6620034,  # store release timer at state+0x204
+    0x002E723C: 0xC78CB0C8,  # load 0.2 inner radial floor
+    0x002E736C: 0x3C013F40,  # +0.75 lateral-side threshold
+    0x002E7378: 0x3C01BF40,  # -0.75 lateral-side threshold
+    0x002E7FB0: 0x3C01BC8E,  # -1 degree rotation high half
+    0x002E7FB4: 0x3421FA35,  # -1 degree rotation low half
+    0x002E7FD0: 0x3C013C8E,  # +1 degree rotation high half
+    0x002E7FD4: 0x3421FA35,  # +1 degree rotation low half
+    0x002E8064: 0xC781B0D0,  # load 1.5 final effective-radius floor
+    0x002E8080: 0x240407D0,  # 2000-tick minimum-radius release timer
+    0x002E8088: 0x0C07FBC8,  # convert native tick duration through 0x001fef20
+    0x002E8090: 0xA6420034,  # store converted timer at state+0x204
+    0x002E8108: 0x0C07FBE6,  # decrement signed-16 release timer
+    0x002E8150: 0x4600A383,  # remaining ticks / duration
+    0x002E8158: 0x0C095F96,  # cosine-ease helper 0x00257e58
+    0x002E8164: 0xE6400030,  # store eased radial correction state+0x200
+    0x002E8200: 0x0C07BF1C,  # final world-contact query 0x001efc70
+    0x00257EA4: 0x3C014049,  # pi high half for cosine easing
+    0x00257EB0: 0x0C07FDFA,  # cosine helper 0x001ff7e8
+}
 
 
 def wrap_pi(value: float) -> float:
@@ -172,7 +203,12 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
     probe = _movement_probe()
     memory = probe.read_zip_entry(savestate, "eeMemory.bin", zstd_dll)
     mismatches: list[dict[str, str]] = []
-    signatures = {**CAMERA_PRODUCER_SIGNATURES, **CHASE_FOLLOW_SIGNATURES, **CHASE_FRAMING_SIGNATURES}
+    signatures = {
+        **CAMERA_PRODUCER_SIGNATURES,
+        **CHASE_FOLLOW_SIGNATURES,
+        **CHASE_FRAMING_SIGNATURES,
+        **CAMERA_OBSTRUCTION_SIGNATURES,
+    }
     for address, expected in signatures.items():
         actual = struct.unpack_from("<I", memory, address)[0]
         if actual != expected:
@@ -327,11 +363,62 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
                 "0x002e9a40..0x002e9a4c composes camera object +0x30 from the resolved anchor plus state+0x140; the main update then publishes object +0x30 to global eye 0x00166dc0",
             ],
         },
+        "cameraObstructionProducer": {
+            "routine": "0x002e7d20..0x002e8368",
+            "pipelineOrder": "type-0 core 0x002e9bb0 calls obstruction 0x002e7d20 before radial follow 0x002e9720",
+            "persistentState": {
+                "radialCorrection": "state+0x200",
+                "releaseTimer": "state+0x204 signed16",
+                "lateralSide": "state+0x208 signed16",
+                "clearWitnessCorrection": f32(camera_state + 0x200),
+                "clearWitnessReleaseTimer": struct.unpack_from("<h", memory, camera_state + 0x204)[0],
+                "clearWitnessLateralSide": struct.unpack_from("<h", memory, camera_state + 0x208)[0],
+            },
+            "radialPullIn": {
+                "stepPerCameraUpdate": OBSTRUCTION_PULL_IN_STEP,
+                "frameScaleAddress": "0x0015ed60",
+                "frameScaleWitness": f32(0x0015ED60),
+                "activeContactTimerTicksAtUnitScale": OBSTRUCTION_PULL_IN_TIMER_TICKS,
+                "innerSolverRadiusFloor": OBSTRUCTION_INNER_RADIUS_FLOOR,
+                "finalEffectiveRadiusFloor": OBSTRUCTION_FINAL_RADIUS_FLOOR,
+                "minimumRadiusTimerTicksAtUnitScale": OBSTRUCTION_MIN_RADIUS_TIMER_TICKS,
+                "effectiveRadius": "preferredRadius(state+0x15c) - radialCorrection(state+0x200)",
+            },
+            "clearLineRecovery": {
+                "timerHelper": "0x001fef20",
+                "timerTickHelper": "0x001fef98",
+                "easingHelper": "0x00257e58",
+                "cosineHelper": "0x001ff7e8",
+                "durationTicksAtUnitScale": OBSTRUCTION_MIN_RADIUS_TIMER_TICKS,
+                "step": "decrement releaseTimer; t=releaseTimer/duration; correction=CosineEase(0, correction, t)",
+                "cosineEase": "a + (b-a) * 0.5 * (1 - cos(pi*t))",
+            },
+            "lateralCorrection": {
+                "sideField": "state+0x208 signed16",
+                "positiveDotThreshold": OBSTRUCTION_SIDE_THRESHOLD,
+                "negativeDotThreshold": -OBSTRUCTION_SIDE_THRESHOLD,
+                "sideEncoding": "+1 above +0.75, -1 below -0.75, otherwise 0",
+                "angularStepRad": OBSTRUCTION_LATERAL_STEP_RAD,
+                "angularStepDegrees": 1.0,
+                "rotationHelper": "0x0025fc08",
+            },
+            "contactGeometry": {
+                "finalQuery": "0x001efc70",
+                "visibleCallShape": "two position pointers plus query context and owner/exclusion object; no explicit scalar camera radius argument",
+                "broadPhase": "0x00259a88/0x00259888 paths build nearby/contact candidate records before the final query",
+                "boundary": "the call site is segment-like, but 0x001efc70 internals are not decoded enough to claim an infinitesimal ray versus swept/expanded geometry",
+            },
+            "gameplayCollisionSeparation": [
+                "camera obstruction is a dedicated stage in the camera type-0 pipeline, not the player movement/contact controller",
+                "the routine temporarily clears Moby +0x94 on selected candidates, retains them in a scratch list, and restores the field before return",
+                "the hard-coded class exceptions to that temporary masking are 0x72, 0x0b, 0x2c, 0x9a, 0xff, 0x392, 0x452 and 0x353",
+            ],
+        },
         "uncertainty": [
             "This branch explains direction-flag-driven heading change, but it is not the complete manual-camera producer.",
             "Live right-stick input changes controlHeading while I+0x1a0 remains on the left-stick forward flag, so right-stick production occurs elsewhere.",
             "The constructor/profile radius witness is 4.64 while this authority snapshot has a settled preferred radius near 6.0; do not promote 4.64 as the ordinary chase distance without resolving the intervening profile/mode source.",
-            "0x002e7d20 is a separate world/contact correction path and is intentionally outside this unobstructed-camera task.",
+            "No dedicated physical wall-contact savestate is retained here, so exact helper-internal ray/sweep geometry and full lateral convergence remain intentionally unpromoted.",
         ],
     }
 
