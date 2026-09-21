@@ -233,8 +233,12 @@ frames against the legacy TypeScript reference (180 classes / 1929 joints / 6476
    geometry goldens are reviewed separately.
 2. **Broader multi-joint animation/state semantics** — the shared VU0 binding
    state is pinned for the normal GC/UYA family, but per-frame `thing1` / `thing2`
-   channels and native sequence/state selection remain unresolved. Special
-   format variants such as GC `LEVEL21` oClass 2131 remain fail-closed.
+   channels remain unresolved. GC player sequence selection now has a bounded
+   retail-backed contract for ordinary idle/walk/skid/crouch/fall/glide,
+   combat/get-hit/death and the targeting-state boundary; sustained walk,
+   ordinary jump launch and any lower-layer targeting strafe clip remain
+   unresolved. See [`GC_PLAYER_ANIMATION_STATES.md`](GC_PLAYER_ANIMATION_STATES.md).
+   Special format variants such as GC `LEVEL21` oClass 2131 remain fail-closed.
 3. Low-LOD and metal packets, bangles, the corncob, per-instance pvars.
 4. The ~47 classes that don't parse — likely a format variant / `force_rac1`
    (`MobyClassHeader` byte `0x0b` != 0).
