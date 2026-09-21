@@ -29,7 +29,8 @@ public sealed class Rac1Class1440ContactFamilyTests
         var source = Dynamic(
             Rac1Class1440ContactFamily.NativeClassId,
             instanceIndex: 4,
-            new RuntimeOpaquePayload(                Rac1Class1440ContactFamily.PVarPayloadFormat,
+            new RuntimeOpaquePayload(
+                Rac1Class1440ContactFamily.PVarPayloadFormat,
                 new byte[Rac1Class1440ContactFamily.MinimumPVarSize - 1]));
 
         Assert.Throws<InvalidDataException>(() =>
@@ -137,7 +138,9 @@ public sealed class Rac1Class1440ContactFamilyTests
     public void RegistrationRejectsUnwitnessedHealthAndOutOfDispatchState()
     {
         var source = Class1440(instanceIndex: 9, health: 1f);
-        var session = new Rac1Class1440ContactFamilySession();        Assert.Throws<NotSupportedException>(() =>
+        var session = new Rac1Class1440ContactFamilySession();
+
+        Assert.Throws<NotSupportedException>(() =>
             session.RegisterRecovered(
                 source,
                 RuntimeEntityState.FromAuthored(source),

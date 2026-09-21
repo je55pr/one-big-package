@@ -28,7 +28,8 @@ public sealed class Rac1Class1440ContactFamilySession
 
         var entry = new Entry(
             Rac1Class1440ContactFamily.RequirePVar(source),
-            Rac1MobyRuntime.Create(source, initialNativeState, current));        if (!_entries.TryAdd(authored.Key, entry))
+            Rac1MobyRuntime.Create(source, initialNativeState, current));
+        if (!_entries.TryAdd(authored.Key, entry))
             throw new InvalidOperationException(
                 $"R&C1 class-1440 instance {source.InstanceIndex} is already registered.");
         return Snapshot(authored.Key, entry);
