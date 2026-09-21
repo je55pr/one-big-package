@@ -22,19 +22,26 @@
     "positionMatches": "authored class-0 instance-0 Veldin player start",
     "motionReset": true,
     "authoredClass0YawRadians": 0.6627015,
-    "postDeathYawResetProven": false
+    "postDeathYawResetProven": true,
+    "controlledMidRouteWitness": {
+      "savestateSha256": "58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec",
+      "preDeathPosition": [106.52737426757812, 230.34225463867188, 34.403656005859375],
+      "preDeathNanotech": 1,
+      "restoredYawRadians": 0.6627014875411987,
+      "restoredTransformMatchesAuthoredClass0": true
+    }
   },
   "stateSemantics": {
     "nanotech": "reset-to-4-proven",
     "playerPosition": "reset-to-opening-veldin-authored-class0-proven",
     "playerMotion": "reset-proven",
-    "playerYaw": "unresolved",
-    "checkpointSelector": "unresolved-beyond-opening-veldin",
+    "playerYaw": "reset-to-opening-veldin-authored-class0-proven",
+    "checkpointSelector": "no-mid-route-checkpoint-proven-in-retained-veldin-witness; generic-selector-unresolved",
     "equippedWeapon": "unresolved-across-death",
     "ammo": "unresolved-across-death",
     "boltWallet": "unresolved-across-death",
     "transientBoltPickups": "unresolved-across-death",
-    "class500UidPersistence": "unresolved-across-death",
+    "class500UidPersistence": "preserved-across-controlled-veldin-environmental-restart",
     "enemyState": "unresolved-across-death",
     "levelScriptState": "unresolved-across-death",
     "campaignState": "separate-persistent-contract-not-a-proven-death-checkpoint-contract"
@@ -57,6 +64,8 @@
   "class500PersistenceBoundary": {
     "destroyedUidBitsCorrelateExactlyInFixedVeldinWitness": true,
     "survivesSavestateRestore": true,
+    "survivesControlledVeldinEnvironmentalRestart": true,
+    "controlledRestartPreDeathSetBits": 46,
     "deathClearEventProven": false,
     "checkpointClearEventProven": false,
     "planetReloadClearEventProven": false
@@ -73,7 +82,8 @@
     "research/RAC1_WEAPON_INVENTORY.md",
     "research/RAC1_CRATES_PICKUPS.md",
     "research/RAC1_HOSTILE_COMMON_STATE.md",
-    "research/RAC1_CAMPAIGN_TRAVEL.md"
+    "research/RAC1_CAMPAIGN_TRAVEL.md",
+    "research/RAC1_CHECKPOINTS.md"
   ],
   "notes": [
     "No ISO, executable, EE-memory, savestate, memory-card, PVar, or other proprietary payload bytes are retained.",

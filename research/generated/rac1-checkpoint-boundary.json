@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9",
+    "controlledStateSha256": "58cf20650d47fe2ed6940b4b508e3354d032d77f477e0d2f5ea16776dcbb52ec"
+  },
+  "retainedVeldinRoute": {
+    "midRouteCheckpointActivationProven": false,
+    "authoredCuboidCount": 14,
+    "segment03To04IntersectsAuthoredCuboid": false,
+    "segment04To05IntersectsAuthoredCuboid": false,
+    "nearbySingletonCheckpointObjectProven": false
+  },
+  "controlledEnvironmentalRestart": {
+    "preDeathPosition": [106.52737426757812, 230.34225463867188, 34.403656005859375],
+    "preDeathNanotech": 1,
+    "deathBoundaryNanotech": 0,
+    "restoredNanotech": 4,
+    "restoredPosition": [132.08999633789062, 115.4800033569336, 31.426616668701172],
+    "restoredYawRadians": 0.6627014875411987,
+    "restoredTransformMatchesAuthoredClass0": true
+  },
+  "resetPath": {
+    "routine": "0x00204c60",
+    "playerState": "0x0013f3d0",
+    "liveClass0Moby": "0x01845e80",
+    "classIdOffset": "0xa6",
+    "livePositionOffset": "0x10",
+    "liveYawOffset": "0x48",
+    "groundingHelper": "0x00259698",
+    "resetSnapshot": "0x0013e090",
+    "resetSnapshotGate": "0x00160540",
+    "resetSnapshotIsPlacementAuthority": false,
+    "signatureWords": {
+      "0x00204c60": "0x27bdff30",
+      "0x00204d2c": "0x2452e090",
+      "0x00204d40": "0x846200a6",
+      "0x00204d5c": "0x0c0965a6",
+      "0x00204d98": "0x24640010",
+      "0x00204da4": "0x78820000",
+      "0x00204da8": "0x7e220000",
+      "0x00204dbc": "0x3c020016",
+      "0x00204dc0": "0x8c420540",
+      "0x00204dcc": "0x7a220000",
+      "0x00204dd0": "0x7e420000",
+      "0x00204dd4": "0x7a820000",
+      "0x00204dd8": "0x7e620000"
+    },
+    "snapshotMutationCausality": {
+      "editedTransformRedirectedRespawn": false,
+      "retailOverwroteEditedSnapshotAtRestart": true
+    }
+  },
+  "class500UidPersistence": {
+    "levelMapBase": "0x0014c190",
+    "localMapBase": "0x001ba4d0",
+    "bytesPerMap": 256,
+    "preDeathSetBits": 46,
+    "mapsEqualBeforeDeath": true,
+    "byteIdenticalAcrossExactRestart": true,
+    "planetReloadClearEventProven": false,
+    "futureCheckpointActivationClearEventProven": false
+  },
+  "unresolved": [
+    "generic R&C1 checkpoint definition and selector",
+    "checkpoint activation condition outside this negative Veldin witness",
+    "checkpoint-specific spawn table, if one exists",
+    "equipped weapon and ammo semantics across checkpoint restart",
+    "Bolt wallet and transient pickup semantics across checkpoint restart",
+    "hostile and broader level-script reset semantics"
+  ],
+  "provenance": [
+    "retail Veldin gameplay-data archaeology",
+    "loaded retail executable reset-path archaeology",
+    "controlled isolated PCSX2/PINE environmental death",
+    "controlled reset-snapshot mutation causality test"
+  ],
+  "notes": [
+    "No ISO, executable, savestate, EE-memory or raw PINE payload is committed.",
+    "The negative activation result is scoped to the retained Veldin route and must not be generalized to all levels."
+  ]
+}
