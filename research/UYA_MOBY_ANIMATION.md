@@ -7,9 +7,9 @@ UYA Moby animation into OBP. Going Commando NTSC-U v1.01 is used as an
 independent cross-check where stated. Public Wrench source was useful as a
 hypothesis/corroboration source, but retail data remains the selector.
 
-The production milestone is intentionally narrow. It does **not** claim that OBP
-has recovered UYA's native gameplay animation-state selection. OBP chooses one
-retail sequence for one authored Veldin instance as an explicit showcase preview.
+The production milestone is intentionally narrow. The world-Moby clips below
+remain explicit showcase previews rather than native gameplay choices. Playable
+Ratchet selector recovery is tracked separately in `UYA_PLAYER_ANIMATION_SELECTION.md`.
 
 ## VU0 matrix-slot state
 
@@ -156,7 +156,8 @@ visible-triangle census.
   that are already sequence-sphere safe from quaternion data alone.
 - Revisit the full static bind transform separately, with new retail-backed
   geometry goldens rather than silently changing the existing world census.
-- Recover native UYA animation-state selection/update behaviour before claiming
-  which sequences play during normal gameplay.
+- Extend the separately recovered playable-Ratchet selector contract only when
+  missing strafe/jump/context predicates have direct retail witnesses; do not
+  apply those player semantics to ordinary world Mobys.
 - Populate optional `RuntimeSkeleton` debug metadata only after its coordinate
   contract is pinned independently; CPU-baked frame positions remain authoritative.
