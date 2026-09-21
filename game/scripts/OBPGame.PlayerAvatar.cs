@@ -11,7 +11,8 @@ public partial class OBPGame
     private PlayerAvatar? _ratchetPlayerAvatar;
     private string? _ratchetPlayerAvatarSourcePath;
     private PlayerAvatarView? _playerAvatarView;
-    private IPlayerAnimationStateSink? _playerAvatarAnimationSink;
+    private IPlayerAnimationPresentationSink? _playerAvatarAnimationSink;
+    private IPlayerAnimationPresentationController? _playerAvatarAnimationController;
     private double _playerAvatarClock;
 
     /// <summary>
@@ -21,7 +22,14 @@ public partial class OBPGame
     /// </summary>
     private void AttachRatchetPlayerVisual(DebugPlayer player)
     {
+        if (_activeDestination?.Game != ObpSourceGame.Rac1)
+        {
+            GD.Print("[player-avatar] native player avatar is not recovered for this source game; keeping debug capsule visual");
+            return;
+        }
+
         EnsureSourceLibraryInitialized();
+        IPlayerAvatarProvider provider = Rac1PlayerAvatarProvider.Instance;
         var source = _sources.Get(ObpSourceGame.Rac1);
         if (source is null)
         {
@@ -35,7 +43,7 @@ public partial class OBPGame
                 !string.Equals(_ratchetPlayerAvatarSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                _ratchetPlayerAvatar = Rac1PlayerAvatarProvider.Instance.Load(
+                _ratchetPlayerAvatar = provider.Load(
                     source.Path,
                     Rac1PlayerAvatarProvider.RatchetAvatarId);
                 _ratchetPlayerAvatarSourcePath = source.Path;
@@ -43,7 +51,13 @@ public partial class OBPGame
                 GD.Print($"[player-avatar] loaded {_ratchetPlayerAvatar.Identity.ModelId} in {sw.ElapsedMilliseconds} ms");
             }
 
-            var view = new PlayerAvatarView(_ratchetPlayerAvatar, alignGeometricBase: true)
+            IPlayerAnimationPresentationController animationController =
+                CreatePlayerAnimationController(provider, _ratchetPlayerAvatar);
+            animationController.SetAnimationState(player.AnimationState);
+            var view = new PlayerAvatarView(
+                _ratchetPlayerAvatar,
+                animationController.Current,
+                alignGeometricBase: true)
             {
                 Name = "RatchetAvatar",
             };
@@ -51,15 +65,16 @@ public partial class OBPGame
             player.VisualRoot.ReplaceVisual(view);
             player.ConfigureAvatarPresentation((float)_ratchetPlayerAvatar.AnimationBounds.Height);
             _playerAvatarView = view;
-            _playerAvatarAnimationSink = (object)view as IPlayerAnimationStateSink;
+            _playerAvatarAnimationSink = view;
+            _playerAvatarAnimationController = animationController;
             _playerAvatarClock = 0;
-            _playerAvatarAnimationSink?.SetAnimationState(player.AnimationState);
             HideAuthoredWorldRatchetPresentation();
             GD.Print($"[player-avatar] attached Ratchet: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
         }
         catch (Exception ex)
         {
             _playerAvatarAnimationSink = null;
+            _playerAvatarAnimationController = null;
             _playerAvatarView = null;
             _playerAvatarClock = 0;
             player.VisualRoot.ReplaceVisual(null);
@@ -67,22 +82,38 @@ public partial class OBPGame
         }
     }
 
+    private static IPlayerAnimationPresentationController CreatePlayerAnimationController(
+        IPlayerAvatarProvider provider,
+        PlayerAvatar avatar)
+    {
+        if (provider is IPlayerAnimationControllerProvider sourceAware)
+            return sourceAware.CreateAnimationController(avatar);
+
+        GD.Print($"[player-avatar] {provider.SourceGame} has no native animation selector; using generic presentation fallback");
+        return new GenericPlayerAnimationPresentationController(avatar);
+    }
+
     private void TickPlayerAvatar(double delta)
     {
         if (_playerAvatarView is null || !GodotObject.IsInstanceValid(_playerAvatarView))
-        {
             return;
+
+        _playerAvatarAnimationController?.SetAnimationState(
+            _player?.AnimationState ?? PlayerAnimationState.Idle);
+        _playerAvatarClock += Math.Max(0, delta);
+        if (_playerAvatarAnimationController is not null)
+        {
+            var presentation = _playerAvatarAnimationController.SetClock(_playerAvatarClock);
+            _playerAvatarAnimationSink?.SetAnimationPresentation(presentation);
         }
 
-        _playerAvatarAnimationSink?.SetAnimationState(_player?.AnimationState ?? PlayerAnimationState.Idle);
-        _playerAvatarClock += Math.Max(0, delta);
         _playerAvatarView.SetClock(_playerAvatarClock);
     }
 
     private void ClearPlayerAvatarView()
     {
-        _playerAvatarAnimationSink?.SetAnimationState(PlayerAnimationState.Idle);
         _playerAvatarAnimationSink = null;
+        _playerAvatarAnimationController = null;
         _playerAvatarView = null;
         _playerAvatarClock = 0;
     }

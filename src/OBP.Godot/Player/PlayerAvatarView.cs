@@ -9,209 +9,59 @@ namespace OBP.Godot.Player;
 /// Avatar frames remain model-local; this node performs only local axis conversion,
 /// optional geometric-base alignment, material construction, and deterministic frame display.
 /// </summary>
-public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
+public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
 {
     private sealed record SurfaceState(ArrayMesh Mesh, int[] Indices, Vector2[] Uvs);
 
     /// <summary>
-    /// Pure semantic-to-clip state machine used by the view. It deliberately
-    /// chooses only neutral clip roles and never sees source-game sequence ids.
+    /// Pure playback of an already resolved, engine-neutral animation decision.
+    /// Source-game sequence selection belongs to the provider/controller layer.
     /// </summary>
-    public sealed class Playback : IPlayerAnimationStateSink
+    public sealed class Playback : IPlayerAnimationPresentationSink
     {
-        private readonly PlayerAvatar _avatar;
-        private PlayerAvatarAnimationClip _currentClip;
+        private readonly IReadOnlyDictionary<string, PlayerAvatarAnimationClip> _clipsById;
         private double _clockSeconds;
-        private double _clipStartedAtSeconds;
-        private PlayerAnimationState _airborneReturnState = PlayerAnimationState.Idle;
-        private PlayerAnimationState _attackReturnState = PlayerAnimationState.Idle;
 
-        public Playback(PlayerAvatar avatar)
+        public Playback(PlayerAvatar avatar, PlayerAnimationPresentation initialPresentation)
         {
             Validate(avatar);
-            _avatar = avatar;
-            _currentClip = avatar.RequiredAnimationClip(PlayerAvatarAnimationRole.Standing);
+            _clipsById = avatar.AnimationClips.ToDictionary(clip => clip.Id, StringComparer.Ordinal);
+            CurrentAnimationPresentation = ValidatePresentation(initialPresentation);
         }
 
-        public PlayerAnimationState CurrentAnimationState { get; private set; } = PlayerAnimationState.Idle;
-        public PlayerAvatarAnimationClip CurrentClip => _currentClip;
-        public double ClipStartedAtSeconds => _clipStartedAtSeconds;
-        public double ClipElapsedSeconds => Math.Max(0, _clockSeconds - _clipStartedAtSeconds);
-        public int CurrentFrame => _currentClip.FrameIndexAt(ClipElapsedSeconds, ShouldLoop(_currentClip));
+        public PlayerAnimationPresentation CurrentAnimationPresentation { get; private set; }
+        public PlayerAnimationState CurrentAnimationState => CurrentAnimationPresentation.SemanticState;
+        public PlayerAvatarAnimationClip CurrentClip => _clipsById[CurrentAnimationPresentation.ClipId];
+        public double ClipStartedAtSeconds => CurrentAnimationPresentation.ClipStartedAtSeconds;
+        public double ClipElapsedSeconds => CurrentAnimationPresentation.ElapsedAt(_clockSeconds);
+        public int CurrentFrame => CurrentClip.FrameIndexAt(ClipElapsedSeconds, CurrentAnimationPresentation.Loop);
 
         public void SetClock(double clockSeconds)
         {
             if (!double.IsFinite(clockSeconds))
                 throw new ArgumentOutOfRangeException(nameof(clockSeconds));
             _clockSeconds = Math.Max(0, clockSeconds);
-            CompleteLocomotionStartIfNeeded();
-            CompleteAttackIfNeeded();
         }
 
-        public void SetAnimationState(PlayerAnimationState state)
+        public void SetAnimationPresentation(PlayerAnimationPresentation presentation)
         {
-            if (state == CurrentAnimationState)
-                return;
-
-            // AttackRequested is a one-frame semantic pulse from the controller.
-            // Keep the native one-shot playing while subsequent movement facts
-            // update only the state we should return to when it completes.
-            if (CurrentAnimationState == PlayerAnimationState.Attack)
-            {
-                _attackReturnState = GroundContext(state);
-                return;
-            }
-
-            // LocomotionStart is a native-timed one-shot. Walk/Run are semantic
-            // controller facts, so pulses between them update return context
-            // without replacing or restarting the start clip.
-            if (_currentClip.Role == PlayerAvatarAnimationRole.LocomotionStart && IsLocomotion(state))
-            {
-                CurrentAnimationState = state;
-                _airborneReturnState = state;
-                return;
-            }
-
-            PlayerAnimationState previous = CurrentAnimationState;
-            switch (state)
-            {
-                case PlayerAnimationState.Idle:
-                    CurrentAnimationState = state;
-                    _airborneReturnState = PlayerAnimationState.Idle;
-                    Select(PlayerAvatarAnimationRole.Standing, restart: _currentClip.Role != PlayerAvatarAnimationRole.Standing);
-                    break;
-
-                case PlayerAnimationState.Walk:
-                case PlayerAnimationState.Run:
-                    CurrentAnimationState = state;
-                    _airborneReturnState = state;
-                    bool startFromGroundedIdle = previous == PlayerAnimationState.Idle &&
-                                                 _currentClip.Role == PlayerAvatarAnimationRole.Standing;
-                    Select(
-                        startFromGroundedIdle
-                            ? PlayerAvatarAnimationRole.LocomotionStart
-                            : PlayerAvatarAnimationRole.SustainedLocomotion,
-                        restart: startFromGroundedIdle ||
-                                 _currentClip.Role != PlayerAvatarAnimationRole.SustainedLocomotion);
-                    break;
-
-                case PlayerAnimationState.JumpRise:
-                    bool moving = IsLocomotion(previous) ||
-                                  _currentClip.Role == PlayerAvatarAnimationRole.SustainedLocomotion;
-                    _airborneReturnState = moving
-                        ? LocomotionContext(previous)
-                        : PlayerAnimationState.Idle;
-                    CurrentAnimationState = state;
-                    Select(
-                        moving ? PlayerAvatarAnimationRole.MovingJump : PlayerAvatarAnimationRole.StationaryJump,
-                        restart: true);
-                    break;
-
-                case PlayerAnimationState.Fall:
-                    CurrentAnimationState = state;
-                    if (_currentClip.Role is not PlayerAvatarAnimationRole.StationaryJump and
-                        not PlayerAvatarAnimationRole.MovingJump)
-                    {
-                        bool movingFall = IsLocomotion(previous) ||
-                                          _currentClip.Role == PlayerAvatarAnimationRole.SustainedLocomotion;
-                        _airborneReturnState = movingFall
-                            ? LocomotionContext(previous)
-                            : PlayerAnimationState.Idle;
-                        Select(
-                            movingFall ? PlayerAvatarAnimationRole.MovingJump : PlayerAvatarAnimationRole.StationaryJump,
-                            restart: true);
-                    }
-                    break;
-
-                case PlayerAnimationState.Land:
-                    CurrentAnimationState = state;
-                    Select(
-                        IsLocomotion(_airborneReturnState)
-                            ? PlayerAvatarAnimationRole.SustainedLocomotion
-                            : PlayerAvatarAnimationRole.Standing,
-                        restart: true);
-                    break;
-
-                case PlayerAnimationState.Attack:
-                    _attackReturnState = GroundContext(previous);
-                    CurrentAnimationState = state;
-                    Select(PlayerAvatarAnimationRole.PrimaryAttack, restart: true);
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(state));
-            }
+            CurrentAnimationPresentation = ValidatePresentation(presentation);
         }
 
-        private void CompleteLocomotionStartIfNeeded()
+        private PlayerAnimationPresentation ValidatePresentation(PlayerAnimationPresentation presentation)
         {
-            if (!IsLocomotion(CurrentAnimationState) ||
-                _currentClip.Role != PlayerAvatarAnimationRole.LocomotionStart ||
-                ClipElapsedSeconds < _currentClip.DurationSeconds)
+            if (string.IsNullOrWhiteSpace(presentation.ClipId) ||
+                !_clipsById.ContainsKey(presentation.ClipId))
             {
-                return;
+                throw new InvalidDataException(
+                    $"Player animation presentation references unknown clip '{presentation.ClipId}'.");
             }
 
-            double completedAt = _clipStartedAtSeconds + _currentClip.DurationSeconds;
-            Select(
-                PlayerAvatarAnimationRole.SustainedLocomotion,
-                restart: true,
-                startAtSeconds: completedAt);
+            if (!double.IsFinite(presentation.ClipStartedAtSeconds))
+                throw new InvalidDataException("Player animation presentation has a non-finite clock origin.");
+
+            return presentation;
         }
-
-        private void CompleteAttackIfNeeded()
-        {
-            if (CurrentAnimationState != PlayerAnimationState.Attack ||
-                ClipElapsedSeconds < _currentClip.DurationSeconds)
-            {
-                return;
-            }
-
-            double completedAt = _clipStartedAtSeconds + _currentClip.DurationSeconds;
-            CurrentAnimationState = _attackReturnState;
-            Select(
-                IsLocomotion(_attackReturnState)
-                    ? PlayerAvatarAnimationRole.SustainedLocomotion
-                    : PlayerAvatarAnimationRole.Standing,
-                restart: true,
-                startAtSeconds: completedAt);
-        }
-
-        private PlayerAnimationState GroundContext(PlayerAnimationState previous)
-        {
-            if (IsLocomotion(previous))
-                return previous;
-            if (_currentClip.Role == PlayerAvatarAnimationRole.SustainedLocomotion &&
-                IsLocomotion(_airborneReturnState))
-            {
-                return _airborneReturnState;
-            }
-            return PlayerAnimationState.Idle;
-        }
-
-        private PlayerAnimationState LocomotionContext(PlayerAnimationState previous) =>
-            IsLocomotion(previous)
-                ? previous
-                : IsLocomotion(_airborneReturnState)
-                    ? _airborneReturnState
-                    : PlayerAnimationState.Run;
-
-        private void Select(
-            PlayerAvatarAnimationRole role,
-            bool restart,
-            double? startAtSeconds = null)
-        {
-            var target = _avatar.RequiredAnimationClip(role);
-            if (restart || !string.Equals(_currentClip.Id, target.Id, StringComparison.Ordinal))
-                _clipStartedAtSeconds = startAtSeconds ?? _clockSeconds;
-            _currentClip = target;
-        }
-
-        private static bool IsLocomotion(PlayerAnimationState state) =>
-            state is PlayerAnimationState.Walk or PlayerAnimationState.Run;
-
-        private static bool ShouldLoop(PlayerAvatarAnimationClip clip) =>
-            clip.Role is PlayerAvatarAnimationRole.Standing or PlayerAvatarAnimationRole.SustainedLocomotion;
     }
 
     private readonly PlayerAvatar _avatar;
@@ -221,12 +71,15 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
     private string? _currentClipId;
     private int _currentFrame = -1;
 
-    public PlayerAvatarView(PlayerAvatar avatar, bool alignGeometricBase = true)
+    public PlayerAvatarView(
+        PlayerAvatar avatar,
+        PlayerAnimationPresentation initialPresentation,
+        bool alignGeometricBase = true)
     {
         Validate(avatar);
         _avatar = avatar;
         AlignGeometricBase = alignGeometricBase;
-        _playback = new Playback(avatar);
+        _playback = new Playback(avatar, initialPresentation);
         _framesByClipId = avatar.AnimationClips.ToDictionary(
             clip => clip.Id,
             clip => clip.LocalFrames
@@ -241,6 +94,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
 
     public PlayerAvatarIdentity Identity => _avatar.Identity;
     public bool AlignGeometricBase { get; }
+    public PlayerAnimationPresentation CurrentAnimationPresentation => _playback.CurrentAnimationPresentation;
     public PlayerAnimationState CurrentAnimationState => _playback.CurrentAnimationState;
     public string CurrentClipId => _playback.CurrentClip.Id;
     public float FramesPerSecond => _playback.CurrentClip.ConstantFramesPerSecond ?? 0f;
@@ -254,9 +108,9 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
         ApplyFrame(_playback.CurrentClip.Id, _playback.CurrentFrame);
     }
 
-    public void SetAnimationState(PlayerAnimationState state)
+    public void SetAnimationPresentation(PlayerAnimationPresentation presentation)
     {
-        _playback.SetAnimationState(state);
+        _playback.SetAnimationPresentation(presentation);
         ApplyFrame(_playback.CurrentClip.Id, _playback.CurrentFrame);
     }
 
@@ -317,21 +171,6 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationStateSink
             avatar.AnimationClips.Select(clip => clip.Id).Distinct(StringComparer.Ordinal).Count() != avatar.AnimationClips.Count)
         {
             throw new InvalidDataException("Player avatar animation clip ids must be non-empty and unique.");
-        }
-
-        PlayerAvatarAnimationRole[] requiredRoles =
-        [
-            PlayerAvatarAnimationRole.Standing,
-            PlayerAvatarAnimationRole.LocomotionStart,
-            PlayerAvatarAnimationRole.SustainedLocomotion,
-            PlayerAvatarAnimationRole.StationaryJump,
-            PlayerAvatarAnimationRole.MovingJump,
-            PlayerAvatarAnimationRole.PrimaryAttack,
-        ];
-        foreach (var role in requiredRoles)
-        {
-            if (avatar.AnimationClips.Count(clip => clip.Role == role) != 1)
-                throw new InvalidDataException($"Player avatar requires exactly one '{role}' animation clip.");
         }
 
         var firstClip = avatar.AnimationClips[0];

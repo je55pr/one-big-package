@@ -127,7 +127,7 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void IdleToLocomotionPlaysNativeTimedStartThenSustainedLocomotion()
     {
-        var playback = new PlayerAvatarView.Playback(Avatar());
+        var playback = NewPlayback();
 
         playback.SetClock(1.0);
         playback.SetAnimationState(PlayerAnimationState.Walk);
@@ -147,7 +147,7 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void WalkRunPulsesDoNotInterruptLocomotionStartOrSustainedClip()
     {
-        var playback = new PlayerAvatarView.Playback(Avatar());
+        var playback = NewPlayback();
 
         playback.SetClock(2.0);
         playback.SetAnimationState(PlayerAnimationState.Walk);
@@ -170,14 +170,14 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void JumpAndAttackInterruptLocomotionStartWithoutResumingIt()
     {
-        var jumping = new PlayerAvatarView.Playback(Avatar());
+        var jumping = NewPlayback();
         jumping.SetAnimationState(PlayerAnimationState.Run);
         Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, jumping.CurrentClip.Role);
         jumping.SetClock(0.05);
         jumping.SetAnimationState(PlayerAnimationState.JumpRise);
         Assert.Equal(PlayerAvatarAnimationRole.MovingJump, jumping.CurrentClip.Role);
 
-        var attacking = new PlayerAvatarView.Playback(Avatar());
+        var attacking = NewPlayback();
         attacking.SetAnimationState(PlayerAnimationState.Walk);
         attacking.SetClock(0.05);
         attacking.SetAnimationState(PlayerAnimationState.Attack);
@@ -191,7 +191,7 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void MovingToIdleReturnsDirectlyToStandingWithoutSelectingStopVariant()
     {
-        var playback = new PlayerAvatarView.Playback(Avatar());
+        var playback = NewPlayback();
         playback.SetAnimationState(PlayerAnimationState.Run);
         playback.SetClock(0.21);
         Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
@@ -206,11 +206,11 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void JumpRiseChoosesStationaryOrMovingClipFromLaunchContext()
     {
-        var stationary = new PlayerAvatarView.Playback(Avatar());
+        var stationary = NewPlayback();
         stationary.SetAnimationState(PlayerAnimationState.JumpRise);
         Assert.Equal(PlayerAvatarAnimationRole.StationaryJump, stationary.CurrentClip.Role);
 
-        var moving = new PlayerAvatarView.Playback(Avatar());
+        var moving = NewPlayback();
         moving.SetAnimationState(PlayerAnimationState.Run);
         moving.SetAnimationState(PlayerAnimationState.JumpRise);
         Assert.Equal(PlayerAvatarAnimationRole.MovingJump, moving.CurrentClip.Role);
@@ -219,7 +219,7 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void JumpRiseToFallKeepsSelectedAirborneClipAndClockOrigin()
     {
-        var playback = new PlayerAvatarView.Playback(Avatar());
+        var playback = NewPlayback();
         playback.SetAnimationState(PlayerAnimationState.Run);
         playback.SetClock(0.5);
         playback.SetAnimationState(PlayerAnimationState.JumpRise);
@@ -239,13 +239,13 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void LandReturnsDirectlyToStandingOrLaunchLocomotionClip()
     {
-        var stationary = new PlayerAvatarView.Playback(Avatar());
+        var stationary = NewPlayback();
         stationary.SetAnimationState(PlayerAnimationState.JumpRise);
         stationary.SetAnimationState(PlayerAnimationState.Fall);
         stationary.SetAnimationState(PlayerAnimationState.Land);
         Assert.Equal(PlayerAvatarAnimationRole.Standing, stationary.CurrentClip.Role);
 
-        var moving = new PlayerAvatarView.Playback(Avatar());
+        var moving = NewPlayback();
         moving.SetAnimationState(PlayerAnimationState.Walk);
         moving.SetAnimationState(PlayerAnimationState.JumpRise);
         moving.SetAnimationState(PlayerAnimationState.Fall);
@@ -257,7 +257,7 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void AttackPlaysOnceThenReturnsToLocomotionWithoutDroppingClockOvershoot()
     {
-        var playback = new PlayerAvatarView.Playback(Avatar());
+        var playback = NewPlayback();
         playback.SetAnimationState(PlayerAnimationState.Run);
         playback.SetClock(0.2);
         playback.SetAnimationState(PlayerAnimationState.Attack);
@@ -277,7 +277,7 @@ public sealed class PlayerAvatarGodotTests
     [Fact]
     public void AttackPulseRemainsLatchedWhileMovementUpdatesReturnState()
     {
-        var playback = new PlayerAvatarView.Playback(Avatar());
+        var playback = NewPlayback();
         playback.SetAnimationState(PlayerAnimationState.Run);
         playback.SetClock(0.2);
         playback.SetAnimationState(PlayerAnimationState.Attack);
@@ -294,9 +294,66 @@ public sealed class PlayerAvatarGodotTests
     }
 
     [Fact]
-    public void ViewImplementsAnimationStateSinkSeam()
+    public void GenericFallbackKeepsSourceKeysUnset()
     {
-        Assert.True(typeof(IPlayerAnimationStateSink).IsAssignableFrom(typeof(PlayerAvatarView)));
+        var controller = new GenericPlayerAnimationPresentationController(Avatar());
+
+        var presentation = controller.SetAnimationState(PlayerAnimationState.Walk);
+
+        Assert.Equal("locomotion-start", presentation.ClipId);
+        Assert.Null(presentation.SourceSequenceKey);
+        Assert.Null(presentation.SourceStateKey);
+    }
+
+    [Fact]
+    public void Rac1ControllerCarriesNativeSequenceAndStateKeysWithoutGodotTypes()
+    {
+        var playback = NewPlayback();
+
+        playback.SetAnimationState(PlayerAnimationState.JumpRise);
+        Assert.Equal("7", playback.CurrentAnimationPresentation.SourceSequenceKey);
+        Assert.Equal("7", playback.CurrentAnimationPresentation.SourceStateKey);
+
+        playback.SetAnimationState(PlayerAnimationState.Land);
+        playback.SetAnimationState(PlayerAnimationState.Attack);
+        Assert.Equal("23", playback.CurrentAnimationPresentation.SourceSequenceKey);
+        Assert.Equal("19", playback.CurrentAnimationPresentation.SourceStateKey);
+    }
+
+    [Fact]
+    public void ViewImplementsResolvedAnimationPresentationSinkSeam()
+    {
+        Assert.True(typeof(IPlayerAnimationPresentationSink).IsAssignableFrom(typeof(PlayerAvatarView)));
+    }
+
+    private static SourceAwarePlaybackHarness NewPlayback() => new(Avatar());
+
+    private sealed class SourceAwarePlaybackHarness
+    {
+        private readonly Rac1PlayerAnimationPresentationController _controller;
+        private readonly PlayerAvatarView.Playback _playback;
+
+        public SourceAwarePlaybackHarness(PlayerAvatar avatar)
+        {
+            _controller = new Rac1PlayerAnimationPresentationController(avatar);
+            _playback = new PlayerAvatarView.Playback(avatar, _controller.Current);
+        }
+
+        public PlayerAnimationPresentation CurrentAnimationPresentation => _playback.CurrentAnimationPresentation;
+        public PlayerAnimationState CurrentAnimationState => _playback.CurrentAnimationState;
+        public PlayerAvatarAnimationClip CurrentClip => _playback.CurrentClip;
+        public double ClipStartedAtSeconds => _playback.ClipStartedAtSeconds;
+        public double ClipElapsedSeconds => _playback.ClipElapsedSeconds;
+        public int CurrentFrame => _playback.CurrentFrame;
+
+        public void SetAnimationState(PlayerAnimationState state) =>
+            _playback.SetAnimationPresentation(_controller.SetAnimationState(state));
+
+        public void SetClock(double clockSeconds)
+        {
+            _playback.SetClock(clockSeconds);
+            _playback.SetAnimationPresentation(_controller.SetClock(clockSeconds));
+        }
     }
 
     private static PlayerAvatar Avatar(
@@ -309,15 +366,15 @@ public sealed class PlayerAvatarGodotTests
         [
             Clip("standing", PlayerAvatarAnimationRole.Standing, [0.1, 0.1]),
             Clip("locomotion-start", PlayerAvatarAnimationRole.LocomotionStart, [0.1, 0.1]),
-            Clip("locomotion", PlayerAvatarAnimationRole.SustainedLocomotion, [0.1, 0.1]),
-            Clip("stop-a", PlayerAvatarAnimationRole.LocomotionStopVariant, [0.1]),
-            Clip("stop-b", PlayerAvatarAnimationRole.LocomotionStopVariant, [0.1]),
-            Clip("jump-stationary", PlayerAvatarAnimationRole.StationaryJump, [0.1, 0.2, 0.3]),
-            Clip("jump-moving", PlayerAvatarAnimationRole.MovingJump, [0.05, 0.1]),
+            Clip("sustained-locomotion", PlayerAvatarAnimationRole.SustainedLocomotion, [0.1, 0.1]),
+            Clip("locomotion-stop-a", PlayerAvatarAnimationRole.LocomotionStopVariant, [0.1]),
+            Clip("locomotion-stop-b", PlayerAvatarAnimationRole.LocomotionStopVariant, [0.1]),
+            Clip("stationary-jump", PlayerAvatarAnimationRole.StationaryJump, [0.1, 0.2, 0.3]),
+            Clip("moving-jump", PlayerAvatarAnimationRole.MovingJump, [0.05, 0.1]),
             Clip("crouch", PlayerAvatarAnimationRole.Crouch, [0.1]),
-            Clip("crouch-right", PlayerAvatarAnimationRole.CrouchTurnRight, [0.1]),
-            Clip("crouch-left", PlayerAvatarAnimationRole.CrouchTurnLeft, [0.1]),
-            Clip("attack", PlayerAvatarAnimationRole.PrimaryAttack, [0.1, 0.2]),
+            Clip("crouch-turn-right", PlayerAvatarAnimationRole.CrouchTurnRight, [0.1]),
+            Clip("crouch-turn-left", PlayerAvatarAnimationRole.CrouchTurnLeft, [0.1]),
+            Clip("primary-attack", PlayerAvatarAnimationRole.PrimaryAttack, [0.1, 0.2]),
         ];
         return new PlayerAvatar(
             new PlayerAvatarIdentity("test", "test", "avatar", "model"),

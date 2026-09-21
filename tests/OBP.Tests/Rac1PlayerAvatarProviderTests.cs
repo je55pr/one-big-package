@@ -17,6 +17,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal("rac1-ntscu-original", provider.BuildId);
         Assert.True(provider.CanLoad(Rac1PlayerAvatarProvider.RatchetAvatarId));
         Assert.False(provider.CanLoad("clank"));
+        Assert.IsAssignableFrom<IPlayerAnimationControllerProvider>(provider);
     }
 
     [SkippableFact]

@@ -9,7 +9,7 @@ namespace OBP.RAC1.Player;
 /// Retail-backed provider for the integrated R&amp;C1 Ratchet avatar.
 /// It owns its source read and never depends on a currently loaded RuntimeWorld.
 /// </summary>
-public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider
+public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAnimationControllerProvider
 {
     public const string RatchetAvatarId = "ratchet";
     public const string RatchetModelId = "rac1:ratchet:moby-class-0";
@@ -30,6 +30,17 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider
 
     public bool CanLoad(string avatarId) =>
         string.Equals(avatarId, RatchetAvatarId, StringComparison.Ordinal);
+
+    public IPlayerAnimationPresentationController CreateAnimationController(PlayerAvatar avatar)
+    {
+        if (!string.Equals(avatar.Identity.SourceGame, SourceGame, StringComparison.Ordinal) ||
+            !CanLoad(avatar.Identity.AvatarId))
+        {
+            throw new ArgumentException("Avatar does not belong to the R&C1 player provider.", nameof(avatar));
+        }
+
+        return new Rac1PlayerAnimationPresentationController(avatar);
+    }
 
     public PlayerAvatar Load(string sourcePath, string avatarId)
     {
@@ -89,9 +100,8 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider
             Skeleton: null);
     }
 
-    private static PlayerAvatarAnimationClip RuntimeClip(Rac1RatchetAvatar.AnimationClip clip)
-    {
-        (string Id, PlayerAvatarAnimationRole Role) neutral = clip.SequenceId switch
+    internal static (string Id, PlayerAvatarAnimationRole Role) AnimationDescriptor(int sequenceId) =>
+        sequenceId switch
         {
             Rac1RatchetAvatar.StandingSequenceId => ("standing", PlayerAvatarAnimationRole.Standing),
             Rac1RatchetAvatar.LocomotionStartSequenceId => ("locomotion-start", PlayerAvatarAnimationRole.LocomotionStart),
@@ -105,9 +115,12 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider
             Rac1RatchetAvatar.CrouchTurnLeftSequenceId => ("crouch-turn-left", PlayerAvatarAnimationRole.CrouchTurnLeft),
             Rac1RatchetAvatar.WrenchAttackSequenceId => ("primary-attack", PlayerAvatarAnimationRole.PrimaryAttack),
             _ => throw new InvalidDataException(
-                $"R&C1 Ratchet native sequence {clip.SequenceId} has no admitted neutral avatar role."),
+                $"R&C1 Ratchet native sequence {sequenceId} has no admitted neutral avatar role."),
         };
 
+    private static PlayerAvatarAnimationClip RuntimeClip(Rac1RatchetAvatar.AnimationClip clip)
+    {
+        var neutral = AnimationDescriptor(clip.SequenceId);
         return new PlayerAvatarAnimationClip(
             neutral.Id,
             neutral.Role,

@@ -141,26 +141,23 @@ records `animClockSeconds` + per-mesh `currentFrame`.
 ### Playable avatar animation
 
 `PlayerAvatar` is separate from placed world animation: it carries multiple **model-local**
-clips with neutral semantic roles and exact per-frame durations. `PlayerAvatarView`
-axis-remaps and base-aligns every clip through the same local transform, then implements
-`IPlayerAnimationStateSink` as a presentation-only selector. Native R&C1 sequence ids
-remain inside `OBP.RAC1`; neither the runtime contract nor Godot/game-facing state names
-depend on them.
+clips with neutral semantic roles and exact per-frame durations. Source-specific animation
+controllers resolve those clips into engine-neutral `PlayerAnimationPresentation` values
+before Godot sees them. `PlayerAvatarView` axis-remaps and base-aligns every clip through
+the same local transform and implements only `IPlayerAnimationPresentationSink`: it renders
+the supplied clip id, clock origin and loop policy. Optional source sequence/state keys are
+opaque provenance carried by Runtime and never interpreted by Godot.
 
-The first binding deliberately stays narrower than the decoded clip catalogue. `Idle`
-uses standing. Entering `Walk` or `Run` from grounded idle plays admitted R&C1 sequence 3
-(`LocomotionStart`) once at its decoded native per-frame timing, then hands to admitted
-sequence 4 (`SustainedLocomotion`). Repeated semantic `Walk`/`Run` updates do not restart or
-replace that start one-shot. After it completes, both `Walk` and `Run` reuse sequence 4;
-that reuse is explicitly an **OBP presentation policy**, not a claim that retail lacked
-speed-dependent controller work. Entering `JumpRise` from locomotion chooses moving jump;
-otherwise it chooses stationary jump. `Fall` keeps that already-selected airborne clip
-and clock origin because the retail trace showed no apex/fall selector split. `Land`
-hands directly to standing or sustained locomotion according to launch context because no
-distinct landing selector was witnessed. `Attack` plays the admitted wrench clip once and
-returns to the prior ground locomotion state. Jump or attack may interrupt locomotion-start;
-completion of those established one-shots returns through the existing moving context rather
-than speculatively replaying sequence 3.
+The first source-aware controller deliberately stays narrower than the decoded R&C1 clip
+catalogue. `Rac1PlayerAnimationPresentationController` owns the retained selector behavior:
+grounded locomotion enters through native sequence 3 and hands to sequence 4 at decoded timing;
+launch context chooses sequence 7 or 8 and the selected jump clip persists through fall; landing
+returns directly to standing or sustained locomotion because no distinct landing selector was
+witnessed; and the admitted sequence-23 wrench attack plays once before returning to the prior
+ground context. These are source-owned decisions, not Godot rules. The generic Runtime fallback
+exists only for an avatar provider that explicitly lacks a native selector. GC and UYA currently
+lack native player-avatar providers, so their worlds keep the debug capsule instead of receiving
+an R&C1 Ratchet presentation.
 
 Both stop variants, crouch, and the two crouch-turn clips remain exposed as neutral avatar
 data without invented gameplay predicates. In particular, sequences 5 and 6 intentionally
