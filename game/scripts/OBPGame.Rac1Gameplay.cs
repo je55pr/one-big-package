@@ -49,6 +49,7 @@ public partial class OBPGame
     private bool _rac1SwingActive;
     private bool _rac1SwingResolved;
     private bool _rac1BombFireRequested;
+    private Rac1BombGloveContactResolution? _rac1LastBombContactResolution;
     private double _rac1SwingAge;
     private double _rac1BombTickAccumulator;
     // Raw retail player-state word at +0x20a4. Its semantics remain intentionally unnamed.
@@ -72,6 +73,7 @@ public partial class OBPGame
         _rac1SwingActive = false;
         _rac1SwingResolved = false;
         _rac1BombFireRequested = false;
+        _rac1LastBombContactResolution = null;
         _rac1SwingAge = 0d;
         _rac1BombTickAccumulator = 0d;
         _rac1NativePlayerState20A4 = 0;
@@ -585,6 +587,8 @@ public partial class OBPGame
             var contactResolution = _rac1BombGlove.ResolveGoal1ContactVolume(
                 pair.Key,
                 contactFacts);
+            if (contactResolution.ProjectileCompleted)
+                _rac1LastBombContactResolution = contactResolution;
 
             if (contactResolution.ProjectileCompleted)
             {

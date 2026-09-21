@@ -1,6 +1,7 @@
 using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
 
 namespace OneBigPackage;
 
@@ -36,6 +37,7 @@ public partial class OBPGame
             Vector3 cratePose = crate.Root.GlobalPosition - crateDirection * 2.0f;
             Rac1SmokePlaceFacing(cratePose, crateDirection);
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
+            AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
                 () => _rac1BoltCrates.DestroyedCrateCount > 0,
@@ -78,23 +80,64 @@ public partial class OBPGame
                 "class-749 incoming damage");
             GD.Print($"[rac1-smoke] class-749 incoming damage PASS; Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
 
+            int bombAmmoBeforeFire = _rac1Weapons.FirstRangedAmmo;
+            if (bombAmmoBeforeFire < Rac1BombGlove.AmmoCostPerShot)
+                throw new InvalidOperationException(
+                    "Bomb Glove smoke requires at least one recovered item-10 round.");
+
             OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged);
+            AssertRac1SmokeHudWeapon(
+                Rac1HudProjection.BombGlovePresentationKey,
+                bombAmmoBeforeFire);
             Vector3 bombPose = hostile.Root.GlobalPosition - hostileForward * 4f;
             Rac1SmokePlaceFacing(bombPose, hostileForward);
             OnRac1PrimaryAttackRequested();
+            int bombAmmoAfterFire = bombAmmoBeforeFire - Rac1BombGlove.AmmoCostPerShot;
             await Rac1SmokeWaitAsync(
-                () => _rac1Weapons.FirstRangedAmmo == 5 && _rac1Projectiles.Count == 0,
+                () => _rac1Weapons.FirstRangedAmmo == bombAmmoAfterFire,
+                60,
+                "Bomb Glove fire admission");
+            AssertRac1SmokeHudWeapon(
+                Rac1HudProjection.BombGlovePresentationKey,
+                bombAmmoAfterFire);
+
+            OnRac1PrimaryAttackRequested();
+            await Rac1SmokeWaitAsync(
+                () => !_rac1BombFireRequested,
+                60,
+                "Bomb Glove cadence rejection");
+            if (_rac1Weapons.FirstRangedAmmo != bombAmmoAfterFire)
+                throw new InvalidOperationException(
+                    $"Bomb Glove cadence spent a second round: {_rac1Weapons.FirstRangedAmmo}, expected {bombAmmoAfterFire}.");
+
+            await Rac1SmokeWaitAsync(
+                () => _rac1LastBombContactResolution is { ProjectileCompleted: true },
                 180,
-                "Bomb Glove projectile contact");
+                "Bomb Glove class-749 contact");
+            var bombContact = _rac1LastBombContactResolution
+                ?? throw new InvalidOperationException("Bomb Glove contact result disappeared.");
+            if (bombContact.AdmittedContactCount != 1)
+                throw new InvalidOperationException(
+                    $"Bomb Glove admitted {bombContact.AdmittedContactCount} contacts, expected one retained Veldin class-749 witness.");
+            var bombDamage = bombContact.DamageResults[0];
+            if (bombDamage.TargetNativeClassId != Rac1Class749Hostile.NativeClassId ||
+                bombDamage.NativeDamage != Rac1BombGlove.NativeDamage ||
+                bombDamage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
+                throw new InvalidOperationException("Bomb Glove contact drifted from the retained native damage envelope.");
             if (!_rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var postBombProbe) ||
                 postBombProbe.Health != 1f ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
                     "Bomb Glove host contact invented an unrecovered class-749 damage consequence.");
-            GD.Print("[rac1-smoke] Bomb Glove contact PASS; ammo=5 and class-749 consequence remains unresolved");
+            if (_rac1Projectiles.ContainsKey(bombContact.ProjectileId))
+                throw new InvalidOperationException("Bomb Glove contact did not retire the hosted projectile.");
+            GD.Print(
+                $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
+                "immediate refire cadence-blocked and class-749 consequence remains unresolved");
 
             Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
+            AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
                 () => _rac1HostileProbes.TryGetValue(
@@ -149,7 +192,7 @@ public partial class OBPGame
             GD.Print("[rac1-smoke] authored Veldin respawn PASS; Nanotech=4");
 
             await RunRac1Level18Class749GateSmokeAsync();
-            await RunRac1HostileLifecycleSmokeAsync();
+            await RunRac1HostileLifecycleSmokeAsync(bombAmmoAfterFire);
 
             GD.Print("[rac1-smoke] PASS: class-749 runtime stays witness-gated while authored presentation survives LEVEL0/LEVEL18/unload-reload");
             GetTree().Quit(0);
@@ -186,7 +229,7 @@ public partial class OBPGame
             "[rac1-smoke] LEVEL18 class-749 gate PASS; 90 authored/presented placements, 0 active runtime hostiles");
     }
 
-    private async Task RunRac1HostileLifecycleSmokeAsync()
+    private async Task RunRac1HostileLifecycleSmokeAsync(int expectedBombAmmo)
     {
         OpenDestinationFromBootstrap("rac1:LEVEL1");
         await Rac1SmokeWaitAsync(
@@ -224,11 +267,35 @@ public partial class OBPGame
             hostile is null || !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
             throw new InvalidOperationException(
                 $"LEVEL0 reload active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected witness-only 1/1.");
-        if (_rac1Weapons.FirstRangedAmmo != 5)
+        if (_rac1Weapons.FirstRangedAmmo != expectedBombAmmo)
             throw new InvalidOperationException(
-                $"Process-lifetime Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected persistent value 5.");
+                $"Process-lifetime Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected persistent value {expectedBombAmmo}.");
+        AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
 
-        GD.Print("[rac1-smoke] LEVEL0 reload PASS; 16 authored/presented placements, witness-only runtime restored, inventory persisted");
+        GD.Print(
+            $"[rac1-smoke] LEVEL0 reload PASS; 16 authored/presented placements, witness-only runtime restored, item-10 ammo remained {expectedBombAmmo}");
+    }
+
+    private void AssertRac1SmokeHudWeapon(string expectedPresentationKey, int? expectedAmmo)
+    {
+        var weapon = _hudState.Current.CurrentWeapon
+            ?? throw new InvalidOperationException("R&C1 HUD has no current weapon.");
+        if (weapon.PresentationKey != expectedPresentationKey)
+            throw new InvalidOperationException(
+                $"R&C1 HUD weapon was '{weapon.PresentationKey}', expected '{expectedPresentationKey}'.");
+
+        if (expectedAmmo is null)
+        {
+            if (weapon.Ammo is not null)
+                throw new InvalidOperationException("Wrench HUD unexpectedly exposed ammo.");
+            return;
+        }
+
+        if (weapon.Ammo?.Current != expectedAmmo ||
+            weapon.Ammo.Capacity != Rac1BombGlove.MaxAmmo)
+            throw new InvalidOperationException(
+                $"Bomb Glove HUD ammo was {weapon.Ammo?.Current}/{weapon.Ammo?.Capacity}, " +
+                $"expected {expectedAmmo}/{Rac1BombGlove.MaxAmmo}.");
     }
 
     private int CountRac1AuthoredClass749() =>
