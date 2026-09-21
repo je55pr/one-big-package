@@ -1,0 +1,293 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "savestate": {
+    "file": "SCUS-97199 (CE4933D0).01.p2s",
+    "sha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+    "eeMemorySize": 33554432
+  },
+  "class749Melee": {
+    "count": 16,
+    "updateRoutine": "0x002d4610",
+    "stateHistogram": {
+      "0x01": 1,
+      "0x05": 13,
+      "0xfd": 2
+    },
+    "stateDispatch": {
+      "0": "0x002d46c4",
+      "1": "0x002d4884",
+      "2": "0x002d493c",
+      "3": "0x002d49b8",
+      "4": "0x002d49f0",
+      "5": "0x002d4a9c",
+      "6": "0x002d4b88",
+      "7": "0x002d4c74",
+      "8": "0x002d4da0",
+      "9": "0x002d4864",
+      "10": "0x002d4e08",
+      "11": "0x002d4fcc",
+      "12": "0x002d501c"
+    },
+    "recoveredContract": {
+      "targetedState": 6,
+      "attackState": 7,
+      "returnHomeState": 8,
+      "attackSequence": 5,
+      "attackEntryDistanceExclusive": 2.0,
+      "attackRetainDistanceInclusive": 1.5,
+      "attackFacingErrorRawBits": "0x3e32b8c2",
+      "animationMarker": 34.0,
+      "markerNativeUpdate": 68,
+      "sequenceNativeUpdates": 102,
+      "nativeDamage": 1.0
+    },
+    "loadedEmitter": {
+      "routine": "0x002599e8",
+      "directCallersInLoadedImage": [
+        "0x002d4cb4"
+      ],
+      "attackVolumeScalarRawBits": "0x3eaa7efa",
+      "attackVolumeScalar": 0.3330000042915344,
+      "boundary": "the loaded image proves class-749's marker-gated emitter call; the surrounding geometry helper is not promoted as a universal enemy melee shape"
+    }
+  },
+  "class1440Candidate": {
+    "count": 9,
+    "updateRoutine": "0x002e0b88",
+    "stateHistogram": {
+      "0x01": 8,
+      "0x03": 1
+    },
+    "pvarPlus20HealthValues": [
+      2.0
+    ],
+    "pvarPlus110TargetMobyHistogram": {
+      "none": 3,
+      "player": 6
+    },
+    "directCallsWithinUpdateRange": {
+      "class749AttackEmitter0x2599e8": [],
+      "damageConstructor0x259bc8": []
+    },
+    "stateDispatch": {
+      "0": "0x002e0c84",
+      "1": "0x002e0d6c",
+      "2": "0x002e0e24",
+      "3": "0x002e0fbc",
+      "4": "0x002e110c",
+      "5": "0x002e11a4",
+      "6": "0x002e1494",
+      "7": "0x002e14f8",
+      "8": "0x002e1544"
+    },
+    "damageIntake": {
+      "health": "PVar+0x20 f32",
+      "lookupCall": "0x002e16e8 -> 0x0025a420",
+      "consumeCall": "0x002e1710 -> 0x0025a478",
+      "consequence": "subtract returned native damage from PVar+0x20"
+    },
+    "state5ContactQuery": {
+      "entry": "0x002e11a4",
+      "queryRoutine": "0x001efc70",
+      "queryCalls": [
+        "0x002e1348",
+        "0x002e13bc"
+      ],
+      "descriptor": {
+        "+0x80": "source Moby",
+        "+0x84": "0x00010000",
+        "+0x8a": "source native class",
+        "+0x8c": "1.0",
+        "+0x90": "1"
+      },
+      "playerContactGate": "query-owned Moby result is compared with current player Moby before class-local helper 0x2e2040 and native state-6 transition",
+      "outgoingDamageBoundary": "unresolved: state 5 does not directly call 0x2599e8 or 0x259bc8, and descriptor field similarity is insufficient to name +0x8c as damage"
+    }
+  },
+  "crossFamilyConclusion": {
+    "sharedProven": [
+      "live Moby native-state/update dispatch envelope",
+      "native damage-record lookup/consumption",
+      "class-owned PVar health subtraction after native damage consumption"
+    ],
+    "notSharedWithoutFurtherEvidence": [
+      "attack cadence or animation marker",
+      "attack entry/retention range",
+      "facing threshold",
+      "contact geometry",
+      "outgoing damage scalar",
+      "projectile semantics"
+    ],
+    "projectileChildRequired": false,
+    "reason": "no separately identifiable weapon-like enemy projectile was recovered from this fixed loaded overlay"
+  },
+  "instructionEvidence": [
+    {
+      "address": "0x002d4c74",
+      "word": "0x3c014208",
+      "meaning": "class-749 state 7 materializes native marker 34.0"
+    },
+    {
+      "address": "0x002d4c7c",
+      "word": "0x0c098636",
+      "meaning": "class-749 state 7 tests the native animation marker"
+    },
+    {
+      "address": "0x002d4c8c",
+      "word": "0x3c013f80",
+      "meaning": "class-749 attack path materializes 1.0"
+    },
+    {
+      "address": "0x002d4c94",
+      "word": "0x3c013eaa",
+      "meaning": "class-749 attack volume scalar begins as raw 0x3eaa7efa"
+    },
+    {
+      "address": "0x002d4ca4",
+      "word": "0x24060001",
+      "meaning": "class-749 attack emitter argument a2 is 1"
+    },
+    {
+      "address": "0x002d4cb0",
+      "word": "0x24080001",
+      "meaning": "class-749 attack emitter argument t0 is 1"
+    },
+    {
+      "address": "0x002d4cb4",
+      "word": "0x0c09667a",
+      "meaning": "class-749 state 7 calls attack emitter 0x2599e8"
+    },
+    {
+      "address": "0x002e0bb8",
+      "word": "0x0c0b859e",
+      "meaning": "class-1440 update calls its pre-dispatch damage/status helper"
+    },
+    {
+      "address": "0x002e0c5c",
+      "word": "0x92630020",
+      "meaning": "class-1440 dispatch reads live Moby state byte +0x20"
+    },
+    {
+      "address": "0x002e16e8",
+      "word": "0x0c096908",
+      "meaning": "class-1440 pre-dispatch calls common damage lookup 0x25a420"
+    },
+    {
+      "address": "0x002e1710",
+      "word": "0x0c09691e",
+      "meaning": "class-1440 pre-dispatch calls common damage consumer 0x25a478"
+    },
+    {
+      "address": "0x002e1774",
+      "word": "0xc6200020",
+      "meaning": "class-1440 loads PVar +0x20 health"
+    },
+    {
+      "address": "0x002e1784",
+      "word": "0x46060001",
+      "meaning": "class-1440 subtracts returned native damage from health"
+    },
+    {
+      "address": "0x002e17bc",
+      "word": "0xe6200020",
+      "meaning": "class-1440 stores PVar +0x20 health"
+    },
+    {
+      "address": "0x002e1290",
+      "word": "0x3c020001",
+      "meaning": "class-1440 state 5 descriptor materializes 0x00010000"
+    },
+    {
+      "address": "0x002e1294",
+      "word": "0xafa20084",
+      "meaning": "class-1440 state 5 stores 0x00010000 at descriptor +0x84"
+    },
+    {
+      "address": "0x002e129c",
+      "word": "0xafb30080",
+      "meaning": "class-1440 state 5 stores source Moby at descriptor +0x80"
+    },
+    {
+      "address": "0x002e12a4",
+      "word": "0xafb20090",
+      "meaning": "class-1440 state 5 stores integer 1 at descriptor +0x90"
+    },
+    {
+      "address": "0x002e12ac",
+      "word": "0xe7b4008c",
+      "meaning": "class-1440 state 5 stores 1.0 at descriptor +0x8c"
+    },
+    {
+      "address": "0x002e12bc",
+      "word": "0x966200a6",
+      "meaning": "class-1440 state 5 loads source native class from Moby +0xa6"
+    },
+    {
+      "address": "0x002e12e0",
+      "word": "0xa7a2008a",
+      "meaning": "class-1440 state 5 stores native class at descriptor +0x8a"
+    },
+    {
+      "address": "0x002e1348",
+      "word": "0x0c07bf1c",
+      "meaning": "class-1440 state 5 performs first VU-backed query"
+    },
+    {
+      "address": "0x002e1364",
+      "word": "0x8c653e58",
+      "meaning": "class-1440 first query path loads query-owned Moby result"
+    },
+    {
+      "address": "0x002e1368",
+      "word": "0x8c8213d0",
+      "meaning": "class-1440 first query path loads current player Moby"
+    },
+    {
+      "address": "0x002e1374",
+      "word": "0x0c0b8810",
+      "meaning": "class-1440 player-contact branch calls class-local helper 0x2e2040"
+    },
+    {
+      "address": "0x002e1388",
+      "word": "0x10820008",
+      "meaning": "class-1440 player-contact branch checks transition to native state 6"
+    },
+    {
+      "address": "0x002e13bc",
+      "word": "0x0c07bf1c",
+      "meaning": "class-1440 state 5 performs second VU-backed query"
+    },
+    {
+      "address": "0x002e13e0",
+      "word": "0x8c64fff8",
+      "meaning": "class-1440 second query path loads the same query-owned Moby result"
+    },
+    {
+      "address": "0x002e13e4",
+      "word": "0x8c4313d0",
+      "meaning": "class-1440 second query path loads current player Moby"
+    },
+    {
+      "address": "0x002e13f0",
+      "word": "0x0c0b8810",
+      "meaning": "class-1440 second player-contact branch calls class-local helper 0x2e2040"
+    },
+    {
+      "address": "0x002e1404",
+      "word": "0x10820008",
+      "meaning": "class-1440 second player-contact branch checks transition to native state 6"
+    }
+  ],
+  "notes": [
+    "No ISO, executable, savestate, EE-memory or PVar payload bytes are emitted.",
+    "Class 1440 is retained as a second targeting/damageable candidate, not promoted to hostile solely from resemblance.",
+    "Only class 749 has a recovered outgoing attack cadence and damage emission path in this witness."
+  ]
+}
