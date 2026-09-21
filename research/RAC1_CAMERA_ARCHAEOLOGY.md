@@ -294,6 +294,25 @@ selector-specific modes outside that baseline until their gameplay trigger is
 independently exposed. Exact ray-versus-swept contact geometry and full
 multi-update lateral convergence remain intentionally unpromoted.
 
+## Human integration review: vertical framing
+
+A short human comparison on 2026-09-21 against the base game found the recovered
+horizontal camera/control feel acceptable, but identified a clear vertical
+presentation mismatch: retail feels framed toward a point above Ratchet's head,
+whereas the current Godot path visibly tilts the view up/down around the eye.
+This is integration evidence, not a numeric retail-authority witness.
+
+The implementation boundary explains why this needs recovery rather than tuning.
+`Rac1OrdinaryCameraController` currently maps manual vertical state directly into
+`Control.Pitch` while leaving the recovered eye, eye anchor and look-height state
+unchanged; `Rac1CameraState.ToRuntimeState()` then rotates only the published
+forward vector. No retained retail trace proves that pitch-only projection.
+Do not hand-tune the vertical span or presentation offsets to hide the mismatch.
+A bounded follow-up should capture vertical right-stick pulses while sampling eye,
+forward/pitch, current/preferred look height and current/preferred eye height, then
+trace the corresponding type-0 writers to determine whether manual vertical input
+drives look height, eye height, both, or another orbit/framing state.
+
 ## Repeatable scenarios
 
 `tools/rac1-camera-archaeology.py` builds the following literal DualShock 2
