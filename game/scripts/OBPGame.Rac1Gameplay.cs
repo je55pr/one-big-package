@@ -17,7 +17,7 @@ namespace OneBigPackage;
 /// </summary>
 public partial class OBPGame
 {
-    private const int Rac1RepresentativeHostileInstance = 149;
+    private const int Rac1WitnessHostileInstance = 149;
     private const double Rac1NativeTicksPerSecond = Rac1RatchetMovementController.UpdateHz;
     private const float Rac1WrenchReach = 2.35f;
     private const float Rac1DirectContactRadius = 1.25f;
@@ -40,8 +40,8 @@ public partial class OBPGame
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
     private readonly Dictionary<long, Rac1HostedProjectile> _rac1Projectiles = [];
-    private RuntimeWorldScene.DynamicObjectNode? _rac1HostileNode;
-    private Rac1Class749HostProbe? _rac1HostileProbe;
+    private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1HostileNodes = [];
+    private readonly Dictionary<int, Rac1Class749HostProbe> _rac1HostileProbes = [];
     private bool _rac1SwingActive;
     private bool _rac1SwingResolved;
     private bool _rac1BombFireRequested;
@@ -62,8 +62,8 @@ public partial class OBPGame
         _rac1Hostiles = new Rac1Class749HostileSession();
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
-        _rac1HostileNode = null;
-        _rac1HostileProbe = null;
+        _rac1HostileNodes.Clear();
+        _rac1HostileProbes.Clear();
         _rac1SwingActive = false;
         _rac1SwingResolved = false;
         _rac1BombFireRequested = false;
@@ -110,28 +110,29 @@ public partial class OBPGame
             _rac1CrateNodes.Add(node);
         }
 
-        var hostileSource = (world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
-            .FirstOrDefault(source => source.NativeClassId == Rac1Class749Hostile.NativeClassId
-                && source.InstanceIndex == Rac1RepresentativeHostileInstance);
-        if (hostileSource is not null)
+        int rejectedHostiles = 0;
+        foreach (var hostileSource in (world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
+            .Where(source => source.NativeClassId == Rac1Class749Hostile.NativeClassId))
         {
-            _rac1HostileNode = FindPresentedDynamic(result, hostileSource)
-                ?? CreateRac1FallbackNode(result, hostileSource, crate: false);
             try
             {
-                _rac1HostileProbe = _rac1Hostiles.RegisterRepresentative(
-                    hostileSource, _rac1HostileNode.State);
+                _ = Rac1Class749Hostile.ReadAuthored(hostileSource)
+                    ?? throw new InvalidDataException("Class-749 source failed its authored-state contract.");
+                var node = FindPresentedDynamic(result, hostileSource)
+                    ?? CreateRac1FallbackNode(result, hostileSource, crate: false);
+                var probe = _rac1Hostiles.Register(hostileSource, node.State);
+                _rac1HostileNodes.Add(hostileSource.InstanceIndex, node);
+                _rac1HostileProbes.Add(hostileSource.InstanceIndex, probe);
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidDataException)
             {
-                _rac1CombatStatus = $"hostile unavailable: {ex.Message}";
-                _rac1HostileNode = null;
-                _rac1HostileProbe = null;
+                rejectedHostiles++;
+                GD.PrintErr($"[rac1-gameplay] class-749 i{hostileSource.InstanceIndex} unavailable: {ex.Message}");
             }
         }
 
         GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted class-500 crates, " +
-                 $"class-749 i{Rac1RepresentativeHostileInstance}={(_rac1HostileNode is null ? "missing" : "live")}");
+                 $"{_rac1HostileNodes.Count} class-749 hostiles ({rejectedHostiles} rejected)");
     }
 
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
@@ -235,7 +236,7 @@ public partial class OBPGame
         TickRac1Swing(delta);
         TickRac1BombGlove(delta);
         TickRac1Projectiles(delta);
-        TickRac1Hostile();
+        TickRac1Hostiles();
         TickRac1Pickups();
     }
 
@@ -389,22 +390,33 @@ public partial class OBPGame
 
     private bool TryStrikeRac1Hostile(double nativeAge, Vector3 root, Vector3 forward)
     {
-        if (_rac1HostileNode is not { } hostile || _rac1HostileProbe is null ||
-            !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
-        {
-            return false;
-        }
-        Vector3 to = hostile.Root.GlobalPosition - root;
-        float along = to.Dot(forward);
-        float perpendicular = (to - forward * along).Length();
-        if (along <= 0f || along > Rac1WrenchReach + Rac1DirectContactRadius ||
-            perpendicular > Rac1DirectContactRadius)
+        var candidate = _rac1HostileNodes.Values
+            .Where(hostile =>
+                _rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) &&
+                IsInstanceValid(hostile.Root) &&
+                hostile.Root.Visible)
+            .Select(hostile =>
+            {
+                Vector3 to = hostile.Root.GlobalPosition - root;
+                float along = to.Dot(forward);
+                float perpendicular = (to - forward * along).Length();
+                return new { Hostile = hostile, Along = along, Perpendicular = perpendicular };
+            })
+            .Where(hit =>
+                hit.Along > 0f &&
+                hit.Along <= Rac1WrenchReach + Rac1DirectContactRadius &&
+                hit.Perpendicular <= Rac1DirectContactRadius)
+            .OrderBy(hit => hit.Along)
+            .ThenBy(hit => hit.Hostile.Source.InstanceIndex)
+            .FirstOrDefault();
+        if (candidate is null)
         {
             return false;
         }
 
+        var hostile = candidate.Hostile;
         var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(hostile.Source)
-            ?? throw new InvalidOperationException("Representative R&C1 class-749 hostile was rejected by the wrench target contract.");
+            ?? throw new InvalidOperationException("R&C1 class-749 hostile was rejected by the wrench target contract.");
         var damage = _rac1Wrench.ResolveForwardDirectRecord(
             Rac1WrenchCombatController.OrdinaryActionId,
             Rac1WrenchCombatController.OrdinaryProfileId,
@@ -415,13 +427,15 @@ public partial class OBPGame
             return false;
         }
 
-        _rac1HostileProbe = _rac1Hostiles.ApplyWrenchDamage(hostile.Source, damage);
+        var probe = _rac1Hostiles.ApplyWrenchDamage(hostile.Source, damage);
+        _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         // The native session admits both 0xfd and 0xfe terminal outcomes but does
         // not recover their selector. The live host uses 0xfd as an explicit
         // presentation choice so the proven terminal deactivation is observable.
-        _rac1HostileProbe = _rac1Hostiles.ApplyTerminalStatus(
+        probe = _rac1Hostiles.ApplyTerminalStatus(
             hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
-        hostile.ApplyState(_rac1HostileProbe.EntityState);
+        _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
+        hostile.ApplyState(probe.EntityState);
         _rac1CombatStatus = $"hostile i{hostile.Source.InstanceIndex}: health 0 -> terminal 0xfd";
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
@@ -487,28 +501,42 @@ public partial class OBPGame
             projectile.Age += (float)Math.Max(0d, delta);
 
             bool impacted = false;
-            if (_rac1HostileNode is { } hostile && _rac1HostileProbe is not null &&
-                IsInstanceValid(hostile.Root) && hostile.Root.Visible)
-            {
-                Vector3 segment = end - start;
-                Vector3 target = hostile.Root.GlobalPosition + Vector3.Up * 0.5f;
-                float t = segment.LengthSquared() <= 1e-6f
-                    ? 0f
-                    : Mathf.Clamp((target - start).Dot(segment) / segment.LengthSquared(), 0f, 1f);
-                if (target.DistanceTo(start + segment * t) <= Rac1BombHostileContactRadius)
+            Vector3 segment = end - start;
+            var hit = _rac1HostileNodes.Values
+                .Where(hostile =>
+                    _rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) &&
+                    IsInstanceValid(hostile.Root) &&
+                    hostile.Root.Visible)
+                .Select(hostile =>
                 {
-                    var damage = _rac1BombGlove.ResolveGoal1Impact(
-                        pair.Key, hostile.Source, _rac1HostileProbe.NativeState);
-                    if (damage is not null)
-                    {
-                        _rac1HostileProbe = _rac1Hostiles.ApplyBombGloveDamage(hostile.Source, damage);
-                        _rac1HostileProbe = _rac1Hostiles.ApplyTerminalStatus(
-                            hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
-                        hostile.ApplyState(_rac1HostileProbe.EntityState);
-                        _rac1CombatStatus = $"Bomb Glove hit class-749 i{hostile.Source.InstanceIndex}: terminal 0xfd";
-                        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
-                        impacted = true;
-                    }
+                    Vector3 target = hostile.Root.GlobalPosition + Vector3.Up * 0.5f;
+                    float t = segment.LengthSquared() <= 1e-6f
+                        ? 0f
+                        : Mathf.Clamp((target - start).Dot(segment) / segment.LengthSquared(), 0f, 1f);
+                    float separation = target.DistanceTo(start + segment * t);
+                    return new { Hostile = hostile, T = t, Separation = separation };
+                })
+                .Where(candidate => candidate.Separation <= Rac1BombHostileContactRadius)
+                .OrderBy(candidate => candidate.T)
+                .ThenBy(candidate => candidate.Hostile.Source.InstanceIndex)
+                .FirstOrDefault();
+            if (hit is not null)
+            {
+                var hostile = hit.Hostile;
+                var probe = _rac1HostileProbes[hostile.Source.InstanceIndex];
+                var damage = _rac1BombGlove.ResolveGoal1Impact(
+                    pair.Key, hostile.Source, probe.NativeState);
+                if (damage is not null)
+                {
+                    probe = _rac1Hostiles.ApplyBombGloveDamage(hostile.Source, damage);
+                    _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
+                    probe = _rac1Hostiles.ApplyTerminalStatus(
+                        hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
+                    _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
+                    hostile.ApplyState(probe.EntityState);
+                    _rac1CombatStatus = $"Bomb Glove hit class-749 i{hostile.Source.InstanceIndex}: terminal 0xfd";
+                    GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+                    impacted = true;
                 }
             }
 
@@ -520,51 +548,63 @@ public partial class OBPGame
         }
     }
 
-    private void TickRac1Hostile()
+    private void TickRac1Hostiles()
     {
-        if (_rac1HostileNode is not { } hostile || _rac1HostileProbe is null ||
-            _player is null || _rac1Nanotech.Probe().IsDead ||
-            !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
+        if (_player is null || _rac1Nanotech.Probe().IsDead)
         {
             return;
         }
 
-        Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
-        double distance = toPlayer.Length();
-        Vector3 planarToPlayer = new(toPlayer.X, 0f, toPlayer.Z);
-        Vector3 planarForward = -hostile.Root.GlobalTransform.Basis.Z;
-        planarForward.Y = 0f;
-        double facingError = Math.PI;
-        if (planarToPlayer.LengthSquared() > 1e-6f && planarForward.LengthSquared() > 1e-6f)
+        foreach (var hostile in _rac1HostileNodes.Values.OrderBy(node => node.Source.InstanceIndex))
         {
-            planarToPlayer = planarToPlayer.Normalized();
-            planarForward = planarForward.Normalized();
-            facingError = Math.Abs(planarForward.SignedAngleTo(planarToPlayer, Vector3.Up));
-        }
+            if (!_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var previous) ||
+                !IsInstanceValid(hostile.Root) ||
+                !hostile.Root.Visible)
+            {
+                continue;
+            }
 
-        Vector3 hostilePosition = hostile.Root.GlobalPosition;
-        var next = _rac1Hostiles.Step(
-            hostile.Source,
-            new Rac1Class749TargetFacts(
-                distance,
-                facingError,
-                new Rac1Class749WorldPoint(hostilePosition.X, hostilePosition.Y, hostilePosition.Z)));
-        if (next.NativeState != _rac1HostileProbe.NativeState)
-        {
-            GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: state {_rac1HostileProbe.NativeState} -> {next.NativeState}");
+            Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
+            double distance = toPlayer.Length();
+            Vector3 planarToPlayer = new(toPlayer.X, 0f, toPlayer.Z);
+            Vector3 planarForward = -hostile.Root.GlobalTransform.Basis.Z;
+            planarForward.Y = 0f;
+            double facingError = Math.PI;
+            if (planarToPlayer.LengthSquared() > 1e-6f && planarForward.LengthSquared() > 1e-6f)
+            {
+                planarToPlayer = planarToPlayer.Normalized();
+                planarForward = planarForward.Normalized();
+                facingError = Math.Abs(planarForward.SignedAngleTo(planarToPlayer, Vector3.Up));
+            }
+
+            Vector3 hostilePosition = hostile.Root.GlobalPosition;
+            var next = _rac1Hostiles.Step(
+                hostile.Source,
+                new Rac1Class749TargetFacts(
+                    distance,
+                    facingError,
+                    new Rac1Class749WorldPoint(-hostilePosition.X, hostilePosition.Y, hostilePosition.Z)));
+            if (next.NativeState != previous.NativeState)
+            {
+                GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: state {previous.NativeState} -> {next.NativeState}");
+            }
+            if (next.Attack is { } attack)
+            {
+                var beforeNanotech = _rac1Nanotech.Probe();
+                var nanotech = _rac1Nanotech.ApplyClass749Attack(attack);
+                _player.Rac1GameplayAlive = !nanotech.IsDead;
+                GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
+                _rac1CombatStatus = nanotech.IsDead
+                    ? "Nanotech 0: combat-death restart/checkpoint semantics unresolved"
+                    : $"class-749 hit: Nanotech {nanotech.Nanotech}/{nanotech.RespawnNanotech}";
+                RefreshRac1HudState(Rac1HudProjection.DamageFeedback(beforeNanotech, nanotech));
+            }
+            _rac1HostileProbes[hostile.Source.InstanceIndex] = next;
+            if (_rac1Nanotech.Probe().IsDead)
+            {
+                break;
+            }
         }
-        if (next.Attack is { } attack)
-        {
-            var beforeNanotech = _rac1Nanotech.Probe();
-            var nanotech = _rac1Nanotech.ApplyClass749Attack(attack);
-            _player.Rac1GameplayAlive = !nanotech.IsDead;
-            GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
-            _rac1CombatStatus = nanotech.IsDead
-                ? "Nanotech 0: combat-death restart/checkpoint semantics unresolved"
-                : $"class-749 hit: Nanotech {nanotech.Nanotech}/{nanotech.RespawnNanotech}";
-            RefreshRac1HudState(Rac1HudProjection.DamageFeedback(beforeNanotech, nanotech));
-        }
-        _rac1HostileProbe = next;
     }
     private void SpawnRac1BoltPickups(Vector3 origin, IReadOnlyList<Rac1BoltPickup> pickups)
     {
@@ -635,9 +675,11 @@ public partial class OBPGame
             return string.Empty;
         }
 
-        string hostile = _rac1HostileProbe is null
-            ? "class-749 unavailable"
-            : $"class-749 i{Rac1RepresentativeHostileInstance} state {_rac1HostileProbe.NativeState} health {_rac1HostileProbe.Health:0.###}";
+        int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
+            IsInstanceValid(hostile.Root) && hostile.Root.Visible);
+        string hostile = _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var witness)
+            ? $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active); witness i{Rac1WitnessHostileInstance} state {witness.NativeState} health {witness.Health:0.###}"
+            : $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active)";
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
         string restart = nanotech.HasRecoveredVeldinEnvironmentalRespawn
@@ -654,15 +696,23 @@ public partial class OBPGame
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return null;
+        _rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out var witnessNode);
+        _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var witnessProbe);
+        int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
+            IsInstanceValid(hostile.Root) && hostile.Root.Visible);
         return new Rac1GameplaySnapshot(
             AdmittedCrates: _rac1CrateNodes.Count,
             DestroyedCrates: _rac1BoltCrates.DestroyedCrateCount,
             OutstandingPickups: _rac1BoltCrates.OutstandingPickupCount,
             CollectedBolts: _rac1BoltCrates.CollectedBolts,
-            HostileInstance: _rac1HostileNode?.Source.InstanceIndex,
-            HostileState: _rac1HostileProbe?.NativeState,
-            HostileHealth: _rac1HostileProbe?.Health,
-            HostileVisible: _rac1HostileNode is { } hostile && IsInstanceValid(hostile.Root) && hostile.Root.Visible,
+            HostileCount: _rac1HostileProbes.Count,
+            ActiveHostiles: activeHostiles,
+            HostileInstance: witnessNode?.Source.InstanceIndex,
+            HostileState: witnessProbe?.NativeState,
+            HostileHealth: witnessProbe?.Health,
+            HostileVisible: witnessNode is not null &&
+                IsInstanceValid(witnessNode.Root) &&
+                witnessNode.Root.Visible,
             Nanotech: _rac1Nanotech.Probe().Nanotech,
             LifeState: _rac1Nanotech.Probe().LifeState,
             EquippedWeapon: _rac1Weapons.Equipped,
@@ -676,6 +726,8 @@ public partial class OBPGame
         int DestroyedCrates,
         int OutstandingPickups,
         int CollectedBolts,
+        int HostileCount,
+        int ActiveHostiles,
         int? HostileInstance,
         int? HostileState,
         float? HostileHealth,

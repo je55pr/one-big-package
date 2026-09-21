@@ -14,6 +14,7 @@ public static class Rac1Class749Hostile
     public const string PVarPayloadFormat = "rac1-pvar";
     public const int PVarSize = 0x280;
     public const int HealthOffset = 0x20;
+    public const int TargetDestinationOffset = 0x180;
     public const int StatusSentinelOffset = 0x1c4;
     public const int HomePositionOffset = 0x1d0;
     public const int StatusSentinelTwo = 2;
@@ -51,6 +52,7 @@ public static class Rac1Class749Hostile
             new Rac1Class749Key(source.NativeClassId, source.InstanceIndex),
             ReadHealth(pvar),
             pvar.Length,
+            ReadTargetDestination(pvar),
             ReadStatusSentinel(pvar),
             ReadHomePosition(pvar));
     }
@@ -68,6 +70,7 @@ public static class Rac1Class749Hostile
             throw new InvalidDataException(
                 $"R&C1 class-749 instance {source.InstanceIndex} PVar is 0x{pvar.Length:x} bytes, expected 0x{PVarSize:x}.");
         _ = ReadHealth(pvar);
+        _ = ReadTargetDestination(pvar);
         _ = ReadHomePosition(pvar);
         return pvar.ToArray();
     }
@@ -84,11 +87,17 @@ public static class Rac1Class749Hostile
     internal static int ReadStatusSentinel(ReadOnlySpan<byte> pvar) =>
         BinaryPrimitives.ReadInt32LittleEndian(pvar.Slice(StatusSentinelOffset, sizeof(int)));
 
-    internal static Rac1Class749WorldPoint ReadHomePosition(ReadOnlySpan<byte> pvar)
+    internal static Rac1Class749WorldPoint ReadTargetDestination(ReadOnlySpan<byte> pvar) =>
+        ReadWorldPoint(pvar, TargetDestinationOffset);
+
+    internal static Rac1Class749WorldPoint ReadHomePosition(ReadOnlySpan<byte> pvar) =>
+        ReadWorldPoint(pvar, HomePositionOffset);
+
+    private static Rac1Class749WorldPoint ReadWorldPoint(ReadOnlySpan<byte> pvar, int offset)
     {
-        float nativeX = ReadFiniteSingle(pvar, HomePositionOffset);
-        float nativeY = ReadFiniteSingle(pvar, HomePositionOffset + sizeof(float));
-        float nativeZ = ReadFiniteSingle(pvar, HomePositionOffset + 2 * sizeof(float));
+        float nativeX = ReadFiniteSingle(pvar, offset);
+        float nativeY = ReadFiniteSingle(pvar, offset + sizeof(float));
+        float nativeZ = ReadFiniteSingle(pvar, offset + 2 * sizeof(float));
         return new Rac1Class749WorldPoint(nativeX, nativeZ, nativeY);
     }
 
@@ -126,6 +135,7 @@ public sealed record Rac1Class749AuthoredState(
     Rac1Class749Key Key,
     float Health,
     int PVarSize,
+    Rac1Class749WorldPoint TargetDestination,
     int StatusSentinel,
     Rac1Class749WorldPoint HomePosition);
 

@@ -4,14 +4,16 @@ using OBP.Runtime.Gameplay;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Deterministic session for the single recovered class-749 hostile witness.
+/// Deterministic session for the recovered class-749 hostile family.
 /// Entries are keyed by native class plus authored instance index; UID semantics are not used.
 /// </summary>
 public sealed class Rac1Class749HostileSession
 {
     private readonly Dictionary<Rac1Class749Key, Entry> _entries = [];
 
-    public Rac1Class749HostProbe RegisterRepresentative(
+    public int RegisteredCount => _entries.Count;
+
+    public Rac1Class749HostProbe Register(
         RuntimeDynamicObject source,
         RuntimeEntityState current)
     {
@@ -30,6 +32,11 @@ public sealed class Rac1Class749HostileSession
                 $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
         return Snapshot(authored.Key, entry);
     }
+
+    public Rac1Class749HostProbe RegisterRepresentative(
+        RuntimeDynamicObject source,
+        RuntimeEntityState current) =>
+        Register(source, current);
 
     public Rac1Class749HostProbe Probe(RuntimeDynamicObject source)
     {
@@ -228,7 +235,8 @@ public sealed class Rac1Class749HostileSession
             Rac1Class749Hostile.TargetedNativeState =>
             [
                 new Rac1Class749NavigationIntent(
-                    Rac1Class749NavigationIntentKind.PursueRecoveredTarget),
+                    Rac1Class749NavigationIntentKind.PursueRecoveredTarget,
+                    Rac1Class749Hostile.ReadTargetDestination(pvar)),
             ],
             Rac1Class749Hostile.ReturnHomeNativeState =>
             [

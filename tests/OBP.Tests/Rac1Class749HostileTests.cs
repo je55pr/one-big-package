@@ -10,8 +10,14 @@ public sealed class Rac1Class749HostileTests
     [Fact]
     public void ReadsExactRac1PvarAuthorityIncludingStatusAndHome()
     {
+        var targetDestination = new Rac1Class749WorldPoint(4, 5, 6);
         var home = new Rac1Class749WorldPoint(10, 20, 30);
-        var source = Class749(149, health: 1f, statusSentinel: 3, home: home);
+        var source = Class749(
+            149,
+            health: 1f,
+            targetDestination: targetDestination,
+            statusSentinel: 3,
+            home: home);
 
         var authored = Assert.IsType<Rac1Class749AuthoredState>(
             Rac1Class749Hostile.ReadAuthored(source));
@@ -19,6 +25,7 @@ public sealed class Rac1Class749HostileTests
         Assert.Equal(new Rac1Class749Key(749, 149), authored.Key);
         Assert.Equal(1f, authored.Health);
         Assert.Equal(0x280, authored.PVarSize);
+        Assert.Equal(targetDestination, authored.TargetDestination);
         Assert.Equal(3, authored.StatusSentinel);
         Assert.Equal(home, authored.HomePosition);
         Assert.Null(source.NativeUid);
@@ -204,6 +211,28 @@ public sealed class Rac1Class749HostileTests
         Assert.Equal(2f, session.Probe(source).Health);
     }
 
+    [Fact]
+    public void RegistersRecoveredFamilyInstancesAsIndependentRuntimeEntries()
+    {
+        var session = new Rac1Class749HostileSession();
+        var sources = Enumerable.Range(140, 16)
+            .Select(index => Class749(index, health: 1f))
+            .ToArray();
+
+        foreach (var source in sources)
+            session.Register(source, RuntimeEntityState.FromAuthored(source));
+
+        Assert.Equal(16, session.RegisteredCount);
+
+        var promoted = session.Step(sources[0], Facts(3, 0, statusSentinel: 0));
+        Assert.Equal(Rac1Class749Hostile.TargetedNativeState, promoted.NativeState);
+        Assert.Equal(
+            Rac1Class749Hostile.TargetSearchNativeState,
+            session.Probe(sources[1]).NativeState);
+        Assert.Throws<InvalidOperationException>(() =>
+            session.Register(sources[0], RuntimeEntityState.FromAuthored(sources[0])));
+    }
+
     private static Rac1Class749HostileSession Registered(RuntimeDynamicObject source)
     {
         var session = new Rac1Class749HostileSession();
@@ -248,6 +277,7 @@ public sealed class Rac1Class749HostileTests
         int instanceIndex,
         float health,
         int pvarSize = 0x280,
+        Rac1Class749WorldPoint targetDestination = default,
         int statusSentinel = 0,
         Rac1Class749WorldPoint home = default)
     {
@@ -257,6 +287,12 @@ public sealed class Rac1Class749HostileTests
             BinaryPrimitives.WriteInt32LittleEndian(
                 pvar.AsSpan(Rac1Class749Hostile.HealthOffset, sizeof(int)),
                 BitConverter.SingleToInt32Bits(health));
+        }
+        if (pvarSize >= Rac1Class749Hostile.TargetDestinationOffset + 3 * sizeof(float))
+        {
+            WriteSingle(pvar, Rac1Class749Hostile.TargetDestinationOffset, checked((float)targetDestination.X));
+            WriteSingle(pvar, Rac1Class749Hostile.TargetDestinationOffset + sizeof(float), checked((float)targetDestination.Z));
+            WriteSingle(pvar, Rac1Class749Hostile.TargetDestinationOffset + 2 * sizeof(float), checked((float)targetDestination.Y));
         }
         if (pvarSize >= Rac1Class749Hostile.StatusSentinelOffset + sizeof(int))
         {

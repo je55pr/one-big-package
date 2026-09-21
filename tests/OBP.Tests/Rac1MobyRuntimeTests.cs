@@ -56,8 +56,14 @@ public sealed class Rac1MobyRuntimeTests
     [Fact]
     public void Class749ExposesNavigationIntentWithoutEmbeddingHostMotion()
     {
+        var targetDestination = new Rac1Class749WorldPoint(12, 5, -1);
         var home = new Rac1Class749WorldPoint(10, 4, -3);
-        var source = Class749(149, health: 1f, statusSentinel: 0, home: home);
+        var source = Class749(
+            149,
+            health: 1f,
+            targetDestination: targetDestination,
+            statusSentinel: 0,
+            home: home);
         var session = new Rac1Class749HostileSession();
         session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
 
@@ -72,7 +78,7 @@ public sealed class Rac1MobyRuntimeTests
         var pursueIntent = Assert.IsType<Rac1Class749NavigationIntent>(
             Assert.Single(pursue.HostIntents));
         Assert.Equal(Rac1Class749NavigationIntentKind.PursueRecoveredTarget, pursueIntent.Kind);
-        Assert.Null(pursueIntent.Destination);
+        Assert.Equal(targetDestination, pursueIntent.Destination);
         Assert.Empty(pursue.HostEvents);
         var enteredReturn = session.Step(
             source,
@@ -181,6 +187,7 @@ public sealed class Rac1MobyRuntimeTests
     private static RuntimeDynamicObject Class749(
         int instanceIndex,
         float health,
+        Rac1Class749WorldPoint targetDestination = default,
         int statusSentinel = 0,
         Rac1Class749WorldPoint home = default)
     {
@@ -188,6 +195,18 @@ public sealed class Rac1MobyRuntimeTests
         BinaryPrimitives.WriteInt32LittleEndian(
             pvar.AsSpan(Rac1Class749Hostile.HealthOffset, sizeof(int)),
             BitConverter.SingleToInt32Bits(health));
+        WriteSingle(
+            pvar,
+            Rac1Class749Hostile.TargetDestinationOffset,
+            checked((float)targetDestination.X));
+        WriteSingle(
+            pvar,
+            Rac1Class749Hostile.TargetDestinationOffset + sizeof(float),
+            checked((float)targetDestination.Z));
+        WriteSingle(
+            pvar,
+            Rac1Class749Hostile.TargetDestinationOffset + 2 * sizeof(float),
+            checked((float)targetDestination.Y));
         BinaryPrimitives.WriteInt32LittleEndian(
             pvar.AsSpan(Rac1Class749Hostile.StatusSentinelOffset, sizeof(int)),
             statusSentinel);

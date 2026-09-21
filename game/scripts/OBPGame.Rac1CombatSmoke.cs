@@ -53,9 +53,14 @@ public partial class OBPGame
                 "bolt collection");
             GD.Print($"[rac1-smoke] bolt collection PASS; total={_rac1BoltCrates.CollectedBolts}");
 
-            if (_rac1HostileNode is not { } hostile || _rac1HostileProbe is null ||
-                !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
-                throw new InvalidOperationException("Representative live class-749 hostile is unavailable.");
+            if (_world.LevelId == 0 && _rac1HostileNodes.Count != 16)
+                throw new InvalidOperationException(
+                    $"Veldin class-749 family count was {_rac1HostileNodes.Count}, expected 16.");
+            if (!_rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out var hostile) ||
+                !_rac1HostileProbes.ContainsKey(Rac1WitnessHostileInstance) ||
+                !IsInstanceValid(hostile.Root) ||
+                !hostile.Root.Visible)
+                throw new InvalidOperationException("Class-749 witness instance 149 is unavailable.");
 
             Vector3 hostileForward = -hostile.Root.GlobalTransform.Basis.Z;
             hostileForward.Y = 0f;
@@ -64,17 +69,21 @@ public partial class OBPGame
             hostileForward = hostileForward.Normalized();
             Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
             await Rac1SmokeWaitAsync(
-                () => _rac1Nanotech.Probe().Nanotech == 3,
+                () => _rac1Nanotech.Probe().Nanotech < 4,
                 180,
                 "class-749 incoming damage");
-            GD.Print("[rac1-smoke] class-749 incoming damage PASS; Nanotech=3/4");
+            GD.Print($"[rac1-smoke] class-749 incoming damage PASS; Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
 
             OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged);
             Vector3 bombPose = hostile.Root.GlobalPosition - hostileForward * 4f;
             Rac1SmokePlaceFacing(bombPose, hostileForward);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
-                () => _rac1HostileProbe is { Health: 0f } && !hostile.Root.Visible,
+                () => _rac1HostileProbes.TryGetValue(
+                        Rac1WitnessHostileInstance,
+                        out var witnessProbe) &&
+                    witnessProbe.Health == 0f &&
+                    !hostile.Root.Visible,
                 180,
                 "Bomb Glove projectile impact");
             if (_rac1Weapons.FirstRangedAmmo != 5)
