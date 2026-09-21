@@ -57,6 +57,31 @@ public sealed class Rac1VeldinSpawnTests
     }
 
     [SkippableFact]
+    public void RetailAllLevels_PlayerStartProviderUsesAuthoredClassZeroTransform()
+    {
+        using var reader = OpenRetail();
+        foreach (var level in Rac1DiscIndex.Read(reader).Levels.OrderBy(level => level.LevelId))
+        {
+            byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+            var ratchet = Assert.Single(
+                Rac1Instances.Parse(gameplay).MobyInstances,
+                moby => moby.OClass == Rac1PlayerStartProvider.RatchetClass);
+
+            Rac1PlayerStart start =
+                Rac1PlayerStartProvider.Instance.Load(reader, level.LevelId);
+
+            Assert.Equal(level.LevelId, start.NativeLevelId);
+            Assert.Equal(Rac1PlayerStartProvider.RatchetInstanceIndex, start.InstanceIndex);
+            Assert.Equal(ratchet.Position, start.NativePosition);
+            Assert.Equal(ratchet.Rotation, start.NativeRotation);
+            Assert.Equal(0, BitConverter.ToInt32(ratchet.RawRecord, 0x08));
+            Assert.Equal((double)ratchet.Position.X, start.Transform.Matrix[12], 6);
+            Assert.Equal((double)ratchet.Position.Z, start.Transform.Matrix[13], 6);
+            Assert.Equal((double)ratchet.Position.Y, start.Transform.Matrix[14], 6);
+        }
+    }
+
+    [SkippableFact]
     public void RetailVeldin_PlayerStartProviderUsesAuthoredRatchetTransform()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

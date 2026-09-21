@@ -1,0 +1,564 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "runtime": {
+    "savestateFile": "SCUS-97199 (CE4933D0).08.p2s",
+    "savestateSha256": "e0d954575ab62e481605a75697d782d8aef7d7dbdc011c3a675670ed7a15e863",
+    "openingCampaignState": {
+      "currentLevel": 0,
+      "visitedPlanets": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "galacticMap": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "perLevelVisited": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "entrySeed": {
+      "levelInitRoutine": "0x00244110..0x00245c27",
+      "mobyPopulationCall": "0x00244b08",
+      "mobyPopulationRoutine": "0x00241940..0x00243d37",
+      "gameplayMobyBlockPointerLoad": "0x00242828",
+      "liveMobyInitializerCall": "0x00242a7c",
+      "liveMobyInitializer": "0x0024e930",
+      "positionCopies": [
+        "0x00242ad8",
+        "0x00242ae0",
+        "0x00242aec"
+      ],
+      "rotationCopies": [
+        "0x00242af4",
+        "0x00242afc",
+        "0x00242b08"
+      ],
+      "recordAdvance": "0x00242c48",
+      "campaignFieldDirectRefs": {
+        "currentLevel": {
+          "levelInit": [],
+          "mobyPopulation": []
+        },
+        "visitedPlanets": {
+          "levelInit": [],
+          "mobyPopulation": []
+        },
+        "galacticMap": {
+          "levelInit": [],
+          "mobyPopulation": []
+        },
+        "perLevelVisited": {
+          "levelInit": [],
+          "mobyPopulation": []
+        }
+      }
+    },
+    "saveDescriptors": {
+      "game": [
+        {
+          "descriptorAddress": "0x001845c0",
+          "runtimeAddress": "0x0015ed84",
+          "size": 4,
+          "blockId": 0
+        },
+        {
+          "descriptorAddress": "0x001845d0",
+          "runtimeAddress": "0x0015ed98",
+          "size": 4,
+          "blockId": 1
+        },
+        {
+          "descriptorAddress": "0x001845e0",
+          "runtimeAddress": "0x0015ee20",
+          "size": 4,
+          "blockId": 2
+        },
+        {
+          "descriptorAddress": "0x001845f0",
+          "runtimeAddress": "0x0015ee24",
+          "size": 4,
+          "blockId": 3
+        },
+        {
+          "descriptorAddress": "0x00184600",
+          "runtimeAddress": "0x0015ee98",
+          "size": 8,
+          "blockId": 4
+        },
+        {
+          "descriptorAddress": "0x00184610",
+          "runtimeAddress": "0x0013d388",
+          "size": 128,
+          "blockId": 5
+        },
+        {
+          "descriptorAddress": "0x00184620",
+          "runtimeAddress": "0x0015edb0",
+          "size": 12,
+          "blockId": 7
+        },
+        {
+          "descriptorAddress": "0x00184630",
+          "runtimeAddress": "0x0013d408",
+          "size": 32,
+          "blockId": 8
+        },
+        {
+          "descriptorAddress": "0x00184640",
+          "runtimeAddress": "0x0013d428",
+          "size": 148,
+          "blockId": 9
+        },
+        {
+          "descriptorAddress": "0x00184650",
+          "runtimeAddress": "0x0013d4c0",
+          "size": 37,
+          "blockId": 10
+        },
+        {
+          "descriptorAddress": "0x00184660",
+          "runtimeAddress": "0x0013d4e8",
+          "size": 37,
+          "blockId": 11
+        },
+        {
+          "descriptorAddress": "0x00184670",
+          "runtimeAddress": "0x0015edd0",
+          "size": 12,
+          "blockId": 12
+        },
+        {
+          "descriptorAddress": "0x00184680",
+          "runtimeAddress": "0x00141ea0",
+          "size": 32,
+          "blockId": 13
+        },
+        {
+          "descriptorAddress": "0x00184690",
+          "runtimeAddress": "0x0015eda0",
+          "size": 4,
+          "blockId": 19
+        },
+        {
+          "descriptorAddress": "0x001846a0",
+          "runtimeAddress": "0x0013dd40",
+          "size": 20,
+          "blockId": 14
+        },
+        {
+          "descriptorAddress": "0x001846b0",
+          "runtimeAddress": "0x0013d510",
+          "size": 80,
+          "blockId": 20
+        },
+        {
+          "descriptorAddress": "0x001846c0",
+          "runtimeAddress": "0x0013d5b0",
+          "size": 1936,
+          "blockId": 15
+        },
+        {
+          "descriptorAddress": "0x001846d0",
+          "runtimeAddress": "0x00141968",
+          "size": 1184,
+          "blockId": 16
+        },
+        {
+          "descriptorAddress": "0x001846e0",
+          "runtimeAddress": "0x00141848",
+          "size": 288,
+          "blockId": 17
+        },
+        {
+          "descriptorAddress": "0x001846f0",
+          "runtimeAddress": "0x00141720",
+          "size": 296,
+          "blockId": 18
+        },
+        {
+          "descriptorAddress": "0x00184700",
+          "runtimeAddress": "0x0015ed8c",
+          "size": 4,
+          "blockId": 21
+        },
+        {
+          "descriptorAddress": "0x00184710",
+          "runtimeAddress": "0x0015ed90",
+          "size": 4,
+          "blockId": 22
+        },
+        {
+          "descriptorAddress": "0x00184720",
+          "runtimeAddress": "0x0015ed94",
+          "size": 4,
+          "blockId": 23
+        },
+        {
+          "descriptorAddress": "0x00184730",
+          "runtimeAddress": "0x0015ed9c",
+          "size": 4,
+          "blockId": 24
+        },
+        {
+          "descriptorAddress": "0x00184740",
+          "runtimeAddress": "0x0015ede0",
+          "size": 4,
+          "blockId": 25
+        },
+        {
+          "descriptorAddress": "0x00184750",
+          "runtimeAddress": "0x0015eddc",
+          "size": 4,
+          "blockId": 26
+        },
+        {
+          "descriptorAddress": "0x00184760",
+          "runtimeAddress": "0x0015ede4",
+          "size": 4,
+          "blockId": 27
+        },
+        {
+          "descriptorAddress": "0x00184770",
+          "runtimeAddress": "0x0015ee1c",
+          "size": 1,
+          "blockId": 28
+        },
+        {
+          "descriptorAddress": "0x00184780",
+          "runtimeAddress": "0x0015ee1d",
+          "size": 1,
+          "blockId": 29
+        },
+        {
+          "descriptorAddress": "0x00184790",
+          "runtimeAddress": "0x0013e520",
+          "size": 40,
+          "blockId": 30
+        },
+        {
+          "descriptorAddress": "0x001847a0",
+          "runtimeAddress": "0x0015eea0",
+          "size": 4,
+          "blockId": 31
+        },
+        {
+          "descriptorAddress": "0x001847b0",
+          "runtimeAddress": "0x00141660",
+          "size": 28,
+          "blockId": 32
+        },
+        {
+          "descriptorAddress": "0x001847c0",
+          "runtimeAddress": "0x0015ee40",
+          "size": 1,
+          "blockId": 33
+        },
+        {
+          "descriptorAddress": "0x001847d0",
+          "runtimeAddress": "0x0015ede8",
+          "size": 4,
+          "blockId": 34
+        },
+        {
+          "descriptorAddress": "0x001847e0",
+          "runtimeAddress": "0x0015edec",
+          "size": 4,
+          "blockId": 35
+        },
+        {
+          "descriptorAddress": "0x001847f0",
+          "runtimeAddress": "0x0015edf0",
+          "size": 4,
+          "blockId": 36
+        },
+        {
+          "descriptorAddress": "0x00184800",
+          "runtimeAddress": "0x0015edc0",
+          "size": 12,
+          "blockId": 37
+        },
+        {
+          "descriptorAddress": "0x00184810",
+          "runtimeAddress": "0x0013dd70",
+          "size": 148,
+          "blockId": 1000
+        },
+        {
+          "descriptorAddress": "0x00184820",
+          "runtimeAddress": "0x0013de08",
+          "size": 148,
+          "blockId": 1001
+        },
+        {
+          "descriptorAddress": "0x00184830",
+          "runtimeAddress": "0x0013dea0",
+          "size": 148,
+          "blockId": 1002
+        },
+        {
+          "descriptorAddress": "0x00184840",
+          "runtimeAddress": "0x0015eea4",
+          "size": 4,
+          "blockId": 1003
+        },
+        {
+          "descriptorAddress": "0x00184850",
+          "runtimeAddress": "0x0015eea8",
+          "size": 4,
+          "blockId": 1004
+        },
+        {
+          "descriptorAddress": "0x00184860",
+          "runtimeAddress": "0x0015eeac",
+          "size": 4,
+          "blockId": 1005
+        },
+        {
+          "descriptorAddress": "0x00184870",
+          "runtimeAddress": "0x0015ee28",
+          "size": 4,
+          "blockId": 1008
+        },
+        {
+          "descriptorAddress": "0x00184880",
+          "runtimeAddress": "0x0015ee2c",
+          "size": 4,
+          "blockId": 1009
+        },
+        {
+          "descriptorAddress": "0x00184890",
+          "runtimeAddress": "0x00141e08",
+          "size": 150,
+          "blockId": 1010
+        },
+        {
+          "descriptorAddress": "0x001848a0",
+          "runtimeAddress": "0x0015ee30",
+          "size": 4,
+          "blockId": 1011
+        }
+      ],
+      "level": [
+        {
+          "descriptorAddress": "0x001848c0",
+          "runtimeAddress": "0x0013dd58",
+          "size": 1,
+          "blockId": 3001
+        },
+        {
+          "descriptorAddress": "0x001848d0",
+          "runtimeAddress": "0x00141ec0",
+          "size": 2048,
+          "blockId": 3002
+        },
+        {
+          "descriptorAddress": "0x001848e0",
+          "runtimeAddress": "0x0014bec0",
+          "size": 4,
+          "blockId": 3003
+        },
+        {
+          "descriptorAddress": "0x001848f0",
+          "runtimeAddress": "0x0014c050",
+          "size": 16,
+          "blockId": 3004
+        },
+        {
+          "descriptorAddress": "0x00184900",
+          "runtimeAddress": "0x0014c190",
+          "size": 256,
+          "blockId": 3005
+        },
+        {
+          "descriptorAddress": "0x00184910",
+          "runtimeAddress": "0x0014d590",
+          "size": 256,
+          "blockId": 3006
+        },
+        {
+          "descriptorAddress": "0x00184920",
+          "runtimeAddress": "0x00141680",
+          "size": 8,
+          "blockId": 3007
+        },
+        {
+          "descriptorAddress": "0x00184930",
+          "runtimeAddress": "0x0014bf10",
+          "size": 16,
+          "blockId": 3008
+        },
+        {
+          "descriptorAddress": "0x00184940",
+          "runtimeAddress": "0x0013df38",
+          "size": 4,
+          "blockId": 4000
+        },
+        {
+          "descriptorAddress": "0x00184950",
+          "runtimeAddress": "0x0013df88",
+          "size": 4,
+          "blockId": 4001
+        },
+        {
+          "descriptorAddress": "0x00184960",
+          "runtimeAddress": "0x0013dfd8",
+          "size": 4,
+          "blockId": 4002
+        }
+      ],
+      "transientTravelDescriptorMatches": {
+        "selectedDestination": [],
+        "pendingDestination": [],
+        "travelActive": []
+      }
+    }
+  },
+  "notes": [
+    "No ISO, executable, EE-memory, savestate, or memory-card payload bytes are emitted.",
+    "The ordinary level-init path calls the same authored-Moby population routine before gameplay.",
+    "That population path copies each emitted authored Moby transform into live storage and has no direct references to the four recovered campaign/progress fields.",
+    "This proves the authored class-0 transform is the default player seed on a target-level load; it does not prove that a later checkpoint or level script cannot relocate Ratchet.",
+    "Selected destination, pending destination, and transition-active are transient travel/session state and have no game-save descriptor in the scanned retail descriptor table.",
+    "Only block 3001 in the per-level descriptor family is semantically promoted here as the recovered 0/1/2 visit state; other level blocks remain opaque."
+  ],
+  "memoryCard": {
+    "memoryCardSha256": "e3c403570266a8cea3a397f626331063a7fe781d6c042cdbd2c3bc858665deba",
+    "slotName": "save0.bin",
+    "slotSha256": "7ab4e16a917b4b8ae53de917f1392b26add43e6acc2541193dc15699d3e435f2",
+    "currentLevel": 2,
+    "visitedPlanets": [
+      0,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "galacticMap": [
+      1,
+      2,
+      3,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "perLevelVisited": [
+      2,
+      2,
+      1,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "smallestSpecificRevisit": [
+      2,
+      1,
+      2
+    ]
+  }
+}

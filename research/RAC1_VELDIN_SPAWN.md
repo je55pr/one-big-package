@@ -38,9 +38,16 @@ The captured live pool starts at `0x01845E80`; emitted slot `0` there is class `
 
 Do not use `RuntimeWorld.Ship` as Ratchet's start on RAC1. The current shared runtime contract documents that field as the native ship park point, and retail Veldin proves the ship tuple is not the player start.
 
-`OBP.RAC1.Player.Rac1PlayerStartProvider` now owns the strict RAC1-local rule supported by the retail dataflow: select the single authored class-0 placement, require authored instance index `0`, and convert its native Z-up placement transform into an OBP Y-up `RuntimeObjectTransform`. It does not mutate or reinterpret `RuntimeWorld.Ship`.
+`OBP.RAC1.Player.Rac1PlayerStartProvider` owns the strict RAC1-local rule supported by the retail dataflow: select the single authored class-0 placement, require authored instance index `0`, and convert its native Z-up placement transform into an OBP Y-up `RuntimeObjectTransform`. It does not mutate or reinterpret `RuntimeWorld.Ship`.
 
-Passing this distinct start through the loaded world/game path still requires an explicit player-start contract or equivalent game-layer wiring outside this task's write lease. That is the manager follow-up; there is deliberately no ship fallback.
+That distinct start now flows through `RuntimeWorld.PlayerStart` /
+`PreferredPlayerStart` into the ordinary Godot player spawn. Follow-up
+level-entry archaeology retained in `research/RAC1_CAMPAIGN_TRAVEL.md` proves
+the common target-level population path seeds authored Moby transforms without
+directly consulting the recovered campaign fields. Class 0 is therefore the
+default seed for restored-current, first-travel, and revisit loads. A later
+checkpoint or level-script relocation remains a separate unrecovered override;
+there is deliberately still no ship fallback.
 
 ## Reproduction
 

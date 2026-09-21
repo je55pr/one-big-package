@@ -14,9 +14,12 @@ public sealed record Rac1PlayerStart(
     RuntimeObjectTransform Transform);
 
 /// <summary>
-/// Resolves the dedicated R&amp;C1 player start without using the level-settings ship tuple.
-/// Retail Veldin overlay archaeology proves that authored Moby instance 0 / class 0 is
-/// populated into live Ratchet and that its authored transform seeds the live transform.
+/// Resolves the dedicated R&amp;C1 default player-entry seed without using the
+/// level-settings ship tuple. Retail level-init archaeology proves that the common
+/// authored-Moby population path copies each target-level transform into live storage
+/// without directly consulting CurrentLevel, destination discovery, or per-level visit
+/// state. Every retail level 0..18 has exactly one class-0 placement at instance 0.
+/// A later checkpoint/script relocation is a separate, currently unrecovered contract.
 /// </summary>
 public sealed class Rac1PlayerStartProvider
 {
