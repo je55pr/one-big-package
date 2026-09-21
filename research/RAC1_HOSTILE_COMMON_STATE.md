@@ -71,6 +71,19 @@ The fixed live witness also rules out interpreting `+0x1c4` as a direct player-d
 
 Accordingly, the **consumer** is recovered but the writer and semantic name are not. No universal “aggro radius” is promoted. The attack range (`< 2.0`), attack-retention boundary (`<= 1.5`), facing threshold, and return-home range (`< 1.5`) remain class-749 behavior. A future hostile class must independently match these structures before sharing them.
 
+## Authored placement scope
+
+A full import of all 19 native levels finds class 749 only in two authored worlds:
+LEVEL0 has 16 placements and LEVEL18 has 90. The other 17 levels have none.
+All 106 imported instances carry the exact `0x280` class-749 PVar contract,
+with authored health `1.0` and initial `+0x1c4` value `0`.
+
+This census is retained as a retail assertion in
+`Rac1Class749HostileRetailTests.AllNativeLevelsRegisterOnlyAuthoredClass749Placements`.
+It does not infer a mission gate, spawn condition, or planet label for LEVEL18.
+The live host therefore activates class-749 behavior only for placements that
+already exist in the imported world and pass the recovered PVar contract.
+
 ## Reusable boundary
 
 The implementation boundary is now:

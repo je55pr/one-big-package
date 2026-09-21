@@ -32,6 +32,43 @@ public sealed class Rac1Class749HostileRetailTests
     }
 
     [SkippableFact]
+    public void AllNativeLevelsRegisterOnlyAuthoredClass749Placements()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+
+        for (int levelId = 0; levelId < 19; levelId++)
+        {
+            var world = Rac1WorldImport.Build(reader, levelId);
+            var class749 = world.DynamicObjects!
+                .Where(o => o.NativeClassId == Rac1Class749Hostile.NativeClassId)
+                .OrderBy(o => o.InstanceIndex)
+                .ToArray();
+            int expectedCount = levelId switch
+            {
+                0 => 16,
+                18 => 90,
+                _ => 0,
+            };
+            Assert.Equal(expectedCount, class749.Length);
+
+            var session = new Rac1Class749HostileSession();
+            foreach (var source in class749)
+            {
+                var authored = Assert.IsType<Rac1Class749AuthoredState>(
+                    Rac1Class749Hostile.ReadAuthored(source));
+                Assert.Equal(1f, authored.Health);
+                Assert.Equal(0, authored.StatusSentinel);
+                Assert.Equal(Rac1Class749Hostile.PVarSize, authored.PVarSize);
+                session.Register(source, RuntimeEntityState.FromAuthored(source));
+            }
+
+            Assert.Equal(class749.Length, session.RegisteredCount);
+        }
+    }
+
+    [SkippableFact]
     public void VeldinInstance149ReplaysRepresentativeWitness()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

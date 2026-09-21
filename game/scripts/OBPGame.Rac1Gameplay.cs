@@ -135,6 +135,28 @@ public partial class OBPGame
                  $"{_rac1HostileNodes.Count} class-749 hostiles ({rejectedHostiles} rejected)");
     }
 
+    private bool TryGetRac1RepresentativeHostile(
+        out RuntimeWorldScene.DynamicObjectNode? node,
+        out Rac1Class749HostProbe? probe)
+    {
+        if (_rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out node) &&
+            _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out probe))
+            return true;
+
+        foreach (var pair in _rac1HostileNodes.OrderBy(pair => pair.Key))
+        {
+            if (_rac1HostileProbes.TryGetValue(pair.Key, out probe))
+            {
+                node = pair.Value;
+                return true;
+            }
+        }
+
+        node = null;
+        probe = null;
+        return false;
+    }
+
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
@@ -677,8 +699,9 @@ public partial class OBPGame
 
         int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
             IsInstanceValid(hostile.Root) && hostile.Root.Visible);
-        string hostile = _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var witness)
-            ? $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active); witness i{Rac1WitnessHostileInstance} state {witness.NativeState} health {witness.Health:0.###}"
+        string hostile = TryGetRac1RepresentativeHostile(out var representativeNode, out var representativeProbe) &&
+            representativeNode is not null && representativeProbe is not null
+            ? $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active); representative i{representativeNode.Source.InstanceIndex} state {representativeProbe.NativeState} health {representativeProbe.Health:0.###}"
             : $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active)";
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
@@ -696,8 +719,7 @@ public partial class OBPGame
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return null;
-        _rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out var witnessNode);
-        _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var witnessProbe);
+        TryGetRac1RepresentativeHostile(out var representativeNode, out var representativeProbe);
         int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
             IsInstanceValid(hostile.Root) && hostile.Root.Visible);
         return new Rac1GameplaySnapshot(
@@ -707,12 +729,12 @@ public partial class OBPGame
             CollectedBolts: _rac1BoltCrates.CollectedBolts,
             HostileCount: _rac1HostileProbes.Count,
             ActiveHostiles: activeHostiles,
-            HostileInstance: witnessNode?.Source.InstanceIndex,
-            HostileState: witnessProbe?.NativeState,
-            HostileHealth: witnessProbe?.Health,
-            HostileVisible: witnessNode is not null &&
-                IsInstanceValid(witnessNode.Root) &&
-                witnessNode.Root.Visible,
+            HostileInstance: representativeNode?.Source.InstanceIndex,
+            HostileState: representativeProbe?.NativeState,
+            HostileHealth: representativeProbe?.Health,
+            HostileVisible: representativeNode is not null &&
+                IsInstanceValid(representativeNode.Root) &&
+                representativeNode.Root.Visible,
             Nanotech: _rac1Nanotech.Probe().Nanotech,
             LifeState: _rac1Nanotech.Probe().LifeState,
             EquippedWeapon: _rac1Weapons.Equipped,
