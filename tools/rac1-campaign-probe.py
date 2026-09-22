@@ -38,12 +38,25 @@ LEVEL_VISITED_DESCRIPTOR = 0x001848C0
 ADMISSION_ROUTINE = 0x002607D0
 TRANSITION_CORE = 0x0024D430
 TRAVEL_ROUTINE = 0x0028ED58
-SCRIPT_ADMISSION_CALL = 0x00283340
-DISCOVERY_EVENT_SUBTRACT = 0x002832F4
-DISCOVERY_EVENT_RANGE = 0x00283330
-FIRST_DISCOVERY_EVENT = 0x25
-LAST_DISCOVERY_EVENT = 0x36
-DISCOVERY_EVENT_OFFSET = 0x24
+
+CONTROLLER_CODE_ROUTER = 0x002831C0
+PAD_STATE_BASE = 0x0013C940
+CONTROLLER_CODE_BUFFER = 0x001BA4A8
+CONTROLLER_CODE_TABLE = 0x001B9BA0
+CODE_ROUTER_ADMISSION_CALL = 0x00283340
+CODE_ROUTER_EVENT_SUBTRACT = 0x002832F4
+CODE_ROUTER_EVENT_RANGE = 0x00283330
+FIRST_CODE_ROUTER_EVENT = 0x25
+LAST_CODE_ROUTER_EVENT = 0x36
+CODE_ROUTER_EVENT_OFFSET = 0x24
+CODE_ROUTER_SERIALIZED_BLOCKS = (5, 8, 10, 11)
+
+MISSION_OBJECT_CLASS = 750
+MISSION_OBJECT_UPDATE = 0x002D5DE8
+MISSION_OBJECT_STATE_TABLE = 0x001E9F60
+MISSION_OBJECT_STATE_COUNT = 12
+MISSION_OBJECT_DESTINATION_PVAR_OFFSET = 0x04
+MISSION_OBJECT_STATE8_ADMISSION_CALL = 0x002D6A20
 INITIAL_CURRENT_LEVEL_LOAD = 0x0023D160
 INITIAL_CURRENT_LEVEL_ZERO_SKIP = 0x0023D164
 INITIAL_ADMISSION_CALL = 0x0023D16C
@@ -189,18 +202,27 @@ def expect_jal(memory, address, target, label):
         raise RuntimeError(f"{label} target mismatch: 0x{resolved:08x} != 0x{target:08x}")
 
 
-def verify_destination_discovery(memory):
-    # a0 = dispatcher value - 0x24
-    expect_i(memory, DISCOVERY_EVENT_SUBTRACT, 9, 7, 4, -DISCOVERY_EVENT_OFFSET, "discovery subtract")
-    # (dispatcher value - 0x25) < 0x12, i.e. inclusive 0x25..0x36.
-    expect_i(memory, DISCOVERY_EVENT_RANGE, 9, 7, 2, -FIRST_DISCOVERY_EVENT, "discovery range subtract")
-    expect_i(memory, DISCOVERY_EVENT_RANGE + 4, 11, 2, 2, 0x12, "discovery range width")
-    expect_jal(memory, SCRIPT_ADMISSION_CALL, ADMISSION_ROUTINE, "script discovery admission")
+def verify_campaign_admission_paths(memory):
+    # This arm belongs to the controller-code router at 0x002831c0, not to an
+    # ordinary progression dispatcher. Its action values 0x25..0x36 map to
+    # destination ids 1..18 and call the shared admission primitive.
+    expect_i(memory, CODE_ROUTER_EVENT_SUBTRACT, 9, 7, 4, -CODE_ROUTER_EVENT_OFFSET, "code-router destination subtract")
+    expect_i(memory, CODE_ROUTER_EVENT_RANGE, 9, 7, 2, -FIRST_CODE_ROUTER_EVENT, "code-router range subtract")
+    expect_i(memory, CODE_ROUTER_EVENT_RANGE + 4, 11, 2, 2, 0x12, "code-router range width")
+    expect_jal(memory, CODE_ROUTER_ADMISSION_CALL, ADMISSION_ROUTINE, "code-router admission")
 
     # Startup loads CurrentLevel, skips zero, and otherwise feeds it to the same primitive.
     expect_i(memory, INITIAL_CURRENT_LEVEL_LOAD, 35, 4, 4, -0x127C, "startup CurrentLevel load")
     expect_i(memory, INITIAL_CURRENT_LEVEL_ZERO_SKIP, 4, 4, 0, 5, "startup zero-level skip")
     expect_jal(memory, INITIAL_ADMISSION_CALL, ADMISSION_ROUTINE, "startup admission")
+
+    # Compiled class-750 state 8 independently calls the same primitive.
+    expect_jal(
+        memory,
+        MISSION_OBJECT_STATE8_ADMISSION_CALL,
+        ADMISSION_ROUTINE,
+        "class-750 state-8 admission",
+    )
 
     # Completion is a separate per-level state-2 store, not destination discovery.
     expect_i(memory, COMPLETION_VALUE_SETUP, 9, 0, 3, 2, "completion state value")
@@ -268,7 +290,7 @@ def runtime_report(savestate, zstd_dll):
     if level_descriptor["blockId"] != 3001:
         raise RuntimeError("per-level descriptor at 0x001848c0 is not block 3001")
 
-    verify_destination_discovery(memory)
+    verify_campaign_admission_paths(memory)
     verify_planet_travel(memory)
     level_table = [
         {
@@ -312,17 +334,35 @@ def runtime_report(savestate, zstd_dll):
         "code": {
             "admissionRoutine": f"0x{ADMISSION_ROUTINE:08x}",
             "admissionCallers": [f"0x{x:08x}" for x in jal_callers(memory, ADMISSION_ROUTINE)],
-            "destinationDiscovery": {
-                "eventSubtractAddress": f"0x{DISCOVERY_EVENT_SUBTRACT:08x}",
-                "eventRangeAddress": f"0x{DISCOVERY_EVENT_RANGE:08x}",
-                "admissionCall": f"0x{SCRIPT_ADMISSION_CALL:08x}",
-                "firstEvent": FIRST_DISCOVERY_EVENT,
-                "lastEvent": LAST_DISCOVERY_EVENT,
-                "destinationOffset": DISCOVERY_EVENT_OFFSET,
+            "controllerCodeRouter": {
+                "routine": f"0x{CONTROLLER_CODE_ROUTER:08x}",
+                "padStateBase": f"0x{PAD_STATE_BASE:08x}",
+                "inputBuffer": f"0x{CONTROLLER_CODE_BUFFER:08x}",
+                "inputSymbolCount": 20,
+                "matchTable": f"0x{CONTROLLER_CODE_TABLE:08x}",
+                "eventSubtractAddress": f"0x{CODE_ROUTER_EVENT_SUBTRACT:08x}",
+                "eventRangeAddress": f"0x{CODE_ROUTER_EVENT_RANGE:08x}",
+                "admissionCall": f"0x{CODE_ROUTER_ADMISSION_CALL:08x}",
+                "firstEvent": FIRST_CODE_ROUTER_EVENT,
+                "lastEvent": LAST_CODE_ROUTER_EVENT,
+                "destinationOffset": CODE_ROUTER_EVENT_OFFSET,
+                "opaqueSerializedBlockIds": list(CODE_ROUTER_SERIALIZED_BLOCKS),
                 "events": [
-                    {"event": event, "destination": event - DISCOVERY_EVENT_OFFSET}
-                    for event in range(FIRST_DISCOVERY_EVENT, LAST_DISCOVERY_EVENT + 1)
+                    {"event": event, "destination": event - CODE_ROUTER_EVENT_OFFSET}
+                    for event in range(FIRST_CODE_ROUTER_EVENT, LAST_CODE_ROUTER_EVENT + 1)
                 ],
+            },
+            "compiledMissionObject": {
+                "classId": MISSION_OBJECT_CLASS,
+                "classIdHex": f"0x{MISSION_OBJECT_CLASS:x}",
+                "updateRoutine": f"0x{MISSION_OBJECT_UPDATE:08x}",
+                "stateTable": f"0x{MISSION_OBJECT_STATE_TABLE:08x}",
+                "stateCount": MISSION_OBJECT_STATE_COUNT,
+                "destinationPVarOffset": MISSION_OBJECT_DESTINATION_PVAR_OFFSET,
+                "visitedPlanets": f"0x{VISITED_PLANETS:08x}",
+                "conditions": ["VisitedPlanets[d]", "player distance", "player state"],
+                "state8AdmissionCall": f"0x{MISSION_OBJECT_STATE8_ADMISSION_CALL:08x}",
+                "admissionRoutine": f"0x{ADMISSION_ROUTINE:08x}",
             },
             "initialAdmission": {
                 "currentLevelLoad": f"0x{INITIAL_CURRENT_LEVEL_LOAD:08x}",
@@ -474,11 +514,14 @@ def main():
         parser.error("--zstd-dll is required with --savestate")
 
     report = {
-        "schema": 1,
+        "schema": 2,
         "authority": AUTHORITY,
         "notes": [
             "No ISO, executable, EE-memory, savestate, or memory-card payload bytes are emitted.",
             "Runtime descriptors and code references are read from the authorized SCUS-97199 savestate.",
+            "Routine 0x002831c0 is retained as controller code-entry/unlock routing, not ordinary campaign progression dispatch.",
+            "Class 750 (0x2ee) is retained as compiled Moby logic that can call destination admission from state 8.",
+            "Serialized blocks 5, 8, 10, and 11 remain numerically identified where their higher-level meanings are unresolved.",
             "The recovered loader bridge indexes the retail 19-pair disc level table directly by campaign destination id.",
             "The pending target slot is only authoritative while the separately recovered travel-active flag is set.",
         ],

@@ -42,28 +42,50 @@ public sealed class Rac1CampaignRetailWitnessTests
     }
 
     [Fact]
-    public void WitnessFreezesDestinationDiscoveryDispatcherAndOpeningSeparation()
+    public void WitnessSeparatesControllerCodeRoutingFromCompiledMissionAdmission()
     {
         JsonElement runtime = Witness().GetProperty("runtime");
         JsonElement opening = runtime.GetProperty("openingState");
         JsonElement code = runtime.GetProperty("code");
-        JsonElement discovery = code.GetProperty("destinationDiscovery");
+        JsonElement router = code.GetProperty("controllerCodeRouter");
+        JsonElement missionObject = code.GetProperty("compiledMissionObject");
 
         Assert.Equal(0, opening.GetProperty("currentLevel").GetInt32());
         Assert.All(opening.GetProperty("visitedPlanets").EnumerateArray(), value => Assert.Equal(0, value.GetInt32()));
         Assert.All(opening.GetProperty("galacticMap").EnumerateArray(), value => Assert.Equal(0, value.GetInt32()));
         Assert.Equal(1, opening.GetProperty("perLevelState")[0].GetInt32());
 
-        Assert.Equal(0x25, discovery.GetProperty("firstEvent").GetInt32());
-        Assert.Equal(0x36, discovery.GetProperty("lastEvent").GetInt32());
-        Assert.Equal(0x24, discovery.GetProperty("destinationOffset").GetInt32());
-        JsonElement[] events = discovery.GetProperty("events").EnumerateArray().ToArray();
+        Assert.Equal("0x002831c0", router.GetProperty("routine").GetString());
+        Assert.Equal("0x0013c940", router.GetProperty("padStateBase").GetString());
+        Assert.Equal("0x001ba4a8", router.GetProperty("inputBuffer").GetString());
+        Assert.Equal(20, router.GetProperty("inputSymbolCount").GetInt32());
+        Assert.Equal("0x001b9ba0", router.GetProperty("matchTable").GetString());
+        Assert.Equal(new[] { 5, 8, 10, 11 }, router.GetProperty("opaqueSerializedBlockIds")
+            .EnumerateArray().Select(value => value.GetInt32()).ToArray());
+        Assert.Equal(0x25, router.GetProperty("firstEvent").GetInt32());
+        Assert.Equal(0x36, router.GetProperty("lastEvent").GetInt32());
+        Assert.Equal(0x24, router.GetProperty("destinationOffset").GetInt32());
+        JsonElement[] events = router.GetProperty("events").EnumerateArray().ToArray();
         Assert.Equal(18, events.Length);
         for (int index = 0; index < events.Length; index++)
         {
             Assert.Equal(0x25 + index, events[index].GetProperty("event").GetInt32());
             Assert.Equal(1 + index, events[index].GetProperty("destination").GetInt32());
         }
+
+        Assert.Equal(750, missionObject.GetProperty("classId").GetInt32());
+        Assert.Equal("0x2ee", missionObject.GetProperty("classIdHex").GetString());
+        Assert.Equal("0x002d5de8", missionObject.GetProperty("updateRoutine").GetString());
+        Assert.Equal("0x001e9f60", missionObject.GetProperty("stateTable").GetString());
+        Assert.Equal(12, missionObject.GetProperty("stateCount").GetInt32());
+        Assert.Equal(4, missionObject.GetProperty("destinationPVarOffset").GetInt32());
+        Assert.Equal("0x0013dd40", missionObject.GetProperty("visitedPlanets").GetString());
+        Assert.Equal(
+            new[] { "VisitedPlanets[d]", "player distance", "player state" },
+            missionObject.GetProperty("conditions").EnumerateArray()
+                .Select(value => value.GetString()).ToArray());
+        Assert.Equal("0x002d6a20", missionObject.GetProperty("state8AdmissionCall").GetString());
+        Assert.Equal("0x002607d0", missionObject.GetProperty("admissionRoutine").GetString());
 
         JsonElement initialAdmission = code.GetProperty("initialAdmission");
         Assert.Equal("0x0023d160", initialAdmission.GetProperty("currentLevelLoad").GetString());

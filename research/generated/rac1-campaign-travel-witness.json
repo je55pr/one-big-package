@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "authority": {
     "game": "Ratchet & Clank",
     "build": "rac1-ntscu-original",
@@ -10,6 +10,9 @@
   "notes": [
     "No ISO, executable, EE-memory, savestate, or memory-card payload bytes are emitted.",
     "Runtime descriptors and code references are read from the authorized SCUS-97199 savestate.",
+    "Routine 0x002831c0 is retained as controller code-entry/unlock routing, not ordinary campaign progression dispatch.",
+    "Class 750 (0x2ee) is retained as compiled Moby logic that can call destination admission from state 8.",
+    "Serialized blocks 5, 8, 10, and 11 remain numerically identified where their higher-level meanings are unresolved.",
     "The recovered loader bridge indexes the retail 19-pair disc level table directly by campaign destination id.",
     "The pending target slot is only authoritative while the separately recovered travel-active flag is set."
   ],
@@ -237,13 +240,24 @@
         "0x00283340",
         "0x002d6a20"
       ],
-      "destinationDiscovery": {
+      "controllerCodeRouter": {
+        "routine": "0x002831c0",
+        "padStateBase": "0x0013c940",
+        "inputBuffer": "0x001ba4a8",
+        "inputSymbolCount": 20,
+        "matchTable": "0x001b9ba0",
         "eventSubtractAddress": "0x002832f4",
         "eventRangeAddress": "0x00283330",
         "admissionCall": "0x00283340",
         "firstEvent": 37,
         "lastEvent": 54,
         "destinationOffset": 36,
+        "opaqueSerializedBlockIds": [
+          5,
+          8,
+          10,
+          11
+        ],
         "events": [
           {
             "event": 37,
@@ -318,6 +332,22 @@
             "destination": 18
           }
         ]
+      },
+      "compiledMissionObject": {
+        "classId": 750,
+        "classIdHex": "0x2ee",
+        "updateRoutine": "0x002d5de8",
+        "stateTable": "0x001e9f60",
+        "stateCount": 12,
+        "destinationPVarOffset": 4,
+        "visitedPlanets": "0x0013dd40",
+        "conditions": [
+          "VisitedPlanets[d]",
+          "player distance",
+          "player state"
+        ],
+        "state8AdmissionCall": "0x002d6a20",
+        "admissionRoutine": "0x002607d0"
       },
       "initialAdmission": {
         "currentLevelLoad": "0x0023d160",

@@ -58,9 +58,11 @@ access pattern, but OBP does not use block 11 as an equip-admission rule: the
 retained populated states have block 10 and block 11 identical, so no retail
 witness yet proves what gameplay transition can separate them.
 
-The normal progression dispatcher provides independent corroboration:
-0x00283308..0x00283328 directly writes 1 to both arrays for its low item-event
-range rather than collapsing them into one field.
+The controller code-entry/unlock router at `0x002831c0` provides independent
+corroboration: `0x00283308..0x00283328` directly writes 1 to both arrays for
+one of its low action-id ranges rather than collapsing them into one field.
+This path is code-entry handling, not evidence for ordinary campaign
+progression dispatch.
 
 ## Generic item descriptor and ammo contract
 

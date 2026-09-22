@@ -56,21 +56,34 @@ Record `i` begins at `0x1538 + i * 0x0aa4`; its block-3001 byte is at
 5. calls the follow-up at `0x00262d38` only when `d != CurrentLevel`.
 
 Direct callers are `0x0023d16c`, `0x00283340`, and `0x002d6a20`.
-The normal progression dispatcher is exact: `0x002832f4` forms
-`destination = event - 0x24`; `0x00283330..0x00283338` admits only
-`(event - 0x25) < 0x12`; and `0x00283340` calls the admission primitive.
-Therefore dispatcher values `0x25..0x36` discover destination IDs `1..18`
-one-for-one. These are retained as progression-dispatch values, not relabelled
-as mission-completion or checkpoint events without a separate witness.
+The `0x00283340` call is not an ordinary progression dispatcher. It sits inside
+loaded routine `0x002831c0`, a controller code-entry/unlock router. That routine
+reads pad-state base `0x0013c940`, accumulates a 20-symbol controller sequence at
+`0x001ba4a8`, matches it against the table rooted at `0x001b9ba0`, then routes
+the resulting action id. `0x002832f4` forms `destination = action - 0x24`;
+`0x00283330..0x00283338` admits only `(action - 0x25) < 0x12`; and
+`0x00283340` calls the admission primitive. Thus action values `0x25..0x36`
+map one-for-one to destination IDs `1..18` only within this code-entry/unlock
+path. Other action ranges write serialized blocks 5, 8, 10, and 11. Those block
+IDs remain numeric here because their higher-level save semantics are unresolved.
 
 The initialization path is also explicit: `0x0023d160` loads CurrentLevel,
 `0x0023d164` skips admission when it is zero, and `0x0023d16c` otherwise
 calls the same admission primitive. This explains the opening snapshot:
 CurrentLevel is 0 and per-level state 0 is already `Visited`, while
 VisitedPlanets and GalacticMap are entirely zero. Starting on level 0 is
-therefore not destination discovery. The third direct caller at `0x002d6a20`
-takes its destination from a gameplay-state data field; no stronger semantic
-label is claimed here.
+therefore not destination discovery.
+
+The third direct caller is an ordinary compiled Moby path rather than the
+controller-code router. The loaded class-registration table identifies class
+750 (`0x2ee`) with update routine `0x002d5de8`; that update dispatches a
+12-state native state machine through table `0x001e9f60`. Class-owned
+`PVar+0x04` supplies the destination id. A branch indexes
+`VisitedPlanets[d]`, applies player-distance and player-state conditions, and
+can enter state 8. State 8 calls `0x002607d0` at `0x002d6a20` using that PVar
+destination, then advances the Moby state. This directly demonstrates
+campaign-affecting progression through class-local compiled object logic; it
+does not establish a high-level scripting VM or generic mission message bus.
 
 This proves the existing `Rac1CampaignState.AdmitDestination` ordering and
 idempotence. It also proves that the 20-byte storage capacity is not the valid
