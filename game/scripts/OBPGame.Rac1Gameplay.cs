@@ -666,19 +666,26 @@ public partial class OBPGame
         if (seconds <= 0f) return;
 
         // RuntimeWorldScene mirrors native X into Godot while retaining Y-up and Z.
-        // Keep the recovered destination intact; only interpolation magnitude remains
-        // explicit host presentation policy until helper 0x002d54c8 is recovered.
-        Vector3 target = new(
+        // The recovered destination remains the native input; any live-target bridge
+        // below is explicitly host presentation policy until its retail writer is recovered.
+        Vector3 recoveredDestination = new(
             -(float)destination.X,
             (float)destination.Y,
             (float)destination.Z);
         Vector3 current = hostile.Root.GlobalPosition;
+
+        // State 6 proves both a live target-Moby dereference and a PVar+0x180
+        // locomotion destination, but the retail writer of +0x180 is still unknown.
+        // For the single admitted Veldin witness, bridge that missing writer only as
+        // host presentation policy: pursue Ratchet's live position. Keeping the
+        // retained +0x180 height strands the visible hostile below Ratchet because
+        // the missing retail writer is precisely what would keep that destination
+        // current. State 8 continues to consume the recovered home destination unchanged.
+        Vector3 target = intent.Kind == Rac1Class749NavigationIntentKind.PursueRecoveredTarget
+            ? recoveredTargetPosition
+            : recoveredDestination;
         Vector3 offset = target - current;
 
-        // State 6 independently dereferences the recovered target Moby (Ratchet)
-        // for facing while helper 0x002d54c8 consumes PVar+0x180 as its movement
-        // destination. State 8 has no target-facing witness, so its home destination
-        // is the bounded facing target too.
         Vector3 facingOffset = intent.Kind == Rac1Class749NavigationIntentKind.PursueRecoveredTarget
             ? recoveredTargetPosition - current
             : offset;

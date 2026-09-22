@@ -66,6 +66,16 @@ public partial class OBPGame
 
             await Rac1SmokeWaitAsync(() => _player.IsOnFloor(), 240, "player grounding");
             Vector3 authoredRespawnPosition = _player.GlobalPosition;
+            var naturalAttack = await Rac1SmokeProvokeClass749AttackAsync(
+                navigationHostile,
+                maxFrames: 3000);
+            GD.Print(
+                $"[rac1-smoke] ordinary-play class-749 attack PASS; " +
+                $"Ratchet travel={naturalAttack.PlayerTravel:0.###}, hostile travel={naturalAttack.HostileTravel:0.###}, " +
+                $"entry distance={naturalAttack.EntryDistance:0.###}, " +
+                $"entry facing={Mathf.RadToDeg((float)naturalAttack.EntryFacing):0.##}deg, " +
+                $"marker={naturalAttack.Attack.NativeMarker:0}, Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
+
             await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
 
             var crate = _rac1CrateNodes
@@ -102,10 +112,9 @@ public partial class OBPGame
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
-            await Rac1SmokeWaitAsync(
-                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.WrenchAttackSequenceId &&
-                      PlayerAvatarPresentationIsSynchronized(),
-                30,
+            await WaitForPlayerAvatarSequenceAsync(
+                Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
+                120,
                 "wrench player-avatar sequence 23");
             await Rac1SmokeWaitAsync(
                 () => _rac1BoltCrates.DestroyedCrateCount > 0,
@@ -123,6 +132,11 @@ public partial class OBPGame
                 60,
                 "bolt collection");
             GD.Print($"[rac1-smoke] bolt collection PASS; total={_rac1BoltCrates.CollectedBolts}");
+            await Rac1SmokeWaitAsync(
+                () => CurrentPlayerAvatarSourceSequence() != Rac1RatchetSequenceSelection.WrenchAttackSequenceId &&
+                      PlayerAvatarPresentationIsSynchronized(),
+                120,
+                "post-wrench player-avatar recovery");
 
             if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
                 throw new InvalidOperationException(
@@ -135,40 +149,6 @@ public partial class OBPGame
                 !IsInstanceValid(hostile.Root) ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException("Class-749 witness instance 149 is unavailable.");
-
-            Vector3 hostileForward = -hostile.Root.GlobalTransform.Basis.Z;
-            hostileForward.Y = 0f;
-            if (hostileForward.LengthSquared() <= 1e-5f)
-                throw new InvalidOperationException("Representative class-749 has no usable host facing axis.");
-            hostileForward = hostileForward.Normalized();
-
-            // This is a synthetic incoming-damage witness, not ordinary movement.
-            // The moving-hostile host policy can otherwise leave Ratchet's floating
-            // smoke pose before native attack marker 68. Reuse the existing
-            // development fly seam only to hold that pose without gravity; the
-            // ordinary wrench regressions below still enter contact through the
-            // retail-derived movement path.
-            await TapPhysicalKeyAsync(Key.F);
-            if (!_player.DevelopmentFlyEnabled)
-                throw new InvalidOperationException(
-                    "Incoming-damage smoke could not hold its synthetic witness pose.");
-            Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
-            await Rac1SmokeWaitAsync(
-                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
-                      PlayerAvatarPresentationIsSynchronized(),
-                120,
-                "incoming-damage standing presentation");
-            await Rac1SmokeWaitAsync(
-                () => _rac1Nanotech.Probe().Nanotech < 4,
-                180,
-                "class-749 incoming damage");
-            if (CurrentPlayerAvatarSourceSequence() != Rac1RatchetSequenceSelection.StandingSequenceId ||
-                !PlayerAvatarPresentationIsSynchronized())
-            {
-                throw new InvalidOperationException(
-                    "incoming damage invented an unrecovered player-avatar reaction sequence");
-            }
-            GD.Print($"[rac1-smoke] class-749 incoming damage PASS; Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
 
             int bombAmmoBeforeFire = _rac1Weapons.FirstRangedAmmo;
             if (bombAmmoBeforeFire < Rac1BombGlove.AmmoCostPerShot)
@@ -233,11 +213,6 @@ public partial class OBPGame
             GD.Print(
                 $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
                 "immediate refire cadence-blocked and class-749 consequence remains unresolved");
-
-            await TapPhysicalKeyAsync(Key.F);
-            if (_player.DevelopmentFlyEnabled)
-                throw new InvalidOperationException(
-                    "Synthetic damage/contact smoke did not restore ordinary player physics.");
 
             Vector3 terminalForward = -hostile.Root.GlobalTransform.Basis.Z;
             terminalForward.Y = 0f;
@@ -416,6 +391,165 @@ public partial class OBPGame
         }
 
         throw new TimeoutException($"Timed out waiting for RAC1 smoke phase: {label}.");
+    }
+
+    private async Task<(
+        float PlayerTravel,
+        float HostileTravel,
+        double EntryDistance,
+        double EntryFacing,
+        Rac1Class749AttackEvent Attack)> Rac1SmokeProvokeClass749AttackAsync(
+        RuntimeWorldScene.DynamicObjectNode hostile,
+        int maxFrames)
+    {
+        if (_player is null ||
+            _world is not { Game: "rac1", LevelId: Rac1Class749Hostile.RetainedRuntimeWitnessLevelId } ||
+            !Rac1Class749Hostile.IsRetainedRuntimeWitness(_world.LevelId, hostile.Source))
+            throw new InvalidOperationException(
+                "Natural class-749 attack smoke requires the retained Veldin runtime witness.");
+
+        var nanotechBefore = _rac1Nanotech.Probe();
+        if (nanotechBefore.IsDead || nanotechBefore.Nanotech != 4)
+            throw new InvalidOperationException(
+                $"Natural class-749 attack smoke requires 4 live Nanotech, found {nanotechBefore.Nanotech}.");
+
+        Vector3 playerStart = _player.GlobalPosition;
+        Vector3 hostileStart = hostile.Root.GlobalPosition;
+        double? entryDistance = null;
+        double? entryFacing = null;
+        bool sawPursuit = false;
+
+        try
+        {
+            for (int frame = 0; frame < maxFrames; frame++)
+            {
+                if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible ||
+                    !_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var probe))
+                    throw new InvalidOperationException(
+                        "Retained class-749 witness disappeared during ordinary-play approach.");
+
+                Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
+                double distance = toPlayer.Length();
+                double facing = Rac1SmokeClass749FacingError(hostile, _player.GlobalPosition);
+
+                sawPursuit |= probe.NativeState == Rac1Class749Hostile.TargetedNativeState;
+                if (probe.NativeState == Rac1Class749Hostile.AttackNativeState &&
+                    entryDistance is null)
+                {
+                    entryDistance = distance;
+                    entryFacing = facing;
+                    if (!(distance < Rac1Class749Hostile.AttackDistanceExclusive) ||
+                        !(facing < Rac1Class749Hostile.AttackFacingErrorExclusive))
+                        throw new InvalidOperationException(
+                            $"Class-749 entered attack outside recovered gates: distance={distance:R}, facing={facing:R}.");
+                }
+
+                if (probe.Attack is { } attack)
+                {
+                    var nanotechAfter = _rac1Nanotech.Probe();
+                    if (!sawPursuit || entryDistance is null || entryFacing is null)
+                        throw new InvalidOperationException(
+                            "Class-749 reached its attack marker without observed pursuit/attack entry.");
+                    if (attack.NativeMarker != Rac1Class749Hostile.AttackMarker ||
+                        attack.NativeDamage != Rac1Class749Hostile.AttackDamage)
+                        throw new InvalidOperationException(
+                            $"Class-749 emitted marker/damage {attack.NativeMarker:R}/{attack.NativeDamage:R}, " +
+                            $"expected {Rac1Class749Hostile.AttackMarker:R}/{Rac1Class749Hostile.AttackDamage:R}.");
+                    if (nanotechAfter.Nanotech != nanotechBefore.Nanotech - 1 || nanotechAfter.IsDead)
+                        throw new InvalidOperationException(
+                            $"Class-749 ordinary attack changed Nanotech {nanotechBefore.Nanotech}->{nanotechAfter.Nanotech}, expected exactly one.");
+
+                    Vector3 playerTravel = _player.GlobalPosition - playerStart;
+                    playerTravel.Y = 0f;
+                    Vector3 hostileTravel = hostile.Root.GlobalPosition - hostileStart;
+                    hostileTravel.Y = 0f;
+                    if (playerTravel.Length() < 0.5f)
+                        throw new InvalidOperationException(
+                            "Natural class-749 attack did not require meaningful ordinary Ratchet movement.");
+                    if (hostileTravel.Length() < 0.25f)
+                        throw new InvalidOperationException(
+                            "Natural class-749 attack did not visibly exercise hostile pursuit.");
+
+                    return (
+                        playerTravel.Length(),
+                        hostileTravel.Length(),
+                        entryDistance.Value,
+                        entryFacing.Value,
+                        attack);
+                }
+
+                if (_rac1Nanotech.Probe().Nanotech != nanotechBefore.Nanotech)
+                    throw new InvalidOperationException(
+                        "Nanotech changed before the smoke observed the recovered class-749 attack marker.");
+
+                if (probe.NativeState == Rac1Class749Hostile.AttackNativeState &&
+                    distance <= 1.25d)
+                {
+                    ClearMovementSmokeInput();
+                }
+                else
+                {
+                    Rac1SmokeDriveToward(hostile.Root.GlobalPosition);
+                }
+
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            }
+        }
+        finally
+        {
+            ClearMovementSmokeInput();
+        }
+
+        var finalProbe = _rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var current)
+            ? current
+            : null;
+        throw new TimeoutException(
+            $"Timed out provoking retained class-749 through ordinary play: " +
+            $"player={_player.GlobalPosition}, hostile={hostile.Root.GlobalPosition}, " +
+            $"state={finalProbe?.NativeState}, Nanotech={_rac1Nanotech.Probe().Nanotech}.");
+    }
+
+    private static double Rac1SmokeClass749FacingError(
+        RuntimeWorldScene.DynamicObjectNode hostile,
+        Vector3 target)
+    {
+        Vector3 toTarget = target - hostile.Root.GlobalPosition;
+        toTarget.Y = 0f;
+        Vector3 forward = -hostile.Root.GlobalTransform.Basis.Z;
+        forward.Y = 0f;
+        if (toTarget.LengthSquared() <= 1e-6f || forward.LengthSquared() <= 1e-6f)
+            return Math.PI;
+
+        return Math.Abs(
+            forward.Normalized().SignedAngleTo(toTarget.Normalized(), Vector3.Up));
+    }
+
+    private void Rac1SmokeDriveToward(Vector3 target)
+    {
+        if (_player is null)
+            throw new InvalidOperationException("RAC1 smoke player disappeared.");
+
+        Vector3 desired = target - _player.GlobalPosition;
+        desired.Y = 0f;
+        if (desired.LengthSquared() <= 1e-5f)
+        {
+            ClearMovementSmokeInput();
+            return;
+        }
+        desired = desired.Normalized();
+
+        double controlYaw = _player.Rac1ControlYaw;
+        Vector3 controlForward = new(
+            -(float)Math.Cos(controlYaw),
+            0f,
+            (float)Math.Sin(controlYaw));
+        Vector3 controlRight = new(
+            -(float)Math.Sin(controlYaw),
+            0f,
+            -(float)Math.Cos(controlYaw));
+        SetAnalogueSmokeInput(
+            Math.Clamp(desired.Dot(controlRight), -1f, 1f),
+            Math.Clamp(desired.Dot(controlForward), -1f, 1f));
     }
 
     private async Task<float> Rac1SmokeApproachWrenchTargetAsync(
