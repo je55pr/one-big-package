@@ -248,6 +248,7 @@ public partial class OBPGame
         {
             _rac1CombatStatus = weapon == Rac1WeaponId.Wrench ? "equipped wrench" : "equipped Bomb Glove item 10";
             RefreshRac1HudState();
+            RefreshRac1WrenchPresentationVisibility();
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
     }

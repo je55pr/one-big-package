@@ -18,6 +18,9 @@ public partial class OBPGame
     private IPlayerAnimationPresentationSink? _playerAvatarAnimationSink;
     private IPlayerAnimationPresentationController? _playerAvatarAnimationController;
     private double _playerAvatarClock;
+    private Rac1WrenchAsset.Asset? _rac1WrenchAsset;
+    private string? _rac1WrenchSourcePath;
+    private Rac1WrenchView? _rac1WrenchView;
 
     /// <summary>
     /// Resolve player presentation from the active source game. A missing native
@@ -70,13 +73,30 @@ public partial class OBPGame
                 Name = "PlayerAvatar",
             };
             ClearPlayerAvatarView();
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                if (_rac1WrenchAsset is null ||
+                    !string.Equals(_rac1WrenchSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
+                {
+                    _rac1WrenchAsset = Rac1WrenchAsset.Load(source.Path);
+                    _rac1WrenchSourcePath = source.Path;
+                }
+
+                _rac1WrenchView = new Rac1WrenchView(_rac1WrenchAsset, _playerAvatar);
+                view.AddChild(_rac1WrenchView);
+            }
             player.VisualRoot.ReplaceVisual(view);
             player.ConfigureAvatarPresentation((float)_playerAvatar.AnimationBounds.Height);
             _playerAvatarView = view;
             _playerAvatarAnimationSink = view;
             _playerAvatarAnimationController = animationController;
             _playerAvatarClock = 0;
+            RefreshRac1WrenchPresentationVisibility();
             HideAuthoredWorldRatchetPresentation();
+            if (_rac1WrenchView is not null)
+            {
+                GD.Print($"[player-avatar] attached retail class-71 Wrench ({Rac1WrenchView.AttachmentProvenance})");
+            }
             GD.Print($"[player-avatar] attached {_playerAvatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
         }
         catch (Exception ex)
@@ -84,6 +104,7 @@ public partial class OBPGame
             _playerAvatarAnimationSink = null;
             _playerAvatarAnimationController = null;
             _playerAvatarView = null;
+            _rac1WrenchView = null;
             _playerAvatarClock = 0;
             player.VisualRoot.ReplaceVisual(null);
             GD.PrintErr($"[player-avatar] could not attach native avatar; keeping debug capsule: {ex.Message}");
@@ -139,7 +160,17 @@ public partial class OBPGame
         _playerAvatarAnimationSink = null;
         _playerAvatarAnimationController = null;
         _playerAvatarView = null;
+        _rac1WrenchView = null;
         _playerAvatarClock = 0;
+    }
+
+    private void RefreshRac1WrenchPresentationVisibility()
+    {
+        if (_rac1WrenchView is null || !GodotObject.IsInstanceValid(_rac1WrenchView))
+            return;
+        _rac1WrenchView.Visible =
+            _activeDestination?.Game == ObpSourceGame.Rac1 &&
+            _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Wrench;
     }
 
     /// <summary>

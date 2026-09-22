@@ -116,6 +116,7 @@ public partial class OBPGame
                 Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
                 120,
                 "wrench player-avatar sequence 23");
+            AssertRac1SmokeWrenchPresentation(visible: true, "first wrench sequence 23");
             await Rac1SmokeWaitAsync(
                 () => _rac1BoltCrates.DestroyedCrateCount > 0,
                 120,
@@ -159,6 +160,7 @@ public partial class OBPGame
             AssertRac1SmokeHudWeapon(
                 Rac1HudProjection.BombGlovePresentationKey,
                 bombAmmoBeforeFire);
+            AssertRac1SmokeWrenchPresentation(visible: false, "Bomb Glove equip");
             Vector3 bombForward = -hostile.Root.GlobalTransform.Basis.Z;
             bombForward.Y = 0f;
             if (bombForward.LengthSquared() <= 1e-5f)
@@ -257,6 +259,7 @@ public partial class OBPGame
                       PlayerAvatarPresentationIsSynchronized(),
                 30,
                 "terminal wrench player-avatar sequence 23");
+            AssertRac1SmokeWrenchPresentation(visible: true, "terminal wrench sequence 23");
             await Rac1SmokeWaitAsync(
                 () => _rac1HostileProbes.TryGetValue(
                         Rac1WitnessHostileInstance,
@@ -372,6 +375,19 @@ public partial class OBPGame
             throw new InvalidOperationException(
                 $"Bomb Glove HUD ammo was {weapon.Ammo?.Current}/{weapon.Ammo?.Capacity}, " +
                 $"expected {expectedAmmo}/{Rac1BombGlove.MaxAmmo}.");
+    }
+
+    private void AssertRac1SmokeWrenchPresentation(bool visible, string phase)
+    {
+        if (_rac1WrenchView is null || !IsInstanceValid(_rac1WrenchView))
+            throw new InvalidOperationException(
+                $"R&C1 Wrench presentation disappeared during {phase}.");
+        if (_rac1WrenchView.Visible != visible)
+            throw new InvalidOperationException(
+                $"R&C1 Wrench visibility during {phase} was {_rac1WrenchView.Visible}, expected {visible}.");
+        if (_playerAvatarView is null || _rac1WrenchView.GetParent() != _playerAvatarView)
+            throw new InvalidOperationException(
+                $"R&C1 Wrench was not parented to the animated Ratchet view during {phase}.");
     }
 
     private int CountRac1AuthoredClass749() =>
