@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../game/scripts/CommandLineArgs.cs" Link="Game/CommandLineArgs.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/OBP.Composition/OBP.Composition.csproj" />
     <ProjectReference Include="../../src/OBP.Core/OBP.Core.csproj" />
     <ProjectReference Include="../../src/OBP.Godot/OBP.Godot.csproj" />

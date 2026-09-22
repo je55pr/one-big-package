@@ -213,8 +213,11 @@ public partial class OBPGame
         int expectedCurrent,
         int[] expectedUnlocked)
     {
+        string savePath = _rac1CampaignPersistence.SavePath
+            ?? throw new InvalidOperationException(
+                "Campaign smoke persistence path was not initialized.");
         Rac1CampaignRestoreResult restored =
-            Rac1CampaignSaveFile.LoadOrDefault(_rac1CampaignSavePath);
+            Rac1CampaignSaveFile.LoadOrDefault(savePath);
         RequireRac1CampaignSmoke(
             restored.Kind == Rac1CampaignRestoreKind.RestoredCurrentSchema,
             $"Persisted restore kind was {restored.Kind}.");

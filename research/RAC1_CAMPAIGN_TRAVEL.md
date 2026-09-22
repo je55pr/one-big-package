@@ -246,12 +246,16 @@ conservative OBP default, not a claim about retail serialization.
 
 ## Bounded playable loop and reload smoke
 
-The Godot host now persists the schema-v2 campaign/weapon envelope in an OBP-owned
-JSON file (`user://rac1-campaign.json` by default). The JSON shape, file location
-and save timing are host policy only. Successful ordinary campaign travel is saved
-only after the late CurrentLevel commit and new-world initialization finish.
-External/debug provider loads still do not change or save campaign progression,
-and neither route serializes the level-local checkpoint session.
+Ordinary local-dev Godot sessions are now ephemeral: each process starts from the
+retained opening Veldin campaign/weapon witness and does not read or write stale
+`user://rac1-campaign.json` state. Persistence is an explicit host opt-in:
+`--rac1-campaign-persist` uses that default path, while
+`--rac1-campaign-save <path>` opts in with an isolated path. The schema-v2 JSON
+shape, file location and save timing remain host policy only. When persistence is
+enabled, successful ordinary campaign travel is saved only after the late
+CurrentLevel commit and new-world initialization finish. External/debug provider
+loads still do not change or save campaign progression, and neither route
+serializes the level-local checkpoint session.
 
 `tools/rac1-campaign-smoke.ps1` uses an isolated temporary host save and two fresh
 Godot processes against the supported retail source. Its bounded route is:

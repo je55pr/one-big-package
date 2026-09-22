@@ -12,7 +12,8 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private bool _rac1CampaignPersistenceInitialized;
-    private string _rac1CampaignSavePath = string.Empty;
+    private Rac1CampaignSessionPersistence _rac1CampaignPersistence =
+        Rac1CampaignSessionPersistence.Ephemeral();
     private Rac1CampaignRestoreKind _rac1CampaignRestoreKind =
         Rac1CampaignRestoreKind.DefaultedMissingState;
 
@@ -21,12 +22,19 @@ public partial class OBPGame
         if (_rac1CampaignPersistenceInitialized)
             return;
 
-        _rac1CampaignSavePath = string.IsNullOrWhiteSpace(_args.Rac1CampaignSavePath)
-            ? ProjectSettings.GlobalizePath("user://rac1-campaign.json")
-            : Path.GetFullPath(_args.Rac1CampaignSavePath);
+        if (_args.Rac1CampaignPersistenceRequested)
+        {
+            string savePath = string.IsNullOrWhiteSpace(_args.Rac1CampaignSavePath)
+                ? ProjectSettings.GlobalizePath("user://rac1-campaign.json")
+                : Path.GetFullPath(_args.Rac1CampaignSavePath);
+            _rac1CampaignPersistence = Rac1CampaignSessionPersistence.Persistent(savePath);
+        }
+        else
+        {
+            _rac1CampaignPersistence = Rac1CampaignSessionPersistence.Ephemeral();
+        }
 
-        Rac1CampaignRestoreResult restored =
-            Rac1CampaignSaveFile.LoadOrDefault(_rac1CampaignSavePath);
+        Rac1CampaignRestoreResult restored = _rac1CampaignPersistence.Restore();
 
         _rac1CampaignSession = new Rac1CampaignRuntimeSession(
             restored.Campaign,
@@ -34,8 +42,11 @@ public partial class OBPGame
         _rac1CampaignRestoreKind = restored.Kind;
         _rac1CampaignPersistenceInitialized = true;
 
+        string persistenceMode = _rac1CampaignPersistence.Enabled
+            ? $"persistent:{_rac1CampaignPersistence.SavePath}"
+            : "ephemeral";
         GD.Print(
-            $"[rac1-campaign] host state {restored.Kind}: current={restored.Campaign.CurrentLevel}, " +
+            $"[rac1-campaign] host state {restored.Kind} ({persistenceMode}): current={restored.Campaign.CurrentLevel}, " +
             $"admitted={restored.Campaign.AdmittedDestinationCount}, " +
             $"item10-owned={restored.Weapons.OwnsFirstRanged}, ammo={restored.Weapons.FirstRangedAmmo}");
     }
@@ -106,12 +117,12 @@ public partial class OBPGame
         if (!_rac1CampaignPersistenceInitialized)
             EnsureRac1CampaignPersistenceInitialized();
 
-        Rac1CampaignSaveFile.Save(
-            _rac1CampaignSavePath,
+        bool persisted = _rac1CampaignPersistence.PersistIfEnabled(
             _rac1CampaignSession.Campaign,
             _rac1CampaignSession.Weapons);
+        string action = persisted ? "persisted" : "session-only";
         GD.Print(
-            $"[rac1-campaign] persisted {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +
+            $"[rac1-campaign] {action} {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +
             $"admitted={_rac1CampaignSession.Campaign.AdmittedDestinationCount}, " +
             $"item10-owned={_rac1CampaignSession.Weapons.OwnsFirstRanged}, " +
             $"ammo={_rac1CampaignSession.Weapons.FirstRangedAmmo}");

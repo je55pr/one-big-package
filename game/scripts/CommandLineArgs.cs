@@ -82,8 +82,14 @@ public sealed record CommandLineArgs
     /// <summary>Run the two-pass evidence-backed R&amp;C1 campaign travel/persistence smoke.</summary>
     public bool Rac1CampaignSmoke { get; init; }
 
-    /// <summary>Override the OBP host campaign-state file. Used by isolated campaign smoke runs.</summary>
+    /// <summary>Explicitly opt this host session into R&amp;C1 campaign persistence.</summary>
+    public bool Rac1CampaignPersist { get; init; }
+
+    /// <summary>Override the OBP host campaign-state file. Supplying a path also opts into persistence.</summary>
     public string? Rac1CampaignSavePath { get; init; }
+
+    public bool Rac1CampaignPersistenceRequested =>
+        Rac1CampaignPersist || !string.IsNullOrWhiteSpace(Rac1CampaignSavePath);
 
     /// <summary>Run the cross-game Godot analogue/input smoke against the selected destination and quit.</summary>
     public bool MovementSmoke { get; init; }
@@ -142,6 +148,7 @@ public sealed record CommandLineArgs
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--rac1-combat-smoke" => result with { Rac1CombatSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
+                "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },
                 "--compose" => result with { Compose = true },
