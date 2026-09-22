@@ -58,6 +58,7 @@ public sealed class Rac1OrdinaryCameraController
     public double ControlHeading => _controlHeading;
     public double ManualYawState => _manualYaw;
     public double ManualPitchState => _manualPitch;
+    public double VerticalOrbitRadians => -_manualPitch * VerticalSpanRadians;
     public double CurrentRadius => _currentRadius;
     public double ObstructionCorrection => _obstructionCorrection;
     public int ObstructionReleaseTicks => _obstructionReleaseTicks;
@@ -143,22 +144,22 @@ public sealed class Rac1OrdinaryCameraController
         _eyeHeight = eyeHeight.Value;
         _eyeHeightVelocity = eyeHeight.Velocity;
 
-        double basePitch = Math.Atan2(
-            _eyeHeight - OrdinaryLookHeight,
-            Math.Max(_currentRadius, Rac1CameraRecurrence.ObstructionInnerRadiusFloor));
-        double cameraPitch = basePitch - (_manualPitch * VerticalSpanRadians);
-        double cosHeading = Math.Cos(_controlHeading);
-        double sinHeading = Math.Sin(_controlHeading);
-
         var anchor = new Vec3(
             input.PlayerNativeZUp.X,
             input.PlayerNativeZUp.Y,
             _filteredZ + _eyeHeight);
-        var radial = new Vec3(
-            -cosHeading * _currentRadius,
-            -sinHeading * _currentRadius,
-            0d);
+        Vec3 radial = ComposeVerticalOrbitOffset(
+            _controlHeading,
+            _currentRadius,
+            VerticalOrbitRadians);
         var eye = anchor + radial;
+
+        double planarRadius = Math.Sqrt(
+            (radial.X * radial.X) +
+            (radial.Y * radial.Y));
+        double cameraPitch = Math.Atan2(
+            eye.Z - (_filteredZ + OrdinaryLookHeight),
+            Math.Max(planarRadius, Rac1CameraRecurrence.ObstructionInnerRadiusFloor));
 
         return new Rac1CameraState(
             new Rac1CameraControlState(
@@ -229,6 +230,24 @@ public sealed class Rac1OrdinaryCameraController
         double remapped = (magnitude - VerticalInputDeadzone) /
             (1d - VerticalInputDeadzone);
         return Math.CopySign(Math.Clamp(remapped, 0d, 1d), conditionedY);
+    }
+
+    public static Vec3 ComposeVerticalOrbitOffset(
+        double controlHeading,
+        double radius,
+        double orbitRadians)
+    {
+        ValidateFinite(controlHeading, nameof(controlHeading));
+        ValidateFinite(radius, nameof(radius));
+        ValidateFinite(orbitRadians, nameof(orbitRadians));
+        if (radius < 0d)
+            throw new ArgumentOutOfRangeException(nameof(radius));
+
+        double planarRadius = radius * Math.Cos(orbitRadians);
+        return new Vec3(
+            -Math.Cos(controlHeading) * planarRadius,
+            -Math.Sin(controlHeading) * planarRadius,
+            radius * Math.Sin(orbitRadians));
     }
 
     public static (double Acceleration, double Damping) RadialCoefficients(

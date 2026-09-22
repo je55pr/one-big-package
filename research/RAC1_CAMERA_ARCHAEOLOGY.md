@@ -299,19 +299,22 @@ multi-update lateral convergence remain intentionally unpromoted.
 A short human comparison on 2026-09-21 against the base game found the recovered
 horizontal camera/control feel acceptable, but identified a clear vertical
 presentation mismatch: retail feels framed toward a point above Ratchet's head,
-whereas the current Godot path visibly tilts the view up/down around the eye.
-This is integration evidence, not a numeric retail-authority witness.
+whereas the first Godot projection tilted the view around a fixed eye. That review
+was integration evidence, not a numeric retail-authority witness.
 
-The implementation boundary explains why this needs recovery rather than tuning.
-`Rac1OrdinaryCameraController` currently maps manual vertical state directly into
-`Control.Pitch` while leaving the recovered eye, eye anchor and look-height state
-unchanged; `Rac1CameraState.ToRuntimeState()` then rotates only the published
-forward vector. No retained retail trace proves that pitch-only projection.
-Do not hand-tune the vertical span or presentation offsets to hide the mismatch.
-A bounded follow-up should capture vertical right-stick pulses while sampling eye,
-forward/pitch, current/preferred look height and current/preferred eye height, then
-trace the corresponding type-0 writers to determine whether manual vertical input
-drives look height, eye height, both, or another orbit/framing state.
+The subsequent type-0 vertical recovery closes that projection boundary. The same
+conditioned/damped manual vertical state and retained `+/-0.3` secondary dead zone
+now drive elevation of the type-0 radial offset around `state+0x90` eye anchor.
+`eye = anchor + radialOffset` remains the composition law, and the radial-offset
+magnitude remains the obstruction-resolved current radius while its planar and Z
+components rotate through the recovered vertical span. The visible pitch is then
+derived back toward the retained current look height instead of being applied as
+an independent tilt at a fixed eye.
+
+Production `Rac1OrdinaryCameraController` now uses that orbit geometry directly.
+Horizontal control-heading updates and the existing obstruction correction/radius
+recurrences are unchanged, and deterministic coverage freezes both full-input
+native geometry and the Godot scene-eye movement that ordinary play consumes.
 
 ## Repeatable scenarios
 

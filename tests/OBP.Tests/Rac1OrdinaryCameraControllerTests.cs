@@ -112,6 +112,72 @@ public sealed class Rac1OrdinaryCameraControllerTests
     }
 
     [Fact]
+    public void VerticalManualInput_OrbitsEyeAroundAnchorAtConstantRadius()
+    {
+        var camera = new Rac1OrdinaryCameraController();
+        var player = new Vec3(10d, 20d, 30d);
+        camera.Reset(player, 0.75d);
+        Rac1CameraState neutral = camera.Step(new Rac1OrdinaryCameraController.Input(
+            player, 0d, 0d, default));
+
+        Rac1CameraState state = neutral;
+        for (int i = 0; i < 36; i++)
+        {
+            state = camera.Step(new Rac1OrdinaryCameraController.Input(
+                player, 0d, 1d, default));
+        }
+
+        Vec3 radial = state.Framing.RadialOffsetNativeZUp;
+        double radius = Math.Sqrt(
+            (radial.X * radial.X) +
+            (radial.Y * radial.Y) +
+            (radial.Z * radial.Z));
+        Assert.Equal(camera.CurrentRadius, radius, 10);
+        Assert.Equal(0.75d, camera.ControlHeading, 12);
+        Assert.True(radial.Z < -3d);
+        Assert.NotEqual(neutral.Framing.EyeNativeZUp.Z, state.Framing.EyeNativeZUp.Z);
+        Assert.Equal(
+            state.Framing.EyeAnchorNativeZUp + radial,
+            state.Framing.EyeNativeZUp);
+
+        double planarRadius = Math.Sqrt(
+            (radial.X * radial.X) +
+            (radial.Y * radial.Y));
+        double lookTargetZ =
+            state.Follow.FilteredTargetNativeZUp.Z +
+            Rac1OrdinaryCameraController.OrdinaryLookHeight;
+        double expectedPitch = Math.Atan2(
+            state.Framing.EyeNativeZUp.Z - lookTargetZ,
+            planarRadius);
+        Assert.Equal(expectedPitch, state.Control.Pitch, 12);
+    }
+
+    [Fact]
+    public void FullVerticalInput_MatchesRecoveredOrbitGeometry()
+    {
+        var camera = new Rac1OrdinaryCameraController();
+        var player = new Vec3(0d, 0d, 0d);
+        camera.Reset(player, 0d);
+
+        Rac1CameraState state = null!;
+        for (int i = 0; i < 36; i++)
+        {
+            state = camera.Step(new Rac1OrdinaryCameraController.Input(
+                player, 0d, 1d, default));
+        }
+
+        Assert.Equal(1d, camera.ManualPitchState, 12);
+        Assert.Equal(-Rac1OrdinaryCameraController.VerticalSpanRadians,
+            camera.VerticalOrbitRadians, 12);
+        Assert.Equal(-4.596244089776054d,
+            state.Framing.RadialOffsetNativeZUp.X, 10);
+        Assert.Equal(0d, state.Framing.RadialOffsetNativeZUp.Y, 12);
+        Assert.Equal(-3.8567065614623854d,
+            state.Framing.RadialOffsetNativeZUp.Z, 10);
+        Assert.Equal(-0.630784939287828d, state.Control.Pitch, 10);
+    }
+
+    [Fact]
     public void ObstructionContact_PullsInAndClearLineUsesNativeRelease()
     {
         var camera = new Rac1OrdinaryCameraController();
