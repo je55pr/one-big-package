@@ -76,8 +76,11 @@ public sealed record CommandLineArgs
     /// <summary>Debug harness: feed one qualifying native break event to the focused/first class-500 crate.</summary>
     public bool CrateAutoStrike { get; init; }
 
-    /// <summary>Run the deterministic retail-backed R&amp;C1 live combat-loop smoke and quit.</summary>
-    public bool Rac1CombatSmoke { get; init; }
+    /// <summary>Run the ordinary-input-only R&amp;C1 Veldin playability smoke and quit.</summary>
+    public bool Rac1VeldinPlaySmoke { get; init; }
+
+    /// <summary>Run the lower-level synthetic R&amp;C1 combat host-contract smoke and quit.</summary>
+    public bool Rac1CombatContractSmoke { get; init; }
 
     /// <summary>Run the two-pass evidence-backed R&amp;C1 campaign travel/persistence smoke.</summary>
     public bool Rac1CampaignSmoke { get; init; }
@@ -146,7 +149,11 @@ public sealed record CommandLineArgs
                 "--anim-solo" => result with { AnimSolo = true },
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
-                "--rac1-combat-smoke" => result with { Rac1CombatSmoke = true },
+                "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
+                // Historical alias now names the honest ordinary-play gate rather than the
+                // synthetic staged-contact harness it previously selected.
+                "--rac1-combat-smoke" => result with { Rac1VeldinPlaySmoke = true },
+                "--rac1-combat-contract-smoke" => result with { Rac1CombatContractSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },

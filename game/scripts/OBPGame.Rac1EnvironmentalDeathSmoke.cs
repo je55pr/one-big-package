@@ -78,11 +78,13 @@ public partial class OBPGame
             $"[rac1-smoke] ordinary Veldin fall PASS; travel={horizontalTravel:0.000} " +
             $"y={_player.GlobalPosition.Y:0.000} separation={deathSeparation:0.000} " +
             "state=0x77 sequence=11 frame=0 Nanotech=0");
-        OnRac1RespawnRequested();
+        // Drive the same ordinary R-key input boundary used by local play. The
+        // smoke must not call the respawn consequence handler directly.
+        await TapPhysicalKeyAsync(Key.R);
         await Rac1SmokeWaitAsync(
             () => !_rac1Nanotech.Probe().IsDead && _player.IsOnFloor(),
             240,
-            "authored Veldin respawn");
+            "authored Veldin respawn from ordinary input");
         await Rac1SmokeWaitAsync(
             () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
                   PlayerAvatarPresentationIsSynchronized(),

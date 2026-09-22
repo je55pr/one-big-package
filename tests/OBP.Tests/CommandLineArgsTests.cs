@@ -25,4 +25,21 @@ public sealed class CommandLineArgsTests
         Assert.Equal("campaign.json", isolatedPersistence.Rac1CampaignSavePath);
         Assert.True(isolatedPersistence.Rac1CampaignPersistenceRequested);
     }
+
+    [Fact]
+    public void Rac1PlayabilityAndSyntheticCombatSmokesAreDistinct()
+    {
+        CommandLineArgs play = CommandLineArgs.Parse(["--rac1-veldin-play-smoke"]);
+        CommandLineArgs legacyPlay = CommandLineArgs.Parse(["--rac1-combat-smoke"]);
+        CommandLineArgs contract = CommandLineArgs.Parse(["--rac1-combat-contract-smoke"]);
+
+        Assert.True(play.Rac1VeldinPlaySmoke);
+        Assert.False(play.Rac1CombatContractSmoke);
+
+        Assert.True(legacyPlay.Rac1VeldinPlaySmoke);
+        Assert.False(legacyPlay.Rac1CombatContractSmoke);
+
+        Assert.False(contract.Rac1VeldinPlaySmoke);
+        Assert.True(contract.Rac1CombatContractSmoke);
+    }
 }

@@ -7,13 +7,13 @@ using OBP.RAC1.Presentation;
 namespace OneBigPackage;
 
 /// <summary>
-/// Deterministic Godot-host integration gate for the bounded R&C1 Goal 1 loop.
-/// It moves the debug host between admitted retail targets, but all gameplay
-/// transitions remain owned by OBP.RAC1 sessions already used by manual play.
+/// Lower-level synthetic Godot host-contract gate for the bounded R&C1 Goal 1 loop.
+/// This harness may stage host transforms to isolate spatial/contact contracts and
+/// therefore must never be cited as ordinary-play or end-to-end playability proof.
 /// </summary>
 public partial class OBPGame
 {
-    private async Task RunRac1CombatSmokeAsync()
+    private async Task RunRac1CombatContractSmokeAsync()
     {
         try
         {
@@ -21,7 +21,7 @@ public partial class OBPGame
                 throw new InvalidOperationException(
                     "R&C1 combat smoke must begin in authored LEVEL0/Veldin.");
 
-            GD.Print("[rac1-smoke] begin live Veldin combat loop");
+            GD.Print("[rac1-combat-contract] begin synthetic Veldin combat host contracts");
             if (!TryGetRac1RepresentativeHostile(out var navigationHostile, out _) ||
                 navigationHostile is null ||
                 !IsInstanceValid(navigationHostile.Root) ||
@@ -249,7 +249,7 @@ public partial class OBPGame
                 maxFrames: 180,
                 "staged class-749 hostile");
             GD.Print(
-                $"[rac1-smoke] ordinary-play staged-hostile approach PASS; travel={hostileApproachTravel:0.000}");
+                $"[rac1-combat-contract] synthetic staged-hostile approach PASS; travel={hostileApproachTravel:0.000}");
 
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
@@ -273,12 +273,12 @@ public partial class OBPGame
             await RunRac1Level18Class749GateSmokeAsync();
             await RunRac1HostileLifecycleSmokeAsync(bombAmmoAfterFire);
 
-            GD.Print("[rac1-smoke] PASS: class-749 runtime stays witness-gated while authored presentation survives LEVEL0/LEVEL18/unload-reload");
+            GD.Print("[rac1-combat-contract] PASS: synthetic host contracts and witness gating survived LEVEL0/LEVEL18/unload-reload");
             GetTree().Quit(0);
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[rac1-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
+            GD.PrintErr($"[rac1-combat-contract] FAIL: {ex.Message}\n{ex.StackTrace}");
             GetTree().Quit(3);
         }
     }
