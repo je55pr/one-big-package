@@ -21,6 +21,48 @@ public partial class OBPGame
                     "R&C1 combat smoke must begin in authored LEVEL0/Veldin.");
 
             GD.Print("[rac1-smoke] begin live Veldin combat loop");
+            if (!TryGetRac1RepresentativeHostile(out var navigationHostile, out _) ||
+                navigationHostile is null ||
+                !IsInstanceValid(navigationHostile.Root) ||
+                !navigationHostile.Root.Visible)
+                throw new InvalidOperationException(
+                    "Ordinary Veldin launch has no admitted class-749 runtime witness.");
+
+            Vector3 navigationStartPosition = navigationHostile.Root.GlobalPosition;
+            Vector3 navigationStartForward = -navigationHostile.Root.GlobalTransform.Basis.Z;
+            navigationStartForward.Y = 0f;
+            if (navigationStartForward.LengthSquared() <= 1e-6f)
+                throw new InvalidOperationException(
+                    "Ordinary Veldin class-749 witness has no usable initial facing axis.");
+            navigationStartForward = navigationStartForward.Normalized();
+
+            await Rac1SmokeWaitAsync(
+                () =>
+                {
+                    if (!IsInstanceValid(navigationHostile.Root)) return false;
+                    Vector3 currentForward = -navigationHostile.Root.GlobalTransform.Basis.Z;
+                    currentForward.Y = 0f;
+                    if (currentForward.LengthSquared() <= 1e-6f) return false;
+                    currentForward = currentForward.Normalized();
+                    float turned = Math.Abs(
+                        navigationStartForward.SignedAngleTo(currentForward, Vector3.Up));
+                    return navigationHostile.Root.GlobalPosition.DistanceTo(navigationStartPosition) > 0.25f &&
+                           turned > 0.15f;
+                },
+                180,
+                "ordinary-launch class-749 visible movement and turn");
+
+            Vector3 navigationEndForward = -navigationHostile.Root.GlobalTransform.Basis.Z;
+            navigationEndForward.Y = 0f;
+            navigationEndForward = navigationEndForward.Normalized();
+            float navigationDistance =
+                navigationHostile.Root.GlobalPosition.DistanceTo(navigationStartPosition);
+            float navigationTurn = Math.Abs(
+                navigationStartForward.SignedAngleTo(navigationEndForward, Vector3.Up));
+            GD.Print(
+                $"[rac1-smoke] ordinary class-749 navigation PASS; moved={navigationDistance:0.###}, " +
+                $"turned={Mathf.RadToDeg(navigationTurn):0.##}deg before any smoke teleport");
+
             await Rac1SmokeWaitAsync(() => _player.IsOnFloor(), 240, "player grounding");
             Vector3 authoredRespawnPosition = _player.GlobalPosition;
             await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
@@ -106,8 +148,14 @@ public partial class OBPGame
             AssertRac1SmokeHudWeapon(
                 Rac1HudProjection.BombGlovePresentationKey,
                 bombAmmoBeforeFire);
-            Vector3 bombPose = hostile.Root.GlobalPosition - hostileForward * 4f;
-            Rac1SmokePlaceFacing(bombPose, hostileForward);
+            Vector3 bombForward = -hostile.Root.GlobalTransform.Basis.Z;
+            bombForward.Y = 0f;
+            if (bombForward.LengthSquared() <= 1e-5f)
+                throw new InvalidOperationException(
+                    "Moving class-749 witness lost its usable facing before Bomb Glove smoke.");
+            bombForward = bombForward.Normalized();
+            Vector3 bombPose = hostile.Root.GlobalPosition - bombForward * 2f;
+            Rac1SmokePlaceFacing(bombPose, bombForward);
             OnRac1PrimaryAttackRequested();
             int bombAmmoAfterFire = bombAmmoBeforeFire - Rac1BombGlove.AmmoCostPerShot;
             await Rac1SmokeWaitAsync(
@@ -155,7 +203,15 @@ public partial class OBPGame
                 $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
                 "immediate refire cadence-blocked and class-749 consequence remains unresolved");
 
-            Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
+            Vector3 terminalForward = -hostile.Root.GlobalTransform.Basis.Z;
+            terminalForward.Y = 0f;
+            if (terminalForward.LengthSquared() <= 1e-5f)
+                throw new InvalidOperationException(
+                    "Moving class-749 witness lost its usable facing before terminal wrench smoke.");
+            terminalForward = terminalForward.Normalized();
+            Rac1SmokePlaceFacing(
+                hostile.Root.GlobalPosition + terminalForward,
+                -terminalForward);
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();

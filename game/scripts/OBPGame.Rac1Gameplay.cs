@@ -30,6 +30,12 @@ public partial class OBPGame
     private const float Rac1BombPresentationSpeed = 18f;
     private const float Rac1BombPresentationLifetime = 2f;
     private const float Rac1BombHostileContactRadius = 0.9f;
+    // Host-side interpolation for the recovered class-749 state-6/state-8
+    // destinations. Retail helper 0x002d54c8 proves destination-directed
+    // locomotion, but its speed/turn tuning is not yet recovered. These values
+    // make that recovered intent visible without promoting host tuning as retail.
+    private const float Rac1Class749HostPresentationSpeed = 3.5f;
+    private const float Rac1Class749HostPresentationTurnRate = 4.0f;
 
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
     private Rac1BoltCrateSession _rac1BoltCrates = new();
@@ -280,7 +286,7 @@ public partial class OBPGame
         TickRac1Swing(delta);
         TickRac1BombGlove(delta);
         TickRac1Projectiles(delta);
-        TickRac1Hostiles();
+        TickRac1Hostiles(delta);
         TickRac1Pickups();
     }
 
@@ -613,7 +619,7 @@ public partial class OBPGame
         }
     }
 
-    private void TickRac1Hostiles()
+    private void TickRac1Hostiles(double delta)
     {
         if (_player is null || _rac1Nanotech.Probe().IsDead)
         {
@@ -651,8 +657,20 @@ public partial class OBPGame
                     new Rac1Class749WorldPoint(-hostilePosition.X, hostilePosition.Y, hostilePosition.Z)));
             if (next.NativeState != previous.NativeState)
             {
-                GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: state {previous.NativeState} -> {next.NativeState}");
+                GD.Print(
+                    $"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: state {previous.NativeState} -> {next.NativeState}; " +
+                    $"distance={distance:0.###} facing={facingError:0.###}");
             }
+
+            foreach (var intent in next.HostIntents.OfType<Rac1Class749NavigationIntent>())
+            {
+                ApplyRac1Class749NavigationIntent(
+                    hostile,
+                    intent,
+                    _player.GlobalPosition,
+                    delta);
+            }
+
             if (next.Attack is { } attack)
             {
                 var beforeNanotech = _rac1Nanotech.Probe();
@@ -671,6 +689,66 @@ public partial class OBPGame
             }
         }
     }
+
+    private static void ApplyRac1Class749NavigationIntent(
+        RuntimeWorldScene.DynamicObjectNode hostile,
+        Rac1Class749NavigationIntent intent,
+        Vector3 recoveredTargetPosition,
+        double delta)
+    {
+        if (intent.Kind is not (
+                Rac1Class749NavigationIntentKind.PursueRecoveredTarget or
+                Rac1Class749NavigationIntentKind.ReturnHome))
+            throw new NotSupportedException($"Unsupported class-749 navigation intent {intent.Kind}.");
+
+        if (intent.Destination is not { } destination)
+            throw new InvalidOperationException(
+                $"Class-749 {intent.Kind} intent is missing its recovered destination.");
+
+        float seconds = (float)Math.Clamp(
+            delta,
+            0d,
+            1d / Rac1NativeTicksPerSecond);
+        if (seconds <= 0f) return;
+
+        // RuntimeWorldScene mirrors native X into Godot while retaining Y-up and Z.
+        // Keep the recovered destination intact; only interpolation magnitude remains
+        // explicit host presentation policy until helper 0x002d54c8 is recovered.
+        Vector3 target = new(
+            -(float)destination.X,
+            (float)destination.Y,
+            (float)destination.Z);
+        Vector3 current = hostile.Root.GlobalPosition;
+        Vector3 offset = target - current;
+
+        // State 6 independently dereferences the recovered target Moby (Ratchet)
+        // for facing while helper 0x002d54c8 consumes PVar+0x180 as its movement
+        // destination. State 8 has no target-facing witness, so its home destination
+        // is the bounded facing target too.
+        Vector3 facingOffset = intent.Kind == Rac1Class749NavigationIntentKind.PursueRecoveredTarget
+            ? recoveredTargetPosition - current
+            : offset;
+        Vector3 planarDirection = new(facingOffset.X, 0f, facingOffset.Z);
+        if (planarDirection.LengthSquared() > 1e-6f)
+        {
+            planarDirection = planarDirection.Normalized();
+            Vector3 forward = -hostile.Root.GlobalTransform.Basis.Z;
+            forward.Y = 0f;
+            if (forward.LengthSquared() > 1e-6f)
+            {
+                forward = forward.Normalized();
+                float turn = forward.SignedAngleTo(planarDirection, Vector3.Up);
+                float maxTurn = Rac1Class749HostPresentationTurnRate * seconds;
+                hostile.Root.RotateY(Mathf.Clamp(turn, -maxTurn, maxTurn));
+            }
+        }
+
+        float distance = offset.Length();
+        if (distance <= 1e-6f) return;
+        float step = Math.Min(distance, Rac1Class749HostPresentationSpeed * seconds);
+        hostile.Root.GlobalPosition = current + offset / distance * step;
+    }
+
     private void SpawnRac1BoltPickups(Vector3 origin, IReadOnlyList<Rac1BoltPickup> pickups)
     {
         if (_sceneResult is null)
