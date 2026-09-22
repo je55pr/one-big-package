@@ -46,7 +46,7 @@ class 0xc0 weapon Moby
 
 Launch writes projectile state `1`. The same accepted-fire update can stage a replacement class-`0x79` object immediately after the launched pointer is handed off. The controlled live trace shows the launched object and replacement staging object simultaneously on the ammo-decrement frame.
 
-The weapon still retains a recovered 20-native-tick accepted-fire gate. The earlier 10-tick rearm claim belonged to a different class-`0xc0` / class-`0x4a` path and is not item-10 Bomb Glove timing.
+The weapon still retains a recovered 20-native-tick accepted-fire gate. The earlier 10-tick rearm claim belonged to the Mine Glove class-`0xbe` / child class-`0x4a` path and is not item-10 Bomb Glove timing.
 
 `Rac1WeaponSpawnOwnership` remains the reusable source/spawn envelope. For item 10 it now records class `0xc0 -> 0x79`, staged offset `+0x50`, projectile source offset `+0x50`, state `0 -> 1`, and a dedicated weapon launch frame.
 
@@ -60,9 +60,9 @@ and then applies the recovered vertical-step recurrence documented in `RAC1_PROJ
 
 The complete item-10 **launch-vector initialization and launch-origin formula remain unresolved**. The Godot host therefore maps native Ratchet yaw directly for visible direction and keeps its muzzle offset as an explicit presentation fallback.
 
-This supersedes an earlier attribution from another class-`0xc0` path rooted at `0x002c1ad0`, constructor `0x002a9ed0`, class `0x4a`, and launch helper `0x002aa008`. That separate path remains valid retail evidence: it has class-`0x4a` ownership at projectile PVar `+0x30`, a 10/20-tick pair, and the previously decoded yaw/radius/height origin construction. Controlled item-10 replay proves it is **not** the Bomb Glove carrier.
+This supersedes an earlier attribution from the Mine Glove controller path rooted at class `0xbe` / update `0x002c1ad0`, constructor `0x002a9ed0`, child class `0x4a`, and launch helper `0x002aa008`. Static registration binds class `0x4a` to update `0x002aa670`; equipment identity binds controller class `0xbe` to Mine Glove item 17. That separate path remains valid retail evidence with child ownership at PVar `+0x30`, a 10/20-tick pair, and the previously decoded yaw/radius/height origin construction. Controlled item-10 replay proves it is **not** the Bomb Glove carrier.
 
-`Rac1Class4aWeaponFamilySession` now promotes the safe reusable subset of that separate path: staged class `0x4a` state `0 -> 1`, the 10-tick replacement gate, the 20-tick fire gate, retained source ownership at PVar `+0x30`, and the `1.0 / 0x00010000` direct-victim damage handoff. The session deliberately requires an external `stagingAdmitted` fact and does not consume inventory ammo, because no retained witness binds this family to a native item id, descriptor capacity or acquisition state. It is therefore a native-runtime family contract, not a selectable Godot weapon yet.
+`Rac1Class4aWeaponFamilySession` now promotes the safe reusable subset of that Mine path: staged class `0x4a` state `0 -> 1`, the 10-tick replacement gate, the 20-tick fire gate, and retained source ownership at PVar `+0x30`. The old `1.0 / 0x00010000` direct-victim handoff was removed from this family because its call site lies in class `0x47` / OmniWrench update `0x002a84c8`, not class `0x4a`. The session still leaves ammo/admission policy external to this bounded contract.
 
 ## Wrench contrast
 
@@ -95,6 +95,6 @@ The corrected item-10 path is reproduced by the payload-free probe in `tools/rac
 - `0x002acfd8..` — item-10 launch handoff;
 - `0x002adb30..` — class-`0x79` ballistic/contact update.
 
-The older `0x002c1ad0 / 0x002a9ed0 / 0x002aa008` path is retained only as separate class-`0x4a` family evidence.
+The `0x002c1ad0 / 0x002a9ed0 / 0x002aa008` path is retained as Mine Glove controller class `0xbe` spawning class `0x4a`, whose registered update is `0x002aa670`.
 
-Unit coverage freezes the integrated admission/spawn contract in `Rac1BombGloveTests` and `Rac1WrenchCombatTests`.
+Unit coverage freezes the integrated admission/spawn contract in `Rac1BombGloveTests` and `Rac1WrenchCombatTests`, while `Rac1Class4aWeaponFamilyTests` pins the corrected Mine controller/child binding.

@@ -1,11 +1,9 @@
-using OBP.Runtime;
-
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// One staged projectile from the separately recovered class-0x4a weapon family.
-/// This family intentionally has no Rac1WeaponId until retail evidence binds it
-/// to a native item slot.
+/// One staged class-0x4a child from the Mine Glove controller family.
+/// Equipment identity binds controller class 0xbe to Mine Glove, while the
+/// retained constructor/update chain binds its spawned child to class 0x4a.
 /// </summary>
 public readonly record struct Rac1Class4aProjectile(
     long ProjectileId,
@@ -20,18 +18,6 @@ public sealed record Rac1Class4aLaunch(
     int FireCooldownTicks,
     int ProjectileRearmTicks);
 
-public sealed record Rac1Class4aDirectDamageResult(
-    long ProjectileId,
-    int TargetNativeClassId,
-    double NativeDamage,
-    uint NativeDamageFlags)
-{
-    public Rac1NativeDamageEnvelope DamageEnvelope =>
-        new(NativeDamage, NativeDamageFlags);
-    public Rac1NativeDamageHandoff DamageHandoff =>
-        Rac1NativeDamageHandoff.DirectVictim(DamageEnvelope);
-}
-
 public sealed record Rac1Class4aWeaponFamilyProbe(
     int FireCooldownTicksRemaining,
     int ProjectileRearmTicksRemaining,
@@ -39,36 +25,31 @@ public sealed record Rac1Class4aWeaponFamilyProbe(
     Rac1Class4aLaunch? Launch);
 
 /// <summary>
-/// Retail facts for the class-0xc0 / class-0x4a path that survived correction
-/// of the item-10 Bomb Glove attribution. Its native item identity, capacity and
-/// complete target-selection rules remain unresolved.
+/// Retail facts for the Mine Glove class-0xbe / class-0x4a path. The class-0x4a
+/// child is distinct from class-0x47 OmniWrench update 0x002a84c8, whose
+/// direct-damage witness must not be projected onto Mine projectiles.
 /// </summary>
 public static class Rac1Class4aWeaponFamily
 {
-    public const int NativeWeaponClassId = 0xc0;
+    public const int NativeWeaponClassId = 0xbe;
+    public const int NativeWeaponUpdate = 0x002c1ad0;
     public const int NativeProjectileClassId = 0x4a;
+    public const int NativeProjectileConstructor = 0x002a9ed0;
+    public const int NativeProjectileUpdate = 0x002aa670;
     public const int ProjectileCreationNativeState = 0;
     public const int ProjectileLaunchedNativeState = 1;
     public const int ProjectileSourcePvarOffset = 0x30;
     public const int ProjectileRearmTicks = 10;
     public const int FireCooldownTicks = 20;
-    public const double NativeDamage = 1d;
-    public const uint NativeDamageFlags = 0x00010000;
-    public static readonly Rac1NativeDamageHandoff DirectDamageHandoff =
-        Rac1NativeDamageHandoff.DirectVictim(
-            new Rac1NativeDamageEnvelope(NativeDamage, NativeDamageFlags));
 }
 
 /// <summary>
-/// Deterministic native-tick staging/cadence owner for the recovered class-0x4a
-/// family. <c>stagingAdmitted</c> is deliberately supplied by the caller because
-/// the family has not yet been bound to a native item/ammo rule.
-/// Target discovery is likewise outside this type: damage may only be committed
-/// after a caller has obtained a preselected victim.
+/// Deterministic native-tick staging/cadence owner for the recovered Mine
+/// class-0x4a child family. <c>stagingAdmitted</c> remains supplied by the caller
+/// because this bounded contract does not model Mine ammo/admission policy.
 /// </summary>
 public sealed class Rac1Class4aWeaponFamilySession
 {
-    private readonly HashSet<long> _launchedProjectileIds = [];
     private int _fireCooldownTicksRemaining;
     private int _projectileRearmTicksRemaining;
     private long _nextProjectileId = 1;
@@ -94,7 +75,6 @@ public sealed class Rac1Class4aWeaponFamilySession
                 Rac1Class4aWeaponFamily.ProjectileRearmTicks;
             _fireCooldownTicksRemaining =
                 Rac1Class4aWeaponFamily.FireCooldownTicks;
-            _launchedProjectileIds.Add(projectile.ProjectileId);
             launch = new Rac1Class4aLaunch(
                 projectile,
                 Rac1Class4aWeaponFamily.FireCooldownTicks,
@@ -112,29 +92,6 @@ public sealed class Rac1Class4aWeaponFamilySession
 
         return Snapshot(launch);
     }
-
-    public Rac1Class4aDirectDamageResult? ResolvePreselectedVictim(
-        long projectileId,
-        RuntimeDynamicObject victim)
-    {
-        ArgumentNullException.ThrowIfNull(victim);
-        if (!_launchedProjectileIds.Contains(projectileId))
-            return null;
-
-        return new Rac1Class4aDirectDamageResult(
-            projectileId,
-            victim.NativeClassId,
-            Rac1Class4aWeaponFamily.NativeDamage,
-            Rac1Class4aWeaponFamily.NativeDamageFlags);
-    }
-
-    /// <summary>
-    /// Explicit completion seam. The retained family evidence does not yet prove
-    /// a reusable post-impact terminal state, so damage transport does not retire
-    /// the projectile implicitly.
-    /// </summary>
-    public bool CompleteProjectile(long projectileId) =>
-        _launchedProjectileIds.Remove(projectileId);
 
     private Rac1Class4aProjectile CreateProjectile() =>
         new(

@@ -1,31 +1,25 @@
 using OBP.RAC1.Gameplay;
-using OBP.Runtime;
 
 namespace OBP.Tests;
 
 public sealed class Rac1Class4aWeaponFamilyTests
 {
     [Fact]
-    public void ContractFreezesOnlyRetainedSeparateFamilyFacts()
+    public void ContractBindsMineControllerToClass4aChild()
     {
-        Assert.Equal(0xc0, Rac1Class4aWeaponFamily.NativeWeaponClassId);
+        Assert.Equal(0xbe, Rac1Class4aWeaponFamily.NativeWeaponClassId);
+        Assert.Equal(0x002c1ad0, Rac1Class4aWeaponFamily.NativeWeaponUpdate);
         Assert.Equal(0x4a, Rac1Class4aWeaponFamily.NativeProjectileClassId);
+        Assert.Equal(0x002a9ed0, Rac1Class4aWeaponFamily.NativeProjectileConstructor);
+        Assert.Equal(0x002aa670, Rac1Class4aWeaponFamily.NativeProjectileUpdate);
         Assert.Equal(0, Rac1Class4aWeaponFamily.ProjectileCreationNativeState);
         Assert.Equal(1, Rac1Class4aWeaponFamily.ProjectileLaunchedNativeState);
         Assert.Equal(0x30, Rac1Class4aWeaponFamily.ProjectileSourcePvarOffset);
         Assert.Equal(10, Rac1Class4aWeaponFamily.ProjectileRearmTicks);
         Assert.Equal(20, Rac1Class4aWeaponFamily.FireCooldownTicks);
-        Assert.Equal(1d, Rac1Class4aWeaponFamily.NativeDamage);
-        Assert.Equal(0x00010000u, Rac1Class4aWeaponFamily.NativeDamageFlags);
-
-        var handoff = Rac1Class4aWeaponFamily.DirectDamageHandoff;
-        Assert.Equal(Rac1NativeDamageHandoffKind.DirectVictimRecord, handoff.Kind);
-        Assert.True(handoff.RetainsSourceMoby);
-        Assert.True(handoff.VictimIsPreselected);
-        Assert.False(handoff.ExcludesSourceMobyFromCandidates);
     }
     [Fact]
-    public void StagingAdmissionRemainsExternalAndCannotInventAnItemBinding()
+    public void StagingAdmissionRemainsExternalToBoundedMineFamily()
     {
         var session = new Rac1Class4aWeaponFamilySession();
 
@@ -37,7 +31,7 @@ public sealed class Rac1Class4aWeaponFamilyTests
         var projectile = Assert.IsType<Rac1Class4aProjectile>(
             staged.PrearmedProjectile);
         Assert.Equal(1, projectile.ProjectileId);
-        Assert.Equal(0xc0, projectile.NativeWeaponClassId);
+        Assert.Equal(0xbe, projectile.NativeWeaponClassId);
         Assert.Equal(0x4a, projectile.NativeProjectileClassId);
         Assert.Equal(0x30, projectile.ProjectileSourcePvarOffset);
     }
@@ -78,43 +72,4 @@ public sealed class Rac1Class4aWeaponFamilyTests
         Assert.Equal(20, second.FireCooldownTicksRemaining);
         Assert.Equal(10, second.ProjectileRearmTicksRemaining);
     }
-
-    [Fact]
-    public void DirectDamageRequiresALaunchedProjectileAndKeepsCompletionExplicit()
-    {
-        var session = new Rac1Class4aWeaponFamilySession();
-        var victim = Dynamic(nativeClassId: 749, instanceIndex: 7);
-
-        Assert.Null(session.ResolvePreselectedVictim(999, victim));
-        session.Step(false, stagingAdmitted: true);
-        var fired = session.Step(true, stagingAdmitted: true);
-        var launch = Assert.IsType<Rac1Class4aLaunch>(fired.Launch);
-
-        var damage = Assert.IsType<Rac1Class4aDirectDamageResult>(
-            session.ResolvePreselectedVictim(launch.Projectile.ProjectileId, victim));
-        Assert.Equal(749, damage.TargetNativeClassId);
-        Assert.Equal(1d, damage.NativeDamage);
-        Assert.Equal(0x00010000u, damage.NativeDamageFlags);
-        Assert.Equal(
-            Rac1NativeDamageHandoffKind.DirectVictimRecord,
-            damage.DamageHandoff.Kind);
-
-        Assert.True(session.CompleteProjectile(launch.Projectile.ProjectileId));
-        Assert.Null(
-            session.ResolvePreselectedVictim(launch.Projectile.ProjectileId, victim));
-    }
-
-    private static RuntimeDynamicObject Dynamic(
-        int nativeClassId,
-        int instanceIndex) =>
-        new(
-            "rac1",
-            nativeClassId,
-            instanceIndex,
-            null,
-            $"moby:{nativeClassId}",
-            $"moby:{instanceIndex}",
-            new RuntimeObjectTransform(new double[16]),
-            Array.Empty<RuntimeObjectMesh>(),
-            Array.Empty<RuntimeOpaquePayload>());
 }

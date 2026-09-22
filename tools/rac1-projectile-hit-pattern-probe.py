@@ -26,8 +26,14 @@ ITEM10_CONSTRUCTOR = 0x002ACE70
 ITEM10_LAUNCH = 0x002ACFD8
 ITEM10_UPDATE = 0x002ADB30
 ITEM10_UPDATE_END = 0x002AF400
-CLASS4A_UPDATE = 0x002A84C8
-CLASS4A_UPDATE_END = 0x002A96F4
+OMNIWRENCH_CLASS = 0x47
+OMNIWRENCH_UPDATE = 0x002A84C8
+MINE_CONTROLLER_CLASS = 0xBE
+MINE_CONTROLLER_UPDATE = 0x002C1AD0
+MINE_CONSTRUCTOR = 0x002A9ED0
+MINE_PROJECTILE_CLASS = 0x4A
+MINE_PROJECTILE_UPDATE = 0x002AA670
+MINE_PROJECTILE_UPDATE_END = 0x002ACAD8
 WORLD_QUERY = 0x001EFC70
 CONTACT_QUERY = 0x001F2868
 SPLASH_DISTRIBUTOR = 0x0025A9F8
@@ -95,10 +101,19 @@ SIGNATURES = [
     (0x00259B90, 0xAE540034, "per-victim record +0x34 stores victim Moby"),
     (0x001F28AC, 0x20D20000, "common contact routine retains source Moby a2"),
     (0x001F29F0, 0x1312FFF7, "common contact scan skips candidate equal to source Moby"),
-    (0x002A8C6C, 0x3C013F80, "separate class-0x4a path materializes direct damage 1.0"),
-    (0x002A8C74, 0x0260282D, "class-0x4a direct path supplies projectile as source"),
-    (0x002A8C7C, 0x3C060001, "class-0x4a direct path supplies flags 0x00010000"),
-    (0x002A8C84, 0x0C0966F2, "class-0x4a direct path calls writer 0x259bc8"),
+    (0x001EA354, 0x00000047, "registration row identifies native class 0x47"),
+    (0x001EA358, 0x002A84C8, "class 0x47 registers update 0x002a84c8"),
+    (0x001EA360, 0x0000004A, "registration row identifies native class 0x4a"),
+    (0x001EA364, 0x002AA670, "class 0x4a registers update 0x002aa670"),
+    (0x001EA450, 0x000000BE, "registration row identifies Mine controller class 0xbe"),
+    (0x001EA454, 0x002C1AD0, "class 0xbe registers Mine controller update 0x002c1ad0"),
+    (0x002C243C, 0x0C0AA7B4, "Mine controller calls constructor 0x002a9ed0"),
+    (0x002A9EEC, 0x2404004A, "Mine constructor requests native child class 0x4a"),
+    (0x002A9EF8, 0x0C093A0E, "Mine constructor calls common Moby allocator"),
+    (0x002A8C6C, 0x3C013F80, "OmniWrench-family path materializes direct damage 1.0"),
+    (0x002A8C74, 0x0260282D, "OmniWrench-family direct path supplies class-0x47 Moby as source"),
+    (0x002A8C7C, 0x3C060001, "OmniWrench-family direct path supplies flags 0x00010000"),
+    (0x002A8C84, 0x0C0966F2, "OmniWrench-family direct path calls writer 0x259bc8"),
 ]
 MEMORY_OPS = {0x20, 0x21, 0x23, 0x24, 0x25, 0x28, 0x29, 0x2B, 0x31, 0x39}
 
@@ -208,8 +223,22 @@ def build_report(memory: bytes, savestate: Path) -> dict[str, object]:
     vertical_delta = round_f32(frame_scale * 11.0)
 
     return {
-        "schema": 2,
+        "schema": 3,
         "authority": AUTHORITY,
+        "nativeClassBindings": {
+            "omniWrench": {
+                "nativeClass": f"0x{OMNIWRENCH_CLASS:04x}",
+                "registeredUpdate": f"0x{OMNIWRENCH_UPDATE:08x}",
+            },
+            "mineGlove": {
+                "weaponNativeClass": f"0x{MINE_CONTROLLER_CLASS:04x}",
+                "weaponUpdate": f"0x{MINE_CONTROLLER_UPDATE:08x}",
+                "projectileNativeClass": f"0x{MINE_PROJECTILE_CLASS:04x}",
+                "projectileConstructor": f"0x{MINE_CONSTRUCTOR:08x}",
+                "projectileUpdate": f"0x{MINE_PROJECTILE_UPDATE:08x}",
+                "controllerConstructorCall": "0x002c243c",
+            },
+        },
         "savestate": {
             "file": savestate.name,
             "sha256": sha256(savestate),
@@ -257,14 +286,18 @@ def build_report(memory: bytes, savestate: Path) -> dict[str, object]:
                 "source": "class-0x79 projectile Moby",
                 "victims": "candidate Mobies discovered by common contact query; source candidate skipped",
             },
-            "separateDirectRepresentative": {
-                "nativeClass": "0x004a",
+            "omniWrenchDirectRepresentative": {
+                "nativeClass": f"0x{OMNIWRENCH_CLASS:04x}",
+                "registeredUpdate": f"0x{OMNIWRENCH_UPDATE:08x}",
                 "writer": f"0x{DIRECT_DAMAGE_WRITER:08x}",
                 "nativeDamage": 1.0,
                 "nativeDamageFlags": "0x00010000",
-                "source": "class-0x4a projectile Moby",
+                "source": "class-0x47 OmniWrench Moby",
                 "victim": "preselected Moby",
-                "boundary": "this is not the item-10 Bomb carrier",
+                "boundary": (
+                    "Wrench-family direct-damage evidence; not Mine class-0x4a projectile evidence, "
+                    "and not by itself proof of the ordinary action-0x13 swing envelope"
+                ),
             },
         },
         "ownershipAndFriendlyFiltering": {
@@ -283,8 +316,11 @@ def build_report(memory: bytes, savestate: Path) -> dict[str, object]:
             "item10UpdateCallers": direct_jal_callers(
                 memory, ITEM10_UPDATE, ITEM10_UPDATE_END, WORLD_QUERY
             ),
-            "class0x4aUpdateCallers": direct_jal_callers(
-                memory, CLASS4A_UPDATE, CLASS4A_UPDATE_END, WORLD_QUERY
+            "omniWrenchUpdateCallers": direct_jal_callers(
+                memory, OMNIWRENCH_UPDATE, MINE_CONSTRUCTOR, WORLD_QUERY
+            ),
+            "mineProjectileUpdateCallers": direct_jal_callers(
+                memory, MINE_PROJECTILE_UPDATE, MINE_PROJECTILE_UPDATE_END, WORLD_QUERY
             ),
             "boundary": (
                 "call sites prove shared world-contact querying, not whether the primitive is "
@@ -309,12 +345,13 @@ def build_report(memory: bytes, savestate: Path) -> dict[str, object]:
             ],
         },
         "controlledLiveWitness": CONTROLLED_LIVE_WITNESS,
-        "instructionEvidence": signatures,
+        "staticEvidence": signatures,
         "notes": [
             "No ISO, executable, EE-memory, savestate, Moby, or PVar payload bytes are emitted.",
-            "Instruction witnesses are isolated 32-bit words retained only to make semantic claims reproducible.",
+            "Static registration/allocation/instruction witnesses are isolated 32-bit words retained only to make semantic claims reproducible.",
             "The managed live witness stores only derived scalar/state observations and addresses.",
-            "Class 0x4a remains useful as a direct-damage representative but is not the item-10 Bomb projectile.",
+            "Class 0x47 / update 0x002a84c8 is OmniWrench; its 1.0 / 0x00010000 direct record is Wrench-family evidence.",
+            "Mine Glove controller class 0xbe / update 0x002c1ad0 allocates child class 0x4a, whose registered update is 0x002aa670.",
         ],
     }
 

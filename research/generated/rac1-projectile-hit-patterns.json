@@ -1,11 +1,25 @@
 {
-  "schema": 2,
+  "schema": 3,
   "authority": {
     "game": "Ratchet & Clank",
     "build": "rac1-ntscu-original",
     "serial": "SCUS-97199",
     "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
     "exeSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9"
+  },
+  "nativeClassBindings": {
+    "omniWrench": {
+      "nativeClass": "0x0047",
+      "registeredUpdate": "0x002a84c8"
+    },
+    "mineGlove": {
+      "weaponNativeClass": "0x00be",
+      "weaponUpdate": "0x002c1ad0",
+      "projectileNativeClass": "0x004a",
+      "projectileConstructor": "0x002a9ed0",
+      "projectileUpdate": "0x002aa670",
+      "controllerConstructorCall": "0x002c243c"
+    }
   },
   "savestate": {
     "file": "SCUS-97199 (CE4933D0).01.p2s",
@@ -58,14 +72,15 @@
       "source": "class-0x79 projectile Moby",
       "victims": "candidate Mobies discovered by common contact query; source candidate skipped"
     },
-    "separateDirectRepresentative": {
-      "nativeClass": "0x004a",
+    "omniWrenchDirectRepresentative": {
+      "nativeClass": "0x0047",
+      "registeredUpdate": "0x002a84c8",
       "writer": "0x00259bc8",
       "nativeDamage": 1.0,
       "nativeDamageFlags": "0x00010000",
-      "source": "class-0x4a projectile Moby",
+      "source": "class-0x47 OmniWrench Moby",
       "victim": "preselected Moby",
-      "boundary": "this is not the item-10 Bomb carrier"
+      "boundary": "Wrench-family direct-damage evidence; not Mine class-0x4a projectile evidence, and not by itself proof of the ordinary action-0x13 swing envelope"
     }
   },
   "ownershipAndFriendlyFiltering": {
@@ -83,11 +98,15 @@
     "item10UpdateCallers": [
       "0x002ae1b0"
     ],
-    "class0x4aUpdateCallers": [
+    "omniWrenchUpdateCallers": [
       "0x002a85f8",
       "0x002a8be8",
       "0x002a8d1c",
-      "0x002a941c"
+      "0x002a941c",
+      "0x002a992c"
+    ],
+    "mineProjectileUpdateCallers": [
+      "0x002aab40"
     ],
     "boundary": "call sites prove shared world-contact querying, not whether the primitive is a ray, segment, sweep, or expanded shape"
   },
@@ -167,7 +186,7 @@
     ],
     "sourceMoby": "0x01858a80"
   },
-  "instructionEvidence": [
+  "staticEvidence": [
     {
       "address": "0x0024e9b8",
       "word": "0xa63000a6",
@@ -434,30 +453,76 @@
       "meaning": "common contact scan skips candidate equal to source Moby"
     },
     {
+      "address": "0x001ea354",
+      "word": "0x00000047",
+      "meaning": "registration row identifies native class 0x47"
+    },
+    {
+      "address": "0x001ea358",
+      "word": "0x002a84c8",
+      "meaning": "class 0x47 registers update 0x002a84c8"
+    },
+    {
+      "address": "0x001ea360",
+      "word": "0x0000004a",
+      "meaning": "registration row identifies native class 0x4a"
+    },
+    {
+      "address": "0x001ea364",
+      "word": "0x002aa670",
+      "meaning": "class 0x4a registers update 0x002aa670"
+    },
+    {
+      "address": "0x001ea450",
+      "word": "0x000000be",
+      "meaning": "registration row identifies Mine controller class 0xbe"
+    },
+    {
+      "address": "0x001ea454",
+      "word": "0x002c1ad0",
+      "meaning": "class 0xbe registers Mine controller update 0x002c1ad0"
+    },
+    {
+      "address": "0x002c243c",
+      "word": "0x0c0aa7b4",
+      "meaning": "Mine controller calls constructor 0x002a9ed0"
+    },
+    {
+      "address": "0x002a9eec",
+      "word": "0x2404004a",
+      "meaning": "Mine constructor requests native child class 0x4a"
+    },
+    {
+      "address": "0x002a9ef8",
+      "word": "0x0c093a0e",
+      "meaning": "Mine constructor calls common Moby allocator"
+    },
+    {
       "address": "0x002a8c6c",
       "word": "0x3c013f80",
-      "meaning": "separate class-0x4a path materializes direct damage 1.0"
+      "meaning": "OmniWrench-family path materializes direct damage 1.0"
     },
     {
       "address": "0x002a8c74",
       "word": "0x0260282d",
-      "meaning": "class-0x4a direct path supplies projectile as source"
+      "meaning": "OmniWrench-family direct path supplies class-0x47 Moby as source"
     },
     {
       "address": "0x002a8c7c",
       "word": "0x3c060001",
-      "meaning": "class-0x4a direct path supplies flags 0x00010000"
+      "meaning": "OmniWrench-family direct path supplies flags 0x00010000"
     },
     {
       "address": "0x002a8c84",
       "word": "0x0c0966f2",
-      "meaning": "class-0x4a direct path calls writer 0x259bc8"
+      "meaning": "OmniWrench-family direct path calls writer 0x259bc8"
     }
   ],
   "notes": [
     "No ISO, executable, EE-memory, savestate, Moby, or PVar payload bytes are emitted.",
-    "Instruction witnesses are isolated 32-bit words retained only to make semantic claims reproducible.",
+    "Static registration/allocation/instruction witnesses are isolated 32-bit words retained only to make semantic claims reproducible.",
     "The managed live witness stores only derived scalar/state observations and addresses.",
-    "Class 0x4a remains useful as a direct-damage representative but is not the item-10 Bomb projectile."
+    "Class 0x47 / update 0x002a84c8 is OmniWrench; its 1.0 / 0x00010000 direct record is Wrench-family evidence.",
+    "Mine Glove controller class 0xbe / update 0x002c1ad0 allocates child class 0x4a, whose registered update is 0x002aa670."
   ]
 }
