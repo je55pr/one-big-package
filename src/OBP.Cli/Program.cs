@@ -1,6 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
 using OBP.IO;
+using OBP.PS2;
+using OBP.RAC1;
+using OBP.RAC1.Research;
 using OBP.RAC2;
 
 // obp-test-import — decode a Going Commando retail level straight from an ISO and
@@ -9,9 +12,46 @@ using OBP.RAC2;
 //
 //   obp test-import <GC.iso> [--level N] [--json]
 
+if (args.Length > 0 && args[0] == "rac1-authored-moby-census")
+{
+    if (args.Length != 3)
+    {
+        Console.Error.WriteLine("usage: obp rac1-authored-moby-census <RAC1.iso> <output-dir>");
+        return 2;
+    }
+
+    string rac1Iso = args[1];
+    string outputDir = args[2];
+    if (!File.Exists(rac1Iso))
+    {
+        Console.Error.WriteLine($"error: ISO not found: {rac1Iso}");
+        return 1;
+    }
+
+    using var rac1Reader = new FileRandomAccessReader(rac1Iso);
+    var boot = Ps2Boot.ReadBootInfo(rac1Reader);
+    if (rac1Reader.Length != Rac1Authority.PrimaryIsoSizeBytes ||
+        !string.Equals(boot.Serial, Rac1Authority.Primary.Serial, StringComparison.OrdinalIgnoreCase))
+    {
+        Console.Error.WriteLine("error: source is not the pinned rac1-ntscu-original / SCUS-97199 authority shape");
+        return 1;
+    }
+
+    var census = Rac1AuthoredMobyCensus.Build(rac1Reader);
+    Directory.CreateDirectory(outputDir);
+    string jsonPath = Path.Combine(outputDir, "rac1-authored-moby-census.json");
+    string csvPath = Path.Combine(outputDir, "rac1-authored-moby-census.csv");
+    File.WriteAllText(jsonPath, Rac1AuthoredMobyCensus.ToJson(census));
+    File.WriteAllText(csvPath, Rac1AuthoredMobyCensus.ToCsv(census));
+    Console.WriteLine($"wrote {jsonPath}");
+    Console.WriteLine($"wrote {csvPath}");
+    return 0;
+}
+
 if (args.Length == 0 || args[0] is "-h" or "--help")
 {
     Console.Error.WriteLine("usage: obp test-import <GC.iso> [--level N] [--json]");
+    Console.Error.WriteLine("       obp rac1-authored-moby-census <RAC1.iso> <output-dir>");
     return 2;
 }
 

@@ -15,6 +15,11 @@ public static class Rac1StaticClasses
     public const int TieEntrySize = 0x20;
     public const int ShrubEntrySize = 0x30;
 
+    public sealed record MobyTableEntry(int Index, int OClass, int AssetOffset)
+    {
+        public bool HasAssetPayload => AssetOffset != 0;
+    }
+
     public sealed record MobyClass(
         int OClass,
         int AssetOffset,
@@ -45,6 +50,15 @@ public static class Rac1StaticClasses
         IReadOnlyDictionary<int, ShrubClass> Shrubs);
 
     private sealed record Entry(int OClass, int AssetOffset, byte[] TextureIds);
+
+    /// <summary>
+    /// Enumerate every authored Moby table row, including zero-payload rows that
+    /// the decoded class dictionary intentionally omits.
+    /// </summary>
+    public static IReadOnlyList<MobyTableEntry> ReadMobyTable(Rac1LevelCore.Core core) =>
+        ReadEntries(core, "moby", MobyTableField, MobyEntrySize)
+            .Select((entry, index) => new MobyTableEntry(index, entry.OClass, entry.AssetOffset))
+            .ToArray();
 
     public static Classes Read(Rac1LevelCore.Core core)
     {
