@@ -100,30 +100,27 @@ public sealed class Rac1Goal1PlayableSliceTests
         var crateState = RuntimeEntityState.FromAuthored(crate);
         var crateTarget = new Rac1WrenchContactTarget(
             Rac1BoltCrate.NativeClassId,
-            Rac1WrenchCombatController.DamageableMobyFlag,
             IsPlayerSelf: false);
         var crateSession = new Rac1BoltCrateSession();
         Assert.True(Rac1BoltCrate.RewardRange(10).Contains(12));
 
-        var contactSphere = Assert.IsType<Rac1WrenchSphere>(wrench.GetClass500ToolTipSphere(
-            Rac1WrenchCombatController.OrdinaryActionId,
-            Rac1WrenchCombatController.OrdinaryProfileId,
-            nativeAge: 20,
-            root: new Rac1WrenchPoint(0, 0, 0),
-            tip: new Rac1WrenchPoint(1, 0, 0)));
-        Assert.Equal(Rac1WrenchCombatController.ToolTipSphereRadius, contactSphere.Radius, 12);
+        // Contact admission is host policy while retail wrench geometry remains unresolved.
+        Assert.True(Rac1WrenchHostContactPolicy.Admits(
+            new Rac1WrenchHostPoint(0, 0, 0),
+            new Rac1WrenchHostDirection(1, 0, 0),
+            new Rac1WrenchHostPoint(2.7, 0.8, 0)));
 
-        var crateHit = Assert.IsType<Rac1WrenchDamageResult>(wrench.ApplyClass500ToolTipContact(
-            Rac1WrenchCombatController.OrdinaryActionId,
-            Rac1WrenchCombatController.OrdinaryProfileId,
-            nativeAge: 20,
-            crateTarget,
-            crate,
-            crateState,
-            crateSession,
-            selectedTotal: 12));
-        Assert.Equal(Rac1WrenchContactPath.ToolTipSphere, crateHit.ContactPath);
-        Assert.Equal(Rac1WrenchCombatController.NativeDamage, crateHit.NativeDamage);
+        var crateHit = Assert.IsType<Rac1WrenchDamageResult>(
+            wrench.ApplyClass500HostAdmittedContact(
+                crateTarget,
+                crate,
+                crateState,
+                crateSession,
+                selectedTotal: 12));
+        Assert.Equal(Rac1WrenchContactPath.HostPolicyAdmission, crateHit.ContactPath);
+        Assert.Equal(
+            Rac1WrenchCombatController.RepresentativeDamage,
+            crateHit.NativeDamage);
 
         var brokenCrate = Assert.IsType<Rac1BoltCrateBreakResult>(crateHit.BoltCrateBreak);
         Assert.Equal(Rac1BoltCrate.ActiveNativeState, brokenCrate.NativeStateBefore);
@@ -198,14 +195,12 @@ public sealed class Rac1Goal1PlayableSliceTests
 
         var hostileTarget = new Rac1WrenchContactTarget(
             Rac1Class749Hostile.NativeClassId,
-            Rac1WrenchCombatController.DamageableMobyFlag,
             IsPlayerSelf: false);
-        var hostileDamage = Assert.IsType<Rac1WrenchDamageResult>(wrench.ResolveForwardDirectRecord(
-            Rac1WrenchCombatController.OrdinaryActionId,
-            Rac1WrenchCombatController.OrdinaryProfileId,
-            nativeAge: 20,
-            hostileTarget));
-        Assert.Equal(Rac1WrenchContactPath.ForwardDirectRecord, hostileDamage.ContactPath);
+        var hostileDamage = Assert.IsType<Rac1WrenchDamageResult>(
+            wrench.ResolveHostAdmittedDamage(hostileTarget));
+        Assert.Equal(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            hostileDamage.ContactPath);
 
         var damaged = hostileSession.ApplyWrenchDamage(hostile, hostileDamage);
         Assert.Equal(0f, damaged.Health);

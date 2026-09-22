@@ -114,9 +114,9 @@ public sealed class Rac1MobyRuntimeTests
         var session = new Rac1Class749HostileSession();
         session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
         var result = new Rac1WrenchDamageResult(
-            Rac1WrenchContactPath.ForwardDirectRecord,
-            Rac1WrenchCombatController.NativeDamage,
-            Rac1WrenchCombatController.NativeDamageFlags);
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
 
         var damaged = session.ApplyWrenchDamage(source, result);
 

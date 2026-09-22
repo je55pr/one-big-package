@@ -1,6 +1,6 @@
 # R&C1 wrench combat archaeology
 
-Status: evidence checkpoint for issue #55. This document records retail-backed findings only; implementation is intentionally deferred until the native hit/contact path is fully recovered.
+Status: evidence boundary for issue #55. Retail ordinary-wrench contact timing, geometry and target filtering remain unresolved. Production may use an explicitly labeled host-policy collision admission layer, but host dimensions must never be promoted as retail evidence.
 
 ## Proven player-side state
 
@@ -62,8 +62,16 @@ The direct geometric route to the nearest active crate crosses real canyon topol
 - Generic `0x1F2868` calls in neighboring actions do not prove that action `0x13` uses that same path directly.
 - Repeated attacks, combo progression, stagger, cooldown, recovery, and target filtering remain unresolved unless separately evidenced.
 
-## Resume point
+## Runtime boundary while retail contact remains unresolved
 
-Next, inspect second-level callees reachable from the exact action-19 call set, especially the remaining opaque helpers, for a bridge into contact/damage handling. If no such bridge exists, test the separately-scheduled-object hypothesis by comparing live Moby/update state during neutral versus action `0x13` and identifying a wrench/contact object whose update ultimately produces the native victim damage record.
+Ordinary play now separates host collision admission from recovered game consequences. `Rac1WrenchHostContactPolicy` is an OBP tuning layer, not a retail reconstruction. Its current planar forward reach `2.6`, planar sweep radius `0.9`, target-origin allowance `0.65`, and rear grace `0.25` exist only to make visually obvious first-swing contacts reliable in the Godot host. Vertical imported-Moby root offset is deliberately ignored because that origin height is not a recovered retail contact anchor. None of those dimensions or that planar admission choice may be cited as native wrench geometry.
 
-Implementation should begin only after the retail chain `Square/action 0x13 -> active contact test -> eligible victim -> native positive damage record` is proven. The first integration target remains a class-500 crate so that positive damage can feed the already-recovered crate break and bolt-collection path from issue #60.
+The retail-backed inputs retained across that boundary are the action/profile identity `0x13/0` and live player-yaw facing established by the separate facing witnesses. The Goal-1 class-500/class-749 target whitelist is integration scope, not recovered native target filtering. A representative positive damage record (`1.0`, flags `0x00010000`) is used only to drive separately recovered victim consumers; those values are not promoted as the ordinary-wrench damage envelope.
+
+For class 500, the separately recovered consequence remains positive native damage -> crate break/disable -> bolt emission. For the retained class-749 witness, the bounded representative consumer remains health `1.0 -> 0.0` and damage-state/terminal-state handling. Host admission decides only whether an obvious visual strike reaches those consumers.
+
+## Further retail recovery
+
+Continue inspecting second-level callees reachable from the exact action-19 call set, especially the remaining opaque helpers, for a bridge into contact/damage handling. If no such bridge exists, test the separately-scheduled-object hypothesis by comparing live Moby/update state during neutral versus action `0x13` and identifying a wrench/contact object whose update ultimately produces the native victim damage record.
+
+Only a proven retail chain such as `Square/action 0x13 -> active contact test -> eligible victim -> native damage record` should replace the host-policy timing, geometry, target filtering, or representative damage stimulus.

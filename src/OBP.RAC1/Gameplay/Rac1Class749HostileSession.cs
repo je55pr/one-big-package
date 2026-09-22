@@ -119,14 +119,14 @@ public sealed class Rac1Class749HostileSession
         RuntimeDynamicObject source,
         Rac1WrenchDamageResult damage)
     {
-        if (damage.ContactPath != Rac1WrenchContactPath.ForwardDirectRecord ||
-            damage.NativeDamage != Rac1WrenchCombatController.NativeDamage ||
-            damage.NativeDamageFlags != Rac1WrenchCombatController.NativeDamageFlags ||
+        if (damage.ContactPath != Rac1WrenchContactPath.HostPolicyAdmission ||
+            damage.NativeDamage != Rac1WrenchCombatController.RepresentativeDamage ||
+            damage.NativeDamageFlags != Rac1WrenchCombatController.RepresentativeDamageFlags ||
             damage.BoltCrateBreak is not null)
             throw new NotSupportedException(
-                "Only the recovered ordinary forward wrench damage result is admitted for class 749.");
+                "Only the bounded host-admitted wrench stimulus is supported for class 749.");
 
-        return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "wrench");
+        return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "host-admitted wrench");
     }
 
     private Rac1Class749HostProbe ApplyRepresentativeDamage(

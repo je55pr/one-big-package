@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
@@ -77,8 +78,27 @@ public partial class OBPGame
             crateDirection.Y = 0f;
             if (crateDirection.LengthSquared() <= 1e-5f) crateDirection = Vector3.Forward;
             crateDirection = crateDirection.Normalized();
-            Vector3 cratePose = crate.Root.GlobalPosition - crateDirection * 2.0f;
-            Rac1SmokePlaceFacing(cratePose, crateDirection);
+            Vector3 crateSide = new(-crateDirection.Z, 0f, crateDirection.X);
+            Vector3 crateApproachPose =
+                crate.Root.GlobalPosition -
+                crateDirection * 4.1f +
+                crateSide * 0.55f;
+            Rac1SmokePlaceGroundedFacing(crateApproachPose, crateDirection);
+            await Rac1SmokeWaitAsync(
+                () => _player.IsOnFloor(),
+                60,
+                "crate approach grounding");
+            if (Rac1SmokeCurrentWrenchPolicyAdmits(crate.Root.GlobalPosition))
+                throw new InvalidOperationException(
+                    "Crate approach seed unexpectedly began inside the host wrench contact policy.");
+
+            float crateApproachTravel = await Rac1SmokeApproachWrenchTargetAsync(
+                () => crate.Root.GlobalPosition,
+                maxFrames: 180,
+                "crate");
+            GD.Print(
+                $"[rac1-smoke] ordinary-play crate approach PASS; travel={crateApproachTravel:0.000}");
+
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
@@ -121,6 +141,17 @@ public partial class OBPGame
             if (hostileForward.LengthSquared() <= 1e-5f)
                 throw new InvalidOperationException("Representative class-749 has no usable host facing axis.");
             hostileForward = hostileForward.Normalized();
+
+            // This is a synthetic incoming-damage witness, not ordinary movement.
+            // The moving-hostile host policy can otherwise leave Ratchet's floating
+            // smoke pose before native attack marker 68. Reuse the existing
+            // development fly seam only to hold that pose without gravity; the
+            // ordinary wrench regressions below still enter contact through the
+            // retail-derived movement path.
+            await TapPhysicalKeyAsync(Key.F);
+            if (!_player.DevelopmentFlyEnabled)
+                throw new InvalidOperationException(
+                    "Incoming-damage smoke could not hold its synthetic witness pose.");
             Rac1SmokePlaceFacing(hostile.Root.GlobalPosition + hostileForward, -hostileForward);
             await Rac1SmokeWaitAsync(
                 () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
@@ -203,15 +234,46 @@ public partial class OBPGame
                 $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
                 "immediate refire cadence-blocked and class-749 consequence remains unresolved");
 
+            await TapPhysicalKeyAsync(Key.F);
+            if (_player.DevelopmentFlyEnabled)
+                throw new InvalidOperationException(
+                    "Synthetic damage/contact smoke did not restore ordinary player physics.");
+
             Vector3 terminalForward = -hostile.Root.GlobalTransform.Basis.Z;
             terminalForward.Y = 0f;
             if (terminalForward.LengthSquared() <= 1e-5f)
                 throw new InvalidOperationException(
                     "Moving class-749 witness lost its usable facing before terminal wrench smoke.");
             terminalForward = terminalForward.Normalized();
-            Rac1SmokePlaceFacing(
-                hostile.Root.GlobalPosition + terminalForward,
-                -terminalForward);
+
+            // The authored hostile location is not a proven walkable wrench approach
+            // corridor. Ordinary navigation was already asserted above before any
+            // smoke teleport, so stage the same supported witness on the crate corridor
+            // that just proved ordinary Ratchet movement. Re-pin only during this
+            // synthetic contact regression; production navigation remains untouched.
+            Vector3 stagedHostilePosition = crate.Root.GlobalPosition;
+            hostile.Root.GlobalPosition = stagedHostilePosition;
+            Rac1SmokePlaceGroundedFacing(crateApproachPose, crateDirection);
+            await Rac1SmokeWaitAsync(
+                () => _player.IsOnFloor(),
+                60,
+                "staged hostile approach grounding");
+            hostile.Root.GlobalPosition = stagedHostilePosition;
+            if (Rac1SmokeCurrentWrenchPolicyAdmits(stagedHostilePosition))
+                throw new InvalidOperationException(
+                    "Staged hostile approach seed unexpectedly began inside the host wrench contact policy.");
+
+            float hostileApproachTravel = await Rac1SmokeApproachWrenchTargetAsync(
+                () =>
+                {
+                    hostile.Root.GlobalPosition = stagedHostilePosition;
+                    return stagedHostilePosition;
+                },
+                maxFrames: 180,
+                "staged class-749 hostile");
+            GD.Print(
+                $"[rac1-smoke] ordinary-play staged-hostile approach PASS; travel={hostileApproachTravel:0.000}");
+
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
@@ -354,6 +416,107 @@ public partial class OBPGame
         }
 
         throw new TimeoutException($"Timed out waiting for RAC1 smoke phase: {label}.");
+    }
+
+    private async Task<float> Rac1SmokeApproachWrenchTargetAsync(
+        Func<Vector3> targetCenterProvider,
+        int maxFrames,
+        string label)
+    {
+        if (_player is null)
+            throw new InvalidOperationException("RAC1 smoke player disappeared.");
+
+        Vector3 start = _player.GlobalPosition;
+        Vector3 targetCenter = targetCenterProvider();
+        try
+        {
+            for (int frame = 0; frame < maxFrames; frame++)
+            {
+                targetCenter = targetCenterProvider();
+                if (Rac1SmokeCurrentWrenchPolicyAdmits(targetCenter))
+                {
+                    Vector3 travelled = _player.GlobalPosition - start;
+                    travelled.Y = 0f;
+                    float distance = travelled.Length();
+                    if (distance < 0.5f)
+                        throw new InvalidOperationException(
+                            $"{label} entered wrench policy after only {distance:0.000} host units; " +
+                            "normal-play approach coverage requires meaningful movement.");
+                    return distance;
+                }
+
+                Vector3 desired = targetCenter - _player.GlobalPosition;
+                desired.Y = 0f;
+                if (desired.LengthSquared() <= 1e-5f)
+                    throw new InvalidOperationException(
+                        $"{label} reached the target origin without entering the wrench host policy.");
+                desired = desired.Normalized();
+
+                double controlYaw = _player.Rac1ControlYaw;
+                Vector3 controlForward = new(
+                    -(float)Math.Cos(controlYaw),
+                    0f,
+                    (float)Math.Sin(controlYaw));
+                Vector3 controlRight = new(
+                    -(float)Math.Sin(controlYaw),
+                    0f,
+                    -(float)Math.Cos(controlYaw));
+                SetAnalogueSmokeInput(
+                    Math.Clamp(desired.Dot(controlRight), -1f, 1f),
+                    Math.Clamp(desired.Dot(controlForward), -1f, 1f));
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            }
+        }
+        finally
+        {
+            ClearMovementSmokeInput();
+        }
+
+        throw new TimeoutException(
+            $"Timed out driving ordinary movement into wrench host policy for {label}: " +
+            $"start={start}, current={_player?.GlobalPosition}, target={targetCenter}, " +
+            $"yaw={_player?.Rac1CurrentYaw:R}, control={_player?.Rac1ControlYaw:R}.");
+    }
+
+    private bool Rac1SmokeCurrentWrenchPolicyAdmits(Vector3 targetCenter)
+    {
+        if (_player is null) return false;
+
+        var facing = _rac1Wrench.ResolveFirstSwingFacing(_player.Rac1CurrentYaw);
+        Vector3 forward = new(-(float)facing.X, 0f, (float)facing.Y);
+        if (forward.LengthSquared() <= 1e-5f) return false;
+        forward = forward.Normalized();
+        Vector3 root =
+            _player.GlobalPosition +
+            Vector3.Up * Rac1WrenchHostRootHeight;
+        return Rac1WrenchHostPolicyAdmits(root, forward, targetCenter);
+    }
+
+    private void Rac1SmokePlaceGroundedFacing(
+        Vector3 position,
+        Vector3 sceneDirection)
+    {
+        if (_player is null)
+            throw new InvalidOperationException("RAC1 smoke player disappeared.");
+
+        Rac1SmokePlaceFacing(position, sceneDirection);
+        var query = PhysicsRayQueryParameters3D.Create(
+            position + Vector3.Up * 8f,
+            position + Vector3.Down * 128f);
+        query.Exclude =
+            new global::Godot.Collections.Array<Rid> { _player.GetRid() };
+        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.Count == 0)
+            throw new InvalidOperationException(
+                $"No imported collision lies below wrench approach seed {position}.");
+
+        Vector3 normal = (Vector3)hit["normal"];
+        if (normal.Y < 0.5f)
+            throw new InvalidOperationException(
+                $"Wrench approach seed {position} hit non-walkable normal {normal}.");
+
+        _player.GlobalPosition = (Vector3)hit["position"] + Vector3.Up * 0.08f;
+        _player.Velocity = Vector3.Zero;
     }
 
     private void Rac1SmokePlaceFacing(Vector3 position, Vector3 sceneDirection)

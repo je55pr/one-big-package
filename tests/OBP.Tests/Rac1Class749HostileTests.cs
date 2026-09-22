@@ -171,21 +171,16 @@ public sealed class Rac1Class749HostileTests
     [Theory]
     [InlineData(Rac1Class749Hostile.TerminalNativeStateFd)]
     [InlineData(Rac1Class749Hostile.TerminalNativeStateFe)]
-    public void OrdinaryForwardWrenchDamageReproducesRepresentativeDeathConsequence(int terminalStatus)
+    public void HostAdmittedWrenchStimulusReproducesRepresentativeDeathConsequence(int terminalStatus)
     {
         var source = Class749(149, health: 1f);
         var session = Registered(source);
         var wrench = new Rac1WrenchCombatController();
         var target = new Rac1WrenchContactTarget(
             Rac1Class749Hostile.NativeClassId,
-            Rac1WrenchCombatController.DamageableMobyFlag,
             IsPlayerSelf: false);
         var damage = Assert.IsType<Rac1WrenchDamageResult>(
-            wrench.ResolveForwardDirectRecord(
-                Rac1WrenchCombatController.OrdinaryActionId,
-                Rac1WrenchCombatController.OrdinaryProfileId,
-                nativeAge: 20,
-                target));
+            wrench.ResolveHostAdmittedDamage(target));
 
         var damaged = session.ApplyWrenchDamage(source, damage);
         Assert.Equal(0f, damaged.Health);
@@ -203,9 +198,9 @@ public sealed class Rac1Class749HostileTests
         var source = Class749(149, health: 2f);
         var session = Registered(source);
         var damage = new Rac1WrenchDamageResult(
-            Rac1WrenchContactPath.ForwardDirectRecord,
-            Rac1WrenchCombatController.NativeDamage,
-            Rac1WrenchCombatController.NativeDamageFlags);
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
 
         Assert.Throws<NotSupportedException>(() => session.ApplyWrenchDamage(source, damage));
         Assert.Equal(2f, session.Probe(source).Health);

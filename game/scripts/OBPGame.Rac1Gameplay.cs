@@ -13,16 +13,16 @@ namespace OneBigPackage;
 
 /// <summary>
 /// Thin live host for the admitted R&C1 Goal 1 gameplay slice. Godot supplies
-/// player input, contact/proximity facts and presentation; OBP.RAC1 remains the
-/// authority for wrench contact, crate rewards and class-749 native state.
+/// player input, explicitly host-policy wrench contact admission and presentation;
+/// OBP.RAC1 retains recovered wrench facing and victim consequences.
 /// </summary>
 public partial class OBPGame
 {
     private const int Rac1WitnessHostileInstance = Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex;
     private const double Rac1NativeTicksPerSecond = Rac1RatchetMovementController.UpdateHz;
-    private const float Rac1WrenchReach = 2.35f;
-    private const float Rac1DirectContactRadius = 1.25f;
-    private const float Rac1CrateOriginPadding = 1.0f;
+    // Host presentation anchor only. Spatial admission dimensions live in the
+    // explicitly non-retail Rac1WrenchHostContactPolicy.
+    private const float Rac1WrenchHostRootHeight = 1.0f;
     private const float Rac1PickupCollectRadius = 1.4f;
     // Host-only launch-vector/contact/expiry presentation. The native class-0x79
     // ballistic recurrence is recovered in OBP.RAC1, but host launch initialization,
@@ -56,7 +56,6 @@ public partial class OBPGame
     private bool _rac1SwingResolved;
     private bool _rac1BombFireRequested;
     private Rac1BombGloveContactResolution? _rac1LastBombContactResolution;
-    private double _rac1SwingAge;
     private double _rac1BombTickAccumulator;
     // Raw retail player-state word at +0x20a4. Its semantics remain intentionally unnamed.
     private int _rac1NativePlayerState20A4;
@@ -80,7 +79,6 @@ public partial class OBPGame
         _rac1SwingResolved = false;
         _rac1BombFireRequested = false;
         _rac1LastBombContactResolution = null;
-        _rac1SwingAge = 0d;
         _rac1BombTickAccumulator = 0d;
         _rac1NativePlayerState20A4 = 0;
         _rac1CombatStatus = "off";
@@ -239,7 +237,6 @@ public partial class OBPGame
 
         _rac1SwingActive = true;
         _rac1SwingResolved = false;
-        _rac1SwingAge = 0d;
         _player?.NotifyRac1WrenchAttackAccepted();
         _rac1CombatStatus = $"wrench swing: sequence {use.NativePlayerSequenceId}";
         GD.Print("[rac1-gameplay] primary attack -> ordinary wrench swing");
@@ -329,33 +326,19 @@ public partial class OBPGame
 
     private void TickRac1Swing(double delta)
     {
-        if (!_rac1SwingActive)
-        {
+        _ = delta;
+        if (!_rac1SwingActive || _rac1SwingResolved)
             return;
-        }
 
-        double previousAge = _rac1SwingAge;
-        _rac1SwingAge += Math.Max(0d, delta) * Rac1NativeTicksPerSecond;
-        bool crossedContactWindow = previousAge < Rac1WrenchCombatController.FirstSwingContactStartAge
-            && _rac1SwingAge > Rac1WrenchCombatController.FirstSwingContactEndAge;
-        if (!_rac1SwingResolved &&
-            (_rac1Wrench.IsContactActive(Rac1WrenchCombatController.OrdinaryActionId,
-                Rac1WrenchCombatController.OrdinaryProfileId, _rac1SwingAge) || crossedContactWindow))
-        {
-            double contactAge = crossedContactWindow
-                ? (Rac1WrenchCombatController.FirstSwingContactStartAge + Rac1WrenchCombatController.FirstSwingContactEndAge) * 0.5d
-                : _rac1SwingAge;
-            _rac1SwingResolved = true;
-            ResolveRac1WrenchContact(contactAge);
-        }
-
-        if (_rac1SwingAge > Rac1WrenchCombatController.FirstSwingContactEndAge)
-        {
-            _rac1SwingActive = false;
-        }
+        // Retail hit-active timing is unresolved. Resolve exactly once through
+        // the host contact policy after use admission instead of interpreting
+        // profile-row values 17/23 as a native contact window.
+        _rac1SwingResolved = true;
+        _rac1SwingActive = false;
+        ResolveRac1WrenchContact();
     }
 
-    private void ResolveRac1WrenchContact(double nativeAge)
+    private void ResolveRac1WrenchContact()
     {
         if (_player is null) return;
 
@@ -363,119 +346,80 @@ public partial class OBPGame
         Vector3 forward = new(-(float)facing.X, 0f, (float)facing.Y);
         if (forward.LengthSquared() <= 1e-5f) return;
         forward = forward.Normalized();
-        Vector3 root = _player.GlobalPosition + Vector3.Up * 1.0f;
-        Vector3 tip = root + forward * Rac1WrenchReach;
+        Vector3 root = _player.GlobalPosition + Vector3.Up * Rac1WrenchHostRootHeight;
 
-        if (TryStrikeRac1Crate(nativeAge, root, tip))
-        {
+        if (TryStrikeRac1Crate(root, forward))
             return;
-        }
 
-        if (TryStrikeRac1Hostile(nativeAge, root, forward))
-        {
+        if (TryStrikeRac1Hostile(root, forward))
             return;
-        }
 
-        _rac1CombatStatus = "wrench: no eligible contact";
+        _rac1CombatStatus = "wrench: no host-admitted contact";
     }
-    private bool TryStrikeRac1Crate(double nativeAge, Vector3 root, Vector3 tip)
+    private bool TryStrikeRac1Crate(Vector3 root, Vector3 forward)
     {
-        var sphere = _rac1Wrench.GetClass500ToolTipSphere(
-            Rac1WrenchCombatController.OrdinaryActionId,
-            Rac1WrenchCombatController.OrdinaryProfileId,
-            nativeAge,
-            new Rac1WrenchPoint(root.X, root.Y, root.Z),
-            new Rac1WrenchPoint(tip.X, tip.Y, tip.Z));
-        if (sphere is null)
-        {
-            return false;
-        }
-
-        Vector3 centre = new(
-            (float)sphere.Value.Center.X,
-            (float)sphere.Value.Center.Y,
-            (float)sphere.Value.Center.Z);
-        float maxDistance = (float)sphere.Value.Radius + Rac1CrateOriginPadding;
         var target = _rac1CrateNodes
             .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
-            .Select(node => (Node: node, Distance: node.Root.GlobalPosition.DistanceTo(centre)))
-            .Where(candidate => candidate.Distance <= maxDistance)
-            .OrderBy(candidate => candidate.Distance)
+            .Where(node => Rac1WrenchHostPolicyAdmits(
+                root,
+                forward,
+                node.Root.GlobalPosition))
+            .OrderBy(node => node.Root.GlobalPosition.DistanceTo(root))
+            .ThenBy(node => node.Source.InstanceIndex)
             .FirstOrDefault();
-        if (target.Node is null)
-        {
+        if (target is null)
             return false;
-        }
 
-        var authored = Rac1BoltCrate.ReadAuthored(target.Node.Source);
+        var authored = Rac1BoltCrate.ReadAuthored(target.Source);
         if (authored?.RewardCentre != 10)
-        {
             return false;
-        }
-        var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(target.Node.Source)
-            ?? throw new InvalidOperationException("Admitted R&C1 Bolt Crate was rejected by the wrench target contract.");
-        var damage = _rac1Wrench.ApplyClass500ToolTipContact(
-            Rac1WrenchCombatController.OrdinaryActionId,
-            Rac1WrenchCombatController.OrdinaryProfileId,
-            nativeAge,
+
+        var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(target.Source)
+            ?? throw new InvalidOperationException(
+                "Admitted R&C1 Bolt Crate was rejected by the wrench target contract.");
+        var damage = _rac1Wrench.ApplyClass500HostAdmittedContact(
             contactTarget,
-            target.Node.Source,
-            target.Node.State,
+            target.Source,
+            target.State,
             _rac1BoltCrates,
             // Deterministic host RNG choice within the recovered range.
             // This does not claim the retail RNG selector.
             selectedTotal: authored.RewardCentre);
         if (damage?.BoltCrateBreak is not { } broken)
-        {
             return false;
-        }
 
-        Vector3 rewardOrigin = target.Node.Root.GlobalPosition;
-        target.Node.ApplyState(broken.EntityState);
+        Vector3 rewardOrigin = target.Root.GlobalPosition;
+        target.ApplyState(broken.EntityState);
         SpawnRac1BoltPickups(rewardOrigin, broken.Pickups);
-        _rac1CombatStatus = $"crate {target.Node.Source.InstanceIndex} broke: +{broken.PhysicalValue} bolts emitted";
+        _rac1CombatStatus =
+            $"crate {target.Source.InstanceIndex} broke via host contact policy: +{broken.PhysicalValue} bolts emitted";
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
     }
 
-    private bool TryStrikeRac1Hostile(double nativeAge, Vector3 root, Vector3 forward)
+    private bool TryStrikeRac1Hostile(Vector3 root, Vector3 forward)
     {
-        var candidate = _rac1HostileNodes.Values
-            .Where(hostile =>
-                _rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) &&
-                IsInstanceValid(hostile.Root) &&
-                hostile.Root.Visible)
-            .Select(hostile =>
-            {
-                Vector3 to = hostile.Root.GlobalPosition - root;
-                float along = to.Dot(forward);
-                float perpendicular = (to - forward * along).Length();
-                return new { Hostile = hostile, Along = along, Perpendicular = perpendicular };
-            })
-            .Where(hit =>
-                hit.Along > 0f &&
-                hit.Along <= Rac1WrenchReach + Rac1DirectContactRadius &&
-                hit.Perpendicular <= Rac1DirectContactRadius)
-            .OrderBy(hit => hit.Along)
-            .ThenBy(hit => hit.Hostile.Source.InstanceIndex)
+        var hostile = _rac1HostileNodes.Values
+            .Where(candidate =>
+                _rac1HostileProbes.ContainsKey(candidate.Source.InstanceIndex) &&
+                IsInstanceValid(candidate.Root) &&
+                candidate.Root.Visible)
+            .Where(candidate => Rac1WrenchHostPolicyAdmits(
+                root,
+                forward,
+                candidate.Root.GlobalPosition))
+            .OrderBy(candidate => candidate.Root.GlobalPosition.DistanceTo(root))
+            .ThenBy(candidate => candidate.Source.InstanceIndex)
             .FirstOrDefault();
-        if (candidate is null)
-        {
+        if (hostile is null)
             return false;
-        }
 
-        var hostile = candidate.Hostile;
         var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(hostile.Source)
-            ?? throw new InvalidOperationException("R&C1 class-749 hostile was rejected by the wrench target contract.");
-        var damage = _rac1Wrench.ResolveForwardDirectRecord(
-            Rac1WrenchCombatController.OrdinaryActionId,
-            Rac1WrenchCombatController.OrdinaryProfileId,
-            nativeAge,
-            contactTarget);
+            ?? throw new InvalidOperationException(
+                "R&C1 class-749 hostile was rejected by the wrench target contract.");
+        var damage = _rac1Wrench.ResolveHostAdmittedDamage(contactTarget);
         if (damage is null)
-        {
             return false;
-        }
 
         var probe = _rac1Hostiles.ApplyWrenchDamage(hostile.Source, damage);
         _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
@@ -486,10 +430,20 @@ public partial class OBPGame
             hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
         _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         hostile.ApplyState(probe.EntityState);
-        _rac1CombatStatus = $"hostile i{hostile.Source.InstanceIndex}: health 0 -> terminal 0xfd";
+        _rac1CombatStatus =
+            $"hostile i{hostile.Source.InstanceIndex}: host contact -> health 0 -> terminal 0xfd";
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
     }
+
+    private static bool Rac1WrenchHostPolicyAdmits(
+        Vector3 root,
+        Vector3 forward,
+        Vector3 targetCenter) =>
+        Rac1WrenchHostContactPolicy.Admits(
+            new Rac1WrenchHostPoint(root.X, root.Y, root.Z),
+            new Rac1WrenchHostDirection(forward.X, forward.Y, forward.Z),
+            new Rac1WrenchHostPoint(targetCenter.X, targetCenter.Y, targetCenter.Z));
     private void TickRac1BombGlove(double delta)
     {
         if (_rac1BombGlove is null || _rac1Nanotech.Probe().IsDead) return;
