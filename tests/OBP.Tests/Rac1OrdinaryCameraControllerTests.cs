@@ -153,6 +153,38 @@ public sealed class Rac1OrdinaryCameraControllerTests
     }
 
     [Fact]
+    public void VerticalManualPulse_NeutralReleaseHoldsPlayerChosenOrbit()
+    {
+        var camera = new Rac1OrdinaryCameraController();
+        var player = new Vec3(10d, 20d, 30d);
+        camera.Reset(player, 0.75d);
+
+        Rac1CameraState state = null!;
+        for (int i = 0; i < 24; i++)
+        {
+            state = camera.Step(new Rac1OrdinaryCameraController.Input(
+                player, 0d, 0.8d, default));
+        }
+
+        double pitchAtRelease = camera.ManualPitchState;
+        Vec3 eyeAtRelease = state.Framing.EyeNativeZUp;
+
+        for (int i = 0; i < 180; i++)
+        {
+            state = camera.Step(new Rac1OrdinaryCameraController.Input(
+                player, 0d, 0d, default));
+        }
+
+        Assert.True(pitchAtRelease > 0.4d);
+        Assert.Equal(pitchAtRelease, camera.ManualPitchState, 12);
+        Assert.Equal(
+            -pitchAtRelease * Rac1OrdinaryCameraController.VerticalSpanRadians,
+            camera.VerticalOrbitRadians,
+            12);
+        Assert.Equal(eyeAtRelease, state.Framing.EyeNativeZUp);
+    }
+
+    [Fact]
     public void FullVerticalInput_MatchesRecoveredOrbitGeometry()
     {
         var camera = new Rac1OrdinaryCameraController();

@@ -138,19 +138,34 @@ public partial class OBPGame
         await PhysicsFramesAsync(36);
         ReleaseRac1CameraSmokeInput();
 
-        double pitchDelta = Math.Abs(player.Rac1CameraManualPitch - pitchBefore);
-        float eyeYDelta = Math.Abs(player.Camera.GlobalPosition.Y - eyeYBefore);
+        double pitchAtRelease = player.Rac1CameraManualPitch;
+        float eyeYAtRelease = player.Camera.GlobalPosition.Y;
+        double pitchDelta = Math.Abs(pitchAtRelease - pitchBefore);
+        float eyeYDelta = Math.Abs(eyeYAtRelease - eyeYBefore);
         if (pitchDelta < 0.40d || eyeYDelta < 0.25f)
             throw new InvalidOperationException(
                 $"Recovered vertical camera orbit was not visible: manual={pitchDelta:R}, " +
                 $"eyeY={eyeYDelta:R}.");
+
+        await PhysicsFramesAsync(90);
+
+        double neutralReleaseDrift =
+            Math.Abs(player.Rac1CameraManualPitch - pitchAtRelease);
+        float neutralEyeYDrift =
+            Math.Abs(player.Camera.GlobalPosition.Y - eyeYAtRelease);
+        if (neutralReleaseDrift > 0.02d || neutralEyeYDrift > 0.20f)
+            throw new InvalidOperationException(
+                $"Recovered vertical camera orbit did not hold after neutral release: " +
+                $"manual drift={neutralReleaseDrift:R}, eyeY drift={neutralEyeYDrift:R}.");
+
         if (HorizontalDistance(playerStart, player.GlobalPosition) > 0.05f)
             throw new InvalidOperationException(
                 "Camera smoke moved Ratchet while only camera actions were pressed.");
 
         GD.Print(
             $"[rac1-veldin-play] camera PASS: heading delta={headingDelta:0.###} rad, " +
-            $"vertical state delta={pitchDelta:0.###}, eyeY delta={eyeYDelta:0.###}");
+            $"vertical state delta={pitchDelta:0.###}, eyeY delta={eyeYDelta:0.###}, " +
+            $"neutral drift={neutralReleaseDrift:0.###}");
     }
 
     private async Task RunRac1OrdinaryBombGloveUseSmokeAsync()

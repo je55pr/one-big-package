@@ -88,6 +88,17 @@ scale, including the continued same-direction release tail. Vertical input has
 a second `+/-0.3` dead zone and remaps the remaining travel across a
 `0.69813168` rad span.
 
+The vertical release path is distinct from feeding numeric zero as an ordinary
+manual target. When conditioned manual Y is neutral, `0x002e8b7c` loads the
+camera-state fallback angle at `state+0x1cc` and `0x002e8b90` divides it by
+the same `0.69813168` span before the damped consumer. The persistent manual
+vertical value and its damped velocity are `state+0x1b0/+0x1b4`. A separate
+entry point at `0x002e8540` writes `state+0x1cc` at `0x002e8558`; the two
+retained callers at `0x002ed0a4` and `0x002ed858` skip that writer when their
+camera-state command source is zero. This establishes source selection and
+separate command ownership, but not a universal gameplay trigger for the
+fallback writer.
+
 ## Recovered unobstructed chase framing and follow
 
 The same authority savestate was replayed through five ordinary, unobstructed
@@ -302,6 +313,15 @@ presentation mismatch: retail feels framed toward a point above Ratchet's head,
 whereas the first Godot projection tilted the view around a fixed eye. That review
 was integration evidence, not a numeric retail-authority witness.
 
+The corrected 2026-09-23 human review is retained here verbatim because it
+exposed the release regression that this recovery fixes:
+
+> Jess playtest: FAIL. Vertical camera orbit itself now works, but after Jess positions it vertically the camera returns to the default vertical position far too quickly; retail R&C1 often holds the manually positioned vertical camera angle. The wrench is now visibly in Ratchet's hand and looks weird but recognizably like the wrench model, so that part is directionally working. Enemy behavior is not acceptable: one single class-749 enemy/witness starts updating its position directly toward Ratchet as soon as the level starts, while the rest of the enemies do nothing, including other enemies of the exact same type. This is a privileged test witness rather than recovered authored enemy population behavior and must not count as enemy-system completion. Also the game window repeatedly closes during Jess's test; investigate whether this is a crash/runtime exit. Treat human sign-off as failed, retain these observations, and create bounded fix tasks before asking Jess to sign off again.
+
+Only the vertical-camera release clause is acted on by this bounded task. The wrench,
+enemy-population and runtime-exit observations remain manager-owned integration
+evidence and are not reinterpreted here.
+
 The subsequent type-0 vertical recovery closes that projection boundary. The same
 conditioned/damped manual vertical state and retained `+/-0.3` secondary dead zone
 now drive elevation of the type-0 radial offset around `state+0x90` eye anchor.
@@ -313,8 +333,15 @@ an independent tilt at a fixed eye.
 
 Production `Rac1OrdinaryCameraController` now uses that orbit geometry directly.
 Horizontal control-heading updates and the existing obstruction correction/radius
-recurrences are unchanged, and deterministic coverage freezes both full-input
-native geometry and the Godot scene-eye movement that ordinary play consumes.
+recurrences are unchanged. Vertical release no longer fabricates a zero-valued
+manual target: when the secondary-dead-zone output is neutral and no recovered
+camera-state fallback command is present, the current player-chosen vertical orbit
+is retained and the vertical command velocity is cleared. This is a hold/no-writer
+distinction, not a slower decay constant. The separate native `state+0x1cc`
+fallback writer remains unhooked in ordinary production until its gameplay trigger
+is exposed with the same confidence as the selector itself. Deterministic coverage
+now freezes full-input geometry, neutral-release persistence and the Godot scene-eye
+movement that ordinary play consumes.
 
 ## Repeatable scenarios
 

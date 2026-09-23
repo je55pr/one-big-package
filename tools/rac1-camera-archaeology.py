@@ -106,6 +106,12 @@ CAMERA_PRODUCER_SIGNATURES = {
     0x001F3F38: 0xE6000158,  # store control heading
     0x001F3F40: 0x3C013FC0,  # release divisor 1.5f
     0x00200130: 0x460D6001,  # f0 = f12 - f13
+    0x002E8B7C: 0xC6400024,  # neutral vertical axis reads state+0x1cc fallback angle
+    0x002E8B80: 0x3C013F32,  # 0.69813168 vertical span high half
+    0x002E8B90: 0x46010003,  # normalize fallback angle by vertical span
+    0x002E8558: 0xE44C01CC,  # explicit camera-state command writes state+0x1cc
+    0x002E9BD4: 0x0C0BA26C,  # type-0 core calls manual/fallback selector 0x002e89b0
+    0x002E9BE4: 0x0C0BA2EE,  # then calls damped manual consumer 0x002e8bb8
 }
 CHASE_FOLLOW_SIGNATURES = {
     0x001ECA90: 0x3C170016,  # s7 high half for camera globals
@@ -289,6 +295,24 @@ def probe_camera_producer(savestate: Path, zstd_dll: Path) -> dict[str, object]:
             "releaseDivisor": 1.5,
             "headingUpdate": "WrapPi(controlHeading - stepField)",
             "wrapDifferenceHelper": "0x00200130",
+        },
+        "ordinaryManualVerticalRelease": {
+            "selectorRoutine": "0x002e89b0..0x002e8bb0",
+            "consumerRoutine": "0x002e8bb8..0x002e8f40",
+            "manualVerticalState": "state+0x1b0",
+            "manualVerticalVelocity": "state+0x1b4",
+            "verticalFallbackAngle": "state+0x1cc",
+            "verticalFallbackWriter": "0x002e8540 (store at 0x002e8558)",
+            "fallbackWriterCallers": ["0x002ed0a4", "0x002ed858"],
+            "verticalSpanRadians": struct.unpack("<f", struct.pack("<I", 0x3F32B8C2))[0],
+            "neutralSelection": "when conditioned manual Y is zero, 0x002e89b0 selects state+0x1cc divided by the vertical span instead of the stick value",
+            "commandBoundary": "state+0x1cc is written by a separate camera-state command producer; the two retained callers skip that writer when their command source is zero",
+            "stateWitness": {
+                "manualVerticalState": f32(camera_state + 0x1B0),
+                "manualVerticalVelocity": f32(camera_state + 0x1B4),
+                "horizontalFallbackCommand": f32(camera_state + 0x1C4),
+                "verticalFallbackAngle": f32(camera_state + 0x1CC),
+            },
         },
         "ordinaryChaseFollowBranch": {
             "producerRoutine": "0x001eca70..0x001ecde8",

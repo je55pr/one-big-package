@@ -107,14 +107,25 @@ public sealed class Rac1OrdinaryCameraController
             _controlHeading - (_manualYaw * HorizontalRadiansPerUnit));
 
         double pitchTarget = RemapVerticalInput(right.Y);
-        var pitch = Rac1CameraRecurrence.AdvanceDampedScalar(
-            _manualPitch,
-            _manualPitchVelocity,
-            pitchTarget,
-            ManualInputAcceleration,
-            ManualInputDamping);
-        _manualPitch = pitch.Value;
-        _manualPitchVelocity = pitch.Velocity;
+        if (pitchTarget != 0d)
+        {
+            var pitch = Rac1CameraRecurrence.AdvanceDampedScalar(
+                _manualPitch,
+                _manualPitchVelocity,
+                pitchTarget,
+                ManualInputAcceleration,
+                ManualInputDamping);
+            _manualPitch = pitch.Value;
+            _manualPitchVelocity = pitch.Velocity;
+        }
+        else
+        {
+            // Native type-0 selects the separate state+0x1cc camera-state
+            // fallback only after manual Y goes neutral. Its writer is recovered,
+            // but no ordinary-play trigger/source is promoted here, so the host
+            // must not synthesize zero as a fallback command.
+            _manualPitchVelocity = 0d;
+        }
 
         var follow = Rac1CameraRecurrence.AdvanceOrdinaryFollowZ(
             _filteredZ,

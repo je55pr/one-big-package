@@ -170,6 +170,14 @@ class Rac1CameraArchaeologyTests(unittest.TestCase):
         self.assertAlmostEqual(branch["stepClampAbsRad"], 0.03999999910593033)
         self.assertEqual(branch["releaseDivisor"], 1.5)
         self.assertEqual(branch["headingUpdate"], "WrapPi(controlHeading - stepField)")
+        vertical = report["ordinaryManualVerticalRelease"]
+        self.assertEqual(vertical["selectorRoutine"], "0x002e89b0..0x002e8bb0")
+        self.assertEqual(vertical["verticalFallbackAngle"], "state+0x1cc")
+        self.assertAlmostEqual(vertical["verticalSpanRadians"], 0.69813168, places=7)
+        self.assertEqual(
+            vertical["fallbackWriterCallers"],
+            ["0x002ed0a4", "0x002ed858"],
+        )
         chase = report["ordinaryChaseFollowBranch"]
         self.assertAlmostEqual(chase["verticalAcceleration"], 0.0075)
         self.assertAlmostEqual(chase["verticalDamping"], 0.175)
