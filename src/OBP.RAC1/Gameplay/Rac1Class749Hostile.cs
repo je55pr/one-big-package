@@ -5,22 +5,29 @@ using OBP.Runtime.Gameplay;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Bounded retail-backed native facts for the representative Veldin class-749 hostile.
+/// Retail-backed native facts for the recovered Veldin class-749 population.
 /// Targeting, state, health, sequence and attack semantics intentionally remain R&amp;C1-specific.
 /// </summary>
 public static class Rac1Class749Hostile
 {
     public const int NativeClassId = 749;
-    public const int RetainedRuntimeWitnessLevelId = 0;
-    public const int RetainedRuntimeWitnessInstanceIndex = 149;
     public const string PVarPayloadFormat = "rac1-pvar";
     public const int PVarSize = 0x280;
     public const int HealthOffset = 0x20;
     public const int TargetDestinationOffset = 0x180;
+    public const int TargetMobyPointerOffset = 0x1c0;
     public const int StatusSentinelOffset = 0x1c4;
     public const int HomePositionOffset = 0x1d0;
+    public const int ActivationGroupOffset = 0x1e0;
+    public const int StateThreeActivationGroupOffset = 0x1e4;
+    public const int LinkModeOffset = 0x1e8;
+    public const int LinkedInstanceOffset = 0x1ec;
+    public const int ActivationYawOffset = 0x1fc;
+    public const int IdleTurnDescriptorOffset = 0x240;
     public const int StatusSentinelTwo = 2;
+    public const double IdleTurnInput = 0.5d;
 
+    public const int LinkedObjectNativeState = 1;
     public const int TargetSearchNativeState = 5;
     public const int TargetedNativeState = 6;
     public const int AttackNativeState = 7;
@@ -47,15 +54,11 @@ public static class Rac1Class749Hostile
     public const double AttackDamage = 1d;
 
     /// <summary>
-    /// Evidence-policy gate for the retained loaded-Veldin runtime witness.
-    /// Other class-749 placements remain authored/presented data until their live activation
-    /// inputs are independently recovered.
+    /// Level-scoped gate for the recovered authored LEVEL0/Veldin class-749 population.
+    /// LEVEL18 remains authored/presented data outside this recovered runtime contract.
     /// </summary>
-    public static bool IsRetainedRuntimeWitness(int levelId, RuntimeDynamicObject source) =>
-        levelId == RetainedRuntimeWitnessLevelId &&
-        source.SourceGame == "rac1" &&
-        source.NativeClassId == NativeClassId &&
-        source.InstanceIndex == RetainedRuntimeWitnessInstanceIndex;
+    public static bool IsRecoveredVeldinPlacement(int levelId, RuntimeDynamicObject source) =>
+        Rac1Class749VeldinPopulation.IsRecoveredPlacement(levelId, source);
 
     public static Rac1Class749AuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {
@@ -67,7 +70,11 @@ public static class Rac1Class749Hostile
             pvar.Length,
             ReadTargetDestination(pvar),
             ReadStatusSentinel(pvar),
-            ReadHomePosition(pvar));
+            ReadHomePosition(pvar),
+            ReadInt32(pvar, ActivationGroupOffset),
+            ReadInt32(pvar, StateThreeActivationGroupOffset),
+            ReadInt32(pvar, LinkModeOffset),
+            ReadInt32(pvar, LinkedInstanceOffset));
     }
 
     internal static byte[] RequirePVar(RuntimeDynamicObject source)
@@ -97,8 +104,21 @@ public static class Rac1Class749Hostile
         return health;
     }
 
+    internal static int ReadInt32(ReadOnlySpan<byte> pvar, int offset) =>
+        BinaryPrimitives.ReadInt32LittleEndian(pvar.Slice(offset, sizeof(int)));
+
     internal static int ReadStatusSentinel(ReadOnlySpan<byte> pvar) =>
-        BinaryPrimitives.ReadInt32LittleEndian(pvar.Slice(StatusSentinelOffset, sizeof(int)));
+        ReadInt32(pvar, StatusSentinelOffset);
+
+    internal static Rac1Class749WorldPoint ReadAuthoredPosition(RuntimeDynamicObject source)
+    {
+        double[] matrix = source.Transform.Matrix;
+        if (matrix.Length != 16 ||
+            !double.IsFinite(matrix[12]) || !double.IsFinite(matrix[13]) || !double.IsFinite(matrix[14]))
+            throw new InvalidDataException(
+                $"R&C1 class-749 instance {source.InstanceIndex} has an invalid authored transform.");
+        return new Rac1Class749WorldPoint(matrix[12], matrix[13], matrix[14]);
+    }
 
     internal static Rac1Class749WorldPoint ReadTargetDestination(ReadOnlySpan<byte> pvar) =>
         ReadWorldPoint(pvar, TargetDestinationOffset);
@@ -119,6 +139,37 @@ public static class Rac1Class749Hostile
         if (!float.IsFinite(health)) throw new ArgumentOutOfRangeException(nameof(health));
         BinaryPrimitives.WriteInt32LittleEndian(
             pvar.Slice(HealthOffset, sizeof(int)), BitConverter.SingleToInt32Bits(health));
+    }
+
+    internal static void WriteStatusSentinel(Span<byte> pvar, int status) =>
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.Slice(StatusSentinelOffset, sizeof(int)), status);
+
+    internal static void WriteTargetDestination(Span<byte> pvar, Rac1Class749WorldPoint point) =>
+        WriteWorldPoint(pvar, TargetDestinationOffset, point);
+
+    internal static void WriteHomePosition(Span<byte> pvar, Rac1Class749WorldPoint point) =>
+        WriteWorldPoint(pvar, HomePositionOffset, point);
+
+    internal static void WriteActivationYawOffset(Span<byte> pvar, float radians)
+    {
+        if (!float.IsFinite(radians)) throw new ArgumentOutOfRangeException(nameof(radians));
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.Slice(ActivationYawOffset, sizeof(int)), BitConverter.SingleToInt32Bits(radians));
+    }
+
+    private static void WriteWorldPoint(Span<byte> pvar, int offset, Rac1Class749WorldPoint point)
+    {
+        WriteFiniteSingle(pvar, offset, checked((float)point.X));
+        WriteFiniteSingle(pvar, offset + sizeof(float), checked((float)point.Z));
+        WriteFiniteSingle(pvar, offset + 2 * sizeof(float), checked((float)point.Y));
+    }
+
+    private static void WriteFiniteSingle(Span<byte> pvar, int offset, float value)
+    {
+        if (!float.IsFinite(value)) throw new ArgumentOutOfRangeException(nameof(value));
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.Slice(offset, sizeof(int)), BitConverter.SingleToInt32Bits(value));
     }
 
     private static float ReadFiniteSingle(ReadOnlySpan<byte> pvar, int offset)
@@ -148,19 +199,26 @@ public sealed record Rac1Class749AuthoredState(
     Rac1Class749Key Key,
     float Health,
     int PVarSize,
-    Rac1Class749WorldPoint TargetDestination,
-    int StatusSentinel,
-    Rac1Class749WorldPoint HomePosition);
+    Rac1Class749WorldPoint InitialTargetDestination,
+    int InitialStatusSentinel,
+    Rac1Class749WorldPoint InitialHomePosition,
+    int ActivationGroup,
+    int StateThreeActivationGroup,
+    int LinkMode,
+    int LinkedInstanceIndex);
 
 /// <summary>
-/// Host-supplied world facts used by the recovered class-749 states. The optional
-/// status value is deliberately unnamed beyond its native PVar +0x1c4 role.
+/// Live world facts supplied to the recovered class-749 dispatch. Veldin ordinary
+/// targeting derives +0x1c4 from the authored activation polygon; StatusSentinel
+/// remains only as a bounded override for deterministic lower-level tests.
 /// </summary>
 public readonly record struct Rac1Class749TargetFacts(
     double Distance,
     double FacingError,
     Rac1Class749WorldPoint CurrentPosition = default,
-    int? StatusSentinel = null);
+    int? StatusSentinel = null,
+    Rac1Class749WorldPoint TargetPosition = default,
+    bool LinkedObjectTerminal = false);
 
 public enum Rac1Class749NavigationIntentKind
 {
@@ -171,6 +229,11 @@ public enum Rac1Class749NavigationIntentKind
 public sealed record Rac1Class749NavigationIntent(
     Rac1Class749NavigationIntentKind Kind,
     Rac1Class749WorldPoint? Destination = null) : IRac1MobyHostIntent;
+
+public sealed record Rac1Class749IdleTurnIntent(
+    int DescriptorOffset,
+    double InputA,
+    double InputB) : IRac1MobyHostIntent;
 
 public sealed record Rac1Class749AttackEvent(
     double NativeMarker,

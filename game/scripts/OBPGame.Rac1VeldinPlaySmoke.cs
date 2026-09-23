@@ -28,12 +28,16 @@ public partial class OBPGame
             AssertRac1VeldinEphemeralOpening();
 
             Vector3 authoredRespawnPosition = _player.GlobalPosition;
-            if (!TryGetRac1RepresentativeHostile(out var hostile, out _) ||
+            if (_rac1HostileNodes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
+                _rac1HostileProbes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
+                !TryGetRac1Hostile(143, out var hostile, out _) ||
                 hostile is null ||
                 !IsInstanceValid(hostile.Root) ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
-                    "Ordinary Veldin start has no supported class-749 runtime witness.");
+                    "Ordinary Veldin start does not expose the recovered 16-placement class-749 population.");
+
+            await RunRac1VeldinPopulationOpeningIdleSmokeAsync();
 
             GD.Print(
                 $"[rac1-veldin-play] opening PASS: ephemeral current=0, " +
@@ -43,8 +47,6 @@ public partial class OBPGame
             await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
             await RunRac1RecoveredCameraInputSmokeAsync(_player);
             await RunRac1OrdinaryBombGloveUseSmokeAsync();
-
-            await RunRac1VisibleHostileMotionSmokeAsync(hostile);
 
             var naturalAttack = await Rac1SmokeProvokeClass749AttackAsync(
                 hostile,
@@ -207,21 +209,31 @@ public partial class OBPGame
             $"{ammoBefore}->{_rac1Weapons.FirstRangedAmmo}");
     }
 
-    private async Task RunRac1VisibleHostileMotionSmokeAsync(
-        RuntimeWorldScene.DynamicObjectNode hostile)
+    private async Task RunRac1VeldinPopulationOpeningIdleSmokeAsync()
     {
-        Vector3 startPosition = hostile.Root.GlobalPosition;
-        await Rac1SmokeWaitAsync(
-            () =>
-                IsInstanceValid(hostile.Root) &&
-                hostile.Root.Visible &&
-                hostile.Root.GlobalPosition.DistanceTo(startPosition) > 0.25f,
-            240,
-            "supported class-749 visible motion");
+        var starts = _rac1HostileNodes.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value.Root.GlobalPosition);
+        for (int frame = 0; frame < 30; frame++)
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
-        float moved = hostile.Root.GlobalPosition.DistanceTo(startPosition);
+        int moved = 0;
+        foreach (var pair in _rac1HostileNodes)
+        {
+            if (pair.Value.Root.GlobalPosition.DistanceTo(starts[pair.Key]) > 0.02f)
+                moved++;
+            var probe = _rac1HostileProbes[pair.Key];
+            if (probe.NativeState is Rac1Class749Hostile.TargetedNativeState or Rac1Class749Hostile.AttackNativeState)
+                throw new InvalidOperationException(
+                    $"Class-749 i{pair.Key} pursued at ordinary Veldin start in state {probe.NativeState}.");
+        }
+
+        if (moved != 0)
+            throw new InvalidOperationException(
+                $"Ordinary Veldin start moved {moved} class-749 placements before polygon admission.");
+
         GD.Print(
-            $"[rac1-veldin-play] hostile motion PASS: class-749 moved={moved:0.###}");
+            "[rac1-veldin-play] population opening PASS: all 16 class-749 placements idle at authored start");
     }
 
     private async Task RunRac1OrdinaryHostileWrenchSmokeAsync(
@@ -245,7 +257,7 @@ public partial class OBPGame
         await TapRac1PrimaryActionAsync();
         await Rac1SmokeWaitAsync(
             () => _rac1HostileProbes.TryGetValue(
-                    Rac1WitnessHostileInstance,
+                    hostile.Source.InstanceIndex,
                     out var probe) &&
                 probe.Health == 0f &&
                 !hostile.Root.Visible,

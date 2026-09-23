@@ -65,14 +65,18 @@ public sealed class Rac1MobyRuntimeTests
             statusSentinel: 0,
             home: home);
         var session = new Rac1Class749HostileSession();
-        session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
+        session.Register(source, RuntimeEntityState.FromAuthored(source));
 
         var enteredTargeted = session.Step(source, Facts(distance: 3, facingError: 0));
         var transition = Assert.Single(enteredTargeted.HostEvents);
         var stateChange = Assert.IsType<Rac1MobyNativeStateChangedEvent>(transition);
         Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, stateChange.NativeStateBefore);
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, stateChange.NativeStateAfter);
-        Assert.Empty(enteredTargeted.HostIntents);
+        var idleTurn = Assert.IsType<Rac1Class749IdleTurnIntent>(
+            Assert.Single(enteredTargeted.HostIntents));
+        Assert.Equal(Rac1Class749Hostile.IdleTurnDescriptorOffset, idleTurn.DescriptorOffset);
+        Assert.Equal(Rac1Class749Hostile.IdleTurnInput, idleTurn.InputA);
+        Assert.Equal(Rac1Class749Hostile.IdleTurnInput, idleTurn.InputB);
 
         var pursue = session.Step(source, Facts(distance: 3, facingError: 0));
         var pursueIntent = Assert.IsType<Rac1Class749NavigationIntent>(
@@ -112,7 +116,7 @@ public sealed class Rac1MobyRuntimeTests
     {
         var source = Class749(149, health: 1f);
         var session = new Rac1Class749HostileSession();
-        session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
+        session.Register(source, RuntimeEntityState.FromAuthored(source));
         var result = new Rac1WrenchDamageResult(
             Rac1WrenchContactPath.HostPolicyAdmission,
             Rac1WrenchCombatController.RepresentativeDamage,
@@ -163,7 +167,7 @@ public sealed class Rac1MobyRuntimeTests
     {
         var source = Class749(149, health: 1f);
         var session = new Rac1Class749HostileSession();
-        session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
+        session.Register(source, RuntimeEntityState.FromAuthored(source));
         session.Step(source, Facts(distance: 3, facingError: 0));
         session.Step(source, Facts(distance: 1, facingError: 0));
 
@@ -220,10 +224,21 @@ public sealed class Rac1MobyRuntimeTests
             Rac1Class749Hostile.HomePositionOffset + 2 * sizeof(float),
             checked((float)home.Y));
 
-        return Dynamic(
+        var transform = new double[16];
+        transform[12] = home.X;
+        transform[13] = home.Y;
+        transform[14] = home.Z;
+        transform[15] = 1d;
+        return new RuntimeDynamicObject(
+            "rac1",
             Rac1Class749Hostile.NativeClassId,
             instanceIndex,
-            new RuntimeOpaquePayload(Rac1Class749Hostile.PVarPayloadFormat, pvar));
+            null,
+            $"moby:{Rac1Class749Hostile.NativeClassId}",
+            $"moby:{instanceIndex}",
+            new RuntimeObjectTransform(transform),
+            Array.Empty<RuntimeObjectMesh>(),
+            [new RuntimeOpaquePayload(Rac1Class749Hostile.PVarPayloadFormat, pvar)]);
     }
     private static RuntimeDynamicObject Dynamic(
         int nativeClassId,

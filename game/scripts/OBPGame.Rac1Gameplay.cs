@@ -18,7 +18,6 @@ namespace OneBigPackage;
 /// </summary>
 public partial class OBPGame
 {
-    private const int Rac1WitnessHostileInstance = Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex;
     private const double Rac1NativeTicksPerSecond = Rac1RatchetMovementController.UpdateHz;
     // Host presentation anchor only. Spatial admission dimensions live in the
     // explicitly non-retail Rac1WrenchHostContactPolicy.
@@ -130,7 +129,7 @@ public partial class OBPGame
             var node = FindPresentedDynamic(result, hostileSource)
                 ?? CreateRac1FallbackNode(result, hostileSource, crate: false);
             _rac1Class749PresentationNodes.Add(node);
-            if (!Rac1Class749Hostile.IsRetainedRuntimeWitness(world.LevelId, hostileSource))
+            if (!Rac1Class749Hostile.IsRecoveredVeldinPlacement(world.LevelId, hostileSource))
             {
                 continue;
             }
@@ -139,7 +138,7 @@ public partial class OBPGame
             {
                 _ = Rac1Class749Hostile.ReadAuthored(hostileSource)
                     ?? throw new InvalidDataException("Class-749 source failed its authored-state contract.");
-                var probe = _rac1Hostiles.RegisterRepresentative(hostileSource, node.State);
+                var probe = _rac1Hostiles.RegisterVeldinPlacement(hostileSource, node.State);
                 _rac1HostileNodes.Add(hostileSource.InstanceIndex, node);
                 _rac1HostileProbes.Add(hostileSource.InstanceIndex, probe);
             }
@@ -151,17 +150,18 @@ public partial class OBPGame
         }
 
         GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted class-500 crates, " +
-                 $"{_rac1HostileNodes.Count} active class-749 runtime witness(es) from " +
+                 $"{_rac1HostileNodes.Count} recovered Veldin class-749 placements from " +
                  $"{authoredClass749} authored placements ({rejectedHostiles} rejected)");
     }
 
-    private bool TryGetRac1RepresentativeHostile(
+    private bool TryGetRac1Hostile(
+        int instanceIndex,
         out RuntimeWorldScene.DynamicObjectNode? node,
         out Rac1Class749HostProbe? probe)
     {
-        if (_world is { Game: "rac1", LevelId: Rac1Class749Hostile.RetainedRuntimeWitnessLevelId } &&
-            _rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out node) &&
-            _rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out probe))
+        if (_world is { Game: "rac1", LevelId: Rac1Class749VeldinPopulation.LevelId } &&
+            _rac1HostileNodes.TryGetValue(instanceIndex, out node) &&
+            _rac1HostileProbes.TryGetValue(instanceIndex, out probe))
             return true;
 
         node = null;
@@ -604,12 +604,31 @@ public partial class OBPGame
             }
 
             Vector3 hostilePosition = hostile.Root.GlobalPosition;
+            Vector3 targetPosition = _player.GlobalPosition;
+            bool linkedObjectTerminal = false;
+            if (hostile.Source.InstanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedInstanceIndex)
+            {
+                var linkedNode = _sceneResult?.DynamicObjectNodes?.FirstOrDefault(node =>
+                    node.Source.InstanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedMobyInstanceIndex);
+                linkedObjectTerminal = linkedNode is null ||
+                    !IsInstanceValid(linkedNode.Root) ||
+                    !linkedNode.Root.Visible;
+                if (!linkedObjectTerminal)
+                    targetPosition = linkedNode!.Root.GlobalPosition;
+            }
+
             var next = _rac1Hostiles.Step(
                 hostile.Source,
                 new Rac1Class749TargetFacts(
                     distance,
                     facingError,
-                    new Rac1Class749WorldPoint(-hostilePosition.X, hostilePosition.Y, hostilePosition.Z)));
+                    new Rac1Class749WorldPoint(-hostilePosition.X, hostilePosition.Y, hostilePosition.Z),
+                    StatusSentinel: null,
+                    TargetPosition: new Rac1Class749WorldPoint(
+                        -targetPosition.X,
+                        targetPosition.Y,
+                        targetPosition.Z),
+                    LinkedObjectTerminal: linkedObjectTerminal));
             if (next.NativeState != previous.NativeState)
             {
                 GD.Print(
@@ -622,7 +641,6 @@ public partial class OBPGame
                 ApplyRac1Class749NavigationIntent(
                     hostile,
                     intent,
-                    _player.GlobalPosition,
                     delta);
             }
 
@@ -648,7 +666,6 @@ public partial class OBPGame
     private static void ApplyRac1Class749NavigationIntent(
         RuntimeWorldScene.DynamicObjectNode hostile,
         Rac1Class749NavigationIntent intent,
-        Vector3 recoveredTargetPosition,
         double delta)
     {
         if (intent.Kind is not (
@@ -667,30 +684,17 @@ public partial class OBPGame
         if (seconds <= 0f) return;
 
         // RuntimeWorldScene mirrors native X into Godot while retaining Y-up and Z.
-        // The recovered destination remains the native input; any live-target bridge
-        // below is explicitly host presentation policy until its retail writer is recovered.
-        Vector3 recoveredDestination = new(
+        // The class-local producer has already supplied the recovered +0x180/+0x1d0
+        // destination. Presentation consumes that descriptor and does not substitute
+        // Ratchet's live transform.
+        Vector3 target = new(
             -(float)destination.X,
             (float)destination.Y,
             (float)destination.Z);
         Vector3 current = hostile.Root.GlobalPosition;
-
-        // State 6 proves both a live target-Moby dereference and a PVar+0x180
-        // locomotion destination, but the retail writer of +0x180 is still unknown.
-        // For the single admitted Veldin witness, bridge that missing writer only as
-        // host presentation policy: pursue Ratchet's live position. Keeping the
-        // retained +0x180 height strands the visible hostile below Ratchet because
-        // the missing retail writer is precisely what would keep that destination
-        // current. State 8 continues to consume the recovered home destination unchanged.
-        Vector3 target = intent.Kind == Rac1Class749NavigationIntentKind.PursueRecoveredTarget
-            ? recoveredTargetPosition
-            : recoveredDestination;
         Vector3 offset = target - current;
 
-        Vector3 facingOffset = intent.Kind == Rac1Class749NavigationIntentKind.PursueRecoveredTarget
-            ? recoveredTargetPosition - current
-            : offset;
-        Vector3 planarDirection = new(facingOffset.X, 0f, facingOffset.Z);
+        Vector3 planarDirection = new(offset.X, 0f, offset.Z);
         if (planarDirection.LengthSquared() > 1e-6f)
         {
             planarDirection = planarDirection.Normalized();
@@ -782,10 +786,15 @@ public partial class OBPGame
 
         int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
             IsInstanceValid(hostile.Root) && hostile.Root.Visible);
-        string hostile = TryGetRac1RepresentativeHostile(out var representativeNode, out var representativeProbe) &&
-            representativeNode is not null && representativeProbe is not null
-            ? $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active); representative i{representativeNode.Source.InstanceIndex} state {representativeProbe.NativeState} health {representativeProbe.Health:0.###}"
-            : $"class-749 family {_rac1HostileProbes.Count} ({activeHostiles} active)";
+        string stateSummary = string.Join(
+            ", ",
+            _rac1HostileProbes.Values
+                .GroupBy(probe => probe.NativeState)
+                .OrderBy(group => group.Key)
+                .Select(group => $"s{group.Key}:{group.Count()}"));
+        string hostile =
+            $"class-749 population {_rac1HostileProbes.Count} ({activeHostiles} visible)" +
+            (stateSummary.Length > 0 ? $"; {stateSummary}" : string.Empty);
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
         string restart = nanotech.HasRecoveredEnvironmentalRespawn
@@ -802,7 +811,6 @@ public partial class OBPGame
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return null;
-        TryGetRac1RepresentativeHostile(out var representativeNode, out var representativeProbe);
         int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
             IsInstanceValid(hostile.Root) && hostile.Root.Visible);
         return new Rac1GameplaySnapshot(
@@ -812,12 +820,16 @@ public partial class OBPGame
             CollectedBolts: _rac1BoltCrates.CollectedBolts,
             HostileCount: _rac1HostileProbes.Count,
             ActiveHostiles: activeHostiles,
-            HostileInstance: representativeNode?.Source.InstanceIndex,
-            HostileState: representativeProbe?.NativeState,
-            HostileHealth: representativeProbe?.Health,
-            HostileVisible: representativeNode is not null &&
-                IsInstanceValid(representativeNode.Root) &&
-                representativeNode.Root.Visible,
+            LinkedHostiles: _rac1HostileProbes.Values.Count(
+                probe => probe.NativeState == Rac1Class749Hostile.LinkedObjectNativeState),
+            IdleHostiles: _rac1HostileProbes.Values.Count(
+                probe => probe.NativeState == Rac1Class749Hostile.TargetSearchNativeState),
+            PursuingHostiles: _rac1HostileProbes.Values.Count(
+                probe => probe.NativeState == Rac1Class749Hostile.TargetedNativeState),
+            AttackingHostiles: _rac1HostileProbes.Values.Count(
+                probe => probe.NativeState == Rac1Class749Hostile.AttackNativeState),
+            ReturningHostiles: _rac1HostileProbes.Values.Count(
+                probe => probe.NativeState == Rac1Class749Hostile.ReturnHomeNativeState),
             Nanotech: _rac1Nanotech.Probe().Nanotech,
             LifeState: _rac1Nanotech.Probe().LifeState,
             EquippedWeapon: _rac1Weapons.Equipped,
@@ -833,10 +845,11 @@ public partial class OBPGame
         int CollectedBolts,
         int HostileCount,
         int ActiveHostiles,
-        int? HostileInstance,
-        int? HostileState,
-        float? HostileHealth,
-        bool HostileVisible,
+        int LinkedHostiles,
+        int IdleHostiles,
+        int PursuingHostiles,
+        int AttackingHostiles,
+        int ReturningHostiles,
         int Nanotech,
         Rac1RatchetLifeState LifeState,
         Rac1WeaponId EquippedWeapon,

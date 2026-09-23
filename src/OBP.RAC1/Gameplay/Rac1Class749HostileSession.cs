@@ -21,22 +21,60 @@ public sealed class Rac1Class749HostileSession
             ?? throw new ArgumentException("Source is not an R&C1 class-749 hostile.", nameof(source));
         current.EnsureMatches(source);
 
-        var entry = new Entry(
-            Rac1Class749Hostile.RequirePVar(source),
-            Rac1MobyRuntime.Create(
-                source,
-                Rac1Class749Hostile.TargetSearchNativeState,
-                current));
-        if (!_entries.TryAdd(authored.Key, entry))
-            throw new InvalidOperationException(
-                $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
-        return Snapshot(authored.Key, entry);
+        byte[] pvar = Rac1Class749Hostile.RequirePVar(source);
+        Rac1Class749Hostile.WriteHomePosition(
+            pvar, Rac1Class749Hostile.ReadAuthoredPosition(source));
+
+        return RegisterCore(
+            source,
+            authored.Key,
+            current,
+            pvar,
+            activationGroup: null,
+            Rac1Class749Hostile.TargetSearchNativeState);
     }
 
-    public Rac1Class749HostProbe RegisterRepresentative(
+    public Rac1Class749HostProbe RegisterVeldinPlacement(
         RuntimeDynamicObject source,
-        RuntimeEntityState current) =>
-        Register(source, current);
+        RuntimeEntityState current)
+    {
+        var authored = Rac1Class749Hostile.ReadAuthored(source)
+            ?? throw new ArgumentException("Source is not an R&C1 class-749 hostile.", nameof(source));
+        if (!Rac1Class749VeldinPopulation.TryGetActivationGroup(source.InstanceIndex, out int group))
+            throw new ArgumentException("Source is not a recovered Veldin class-749 placement.", nameof(source));
+        current.EnsureMatches(source);
+
+        byte[] pvar = Rac1Class749Hostile.RequirePVar(source);
+        Rac1Class749Hostile.WriteHomePosition(
+            pvar, Rac1Class749Hostile.ReadAuthoredPosition(source));
+        Rac1Class749VeldinPopulation.ValidateAuthoredFields(source, pvar);
+
+        return RegisterCore(
+            source,
+            authored.Key,
+            current,
+            pvar,
+            group,
+            Rac1Class749VeldinPopulation.InitialNativeState(source, pvar));
+    }
+
+    private Rac1Class749HostProbe RegisterCore(
+        RuntimeDynamicObject source,
+        Rac1Class749Key key,
+        RuntimeEntityState current,
+        byte[] pvar,
+        int? activationGroup,
+        int initialState)
+    {
+        var entry = new Entry(
+            pvar,
+            activationGroup,
+            Rac1MobyRuntime.Create(source, initialState, current));
+        if (!_entries.TryAdd(key, entry))
+            throw new InvalidOperationException(
+                $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
+        return Snapshot(key, entry);
+    }
 
     public Rac1Class749HostProbe Probe(RuntimeDynamicObject source)
     {
@@ -52,42 +90,57 @@ public sealed class Rac1Class749HostileSession
 
         var (key, entry) = RequireEntry(source);
         int nativeStateBefore = entry.NativeState;
-        int statusSentinel = target.StatusSentinel ?? Rac1Class749Hostile.ReadStatusSentinel(entry.PVar);
+        int statusSentinel = UpdateTargetDescriptor(entry, target);
         Rac1Class749AttackEvent? attack = null;
         IReadOnlyList<IRac1MobyHostIntent> hostIntents =
             HostIntentsForDispatch(nativeStateBefore, entry.PVar);
 
         switch (entry.NativeState)
         {
-            case Rac1Class749Hostile.TargetSearchNativeState:
-                if (statusSentinel != Rac1Class749Hostile.StatusSentinelTwo)
-                    entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
-                break;
-
-            case Rac1Class749Hostile.TargetedNativeState:
-                if (target.Distance < Rac1Class749Hostile.AttackDistanceExclusive &&
-                    target.FacingError < Rac1Class749Hostile.AttackFacingErrorExclusive)
-                {
-                    entry.NativeState = Rac1Class749Hostile.AttackNativeState;
-                    SetSequence(entry, Rac1Class749Hostile.AttackSequenceId);
-                }
-                else if (statusSentinel == Rac1Class749Hostile.StatusSentinelTwo)
+            case Rac1Class749Hostile.LinkedObjectNativeState:
+                if (target.LinkedObjectTerminal)
                 {
                     entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
                     SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
                 }
                 break;
+            case Rac1Class749Hostile.TargetSearchNativeState:
+                if (statusSentinel != Rac1Class749Hostile.StatusSentinelTwo)
+                {
+                    entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
+                    RandomizeActivationYaw(entry);
+                }
+                break;
 
-            case Rac1Class749Hostile.AttackNativeState:
-                attack = AdvanceAttackSequence(entry);
+            case Rac1Class749Hostile.TargetedNativeState:
                 if (statusSentinel == Rac1Class749Hostile.StatusSentinelTwo)
                 {
                     entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
+                }
+                else if (target.Distance < Rac1Class749Hostile.AttackDistanceExclusive &&
+                         target.FacingError < Rac1Class749Hostile.AttackFacingErrorExclusive)
+                {
+                    entry.NativeState = Rac1Class749Hostile.AttackNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.AttackSequenceId);
+                }
+                break;
+
+            case Rac1Class749Hostile.AttackNativeState:
+                if (statusSentinel == Rac1Class749Hostile.StatusSentinelTwo)
+                {
+                    entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
                 }
                 else if (target.Distance > Rac1Class749Hostile.AttackRetainDistanceInclusive ||
-                         target.FacingError > Rac1Class749Hostile.AttackFacingErrorExclusive)
+                         target.FacingError >= Rac1Class749Hostile.AttackFacingErrorExclusive)
                 {
                     entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
+                    SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
+                }
+                else
+                {
+                    attack = AdvanceAttackSequence(entry);
                 }
                 break;
 
@@ -189,6 +242,37 @@ public sealed class Rac1Class749HostileSession
         return Snapshot(key, entry, hostEvents: hostEvents);
     }
 
+    private static int UpdateTargetDescriptor(Entry entry, Rac1Class749TargetFacts target)
+    {
+        if (entry.NativeState == Rac1Class749Hostile.LinkedObjectNativeState)
+        {
+            Rac1Class749Hostile.WriteTargetDestination(entry.PVar, target.TargetPosition);
+            return Rac1Class749Hostile.ReadStatusSentinel(entry.PVar);
+        }
+
+        int status = target.StatusSentinel ??
+            (entry.ActivationGroup is int group
+                ? Rac1Class749VeldinPopulation.IsAdmitted(group, target.TargetPosition) ? 0 : 2
+                : Rac1Class749Hostile.ReadStatusSentinel(entry.PVar));
+        Rac1Class749Hostile.WriteStatusSentinel(entry.PVar, status);
+        if (status != Rac1Class749Hostile.StatusSentinelTwo &&
+            (entry.ActivationGroup is not null || target.TargetPosition != default))
+            Rac1Class749Hostile.WriteTargetDestination(entry.PVar, target.TargetPosition);
+        return status;
+    }
+
+    private static void RandomizeActivationYaw(Entry entry)
+    {
+        entry.ActivationCount++;
+        uint mixed = unchecked(
+            (uint)(entry.InstanceIndex * 1103515245) +
+            (uint)(entry.ActivationCount * 12345));
+        double unit = (mixed & 0xffffu) / 65535d;
+        const double maxRadians = 20d * Math.PI / 180d;
+        Rac1Class749Hostile.WriteActivationYawOffset(
+            entry.PVar, checked((float)((unit * 2d - 1d) * maxRadians)));
+    }
+
     private static Rac1Class749AttackEvent? AdvanceAttackSequence(Entry entry)
     {
         if (entry.NativeSequence != Rac1Class749Hostile.AttackSequenceId)
@@ -219,6 +303,13 @@ public sealed class Rac1Class749HostileSession
         ReadOnlySpan<byte> pvar) =>
         nativeState switch
         {
+            Rac1Class749Hostile.TargetSearchNativeState =>
+            [
+                new Rac1Class749IdleTurnIntent(
+                    Rac1Class749Hostile.IdleTurnDescriptorOffset,
+                    Rac1Class749Hostile.IdleTurnInput,
+                    Rac1Class749Hostile.IdleTurnInput),
+            ],
             Rac1Class749Hostile.TargetedNativeState =>
             [
                 new Rac1Class749NavigationIntent(
@@ -266,7 +357,10 @@ public sealed class Rac1Class749HostileSession
             throw new ArgumentOutOfRangeException(nameof(target));
         if (!double.IsFinite(target.CurrentPosition.X) ||
             !double.IsFinite(target.CurrentPosition.Y) ||
-            !double.IsFinite(target.CurrentPosition.Z))
+            !double.IsFinite(target.CurrentPosition.Z) ||
+            !double.IsFinite(target.TargetPosition.X) ||
+            !double.IsFinite(target.TargetPosition.Y) ||
+            !double.IsFinite(target.TargetPosition.Z))
             throw new ArgumentOutOfRangeException(nameof(target));
     }
 
@@ -286,9 +380,15 @@ public sealed class Rac1Class749HostileSession
             hostIntents ?? Array.Empty<IRac1MobyHostIntent>(),
             hostEvents ?? Array.Empty<IRac1MobyHostEvent>());
 
-    private sealed class Entry(byte[] pvar, Rac1MobyRuntimeState runtimeState)
+    private sealed class Entry(
+        byte[] pvar,
+        int? activationGroup,
+        Rac1MobyRuntimeState runtimeState)
     {
         public byte[] PVar { get; } = pvar;
+        public int InstanceIndex { get; } = runtimeState.Key.InstanceIndex;
+        public int? ActivationGroup { get; } = activationGroup;
+        public int ActivationCount { get; set; }
         public Rac1MobyRuntimeState RuntimeState { get; set; } = runtimeState;
         public int NativeState
         {

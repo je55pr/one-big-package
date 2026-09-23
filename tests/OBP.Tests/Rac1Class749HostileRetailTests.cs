@@ -32,7 +32,7 @@ public sealed class Rac1Class749HostileRetailTests
     }
 
     [SkippableFact]
-    public void AllNativeLevelsRetainAuthoredClass749PlacementsWithoutExpandingRuntimeWitness()
+    public void NativePlacementCensusKeepsRecoveredRuntimeScopeVeldinOnly()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
@@ -58,45 +58,45 @@ public sealed class Rac1Class749HostileRetailTests
                 var authored = Assert.IsType<Rac1Class749AuthoredState>(
                     Rac1Class749Hostile.ReadAuthored(source));
                 Assert.Equal(1f, authored.Health);
-                Assert.Equal(0, authored.StatusSentinel);
+                Assert.Equal(0, authored.InitialStatusSentinel);
                 Assert.Equal(Rac1Class749Hostile.PVarSize, authored.PVarSize);
             }
 
-            var runtimeWitnesses = class749
-                .Where(source => Rac1Class749Hostile.IsRetainedRuntimeWitness(levelId, source))
-                .ToArray();
-            int expectedRuntimeWitnessCount =
-                levelId == Rac1Class749Hostile.RetainedRuntimeWitnessLevelId ? 1 : 0;
-            Assert.Equal(expectedRuntimeWitnessCount, runtimeWitnesses.Length);
-            if (runtimeWitnesses.Length == 1)
-                Assert.Equal(
-                    Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex,
-                    runtimeWitnesses[0].InstanceIndex);
+            int recoveredRuntimePlacements = class749.Count(source =>
+                Rac1Class749Hostile.IsRecoveredVeldinPlacement(levelId, source));
+            Assert.Equal(levelId == Rac1Class749VeldinPopulation.LevelId ? 16 : 0, recoveredRuntimePlacements);
         }
     }
 
     [SkippableFact]
-    public void VeldinInstance149ReplaysRepresentativeWitness()
+    public void VeldinRegistersAllSixteenWithoutInstance149Privilege()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
-        var world = Rac1WorldImport.Build(reader, Rac1Class749Hostile.RetainedRuntimeWitnessLevelId);
-        var specimen = Assert.Single(
-            world.DynamicObjects!,
-            o => o.InstanceIndex == Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex);
-        Assert.Equal(Rac1Class749Hostile.NativeClassId, specimen.NativeClassId);
-        Assert.True(Rac1Class749Hostile.IsRetainedRuntimeWitness(world.LevelId, specimen));
-
-        var authored = Assert.IsType<Rac1Class749AuthoredState>(
-            Rac1Class749Hostile.ReadAuthored(specimen));
-        Assert.Equal(1f, authored.Health);
-        Assert.Equal(0x280, authored.PVarSize);
+        var world = Rac1WorldImport.Build(reader, Rac1Class749VeldinPopulation.LevelId);
+        var placements = world.DynamicObjects!
+            .Where(o => Rac1Class749Hostile.IsRecoveredVeldinPlacement(world.LevelId, o))
+            .OrderBy(o => o.InstanceIndex)
+            .ToArray();
+        Assert.Equal(16, placements.Length);
 
         var session = new Rac1Class749HostileSession();
-        var registered = session.RegisterRepresentative(
-            specimen, RuntimeEntityState.FromAuthored(specimen));
-        Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, registered.NativeState);
-        Assert.Equal(RuntimeEntityPresence.Active, registered.EntityState.Presentation.Presence);
+        foreach (var placement in placements)
+        {
+            var registered = session.RegisterVeldinPlacement(
+                placement, RuntimeEntityState.FromAuthored(placement));
+            int expectedState =
+                placement.InstanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedInstanceIndex
+                    ? Rac1Class749Hostile.LinkedObjectNativeState
+                    : Rac1Class749Hostile.TargetSearchNativeState;
+            Assert.Equal(expectedState, registered.NativeState);
+            Assert.Equal(RuntimeEntityPresence.Active, registered.EntityState.Presentation.Presence);
+        }
+
+        Assert.Equal(16, session.RegisteredCount);
+        Assert.Equal(
+            Rac1Class749Hostile.TargetSearchNativeState,
+            session.Probe(placements.Single(p => p.InstanceIndex == 149)).NativeState);
     }
 }

@@ -8,7 +8,8 @@
   provider path with an ephemeral campaign session, then drives only ordinary
   InputMap/keyboard controls. The gate verifies the clean opening inventory,
   usable Bomb Glove ammo, recovered horizontal and vertical camera input,
-  visible hostile motion, a natural hostile attack/damage event, practical
+  all 16 Veldin class-749 placements idle at the authored start, polygon-driven
+  population activation, a natural hostile attack/damage event, practical
   hostile/crate wrench contacts, and a natural fall/death/respawn.
 
   This smoke never stages Ratchet or enemy transforms, injects checkpoint/death/

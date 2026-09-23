@@ -137,7 +137,7 @@ public sealed class Rac1Goal1PlayableSliceTests
 
         var hostile = Class749(instanceIndex: 149, health: 1f);
         var hostileSession = new Rac1Class749HostileSession();
-        var hostileProbe = hostileSession.RegisterRepresentative(
+        var hostileProbe = hostileSession.Register(
             hostile,
             RuntimeEntityState.FromAuthored(hostile));
         Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, hostileProbe.NativeState);
@@ -251,7 +251,7 @@ public sealed class Rac1Goal1PlayableSliceTests
 
         var hostile = Class749(instanceIndex: 149, health: 1f);
         var hostiles = new Rac1Class749HostileSession();
-        var hostileProbe = hostiles.RegisterRepresentative(hostile, RuntimeEntityState.FromAuthored(hostile));
+        var hostileProbe = hostiles.Register(hostile, RuntimeEntityState.FromAuthored(hostile));
         var bombContact = bombGlove.ResolveGoal1ContactVolume(
             shot.Projectile.ProjectileId,
             [new Rac1MobyContactFacts(hostile, hostileProbe.NativeState, IsSourceMoby: false)]);

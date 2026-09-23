@@ -25,9 +25,9 @@ public sealed class Rac1Class749HostileTests
         Assert.Equal(new Rac1Class749Key(749, 149), authored.Key);
         Assert.Equal(1f, authored.Health);
         Assert.Equal(0x280, authored.PVarSize);
-        Assert.Equal(targetDestination, authored.TargetDestination);
-        Assert.Equal(3, authored.StatusSentinel);
-        Assert.Equal(home, authored.HomePosition);
+        Assert.Equal(targetDestination, authored.InitialTargetDestination);
+        Assert.Equal(3, authored.InitialStatusSentinel);
+        Assert.Equal(home, authored.InitialHomePosition);
         Assert.Null(source.NativeUid);
     }
 
@@ -96,15 +96,22 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
-    public void StateSevenRetainsInclusiveThresholdsAndLeavesOnlyAboveThem()
+    public void StateSevenRetainsInclusiveDistanceButRequiresFacingInsideThreshold()
     {
         var source = Class749(149, health: 1f);
         var session = InStateSeven(source);
 
         var retained = session.Step(source, Facts(
             Rac1Class749Hostile.AttackRetainDistanceInclusive,
-            Rac1Class749Hostile.AttackFacingErrorExclusive));
+            Math.BitDecrement((double)Rac1Class749Hostile.AttackFacingErrorExclusive)));
         Assert.Equal(Rac1Class749Hostile.AttackNativeState, retained.NativeState);
+
+        var thresholdSource = Class749(153, health: 1f);
+        var thresholdSession = InStateSeven(thresholdSource);
+        var thresholdExit = thresholdSession.Step(
+            thresholdSource,
+            Facts(1d, Rac1Class749Hostile.AttackFacingErrorExclusive));
+        Assert.Equal(Rac1Class749Hostile.TargetedNativeState, thresholdExit.NativeState);
 
         var distanceExitSource = Class749(150, health: 1f);
         var distanceExitSession = InStateSeven(distanceExitSource);
@@ -207,22 +214,94 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
-    public void RuntimeWitnessGateDoesNotGeneralizeByClassOrPvarResemblance()
+    public void VeldinPopulationPinsAllAuthoredActivationGroupsWithoutInstancePrivilege()
     {
-        var witness = Class749(
-            Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex,
-            health: 1f);
-        var sameClassDifferentInstance = Class749(
-            Rac1Class749Hostile.RetainedRuntimeWitnessInstanceIndex + 1,
-            health: 1f);
+        int[] expected = [0, 0, 1, 1, 1, 2, 3, 3, 4, 16, 16, 20, 23, 23, 23, 23];
+        for (int i = 0; i < expected.Length; i++)
+        {
+            int instanceIndex = Rac1Class749VeldinPopulation.FirstInstanceIndex + i;
+            Assert.Equal(expected[i], Rac1Class749VeldinPopulation.GetActivationGroup(instanceIndex));
+            Assert.True(Rac1Class749Hostile.IsRecoveredVeldinPlacement(
+                Rac1Class749VeldinPopulation.LevelId,
+                Class749(instanceIndex, health: 1f)));
+        }
 
-        Assert.True(Rac1Class749Hostile.IsRetainedRuntimeWitness(
-            Rac1Class749Hostile.RetainedRuntimeWitnessLevelId,
-            witness));
-        Assert.False(Rac1Class749Hostile.IsRetainedRuntimeWitness(
-            Rac1Class749Hostile.RetainedRuntimeWitnessLevelId,
-            sameClassDifferentInstance));
-        Assert.False(Rac1Class749Hostile.IsRetainedRuntimeWitness(18, witness));
+        Assert.False(Rac1Class749Hostile.IsRecoveredVeldinPlacement(
+            18,
+            Class749(149, health: 1f)));
+    }
+
+    [Fact]
+    public void AuthoredVeldinStartDoesNotPromoteAnyPlacementToPursuit()
+    {
+        var session = new Rac1Class749HostileSession();
+        for (int instanceIndex = 143; instanceIndex <= 158; instanceIndex++)
+        {
+            var source = VeldinClass749(instanceIndex);
+            session.RegisterVeldinPlacement(source, RuntimeEntityState.FromAuthored(source));
+            var probe = session.Step(
+                source,
+                new Rac1Class749TargetFacts(
+                    10d,
+                    0d,
+                    TargetPosition: Rac1Class749VeldinPopulation.AuthoredRatchetStart));
+
+            Assert.NotEqual(Rac1Class749Hostile.TargetedNativeState, probe.NativeState);
+        }
+    }
+
+    [Fact]
+    public void PolygonAdmissionPromotesOnlyMatchingAuthoredGroups()
+    {
+        var session = new Rac1Class749HostileSession();
+        var group0 = VeldinClass749(143);
+        var group3 = VeldinClass749(149);
+        session.RegisterVeldinPlacement(group0, RuntimeEntityState.FromAuthored(group0));
+        session.RegisterVeldinPlacement(group3, RuntimeEntityState.FromAuthored(group3));
+
+        var group0Probe = session.Step(
+            group0,
+            new Rac1Class749TargetFacts(10d, 0d, TargetPosition: new(150d, 0d, 120d)));
+        var group3Suppressed = session.Step(
+            group3,
+            new Rac1Class749TargetFacts(10d, 0d, TargetPosition: new(150d, 0d, 120d)));
+        var group3Admitted = session.Step(
+            group3,
+            new Rac1Class749TargetFacts(10d, 0d, TargetPosition: new(104d, 0d, 190d)));
+
+        Assert.Equal(Rac1Class749Hostile.TargetedNativeState, group0Probe.NativeState);
+        Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, group3Suppressed.NativeState);
+        Assert.Equal(Rac1Class749Hostile.TargetedNativeState, group3Admitted.NativeState);
+    }
+
+    [Fact]
+    public void Instance154UsesLinkedConstructorThenReturnsHomeAfterTerminal()
+    {
+        var home = new Rac1Class749WorldPoint(96d, 33d, 258d);
+        var source = VeldinClass749(154, home);
+        var session = new Rac1Class749HostileSession();
+        var initial = session.RegisterVeldinPlacement(source, RuntimeEntityState.FromAuthored(source));
+        Assert.Equal(Rac1Class749Hostile.LinkedObjectNativeState, initial.NativeState);
+
+        var tracking = session.Step(
+            source,
+            new Rac1Class749TargetFacts(5d, 0d, home, TargetPosition: new(96d, 33d, 258d)));
+        Assert.Equal(Rac1Class749Hostile.LinkedObjectNativeState, tracking.NativeState);
+
+        var terminal = session.Step(
+            source,
+            new Rac1Class749TargetFacts(
+                5d,
+                0d,
+                home,
+                TargetPosition: new(96d, 33d, 258d),
+                LinkedObjectTerminal: true));
+        Assert.Equal(Rac1Class749Hostile.ReturnHomeNativeState, terminal.NativeState);
+
+        var atHome = session.Step(
+            source,
+            new Rac1Class749TargetFacts(5d, 0d, home, TargetPosition: new(96d, 33d, 258d)));
+        Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, atHome.NativeState);
     }
 
     [Fact]
@@ -250,7 +329,7 @@ public sealed class Rac1Class749HostileTests
     private static Rac1Class749HostileSession Registered(RuntimeDynamicObject source)
     {
         var session = new Rac1Class749HostileSession();
-        session.RegisterRepresentative(source, RuntimeEntityState.FromAuthored(source));
+        session.Register(source, RuntimeEntityState.FromAuthored(source));
         return session;
     }
 
@@ -287,6 +366,28 @@ public sealed class Rac1Class749HostileTests
         Rac1Class749WorldPoint currentPosition = default) =>
         new(distance, facingError, currentPosition, statusSentinel);
 
+    private static RuntimeDynamicObject VeldinClass749(
+        int instanceIndex,
+        Rac1Class749WorldPoint home = default)
+    {
+        var source = Class749(instanceIndex, health: 1f, home: home);
+        byte[] pvar = source.NativePayloads!.Single().Data;
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(Rac1Class749Hostile.ActivationGroupOffset, sizeof(int)),
+            Rac1Class749VeldinPopulation.GetActivationGroup(instanceIndex));
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(Rac1Class749Hostile.LinkModeOffset, sizeof(int)),
+            instanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedInstanceIndex ? 21 : -1);
+        if (instanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedInstanceIndex)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(
+                pvar.AsSpan(Rac1Class749Hostile.StateThreeActivationGroupOffset, sizeof(int)), -1);
+            BinaryPrimitives.WriteInt32LittleEndian(
+                pvar.AsSpan(Rac1Class749Hostile.LinkedInstanceOffset, sizeof(int)), 197);
+        }
+        return source;
+    }
+
     private static RuntimeDynamicObject Class749(
         int instanceIndex,
         float health,
@@ -321,10 +422,15 @@ public sealed class Rac1Class749HostileTests
             WriteSingle(pvar, Rac1Class749Hostile.HomePositionOffset + 2 * sizeof(float), checked((float)home.Y));
         }
 
+        var transform = new double[16];
+        transform[12] = home.X;
+        transform[13] = home.Y;
+        transform[14] = home.Z;
+        transform[15] = 1d;
         return new RuntimeDynamicObject(
             "rac1", Rac1Class749Hostile.NativeClassId, instanceIndex, null,
             $"moby:{Rac1Class749Hostile.NativeClassId}", $"moby:{instanceIndex}",
-            new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>(),
+            new RuntimeObjectTransform(transform), Array.Empty<RuntimeObjectMesh>(),
             [new RuntimeOpaquePayload(Rac1Class749Hostile.PVarPayloadFormat, pvar)]);
     }
 

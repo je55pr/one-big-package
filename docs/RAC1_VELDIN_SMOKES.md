@@ -20,7 +20,11 @@ The smoke then drives only the public player input boundary. It verifies:
 - ordinary keyboard selection of the Bomb Glove and one primary-action fire,
   proving the opening six-round grant is usable by observing the normal 6 -> 5
   inventory transition;
-- visible class-749 translation under the supported runtime hostile session;
+- all 16 authored Veldin class-749 placements registered into the recovered
+  runtime population while remaining idle at the authored Ratchet start, preventing
+  the old privileged one-enemy pursuit regression;
+- polygon-driven class-749 activation during ordinary movement, with multiple
+  placements in the same authored group able to respond;
 - natural pursuit/attack marker damage, including a real 4 -> 3 Nanotech hit;
 - a Wrench selection/action against the hostile after gameplay itself establishes
   contact range;
@@ -43,8 +47,8 @@ the staged harness.
 `--rac1-combat-contract-smoke`. Its implementation lives in
 `OBPGame.Rac1CombatContractSmoke.cs`. This is explicitly a lower-level synthetic
 integration harness: it may stage transforms and call narrow internal seams to
-isolate wrench/contact, projectile, presentation, witness-gating and lifecycle
-contracts.
+isolate wrench/contact, projectile, presentation, recovered Veldin population
+gating and lifecycle contracts.
 
 A pass from the synthetic contract gate is useful for regression isolation, but
 must not be cited as proof that a player can reach the same setup from an

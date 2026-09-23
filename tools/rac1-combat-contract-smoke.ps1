@@ -7,7 +7,7 @@
   Builds the Godot host and runs the explicitly synthetic contract harness.
   Unlike tools/rac1-veldin-play-smoke.ps1, this harness is allowed to stage
   transforms and invoke narrow internal seams to isolate host collision,
-  presentation, witness-gating and unload/reload contracts. Its pass result is
+  presentation, Veldin population gating and unload/reload contracts. Its pass result is
   not evidence of ordinary-play reachability or end-to-end playability.
 #>
 param(

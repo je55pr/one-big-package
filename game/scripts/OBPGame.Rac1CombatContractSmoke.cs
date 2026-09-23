@@ -22,50 +22,48 @@ public partial class OBPGame
                     "R&C1 combat smoke must begin in authored LEVEL0/Veldin.");
 
             GD.Print("[rac1-combat-contract] begin synthetic Veldin combat host contracts");
-            if (!TryGetRac1RepresentativeHostile(out var navigationHostile, out _) ||
+            if (_rac1HostileNodes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
+                _rac1HostileProbes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount)
+                throw new InvalidOperationException(
+                    $"Ordinary Veldin launch registered {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count} " +
+                    $"class-749 placements, expected {Rac1Class749VeldinPopulation.AuthoredPlacementCount}/" +
+                    $"{Rac1Class749VeldinPopulation.AuthoredPlacementCount}.");
+
+            var launchPositions = _rac1HostileNodes.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value.Root.GlobalPosition);
+            for (int frame = 0; frame < 30; frame++)
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            foreach (var pair in _rac1HostileNodes)
+            {
+                if (pair.Value.Root.GlobalPosition.DistanceTo(launchPositions[pair.Key]) > 0.02f)
+                    throw new InvalidOperationException(
+                        $"Class-749 i{pair.Key} moved from the authored Veldin start before polygon admission.");
+                var probe = _rac1HostileProbes[pair.Key];
+                if (probe.NativeState is Rac1Class749Hostile.TargetedNativeState or Rac1Class749Hostile.AttackNativeState)
+                    throw new InvalidOperationException(
+                        $"Class-749 i{pair.Key} pursued from the authored Veldin start in state {probe.NativeState}.");
+            }
+
+            if (!TryGetRac1Hostile(143, out var navigationHostile, out _) ||
                 navigationHostile is null ||
                 !IsInstanceValid(navigationHostile.Root) ||
                 !navigationHostile.Root.Visible)
                 throw new InvalidOperationException(
-                    "Ordinary Veldin launch has no admitted class-749 runtime witness.");
+                    "Recovered Veldin class-749 instance 143 is unavailable for polygon-admission smoke.");
 
-            Vector3 navigationStartPosition = navigationHostile.Root.GlobalPosition;
-            Vector3 navigationStartForward = -navigationHostile.Root.GlobalTransform.Basis.Z;
-            navigationStartForward.Y = 0f;
-            if (navigationStartForward.LengthSquared() <= 1e-6f)
-                throw new InvalidOperationException(
-                    "Ordinary Veldin class-749 witness has no usable initial facing axis.");
-            navigationStartForward = navigationStartForward.Normalized();
-
-            await Rac1SmokeWaitAsync(
-                () =>
-                {
-                    if (!IsInstanceValid(navigationHostile.Root)) return false;
-                    Vector3 currentForward = -navigationHostile.Root.GlobalTransform.Basis.Z;
-                    currentForward.Y = 0f;
-                    if (currentForward.LengthSquared() <= 1e-6f) return false;
-                    currentForward = currentForward.Normalized();
-                    float turned = Math.Abs(
-                        navigationStartForward.SignedAngleTo(currentForward, Vector3.Up));
-                    return navigationHostile.Root.GlobalPosition.DistanceTo(navigationStartPosition) > 0.25f &&
-                           turned > 0.15f;
-                },
-                180,
-                "ordinary-launch class-749 visible movement and turn");
-
-            Vector3 navigationEndForward = -navigationHostile.Root.GlobalTransform.Basis.Z;
-            navigationEndForward.Y = 0f;
-            navigationEndForward = navigationEndForward.Normalized();
-            float navigationDistance =
-                navigationHostile.Root.GlobalPosition.DistanceTo(navigationStartPosition);
-            float navigationTurn = Math.Abs(
-                navigationStartForward.SignedAngleTo(navigationEndForward, Vector3.Up));
             GD.Print(
-                $"[rac1-smoke] ordinary class-749 navigation PASS; moved={navigationDistance:0.###}, " +
-                $"turned={Mathf.RadToDeg(navigationTurn):0.##}deg before any smoke teleport");
+                "[rac1-smoke] class-749 launch admission PASS; all 16 registered and none pursued at authored start");
 
             await Rac1SmokeWaitAsync(() => _player.IsOnFloor(), 240, "player grounding");
             Vector3 authoredRespawnPosition = _player.GlobalPosition;
+
+            // Keep the natural fall/death witness ahead of polygon admission. Once
+            // Ratchet enters group 0, both authored i143/i144 are legitimately live
+            // and can attack during later synthetic phases.
+            await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
+
             var naturalAttack = await Rac1SmokeProvokeClass749AttackAsync(
                 navigationHostile,
                 maxFrames: 3000);
@@ -76,7 +74,25 @@ public partial class OBPGame
                 $"entry facing={Mathf.RadToDeg((float)naturalAttack.EntryFacing):0.##}deg, " +
                 $"marker={naturalAttack.Attack.NativeMarker:0}, Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
 
-            await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
+            if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
+                throw new InvalidOperationException(
+                    $"Veldin class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
+            if (_rac1HostileNodes.Count != 16 || _rac1HostileProbes.Count != 16)
+                throw new InvalidOperationException(
+                    $"Veldin active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected recovered population 16/16.");
+            var hostile = navigationHostile;
+            if (!_rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) ||
+                !IsInstanceValid(hostile.Root) ||
+                !hostile.Root.Visible)
+                throw new InvalidOperationException(
+                    $"Recovered class-749 instance {hostile.Source.InstanceIndex} is unavailable.");
+
+            // From here onward this is the explicitly synthetic contract harness.
+            // Quarantine the recovered population while isolating crate/player-avatar
+            // presentation; later re-enable only the selected placement and stage it
+            // outside its activation polygon for projectile/wrench contact checks.
+            foreach (var pair in _rac1HostileNodes)
+                pair.Value.Root.Visible = false;
 
             var crate = _rac1CrateNodes
                 .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
@@ -139,17 +155,9 @@ public partial class OBPGame
                 120,
                 "post-wrench player-avatar recovery");
 
-            if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
-                throw new InvalidOperationException(
-                    $"Veldin class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
-            if (_rac1HostileNodes.Count != 1 || _rac1HostileProbes.Count != 1)
-                throw new InvalidOperationException(
-                    $"Veldin active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected witness-only 1/1.");
-            if (!_rac1HostileNodes.TryGetValue(Rac1WitnessHostileInstance, out var hostile) ||
-                !_rac1HostileProbes.ContainsKey(Rac1WitnessHostileInstance) ||
-                !IsInstanceValid(hostile.Root) ||
-                !hostile.Root.Visible)
-                throw new InvalidOperationException("Class-749 witness instance 149 is unavailable.");
+            Vector3 stagedHostilePosition = crate.Root.GlobalPosition;
+            hostile.Root.GlobalPosition = stagedHostilePosition;
+            hostile.Root.Visible = true;
 
             int bombAmmoBeforeFire = _rac1Weapons.FirstRangedAmmo;
             if (bombAmmoBeforeFire < Rac1BombGlove.AmmoCostPerShot)
@@ -165,7 +173,7 @@ public partial class OBPGame
             bombForward.Y = 0f;
             if (bombForward.LengthSquared() <= 1e-5f)
                 throw new InvalidOperationException(
-                    "Moving class-749 witness lost its usable facing before Bomb Glove smoke.");
+                    "Selected class-749 placement lost its usable facing before Bomb Glove smoke.");
             bombForward = bombForward.Normalized();
             Vector3 bombPose = hostile.Root.GlobalPosition - bombForward * 2f;
             Rac1SmokePlaceFacing(bombPose, bombForward);
@@ -199,13 +207,13 @@ public partial class OBPGame
                 ?? throw new InvalidOperationException("Bomb Glove contact result disappeared.");
             if (bombContact.AdmittedContactCount != 1)
                 throw new InvalidOperationException(
-                    $"Bomb Glove admitted {bombContact.AdmittedContactCount} contacts, expected one retained Veldin class-749 witness.");
+                    $"Bomb Glove admitted {bombContact.AdmittedContactCount} contacts, expected one staged recovered Veldin class-749 placement.");
             var bombDamage = bombContact.DamageResults[0];
             if (bombDamage.TargetNativeClassId != Rac1Class749Hostile.NativeClassId ||
                 bombDamage.NativeDamage != Rac1BombGlove.NativeDamage ||
                 bombDamage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
                 throw new InvalidOperationException("Bomb Glove contact drifted from the retained native damage envelope.");
-            if (!_rac1HostileProbes.TryGetValue(Rac1WitnessHostileInstance, out var postBombProbe) ||
+            if (!_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var postBombProbe) ||
                 postBombProbe.Health != 1f ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
@@ -216,19 +224,25 @@ public partial class OBPGame
                 $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
                 "immediate refire cadence-blocked and class-749 consequence remains unresolved");
 
+            // This lower-level harness has already proved the crate contact path above.
+            // Hide remaining class-500 presentations so the staged terminal swing
+            // isolates the class-749 host-contact contract instead of being consumed
+            // by the production crate-first contact ordering.
+            foreach (var crateNode in _rac1CrateNodes.Where(node => IsInstanceValid(node.Root)))
+                crateNode.Root.Visible = false;
+
             Vector3 terminalForward = -hostile.Root.GlobalTransform.Basis.Z;
             terminalForward.Y = 0f;
             if (terminalForward.LengthSquared() <= 1e-5f)
                 throw new InvalidOperationException(
-                    "Moving class-749 witness lost its usable facing before terminal wrench smoke.");
+                    "Selected class-749 placement lost its usable facing before terminal wrench smoke.");
             terminalForward = terminalForward.Normalized();
 
             // The authored hostile location is not a proven walkable wrench approach
             // corridor. Ordinary navigation was already asserted above before any
-            // smoke teleport, so stage the same supported witness on the crate corridor
+            // smoke teleport, so stage the selected recovered placement on the crate corridor
             // that just proved ordinary Ratchet movement. Re-pin only during this
             // synthetic contact regression; production navigation remains untouched.
-            Vector3 stagedHostilePosition = crate.Root.GlobalPosition;
             hostile.Root.GlobalPosition = stagedHostilePosition;
             Rac1SmokePlaceGroundedFacing(crateApproachPose, crateDirection);
             await Rac1SmokeWaitAsync(
@@ -255,17 +269,25 @@ public partial class OBPGame
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
             OnRac1PrimaryAttackRequested();
             await Rac1SmokeWaitAsync(
-                () => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.WrenchAttackSequenceId &&
-                      PlayerAvatarPresentationIsSynchronized(),
+                () =>
+                {
+                    hostile.Root.GlobalPosition = stagedHostilePosition;
+                    return CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.WrenchAttackSequenceId &&
+                           PlayerAvatarPresentationIsSynchronized();
+                },
                 30,
                 "terminal wrench player-avatar sequence 23");
             AssertRac1SmokeWrenchPresentation(visible: true, "terminal wrench sequence 23");
             await Rac1SmokeWaitAsync(
-                () => _rac1HostileProbes.TryGetValue(
-                        Rac1WitnessHostileInstance,
-                        out var witnessProbe) &&
-                    witnessProbe.Health == 0f &&
-                    !hostile.Root.Visible,
+                () =>
+                {
+                    hostile.Root.GlobalPosition = stagedHostilePosition;
+                    return _rac1HostileProbes.TryGetValue(
+                               hostile.Source.InstanceIndex,
+                               out var hostileProbe) &&
+                           hostileProbe.Health == 0f &&
+                           !hostile.Root.Visible;
+                },
                 120,
                 "wrench hostile terminalization");
             GD.Print("[rac1-smoke] wrench hostile terminalization PASS");
@@ -273,7 +295,7 @@ public partial class OBPGame
             await RunRac1Level18Class749GateSmokeAsync();
             await RunRac1HostileLifecycleSmokeAsync(bombAmmoAfterFire);
 
-            GD.Print("[rac1-combat-contract] PASS: synthetic host contracts and witness gating survived LEVEL0/LEVEL18/unload-reload");
+            GD.Print("[rac1-combat-contract] PASS: recovered Veldin population contracts survived LEVEL0/LEVEL18/unload-reload");
             ApplicationLifecycle.RequestQuit(this, "rac1-combat-contract-pass", 0);
         }
         catch (Exception ex)
@@ -299,8 +321,7 @@ public partial class OBPGame
         if (authored != 90 || presented != 90)
             throw new InvalidOperationException(
                 $"LEVEL18 class-749 census/presentation was {authored}/{presented}, expected 90/90.");
-        if (_rac1HostileNodes.Count != 0 || _rac1HostileProbes.Count != 0 ||
-            TryGetRac1RepresentativeHostile(out _, out _))
+        if (_rac1HostileNodes.Count != 0 || _rac1HostileProbes.Count != 0)
             throw new InvalidOperationException(
                 $"LEVEL18 promoted unsupported class-749 runtime behavior: {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count} active.");
 
@@ -320,7 +341,7 @@ public partial class OBPGame
             "LEVEL1 load and grounding");
 
         if (_rac1HostileNodes.Count != 0 || _rac1HostileProbes.Count != 0 ||
-            _rac1Projectiles.Count != 0 || TryGetRac1RepresentativeHostile(out _, out _))
+            _rac1Projectiles.Count != 0)
             throw new InvalidOperationException(
                 "LEVEL1 retained class-749 or projectile state after LEVEL18 unload.");
 
@@ -341,18 +362,18 @@ public partial class OBPGame
         if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
             throw new InvalidOperationException(
                 $"LEVEL0 reload class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
-        if (_rac1HostileNodes.Count != 1 || _rac1HostileProbes.Count != 1 ||
-            !TryGetRac1RepresentativeHostile(out var hostile, out _) ||
+        if (_rac1HostileNodes.Count != 16 || _rac1HostileProbes.Count != 16 ||
+            !TryGetRac1Hostile(143, out var hostile, out _) ||
             hostile is null || !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
             throw new InvalidOperationException(
-                $"LEVEL0 reload active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected witness-only 1/1.");
+                $"LEVEL0 reload active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected recovered population 16/16.");
         if (_rac1Weapons.FirstRangedAmmo != expectedBombAmmo)
             throw new InvalidOperationException(
                 $"Process-lifetime Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected persistent value {expectedBombAmmo}.");
         AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
 
         GD.Print(
-            $"[rac1-smoke] LEVEL0 reload PASS; 16 authored/presented placements, witness-only runtime restored, item-10 ammo remained {expectedBombAmmo}");
+            $"[rac1-smoke] LEVEL0 reload PASS; 16 authored/presented/runtime placements restored, item-10 ammo remained {expectedBombAmmo}");
     }
 
     private void AssertRac1SmokeHudWeapon(string expectedPresentationKey, int? expectedAmmo)
@@ -419,10 +440,10 @@ public partial class OBPGame
         int maxFrames)
     {
         if (_player is null ||
-            _world is not { Game: "rac1", LevelId: Rac1Class749Hostile.RetainedRuntimeWitnessLevelId } ||
-            !Rac1Class749Hostile.IsRetainedRuntimeWitness(_world.LevelId, hostile.Source))
+            _world is not { Game: "rac1", LevelId: Rac1Class749VeldinPopulation.LevelId } ||
+            !Rac1Class749Hostile.IsRecoveredVeldinPlacement(_world.LevelId, hostile.Source))
             throw new InvalidOperationException(
-                "Natural class-749 attack smoke requires the retained Veldin runtime witness.");
+                "Natural class-749 attack smoke requires a recovered Veldin population placement.");
 
         var nanotechBefore = _rac1Nanotech.Probe();
         if (nanotechBefore.IsDead || nanotechBefore.Nanotech != 4)
@@ -434,6 +455,12 @@ public partial class OBPGame
         double? entryDistance = null;
         double? entryFacing = null;
         bool sawPursuit = false;
+        int activationGroup = Rac1Class749VeldinPopulation.GetActivationGroup(
+            hostile.Source.InstanceIndex);
+        int expectedGroupMembers = _rac1HostileNodes.Keys.Count(instanceIndex =>
+            Rac1Class749VeldinPopulation.TryGetActivationGroup(instanceIndex, out int group) &&
+            group == activationGroup);
+        var activatedGroupMembers = new HashSet<int>();
 
         try
         {
@@ -442,11 +469,21 @@ public partial class OBPGame
                 if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible ||
                     !_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var probe))
                     throw new InvalidOperationException(
-                        "Retained class-749 witness disappeared during ordinary-play approach.");
+                        "Recovered class-749 placement disappeared during ordinary-play approach.");
 
                 Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
                 double distance = toPlayer.Length();
                 double facing = Rac1SmokeClass749FacingError(hostile, _player.GlobalPosition);
+
+                foreach (var pair in _rac1HostileProbes)
+                {
+                    if (Rac1Class749VeldinPopulation.TryGetActivationGroup(pair.Key, out int group) &&
+                        group == activationGroup &&
+                        pair.Value.NativeState != Rac1Class749Hostile.TargetSearchNativeState)
+                    {
+                        activatedGroupMembers.Add(pair.Key);
+                    }
+                }
 
                 sawPursuit |= probe.NativeState == Rac1Class749Hostile.TargetedNativeState;
                 if (probe.NativeState == Rac1Class749Hostile.AttackNativeState &&
@@ -485,6 +522,18 @@ public partial class OBPGame
                     if (hostileTravel.Length() < 0.25f)
                         throw new InvalidOperationException(
                             "Natural class-749 attack did not visibly exercise hostile pursuit.");
+                    if (expectedGroupMembers > 1 &&
+                        activatedGroupMembers.Count < expectedGroupMembers)
+                    {
+                        throw new InvalidOperationException(
+                            $"Class-749 activation group {activationGroup} activated only " +
+                            $"{activatedGroupMembers.Count}/{expectedGroupMembers} authored placements: " +
+                            $"{string.Join(",", activatedGroupMembers.Order())}.");
+                    }
+
+                    GD.Print(
+                        $"[rac1-smoke] class-749 group {activationGroup} activation PASS; " +
+                        $"members={string.Join(",", activatedGroupMembers.Order())}");
 
                     return (
                         playerTravel.Length(),
