@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "authority": {"game":"Ratchet & Clank","buildId":"rac1-ntscu-original","serial":"SCUS-97199","method":"static-only","payloadFree":true},
+  "notes": [
+    "Retained from w349 static archaeology; PCSX2/PINE was not used.",
+    "Public/Lawrence class names are corroboration only, never inferred from appearance or text proximity.",
+    "PVar schemas remain opaque except class 750 PVar+0x04, whose destination semantics are proven by executable use.",
+    "No ISO, executable, model, animation, PVar, VAG, or other retail payload bytes are retained."
+  ],
+  "progressionMoby": {
+    "oClass":750,"retainedClassification":"visible mission/progression Moby; strongly corroborated as the infobot family",
+    "semanticGrade":"direct-native-behavior-plus-public-corroboration","pVarBytes":208,
+    "highLodPackets":19,"joints":43,"ordinarySequenceSlots":5,
+    "authoredTableLevels":[0,1,3,4,5,6,7,8,10,12,13,14,15,17],
+    "placements":[
+      {"level":1,"nativeLevel":"LEVEL1","instanceOrdinal":0,"destinationAtPVar04":0},
+      {"level":3,"nativeLevel":"LEVEL3","instanceOrdinal":0,"destinationAtPVar04":4},
+      {"level":6,"nativeLevel":"LEVEL6","instanceOrdinal":0,"destinationAtPVar04":5},
+      {"level":6,"nativeLevel":"LEVEL6","instanceOrdinal":1,"destinationAtPVar04":5},
+      {"level":7,"nativeLevel":"LEVEL7","instanceOrdinal":0,"destinationAtPVar04":8},
+      {"level":10,"nativeLevel":"LEVEL10","instanceOrdinal":0,"destinationAtPVar04":11},
+      {"level":10,"nativeLevel":"LEVEL10","instanceOrdinal":1,"destinationAtPVar04":12},
+      {"level":17,"nativeLevel":"LEVEL17","instanceOrdinal":0,"destinationAtPVar04":18}
+    ],    "compiledAdmissionWitness": {
+      "registeredUpdateRoutine":"0x002d5de8","stateTable":"0x001e9f60","stateCount":12,
+      "destinationPVarOffset":4,"admissionState":8,"state8AdmissionCall":"0x002d6a20",
+      "admissionRoutine":"0x002607d0",
+      "effect":"admits the PVar-selected campaign destination through VisitedPlanets/GalacticMap state"
+    }
+  },
+  "actorCandidates": [
+    {"oClass":890,"nativeLevel":"LEVEL3","level":3,"instances":1,"pVarBytes":560,"highLodPackets":28,"joints":92,"registeredUpdateRoutine":"0x002da870","corroborativeLabels":["Helga"],"semanticGrade":"strongly-corroborated","retainedClassification":"one-off mission/contact actor candidate"},
+    {"oClass":774,"nativeLevel":"LEVEL1","level":1,"instances":1,"pVarBytes":416,"highLodPackets":30,"joints":90,"registeredUpdateRoutine":"0x002ff118","corroborativeLabels":["Plumber"],"semanticGrade":"strongly-corroborated","retainedClassification":"one-off mission/contact actor candidate; level-specific variant"},
+    {"oClass":1283,"nativeLevel":"LEVEL8","level":8,"instances":1,"pVarBytes":384,"highLodPackets":30,"joints":90,"registeredUpdateRoutine":"0x003065d8","corroborativeLabels":["Plumber"],"semanticGrade":"strongly-corroborated","retainedClassification":"one-off mission/contact actor candidate; level-specific variant"},
+    {"oClass":919,"nativeLevel":"LEVEL5","level":5,"instances":1,"pVarBytes":384,"highLodPackets":30,"joints":92,"registeredUpdateRoutine":"0x00317470","corroborativeLabels":["Bouncer"],"semanticGrade":"corroborated","retainedClassification":"one-off mission/contact actor candidate"},
+    {"oClass":1144,"nativeLevel":"LEVEL8","level":8,"instances":1,"pVarBytes":416,"highLodPackets":37,"joints":96,"registeredUpdateRoutine":"0x00305270","corroborativeLabels":["Deserter"],"semanticGrade":"corroborated","retainedClassification":"one-off mission/contact actor candidate"},
+    {"oClass":1130,"nativeLevel":"LEVEL8","level":8,"instances":1,"pVarBytes":400,"highLodPackets":33,"joints":92,"registeredUpdateRoutine":"0x00302ce8","corroborativeLabels":["Commando"],"semanticGrade":"corroborated","retainedClassification":"one-off mission/contact actor candidate"},
+    {"oClass":1190,"nativeLevel":"LEVEL4","level":4,"instances":1,"pVarBytes":336,"highLodPackets":36,"joints":83,"registeredUpdateRoutine":"0x002e3078","corroborativeLabels":["Fred","Lieutenant"],"semanticGrade":"unresolved-contradictory-public-labels","retainedClassification":"one-off mission/contact actor candidate; retail identity unresolved"}
+  ],  "acquisitionInteractables": [
+    {"oClass":1005,"nativeLevel":"LEVEL2","level":2,"instances":1,"pVarBytes":80,"highLodPackets":14,"joints":10,"corroborativeLabel":"Trespasser","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"},
+    {"oClass":1016,"nativeLevel":"LEVEL6","level":6,"instances":1,"pVarBytes":80,"highLodPackets":13,"joints":11,"corroborativeLabel":"Hydrodisplacer","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"},
+    {"oClass":1120,"nativeLevel":"LEVEL4","level":4,"instances":1,"pVarBytes":80,"highLodPackets":17,"joints":20,"corroborativeLabel":"Suck Cannon handoff/object","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"},
+    {"oClass":1290,"nativeLevel":"LEVEL9","level":9,"instances":1,"pVarBytes":80,"highLodPackets":10,"joints":2,"authoredTableLevelCount":19,"corroborativeLabel":"Pilot's Helmet","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"},
+    {"oClass":18,"nativeLevel":"LEVEL10","level":10,"instances":1,"pVarBytes":80,"highLodPackets":14,"joints":0,"corroborativeLabel":"Magneboots","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"},
+    {"oClass":1354,"nativeLevel":"LEVEL14","level":14,"instances":1,"pVarBytes":96,"highLodPackets":20,"joints":23,"corroborativeLabel":"Morph-o-Ray","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"},
+    {"oClass":1428,"nativeLevel":"LEVEL17","level":17,"instances":1,"pVarBytes":64,"highLodPackets":14,"joints":13,"corroborativeLabel":"Codebot","semanticGrade":"public-progression-corroboration","retainedClassification":"acquisition/interactable object"}
+  ],
+  "vendorSpeechBank": {
+    "tocOffset":"0x1a0","entryCount":37,"sourceNamePattern":"speech/ven...",
+    "finalMetadataLabel":"Fanfare_Vendor","visibleVendorOClass":null,
+    "retainedBoundary":"dedicated retail vendor speech bank is proven; no visible vendor Moby class is promoted"
+  }
+}
