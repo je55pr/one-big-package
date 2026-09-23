@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.RAC1.Progression;
 using OBP.Runtime;
@@ -37,12 +38,12 @@ public partial class OBPGame
             }
 
             GD.Print("[rac1-campaign-smoke] PASS");
-            GetTree().Quit(0);
+            ApplicationLifecycle.RequestQuit(this, "rac1-campaign-smoke-pass", 0);
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[rac1-campaign-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
-            GetTree().Quit(4);
+            ApplicationLifecycle.RequestQuit(this, "rac1-campaign-smoke-fail", 4);
         }
     }
 

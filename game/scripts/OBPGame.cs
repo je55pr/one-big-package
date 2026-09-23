@@ -74,6 +74,7 @@ public partial class OBPGame : Node3D
 
     public override void _Ready()
     {
+        ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
         if (_args.FixedSeed is { } seed)
         {
@@ -196,15 +197,23 @@ public partial class OBPGame : Node3D
 
         if (key.Keycode == Key.Escape)
         {
-            if (_mode == Mode.World && _selector is null && _isoPath is not null && _args.CaptureFrame is null)
+            if (TryHandleInteractiveBack())
             {
-                ReturnToSelector();
-            }
-            else
-            {
-                GetTree().Quit();
+                return;
             }
 
+            bool interactiveSurface =
+                (_mode == Mode.World || _mode == Mode.Selector || _mode == Mode.Picker) &&
+                _args.CaptureFrame is null;
+            if (ApplicationLifecycle.ResolveEscapeFallback(interactiveSurface) ==
+                ApplicationLifecycle.EscapeFallback.StayAlive)
+            {
+                ApplicationLifecycle.ReportStayAlive(
+                    $"unhandled-escape mode={_mode} scene={_sceneKind}");
+                return;
+            }
+
+            ApplicationLifecycle.RequestQuit(this, "escape-noninteractive");
             return;
         }
 
@@ -227,6 +236,48 @@ public partial class OBPGame : Node3D
             UpdateWorldHud();
         }
     }
+
+    public bool TryHandleInteractiveBack()
+    {
+        if (TryCloseRac1PlanetMap())
+        {
+            ApplicationLifecycle.ReportNavigation("rac1-planet-map-close");
+            return true;
+        }
+
+        if (TryReturnWorldToDestinations())
+        {
+            ApplicationLifecycle.ReportNavigation("world-to-destinations");
+            return true;
+        }
+
+        if (TryReturnSelectorToSources())
+        {
+            ApplicationLifecycle.ReportNavigation("selector-to-sources");
+            return true;
+        }
+
+        if (_mode == Mode.World && _selector is null && _isoPath is not null &&
+            _args.CaptureFrame is null)
+        {
+            ReturnToSelector();
+            ApplicationLifecycle.ReportNavigation("legacy-world-to-selector");
+            return true;
+        }
+
+        return false;
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what == NotificationWMCloseRequest)
+        {
+            ApplicationLifecycle.RequestQuit(this, "desktop-window-close");
+        }
+    }
+
+    public override void _ExitTree() =>
+        ApplicationLifecycle.ReportRootExit(Name);
 
     /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
     private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)
@@ -486,7 +537,7 @@ public partial class OBPGame : Node3D
             GD.Print("[stress] " + r);
         }
 
-        GetTree().Quit(0);
+        ApplicationLifecycle.RequestQuit(this, "stress-switch-complete", 0);
     }
 
     private static int CountDescendants(Node n)
@@ -1034,7 +1085,10 @@ public partial class OBPGame : Node3D
                 meta["captureFrameArg"] = frameArg;
                 return meta;
             });
-        GetTree().Quit(result.Ok ? 0 : 1);
+        ApplicationLifecycle.RequestQuit(
+            this,
+            result.Ok ? "capture-complete" : "capture-save-failed",
+            result.Ok ? 0 : 1);
     }
 
     /// <summary>The common world / render / player metadata for any capture (shot or single frame). Call after the world has settled.</summary>

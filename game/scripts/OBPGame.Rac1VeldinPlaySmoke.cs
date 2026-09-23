@@ -62,12 +62,12 @@ public partial class OBPGame
                 "[rac1-veldin-play] PASS: clean opening, recovered camera input, " +
                 "Bomb Glove use, natural hostile motion/attack, practical wrench contacts, " +
                 "and natural fall/death/respawn all passed without smoke staging");
-            GetTree().Quit(0);
+            ApplicationLifecycle.RequestQuit(this, "rac1-veldin-play-smoke-pass", 0);
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[rac1-veldin-play] FAIL: {ex.Message}\n{ex.StackTrace}");
-            GetTree().Quit(3);
+            ApplicationLifecycle.RequestQuit(this, "rac1-veldin-play-smoke-fail", 3);
         }
         finally
         {

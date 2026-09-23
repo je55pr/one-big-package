@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.Godot;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
@@ -164,12 +165,12 @@ public partial class OBPGame
                 $"walk={walkSpeed:0.000} run={runSpeed:0.000} movingJump={movingJump:0.000} shortJump={shortJump:0.000} " +
                 $"longJump={longJump:0.000} partialAir={partialAirTravel:0.000} keyboard={keyboardSpeed:0.000} " +
                 $"fly={flyTravel:0.000} respawnError={respawnError:0.000}");
-            GetTree().Quit(0);
+            ApplicationLifecycle.RequestQuit(this, "movement-smoke-pass", 0);
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[movement-smoke] FAIL {destination.DestinationId}: {ex.Message}");
-            GetTree().Quit(1);
+            ApplicationLifecycle.RequestQuit(this, "movement-smoke-fail", 1);
         }
         finally
         {

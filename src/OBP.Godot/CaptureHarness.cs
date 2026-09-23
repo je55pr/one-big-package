@@ -47,7 +47,7 @@ public static class CaptureHarness
             }
 
             GD.PrintErr("[CaptureHarness] watchdog fired — quitting");
-            tree.Quit(2);
+            ApplicationLifecycle.RequestQuit(tree, "capture-watchdog", 2);
         };
 
         await node.ToSignal(tree.CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);

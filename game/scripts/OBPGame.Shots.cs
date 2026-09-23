@@ -29,7 +29,7 @@ public partial class OBPGame
         catch (System.Exception ex)
         {
             GD.PrintErr($"[shots] could not read shot list '{listPath}': {ex.Message}");
-            GetTree().Quit(2);
+            ApplicationLifecycle.RequestQuit(this, "shots-list-read-failed", 2);
             return;
         }
 
@@ -50,7 +50,7 @@ public partial class OBPGame
             if (_isoPath is null || !IdentifyDisc(_isoPath))
             {
                 GD.PrintErr("[shots] a GC planet token needs --gc-iso");
-                GetTree().Quit(2);
+                ApplicationLifecycle.RequestQuit(this, "shots-missing-gc-source", 2);
                 return;
             }
 
@@ -61,7 +61,7 @@ public partial class OBPGame
         if (_mode != Mode.World || _world is not { } world)
         {
             GD.PrintErr($"[shots] world '{token ?? "?"}' did not load");
-            GetTree().Quit(1);
+            ApplicationLifecycle.RequestQuit(this, "shots-world-load-failed", 1);
             return;
         }
         Engine.MaxFps = 60;
@@ -98,7 +98,10 @@ public partial class OBPGame
         }
 
         GD.Print($"[shots] done — {list.Shots.Count - failures}/{list.Shots.Count} written to captures/shots/");
-        GetTree().Quit(failures == 0 ? 0 : 1);
+        ApplicationLifecycle.RequestQuit(
+            this,
+            failures == 0 ? "shots-complete" : "shots-capture-failed",
+            failures == 0 ? 0 : 1);
     }
 
     /// <summary>Remember every <c>--&lt;game&gt;-iso</c> passed, so the neutral provider path can resolve its source.</summary>

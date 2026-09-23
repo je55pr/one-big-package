@@ -52,7 +52,7 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        if (_game.TryReturnWorldToDestinations() || _game.TryReturnSelectorToSources())
+        if (_game.TryHandleInteractiveBack())
         {
             GetViewport().SetInputAsHandled();
         }

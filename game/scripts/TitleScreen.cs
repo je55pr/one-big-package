@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Godot;
 
 namespace OneBigPackage;
 
@@ -122,7 +123,7 @@ public sealed partial class TitleScreen : CanvasLayer
         GetViewport().SetInputAsHandled();
         if (@event is InputEventKey { Keycode: Key.Escape })
         {
-            GetTree().Quit();
+            ApplicationLifecycle.RequestQuit(this, "title-escape");
             return;
         }
 

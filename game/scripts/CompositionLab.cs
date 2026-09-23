@@ -326,7 +326,7 @@ public partial class CompositionLab : Node3D
             GD.Print("[compose-reload] " + r);
         }
 
-        GetTree().Quit(0);
+        ApplicationLifecycle.RequestQuit(this, "composition-reload-complete", 0);
     }
 
     private static int CountDescendants(Node n)
@@ -419,7 +419,7 @@ public partial class CompositionLab : Node3D
         switch (k)
         {
             case Key.Escape:
-                GetTree().Quit();
+                ApplicationLifecycle.RequestQuit(this, "composition-escape");
                 break;
             case Key.Tab:
                 CycleActiveWorld();
@@ -892,7 +892,10 @@ public partial class CompositionLab : Node3D
                 ["camera"] = new[] { _camera.GlobalPosition.X, _camera.GlobalPosition.Y, _camera.GlobalPosition.Z },
             });
 
-        GetTree().Quit(result.Ok ? 0 : 1);
+        ApplicationLifecycle.RequestQuit(
+            this,
+            result.Ok ? "composition-capture-complete" : "composition-capture-save-failed",
+            result.Ok ? 0 : 1);
     }
 
     private const float StartCaptureRadius = 220f;

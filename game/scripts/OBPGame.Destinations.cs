@@ -272,7 +272,7 @@ public partial class OBPGame
             _world = null;
             if (_args.CaptureFrame is not null)
             {
-                GetTree().Quit(1);
+                ApplicationLifecycle.RequestQuit(this, "destination-capture-import-failed", 1);
                 return;
             }
 

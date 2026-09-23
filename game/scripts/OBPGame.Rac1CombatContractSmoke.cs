@@ -274,12 +274,12 @@ public partial class OBPGame
             await RunRac1HostileLifecycleSmokeAsync(bombAmmoAfterFire);
 
             GD.Print("[rac1-combat-contract] PASS: synthetic host contracts and witness gating survived LEVEL0/LEVEL18/unload-reload");
-            GetTree().Quit(0);
+            ApplicationLifecycle.RequestQuit(this, "rac1-combat-contract-pass", 0);
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[rac1-combat-contract] FAIL: {ex.Message}\n{ex.StackTrace}");
-            GetTree().Quit(3);
+            ApplicationLifecycle.RequestQuit(this, "rac1-combat-contract-fail", 3);
         }
     }
 
