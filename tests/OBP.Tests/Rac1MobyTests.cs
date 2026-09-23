@@ -138,7 +138,8 @@ public sealed class Rac1MobyTests
                     present++;
                     if (cls.JointCount == 0) jointlessPresent++;
                     Assert.Equal(slotIndex, sequence.Index);
-                    Assert.Equal(sequence.TriggerCount, sequence.Triggers.Count);
+                    Assert.Equal(sequence.TriggerCount, sequence.TimedSoundWords.Count);
+                    Assert.Equal(sequence.TriggerCount, sequence.TimedSoundCues.Count);
                     Assert.Equal(sequence.Frames.Count, sequence.FrameEntries.Count);
                     frames += sequence.Frames.Count;
                     foreach (var frame in sequence.Frames)

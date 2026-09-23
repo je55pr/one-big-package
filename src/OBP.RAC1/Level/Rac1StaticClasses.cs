@@ -28,6 +28,7 @@ public static class Rac1StaticClasses
         IReadOnlyList<int> TextureIds,
         int JointCount,
         IReadOnlyList<Rac1Moby.SkeletonJoint> Joints,
+        Rac1MobyAnimation.ClassSoundTable SoundTable,
         IReadOnlyList<Rac1MobyAnimation.SequenceSlot> Sequences);
 
     public sealed record TieClass(
@@ -95,11 +96,13 @@ public static class Rac1StaticClasses
             var payload = Payload(entry).ToArray();
             var mesh = Rac1Moby.ReadClass(payload);
             var joints = Rac1Moby.ReadSkeleton(payload);
+            var soundTable = Rac1MobyAnimation.ReadClassSoundTable(payload);
             var sequences = Rac1MobyAnimation.ReadSequences(payload);
             var mapped = MapTextureSlots("moby", entry, mesh.TriangleMaterialSlots, allowUntextured: true);
             mobies.Add(entry.OClass, new MobyClass(
                 entry.OClass, entry.AssetOffset, mesh, mapped,
-                mapped.Where(v => v >= 0).Distinct().OrderBy(v => v).ToArray(), mesh.JointCount, joints, sequences));
+                mapped.Where(v => v >= 0).Distinct().OrderBy(v => v).ToArray(),
+                mesh.JointCount, joints, soundTable, sequences));
         }
 
         var ties = new Dictionary<int, TieClass>();

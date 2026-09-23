@@ -11,6 +11,23 @@ public static class Rac1MobyAnimation
 {
     public const int SequenceHeaderSize = 0x1c;
     public const int FrameHeaderSize = 0x10;
+    public const int SoundDefinitionSize = 0x20;
+    public const byte NoSoundId = 0xff;
+
+    public sealed record ClassSoundDefinition(int Id, int Offset);
+
+    public sealed record ClassSoundTable(
+        byte Count,
+        int Offset,
+        IReadOnlyList<ClassSoundDefinition> Definitions)
+    {
+        public bool HasDefinitions => Count != 0;
+    }
+
+    public sealed record TimedSoundCue(uint RawWord, ushort PositionUnits, ushort SoundId)
+    {
+        public float PositionFrames => PositionUnits / 16f;
+    }
 
     public sealed record JointQuaternion(short X, short Y, short Z, short W)
     {
@@ -41,21 +58,41 @@ public static class Rac1MobyAnimation
         float SphereY,
         float SphereZ,
         float SphereW,
-        byte SoundCount,
+        byte SoundId,
         byte TriggerCount,
         byte Unknown13,
-        uint TriggerDataOffset,
+        uint Opaque14,
         uint ConstantTransitionRateRaw,
         IReadOnlyList<uint> FrameEntries,
-        IReadOnlyList<uint> Triggers,
+        IReadOnlyList<uint> TimedSoundWords,
+        IReadOnlyList<TimedSoundCue> TimedSoundCues,
         IReadOnlyList<Frame> Frames)
     {
+        public bool HasDirectSound => SoundId != NoSoundId;
         public float ConstantTransitionRate => BitConverter.Int32BitsToSingle(unchecked((int)ConstantTransitionRateRaw));
     }
 
     public sealed record SequenceSlot(int Index, Sequence? Value);
 
     private static int Align(int value, int amount) => ((value + amount - 1) / amount) * amount;
+
+    public static ClassSoundTable ReadClassSoundTable(byte[] bytes)
+    {
+        if (bytes.Length < 0x48)
+            throw new InvalidDataException("R&C1 Moby class buffer shorter than the 0x48 header.");
+
+        byte count = bytes[0x0d];
+        int offset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0x28));
+        if (count == 0)
+            return new ClassSoundTable(count, offset, []);
+        if (offset <= 0 || (long)offset + (long)count * SoundDefinitionSize > bytes.Length)
+            throw new InvalidDataException("R&C1 Moby class-local sound definition table is out of range.");
+
+        var definitions = new ClassSoundDefinition[count];
+        for (int id = 0; id < count; id++)
+            definitions[id] = new ClassSoundDefinition(id, offset + id * SoundDefinitionSize);
+        return new ClassSoundTable(count, offset, definitions);
+    }
 
     public static IReadOnlyList<SequenceSlot> ReadSequences(byte[] bytes)
     {
@@ -135,7 +172,7 @@ public static class Rac1MobyAnimation
             throw new InvalidDataException($"R&C1 {kind} sequence {index} offset {sequenceOffset} is out of range.");
 
         int frameCount = bytes[sequenceOffset + 0x10];
-        byte soundCount = bytes[sequenceOffset + 0x11];
+        byte soundId = bytes[sequenceOffset + 0x11];
         byte triggerCount = bytes[sequenceOffset + 0x12];
         byte unknown13 = bytes[sequenceOffset + 0x13];
         long frameTableEnd = (long)sequenceOffset + 0x1c + frameCount * 4L;
@@ -158,21 +195,29 @@ public static class Rac1MobyAnimation
             frames.Add(ReadFrame(bytes, frameOffset, jointCount, index, f));
         }
 
-        var triggers = new uint[triggerCount];
+        var timedSoundWords = new uint[triggerCount];
+        var timedSoundCues = new TimedSoundCue[triggerCount];
         for (int i = 0; i < triggerCount; i++)
-            triggers[i] = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan((int)frameTableEnd + i * 4));
+        {
+            uint word = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan((int)frameTableEnd + i * 4));
+            timedSoundWords[i] = word;
+            timedSoundCues[i] = new TimedSoundCue(
+                word,
+                checked((ushort)(word >> 16)),
+                checked((ushort)(word & 0xffff)));
+        }
 
         float sphereX = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(sequenceOffset));
         float sphereY = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(sequenceOffset + 4));
         float sphereZ = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(sequenceOffset + 8));
         float sphereW = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(sequenceOffset + 12));
-        uint triggerDataOffset = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(sequenceOffset + 0x14));
+        uint opaque14 = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(sequenceOffset + 0x14));
         uint constantTransitionRateRaw = BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(sequenceOffset + 0x18));
         return new Sequence(
             index, sphereX, sphereY, sphereZ, sphereW,
-            soundCount, triggerCount, unknown13,
-            triggerDataOffset, constantTransitionRateRaw,
-            frameEntries, triggers, frames);
+            soundId, triggerCount, unknown13,
+            opaque14, constantTransitionRateRaw,
+            frameEntries, timedSoundWords, timedSoundCues, frames);
     }
 
     private static Frame ReadFrame(byte[] bytes, int frameOffset, int jointCount, int sequenceIndex, int frameIndex)
