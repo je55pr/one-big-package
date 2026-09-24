@@ -127,6 +127,12 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Retail-backed RAC1 yaw recurrence mode for deterministic inspection.</summary>
     public Rac1RatchetYawMode Rac1YawMode => _rac1Movement.YawMode;
 
+    /// <summary>
+    /// Latest evidence-backed surface action request. This is diagnostic only
+    /// until the corresponding alternate native controller is implemented.
+    /// </summary>
+    public Rac1SurfaceActionIntent? Rac1SurfaceActionIntent => _rac1SurfaceActionIntent;
+
     /// <summary>Current engine-independent R&C1 player gameplay snapshot.</summary>
     public Rac1RatchetNanotechSnapshot? Rac1GameplayState { get; set; }
 
@@ -183,6 +189,7 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _scriptAttacked;
     private readonly Rac1RatchetMovementController _rac1Movement = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
+    private Rac1SurfaceActionIntent? _rac1SurfaceActionIntent;
     private readonly Rac1OrdinaryCameraController _rac1Camera = new();
     private readonly RawGamepadInput _rawInput = new();
     private RawPlayerInputFrame _liveInput;
@@ -584,6 +591,7 @@ public partial class DebugPlayer : CharacterBody3D
         var contact = ProbeRac1Contact(
             grounded,
             IsOnCeiling());
+        _rac1SurfaceActionIntent = Rac1SurfaceActionRouting.Select(contact);
         var step = _rac1Movement.Step(
             new PlayerControlIntent(
                 move.X,
@@ -789,8 +797,11 @@ public partial class DebugPlayer : CharacterBody3D
         string pad = _liveInput.Diagnostic is { } diagnostic ? diagnostic.Format() : "none";
         string inputLine = FormattableString.Invariant(
             $"input raw right/forward=({_liveInput.Move.X:0.000000},{-_liveInput.Move.Y:0.000000}) conditioned=({analogue.X:0.000000},{analogue.Y:0.000000}) mag={analogue.Magnitude:0.000000} uncapped={analogue.UncappedMagnitude:0.000000} band={analogue.SpeedBand}\n");
+        string surfaceIntent = _rac1SurfaceActionIntent is { } intent
+            ? $"0x{intent.NativeActionState:x2}/{intent.Interaction}"
+            : "none";
         string movementLine = FormattableString.Invariant(
-            $"native target step={_rac1Movement.TargetPlanarStep:0.00000000} actual step={Math.Sqrt((_rac1Movement.PlanarX * _rac1Movement.PlanarX) + (_rac1Movement.PlanarY * _rac1Movement.PlanarY)):0.00000000} locomotion={_rac1Movement.LocomotionState} yaw-mode={_rac1Movement.YawMode}\n");
+            $"native target step={_rac1Movement.TargetPlanarStep:0.00000000} actual step={Math.Sqrt((_rac1Movement.PlanarX * _rac1Movement.PlanarX) + (_rac1Movement.PlanarY * _rac1Movement.PlanarY)):0.00000000} locomotion={_rac1Movement.LocomotionState} yaw-mode={_rac1Movement.YawMode} surface-intent={surfaceIntent}\n");
         string yawLine = FormattableString.Invariant(
             $"yaw control={_rac1Yaw.ControlYaw:0.000000} target={_rac1Yaw.TargetYaw:0.000000} current={_rac1Yaw.CurrentYaw:0.000000} velocity={_rac1Yaw.YawVelocity:0.000000}\n");
         string cameraState = _rac1RuntimeCameraState is { } state
