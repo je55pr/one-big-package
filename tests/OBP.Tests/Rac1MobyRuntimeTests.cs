@@ -212,6 +212,37 @@ public sealed class Rac1MobyRuntimeTests
     }
 
     [Fact]
+    public void RuntimeSessionTracksLiveTransformWithoutMutatingAuthoredIdentity()
+    {
+        var source = Dynamic(nativeClassId: 766, instanceIndex: 4, nativeUid: 91);
+        var runtime = new Rac1MobyRuntimeSession();
+        var instance = runtime.Register(
+            source,
+            RuntimeEntityState.FromAuthored(source),
+            nativeState: 5);
+        var liveTransform = new RuntimeObjectTransform(
+        [
+            1d, 0d, 0d, 0d,
+            0d, 1d, 0d, 0d,
+            0d, 0d, 1d, 0d,
+            10d, 20d, 30d, 1d,
+        ]);
+
+        var state = runtime.SetTransform(instance, liveTransform);
+
+        Assert.Equal(liveTransform, state.Presentation.Transform);
+        Assert.Equal(liveTransform, instance.EntityState.Presentation.Transform);
+        Assert.Equal(5, instance.State.NativeState);
+        Assert.Equal(RuntimeEntityPresence.Active, instance.Presence);
+        Assert.NotEqual(liveTransform, source.Transform);
+        Assert.Equal(RuntimeEntityIdentity.From(source), instance.Identity);
+        Assert.Throws<ArgumentException>(() =>
+            runtime.SetTransform(
+                instance,
+                new RuntimeObjectTransform(new double[15])));
+    }
+
+    [Fact]
     public void SameClassInstancesDispatchWithoutPrivilegedWitness()
     {
         var runtime = new Rac1MobyRuntimeSession();

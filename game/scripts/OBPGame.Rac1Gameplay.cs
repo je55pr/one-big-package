@@ -758,7 +758,7 @@ public partial class OBPGame
         }
     }
 
-    private static void ApplyRac1Class749NavigationIntent(
+    private void ApplyRac1Class749NavigationIntent(
         RuntimeWorldScene.DynamicObjectNode hostile,
         Rac1Class749NavigationIntent intent,
         double delta)
@@ -805,9 +805,17 @@ public partial class OBPGame
         }
 
         float distance = offset.Length();
-        if (distance <= 1e-6f) return;
-        float step = Math.Min(distance, Rac1Class749HostPresentationSpeed * seconds);
-        hostile.Root.GlobalPosition = current + offset / distance * step;
+        if (distance > 1e-6f)
+        {
+            float step = Math.Min(distance, Rac1Class749HostPresentationSpeed * seconds);
+            hostile.Root.GlobalPosition = current + offset / distance * step;
+        }
+
+        var runtimeInstance = _rac1MobyRuntime.Require(hostile.Source);
+        RuntimeEntityState synchronized = _rac1MobyRuntime.SetTransform(
+            runtimeInstance,
+            RuntimeWorldScene.ToRuntimeTransform(hostile.Root.Transform));
+        hostile.ApplyState(synchronized);
     }
 
     private void SpawnRac1BoltPickups(Vector3 origin, IReadOnlyList<Rac1BoltPickup> pickups)

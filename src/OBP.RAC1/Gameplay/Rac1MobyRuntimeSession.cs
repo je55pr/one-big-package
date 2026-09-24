@@ -135,6 +135,24 @@ public sealed class Rac1MobyRuntimeSession
         return instance.State;
     }
 
+    public RuntimeEntityState SetTransform(
+        Rac1MobyRuntimeInstance instance,
+        RuntimeObjectTransform transform)
+    {
+        RequireOwned(instance);
+        ArgumentNullException.ThrowIfNull(transform);
+        if (transform.Matrix.Length != 16)
+            throw new ArgumentException(
+                "R&C1 Moby runtime transform must be a 4x4 affine matrix.",
+                nameof(transform));
+
+        instance.State = instance.State with
+        {
+            EntityState = instance.EntityState.WithTransform(transform),
+        };
+        return instance.EntityState;
+    }
+
     public RuntimeEntityState SetPresence(
         Rac1MobyRuntimeInstance instance,
         RuntimeEntityPresence presence)

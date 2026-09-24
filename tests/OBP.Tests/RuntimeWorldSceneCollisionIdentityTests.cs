@@ -5,6 +5,25 @@ namespace OBP.Tests;
 
 public sealed class RuntimeWorldSceneCollisionIdentityTests
 {
+    [Fact]
+    public void DynamicObjectTransformRoundTripsThroughGodotSceneSpace()
+    {
+        var source = new RuntimeObjectTransform(
+        [
+            0.5d, 0.25d, -0.75d, 0d,
+            -0.125d, 1.25d, 0.375d, 0d,
+            0.625d, -0.5d, 0.875d, 0d,
+            132.09d, 31.4266d, 115.48d, 1d,
+        ]);
+
+        var scene = RuntimeWorldScene.ToSceneTransform(source);
+        var roundTrip = RuntimeWorldScene.ToRuntimeTransform(scene);
+
+        Assert.Equal(16, roundTrip.Matrix.Length);
+        for (int i = 0; i < source.Matrix.Length; i++)
+            Assert.Equal(source.Matrix[i], roundTrip.Matrix[i], precision: 5);
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(1, 0)]

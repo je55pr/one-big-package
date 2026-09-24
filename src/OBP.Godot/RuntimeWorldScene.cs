@@ -604,7 +604,7 @@ public static class RuntimeWorldScene
     }
 
     /// <summary>Convert an OBP-space object matrix to Godot's X-unmirrored scene transform.</summary>
-    private static Transform3D ToSceneTransform(RuntimeObjectTransform transform)
+    public static Transform3D ToSceneTransform(RuntimeObjectTransform transform)
     {
         var m = transform.Matrix;
         if (m.Length != 16)
@@ -620,6 +620,26 @@ public static class RuntimeWorldScene
         var z = new Vector3((float)-m[8], (float)m[9], (float)m[10]);
         var origin = new Vector3((float)-m[12], (float)m[13], (float)m[14]);
         return new Transform3D(new Basis(x, y, z), origin);
+    }
+
+    /// <summary>
+    /// Convert a Godot scene transform back to the neutral OBP-space affine matrix.
+    /// This is the inverse of <see cref="ToSceneTransform"/> for runtime transforms.
+    /// </summary>
+    public static RuntimeObjectTransform ToRuntimeTransform(Transform3D transform)
+    {
+        Vector3 x = transform.Basis.X;
+        Vector3 y = transform.Basis.Y;
+        Vector3 z = transform.Basis.Z;
+        Vector3 origin = transform.Origin;
+
+        return new RuntimeObjectTransform(
+        [
+            x.X, -x.Y, -x.Z, 0d,
+            -y.X, y.Y, y.Z, 0d,
+            -z.X, z.Y, z.Z, 0d,
+            -origin.X, origin.Y, origin.Z, 1d,
+        ]);
     }
 
     private static Vector3 Vertex(RuntimeCollisionBlob blob, int index)
