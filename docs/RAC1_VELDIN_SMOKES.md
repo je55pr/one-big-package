@@ -57,6 +57,22 @@ CLI flag: `--rac1-veldin-play-smoke`. The historical `--rac1-combat-smoke` flag
 is retained as an alias for this honest gate so old invocations no longer select
 the staged harness.
 
+## Human playability signoff
+
+On 2026-09-25, after the ordinary-play and synthetic retail-backed gates passed,
+the current `rac1:LEVEL0` build was launched in normal interactive player mode
+against the supported NTSC-U source. Jess was asked to verify only the claimed
+runtime behavior: ordinary movement/camera/jump, natural class-749 activation
+and damage, Wrench contact against an enemy and crate, Bomb Glove firing/ammo
+consumption, and automatic Veldin fall restart without the development R key.
+
+Jess's reported result was: **"no failures."**
+
+This human signoff is intentionally bounded to those claimed behaviors. It does
+not promote unresolved host contact dimensions, presentation tuning, surface
+motion laws, mission semantics, or unknown native selectors into recovered
+retail behavior.
+
 ## Synthetic combat host-contract gate
 
 `tools/rac1-combat-contract-smoke.ps1` selects
