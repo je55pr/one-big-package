@@ -285,32 +285,28 @@ public sealed class Rac1Class749HostileSession :
         return Snapshot(key, entry, hostEvents: hostEvents);
     }
 
-    public Rac1Class749HostProbe ApplyTerminalStatus(RuntimeDynamicObject source, int nativeStatus)
+    public Rac1Class749HostProbe CompleteRecoveredDamageReaction(
+        RuntimeDynamicObject source)
     {
-        if (nativeStatus is not (Rac1Class749Hostile.TerminalNativeStateFd or Rac1Class749Hostile.TerminalNativeStateFe))
-            throw new ArgumentOutOfRangeException(nameof(nativeStatus));
-
         var (key, entry) = RequireEntry(source);
-        if (entry.NativeState != Rac1Class749Hostile.DamageNativeState &&
-            entry.NativeState != Rac1Class749Hostile.TerminalNativeStateFd &&
-            entry.NativeState != Rac1Class749Hostile.TerminalNativeStateFe)
+        if (entry.NativeState != Rac1Class749Hostile.DamageNativeState)
             throw new InvalidOperationException(
-                $"R&C1 class-749 terminal status cannot follow native state {entry.NativeState}.");
+                $"R&C1 class-749 recovered terminalization requires native state " +
+                $"{Rac1Class749Hostile.DamageNativeState}, not {entry.NativeState}.");
+        if (entry.RuntimeState.IsTerminalized)
+            throw new InvalidOperationException(
+                "R&C1 class-749 damage reaction is already terminalized.");
 
-        int nativeStateBefore = entry.NativeState;
-        entry.Terminalize(nativeStatus);
+        entry.Terminalize();
         entry.NativeSequence = null;
         entry.NativeSequenceUpdate = 0;
 
-        var hostEvents = new List<IRac1MobyHostEvent>();
-        if (nativeStateBefore != nativeStatus)
-        {
-            hostEvents.Add(new Rac1MobyNativeStateChangedEvent(
+        IReadOnlyList<IRac1MobyHostEvent> hostEvents =
+        [
+            new Rac1MobyTerminalizedEvent(
                 entry.RuntimeState.Key,
-                nativeStateBefore,
-                nativeStatus));
-        }
-        hostEvents.Add(new Rac1MobyTerminalizedEvent(entry.RuntimeState.Key, nativeStatus));
+                NativeTerminalState: null),
+        ];
         return Snapshot(key, entry, hostEvents: hostEvents);
     }
 
@@ -512,7 +508,7 @@ public sealed class Rac1Class749HostileSession :
         public int NativeSequenceUpdate { get; set; }
         public RuntimeEntityState EntityState => RuntimeState.EntityState;
 
-        public void Terminalize(int nativeState) =>
-            runtime.Terminalize(RuntimeInstance, nativeState);
+        public void Terminalize() =>
+            runtime.Terminalize(RuntimeInstance);
     }
 }

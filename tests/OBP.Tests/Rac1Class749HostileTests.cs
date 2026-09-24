@@ -175,10 +175,8 @@ public sealed class Rac1Class749HostileTests
         Assert.Equal(Rac1Class749Hostile.StateSixOrEightSequenceId, cleared.NativeSequence);
     }
 
-    [Theory]
-    [InlineData(Rac1Class749Hostile.TerminalNativeStateFd)]
-    [InlineData(Rac1Class749Hostile.TerminalNativeStateFe)]
-    public void HostAdmittedWrenchStimulusReproducesRepresentativeDeathConsequence(int terminalStatus)
+    [Fact]
+    public void HostAdmittedWrenchStimulusCompletesRecoveredTerminalLifetimeWithoutGuessingSelector()
     {
         var source = Class749(149, health: 1f);
         var session = Registered(source);
@@ -197,9 +195,16 @@ public sealed class Rac1Class749HostileTests
         Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.NativeState);
         Assert.Equal(RuntimeEntityPresence.Active, damaged.EntityState.Presentation.Presence);
 
-        var terminal = session.ApplyTerminalStatus(source, terminalStatus);
-        Assert.Equal(terminalStatus, terminal.NativeState);
+        var terminal = session.CompleteRecoveredDamageReaction(source);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, terminal.NativeState);
+        Assert.True(terminal.RuntimeState.IsTerminalized);
+        Assert.Null(terminal.RuntimeState.NativeTerminalState);
         Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
+        var ended = Assert.IsType<Rac1MobyTerminalizedEvent>(
+            Assert.Single(terminal.HostEvents));
+        Assert.False(ended.HasRecoveredNativeTerminalState);
+        Assert.Throws<InvalidOperationException>(() =>
+            session.CompleteRecoveredDamageReaction(source));
     }
 
     [Fact]

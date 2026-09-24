@@ -511,14 +511,13 @@ public partial class OBPGame
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
         var probe = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(
             damageEvent);
-        // The native session admits both 0xfd and 0xfe terminal outcomes but does
-        // not recover their selector. The live host uses 0xfd as an explicit
-        // presentation choice so the proven terminal deactivation is observable.
-        probe = _rac1Hostiles.ApplyTerminalStatus(
-            hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
+        // Retail proves state 12 reaches the common terminalizer, but OBP does
+        // not reconstruct the pool-side selector that chooses 0xfd versus 0xfe.
+        // Complete the recovered lifetime transition without inventing that byte.
+        probe = _rac1Hostiles.CompleteRecoveredDamageReaction(hostile.Source);
         hostile.ApplyState(probe.EntityState);
         _rac1CombatStatus =
-            $"hostile i{hostile.Source.InstanceIndex}: host contact -> health 0 -> terminal 0xfd";
+            $"hostile i{hostile.Source.InstanceIndex}: host contact -> health 0 -> terminal lifetime (native 0xfd/0xfe selector unresolved)";
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
     }

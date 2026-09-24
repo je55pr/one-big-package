@@ -14,10 +14,8 @@ public sealed class Rac1Goal1PlayableSliceTests
 {
     private static readonly PlayerContactFacts Grounded = new(true);
 
-    [Theory]
-    [InlineData(Rac1Class749Hostile.TerminalNativeStateFd)]
-    [InlineData(Rac1Class749Hostile.TerminalNativeStateFe)]
-    public void DeterministicPlayableSliceChainsRecoveredGoalOneMilestones(int terminalStatus)
+    [Fact]
+    public void DeterministicPlayableSliceChainsRecoveredGoalOneMilestones()
     {
         // The explicit player start is the recovered Veldin class-0 placement,
         // converted from native X/Y/Z into OBP X/Y/Z. The remote ship is not Ratchet's spawn.
@@ -221,9 +219,10 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.NativeState);
         Assert.Equal(RuntimeEntityPresence.Active, damaged.EntityState.Presentation.Presence);
 
-        var terminal = hostileSession.ApplyTerminalStatus(hostile, terminalStatus);
-        Assert.Equal(terminalStatus, terminal.NativeState);
-        Assert.Contains(terminal.NativeState, new[] { 0xfd, 0xfe });
+        var terminal = hostileSession.CompleteRecoveredDamageReaction(hostile);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, terminal.NativeState);
+        Assert.True(terminal.RuntimeState.IsTerminalized);
+        Assert.Null(terminal.RuntimeState.NativeTerminalState);
         Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
 
         var environment = Assert.IsType<RuntimeEnvironment>(world.Environment);

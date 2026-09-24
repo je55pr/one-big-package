@@ -72,6 +72,29 @@ public sealed class Rac1HostArchitectureTests
     }
 
     [Fact]
+    public void Rac1GameplayDoesNotInventClass749TerminalStateSelector()
+    {
+        string gameplay = File.ReadAllText(Path.Combine(
+            RepoPaths.Root,
+            "game",
+            "scripts",
+            "OBPGame.Rac1Gameplay.cs"));
+
+        Assert.DoesNotContain(
+            "Rac1Class749Hostile.TerminalNativeStateFd",
+            gameplay,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "Rac1Class749Hostile.TerminalNativeStateFe",
+            gameplay,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "_rac1Hostiles.CompleteRecoveredDamageReaction(hostile.Source)",
+            gameplay,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Rac1GameplayActivityDoesNotDependOnRenderVisibility()
     {
         string gameplay = File.ReadAllText(Path.Combine(

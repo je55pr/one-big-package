@@ -59,7 +59,9 @@ public sealed class Rac1MobyRuntimeInstance
     public Rac1MobyRuntimeState State { get; internal set; }
     public RuntimeEntityState EntityState => State.EntityState;
     public RuntimeEntityPresence Presence => EntityState.Presentation.Presence;
-    public bool IsActive => Presence == RuntimeEntityPresence.Active;
+    public bool IsActive =>
+        !State.IsTerminalized &&
+        Presence == RuntimeEntityPresence.Active;
 
     internal byte[] MutablePVar => _pvar;
 }
@@ -158,11 +160,24 @@ public sealed class Rac1MobyRuntimeSession
         RuntimeEntityPresence presence)
     {
         RequireOwned(instance);
+        if (instance.State.IsTerminalized &&
+            presence == RuntimeEntityPresence.Active)
+            throw new InvalidOperationException(
+                "A terminalized R&C1 Moby cannot be reactivated by presentation presence.");
+
         instance.State = instance.State with
         {
             EntityState = instance.EntityState.WithPresence(presence),
         };
         return instance.EntityState;
+    }
+
+    public Rac1MobyRuntimeState Terminalize(
+        Rac1MobyRuntimeInstance instance)
+    {
+        RequireOwned(instance);
+        instance.State = Rac1MobyRuntime.Terminalize(instance.State);
+        return instance.State;
     }
 
     public Rac1MobyRuntimeState Terminalize(

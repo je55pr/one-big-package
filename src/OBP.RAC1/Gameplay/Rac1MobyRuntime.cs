@@ -29,10 +29,17 @@ public static class Rac1MobyRuntime
             throw new ArgumentException("Source is not an R&C1 Moby.", nameof(source));
         current.EnsureMatches(source);
         ValidateNativeState(nativeState);
+        if (IsTerminalState(nativeState))
+            current = current.WithPresence(RuntimeEntityPresence.Inactive);
+
         return new Rac1MobyRuntimeState(
             new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
             nativeState,
-            current);
+            current,
+            IsTerminalState(nativeState)
+                ? Rac1MobyLifecycleState.Terminalized
+                : Rac1MobyLifecycleState.Live,
+            IsTerminalState(nativeState) ? nativeState : null);
     }
 
     public static Rac1MobyRuntimeState WithNativeState(
@@ -40,7 +47,23 @@ public static class Rac1MobyRuntime
         int nativeState)
     {
         ValidateNativeState(nativeState);
+        if (IsTerminalState(nativeState))
+            return Terminalize(current, nativeState);
+        if (current.IsTerminalized)
+            throw new InvalidOperationException(
+                "A terminalized R&C1 Moby cannot re-enter a live native state.");
         return current with { NativeState = nativeState };
+    }
+
+    public static Rac1MobyRuntimeState Terminalize(
+        Rac1MobyRuntimeState current)
+    {
+        return current with
+        {
+            EntityState = current.EntityState.WithPresence(RuntimeEntityPresence.Inactive),
+            Lifecycle = Rac1MobyLifecycleState.Terminalized,
+            NativeTerminalState = null,
+        };
     }
 
     public static Rac1MobyRuntimeState Terminalize(
@@ -50,10 +73,10 @@ public static class Rac1MobyRuntime
         if (!IsTerminalState(nativeState))
             throw new ArgumentOutOfRangeException(nameof(nativeState));
 
-        return current with
+        return Terminalize(current) with
         {
             NativeState = nativeState,
-            EntityState = current.EntityState.WithPresence(RuntimeEntityPresence.Inactive),
+            NativeTerminalState = nativeState,
         };
     }
 
@@ -67,10 +90,21 @@ public static class Rac1MobyRuntime
     }
 }
 
+public enum Rac1MobyLifecycleState
+{
+    Live,
+    Terminalized,
+}
+
 public sealed record Rac1MobyRuntimeState(
     Rac1MobyRuntimeKey Key,
     int NativeState,
-    RuntimeEntityState EntityState);
+    RuntimeEntityState EntityState,
+    Rac1MobyLifecycleState Lifecycle = Rac1MobyLifecycleState.Live,
+    int? NativeTerminalState = null)
+{
+    public bool IsTerminalized => Lifecycle == Rac1MobyLifecycleState.Terminalized;
+}
 
 /// <summary>
 /// Copyright-safe envelope for the recovered native damage transport inputs.
@@ -117,9 +151,13 @@ public sealed record Rac1MobyDamageConsumedEvent(
     Rac1NativeDamageEnvelope Damage) : IRac1MobyHostEvent;
 
 /// <summary>
-/// Common 0xfd/0xfe terminalization projected to neutral inactive presence.
-/// This does not claim immediate native Moby deallocation.
+/// Common terminalization projected to neutral inactive presence. The exact
+/// native 0xfd/0xfe state is optional when the recovered terminalizer is proven
+/// but its pool-side selector is not. This does not claim immediate deallocation.
 /// </summary>
 public sealed record Rac1MobyTerminalizedEvent(
     Rac1MobyRuntimeKey Key,
-    int NativeTerminalState) : IRac1MobyHostEvent;
+    int? NativeTerminalState) : IRac1MobyHostEvent
+{
+    public bool HasRecoveredNativeTerminalState => NativeTerminalState.HasValue;
+}

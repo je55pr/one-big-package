@@ -37,9 +37,49 @@ public sealed class Rac1MobyRuntimeTests
         var terminal = Rac1MobyRuntime.Terminalize(state, terminalState);
 
         Assert.Equal(terminalState, terminal.NativeState);
+        Assert.True(terminal.IsTerminalized);
+        Assert.Equal(terminalState, terminal.NativeTerminalState);
         Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             Rac1MobyRuntime.Terminalize(state, nativeState: 12));
+    }
+
+    [Fact]
+    public void TerminalizationCanStayExplicitWhenNativeSelectorIsUnresolved()
+    {
+        var source = Dynamic(nativeClassId: 749, instanceIndex: 149);
+        var state = Rac1MobyRuntime.Create(
+            source,
+            nativeState: Rac1Class749Hostile.DamageNativeState,
+            RuntimeEntityState.FromAuthored(source));
+
+        var terminal = Rac1MobyRuntime.Terminalize(state);
+
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, terminal.NativeState);
+        Assert.True(terminal.IsTerminalized);
+        Assert.Null(terminal.NativeTerminalState);
+        Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
+        Assert.Throws<InvalidOperationException>(() =>
+            Rac1MobyRuntime.WithNativeState(
+                terminal,
+                Rac1Class749Hostile.TargetSearchNativeState));
+    }
+
+    [Theory]
+    [InlineData(Rac1MobyRuntime.TerminalNativeStateFd)]
+    [InlineData(Rac1MobyRuntime.TerminalNativeStateFe)]
+    public void RegisteringKnownTerminalNativeStateNormalizesLifetimeInactive(
+        int terminalState)
+    {
+        var source = Dynamic(nativeClassId: 500, instanceIndex: 9);
+        var terminal = Rac1MobyRuntime.Create(
+            source,
+            terminalState,
+            RuntimeEntityState.FromAuthored(source));
+
+        Assert.True(terminal.IsTerminalized);
+        Assert.Equal(terminalState, terminal.NativeTerminalState);
+        Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
     }
 
     [Fact]
@@ -144,24 +184,15 @@ public sealed class Rac1MobyRuntimeTests
                 Assert.Equal(Rac1Class749Hostile.DamageNativeState, state.NativeStateAfter);
             });
 
-        var terminal = session.ApplyTerminalStatus(
-            source,
-            Rac1Class749Hostile.TerminalNativeStateFd);
+        var terminal = session.CompleteRecoveredDamageReaction(source);
 
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, terminal.NativeState);
+        Assert.True(terminal.RuntimeState.IsTerminalized);
+        Assert.Null(terminal.RuntimeState.NativeTerminalState);
         Assert.Equal(RuntimeEntityPresence.Inactive, terminal.EntityState.Presentation.Presence);
-        Assert.Collection(
-            terminal.HostEvents,
-            item =>
-            {
-                var state = Assert.IsType<Rac1MobyNativeStateChangedEvent>(item);
-                Assert.Equal(Rac1Class749Hostile.DamageNativeState, state.NativeStateBefore);
-                Assert.Equal(Rac1Class749Hostile.TerminalNativeStateFd, state.NativeStateAfter);
-            },
-            item =>
-            {
-                var ended = Assert.IsType<Rac1MobyTerminalizedEvent>(item);
-                Assert.Equal(Rac1Class749Hostile.TerminalNativeStateFd, ended.NativeTerminalState);
-            });
+        var ended = Assert.IsType<Rac1MobyTerminalizedEvent>(
+            Assert.Single(terminal.HostEvents));
+        Assert.False(ended.HasRecoveredNativeTerminalState);
         Assert.Empty(session.Probe(source).HostEvents);
     }
 
@@ -211,7 +242,14 @@ public sealed class Rac1MobyRuntimeTests
         runtime.SetPresence(instance, RuntimeEntityPresence.Active);
         runtime.Terminalize(instance, Rac1MobyRuntime.TerminalNativeStateFd);
         Assert.Equal(Rac1MobyRuntime.TerminalNativeStateFd, instance.State.NativeState);
+        Assert.True(instance.State.IsTerminalized);
+        Assert.Equal(
+            Rac1MobyRuntime.TerminalNativeStateFd,
+            instance.State.NativeTerminalState);
         Assert.Equal(RuntimeEntityPresence.Inactive, instance.Presence);
+        Assert.False(instance.IsActive);
+        Assert.Throws<InvalidOperationException>(() =>
+            runtime.SetPresence(instance, RuntimeEntityPresence.Active));
     }
 
     [Fact]

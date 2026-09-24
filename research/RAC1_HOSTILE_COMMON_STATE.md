@@ -43,7 +43,7 @@ The loaded Veldin image contains 70 calls to `0x0024eb68`. Two independent gamep
 - class 500 calls it from `0x002cf820`;
 - class 749 state 12 calls it from `0x002d5060`.
 
-This promotes native states `0xfd` / `0xfe` as engine-owned terminal Moby states and makes the existing neutral projection to inactive presentation defensible. It does **not** prove immediate memory deallocation at the call, so “terminalize / enter inactive lifetime” is the supported wording rather than “free the object now.”
+This promotes native states `0xfd` / `0xfe` as engine-owned terminal Moby states and makes the existing neutral projection to inactive presentation defensible. It does **not** prove immediate memory deallocation at the call, so “terminalize / enter inactive lifetime” is the supported wording rather than “free the object now.” The shared runtime therefore models terminal lifetime separately from the optional recovered terminal-state byte: callers with exact evidence retain `0xfd`/`0xfe`, while class 749 can complete its proven state-12 -> common-terminalizer chain without fabricating which byte the unrecovered pool-side selector chose.
 
 ## Class-749 target and locomotion script
 
