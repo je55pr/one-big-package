@@ -399,28 +399,42 @@ public partial class OBPGame
         forward = forward.Normalized();
         Vector3 root = _player.GlobalPosition + Vector3.Up * Rac1WrenchHostRootHeight;
 
-        if (TryStrikeRac1Crate(root, forward))
+        var candidates = _rac1CrateNodes
+            .Concat(_rac1HostileNodes.Values)
+            .Where(node =>
+                IsInstanceValid(node.Root) &&
+                node.Root.Visible &&
+                (node.Source.NativeClassId != Rac1Class749Hostile.NativeClassId ||
+                 _rac1HostileProbes.ContainsKey(node.Source.InstanceIndex)))
+            .ToArray();
+        RuntimeDynamicObject? selected = _rac1Wrench.SelectNearestGoal1HostTarget(
+            new Rac1WrenchHostPoint(root.X, root.Y, root.Z),
+            new Rac1WrenchHostDirection(forward.X, forward.Y, forward.Z),
+            candidates.Select(node => new Rac1WrenchHostCandidate(
+                node.Source,
+                new Rac1WrenchHostPoint(
+                    node.Root.GlobalPosition.X,
+                    node.Root.GlobalPosition.Y,
+                    node.Root.GlobalPosition.Z))));
+        if (selected is null)
+        {
+            _rac1CombatStatus = "wrench: no host-admitted contact";
             return;
+        }
 
-        if (TryStrikeRac1Hostile(root, forward))
-            return;
-
-        _rac1CombatStatus = "wrench: no host-admitted contact";
+        var target = candidates.Single(node => ReferenceEquals(node.Source, selected));
+        bool applied = target.Source.NativeClassId switch
+        {
+            Rac1BoltCrate.NativeClassId => TryStrikeRac1Crate(target),
+            Rac1Class749Hostile.NativeClassId => TryStrikeRac1Hostile(target),
+            _ => false,
+        };
+        if (!applied)
+            _rac1CombatStatus = "wrench: admitted target produced no recovered consequence";
     }
-    private bool TryStrikeRac1Crate(Vector3 root, Vector3 forward)
-    {
-        var target = _rac1CrateNodes
-            .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
-            .Where(node => Rac1WrenchHostPolicyAdmits(
-                root,
-                forward,
-                node.Root.GlobalPosition))
-            .OrderBy(node => node.Root.GlobalPosition.DistanceTo(root))
-            .ThenBy(node => node.Source.InstanceIndex)
-            .FirstOrDefault();
-        if (target is null)
-            return false;
 
+    private bool TryStrikeRac1Crate(RuntimeWorldScene.DynamicObjectNode target)
+    {
         var authored = Rac1BoltCrate.ReadAuthored(target.Source);
         if (authored?.RewardCentre != 10)
             return false;
@@ -448,23 +462,8 @@ public partial class OBPGame
         return true;
     }
 
-    private bool TryStrikeRac1Hostile(Vector3 root, Vector3 forward)
+    private bool TryStrikeRac1Hostile(RuntimeWorldScene.DynamicObjectNode hostile)
     {
-        var hostile = _rac1HostileNodes.Values
-            .Where(candidate =>
-                _rac1HostileProbes.ContainsKey(candidate.Source.InstanceIndex) &&
-                IsInstanceValid(candidate.Root) &&
-                candidate.Root.Visible)
-            .Where(candidate => Rac1WrenchHostPolicyAdmits(
-                root,
-                forward,
-                candidate.Root.GlobalPosition))
-            .OrderBy(candidate => candidate.Root.GlobalPosition.DistanceTo(root))
-            .ThenBy(candidate => candidate.Source.InstanceIndex)
-            .FirstOrDefault();
-        if (hostile is null)
-            return false;
-
         var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(hostile.Source)
             ?? throw new InvalidOperationException(
                 "R&C1 class-749 hostile was rejected by the wrench target contract.");

@@ -155,6 +155,56 @@ public sealed class Rac1WrenchCombatTests
     }
 
     [Fact]
+    public void NearestHostAdmittedTargetWinsAcrossRecoveredClasses()
+    {
+        var crate = Target(Rac1BoltCrate.NativeClassId, 89);
+        var hostile = Target(Rac1Class749Hostile.NativeClassId, 149);
+        var ignored = Target(1781, 7);
+        var root = new Rac1WrenchHostPoint(0d, 0d, 0d);
+        var forward = new Rac1WrenchHostDirection(1d, 0d, 0d);
+
+        var selected = _controller.SelectNearestGoal1HostTarget(
+            root,
+            forward,
+            [
+                new Rac1WrenchHostCandidate(
+                    crate,
+                    new Rac1WrenchHostPoint(2.4d, 0d, 0d)),
+                new Rac1WrenchHostCandidate(
+                    hostile,
+                    new Rac1WrenchHostPoint(1.2d, 0d, 0d)),
+                new Rac1WrenchHostCandidate(
+                    ignored,
+                    new Rac1WrenchHostPoint(0.5d, 0d, 0d)),
+            ]);
+
+        Assert.Same(hostile, selected);
+    }
+
+    [Fact]
+    public void NearestHostTargetSelectionHasNoCrateFirstBias()
+    {
+        var crate = Target(Rac1BoltCrate.NativeClassId, 89);
+        var hostile = Target(Rac1Class749Hostile.NativeClassId, 149);
+        var root = new Rac1WrenchHostPoint(0d, 0d, 0d);
+        var forward = new Rac1WrenchHostDirection(1d, 0d, 0d);
+
+        var crateNearest = _controller.SelectNearestGoal1HostTarget(
+            root,
+            forward,
+            [
+                new Rac1WrenchHostCandidate(
+                    hostile,
+                    new Rac1WrenchHostPoint(2.3d, 0d, 0d)),
+                new Rac1WrenchHostCandidate(
+                    crate,
+                    new Rac1WrenchHostPoint(1.1d, 0d, 0d)),
+            ]);
+
+        Assert.Same(crate, crateNearest);
+    }
+
+    [Fact]
     public void PlayerSelfIsExcludedFromHostAdmittedDamage()
     {
         var target = new Rac1WrenchContactTarget(
@@ -224,6 +274,17 @@ public sealed class Rac1WrenchCombatTests
             crateBreak.EntityState.Presentation.Presence);
         Assert.Equal(1, session.DestroyedCrateCount);
     }
+
+    private static RuntimeDynamicObject Target(int nativeClassId, int instanceIndex) =>
+        new(
+            "rac1",
+            nativeClassId,
+            instanceIndex,
+            null,
+            $"moby:{nativeClassId}",
+            $"moby:{instanceIndex}",
+            new RuntimeObjectTransform(new double[16]),
+            Array.Empty<RuntimeObjectMesh>());
 
     private static RuntimeDynamicObject Class500(int uid, int rewardCentre)
     {

@@ -14,6 +14,10 @@ public readonly record struct Rac1WrenchContactTarget(
     int NativeClassId,
     bool IsPlayerSelf);
 
+public sealed record Rac1WrenchHostCandidate(
+    RuntimeDynamicObject Source,
+    Rac1WrenchHostPoint Center);
+
 public sealed record Rac1WrenchDamageResult(
     Rac1WrenchContactPath ContactPath,
     double NativeDamage,
@@ -89,6 +93,28 @@ public sealed class Rac1WrenchCombatController
             IsPlayerSelf: false);
     }
 
+    public RuntimeDynamicObject? SelectNearestGoal1HostTarget(
+        Rac1WrenchHostPoint root,
+        Rac1WrenchHostDirection forward,
+        IEnumerable<Rac1WrenchHostCandidate> candidates)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+
+        return candidates
+            .Where(candidate =>
+                candidate.Source is not null &&
+                AdmitGoal1RuntimeTarget(candidate.Source) is not null &&
+                Rac1WrenchHostContactPolicy.Admits(
+                    root,
+                    forward,
+                    candidate.Center))
+            .OrderBy(candidate => PlanarDistanceSquared(root, candidate.Center))
+            .ThenBy(candidate => candidate.Source.NativeClassId)
+            .ThenBy(candidate => candidate.Source.InstanceIndex)
+            .Select(candidate => candidate.Source)
+            .FirstOrDefault();
+    }
+
     public Rac1WrenchDamageResult? ResolveHostAdmittedDamage(
         Rac1WrenchContactTarget target)
     {
@@ -132,6 +158,15 @@ public sealed class Rac1WrenchCombatController
         return crateBreak is null
             ? null
             : transport with { BoltCrateBreak = crateBreak };
+    }
+
+    private static double PlanarDistanceSquared(
+        Rac1WrenchHostPoint a,
+        Rac1WrenchHostPoint b)
+    {
+        double dx = b.X - a.X;
+        double dz = b.Z - a.Z;
+        return (dx * dx) + (dz * dz);
     }
 
     private static bool CanDamage(Rac1WrenchContactTarget target) =>
