@@ -33,6 +33,45 @@ public sealed class Rac1HostArchitectureTests
     }
 
     [Fact]
+    public void OrdinaryVeldinSmokeCannotUseDevelopmentOrDirectConsequenceShortcuts()
+    {
+        string smoke = File.ReadAllText(Path.Combine(
+            RepoPaths.Root,
+            "game",
+            "scripts",
+            "OBPGame.Rac1VeldinPlaySmoke.cs"));
+
+        string[] forbidden =
+        [
+            "ResetToSpawn(",
+            "TryCompleteRac1EnvironmentalRestart(",
+            "ApplyEnvironmentalDeathReset(",
+            "ApplyTerminalStatus(",
+            "SetRac1HostedPresence(",
+            "TapPhysicalKeyAsync(Key.R)",
+            "TapPhysicalKeyAsync(Key.F)",
+            ".Root.GlobalPosition =",
+            "_player.GlobalPosition =",
+        ];
+
+        foreach (string shortcut in forbidden)
+            Assert.DoesNotContain(shortcut, smoke, StringComparison.Ordinal);
+
+        Assert.Contains(
+            "Input.ActionPress(RawGamepadInput.Action)",
+            smoke,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "Rac1SmokeDriveToward(",
+            smoke,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "RunRac1NaturalVeldinFallRespawnSmokeAsync",
+            smoke,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Rac1GameplayActivityDoesNotDependOnRenderVisibility()
     {
         string gameplay = File.ReadAllText(Path.Combine(
