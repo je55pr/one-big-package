@@ -61,7 +61,7 @@ The loaded image has only one call to state-5 helper `0x00261630`, from class 74
 
 PVar `+0x1c0` is the class-749 target-Moby pointer. In the pre-dispatch path, a null `+0x1c0` loads global `0x001413d0` and stores it into that field. In the fixed Veldin witness that global contains `0x01845e80`, the live class-0 Ratchet Moby. Eleven of sixteen class-749 PVars already hold that exact player pointer and the other five are null; no class-749 PVar points at another Moby.
 
-State 6 dereferences the target Moby for facing while pursuing PVar `+0x180`. This closes the target identity without turning the surrounding script into a generic engine target-acquisition service.
+State 6 dereferences the target Moby for facing while pursuing PVar `+0x180`. This closes the target identity without turning the surrounding script into a generic engine target-acquisition service. OBP represents that boundary with a typed `Rac1Class749TargetDescriptor`: ordinary recovered Veldin search/pursuit/attack requires the shared class-0 player identity, while the authored instance-154 linked state requires a Moby identity whose runtime instance is the recovered link target 197. Anonymous positions and mismatched identities fail closed. Godot first selects that descriptor target, then derives distance/facing from the same selected target; it no longer computes Ratchet distance/facing and patches a different destination afterward. Raw retail Moby pointers are not exposed to the host/runtime contract.
 
 ### Activation/range boundary
 

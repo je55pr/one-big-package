@@ -683,23 +683,12 @@ public partial class OBPGame
 
             var previous = _rac1Hostiles.Probe(hostile.Source);
 
-            Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
-            double distance = toPlayer.Length();
-            Vector3 planarToPlayer = new(toPlayer.X, 0f, toPlayer.Z);
-            Vector3 planarForward = -hostile.Root.GlobalTransform.Basis.Z;
-            planarForward.Y = 0f;
-            double facingError = Math.PI;
-            if (planarToPlayer.LengthSquared() > 1e-6f && planarForward.LengthSquared() > 1e-6f)
-            {
-                planarToPlayer = planarToPlayer.Normalized();
-                planarForward = planarForward.Normalized();
-                facingError = Math.Abs(planarForward.SignedAngleTo(planarToPlayer, Vector3.Up));
-            }
-
             Vector3 hostilePosition = hostile.Root.GlobalPosition;
             Vector3 targetPosition = _player.GlobalPosition;
+            Rac1GameplayEntityRef? targetIdentity = Rac1GameplayEntityRef.Player;
             bool linkedObjectTerminal = false;
-            if (previous.LinkedTargetInstanceIndex is int linkedTargetInstanceIndex)
+            if (previous.NativeState == Rac1Class749Hostile.LinkedObjectNativeState &&
+                previous.LinkedTargetInstanceIndex is int linkedTargetInstanceIndex)
             {
                 _rac1LinkedTargetNodes.TryGetValue(
                     linkedTargetInstanceIndex,
@@ -707,21 +696,56 @@ public partial class OBPGame
                 linkedObjectTerminal = linkedNode is null ||
                     !IsInstanceValid(linkedNode.Root) ||
                     linkedNode.State.Presentation.Presence != RuntimeEntityPresence.Active;
-                if (!linkedObjectTerminal)
+                if (linkedObjectTerminal)
+                {
+                    targetPosition = hostilePosition;
+                    targetIdentity = null;
+                }
+                else
+                {
                     targetPosition = linkedNode!.Root.GlobalPosition;
+                    targetIdentity = Rac1GameplayEntityRef.Moby(
+                        new Rac1MobyRuntimeKey(
+                            linkedNode.Source.NativeClassId,
+                            linkedNode.Source.InstanceIndex));
+                }
             }
 
+            Vector3 toTarget = targetPosition - hostilePosition;
+            double distance = toTarget.Length();
+            Vector3 planarToTarget = new(toTarget.X, 0f, toTarget.Z);
+            Vector3 planarForward = -hostile.Root.GlobalTransform.Basis.Z;
+            planarForward.Y = 0f;
+            double facingError = Math.PI;
+            if (planarToTarget.LengthSquared() > 1e-6f &&
+                planarForward.LengthSquared() > 1e-6f)
+            {
+                planarToTarget = planarToTarget.Normalized();
+                planarForward = planarForward.Normalized();
+                facingError = Math.Abs(
+                    planarForward.SignedAngleTo(planarToTarget, Vector3.Up));
+            }
+
+            Rac1Class749TargetDescriptor? targetDescriptor =
+                targetIdentity is { } identity
+                ? new Rac1Class749TargetDescriptor(
+                    identity,
+                    new Rac1Class749WorldPoint(
+                        -targetPosition.X,
+                        targetPosition.Y,
+                        targetPosition.Z))
+                : null;
             var next = _rac1MobyRuntime.DispatchUpdate<Rac1Class749HostProbe>(
                 hostile.Source,
                 new Rac1Class749TargetFacts(
                     distance,
                     facingError,
-                    new Rac1Class749WorldPoint(-hostilePosition.X, hostilePosition.Y, hostilePosition.Z),
+                    new Rac1Class749WorldPoint(
+                        -hostilePosition.X,
+                        hostilePosition.Y,
+                        hostilePosition.Z),
                     StatusSentinel: null,
-                    TargetPosition: new Rac1Class749WorldPoint(
-                        -targetPosition.X,
-                        targetPosition.Y,
-                        targetPosition.Z),
+                    TargetDescriptor: targetDescriptor,
                     LinkedObjectTerminal: linkedObjectTerminal));
             if (next.NativeState != previous.NativeState)
             {

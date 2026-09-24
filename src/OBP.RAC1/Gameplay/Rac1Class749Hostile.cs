@@ -212,12 +212,16 @@ public sealed record Rac1Class749AuthoredState(
 /// targeting derives +0x1c4 from the authored activation polygon; StatusSentinel
 /// remains only as a bounded override for deterministic lower-level tests.
 /// </summary>
+public readonly record struct Rac1Class749TargetDescriptor(
+    Rac1GameplayEntityRef Identity,
+    Rac1Class749WorldPoint Position);
+
 public readonly record struct Rac1Class749TargetFacts(
     double Distance,
     double FacingError,
     Rac1Class749WorldPoint CurrentPosition = default,
     int? StatusSentinel = null,
-    Rac1Class749WorldPoint TargetPosition = default,
+    Rac1Class749TargetDescriptor? TargetDescriptor = null,
     bool LinkedObjectTerminal = false);
 
 public enum Rac1Class749NavigationIntentKind

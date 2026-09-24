@@ -318,18 +318,50 @@ public sealed class Rac1Class749HostileSession :
     {
         if (entry.NativeState == Rac1Class749Hostile.LinkedObjectNativeState)
         {
-            Rac1Class749Hostile.WriteTargetDestination(entry.PVar, target.TargetPosition);
+            if (target.LinkedObjectTerminal)
+                return Rac1Class749Hostile.ReadStatusSentinel(entry.PVar);
+
+            Rac1Class749TargetDescriptor linkedDescriptor =
+                target.TargetDescriptor ??
+                throw new NotSupportedException(
+                    "Recovered R&C1 class-749 linked-object state requires an explicit live Moby target descriptor.");
+            if (linkedDescriptor.Identity.Kind != Rac1GameplayEntityKind.Moby ||
+                entry.LinkedTargetInstanceIndex is not int linkedInstanceIndex ||
+                linkedDescriptor.Identity.RuntimeId != linkedInstanceIndex)
+            {
+                throw new NotSupportedException(
+                    "Recovered R&C1 class-749 linked-object state requires the authored linked Moby identity.");
+            }
+
+            Rac1Class749Hostile.WriteTargetDestination(
+                entry.PVar,
+                linkedDescriptor.Position);
             return Rac1Class749Hostile.ReadStatusSentinel(entry.PVar);
         }
 
+        Rac1Class749TargetDescriptor? targetDescriptor = target.TargetDescriptor;
+        if (entry.ActivationGroup is not null)
+        {
+            if (targetDescriptor is not { } veldinTarget ||
+                veldinTarget.Identity != Rac1GameplayEntityRef.Player)
+            {
+                throw new NotSupportedException(
+                    "Recovered Veldin class-749 targeting requires the explicit class-0 player descriptor.");
+            }
+        }
+
         int status = target.StatusSentinel ??
-            (entry.ActivationGroup is int group
-                ? Rac1Class749VeldinPopulation.IsAdmitted(group, target.TargetPosition) ? 0 : 2
+            (entry.ActivationGroup is int group && targetDescriptor is { } descriptor
+                ? Rac1Class749VeldinPopulation.IsAdmitted(group, descriptor.Position) ? 0 : 2
                 : Rac1Class749Hostile.ReadStatusSentinel(entry.PVar));
         Rac1Class749Hostile.WriteStatusSentinel(entry.PVar, status);
         if (status != Rac1Class749Hostile.StatusSentinelTwo &&
-            (entry.ActivationGroup is not null || target.TargetPosition != default))
-            Rac1Class749Hostile.WriteTargetDestination(entry.PVar, target.TargetPosition);
+            targetDescriptor is { } admittedTarget)
+        {
+            Rac1Class749Hostile.WriteTargetDestination(
+                entry.PVar,
+                admittedTarget.Position);
+        }
         return status;
     }
 
@@ -432,10 +464,12 @@ public sealed class Rac1Class749HostileSession :
             throw new ArgumentOutOfRangeException(nameof(target));
         if (!double.IsFinite(target.CurrentPosition.X) ||
             !double.IsFinite(target.CurrentPosition.Y) ||
-            !double.IsFinite(target.CurrentPosition.Z) ||
-            !double.IsFinite(target.TargetPosition.X) ||
-            !double.IsFinite(target.TargetPosition.Y) ||
-            !double.IsFinite(target.TargetPosition.Z))
+            !double.IsFinite(target.CurrentPosition.Z))
+            throw new ArgumentOutOfRangeException(nameof(target));
+        if (target.TargetDescriptor is { Position: var targetPosition } &&
+            (!double.IsFinite(targetPosition.X) ||
+             !double.IsFinite(targetPosition.Y) ||
+             !double.IsFinite(targetPosition.Z)))
             throw new ArgumentOutOfRangeException(nameof(target));
     }
 
