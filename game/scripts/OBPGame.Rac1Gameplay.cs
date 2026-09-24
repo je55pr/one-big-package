@@ -51,6 +51,7 @@ public partial class OBPGame
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
     private readonly Dictionary<long, Rac1HostedProjectile> _rac1Projectiles = [];
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1Class749PresentationNodes = [];
+    private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1LinkedTargetNodes = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1HostileNodes = [];
     private readonly Dictionary<int, Rac1Class749HostProbe> _rac1HostileProbes = [];
     private bool _rac1BombFireRequested;
@@ -82,6 +83,7 @@ public partial class OBPGame
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
         _rac1Class749PresentationNodes.Clear();
+        _rac1LinkedTargetNodes.Clear();
         _rac1HostileNodes.Clear();
         _rac1HostileProbes.Clear();
         _rac1BombFireRequested = false;
@@ -156,6 +158,8 @@ public partial class OBPGame
                 var probe = _rac1Hostiles.RegisterVeldinPlacement(hostileSource, node.State);
                 _rac1HostileNodes.Add(hostileSource.InstanceIndex, node);
                 _rac1HostileProbes.Add(hostileSource.InstanceIndex, probe);
+                if (probe.LinkedTargetInstanceIndex is int linkedInstanceIndex)
+                    TrackRac1LinkedTarget(world, result, linkedInstanceIndex);
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidDataException)
             {
@@ -197,6 +201,36 @@ public partial class OBPGame
             node.Source.SourceGame == source.SourceGame &&
             node.Source.NativeClassId == source.NativeClassId &&
             node.Source.InstanceIndex == source.InstanceIndex);
+    private void TrackRac1LinkedTarget(
+        RuntimeWorld world,
+        RuntimeWorldScene.Result result,
+        int linkedInstanceIndex)
+    {
+        if (_rac1LinkedTargetNodes.ContainsKey(linkedInstanceIndex))
+            return;
+
+        var matches = (world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
+            .Where(source => source.InstanceIndex == linkedInstanceIndex)
+            .Take(2)
+            .ToArray();
+        if (matches.Length != 1)
+        {
+            GD.PrintErr(
+                $"[rac1-gameplay] linked Moby i{linkedInstanceIndex} could not be resolved " +
+                $"uniquely from authored runtime objects ({matches.Length} matches)");
+            return;
+        }
+
+        RuntimeDynamicObject source = matches[0];
+        var node = FindPresentedDynamic(result, source)
+            ?? _rac1CrateNodes.FirstOrDefault(candidate =>
+                candidate.Source.SourceGame == source.SourceGame &&
+                candidate.Source.NativeClassId == source.NativeClassId &&
+                candidate.Source.InstanceIndex == source.InstanceIndex)
+            ?? CreateRac1InvisibleRuntimeNode(result, source);
+        _rac1LinkedTargetNodes.Add(linkedInstanceIndex, node);
+    }
+
     private static RuntimeWorldScene.DynamicObjectNode CreateRac1InvisibleRuntimeNode(
         RuntimeWorldScene.Result result,
         RuntimeDynamicObject source)
@@ -662,12 +696,12 @@ public partial class OBPGame
             bool linkedObjectTerminal = false;
             if (previous.LinkedTargetInstanceIndex is int linkedTargetInstanceIndex)
             {
-                var linkedNode = _sceneResult?.DynamicObjectNodes?.FirstOrDefault(node =>
-                    node.Source.SourceGame == "rac1" &&
-                    node.Source.InstanceIndex == linkedTargetInstanceIndex);
+                _rac1LinkedTargetNodes.TryGetValue(
+                    linkedTargetInstanceIndex,
+                    out var linkedNode);
                 linkedObjectTerminal = linkedNode is null ||
                     !IsInstanceValid(linkedNode.Root) ||
-                    !linkedNode.Root.Visible;
+                    linkedNode.State.Presentation.Presence != RuntimeEntityPresence.Active;
                 if (!linkedObjectTerminal)
                     targetPosition = linkedNode!.Root.GlobalPosition;
             }
