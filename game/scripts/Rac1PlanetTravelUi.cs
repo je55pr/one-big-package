@@ -175,7 +175,7 @@ public partial class Rac1PlanetTravelUi : CanvasLayer
 
     private static string DestinationName(int destinationId) =>
         Rac1CampaignDestinationIdentity.ResolveDisplayName(destinationId)
-        ?? $"Level {destinationId}";
+        ?? "Unknown destination";
 
     private void FocusInitialControl()
     {

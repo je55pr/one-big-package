@@ -19,7 +19,7 @@ public sealed class Rac1LevelTests_World
         Assert.Equal("rac1", world.Game);
         Assert.Equal(Rac1Authority.Primary.BuildId, world.BuildId);
         Assert.Equal(0, world.LevelId);
-        Assert.Equal("LEVEL0", world.DisplayName);
+        Assert.Equal("Veldin", world.DisplayName);
 
         Assert.Equal(286, world.Meshes.Count);
         Assert.Equal(751_435, world.TotalRenderTriangles);

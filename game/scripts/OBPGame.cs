@@ -404,8 +404,8 @@ public partial class OBPGame : Node3D
         TeardownWorld();
 
         var entry = GcPlanetCatalogue.Find(levelId);
-        string label = entry?.DisplayName ?? $"LEVEL{levelId}";
-        _sceneKind = $"gc-{(entry?.Planet ?? $"level{levelId}").ToLowerInvariant().Replace(' ', '-')}";
+        string label = entry?.DisplayName ?? "Unknown destination";
+        _sceneKind = $"gc-{(entry?.Planet ?? "unknown-destination").ToLowerInvariant().Replace(' ', '-')}";
 
         RuntimeWorld world;
         try
@@ -874,8 +874,9 @@ public partial class OBPGame : Node3D
             "rac3" => "Up Your Arsenal",
             _ => w.Game,
         };
-        string planet = w.PlanetName ?? _activeDestination?.PlanetLabel ?? "?";
-        string location = w.LocationName ?? _activeDestination?.LocationLabel ?? "?";
+        string destinationName = w.PlanetName is { Length: > 0 }
+            ? w.DisplayName
+            : _activeDestination?.DisplayName ?? "Unknown destination";
         string container = _activeDestination?.NativeContainer ?? gcEntry?.ContainerFile ?? "(native container unresolved)";
         string pos = "-";
         string ground = "-";
@@ -891,7 +892,7 @@ public partial class OBPGame : Node3D
 
         _worldHud.Text =
             $"Game: {gameLabel}   Build: {w.BuildId}\n" +
-            $"Planet: {planet}   Location: {location}\n" +
+            $"Destination: {destinationName}\n" +
             $"Level id: {w.LevelId}   Container: {container}   (switch #{_worldSwitches})\n" +
             $"Player XYZ: {pos}   {ground}\n" +
             $"Render tris: {r.Triangles:N0}   Collision tris: {r.CollisionTriangles:N0}\n" +

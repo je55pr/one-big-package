@@ -74,7 +74,7 @@ public static class GcPlanetCatalogue
         new(11, "Joba",           "Megacorp Games",      2896, GcLevelKind.Planet),
         new(12, "Todano",         "Megacorp Armory",     2897, GcLevelKind.Planet),
         new(13, "Boldan",         "Silver City",         2898, GcLevelKind.Planet),
-        new(14, "Aranos",         "return (unresolved)", 2899, GcLevelKind.Unresolved),
+        new(14, "Aranos",         "",                    2899, GcLevelKind.Unresolved),
         new(15, "Gorn",           "Thug Fleet",          2900, GcLevelKind.SpaceCombat),
         new(16, "Snivelak",       "Thug Headquarters",   2901, GcLevelKind.Planet),
         new(17, "Smolg",          "Distribution Center", 2902, GcLevelKind.Planet),
@@ -84,8 +84,8 @@ public static class GcPlanetCatalogue
         new(21, "Aranos",         "Floating Prison",     2885, GcLevelKind.Hub),
         new(22, "Feltzin System", "Space Arena",         2890, GcLevelKind.SpaceCombat),
         new(23, "Hrugis Cloud",   "Space Arena",         2895, GcLevelKind.SpaceCombat),
-        new(24, "Ship Shack",     "Slim Cognito",        2909, GcLevelKind.Vendor),
-        new(25, "Starfield",      "scene stub",          0,    GcLevelKind.Scene),
+        new(24, "Slim Cognito's Ship Shack", "",         2909, GcLevelKind.Vendor),
+        new(25, "Starfield",      "",                    0,    GcLevelKind.Scene),
         new(26, "Gorn",           "Space Arena",         2900, GcLevelKind.SpaceCombat),
     ];
 

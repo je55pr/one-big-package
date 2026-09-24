@@ -102,12 +102,15 @@ public static partial class Rac1WorldImport
             recoveredPlayerStart.NativePosition.Y,
             recoveredPlayerStart.NativeRotation.Z);
 
+        var destination = Rac1DestinationCatalogue.Instance.FindByNativeLevel(levelId)
+            ?? throw new InvalidDataException($"R&C1 level {levelId} has no canonical destination metadata.");
+
         return new RuntimeWorld(
             Game: "rac1",
             BuildId: Rac1Authority.Primary.BuildId,
             LevelId: levelId,
-            PlanetName: null,
-            LocationName: null,
+            PlanetName: destination.PlanetLabel,
+            LocationName: destination.LocationLabel,
             Meshes: meshes,
             Textures: textures,
             MaterialCount: textures.Count + skyExtraMaterials,

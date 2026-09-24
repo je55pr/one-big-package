@@ -5,6 +5,7 @@ namespace OBP.Tests;
 public sealed class Rac1CampaignDestinationIdentityTests
 {
     [Theory]
+    [InlineData(0, "Veldin")]
     [InlineData(1, "Novalis")]
     [InlineData(2, "Aridia")]
     [InlineData(3, "Kerwan")]
@@ -29,7 +30,6 @@ public sealed class Rac1CampaignDestinationIdentityTests
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(-1)]
     [InlineData(19)]
     [InlineData(int.MinValue)]

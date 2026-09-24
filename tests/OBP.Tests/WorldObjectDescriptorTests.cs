@@ -151,12 +151,12 @@ public class WorldObjectDescriptorTests
     [Fact]
     public void Rac1WeldedOnlyWorld_HasNoDynamicObjectFields()
     {
-        var world = World() with { Game = "rac1", DynamicObjects = null, PlanetName = null, LocationName = null };
+        var world = World() with { Game = "rac1", DynamicObjects = null, PlanetName = "Novalis", LocationName = null };
         var d = WorldObjectDescriptorBuilder.Build(world, new WorldHit("tie", 2));
 
         Assert.Equal("welded tie", d.Category);
         Assert.Null(d.NativeClassId);
         Assert.Null(d.Transform);
-        Assert.Equal("LEVEL1", d.WorldName);
+        Assert.Equal("Novalis", d.WorldName);
     }
 }

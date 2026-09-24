@@ -130,7 +130,9 @@ public static partial class Rac3WorldImport
         RuntimeSpawn? ship = defaultShipTransform
             ? null
             : new RuntimeSpawn(settings.ShipPosition.X, settings.ShipPosition.Z, settings.ShipPosition.Y, settings.ShipRotationZ);
-        var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, null, null, meshes, textures, materialCount, collision, bounds, environment, ship,
+        var destination = Rac3DestinationCatalogue.Instance.FindByTableIndex(tableIndex)
+            ?? throw new InvalidDataException($"UYA table {tableIndex} has no canonical destination metadata.");
+        var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, destination.PlanetLabel, destination.LocationLabel, meshes, textures, materialCount, collision, bounds, environment, ship,
             Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects, AmbientAnimations: ambientAnimations);
         return new ImportResult(world, tfrag.TfragCount, gameplay.TieInstances.Count, gameplay.ShrubInstances.Count, gameplay.MobyInstances.Count,
             gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);

@@ -48,10 +48,10 @@ public sealed record RuntimeWorld(
 
     public int TotalCollisionTriangles => CollisionMeshes.Sum(c => c.Triangles);
 
-    /// <summary>A short human label — "Endako — Megapolis", or "LEVEL14" when unnamed.</summary>
+    /// <summary>A short human label such as "Endako — Megapolis". Technical level ids stay separate.</summary>
     public string DisplayName => PlanetName is { Length: > 0 } p
         ? LocationName is { Length: > 0 } l ? $"{p} — {l}" : p
-        : $"LEVEL{LevelId}";
+        : "Unknown destination";
 }
 
 /// <summary>

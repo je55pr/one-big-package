@@ -1,6 +1,7 @@
 using OBP.Core;
 using OBP.RAC1;
 using OBP.RAC2;
+using OBP.RAC3;
 using OBP.Runtime;
 
 namespace OBP.Tests;
@@ -22,6 +23,28 @@ public sealed class DestinationCatalogueTests
         Assert.Equal(3, aranos.Length);
         Assert.Equal(new[] { "rac2:LEVEL0", "rac2:LEVEL14", "rac2:LEVEL21" },
             aranos.Select(d => d.DestinationId).ToArray());
+    }
+
+    [Fact]
+    public void AllGoingCommandoDestinationsHavePlayerFacingNames()
+    {
+        string[] expectedNames =
+        [
+            "Aranos — Floating Prison", "Oozla — The Megacorp Outlet", "Maktar Nebula — Maktar Resort", "Endako — Megapolis",
+            "Barlow — Vukovar Canyon", "Feltzin System — Thug Rendezvous", "Notak — Canal City", "Siberius — Frozen Lab",
+            "Tabora — Mining Area", "Dobbo — Testing Facility", "Hrugis Cloud — Deep Space Disposal", "Joba — Megacorp Games",
+            "Todano — Megacorp Armory", "Boldan — Silver City", "Aranos", "Gorn — Thug Fleet", "Snivelak — Thug Headquarters",
+            "Smolg — Distribution Center", "Damosel — Allgon City", "Grelbin — Tundor Wastes", "Yeedil — Protopet Factory",
+            "Aranos — Floating Prison", "Feltzin System — Space Arena", "Hrugis Cloud — Space Arena", "Slim Cognito's Ship Shack",
+            "Starfield", "Gorn — Space Arena",
+        ];
+
+        Assert.Equal(expectedNames, GcDestinationCatalogue.Instance.Destinations.Select(destination => destination.DisplayName));
+        Assert.Equal(Enumerable.Range(0, expectedNames.Length).Select(level => $"rac2:LEVEL{level}"),
+            GcDestinationCatalogue.Instance.Destinations.Select(destination => destination.DestinationId));
+        Assert.DoesNotContain(GcDestinationCatalogue.Instance.Destinations,
+            destination => destination.DisplayName.Contains("unresolved", StringComparison.OrdinalIgnoreCase)
+                || destination.DisplayName.Contains("stub", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -89,17 +112,53 @@ public sealed class DestinationCatalogueTests
     }
 
     [Fact]
-    public void Rac1ProjectionExposesOnlyRetailValidatedNativeIdentity()
+    public void UyaProjectionExposesAllObservedNamesWithoutChangingTableIdentity()
+    {
+        string[] expectedNames =
+        [
+            "Veldin", "Florana", "Starship Phoenix", "Marcadia", "Daxx", "Starship Phoenix (Under Attack)",
+            "Annihilation Nation", "Aquatos", "Tyhrranosis", "Zeldrin Starport", "Obani Moons", "Rilgar",
+            "Holostar Studios Ratchet", "Koros", "Kerwan", "Crash Site", "Aridia", "Thran Asteroid Belt", "Final Boss",
+            "Obani Draco", "Mylon", "Holostar Studios Clank", "Insomniac Museum", "Kerwan Ranger Missions", "Aquatos Base",
+            "Aquatos Sewers", "Tyhrranosis Ranger Missions", "Vid-Comic", "Vid-Comic 1", "Vid-Comic 4", "Vid-Comic 2",
+            "Vid-Comic 3", "Vid-Comic 5", "Vid-Comic 1 Special Edition", "Multiplayer Menu", "Bakisi Isles", "Hoven Gorge",
+            "Outpost X12", "Korgon Outpost", "Metropolis", "Blackwater City", "Command Center", "Blackwater Docks",
+            "Aquatos Sewers", "Marcadia Palace", "Bakisi Isles (Split-screen)", "Hoven Gorge (Split-screen)",
+            "Outpost X12 (Split-screen)", "Korgon Outpost (Split-screen)", "Metropolis (Split-screen)",
+            "Blackwater City (Split-screen)",
+        ];
+
+        var catalogue = Rac3DestinationCatalogue.Instance;
+        Assert.Equal(expectedNames, catalogue.Destinations.Select(destination => destination.DisplayName));
+        Assert.Equal(Rac3DestinationCatalogue.ObservedMainTableIndices.Select(table => $"rac3:TABLE{table}"),
+            catalogue.Destinations.Select(destination => destination.DestinationId));
+        Assert.Equal(Rac3DestinationCatalogue.ObservedMainTableIndices.Select(table => $"TABLE{table}"),
+            catalogue.Destinations.Select(destination => destination.NativeDestinationId));
+        Assert.DoesNotContain(catalogue.Destinations,
+            destination => destination.DisplayName.Contains("TABLE", StringComparison.OrdinalIgnoreCase)
+                || destination.DisplayName.Contains("Unnamed", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Rac1ProjectionExposesAllDecodedNamesWithoutChangingNativeIdentity()
     {
         IObpDestinationCatalogue catalogue = Rac1DestinationCatalogue.Instance;
+        string[] expectedNames =
+        [
+            "Veldin", "Novalis", "Aridia", "Kerwan", "Eudora", "Rilgar", "Nebula G34", "Umbris", "Batalia", "Gaspar",
+            "Orxon", "Pokitaru", "Hoven", "Oltanis Orbit", "Oltanis", "Quartu", "Kalebo III", "Veldin Orbit", "Veldin",
+        ];
+
         Assert.Equal(ObpSourceGame.Rac1, catalogue.Game);
         Assert.Equal(Rac1Authority.Primary.BuildId, catalogue.BuildId);
-        Assert.Equal(19, catalogue.Destinations.Count);
-        Assert.Equal(Enumerable.Range(0, 19).Select(level => $"rac1:LEVEL{level}"),
+        Assert.Equal(expectedNames, catalogue.Destinations.Select(destination => destination.DisplayName));
+        Assert.Equal(Enumerable.Range(0, expectedNames.Length).Select(level => $"rac1:LEVEL{level}"),
             catalogue.Destinations.Select(destination => destination.DestinationId));
+        Assert.Equal(Enumerable.Range(0, expectedNames.Length).Select(level => $"LEVEL{level}"),
+            catalogue.Destinations.Select(destination => destination.NativeDestinationId));
         Assert.All(catalogue.Destinations, destination =>
         {
-            Assert.Equal(ObpDestinationKind.Unresolved, destination.Kind);
+            Assert.Equal(ObpDestinationKind.Planet, destination.Kind);
             Assert.Null(destination.NativeEngineId);
             Assert.Null(destination.NativeContainer);
         });

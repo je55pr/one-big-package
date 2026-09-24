@@ -39,6 +39,7 @@ public sealed class Rac3WorldTests
         Assert.Equal("rac3", world.Game);
         Assert.Equal(Rac3Authority.Primary.BuildId, world.BuildId);
         Assert.Equal(table, world.LevelId);
+        Assert.Equal(Rac3DestinationCatalogue.Instance.FindByTableIndex(table)!.DisplayName, world.DisplayName);
         Assert.Equal(tfrags, result.TfragCount);
         Assert.Equal(ties, result.TieInstanceCount);
         Assert.Equal(shrubs, result.ShrubInstanceCount);

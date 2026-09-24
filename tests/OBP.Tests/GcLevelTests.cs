@@ -567,6 +567,7 @@ public class GcLevelTests
 
         using var reader = new FileRandomAccessReader(iso!);
         var world = GcWorldImport.Build(reader, 1);
+        Assert.Equal("Oozla — The Megacorp Outlet", world.DisplayName);
 
         // Render geometry. tfrags now come from every chunk slot (spatial tiles),
         // not just chunk 0 — chunk 0 alone is only the region around the ship.
