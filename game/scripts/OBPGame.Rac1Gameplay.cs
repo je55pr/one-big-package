@@ -201,10 +201,11 @@ public partial class OBPGame
         RuntimeDynamicObject source,
         bool crate)
     {
-        var root = new Node3D
+        var root = new RuntimeWorldScene.RuntimeDynamicObjectRoot3D
         {
             Name = $"rac1_live_{source.NativeClassId}_{source.InstanceIndex}",
         };
+        root.Configure(source);
         Mesh primitive = crate
             ? new BoxMesh { Size = new Vector3(1.15f, 1.15f, 1.15f) }
             : new SphereMesh { Radius = 0.6f, Height = 1.2f };
@@ -470,7 +471,9 @@ public partial class OBPGame
             hostile.Source.NativeClassId,
             hostile.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
-        var probe = _rac1Hostiles.ApplyDamage(hostile.Source, damageEvent);
+        var probe = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(
+            hostile.Source,
+            damageEvent);
         _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         // The native session admits both 0xfd and 0xfe terminal outcomes but does
         // not recover their selector. The live host uses 0xfd as an explicit

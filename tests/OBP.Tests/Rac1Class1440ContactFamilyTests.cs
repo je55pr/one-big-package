@@ -135,6 +135,84 @@ public sealed class Rac1Class1440ContactFamilyTests
     }
 
     [Fact]
+    public void SharedDamageEventRoutesToRecoveredClassOwnedConsequence()
+    {
+        var source = Class1440(instanceIndex: 11, health: 2f);
+        var session = Registered(source, initialNativeState: 3);
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(target, wrench);
+
+        var result = session.ApplyDamage(source, damage);
+
+        Assert.Equal(1f, result.Health);
+        var consumed = Assert.IsType<Rac1MobyDamageConsumedEvent>(
+            Assert.Single(result.HostEvents));
+        Assert.Equal(wrench.DamageEnvelope, consumed.Damage);
+    }
+
+    [Fact]
+    public void SharedRuntimeRegistersDamageWithoutInventingClass1440UpdateDispatch()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var session = new Rac1Class1440ContactFamilySession(runtime);
+        var source = Class1440(instanceIndex: 13, health: 2f);
+        session.RegisterRecovered(
+            source,
+            RuntimeEntityState.FromAuthored(source),
+            initialNativeState: 3);
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
+            wrench);
+
+        var damaged = runtime.DispatchDamage<Rac1Class1440ContactProbe>(
+            source,
+            damage);
+
+        Assert.Equal(1f, damaged.Health);
+        Assert.Throws<NotSupportedException>(() =>
+            runtime.DispatchUpdate<object>(source, new object()));
+    }
+
+    [Fact]
+    public void SharedDamageEventRejectsWrongVictimAndMissingNativeEnvelope()
+    {
+        var source = Class1440(instanceIndex: 12, health: 2f);
+        var session = Registered(source, initialNativeState: 3);
+        var wrongTarget = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex + 1);
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+
+        Assert.Throws<ArgumentException>(() =>
+            session.ApplyDamage(
+                source,
+                Rac1DamageRuntime.FromWrench(wrongTarget, wrench)));
+
+        var flagless = new Rac1GameplayDamageEvent(
+            Rac1GameplayEntityRef.Player,
+            Rac1GameplayEntityRef.Moby(new Rac1MobyRuntimeKey(
+                source.NativeClassId,
+                source.InstanceIndex)),
+            nativeDamage: 1d);
+        Assert.Throws<NotSupportedException>(() =>
+            session.ApplyDamage(source, flagless));
+        Assert.Equal(2f, session.Probe(source).Health);
+    }
+
+    [Fact]
     public void RegistrationRejectsUnwitnessedHealthAndOutOfDispatchState()
     {
         var source = Class1440(instanceIndex: 9, health: 1f);

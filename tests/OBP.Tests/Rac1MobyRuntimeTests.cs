@@ -233,6 +233,64 @@ public sealed class Rac1MobyRuntimeTests
         Assert.NotEqual(firstUpdate.RuntimeState.Key, secondUpdate.RuntimeState.Key);
     }
 
+    [Fact]
+    public void SharedRuntimeDispatchesRecoveredDamageConsumerByNativeClass()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var hostiles = new Rac1Class749HostileSession(runtime);
+        var source = Class749(149, health: 1f);
+        hostiles.Register(source, RuntimeEntityState.FromAuthored(source));
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(target, wrench);
+
+        var result = runtime.DispatchDamage<Rac1Class749HostProbe>(
+            source,
+            damage);
+
+        Assert.Equal(0f, result.Health);
+        Assert.Equal(
+            Rac1Class749Hostile.DamageNativeState,
+            result.NativeState);
+    }
+
+    [Fact]
+    public void SharedRuntimeDamageDispatchFailsClosedForWrongTargetOrUnknownConsumer()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var hostiles = new Rac1Class749HostileSession(runtime);
+        var hostile = Class749(149, health: 1f);
+        hostiles.Register(hostile, RuntimeEntityState.FromAuthored(hostile));
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+
+        var wrongTarget = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(hostile.NativeClassId, 150),
+            wrench);
+        Assert.Throws<ArgumentException>(() =>
+            runtime.DispatchDamage<Rac1Class749HostProbe>(
+                hostile,
+                wrongTarget));
+
+        var unknown = Dynamic(nativeClassId: 766, instanceIndex: 4);
+        runtime.Register(
+            unknown,
+            RuntimeEntityState.FromAuthored(unknown),
+            nativeState: 5);
+        var unknownDamage = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(unknown.NativeClassId, unknown.InstanceIndex),
+            wrench);
+        Assert.Throws<NotSupportedException>(() =>
+            runtime.DispatchDamage<object>(unknown, unknownDamage));
+    }
+
     private static Rac1Class749TargetFacts Facts(
         double distance,
         double facingError,

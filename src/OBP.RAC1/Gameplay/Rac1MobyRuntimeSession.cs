@@ -14,6 +14,19 @@ public interface IRac1MobyClassController
 }
 
 /// <summary>
+/// Class-local native damage consumer. Registration is independent from update
+/// dispatch because recovered damage semantics need not imply recovered AI/state
+/// update logic for the same Moby class.
+/// </summary>
+public interface IRac1MobyDamageConsumer
+{
+    int NativeClassId { get; }
+    object ApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage);
+}
+
+/// <summary>
 /// One live authored R&C1 Moby. Identity and placement are immutable; PVar,
 /// native state and neutral presentation/lifecycle are live runtime state.
 /// </summary>
@@ -55,6 +68,7 @@ public sealed class Rac1MobyRuntimeSession
 {
     private readonly Dictionary<Rac1MobyRuntimeKey, Rac1MobyRuntimeInstance> _instances = [];
     private readonly Dictionary<int, IRac1MobyClassController> _controllers = [];
+    private readonly Dictionary<int, IRac1MobyDamageConsumer> _damageConsumers = [];
 
     public int RegisteredCount => _instances.Count;
     public IReadOnlyCollection<Rac1MobyRuntimeInstance> Instances => _instances.Values;
@@ -65,6 +79,14 @@ public sealed class Rac1MobyRuntimeSession
         if (!_controllers.TryAdd(controller.NativeClassId, controller))
             throw new InvalidOperationException(
                 $"R&C1 Moby class {controller.NativeClassId} already has a runtime controller.");
+    }
+
+    public void RegisterDamageConsumer(IRac1MobyDamageConsumer consumer)
+    {
+        ArgumentNullException.ThrowIfNull(consumer);
+        if (!_damageConsumers.TryAdd(consumer.NativeClassId, consumer))
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {consumer.NativeClassId} already has a native damage consumer.");
     }
 
     public Rac1MobyRuntimeInstance Register(
@@ -140,6 +162,28 @@ public sealed class Rac1MobyRuntimeSession
         if (result is not TOutput typed)
             throw new InvalidOperationException(
                 $"R&C1 Moby class {source.NativeClassId} returned {result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
+        return typed;
+    }
+
+    public TOutput DispatchDamage<TOutput>(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        var instance = Require(source);
+        if (!damage.Target.MatchesMoby(instance.Key))
+            throw new ArgumentException(
+                "R&C1 damage event target does not match the supplied runtime Moby.",
+                nameof(damage));
+
+        if (!_damageConsumers.TryGetValue(source.NativeClassId, out var consumer))
+            throw new NotSupportedException(
+                $"R&C1 Moby class {source.NativeClassId} has no recovered native damage consumer.");
+
+        object result = consumer.ApplyDamage(source, damage);
+        if (result is not TOutput typed)
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {source.NativeClassId} damage consumer returned {result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
         return typed;
     }
 

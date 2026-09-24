@@ -54,6 +54,33 @@ public static class RuntimeWorldScene
         int DynamicObjects = 0,
         System.Collections.Generic.IReadOnlyList<DynamicObjectNode>? DynamicObjectNodes = null);
 
+    /// <summary>
+    /// Scene root for one preserved dynamic gameplay object. This carries source
+    /// identity only; it deliberately adds no collision shape or physics policy.
+    /// Class/game-specific hosts may parent recovered colliders beneath it and
+    /// later recover the owning native object by walking ancestors.
+    /// </summary>
+    public sealed class RuntimeDynamicObjectRoot3D : Node3D
+    {
+        public RuntimeDynamicObject? Source { get; private set; }
+
+        public void Configure(RuntimeDynamicObject source)
+        {
+            Source = source ?? throw new ArgumentNullException(nameof(source));
+        }
+    }
+
+    public static RuntimeDynamicObject? FindDynamicObjectOwner(Node? node)
+    {
+        for (Node? current = node; current is not null; current = current.GetParent())
+        {
+            if (current is RuntimeDynamicObjectRoot3D { Source: { } source })
+                return source;
+        }
+
+        return null;
+    }
+
     /// <summary>Godot presentation handle for one preserved gameplay entity.</summary>
     public sealed class DynamicObjectNode
     {
@@ -356,11 +383,12 @@ public static class RuntimeWorldScene
                     continue;
                 }
 
-                var objRoot = new Node3D
+                var objRoot = new RuntimeDynamicObjectRoot3D
                 {
                     Name = $"dyn_{obj.SourceGame}_{obj.NativeClassId}_{obj.InstanceIndex}",
                     Transform = ToSceneTransform(obj.Transform),
                 };
+                objRoot.Configure(obj);
                 int childMeshes = 0;
 
                 foreach (var m in obj.Meshes)

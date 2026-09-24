@@ -7,7 +7,9 @@ namespace OBP.RAC1.Gameplay;
 /// Deterministic session for the recovered class-749 hostile family.
 /// Entries are keyed by native class plus authored instance index; UID semantics are not used.
 /// </summary>
-public sealed class Rac1Class749HostileSession : IRac1MobyClassController
+public sealed class Rac1Class749HostileSession :
+    IRac1MobyClassController,
+    IRac1MobyDamageConsumer
 {
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly Dictionary<Rac1Class749Key, Entry> _entries = [];
@@ -21,6 +23,7 @@ public sealed class Rac1Class749HostileSession : IRac1MobyClassController
     {
         _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _runtime.RegisterController(this);
+        _runtime.RegisterDamageConsumer(this);
     }
 
     public int RegisteredCount => _entries.Count;
@@ -32,6 +35,11 @@ public sealed class Rac1Class749HostileSession : IRac1MobyClassController
             : throw new ArgumentException(
                 "R&C1 class-749 update requires Rac1Class749TargetFacts.",
                 nameof(facts));
+
+    object IRac1MobyDamageConsumer.ApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage) =>
+        ApplyDamage(source, damage);
 
     public Rac1Class749HostProbe Register(
         RuntimeDynamicObject source,
