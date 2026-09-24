@@ -732,7 +732,7 @@ public partial class DebugPlayer : CharacterBody3D
             $"last jump: {_lastJump}\n" +
             diagnostics +
             $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face action\n" +
-            $"mouse / right stick debug camera / F fly / R respawn / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
+            $"mouse / right stick debug camera / F fly / R respawn (development) / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
     }
 
     private string BuildInputDiagnostics()

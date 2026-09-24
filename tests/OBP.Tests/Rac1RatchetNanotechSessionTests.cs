@@ -117,6 +117,25 @@ public sealed class Rac1RatchetNanotechSessionTests
     }
 
     [Fact]
+    public void VeldinDeathGateContractHasNoHorizontalLocationOrLedgeSelector()
+    {
+        string[] admittedFacts = typeof(Rac1VeldinEnvironmentalDeathFacts)
+            .GetProperties()
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            [
+                nameof(Rac1VeldinEnvironmentalDeathFacts.ContactSeparation),
+                nameof(Rac1VeldinEnvironmentalDeathFacts.DeathHeight),
+                nameof(Rac1VeldinEnvironmentalDeathFacts.NativeSpecialPlayerState20A4),
+                nameof(Rac1VeldinEnvironmentalDeathFacts.NativeVerticalPosition),
+            ],
+            admittedFacts);
+    }
+
+    [Fact]
     public void VeldinEnvironmentalDeathResetIsOneShotWhileAlive()
     {
         var session = new Rac1RatchetNanotechSession();

@@ -51,8 +51,15 @@ public partial class OBPGame
             var naturalAttack = await Rac1SmokeProvokeClass749AttackAsync(
                 hostile,
                 maxFrames: 3000);
+            if (_rac1AutomaticEnvironmentalRestartGeneration != _rac1EnvironmentalDeathGeneration ||
+                naturalAttack.PlayerTravel < 5f)
+                throw new InvalidOperationException(
+                    $"Ordinary movement did not resume after automatic Veldin restart: " +
+                    $"restart={_rac1AutomaticEnvironmentalRestartGeneration}, " +
+                    $"death={_rac1EnvironmentalDeathGeneration}, " +
+                    $"travel={naturalAttack.PlayerTravel:R}.");
             GD.Print(
-                $"[rac1-veldin-play] natural hostile attack PASS: " +
+                $"[rac1-veldin-play] natural hostile attack / post-restart control PASS: " +
                 $"Ratchet travel={naturalAttack.PlayerTravel:0.###}, " +
                 $"hostile travel={naturalAttack.HostileTravel:0.###}, " +
                 $"Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
@@ -63,7 +70,7 @@ public partial class OBPGame
             GD.Print(
                 "[rac1-veldin-play] PASS: clean opening, recovered camera input, " +
                 "Bomb Glove use, natural hostile motion/attack, practical wrench contacts, " +
-                "and natural fall/death/respawn all passed without smoke staging");
+                "and natural fall/death/automatic restart all passed without smoke staging or development respawn input");
             ApplicationLifecycle.RequestQuit(this, "rac1-veldin-play-smoke-pass", 0);
         }
         catch (Exception ex)
@@ -278,14 +285,10 @@ public partial class OBPGame
         float directDistance = HorizontalDistance(routeStart, crate.Root.GlobalPosition);
         await Rac1SmokeFollowWalkRouteAsync(waypoints);
 
-        float finalApproach = 0f;
-        if (!Rac1SmokeCurrentWrenchPolicyAdmits(crate.Root.GlobalPosition))
-        {
-            finalApproach = await Rac1SmokeApproachWrenchTargetAsync(
-                () => crate.Root.GlobalPosition,
-                maxFrames: 240,
-                $"planned class-500 crate i{crate.Source.InstanceIndex}");
-        }
+        float finalApproach = await Rac1SmokeSettleForWrenchContactAsync(
+            () => crate.Root.GlobalPosition,
+            maxFrames: 360,
+            $"planned class-500 crate i{crate.Source.InstanceIndex}");
 
         int destroyedBefore = _rac1BoltCrates.DestroyedCrateCount;
         int[] visibleBefore = _rac1CrateNodes
@@ -312,6 +315,60 @@ public partial class OBPGame
             $"broken=i{brokenInstance}, direct={directDistance:0.###}, " +
             $"route-points={waypoints.Count}, travel={travelled:0.###}, " +
             $"final={finalApproach:0.###}");
+    }
+
+    private async Task<float> Rac1SmokeSettleForWrenchContactAsync(
+        Func<Vector3> targetCenterProvider,
+        int maxFrames,
+        string label)
+    {
+        if (_player is null)
+            throw new InvalidOperationException("Veldin player disappeared during wrench approach.");
+
+        Vector3 start = _player.GlobalPosition;
+        Vector3 target = targetCenterProvider();
+        int admittedStoppedFrames = 0;
+        try
+        {
+            for (int frame = 0; frame < maxFrames; frame++)
+            {
+                target = targetCenterProvider();
+                bool admitted = Rac1SmokeCurrentWrenchPolicyAdmits(target);
+                float speed = HorizontalSpeed(_player);
+
+                if (admitted)
+                {
+                    ClearMovementSmokeInput();
+                    if (speed <= 0.15f)
+                    {
+                        admittedStoppedFrames++;
+                        if (admittedStoppedFrames >= 2)
+                            return HorizontalDistance(start, _player.GlobalPosition);
+                    }
+                    else
+                    {
+                        admittedStoppedFrames = 0;
+                    }
+                }
+                else
+                {
+                    admittedStoppedFrames = 0;
+                    // Use the already-proven low-stick walk witness so the smoke
+                    // approaches the host contact window without full-run overshoot.
+                    Rac1SmokeDriveToward(target, inputScale: 0.60f);
+                }
+
+                await PhysicsFramesAsync(1);
+            }
+        }
+        finally
+        {
+            ClearMovementSmokeInput();
+        }
+
+        throw new TimeoutException(
+            $"Timed out settling ordinary movement inside wrench host policy for {label}: " +
+            $"player={_player.GlobalPosition}, target={target}, speed={HorizontalSpeed(_player):R}.");
     }
 
     private (

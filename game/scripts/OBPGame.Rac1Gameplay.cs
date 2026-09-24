@@ -58,6 +58,12 @@ public partial class OBPGame
     private double _rac1BombTickAccumulator;
     // Raw retail player-state word at +0x20a4. Its semantics remain intentionally unnamed.
     private int _rac1NativePlayerState20A4;
+    private bool _rac1AutomaticEnvironmentalRestartPending;
+    private long _rac1EnvironmentalDeathGeneration;
+    private long _rac1AutomaticEnvironmentalRestartGeneration;
+    private Rac1RatchetNanotechSnapshot? _rac1LastEnvironmentalDeathBoundary;
+    private Vector3 _rac1LastEnvironmentalDeathPosition;
+    private double _rac1LastEnvironmentalDeathContactSeparation = double.NaN;
     private string _rac1CombatStatus = "off";
 
     private void ResetRac1LevelGameplay()
@@ -80,6 +86,12 @@ public partial class OBPGame
         _rac1LastBombContactResolution = null;
         _rac1BombTickAccumulator = 0d;
         _rac1NativePlayerState20A4 = 0;
+        _rac1AutomaticEnvironmentalRestartPending = false;
+        _rac1EnvironmentalDeathGeneration = 0;
+        _rac1AutomaticEnvironmentalRestartGeneration = 0;
+        _rac1LastEnvironmentalDeathBoundary = null;
+        _rac1LastEnvironmentalDeathPosition = default;
+        _rac1LastEnvironmentalDeathContactSeparation = double.NaN;
         _rac1CombatStatus = "off";
     }
 
@@ -255,12 +267,19 @@ public partial class OBPGame
 
     private void OnRac1RespawnRequested()
     {
+        // Explicit development control only. Ordinary Veldin play consumes the
+        // recovered environmental restart automatically from TickRac1Gameplay.
+        _ = TryCompleteRac1EnvironmentalRestart(automatic: false);
+    }
+
+    private bool TryCompleteRac1EnvironmentalRestart(bool automatic)
+    {
         var death = _rac1Nanotech.Probe();
         if (_world is not { Game: "rac1" } world || _player is null ||
             _rac1CampaignSession.LevelCheckpoint is not { } checkpoint ||
             checkpoint.NativeLevelId != world.LevelId ||
             !death.HasRecoveredEnvironmentalRespawn)
-            return;
+            return false;
 
         // The recovered restart boundary resets Nanotech, placement, heading and
         // player motion. Godot does not infer a checkpoint trigger: level 0 reaches
@@ -269,14 +288,27 @@ public partial class OBPGame
         Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
         var respawn = _rac1Nanotech.Respawn();
         _player.ApplyRecoveredRac1Restart(restart.Placement);
-        _rac1CombatStatus = $"environmental respawn L{world.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";
+        _rac1AutomaticEnvironmentalRestartPending = false;
+        if (automatic)
+            _rac1AutomaticEnvironmentalRestartGeneration = _rac1EnvironmentalDeathGeneration;
+        string source = automatic ? "automatic" : "development manual";
+        _rac1CombatStatus =
+            $"{source} environmental respawn L{world.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";
         RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
+        return true;
     }
 
     private void TickRac1Gameplay(double delta)
     {
         if (_world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
+
+        if (_rac1AutomaticEnvironmentalRestartPending &&
+            !TryCompleteRac1EnvironmentalRestart(automatic: true))
+        {
+            GD.PrintErr("[rac1-gameplay] automatic environmental restart pending without a valid recovered checkpoint session");
+            return;
+        }
 
         TickRac1VeldinEnvironmentalDeath();
         if (_rac1Nanotech.Probe().IsDead) return;
@@ -294,14 +326,20 @@ public partial class OBPGame
             _player is null || _rac1Nanotech.Probe().IsDead)
             return;
 
+        double contactSeparation = MeasureRac1ContactSeparation();
         var dead = _rac1Nanotech.TryApplyVeldinEnvironmentalDeath(
             new Rac1VeldinEnvironmentalDeathFacts(
                 NativeVerticalPosition: _player.GlobalPosition.Y,
                 DeathHeight: environment.DeathHeight,
-                ContactSeparation: MeasureRac1ContactSeparation(),
+                ContactSeparation: contactSeparation,
                 NativeSpecialPlayerState20A4: _rac1NativePlayerState20A4));
         if (dead is null) return;
 
+        _rac1EnvironmentalDeathGeneration++;
+        _rac1LastEnvironmentalDeathBoundary = dead;
+        _rac1LastEnvironmentalDeathPosition = _player.GlobalPosition;
+        _rac1LastEnvironmentalDeathContactSeparation = contactSeparation;
+        _rac1AutomaticEnvironmentalRestartPending = true;
         _player.Rac1GameplayAlive = false;
         _rac1CombatStatus = $"Veldin death plane: state 0x{dead.NativePlayerState:x2}, sequence {dead.NativeSequence} frame {dead.NativeSequenceFrame}; Nanotech {dead.Nanotech}";
         RefreshRac1HudState();

@@ -589,10 +589,12 @@ public partial class OBPGame
             forward.Normalized().SignedAngleTo(toTarget.Normalized(), Vector3.Up));
     }
 
-    private void Rac1SmokeDriveToward(Vector3 target)
+    private void Rac1SmokeDriveToward(Vector3 target, float inputScale = 1f)
     {
         if (_player is null)
             throw new InvalidOperationException("RAC1 smoke player disappeared.");
+        if (!(inputScale > 0f && inputScale <= 1f))
+            throw new ArgumentOutOfRangeException(nameof(inputScale));
 
         Vector3 desired = target - _player.GlobalPosition;
         desired.Y = 0f;
@@ -613,14 +615,16 @@ public partial class OBPGame
             0f,
             -(float)Math.Cos(controlYaw));
         SetAnalogueSmokeInput(
-            Math.Clamp(desired.Dot(controlRight), -1f, 1f),
-            Math.Clamp(desired.Dot(controlForward), -1f, 1f));
+            inputScale * Math.Clamp(desired.Dot(controlRight), -1f, 1f),
+            inputScale * Math.Clamp(desired.Dot(controlForward), -1f, 1f));
     }
 
     private async Task<float> Rac1SmokeApproachWrenchTargetAsync(
         Func<Vector3> targetCenterProvider,
         int maxFrames,
-        string label)
+        string label,
+        float inputScale = 1f,
+        float minimumTravel = 0.5f)
     {
         if (_player is null)
             throw new InvalidOperationException("RAC1 smoke player disappeared.");
@@ -637,10 +641,10 @@ public partial class OBPGame
                     Vector3 travelled = _player.GlobalPosition - start;
                     travelled.Y = 0f;
                     float distance = travelled.Length();
-                    if (distance < 0.5f)
+                    if (distance < minimumTravel)
                         throw new InvalidOperationException(
                             $"{label} entered wrench policy after only {distance:0.000} host units; " +
-                            "normal-play approach coverage requires meaningful movement.");
+                            $"required at least {minimumTravel:0.000} for this smoke phase.");
                     return distance;
                 }
 
@@ -661,8 +665,8 @@ public partial class OBPGame
                     0f,
                     -(float)Math.Cos(controlYaw));
                 SetAnalogueSmokeInput(
-                    Math.Clamp(desired.Dot(controlRight), -1f, 1f),
-                    Math.Clamp(desired.Dot(controlForward), -1f, 1f));
+                    inputScale * Math.Clamp(desired.Dot(controlRight), -1f, 1f),
+                    inputScale * Math.Clamp(desired.Dot(controlForward), -1f, 1f));
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
         }

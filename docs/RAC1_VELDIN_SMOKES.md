@@ -13,8 +13,10 @@ session mutations.
 
 The smoke then drives only the public player input boundary. It verifies:
 
-- natural full-forward Veldin fall, recovered death state, R-key respawn and
-  return to the authored class-0 start;
+- natural full-forward Veldin fall, recovered state `0x77` / sequence 11 /
+  Nanotech 0 boundary, automatic gameplay restart to the authored class-0 start,
+  restored Nanotech/motion/yaw/camera presentation, and resumed ordinary control
+  without development respawn input;
 - recovered type-0 horizontal camera orbit and recovered vertical manual orbit
   through the ordinary camera InputMap actions while Ratchet remains stationary;
 - ordinary keyboard selection of the Bomb Glove and one primary-action fire,
@@ -34,8 +36,22 @@ The smoke then drives only the public player input boundary. It verifies:
   transform. The final Wrench action must increase the live destroyed-crate count.
 
 The gate intentionally does **not** teleport Ratchet or enemies, write checkpoint,
-death or attack state, mutate ammo, or invoke consequence handlers in place of
-input. The route planner is test policy only and is not a recovered navigation AI.
+death or attack state, mutate ammo, press the development R-respawn control, or
+invoke consequence handlers in place of input. The route planner and low-stick
+settling used to make the final crate contact deterministic are test policy only,
+not recovered navigation AI.
+
+Earlier revisions of this smoke pressed R after observing the recovered death
+boundary. That proved only the development manual-respawn seam and did **not**
+prove natural gameplay restart. Those R-assisted results must not be cited as
+automatic-respawn evidence.
+
+A separate normal player-mode verification, launched without the smoke flag,
+held only ordinary forward input. Ratchet repeatedly crossed the natural Veldin
+gate, entered state `0x77` / sequence 11 / Nanotech 0, automatically restarted
+at authored class 0 with Nanotech 4, and resumed the still-held forward input.
+No development respawn input was sent. This is host-integration evidence for the
+automatic path, not evidence for an unrecovered retail death-animation duration.
 
 CLI flag: `--rac1-veldin-play-smoke`. The historical `--rac1-combat-smoke` flag
 is retained as an alias for this honest gate so old invocations no longer select

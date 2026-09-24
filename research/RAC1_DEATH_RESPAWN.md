@@ -9,6 +9,24 @@ checkpoint system from host behavior.
 The payload-free machine-readable boundary is frozen in
 [`generated/rac1-death-respawn-boundary.json`](generated/rac1-death-respawn-boundary.json).
 
+## Host integration audit
+
+The pre-fix host could detect the recovered Veldin death boundary but could not
+complete it as ordinary gameplay. `TickRac1VeldinEnvironmentalDeath` put the
+Nanotech session into recovered death, set `Rac1GameplayAlive = false`, and
+reported state `0x77` / sequence 11 / Nanotech 0. On later host updates,
+`TickRac1Gameplay` returned immediately while the session was dead. Meanwhile
+`DebugPlayer._PhysicsProcess` only zeroed movement/jump/crouch input for a dead
+R&C1 player; it still ran the movement/physics step and `MoveAndSlide`, so an
+already-airborne `CharacterBody3D` could continue falling with no gameplay
+restart consumer.
+
+The only path that called the recovered `Respawn()`, checkpoint placement,
+Nanotech restoration, motion/yaw reset and alive-state reset was
+`OnRac1RespawnRequested`, reached by the development R key. The old ordinary
+Veldin smoke pressed R after observing death, so its pass masked the missing
+automatic consumer and could not establish natural fall/death/restart behavior.
+
 ## Proven opening-Veldin environmental restart
 
 The controlled retail Veldin fall witness is the only restart path with a
@@ -25,6 +43,15 @@ exists, but its checkpoint writer/activation trigger remains unrecovered.
   authored class-0 / instance-0 Veldin player start.
 - The recovered movement witness independently shows player/controller motion
   cleared across this restart.
+
+The admitted Veldin death gate is location-independent once its recovered native
+facts are satisfied: its contract consumes only vertical position versus the
+decoded level death height, floor/contact separation, and the retained raw
+`player + 0x20a4` exclusion. It has no horizontal coordinate, ledge id, route
+id, or checkpoint-volume input. The ordinary spawn-forward smoke therefore proves
+one naturally reachable route into a gate whose recovered predicates are not
+ledge-specific; no teleport-to-plane coverage is needed to generalize the gate
+itself across Veldin.
 
 This proves an opening-Veldin environmental restart to the authored player-start
 position. It does **not** prove that class 0 is a universal death checkpoint, or
@@ -94,7 +121,15 @@ sequences 10/11 must therefore not be aliased onto combat death.
 operation accepts only the environmental cause. The only automatic host producer
 remains the recovered Veldin death-plane gate; level 2 is exercised only by an
 explicit retained-witness smoke injection because its gameplay trigger is still
-unknown. The Godot host therefore still cannot turn class-749 zero-health into an
+unknown. For Veldin, the Godot host now consumes the already-recovered
+environmental restart automatically on the next host update after exposing the
+state `0x77` / sequence 11 / Nanotech 0 boundary. That one-update scheduling is
+host presentation policy, not a recovered retail delay or animation duration, and
+no unrecovered death clip is fabricated. The R key remains an explicitly labelled
+development respawn seam and is not used by ordinary natural-death acceptance.
+The older R-assisted Veldin smoke therefore demonstrated only that development
+seam after a recovered death boundary; it was not evidence of natural automatic
+restart. The Godot host therefore still cannot turn class-749 zero-health into an
 environmental restart.
 
 ## Host placement boundary

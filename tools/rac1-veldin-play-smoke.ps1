@@ -10,11 +10,12 @@
   usable Bomb Glove ammo, recovered horizontal and vertical camera input,
   all 16 Veldin class-749 placements idle at the authored start, polygon-driven
   population activation, a natural hostile attack/damage event, practical
-  hostile/crate wrench contacts, and a natural fall/death/respawn.
+  hostile/crate wrench contacts, and a natural fall/death/automatic-restart
+  path that requires no development R-key respawn input.
 
   This smoke never stages Ratchet or enemy transforms, injects checkpoint/death/
-  attack state, mutates ammo to manufacture success, or calls gameplay
-  consequence handlers directly.
+  attack state, mutates ammo to manufacture success, presses the development
+  respawn control, or calls gameplay consequence handlers directly.
 #>
 param(
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,
