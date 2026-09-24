@@ -53,8 +53,6 @@ public partial class OBPGame
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1Class749PresentationNodes = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1HostileNodes = [];
     private readonly Dictionary<int, Rac1Class749HostProbe> _rac1HostileProbes = [];
-    private bool _rac1SwingActive;
-    private bool _rac1SwingResolved;
     private bool _rac1BombFireRequested;
     private Rac1BombGloveContactResolution? _rac1LastBombContactResolution;
     private double _rac1BombTickAccumulator;
@@ -86,8 +84,6 @@ public partial class OBPGame
         _rac1Class749PresentationNodes.Clear();
         _rac1HostileNodes.Clear();
         _rac1HostileProbes.Clear();
-        _rac1SwingActive = false;
-        _rac1SwingResolved = false;
         _rac1BombFireRequested = false;
         _rac1LastBombContactResolution = null;
         _rac1BombTickAccumulator = 0d;
@@ -255,8 +251,9 @@ public partial class OBPGame
             return;
         }
 
-        _rac1SwingActive = true;
-        _rac1SwingResolved = false;
+        _rac1Nanotech.Actions.EnterState(Rac1PlayerActionDomain.Wrench);
+        if (_player is not null)
+            _player.Rac1GameplayState = _rac1Nanotech.Probe();
         _player?.NotifyRac1WrenchAttackAccepted();
         _rac1CombatStatus = $"wrench swing: sequence {use.NativePlayerSequenceId}";
         GD.Print("[rac1-gameplay] primary attack -> ordinary wrench swing");
@@ -378,15 +375,18 @@ public partial class OBPGame
     private void TickRac1Swing(double delta)
     {
         _ = delta;
-        if (!_rac1SwingActive || _rac1SwingResolved)
+        if (_rac1Nanotech.Actions.Probe().CurrentNativeState !=
+            Rac1PlayerActionDomain.Wrench)
             return;
 
         // Retail hit-active timing is unresolved. Resolve exactly once through
-        // the host contact policy after use admission instead of interpreting
-        // profile-row values 17/23 as a native contact window.
-        _rac1SwingResolved = true;
-        _rac1SwingActive = false;
+        // the host contact policy on the next gameplay tick, then leave the
+        // recovered wrench action. Do not reinterpret profile-row values 17/23
+        // as a native contact window.
         ResolveRac1WrenchContact();
+        _rac1Nanotech.Actions.EnterState(Rac1PlayerActionDomain.Neutral);
+        if (_player is not null)
+            _player.Rac1GameplayState = _rac1Nanotech.Probe();
     }
 
     private void ResolveRac1WrenchContact()

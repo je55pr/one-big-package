@@ -52,6 +52,28 @@ public sealed class Rac1PlayerActionRuntimeTests
     }
 
     [Fact]
+    public void WrenchEntryUsesRecoveredActionAndSequenceWithoutHostBooleanState()
+    {
+        var session = new Rac1PlayerActionRuntimeSession();
+
+        var wrench = session.EnterState(Rac1PlayerActionDomain.Wrench);
+
+        Assert.Equal(Rac1PlayerActionDomain.Wrench, wrench.CurrentNativeState);
+        Assert.Equal(Rac1PlayerActionDomain.Neutral, wrench.PreviousNativeState);
+        Assert.Equal(
+            Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
+            wrench.NativeSequence);
+        Assert.Equal(0, wrench.NativeSequenceFrame);
+        Assert.Equal(
+            Rac1OrdinaryMovementPolicy.Allowed,
+            wrench.OrdinaryMovement);
+
+        var neutral = session.EnterState(Rac1PlayerActionDomain.Neutral);
+        Assert.Equal(Rac1PlayerActionDomain.Neutral, neutral.CurrentNativeState);
+        Assert.Equal(Rac1PlayerActionDomain.Wrench, neutral.PreviousNativeState);
+    }
+
+    [Fact]
     public void UnknownStateRemainsNumericAndDoesNotGainOrdinaryMovementSemantics()
     {
         var session = new Rac1PlayerActionRuntimeSession();
