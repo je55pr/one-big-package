@@ -17,6 +17,8 @@ Weapon state `3` loads its staged object from weapon PVar `+0x50`, calls constru
 The class-`0x79` constructor stores the firing weapon Moby at projectile PVar `+0x50`. The launch helper writes projectile native state `1`, establishing the source chain:
 
 `class-0xc0 weapon Moby -> class-0x79 projectile -> projectile PVar+0x50 source`.
+
+The shared `Rac1GameplayDamageEvent` preserves that distinction: the damage **source** is the launched class-`0x79` projectile identity, while recovered **owner** provenance is native class `0xc0`. OBP leaves the owner's runtime instance unset rather than inventing a stable weapon-Moby id from the raw pointer.
 The accepted-fire update clears the old staged pointer, then the weapon tail can immediately construct and store a replacement class-`0x79` object at weapon PVar `+0x50`. The controlled live trace shows the launched carrier at `0x01858b80` while the replacement is already staged at `0x01858c80` on the ammo-decrement frame. The older 10-tick rearm claim belonged to a different class-`0xc0` update and is not Bomb Glove truth.
 
 The weapon retains a recovered 20-native-tick fire gate. OBP therefore keeps the 20-tick accepted-shot gate, but no longer models a 10-tick projectile rearm delay.

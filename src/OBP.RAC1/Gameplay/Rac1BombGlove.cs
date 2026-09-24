@@ -25,6 +25,7 @@ public sealed record Rac1BombGloveDamageResult(
     uint NativeDamageFlags)
 {
     public Rac1NativeDamageEnvelope DamageEnvelope => new(NativeDamage, NativeDamageFlags);
+    public Rac1WeaponSpawnOwnership Ownership => Rac1BombGlove.SpawnOwnership;
 
     /// <summary>
     /// The retained item-10 representative uses the native contact-volume path:

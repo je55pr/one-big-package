@@ -43,6 +43,44 @@ public readonly record struct Rac1GameplayEntityRef(
         RuntimeId == key.InstanceIndex;
 }
 /// <summary>
+/// Recovered ownership provenance for a gameplay damage source. NativeClassId is
+/// retained even when OBP cannot safely reconstruct the owner's runtime instance.
+/// When RuntimeEntity is present it must agree with that native class.
+/// </summary>
+public readonly record struct Rac1GameplayDamageOwner(
+    int NativeClassId,
+    Rac1GameplayEntityRef? RuntimeEntity)
+{
+    public bool HasRuntimeIdentity => RuntimeEntity.HasValue;
+
+    public static Rac1GameplayDamageOwner FromEntity(
+        Rac1GameplayEntityRef entity) =>
+        new(entity.NativeClassId, entity);
+
+    public static Rac1GameplayDamageOwner NativeClass(int nativeClassId)
+    {
+        if (nativeClassId < 0)
+            throw new ArgumentOutOfRangeException(nameof(nativeClassId));
+
+        return new(nativeClassId, RuntimeEntity: null);
+    }
+
+    public Rac1GameplayDamageOwner Validate()
+    {
+        if (NativeClassId < 0)
+            throw new ArgumentOutOfRangeException(nameof(NativeClassId));
+        if (RuntimeEntity is { } entity &&
+            entity.NativeClassId != NativeClassId)
+        {
+            throw new InvalidDataException(
+                "R&C1 damage owner runtime identity does not match its native class.");
+        }
+
+        return this;
+    }
+}
+
+/// <summary>
 /// Common gameplay damage/event transport. Optional native fields remain optional:
 /// absence is evidence, not a request to synthesize a value.
 /// </summary>
@@ -54,14 +92,19 @@ public sealed record Rac1GameplayDamageEvent
         double nativeDamage,
         uint? nativeDamageFlags = null,
         double? nativeMarker = null,
-        Rac1NativeDamageHandoffKind? handoffKind = null)
+        Rac1NativeDamageHandoffKind? handoffKind = null,
+        Rac1GameplayDamageOwner? owner = null)
     {
         if (!double.IsFinite(nativeDamage))
             throw new ArgumentOutOfRangeException(nameof(nativeDamage));
         if (nativeMarker.HasValue && !double.IsFinite(nativeMarker.Value))
             throw new ArgumentOutOfRangeException(nameof(nativeMarker));
 
+        if (owner is { } recoveredOwner)
+            recoveredOwner.Validate();
+
         Source = source;
+        Owner = owner;
         Target = target;
         NativeDamage = nativeDamage;
         NativeDamageFlags = nativeDamageFlags;
@@ -70,6 +113,7 @@ public sealed record Rac1GameplayDamageEvent
     }
 
     public Rac1GameplayEntityRef Source { get; }
+    public Rac1GameplayDamageOwner? Owner { get; }
     public Rac1GameplayEntityRef Target { get; }
     public double NativeDamage { get; }
     public uint? NativeDamageFlags { get; }
@@ -92,7 +136,9 @@ public static class Rac1DamageRuntime
             Rac1GameplayEntityRef.Moby(source),
             Rac1GameplayEntityRef.Player,
             attack.NativeDamage,
-            nativeMarker: attack.NativeMarker);
+            nativeMarker: attack.NativeMarker,
+            owner: Rac1GameplayDamageOwner.FromEntity(
+                Rac1GameplayEntityRef.Moby(source)));
     }
 
     public static Rac1GameplayDamageEvent FromWrench(
@@ -104,7 +150,9 @@ public static class Rac1DamageRuntime
             Rac1GameplayEntityRef.Player,
             Rac1GameplayEntityRef.Moby(target),
             damage.NativeDamage,
-            damage.NativeDamageFlags);
+            damage.NativeDamageFlags,
+            owner: Rac1GameplayDamageOwner.FromEntity(
+                Rac1GameplayEntityRef.Player));
     }
 
     public static Rac1GameplayDamageEvent FromBombGlove(
@@ -121,6 +169,8 @@ public static class Rac1DamageRuntime
             Rac1GameplayEntityRef.Moby(target),
             damage.NativeDamage,
             damage.NativeDamageFlags,
-            handoffKind: damage.DamageHandoff.Kind);
+            handoffKind: damage.DamageHandoff.Kind,
+            owner: Rac1GameplayDamageOwner.NativeClass(
+                damage.Ownership.OwnerNativeClassId));
     }
 }
