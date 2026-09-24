@@ -1,11 +1,13 @@
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.Runtime.Player;
 
 namespace OBP.Tests;
 
 public sealed class Rac1SurfaceActionRoutingTests
 {
     [Theory]
+    [InlineData(0, Rac1SurfaceInteractionKind.ShallowWaterWade, Rac1PlayerActionDomain.Wade)]
     [InlineData(7, Rac1SurfaceInteractionKind.IceSlide, Rac1PlayerActionDomain.IceSlide)]
     [InlineData(3, Rac1SurfaceInteractionKind.MudSink, Rac1PlayerActionDomain.Mud)]
     public void StaticSurfaceClassesProduceOnlyRecoveredActionIntents(
@@ -22,6 +24,25 @@ public sealed class Rac1SurfaceActionRoutingTests
 
         Assert.Equal(interaction, intent.Interaction);
         Assert.Equal(expectedState, intent.NativeActionState);
+    }
+
+    [Fact]
+    public void WadeIntentIsRecoveredWhileOrdinaryMotionStillFailsClosed()
+    {
+        var contact = Rac1PlayerContactResult.StaticWorld(
+            isGrounded: true,
+            rawFaceType: 0);
+        var intent = Assert.IsType<Rac1SurfaceActionIntent>(
+            Rac1SurfaceActionRouting.Select(contact));
+        var movement = new Rac1RatchetMovementController();
+
+        Assert.Equal(Rac1SurfaceInteractionKind.ShallowWaterWade, intent.Interaction);
+        Assert.Equal(Rac1PlayerActionDomain.Wade, intent.NativeActionState);
+        Assert.Throws<NotSupportedException>(() =>
+            movement.Step(
+                new PlayerControlIntent(0d, 1d, false, false),
+                contact,
+                _ => 0d));
     }
 
     [Fact]
@@ -46,19 +67,6 @@ public sealed class Rac1SurfaceActionRoutingTests
 
         Assert.Equal(Rac1SurfaceInteractionKind.MagnebootSupport, intent.Interaction);
         Assert.Equal(Rac1PlayerActionDomain.Magneboot, intent.NativeActionState);
-    }
-
-    [Fact]
-    public void ShallowWaterRemainsFailClosedUntilItsExactActionSlotIsReconciled()
-    {
-        var contact = Rac1PlayerContactResult.StaticWorld(
-            isGrounded: true,
-            rawFaceType: 0);
-
-        Assert.Equal(
-            Rac1SurfaceInteractionKind.ShallowWaterWade,
-            contact.SurfaceInteraction);
-        Assert.Null(Rac1SurfaceActionRouting.Select(contact));
     }
 
     [Theory]

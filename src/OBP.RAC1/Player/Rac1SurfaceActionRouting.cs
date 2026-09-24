@@ -13,8 +13,8 @@ public static class Rac1SurfaceActionRouting
 {
     /// <summary>
     /// Maps only contact classes whose native player action is independently
-    /// recovered. Shallow water deliberately remains unresolved here because the
-    /// retained evidence disagrees on its exact action slot.
+    /// recovered. The later water-family recovery resolves shallow-water WADE as
+    /// state 0x72; execution still remains separate until its motion law is recovered.
     /// </summary>
     public static Rac1SurfaceActionIntent? Select(Rac1PlayerContactResult contact)
     {
@@ -34,8 +34,11 @@ public static class Rac1SurfaceActionRouting
                 new(
                     Rac1SurfaceInteractionKind.MagnebootSupport,
                     Rac1PlayerActionDomain.Magneboot),
-            Rac1SurfaceInteractionKind.None or
-            Rac1SurfaceInteractionKind.ShallowWaterWade => null,
+            Rac1SurfaceInteractionKind.ShallowWaterWade =>
+                new(
+                    Rac1SurfaceInteractionKind.ShallowWaterWade,
+                    Rac1PlayerActionDomain.Wade),
+            Rac1SurfaceInteractionKind.None => null,
             _ => throw new ArgumentOutOfRangeException(nameof(contact)),
         };
     }
