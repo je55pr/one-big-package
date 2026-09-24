@@ -1,3 +1,4 @@
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 
 namespace OBP.Tests;
@@ -89,6 +90,69 @@ public sealed class Rac1PlayerActionRuntimeTests
         Assert.Equal(
             Rac1OrdinaryMovementPolicy.Allowed,
             fire.OrdinaryMovement);
+    }
+
+    [Fact]
+    public void WeaponAdmissionOwnsTypedActionTransitionAndRejectedUseIsNoOp()
+    {
+        var session = new Rac1PlayerActionRuntimeSession();
+        var before = session.Probe();
+
+        var rejected = session.ApplyWeaponUseAdmission(
+            Rac1WeaponUseAdmission.Reject(
+                Rac1WeaponId.Wrench,
+                Rac1WeaponUseRejection.NotEquipped));
+
+        Assert.Same(before, rejected);
+        Assert.Same(before, session.Probe());
+
+        var wrench = session.ApplyWeaponUseAdmission(
+            Rac1WeaponUseAdmission.AcceptWrench());
+        Assert.Equal(Rac1PlayerActionDomain.Wrench, wrench.CurrentNativeState);
+        Assert.Equal(
+            Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
+            wrench.NativeSequence);
+
+        _ = session.EnterState(Rac1PlayerActionDomain.Neutral);
+        var ranged = session.ApplyWeaponUseAdmission(
+            Rac1WeaponUseAdmission.AcceptFirstRanged(ammoBefore: 6, ammoAfter: 5));
+        Assert.Equal(
+            Rac1PlayerActionDomain.FirstRangedFire,
+            ranged.CurrentNativeState);
+        Assert.Equal(
+            Rac1RatchetSequenceSelection.FirstRangedFireSequenceId,
+            ranged.NativeSequence);
+    }
+
+    [Fact]
+    public void WeaponAdmissionRejectsIncoherentSelectorsBeforeMutation()
+    {
+        var session = new Rac1PlayerActionRuntimeSession();
+        var before = session.Probe();
+        var mismatched = new Rac1WeaponUseAdmission(
+            Rac1WeaponId.Wrench,
+            Accepted: true,
+            Rac1WeaponUseRejection.None,
+            AmmoBefore: null,
+            AmmoAfter: null,
+            NativePlayerActionState: Rac1PlayerActionDomain.Wrench,
+            NativePlayerSequenceId: Rac1RatchetSequenceSelection.FirstRangedFireSequenceId);
+
+        Assert.Throws<InvalidDataException>(() =>
+            session.ApplyWeaponUseAdmission(mismatched));
+        Assert.Same(before, session.Probe());
+
+        var malformedRejected = new Rac1WeaponUseAdmission(
+            Rac1WeaponId.Wrench,
+            Accepted: false,
+            Rac1WeaponUseRejection.NotEquipped,
+            AmmoBefore: null,
+            AmmoAfter: null,
+            NativePlayerActionState: Rac1PlayerActionDomain.Wrench,
+            NativePlayerSequenceId: null);
+        Assert.Throws<InvalidDataException>(() =>
+            session.ApplyWeaponUseAdmission(malformedRejected));
+        Assert.Same(before, session.Probe());
     }
 
     [Fact]

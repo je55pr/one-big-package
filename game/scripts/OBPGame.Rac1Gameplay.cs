@@ -251,10 +251,7 @@ public partial class OBPGame
             return;
         }
 
-        int nativePlayerAction = use.NativePlayerActionState
-            ?? throw new InvalidOperationException(
-                "Accepted R&C1 wrench use is missing its recovered player action state.");
-        _rac1Nanotech.Actions.EnterState(nativePlayerAction);
+        _rac1Nanotech.Actions.ApplyWeaponUseAdmission(use);
         if (_player is not null)
             _player.Rac1GameplayState = _rac1Nanotech.Probe();
         _player?.NotifyRac1WrenchAttackAccepted();

@@ -1,3 +1,5 @@
+using OBP.RAC1.Gameplay;
+
 namespace OBP.RAC1.Player;
 
 /// <summary>
@@ -131,6 +133,40 @@ public sealed class Rac1PlayerActionRuntimeSession
         if (!_handlers.TryAdd(handler.NativeState, handler))
             throw new InvalidOperationException(
                 $"R&C1 player action 0x{handler.NativeState:x2} already has a lifecycle handler.");
+    }
+
+    public Rac1PlayerActionSnapshot ApplyWeaponUseAdmission(
+        Rac1WeaponUseAdmission admission)
+    {
+        ArgumentNullException.ThrowIfNull(admission);
+
+        if (!admission.Accepted)
+        {
+            if (admission.NativePlayerActionState is not null ||
+                admission.NativePlayerSequenceId is not null)
+                throw new InvalidDataException(
+                    "Rejected R&C1 weapon use cannot carry player action or sequence selectors.");
+
+            return _current;
+        }
+
+        if (admission.NativePlayerActionState is not int nativeState ||
+            admission.NativePlayerSequenceId is not int nativeSequence)
+            throw new InvalidDataException(
+                "Accepted R&C1 weapon use requires both recovered player action and sequence selectors.");
+
+        Rac1PlayerActionDomain.Validate(nativeState);
+        if (!_handlers.TryGetValue(nativeState, out var handler))
+            throw new NotSupportedException(
+                $"R&C1 player action 0x{nativeState:x2} has no recovered lifecycle handler.");
+
+        Rac1PlayerActionEntry expected = handler.Initialize(_current);
+        if (expected.NativeSequence != nativeSequence)
+            throw new InvalidDataException(
+                $"R&C1 weapon admission sequence {nativeSequence} does not match action " +
+                $"0x{nativeState:x2} entry sequence {expected.NativeSequence?.ToString() ?? "none"}.");
+
+        return EnterState(nativeState);
     }
 
     public Rac1PlayerActionSnapshot EnterState(int nativeState)
