@@ -581,7 +581,7 @@ public partial class DebugPlayer : CharacterBody3D
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
         double controlYaw = GetRac1ControlYaw();
-        var contact = Rac1PlayerContactResult.StaticWorld(
+        var contact = ProbeRac1Contact(
             grounded,
             IsOnCeiling());
         var step = _rac1Movement.Step(
@@ -610,6 +610,41 @@ public partial class DebugPlayer : CharacterBody3D
             _scriptJumped = true;
             GD.Print($"[DebugPlayer] native R&C1 jump from {GlobalPosition}");
         }
+    }
+
+    private Rac1PlayerContactResult ProbeRac1Contact(
+        bool grounded,
+        bool hitCeiling)
+    {
+        if (!grounded)
+            return Rac1PlayerContactResult.StaticWorld(false, hitCeiling);
+
+        Vector3 origin = GlobalPosition;
+        var query = PhysicsRayQueryParameters3D.Create(
+            origin + Vector3.Up * 0.25f,
+            origin + Vector3.Down * 2.0f);
+        query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.Count == 0 ||
+            !hit.ContainsKey("collider") ||
+            !hit.ContainsKey("face_index"))
+        {
+            return Rac1PlayerContactResult.StaticWorld(true, hitCeiling);
+        }
+
+        var collider = hit["collider"].As<Node>();
+        if (collider is not RuntimeWorldScene.RuntimeCollisionBody3D collisionBody)
+            return Rac1PlayerContactResult.StaticWorld(true, hitCeiling);
+
+        int faceIndex = (int)hit["face_index"];
+        int? materialId = collisionBody.MaterialIdForFace(faceIndex);
+        int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
+            ? materialId
+            : null;
+        return Rac1PlayerContactResult.StaticWorld(
+            true,
+            hitCeiling,
+            rawFaceType);
     }
 
     private void UpdateAnimationState(bool onFloor)

@@ -96,6 +96,65 @@ public static class RuntimeWorldScene
         }
     }
 
+    /// <summary>
+    /// Static collision body that preserves its source collision blob so a host
+    /// contact query can recover the native triangle/material identity. The scene
+    /// emits each source triangle twice with opposite winding, therefore Godot
+    /// face n maps deterministically to source triangle n / 2.
+    /// </summary>
+    public sealed class RuntimeCollisionBody3D : StaticBody3D
+    {
+        public RuntimeCollisionBlob? SourceCollision { get; private set; }
+        public int CollisionBlobIndex { get; private set; } = -1;
+
+        public void Configure(RuntimeCollisionBlob sourceCollision, int collisionBlobIndex)
+        {
+            SourceCollision = sourceCollision ?? throw new ArgumentNullException(nameof(sourceCollision));
+            CollisionBlobIndex = collisionBlobIndex;
+        }
+
+        public int? SourceTriangleIndexForFace(int godotFaceIndex) =>
+            SourceCollision is null
+                ? null
+                : SourceTriangleIndexForDoubledFace(
+                    godotFaceIndex,
+                    SourceCollision.Triangles);
+
+        public int? MaterialIdForFace(int godotFaceIndex) =>
+            SourceCollision is null
+                ? null
+                : MaterialIdForDoubledFace(SourceCollision, godotFaceIndex);
+    }
+
+    public static int? SourceTriangleIndexForDoubledFace(
+        int godotFaceIndex,
+        int sourceTriangleCount)
+    {
+        if (godotFaceIndex < 0 || sourceTriangleCount < 0)
+            return null;
+
+        int triangleIndex = godotFaceIndex / 2;
+        return triangleIndex < sourceTriangleCount
+            ? triangleIndex
+            : null;
+    }
+
+    public static int? MaterialIdForDoubledFace(
+        RuntimeCollisionBlob sourceCollision,
+        int godotFaceIndex)
+    {
+        ArgumentNullException.ThrowIfNull(sourceCollision);
+        int? triangleIndex = SourceTriangleIndexForDoubledFace(
+            godotFaceIndex,
+            sourceCollision.Triangles);
+        if (!triangleIndex.HasValue)
+            return null;
+
+        return triangleIndex.Value < sourceCollision.TriangleMaterialIds.Length
+            ? sourceCollision.TriangleMaterialIds[triangleIndex.Value]
+            : null;
+    }
+
     public sealed record Options
     {
         /// <summary>Render the sky shells (grouped under <see cref="Result.SkyRoot"/> so the host can pin them to the camera).</summary>
@@ -483,7 +542,8 @@ public static class RuntimeWorldScene
                     faces[t * 6 + 5] = a;
                 }
 
-                var body = new StaticBody3D { Name = $"Collision{i}" };
+                var body = new RuntimeCollisionBody3D { Name = $"Collision{i}" };
+                body.Configure(blob, i);
                 body.AddChild(new CollisionShape3D { Shape = new ConcavePolygonShape3D { Data = faces } });
                 root.AddChild(body);
                 collisionBodies++;
