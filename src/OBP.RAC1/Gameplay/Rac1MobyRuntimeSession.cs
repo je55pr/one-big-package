@@ -1,0 +1,153 @@
+using OBP.Runtime;
+using OBP.Runtime.Gameplay;
+
+namespace OBP.RAC1.Gameplay;
+
+/// <summary>
+/// Class-local update hook. The shared runtime selects a controller only by
+/// authored native class; the controller alone interprets its update facts.
+/// </summary>
+public interface IRac1MobyClassController
+{
+    int NativeClassId { get; }
+    object Update(RuntimeDynamicObject source, object facts);
+}
+
+/// <summary>
+/// One live authored R&C1 Moby. Identity and placement are immutable; PVar,
+/// native state and neutral presentation/lifecycle are live runtime state.
+/// </summary>
+public sealed class Rac1MobyRuntimeInstance
+{
+    private readonly byte[] _pvar;
+
+    internal Rac1MobyRuntimeInstance(
+        RuntimeDynamicObject source,
+        ReadOnlySpan<byte> pvar,
+        Rac1MobyRuntimeState state)
+    {
+        Source = source; _pvar = pvar.ToArray();
+        State = state;
+    }
+
+    public RuntimeDynamicObject Source { get; }
+    public Rac1MobyRuntimeKey Key => State.Key;
+    public RuntimeEntityIdentity Identity => State.EntityState.Identity;
+    public int NativeClassId => Key.NativeClassId;
+    public int InstanceIndex => Key.InstanceIndex;
+    public int? NativeUid => Identity.NativeUid;
+    public RuntimeObjectTransform AuthoredTransform => Source.Transform;
+    public ReadOnlyMemory<byte> PVar => _pvar;
+    public Rac1MobyRuntimeState State { get; internal set; }
+    public RuntimeEntityState EntityState => State.EntityState;
+    public RuntimeEntityPresence Presence => EntityState.Presentation.Presence;
+    public bool IsActive => Presence == RuntimeEntityPresence.Active;
+
+    internal byte[] MutablePVar => _pvar;
+}
+
+/// <summary>
+/// Shared live-Moby store for R&C1. Unknown classes may be registered and
+/// observed without gaining guessed behaviour; update dispatch requires an
+/// explicitly registered class controller.
+/// </summary>
+public sealed class Rac1MobyRuntimeSession
+{
+    private readonly Dictionary<Rac1MobyRuntimeKey, Rac1MobyRuntimeInstance> _instances = [];
+    private readonly Dictionary<int, IRac1MobyClassController> _controllers = [];
+
+    public int RegisteredCount => _instances.Count;
+    public IReadOnlyCollection<Rac1MobyRuntimeInstance> Instances => _instances.Values;
+
+    public void RegisterController(IRac1MobyClassController controller)
+    {
+        ArgumentNullException.ThrowIfNull(controller);
+        if (!_controllers.TryAdd(controller.NativeClassId, controller))
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {controller.NativeClassId} already has a runtime controller.");
+    }
+
+    public Rac1MobyRuntimeInstance Register(
+        RuntimeDynamicObject source,
+        RuntimeEntityState current,
+        int nativeState,
+        ReadOnlySpan<byte> pvar = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        current.EnsureMatches(source);
+
+        var state = Rac1MobyRuntime.Create(source, nativeState, current);
+        var instance = new Rac1MobyRuntimeInstance(source, pvar, state);
+        if (!_instances.TryAdd(state.Key, instance))
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {source.NativeClassId} instance {source.InstanceIndex} is already registered.");
+        return instance;
+    }
+
+    public Rac1MobyRuntimeInstance Require(RuntimeDynamicObject source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var key = new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex);
+        if (!_instances.TryGetValue(key, out var instance))
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {source.NativeClassId} instance {source.InstanceIndex} is not registered.");
+
+        instance.EntityState.EnsureMatches(source);
+        return instance;
+    }
+
+    public bool TryGet(Rac1MobyRuntimeKey key, out Rac1MobyRuntimeInstance? instance) =>
+        _instances.TryGetValue(key, out instance);
+
+    public Rac1MobyRuntimeState SetNativeState(
+        Rac1MobyRuntimeInstance instance,
+        int nativeState)
+    {
+        RequireOwned(instance);
+        instance.State = Rac1MobyRuntime.WithNativeState(instance.State, nativeState);
+        return instance.State;
+    }
+
+    public RuntimeEntityState SetPresence(
+        Rac1MobyRuntimeInstance instance,
+        RuntimeEntityPresence presence)
+    {
+        RequireOwned(instance);
+        instance.State = instance.State with
+        {
+            EntityState = instance.EntityState.WithPresence(presence),
+        };
+        return instance.EntityState;
+    }
+
+    public Rac1MobyRuntimeState Terminalize(
+        Rac1MobyRuntimeInstance instance,
+        int nativeState)
+    {
+        RequireOwned(instance);
+        instance.State = Rac1MobyRuntime.Terminalize(instance.State, nativeState);
+        return instance.State;
+    }
+
+    public TOutput DispatchUpdate<TOutput>(RuntimeDynamicObject source, object facts)
+    {
+        _ = Require(source);
+        if (!_controllers.TryGetValue(source.NativeClassId, out var controller))
+            throw new NotSupportedException(
+                $"R&C1 Moby class {source.NativeClassId} has no recovered runtime controller.");
+
+        object result = controller.Update(source, facts);
+        if (result is not TOutput typed)
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {source.NativeClassId} returned {result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
+        return typed;
+    }
+
+    private void RequireOwned(Rac1MobyRuntimeInstance instance)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        if (!_instances.TryGetValue(instance.Key, out var registered) ||
+            !ReferenceEquals(instance, registered))
+            throw new InvalidOperationException("R&C1 Moby runtime instance belongs to another session.");
+    }
+}

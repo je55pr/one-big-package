@@ -7,11 +7,31 @@ namespace OBP.RAC1.Gameplay;
 /// Deterministic session for the recovered class-749 hostile family.
 /// Entries are keyed by native class plus authored instance index; UID semantics are not used.
 /// </summary>
-public sealed class Rac1Class749HostileSession
+public sealed class Rac1Class749HostileSession : IRac1MobyClassController
 {
+    private readonly Rac1MobyRuntimeSession _runtime;
     private readonly Dictionary<Rac1Class749Key, Entry> _entries = [];
 
+    public Rac1Class749HostileSession()
+        : this(new Rac1MobyRuntimeSession())
+    {
+    }
+
+    public Rac1Class749HostileSession(Rac1MobyRuntimeSession runtime)
+    {
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+        _runtime.RegisterController(this);
+    }
+
     public int RegisteredCount => _entries.Count;
+    public int NativeClassId => Rac1Class749Hostile.NativeClassId;
+
+    object IRac1MobyClassController.Update(RuntimeDynamicObject source, object facts) =>
+        facts is Rac1Class749TargetFacts target
+            ? Step(source, target)
+            : throw new ArgumentException(
+                "R&C1 class-749 update requires Rac1Class749TargetFacts.",
+                nameof(facts));
 
     public Rac1Class749HostProbe Register(
         RuntimeDynamicObject source,
@@ -66,10 +86,15 @@ public sealed class Rac1Class749HostileSession
         int? activationGroup,
         int initialState)
     {
+        var runtimeInstance = _runtime.Register(
+            source,
+            current,
+            initialState,
+            pvar);
         var entry = new Entry(
-            pvar,
-            activationGroup,
-            Rac1MobyRuntime.Create(source, initialState, current));
+            _runtime,
+            runtimeInstance,
+            activationGroup);
         if (!_entries.TryAdd(key, entry))
             throw new InvalidOperationException(
                 $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
@@ -226,7 +251,7 @@ public sealed class Rac1Class749HostileSession
                 $"R&C1 class-749 terminal status cannot follow native state {entry.NativeState}.");
 
         int nativeStateBefore = entry.NativeState;
-        entry.RuntimeState = Rac1MobyRuntime.Terminalize(entry.RuntimeState, nativeStatus);
+        entry.Terminalize(nativeStatus);
         entry.NativeSequence = null;
         entry.NativeSequenceUpdate = 0;
 
@@ -345,7 +370,10 @@ public sealed class Rac1Class749HostileSession
         var key = new Rac1Class749Key(source.NativeClassId, source.InstanceIndex);
         if (!_entries.TryGetValue(key, out var entry))
             throw new InvalidOperationException($"R&C1 class-749 instance {source.InstanceIndex} is not registered.");
-        entry.EntityState.EnsureMatches(source);
+        var runtimeInstance = _runtime.Require(source);
+        if (!ReferenceEquals(runtimeInstance, entry.RuntimeInstance))
+            throw new InvalidOperationException(
+                $"R&C1 class-749 instance {source.InstanceIndex} runtime identity drifted.");
         return (key, entry);
     }
 
@@ -381,22 +409,26 @@ public sealed class Rac1Class749HostileSession
             hostEvents ?? Array.Empty<IRac1MobyHostEvent>());
 
     private sealed class Entry(
-        byte[] pvar,
-        int? activationGroup,
-        Rac1MobyRuntimeState runtimeState)
+        Rac1MobyRuntimeSession runtime,
+        Rac1MobyRuntimeInstance runtimeInstance,
+        int? activationGroup)
     {
-        public byte[] PVar { get; } = pvar;
-        public int InstanceIndex { get; } = runtimeState.Key.InstanceIndex;
+        public Rac1MobyRuntimeInstance RuntimeInstance { get; } = runtimeInstance;
+        public byte[] PVar => RuntimeInstance.MutablePVar;
+        public int InstanceIndex => RuntimeInstance.InstanceIndex;
         public int? ActivationGroup { get; } = activationGroup;
         public int ActivationCount { get; set; }
-        public Rac1MobyRuntimeState RuntimeState { get; set; } = runtimeState;
+        public Rac1MobyRuntimeState RuntimeState => RuntimeInstance.State;
         public int NativeState
         {
             get => RuntimeState.NativeState;
-            set => RuntimeState = Rac1MobyRuntime.WithNativeState(RuntimeState, value);
+            set => runtime.SetNativeState(RuntimeInstance, value);
         }
         public int? NativeSequence { get; set; }
         public int NativeSequenceUpdate { get; set; }
         public RuntimeEntityState EntityState => RuntimeState.EntityState;
+
+        public void Terminalize(int nativeState) =>
+            runtime.Terminalize(RuntimeInstance, nativeState);
     }
 }

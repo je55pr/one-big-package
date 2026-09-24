@@ -38,6 +38,7 @@ public partial class OBPGame
 
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
     private Rac1BoltCrateSession _rac1BoltCrates = new();
+    private Rac1MobyRuntimeSession _rac1MobyRuntime = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
     private Rac1RatchetNanotechSession _rac1Nanotech = new();
     private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
@@ -74,7 +75,8 @@ public partial class OBPGame
             if (IsInstanceValid(projectile.Node)) projectile.Node.QueueFree();
         _rac1Projectiles.Clear();
         _rac1BoltCrates = new Rac1BoltCrateSession();
-        _rac1Hostiles = new Rac1Class749HostileSession();
+        _rac1MobyRuntime = new Rac1MobyRuntimeSession();
+        _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime);
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
         _rac1Class749PresentationNodes.Clear();
@@ -655,7 +657,7 @@ public partial class OBPGame
                     targetPosition = linkedNode!.Root.GlobalPosition;
             }
 
-            var next = _rac1Hostiles.Step(
+            var next = _rac1MobyRuntime.DispatchUpdate<Rac1Class749HostProbe>(
                 hostile.Source,
                 new Rac1Class749TargetFacts(
                     distance,

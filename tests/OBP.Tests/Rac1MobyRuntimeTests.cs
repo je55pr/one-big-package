@@ -181,6 +181,58 @@ public sealed class Rac1MobyRuntimeTests
         Assert.Empty(session.Probe(source).HostEvents);
     }
 
+    [Fact]
+    public void RuntimeSessionOwnsStableIdentityPVarPresenceAndTerminalization()
+    {
+        var source = Dynamic(nativeClassId: 766, instanceIndex: 4, nativeUid: 91);
+        var pvar = new byte[] { 1, 2, 3, 4 };
+        var runtime = new Rac1MobyRuntimeSession();
+
+        var instance = runtime.Register(
+            source,
+            RuntimeEntityState.FromAuthored(source),
+            nativeState: 5,
+            pvar);
+
+        pvar[0] = 99;
+        Assert.Equal(new Rac1MobyRuntimeKey(766, 4), instance.Key);
+        Assert.Equal(91, instance.NativeUid);
+        Assert.Equal(source.Transform, instance.AuthoredTransform);
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, instance.PVar.ToArray());
+        Assert.Same(instance, runtime.Require(source));
+
+        runtime.SetPresence(instance, RuntimeEntityPresence.Inactive);
+        Assert.False(instance.IsActive);
+        Assert.Equal(5, instance.State.NativeState);
+
+        runtime.SetPresence(instance, RuntimeEntityPresence.Active);
+        runtime.Terminalize(instance, Rac1MobyRuntime.TerminalNativeStateFd);
+        Assert.Equal(Rac1MobyRuntime.TerminalNativeStateFd, instance.State.NativeState);
+        Assert.Equal(RuntimeEntityPresence.Inactive, instance.Presence);
+    }
+
+    [Fact]
+    public void SameClassInstancesDispatchWithoutPrivilegedWitness()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var hostiles = new Rac1Class749HostileSession(runtime);
+        var first = Class749(149, health: 1f);
+        var second = Class749(150, health: 1f);
+        hostiles.Register(first, RuntimeEntityState.FromAuthored(first));
+        hostiles.Register(second, RuntimeEntityState.FromAuthored(second));
+
+        var firstUpdate = runtime.DispatchUpdate<Rac1Class749HostProbe>(
+            first, Facts(distance: 3, facingError: 0));
+        var secondUpdate = runtime.DispatchUpdate<Rac1Class749HostProbe>(
+            second, Facts(distance: 3, facingError: 0));
+
+        Assert.Equal(Rac1Class749Hostile.TargetedNativeState, firstUpdate.NativeState);
+        Assert.Equal(firstUpdate.NativeState, secondUpdate.NativeState);
+        Assert.Equal(2, runtime.RegisteredCount);
+        Assert.Equal(2, hostiles.RegisteredCount);
+        Assert.NotEqual(firstUpdate.RuntimeState.Key, secondUpdate.RuntimeState.Key);
+    }
+
     private static Rac1Class749TargetFacts Facts(
         double distance,
         double facingError,
@@ -243,12 +295,13 @@ public sealed class Rac1MobyRuntimeTests
     private static RuntimeDynamicObject Dynamic(
         int nativeClassId,
         int instanceIndex,
+        int? nativeUid = null,
         params RuntimeOpaquePayload[] payloads) =>
         new(
             "rac1",
             nativeClassId,
             instanceIndex,
-            null,
+            nativeUid,
             $"moby:{nativeClassId}",
             $"moby:{instanceIndex}",
             new RuntimeObjectTransform(new double[16]),
