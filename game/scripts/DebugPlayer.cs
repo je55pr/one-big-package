@@ -593,18 +593,22 @@ public partial class DebugPlayer : CharacterBody3D
         var contact = ProbeRac1Contact(
             grounded,
             IsOnCeiling());
-        _rac1SurfaceActionIntent = Rac1SurfaceActionRouting.Select(contact);
-        var step = _rac1Movement.Step(
-            new PlayerControlIntent(
-                move.X,
-                -move.Y,
-                jump,
-                jumpPressed,
-                crouch,
-                GetRac1PlanarBasis(),
-                GetRac1NativePlanarBasis()),
-            contact,
-            mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw);
+        _rac1SurfaceActionIntent = UseRac1Gameplay
+            ? Rac1SurfaceActionRouting.Select(contact)
+            : null;
+        var intent = new PlayerControlIntent(
+            move.X,
+            -move.Y,
+            jump,
+            jumpPressed,
+            crouch,
+            GetRac1PlanarBasis(),
+            GetRac1NativePlanarBasis());
+        Func<Rac1RatchetYawMode, double> resolveFacing =
+            mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw;
+        var step = UseRac1Gameplay
+            ? _rac1Movement.Step(intent, contact, resolveFacing)
+            : _rac1Movement.Step(intent, contact.MovementFacts, resolveFacing);
 
         UpdateRac1FacingPresentation();
 

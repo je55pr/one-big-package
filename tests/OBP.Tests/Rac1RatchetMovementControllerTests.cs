@@ -1,3 +1,4 @@
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
@@ -272,6 +273,61 @@ public sealed class Rac1RatchetMovementControllerTests
 
         Assert.Equal(before - Rac1RatchetMovementController.CrouchDecelerationPerTick, crouched.PlanarY, 9);
         Assert.True(crouched.PlanarMagnitude < before);
+    }
+
+    [Theory]
+    [InlineData(0, Rac1SurfaceInteractionKind.ShallowWaterWade)]
+    [InlineData(3, Rac1SurfaceInteractionKind.MudSink)]
+    [InlineData(7, Rac1SurfaceInteractionKind.IceSlide)]
+    public void OrdinaryControllerRejectsRecoveredAlternateStaticSurfacesBeforeMutation(
+        int rawFaceType,
+        Rac1SurfaceInteractionKind expectedInteraction)
+    {
+        var controller = new Rac1RatchetMovementController();
+        var contact = Rac1PlayerContactResult.StaticWorld(
+            isGrounded: true,
+            rawFaceType: rawFaceType);
+
+        Assert.Equal(expectedInteraction, contact.SurfaceInteraction);
+        Assert.Throws<NotSupportedException>(() =>
+            controller.Step(
+                new PlayerControlIntent(0d, 1d, false, false),
+                contact,
+                _ => 0d));
+        Assert.Equal(0d, controller.PlanarMagnitude);
+        Assert.Equal(0d, controller.VerticalStep);
+        Assert.Equal(Rac1RatchetMovementPhase.Grounded, controller.Phase);
+    }
+
+    [Fact]
+    public void OrdinaryControllerRejectsRecoveredMagnebootSupportBeforeMutation()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var support = new Rac1MobyRuntimeKey(
+            Rac1PlayerContactResult.MagnebootSupportMobyClass,
+            12);
+        var contact = new Rac1PlayerContactResult(
+            IsGrounded: true,
+            HitCeiling: false,
+            Face: Rac1CollisionFaceSemantics.Decode(2),
+            ContactedMoby: support,
+            CurrentDynamicContact: support,
+            PersistentSupportMoby: support,
+            SupportAnchor: new Rac1SupportAnchorState(1u, true),
+            SupportCarry: Rac1SupportCarry.None,
+            Conveyor: Rac1ConveyorTransfer.None);
+
+        Assert.Equal(
+            Rac1SurfaceInteractionKind.MagnebootSupport,
+            contact.SurfaceInteraction);
+        Assert.Throws<NotSupportedException>(() =>
+            controller.Step(
+                new PlayerControlIntent(0d, 1d, false, false),
+                contact,
+                _ => 0d));
+        Assert.Equal(0d, controller.PlanarMagnitude);
+        Assert.Equal(0d, controller.VerticalStep);
+        Assert.Equal(Rac1RatchetMovementPhase.Grounded, controller.Phase);
     }
 
     [Fact]

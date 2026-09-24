@@ -146,8 +146,16 @@ public sealed class Rac1RatchetMovementController
     public StepResult Step(
         PlayerControlIntent input,
         Rac1PlayerContactResult contact,
-        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null) =>
-        Step(input, contact.MovementFacts, resolveNativeFacingYaw);
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null)
+    {
+        ArgumentNullException.ThrowIfNull(contact);
+        if (contact.SurfaceInteraction != Rac1SurfaceInteractionKind.None)
+            throw new NotSupportedException(
+                $"Ordinary R&C1 movement cannot run on recovered alternate surface " +
+                $"{contact.SurfaceInteraction}; its native controller is not implemented.");
+
+        return Step(input, contact.MovementFacts, resolveNativeFacingYaw);
+    }
 
     public StepResult Step(
         PlayerControlIntent input,
