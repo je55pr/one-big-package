@@ -254,24 +254,6 @@ public sealed class Rac1Class749HostileSession :
             "player-origin representative damage");
     }
 
-    public Rac1Class749HostProbe ApplyWrenchDamage(
-        RuntimeDynamicObject source,
-        Rac1WrenchDamageResult damage)
-    {
-        if (damage.ContactPath != Rac1WrenchContactPath.HostPolicyAdmission ||
-            damage.NativeDamage != Rac1WrenchCombatController.RepresentativeDamage ||
-            damage.NativeDamageFlags != Rac1WrenchCombatController.RepresentativeDamageFlags)
-            throw new NotSupportedException(
-                "Only the bounded host-admitted wrench stimulus is supported for class 749.");
-
-        var target = new Rac1MobyRuntimeKey(
-            source.NativeClassId,
-            source.InstanceIndex);
-        return ApplyDamage(
-            source,
-            Rac1DamageRuntime.FromWrench(target, damage));
-    }
-
     private Rac1Class749HostProbe ApplyRepresentativeDamage(
         RuntimeDynamicObject source,
         Rac1NativeDamageEnvelope damage,

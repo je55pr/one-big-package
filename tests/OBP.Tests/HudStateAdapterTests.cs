@@ -31,9 +31,7 @@ public sealed class HudStateAdapterTests
         Assert.Equal(0, ranged.CurrentWeapon.Ammo!.Current);
         Assert.Equal(Rac1BombGlove.MaxAmmo, ranged.CurrentWeapon.Ammo.Capacity);
 
-        nanotech.ApplyClass749Attack(new Rac1Class749AttackEvent(
-            Rac1Class749Hostile.AttackMarker,
-            Rac1Class749Hostile.AttackDamage));
+        nanotech.ApplyDamage(RecoveredClass749Damage());
         var damaged = Rac1HudProjection.Capture(nanotech, weapons);
 
         Assert.Equal(3, damaged.Health!.Current);
@@ -48,9 +46,7 @@ public sealed class HudStateAdapterTests
         var publisher = new HudStateAdapter();
         var initial = publisher.BeginSession(Rac1HudProjection.Capture(nanotech, weapons));
         var before = nanotech.Probe();
-        var after = nanotech.ApplyClass749Attack(new Rac1Class749AttackEvent(
-            Rac1Class749Hostile.AttackMarker,
-            Rac1Class749Hostile.AttackDamage));
+        var after = nanotech.ApplyDamage(RecoveredClass749Damage());
 
         var first = publisher.Publish(
             Rac1HudProjection.Capture(nanotech, weapons),
@@ -110,6 +106,15 @@ public sealed class HudStateAdapterTests
         Assert.Equal(2, feedback.Delta);
         Assert.Equal(Rac1HudProjection.BombGloveNameKey, feedback.SubjectKey);
     }
+
+    private static Rac1GameplayDamageEvent RecoveredClass749Damage() =>
+        Rac1DamageRuntime.FromClass749Attack(
+            new Rac1MobyRuntimeKey(
+                Rac1Class749Hostile.NativeClassId,
+                149),
+            new Rac1Class749AttackEvent(
+                Rac1Class749Hostile.AttackMarker,
+                Rac1Class749Hostile.AttackDamage));
 
     [Fact]
     public void BoltPickupFeedbackDoesNotInventAPlayerWallet()

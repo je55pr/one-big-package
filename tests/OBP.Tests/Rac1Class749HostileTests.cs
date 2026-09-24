@@ -189,7 +189,10 @@ public sealed class Rac1Class749HostileTests
         var damage = Assert.IsType<Rac1WrenchDamageResult>(
             wrench.ResolveHostAdmittedDamage(target));
 
-        var damaged = session.ApplyWrenchDamage(source, damage);
+        var damageEvent = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
+            damage);
+        var damaged = session.ApplyDamage(source, damageEvent);
         Assert.Equal(0f, damaged.Health);
         Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.NativeState);
         Assert.Equal(RuntimeEntityPresence.Active, damaged.EntityState.Presentation.Presence);
@@ -249,7 +252,11 @@ public sealed class Rac1Class749HostileTests
             Rac1WrenchCombatController.RepresentativeDamage,
             Rac1WrenchCombatController.RepresentativeDamageFlags);
 
-        Assert.Throws<NotSupportedException>(() => session.ApplyWrenchDamage(source, damage));
+        var damageEvent = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
+            damage);
+        Assert.Throws<NotSupportedException>(() =>
+            session.ApplyDamage(source, damageEvent));
         Assert.Equal(2f, session.Probe(source).Health);
     }
 

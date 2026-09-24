@@ -122,7 +122,10 @@ public sealed class Rac1MobyRuntimeTests
             Rac1WrenchCombatController.RepresentativeDamage,
             Rac1WrenchCombatController.RepresentativeDamageFlags);
 
-        var damaged = session.ApplyWrenchDamage(source, result);
+        var damageEvent = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
+            result);
+        var damaged = session.ApplyDamage(source, damageEvent);
 
         Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.RuntimeState.NativeState);
         Assert.Equal(RuntimeEntityPresence.Active, damaged.EntityState.Presentation.Presence);

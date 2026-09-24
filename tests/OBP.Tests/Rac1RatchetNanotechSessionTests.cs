@@ -25,7 +25,7 @@ public sealed class Rac1RatchetNanotechSessionTests
     {
         var session = new Rac1RatchetNanotechSession();
 
-        var probe = session.ApplyClass749Attack(RecoveredClass749Attack());
+        var probe = session.ApplyDamage(RecoveredClass749Damage());
 
         Assert.Equal(3, probe.Nanotech);
         Assert.Equal(Rac1RatchetLifeState.Alive, probe.LifeState);
@@ -38,7 +38,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         Rac1RatchetNanotechSnapshot probe = session.Probe();
 
         for (int hit = 0; hit < 4; hit++)
-            probe = session.ApplyClass749Attack(RecoveredClass749Attack());
+            probe = session.ApplyDamage(RecoveredClass749Damage());
 
         Assert.Equal(0, probe.Nanotech);
         Assert.Equal(Rac1RatchetLifeState.Dead, probe.LifeState);
@@ -46,7 +46,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.True(probe.IsDead);
         Assert.False(probe.HasRecoveredEnvironmentalRespawn);
         Assert.Throws<InvalidOperationException>(() =>
-            session.ApplyClass749Attack(RecoveredClass749Attack()));
+            session.ApplyDamage(RecoveredClass749Damage()));
         Assert.Throws<InvalidOperationException>(() => session.Respawn());
     }
 
@@ -58,7 +58,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         var session = new Rac1RatchetNanotechSession();
 
         Assert.Throws<NotSupportedException>(() =>
-            session.ApplyClass749Attack(new Rac1Class749AttackEvent(marker, damage)));
+            session.ApplyDamage(Class749Damage(marker, damage)));
         Assert.Equal(4, session.Probe().Nanotech);
     }
 
@@ -69,9 +69,7 @@ public sealed class Rac1RatchetNanotechSessionTests
         var source = new Rac1MobyRuntimeKey(
             Rac1Class749Hostile.NativeClassId,
             149);
-        var damage = Rac1DamageRuntime.FromClass749Attack(
-            source,
-            RecoveredClass749Attack());
+        var damage = RecoveredClass749Damage(source.InstanceIndex);
 
         var probe = session.ApplyDamage(damage);
 
@@ -240,6 +238,20 @@ public sealed class Rac1RatchetNanotechSessionTests
         int nativePlayerState20A4 = 0) =>
         new(nativeVerticalPosition, 27d, contactSeparation, nativePlayerState20A4);
 
-    private static Rac1Class749AttackEvent RecoveredClass749Attack() =>
-        new(Rac1Class749Hostile.AttackMarker, Rac1Class749Hostile.AttackDamage);
+    private static Rac1GameplayDamageEvent RecoveredClass749Damage(
+        int instanceIndex = 149) =>
+        Class749Damage(
+            Rac1Class749Hostile.AttackMarker,
+            Rac1Class749Hostile.AttackDamage,
+            instanceIndex);
+
+    private static Rac1GameplayDamageEvent Class749Damage(
+        double marker,
+        double damage,
+        int instanceIndex = 149) =>
+        Rac1DamageRuntime.FromClass749Attack(
+            new Rac1MobyRuntimeKey(
+                Rac1Class749Hostile.NativeClassId,
+                instanceIndex),
+            new Rac1Class749AttackEvent(marker, damage));
 }

@@ -63,17 +63,6 @@ public sealed class Rac1RatchetNanotechSession
         return ApplyRecoveredClass749Damage();
     }
 
-    public Rac1RatchetNanotechSnapshot ApplyClass749Attack(Rac1Class749AttackEvent attack)
-    {
-        ArgumentNullException.ThrowIfNull(attack);
-        if (attack.NativeMarker != Rac1Class749Hostile.AttackMarker ||
-            attack.NativeDamage != Rac1Class749Hostile.AttackDamage)
-            throw new NotSupportedException(
-                "Only the recovered R&C1 class-749 marker-34 damage-1 attack is admitted.");
-
-        return ApplyRecoveredClass749Damage();
-    }
-
     private Rac1RatchetNanotechSnapshot ApplyRecoveredClass749Damage()
     {
         if (_lifeState != Rac1RatchetLifeState.Alive)

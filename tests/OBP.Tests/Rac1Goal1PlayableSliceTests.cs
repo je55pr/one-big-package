@@ -211,7 +211,12 @@ public sealed class Rac1Goal1PlayableSliceTests
             Rac1WrenchContactPath.HostPolicyAdmission,
             hostileDamage.ContactPath);
 
-        var damaged = hostileSession.ApplyWrenchDamage(hostile, hostileDamage);
+        var hostileDamageEvent = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(
+                hostile.NativeClassId,
+                hostile.InstanceIndex),
+            hostileDamage);
+        var damaged = hostileSession.ApplyDamage(hostile, hostileDamageEvent);
         Assert.Equal(0f, damaged.Health);
         Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.NativeState);
         Assert.Equal(RuntimeEntityPresence.Active, damaged.EntityState.Presentation.Presence);
@@ -273,8 +278,14 @@ public sealed class Rac1Goal1PlayableSliceTests
         Assert.Equal(1f, hostiles.Probe(hostile).Health);
 
         var nanotech = new Rac1RatchetNanotechSession();
-        var afterHit = nanotech.ApplyClass749Attack(
-            new Rac1Class749AttackEvent(Rac1Class749Hostile.AttackMarker, Rac1Class749Hostile.AttackDamage));
+        var afterHit = nanotech.ApplyDamage(
+            Rac1DamageRuntime.FromClass749Attack(
+                new Rac1MobyRuntimeKey(
+                    hostile.NativeClassId,
+                    hostile.InstanceIndex),
+                new Rac1Class749AttackEvent(
+                    Rac1Class749Hostile.AttackMarker,
+                    Rac1Class749Hostile.AttackDamage)));
         Assert.Equal(3, afterHit.Nanotech);
         Assert.False(afterHit.IsDead);
 
