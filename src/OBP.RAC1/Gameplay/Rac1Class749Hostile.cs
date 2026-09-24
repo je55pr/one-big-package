@@ -252,7 +252,8 @@ public sealed record Rac1Class749HostProbe(
     Rac1Class749AttackEvent? Attack,
     Rac1MobyRuntimeState RuntimeState,
     IReadOnlyList<IRac1MobyHostIntent> HostIntents,
-    IReadOnlyList<IRac1MobyHostEvent> HostEvents)
+    IReadOnlyList<IRac1MobyHostEvent> HostEvents,
+    int? LinkedTargetInstanceIndex = null)
 {
     public int NativeState => RuntimeState.NativeState;
     public RuntimeEntityState EntityState => RuntimeState.EntityState;

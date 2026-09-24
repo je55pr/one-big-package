@@ -663,10 +663,11 @@ public partial class OBPGame
             Vector3 hostilePosition = hostile.Root.GlobalPosition;
             Vector3 targetPosition = _player.GlobalPosition;
             bool linkedObjectTerminal = false;
-            if (hostile.Source.InstanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedInstanceIndex)
+            if (previous.LinkedTargetInstanceIndex is int linkedTargetInstanceIndex)
             {
                 var linkedNode = _sceneResult?.DynamicObjectNodes?.FirstOrDefault(node =>
-                    node.Source.InstanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedMobyInstanceIndex);
+                    node.Source.SourceGame == "rac1" &&
+                    node.Source.InstanceIndex == linkedTargetInstanceIndex);
                 linkedObjectTerminal = linkedNode is null ||
                     !IsInstanceValid(linkedNode.Root) ||
                     !linkedNode.Root.Visible;

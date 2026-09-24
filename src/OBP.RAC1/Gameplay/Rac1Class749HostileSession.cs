@@ -59,6 +59,7 @@ public sealed class Rac1Class749HostileSession :
             current,
             pvar,
             activationGroup: null,
+            linkedTargetInstanceIndex: null,
             Rac1Class749Hostile.TargetSearchNativeState);
     }
 
@@ -77,12 +78,20 @@ public sealed class Rac1Class749HostileSession :
             pvar, Rac1Class749Hostile.ReadAuthoredPosition(source));
         Rac1Class749VeldinPopulation.ValidateAuthoredFields(source, pvar);
 
+        int? linkedTargetInstanceIndex =
+            source.InstanceIndex == Rac1Class749VeldinPopulation.SpecialLinkedInstanceIndex
+                ? Rac1Class749Hostile.ReadInt32(
+                    pvar,
+                    Rac1Class749Hostile.LinkedInstanceOffset)
+                : null;
+
         return RegisterCore(
             source,
             authored.Key,
             current,
             pvar,
             group,
+            linkedTargetInstanceIndex,
             Rac1Class749VeldinPopulation.InitialNativeState(source, pvar));
     }
 
@@ -92,6 +101,7 @@ public sealed class Rac1Class749HostileSession :
         RuntimeEntityState current,
         byte[] pvar,
         int? activationGroup,
+        int? linkedTargetInstanceIndex,
         int initialState)
     {
         var runtimeInstance = _runtime.Register(
@@ -102,7 +112,8 @@ public sealed class Rac1Class749HostileSession :
         var entry = new Entry(
             _runtime,
             runtimeInstance,
-            activationGroup);
+            activationGroup,
+            linkedTargetInstanceIndex);
         if (!_entries.TryAdd(key, entry))
             throw new InvalidOperationException(
                 $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
@@ -446,17 +457,20 @@ public sealed class Rac1Class749HostileSession :
             attack,
             entry.RuntimeState,
             hostIntents ?? Array.Empty<IRac1MobyHostIntent>(),
-            hostEvents ?? Array.Empty<IRac1MobyHostEvent>());
+            hostEvents ?? Array.Empty<IRac1MobyHostEvent>(),
+            entry.LinkedTargetInstanceIndex);
 
     private sealed class Entry(
         Rac1MobyRuntimeSession runtime,
         Rac1MobyRuntimeInstance runtimeInstance,
-        int? activationGroup)
+        int? activationGroup,
+        int? linkedTargetInstanceIndex)
     {
         public Rac1MobyRuntimeInstance RuntimeInstance { get; } = runtimeInstance;
         public byte[] PVar => RuntimeInstance.MutablePVar;
         public int InstanceIndex => RuntimeInstance.InstanceIndex;
         public int? ActivationGroup { get; } = activationGroup;
+        public int? LinkedTargetInstanceIndex { get; } = linkedTargetInstanceIndex;
         public int ActivationCount { get; set; }
         public Rac1MobyRuntimeState RuntimeState => RuntimeInstance.State;
         public int NativeState

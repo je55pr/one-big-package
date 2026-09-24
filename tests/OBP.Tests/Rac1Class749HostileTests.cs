@@ -322,6 +322,15 @@ public sealed class Rac1Class749HostileTests
         var session = new Rac1Class749HostileSession();
         var initial = session.RegisterVeldinPlacement(source, RuntimeEntityState.FromAuthored(source));
         Assert.Equal(Rac1Class749Hostile.LinkedObjectNativeState, initial.NativeState);
+        Assert.Equal(
+            Rac1Class749VeldinPopulation.SpecialLinkedMobyInstanceIndex,
+            initial.LinkedTargetInstanceIndex);
+
+        var ordinary = VeldinClass749(149, new Rac1Class749WorldPoint(104d, 33d, 190d));
+        var ordinaryProbe = session.RegisterVeldinPlacement(
+            ordinary,
+            RuntimeEntityState.FromAuthored(ordinary));
+        Assert.Null(ordinaryProbe.LinkedTargetInstanceIndex);
 
         var tracking = session.Step(
             source,
