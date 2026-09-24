@@ -466,7 +466,11 @@ public partial class OBPGame
         if (damage is null)
             return false;
 
-        var probe = _rac1Hostiles.ApplyWrenchDamage(hostile.Source, damage);
+        var targetKey = new Rac1MobyRuntimeKey(
+            hostile.Source.NativeClassId,
+            hostile.Source.InstanceIndex);
+        var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
+        var probe = _rac1Hostiles.ApplyDamage(hostile.Source, damageEvent);
         _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         // The native session admits both 0xfd and 0xfe terminal outcomes but does
         // not recover their selector. The live host uses 0xfd as an explicit
@@ -603,8 +607,9 @@ public partial class OBPGame
 
             if (contactResolution.ProjectileCompleted)
             {
+                int damageEventCount = contactResolution.DamageEvents.Count;
                 _rac1CombatStatus =
-                    $"Bomb Glove contact: {contactResolution.AdmittedContactCount} class-749 candidate(s); native consequence unresolved";
+                    $"Bomb Glove contact: {damageEventCount} class-749 damage event(s); native consequence unresolved";
                 GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
                 impacted = true;
             }
@@ -691,7 +696,13 @@ public partial class OBPGame
             if (next.Attack is { } attack)
             {
                 var beforeNanotech = _rac1Nanotech.Probe();
-                var nanotech = _rac1Nanotech.ApplyClass749Attack(attack);
+                var sourceKey = new Rac1MobyRuntimeKey(
+                    hostile.Source.NativeClassId,
+                    hostile.Source.InstanceIndex);
+                var damageEvent = Rac1DamageRuntime.FromClass749Attack(
+                    sourceKey,
+                    attack);
+                var nanotech = _rac1Nanotech.ApplyDamage(damageEvent);
                 _player.Rac1GameplayState = nanotech;
                 GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
                 _rac1CombatStatus = nanotech.IsDead

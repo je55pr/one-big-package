@@ -39,15 +39,38 @@ public sealed class Rac1RatchetNanotechSession
     public Rac1RatchetNanotechSnapshot Probe() => Snapshot();
     public Rac1PlayerActionRuntimeSession Actions => _actions;
 
+    public Rac1RatchetNanotechSnapshot ApplyDamage(Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        if (damage.Target != Rac1GameplayEntityRef.Player ||
+            damage.Source.Kind != Rac1GameplayEntityKind.Moby ||
+            damage.Source.NativeClassId != Rac1Class749Hostile.NativeClassId ||
+            damage.NativeMarker != Rac1Class749Hostile.AttackMarker ||
+            damage.NativeDamage != Rac1Class749Hostile.AttackDamage ||
+            damage.NativeDamageFlags is not null)
+        {
+            throw new NotSupportedException(
+                "Only the recovered R&C1 class-749 marker-34 damage-1 player event is admitted.");
+        }
+
+        return ApplyRecoveredClass749Damage();
+    }
+
     public Rac1RatchetNanotechSnapshot ApplyClass749Attack(Rac1Class749AttackEvent attack)
     {
-        if (_lifeState != Rac1RatchetLifeState.Alive)
-            throw new InvalidOperationException("R&C1 Ratchet cannot take the recovered class-749 hit after death.");
-
+        ArgumentNullException.ThrowIfNull(attack);
         if (attack.NativeMarker != Rac1Class749Hostile.AttackMarker ||
             attack.NativeDamage != Rac1Class749Hostile.AttackDamage)
             throw new NotSupportedException(
                 "Only the recovered R&C1 class-749 marker-34 damage-1 attack is admitted.");
+
+        return ApplyRecoveredClass749Damage();
+    }
+
+    private Rac1RatchetNanotechSnapshot ApplyRecoveredClass749Damage()
+    {
+        if (_lifeState != Rac1RatchetLifeState.Alive)
+            throw new InvalidOperationException("R&C1 Ratchet cannot take the recovered class-749 hit after death.");
 
         _nanotech = Math.Max(0, _nanotech - 1);
         if (_nanotech == 0)

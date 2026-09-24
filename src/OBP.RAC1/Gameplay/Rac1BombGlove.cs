@@ -20,6 +20,7 @@ public sealed record Rac1BombGloveShot(
 public sealed record Rac1BombGloveDamageResult(
     long ProjectileId,
     int TargetNativeClassId,
+    int TargetInstanceIndex,
     double NativeDamage,
     uint NativeDamageFlags)
 {
@@ -45,6 +46,11 @@ public sealed record Rac1BombGloveContactResolution(
     bool ProjectileCompleted)
 {
     public int AdmittedContactCount => DamageResults.Count;
+
+    public IReadOnlyList<Rac1GameplayDamageEvent> DamageEvents =>
+        DamageResults
+            .Select(Rac1DamageRuntime.FromBombGlove)
+            .ToArray();
 }
 
 public sealed record Rac1BombGloveProbe(
@@ -226,6 +232,7 @@ public sealed class Rac1BombGloveSession
         return new Rac1BombGloveDamageResult(
             projectileId,
             facts.Target.NativeClassId,
+            facts.Target.InstanceIndex,
             Rac1BombGlove.NativeDamage,
             Rac1BombGlove.NativeDamageFlags);
     }

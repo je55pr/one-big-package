@@ -200,6 +200,46 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
+    public void GenericDamageEventConsumesRecoveredPlayerOriginRepresentativeHit()
+    {
+        var source = Class749(149, health: 1f);
+        var session = Registered(source);
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(target, wrench);
+
+        var damaged = session.ApplyDamage(source, damage);
+
+        Assert.Equal(0f, damaged.Health);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, damaged.NativeState);
+        Assert.IsType<Rac1MobyDamageConsumedEvent>(
+            damaged.HostEvents.First());
+    }
+
+    [Fact]
+    public void GenericDamageConsumerRejectsUnrecoveredBombConsequence()
+    {
+        var source = Class749(149, health: 1f);
+        var session = Registered(source);
+        var bomb = new Rac1BombGloveDamageResult(
+            ProjectileId: 7,
+            TargetNativeClassId: source.NativeClassId,
+            TargetInstanceIndex: source.InstanceIndex,
+            NativeDamage: Rac1BombGlove.NativeDamage,
+            NativeDamageFlags: Rac1BombGlove.NativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromBombGlove(bomb);
+
+        Assert.Throws<NotSupportedException>(() =>
+            session.ApplyDamage(source, damage));
+        Assert.Equal(1f, session.Probe(source).Health);
+    }
+
+    [Fact]
     public void WrenchDamageDoesNotGeneralizeUnprovenHealthValues()
     {
         var source = Class749(149, health: 2f);

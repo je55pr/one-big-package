@@ -63,6 +63,23 @@ public sealed class Rac1RatchetNanotechSessionTests
     }
 
     [Fact]
+    public void GenericDamageEventConsumesRecoveredClass749PlayerHit()
+    {
+        var session = new Rac1RatchetNanotechSession();
+        var source = new Rac1MobyRuntimeKey(
+            Rac1Class749Hostile.NativeClassId,
+            149);
+        var damage = Rac1DamageRuntime.FromClass749Attack(
+            source,
+            RecoveredClass749Attack());
+
+        var probe = session.ApplyDamage(damage);
+
+        Assert.Equal(3, probe.Nanotech);
+        Assert.Equal(Rac1RatchetLifeState.Alive, probe.LifeState);
+    }
+
+    [Fact]
     public void VeldinEnvironmentalDeathBoundaryAndRespawnRestoreRetailNanotech()
     {
         var session = new Rac1RatchetNanotechSession();

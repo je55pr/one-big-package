@@ -165,6 +165,7 @@ public sealed class Rac1BombGloveTests
                 Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState)));
 
         Assert.Equal(Rac1Class749Hostile.NativeClassId, damage.TargetNativeClassId);
+        Assert.Equal(hostile.InstanceIndex, damage.TargetInstanceIndex);
         Assert.Equal(2d, damage.NativeDamage);
         Assert.Equal(0x00830000u, damage.NativeDamageFlags);
         Assert.Equal(Rac1NativeDamageHandoffKind.ContactVolume, damage.DamageHandoff.Kind);
@@ -200,6 +201,16 @@ public sealed class Rac1BombGloveTests
         Assert.Equal(1, resolution.AdmittedContactCount);
         Assert.Single(resolution.DamageResults);
         Assert.Equal(Rac1Class749Hostile.NativeClassId, resolution.DamageResults[0].TargetNativeClassId);
+        Assert.Equal(hostile.InstanceIndex, resolution.DamageResults[0].TargetInstanceIndex);
+        var damageEvent = Assert.Single(resolution.DamageEvents);
+        Assert.Equal(
+            Rac1GameplayEntityRef.Moby(new Rac1MobyRuntimeKey(
+                hostile.NativeClassId,
+                hostile.InstanceIndex)),
+            damageEvent.Target);
+        Assert.Equal(
+            Rac1NativeDamageHandoffKind.ContactVolume,
+            damageEvent.HandoffKind);
         Assert.False(session.CompleteProjectile(shot.Projectile.ProjectileId));
         Assert.Null(session.ResolveGoal1Contact(
             shot.Projectile.ProjectileId,

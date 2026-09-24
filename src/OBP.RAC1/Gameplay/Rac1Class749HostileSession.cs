@@ -193,6 +193,33 @@ public sealed class Rac1Class749HostileSession : IRac1MobyClassController
         return Snapshot(key, entry, attack, hostIntents, hostEvents);
     }
 
+    public Rac1Class749HostProbe ApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        if (!damage.Target.MatchesMoby(target) ||
+            damage.Source != Rac1GameplayEntityRef.Player ||
+            damage.NativeDamage != Rac1WrenchCombatController.RepresentativeDamage ||
+            damage.NativeDamageFlags != Rac1WrenchCombatController.RepresentativeDamageFlags ||
+            damage.NativeMarker is not null)
+        {
+            throw new NotSupportedException(
+                "Only the bounded player-origin representative damage event is supported for class 749.");
+        }
+
+        Rac1NativeDamageEnvelope envelope = damage.DamageEnvelope
+            ?? throw new InvalidOperationException(
+                "Class-749 representative damage requires native damage flags.");
+        return ApplyRepresentativeDamage(
+            source,
+            envelope,
+            "player-origin representative damage");
+    }
+
     public Rac1Class749HostProbe ApplyWrenchDamage(
         RuntimeDynamicObject source,
         Rac1WrenchDamageResult damage)
@@ -204,7 +231,12 @@ public sealed class Rac1Class749HostileSession : IRac1MobyClassController
             throw new NotSupportedException(
                 "Only the bounded host-admitted wrench stimulus is supported for class 749.");
 
-        return ApplyRepresentativeDamage(source, damage.DamageEnvelope, "host-admitted wrench");
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        return ApplyDamage(
+            source,
+            Rac1DamageRuntime.FromWrench(target, damage));
     }
 
     private Rac1Class749HostProbe ApplyRepresentativeDamage(
