@@ -581,6 +581,9 @@ public partial class DebugPlayer : CharacterBody3D
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
         double controlYaw = GetRac1ControlYaw();
+        var contact = Rac1PlayerContactResult.StaticWorld(
+            grounded,
+            IsOnCeiling());
         var step = _rac1Movement.Step(
             new PlayerControlIntent(
                 move.X,
@@ -590,16 +593,18 @@ public partial class DebugPlayer : CharacterBody3D
                 crouch,
                 GetRac1PlanarBasis(),
                 GetRac1NativePlanarBasis()),
-            new PlayerContactFacts(grounded, IsOnCeiling()),
+            contact,
             mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw);
 
         UpdateRac1FacingPresentation();
 
+        var resolvedDelta = contact.ApplySupportAndConveyor(
+            new Rac1NativeVector3(step.PlanarX, step.Vertical, step.PlanarY));
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(
-            (float)step.PlanarX * nativeTicksPerSecond,
-            (float)step.Vertical * nativeTicksPerSecond,
-            (float)step.PlanarY * nativeTicksPerSecond);
+            (float)resolvedDelta.X * nativeTicksPerSecond,
+            (float)resolvedDelta.Y * nativeTicksPerSecond,
+            (float)resolvedDelta.Z * nativeTicksPerSecond);
         if (Scripted && step.Vertical > 0d && !_scriptJumped)
         {
             _scriptJumped = true;

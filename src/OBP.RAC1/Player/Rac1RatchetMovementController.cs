@@ -145,6 +145,12 @@ public sealed class Rac1RatchetMovementController
 
     public StepResult Step(
         PlayerControlIntent input,
+        Rac1PlayerContactResult contact,
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null) =>
+        Step(input, contact.MovementFacts, resolveNativeFacingYaw);
+
+    public StepResult Step(
+        PlayerControlIntent input,
         PlayerContactFacts contact,
         Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null)
     {

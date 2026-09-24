@@ -16,6 +16,9 @@ public sealed class Rac1PlayerActionRuntimeTests
         Assert.Null(unknown.RecoveredName);
         Assert.Equal("state-0x01", unknown.DisplayName);
 
+        var unresolvedShallowWaterState = Rac1PlayerActionDomain.Describe(0x72);
+        Assert.Null(unresolvedShallowWaterState.RecoveredName);
+
         var death = Rac1PlayerActionDomain.Describe(
             Rac1PlayerActionDomain.EnvironmentalFallDeath);
         Assert.Equal("environmental-fall-death", death.RecoveredName);

@@ -16,7 +16,6 @@ public static class Rac1PlayerActionDomain
     public const int Magneboot = 0x3f;
     public const int Mud = 0x68;
     public const int Drown = 0x6a;
-    public const int Wade = 0x72;
     public const int EnvironmentalFallDeath = 0x77;
 
     public static Rac1PlayerActionDescriptor Describe(int nativeState)
@@ -46,7 +45,6 @@ public static class Rac1PlayerActionDomain
         Magneboot => "magneboot",
         Mud => "mud",
         Drown => "drown",
-        Wade => "wade",
         EnvironmentalFallDeath => "environmental-fall-death",
         _ => null,
     };
