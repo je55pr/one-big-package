@@ -170,6 +170,50 @@ public sealed class Rac1MobyRuntimeSession
         return typed;
     }
 
+    public bool TryResolveDamageTarget(
+        Rac1GameplayDamageEvent damage,
+        out Rac1MobyRuntimeInstance? instance)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        instance = null;
+        if (damage.Target.Kind != Rac1GameplayEntityKind.Moby ||
+            damage.Target.RuntimeId is < int.MinValue or > int.MaxValue)
+            return false;
+
+        var key = new Rac1MobyRuntimeKey(
+            damage.Target.NativeClassId,
+            checked((int)damage.Target.RuntimeId));
+        return _instances.TryGetValue(key, out instance);
+    }
+
+    public bool CanDispatchDamage(Rac1GameplayDamageEvent damage) =>
+        TryResolveDamageTarget(damage, out var instance) &&
+        instance is not null &&
+        CanDispatchDamage(instance.Source, damage);
+
+    public bool TryDispatchDamage<TOutput>(
+        Rac1GameplayDamageEvent damage,
+        out TOutput? output)
+    {
+        output = default;
+        if (!TryResolveDamageTarget(damage, out var instance) ||
+            instance is null)
+            return false;
+
+        return TryDispatchDamage(instance.Source, damage, out output);
+    }
+
+    public TOutput DispatchDamage<TOutput>(Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        if (!TryResolveDamageTarget(damage, out var instance) ||
+            instance is null)
+            throw new InvalidOperationException(
+                "R&C1 damage event target is not a registered runtime Moby.");
+
+        return DispatchDamage<TOutput>(instance.Source, damage);
+    }
+
     public bool CanDispatchDamage(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage)

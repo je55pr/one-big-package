@@ -260,6 +260,64 @@ public sealed class Rac1MobyRuntimeTests
     }
 
     [Fact]
+    public void SharedRuntimeRoutesDamageDirectlyFromStableEventTargetIdentity()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var hostiles = new Rac1Class749HostileSession(runtime);
+        var source = Class749(149, health: 1f);
+        hostiles.Register(source, RuntimeEntityState.FromAuthored(source));
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
+            wrench);
+
+        Assert.True(runtime.TryResolveDamageTarget(damage, out var resolved));
+        Assert.NotNull(resolved);
+        Assert.Same(source, resolved!.Source);
+        Assert.True(runtime.CanDispatchDamage(damage));
+
+        var result = runtime.DispatchDamage<Rac1Class749HostProbe>(damage);
+
+        Assert.Equal(0f, result.Health);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, result.NativeState);
+    }
+
+    [Fact]
+    public void EventOnlyDamageRoutingFailsClosedWhenTargetIsNotRegisteredMoby()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var unregistered = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(Rac1Class749Hostile.NativeClassId, 149),
+            wrench);
+
+        Assert.False(runtime.TryResolveDamageTarget(unregistered, out var missing));
+        Assert.Null(missing);
+        Assert.False(runtime.CanDispatchDamage(unregistered));
+        Assert.False(runtime.TryDispatchDamage<Rac1Class749HostProbe>(
+            unregistered,
+            out var absent));
+        Assert.Null(absent);
+        Assert.Throws<InvalidOperationException>(() =>
+            runtime.DispatchDamage<Rac1Class749HostProbe>(unregistered));
+
+        var playerTarget = new Rac1GameplayDamageEvent(
+            Rac1GameplayEntityRef.Player,
+            Rac1GameplayEntityRef.Player,
+            1d,
+            0x00010000u);
+        Assert.False(runtime.TryResolveDamageTarget(playerTarget, out var notMoby));
+        Assert.Null(notMoby);
+        Assert.False(runtime.CanDispatchDamage(playerTarget));
+    }
+
+    [Fact]
     public void SharedRuntimeDamageAdmissionSeparatesTransportFromRecoveredConsequence()
     {
         var runtime = new Rac1MobyRuntimeSession();

@@ -467,7 +467,6 @@ public partial class OBPGame
             hostile.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
         var probe = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(
-            hostile.Source,
             damageEvent);
         _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         // The native session admits both 0xfd and 0xfe terminal outcomes but does
@@ -609,16 +608,7 @@ public partial class OBPGame
                 int admittedConsequenceCount = 0;
                 foreach (var damageEvent in contactResolution.DamageEvents)
                 {
-                    if (damageEvent.Target.Kind != Rac1GameplayEntityKind.Moby ||
-                        damageEvent.Target.RuntimeId is < int.MinValue or > int.MaxValue ||
-                        !_rac1HostileNodes.TryGetValue(
-                            checked((int)damageEvent.Target.RuntimeId),
-                            out var victim))
-                    {
-                        continue;
-                    }
-
-                    if (_rac1MobyRuntime.CanDispatchDamage(victim.Source, damageEvent))
+                    if (_rac1MobyRuntime.CanDispatchDamage(damageEvent))
                         admittedConsequenceCount++;
                 }
 
