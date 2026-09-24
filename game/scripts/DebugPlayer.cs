@@ -189,6 +189,7 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _scriptAttacked;
     private readonly Rac1RatchetMovementController _rac1Movement = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
+    private readonly Rac1DynamicSupportSession _rac1DynamicSupport = new();
     private Rac1SurfaceActionIntent? _rac1SurfaceActionIntent;
     private readonly Rac1OrdinaryCameraController _rac1Camera = new();
     private readonly RawGamepadInput _rawInput = new();
@@ -573,6 +574,7 @@ public partial class DebugPlayer : CharacterBody3D
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         _rac1Yaw.Reset(nativeYaw);
+        _rac1DynamicSupport.Reset();
         _rac1CameraInitialized = false;
         _rac1RuntimeCameraState = null;
         _rac1JumpWasHeld = false;
@@ -625,7 +627,7 @@ public partial class DebugPlayer : CharacterBody3D
         bool hitCeiling)
     {
         if (!grounded)
-            return Rac1PlayerContactResult.StaticWorld(false, hitCeiling);
+            return _rac1DynamicSupport.StepStatic(false, hitCeiling);
 
         Vector3 origin = GlobalPosition;
         var query = PhysicsRayQueryParameters3D.Create(
@@ -637,19 +639,19 @@ public partial class DebugPlayer : CharacterBody3D
             !hit.ContainsKey("collider") ||
             !hit.ContainsKey("face_index"))
         {
-            return Rac1PlayerContactResult.StaticWorld(true, hitCeiling);
+            return _rac1DynamicSupport.StepStatic(true, hitCeiling);
         }
 
         var collider = hit["collider"].As<Node>();
         if (collider is not RuntimeWorldScene.RuntimeCollisionBody3D collisionBody)
-            return Rac1PlayerContactResult.StaticWorld(true, hitCeiling);
+            return _rac1DynamicSupport.StepStatic(true, hitCeiling);
 
         int faceIndex = (int)hit["face_index"];
         int? materialId = collisionBody.MaterialIdForFace(faceIndex);
         int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
             ? materialId
             : null;
-        return Rac1PlayerContactResult.StaticWorld(
+        return _rac1DynamicSupport.StepStatic(
             true,
             hitCeiling,
             rawFaceType);
