@@ -6,6 +6,17 @@ namespace OBP.Tests;
 public sealed class Rac1PlayerContactRuntimeTests
 {
     [Fact]
+    public void NativeContactLayoutPinsRecoveredPlayerSlotsWithoutExposingRawMemory()
+    {
+        Assert.Equal(0x0f0, Rac1PlayerContactNativeLayout.SupportCarryVectorOffset);
+        Assert.Equal(0x2fc, Rac1PlayerContactNativeLayout.CurrentDynamicContactMobyOffset);
+        Assert.Equal(0x360, Rac1PlayerContactNativeLayout.PersistentSupportMobyOffset);
+        Assert.Equal(0x364, Rac1PlayerContactNativeLayout.SupportAnchorStateOffset);
+        Assert.Equal(0x12e0, Rac1PlayerContactNativeLayout.SurfaceClassOffset);
+        Assert.Equal(0x12ed, Rac1PlayerContactNativeLayout.SurfaceEffectModeOffset);
+    }
+
+    [Fact]
     public void CollisionFacePreservesSurfaceEffectAndSpecialHighBitSeparately()
     {
         var ordinary = Rac1CollisionFaceSemantics.Decode(0x47);

@@ -3,6 +3,21 @@ using OBP.Runtime.Player;
 
 namespace OBP.RAC1.Player;
 
+/// <summary>
+/// Recovered native player-field layout for contact/support state. These offsets
+/// are provenance only: callers exchange typed contact facts, not raw player-memory
+/// addresses.
+/// </summary>
+public static class Rac1PlayerContactNativeLayout
+{
+    public const int SupportCarryVectorOffset = 0x0f0;
+    public const int CurrentDynamicContactMobyOffset = 0x2fc;
+    public const int PersistentSupportMobyOffset = 0x360;
+    public const int SupportAnchorStateOffset = 0x364;
+    public const int SurfaceClassOffset = 0x12e0;
+    public const int SurfaceEffectModeOffset = 0x12ed;
+}
+
 public readonly record struct Rac1NativeVector3(double X, double Y, double Z)
 {
     public static Rac1NativeVector3 Zero { get; } = new(0d, 0d, 0d);
