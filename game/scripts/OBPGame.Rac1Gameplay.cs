@@ -615,8 +615,25 @@ public partial class OBPGame
             if (contactResolution.ProjectileCompleted)
             {
                 int damageEventCount = contactResolution.DamageEvents.Count;
+                int admittedConsequenceCount = 0;
+                foreach (var damageEvent in contactResolution.DamageEvents)
+                {
+                    if (damageEvent.Target.Kind != Rac1GameplayEntityKind.Moby ||
+                        damageEvent.Target.RuntimeId is < int.MinValue or > int.MaxValue ||
+                        !_rac1HostileNodes.TryGetValue(
+                            checked((int)damageEvent.Target.RuntimeId),
+                            out var victim))
+                    {
+                        continue;
+                    }
+
+                    if (_rac1MobyRuntime.CanDispatchDamage(victim.Source, damageEvent))
+                        admittedConsequenceCount++;
+                }
+
                 _rac1CombatStatus =
-                    $"Bomb Glove contact: {damageEventCount} class-749 damage event(s); native consequence unresolved";
+                    $"Bomb Glove contact: {damageEventCount} transported damage event(s), " +
+                    $"{admittedConsequenceCount} recovered class-local consequence(s) admitted";
                 GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
                 impacted = true;
             }

@@ -27,6 +27,11 @@ public sealed class Rac1Class1440ContactFamilySession :
 
     public int NativeClassId => Rac1Class1440ContactFamily.NativeClassId;
 
+    bool IRac1MobyDamageConsumer.CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage) =>
+        CanApplyDamage(source, damage);
+
     object IRac1MobyDamageConsumer.ApplyDamage(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage) =>
@@ -121,6 +126,22 @@ public sealed class Rac1Class1440ContactFamilySession :
     /// This class validates victim identity and requires the native envelope,
     /// while source/weapon eligibility remains the caller's responsibility.
     /// </summary>
+    public bool CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(damage);
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+
+        return source.SourceGame == "rac1" &&
+               source.NativeClassId == Rac1Class1440ContactFamily.NativeClassId &&
+               damage.Target.MatchesMoby(target) &&
+               damage.DamageEnvelope is { NativeDamage: > 0d };
+    }
+
     public Rac1Class1440ContactProbe ApplyDamage(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage)

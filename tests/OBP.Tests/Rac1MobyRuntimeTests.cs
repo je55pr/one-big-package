@@ -260,6 +260,59 @@ public sealed class Rac1MobyRuntimeTests
     }
 
     [Fact]
+    public void SharedRuntimeDamageAdmissionSeparatesTransportFromRecoveredConsequence()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var hostiles = new Rac1Class749HostileSession(runtime);
+        var source = Class749(149, health: 1f);
+        hostiles.Register(source, RuntimeEntityState.FromAuthored(source));
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var wrenchEvent = Rac1DamageRuntime.FromWrench(target, wrench);
+
+        Assert.True(runtime.CanDispatchDamage(source, wrenchEvent));
+        Assert.True(runtime.TryDispatchDamage<Rac1Class749HostProbe>(
+            source,
+            wrenchEvent,
+            out var wrenchResult));
+        Assert.NotNull(wrenchResult);
+        Assert.Equal(0f, wrenchResult!.Health);
+
+        var freshRuntime = new Rac1MobyRuntimeSession();
+        var freshHostiles = new Rac1Class749HostileSession(freshRuntime);
+        var freshSource = Class749(150, health: 1f);
+        freshHostiles.Register(
+            freshSource,
+            RuntimeEntityState.FromAuthored(freshSource));
+        var bombEvent = Rac1DamageRuntime.FromBombGlove(
+            new Rac1BombGloveDamageResult(
+                ProjectileId: 1,
+                TargetNativeClassId: freshSource.NativeClassId,
+                TargetInstanceIndex: freshSource.InstanceIndex,
+                NativeDamage: Rac1BombGlove.NativeDamage,
+                NativeDamageFlags: Rac1BombGlove.NativeDamageFlags));
+
+        Assert.False(freshRuntime.CanDispatchDamage(freshSource, bombEvent));
+        Assert.False(freshRuntime.TryDispatchDamage<Rac1Class749HostProbe>(
+            freshSource,
+            bombEvent,
+            out var bombResult));
+        Assert.Null(bombResult);
+        Assert.Equal(1f, freshHostiles.Probe(freshSource).Health);
+        Assert.Throws<NotSupportedException>(() =>
+            freshRuntime.DispatchDamage<Rac1Class749HostProbe>(
+                freshSource,
+                bombEvent));
+        Assert.Equal(1f, freshHostiles.Probe(freshSource).Health);
+    }
+
+    [Fact]
     public void SharedRuntimeDamageDispatchFailsClosedForWrongTargetOrUnknownConsumer()
     {
         var runtime = new Rac1MobyRuntimeSession();

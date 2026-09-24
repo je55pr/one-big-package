@@ -36,6 +36,11 @@ public sealed class Rac1Class749HostileSession :
                 "R&C1 class-749 update requires Rac1Class749TargetFacts.",
                 nameof(facts));
 
+    bool IRac1MobyDamageConsumer.CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage) =>
+        CanApplyDamage(source, damage);
+
     object IRac1MobyDamageConsumer.ApplyDamage(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage) =>
@@ -212,23 +217,33 @@ public sealed class Rac1Class749HostileSession :
         return Snapshot(key, entry, attack, hostIntents, hostEvents);
     }
 
+    public bool CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(damage);
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+
+        return source.SourceGame == "rac1" &&
+               source.NativeClassId == Rac1Class749Hostile.NativeClassId &&
+               damage.Target.MatchesMoby(target) &&
+               damage.Source == Rac1GameplayEntityRef.Player &&
+               damage.NativeDamage == Rac1WrenchCombatController.RepresentativeDamage &&
+               damage.NativeDamageFlags == Rac1WrenchCombatController.RepresentativeDamageFlags &&
+               damage.NativeMarker is null;
+    }
+
     public Rac1Class749HostProbe ApplyDamage(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage)
     {
         ArgumentNullException.ThrowIfNull(damage);
-        var target = new Rac1MobyRuntimeKey(
-            source.NativeClassId,
-            source.InstanceIndex);
-        if (!damage.Target.MatchesMoby(target) ||
-            damage.Source != Rac1GameplayEntityRef.Player ||
-            damage.NativeDamage != Rac1WrenchCombatController.RepresentativeDamage ||
-            damage.NativeDamageFlags != Rac1WrenchCombatController.RepresentativeDamageFlags ||
-            damage.NativeMarker is not null)
-        {
+        if (!CanApplyDamage(source, damage))
             throw new NotSupportedException(
                 "Only the bounded player-origin representative damage event is supported for class 749.");
-        }
 
         Rac1NativeDamageEnvelope envelope = damage.DamageEnvelope
             ?? throw new InvalidOperationException(

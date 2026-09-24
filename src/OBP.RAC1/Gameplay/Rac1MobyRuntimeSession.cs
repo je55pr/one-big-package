@@ -21,6 +21,11 @@ public interface IRac1MobyClassController
 public interface IRac1MobyDamageConsumer
 {
     int NativeClassId { get; }
+
+    bool CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage);
+
     object ApplyDamage(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage);
@@ -165,6 +170,43 @@ public sealed class Rac1MobyRuntimeSession
         return typed;
     }
 
+    public bool CanDispatchDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        var instance = Require(source);
+        if (!damage.Target.MatchesMoby(instance.Key))
+            throw new ArgumentException(
+                "R&C1 damage event target does not match the supplied runtime Moby.",
+                nameof(damage));
+
+        return _damageConsumers.TryGetValue(
+                   source.NativeClassId,
+                   out var consumer) &&
+               consumer.CanApplyDamage(source, damage);
+    }
+
+    public bool TryDispatchDamage<TOutput>(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage,
+        out TOutput? output)
+    {
+        output = default;
+        if (!CanDispatchDamage(source, damage))
+            return false;
+
+        var consumer = _damageConsumers[source.NativeClassId];
+        object result = consumer.ApplyDamage(source, damage);
+        if (result is not TOutput typed)
+            throw new InvalidOperationException(
+                $"R&C1 Moby class {source.NativeClassId} damage consumer returned " +
+                $"{result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
+
+        output = typed;
+        return true;
+    }
+
     public TOutput DispatchDamage<TOutput>(
         RuntimeDynamicObject source,
         Rac1GameplayDamageEvent damage)
@@ -179,6 +221,9 @@ public sealed class Rac1MobyRuntimeSession
         if (!_damageConsumers.TryGetValue(source.NativeClassId, out var consumer))
             throw new NotSupportedException(
                 $"R&C1 Moby class {source.NativeClassId} has no recovered native damage consumer.");
+        if (!consumer.CanApplyDamage(source, damage))
+            throw new NotSupportedException(
+                $"R&C1 Moby class {source.NativeClassId} does not admit this recovered native damage event.");
 
         object result = consumer.ApplyDamage(source, damage);
         if (result is not TOutput typed)
