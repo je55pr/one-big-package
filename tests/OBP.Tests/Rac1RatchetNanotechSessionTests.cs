@@ -159,6 +159,39 @@ public sealed class Rac1RatchetNanotechSessionTests
     }
 
     [Fact]
+    public void RecoveredEnvironmentalRestartLifecycleOwnsPendingGeneration()
+    {
+        var session = new Rac1RatchetNanotechSession();
+
+        Assert.Equal(0, session.EnvironmentalDeathGeneration);
+        Assert.Equal(0, session.EnvironmentalRestartGeneration);
+        Assert.False(session.HasPendingRecoveredEnvironmentalRestart);
+
+        var firstDeath = session.ApplyEnvironmentalDeathReset();
+
+        Assert.True(firstDeath.HasRecoveredEnvironmentalRespawn);
+        Assert.Equal(1, session.EnvironmentalDeathGeneration);
+        Assert.Equal(0, session.EnvironmentalRestartGeneration);
+        Assert.True(session.HasPendingRecoveredEnvironmentalRestart);
+
+        var firstRespawn = session.Respawn();
+
+        Assert.False(firstRespawn.HasRecoveredEnvironmentalRespawn);
+        Assert.Equal(1, session.EnvironmentalDeathGeneration);
+        Assert.Equal(1, session.EnvironmentalRestartGeneration);
+        Assert.False(session.HasPendingRecoveredEnvironmentalRestart);
+
+        session.ApplyEnvironmentalDeathReset();
+        Assert.Equal(2, session.EnvironmentalDeathGeneration);
+        Assert.Equal(1, session.EnvironmentalRestartGeneration);
+        Assert.True(session.HasPendingRecoveredEnvironmentalRestart);
+
+        session.Respawn();
+        Assert.Equal(2, session.EnvironmentalRestartGeneration);
+        Assert.False(session.HasPendingRecoveredEnvironmentalRestart);
+    }
+
+    [Fact]
     public void VeldinEnvironmentalDeathResetIsOneShotWhileAlive()
     {
         var session = new Rac1RatchetNanotechSession();

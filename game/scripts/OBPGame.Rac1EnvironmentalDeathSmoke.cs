@@ -21,14 +21,14 @@ public partial class OBPGame
                 $"Authored Veldin start was not in floor contact: separation={groundedSeparation:R}.");
 
         Vector3 runStart = _player.GlobalPosition;
-        long deathGenerationBefore = _rac1EnvironmentalDeathGeneration;
-        long automaticRestartGenerationBefore = _rac1AutomaticEnvironmentalRestartGeneration;
+        long deathGenerationBefore = _rac1Nanotech.EnvironmentalDeathGeneration;
+        long automaticRestartGenerationBefore = _rac1Nanotech.EnvironmentalRestartGeneration;
         bool leftFloor = false;
         try
         {
             SetAnalogueSmokeInput(0f, 1f);
             for (int frame = 0;
-                 frame < 900 && _rac1EnvironmentalDeathGeneration == deathGenerationBefore;
+                 frame < 900 && _rac1Nanotech.EnvironmentalDeathGeneration == deathGenerationBefore;
                  frame++)
             {
                 await PhysicsFramesAsync(1);
@@ -40,7 +40,7 @@ public partial class OBPGame
             ClearMovementSmokeInput();
         }
 
-        if (_rac1EnvironmentalDeathGeneration != deathGenerationBefore + 1 ||
+        if (_rac1Nanotech.EnvironmentalDeathGeneration != deathGenerationBefore + 1 ||
             _rac1LastEnvironmentalDeathBoundary is not { } dead)
             throw new TimeoutException(
                 "Ordinary full-forward Veldin run never reached the environmental-death boundary.");
@@ -84,14 +84,14 @@ public partial class OBPGame
             $"y={deathPosition.Y:0.000} separation={deathSeparation:0.000} " +
             "state=0x77 sequence=11 frame=0 Nanotech=0");
 
-        long deathGeneration = _rac1EnvironmentalDeathGeneration;
+        long deathGeneration = _rac1Nanotech.EnvironmentalDeathGeneration;
         await Rac1SmokeWaitAsync(
-            () => _rac1AutomaticEnvironmentalRestartGeneration == deathGeneration &&
+            () => _rac1Nanotech.EnvironmentalRestartGeneration == deathGeneration &&
                   !_rac1Nanotech.Probe().IsDead &&
                   _player.IsOnFloor(),
             240,
             "automatic authored Veldin environmental restart");
-        if (_rac1AutomaticEnvironmentalRestartGeneration <= automaticRestartGenerationBefore)
+        if (_rac1Nanotech.EnvironmentalRestartGeneration <= automaticRestartGenerationBefore)
             throw new InvalidOperationException(
                 "Veldin restart completed without the automatic environmental-restart path.");
 

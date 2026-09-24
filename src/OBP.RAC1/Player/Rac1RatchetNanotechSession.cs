@@ -36,6 +36,13 @@ public sealed class Rac1RatchetNanotechSession
     private Rac1RatchetLifeState _lifeState = Rac1RatchetLifeState.Alive;
     private Rac1RatchetDeathCause _deathCause = Rac1RatchetDeathCause.None;
 
+    public long EnvironmentalDeathGeneration { get; private set; }
+    public long EnvironmentalRestartGeneration { get; private set; }
+    public bool HasPendingRecoveredEnvironmentalRestart =>
+        _lifeState == Rac1RatchetLifeState.Dead &&
+        _deathCause == Rac1RatchetDeathCause.RecoveredEnvironmental &&
+        EnvironmentalRestartGeneration < EnvironmentalDeathGeneration;
+
     public Rac1RatchetNanotechSnapshot Probe() => Snapshot();
     public Rac1PlayerActionRuntimeSession Actions => _actions;
 
@@ -120,6 +127,7 @@ public sealed class Rac1RatchetNanotechSession
         _nanotech = 0;
         _lifeState = Rac1RatchetLifeState.Dead;
         _deathCause = Rac1RatchetDeathCause.RecoveredEnvironmental;
+        EnvironmentalDeathGeneration = checked(EnvironmentalDeathGeneration + 1);
         return Snapshot();
     }
 
@@ -130,14 +138,14 @@ public sealed class Rac1RatchetNanotechSession
     /// </summary>
     public Rac1RatchetNanotechSnapshot Respawn()
     {
-        if (_lifeState != Rac1RatchetLifeState.Dead ||
-            _deathCause != Rac1RatchetDeathCause.RecoveredEnvironmental)
+        if (!HasPendingRecoveredEnvironmentalRestart)
             throw new InvalidOperationException(
-                "R&C1 recovered respawn requires a recovered environmental death.");
+                "R&C1 recovered respawn requires a pending recovered environmental death.");
 
         _nanotech = RetailVeldinRespawnNanotech;
         _lifeState = Rac1RatchetLifeState.Alive;
         _deathCause = Rac1RatchetDeathCause.None;
+        EnvironmentalRestartGeneration = EnvironmentalDeathGeneration;
         _actions.EnterState(Rac1PlayerActionDomain.Neutral);
         return Snapshot();
     }

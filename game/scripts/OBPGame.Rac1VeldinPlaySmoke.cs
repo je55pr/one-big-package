@@ -51,12 +51,12 @@ public partial class OBPGame
             var naturalAttack = await Rac1SmokeProvokeClass749AttackAsync(
                 hostile,
                 maxFrames: 3000);
-            if (_rac1AutomaticEnvironmentalRestartGeneration != _rac1EnvironmentalDeathGeneration ||
+            if (_rac1Nanotech.EnvironmentalRestartGeneration != _rac1Nanotech.EnvironmentalDeathGeneration ||
                 naturalAttack.PlayerTravel < 5f)
                 throw new InvalidOperationException(
                     $"Ordinary movement did not resume after automatic Veldin restart: " +
-                    $"restart={_rac1AutomaticEnvironmentalRestartGeneration}, " +
-                    $"death={_rac1EnvironmentalDeathGeneration}, " +
+                    $"restart={_rac1Nanotech.EnvironmentalRestartGeneration}, " +
+                    $"death={_rac1Nanotech.EnvironmentalDeathGeneration}, " +
                     $"travel={naturalAttack.PlayerTravel:R}.");
             GD.Print(
                 $"[rac1-veldin-play] natural hostile attack / post-restart control PASS: " +
