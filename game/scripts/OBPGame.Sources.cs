@@ -192,10 +192,10 @@ public partial class OBPGame
             _worldHud.Visible = false;
         }
 
-        // A normal executable/editor launch used to build the smoke cube before
-        // this deferred source screen appeared. Remove those presentation-only
-        // nodes so browsing into a runtime world cannot accidentally inherit the
-        // smoke sun, floor, cube or banner. World loads are owned by _worldScene.
+        // Production startup no longer constructs the smoke fixture. Keep this
+        // defensive cleanup for explicit debug/test fixtures so source browsing
+        // cannot inherit their sun, floor, cube or banner. World loads are owned
+        // by the runtime-world presentation path.
         foreach (var child in _worldRoot.GetChildren())
         {
             if (!child.IsQueuedForDeletion())

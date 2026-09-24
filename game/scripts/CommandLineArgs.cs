@@ -9,6 +9,7 @@ namespace OneBigPackage;
 public sealed record CommandLineArgs
 {
     public string TestScene { get; init; } = "smoke";
+    public bool TestSceneExplicit { get; init; }
     public int? CaptureFrame { get; init; }
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
@@ -79,6 +80,9 @@ public sealed record CommandLineArgs
     /// <summary>Run the ordinary-input-only R&amp;C1 Veldin playability smoke and quit.</summary>
     public bool Rac1VeldinPlaySmoke { get; init; }
 
+    /// <summary>Exercise cold startup visibility, then enter ordinary R&amp;C1 Veldin through the bootstrap/provider path.</summary>
+    public bool Rac1StartupVisibilitySmoke { get; init; }
+
     /// <summary>Run the lower-level synthetic R&amp;C1 combat host-contract smoke and quit.</summary>
     public bool Rac1CombatContractSmoke { get; init; }
 
@@ -125,7 +129,7 @@ public sealed record CommandLineArgs
 
             result = a switch
             {
-                "--test-scene" => result with { TestScene = Next() ?? result.TestScene },
+                "--test-scene" => result with { TestScene = Next() ?? result.TestScene, TestSceneExplicit = true },
                 "--test-level" => result with { TestLevel = Next() },
                 "--capture-frame" => result with { CaptureFrame = ParseInt(Next()) },
                 "--capture-out" => result with { CaptureOut = Next() },
@@ -150,6 +154,7 @@ public sealed record CommandLineArgs
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
+                "--rac1-startup-visibility-smoke" => result with { Rac1StartupVisibilitySmoke = true },
                 // Historical alias now names the honest ordinary-play gate rather than the
                 // synthetic staged-contact harness it previously selected.
                 "--rac1-combat-smoke" => result with { Rac1VeldinPlaySmoke = true },

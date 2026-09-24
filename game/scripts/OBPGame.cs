@@ -131,13 +131,20 @@ public partial class OBPGame : Node3D
                 ShowSelector();
             }
         }
-        else if (_args.TestScene == "picker")
+        else if (_args.TestScene == "picker" && _args.TestSceneExplicit)
         {
             BuildPickerScreen();
         }
-        else
+        else if (_args.TestSceneExplicit)
         {
             BuildScene(_args.TestScene);
+        }
+        else
+        {
+            // Production startup is owned by SourceManagerBootstrap. Keep only the
+            // neutral background until its deferred title/source/world route is ready;
+            // never render the deterministic smoke fixture as a transient placeholder.
+            EnsurePlainEnvironment();
         }
 
         GD.Print($"[OBPGame] ready — mode={_mode} scene='{_sceneKind}' " +

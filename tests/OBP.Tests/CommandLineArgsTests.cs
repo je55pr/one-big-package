@@ -5,6 +5,18 @@ namespace OBP.Tests;
 public sealed class CommandLineArgsTests
 {
     [Fact]
+    public void SmokeSceneIsOnlyExplicitlyRequested()
+    {
+        CommandLineArgs ordinary = CommandLineArgs.Parse([]);
+        CommandLineArgs explicitSmoke = CommandLineArgs.Parse(["--test-scene", "smoke"]);
+
+        Assert.Equal("smoke", ordinary.TestScene);
+        Assert.False(ordinary.TestSceneExplicit);
+        Assert.Equal("smoke", explicitSmoke.TestScene);
+        Assert.True(explicitSmoke.TestSceneExplicit);
+    }
+
+    [Fact]
     public void Rac1CampaignPersistenceIsOptIn()
     {
         CommandLineArgs ordinary = CommandLineArgs.Parse([]);
@@ -32,6 +44,7 @@ public sealed class CommandLineArgsTests
         CommandLineArgs play = CommandLineArgs.Parse(["--rac1-veldin-play-smoke"]);
         CommandLineArgs legacyPlay = CommandLineArgs.Parse(["--rac1-combat-smoke"]);
         CommandLineArgs contract = CommandLineArgs.Parse(["--rac1-combat-contract-smoke"]);
+        CommandLineArgs startup = CommandLineArgs.Parse(["--rac1-startup-visibility-smoke"]);
 
         Assert.True(play.Rac1VeldinPlaySmoke);
         Assert.False(play.Rac1CombatContractSmoke);
@@ -41,5 +54,8 @@ public sealed class CommandLineArgsTests
 
         Assert.False(contract.Rac1VeldinPlaySmoke);
         Assert.True(contract.Rac1CombatContractSmoke);
+
+        Assert.True(startup.Rac1StartupVisibilitySmoke);
+        Assert.False(startup.TestSceneExplicit);
     }
 }

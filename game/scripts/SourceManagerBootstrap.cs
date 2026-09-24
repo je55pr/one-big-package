@@ -72,6 +72,7 @@ public partial class SourceManagerBootstrap : Node
         string? destinationId = ValueAfter(args, "--destination");
         string? testScene = ValueAfter(args, "--test-scene");
         bool rac1CampaignSmoke = System.Array.Exists(args, a => a == "--rac1-campaign-smoke");
+        bool rac1StartupVisibilitySmoke = System.Array.Exists(args, a => a == "--rac1-startup-visibility-smoke");
 
         if (rac1Path is not null)
         {
@@ -89,6 +90,12 @@ public partial class SourceManagerBootstrap : Node
         if (rac1CampaignSmoke)
         {
             _game.OpenRac1CampaignCurrentFromBootstrap();
+            return;
+        }
+
+        if (rac1StartupVisibilitySmoke)
+        {
+            _game.RunRac1StartupVisibilitySmokeFromBootstrap();
             return;
         }
 
