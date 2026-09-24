@@ -8,7 +8,7 @@ namespace OBP.RAC1.Gameplay;
 /// supplies the native RNG-selected total; this class validates it against the
 /// recovered retail range and reproduces the proven low-value partition.
 /// </summary>
-public sealed class Rac1BoltCrateSession
+public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
 {
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly Rac1MobyPersistenceSession _persistence;
@@ -33,7 +33,20 @@ public sealed class Rac1BoltCrateSession
     {
         _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
+        _runtime.RegisterDamageConsumer(this);
     }
+
+    public int NativeClassId => Rac1BoltCrate.NativeClassId;
+
+    bool IRac1MobyDamageConsumer.CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage) =>
+        CanApplyDamage(source, damage);
+
+    object IRac1MobyDamageConsumer.ApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage) =>
+        AdmitDamage(source, damage);
 
     public int CollectedBolts { get; private set; }
     public int DestroyedCrateCount =>
@@ -72,6 +85,63 @@ public sealed class Rac1BoltCrateSession
             Rac1BoltCrate.RequirePVar(source));
     }
 
+    public bool CanApplyDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(damage);
+        if (source.SourceGame != "rac1" ||
+            source.NativeClassId != Rac1BoltCrate.NativeClassId)
+            return false;
+
+        var instance = _runtime.Require(source);
+        return damage.Target.MatchesMoby(instance.Key) &&
+               instance.IsActive &&
+               instance.State.NativeState == Rac1BoltCrate.ActiveNativeState &&
+               Rac1BoltCrate.ShouldBreak(damage.NativeDamage);
+    }
+
+    public Rac1BoltCrateDamageAdmission AdmitDamage(
+        RuntimeDynamicObject source,
+        Rac1GameplayDamageEvent damage)
+    {
+        if (!CanApplyDamage(source, damage))
+            throw new NotSupportedException(
+                "R&C1 class-500 damage admission requires positive native damage against an active crate.");
+
+        var instance = _runtime.Require(source);
+        return new Rac1BoltCrateDamageAdmission(
+            instance.Key,
+            damage.NativeDamage,
+            damage.NativeDamageFlags,
+            instance.EntityState);
+    }
+
+    public Rac1BoltCrateBreakResult CompleteDamage(
+        Rac1BoltCrateDamageAdmission admission,
+        int selectedTotal)
+    {
+        ArgumentNullException.ThrowIfNull(admission);
+        if (!_runtime.TryGet(admission.Target, out var runtimeInstance) ||
+            runtimeInstance is null)
+            throw new InvalidOperationException(
+                "R&C1 class-500 damage admission target is not registered.");
+
+        RuntimeDynamicObject source = runtimeInstance.Source;
+        admission.EntityState.EnsureMatches(source);
+        if (!runtimeInstance.IsActive ||
+            runtimeInstance.State.NativeState != Rac1BoltCrate.ActiveNativeState)
+            throw new InvalidOperationException(
+                "Inactive or non-active-state Bolt Crate cannot complete damage.");
+
+        return CompletePositiveDamage(
+            source,
+            runtimeInstance,
+            admission.NativeDamage,
+            selectedTotal);
+    }
+
     public Rac1BoltCrateBreakResult? ApplyDamage(
         RuntimeDynamicObject source,
         RuntimeEntityState current,
@@ -87,11 +157,13 @@ public sealed class Rac1BoltCrateSession
                 "R&C1 Bolt Crate damage target does not match the supplied runtime entity.",
                 nameof(damage));
 
-        return ApplyDamage(
-            source,
-            current,
-            damage.NativeDamage,
-            selectedTotal);
+        _ = Register(source, current);
+        if (!Rac1BoltCrate.ShouldBreak(damage.NativeDamage))
+            return null;
+
+        var admission =
+            _runtime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage);
+        return CompleteDamage(admission, selectedTotal);
     }
 
     public Rac1BoltCrateBreakResult? ApplyDamage(
@@ -103,7 +175,31 @@ public sealed class Rac1BoltCrateSession
         if (source.SourceGame != "rac1" || source.NativeClassId != Rac1BoltCrate.NativeClassId)
             throw new ArgumentException("Source is not an R&C1 class-500 Bolt Crate.", nameof(source));
         current.EnsureMatches(source);
-        if (!Rac1BoltCrate.ShouldBreak(nativeDamage)) return null;
+        if (!Rac1BoltCrate.ShouldBreak(nativeDamage))
+            return null;
+
+        var runtimeInstance = Register(source, current);
+        return CompletePositiveDamage(
+            source,
+            runtimeInstance,
+            nativeDamage,
+            selectedTotal);
+    }
+
+    private Rac1BoltCrateBreakResult CompletePositiveDamage(
+        RuntimeDynamicObject source,
+        Rac1MobyRuntimeInstance runtimeInstance,
+        double nativeDamage,
+        int selectedTotal)
+    {
+        if (!Rac1BoltCrate.ShouldBreak(nativeDamage))
+            throw new ArgumentOutOfRangeException(
+                nameof(nativeDamage),
+                "R&C1 class-500 break completion requires positive native damage.");
+        if (!runtimeInstance.IsActive ||
+            runtimeInstance.State.NativeState != Rac1BoltCrate.ActiveNativeState)
+            throw new InvalidOperationException(
+                "Inactive or non-active-state Bolt Crate cannot break again.");
 
         var authored = Rac1BoltCrate.ReadAuthored(source)
             ?? throw new InvalidDataException("R&C1 class-500 authored authority state is unavailable.");
@@ -117,12 +213,6 @@ public sealed class Rac1BoltCrateSession
         if (persisted.LevelIndexedMap || persisted.LocalSessionMap)
             throw new InvalidOperationException(
                 $"Bolt Crate UID {authored.Uid} already has recovered persistence state in level {_persistence.LevelId}.");
-
-        var runtimeInstance = Register(source, current);
-        if (!runtimeInstance.IsActive ||
-            runtimeInstance.State.NativeState != Rac1BoltCrate.ActiveNativeState)
-            throw new InvalidOperationException(
-                "Inactive or non-active-state Bolt Crate cannot break again.");
 
         _persistence.UpdateUid(source, Rac1MobyUidPersistenceBits.BothSet);
         var pickups = new List<Rac1BoltPickup>(values.Count);
@@ -164,6 +254,16 @@ public sealed class Rac1BoltCrateSession
         return retailValue;
     }
 }
+
+/// <summary>
+/// Shared damage transport admitted by class 500 before its separate native
+/// reward-selection input is supplied. Admission does not mutate crate lifetime.
+/// </summary>
+public sealed record Rac1BoltCrateDamageAdmission(
+    Rac1MobyRuntimeKey Target,
+    double NativeDamage,
+    uint? NativeDamageFlags,
+    RuntimeEntityState EntityState);
 
 /// <summary>
 /// Native transition evidence paired with the neutral deactivation projection.

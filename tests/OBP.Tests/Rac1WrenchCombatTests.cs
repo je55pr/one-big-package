@@ -215,13 +215,20 @@ public sealed class Rac1WrenchCombatTests
     }
 
     [Fact]
-    public void Class500UsesSeparateCrateConsequencePath()
+    public void Class500UsesSharedDamageTransportBeforeSeparateCrateConsequence()
     {
         var target = new Rac1WrenchContactTarget(
             NativeClassId: Rac1BoltCrate.NativeClassId,
             IsPlayerSelf: false);
 
-        Assert.Null(_controller.ResolveHostAdmittedDamage(target));
+        var transport = Assert.IsType<Rac1WrenchDamageResult>(
+            _controller.ResolveHostAdmittedDamage(target));
+
+        Assert.Equal(Rac1WrenchContactPath.HostPolicyAdmission, transport.ContactPath);
+        Assert.Equal(Rac1WrenchCombatController.RepresentativeDamage, transport.NativeDamage);
+        Assert.Equal(
+            Rac1WrenchCombatController.RepresentativeDamageFlags,
+            transport.NativeDamageFlags);
     }
 
     [Fact]
@@ -239,33 +246,38 @@ public sealed class Rac1WrenchCombatTests
         Assert.Equal(
             Rac1WrenchCombatController.RepresentativeDamageFlags,
             result.NativeDamageFlags);
-        Assert.Null(result.BoltCrateBreak);
     }
 
     [Fact]
-    public void Class500HostAdmissionHandsPositiveDamageToRecoveredCrateConsumer()
+    public void Class500HostAdmissionRoutesThroughSharedRuntimeBeforeRewardCompletion()
     {
         var source = Class500(uid: 121, rewardCentre: 10);
         var current = RuntimeEntityState.FromAuthored(source);
         var target = new Rac1WrenchContactTarget(
             NativeClassId: Rac1BoltCrate.NativeClassId,
             IsPlayerSelf: false);
-        var session = new Rac1BoltCrateSession();
+        var runtime = new Rac1MobyRuntimeSession();
+        var session = new Rac1BoltCrateSession(
+            runtime,
+            new Rac1MobyPersistenceSession(levelId: 0));
+        var registered = session.Register(source, current);
+        var transport = Assert.IsType<Rac1WrenchDamageResult>(
+            _controller.ResolveHostAdmittedDamage(target));
+        var damageEvent = Rac1DamageRuntime.FromWrench(
+            registered.Key,
+            transport);
 
-        var result = Assert.IsType<Rac1WrenchDamageResult>(
-            _controller.ApplyClass500HostAdmittedContact(
-                target,
-                source,
-                current,
-                session,
-                selectedTotal: 12));
+        var admission = runtime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
+            damageEvent);
 
-        Assert.Equal(Rac1WrenchContactPath.HostPolicyAdmission, result.ContactPath);
+        Assert.Equal(registered.Key, admission.Target);
         Assert.Equal(
             Rac1WrenchCombatController.RepresentativeDamage,
-            result.NativeDamage);
-        var crateBreak = Assert.IsType<Rac1BoltCrateBreakResult>(
-            result.BoltCrateBreak);
+            admission.NativeDamage);
+        Assert.True(registered.IsActive);
+        Assert.Equal(0, session.DestroyedCrateCount);
+
+        var crateBreak = session.CompleteDamage(admission, selectedTotal: 12);
         Assert.Equal(
             Rac1BoltCrate.ActiveNativeState,
             crateBreak.NativeStateBefore);

@@ -260,8 +260,7 @@ public sealed class Rac1Class749HostileSession :
     {
         if (damage.ContactPath != Rac1WrenchContactPath.HostPolicyAdmission ||
             damage.NativeDamage != Rac1WrenchCombatController.RepresentativeDamage ||
-            damage.NativeDamageFlags != Rac1WrenchCombatController.RepresentativeDamageFlags ||
-            damage.BoltCrateBreak is not null)
+            damage.NativeDamageFlags != Rac1WrenchCombatController.RepresentativeDamageFlags)
             throw new NotSupportedException(
                 "Only the bounded host-admitted wrench stimulus is supported for class 749.");
 

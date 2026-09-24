@@ -478,16 +478,22 @@ public partial class OBPGame
         var contactTarget = _rac1Wrench.AdmitGoal1RuntimeTarget(target.Source)
             ?? throw new InvalidOperationException(
                 "Admitted R&C1 Bolt Crate was rejected by the wrench target contract.");
-        var damage = _rac1Wrench.ApplyClass500HostAdmittedContact(
-            contactTarget,
-            target.Source,
-            target.State,
-            _rac1BoltCrates,
+        var damage = _rac1Wrench.ResolveHostAdmittedDamage(contactTarget);
+        if (damage is null)
+            return false;
+
+        var targetKey = new Rac1MobyRuntimeKey(
+            target.Source.NativeClassId,
+            target.Source.InstanceIndex);
+        var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
+        var admission =
+            _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
+                damageEvent);
+        var broken = _rac1BoltCrates.CompleteDamage(
+            admission,
             // Deterministic host RNG choice within the recovered range.
             // This does not claim the retail RNG selector.
             selectedTotal: authored.RewardCentre);
-        if (damage?.BoltCrateBreak is not { } broken)
-            return false;
 
         Vector3 rewardOrigin = target.Root.GlobalPosition;
         target.ApplyState(broken.EntityState);

@@ -106,6 +106,49 @@ public sealed class Rac1BoltCrateTests
     }
 
     [Fact]
+    public void SharedRuntimeDamageAdmissionDoesNotChooseRewardOrMutateLifetime()
+    {
+        var source = Class500(uid: 121, rewardCentre: 10);
+        var runtime = new Rac1MobyRuntimeSession();
+        var persistence = new Rac1MobyPersistenceSession(levelId: 0);
+        var session = new Rac1BoltCrateSession(runtime, persistence);
+        var registered = session.Register(
+            source,
+            RuntimeEntityState.FromAuthored(source));
+        var damage = new Rac1GameplayDamageEvent(
+            Rac1GameplayEntityRef.Player,
+            Rac1GameplayEntityRef.Moby(registered.Key),
+            nativeDamage: 0.25d,
+            nativeDamageFlags: 0x12340000u);
+
+        Assert.True(runtime.CanDispatchDamage(damage));
+        var admission =
+            runtime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage);
+
+        Assert.Equal(registered.Key, admission.Target);
+        Assert.Equal(0.25d, admission.NativeDamage);
+        Assert.Equal(0x12340000u, admission.NativeDamageFlags);
+        Assert.True(registered.IsActive);
+        Assert.Equal(Rac1BoltCrate.ActiveNativeState, registered.State.NativeState);
+        Assert.Equal(0, session.DestroyedCrateCount);
+        Assert.Equal(0, session.OutstandingPickupCount);
+
+        var zero = new Rac1GameplayDamageEvent(
+            Rac1GameplayEntityRef.Player,
+            Rac1GameplayEntityRef.Moby(registered.Key),
+            nativeDamage: 0d);
+        Assert.False(runtime.CanDispatchDamage(zero));
+
+        var broken = session.CompleteDamage(admission, selectedTotal: 7);
+
+        Assert.Equal(7, broken.PhysicalValue);
+        Assert.False(registered.IsActive);
+        Assert.Equal(Rac1BoltCrate.DisabledNativeState, registered.State.NativeState);
+        Assert.Equal(1, session.DestroyedCrateCount);
+        Assert.Equal(3, session.OutstandingPickupCount);
+    }
+
+    [Fact]
     public void GenericDamageEventRoutesToCrateConsequenceAndValidatesVictimIdentity()
     {
         var source = Class500(uid: 121, rewardCentre: 10);

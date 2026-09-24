@@ -101,7 +101,11 @@ public sealed class Rac1Goal1PlayableSliceTests
         var crateTarget = new Rac1WrenchContactTarget(
             Rac1BoltCrate.NativeClassId,
             IsPlayerSelf: false);
-        var crateSession = new Rac1BoltCrateSession();
+        var crateRuntime = new Rac1MobyRuntimeSession();
+        var crateSession = new Rac1BoltCrateSession(
+            crateRuntime,
+            new Rac1MobyPersistenceSession(levelId: 0));
+        var crateRuntimeInstance = crateSession.Register(crate, crateState);
         Assert.True(Rac1BoltCrate.RewardRange(10).Contains(12));
 
         // Contact admission is host policy while retail wrench geometry remains unresolved.
@@ -111,18 +115,23 @@ public sealed class Rac1Goal1PlayableSliceTests
             new Rac1WrenchHostPoint(2.7, 0.8, 0)));
 
         var crateHit = Assert.IsType<Rac1WrenchDamageResult>(
-            wrench.ApplyClass500HostAdmittedContact(
-                crateTarget,
-                crate,
-                crateState,
-                crateSession,
-                selectedTotal: 12));
+            wrench.ResolveHostAdmittedDamage(crateTarget));
         Assert.Equal(Rac1WrenchContactPath.HostPolicyAdmission, crateHit.ContactPath);
         Assert.Equal(
             Rac1WrenchCombatController.RepresentativeDamage,
             crateHit.NativeDamage);
 
-        var brokenCrate = Assert.IsType<Rac1BoltCrateBreakResult>(crateHit.BoltCrateBreak);
+        var crateDamageEvent = Rac1DamageRuntime.FromWrench(
+            crateRuntimeInstance.Key,
+            crateHit);
+        var crateAdmission =
+            crateRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
+                crateDamageEvent);
+        Assert.True(crateRuntimeInstance.IsActive);
+
+        var brokenCrate = crateSession.CompleteDamage(
+            crateAdmission,
+            selectedTotal: 12);
         Assert.Equal(Rac1BoltCrate.ActiveNativeState, brokenCrate.NativeStateBefore);
         Assert.Equal(Rac1BoltCrate.BreakTransitionNativeState, brokenCrate.NativeBreakTransitionState);
         Assert.Equal(Rac1BoltCrate.DisabledNativeState, brokenCrate.NativeDisabledState);

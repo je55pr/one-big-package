@@ -21,8 +21,7 @@ public sealed record Rac1WrenchHostCandidate(
 public sealed record Rac1WrenchDamageResult(
     Rac1WrenchContactPath ContactPath,
     double NativeDamage,
-    uint NativeDamageFlags,
-    Rac1BoltCrateBreakResult? BoltCrateBreak = null)
+    uint NativeDamageFlags)
 {
     public Rac1NativeDamageEnvelope DamageEnvelope => new(NativeDamage, NativeDamageFlags);
 }
@@ -119,45 +118,11 @@ public sealed class Rac1WrenchCombatController
         Rac1WrenchContactTarget target)
     {
         if (!CanDamage(target)) return null;
-        if (target.NativeClassId == Rac1BoltCrate.NativeClassId) return null;
 
         return new Rac1WrenchDamageResult(
             Rac1WrenchContactPath.HostPolicyAdmission,
             RepresentativeDamage,
             RepresentativeDamageFlags);
-    }
-
-    public Rac1WrenchDamageResult? ApplyClass500HostAdmittedContact(
-        Rac1WrenchContactTarget target,
-        RuntimeDynamicObject source,
-        RuntimeEntityState current,
-        Rac1BoltCrateSession crateSession,
-        int selectedTotal)
-    {
-        if (!CanDamage(target)) return null;
-        if (target.NativeClassId != Rac1BoltCrate.NativeClassId) return null;
-        if (source.NativeClassId != target.NativeClassId)
-            throw new ArgumentException(
-                "Wrench target class does not match the supplied runtime entity.",
-                nameof(source));
-
-        var transport = new Rac1WrenchDamageResult(
-            Rac1WrenchContactPath.HostPolicyAdmission,
-            RepresentativeDamage,
-            RepresentativeDamageFlags);
-        var damageEvent = Rac1DamageRuntime.FromWrench(
-            new Rac1MobyRuntimeKey(
-                source.NativeClassId,
-                source.InstanceIndex),
-            transport);
-        var crateBreak = crateSession.ApplyDamage(
-            source,
-            current,
-            damageEvent,
-            selectedTotal);
-        return crateBreak is null
-            ? null
-            : transport with { BoltCrateBreak = crateBreak };
     }
 
     private static double PlanarDistanceSquared(
