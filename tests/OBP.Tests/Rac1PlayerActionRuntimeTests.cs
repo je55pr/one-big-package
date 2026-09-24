@@ -74,6 +74,24 @@ public sealed class Rac1PlayerActionRuntimeTests
     }
 
     [Fact]
+    public void FirstRangedEntryUsesRecoveredActionAndSequence()
+    {
+        var session = new Rac1PlayerActionRuntimeSession();
+
+        var fire = session.EnterState(Rac1PlayerActionDomain.FirstRangedFire);
+
+        Assert.Equal(Rac1PlayerActionDomain.FirstRangedFire, fire.CurrentNativeState);
+        Assert.Equal(Rac1PlayerActionDomain.Neutral, fire.PreviousNativeState);
+        Assert.Equal(
+            Rac1RatchetSequenceSelection.FirstRangedFireSequenceId,
+            fire.NativeSequence);
+        Assert.Equal(0, fire.NativeSequenceFrame);
+        Assert.Equal(
+            Rac1OrdinaryMovementPolicy.Allowed,
+            fire.OrdinaryMovement);
+    }
+
+    [Fact]
     public void UnknownStateRemainsNumericAndDoesNotGainOrdinaryMovementSemantics()
     {
         var session = new Rac1PlayerActionRuntimeSession();

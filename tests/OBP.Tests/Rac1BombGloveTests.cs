@@ -52,6 +52,7 @@ public sealed class Rac1BombGloveTests
         var use = Assert.IsType<Rac1WeaponUseAdmission>(fired.UseAdmission);
         Assert.True(use.Accepted);
         Assert.Equal(Rac1WeaponUseRejection.None, use.Rejection);
+        Assert.Equal(Rac1PlayerActionDomain.FirstRangedFire, use.NativePlayerActionState);
         Assert.Equal(Rac1RatchetSequenceSelection.FirstRangedFireSequenceId, use.NativePlayerSequenceId);
         Assert.Same(use, shot.Admission);
     }

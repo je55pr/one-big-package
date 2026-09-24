@@ -23,6 +23,9 @@ public sealed class Rac1WrenchCombatTests
         Assert.Null(accepted.AmmoBefore);
         Assert.Null(accepted.AmmoAfter);
         Assert.Equal(
+            Rac1PlayerActionDomain.Wrench,
+            accepted.NativePlayerActionState);
+        Assert.Equal(
             Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
             accepted.NativePlayerSequenceId);
     }

@@ -110,6 +110,7 @@ public sealed class Rac1PlayerActionRuntimeSession
     {
         RegisterHandler(new NeutralActionHandler());
         RegisterHandler(new WrenchActionHandler());
+        RegisterHandler(new FirstRangedFireActionHandler());
         RegisterHandler(new EnvironmentalFallDeathActionHandler());
         _current = new Rac1PlayerActionSnapshot(
             Rac1PlayerActionDomain.Neutral,
@@ -185,6 +186,19 @@ public sealed class Rac1PlayerActionRuntimeSession
         public Rac1PlayerActionEntry Initialize(Rac1PlayerActionSnapshot previous) =>
             new(
                 Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
+                0,
+                previous.OrdinaryMovement);
+
+        public Rac1PlayerActionSnapshot Update(Rac1PlayerActionSnapshot current) => current;
+    }
+
+    private sealed class FirstRangedFireActionHandler : IRac1PlayerActionHandler
+    {
+        public int NativeState => Rac1PlayerActionDomain.FirstRangedFire;
+
+        public Rac1PlayerActionEntry Initialize(Rac1PlayerActionSnapshot previous) =>
+            new(
+                Rac1RatchetSequenceSelection.FirstRangedFireSequenceId,
                 0,
                 previous.OrdinaryMovement);
 

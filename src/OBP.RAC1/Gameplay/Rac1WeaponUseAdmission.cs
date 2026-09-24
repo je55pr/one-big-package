@@ -26,13 +26,14 @@ public sealed record Rac1WeaponUseAdmission(
     Rac1WeaponUseRejection Rejection,
     int? AmmoBefore,
     int? AmmoAfter,
+    int? NativePlayerActionState,
     int? NativePlayerSequenceId)
 {
     public static Rac1WeaponUseAdmission Reject(
         Rac1WeaponId weaponId,
         Rac1WeaponUseRejection rejection,
         int? ammo = null) =>
-        new(weaponId, false, rejection, ammo, ammo, null);
+        new(weaponId, false, rejection, ammo, ammo, null, null);
 
     public static Rac1WeaponUseAdmission AcceptWrench() =>
         new(
@@ -41,6 +42,7 @@ public sealed record Rac1WeaponUseAdmission(
             Rac1WeaponUseRejection.None,
             null,
             null,
+            Rac1PlayerActionDomain.Wrench,
             Rac1RatchetSequenceSelection.WrenchAttackSequenceId);
 
     public static Rac1WeaponUseAdmission AcceptFirstRanged(int ammoBefore, int ammoAfter) =>
@@ -50,6 +52,7 @@ public sealed record Rac1WeaponUseAdmission(
             Rac1WeaponUseRejection.None,
             ammoBefore,
             ammoAfter,
+            Rac1PlayerActionDomain.FirstRangedFire,
             Rac1RatchetSequenceSelection.FirstRangedFireSequenceId);
 }
 
