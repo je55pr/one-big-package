@@ -130,7 +130,7 @@ public partial class OBPGame
             }
 
             var node = FindPresentedDynamic(result, source)
-                ?? CreateRac1FallbackNode(result, source, crate: true);
+                ?? CreateRac1InvisibleRuntimeNode(result, source);
             _rac1BoltCrates.Register(source, node.State);
             _rac1CrateNodes.Add(node);
         }
@@ -142,7 +142,7 @@ public partial class OBPGame
         {
             authoredClass749++;
             var node = FindPresentedDynamic(result, hostileSource)
-                ?? CreateRac1FallbackNode(result, hostileSource, crate: false);
+                ?? CreateRac1InvisibleRuntimeNode(result, hostileSource);
             _rac1Class749PresentationNodes.Add(node);
             if (!Rac1Class749Hostile.IsRecoveredVeldinPlacement(world.LevelId, hostileSource))
             {
@@ -197,32 +197,23 @@ public partial class OBPGame
             node.Source.SourceGame == source.SourceGame &&
             node.Source.NativeClassId == source.NativeClassId &&
             node.Source.InstanceIndex == source.InstanceIndex);
-    private static RuntimeWorldScene.DynamicObjectNode CreateRac1FallbackNode(
+    private static RuntimeWorldScene.DynamicObjectNode CreateRac1InvisibleRuntimeNode(
         RuntimeWorldScene.Result result,
-        RuntimeDynamicObject source,
-        bool crate)
+        RuntimeDynamicObject source)
     {
         var root = new RuntimeWorldScene.RuntimeDynamicObjectRoot3D
         {
-            Name = $"rac1_live_{source.NativeClassId}_{source.InstanceIndex}",
+            Name = $"rac1_runtime_{source.NativeClassId}_{source.InstanceIndex}",
         };
         root.Configure(source);
-        Mesh primitive = crate
-            ? new BoxMesh { Size = new Vector3(1.15f, 1.15f, 1.15f) }
-            : new SphereMesh { Radius = 0.6f, Height = 1.2f };
-        var material = new StandardMaterial3D
-        {
-            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            AlbedoColor = crate ? new Color(0.65f, 0.45f, 0.18f) : new Color(0.85f, 0.2f, 0.2f),
-        };
-        root.AddChild(new MeshInstance3D
-        {
-            Name = crate ? "BoltCrateHostMarker" : "Class749HostMarker",
-            Mesh = primitive,
-            MaterialOverride = material,
-        });
         result.Root.AddChild(root);
-        return new RuntimeWorldScene.DynamicObjectNode(source, root);
+
+        var node = new RuntimeWorldScene.DynamicObjectNode(source, root);
+        node.ApplyState(RuntimeEntityState.FromAuthored(source));
+        // Preserve authored identity/state for class registration, but do not
+        // manufacture a visible/contactable host target when presentation is absent.
+        root.Visible = false;
+        return node;
     }
 
     private void ArmRac1Gameplay(DebugPlayer player)
