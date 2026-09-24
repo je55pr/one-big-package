@@ -100,6 +100,35 @@ public sealed class Rac1BoltCrateTests
     }
 
     [Fact]
+    public void SameWorldControllerRecreationPreservesDestroyedUidState()
+    {
+        var source = Class500(uid: 121, rewardCentre: 10);
+        var persistence = new Rac1MobyPersistenceSession(levelId: 0);
+        var firstSession = new Rac1BoltCrateSession(persistence);
+        var initial = RuntimeEntityState.FromAuthored(source);
+
+        _ = Assert.IsType<Rac1BoltCrateBreakResult>(
+            firstSession.ApplyDamage(
+                source,
+                initial,
+                nativeDamage: 1,
+                selectedTotal: 7));
+
+        var restartedController = new Rac1BoltCrateSession(persistence);
+
+        Assert.Equal(1, restartedController.DestroyedCrateCount);
+        Assert.Equal(
+            Rac1MobyUidPersistenceBits.BothSet,
+            persistence.QueryUid(source));
+        Assert.Throws<InvalidOperationException>(() =>
+            restartedController.ApplyDamage(
+                source,
+                initial,
+                nativeDamage: 1,
+                selectedTotal: 8));
+    }
+
+    [Fact]
     public void UnadmittedRewardCentreDoesNotInventRngRange()
     {
         Assert.Throws<NotSupportedException>(() => Rac1BoltCrate.RewardRange(15));

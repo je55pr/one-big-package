@@ -10,12 +10,25 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public sealed class Rac1BoltCrateSession
 {
-    private readonly HashSet<int> _destroyedUids = [];
+    private readonly Rac1MobyPersistenceSession _persistence;
     private readonly Dictionary<int, Rac1BoltPickup> _outstanding = [];
     private int _nextPickupId = 1;
 
+    public Rac1BoltCrateSession()
+        : this(new Rac1MobyPersistenceSession(levelId: 0))
+    {
+    }
+
+    public Rac1BoltCrateSession(Rac1MobyPersistenceSession persistence)
+    {
+        _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
+    }
+
     public int CollectedBolts { get; private set; }
-    public int DestroyedCrateCount => _destroyedUids.Count;
+    public int DestroyedCrateCount =>
+        _persistence.UidStates.Count(pair =>
+            pair.Key.NativeClassId == Rac1BoltCrate.NativeClassId &&
+            pair.Value == Rac1MobyUidPersistenceBits.BothSet);
     public int OutstandingPickupCount => _outstanding.Count;
 
     public Rac1BoltCrateBreakResult? ApplyDamage(
@@ -40,8 +53,12 @@ public sealed class Rac1BoltCrateSession
                 $"Native selected total {selectedTotal} is outside recovered range {range.Minimum}..{range.Maximum}.");
 
         var values = Rac1BoltCrate.PartitionRepresentativeTotal(selectedTotal);
-        if (!_destroyedUids.Add(authored.Uid))
-            throw new InvalidOperationException($"Bolt Crate UID {authored.Uid} already paid out in this session.");
+        var persisted = _persistence.QueryUid(source);
+        if (persisted.LevelIndexedMap || persisted.LocalSessionMap)
+            throw new InvalidOperationException(
+                $"Bolt Crate UID {authored.Uid} already has recovered persistence state in level {_persistence.LevelId}.");
+
+        _persistence.UpdateUid(source, Rac1MobyUidPersistenceBits.BothSet);
         var pickups = new List<Rac1BoltPickup>(values.Count);
         foreach (int value in values)
         {

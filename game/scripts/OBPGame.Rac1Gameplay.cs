@@ -37,6 +37,7 @@ public partial class OBPGame
     private const float Rac1Class749HostPresentationTurnRate = 4.0f;
 
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
+    private Rac1MobyPersistenceSession _rac1MobyPersistence = new(levelId: 0);
     private Rac1BoltCrateSession _rac1BoltCrates = new();
     private Rac1MobyRuntimeSession _rac1MobyRuntime = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
@@ -67,14 +68,15 @@ public partial class OBPGame
     private double _rac1LastEnvironmentalDeathContactSeparation = double.NaN;
     private string _rac1CombatStatus = "off";
 
-    private void ResetRac1LevelGameplay()
+    private void ResetRac1LevelGameplay(int levelId = 0)
     {
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
         foreach (var projectile in _rac1Projectiles.Values)
             if (IsInstanceValid(projectile.Node)) projectile.Node.QueueFree();
         _rac1Projectiles.Clear();
-        _rac1BoltCrates = new Rac1BoltCrateSession();
+        _rac1MobyPersistence = new Rac1MobyPersistenceSession(levelId);
+        _rac1BoltCrates = new Rac1BoltCrateSession(_rac1MobyPersistence);
         _rac1MobyRuntime = new Rac1MobyRuntimeSession();
         _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime);
         _rac1Nanotech = new Rac1RatchetNanotechSession();
@@ -99,7 +101,7 @@ public partial class OBPGame
 
     private void ConfigureRac1Gameplay(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        ResetRac1LevelGameplay();
+        ResetRac1LevelGameplay(world.LevelId);
         if (world.Game != "rac1")
         {
             return;
