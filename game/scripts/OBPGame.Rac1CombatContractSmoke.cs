@@ -3,6 +3,7 @@ using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
+using OBP.Runtime.Gameplay;
 
 namespace OneBigPackage;
 
@@ -92,7 +93,7 @@ public partial class OBPGame
             // presentation; later re-enable only the selected placement and stage it
             // outside its activation polygon for projectile/wrench contact checks.
             foreach (var pair in _rac1HostileNodes)
-                pair.Value.Root.Visible = false;
+                SetRac1HostedPresence(pair.Value, RuntimeEntityPresence.Inactive);
 
             var crate = _rac1CrateNodes
                 .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
@@ -157,7 +158,7 @@ public partial class OBPGame
 
             Vector3 stagedHostilePosition = crate.Root.GlobalPosition;
             hostile.Root.GlobalPosition = stagedHostilePosition;
-            hostile.Root.Visible = true;
+            SetRac1HostedPresence(hostile, RuntimeEntityPresence.Active);
 
             int bombAmmoBeforeFire = _rac1Weapons.FirstRangedAmmo;
             if (bombAmmoBeforeFire < Rac1BombGlove.AmmoCostPerShot)
@@ -225,11 +226,11 @@ public partial class OBPGame
                 "immediate refire cadence-blocked and class-749 consequence remains unresolved");
 
             // This lower-level harness has already proved the crate contact path above.
-            // Hide remaining class-500 presentations so the staged terminal swing
+            // Deactivate remaining class-500 runtime entries so the staged terminal swing
             // isolates the class-749 host-contact contract instead of being consumed
             // by the production crate-first contact ordering.
             foreach (var crateNode in _rac1CrateNodes.Where(node => IsInstanceValid(node.Root)))
-                crateNode.Root.Visible = false;
+                SetRac1HostedPresence(crateNode, RuntimeEntityPresence.Inactive);
 
             Vector3 terminalForward = -hostile.Root.GlobalTransform.Basis.Z;
             terminalForward.Y = 0f;

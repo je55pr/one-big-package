@@ -187,6 +187,24 @@ public partial class OBPGame
             .Select(node => _rac1Hostiles.Probe(node.Source))
             .ToArray();
 
+    private bool IsRac1GameplayActive(RuntimeWorldScene.DynamicObjectNode node) =>
+        _rac1MobyRuntime.Require(node.Source).IsActive;
+
+    private static bool HasRac1HostContactGeometry(
+        RuntimeWorldScene.DynamicObjectNode node) =>
+        node.Root.GetChildren().Any(child => child is MeshInstance3D);
+
+    private void SetRac1HostedPresence(
+        RuntimeWorldScene.DynamicObjectNode node,
+        RuntimeEntityPresence presence)
+    {
+        var runtime = _rac1MobyRuntime.Require(node.Source);
+        _rac1MobyRuntime.SetTransform(
+            runtime,
+            RuntimeWorldScene.ToRuntimeTransform(node.Root.Transform));
+        node.ApplyState(_rac1MobyRuntime.SetPresence(runtime, presence));
+    }
+
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
@@ -422,7 +440,8 @@ public partial class OBPGame
             .Concat(_rac1HostileNodes.Values)
             .Where(node =>
                 IsInstanceValid(node.Root) &&
-                node.Root.Visible)
+                IsRac1GameplayActive(node) &&
+                HasRac1HostContactGeometry(node))
             .ToArray();
         RuntimeDynamicObject? selected = _rac1Wrench.SelectNearestGoal1HostTarget(
             new Rac1WrenchHostPoint(root.X, root.Y, root.Z),
@@ -593,7 +612,8 @@ public partial class OBPGame
             var contacts = _rac1HostileNodes.Values
                 .Where(hostile =>
                     IsInstanceValid(hostile.Root) &&
-                    hostile.Root.Visible)
+                    IsRac1GameplayActive(hostile) &&
+                    HasRac1HostContactGeometry(hostile))
                 .Select(hostile =>
                 {
                     Vector3 target = hostile.Root.GlobalPosition + Vector3.Up * 0.5f;
@@ -660,7 +680,7 @@ public partial class OBPGame
 
         foreach (var hostile in _rac1HostileNodes.Values.OrderBy(node => node.Source.InstanceIndex))
         {
-            if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
+            if (!IsInstanceValid(hostile.Root) || !IsRac1GameplayActive(hostile))
                 continue;
 
             var previous = _rac1Hostiles.Probe(hostile.Source);
@@ -873,9 +893,9 @@ public partial class OBPGame
             return string.Empty;
         }
 
-        int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
-            IsInstanceValid(hostile.Root) && hostile.Root.Visible);
         var hostileProbes = SnapshotRac1HostileProbes();
+        int activeHostiles = hostileProbes.Count(probe =>
+            probe.EntityState.Presentation.Presence == RuntimeEntityPresence.Active);
         string stateSummary = string.Join(
             ", ",
             hostileProbes
@@ -883,7 +903,7 @@ public partial class OBPGame
                 .OrderBy(group => group.Key)
                 .Select(group => $"s{group.Key}:{group.Count()}"));
         string hostile =
-            $"class-749 population {hostileProbes.Length} ({activeHostiles} visible)" +
+            $"class-749 population {hostileProbes.Length} ({activeHostiles} active)" +
             (stateSummary.Length > 0 ? $"; {stateSummary}" : string.Empty);
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
@@ -901,9 +921,9 @@ public partial class OBPGame
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return null;
-        int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
-            IsInstanceValid(hostile.Root) && hostile.Root.Visible);
         var hostileProbes = SnapshotRac1HostileProbes();
+        int activeHostiles = hostileProbes.Count(probe =>
+            probe.EntityState.Presentation.Presence == RuntimeEntityPresence.Active);
         return new Rac1GameplaySnapshot(
             AdmittedCrates: _rac1CrateNodes.Count,
             DestroyedCrates: _rac1BoltCrates.DestroyedCrateCount,
