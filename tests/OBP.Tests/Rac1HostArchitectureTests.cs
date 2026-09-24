@@ -72,6 +72,25 @@ public sealed class Rac1HostArchitectureTests
     }
 
     [Fact]
+    public void Rac1DebugHudDoesNotAdvertiseDisabledRKeyRespawn()
+    {
+        string player = File.ReadAllText(Path.Combine(
+            RepoPaths.Root,
+            "game",
+            "scripts",
+            "DebugPlayer.cs"));
+
+        Assert.Contains(
+            "string developmentControls = UseRac1Gameplay",
+            player,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "? \"mouse / right stick debug camera / F fly / F8 diagnostics",
+            player,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Rac1HudDoesNotAdvertiseManualEnvironmentalRespawn()
     {
         string gameplay = File.ReadAllText(Path.Combine(

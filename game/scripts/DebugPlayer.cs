@@ -803,6 +803,9 @@ public partial class DebugPlayer : CharacterBody3D
         var p = GlobalPosition;
         float speed = new Vector2(Velocity.X, Velocity.Z).Length();
         string diagnostics = _inputDiagnosticsVisible ? BuildInputDiagnostics() : string.Empty;
+        string developmentControls = UseRac1Gameplay
+            ? "mouse / right stick debug camera / F fly / F8 diagnostics / F9 camera fallback / Tab cursor / Esc"
+            : "mouse / right stick debug camera / F fly / R respawn (development) / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
         _hud.Text =
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
@@ -810,7 +813,7 @@ public partial class DebugPlayer : CharacterBody3D
             $"last jump: {_lastJump}\n" +
             diagnostics +
             $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face action\n" +
-            $"mouse / right stick debug camera / F fly / R respawn (development) / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
+            developmentControls;
     }
 
     private string BuildInputDiagnostics()
