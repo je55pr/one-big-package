@@ -82,6 +82,33 @@ public sealed class Rac1DamageRuntimeTests
     }
 
     [Fact]
+    public void DamageTransportPublishesSequencedEventsSynchronously()
+    {
+        var session = new Rac1DamageTransportSession();
+        var observed = new List<Rac1GameplayDamageDispatch>();
+        session.Published += observed.Add;
+        var firstDamage = new Rac1GameplayDamageEvent(
+            Rac1GameplayEntityRef.Player,
+            Rac1GameplayEntityRef.Moby(new Rac1MobyRuntimeKey(500, 89)),
+            nativeDamage: 1d);
+        var secondDamage = new Rac1GameplayDamageEvent(
+            Rac1GameplayEntityRef.Moby(new Rac1MobyRuntimeKey(749, 143)),
+            Rac1GameplayEntityRef.Player,
+            nativeDamage: 1d,
+            nativeMarker: Rac1Class749Hostile.AttackMarker);
+
+        var first = session.Publish(firstDamage);
+        var second = session.Publish(secondDamage);
+
+        Assert.Equal(2, session.Sequence);
+        Assert.Equal(new long[] { 1, 2 }, observed.Select(item => item.Sequence));
+        Assert.Same(firstDamage, first.Damage);
+        Assert.Same(secondDamage, second.Damage);
+        Assert.Same(firstDamage, observed[0].Damage);
+        Assert.Same(secondDamage, observed[1].Damage);
+    }
+
+    [Fact]
     public void DamageOwnerRejectsRuntimeIdentityFromDifferentNativeClass()
     {
         var mismatched = new Rac1GameplayDamageOwner(

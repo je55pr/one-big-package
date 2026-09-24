@@ -459,7 +459,22 @@ public partial class OBPGame
             Rac1Class749VeldinPopulation.TryGetActivationGroup(instanceIndex, out int group) &&
             group == activationGroup);
         var activatedGroupMembers = new HashSet<int>();
+        var expectedAttackSource = Rac1GameplayEntityRef.Moby(
+            new Rac1MobyRuntimeKey(
+                hostile.Source.NativeClassId,
+                hostile.Source.InstanceIndex));
+        Rac1GameplayDamageDispatch? observedAttackDispatch = null;
+        void ObserveDamage(Rac1GameplayDamageDispatch dispatch)
+        {
+            if (observedAttackDispatch is null &&
+                dispatch.Damage.Source == expectedAttackSource &&
+                dispatch.Damage.Target == Rac1GameplayEntityRef.Player)
+            {
+                observedAttackDispatch = dispatch;
+            }
+        }
 
+        _rac1DamageTransport.Published += ObserveDamage;
         try
         {
             for (int frame = 0; frame < maxFrames; frame++)
@@ -496,17 +511,21 @@ public partial class OBPGame
                             $"Class-749 entered attack outside recovered gates: distance={distance:R}, facing={facing:R}.");
                 }
 
-                if (probe.Attack is { } attack)
+                if (observedAttackDispatch is { } dispatch)
                 {
+                    var damageEvent = dispatch.Damage;
                     var nanotechAfter = _rac1Nanotech.Probe();
                     if (!sawPursuit || entryDistance is null || entryFacing is null)
                         throw new InvalidOperationException(
-                            "Class-749 reached its attack marker without observed pursuit/attack entry.");
-                    if (attack.NativeMarker != Rac1Class749Hostile.AttackMarker ||
-                        attack.NativeDamage != Rac1Class749Hostile.AttackDamage)
+                            "Class-749 reached its transported attack marker without observed pursuit/attack entry.");
+                    if (damageEvent.NativeMarker is not double nativeMarker ||
+                        nativeMarker != Rac1Class749Hostile.AttackMarker ||
+                        damageEvent.NativeDamage != Rac1Class749Hostile.AttackDamage)
+                    {
                         throw new InvalidOperationException(
-                            $"Class-749 emitted marker/damage {attack.NativeMarker:R}/{attack.NativeDamage:R}, " +
+                            $"Class-749 transported marker/damage {damageEvent.NativeMarker?.ToString("R") ?? "null"}/{damageEvent.NativeDamage:R}, " +
                             $"expected {Rac1Class749Hostile.AttackMarker:R}/{Rac1Class749Hostile.AttackDamage:R}.");
+                    }
                     if (nanotechAfter.Nanotech != nanotechBefore.Nanotech - 1 || nanotechAfter.IsDead)
                         throw new InvalidOperationException(
                             $"Class-749 ordinary attack changed Nanotech {nanotechBefore.Nanotech}->{nanotechAfter.Nanotech}, expected exactly one.");
@@ -539,7 +558,9 @@ public partial class OBPGame
                         hostileTravel.Length(),
                         entryDistance.Value,
                         entryFacing.Value,
-                        attack);
+                        new Rac1Class749AttackEvent(
+                            nativeMarker,
+                            damageEvent.NativeDamage));
                 }
 
                 if (_rac1Nanotech.Probe().Nanotech != nanotechBefore.Nanotech)
@@ -561,6 +582,7 @@ public partial class OBPGame
         }
         finally
         {
+            _rac1DamageTransport.Published -= ObserveDamage;
             ClearMovementSmokeInput();
         }
 

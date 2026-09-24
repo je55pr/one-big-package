@@ -125,6 +125,35 @@ public sealed record Rac1GameplayDamageEvent
             ? new Rac1NativeDamageEnvelope(NativeDamage, flags)
             : null;
 }
+public sealed record Rac1GameplayDamageDispatch(
+    long Sequence,
+    Rac1GameplayDamageEvent Damage);
+
+/// <summary>
+/// Sequenced engine-neutral transport for emitted R&C1 gameplay damage events.
+/// Publishing is synchronous and does not apply consequences; target-specific
+/// consumers remain separate from transport and observers do not change event
+/// lifetime or native state.
+/// </summary>
+public sealed class Rac1DamageTransportSession
+{
+    private long _sequence;
+
+    public long Sequence => _sequence;
+
+    public event Action<Rac1GameplayDamageDispatch>? Published;
+
+    public Rac1GameplayDamageDispatch Publish(Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        var dispatch = new Rac1GameplayDamageDispatch(
+            checked(++_sequence),
+            damage);
+        Published?.Invoke(dispatch);
+        return dispatch;
+    }
+}
+
 public static class Rac1DamageRuntime
 {
     public static Rac1GameplayDamageEvent FromClass749Attack(

@@ -42,6 +42,7 @@ public partial class OBPGame
     private Rac1MobyRuntimeSession _rac1MobyRuntime = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
     private Rac1RatchetNanotechSession _rac1Nanotech = new();
+    private Rac1DamageTransportSession _rac1DamageTransport = new();
     private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
         new Rac1CampaignState(),
         Rac1WeaponInventory.CreateOpeningVeldinWitness());
@@ -77,6 +78,7 @@ public partial class OBPGame
             _rac1MobyPersistence);
         _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime);
         _rac1Nanotech = new Rac1RatchetNanotechSession();
+        _rac1DamageTransport = new Rac1DamageTransportSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
         _rac1Class749PresentationNodes.Clear();
         _rac1LinkedTargetNodes.Clear();
@@ -478,6 +480,7 @@ public partial class OBPGame
             target.Source.NativeClassId,
             target.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
+        _rac1DamageTransport.Publish(damageEvent);
         var admission =
             _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(
                 damageEvent);
@@ -509,6 +512,7 @@ public partial class OBPGame
             hostile.Source.NativeClassId,
             hostile.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
+        _rac1DamageTransport.Publish(damageEvent);
         var probe = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(
             damageEvent);
         // Retail proves state 12 reaches the common terminalizer, but OBP does
@@ -647,6 +651,7 @@ public partial class OBPGame
                 int admittedConsequenceCount = 0;
                 foreach (var damageEvent in contactResolution.DamageEvents)
                 {
+                    _rac1DamageTransport.Publish(damageEvent);
                     if (_rac1MobyRuntime.CanDispatchDamage(damageEvent))
                         admittedConsequenceCount++;
                 }
@@ -769,6 +774,7 @@ public partial class OBPGame
                 var damageEvent = Rac1DamageRuntime.FromClass749Attack(
                     sourceKey,
                     attack);
+                _rac1DamageTransport.Publish(damageEvent);
                 var nanotech = _rac1Nanotech.ApplyDamage(damageEvent);
                 _player.Rac1GameplayState = nanotech;
                 GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
