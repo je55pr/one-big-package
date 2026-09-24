@@ -10,17 +10,28 @@ namespace OBP.RAC1.Gameplay;
 /// </summary>
 public sealed class Rac1BoltCrateSession
 {
+    private readonly Rac1MobyRuntimeSession _runtime;
     private readonly Rac1MobyPersistenceSession _persistence;
     private readonly Dictionary<int, Rac1BoltPickup> _outstanding = [];
     private int _nextPickupId = 1;
 
     public Rac1BoltCrateSession()
-        : this(new Rac1MobyPersistenceSession(levelId: 0))
+        : this(
+            new Rac1MobyRuntimeSession(),
+            new Rac1MobyPersistenceSession(levelId: 0))
     {
     }
 
     public Rac1BoltCrateSession(Rac1MobyPersistenceSession persistence)
+        : this(new Rac1MobyRuntimeSession(), persistence)
     {
+    }
+
+    public Rac1BoltCrateSession(
+        Rac1MobyRuntimeSession runtime,
+        Rac1MobyPersistenceSession persistence)
+    {
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
     }
 
@@ -30,6 +41,36 @@ public sealed class Rac1BoltCrateSession
             pair.Key.NativeClassId == Rac1BoltCrate.NativeClassId &&
             pair.Value == Rac1MobyUidPersistenceBits.BothSet);
     public int OutstandingPickupCount => _outstanding.Count;
+
+    public Rac1MobyRuntimeInstance Register(
+        RuntimeDynamicObject source,
+        RuntimeEntityState current)
+    {
+        if (source.SourceGame != "rac1" ||
+            source.NativeClassId != Rac1BoltCrate.NativeClassId)
+            throw new ArgumentException(
+                "Source is not an R&C1 class-500 Bolt Crate.",
+                nameof(source));
+        current.EnsureMatches(source);
+        _ = Rac1BoltCrate.ReadAuthored(source)
+            ?? throw new InvalidDataException(
+                "R&C1 class-500 authored authority state is unavailable.");
+
+        var key = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        if (_runtime.TryGet(key, out var existing))
+        {
+            _ = _runtime.Require(source);
+            return existing!;
+        }
+
+        return _runtime.Register(
+            source,
+            current,
+            Rac1BoltCrate.ActiveNativeState,
+            Rac1BoltCrate.RequirePVar(source));
+    }
 
     public Rac1BoltCrateBreakResult? ApplyDamage(
         RuntimeDynamicObject source,
@@ -64,9 +105,6 @@ public sealed class Rac1BoltCrateSession
         current.EnsureMatches(source);
         if (!Rac1BoltCrate.ShouldBreak(nativeDamage)) return null;
 
-        if (current.Presentation.Presence != RuntimeEntityPresence.Active)
-            throw new InvalidOperationException("Inactive Bolt Crate cannot break again.");
-
         var authored = Rac1BoltCrate.ReadAuthored(source)
             ?? throw new InvalidDataException("R&C1 class-500 authored authority state is unavailable.");
         var range = Rac1BoltCrate.RewardRange(authored.RewardCentre);
@@ -79,6 +117,12 @@ public sealed class Rac1BoltCrateSession
         if (persisted.LevelIndexedMap || persisted.LocalSessionMap)
             throw new InvalidOperationException(
                 $"Bolt Crate UID {authored.Uid} already has recovered persistence state in level {_persistence.LevelId}.");
+
+        var runtimeInstance = Register(source, current);
+        if (!runtimeInstance.IsActive ||
+            runtimeInstance.State.NativeState != Rac1BoltCrate.ActiveNativeState)
+            throw new InvalidOperationException(
+                "Inactive or non-active-state Bolt Crate cannot break again.");
 
         _persistence.UpdateUid(source, Rac1MobyUidPersistenceBits.BothSet);
         var pickups = new List<Rac1BoltPickup>(values.Count);
@@ -95,10 +139,17 @@ public sealed class Rac1BoltCrateSession
             pickups.Add(pickup);
         }
 
+        _runtime.SetNativeState(
+            runtimeInstance,
+            Rac1BoltCrate.BreakTransitionNativeState);
+        _runtime.Terminalize(
+            runtimeInstance,
+            Rac1BoltCrate.DisabledNativeState);
+
         return new Rac1BoltCrateBreakResult(
             authored, range, selectedTotal, Rac1BoltCrate.ActiveNativeState,
             Rac1BoltCrate.BreakTransitionNativeState, Rac1BoltCrate.DisabledNativeState,
-            pickups, current.WithPresence(RuntimeEntityPresence.Inactive));
+            pickups, runtimeInstance.EntityState);
     }
 
     public int CollectPickup(int pickupId)

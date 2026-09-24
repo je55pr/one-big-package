@@ -48,8 +48,11 @@ public sealed class Rac1BoltCrateTests
     public void BreakProjectsInactiveAndCollectionCreditsExactDenominations()
     {
         var source = Class500(uid: 121, rewardCentre: 10);
-        var session = new Rac1BoltCrateSession();
+        var runtime = new Rac1MobyRuntimeSession();
+        var persistence = new Rac1MobyPersistenceSession(levelId: 0);
+        var session = new Rac1BoltCrateSession(runtime, persistence);
         var initial = RuntimeEntityState.FromAuthored(source);
+        var registered = session.Register(source, initial);
 
         var result = Assert.IsType<Rac1BoltCrateBreakResult>(
             session.ApplyDamage(source, initial, nativeDamage: 1, selectedTotal: 12));
@@ -59,6 +62,9 @@ public sealed class Rac1BoltCrateTests
         Assert.Equal(Rac1BoltCrate.DisabledNativeState, result.NativeDisabledState);
         Assert.Equal(RuntimeEntityPresence.Inactive, result.EntityState.Presentation.Presence);
         Assert.Equal(initial.Identity, result.EntityState.Identity);
+        Assert.Same(registered, runtime.Require(source));
+        Assert.Equal(Rac1BoltCrate.DisabledNativeState, registered.State.NativeState);
+        Assert.Equal(RuntimeEntityPresence.Inactive, registered.Presence);
         Assert.Equal(12, result.PhysicalValue);
         Assert.Equal(new[] { 14, 14, 13, 13 }, result.Pickups.Select(p => p.NativeClassId));
 

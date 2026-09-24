@@ -42,6 +42,22 @@ public static class Rac1BoltCrate
         return new Rac1BoltCrateAuthoredState(uid, rewardCentre, pvar?.Length);
     }
 
+    internal static byte[] RequirePVar(RuntimeDynamicObject source)
+    {
+        var payloads = source.NativePayloads?
+            .Where(payload => payload.Format == PVarPayloadFormat)
+            .ToArray() ?? [];
+        if (payloads.Length != 1)
+            throw new InvalidDataException(
+                $"R&C1 class-500 instance {source.InstanceIndex} requires exactly one {PVarPayloadFormat} payload.");
+
+        byte[] pvar = payloads[0].Data;
+        if (pvar.Length != 0x100)
+            throw new InvalidDataException(
+                $"R&C1 class-500 instance {source.InstanceIndex} PVar is 0x{pvar.Length:x} bytes, expected 0x100.");
+        return pvar.ToArray();
+    }
+
     public static Rac1BoltRewardRange RewardRange(int rewardCentre)
     {
         if (rewardCentre != 10)

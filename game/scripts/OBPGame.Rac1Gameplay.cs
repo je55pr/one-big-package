@@ -76,8 +76,10 @@ public partial class OBPGame
             if (IsInstanceValid(projectile.Node)) projectile.Node.QueueFree();
         _rac1Projectiles.Clear();
         _rac1MobyPersistence = new Rac1MobyPersistenceSession(levelId);
-        _rac1BoltCrates = new Rac1BoltCrateSession(_rac1MobyPersistence);
         _rac1MobyRuntime = new Rac1MobyRuntimeSession();
+        _rac1BoltCrates = new Rac1BoltCrateSession(
+            _rac1MobyRuntime,
+            _rac1MobyPersistence);
         _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime);
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
@@ -133,6 +135,7 @@ public partial class OBPGame
 
             var node = FindPresentedDynamic(result, source)
                 ?? CreateRac1FallbackNode(result, source, crate: true);
+            _rac1BoltCrates.Register(source, node.State);
             _rac1CrateNodes.Add(node);
         }
 
