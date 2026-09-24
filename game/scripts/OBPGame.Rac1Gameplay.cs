@@ -53,7 +53,6 @@ public partial class OBPGame
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1Class749PresentationNodes = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1LinkedTargetNodes = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1HostileNodes = [];
-    private readonly Dictionary<int, Rac1Class749HostProbe> _rac1HostileProbes = [];
     private bool _rac1BombFireRequested;
     private Rac1BombGloveContactResolution? _rac1LastBombContactResolution;
     private double _rac1BombTickAccumulator;
@@ -85,7 +84,6 @@ public partial class OBPGame
         _rac1Class749PresentationNodes.Clear();
         _rac1LinkedTargetNodes.Clear();
         _rac1HostileNodes.Clear();
-        _rac1HostileProbes.Clear();
         _rac1BombFireRequested = false;
         _rac1LastBombContactResolution = null;
         _rac1BombTickAccumulator = 0d;
@@ -157,7 +155,6 @@ public partial class OBPGame
                     ?? throw new InvalidDataException("Class-749 source failed its authored-state contract.");
                 var probe = _rac1Hostiles.RegisterVeldinPlacement(hostileSource, node.State);
                 _rac1HostileNodes.Add(hostileSource.InstanceIndex, node);
-                _rac1HostileProbes.Add(hostileSource.InstanceIndex, probe);
                 if (probe.LinkedTargetInstanceIndex is int linkedInstanceIndex)
                     TrackRac1LinkedTarget(world, result, linkedInstanceIndex);
             }
@@ -179,14 +176,22 @@ public partial class OBPGame
         out Rac1Class749HostProbe? probe)
     {
         if (_world is { Game: "rac1", LevelId: Rac1Class749VeldinPopulation.LevelId } &&
-            _rac1HostileNodes.TryGetValue(instanceIndex, out node) &&
-            _rac1HostileProbes.TryGetValue(instanceIndex, out probe))
+            _rac1HostileNodes.TryGetValue(instanceIndex, out node))
+        {
+            probe = _rac1Hostiles.Probe(node.Source);
             return true;
+        }
 
         node = null;
         probe = null;
         return false;
     }
+
+    private Rac1Class749HostProbe[] SnapshotRac1HostileProbes() =>
+        _rac1HostileNodes.Values
+            .OrderBy(node => node.Source.InstanceIndex)
+            .Select(node => _rac1Hostiles.Probe(node.Source))
+            .ToArray();
 
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
@@ -428,9 +433,7 @@ public partial class OBPGame
             .Concat(_rac1HostileNodes.Values)
             .Where(node =>
                 IsInstanceValid(node.Root) &&
-                node.Root.Visible &&
-                (node.Source.NativeClassId != Rac1Class749Hostile.NativeClassId ||
-                 _rac1HostileProbes.ContainsKey(node.Source.InstanceIndex)))
+                node.Root.Visible)
             .ToArray();
         RuntimeDynamicObject? selected = _rac1Wrench.SelectNearestGoal1HostTarget(
             new Rac1WrenchHostPoint(root.X, root.Y, root.Z),
@@ -502,13 +505,11 @@ public partial class OBPGame
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
         var probe = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(
             damageEvent);
-        _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         // The native session admits both 0xfd and 0xfe terminal outcomes but does
         // not recover their selector. The live host uses 0xfd as an explicit
         // presentation choice so the proven terminal deactivation is observable.
         probe = _rac1Hostiles.ApplyTerminalStatus(
             hostile.Source, Rac1Class749Hostile.TerminalNativeStateFd);
-        _rac1HostileProbes[hostile.Source.InstanceIndex] = probe;
         hostile.ApplyState(probe.EntityState);
         _rac1CombatStatus =
             $"hostile i{hostile.Source.InstanceIndex}: host contact -> health 0 -> terminal 0xfd";
@@ -602,7 +603,6 @@ public partial class OBPGame
             Vector3 segment = end - start;
             var contacts = _rac1HostileNodes.Values
                 .Where(hostile =>
-                    _rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) &&
                     IsInstanceValid(hostile.Root) &&
                     hostile.Root.Visible)
                 .Select(hostile =>
@@ -623,7 +623,7 @@ public partial class OBPGame
                 .Select(contact =>
                 {
                     var hostile = contact.Hostile;
-                    var probe = _rac1HostileProbes[hostile.Source.InstanceIndex];
+                    var probe = _rac1Hostiles.Probe(hostile.Source);
                     return new Rac1MobyContactFacts(
                         hostile.Source,
                         probe.NativeState,
@@ -671,12 +671,10 @@ public partial class OBPGame
 
         foreach (var hostile in _rac1HostileNodes.Values.OrderBy(node => node.Source.InstanceIndex))
         {
-            if (!_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var previous) ||
-                !IsInstanceValid(hostile.Root) ||
-                !hostile.Root.Visible)
-            {
+            if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
                 continue;
-            }
+
+            var previous = _rac1Hostiles.Probe(hostile.Source);
 
             Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
             double distance = toPlayer.Length();
@@ -750,7 +748,6 @@ public partial class OBPGame
                     : $"class-749 hit: Nanotech {nanotech.Nanotech}/{nanotech.RespawnNanotech}";
                 RefreshRac1HudState(Rac1HudProjection.DamageFeedback(beforeNanotech, nanotech));
             }
-            _rac1HostileProbes[hostile.Source.InstanceIndex] = next;
             if (_rac1Nanotech.Probe().IsDead)
             {
                 break;
@@ -889,14 +886,15 @@ public partial class OBPGame
 
         int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
             IsInstanceValid(hostile.Root) && hostile.Root.Visible);
+        var hostileProbes = SnapshotRac1HostileProbes();
         string stateSummary = string.Join(
             ", ",
-            _rac1HostileProbes.Values
+            hostileProbes
                 .GroupBy(probe => probe.NativeState)
                 .OrderBy(group => group.Key)
                 .Select(group => $"s{group.Key}:{group.Count()}"));
         string hostile =
-            $"class-749 population {_rac1HostileProbes.Count} ({activeHostiles} visible)" +
+            $"class-749 population {hostileProbes.Length} ({activeHostiles} visible)" +
             (stateSummary.Length > 0 ? $"; {stateSummary}" : string.Empty);
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
@@ -916,22 +914,23 @@ public partial class OBPGame
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return null;
         int activeHostiles = _rac1HostileNodes.Values.Count(hostile =>
             IsInstanceValid(hostile.Root) && hostile.Root.Visible);
+        var hostileProbes = SnapshotRac1HostileProbes();
         return new Rac1GameplaySnapshot(
             AdmittedCrates: _rac1CrateNodes.Count,
             DestroyedCrates: _rac1BoltCrates.DestroyedCrateCount,
             OutstandingPickups: _rac1BoltCrates.OutstandingPickupCount,
             CollectedBolts: _rac1BoltCrates.CollectedBolts,
-            HostileCount: _rac1HostileProbes.Count,
+            HostileCount: hostileProbes.Length,
             ActiveHostiles: activeHostiles,
-            LinkedHostiles: _rac1HostileProbes.Values.Count(
+            LinkedHostiles: hostileProbes.Count(
                 probe => probe.NativeState == Rac1Class749Hostile.LinkedObjectNativeState),
-            IdleHostiles: _rac1HostileProbes.Values.Count(
+            IdleHostiles: hostileProbes.Count(
                 probe => probe.NativeState == Rac1Class749Hostile.TargetSearchNativeState),
-            PursuingHostiles: _rac1HostileProbes.Values.Count(
+            PursuingHostiles: hostileProbes.Count(
                 probe => probe.NativeState == Rac1Class749Hostile.TargetedNativeState),
-            AttackingHostiles: _rac1HostileProbes.Values.Count(
+            AttackingHostiles: hostileProbes.Count(
                 probe => probe.NativeState == Rac1Class749Hostile.AttackNativeState),
-            ReturningHostiles: _rac1HostileProbes.Values.Count(
+            ReturningHostiles: hostileProbes.Count(
                 probe => probe.NativeState == Rac1Class749Hostile.ReturnHomeNativeState),
             Nanotech: _rac1Nanotech.Probe().Nanotech,
             LifeState: _rac1Nanotech.Probe().LifeState,

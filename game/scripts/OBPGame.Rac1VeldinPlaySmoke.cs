@@ -29,7 +29,7 @@ public partial class OBPGame
 
             Vector3 authoredRespawnPosition = _player.GlobalPosition;
             if (_rac1HostileNodes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
-                _rac1HostileProbes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
+                _rac1Hostiles.RegisteredCount != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
                 !TryGetRac1Hostile(143, out var hostile, out _) ||
                 hostile is null ||
                 !IsInstanceValid(hostile.Root) ||
@@ -229,7 +229,7 @@ public partial class OBPGame
         {
             if (pair.Value.Root.GlobalPosition.DistanceTo(starts[pair.Key]) > 0.02f)
                 moved++;
-            var probe = _rac1HostileProbes[pair.Key];
+            var probe = _rac1Hostiles.Probe(pair.Value.Source);
             if (probe.NativeState is Rac1Class749Hostile.TargetedNativeState or Rac1Class749Hostile.AttackNativeState)
                 throw new InvalidOperationException(
                     $"Class-749 i{pair.Key} pursued at ordinary Veldin start in state {probe.NativeState}.");
@@ -263,10 +263,7 @@ public partial class OBPGame
 
         await TapRac1PrimaryActionAsync();
         await Rac1SmokeWaitAsync(
-            () => _rac1HostileProbes.TryGetValue(
-                    hostile.Source.InstanceIndex,
-                    out var probe) &&
-                probe.Health == 0f &&
+            () => _rac1Hostiles.Probe(hostile.Source).Health == 0f &&
                 !hostile.Root.Visible,
             120,
             "ordinary hostile wrench contact");

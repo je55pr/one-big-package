@@ -23,9 +23,9 @@ public partial class OBPGame
 
             GD.Print("[rac1-combat-contract] begin synthetic Veldin combat host contracts");
             if (_rac1HostileNodes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
-                _rac1HostileProbes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount)
+                _rac1Hostiles.RegisteredCount != Rac1Class749VeldinPopulation.AuthoredPlacementCount)
                 throw new InvalidOperationException(
-                    $"Ordinary Veldin launch registered {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count} " +
+                    $"Ordinary Veldin launch registered {_rac1HostileNodes.Count}/{_rac1Hostiles.RegisteredCount} " +
                     $"class-749 placements, expected {Rac1Class749VeldinPopulation.AuthoredPlacementCount}/" +
                     $"{Rac1Class749VeldinPopulation.AuthoredPlacementCount}.");
 
@@ -40,7 +40,7 @@ public partial class OBPGame
                 if (pair.Value.Root.GlobalPosition.DistanceTo(launchPositions[pair.Key]) > 0.02f)
                     throw new InvalidOperationException(
                         $"Class-749 i{pair.Key} moved from the authored Veldin start before polygon admission.");
-                var probe = _rac1HostileProbes[pair.Key];
+                var probe = _rac1Hostiles.Probe(pair.Value.Source);
                 if (probe.NativeState is Rac1Class749Hostile.TargetedNativeState or Rac1Class749Hostile.AttackNativeState)
                     throw new InvalidOperationException(
                         $"Class-749 i{pair.Key} pursued from the authored Veldin start in state {probe.NativeState}.");
@@ -77,11 +77,11 @@ public partial class OBPGame
             if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
                 throw new InvalidOperationException(
                     $"Veldin class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
-            if (_rac1HostileNodes.Count != 16 || _rac1HostileProbes.Count != 16)
+            if (_rac1HostileNodes.Count != 16 || _rac1Hostiles.RegisteredCount != 16)
                 throw new InvalidOperationException(
-                    $"Veldin active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected recovered population 16/16.");
+                    $"Veldin active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1Hostiles.RegisteredCount}, expected recovered population 16/16.");
             var hostile = navigationHostile;
-            if (!_rac1HostileProbes.ContainsKey(hostile.Source.InstanceIndex) ||
+            if (!_rac1HostileNodes.ContainsKey(hostile.Source.InstanceIndex) ||
                 !IsInstanceValid(hostile.Root) ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
@@ -213,8 +213,8 @@ public partial class OBPGame
                 bombDamage.NativeDamage != Rac1BombGlove.NativeDamage ||
                 bombDamage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
                 throw new InvalidOperationException("Bomb Glove contact drifted from the retained native damage envelope.");
-            if (!_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var postBombProbe) ||
-                postBombProbe.Health != 1f ||
+            var postBombProbe = _rac1Hostiles.Probe(hostile.Source);
+            if (postBombProbe.Health != 1f ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
                     "Bomb Glove host contact invented an unrecovered class-749 damage consequence.");
@@ -282,10 +282,7 @@ public partial class OBPGame
                 () =>
                 {
                     hostile.Root.GlobalPosition = stagedHostilePosition;
-                    return _rac1HostileProbes.TryGetValue(
-                               hostile.Source.InstanceIndex,
-                               out var hostileProbe) &&
-                           hostileProbe.Health == 0f &&
+                    return _rac1Hostiles.Probe(hostile.Source).Health == 0f &&
                            !hostile.Root.Visible;
                 },
                 120,
@@ -321,9 +318,9 @@ public partial class OBPGame
         if (authored != 90 || presented != 90)
             throw new InvalidOperationException(
                 $"LEVEL18 class-749 census/presentation was {authored}/{presented}, expected 90/90.");
-        if (_rac1HostileNodes.Count != 0 || _rac1HostileProbes.Count != 0)
+        if (_rac1HostileNodes.Count != 0 || _rac1Hostiles.RegisteredCount != 0)
             throw new InvalidOperationException(
-                $"LEVEL18 promoted unsupported class-749 runtime behavior: {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count} active.");
+                $"LEVEL18 promoted unsupported class-749 runtime behavior: {_rac1HostileNodes.Count}/{_rac1Hostiles.RegisteredCount} active.");
 
         GD.Print(
             "[rac1-smoke] LEVEL18 class-749 gate PASS; 90 authored/presented placements, 0 active runtime hostiles");
@@ -340,7 +337,7 @@ public partial class OBPGame
             360,
             "LEVEL1 load and grounding");
 
-        if (_rac1HostileNodes.Count != 0 || _rac1HostileProbes.Count != 0 ||
+        if (_rac1HostileNodes.Count != 0 || _rac1Hostiles.RegisteredCount != 0 ||
             _rac1Projectiles.Count != 0)
             throw new InvalidOperationException(
                 "LEVEL1 retained class-749 or projectile state after LEVEL18 unload.");
@@ -362,11 +359,11 @@ public partial class OBPGame
         if (CountRac1AuthoredClass749() != 16 || CountRac1PresentedClass749() != 16)
             throw new InvalidOperationException(
                 $"LEVEL0 reload class-749 census/presentation was {CountRac1AuthoredClass749()}/{CountRac1PresentedClass749()}, expected 16/16.");
-        if (_rac1HostileNodes.Count != 16 || _rac1HostileProbes.Count != 16 ||
+        if (_rac1HostileNodes.Count != 16 || _rac1Hostiles.RegisteredCount != 16 ||
             !TryGetRac1Hostile(143, out var hostile, out _) ||
             hostile is null || !IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
             throw new InvalidOperationException(
-                $"LEVEL0 reload active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1HostileProbes.Count}, expected recovered population 16/16.");
+                $"LEVEL0 reload active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1Hostiles.RegisteredCount}, expected recovered population 16/16.");
         if (_rac1Weapons.FirstRangedAmmo != expectedBombAmmo)
             throw new InvalidOperationException(
                 $"Process-lifetime Bomb Glove ammo was {_rac1Weapons.FirstRangedAmmo}, expected persistent value {expectedBombAmmo}.");
@@ -466,20 +463,21 @@ public partial class OBPGame
         {
             for (int frame = 0; frame < maxFrames; frame++)
             {
-                if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible ||
-                    !_rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var probe))
+                if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
                     throw new InvalidOperationException(
                         "Recovered class-749 placement disappeared during ordinary-play approach.");
 
+                var probe = _rac1Hostiles.Probe(hostile.Source);
                 Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
                 double distance = toPlayer.Length();
                 double facing = Rac1SmokeClass749FacingError(hostile, _player.GlobalPosition);
 
-                foreach (var pair in _rac1HostileProbes)
+                foreach (var pair in _rac1HostileNodes)
                 {
+                    var memberProbe = _rac1Hostiles.Probe(pair.Value.Source);
                     if (Rac1Class749VeldinPopulation.TryGetActivationGroup(pair.Key, out int group) &&
                         group == activationGroup &&
-                        pair.Value.NativeState != Rac1Class749Hostile.TargetSearchNativeState)
+                        memberProbe.NativeState != Rac1Class749Hostile.TargetSearchNativeState)
                     {
                         activatedGroupMembers.Add(pair.Key);
                     }
@@ -565,8 +563,8 @@ public partial class OBPGame
             ClearMovementSmokeInput();
         }
 
-        var finalProbe = _rac1HostileProbes.TryGetValue(hostile.Source.InstanceIndex, out var current)
-            ? current
+        var finalProbe = _rac1HostileNodes.ContainsKey(hostile.Source.InstanceIndex)
+            ? _rac1Hostiles.Probe(hostile.Source)
             : null;
         throw new TimeoutException(
             $"Timed out provoking retained class-749 through ordinary play: " +
