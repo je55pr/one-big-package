@@ -66,8 +66,8 @@ There is **not** one recovered fixed authored pickup radius. In the homing/colle
 
 ## Runtime promotion
 
-`Rac1BoltCrateSession` is an R&C1-owned deterministic host for the admitted representative loop. It takes a neutral `RuntimeEntityState`, validates class-500 authored authority, applies only positive recovered damage, validates a caller-provided native RNG total against the recovered centre-10 range, creates the proven low-value bolt pieces, and projects the destroyed crate to neutral `Inactive` presence.
+`Rac1BoltCrateSession` is an R&C1-owned class-500 controller over the shared `Rac1MobyRuntimeSession`. Registration preserves authored identity/PVar state in that common live-Moby store. Positive native damage arrives through the common damage-event transport and produces a typed class-500 admission without choosing a reward or changing lifetime. A separate class-local completion step validates the caller-provided native RNG total against the recovered centre-10 range, updates UID persistence, creates the proven low-value bolt pieces, runs the recovered active -> break-transition -> disabled states, and terminalizes the shared Moby to neutral `Inactive` presence.
 
-Native state numbers, packed offsets, PVar bytes, UID persistence bits, reward RNG and pickup class numbers do not enter `OBP.Runtime` or Godot. Collection credits each outstanding pickup exactly once. The source-game UID is used to prevent duplicate payout within the deterministic session.
+Native state numbers, packed offsets, PVar bytes, UID persistence bits, reward RNG and pickup class numbers do not enter `OBP.Runtime` or Godot. The generic damage transport likewise does not own reward selection. Collection credits each outstanding pickup exactly once. The source-game UID is used to prevent duplicate payout within the deterministic session.
 
 Payload-free evidence is frozen in `research/generated/rac1-bolt-crate-reward-loop.json`. Portable tests use synthetic authored payloads; retail assertions are gated behind `OBP_RAC1_ISO`.

@@ -85,21 +85,28 @@ placement would therefore manufacture an immediate state `5 -> 6` transition.
 
 The retail census is retained by
 `Rac1Class749HostileRetailTests.AllNativeLevelsRetainAuthoredClass749PlacementsWithoutExpandingRuntimeWitness`.
-The Godot host keeps all authored placements available to presentation, but
-active class-749 simulation is restricted to the retained LEVEL0 instance-149
-runtime witness. The other Veldin placements and all 90 LEVEL18 placements are
-not registered with the hostile session. No LEVEL18 aggression, mission gate,
-spawn condition, planet label, or activation radius is inferred from class/PVar
-resemblance alone.
+The runtime now registers all 16 recovered LEVEL0/Veldin placements through the
+same class-749 controller. Their recovered activation polygons/groups and target
+descriptor status govern admission, so no placement receives an instance-149
+privilege and none pursues immediately from its authored start. Instance 154's
+linked-object state is retained because its authored PVar contract proves that
+structural case; it is not a privileged witness shortcut.
+
+All 90 LEVEL18 placements remain presentation-only because their activation and
+mission semantics are not recovered. No LEVEL18 aggression, mission gate, spawn
+condition, planet label, or activation radius is inferred from class/PVar
+resemblance alone. Host interpolation currently makes the recovered state-6/8
+destinations visible, but its speed/turn tuning remains explicitly non-retail.
 
 ## Reusable boundary
 
 The implementation boundary is now:
 
-- **engine/common:** `0x100` live-Moby stride; state byte `+0x20`; per-class update dispatch `+0x74`; damage slot `+0xa4`; class id `+0xa6`; damage-record construction/lookup/consumption; common `0xfd/0xfe` terminalizer;
+- **engine/common:** `0x100` live-Moby stride; stable authored identity; state byte `+0x20`; per-class update dispatch `+0x74`; damage slot `+0xa4`; class id `+0xa6`; damage-record construction/lookup/consumption; shared active/inactive presence; live transform snapshots; common `0xfd/0xfe` terminalization;
 - **class-bound field usage:** live `+0x78` when a specific class proves it as its PVar pointer;
-- **class 749 only:** PVar health `+0x20`, target destination `+0x180`, target Moby `+0x1c0`, unresolved status `+0x1c4`, home `+0x1d0`, state meanings 5/6/7/8/12, locomotion helpers and all range/facing/animation timing;
-- **still evidence-gated:** the writer/meaning of class-749 PVar `+0x1c4`, any universal activation radius, and whether another hostile shares class 749's state/PVar layout.
+- **class 749 only:** PVar health `+0x20`, target destination `+0x180`, target Moby `+0x1c0`, unresolved status `+0x1c4`, home `+0x1d0`, state meanings 5/6/7/8/12, activation polygons/groups, locomotion helpers and all range/facing/animation timing;
+- **host/presentation only:** Godot mesh availability and the current destination interpolation speed/turn values. Render visibility is not used as Moby lifetime;
+- **still evidence-gated:** the writer/meaning of class-749 PVar `+0x1c4`, any universal activation radius, the native selector between terminal states `0xfd` and `0xfe`, exact state-12 reaction completion timing, and whether another hostile shares class 749's state/PVar layout.
 
 This is intentionally narrower than a generic “enemy component.” The common layer is Moby scheduling, damage transport and lifetime; hostile policy remains script-owned until a second hostile independently proves a shared family.
 
