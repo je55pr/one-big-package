@@ -1,5 +1,6 @@
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
@@ -61,6 +62,43 @@ public sealed class Rac1NativeHitSemanticsTests
         Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, sourceSelf.TargetNativeState);
         Assert.False(Rac1NativeHitSemantics.IsDistinctContactCandidate(sourceSelf));
         Assert.True(Rac1NativeHitSemantics.IsDistinctContactCandidate(distinct));
+    }
+
+    [Fact]
+    public void RuntimeContactFactsCarrySharedLifetimeAndPresence()
+    {
+        var source = new RuntimeDynamicObject(
+            "rac1",
+            Rac1Class749Hostile.NativeClassId,
+            149,
+            null,
+            "moby:749",
+            "moby:149",
+            new RuntimeObjectTransform(new double[16]),
+            Array.Empty<RuntimeObjectMesh>());
+        var runtime = new Rac1MobyRuntimeSession();
+        var instance = runtime.Register(
+            source,
+            RuntimeEntityState.FromAuthored(source),
+            Rac1Class749Hostile.DamageNativeState);
+
+        var live = Rac1MobyContactFacts.FromRuntime(
+            instance,
+            isSourceMoby: false);
+
+        Assert.True(live.IsTargetActive);
+        Assert.Equal(RuntimeEntityPresence.Active, live.TargetPresence);
+        Assert.Equal(Rac1MobyLifecycleState.Live, live.TargetLifecycle);
+
+        runtime.Terminalize(instance);
+        var terminal = Rac1MobyContactFacts.FromRuntime(
+            instance,
+            isSourceMoby: false);
+
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, terminal.TargetNativeState);
+        Assert.Equal(RuntimeEntityPresence.Inactive, terminal.TargetPresence);
+        Assert.Equal(Rac1MobyLifecycleState.Terminalized, terminal.TargetLifecycle);
+        Assert.False(terminal.IsTargetActive);
     }
 
     [Fact]

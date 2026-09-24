@@ -108,6 +108,7 @@ public static class Rac1BombGlove
         facts.Validate();
 
         return Rac1NativeHitSemantics.IsDistinctContactCandidate(facts) &&
+               facts.IsTargetActive &&
                facts.Target.SourceGame == "rac1" &&
                facts.Target.NativeClassId == Rac1Class749Hostile.NativeClassId &&
                !Rac1MobyRuntime.IsTerminalState(facts.TargetNativeState);

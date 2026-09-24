@@ -72,6 +72,25 @@ public sealed class Rac1HostArchitectureTests
     }
 
     [Fact]
+    public void Rac1HudDoesNotAdvertiseManualEnvironmentalRespawn()
+    {
+        string gameplay = File.ReadAllText(Path.Combine(
+            RepoPaths.Root,
+            "game",
+            "scripts",
+            "OBPGame.Rac1Gameplay.cs"));
+
+        Assert.DoesNotContain(
+            "R recovered environmental respawn",
+            gameplay,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "automatic recovered environmental respawn pending",
+            gameplay,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Rac1GameplayDoesNotInventClass749TerminalStateSelector()
     {
         string gameplay = File.ReadAllText(Path.Combine(

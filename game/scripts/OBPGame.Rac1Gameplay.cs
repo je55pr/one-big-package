@@ -629,11 +629,10 @@ public partial class OBPGame
                 .Select(contact =>
                 {
                     var hostile = contact.Hostile;
-                    var probe = _rac1Hostiles.Probe(hostile.Source);
-                    return new Rac1MobyContactFacts(
-                        hostile.Source,
-                        probe.NativeState,
-                        IsSourceMoby: false);
+                    var runtime = _rac1MobyRuntime.Require(hostile.Source);
+                    return Rac1MobyContactFacts.FromRuntime(
+                        runtime,
+                        isSourceMoby: false);
                 })
                 .ToArray();
             var contactResolution = _rac1BombGlove.ResolveGoal1ContactVolume(
@@ -929,7 +928,7 @@ public partial class OBPGame
         var nanotech = _rac1Nanotech.Probe();
         string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
         string restart = nanotech.HasRecoveredEnvironmentalRespawn
-            ? "R recovered environmental respawn"
+            ? "automatic recovered environmental respawn pending"
             : nanotech.IsDead
                 ? "combat restart unresolved"
                 : "environmental restart evidence: levels 0 and 2 only";

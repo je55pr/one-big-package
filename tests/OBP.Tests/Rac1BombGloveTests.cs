@@ -1,6 +1,7 @@
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
 
@@ -216,6 +217,27 @@ public sealed class Rac1BombGloveTests
         Assert.Null(session.ResolveGoal1Contact(
             shot.Projectile.ProjectileId,
             Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState)));
+    }
+
+    [Fact]
+    public void ContactRejectsTerminalLifetimeEvenWhenLastNativeStateIsDamageState12()
+    {
+        var session = new Rac1BombGloveSession(initialAmmo: 1);
+        var shot = Assert.IsType<Rac1BombGloveShot>(session.Step(true).Shot);
+        var hostile = Dynamic(
+            Rac1Class749Hostile.NativeClassId,
+            instanceIndex: 149);
+        var terminalFacts = new Rac1MobyContactFacts(
+            hostile,
+            Rac1Class749Hostile.DamageNativeState,
+            IsSourceMoby: false,
+            RuntimeEntityPresence.Inactive,
+            Rac1MobyLifecycleState.Terminalized);
+
+        Assert.False(terminalFacts.IsTargetActive);
+        Assert.Null(session.ResolveGoal1Contact(
+            shot.Projectile.ProjectileId,
+            terminalFacts));
     }
 
     [Theory]

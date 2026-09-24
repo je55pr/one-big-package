@@ -1,4 +1,5 @@
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.RAC1.Gameplay;
 
@@ -10,12 +11,31 @@ namespace OBP.RAC1.Gameplay;
 public sealed record Rac1MobyContactFacts(
     RuntimeDynamicObject Target,
     int TargetNativeState,
-    bool IsSourceMoby)
+    bool IsSourceMoby,
+    RuntimeEntityPresence TargetPresence = RuntimeEntityPresence.Active,
+    Rac1MobyLifecycleState TargetLifecycle = Rac1MobyLifecycleState.Live)
 {
+    public bool IsTargetActive =>
+        TargetLifecycle == Rac1MobyLifecycleState.Live &&
+        TargetPresence == RuntimeEntityPresence.Active;
+
     public Rac1MobyContactFacts Validate()
     {
         ArgumentNullException.ThrowIfNull(Target);
         return this;
+    }
+
+    public static Rac1MobyContactFacts FromRuntime(
+        Rac1MobyRuntimeInstance instance,
+        bool isSourceMoby)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        return new Rac1MobyContactFacts(
+            instance.Source,
+            instance.State.NativeState,
+            isSourceMoby,
+            instance.Presence,
+            instance.State.Lifecycle);
     }
 }
 
