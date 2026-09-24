@@ -129,7 +129,7 @@ public partial class OBPGame
         // Test-only injection of the retained level-2 environmental reset witness.
         // The gameplay writer/trigger that creates this checkpoint remains unknown.
         var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
-        _player!.Rac1GameplayAlive = false;
+        _player!.Rac1GameplayState = dead;
         RequireRac1CampaignSmoke(
             dead.Nanotech == 0 && dead.HasRecoveredEnvironmentalRespawn,
             "Level-2 environmental death injection did not enter the recovered reset state.");

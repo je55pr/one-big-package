@@ -72,6 +72,9 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.Equal(Rac1RatchetDeathCause.RecoveredEnvironmental, dead.DeathCause);
         Assert.True(dead.IsDead);
         Assert.True(dead.HasRecoveredEnvironmentalRespawn);
+        Assert.Equal(Rac1PlayerActionDomain.EnvironmentalFallDeath, dead.NativePlayerState);
+        Assert.Equal(Rac1PlayerActionDomain.Neutral, dead.PreviousNativePlayerState);
+        Assert.False(dead.AllowsOrdinaryCharacterMovement);
 
         var respawned = session.Respawn();
         Assert.Equal(4, respawned.Nanotech);
@@ -92,6 +95,9 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.Equal(Rac1RatchetNanotechSession.RetailVeldinDeathNativeState, dead.NativePlayerState);
         Assert.Equal(Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequence, dead.NativeSequence);
         Assert.Equal(Rac1RatchetNanotechSession.RetailVeldinDeathNativeSequenceFrame, dead.NativeSequenceFrame);
+        Assert.Equal(Rac1PlayerActionDomain.Neutral, dead.PreviousNativePlayerState);
+        Assert.Equal(1, dead.Action.EntryGeneration);
+        Assert.False(dead.AllowsOrdinaryCharacterMovement);
     }
 
     [Fact]
@@ -160,9 +166,13 @@ public sealed class Rac1RatchetNanotechSessionTests
         Assert.Equal(Rac1RatchetLifeState.Alive, respawn.LifeState);
         Assert.Equal(Rac1RatchetDeathCause.None, respawn.DeathCause);
         Assert.False(respawn.HasRecoveredEnvironmentalRespawn);
-        Assert.Null(respawn.NativePlayerState);
+        Assert.Equal(Rac1PlayerActionDomain.Neutral, respawn.NativePlayerState);
+        Assert.Equal(
+            Rac1PlayerActionDomain.EnvironmentalFallDeath,
+            respawn.PreviousNativePlayerState);
         Assert.Null(respawn.NativeSequence);
         Assert.Null(respawn.NativeSequenceFrame);
+        Assert.True(respawn.AllowsOrdinaryCharacterMovement);
     }
 
     [Fact]

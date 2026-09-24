@@ -127,8 +127,15 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Retail-backed RAC1 yaw recurrence mode for deterministic inspection.</summary>
     public Rac1RatchetYawMode Rac1YawMode => _rac1Movement.YawMode;
 
-    /// <summary>Whether the RAC1 gameplay session currently admits player control.</summary>
-    public bool Rac1GameplayAlive { get; set; } = true;
+    /// <summary>Current engine-independent R&C1 player gameplay snapshot.</summary>
+    public Rac1RatchetNanotechSnapshot? Rac1GameplayState { get; set; }
+
+    /// <summary>Compatibility diagnostic derived from the gameplay snapshot, never host-owned state.</summary>
+    public bool Rac1GameplayAlive => Rac1GameplayState is null || !Rac1GameplayState.IsDead;
+
+    /// <summary>Whether the recovered player lifecycle admits ordinary CharacterBody movement.</summary>
+    public bool Rac1GameplayAllowsOrdinaryMovement =>
+        Rac1GameplayState is null || Rac1GameplayState.AllowsOrdinaryCharacterMovement;
 
     /// <summary>Unconditioned right-stick intent feeding the recovered type-0 producer or debug fallback.</summary>
     public Vector2 RawCameraIntent => _liveInput.CameraIntent;
@@ -350,14 +357,16 @@ public partial class DebugPlayer : CharacterBody3D
 
         var (move, jump) = Scripted ? ScriptedInput() : (_liveInput.Move, _liveInput.JumpHeld);
         bool crouch = !Scripted && _liveInput.CrouchHeld;
-        if (UseRac1Gameplay && !Rac1GameplayAlive)
+        if (UseRac1Gameplay && !Rac1GameplayAllowsOrdinaryMovement)
         {
-            move = Vector2.Zero;
-            jump = false;
-            crouch = false;
+            _attackRequested = false;
+            _rac1JumpWasHeld = false;
+            Velocity = Vector3.Zero;
+            UpdateHud(false);
+            return;
         }
-        StepRetailDerivedMovement(move, jump, crouch);
 
+        StepRetailDerivedMovement(move, jump, crouch);
         MoveAndSlide();
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
@@ -560,7 +569,6 @@ public partial class DebugPlayer : CharacterBody3D
         _rac1CameraInitialized = false;
         _rac1RuntimeCameraState = null;
         _rac1JumpWasHeld = false;
-        Rac1GameplayAlive = true;
         UpdateRac1FacingPresentation();
         ResetAnimationState();
         _placed = false;

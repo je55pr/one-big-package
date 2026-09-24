@@ -229,7 +229,7 @@ public partial class OBPGame
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
         player.Rac1RespawnRequested += OnRac1RespawnRequested;
-        player.Rac1GameplayAlive = !_rac1Nanotech.Probe().IsDead;
+        player.Rac1GameplayState = _rac1Nanotech.Probe();
     }
 
     private void OnRac1PrimaryAttackRequested()
@@ -289,6 +289,7 @@ public partial class OBPGame
         // when a separately identified checkpoint/death witness has been supplied.
         Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
         var respawn = _rac1Nanotech.Respawn();
+        _player.Rac1GameplayState = respawn;
         _player.ApplyRecoveredRac1Restart(restart.Placement);
         _rac1AutomaticEnvironmentalRestartPending = false;
         if (automatic)
@@ -304,6 +305,9 @@ public partial class OBPGame
     private void TickRac1Gameplay(double delta)
     {
         if (_world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
+
+        _rac1Nanotech.Actions.Update();
+        _player.Rac1GameplayState = _rac1Nanotech.Probe();
 
         if (_rac1AutomaticEnvironmentalRestartPending &&
             !TryCompleteRac1EnvironmentalRestart(automatic: true))
@@ -342,7 +346,7 @@ public partial class OBPGame
         _rac1LastEnvironmentalDeathPosition = _player.GlobalPosition;
         _rac1LastEnvironmentalDeathContactSeparation = contactSeparation;
         _rac1AutomaticEnvironmentalRestartPending = true;
-        _player.Rac1GameplayAlive = false;
+        _player.Rac1GameplayState = dead;
         _rac1CombatStatus = $"Veldin death plane: state 0x{dead.NativePlayerState:x2}, sequence {dead.NativeSequence} frame {dead.NativeSequenceFrame}; Nanotech {dead.Nanotech}";
         RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
@@ -688,7 +692,7 @@ public partial class OBPGame
             {
                 var beforeNanotech = _rac1Nanotech.Probe();
                 var nanotech = _rac1Nanotech.ApplyClass749Attack(attack);
-                _player.Rac1GameplayAlive = !nanotech.IsDead;
+                _player.Rac1GameplayState = nanotech;
                 GD.Print($"[rac1-gameplay] hostile i{hostile.Source.InstanceIndex}: attack marker {attack.NativeMarker:0} damage {attack.NativeDamage:0.###}; Nanotech {nanotech.Nanotech}");
                 _rac1CombatStatus = nanotech.IsDead
                     ? "Nanotech 0: combat-death restart/checkpoint semantics unresolved"

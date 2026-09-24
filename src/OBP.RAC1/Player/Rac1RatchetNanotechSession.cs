@@ -23,21 +23,21 @@ public sealed class Rac1RatchetNanotechSession
 {
     public const int RetailVeldinRespawnNanotech = 4;
     public const double RetailVeldinDeathContactSeparationExclusive = 2d;
-    public const int RetailVeldinDeathNativeState = 0x77;
-    public const int RetailVeldinDeathNativeSequence = 11;
+    public const int RetailVeldinDeathNativeState = Rac1PlayerActionDomain.EnvironmentalFallDeath;
+    public const int RetailVeldinDeathNativeSequence =
+        Rac1RatchetSequenceSelection.EnvironmentalDeathTerminalSequenceId;
     public const int RetailVeldinDeathNativeSequenceFrame = 0;
 
     // Raw retail player-state exclusion. Its meaning is intentionally unnamed.
     private const int UnnamedSpecialPlayerState20A4ExcludedValue = 2;
 
+    private readonly Rac1PlayerActionRuntimeSession _actions = new();
     private int _nanotech = RetailVeldinRespawnNanotech;
     private Rac1RatchetLifeState _lifeState = Rac1RatchetLifeState.Alive;
     private Rac1RatchetDeathCause _deathCause = Rac1RatchetDeathCause.None;
-    private int? _nativePlayerState;
-    private int? _nativeSequence;
-    private int? _nativeSequenceFrame;
 
     public Rac1RatchetNanotechSnapshot Probe() => Snapshot();
+    public Rac1PlayerActionRuntimeSession Actions => _actions;
 
     public Rac1RatchetNanotechSnapshot ApplyClass749Attack(Rac1Class749AttackEvent attack)
     {
@@ -66,7 +66,7 @@ public sealed class Rac1RatchetNanotechSession
     public Rac1RatchetNanotechSnapshot? TryApplyVeldinEnvironmentalDeath(
         Rac1VeldinEnvironmentalDeathFacts facts)
     {
-        if (_nativePlayerState == RetailVeldinDeathNativeState ||
+        if (_actions.Probe().CurrentNativeState == RetailVeldinDeathNativeState ||
             _lifeState != Rac1RatchetLifeState.Alive)
             return null;
 
@@ -78,9 +78,7 @@ public sealed class Rac1RatchetNanotechSession
             facts.NativeSpecialPlayerState20A4 == UnnamedSpecialPlayerState20A4ExcludedValue)
             return null;
 
-        _nativePlayerState = RetailVeldinDeathNativeState;
-        _nativeSequence = RetailVeldinDeathNativeSequence;
-        _nativeSequenceFrame = RetailVeldinDeathNativeSequenceFrame;
+        _actions.EnterState(RetailVeldinDeathNativeState);
         return ApplyEnvironmentalDeathReset();
     }
 
@@ -95,6 +93,7 @@ public sealed class Rac1RatchetNanotechSession
         if (_lifeState != Rac1RatchetLifeState.Alive)
             throw new InvalidOperationException("R&C1 Ratchet is already dead.");
 
+        _actions.EnterState(RetailVeldinDeathNativeState);
         _nanotech = 0;
         _lifeState = Rac1RatchetLifeState.Dead;
         _deathCause = Rac1RatchetDeathCause.RecoveredEnvironmental;
@@ -116,9 +115,7 @@ public sealed class Rac1RatchetNanotechSession
         _nanotech = RetailVeldinRespawnNanotech;
         _lifeState = Rac1RatchetLifeState.Alive;
         _deathCause = Rac1RatchetDeathCause.None;
-        _nativePlayerState = null;
-        _nativeSequence = null;
-        _nativeSequenceFrame = null;
+        _actions.EnterState(Rac1PlayerActionDomain.Neutral);
         return Snapshot();
     }
 
@@ -128,9 +125,7 @@ public sealed class Rac1RatchetNanotechSession
             RetailVeldinRespawnNanotech,
             _lifeState,
             _deathCause,
-            _nativePlayerState,
-            _nativeSequence,
-            _nativeSequenceFrame);
+            _actions.Probe());
 }
 
 public sealed record Rac1VeldinEnvironmentalDeathFacts(
@@ -144,11 +139,15 @@ public sealed record Rac1RatchetNanotechSnapshot(
     int RespawnNanotech,
     Rac1RatchetLifeState LifeState,
     Rac1RatchetDeathCause DeathCause,
-    int? NativePlayerState = null,
-    int? NativeSequence = null,
-    int? NativeSequenceFrame = null)
+    Rac1PlayerActionSnapshot Action)
 {
     public bool IsDead => LifeState == Rac1RatchetLifeState.Dead;
+    public int NativePlayerState => Action.CurrentNativeState;
+    public int? PreviousNativePlayerState => Action.PreviousNativeState;
+    public int? NativeSequence => Action.NativeSequence;
+    public int? NativeSequenceFrame => Action.NativeSequenceFrame;
+    public bool AllowsOrdinaryCharacterMovement =>
+        !IsDead && Action.AllowsOrdinaryCharacterMovement;
 
     public bool HasRecoveredEnvironmentalRespawn =>
         IsDead && DeathCause == Rac1RatchetDeathCause.RecoveredEnvironmental;
