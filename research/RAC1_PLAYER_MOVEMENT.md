@@ -172,6 +172,12 @@ The controller owner then identified a concrete hardware explanation: these Joy-
 
 Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-movement-controller.json`, with the dense raw-stick reduction in `research/generated/rac1-analogue-input-law.json`, the independent control-heading matrices in `research/generated/rac1-stick-heading-probe.json`, and the moving-turn/reversal reduction in `research/generated/rac1-ground-turn-response.json`. Local raw PINE traces and screenshots remain outside Git.
 
+## Recovered surface-action boundary
+
+The rich R&C1 contact path retains the packed collision-face byte and separates low surface class, effect mode and signed/high-bit special-face status. Godot's static collision adapter preserves source triangle material ids and maps each doubled Godot face back to its native triangle before this decode, so live static contacts can carry the same source byte into `Rac1PlayerContactResult`.
+
+Recovered action identities are now explicit: class 0 selects shallow-water **WADE** state `0x72`; class 3 selects mud state `0x68`; class 7 selects ice-slide state `0x2f`; and class 2 plus contacted Moby class `0xAD` selects Magneboot state `0x3f`. The later water-family recovery supersedes the earlier ambiguous shallow-water slot note and is the basis for naming `0x72` WADE. These are selector/action facts, not permission to invent motion laws. `Rac1SurfaceActionRouting` exposes the typed intent, while `Rac1RatchetMovementController` deliberately rejects these alternate contacts until their movement/update laws are recovered. The retained Veldin collision summary contains only native type ids `9,10,12,31`, so this fail-closed boundary does not replace ordinary Veldin ground motion.
+
 ## Deliberately unresolved
 
 - the exact translational walk/run selector inside the retained 62/63 live bracket, the trigger behind the flat sequence-4 right-to-left run slowdown and the special run-release 180-degree target-aligned restart, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
