@@ -272,7 +272,6 @@ public partial class OBPGame
         if (_world?.Game != "rac1") return;
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
-        player.Rac1RespawnRequested += OnRac1RespawnRequested;
         player.Rac1GameplayState = _rac1Nanotech.Probe();
     }
 
@@ -310,13 +309,6 @@ public partial class OBPGame
             RefreshRac1WrenchPresentationVisibility();
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
-    }
-
-    private void OnRac1RespawnRequested()
-    {
-        // Explicit development control only. Ordinary Veldin play consumes the
-        // recovered environmental restart automatically from TickRac1Gameplay.
-        _ = TryCompleteRac1EnvironmentalRestart(automatic: false);
     }
 
     private bool TryCompleteRac1EnvironmentalRestart(bool automatic)

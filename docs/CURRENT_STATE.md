@@ -108,7 +108,7 @@ All 27 known GC level files have been exercised through the generic importer pat
 
 The merged runtime includes:
 
-- a `CharacterBody3D` host with WASD, mouse look, manual respawn and development fly/noclip; ordinary grounded/airborne play in R&C1, GC and UYA all routes through the retail-derived R&C1 60 Hz controller as an explicit **OBP-created cross-game default**, not a native-equivalence claim;
+- a `CharacterBody3D` host with WASD, mouse look, development spawn reset and fly/noclip; the R reset key is disabled whenever R&C1 gameplay is active so recovered environmental restart remains automatic, while ordinary grounded/airborne play in R&C1, GC and UYA all routes through the retail-derived R&C1 60 Hz controller as an explicit **OBP-created cross-game default**, not a native-equivalence claim;
 - ship/player-start placement from retail settings, with a bounds-centre fallback where no usable native point exists;
 - deterministic movement telemetry now records the selected common-controller label, recovered locomotion state, yaw mode and avatar animation state; the retired DebugPlayer speed/jump/gravity calibration is no longer used by ordinary trilogy play;
 - `tools/movement-smoke.ps1` drives the live Godot InputMap/`CharacterBody3D` path through representative R&C1 `LEVEL0`, GC `LEVEL1` and UYA `TABLE1` worlds, requiring reconstructed floor contact plus low-stick walk, progressive full-stick run, arbitrary-angle steering, crouch, tap-versus-held jump, partial-stick air control, WASD fallback, development fly and development respawn. The cross-game pass validates OBP integration only: GC/UYA still reuse the R&C1 retail-derived controller as an OBP-created default, not a sequel-native equivalence claim;

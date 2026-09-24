@@ -22,8 +22,10 @@ namespace OneBigPackage;
 /// Godot owns collision, floor/ceiling contacts and scene-unit velocity. Recovered
 /// R&amp;C1 camera snapshots can own ordinary camera pose and control heading through
 /// the neutral camera contract; the old chase nodes remain a debug fallback.
-/// <c>F</c> fly/noclip and <c>R</c> manual respawn remain separate development
-/// features. Headless capture can supply deterministic canned input.
+/// <c>F</c> fly/noclip and <c>R</c> spawn reset remain separate development
+/// features, but R is disabled for R&C1 gameplay so recovered restart remains
+/// lifecycle-owned. Headless capture can supply
+/// deterministic canned input.
 /// </summary>
 public partial class DebugPlayer : CharacterBody3D
 {
@@ -78,9 +80,6 @@ public partial class DebugPlayer : CharacterBody3D
 
     /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
     public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
-
-    /// <summary>Development host seam for respawning after the witnessed Veldin death/reset boundary.</summary>
-    public event Action? Rac1RespawnRequested;
 
     public Camera3D Camera { get; private set; } = null!;
 
@@ -316,12 +315,9 @@ public partial class DebugPlayer : CharacterBody3D
                     ApplyRecoveredCameraPresentation();
                 GD.Print($"[DebugPlayer] fly mode {(_fly ? "on" : "off")}");
             }
-            else if (key.Keycode == Key.R)
+            else if (key.Keycode == Key.R && !UseRac1Gameplay)
             {
-                if (UseRac1Gameplay && !Rac1GameplayAlive)
-                    Rac1RespawnRequested?.Invoke();
-                else
-                    ResetToSpawn();
+                ResetToSpawn();
             }
         }
     }

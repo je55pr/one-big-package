@@ -154,7 +154,10 @@ public partial class OBPGame
             Require(!player.DevelopmentFlyEnabled, "F did not disable development fly");
 
             Vector3 spawn = player.DebugSpawnPosition;
-            await TapPhysicalKeyAsync(Key.R);
+            if (destination.Game == ObpSourceGame.Rac1)
+                player.ResetToSpawn();
+            else
+                await TapPhysicalKeyAsync(Key.R);
             await WaitForGroundedAsync(player, 180);
             float respawnError = HorizontalDistance(spawn, player.GlobalPosition);
             Require(respawnError < 1.0f, "development respawn did not return to the host spawn");

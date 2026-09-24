@@ -134,7 +134,9 @@ public partial class OBPGame
             dead.Nanotech == 0 && dead.HasRecoveredEnvironmentalRespawn,
             "Level-2 environmental death injection did not enter the recovered reset state.");
 
-        OnRac1RespawnRequested();
+        RequireRac1CampaignSmoke(
+            TryCompleteRac1EnvironmentalRestart(automatic: false),
+            "Level-2 injected environmental restart did not complete through the recovered checkpoint seam.");
 
         var respawn = _rac1Nanotech.Probe();
         RuntimeSpawnScenePose scenePose = RuntimeSpawnSceneAdapter.ToScenePose(recoveredPlacement);
