@@ -647,18 +647,38 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         var collider = hit["collider"].As<Node>();
-        if (collider is not RuntimeWorldScene.RuntimeCollisionBody3D collisionBody)
-            return _rac1DynamicSupport.StepStatic(true, hitCeiling);
+        if (collider is RuntimeWorldScene.RuntimeCollisionBody3D collisionBody)
+        {
+            int faceIndex = (int)hit["face_index"];
+            int? materialId = collisionBody.MaterialIdForFace(faceIndex);
+            int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
+                ? materialId
+                : null;
+            return _rac1DynamicSupport.StepStatic(
+                true,
+                hitCeiling,
+                rawFaceType);
+        }
 
-        int faceIndex = (int)hit["face_index"];
-        int? materialId = collisionBody.MaterialIdForFace(faceIndex);
-        int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
-            ? materialId
-            : null;
-        return _rac1DynamicSupport.StepStatic(
-            true,
-            hitCeiling,
-            rawFaceType);
+        if (UseRac1Gameplay &&
+            RuntimeWorldScene.FindDynamicObjectOwner(collider) is { } dynamicOwner)
+        {
+            var contactKey = new Rac1MobyRuntimeKey(
+                dynamicOwner.NativeClassId,
+                dynamicOwner.InstanceIndex);
+            return _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
+                IsGrounded: true,
+                HitCeiling: hitCeiling,
+                RawFaceType: null,
+                ContactedMoby: contactKey,
+                CurrentDynamicContact: contactKey,
+                PersistentSupportMoby: null,
+                SupportAnchor: new Rac1SupportAnchorState(0u, false),
+                SupportAnchorWorldPosition: null,
+                Conveyor: Rac1ConveyorTransfer.None));
+        }
+
+        return _rac1DynamicSupport.StepStatic(true, hitCeiling);
     }
 
     private void UpdateAnimationState(bool onFloor)

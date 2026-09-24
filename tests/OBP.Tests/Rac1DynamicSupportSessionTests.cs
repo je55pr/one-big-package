@@ -66,6 +66,32 @@ public sealed class Rac1DynamicSupportSessionTests
     }
 
     [Fact]
+    public void DynamicContactIdentityDoesNotInventPersistentSupportOrSurfaceSemantics()
+    {
+        var session = new Rac1DynamicSupportSession();
+        var contacted = new Rac1MobyRuntimeKey(500, 89);
+
+        var contact = session.Step(new Rac1DynamicSupportFacts(
+            IsGrounded: true,
+            HitCeiling: false,
+            RawFaceType: null,
+            ContactedMoby: contacted,
+            CurrentDynamicContact: contacted,
+            PersistentSupportMoby: null,
+            SupportAnchor: new Rac1SupportAnchorState(0u, false),
+            SupportAnchorWorldPosition: null,
+            Conveyor: Rac1ConveyorTransfer.None));
+
+        Assert.Equal(contacted, contact.ContactedMoby);
+        Assert.Equal(contacted, contact.CurrentDynamicContact);
+        Assert.Null(contact.PersistentSupportMoby);
+        Assert.Equal(Rac1SupportCarry.None, contact.SupportCarry);
+        Assert.Equal(Rac1SurfaceInteractionKind.None, contact.SurfaceInteraction);
+        Assert.Null(session.PreviousSupport);
+        Assert.Null(session.PreviousAnchorWorldPosition);
+    }
+
+    [Fact]
     public void CurrentContactAndPersistentSupportRemainIndependent()
     {
         var session = new Rac1DynamicSupportSession();
