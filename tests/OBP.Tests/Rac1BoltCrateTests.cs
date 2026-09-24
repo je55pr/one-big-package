@@ -100,6 +100,48 @@ public sealed class Rac1BoltCrateTests
     }
 
     [Fact]
+    public void GenericDamageEventRoutesToCrateConsequenceAndValidatesVictimIdentity()
+    {
+        var source = Class500(uid: 121, rewardCentre: 10);
+        var persistence = new Rac1MobyPersistenceSession(levelId: 0);
+        var session = new Rac1BoltCrateSession(persistence);
+        var initial = RuntimeEntityState.FromAuthored(source);
+        var wrench = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            Rac1WrenchCombatController.RepresentativeDamage,
+            Rac1WrenchCombatController.RepresentativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(
+                source.NativeClassId,
+                source.InstanceIndex),
+            wrench);
+
+        var result = Assert.IsType<Rac1BoltCrateBreakResult>(
+            session.ApplyDamage(
+                source,
+                initial,
+                damage,
+                selectedTotal: 7));
+
+        Assert.Equal(7, result.PhysicalValue);
+        Assert.Equal(
+            Rac1MobyUidPersistenceBits.BothSet,
+            persistence.QueryUid(source));
+
+        var wrongTarget = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(
+                source.NativeClassId,
+                source.InstanceIndex + 1),
+            wrench);
+        Assert.Throws<ArgumentException>(() =>
+            new Rac1BoltCrateSession().ApplyDamage(
+                source,
+                initial,
+                wrongTarget,
+                selectedTotal: 7));
+    }
+
+    [Fact]
     public void SameWorldControllerRecreationPreservesDestroyedUidState()
     {
         var source = Class500(uid: 121, rewardCentre: 10);

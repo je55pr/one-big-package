@@ -115,18 +115,23 @@ public sealed class Rac1WrenchCombatController
                 "Wrench target class does not match the supplied runtime entity.",
                 nameof(source));
 
+        var transport = new Rac1WrenchDamageResult(
+            Rac1WrenchContactPath.HostPolicyAdmission,
+            RepresentativeDamage,
+            RepresentativeDamageFlags);
+        var damageEvent = Rac1DamageRuntime.FromWrench(
+            new Rac1MobyRuntimeKey(
+                source.NativeClassId,
+                source.InstanceIndex),
+            transport);
         var crateBreak = crateSession.ApplyDamage(
             source,
             current,
-            RepresentativeDamage,
+            damageEvent,
             selectedTotal);
         return crateBreak is null
             ? null
-            : new Rac1WrenchDamageResult(
-                Rac1WrenchContactPath.HostPolicyAdmission,
-                RepresentativeDamage,
-                RepresentativeDamageFlags,
-                crateBreak);
+            : transport with { BoltCrateBreak = crateBreak };
     }
 
     private static bool CanDamage(Rac1WrenchContactTarget target) =>

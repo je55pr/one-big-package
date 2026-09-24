@@ -34,6 +34,28 @@ public sealed class Rac1BoltCrateSession
     public Rac1BoltCrateBreakResult? ApplyDamage(
         RuntimeDynamicObject source,
         RuntimeEntityState current,
+        Rac1GameplayDamageEvent damage,
+        int selectedTotal)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        var target = new Rac1MobyRuntimeKey(
+            source.NativeClassId,
+            source.InstanceIndex);
+        if (!damage.Target.MatchesMoby(target))
+            throw new ArgumentException(
+                "R&C1 Bolt Crate damage target does not match the supplied runtime entity.",
+                nameof(damage));
+
+        return ApplyDamage(
+            source,
+            current,
+            damage.NativeDamage,
+            selectedTotal);
+    }
+
+    public Rac1BoltCrateBreakResult? ApplyDamage(
+        RuntimeDynamicObject source,
+        RuntimeEntityState current,
         double nativeDamage,
         int selectedTotal)
     {
