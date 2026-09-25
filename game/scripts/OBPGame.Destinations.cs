@@ -324,6 +324,7 @@ public partial class OBPGame
         if (!staticCamera)
         {
             ConfigureRac1Gameplay(world, result);
+            ConfigureUyaGameplay(world, result);
         }
 
         if (_args.AnimSolo)

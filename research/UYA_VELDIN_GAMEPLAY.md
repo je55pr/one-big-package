@@ -163,12 +163,36 @@ UYA-specific underlay does not name class 500. OBP therefore keeps the current
 UYA implementation named by class/destructible behavior rather than promoting
 that familiar label as UYA authority.
 
+## Live host integration
+
+The generic provider/world path now configures a UYA gameplay session whenever
+an interactive `rac3` world is adopted. It registers the complete authored Moby
+population, installs only the recovered exact-class 500 damage consumer, and
+binds the 131 admitted TABLE1 class-500 instances back to their normal
+`RuntimeWorldScene` presentation nodes.
+
+The temporary non-R&C1 player action supplies only a short-range host
+aim/contact envelope. Its event uses `flags=0x00000001` and positive damage,
+which the TABLE1 class-500 routine admits; this is **not** promoted as recovered
+UYA wrench reach, timing, animation, or weapon damage. Once admitted, the UYA
+runtime owns the state-1 -> state-3 break decision and native deactivation route,
+and the host only applies the resulting neutral inactive presentation state.
+
+An ordinary `rac3:TABLE1` Godot movement smoke from the authored ship point
+confirmed 131/131 class-500 instances admitted and presented, zero rejected,
+normal collision grounding, and the existing temporary R&C1 locomotion path.
+No witness object, teleport, or hand-authored crate was used.
+
 ## Next recovery boundary
 
-The next evidence task is to identify the first ordinary-route hostile family
-from UYA itself. That requires UYA loaded-overlay/live-runtime
-evidence linking authored class identities to update routines, damage admission,
-state/lifetime transitions and PVar fields. Once one family is proved, its
-controller should attach to every authored instance of that class through the
-runtime store, then be exercised from normal TABLE1 spawn with the existing
-temporary R&C1 player locomotion.
+The next evidence task is to finish the class-500 post-break reward path rather
+than borrow GC payout semantics. The TABLE1 helper already proves that authored
+live `+0xB4` participates in reward flow; the remaining work is to recover the
+UYA-specific reward selector/denominations and collection/progression boundary.
+
+After that, identify the first ordinary-route hostile family from UYA itself.
+That requires UYA loaded-overlay/live-runtime evidence linking authored class
+identities to update routines, damage admission, state/lifetime transitions and
+PVar fields. Once one family is proved, its controller should attach to every
+authored instance of that class through the runtime store, then be exercised
+from normal TABLE1 spawn with the existing temporary R&C1 player locomotion.

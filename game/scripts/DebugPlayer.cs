@@ -72,7 +72,11 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Current native planar target step after analogue conditioning.</summary>
     public double Rac1TargetPlanarStep => _rac1Movement.TargetPlanarStep;
 
-    /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
+    /// <summary>
+    /// Non-R&C1 primary-action request. The GC debug crate harness and bounded
+    /// UYA compatibility host may resolve contact; source-game gameplay code owns
+    /// any admitted consequence.
+    /// </summary>
     public event Action? CrateStrikeRequested;
 
     /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host resolves the equipped item.</summary>

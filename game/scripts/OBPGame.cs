@@ -590,6 +590,7 @@ public partial class OBPGame : Node3D
         _inspector = null;
         _world = null;
         ResetCrateDebugHarness();
+        ResetUyaGameplay();
     }
 
     /// <summary>
@@ -823,6 +824,7 @@ public partial class OBPGame : Node3D
         AttachPlayerAvatarVisual(player);
         ArmCrateDebugHarness(player);
         ArmRac1Gameplay(player);
+        ArmUyaGameplay(player);
     }
 
     // --- HUD ---------------------------------------------------------------
@@ -889,6 +891,7 @@ public partial class OBPGame : Node3D
 
         string crateDebug = GetCrateDebugHudLine();
         string rac1Gameplay = GetRac1GameplayHudLine();
+        string uyaGameplay = GetUyaGameplayHudLine();
 
         _worldHud.Text =
             $"Game: {gameLabel}   Build: {w.BuildId}\n" +
@@ -902,7 +905,8 @@ public partial class OBPGame : Node3D
             $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
             (_worldHost.AudioDiagnostics.Count > 0 ? $"\n{_worldHost.AudioStatusLine}" : "") +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
-            (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}");
+            (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}") +
+            (string.IsNullOrEmpty(uyaGameplay) ? "" : $"\n{uyaGameplay}");
     }
 
     private void SetSelectorHint(string text)
