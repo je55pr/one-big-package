@@ -249,6 +249,45 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
+    public void OrdinaryGroundTerrain_UsesDirectionalSlopeWithoutCrossSlopeSteering()
+    {
+        const double yaw = -2.0740272998809814d;
+        const double runCap = 0.09500919d;
+        var movement = new Rac1RatchetMovementController.StepResult(
+            Math.Cos(yaw) * runCap,
+            Math.Sin(yaw) * runCap,
+            0d,
+            Rac1RatchetMovementPhase.Grounded,
+            Rac1RatchetLocomotionState.Moving,
+            Rac1RatchetYawMode.GroundRun);
+
+        var projected = Rac1OrdinaryGroundContactMotion.ResolvePreContactStep(
+            movement,
+            Grounded,
+            normalPlanarX: 0.07734177119116313d,
+            normalPlanarY: 0.3387449668450168d,
+            normalUp: 0.9376940321161173d);
+
+        Assert.Equal(-0.04315774142742157d, projected.PlanarX, 5);
+        Assert.Equal(-0.07839659601449966d, projected.PlanarY, 5);
+        Assert.Equal(0.016880685463547707d, projected.Vertical, 5);
+        Assert.Equal(
+            Math.Atan2(movement.PlanarY, movement.PlanarX),
+            Math.Atan2(projected.PlanarY, projected.PlanarX),
+            12);
+        Assert.Equal(
+            runCap,
+            Math.Sqrt(
+                (projected.PlanarX * projected.PlanarX) +
+                (projected.PlanarY * projected.PlanarY) +
+                Math.Pow(
+                    projected.Vertical +
+                    Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick,
+                    2)),
+            8);
+    }
+
+    [Fact]
     public void SupportedOrdinaryGround_AddsRetailPreContactAdhesionOnlyOutsideJumpStates()
     {
         var controller = new Rac1RatchetMovementController();

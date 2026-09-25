@@ -248,8 +248,9 @@ public partial class DebugPlayer : CharacterBody3D
         // RAC1 supplies its own recovered 54/3600 downward contact request.
         // Do not stack Godot's arbitrary floor-snap distance on top of it.
         FloorSnapLength = UseRac1Gameplay ? 0f : 1.5f;
-        // Retail uphill witnesses preserve the full 3D locomotion-step magnitude.
-        FloorConstantSpeed = UseRac1Gameplay;
+        // R&C1 now constructs the recovered directional-slope tangent itself;
+        // do not ask Godot to invent a second constant-speed slope projection.
+        FloorConstantSpeed = false;
         FloorMaxAngle = UseRac1Gameplay
             ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians
             : Mathf.DegToRad(60f);
@@ -596,7 +597,7 @@ public partial class DebugPlayer : CharacterBody3D
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
         double controlYaw = GetRac1ControlYaw();
-        var contact = ProbeRac1Contact(
+        var (contact, groundNormal) = ProbeRac1Contact(
             grounded,
             IsOnCeiling());
         _rac1SurfaceActionIntent = UseRac1Gameplay
@@ -618,13 +619,23 @@ public partial class DebugPlayer : CharacterBody3D
 
         UpdateRac1FacingPresentation();
 
-        double preContactVertical = UseRac1Gameplay
-            ? Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(
+        Vector3 admittedNormal = groundNormal ?? Vector3.Up;
+        var preContact = UseRac1Gameplay
+            ? Rac1OrdinaryGroundContactMotion.ResolvePreContactStep(
                 step,
-                contact.MovementFacts)
-            : step.Vertical;
+                contact.MovementFacts,
+                admittedNormal.X,
+                admittedNormal.Z,
+                admittedNormal.Y)
+            : new Rac1OrdinaryGroundContactMotion.PreContactStep(
+                step.PlanarX,
+                step.PlanarY,
+                step.Vertical);
         var resolvedDelta = contact.ApplySupportAndConveyor(
-            new Rac1NativeVector3(step.PlanarX, preContactVertical, step.PlanarY));
+            new Rac1NativeVector3(
+                preContact.PlanarX,
+                preContact.Vertical,
+                preContact.PlanarY));
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(
             (float)resolvedDelta.X * nativeTicksPerSecond,
@@ -637,14 +648,14 @@ public partial class DebugPlayer : CharacterBody3D
         }
     }
 
-    private Rac1PlayerContactResult ProbeRac1Contact(
+    private (Rac1PlayerContactResult Contact, Vector3? GroundNormal) ProbeRac1Contact(
         bool grounded,
         bool hitCeiling)
     {
         if (!grounded)
         {
             ClearRac1HostSupportAnchor();
-            return _rac1DynamicSupport.StepStatic(false, hitCeiling);
+            return (_rac1DynamicSupport.StepStatic(false, hitCeiling), null);
         }
 
         Vector3 origin = GlobalPosition;
@@ -656,9 +667,12 @@ public partial class DebugPlayer : CharacterBody3D
         if (hit.Count == 0 || !hit.ContainsKey("collider"))
         {
             ClearRac1HostSupportAnchor();
-            return _rac1DynamicSupport.StepStatic(true, hitCeiling);
+            return (_rac1DynamicSupport.StepStatic(true, hitCeiling), null);
         }
 
+        Vector3? groundNormal = hit.ContainsKey("normal")
+            ? (Vector3)hit["normal"]
+            : null;
         var collider = hit["collider"].As<Node>();
         if (collider is RuntimeWorldScene.RuntimeCollisionBody3D collisionBody &&
             hit.ContainsKey("face_index"))
@@ -669,10 +683,12 @@ public partial class DebugPlayer : CharacterBody3D
             int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
                 ? materialId
                 : null;
-            return _rac1DynamicSupport.StepStatic(
-                true,
-                hitCeiling,
-                rawFaceType);
+            return (
+                _rac1DynamicSupport.StepStatic(
+                    true,
+                    hitCeiling,
+                    rawFaceType),
+                groundNormal);
         }
 
         if (UseRac1Gameplay &&
@@ -685,16 +701,18 @@ public partial class DebugPlayer : CharacterBody3D
             if (!hit.ContainsKey("position"))
             {
                 ClearRac1HostSupportAnchor();
-                return _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
-                    IsGrounded: true,
-                    HitCeiling: hitCeiling,
-                    RawFaceType: null,
-                    ContactedMoby: contactKey,
-                    CurrentDynamicContact: contactKey,
-                    PersistentSupportMoby: null,
-                    SupportAnchor: new Rac1SupportAnchorState(0u, false),
-                    SupportAnchorWorldPosition: null,
-                    Conveyor: Rac1ConveyorTransfer.None));
+                return (
+                    _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
+                        IsGrounded: true,
+                        HitCeiling: hitCeiling,
+                        RawFaceType: null,
+                        ContactedMoby: contactKey,
+                        CurrentDynamicContact: contactKey,
+                        PersistentSupportMoby: null,
+                        SupportAnchor: new Rac1SupportAnchorState(0u, false),
+                        SupportAnchorWorldPosition: null,
+                        Conveyor: Rac1ConveyorTransfer.None)),
+                    groundNormal);
             }
 
             Vector3 contactWorld = (Vector3)hit["position"];
@@ -707,23 +725,25 @@ public partial class DebugPlayer : CharacterBody3D
 
             Vector3 supportAnchorWorld = dynamicRoot.ToGlobal(_rac1HostSupportLocalAnchor);
             Vec3 supportAnchorNative = ScenePlayerToNative(supportAnchorWorld);
-            return _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
-                IsGrounded: true,
-                HitCeiling: hitCeiling,
-                RawFaceType: null,
-                ContactedMoby: contactKey,
-                CurrentDynamicContact: contactKey,
-                PersistentSupportMoby: contactKey,
-                SupportAnchor: new Rac1SupportAnchorState(1u, true),
-                SupportAnchorWorldPosition: new Rac1NativeVector3(
-                    supportAnchorNative.X,
-                    supportAnchorNative.Y,
-                    supportAnchorNative.Z),
-                Conveyor: Rac1ConveyorTransfer.None));
+            return (
+                _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
+                    IsGrounded: true,
+                    HitCeiling: hitCeiling,
+                    RawFaceType: null,
+                    ContactedMoby: contactKey,
+                    CurrentDynamicContact: contactKey,
+                    PersistentSupportMoby: contactKey,
+                    SupportAnchor: new Rac1SupportAnchorState(1u, true),
+                    SupportAnchorWorldPosition: new Rac1NativeVector3(
+                        supportAnchorNative.X,
+                        supportAnchorNative.Y,
+                        supportAnchorNative.Z),
+                    Conveyor: Rac1ConveyorTransfer.None)),
+                groundNormal);
         }
 
         ClearRac1HostSupportAnchor();
-        return _rac1DynamicSupport.StepStatic(true, hitCeiling);
+        return (_rac1DynamicSupport.StepStatic(true, hitCeiling), groundNormal);
     }
 
     private void ClearRac1HostSupportAnchor()

@@ -31,8 +31,8 @@ public partial class OBPGame
                     player.FloorSnapLength <= 0.000001f,
                     "R&C1 ordinary movement still has host floor snap enabled");
                 Require(
-                    player.FloorConstantSpeed,
-                    "R&C1 ordinary slope projection is not preserving constant ground speed");
+                    !player.FloorConstantSpeed,
+                    "R&C1 still delegates slope speed projection to Godot");
                 Require(
                     Math.Abs(player.FloorMaxAngle -
                         (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians) < 0.000001f,
