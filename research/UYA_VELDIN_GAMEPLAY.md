@@ -148,9 +148,10 @@ route for the entire authored population:
 
 The TABLE1 static-population path independently copies authored static
 `+0x10 -> live Moby +0xB2` and static `+0x14 -> live Moby +0xB4`.
-The post-break helper later consumes live `+0xB4` and clears it. This proves
-that the authored value participates in the native post-break/reward flow,
-without yet assigning a stronger semantic name to the value.
+The post-break helper later reads and conditionally clears live `+0xB4`, but
+only **after** its separate indexed-resource spawn loop. The new trace therefore
+proves lifecycle consumption of that authored value, not that it selects or
+quantifies the resource drop. Its exact semantic name remains unknown.
 
 `UyaClass500DestructibleSession` now implements this recovered path for every
 authored TABLE1 class-500 object. Damage dispatch requires the UYA-native mask,
@@ -159,9 +160,49 @@ state 1 -> break state 3 and projects the proven ordinary deactivation route to
 neutral inactive presence. Unrecovered PVar variants fail closed.
 
 Pinned Wrench cross-game data names numeric class 500 as a Bolt Crate, but its
-UYA-specific underlay does not name class 500. OBP therefore keeps the current
-UYA implementation named by class/destructible behavior rather than promoting
-that familiar label as UYA authority.
+UYA-specific underlay does not name class 500. Direct UYA evidence now points
+elsewhere: TABLE1 class 500 has an indexed-resource emission path, not the GC
+class-500 physical-Bolt denomination path. OBP therefore keeps the UYA object
+named by class/destructible behavior.
+
+## TABLE1 indexed-resource drop and class 3291
+
+Direct TABLE1 disassembly closes the ordinary `PVar+0xFB == 0` drop path used
+by all 131 authored class-500 instances. The shared post-break helper calls
+`0x00440E98`, whose native table has **156 resource slots**. It filters slots
+by an availability byte, a non-zero item-definition `+0x8A` limit and an exact
+resource-index exclusion set (`16, 57, 6F, 97, A7, C0..C4` hex). If any
+eligible resource is below its limit, selection is from that under-limit pool;
+otherwise it falls back to all eligible resources. Both selections consume an
+explicit bounded native RNG result.
+
+The helper then performs a separate `rand(5)`: zero yields two spawned objects,
+all other results yield one. Each spawn calls `0x0030EF98`, which explicitly
+allocates native **class 3291 (`0xCDB`)**. The constructor stores the selected
+resource index at PVar `+0x68`. With the class-500 caller's amount argument
+`-1`, it resolves the selected item's table row and copies item-definition
+halfword `+0x88` into PVar `+0x60`.
+
+Class 3291's TABLE1 update later reads those same fields on collection:
+`+0x68` supplies the indexed-resource slot and `+0x60` the increment. It
+calls `0x0050D980`, which adds the amount to the slot's 32-bit current count
+and clamps to item-definition `+0x8A` when that limit is non-zero. The pickup
+then transitions out even if the count did not increase. This proves an indexed
+resource/count pickup contract without proving human names for individual slots.
+
+A retained authorized UYA savestate
+(`SHA-256 1e16f9a6262c77507ed38f7887d6b3bf849703c574d8b870611873dbbb7f6b5c`)
+was loaded with its native PCSX2 v2.8.2 compatibility requirement in a
+g007-owned portable profile. Visual capture confirmed live Veldin gameplay.
+PINE sampling of the exact selector arrays in that state found zero eligible
+resource slots under the recovered filter, so that particular retail state
+would make the helper return zero and spawn no class-3291 resource pickup.
+That state fact is not generalized into an opening inventory policy.
+
+`UyaClass500ResourceDropPlanner` and `UyaIndexedResourceSession` now retain
+this engine-independent contract. Callers must supply all 156 resolved resource
+facts and explicit native-range RNG results; OBP does not invent UYA inventory,
+slot names or random outcomes.
 
 ## Live host integration
 
@@ -185,12 +226,14 @@ No witness object, teleport, or hand-authored crate was used.
 
 ## Next recovery boundary
 
-The next evidence task is to finish the class-500 post-break reward path rather
-than borrow GC payout semantics. The TABLE1 helper already proves that authored
-live `+0xB4` participates in reward flow; the remaining work is to recover the
-UYA-specific reward selector/denominations and collection/progression boundary.
+The next integration task is to recover the UYA player inventory/resource
+snapshot that supplies the 156 selector facts during ordinary TABLE1 play, then
+wire class-3291 pickup presentation/collection only when those facts are
+available. The selector, spawn identity, increment amount and add/clamp law are
+now recovered; slot names, ordinary opening inventory ownership and host RNG
+source remain intentionally unpromoted.
 
-After that, identify the first ordinary-route hostile family from UYA itself.
+In parallel, identify the first ordinary-route hostile family from UYA itself.
 That requires UYA loaded-overlay/live-runtime evidence linking authored class
 identities to update routines, damage admission, state/lifetime transitions and
 PVar fields. Once one family is proved, its controller should attach to every
