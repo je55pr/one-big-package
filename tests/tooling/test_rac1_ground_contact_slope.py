@@ -58,7 +58,7 @@ class Rac1GroundContactSlopeTests(unittest.TestCase):
             0.015,
             places=6,
         )
-        self.assertIn("not yet pinned", report["lawStatus"])
+        self.assertIn("statically pinned", report["lawStatus"])
 
 
     def test_non_run_cap_or_wrong_contact_correction_is_rejected(self):

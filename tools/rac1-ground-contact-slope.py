@@ -82,7 +82,10 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         "authority": capture.get("authority"),
         "movieSha256": capture.get("movieSha256"),
         "stateSha256": capture.get("stateSha256"),
-        "lawStatus": "runtime-observed; producing static routine not yet pinned",
+        "lawStatus": (
+            "runtime-observed terrain response; ordinary -0.015 downward request "
+            "is statically pinned in rac1-ground-contact-static.json"
+        ),
         "runCapNativeUnitsPerTick": RUN_CAP,
         "stableWitnessCount": len(stable),
         "stableFrameRange": [stable[0]["frame"], stable[-1]["frame"]],

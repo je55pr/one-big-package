@@ -3,7 +3,7 @@
   "authority": "R&C1 NTSC-U SCUS-97199 / PCSX2 input recording + PINE",
   "movieSha256": "565f07bae110802f535943a05a0bfe3312697bd7d98bdb4370dc541b886820e9",
   "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
-  "lawStatus": "runtime-observed; producing static routine not yet pinned",
+  "lawStatus": "runtime-observed terrain response; ordinary -0.015 downward request is statically pinned in rac1-ground-contact-static.json",
   "runCapNativeUnitsPerTick": 0.09500919,
   "stableWitnessCount": 81,
   "stableFrameRange": [
