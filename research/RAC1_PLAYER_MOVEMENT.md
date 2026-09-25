@@ -6,9 +6,9 @@ Authority: NTSC-U original retail (`SCUS-97199`, build `rac1-ntscu-original`). T
 
 Retail exposes Ratchet's actual per-update XYZ displacement in the player-state structure at `0x0013f3d0 + 0x80/+0x84/+0x88` (`0x0013f450` for X). Across controlled traces those floats match live Moby position deltas component-for-component on game updates.
 
-OBP therefore models the R&C1 controller in **native world displacement per 60 Hz update**. `OBP.RAC1` owns acceleration, jump, crouch and the recovered yaw recurrences. `OBP.Runtime.Player` carries only neutral input/contact facts. Godot converts the native step to engine velocity and retains ownership of world collision, floor/ceiling contact and slope response.
+OBP therefore models the R&C1 controller in **native world displacement per 60 Hz update**. `OBP.RAC1` owns acceleration, jump, crouch and the recovered yaw recurrences. `OBP.Runtime.Player` carries only neutral input/contact facts. At the start of the g005 recovery, Godot still converts the native step to engine velocity and owns world collision, floor/ceiling contact and slope response; that remaining host policy is now an explicit archaeology target rather than part of the recovered controller contract.
 
-This separation is important: retail slope traces acquire vertical displacement while ordinary locomotion remains active. That vertical component is collision/terrain response, not evidence for a second controller gravity equation.
+Retail slope traces acquire vertical displacement while ordinary locomotion remains active. That vertical component is collision/terrain response, not evidence for a second controller gravity equation. The g005 contact trace below now separates the pre-contact movement vector from the final per-tick displacement, which lets slope/contact behavior be studied without folding it back into the acceleration recurrence.
 
 ## Planar input boundary
 
@@ -147,6 +147,16 @@ The strongest local fixed traces are `right_release_zero.json`, `forward_release
 Three independent Veldin fall-off trials enter native death sequences 10/11 and then restore Ratchet to approximately `(132.09, 115.48, 31.4266)` in standing state. That location agrees with the separately recovered authored class-0 player-start region.
 
 The post-respawn controller does not inherit the pre-death motion. `Rac1RatchetMovementController.Reset()` therefore clears planar displacement, vertical displacement, jump anticipation/hold state and returns the controller to grounded startup state. Host placement remains responsible for choosing the authored player start; this work does not invent a broader checkpoint system.
+
+## Ground/contact recovery audit (g005)
+
+The g005 baseline still contains host-authored floor policy in `DebugPlayer`: `FloorSnapLength = 1.5`, `FloorMaxAngle = 60 degrees`, `FloorStopOnSlope = true`, `MaxSlides = 6` and `SafeMargin = 0.1`, followed by `MoveAndSlide()` and `IsOnFloor()`. Those values are not retail evidence. The shared g002 contact runtime preserves native current-contact, persistent-support, anchor and conveyor semantics, but the ordinary Godot dynamic-contact adapter currently supplies no persistent support, no valid anchor and no conveyor transfer, so that richer seam is not yet driving ordinary play.
+
+The analogue PINE harness now samples `P+0x2fc` current dynamic contact, `P+0x360` persistent support, `P+0x364` support-anchor state, the packed surface/effect words and `P+0x2084` action state alongside the existing movement fields. In fixed state `07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d`, movie `565f07bae110802f535943a05a0bfe3312697bd7d98bdb4370dc541b886820e9` runs from flat Veldin ground onto an uphill section. `G+0x60/+0x64/+0x68` exposes a repeatable pre-contact movement vector while `G+0x80/+0x84/+0x88` remains the final actual displacement.
+
+The payload-free reduction `research/generated/rac1-ground-contact-slope.json` retains 81 stable run-cap witnesses. Across those rows the final 3D displacement stays within `6.69e-6` of `0.09500919` native unit/tick; 25 retained uphill rows have more than `0.01` positive vertical displacement, so the tested retail slope response preserves the ordinary run-step magnitude in 3D rather than merely keeping the flat XY vector unchanged. The final-minus-pre-contact correction is almost purely vertical and clusters around `+0.015`: min `0.01497495`, median `0.015000022`, max `0.01500468`, with horizontal correction below the reducer's `5e-5` tolerance. On flat rows the pre-contact Z component is correspondingly about `-0.015` and final Z is zero; on stable uphill rows the same correction lifts the pre-contact vector to the terrain-following final displacement.
+
+This is a **runtime-observed contact recurrence**, not yet a promoted implementation constant. The loaded executable contains a broadly used `0.015f` global, so literal-reference frequency alone does not identify the producing contact routine. Static ordering around `0x00211670` establishes that action update `0x00217970`, `0x00211380`, `0x00221310` and `0x002215c8` execute in the ordinary player update chain, but the exact writer/branch responsible for the `G+0x60 -> G+0x80` correction is still being pinned. Terrain-transition spikes are deliberately excluded from the stable reducer. Until that static/perturbation link is complete, OBP must not replace the Godot slope path with a guessed projection formula.
 
 ## Runtime promotion
 

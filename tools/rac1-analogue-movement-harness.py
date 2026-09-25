@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURES = ROOT / "captures"
 PLAYER_STATE = 0x0013F3D0
+PLAYER_BASE = PLAYER_STATE - 0x80
 PLAYER_MOBY = 0x01845E80
 READ32 = 2
 NEUTRAL = 127
@@ -38,6 +39,15 @@ KNOWN_FIELDS = {
     "control_dir_y": (PLAYER_STATE + 0x0F4, "f32"),
     "control_dir_z": (PLAYER_STATE + 0x0F8, "f32"),
     "target_yaw": (PLAYER_STATE + 0x100, "f32"),
+    "current_dynamic_contact": (PLAYER_BASE + 0x2FC, "u32"),
+    "contact_slot_300": (PLAYER_BASE + 0x300, "u32"),
+    "contact_flags_308": (PLAYER_BASE + 0x308, "u32"),
+    "contact_counters_30c": (PLAYER_BASE + 0x30C, "u32"),
+    "persistent_support": (PLAYER_BASE + 0x360, "u32"),
+    "support_anchor_state": (PLAYER_BASE + 0x364, "u32"),
+    "surface_word": (PLAYER_BASE + 0x12E0, "u32"),
+    "surface_effect_word": (PLAYER_BASE + 0x12EC, "u32"),
+    "action_state": (PLAYER_BASE + 0x2084, "u32"),
     "pos_x": (PLAYER_MOBY + 0x10, "f32"),
     "pos_y": (PLAYER_MOBY + 0x14, "f32"),
     "pos_z": (PLAYER_MOBY + 0x18, "f32"),
@@ -235,6 +245,10 @@ def sample_player(pine: Pine, scan_bytes: int = 0x180) -> dict[str, object]:
     sequence_word = int(sample.pop("sequence_word"))
     sample["next_sequence"] = (sequence_word >> 16) & 0xFF
     sample["sequence"] = (sequence_word >> 24) & 0xFF
+    surface_word = int(sample.pop("surface_word"))
+    effect_word = int(sample.pop("surface_effect_word"))
+    sample["surface_face_type"] = surface_word & 0xFF
+    sample["surface_effect_mode"] = (effect_word >> 8) & 0xFF
     scan_values = values[len(known_addresses):]
     sample["candidate_words"] = {
         f"0x{offset:03x}": raw for offset, raw in zip(scan_offsets, scan_values)

@@ -86,6 +86,24 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             HARNESS.capture_path(ROOT / "research" / "raw.json")
 
+    def test_contact_probe_fields_pin_recovered_player_layout(self):
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["current_dynamic_contact"],
+            (HARNESS.PLAYER_BASE + 0x2FC, "u32"),
+        )
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["persistent_support"],
+            (HARNESS.PLAYER_BASE + 0x360, "u32"),
+        )
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["support_anchor_state"],
+            (HARNESS.PLAYER_BASE + 0x364, "u32"),
+        )
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["action_state"],
+            (HARNESS.PLAYER_BASE + 0x2084, "u32"),
+        )
+
     def test_derive_keeps_only_reduced_candidate_metadata(self):
         def row(frame, label, left, x, disp, yaw, sequence, candidate):
             return {
