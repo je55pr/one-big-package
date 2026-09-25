@@ -80,6 +80,9 @@ public sealed record CommandLineArgs
     /// <summary>Run the ordinary-input-only R&amp;C1 Veldin playability smoke and quit.</summary>
     public bool Rac1VeldinPlaySmoke { get; init; }
 
+    /// <summary>Run the R&amp;C1 Veldin movement/contact-only ordinary-input smoke and quit.</summary>
+    public bool Rac1MovementContactSmoke { get; init; }
+
     /// <summary>Exercise cold startup visibility, then enter ordinary R&amp;C1 Veldin through the bootstrap/provider path.</summary>
     public bool Rac1StartupVisibilitySmoke { get; init; }
 
@@ -154,6 +157,7 @@ public sealed record CommandLineArgs
                 "--crate-focus" => result with { CrateFocus = true },
                 "--crate-auto-strike" => result with { CrateAutoStrike = true },
                 "--rac1-veldin-play-smoke" => result with { Rac1VeldinPlaySmoke = true },
+                "--rac1-movement-contact-smoke" => result with { Rac1MovementContactSmoke = true },
                 "--rac1-startup-visibility-smoke" => result with { Rac1StartupVisibilitySmoke = true },
                 // Historical alias now names the honest ordinary-play gate rather than the
                 // synthetic staged-contact harness it previously selected.

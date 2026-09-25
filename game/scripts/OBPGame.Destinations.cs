@@ -360,6 +360,11 @@ public partial class OBPGame
             _ = RunRac1VeldinPlaySmokeAsync();
         }
 
+        if (_args.Rac1MovementContactSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
+        {
+            _ = RunRac1MovementContactSmokeAsync();
+        }
+
         if (_args.Rac1CombatContractSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
         {
             _ = RunRac1CombatContractSmokeAsync();

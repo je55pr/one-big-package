@@ -84,6 +84,85 @@ public partial class OBPGame
         }
     }
 
+    private async Task RunRac1MovementContactSmokeAsync()
+    {
+        try
+        {
+            if (_world is not { Game: "rac1", LevelId: 0 } || _player is null)
+                throw new InvalidOperationException(
+                    "R&C1 movement/contact smoke must begin in ordinary rac1:LEVEL0.");
+
+            Engine.MaxFps = 60;
+            ClearRac1VeldinPlaySmokeInput();
+            await WaitForGroundedAsync(_player, 360);
+            AssertRac1VeldinEphemeralOpening();
+            _player.ResetRac1CollisionDiagnostics();
+
+            Vector3 authoredRespawnPosition = _player.GlobalPosition;
+
+            // First prove the ordinary recovered ground/edge path can leave authored
+            // collision, hit the retail Veldin death boundary, and reacquire the
+            // authored start automatically. No transform or development respawn input.
+            await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
+
+            Vector3 movementStart = _player.GlobalPosition;
+            SetAnalogueSmokeInput(0f, 0.60f);
+            await PhysicsFramesAsync(48);
+            float walkSpeed = HorizontalSpeed(_player);
+            float walkTravel = HorizontalDistance(movementStart, _player.GlobalPosition);
+            double walkMagnitude = _player.Rac1AnalogueMagnitude;
+            double walkTarget = _player.Rac1TargetPlanarStep;
+            Require(
+                walkMagnitude >= 0.25d && walkMagnitude < 0.83d,
+                "ordinary Veldin low-stick input did not land in the recovered walk band");
+            Require(
+                walkTarget > 0d && walkTarget < 0.03d,
+                "ordinary Veldin low-stick input did not select the recovered walk plateau");
+            Require(walkTravel > 0.25f, "ordinary Veldin walk produced no useful traversal");
+
+            Vector3 runStart = _player.GlobalPosition;
+            SetAnalogueSmokeInput(0f, 1f);
+            await PhysicsFramesAsync(48);
+            float runSpeed = HorizontalSpeed(_player);
+            float runTravel = HorizontalDistance(runStart, _player.GlobalPosition);
+            Require(
+                runSpeed > walkSpeed + 1.0f,
+                "ordinary Veldin full-stick input did not progress from walk to run");
+            Require(
+                _player.Rac1TargetPlanarStep > walkTarget,
+                "ordinary Veldin full-stick target did not exceed the walk target");
+            Require(runTravel > walkTravel + 1.0f, "ordinary Veldin run did not out-travel walk");
+
+            float movingJump = await MeasureJumpAsync(
+                _player,
+                holdFrames: 8,
+                applyPartialAirControl: false,
+                movingAtLaunch: true);
+            Require(movingJump > 0.5f, "ordinary Veldin moving jump produced no useful apex");
+            Require(_player.IsOnFloor(), "ordinary Veldin jump did not reacquire floor support");
+            Require(
+                _player.Rac1MaxObservedSlideCollisions < _player.MaxSlides,
+                $"ordinary Veldin movement saturated Godot MaxSlides={_player.MaxSlides}; " +
+                $"observed={_player.Rac1MaxObservedSlideCollisions}");
+
+            GD.Print(
+                $"[rac1-movement-contact] PASS walk={walkSpeed:0.000}/{walkTravel:0.000} " +
+                $"run={runSpeed:0.000}/{runTravel:0.000} movingJump={movingJump:0.000} " +
+                $"maxSlideContacts={_player.Rac1MaxObservedSlideCollisions}/{_player.MaxSlides}; " +
+                "authored edge/death/restart and post-restart support all passed without cheats");
+            ApplicationLifecycle.RequestQuit(this, "rac1-movement-contact-smoke-pass", 0);
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[rac1-movement-contact] FAIL: {ex.Message}\n{ex.StackTrace}");
+            ApplicationLifecycle.RequestQuit(this, "rac1-movement-contact-smoke-fail", 3);
+        }
+        finally
+        {
+            ClearRac1VeldinPlaySmokeInput();
+        }
+    }
+
     private void AssertRac1VeldinEphemeralOpening()
     {
         if (_args.Rac1CampaignPersistenceRequested || _rac1CampaignPersistence.Enabled)
