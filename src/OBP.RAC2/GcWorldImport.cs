@@ -182,8 +182,9 @@ public static class GcWorldImport
         var dynamicClasses = new HashSet<int> { 500 };
         if (level == 0)
         {
-            // Aranos opening MSR I family. Retail LEVEL0 identifies class 2827
-            // as the first hostile population and supplies its class-local runtime.
+            // Aranos opening lift and MSR I family. Both need per-instance runtime
+            // identity rather than remaining welded into the static Moby soup.
+            dynamicClasses.Add(GcAranosOpeningLiftSession.NativeClassId);
             dynamicClasses.Add(GcClass2827HostileSession.NativeClassId);
         }
         var dynamicObjects = BuildDynamicMobyObjects(

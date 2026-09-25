@@ -46,9 +46,20 @@ public partial class OBPGame
         public int AttackCount { get; set; }
     }
 
+    private sealed class GcOpeningLiftHostSession(
+        RuntimeWorldScene.DynamicObjectNode node,
+        GcAranosOpeningLiftSession lift)
+    {
+        public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
+        public GcAranosOpeningLiftSession Lift { get; } = lift;
+        public bool CarryingPlayer { get; set; }
+        public float RiderOffsetY { get; set; }
+    }
+
     private GcDamageTransportSession _gcDamageTransport = new();
     private readonly Dictionary<int, GcClass2827HostileSession> _gcClass2827Hostiles = [];
     private readonly Dictionary<int, GcOpeningMsr1HostSession> _gcOpeningMsr1 = [];
+    private GcOpeningLiftHostSession? _gcOpeningLift;
     private GcRatchetNanotechSession _gcRatchetNanotech = new();
     private double _gcNativeTickAccumulator;
     private RuntimeWorldScene.DynamicObjectNode? _crateDebugTarget;
@@ -71,6 +82,7 @@ public partial class OBPGame
         _gcDamageTransport = new GcDamageTransportSession();
         _gcClass2827Hostiles.Clear();
         _gcOpeningMsr1.Clear();
+        _gcOpeningLift = null;
         _gcRatchetNanotech = new GcRatchetNanotechSession();
         _gcNativeTickAccumulator = 0d;
         _crateBoltSession = new GcFreshBoltSession();
@@ -82,6 +94,17 @@ public partial class OBPGame
         if (_sceneResult?.DynamicObjectNodes is not { } nodes)
         {
             return;
+        }
+
+        var openingLiftNode = nodes.FirstOrDefault(n =>
+            n.Source.SourceGame == "rac2" &&
+            n.Source.NativeClassId == GcAranosOpeningLiftSession.NativeClassId &&
+            n.Source.InstanceIndex == GcAranosOpeningLiftSession.OpeningInstanceIndex);
+        if (openingLiftNode is not null)
+        {
+            _gcOpeningLift = new GcOpeningLiftHostSession(
+                openingLiftNode,
+                new GcAranosOpeningLiftSession(openingLiftNode.Source));
         }
 
         foreach (var node in nodes.Where(n =>
@@ -299,7 +322,8 @@ public partial class OBPGame
 
     private void TickGcGameplay(double delta)
     {
-        if (_world?.Game != "rac2" || _player is null || _gcClass2827Hostiles.Count == 0)
+        if (_world?.Game != "rac2" || _player is null ||
+            (_gcClass2827Hostiles.Count == 0 && _gcOpeningLift is null))
         {
             return;
         }
@@ -314,12 +338,68 @@ public partial class OBPGame
         _gcNativeTickAccumulator -= ticks * GcNativeTickSeconds;
         for (int tick = 0; tick < ticks; tick++)
         {
+            TickGcOpeningLiftNativeTick();
+
             foreach (var hostile in _gcClass2827Hostiles.Values)
             {
                 hostile.TickCooldown();
             }
 
             TickGcOpeningMsr1NativeTick();
+        }
+    }
+
+    private void TickGcOpeningLiftNativeTick()
+    {
+        if (_gcOpeningLift is not { } session ||
+            _player is null || !IsInstanceValid(_player) ||
+            !IsInstanceValid(session.Node.Root))
+        {
+            return;
+        }
+
+        if (session.Lift.Phase == GcAranosOpeningLiftPhase.LowerIdle)
+        {
+            // Class-local retail mesh bounds (native X/Y -> scene X/Z) are
+            // x=-2.785..2.715 and z=-2.951..6.778. A small margin accounts for
+            // Ratchet's capsule and keeps the trigger tied to the actual platform.
+            Vector3 local = session.Node.Root.ToLocal(_player.GlobalPosition);
+            bool riderPresent =
+                local.X >= -3.15f && local.X <= 3.08f &&
+                local.Z >= -3.32f && local.Z <= 7.15f &&
+                local.Y >= -0.65f && local.Y <= 3.25f;
+            if (session.Lift.TryBeginRise(riderPresent))
+            {
+                session.CarryingPlayer = true;
+                session.RiderOffsetY = _player.GlobalPosition.Y - session.Node.Root.GlobalPosition.Y;
+                GD.Print($"[gc-lift] opening class-2753 ride started at native Z={session.Lift.CurrentNativeZ:0.###}");
+            }
+        }
+
+        var step = session.Lift.AdvanceNativeTick();
+        if (Math.Abs(step.DeltaNativeZ) <= double.Epsilon)
+        {
+            return;
+        }
+
+        Transform3D sceneTransform = session.Node.Root.Transform;
+        Vector3 origin = sceneTransform.Origin;
+        origin.Y += (float)step.DeltaNativeZ;
+        sceneTransform.Origin = origin;
+        session.Node.ApplyState(session.Node.State.WithTransform(
+            RuntimeWorldScene.ToRuntimeTransform(sceneTransform)));
+
+        if (session.CarryingPlayer)
+        {
+            Vector3 playerPosition = _player.GlobalPosition;
+            playerPosition.Y = origin.Y + session.RiderOffsetY;
+            _player.GlobalPosition = playerPosition;
+        }
+
+        if (step.Phase == GcAranosOpeningLiftPhase.UpperIdle)
+        {
+            session.CarryingPlayer = false;
+            GD.Print($"[gc-lift] opening class-2753 ride reached native Z={step.NativeZ:0.###}");
         }
     }
 
