@@ -96,10 +96,52 @@ all 735 authored Mobies into the UYA runtime, and pins representative opening
 placements including class 0 / instance 0 and class 500 / instance 311. It does
 not teleport, inject a witness object or substitute a hand-authored placement.
 
+## TABLE1 class-500 destructible recovery
+
+The loaded TABLE1 Moby vtable maps authored classes 500, 501 and 511 to the
+same update routine at `0x0033A5C0`. This is UYA overlay evidence, not an
+assumption imported from Going Commando. The routine uses live Moby `+0x20`
+as a six-state selector and live `+0x68` as the PVar pointer.
+
+Before state dispatch it calls the owned collision-damage resolver with mask
+`0x0B030001`. A returned record with exact flags `0x02000000` is discarded.
+On the ordinary state-1 path, class 500 requires positive floating damage at
+record `+0x2C` before calling the shared transition/reward helpers
+`0x0033BE30` and `0x0033B940`.
+
+The class-500 state-3 path reads PVar `+0xF8`. Zero enters
+`0x0033CA98`; that helper takes its direct native deactivation path when the
+PVar dword at `+0xB0` is also zero. Exact-authority TABLE1 census closes this
+route for the entire authored population:
+
+- 131 class-500 instances;
+- all 131 carry exactly `0x140` PVar bytes;
+- all 131 have PVar `+0xB0 dword == 0`, `+0xC8 == 0`,
+  `+0xF8 == 0` and `+0xFB == 0`;
+- authored static `+0x14` values are `11` (14 objects), `44` (110),
+  and `61` (7).
+
+The TABLE1 static-population path independently copies authored static
+`+0x10 -> live Moby +0xB2` and static `+0x14 -> live Moby +0xB4`.
+The post-break helper later consumes live `+0xB4` and clears it. This proves
+that the authored value participates in the native post-break/reward flow,
+without yet assigning a stronger semantic name to the value.
+
+`UyaClass500DestructibleSession` now implements this recovered path for every
+authored TABLE1 class-500 object. Damage dispatch requires the UYA-native mask,
+exact-flag exclusion and positive damage scalar. A matching hit records native
+state 1 -> break state 3 and projects the proven ordinary deactivation route to
+neutral inactive presence. Unrecovered PVar variants fail closed.
+
+Pinned Wrench cross-game data names numeric class 500 as a Bolt Crate, but its
+UYA-specific underlay does not name class 500. OBP therefore keeps the current
+UYA implementation named by class/destructible behavior rather than promoting
+that familiar label as UYA authority.
+
 ## Next recovery boundary
 
-The next evidence task is to identify the first ordinary-route destructible and
-hostile families from UYA itself. That requires UYA loaded-overlay/live-runtime
+The next evidence task is to identify the first ordinary-route hostile family
+from UYA itself. That requires UYA loaded-overlay/live-runtime
 evidence linking authored class identities to update routines, damage admission,
 state/lifetime transitions and PVar fields. Once one family is proved, its
 controller should attach to every authored instance of that class through the

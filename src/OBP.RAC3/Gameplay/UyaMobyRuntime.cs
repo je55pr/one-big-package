@@ -83,6 +83,24 @@ public sealed class UyaMobyRuntimeInstance
 }
 
 /// <summary>
+/// Class-local native damage consumer. Registration is independent from authored
+/// population so unknown UYA classes remain inert rather than gaining policy
+/// from another Ratchet game.
+/// </summary>
+public interface IUyaMobyDamageConsumer
+{
+    int NativeClassId { get; }
+
+    bool CanApplyDamage(
+        RuntimeDynamicObject source,
+        UyaGameplayDamageEvent damage);
+
+    object ApplyDamage(
+        RuntimeDynamicObject source,
+        UyaGameplayDamageEvent damage);
+}
+
+/// <summary>
 /// Reusable UYA live-Moby store. Unknown classes are admitted as authored
 /// entities but gain no guessed behavior. Class-specific controllers can build
 /// on this store once their native semantics are recovered.
@@ -91,9 +109,18 @@ public sealed class UyaMobyRuntimeSession
 {
     public const string PVarPayloadFormat = "rac3-pvar-gc-layout-compat";
     private readonly Dictionary<UyaMobyRuntimeKey, UyaMobyRuntimeInstance> _instances = [];
+    private readonly Dictionary<int, IUyaMobyDamageConsumer> _damageConsumers = [];
 
     public int RegisteredCount => _instances.Count;
     public IReadOnlyCollection<UyaMobyRuntimeInstance> Instances => _instances.Values;
+
+    public void RegisterDamageConsumer(IUyaMobyDamageConsumer consumer)
+    {
+        ArgumentNullException.ThrowIfNull(consumer);
+        if (!_damageConsumers.TryAdd(consumer.NativeClassId, consumer))
+            throw new InvalidOperationException(
+                $"UYA Moby class {consumer.NativeClassId} already has a native damage consumer.");
+    }
 
     public UyaMobyRuntimeInstance Register(RuntimeDynamicObject source)
     {
@@ -136,6 +163,81 @@ public sealed class UyaMobyRuntimeSession
         RequireOwned(instance);
         instance.State = UyaMobyRuntime.Terminalize(instance.State);
         return instance.State;
+    }
+
+    public bool TryResolveDamageTarget(
+        UyaGameplayDamageEvent damage,
+        out UyaMobyRuntimeInstance? instance)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        instance = null;
+        if (damage.Target.Kind != UyaGameplayEntityKind.Moby ||
+            damage.Target.RuntimeId is < int.MinValue or > int.MaxValue)
+            return false;
+
+        var key = new UyaMobyRuntimeKey(
+            damage.Target.NativeClassId,
+            checked((int)damage.Target.RuntimeId));
+        return _instances.TryGetValue(key, out instance);
+    }
+
+    public bool CanDispatchDamage(UyaGameplayDamageEvent damage)
+    {
+        if (!TryResolveDamageTarget(damage, out var instance) ||
+            instance is null ||
+            !instance.IsActive)
+            return false;
+
+        return _damageConsumers.TryGetValue(
+                   instance.Source.NativeClassId,
+                   out var consumer) &&
+               consumer.CanApplyDamage(instance.Source, damage);
+    }
+
+    public bool TryDispatchDamage<TOutput>(
+        UyaGameplayDamageEvent damage,
+        out TOutput? output)
+    {
+        output = default;
+        if (!CanDispatchDamage(damage) ||
+            !TryResolveDamageTarget(damage, out var instance) ||
+            instance is null)
+            return false;
+
+        object result = _damageConsumers[instance.Source.NativeClassId]
+            .ApplyDamage(instance.Source, damage);
+        if (result is not TOutput typed)
+            throw new InvalidOperationException(
+                $"UYA Moby class {instance.Source.NativeClassId} damage consumer returned " +
+                $"{result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
+
+        output = typed;
+        return true;
+    }
+
+    public TOutput DispatchDamage<TOutput>(UyaGameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        if (!TryResolveDamageTarget(damage, out var instance) ||
+            instance is null)
+            throw new InvalidOperationException(
+                "UYA damage event target is not a registered runtime Moby.");
+        if (!instance.IsActive)
+            throw new InvalidOperationException(
+                "UYA damage event target is no longer an active runtime Moby.");
+        if (!_damageConsumers.TryGetValue(instance.Source.NativeClassId, out var consumer))
+            throw new NotSupportedException(
+                $"UYA Moby class {instance.Source.NativeClassId} has no recovered native damage consumer.");
+        if (!consumer.CanApplyDamage(instance.Source, damage))
+            throw new NotSupportedException(
+                $"UYA Moby class {instance.Source.NativeClassId} does not admit this recovered native damage event.");
+
+        object result = consumer.ApplyDamage(instance.Source, damage);
+        if (result is not TOutput typed)
+            throw new InvalidOperationException(
+                $"UYA Moby class {instance.Source.NativeClassId} damage consumer returned " +
+                $"{result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
+        return typed;
     }
 
     public RuntimeEntityState SetTransform(

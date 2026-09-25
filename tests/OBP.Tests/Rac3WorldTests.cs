@@ -92,6 +92,48 @@ public sealed class Rac3WorldTests
     }
 
     [SkippableFact]
+    public void RetailVeldinClass500PopulationUsesRecoveredOrdinaryDestructibleRoute()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
+        var sources = world.DynamicObjects!
+            .Where(o => o.NativeClassId == UyaClass500Destructible.NativeClassId)
+            .OrderBy(o => o.InstanceIndex)
+            .ToArray();
+
+        Assert.Equal(131, sources.Length);
+        var authored = sources
+            .Select(UyaClass500Destructible.ReadAuthored)
+            .ToArray();
+        Assert.All(authored, item =>
+        {
+            Assert.Equal(0u, item.PVarB0);
+            Assert.Equal(0, item.PVarC8);
+            Assert.Equal(0, item.PVarF8);
+            Assert.Equal(0, item.PVarFb);
+            Assert.Equal(
+                UyaClass500PostBreakRoute.Deactivate,
+                UyaClass500Destructible.PostBreakRoute(item));
+        });
+        Assert.Equal(
+            new[] { (11, 14), (44, 110), (61, 7) },
+            authored.GroupBy(item => item.AuthoredValue)
+                .OrderBy(group => group.Key)
+                .Select(group => (group.Key, group.Count()))
+                .ToArray());
+
+        RuntimeDynamicObject instance311 = Assert.Single(
+            sources,
+            source => source.InstanceIndex == 311);
+        UyaClass500AuthoredState witness =
+            UyaClass500Destructible.ReadAuthored(instance311);
+        Assert.Equal(352, witness.Uid);
+        Assert.Equal(44, witness.AuthoredValue);
+    }
+
+    [SkippableFact]
     public void RetailVeldinExposesEvidenceSafeMobyAnimationPreview()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
