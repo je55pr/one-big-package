@@ -720,7 +720,7 @@ public class GcLevelTests
         Assert.Equal(139_210, Tris("moby"));
         Assert.Equal(90_450, world.TotalDynamicTriangles);
         Assert.Equal(43, world.DynamicObjects!.Count(o => o.NativeClassId == 500));
-        Assert.Equal(31, world.DynamicObjects.Count(o => o.NativeClassId == 2827));
+        Assert.Equal(31, world.DynamicObjects!.Count(o => o.NativeClassId == 2827));
         Assert.NotEmpty(world.AnimatedMeshes!);
         Assert.All(world.AnimatedMeshes!, a => Assert.Equal(200, a.Frames.Count));
 

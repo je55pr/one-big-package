@@ -68,6 +68,21 @@ public sealed class GcAranosGameplayTests
             ?? throw new FileNotFoundException("/G/LEVEL0.WAD");
         var header = GcLevelWad.ReadHeader(wad);
         var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
+        var overlay = GcLevelOverlay.Open(GcLevelWad.RequireLump(wad, header, 0));
+        var stateTable = overlay.ReadVirtual(0x002A2AC0, 14 * sizeof(uint));
+        uint[] stateHandlers = Enumerable.Range(0, 14)
+            .Select(index => BinaryPrimitives.ReadUInt32LittleEndian(
+                stateTable.AsSpan(index * sizeof(uint), sizeof(uint))))
+            .ToArray();
+        Assert.Equal(
+            [
+                0x003D86CCu, 0x003D86E8u, 0x003D880Cu, 0x003D8A28u,
+                0x003D8848u, 0x003D8C04u, 0x003D8C38u, 0x003D8D54u,
+                0x003D8DB8u, 0x003D8F1Cu, 0x003D9018u, 0x003D90A0u,
+                0x003D92FCu, 0x003D95ECu,
+            ],
+            stateHandlers);
+
         var hostiles = gameplay.MobyInstances
             .Where(moby => moby.OClass == GcClass2827HostileSession.NativeClassId)
             .ToArray();
@@ -81,6 +96,17 @@ public sealed class GcAranosGameplayTests
             Assert.Equal(2f, BitConverter.ToSingle(hostile.PVarData, 0x20));
             Assert.Equal((short)0,
                 BinaryPrimitives.ReadInt16LittleEndian(hostile.PVarData.AsSpan(0x26, 2)));
+            Assert.Equal(1, hostile.PVarData[0x34]);
         });
+
+        var modes = hostiles
+            .GroupBy(hostile => BinaryPrimitives.ReadInt32LittleEndian(
+                hostile.PVarData!.AsSpan(0x27C, 4)))
+            .ToDictionary(group => group.Key, group => group.Count());
+        Assert.Equal(20, modes[0]);
+        Assert.Equal(11, modes[1]);
+        Assert.All(hostiles.Take(4), hostile => Assert.Equal(
+            GcClass2827HostileSession.OpeningRoomAuthoredMode,
+            BinaryPrimitives.ReadInt32LittleEndian(hostile.PVarData!.AsSpan(0x27C, 4))));
     }
 }

@@ -144,11 +144,29 @@ Retail class-2827 authority on Aranos:
 - an accepted hit writes a 15-tick cooldown to PVar `+0x26`;
 - health `<= 0` selects the native death/terminal animation path.
 
+The 14-state jump table is now pinned directly from LEVEL0. In particular,
+state 12 resolves to `0x003D90A0`, state 13 to `0x003D92FC`, and state 14 to
+`0x003D95EC`. The first four route-local MSR I instances are authored with
+PVar `+0x27C == 1`; the full family census is 11 mode-1 and 20 mode-0 instances.
+
+State 12 provides a bounded attack-admission contract: it measures distance to
+the current target, requires `< 2.8`, computes wrapped absolute yaw error through
+helper `0x002EF1E0`, and requires that error below `0x3E567751` radians
+(~12 degrees) before selecting the state-13 attack path. State 13 accepts native
+sequences `0x1B` and `0x10`; only animation frames 19 through 25 emit contact
+volumes. The emitted joint/radius pairs are `(0,0.35)`, `(1,0.15)`, `(2,0.15)`,
+and `(9,0.35)`. PVar byte `+0x34` is converted to float and passed as the second
+contact-volume scalar; it is authored as `1` on all 31 LEVEL0 instances. That
+scalar is therefore preserved as an attack-contact extent, not labelled as
+Nanotech damage until the downstream collision/damage helper proves that meaning.
+
 The recovered player state-20 tuple also uses damage mask `0x00010000` and deals
 `2.0` HP, so one admitted state-20 hit exactly exhausts an authored MSR I. OBP
 now carries this through `GcClass2827HostileSession`; ordinary GC primary aim can
 select class 2827, publish the recovered damage tuple, and terminalise the
-instance. Movement/chase and contact attack are deliberately not approximated yet.
+instance. Attack admission and contact geometry are recovered, while authored
+approach/root-motion execution and the resulting player Nanotech damage handoff
+remain to be wired.
 
 A live-retail visual attempt was made with the preserved GC PCSX2 profiles under
 goal-owned MjauRunner runs. Both the normal and no-card profiles visibly stopped
@@ -167,18 +185,19 @@ Working now:
   opening class-2827 MSR I family and feed the recovered player state-20 tuple;
 - the recovered Aranos class-500 break predicate and zero-C8 lifetime projection;
 - all 31 authored MSR I instances preserved individually with retail HP/cooldown;
-- recovered MSR I damage admission and lethal terminalisation.
+- recovered MSR I damage admission and lethal terminalisation;
+- recovered state-12 attack admission plus state-13 contact timing/geometry.
 
 Still required for the goal:
 
-- recover MSR I activation, chase/movement and contact attack timing/geometry;
-- recover GC player damage/Nanotech semantics required by that encounter;
+- recover MSR I activation and approach/root-motion execution;
+- recover the downstream contact-to-player damage/Nanotech semantics;
 - establish any opening door/trigger/gate/checkpoint behaviour that blocks the
   ordinary route;
 - replace or further bound the showcase Bolt reward assumptions where needed;
 - add an honest ordinary-route Aranos gameplay smoke;
 - complete the human-playable Jess signoff and document failures verbatim.
 
-The next smallest slice is retail recovery of class 2827's activation, chase and
-chainsaw contact-attack handlers from the bounded LEVEL0 state machine, followed
-by the corresponding GC player Nanotech damage handoff.
+The next smallest slice is retail recovery of class 2827's activation and
+approach/root-motion path, followed by the downstream contact-to-player Nanotech
+handoff. The attack admission/contact-volume portion no longer needs guessing.

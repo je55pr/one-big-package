@@ -16,6 +16,8 @@ public sealed class GcClass2827HostileTests
         Assert.NotNull(authored);
         Assert.Equal(2f, authored!.Health);
         Assert.Equal((short)0, authored.HitCooldownTicks);
+        Assert.Equal(1f, authored.AttackContactExtent);
+        Assert.Equal(GcClass2827HostileSession.OpeningRoomAuthoredMode, authored.AuthoredMode);
         Assert.Equal(43, authored.AuthoredBolts);
     }
 
@@ -55,6 +57,39 @@ public sealed class GcClass2827HostileTests
     }
 
     [Fact]
+    public void State12AttackAdmissionUsesRecoveredDistanceAndFacingBounds()
+    {
+        Assert.True(GcClass2827HostileSession.ShouldEnterAttack(2.79, 0.20));
+        Assert.False(GcClass2827HostileSession.ShouldEnterAttack(2.8, 0.20));
+        Assert.False(GcClass2827HostileSession.ShouldEnterAttack(2.79,
+            GcClass2827HostileSession.AttackFacingErrorExclusive));
+    }
+
+    [Fact]
+    public void State13ContactWindowPublishesFourRecoveredVolumes()
+    {
+        var session = new GcClass2827HostileSession(Hostile(2f, 0, 43));
+
+        var before = session.ProbeAttackContact(
+            GcClass2827HostileSession.AttackSequence27, 18.99f);
+        var active = session.ProbeAttackContact(
+            GcClass2827HostileSession.AttackSequence27, 19f);
+        var end = session.ProbeAttackContact(
+            GcClass2827HostileSession.AttackSequence16, 25f);
+
+        Assert.Empty(before.Contacts);
+        Assert.Equal([0, 1, 2, 9], active.Contacts.Select(c => c.JointIndex));
+        Assert.Equal([0.35f, 0.15f, 0.15f, 0.35f], active.Contacts.Select(c => c.Radius));
+        Assert.All(active.Contacts, contact =>
+        {
+            Assert.Equal(1f, contact.AuthoredExtent);
+            Assert.Equal(1f, contact.UnitScale);
+        });
+        Assert.Equal(4, end.Contacts.Count);
+        Assert.Empty(session.ProbeAttackContact(8, 20f).Contacts);
+    }
+
+    [Fact]
     public void DamageWithoutRetailQueryMaskIsIgnored()
     {
         var source = Hostile(health: 2f, cooldown: 0, bolts: 43);
@@ -80,6 +115,8 @@ public sealed class GcClass2827HostileTests
             pvar.AsSpan(0x20, 4),
             BitConverter.SingleToInt32Bits(health));
         BinaryPrimitives.WriteInt16LittleEndian(pvar.AsSpan(0x26, 2), cooldown);
+        pvar[0x34] = 1;
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x27C, 4), 1);
 
         return new RuntimeDynamicObject(
             "rac2",
