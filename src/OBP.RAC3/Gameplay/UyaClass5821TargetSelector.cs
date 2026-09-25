@@ -10,13 +10,156 @@ namespace OBP.RAC3.Gameplay;
 /// heading-error * horizontal-distance * f14. Ratchet receives a 20-unit
 /// score reduction clamped at zero for the authored selector-byte-zero profile.
 ///
-/// Horizontal distance and shortest heading error are supplied as facts. This
-/// deliberately does not substitute .NET geometry/atan2 for the native VU0
-/// distance helper or fast angle helper.
+/// The retail horizontal-distance and fast atan2-style helpers are recovered
+/// below from TABLE1/GC-identical code and UYA's coefficient/quadrant tables.
+/// The selector can therefore build its scalar facts directly from native XYZ
+/// positions and native source heading without falling back to MathF.Atan2.
 /// </summary>
 public static class UyaClass5821TargetSelector
 {
     public const float NativeRatchetScoreReduction = 20f;
+
+    private static readonly float NativeAtanCoefficient0 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3F7FFFF5));
+    private static readonly float NativeAtanCoefficient1 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0xBEAAA61C));
+    private static readonly float NativeAtanCoefficient2 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3E4C40A6));
+    private static readonly float NativeAtanCoefficient3 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0xBE0E6C63));
+    private static readonly float NativeAtanCoefficient4 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3DC577DF));
+    private static readonly float NativeAtanCoefficient5 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0xBD6501C4));
+    private static readonly float NativeAtanCoefficient6 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3CB31652));
+    private static readonly float NativeAtanCoefficient7 =
+        BitConverter.Int32BitsToSingle(unchecked((int)0xBB84D7E7));
+
+    public static readonly float NativePiOverFour =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3F490FDB));
+    public static readonly float NativePiOverTwo =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3FC90FDB));
+    public static readonly float NativePi =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x40490FDB));
+
+    public static float NativeHorizontalDistance(
+        float sourceX,
+        float sourceY,
+        float targetX,
+        float targetY)
+    {
+        ValidateFinite(sourceX, nameof(sourceX));
+        ValidateFinite(sourceY, nameof(sourceY));
+        ValidateFinite(targetX, nameof(targetX));
+        ValidateFinite(targetY, nameof(targetY));
+
+        float dx = targetX - sourceX;
+        float dy = targetY - sourceY;
+        float xx = dx * dx;
+        float yy = dy * dy;
+        return MathF.Sqrt(xx + yy);
+    }
+
+    public static float NativeFastAtan2(float deltaY, float deltaX)
+    {
+        ValidateFinite(deltaY, nameof(deltaY));
+        ValidateFinite(deltaX, nameof(deltaX));
+
+        float absX = MathF.Abs(deltaX);
+        float absY = MathF.Abs(deltaY);
+        bool yDominant = absX < absY;
+
+        float smaller = yDominant ? absX : absY;
+        float larger = yDominant ? absY : absX;
+        if (larger <= 0f)
+            return 0f;
+
+        float ratio = (smaller - larger) / (smaller + larger);
+        float ratioSquared = ratio * ratio;
+
+        float polynomial = NativeAtanCoefficient7;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient6;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient5;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient4;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient3;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient2;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient1;
+        polynomial = polynomial * ratioSquared + NativeAtanCoefficient0;
+        polynomial *= ratio;
+
+        float baseAngle = NativePiOverFour + polynomial;
+
+        bool xNegative = BitConverter.SingleToInt32Bits(deltaX) < 0;
+        bool yNegative = BitConverter.SingleToInt32Bits(deltaY) < 0;
+        int quadrant = (yDominant ? 1 : 0) |
+                       (yNegative ? 2 : 0) |
+                       (xNegative ? 4 : 0);
+
+        (float scale, float offset) = quadrant switch
+        {
+            0 => (1f, 0f),
+            1 => (-1f, NativePiOverTwo),
+            2 => (-1f, 0f),
+            3 => (1f, -NativePiOverTwo),
+            4 => (-1f, NativePi),
+            5 => (1f, NativePiOverTwo),
+            6 => (1f, -NativePi),
+            7 => (-1f, -NativePiOverTwo),
+            _ => throw new InvalidOperationException(),
+        };
+
+        return baseAngle * scale + offset;
+    }
+
+    public static float NativeShortestHeadingError(
+        float candidateHeading,
+        float sourceHeading)
+    {
+        ValidateFinite(candidateHeading, nameof(candidateHeading));
+        ValidateFinite(sourceHeading, nameof(sourceHeading));
+
+        float delta = MathF.Abs(candidateHeading - sourceHeading);
+        if (delta < NativePi)
+            return delta;
+
+        return (NativePi + NativePi) - delta;
+    }
+
+    public static UyaClass5821RadiusHeightFacts BuildNativeRadiusHeightFacts(
+        float sourceX,
+        float sourceY,
+        float sourceZ,
+        float targetX,
+        float targetY,
+        float targetZ)
+    {
+        ValidateFinite(sourceZ, nameof(sourceZ));
+        ValidateFinite(targetZ, nameof(targetZ));
+        return new UyaClass5821RadiusHeightFacts(
+            NativeHorizontalDistance(sourceX, sourceY, targetX, targetY),
+            MathF.Abs(targetZ - sourceZ));
+    }
+
+    public static UyaClass5821TargetScoreFacts BuildNativeScoreFacts(
+        float sourceX,
+        float sourceY,
+        float sourceHeading,
+        float targetX,
+        float targetY,
+        bool isRatchet)
+    {
+        float horizontalDistance =
+            NativeHorizontalDistance(sourceX, sourceY, targetX, targetY);
+        float targetHeading =
+            NativeFastAtan2(targetY - sourceY, targetX - sourceX);
+        float headingError =
+            NativeShortestHeadingError(targetHeading, sourceHeading);
+        return new UyaClass5821TargetScoreFacts(
+            horizontalDistance,
+            headingError,
+            isRatchet);
+    }
 
     public static bool IsNativeRadiusHeightEligible(
         UyaClass5821RadiusHeightFacts facts,
@@ -141,6 +284,12 @@ public static class UyaClass5821TargetSelector
             throw new NotSupportedException(
                 "UYA class-5821 score request is not the recovered authored-zero TABLE1 profile.");
         }
+    }
+
+    private static void ValidateFinite(float value, string paramName)
+    {
+        if (!float.IsFinite(value))
+            throw new ArgumentOutOfRangeException(paramName);
     }
 
     private static void ValidateFiniteNonNegative(float value, string paramName)

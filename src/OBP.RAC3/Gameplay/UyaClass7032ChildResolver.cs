@@ -20,7 +20,9 @@ public static class UyaClass7032ChildResolver
     public const int AlternateInstanceIndexOffset = 0x4c;
     public const int RuntimeChildPoolSlotOffset = 0x50;
     public const int PartnerOptionalChildHookSelectorOffset = 0x90;
+    public const int PartnerRegistryAdmissionSelectorOffset = 0x92;
     public const int ControllerPartnerPointerOffset = 0xb8;
+    public const int ResolvedChildRegistryTag = 1;
 
     public const int StateOneNativeState = 1;
     public const int ResolvedNativeState = 2;
@@ -90,6 +92,43 @@ public static class UyaClass7032ChildResolver
         return true;
     }
 
+    public static bool TryBuildTable1TagOneAdmission(
+        ReadOnlySpan<byte> controllerPvar,
+        ReadOnlySpan<byte> partnerPvar,
+        int resolvedChildClassId,
+        out UyaClass7032TagOneAdmission? admission)
+    {
+        UyaClass7032AuthoredChildResolver controller =
+            DecodeAuthored(controllerPvar);
+
+        if (controller.RuntimeChildPoolSlot < 0)
+        {
+            admission = null;
+            return false;
+        }
+
+        if (resolvedChildClassId != Table1ChildClassId)
+            throw new NotSupportedException(
+                $"TABLE1 class-7032 resolved child class {resolvedChildClassId} is unrecovered.");
+        if (partnerPvar.Length <= PartnerRegistryAdmissionSelectorOffset)
+            throw new InvalidDataException(
+                "UYA class-7031 partner PVar is too short for the recovered tag-1 admission gate.");
+
+        byte selector = partnerPvar[PartnerRegistryAdmissionSelectorOffset];
+        if (selector == 0)
+        {
+            admission = null;
+            return false;
+        }
+
+        admission = new UyaClass7032TagOneAdmission(
+            controller.RuntimeChildPoolSlot,
+            resolvedChildClassId,
+            selector,
+            ResolvedChildRegistryTag);
+        return true;
+    }
+
     public static UyaClass7032ChildResolution ApplyStateOneResolution(
         Span<byte> mutablePvar,
         int childPoolSlot)
@@ -127,3 +166,9 @@ public sealed record UyaClass7032ChildSpawnRequest(
 public sealed record UyaClass7032ChildResolution(
     int ChildPoolSlot,
     int NativeStateAfterResolve);
+
+public sealed record UyaClass7032TagOneAdmission(
+    int ChildPoolSlot,
+    int ChildNativeClassId,
+    byte PartnerAdmissionSelector,
+    int NativeRegistryTag);

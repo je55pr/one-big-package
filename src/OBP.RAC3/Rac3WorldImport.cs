@@ -3,6 +3,7 @@ using OBP.IO;
 using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Geometry;
 using OBP.RAC3.Level;
 using OBP.Runtime;
@@ -91,8 +92,12 @@ public static partial class Rac3WorldImport
         var animatedMeshes = BuildAnimationPreview(tableIndex, gameplay.MobyInstances, mobyClasses.Decoded, out var animatedInstances);
         var dynamicObjects = gameplay.MobyInstances.Select(m =>
         {
-            var payloads = new List<RuntimeOpaquePayload> { new("rac3-moby-instance-gc-layout-compat", m.RawInstance) };
-            if (m.PvarData is { } pv) payloads.Add(new("rac3-pvar-gc-layout-compat", pv));
+            var payloads = new List<RuntimeOpaquePayload>
+            {
+                new(UyaMobyRuntimeSession.InstancePayloadFormat, m.RawInstance),
+            };
+            if (m.PvarData is { } pv)
+                payloads.Add(new(UyaMobyRuntimeSession.PVarPayloadFormat, pv));
             IReadOnlyList<RuntimeObjectMesh> objectMeshes = animatedInstances.Contains(m.Index)
                 ? Array.Empty<RuntimeObjectMesh>()
                 : mobyModels.TryGetValue(m.OClass, out var modelMeshes)

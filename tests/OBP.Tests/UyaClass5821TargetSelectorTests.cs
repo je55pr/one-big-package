@@ -5,6 +5,118 @@ namespace OBP.Tests;
 public sealed class UyaClass5821TargetSelectorTests
 {
     [Fact]
+    public void NativePlanarMathConstantsMatchRetailBits()
+    {
+        Assert.Equal(
+            unchecked((int)0x3F490FDB),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821TargetSelector.NativePiOverFour));
+        Assert.Equal(
+            unchecked((int)0x3FC90FDB),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821TargetSelector.NativePiOverTwo));
+        Assert.Equal(
+            unchecked((int)0x40490FDB),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821TargetSelector.NativePi));
+    }
+
+    [Fact]
+    public void NativeHorizontalDistanceUsesRecoveredPlanarComponents()
+    {
+        Assert.Equal(
+            5f,
+            UyaClass5821TargetSelector.NativeHorizontalDistance(
+                sourceX: 10f,
+                sourceY: 20f,
+                targetX: 13f,
+                targetY: 24f));
+    }
+
+    [Theory]
+    [InlineData(1f, 1f)]
+    [InlineData(1f, -1f)]
+    [InlineData(-1f, -1f)]
+    [InlineData(-1f, 1f)]
+    [InlineData(0.5f, 1f)]
+    [InlineData(1f, 0.5f)]
+    [InlineData(-0.5f, 1f)]
+    [InlineData(0.5f, -1f)]
+    public void NativeFastAtan2TracksRecoveredAtan2Law(
+        float deltaY,
+        float deltaX)
+    {
+        float native =
+            UyaClass5821TargetSelector.NativeFastAtan2(deltaY, deltaX);
+        float oracle = MathF.Atan2(deltaY, deltaX);
+
+        Assert.InRange(MathF.Abs(native - oracle), 0f, 0.00001f);
+    }
+
+    [Fact]
+    public void NativeFastAtan2KeepsRetailDiagonalAndZeroCases()
+    {
+        Assert.Equal(
+            UyaClass5821TargetSelector.NativePiOverFour,
+            UyaClass5821TargetSelector.NativeFastAtan2(1f, 1f));
+        Assert.Equal(
+            0f,
+            UyaClass5821TargetSelector.NativeFastAtan2(0f, 0f));
+    }
+
+    [Fact]
+    public void NativeShortestHeadingErrorUsesRecoveredStrictPiFold()
+    {
+        float pi = UyaClass5821TargetSelector.NativePi;
+        Assert.Equal(
+            0.25f,
+            UyaClass5821TargetSelector.NativeShortestHeadingError(
+                0.5f,
+                0.25f));
+        Assert.Equal(
+            0.5f,
+            UyaClass5821TargetSelector.NativeShortestHeadingError(
+                pi - 0.25f,
+                -pi + 0.25f),
+            precision: 5);
+        Assert.Equal(
+            pi,
+            UyaClass5821TargetSelector.NativeShortestHeadingError(
+                pi,
+                0f));
+    }
+
+    [Fact]
+    public void NativeFactBuildersUseLiveNativeXyzAndHeadingLaw()
+    {
+        UyaClass5821RadiusHeightFacts radius =
+            UyaClass5821TargetSelector.BuildNativeRadiusHeightFacts(
+                sourceX: 10f,
+                sourceY: 20f,
+                sourceZ: 30f,
+                targetX: 13f,
+                targetY: 24f,
+                targetZ: 33f);
+        Assert.Equal(5f, radius.HorizontalDistance);
+        Assert.Equal(3f, radius.AbsoluteVerticalSeparation);
+
+        UyaClass5821TargetScoreFacts score =
+            UyaClass5821TargetSelector.BuildNativeScoreFacts(
+                sourceX: 10f,
+                sourceY: 20f,
+                sourceHeading: 0f,
+                targetX: 13f,
+                targetY: 24f,
+                isRatchet: true);
+        Assert.Equal(5f, score.HorizontalDistance);
+        Assert.True(score.IsRatchet);
+        Assert.InRange(
+            MathF.Abs(score.ShortestHeadingErrorRadians - MathF.Atan2(4f, 3f)),
+            0f,
+            0.00001f);
+    }
+
+    [Fact]
     public void IndexMinusOneEligibilityUsesStrictHorizontalAndVerticalThresholds()
     {
         UyaClass5821TargetSelectionRequest request = Request(index: -1, radius: 32f);

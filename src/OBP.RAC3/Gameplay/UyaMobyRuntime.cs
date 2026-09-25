@@ -117,6 +117,7 @@ public interface IUyaMobyDamageConsumer
 /// </summary>
 public sealed class UyaMobyRuntimeSession
 {
+    public const string InstancePayloadFormat = "rac3-moby-instance-gc-layout-compat";
     public const string PVarPayloadFormat = "rac3-pvar-gc-layout-compat";
     private readonly Dictionary<UyaMobyRuntimeKey, UyaMobyRuntimeInstance> _instances = [];
     private readonly Dictionary<int, IUyaMobyClassController> _controllers = [];

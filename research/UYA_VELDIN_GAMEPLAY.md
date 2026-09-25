@@ -338,15 +338,39 @@ receives the caller's zero stack flags instead, so the reduction remains active.
 Replacement uses strict score `<`, therefore a tie leaves the earlier Ratchet
 seed in place.
 
-`UyaClass5821TargetSelector` executes this recovered ordinary tag-1/tag-2
-score/replace law while deliberately accepting horizontal distance and shortest
-heading error as facts. It does **not** replace the retail VU0 distance or fast
-atan2-style helper with host math. The alternate tag-3 profile remains
-fail-closed because its Ratchet penalty branch differs. The retained clean
-snapshot also gives a live registry sanity check: cached registry count is one,
-pointing to pool slot **445**, native class **6306**, state **2**, tag **3**.
-That matches class 6306's authored-zero registry branch and cannot replace an
-ordinary class-5821 tag-1/tag-2 request.
+The selector's scalar fact production is now recovered as well. UYA helper
+`0x0040BFE8` is byte-for-byte identical to the GC Aranos helper at
+`0x002EE2E8`; independent GC call sites use the same returned scalar as a
+planar separation and then test native Z separately. `UyaClass5821TargetSelector`
+therefore replays that native horizontal magnitude from XY.
+
+Fast heading helper `0x0040C490` is also executable. UYA's retained coefficient
+table at `0x001D9D20` contains the eight exact float coefficients
+`3F7FFFF5, BEAAA61C, 3E4C40A6, BE0E6C63, 3DC577DF, BD6501C4,
+3CB31652, BB84D7E7`. Native code forms
+`r=(min(abs(x),abs(y))-max(abs(x),abs(y)))/(min+max)`, evaluates the
+odd atan polynomial by Horner on `r*r`, adds exact float `pi/4 =
+0x3F490FDB`, then applies an eight-case quadrant table of scale
+`+/-1` and offsets `0, +/-pi/2, +/-pi`. The selector call supplies
+`x=candidateX-sourceX`, `y=candidateY-sourceY`. Helper `0x0040CFB0`
+then computes `abs(a-b)` and, when that is not strictly below pi, returns
+`2*pi-delta`. The C# replay uses these recovered constants and never calls
+`MathF.Atan2`.
+
+`UyaClass5821TargetSelector` can now build horizontal distance, fast heading,
+shortest heading error, radius/height facts and the ordinary tag-1/tag-2
+score/replace result directly from **native Z-up** positions plus native source
+heading. The alternate tag-3 profile remains fail-closed because its Ratchet
+penalty branch differs. `UyaMobyPlacement` decodes authored native position
+from the retained 0x88 Moby payload at `+0x40/+0x44/+0x48` and rotation at
+`+0x4C/+0x50/+0x54`; the importer now names both placement and PVar payload
+formats through `UyaMobyRuntimeSession` constants rather than duplicate string
+literals.
+
+The retained clean snapshot also gives a live registry sanity check: cached
+registry count is one, pointing to pool slot **445**, native class **6306**,
+state **2**, tag **3**. That matches class 6306's authored-zero registry branch
+and cannot replace an ordinary class-5821 tag-1/tag-2 request.
 
 The target-group **file substrate and cache-builder candidate universe are now
 recovered directly from TABLE1**. Gameplay header `+0x98` points to an outer
@@ -424,14 +448,19 @@ hold child slots 667, 668 and 669 respectively. All three resolved children
 are native class **6886** and all three linked partners are native class
 **7031**. Two of those child/controller pairs are about 43 native units from
 the sampled Ratchet position, proving that the runtime child family is genuinely
-resident rather than a controller-position inference. The later tag-1 registry
-call still registers **the resolved child Moby**, not class 7032, and only when
-the controller's partner PVar byte `+0x92` is nonzero. In this retained state
-all three partner `+0x92` bytes are zero, so **no tag-1 child is currently
-registered**. The remaining 24 controllers have no resolved child.
-`UyaClass7032ChildResolver` now retains the authored request/partner contract
-and the proven child-slot/state-2 mutation without inventing factory placement
-or the optional hook's behavior.
+resident rather than a controller-position inference.
+
+The later registration gate is now executable too. At `0x003336C8` native
+code first requires the resolved child pointer `s2 != 0`, then a non-null
+linked partner PVar pointer from stack `+0x20`, then
+`partnerPVar[+0x92] != 0`; only after all three gates does it pass **the
+resolved child Moby** to `0x004538E0` with exact registry tag **1**.
+`UyaClass7032ChildResolver.TryBuildTable1TagOneAdmission` mirrors those proven
+conditions, requires the TABLE1 child class to be 6886, and otherwise fails
+closed. In the retained state all three partner `+0x92` bytes are zero, so
+**no tag-1 child is currently registered**. The remaining 24 controllers have
+no resolved child. Factory placement and the optional partner `+0x90` hook
+remain unrecovered and are not synthesized.
 
 The seven shared hostile-family callers now have their tag-choice branch
 pinned class-by-class. Dispatch ownership maps the calls to **5821/7072, 5860,
@@ -541,16 +570,20 @@ now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
 In parallel, continue class 5821 from the executable target-group geometry.
-The class-7032 state-1 controller/partner/child-slot resolver and authored
-tag-3/tag-5 hostile-family selectors are now pinned. Recover the class-6886
-factory/placement boundary and the later class-7031 partner PVar `+0x92`
-registry admission far enough to instantiate only evidence-backed runtime
-children and feed only actually admitted tag-1 children into the group cache.
-Recover the ordinary `0x0040BFE8` horizontal-distance and `0x0040C490`
-fast-angle fact production far enough to drive the facts-based
-Ratchet-seed/exact-tag score loop from live host positions, then feed its
-selected target into the recovered state-8 -> state-10 transition. Also
-recover the UYA player-life consequence for emitted damage records and the
+The class-7032 state-1 resolver, exact tag-1 partner gate, hostile-family tag
+selectors, horizontal-distance helper, fast heading helper and ordinary
+Ratchet-seed score/replace law are now pinned. Recover the class-6886
+factory/placement boundary (including only evidence-backed effects of partner
+`+0x90`) so resolved children can actually be instantiated, then admit them
+through the already-executable partner `+0x92` tag-1 gate.
+
+Carry UYA target-group/cache data to the RAC3 gameplay session through a
+game-specific sidecar rather than polluting the neutral `RuntimeWorld`
+contract, use the preserved native Moby placement plus explicit OBP-Y-up ->
+native-Z-up player conversion to build live selector facts, and feed the
+selected target into the recovered state-8 -> state-10 transition only after
+the preceding class-5821 state progression is recovered. Also recover the UYA
+player-life consequence for emitted damage records and the
 post-lethal reaction progression after lifetime reaches non-positive. State 25
 must remain a subtype-family branch until TABLE1 eligibility is witnessed.
 R&C1 Nanotech, controller-position stand-ins, nearest-player guesses, guessed

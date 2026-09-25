@@ -58,6 +58,79 @@ public sealed class UyaClass7032RegistryTests
     }
 
     [Fact]
+    public void TagOneAdmissionRequiresResolved6886ChildAndPartnerGate()
+    {
+        byte[] controller = new byte[0x80];
+        BinaryPrimitives.WriteInt32LittleEndian(
+            controller.AsSpan(UyaClass7032ChildResolver.RuntimeChildPoolSlotOffset),
+            668);
+        byte[] partner = new byte[0xA0];
+
+        Assert.False(
+            UyaClass7032ChildResolver.TryBuildTable1TagOneAdmission(
+                controller,
+                partner,
+                UyaClass7032ChildResolver.Table1ChildClassId,
+                out UyaClass7032TagOneAdmission? closed));
+        Assert.Null(closed);
+
+        partner[UyaClass7032ChildResolver.PartnerRegistryAdmissionSelectorOffset] = 3;
+        Assert.True(
+            UyaClass7032ChildResolver.TryBuildTable1TagOneAdmission(
+                controller,
+                partner,
+                UyaClass7032ChildResolver.Table1ChildClassId,
+                out UyaClass7032TagOneAdmission? admitted));
+        Assert.NotNull(admitted);
+        Assert.Equal(668, admitted.ChildPoolSlot);
+        Assert.Equal(6886, admitted.ChildNativeClassId);
+        Assert.Equal((byte)3, admitted.PartnerAdmissionSelector);
+        Assert.Equal(1, admitted.NativeRegistryTag);
+    }
+
+    [Fact]
+    public void TagOneAdmissionFailsClosedWithoutResolvedChild()
+    {
+        byte[] controller = new byte[0x80];
+        BinaryPrimitives.WriteInt32LittleEndian(
+            controller.AsSpan(UyaClass7032ChildResolver.RuntimeChildPoolSlotOffset),
+            -1);
+        byte[] partner = new byte[0xA0];
+        partner[UyaClass7032ChildResolver.PartnerRegistryAdmissionSelectorOffset] = 1;
+
+        Assert.False(
+            UyaClass7032ChildResolver.TryBuildTable1TagOneAdmission(
+                controller,
+                partner,
+                UyaClass7032ChildResolver.Table1ChildClassId,
+                out UyaClass7032TagOneAdmission? admission));
+        Assert.Null(admission);
+    }
+
+    [Fact]
+    public void TagOneAdmissionRejectsUnknownResolvedChildAndShortPartnerPvar()
+    {
+        byte[] controller = new byte[0x80];
+        BinaryPrimitives.WriteInt32LittleEndian(
+            controller.AsSpan(UyaClass7032ChildResolver.RuntimeChildPoolSlotOffset),
+            668);
+        byte[] partner = new byte[0xA0];
+
+        Assert.Throws<NotSupportedException>(() =>
+            UyaClass7032ChildResolver.TryBuildTable1TagOneAdmission(
+                controller,
+                partner,
+                resolvedChildClassId: 6885,
+                out _));
+        Assert.Throws<InvalidDataException>(() =>
+            UyaClass7032ChildResolver.TryBuildTable1TagOneAdmission(
+                controller,
+                new byte[UyaClass7032ChildResolver.PartnerRegistryAdmissionSelectorOffset],
+                UyaClass7032ChildResolver.Table1ChildClassId,
+                out _));
+    }
+
+    [Fact]
     public void StateOneResolutionRecordsFactoryChildSlotAndAdvancesToStateTwo()
     {
         byte[] pvar = new byte[0x80];
