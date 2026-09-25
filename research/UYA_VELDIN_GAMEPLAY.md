@@ -310,6 +310,51 @@ remains fail-closed. Shared helper `0x00455E98` remains downstream steering:
 it receives an already-selected `+0x230` target, caches it at `+0x3B0`,
 and resets a steering field.
 
+The target-group **file substrate and cache-builder candidate universe are now
+recovered directly from TABLE1**. Gameplay header `+0x98` points to an outer
+block at `0x002F9230`; its first word is copy size `0x15A4`, and the copied
+payload starts four bytes later. That payload contains **106** groups, a
+`0x20`-byte header, then `106 × 0x30` group records. Header-relative condition
+list bases are `0x1400`, `0x14C0`, `0`, `0x15A0`, `0`; their stored extents
+land exactly on the next base / payload end. Each group record begins with
+native world-space X/Y/Z plus a radius, five 16-bit condition counts, a native
+cache stamp, then five relative list offsets. Native loader `0x0042772C`
+copies and relocates this structure exactly before allocating one `0xE0` cache
+entry per group.
+
+`UyaGameplay` now parses this native block as `TargetGroups` with bounded
+condition lists and preserves unresolved lists rather than naming them by
+analogy. It also parses gameplay `+0x68`: native loader `0x00427310` reads its
+count and copies `count × 0x80` records to the global used by condition-list 1.
+TABLE1 contains **125** such target volumes. Across all 106 groups, list-entry
+counts are `48, 56, 0, 1, 0`; list 0 ends exactly at list-1 base `0x14C0`,
+list 1 exactly at `0x15A0`, and the lone list-3 entry (group 52) exactly at
+payload end `0x15A4`. The largest list-1 index is 117, inside the 125-record
+volume table.
+
+For the ten groups referenced by class 5821, every group has exactly one fine
+predicate. Groups **7, 13, 18, 24, 66, 73, 82** use condition-list 0 with
+indices **8, 18, 17, 69, 97, 106, 113** respectively. Groups **26, 27, 79**
+use condition-list 1 with volume indices **9, 117, 81**. Native
+`0x00440760` shows list 1 is an oriented-volume containment predicate: it
+indexes the `0x80` table and accepts only when three transformed coordinates
+all lie in `[-1, 1]`. Native `0x004432C0` shows list 0 is a 2D point-in-polygon
+crossing test over 16-byte-stride vertices. The list-0 pointer table itself is
+a fixed shared global at `0x0021F740`; its source/population has not yet been
+mapped back to an authorized UYA file block, so polygon membership remains
+fail-closed.
+
+The lazy cache builder `0x00452F80` considers Ratchet, native class 203,
+native class 7107, and a per-frame tagged Moby registry. TABLE1 authors **zero
+class-203 and zero class-7107** placements, reducing Veldin candidates to
+Ratchet plus that registry. A reverse dispatch call graph proves only eight
+authored TABLE1 classes can register: **5821 (62), 5860 (23), 6306 (18),
+6317 (3), 6476 (3), 6577 (3), 6836 (1), 7032 (27)**, 140 placements total.
+Classes 5821/5860/6306/6317/6476/6577/6836 share tag-5/tag-3 registration
+branches; class 7032 registers as tag 1. Coarse group-sphere censuses contain
+real mixed-class candidate sets, so replacing the native law with Ratchet-only
+or nearest-player targeting would be observably wrong.
+
 In the g007-owned, visually verified clean Veldin state, 58 class-5821 Mobies
 are resident and only four have nonzero `+0x230`; all four point to Ratchet
 and all four are already state `0xFD`. The 38 state-0 and eight state-1
@@ -384,13 +429,16 @@ available. The selector, spawn identity, increment amount and add/clamp law are
 now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
-In parallel, continue class 5821 from the recovered target-selector request.
-Reconstruct the dynamic runtime target-group table consumed by `0x00453620`
-and its candidate membership so the Ratchet seed versus candidate-replacement
-decision can be executed source-natively. Only then may the host feed selected
-targets into the recovered state-8 -> state-10 transition for the authored
-population. Also recover the UYA player-life consequence for emitted damage
-records and the post-lethal reaction progression after lifetime reaches
-non-positive. State 25 must remain a subtype-family branch until TABLE1
-eligibility is witnessed. R&C1 Nanotech, nearest-player guesses, guessed
-cooldowns, or synthetic targets must not substitute.
+In parallel, continue class 5821 from the now-parsed target-group substrate.
+Map the fixed list-0 polygon table at `0x0021F740` back to authorized UYA
+source bytes, decode the list-1 `0x80` volume transform exactly enough to
+execute `0x00440760`, and pin the per-frame tag-3/tag-5 registration admission
+branches for the seven shared hostile-family classes. Then the Ratchet seed
+versus candidate-replacement decision can be executed source-natively through
+the recovered group definitions and candidate registry. Only after that may the
+host feed selected targets into the recovered state-8 -> state-10 transition.
+Also recover the UYA player-life consequence for emitted damage records and the
+post-lethal reaction progression after lifetime reaches non-positive. State 25
+must remain a subtype-family branch until TABLE1 eligibility is witnessed.
+R&C1 Nanotech, nearest-player guesses, guessed cooldowns, or synthetic targets
+must not substitute.
