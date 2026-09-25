@@ -385,14 +385,38 @@ slots; all three children are native class **6886**, and all three partner
 `+0x92` bytes are zero, so **no tag-1 child is currently registered**.
 The remaining 24 controllers have no resolved child.
 
-The seven shared hostile-family callers retain their recovered tag-5/tag-3
-branches; no authored TABLE1 path currently proves an ordinary tag-2 registrant.
+The seven shared hostile-family callers now have their tag-choice branch
+pinned class-by-class. Dispatch ownership maps the calls to **5821/7072, 5860,
+6306, 6317, 6476, 6577, and 6836**. Classes 5821, 5860, 6306, 6317, 6577,
+and 6836 read PVar byte **+0x5F**; class 6476 reads **+0x2F**. In every case a
+nonzero selector chooses registry tag **5**, while zero chooses tag **3**.
+This is only the tag choice: each class still has earlier live-state/health/flag
+admission gates before calling shared helper `0x004538E0`, and those gates are
+not collapsed into the selector byte.
+
+TABLE1 authors **113** placements across those seven families
+(62+23+18+3+3+3+1), and every one authors its selector byte as zero. Thus the
+entire authored hostile population starts on the tag-3 branch, with zero
+authored tag-5 choices. TABLE1 has no authored class-7072 placement even though
+7072 aliases the class-5821 update. `UyaTargetRegistry` exposes only this
+evidence-backed class/offset/tag mapping and marks every result as requiring
+additional native admission.
+
+No authored TABLE1 path currently proves an ordinary tag-2 registrant.
 Therefore ordinary class-5821 tag-2 requests have only the Ratchet seed in the
-recovered population, while tag-1 replacement depends on runtime-spawned class-
-6886 children satisfying the class-7032 partner gate. The exact group geometry
-still matters for those future children, but an authored-position census of
-class-7032 controllers is **not** a native candidate census and must not be used
-as one.
+recovered population, while tag-1 replacement depends on runtime-spawned
+class-6886 children satisfying the class-7032 partner gate. The exact group
+geometry still matters for those future children, but an authored-position
+census of class-7032 controllers is **not** a native candidate census and must
+not be used as one.
+
+Using the native XYZ basis, Ratchet's admitted ship start
+`(370.286, 95.857, 78.898)` lies outside all ten nonnegative target groups
+referenced by class 5821. The nearest live `selector == -1` class-5821
+instances in the retained clean Veldin snapshot are about **105 native
+horizontal units** from that start, so the `-1` radius/height path is not an
+immediate-spawn acquisition case. The nearest class-5821 residents overall are
+about 28-34 units away, subtype 4, already state `0xFD`, and use group 73.
 
 In the g007-owned, visually verified clean Veldin state, 58 class-5821 Mobies
 are resident and only four have nonzero `+0x230`; all four point to Ratchet
