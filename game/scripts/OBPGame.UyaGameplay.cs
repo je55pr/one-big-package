@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot;
+using OBP.RAC3;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime;
 
@@ -23,6 +24,7 @@ public partial class OBPGame
 
     private UyaMobyRuntimeSession _uyaMobyRuntime = new();
     private UyaDamageTransportSession _uyaDamageTransport = new();
+    private Rac3WorldGameplayContext? _uyaGameplayContext;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _uyaClass500Nodes = [];
     private int _uyaAuthoredClass500;
     private int _uyaAdmittedClass500;
@@ -35,6 +37,7 @@ public partial class OBPGame
         _uyaClass500Nodes.Clear();
         _uyaMobyRuntime = new UyaMobyRuntimeSession();
         _uyaDamageTransport = new UyaDamageTransportSession();
+        _uyaGameplayContext = null;
         _uyaAuthoredClass500 = 0;
         _uyaAdmittedClass500 = 0;
         _uyaDestroyedClass500 = 0;
@@ -49,6 +52,18 @@ public partial class OBPGame
         if (world.Game != "rac3")
             return;
 
+        if (!Rac3WorldGameplaySidecar.TryGet(
+                world,
+                out Rac3WorldGameplayContext? gameplayContext) ||
+            gameplayContext is null)
+        {
+            _uyaGameplayStatus =
+                "blocked: RAC3 production gameplay sidecar missing";
+            GD.PushError($"[uya-gameplay] {_uyaGameplayStatus}");
+            return;
+        }
+
+        _uyaGameplayContext = gameplayContext;
         _uyaMobyRuntime.RegisterWorld(world);
         _ = new UyaClass500DestructibleSession(_uyaMobyRuntime);
         _ = new UyaClass5821DamageSession(_uyaMobyRuntime);
@@ -113,7 +128,10 @@ public partial class OBPGame
 
         _uyaGameplayStatus =
             $"ready: {_uyaAdmittedClass500}/{_uyaAuthoredClass500} class-500; " +
-            $"{_uyaAdmittedClass5821}/{_uyaAuthoredClass5821} class-5821 profiles admitted";
+            $"{_uyaAdmittedClass5821}/{_uyaAuthoredClass5821} class-5821 profiles admitted; " +
+            $"{gameplayContext.Gameplay.TargetGroups.Count} target groups / " +
+            $"{gameplayContext.Gameplay.TargetPolygons.Count} polygons / " +
+            $"{gameplayContext.Gameplay.TargetVolumes.Count} volumes sidecar";
         GD.Print(
             $"[uya-gameplay] {_uyaGameplayStatus}; {_uyaClass500Nodes.Count} class-500 presented, " +
             $"{unpresented} unpresented, {rejected} class-500 rejected, " +

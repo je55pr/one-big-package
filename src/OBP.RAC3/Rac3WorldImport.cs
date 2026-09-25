@@ -18,8 +18,15 @@ namespace OBP.RAC3;
 /// </summary>
 public static partial class Rac3WorldImport
 {
-    public sealed record ImportResult(RuntimeWorld World, int TfragCount, int TieInstanceCount, int ShrubInstanceCount,
-        int MobyInstanceCount, int MobiesWithPvar, int SkyShellCount);
+    public sealed record ImportResult(
+        RuntimeWorld World,
+        UyaGameplay.Gameplay Gameplay,
+        int TfragCount,
+        int TieInstanceCount,
+        int ShrubInstanceCount,
+        int MobyInstanceCount,
+        int MobiesWithPvar,
+        int SkyShellCount);
 
     public static RuntimeWorld Build(IRandomAccessReader disc, int tableIndex) => BuildObserved(disc, tableIndex).World;
 
@@ -139,8 +146,15 @@ public static partial class Rac3WorldImport
             ?? throw new InvalidDataException($"UYA table {tableIndex} has no canonical destination metadata.");
         var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, destination.PlanetLabel, destination.LocationLabel, meshes, textures, materialCount, collision, bounds, environment, ship,
             Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects, AmbientAnimations: ambientAnimations);
-        return new ImportResult(world, tfrag.TfragCount, gameplay.TieInstances.Count, gameplay.ShrubInstances.Count, gameplay.MobyInstances.Count,
-            gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
+        return new ImportResult(
+            world,
+            gameplay,
+            tfrag.TfragCount,
+            gameplay.TieInstances.Count,
+            gameplay.ShrubInstances.Count,
+            gameplay.MobyInstances.Count,
+            gameplay.MobyInstances.Count(m => m.PvarData is not null),
+            skyShellCount);
     }
 
     private static RuntimeMaterialPresentation? PresentationFor(

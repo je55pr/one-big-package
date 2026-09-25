@@ -65,6 +65,30 @@ public sealed class Rac3WorldTests
     }
 
     [SkippableFact]
+    public void RetailProviderCarriesVeldinGameplaySidecarByWorldIdentity()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+
+        ObpDestination destination =
+            Rac3DestinationCatalogue.Instance.FindByTableIndex(1)!;
+        RuntimeWorld world =
+            Rac3WorldProvider.Instance.Load(iso!, destination);
+
+        Rac3WorldGameplayContext context =
+            Rac3WorldGameplaySidecar.Require(world);
+
+        Assert.Equal(1, context.TableIndex);
+        Assert.Equal(735, context.Gameplay.MobyInstances.Count);
+        Assert.Equal(125, context.Gameplay.TargetVolumes.Count);
+        Assert.Equal(159, context.Gameplay.TargetPolygons.Count);
+        Assert.Equal(106, context.Gameplay.TargetGroups.Count);
+        Assert.Same(
+            context,
+            Rac3WorldGameplaySidecar.Require(world));
+    }
+
+    [SkippableFact]
     public void RetailVeldinAuthoredPopulationFeedsUyaRuntimeWithoutClassGuessing()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
