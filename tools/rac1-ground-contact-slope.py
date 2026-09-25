@@ -28,13 +28,20 @@ def _sample_vectors(row: dict[str, object]) -> dict[str, object]:
     sample = row["sample"]
     words = sample["candidate_words"]
     pre = tuple(_f32(words[f"0x{offset:03x}"]) for offset in (0x60, 0x64, 0x68))
+    vertical = tuple(_f32(words[f"0x{offset:03x}"]) for offset in (0xA0, 0xA4, 0xA8))
+    planar = tuple(_f32(words[f"0x{offset:03x}"]) for offset in (0xB0, 0xB4, 0xB8))
     final = tuple(float(sample[name]) for name in ("disp_x", "disp_y", "disp_z"))
     correction = tuple(final[i] - pre[i] for i in range(3))
+    component_sum = tuple(planar[i] + vertical[i] for i in range(3))
+    component_error = tuple(pre[i] - component_sum[i] for i in range(3))
     return {
         "frame": int(row["frame"]),
         "segment": row["segment"],
         "sequence": int(sample["sequence"]),
         "preContact": list(pre),
+        "planarComponent": list(planar),
+        "verticalComponent": list(vertical),
+        "componentReconstructionError": list(component_error),
         "finalDisplacement": list(final),
         "contactCorrection": list(correction),
         "finalMagnitude": _length3(final),
@@ -77,6 +84,29 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
     magnitudes = [row["finalMagnitude"] for row in stable]
     uphill = [row for row in stable if row["finalDisplacement"][2] > 0.01]
     flat = [row for row in stable if abs(row["finalDisplacement"][2]) < 1e-4]
+    uphill_reconstruction_errors = [
+        _length3(tuple(row["componentReconstructionError"])) for row in uphill
+    ]
+    flat_residual_z = [row["componentReconstructionError"][2] for row in flat]
+    flat_residual_xy = [
+        math.hypot(
+            row["componentReconstructionError"][0],
+            row["componentReconstructionError"][1],
+        )
+        for row in flat
+    ]
+    planar_z = [abs(row["planarComponent"][2]) for row in stable]
+    vertical_xy = [
+        math.hypot(row["verticalComponent"][0], row["verticalComponent"][1])
+        for row in stable
+    ]
+    final_planar_errors = [
+        math.hypot(
+            row["finalDisplacement"][0] - row["planarComponent"][0],
+            row["finalDisplacement"][1] - row["planarComponent"][1],
+        )
+        for row in stable
+    ]
     return {
         "schema": 1,
         "authority": capture.get("authority"),
@@ -94,6 +124,24 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         "finalMagnitudeError": {
             "maxAbs": max(abs(value - RUN_CAP) for value in magnitudes),
             "medianAbs": statistics.median(abs(value - RUN_CAP) for value in magnitudes),
+        },
+        "componentDecomposition": {
+            "planarComponent": "G+0xb0/+0xb4/+0xb8",
+            "verticalComponent": "G+0xa0/+0xa4/+0xa8",
+            "uphillEquation": "G+0x60 = G+0xb0 + G+0xa0",
+            "uphillMaxReconstructionError": max(
+                uphill_reconstruction_errors, default=0.0
+            ),
+            "flatResidualEquation": (
+                "G+0x60 - (G+0xb0 + G+0xa0) = (0, 0, -0.015)"
+            ),
+            "flatResidualZMedian": (
+                statistics.median(flat_residual_z) if flat_residual_z else None
+            ),
+            "flatMaxResidualPlanarMagnitude": max(flat_residual_xy, default=0.0),
+            "maxPlanarComponentAbsZ": max(planar_z),
+            "maxVerticalComponentPlanarMagnitude": max(vertical_xy),
+            "maxFinalVsPlanarHorizontalError": max(final_planar_errors),
         },
         "verticalContactCorrection": {
             "expectedObservedValue": VERTICAL_CORRECTION,

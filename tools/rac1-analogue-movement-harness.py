@@ -39,6 +39,9 @@ KNOWN_FIELDS = {
     "control_dir_y": (PLAYER_STATE + 0x0F4, "f32"),
     "control_dir_z": (PLAYER_STATE + 0x0F8, "f32"),
     "target_yaw": (PLAYER_STATE + 0x100, "f32"),
+    "contact_orientation_x": (PLAYER_BASE + 0x270, "f32"),
+    "contact_orientation_y": (PLAYER_BASE + 0x274, "f32"),
+    "contact_orientation_z": (PLAYER_BASE + 0x278, "f32"),
     "current_dynamic_contact": (PLAYER_BASE + 0x2FC, "u32"),
     "contact_slot_300": (PLAYER_BASE + 0x300, "u32"),
     "contact_flags_308": (PLAYER_BASE + 0x308, "u32"),
@@ -315,8 +318,16 @@ def _main_window(pid: int) -> int:
     windows = [(hwnd, _window_text(hwnd)) for hwnd in _windows_for_pid(pid)]
     if not windows:
         raise RuntimeError(f"visible PCSX2 window not found for pid {pid}")
-    # Game-title-only windows are normal when PCSX2 hides its branding.
-    return max(windows, key=lambda item: len(item[1]))[0]
+
+    def window_area(item: tuple[int, str]) -> int:
+        rect = wintypes.RECT()
+        if not user32.GetWindowRect(item[0], ctypes.byref(rect)):
+            return 0
+        return max(0, rect.right - rect.left) * max(0, rect.bottom - rect.top)
+
+    # Prefer the large game/main window over utility windows such as Input
+    # Recording Viewer. Game-title-only windows are normal in PCSX2.
+    return max(windows, key=lambda item: (window_area(item), len(item[1])))[0]
 
 def _wait_for_input_recording_picker(pid: int, timeout: float = 4.0) -> int:
     deadline = time.monotonic() + timeout

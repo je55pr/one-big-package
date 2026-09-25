@@ -88,6 +88,18 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
 
     def test_contact_probe_fields_pin_recovered_player_layout(self):
         self.assertEqual(
+            HARNESS.KNOWN_FIELDS["contact_orientation_x"],
+            (HARNESS.PLAYER_BASE + 0x270, "f32"),
+        )
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["contact_orientation_y"],
+            (HARNESS.PLAYER_BASE + 0x274, "f32"),
+        )
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["contact_orientation_z"],
+            (HARNESS.PLAYER_BASE + 0x278, "f32"),
+        )
+        self.assertEqual(
             HARNESS.KNOWN_FIELDS["current_dynamic_contact"],
             (HARNESS.PLAYER_BASE + 0x2FC, "u32"),
         )

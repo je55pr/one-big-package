@@ -16,6 +16,18 @@
     "maxAbs": 6.6838518511525e-06,
     "medianAbs": 4.919992052654365e-10
   },
+  "componentDecomposition": {
+    "planarComponent": "G+0xb0/+0xb4/+0xb8",
+    "verticalComponent": "G+0xa0/+0xa4/+0xa8",
+    "uphillEquation": "G+0x60 = G+0xb0 + G+0xa0",
+    "uphillMaxReconstructionError": 1.666001104184886e-08,
+    "flatResidualEquation": "G+0x60 - (G+0xb0 + G+0xa0) = (0, 0, -0.015)",
+    "flatResidualZMedian": -0.015000022016465664,
+    "flatMaxResidualPlanarMagnitude": 1.862645149230957e-08,
+    "maxPlanarComponentAbsZ": 0.0,
+    "maxVerticalComponentPlanarMagnitude": 0.0,
+    "maxFinalVsPlanarHorizontalError": 1.5710066409757864e-05
+  },
   "verticalContactCorrection": {
     "expectedObservedValue": 0.015,
     "min": 0.01497494988143444,
@@ -30,6 +42,21 @@
       "preContact": [
         -0.04581773281097412,
         -0.08322098851203918,
+        -0.015000022016465664
+      ],
+      "planarComponent": [
+        -0.045817725360393524,
+        -0.08322097361087799,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
         -0.015000022016465664
       ],
       "finalDisplacement": [
@@ -53,6 +80,21 @@
         -0.0832202285528183,
         -0.015000022016465664
       ],
+      "planarComponent": [
+        -0.04581909999251366,
+        -0.0832202285528183,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        0.0,
+        0.0,
+        -0.015000022016465664
+      ],
       "finalDisplacement": [
         -0.0458221435546875,
         -0.083221435546875,
@@ -72,6 +114,21 @@
       "preContact": [
         -0.04581362009048462,
         -0.08322324603796005,
+        -0.015000022016465664
+      ],
+      "planarComponent": [
+        -0.04581361263990402,
+        -0.08322323113679886,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
         -0.015000022016465664
       ],
       "finalDisplacement": [
@@ -95,6 +152,21 @@
         -0.08322214335203171,
         -0.015000022016465664
       ],
+      "planarComponent": [
+        -0.04581562429666519,
+        -0.08322214335203171,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        0.0,
+        0.0,
+        -0.015000022016465664
+      ],
       "finalDisplacement": [
         -0.0458221435546875,
         -0.08322906494140625,
@@ -115,6 +187,21 @@
         -0.04523249343037605,
         -0.0821615532040596,
         0.00011599250137805939
+      ],
+      "planarComponent": [
+        -0.045232485979795456,
+        -0.08216153830289841,
+        0.0
+      ],
+      "verticalComponent": [
+        -0.0,
+        -0.0,
+        0.00011599248682614416
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
+        1.4551915228366852e-11
       ],
       "finalDisplacement": [
         -0.0452423095703125,
@@ -137,6 +224,21 @@
         -0.07839659601449966,
         0.016880685463547707
       ],
+      "planarComponent": [
+        -0.04315774142742157,
+        -0.07839659601449966,
+        0.0
+      ],
+      "verticalComponent": [
+        -0.0,
+        -0.0,
+        0.016880685463547707
+      ],
+      "componentReconstructionError": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "finalDisplacement": [
         -0.0431671142578125,
         -0.078399658203125,
@@ -157,6 +259,21 @@
         -0.04315965250134468,
         -0.07839560508728027,
         0.016880521550774574
+      ],
+      "planarComponent": [
+        -0.043159645050764084,
+        -0.07839559018611908,
+        0.0
+      ],
+      "verticalComponent": [
+        -0.0,
+        -0.0,
+        0.016880521550774574
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
+        0.0
       ],
       "finalDisplacement": [
         -0.0431671142578125,
