@@ -10,6 +10,10 @@ public static class Rac1OrdinaryGroundContactMotion
     public const double NativeTickScalar = 1d / 3600d;
     public const double GroundDownwardRequestPerTick = 54d * NativeTickScalar;
     public const double EdgeFallAccelerationPerTick = 25d * NativeTickScalar;
+    // P+0x2dc is the signed player/contact correction metric. Retail takes its
+    // absolute value and requires it to be below this exact f32 threshold before
+    // ordinary support can clear the short contact counter.
+    public const double OrdinarySupportContactMetricLimit = 0.019999999552965164d;
     // Loaded ordinary-support gate at 0x00212ba0..0x00212bb8.
     // Keep the exact retail f32 value rather than rounding the runtime law.
     public const double OrdinarySupportMaxAngleRadians = 0.8726646304130554d;

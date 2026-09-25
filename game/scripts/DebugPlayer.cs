@@ -259,7 +259,13 @@ public partial class DebugPlayer : CharacterBody3D
         // for that witnessed no-drift behavior, not a claimed native boolean.
         FloorStopOnSlope = true;
         MaxSlides = 6;
-        SafeMargin = 0.1f;
+        // Scene geometry is 1:1 with RAC1 world units. Godot's recovery margin is
+        // not the native collision algorithm, but using the recovered ordinary
+        // support contact-correction tolerance removes the old arbitrary 0.1u
+        // RAC1 skin while preserving the sequel/debug-host boundary.
+        SafeMargin = UseRac1Gameplay
+            ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit
+            : 0.1f;
 
         if (!Scripted)
         {

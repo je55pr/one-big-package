@@ -236,6 +236,15 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
+    public void OrdinarySupportContactMetric_PinsRetailTwoCentimeterAdmissionGate()
+    {
+        Assert.Equal(
+            0.019999999552965164d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit,
+            15);
+    }
+
+    [Fact]
     public void OrdinarySupportAngle_PinsRetailFiftyDegreeAdmissionGate()
     {
         Assert.Equal(

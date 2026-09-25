@@ -24,6 +24,11 @@ class Rac1GroundSupportAdmissionTests(unittest.TestCase):
 
         self.assertEqual(report["signaturesVerified"], len(ADMISSION.SIGNATURES))
         self.assertAlmostEqual(report["contactMetricLimit"], 0.02, places=7)
+        self.assertEqual(report["contactMetricInitialization"], 42.0)
+        self.assertEqual(
+            report["contactMetricProducer"],
+            "0x001ff450(G, P+0x2a0) -> P+0x2dc",
+        )
         self.assertAlmostEqual(
             report["ordinarySupportMaxAngleDegrees"], 50.0, places=5
         )

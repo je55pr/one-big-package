@@ -12,6 +12,22 @@ import struct
 from pathlib import Path
 
 SIGNATURES = {
+    0x00212838: 0x3C014200,  # 42.0f default metric
+    0x0021283C: 0x44810000,
+    0x00212848: 0xE62002DC,  # P+0x2dc = 42.0f before collision selection
+    0x00212AE0: 0x2615FD60,  # s5 = P
+    0x00212AE4: 0x2613FDE0,  # s3 = G / PLAYER_STATE
+    0x00212AE8: 0x0200282D,  # a1 = P+0x2a0
+    0x00212AEC: 0x0260202D,  # a0 = G
+    0x00212AF0: 0x0C07FD14,  # 0x001ff450(G, P+0x2a0)
+    0x00212B08: 0xE6A002DC,  # producer result -> P+0x2dc
+    0x00212B54: 0x44800800,
+    0x00212B5C: 0x46000834,
+    0x00212B64: 0x45020005,
+    0x00212B6C: 0xC6A002DC,
+    0x00212B70: 0x46000007,  # negate negative metric
+    0x00212B74: 0xE6A002DC,
+    0x00212B78: 0xC6A102DC,
     0x00212B68: 0xC6A102DC,
     0x00212B7C: 0x3C013CA3,
     0x00212B80: 0x3421D70A,
@@ -38,6 +54,8 @@ SIGNATURES = {
 
 CONTACT_METRIC_LIMIT_BITS = 0x3CA3D70A
 SUPPORT_ANGLE_LIMIT_BITS = 0x3F5F66F3
+PLAYER_BASE = 0x0013F350
+PLAYER_STATE = 0x0013F3D0
 
 
 def _f32_bits(word: int) -> float:
@@ -46,6 +64,30 @@ def _f32_bits(word: int) -> float:
 
 def _u32(memory: bytes, address: int) -> int:
     return struct.unpack_from("<I", memory, address)[0]
+
+
+def _f32(memory: bytes, address: int) -> float:
+    return struct.unpack_from("<f", memory, address)[0]
+
+
+def derive_authority_witness(memory: bytes) -> dict[str, object]:
+    metric = _f32(memory, PLAYER_BASE + 0x2DC)
+    player = [_f32(memory, PLAYER_STATE + offset) for offset in (0, 4, 8)]
+    accepted = [_f32(memory, PLAYER_BASE + 0x2A0 + offset) for offset in (0, 4, 8)]
+    return {
+        "contactMetric": metric,
+        "absoluteContactMetric": abs(metric),
+        "playerStatePosition": player,
+        "acceptedContactPosition": accepted,
+        "positionDeltaAtFrameBoundary": [
+            player[i] - accepted[i] for i in range(3)
+        ],
+        "groundDownwardRequestDifference": abs(abs(metric) - (54.0 / 3600.0)),
+        "interpretationBoundary": (
+            "The fixed-state metric is retained after the player/contact positions "
+            "have converged at the frame boundary; it is not a standing clearance."
+        ),
+    }
 
 
 def derive_static(memory: bytes) -> dict[str, object]:
@@ -70,6 +112,9 @@ def derive_static(memory: bytes) -> dict[str, object]:
         "ordinarySupportMaxAngleDegrees": math.degrees(angle_limit),
         "angleProducer": "0x00233d30",
         "contactMetricField": "P+0x2dc",
+        "contactMetricInitialization": 42.0,
+        "contactMetricProducer": "0x001ff450(G, P+0x2a0) -> P+0x2dc",
+        "contactMetricNormalization": "negative values are negated before the 0.02 comparison",
         "contactAngleField": "P+0x2e0",
         "shortContactCounterField": "P+0x30c",
         "unsupportedCounterField": "P+0x30e",
@@ -103,6 +148,7 @@ def main() -> int:
         args.savestate, "eeMemory.bin", args.zstd_dll
     )
     report = derive_static(memory)
+    report["authorityStateWitness"] = derive_authority_witness(memory)
     report["authorityStateSha256"] = hashlib.sha256(
         args.savestate.read_bytes()
     ).hexdigest()
