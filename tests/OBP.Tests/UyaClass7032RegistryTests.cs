@@ -41,15 +41,32 @@ public sealed class UyaClass7032RegistryTests
             {
                 Assert.Equal(-1, authored.RequestedChildClassId);
                 Assert.Equal(-1, authored.PartnerInstanceIndex);
+                Assert.False(
+                    UyaClass7032ChildResolver.EntersStateOneImmediately(
+                        controller.PvarData!));
                 Assert.Null(request);
                 disabled++;
                 continue;
             }
 
+            Assert.True(
+                UyaClass7032ChildResolver.EntersStateOneImmediately(
+                    controller.PvarData!));
             Assert.NotNull(request);
             Assert.Equal(6886, request.RequestedChildClassId);
             Assert.Equal(7031, request.PartnerClassId);
             Assert.Equal(controller.Index, request.ControllerInstanceIndex);
+            UyaGameplay.MobyInstance partner = gameplay.MobyInstances[request.PartnerInstanceIndex];
+            Assert.NotNull(partner.PvarData);
+            Assert.True(
+                partner.PvarData!.Length >
+                UyaClass7032ChildResolver.PartnerRegistryAdmissionSelectorOffset);
+            Assert.Equal(
+                0,
+                partner.PvarData[UyaClass7032ChildResolver.PartnerOptionalChildHookSelectorOffset]);
+            Assert.Equal(
+                1,
+                partner.PvarData[UyaClass7032ChildResolver.PartnerRegistryAdmissionSelectorOffset]);
             enabled++;
         }
 
@@ -128,6 +145,35 @@ public sealed class UyaClass7032RegistryTests
                 new byte[UyaClass7032ChildResolver.PartnerRegistryAdmissionSelectorOffset],
                 UyaClass7032ChildResolver.Table1ChildClassId,
                 out _));
+    }
+
+    [Fact]
+    public void FactorySeedCopiesRecoveredControllerBlocksAndBackLink()
+    {
+        byte[] controller = Enumerable.Range(0, UyaClass7032ChildResolver.LiveMobySize)
+            .Select(value => (byte)value)
+            .ToArray();
+        byte[] child = Enumerable.Repeat((byte)0xCD, UyaClass7032ChildResolver.LiveMobySize)
+            .ToArray();
+
+        UyaClass7032ChildResolver.ApplyTable1FactoryMobySeed(
+            controller,
+            child,
+            controllerNativeAddress: 0x01D3CE00u);
+
+        Assert.Equal(0x560, UyaClass7032ChildResolver.Table1ChildPVarSize);
+        Assert.Equal(
+            controller.AsSpan(0x10, 0x10).ToArray(),
+            child.AsSpan(0x10, 0x10).ToArray());
+        Assert.Equal(
+            controller.AsSpan(0x38, 0x08).ToArray(),
+            child.AsSpan(0x38, 0x08).ToArray());
+        Assert.Equal(
+            controller.AsSpan(0xF0, 0x10).ToArray(),
+            child.AsSpan(0xF0, 0x10).ToArray());
+        Assert.Equal(0x01D3CE00u, BinaryPrimitives.ReadUInt32LittleEndian(child.AsSpan(0xB8)));
+        Assert.Equal(0xCD, child[0x20]);
+        Assert.Equal(0xCD, child[0x40]);
     }
 
     [Fact]

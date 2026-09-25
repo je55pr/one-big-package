@@ -442,6 +442,35 @@ controller to native state 2. A partner PVar byte `+0x90` controls an
 optional descriptor hook during this resolver; it is distinct from the later
 tag-1 registry admission byte at partner PVar `+0x92`.
 
+The class-6886 factory boundary is now pinned beyond the returned pool slot.
+`0x00438488(6886, 4, 0x9C)` reaches the class registration callback at
+`0x003CA280`, which returns the `0x9C`-byte class descriptor at `0x002BB530`.
+Its create callback `0x003C8D98` calls shared factory `0x00335908`; the class
+size callback returns exactly **`0x560` PVar bytes**. For a newly allocated
+child the shared factory stores the controller pointer at child Moby `+0xB8`,
+copies controller Moby bytes `+0x10..+0x1F`, `+0x38..+0x3F`, and
+`+0xF0..+0xFF` verbatim into the child, then runs class-local initializer
+`0x003C8E40`. The first copied block contains the live XYZ fields. The wider
+semantics of the `+0x38` and `+0xF0` blocks remain unnamed rather than guessed.
+The three resolved class-6886 children in the retained Veldin state match their
+owning controller XYZ exactly and are nowhere near the linked class-7031 partner
+positions, independently corroborating the factory copy.
+
+All 17 linked authored class-7031 partners start with PVar `+0x90 = 0` and
+`+0x92 = 1`. Thus the optional descriptor hook is absent from ordinary TABLE1
+spawn, while tag-1 admission starts armed. Shared state-1 partner callback
+`0x00329AA8` does not clear `+0x92`; the retained live snapshot's three resident
+partners have nevertheless reached `+0x92 = 0`, so that consumption belongs to
+a later class-7031/runtime boundary and is not folded into child creation.
+
+State-zero timing is also direct. `0x00333758` tests the signed dword at
+controller PVar `+0x30`; non-positive values take the immediate native-state-1
+route. All **17** TABLE1 controllers that request class 6886 author zero there,
+while the ten disabled `childClass == -1` controllers author integer one. Thus
+the missing 14 children in the retained clean snapshot are a residency/streaming
+fact, not an authored spawn-delay field. The host must recover that residency
+boundary rather than spawning all 17 globally at TABLE1 load.
+
 A fresh g007-owned run of the retained, visually verified Veldin state
 reproduces three resolved controllers: live controller slots 161, 172 and 173
 hold child slots 667, 668 and 669 respectively. All three resolved children
@@ -570,12 +599,14 @@ now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
 In parallel, continue class 5821 from the executable target-group geometry.
-The class-7032 state-1 resolver, exact tag-1 partner gate, hostile-family tag
-selectors, horizontal-distance helper, fast heading helper and ordinary
-Ratchet-seed score/replace law are now pinned. Recover the class-6886
-factory/placement boundary (including only evidence-backed effects of partner
-`+0x90`) so resolved children can actually be instantiated, then admit them
-through the already-executable partner `+0x92` tag-1 gate.
+The class-7032 state-1 resolver, class-6886 allocation/placement seed, exact
+tag-1 partner gate, hostile-family tag selectors, horizontal-distance helper,
+fast heading helper and ordinary Ratchet-seed score/replace law are now pinned.
+Recover the UYA Moby residency/streaming boundary that determines which 7032
+controllers are live, then instantiate only those class-6886 children through
+the recovered factory contract. Trace the later class-7031 transition that
+consumes authored `+0x92 = 1` before treating tag-1 membership as persistent;
+ordinary TABLE1 does not use the optional `+0x90` descriptor hook.
 
 Carry UYA target-group/cache data to the RAC3 gameplay session through a
 game-specific sidecar rather than polluting the neutral `RuntimeWorld`

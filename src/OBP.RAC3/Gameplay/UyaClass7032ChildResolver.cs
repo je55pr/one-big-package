@@ -24,8 +24,19 @@ public static class UyaClass7032ChildResolver
     public const int ControllerPartnerPointerOffset = 0xb8;
     public const int ResolvedChildRegistryTag = 1;
 
+    public const int StateZeroImmediateRouteWordOffset = 0x30;
     public const int StateOneNativeState = 1;
     public const int ResolvedNativeState = 2;
+
+    public const int LiveMobySize = 0x100;
+    public const int Table1ChildPVarSize = 0x560;
+    public const int FactoryCopiedBlock10Offset = 0x10;
+    public const int FactoryCopiedBlock10Size = 0x10;
+    public const int FactoryCopiedBlock38Offset = 0x38;
+    public const int FactoryCopiedBlock38Size = 0x08;
+    public const int FactoryCopiedBlockF0Offset = 0xf0;
+    public const int FactoryCopiedBlockF0Size = 0x10;
+    public const int ChildControllerPointerOffset = 0xb8;
     public static UyaClass7032AuthoredChildResolver DecodeAuthored(
         ReadOnlySpan<byte> pvar)
     {
@@ -42,6 +53,19 @@ public static class UyaClass7032ChildResolver
                 pvar[AlternateInstanceIndexOffset..]),
             BinaryPrimitives.ReadInt32LittleEndian(
                 pvar[RuntimeChildPoolSlotOffset..]));
+    }
+
+    /// <summary>
+    /// State zero branches directly to native state one when the signed dword at
+    /// PVar +0x30 is non-positive. This is a control-flow fact, not a timer name.
+    /// </summary>
+    public static bool EntersStateOneImmediately(ReadOnlySpan<byte> pvar)
+    {
+        if (pvar.Length < StateZeroImmediateRouteWordOffset + sizeof(int))
+            throw new InvalidDataException(
+                "UYA class-7032 PVar is too short for the recovered state-zero gate.");
+        return BinaryPrimitives.ReadInt32LittleEndian(
+            pvar[StateZeroImmediateRouteWordOffset..]) <= 0;
     }
 
     public static bool TryBuildTable1StateOneRequest(
@@ -127,6 +151,31 @@ public static class UyaClass7032ChildResolver
             selector,
             ResolvedChildRegistryTag);
         return true;
+    }
+
+    /// <summary>
+    /// Replays the exact live-Moby seed copies performed by native 0x00335908
+    /// after allocating a class-6886 child and before its class-local initializer.
+    /// The meanings of the +0x38 and +0xF0 blocks remain intentionally unnamed.
+    /// </summary>
+    public static void ApplyTable1FactoryMobySeed(
+        ReadOnlySpan<byte> controllerMoby,
+        Span<byte> childMoby,
+        uint controllerNativeAddress)
+    {
+        if (controllerMoby.Length < LiveMobySize || childMoby.Length < LiveMobySize)
+            throw new InvalidDataException(
+                "UYA class-7032 factory seed requires complete 0x100-byte live Mobies.");
+
+        controllerMoby.Slice(FactoryCopiedBlock10Offset, FactoryCopiedBlock10Size)
+            .CopyTo(childMoby[FactoryCopiedBlock10Offset..]);
+        controllerMoby.Slice(FactoryCopiedBlock38Offset, FactoryCopiedBlock38Size)
+            .CopyTo(childMoby[FactoryCopiedBlock38Offset..]);
+        controllerMoby.Slice(FactoryCopiedBlockF0Offset, FactoryCopiedBlockF0Size)
+            .CopyTo(childMoby[FactoryCopiedBlockF0Offset..]);
+        BinaryPrimitives.WriteUInt32LittleEndian(
+            childMoby[ChildControllerPointerOffset..],
+            controllerNativeAddress);
     }
 
     public static UyaClass7032ChildResolution ApplyStateOneResolution(
