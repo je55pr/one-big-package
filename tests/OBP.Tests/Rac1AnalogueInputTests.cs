@@ -89,47 +89,6 @@ public sealed class Rac1AnalogueInputTests
     }
 
     [Fact]
-    public void HostAxisEnvelope_UsesRadialTenPercentInnerAndOuterDeadZones()
-    {
-        var belowInner = Rac1AnalogueInput.ConditionHostAxes(0d, 0.09d);
-        var atInner = Rac1AnalogueInput.ConditionHostAxes(0d, 0.10d);
-        var middle = Rac1AnalogueInput.ConditionHostAxes(0d, 0.50d);
-        var atOuter = Rac1AnalogueInput.ConditionHostAxes(0d, 0.90d);
-        var imperfectFullThrow = Rac1AnalogueInput.ConditionHostAxes(0d, 0.99d);
-
-        Assert.False(belowInner.IsActive);
-        Assert.False(atInner.IsActive);
-        Assert.Equal(0.5d, middle.Magnitude, 12);
-        Assert.Equal(1d, atOuter.Magnitude, 12);
-        Assert.Equal(1d, imperfectFullThrow.Magnitude, 12);
-    }
-
-    [Fact]
-    public void HostGroundPath_UsesContinuousConditionedMagnitude()
-    {
-        var controller = new Rac1RatchetMovementController();
-        var halfStick = new PlayerControlIntent(0d, 0.50d, false, false);
-        Rac1RatchetMovementController.StepResult step = default;
-
-        for (int i = 0; i < 80; i++)
-            step = controller.StepHostAxes(halfStick, Grounded, _ => 0d);
-
-        double expected = Rac1RatchetMovementController.MaximumPlanarStep * 0.5d;
-        Assert.Equal(expected, controller.TargetPlanarStep, 12);
-        Assert.Equal(expected, step.PlanarMagnitude, 12);
-
-        controller.Reset();
-        for (int i = 0; i < 80; i++)
-            step = controller.StepHostAxes(
-                new PlayerControlIntent(0d, 0.99d, false, false),
-                Grounded,
-                _ => 0d);
-
-        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.TargetPlanarStep, 12);
-        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, step.PlanarMagnitude, 12);
-    }
-
-    [Fact]
     public void PlayerControlIntentBoundary_ConditionsInsideRac1Controller()
     {
         var intent = IntentFromRaw(220, 220);

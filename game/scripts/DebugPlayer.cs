@@ -630,11 +630,10 @@ public partial class DebugPlayer : CharacterBody3D
             crouch,
             GetRac1PlanarBasis(),
             GetRac1NativePlanarBasis());
-        Func<Rac1RatchetYawMode, double> resolveFacing = UseRac1Gameplay
-            ? mode => _rac1Yaw.StepHostAxes(move.X, -move.Y, controlYaw, mode).CurrentYaw
-            : mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw;
+        Func<Rac1RatchetYawMode, double> resolveFacing =
+            mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw;
         var step = UseRac1Gameplay
-            ? _rac1Movement.StepHostAxes(intent, contact, resolveFacing)
+            ? _rac1Movement.Step(intent, contact, resolveFacing)
             : _rac1Movement.Step(intent, contact.MovementFacts, resolveFacing);
 
         UpdateRac1FacingPresentation();
@@ -790,6 +789,9 @@ public partial class DebugPlayer : CharacterBody3D
         float planarSpeed = new Vector2(Velocity.X, Velocity.Z).Length();
         if (_rac1Movement.LocomotionState is Rac1RatchetLocomotionState.Crouched or Rac1RatchetLocomotionState.CrouchTurning)
             planarSpeed = 0f;
+        else if (_rac1Movement.LocomotionState == Rac1RatchetLocomotionState.Moving &&
+                 _rac1Movement.YawMode == Rac1RatchetYawMode.GroundRun)
+            planarSpeed = Math.Max(planarSpeed, (float)PlayerAnimationStateMachine.RunEnterSpeed);
 
         double verticalPresentation = _rac1Movement.Phase == Rac1RatchetMovementPhase.JumpAnticipation
             ? PlayerAnimationStateMachine.JumpRiseVelocity + 0.01d

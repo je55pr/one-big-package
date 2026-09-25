@@ -45,31 +45,14 @@ public sealed class Rac1RatchetYawController
         double inputX,
         double inputY,
         double controlYaw,
-        Rac1RatchetYawMode mode) =>
-        StepCore(
-            Rac1AnalogueInput.ConditionUnitAxes(inputX, inputY),
-            controlYaw,
-            mode);
-
-    /// <summary>Apply the playable Godot/SDL radial host-stick envelope before native yaw.</summary>
-    public StepResult StepHostAxes(
-        double inputX,
-        double inputY,
-        double controlYaw,
-        Rac1RatchetYawMode mode) =>
-        StepCore(
-            Rac1AnalogueInput.ConditionHostAxes(inputX, inputY),
-            controlYaw,
-            mode);
-
-    private StepResult StepCore(
-        Rac1AnalogueInput.Conditioned analogue,
-        double controlYaw,
         Rac1RatchetYawMode mode)
     {
+        if (!double.IsFinite(inputX)) throw new ArgumentOutOfRangeException(nameof(inputX));
+        if (!double.IsFinite(inputY)) throw new ArgumentOutOfRangeException(nameof(inputY));
         if (!double.IsFinite(controlYaw)) throw new ArgumentOutOfRangeException(nameof(controlYaw));
 
         ControlYaw = WrapPi(controlYaw);
+        var analogue = Rac1AnalogueInput.ConditionUnitAxes(inputX, inputY);
         TargetYaw = analogue.IsActive
             ? BuildMovementTarget(analogue.X, analogue.Y, ControlYaw)
             : CurrentYaw;
