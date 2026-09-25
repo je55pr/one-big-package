@@ -204,6 +204,46 @@ this engine-independent contract. Callers must supply all 156 resolved resource
 facts and explicit native-range RNG results; OBP does not invent UYA inventory,
 slot names or random outcomes.
 
+## TABLE1 class 5821 actor evidence
+
+Direct TABLE1 vtable scanning establishes a 12-byte dispatch record
+`{oClass, update, aux}`. Class **5821 (`0x16BD`)** resolves to update
+`0x0034FC70` with aux `0x002F74D4`. TABLE1 contains **62 authored
+class-5821 instances**, each with exactly `0x5F0` PVar bytes and authored
+signed halfword `PVar+0x34 == 1`.
+
+The class initializer copies its resolved/scaled signed `PVar+0x34` value into
+runtime float `PVar+0x30`. The retained v2.8.2 Veldin state confirms the
+ordinary TABLE1 branch currently leaves that runtime value at **1.0** for
+dormant state-0 and active state-1 instances. The same family update tests
+`PVar+0x30 <= 0` before entering cleanup/death-style consequences.
+
+The live-Moby pool bridge is also direct UYA evidence. Global
+`0x001E009C` points at a pool of `0x100`-byte Mobies; class is at live
+`+0xAA`, state at `+0x20`, PVar pointer at `+0x68`, and position at
+`+0x10/+0x14/+0x18`. In the retained Veldin state the pool base is
+`0x01D36D00`, exactly equal to the live-player pointer stored at player-global
+`0x001A4BE0+0x25C0`, so Ratchet is live slot 0.
+
+Three nearby live class-5821 objects were observed in native state **0xFD**.
+All three retained that exact Ratchet Moby pointer at runtime PVar
+`+0x230` and carried runtime lifetime **-1999.0**. Farther dormant state-0
+instances carried a null `+0x230` target and lifetime 1.0. This proves that
+class 5821 has a runtime target-acquisition field which can resolve Ratchet, and
+that state 0xFD plus non-positive lifetime is a real terminal observation for
+this class. The overlay also checks state 0xFE on linked Mobies, but no
+class-5821 state-0xFE witness has been retained, so OBP does not promote 0xFE as
+a class-5821 terminal state.
+
+A controlled ordinary-input approach was rejected as a behavior witness after
+Ratchet visibly left the intended ground line; no teleport or memory write was
+used. A separate five-second g007-owned retail visual capture from the clean
+state showed no player-hit event. Consequently **outbound hostility is not yet
+promoted**, and the class-5821 implementation does not register a damage
+consumer or attack law. In particular, class-500's recovered damage mask is not
+reused. `UyaClass5821Actor` currently preserves only the exact authored
+lifetime authority and observed native state/lifetime/target facts.
+
 ## Live host integration
 
 The generic provider/world path now configures a UYA gameplay session whenever
@@ -233,9 +273,9 @@ available. The selector, spawn identity, increment amount and add/clamp law are
 now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
-In parallel, identify the first ordinary-route hostile family from UYA itself.
-That requires UYA loaded-overlay/live-runtime evidence linking authored class
-identities to update routines, damage admission, state/lifetime transitions and
-PVar fields. Once one family is proved, its controller should attach to every
-authored instance of that class through the runtime store, then be exercised
-from normal TABLE1 spawn with the existing temporary R&C1 player locomotion.
+In parallel, continue class 5821 at the exact unresolved boundary: trace the
+shared service which drives runtime lifetime from 1.0 to the observed -1999.0
+terminal sentinel and recover the family's native incoming-damage admission.
+Then retain a controlled ordinary-route witness of an outbound attack consequence
+before promoting 5821 as a hostile actor. Only after both directions are proved
+should an exact-class controller attach to all 62 authored TABLE1 instances.
