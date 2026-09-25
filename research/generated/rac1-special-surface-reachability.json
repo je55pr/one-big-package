@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199"
+  },
+  "decodedCollisionCensus": {
+    "veldinOrdinaryControl": {
+      "level": 0,
+      "name": "Veldin",
+      "triangles": 86184,
+      "class0": 0,
+      "class3": 0,
+      "class7": 0
+    },
+    "wadeWitness": {
+      "level": 1,
+      "name": "Novalis",
+      "surfaceClass": 0,
+      "triangles": 3936,
+      "interaction": "ShallowWaterWade",
+      "nativeActionState": "0x72"
+    },
+    "mudWitness": {
+      "level": 2,
+      "name": "Aridia",
+      "surfaceClass": 3,
+      "triangles": 1975,
+      "interaction": "MudSink",
+      "nativeActionState": "0x68"
+    },
+    "iceWitness": {
+      "level": 12,
+      "name": "Hoven",
+      "surfaceClass": 7,
+      "triangles": 2777,
+      "interaction": "IceSlide",
+      "nativeActionState": "0x2f"
+    },
+    "conveyorLevelWitness": {
+      "level": 15,
+      "name": "Quartu",
+      "class0Triangles": 703,
+      "class1250AuthoredInstances": 18,
+      "class1250PreTransformBiasPerTick": 0.041666666666666664
+    }
+  },
+  "allLevelsWithRecoveredStaticSurfaceClasses": {
+    "class0": [1, 5, 8, 11, 15, 17],
+    "class3": [2],
+    "class7": [12, 14]
+  },
+  "boundary": "These are decoded authored collision/material reachability witnesses. WADE, mud and ice routing is recovered, but their alternate movement laws remain fail-closed. Class 1250 is authored on Quartu; its recovered 1/24 pre-transform bias remains separate from unresolved host tangential conveyor motion."
+}

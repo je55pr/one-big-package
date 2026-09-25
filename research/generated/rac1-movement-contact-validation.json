@@ -19,6 +19,14 @@
     "ordinaryContactMetricLimit": 0.019999999552965164,
     "stationarySupportedSlopeTailTicks": 45
   },
+  "retailReachability": {
+    "veldinAlternateSurfaceClasses": [],
+    "novalisWadeTriangles": 3936,
+    "aridiaMudTriangles": 1975,
+    "hovenIceTriangles": 2777,
+    "quartuClass1250AuthoredInstances": 18,
+    "quartuClass1250PreTransformBiasPerTick": 0.041666666666666664
+  },
   "portableRuntimeContracts": {
     "dynamicSupport": "Rac1DynamicSupportSession tests preserve current contact, persistent support, valid-anchor carry, support switches and rotation carry.",
     "conveyor": "Rac1PlayerContactRuntime tests keep class-1250 1/24 pre-transform bias separate from support carry and tangential transfer.",
@@ -30,7 +38,9 @@
     "rac1-ground-edge-fall.json",
     "rac1-ground-support-admission.json",
     "rac1-ground-slope-stop.json",
+    "rac1-special-surface-reachability.json",
     "Rac1GroundProjectionRetailTests",
+    "Rac1SpecialSurfaceReachabilityTests",
     "Rac1DynamicSupportSessionTests",
     "Rac1PlayerContactRuntimeTests",
     "Rac1SurfaceActionRoutingTests"
@@ -45,7 +55,13 @@
     "edgeAccelerationMatches25Over3600": true,
     "supportAngleMatchesRetailF32FiftyDegrees": true,
     "contactMetricMatchesRetailF32Point02": true,
-    "stationarySlopeTailAtLeast45Ticks": true
+    "stationarySlopeTailAtLeast45Ticks": true,
+    "veldinHasNoRecoveredAlternateSurfaceClass": true,
+    "novalisHasDecodedWadeSurfaces": true,
+    "aridiaHasDecodedMudSurfaces": true,
+    "hovenHasDecodedIceSurfaces": true,
+    "quartuHasRecoveredClass1250Population": true,
+    "class1250BiasMatches1Over24": true
   },
   "boundary": "Godot still executes collision sweeps. MaxSlides is not claimed as a native R&C1 constant; the live LEVEL0 smoke separately proves the configured cap does not saturate on the validated ordinary traversal."
 }

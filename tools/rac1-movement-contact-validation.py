@@ -19,6 +19,7 @@ def build_summary(generated: Path) -> dict[str, object]:
     edge = _read(generated, "rac1-ground-edge-fall.json")
     support = _read(generated, "rac1-ground-support-admission.json")
     stop = _read(generated, "rac1-ground-slope-stop.json")
+    special = _read(generated, "rac1-special-surface-reachability.json")
 
     ground_accel = float(controller["groundPlanar"]["accelerationPerTick"])
     run_cap = float(controller["groundPlanar"]["maximumStep"])
@@ -40,6 +41,12 @@ def build_summary(generated: Path) -> dict[str, object]:
     contact_limit = float(support["contactMetricLimit"])
     support_angle = float(support["ordinarySupportMaxAngleRadians"])
     stationary_frames = int(stop["stationaryFrames"])
+    surface_census = special["decodedCollisionCensus"]
+    veldin_surface = surface_census["veldinOrdinaryControl"]
+    wade_surface = surface_census["wadeWitness"]
+    mud_surface = surface_census["mudWitness"]
+    ice_surface = surface_census["iceWitness"]
+    conveyor_level = surface_census["conveyorLevelWitness"]
 
     checks = {
         "groundAccelerationMatches1Over480": abs(ground_accel - 1 / 480) < 1e-15,
@@ -56,6 +63,20 @@ def build_summary(generated: Path) -> dict[str, object]:
             contact_limit - 0.019999999552965164
         ) < 1e-15,
         "stationarySlopeTailAtLeast45Ticks": stationary_frames >= 45,
+        "veldinHasNoRecoveredAlternateSurfaceClass": (
+            int(veldin_surface["class0"]) == 0 and
+            int(veldin_surface["class3"]) == 0 and
+            int(veldin_surface["class7"]) == 0
+        ),
+        "novalisHasDecodedWadeSurfaces": int(wade_surface["triangles"]) == 3936,
+        "aridiaHasDecodedMudSurfaces": int(mud_surface["triangles"]) == 1975,
+        "hovenHasDecodedIceSurfaces": int(ice_surface["triangles"]) == 2777,
+        "quartuHasRecoveredClass1250Population": (
+            int(conveyor_level["class1250AuthoredInstances"]) == 18
+        ),
+        "class1250BiasMatches1Over24": abs(
+            float(conveyor_level["class1250PreTransformBiasPerTick"]) - (1 / 24)
+        ) < 1e-15,
     }
     failed = [name for name, passed in checks.items() if not passed]
     if failed:
@@ -78,6 +99,18 @@ def build_summary(generated: Path) -> dict[str, object]:
             "ordinaryContactMetricLimit": contact_limit,
             "stationarySupportedSlopeTailTicks": stationary_frames,
         },
+        "retailReachability": {
+            "veldinAlternateSurfaceClasses": [],
+            "novalisWadeTriangles": int(wade_surface["triangles"]),
+            "aridiaMudTriangles": int(mud_surface["triangles"]),
+            "hovenIceTriangles": int(ice_surface["triangles"]),
+            "quartuClass1250AuthoredInstances": int(
+                conveyor_level["class1250AuthoredInstances"]
+            ),
+            "quartuClass1250PreTransformBiasPerTick": float(
+                conveyor_level["class1250PreTransformBiasPerTick"]
+            ),
+        },
         "portableRuntimeContracts": {
             "dynamicSupport": (
                 "Rac1DynamicSupportSession tests preserve current contact, "
@@ -99,7 +132,9 @@ def build_summary(generated: Path) -> dict[str, object]:
             "rac1-ground-edge-fall.json",
             "rac1-ground-support-admission.json",
             "rac1-ground-slope-stop.json",
+            "rac1-special-surface-reachability.json",
             "Rac1GroundProjectionRetailTests",
+            "Rac1SpecialSurfaceReachabilityTests",
             "Rac1DynamicSupportSessionTests",
             "Rac1PlayerContactRuntimeTests",
             "Rac1SurfaceActionRoutingTests",

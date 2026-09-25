@@ -20,6 +20,11 @@ class Rac1MovementContactValidationTests(unittest.TestCase):
         self.assertLess(metrics["runningJumpHorizontalErrorNativeUnits"], 1e-4)
         self.assertLess(metrics["slopeRunMagnitudeMaximumErrorNativeUnits"], 1e-5)
         self.assertGreaterEqual(metrics["stationarySupportedSlopeTailTicks"], 45)
+        reachability = report["retailReachability"]
+        self.assertEqual(reachability["novalisWadeTriangles"], 3936)
+        self.assertEqual(reachability["aridiaMudTriangles"], 1975)
+        self.assertEqual(reachability["hovenIceTriangles"], 2777)
+        self.assertEqual(reachability["quartuClass1250AuthoredInstances"], 18)
         self.assertIn("MaxSlides", report["boundary"])
 
     def test_summary_keeps_special_motion_fail_closed_boundary_explicit(self):
