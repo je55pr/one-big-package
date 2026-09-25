@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "authority": {
+    "game": "Ratchet & Clank",
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199"
+  },
+  "status": "passed",
+  "retailVsModel": {
+    "groundAccelerationPerTick": 0.0020833333333333333,
+    "runCapNativeUnitsPerTick": 0.09500919,
+    "yawMaximumRmsResidualRad": 9.3e-08,
+    "runningJumpHorizontalErrorNativeUnits": 5.348552960082742e-05,
+    "runningJumpAirTimeErrorSeconds": 0.0005260000000000264,
+    "slopeRunMagnitudeMaximumErrorNativeUnits": 6.6838518511525e-06,
+    "edgeFallAccelerationPerTick": 0.006944444444444444,
+    "ordinarySupportMaxAngleRadians": 0.8726646304130554,
+    "ordinarySupportMaxAngleDegrees": 50.0000002530119,
+    "ordinaryContactMetricLimit": 0.019999999552965164,
+    "stationarySupportedSlopeTailTicks": 45
+  },
+  "portableRuntimeContracts": {
+    "dynamicSupport": "Rac1DynamicSupportSession tests preserve current contact, persistent support, valid-anchor carry, support switches and rotation carry.",
+    "conveyor": "Rac1PlayerContactRuntime tests keep class-1250 1/24 pre-transform bias separate from support carry and tangential transfer.",
+    "specialSurfaces": "Rac1SurfaceActionRouting tests select shallow-water WADE, mud, ice and class-2/class-0xAD Magneboot intents; ordinary movement fails closed where alternate motion laws remain unrecovered."
+  },
+  "evidence": [
+    "rac1-ratchet-movement-controller.json",
+    "rac1-ground-contact-slope.json",
+    "rac1-ground-edge-fall.json",
+    "rac1-ground-support-admission.json",
+    "rac1-ground-slope-stop.json",
+    "Rac1GroundProjectionRetailTests",
+    "Rac1DynamicSupportSessionTests",
+    "Rac1PlayerContactRuntimeTests",
+    "Rac1SurfaceActionRoutingTests"
+  ],
+  "checks": {
+    "groundAccelerationMatches1Over480": true,
+    "runCapMatchesRecoveredValue": true,
+    "yawRecurrenceMaxRmsBelow1e6": true,
+    "runningJumpHorizontalErrorBelow1e4": true,
+    "runningJumpAirTimeErrorBelowOneTick": true,
+    "slopeRunMagnitudeMaxErrorBelow1e5": true,
+    "edgeAccelerationMatches25Over3600": true,
+    "supportAngleMatchesRetailF32FiftyDegrees": true,
+    "contactMetricMatchesRetailF32Point02": true,
+    "stationarySlopeTailAtLeast45Ticks": true
+  },
+  "boundary": "Godot still executes collision sweeps. MaxSlides is not claimed as a native R&C1 constant; the live LEVEL0 smoke separately proves the configured cap does not saturate on the validated ordinary traversal."
+}

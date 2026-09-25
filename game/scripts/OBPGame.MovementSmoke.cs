@@ -18,6 +18,7 @@ public partial class OBPGame
             Engine.MaxFps = 60;
             ClearMovementSmokeInput();
             await WaitForGroundedAsync(player, 360);
+            player.ResetRac1CollisionDiagnostics();
 
             Require(_sceneResult?.CollisionBodies > 0, "world has no Godot collision body");
             Require(player.IsOnFloor(), "player did not settle on Godot collision");
@@ -172,12 +173,20 @@ public partial class OBPGame
             float respawnError = HorizontalDistance(spawn, player.GlobalPosition);
             Require(respawnError < 1.0f, "development respawn did not return to the host spawn");
             Require(player.IsOnFloor(), "respawned player did not re-enter Godot floor contact");
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                Require(
+                    player.Rac1MaxObservedSlideCollisions < player.MaxSlides,
+                    $"R&C1 ordinary movement saturated Godot MaxSlides={player.MaxSlides}; " +
+                    $"observed={player.Rac1MaxObservedSlideCollisions}");
+            }
 
             GD.Print(
                 $"[movement-smoke] PASS {destination.DestinationId} " +
                 $"walk={walkSpeed:0.000} run={runSpeed:0.000} movingJump={movingJump:0.000} shortJump={shortJump:0.000} " +
                 $"longJump={longJump:0.000} partialAir={partialAirTravel:0.000} keyboard={keyboardSpeed:0.000} " +
-                $"fly={flyTravel:0.000} respawnError={respawnError:0.000}");
+                $"fly={flyTravel:0.000} respawnError={respawnError:0.000} " +
+                $"maxSlideContacts={player.Rac1MaxObservedSlideCollisions}/{player.MaxSlides}");
             ApplicationLifecycle.RequestQuit(this, "movement-smoke-pass", 0);
         }
         catch (Exception ex)

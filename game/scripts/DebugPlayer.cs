@@ -72,6 +72,12 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Current native planar target step after analogue conditioning.</summary>
     public double Rac1TargetPlanarStep => _rac1Movement.TargetPlanarStep;
 
+    /// <summary>Maximum Godot slide contacts consumed by one ordinary R&C1 movement tick since reset.</summary>
+    public int Rac1MaxObservedSlideCollisions { get; private set; }
+
+    /// <summary>Reset host collision diagnostics without changing player/controller state.</summary>
+    public void ResetRac1CollisionDiagnostics() => Rac1MaxObservedSlideCollisions = 0;
+
     /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
     public event Action? CrateStrikeRequested;
 
@@ -391,6 +397,10 @@ public partial class DebugPlayer : CharacterBody3D
 
         StepRetailDerivedMovement(move, jump, crouch);
         MoveAndSlide();
+        if (UseRac1Gameplay)
+            Rac1MaxObservedSlideCollisions = Math.Max(
+                Rac1MaxObservedSlideCollisions,
+                GetSlideCollisionCount());
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
 
