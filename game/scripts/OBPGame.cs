@@ -178,6 +178,7 @@ public partial class OBPGame : Node3D
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
             TickRac1Gameplay(delta);
+            TickUyaGameplay(delta);
             UpdatePlayerHud();
             UpdateWorldHud();
         }

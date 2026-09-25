@@ -26,15 +26,23 @@ public partial class OBPGame
     private UyaDamageTransportSession _uyaDamageTransport = new();
     private Rac3WorldGameplayContext? _uyaGameplayContext;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _uyaClass500Nodes = [];
+    private readonly List<UyaClass5821AuditSource> _uyaClass5821AuditSources = [];
     private int _uyaAuthoredClass500;
     private int _uyaAdmittedClass500;
     private int _uyaDestroyedClass500;
     private int _uyaAuthoredClass5821;
     private int _uyaAdmittedClass5821;
+    private int _uyaPrimaryRatchetSeeded;
+    private int _uyaSecondaryRatchetSeeded;
+    private int _uyaPrimaryTargetAuditUnknown;
+    private int _uyaSecondaryTargetAuditUnknown;
+    private double _uyaTargetAuditAge;
+    private bool _uyaTargetAuditLogged;
     private string _uyaGameplayStatus = "off";
     private void ResetUyaGameplay()
     {
         _uyaClass500Nodes.Clear();
+        _uyaClass5821AuditSources.Clear();
         _uyaMobyRuntime = new UyaMobyRuntimeSession();
         _uyaDamageTransport = new UyaDamageTransportSession();
         _uyaGameplayContext = null;
@@ -43,6 +51,12 @@ public partial class OBPGame
         _uyaDestroyedClass500 = 0;
         _uyaAuthoredClass5821 = 0;
         _uyaAdmittedClass5821 = 0;
+        _uyaPrimaryRatchetSeeded = 0;
+        _uyaSecondaryRatchetSeeded = 0;
+        _uyaPrimaryTargetAuditUnknown = 0;
+        _uyaSecondaryTargetAuditUnknown = 0;
+        _uyaTargetAuditAge = 0d;
+        _uyaTargetAuditLogged = false;
         _uyaGameplayStatus = "off";
     }
 
@@ -124,6 +138,11 @@ public partial class OBPGame
             }
 
             _uyaAdmittedClass5821++;
+            _uyaClass5821AuditSources.Add(
+                new UyaClass5821AuditSource(
+                    source,
+                    UyaClass5821Actor.ReadAuthored(source),
+                    UyaMobyPlacement.ReadAuthored(source)));
         }
 
         _uyaGameplayStatus =
@@ -227,6 +246,157 @@ public partial class OBPGame
         return best;
     }
 
+    private void TickUyaGameplay(double delta)
+    {
+        if (_world?.Game != "rac3" ||
+            _player is null ||
+            _uyaGameplayContext is null ||
+            _uyaClass5821AuditSources.Count == 0)
+        {
+            return;
+        }
+
+        _uyaTargetAuditAge += delta;
+        UyaNativePoint ratchet = new(
+            -_player.GlobalPosition.X,
+            _player.GlobalPosition.Z,
+            _player.GlobalPosition.Y);
+
+        int primarySeeded = 0;
+        int secondarySeeded = 0;
+        int primaryUnknown = 0;
+        int secondaryUnknown = 0;
+
+        foreach (UyaClass5821AuditSource audit in _uyaClass5821AuditSources)
+        {
+            if (!TryAuditUyaRatchetSeed(
+                    audit,
+                    ratchet,
+                    UyaClass5821Actor.NativeObservedSelectorSubtypePrimary,
+                    out bool primarySelected))
+            {
+                primaryUnknown++;
+            }
+            else if (primarySelected)
+            {
+                primarySeeded++;
+            }
+
+            if (!TryAuditUyaRatchetSeed(
+                    audit,
+                    ratchet,
+                    UyaClass5821Actor.NativeObservedSelectorSubtypeSecondaryA,
+                    out bool secondarySelected))
+            {
+                secondaryUnknown++;
+            }
+            else if (secondarySelected)
+            {
+                secondarySeeded++;
+            }
+        }
+
+        _uyaPrimaryRatchetSeeded = primarySeeded;
+        _uyaSecondaryRatchetSeeded = secondarySeeded;
+        _uyaPrimaryTargetAuditUnknown = primaryUnknown;
+        _uyaSecondaryTargetAuditUnknown = secondaryUnknown;
+
+        if (!_uyaTargetAuditLogged && _uyaTargetAuditAge >= 0.75d)
+        {
+            _uyaTargetAuditLogged = true;
+            GD.Print(
+                $"[uya-gameplay] class-5821 Ratchet-seed audit: " +
+                $"primary={primarySeeded}/{_uyaClass5821AuditSources.Count}, " +
+                $"secondary={secondarySeeded}/{_uyaClass5821AuditSources.Count}, " +
+                $"unknown={primaryUnknown}/{secondaryUnknown}; live subtype +0x95 not host-owned");
+        }
+    }
+
+    private bool TryAuditUyaRatchetSeed(
+        UyaClass5821AuditSource audit,
+        UyaNativePoint ratchet,
+        byte nativeSubtype,
+        out bool selected)
+    {
+        selected = false;
+        if (_uyaGameplayContext is null)
+            return false;
+
+        UyaClass5821AuthoredState authored = audit.Authored;
+        UyaClass5821TargetSelectionRequest request;
+        try
+        {
+            request = UyaClass5821Actor.BuildTable1TargetSelectionRequest(
+                authored,
+                nativeSubtype,
+                runtimeModeEnabled: authored.InitialTargetSelectorMode != 0,
+                runtimeAuxEnabled: authored.InitialTargetSelectorAux != 0);
+        }
+        catch (NotSupportedException)
+        {
+            return false;
+        }
+
+        bool eligible;
+        UyaMobyPlacementFacts placement = audit.Placement;
+        if (request.NativeSelectorIndex >= 0)
+        {
+            if (!_uyaGameplayContext.Gameplay.TryContainsTargetGroup(
+                    request.NativeSelectorIndex,
+                    ratchet.X,
+                    ratchet.Y,
+                    ratchet.Z,
+                    out eligible))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            UyaClass5821RadiusHeightFacts facts =
+                UyaClass5821TargetSelector.BuildNativeRadiusHeightFacts(
+                    placement.NativeX,
+                    placement.NativeY,
+                    placement.NativeZ,
+                    ratchet.X,
+                    ratchet.Y,
+                    ratchet.Z);
+            eligible =
+                UyaClass5821TargetSelector.IsNativeRadiusHeightEligible(
+                    facts,
+                    request);
+        }
+
+        UyaClass5821TargetScoreFacts scoreFacts =
+            UyaClass5821TargetSelector.BuildNativeScoreFacts(
+                placement.NativeX,
+                placement.NativeY,
+                placement.RotationZ,
+                ratchet.X,
+                ratchet.Y,
+                isRatchet: true);
+        var ratchetFacts = new UyaClass5821TargetCandidateFacts(
+            UyaGameplayEntityRef.Player,
+            IsRatchet: true,
+            NativeRegistryTag: null,
+            IsEligible: eligible,
+            scoreFacts.HorizontalDistance,
+            scoreFacts.ShortestHeadingErrorRadians);
+
+        UyaClass5821TargetSelectionResult? result =
+            UyaClass5821TargetSelector.SelectOrdinaryTarget(
+                request,
+                ratchetFacts,
+                registryCandidates: []);
+        selected = result is { IsRatchet: true };
+        return true;
+    }
+
+    private sealed record UyaClass5821AuditSource(
+        RuntimeDynamicObject Source,
+        UyaClass5821AuthoredState Authored,
+        UyaMobyPlacementFacts Placement);
+
     private string GetUyaGameplayHudLine()
     {
         if (_world?.Game != "rac3" || _uyaGameplayStatus == "off")
@@ -241,6 +411,8 @@ public partial class OBPGame
             $"class-500 authored {_uyaAuthoredClass500}, admitted {_uyaAdmittedClass500}, " +
             $"presented live {live}, destroyed {_uyaDestroyedClass500}\n" +
             $"class-5821 profiles {_uyaAdmittedClass5821}/{_uyaAuthoredClass5821}; " +
-            $"runtime state/player consequence pending   {_uyaGameplayStatus}";
+            $"Ratchet seed audit primary {_uyaPrimaryRatchetSeeded}, secondary {_uyaSecondaryRatchetSeeded}, " +
+            $"unknown {_uyaPrimaryTargetAuditUnknown}/{_uyaSecondaryTargetAuditUnknown}\n" +
+            $"live subtype +0x95 / runtime AI state / player consequence pending   {_uyaGameplayStatus}";
     }
 }
