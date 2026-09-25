@@ -10,6 +10,9 @@ public static class Rac1OrdinaryGroundContactMotion
     public const double NativeTickScalar = 1d / 3600d;
     public const double GroundDownwardRequestPerTick = 54d * NativeTickScalar;
     public const double EdgeFallAccelerationPerTick = 25d * NativeTickScalar;
+    // Loaded ordinary-support gate at 0x00212ba0..0x00212bb8.
+    // Keep the exact retail f32 value rather than rounding the runtime law.
+    public const double OrdinarySupportMaxAngleRadians = 0.8726646304130554d;
 
     public static double ResolvePreContactVertical(
         Rac1RatchetMovementController.StepResult movement,

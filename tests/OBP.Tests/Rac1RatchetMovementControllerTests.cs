@@ -236,6 +236,19 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
+    public void OrdinarySupportAngle_PinsRetailFiftyDegreeAdmissionGate()
+    {
+        Assert.Equal(
+            0.8726646304130554d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians,
+            15);
+        Assert.Equal(
+            50d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians * 180d / Math.PI,
+            5);
+    }
+
+    [Fact]
     public void SupportedOrdinaryGround_AddsRetailPreContactAdhesionOnlyOutsideJumpStates()
     {
         var controller = new Rac1RatchetMovementController();

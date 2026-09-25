@@ -250,7 +250,9 @@ public partial class DebugPlayer : CharacterBody3D
         FloorSnapLength = UseRac1Gameplay ? 0f : 1.5f;
         // Retail uphill witnesses preserve the full 3D locomotion-step magnitude.
         FloorConstantSpeed = UseRac1Gameplay;
-        FloorMaxAngle = Mathf.DegToRad(60f);
+        FloorMaxAngle = UseRac1Gameplay
+            ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians
+            : Mathf.DegToRad(60f);
         FloorStopOnSlope = true;
         MaxSlides = 6;
         SafeMargin = 0.1f;

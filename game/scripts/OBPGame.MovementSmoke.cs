@@ -34,6 +34,10 @@ public partial class OBPGame
                     player.FloorConstantSpeed,
                     "R&C1 ordinary slope projection is not preserving constant ground speed");
                 Require(
+                    Math.Abs(player.FloorMaxAngle -
+                        (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians) < 0.000001f,
+                    "R&C1 ordinary support angle is not using the recovered retail gate");
+                Require(
                     _playerAvatarView is not null &&
                     GodotObject.IsInstanceValid(_playerAvatarView) &&
                     _playerAvatarAnimationController is Rac1PlayerAnimationPresentationController &&
