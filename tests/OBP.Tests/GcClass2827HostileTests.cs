@@ -16,7 +16,7 @@ public sealed class GcClass2827HostileTests
         Assert.NotNull(authored);
         Assert.Equal(2f, authored!.Health);
         Assert.Equal((short)0, authored.HitCooldownTicks);
-        Assert.Equal(1f, authored.AttackContactExtent);
+        Assert.Equal(1f, authored.AttackDamageHp);
         Assert.Equal(GcClass2827HostileSession.OpeningRoomAuthoredMode, authored.AuthoredMode);
         Assert.Equal(43, authored.AuthoredBolts);
 
@@ -118,7 +118,7 @@ public sealed class GcClass2827HostileTests
         Assert.Equal([0.35f, 0.15f, 0.15f, 0.35f], active.Contacts.Select(c => c.Radius));
         Assert.All(active.Contacts, contact =>
         {
-            Assert.Equal(1f, contact.AuthoredExtent);
+            Assert.Equal(1f, contact.DamageHp);
             Assert.Equal(1f, contact.UnitScale);
         });
         Assert.Equal(4, end.Contacts.Count);

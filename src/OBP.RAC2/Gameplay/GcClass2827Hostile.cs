@@ -33,7 +33,7 @@ public sealed class GcClass2827HostileSession
     private RuntimeEntityState _entityState;
     private float _health;
     private short _cooldown;
-    private readonly float _attackContactExtent;
+    private readonly float _attackDamageHp;
     private readonly GcNativeStateSession? _nativeState;
 
     private static readonly (int JointIndex, float Radius)[] AttackVolumeGeometry =
@@ -55,7 +55,7 @@ public sealed class GcClass2827HostileSession
         _entityState.EnsureMatches(source);
         _health = authored.Health;
         _cooldown = authored.HitCooldownTicks;
-        _attackContactExtent = authored.AttackContactExtent;
+        _attackDamageHp = authored.AttackDamageHp;
         _nativeState = authored.AuthoredMode == OpeningRoomAuthoredMode
             ? new GcNativeStateSession(
                 OpeningRoomInitialNativeState,
@@ -67,7 +67,7 @@ public sealed class GcClass2827HostileSession
     public short CooldownTicks => _cooldown;
     public bool IsTerminal => _entityState.Presentation.Presence == RuntimeEntityPresence.Inactive;
     public RuntimeEntityState EntityState => _entityState;
-    public float AttackContactExtent => _attackContactExtent;
+    public float AttackDamageHp => _attackDamageHp;
     public GcNativeStateSession? NativeState => _nativeState;
 
     public static bool ShouldEnterAttack(double distance, double facingError) =>
@@ -99,7 +99,7 @@ public sealed class GcClass2827HostileSession
                 new GcClass2827AttackContact(
                     volume.JointIndex,
                     volume.Radius,
-                    _attackContactExtent,
+                    _attackDamageHp,
                     UnitScale: 1f)).ToArray()
             : [];
         return new(nativeSequence, nativeFrame, attackSequence, contactWindow, contacts);
@@ -160,9 +160,9 @@ public sealed class GcClass2827HostileSession
         int healthBits = BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x20, 4));
         float health = BitConverter.Int32BitsToSingle(healthBits);
         short cooldown = BinaryPrimitives.ReadInt16LittleEndian(pvar.AsSpan(0x26, 2));
-        float attackContactExtent = pvar[0x34];
+        float attackDamageHp = pvar[0x34];
         int authoredMode = BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x27C, 4));
-        if (!float.IsFinite(health) || health <= 0f || cooldown < 0 || attackContactExtent <= 0f)
+        if (!float.IsFinite(health) || health <= 0f || cooldown < 0 || attackDamageHp <= 0f)
         {
             return null;
         }
@@ -170,7 +170,7 @@ public sealed class GcClass2827HostileSession
         return new GcClass2827AuthoredState(
             Health: health,
             HitCooldownTicks: cooldown,
-            AttackContactExtent: attackContactExtent,
+            AttackDamageHp: attackDamageHp,
             AuthoredMode: authoredMode,
             AuthoredBolts: source.NativePayloads is null
                 ? null
@@ -190,15 +190,19 @@ public sealed class GcClass2827HostileSession
 public sealed record GcClass2827AuthoredState(
     float Health,
     short HitCooldownTicks,
-    float AttackContactExtent,
+    float AttackDamageHp,
     int AuthoredMode,
     int? AuthoredBolts);
 
 public sealed record GcClass2827AttackContact(
     int JointIndex,
     float Radius,
-    float AuthoredExtent,
-    float UnitScale);
+    float DamageHp,
+    float UnitScale)
+{
+    public GcPlayerDamageRecord ToPlayerDamageRecord() =>
+        new(GcRatchetNanotechSession.DamageQueryMask, DamageHp);
+}
 
 public sealed record GcClass2827AttackProbe(
     int NativeSequence,

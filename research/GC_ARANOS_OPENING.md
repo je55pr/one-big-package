@@ -169,23 +169,50 @@ helper `0x002EF1E0`, and requires that error below `0x3E567751` radians
 (~12 degrees) before selecting the state-13 attack path. State 13 accepts native
 sequences `0x1B` and `0x10`; only animation frames 19 through 25 emit contact
 volumes. The emitted joint/radius pairs are `(0,0.35)`, `(1,0.15)`, `(2,0.15)`,
-and `(9,0.35)`. PVar byte `+0x34` is converted to float and passed as the second
-contact-volume scalar; it is authored as `1` on all 31 LEVEL0 instances. That
-scalar is therefore preserved as an attack-contact extent, not labelled as
-Nanotech damage until the downstream collision/damage helper proves that meaning.
+and `(9,0.35)`. PVar byte `+0x34` is authored as `1` on all 31 LEVEL0
+instances. Initialization at `0x003D99EC..0x003D9A24` converts that byte to
+float and stores it at PVar `+0x2CC`; state 13 passes that runtime float into
+all four contact registrations. The earlier provisional "extent" label is
+therefore retired: this is the class-local attack damage scalar.
+
+The player-side handoff is also now recovered from the exact v1.01 EE image.
+Opening player state stores current Nanotech at `0x0018C2EC`; the preserved
+opening state is `4`, with the adjacent maximum value also `4`. Player damage
+handling at `0x002B2F2C` queries Ratchet's Moby through shared helper
+`0x0031CA70` with mask `1`. When a record exists, record `+0x2C` is rounded
+with `cvt.w.s` and passed to `0x002A4EF8`, which subtracts the integer amount
+from Nanotech and clamps below zero to zero. The class-2827 authored scalar of
+`1` therefore produces one Nanotech of opening MSR I contact damage. OBP now
+carries this bounded consequence through `GcRatchetNanotechSession`; repeated
+contact suppression remains deliberately outside that session until the shared
+collision/reaction path is recovered.
 
 The recovered player state-20 tuple also uses damage mask `0x00010000` and deals
 `2.0` HP, so one admitted state-20 hit exactly exhausts an authored MSR I. OBP
 now carries this through `GcClass2827HostileSession`; ordinary GC primary aim can
 select class 2827, publish the recovered damage tuple, and terminalise the
-instance. Attack admission and contact geometry are recovered, while authored
-approach/root-motion execution and the resulting player Nanotech damage handoff
-remain to be wired.
+instance. Attack admission, contact geometry, and the player Nanotech
+consequence are recovered. Authored approach/root-motion execution and actual
+host-side contact overlap admission remain to be wired.
 
-A live-retail visual attempt was made with the preserved GC PCSX2 profiles under
-goal-owned MjauRunner runs. Both the normal and no-card profiles visibly stopped
-at a `Memory Card Read Failed` dialog, so no gameplay or visual claim was taken
-from those runs.
+Earlier live-retail attempts with the preserved GC PCSX2 profiles stopped at a
+memory-card warning and were not used as gameplay evidence. Generation 5 repaired
+that witness path without bypassing MjauRunner ownership. Goal-owned run
+`run-000018` loaded the preserved v1.01 Aranos opening state; after dismissing
+the game's autosave/card warning, ordinary input visibly moved Ratchet from the
+authored class-0 opening position.
+
+A separate controlled PINE probe on that same owned retail run was used only for
+archaeology, not ordinary-route proof. Ratchet's authoritative player-state
+position and Moby transform were placed beside authored class-2827 instance 205
+at native `(245.42667, 230.9, 104)`. The synchronized capture visibly shows the
+opening MSR I pair surrounding/striking Ratchet. Current Nanotech at
+`0x0018C2EC` then changed `4 -> 3 -> 2 -> 1 -> 0`; each nonlethal decrement
+entered player state `22` and returned to state `0`, while the lethal
+decrement entered state `22` before reaching state `57`. The observed sample
+timestamps are not promoted to a hit-stun or repeat-hit timing contract. The
+contact sheet is retained at
+`runtime/mjaurunner/logs/run-000018/captures/20260925T065334389669Z-contact.png`.
 
 ## Current playable boundary
 
@@ -200,12 +227,15 @@ Working now:
 - the recovered Aranos class-500 break predicate and zero-C8 lifetime projection;
 - all 31 authored MSR I instances preserved individually with retail HP/cooldown;
 - recovered MSR I damage admission and lethal terminalisation;
-- recovered state-12 attack admission plus state-13 contact timing/geometry.
+- recovered state-12 attack admission plus state-13 contact timing/geometry;
+- recovered GC player Nanotech damage path for opening MSR I contact, including
+  one-Nanotech damage, state 22 hit reaction, and state 57 lethal handoff.
 
 Still required for the goal:
 
 - recover MSR I activation and approach/root-motion execution;
-- recover the downstream contact-to-player damage/Nanotech semantics;
+- recover or reproduce the shared contact-overlap admission/repeat-hit gate that
+  decides when an active MSR I volume reaches Ratchet;
 - establish any opening door/trigger/gate/checkpoint behaviour that blocks the
   ordinary route;
 - replace or further bound the showcase Bolt reward assumptions where needed;
@@ -213,5 +243,6 @@ Still required for the goal:
 - complete the human-playable Jess signoff and document failures verbatim.
 
 The next smallest slice is retail recovery of class 2827's activation and
-approach/root-motion path, followed by the downstream contact-to-player Nanotech
-handoff. The attack admission/contact-volume portion no longer needs guessing.
+approach/root-motion path plus the shared contact-overlap/repeat-hit gate. The
+attack admission, contact-volume damage, and player Nanotech consequence no
+longer need guessing.
