@@ -2,6 +2,7 @@ using System.Text.Json;
 using OBP.Core;
 using OBP.IO;
 using OBP.RAC3;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Geometry;
 using OBP.RAC3.Level;
 using OBP.Runtime;
@@ -61,6 +62,33 @@ public sealed class Rac3WorldTests
         Assert.All(world.Meshes, m => Assert.All(m.Positions, v => Assert.True(double.IsFinite(v))));
         if (table == 1) Assert.Equal(45, world.AnimatedMeshes?.Count);
         else Assert.Empty(world.AnimatedMeshes ?? Array.Empty<RuntimeAnimatedMesh>());
+    }
+
+    [SkippableFact]
+    public void RetailVeldinAuthoredPopulationFeedsUyaRuntimeWithoutClassGuessing()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
+        var runtime = new UyaMobyRuntimeSession();
+
+        runtime.RegisterWorld(world);
+
+        Assert.Equal(735, runtime.RegisteredCount);
+        var class0 = Assert.Single(runtime.Instances, item => item.Key == new UyaMobyRuntimeKey(0, 0));
+        Assert.Equal(0, class0.PVar.Length);
+        Assert.InRange(class0.Source.Transform.Matrix[12], 365.31, 365.33);
+        Assert.InRange(class0.Source.Transform.Matrix[13], 78.67, 78.69);
+        Assert.InRange(class0.Source.Transform.Matrix[14], 103.49, 103.51);
+
+        var nearby500 = Assert.Single(runtime.Instances, item => item.Key == new UyaMobyRuntimeKey(500, 311));
+        Assert.Equal(352, nearby500.Identity.NativeUid);
+        Assert.Equal(320, nearby500.PVar.Length);
+        Assert.InRange(nearby500.Source.Transform.Matrix[12], 346.93, 346.95);
+        Assert.InRange(nearby500.Source.Transform.Matrix[13], 77.96, 77.98);
+        Assert.InRange(nearby500.Source.Transform.Matrix[14], 115.13, 115.15);
+        Assert.True(nearby500.IsActive);
     }
 
     [SkippableFact]
