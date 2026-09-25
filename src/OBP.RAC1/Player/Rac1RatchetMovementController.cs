@@ -155,24 +155,78 @@ public sealed class Rac1RatchetMovementController
                 $"Ordinary R&C1 movement cannot run on recovered alternate surface " +
                 $"{contact.SurfaceInteraction}; its native controller is not implemented.");
 
-        return StepCore(input, contact.MovementFacts, true, resolveNativeFacingYaw);
+        return StepCore(
+            input,
+            contact.MovementFacts,
+            true,
+            Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY),
+            continuousGroundMagnitude: false,
+            resolveNativeFacingYaw);
     }
 
     public StepResult Step(
         PlayerControlIntent input,
         PlayerContactFacts contact,
         Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null) =>
-        StepCore(input, contact, false, resolveNativeFacingYaw);
+        StepCore(
+            input,
+            contact,
+            false,
+            Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY),
+            continuousGroundMagnitude: false,
+            resolveNativeFacingYaw);
+
+    /// <summary>
+    /// Playable Godot/SDL host path. The host stick uses a radial 10% inner / 10%
+    /// outer envelope and continuous grounded speed, while native acceleration,
+    /// yaw, jump and contact recurrences remain unchanged.
+    /// </summary>
+    public StepResult StepHostAxes(
+        PlayerControlIntent input,
+        Rac1PlayerContactResult contact,
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null)
+    {
+        ArgumentNullException.ThrowIfNull(contact);
+        if (contact.SurfaceInteraction != Rac1SurfaceInteractionKind.None)
+            throw new NotSupportedException(
+                $"Ordinary R&C1 movement cannot run on recovered alternate surface " +
+                $"{contact.SurfaceInteraction}; its native controller is not implemented.");
+
+        return StepCore(
+            input,
+            contact.MovementFacts,
+            true,
+            Rac1AnalogueInput.ConditionHostAxes(input.PlanarX, input.PlanarY),
+            continuousGroundMagnitude: true,
+            resolveNativeFacingYaw);
+    }
+
+    public StepResult StepHostAxes(
+        PlayerControlIntent input,
+        PlayerContactFacts contact,
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null) =>
+        StepCore(
+            input,
+            contact,
+            false,
+            Rac1AnalogueInput.ConditionHostAxes(input.PlanarX, input.PlanarY),
+            continuousGroundMagnitude: true,
+            resolveNativeFacingYaw);
 
     private StepResult StepCore(
         PlayerControlIntent input,
         PlayerContactFacts contact,
         bool useRecoveredOrdinaryContactMotion,
+        Rac1AnalogueInput.Conditioned analogue,
+        bool continuousGroundMagnitude,
         Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw)
     {
-        var analogue = Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY);
         AnalogueInput = analogue;
-        bool alignGroundTranslationToFacing = UpdatePlanar(input, analogue, contact.IsGrounded);
+        bool alignGroundTranslationToFacing = UpdatePlanar(
+            input,
+            analogue,
+            contact.IsGrounded,
+            continuousGroundMagnitude);
         UpdateVertical(input, contact, useRecoveredOrdinaryContactMotion);
         UpdateLocomotionState(input, analogue, contact);
         UpdateYawMode(input, analogue, contact);
@@ -210,13 +264,14 @@ public sealed class Rac1RatchetMovementController
     private bool UpdatePlanar(
         PlayerControlIntent input,
         Rac1AnalogueInput.Conditioned analogue,
-        bool grounded)
+        bool grounded,
+        bool continuousGroundMagnitude)
     {
         bool crouching = grounded && input.CrouchHeld;
         bool hasIntent = !crouching && analogue.IsActive;
         bool usesAirPlanarLaw = !grounded || Phase != Rac1RatchetMovementPhase.Grounded;
         TargetPlanarStep = hasIntent
-            ? usesAirPlanarLaw
+            ? usesAirPlanarLaw || continuousGroundMagnitude
                 ? MaximumPlanarStep * analogue.Magnitude
                 : analogue.SpeedBand == Rac1AnalogueSpeedBand.Walk
                     ? WalkPlanarStep

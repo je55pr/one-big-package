@@ -19,6 +19,13 @@ public static class Rac1AnalogueInput
     public const double ComponentScaleCounts = 76d;
     public const double ActivationMagnitude = 0.25d;
 
+    // Godot/SDL host sticks use a usability envelope before entering the
+    // recovered controller. This intentionally stays separate from the literal
+    // DualShock 2 byte conditioner below: 10% is neutral, 90% is full-scale,
+    // and the radial span between them is linear.
+    public const double HostInnerDeadZone = 0.10d;
+    public const double HostOuterDeadZone = 0.10d;
+
     // The exact translational walk/run selector is still unresolved. Production
     // uses the first observed cardinal run witness as the deterministic boundary;
     // do not relabel this value as an exact recovered retail comparison.
@@ -56,6 +63,40 @@ public static class Rac1AnalogueInput
         return ConditionCenteredCounts(
             Math.Clamp(right, -1d, 1d) * HostAxisCountScale,
             Math.Clamp(forward, -1d, 1d) * HostAxisCountScale);
+    }
+
+    /// <summary>
+    /// Condition a modern host stick with radial lower/upper dead zones. This is
+    /// the playable adapter used by Godot; it is not presented as a recovered
+    /// retail DS2 byte law.
+    /// </summary>
+    public static Conditioned ConditionHostAxes(double right, double forward)
+    {
+        ValidateFinite(right, nameof(right));
+        ValidateFinite(forward, nameof(forward));
+
+        right = Math.Clamp(right, -1d, 1d);
+        forward = Math.Clamp(forward, -1d, 1d);
+        double sourceMagnitude = Math.Sqrt((right * right) + (forward * forward));
+        if (sourceMagnitude <= 1e-12d)
+            return default;
+
+        double cappedMagnitude = Math.Min(sourceMagnitude, 1d);
+        double activeSpan = 1d - HostInnerDeadZone - HostOuterDeadZone;
+        double magnitude = Math.Clamp(
+            (cappedMagnitude - HostInnerDeadZone) / activeSpan,
+            0d,
+            1d);
+        if (magnitude <= 1e-12d)
+            return default;
+
+        double directionScale = magnitude / sourceMagnitude;
+        double x = right * directionScale;
+        double y = forward * directionScale;
+        var band = magnitude >= FirstObservedRunMagnitude
+            ? Rac1AnalogueSpeedBand.Run
+            : Rac1AnalogueSpeedBand.Walk;
+        return new Conditioned(x, y, magnitude, magnitude, true, band);
     }
 
     /// <summary>Condition literal DualShock 2 left-stick bytes.</summary>
