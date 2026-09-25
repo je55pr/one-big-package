@@ -260,14 +260,33 @@ zero `+0x5F` branch selects flags **`0x00000001`**. Wrapper
 **`0x00000001`**, record kind **0**, descriptor byte `+0x29 = 1`, and
 an additional spatial scalar **0.75**. The emitter runs only while
 `0x00436500`'s native action-progress result satisfies **`6 < progress <
-10`** and live Moby byte `+0x42 == 12`. State 8 contains a direct route
-into state 10: the target-position separation scalar must be below `1.0`,
-then the wrapped target-heading error must be below
-`0x3EDF66F3 = 0.4363323 rad` (25 degrees). State 8 also has independent
-global/contact branches, so OBP does not collapse its whole transition law to
-those two comparisons alone. `UyaClass5821Actor` exposes the exact state-10
-TABLE1 attack descriptor and engine-neutral Ratchet damage event, but transport
-still applies no player-life consequence.
+10`** and live Moby byte `+0x42 == 12`. State 8 contains a direct route into
+state 10. It first rejects player-global
+state **`0x12`**, then requires the current target-position separation scalar
+to be strictly below **`1.0`**. Helper `0x0040CFB0` directly computes the
+shortest unsigned angular difference: `abs(a-b)`, folded to `2π-delta` when
+the first difference exceeds π. State 8 requires that result to be strictly
+below **`0x3EDF66F3 = 0.4363323 rad` (25 degrees)** before selecting native
+state 10 and action/sequence byte **12**. `UyaClass5821Actor` exposes this
+direct gate as explicit facts and fails closed when no current target is
+provided. State 8 also has independent global/contact branches, so OBP does not
+collapse its whole transition law to these comparisons alone.
+
+Target acquisition remains upstream and unresolved. All **62 authored**
+class-5821 PVars carry zeros at target-position `+0x220/+0x224/+0x228` and
+target pointer `+0x230`, proving those fields are runtime-generated rather
+than placement data. Shared helper `0x00455E98` receives an already-selected
+`+0x230` target and the class-owned `+0x360` steering block; it caches that
+target at `+0x3B0` and resets a steering field, so it is a tracker rather than
+the selector. In the g007-owned, visually verified clean Veldin state, 58
+class-5821 Mobies are resident and only four have nonzero `+0x230`; all four
+point to Ratchet and all four are already state `0xFD`. The 38 state-0 and
+eight state-1 residents have null targets. This is valid target-identity
+evidence, not an acquisition-timing witness.
+
+`UyaClass5821Actor` exposes the exact state-10 TABLE1 attack descriptor and
+engine-neutral Ratchet damage event, but transport still applies no player-life
+consequence.
 
 A second **class-family** emitter exists in state 25. State 24 initializes
 PVar `+0x300` to float bits `0x3D888889`, advances it each native update
@@ -333,10 +352,12 @@ available. The selector, spawn identity, increment amount and add/clamp law are
 now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
-In parallel, continue class 5821 from the population-backed state-10 boundary.
-Recover enough of state 8's remaining target/contact branches to execute the
-native state-8 -> state-10 attack transition for the authored TABLE1 population,
-and recover the UYA player-life consequence for its damage records. Separately,
-recover the post-lethal reaction progression after lifetime reaches non-positive.
-State 25 must remain a subtype-family branch until TABLE1 eligibility is witnessed.
-R&C1 Nanotech, guessed cooldowns, or a synthetic subtype must not substitute.
+In parallel, continue class 5821 from the now-pinned direct state-8 attack gate.
+Recover the upstream runtime target-acquisition law that populates
+`PVar+0x220..+0x230`; only then may the host feed the recovered state-8 ->
+state-10 transition for the authored population. Also recover the UYA
+player-life consequence for emitted damage records and the post-lethal reaction
+progression after lifetime reaches non-positive. State 25 must remain a
+subtype-family branch until TABLE1 eligibility is witnessed. R&C1 Nanotech,
+nearest-player guesses, guessed cooldowns, or synthetic targets must not
+substitute.

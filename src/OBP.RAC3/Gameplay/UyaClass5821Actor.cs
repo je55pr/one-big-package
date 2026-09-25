@@ -46,6 +46,14 @@ public static class UyaClass5821Actor
     public const byte NativeOrdinaryAttackRecordKind = 0;
     public const byte NativeOrdinaryAttackRecordByte29 = 1;
 
+    // Direct TABLE1 state-8 -> state-10 attack transition.
+    public const byte NativeOrdinaryAttackApproachState = 8;
+    public const uint NativeState8BlockedPlayerGlobalState = 0x12;
+    public const float NativeState8TargetSeparationUpperExclusive = 1f;
+    public static readonly float NativeState8HeadingErrorUpperExclusive =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3EDF66F3));
+    public const byte NativeState10SelectedAction = 12;
+
     // Class-family state-24 -> state-25 attack scheduler. The retained TABLE1
     // live population has not yet proved eligibility for this subtype path.
     public const byte NativeAttackWindupState = 24;
@@ -135,6 +143,28 @@ public static class UyaClass5821Actor
         UyaClass5821AuthoredState authored) =>
         authored.NativeOrdinaryAttackDamageByte == 1 &&
         authored.NativeOrdinaryAttackFlagSelector == 0;
+
+    /// <summary>
+    /// Exact direct state-8 gate recovered from TABLE1. Target acquisition is
+    /// upstream shared AI behavior and remains unrecovered, so callers must
+    /// supply an already-established current target. Missing target facts fail
+    /// closed rather than promoting the player as an implicit target.
+    /// </summary>
+    public static bool ShouldEnterNativeState10FromState8(
+        UyaClass5821State8AttackFacts facts)
+    {
+        if (!float.IsFinite(facts.TargetSeparation) ||
+            facts.TargetSeparation < 0f)
+            throw new ArgumentOutOfRangeException(nameof(facts));
+        if (!float.IsFinite(facts.ShortestHeadingErrorRadians) ||
+            facts.ShortestHeadingErrorRadians < 0f)
+            throw new ArgumentOutOfRangeException(nameof(facts));
+
+        return facts.HasCurrentTarget &&
+               facts.PlayerGlobalState != NativeState8BlockedPlayerGlobalState &&
+               facts.TargetSeparation < NativeState8TargetSeparationUpperExclusive &&
+               facts.ShortestHeadingErrorRadians < NativeState8HeadingErrorUpperExclusive;
+    }
 
     public static bool IsNativeState10EmitterWindow(
         float actionProgress,
@@ -322,6 +352,12 @@ public sealed record UyaClass5821NativeObservation(
     byte NativeState,
     double NativeLifetime,
     bool TargetsRatchet);
+
+public sealed record UyaClass5821State8AttackFacts(
+    bool HasCurrentTarget,
+    uint PlayerGlobalState,
+    float TargetSeparation,
+    float ShortestHeadingErrorRadians);
 
 public sealed record UyaClass5821WindupStep(
     float Accumulator,

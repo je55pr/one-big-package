@@ -105,6 +105,75 @@ public sealed class UyaClass5821ActorTests
             expected,
             UyaClass5821Actor.EmitsPopulationBackedNativeDamage(nativeState));
 
+    [Fact]
+    public void State8DirectAttackGateUsesRetailThresholdBits()
+    {
+        Assert.Equal(8, UyaClass5821Actor.NativeOrdinaryAttackApproachState);
+        Assert.Equal(
+            unchecked((int)0x3EDF66F3),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821Actor.NativeState8HeadingErrorUpperExclusive));
+        Assert.Equal(1f, UyaClass5821Actor.NativeState8TargetSeparationUpperExclusive);
+        Assert.Equal(0x12u, UyaClass5821Actor.NativeState8BlockedPlayerGlobalState);
+        Assert.Equal(12, UyaClass5821Actor.NativeState10SelectedAction);
+    }
+
+    [Theory]
+    [InlineData(false, 0, 0.5f, 0f, false)]
+    [InlineData(true, 0x12, 0.5f, 0f, false)]
+    [InlineData(true, 0, 1f, 0f, false)]
+    [InlineData(true, 0, 0.9999f, 0f, true)]
+    public void State8DirectAttackGateFailsClosedOnTargetAndSeparation(
+        bool hasTarget,
+        uint playerState,
+        float separation,
+        float headingError,
+        bool expected) =>
+        Assert.Equal(
+            expected,
+            UyaClass5821Actor.ShouldEnterNativeState10FromState8(
+                new UyaClass5821State8AttackFacts(
+                    hasTarget,
+                    playerState,
+                    separation,
+                    headingError)));
+
+    [Fact]
+    public void State8DirectAttackGateUsesStrictShortestHeadingError()
+    {
+        float threshold = UyaClass5821Actor.NativeState8HeadingErrorUpperExclusive;
+        Assert.False(
+            UyaClass5821Actor.ShouldEnterNativeState10FromState8(
+                new UyaClass5821State8AttackFacts(true, 0, 0.5f, threshold)));
+        Assert.True(
+            UyaClass5821Actor.ShouldEnterNativeState10FromState8(
+                new UyaClass5821State8AttackFacts(
+                    true,
+                    0,
+                    0.5f,
+                    BitConverter.Int32BitsToSingle(
+                        BitConverter.SingleToInt32Bits(threshold) - 1))));
+    }
+
+    [Fact]
+    public void State8DirectAttackGateRejectsImpossibleScalarFacts()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            UyaClass5821Actor.ShouldEnterNativeState10FromState8(
+                new UyaClass5821State8AttackFacts(
+                    true,
+                    0,
+                    -0.01f,
+                    0f)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            UyaClass5821Actor.ShouldEnterNativeState10FromState8(
+                new UyaClass5821State8AttackFacts(
+                    true,
+                    0,
+                    0.5f,
+                    -0.01f)));
+    }
+
     [Theory]
     [InlineData(6f, 12, false)]
     [InlineData(6.0001f, 12, true)]
