@@ -25,7 +25,10 @@ public sealed class UyaClass5821ActorTests
         Assert.Equal(0, authored.DamageConfigByte49);
         Assert.Equal(0f, authored.DamageConfigSameClassMultiplier);
         Assert.Equal(1f, authored.DamageConfigOptionalMultiplier);
+        Assert.Equal(1, authored.NativeOrdinaryAttackDamageByte);
+        Assert.Equal(0, authored.NativeOrdinaryAttackFlagSelector);
         Assert.True(UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored));
+        Assert.True(UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored));
     }
 
     [Theory]
@@ -50,6 +53,154 @@ public sealed class UyaClass5821ActorTests
     }
 
     [Fact]
+    public void State24WindupUsesRetailSinglePrecisionRecurrence()
+    {
+        Assert.Equal(
+            unchecked((int)0x3D888889),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821Actor.NativeAttackWindupInitial));
+        Assert.Equal(
+            unchecked((int)0xBB888889),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821Actor.NativeAttackAccumulatorDelta));
+        Assert.Equal(
+            unchecked((int)0x3E088889),
+            BitConverter.SingleToInt32Bits(
+                UyaClass5821Actor.NativeAttackWindupNormalizationSpan));
+
+        float accumulator = UyaClass5821Actor.NativeAttackWindupInitial;
+        UyaClass5821WindupStep step = null!;
+        for (int tick = 1; tick <= 32; tick++)
+        {
+            step = UyaClass5821Actor.AdvanceNativeState24(accumulator);
+            accumulator = step.Accumulator;
+            Assert.Equal(
+                UyaClass5821Actor.NativeAttackWindupState,
+                step.NextNativeState);
+        }
+
+        Assert.Equal(
+            unchecked((int)0x3F7FFFFF),
+            BitConverter.SingleToInt32Bits(step.NormalizedProgress));
+
+        step = UyaClass5821Actor.AdvanceNativeState24(accumulator);
+        Assert.Equal(
+            UyaClass5821Actor.NativeAttackWindupTicks,
+            33);
+        Assert.Equal(
+            UyaClass5821Actor.NativeDamageEmitterState,
+            step.NextNativeState);
+        Assert.Equal(1.03125f, step.NormalizedProgress);
+    }
+
+    [Theory]
+    [InlineData(9, false)]
+    [InlineData(10, true)]
+    [InlineData(24, false)]
+    [InlineData(25, false)]
+    public void PopulationBackedDamageEmitterIsState10(
+        byte nativeState,
+        bool expected) =>
+        Assert.Equal(
+            expected,
+            UyaClass5821Actor.EmitsPopulationBackedNativeDamage(nativeState));
+
+    [Theory]
+    [InlineData(6f, 12, false)]
+    [InlineData(6.0001f, 12, true)]
+    [InlineData(9.9999f, 12, true)]
+    [InlineData(10f, 12, false)]
+    [InlineData(8f, 11, false)]
+    public void State10EmitterUsesStrictProgressWindowAndMobyByte42(
+        float progress,
+        byte mobyByte42,
+        bool expected) =>
+        Assert.Equal(
+            expected,
+            UyaClass5821Actor.IsNativeState10EmitterWindow(
+                progress,
+                mobyByte42));
+
+    [Fact]
+    public void State10AttackDescriptorMatchesAll62Table1Profile()
+    {
+        var authored = UyaClass5821Actor.ReadAuthored(
+            Class5821(instanceIndex: 430, authoredLifetime: 1));
+
+        UyaClass5821AttackDescriptor attack =
+            UyaClass5821Actor.NativeState10Attack(authored);
+
+        Assert.Equal(10, attack.NativeState);
+        Assert.Equal(0.5f, attack.Radius);
+        Assert.Equal(1f, attack.Damage);
+        Assert.Equal(0x00000001u, attack.Flags);
+        Assert.Equal(0, attack.RecordKind);
+        Assert.Equal(1, attack.RecordByte29);
+        Assert.Equal(0.75f, attack.SpatialScalar);
+
+        var source = new UyaMobyRuntimeKey(
+            UyaClass5821Actor.NativeClassId,
+            430);
+        UyaGameplayDamageEvent playerDamage =
+            UyaClass5821Actor.NativeState10RatchetDamage(source, authored);
+        Assert.Equal(UyaGameplayEntityRef.Moby(source), playerDamage.Source);
+        Assert.Equal(UyaGameplayEntityRef.Player, playerDamage.Target);
+        Assert.Equal(1d, playerDamage.NativeDamage);
+        Assert.Equal(0x00000001u, playerDamage.NativeDamageFlags);
+        Assert.Equal((byte)0, playerDamage.NativeRecordKind);
+    }
+
+    [Fact]
+    public void State10AttackFailsClosedOutsideTable1AuthoredProfile()
+    {
+        RuntimeDynamicObject source =
+            Class5821(instanceIndex: 430, authoredLifetime: 1);
+        byte[] pvar = source.NativePayloads!
+            .Single(payload =>
+                payload.Format == UyaMobyRuntimeSession.PVarPayloadFormat)
+            .Data.ToArray();
+        pvar[UyaClass5821Actor.NativeOrdinaryAttackFlagSelectorOffset] = 1;
+        source = source with
+        {
+            NativePayloads =
+            [
+                new RuntimeOpaquePayload(
+                    UyaMobyRuntimeSession.PVarPayloadFormat,
+                    pvar),
+            ],
+        };
+
+        UyaClass5821AuthoredState authored =
+            UyaClass5821Actor.ReadAuthored(source);
+        Assert.False(
+            UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored));
+        Assert.Throws<NotSupportedException>(() =>
+            UyaClass5821Actor.NativeState10Attack(authored));
+    }
+
+    [Fact]
+    public void StateEntrySetupBitIsOneShot()
+    {
+        Assert.True(UyaClass5821Actor.NeedsNativeStateEntrySetup(0x00));
+        Assert.False(UyaClass5821Actor.NeedsNativeStateEntrySetup(0x01));
+        Assert.False(UyaClass5821Actor.NeedsNativeStateEntrySetup(0x03));
+    }
+
+    [Theory]
+    [InlineData(10f, 10f, true)]
+    [InlineData(9.5f, 10f, true)]
+    [InlineData(10.5f, 10f, false)]
+    public void State25ExitUsesNativeZAgainstQueryProducedThreshold(
+        float nativeZ,
+        float threshold,
+        bool expected) =>
+        Assert.Equal(
+            expected,
+            UyaClass5821Actor.ShouldEnterNativeState26(
+                nativeZ,
+                threshold));
+
+    [Fact]
     public void State25AttackDescriptorMatchesTable1Emitter()
     {
         UyaClass5821AttackDescriptor attack =
@@ -61,6 +212,7 @@ public sealed class UyaClass5821ActorTests
         Assert.Equal(0x02000001u, attack.Flags);
         Assert.Equal(0, attack.RecordKind);
         Assert.Equal(1, attack.RecordByte29);
+        Assert.Equal(1f, attack.SpatialScalar);
 
         var source = new UyaMobyRuntimeKey(
             UyaClass5821Actor.NativeClassId,
@@ -218,6 +370,8 @@ public sealed class UyaClass5821ActorTests
                 UyaClass5821Actor.ReadAuthored(source);
             Assert.Equal(1, authored.AuthoredLifetime);
             Assert.True(UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored));
+            Assert.True(
+                UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored));
         });
     }
 
@@ -279,6 +433,8 @@ public sealed class UyaClass5821ActorTests
         BinaryPrimitives.WriteSingleLittleEndian(
             pvar.AsSpan(UyaClass5821Actor.DamageConfigOptionalMultiplierOffset, sizeof(float)),
             1f);
+        pvar[UyaClass5821Actor.NativeOrdinaryAttackDamageByteOffset] = 1;
+        pvar[UyaClass5821Actor.NativeOrdinaryAttackFlagSelectorOffset] = 0;
 
         return new RuntimeDynamicObject(
             "rac3",

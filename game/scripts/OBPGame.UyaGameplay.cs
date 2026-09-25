@@ -27,6 +27,8 @@ public partial class OBPGame
     private int _uyaAuthoredClass500;
     private int _uyaAdmittedClass500;
     private int _uyaDestroyedClass500;
+    private int _uyaAuthoredClass5821;
+    private int _uyaAdmittedClass5821;
     private string _uyaGameplayStatus = "off";
     private void ResetUyaGameplay()
     {
@@ -36,6 +38,8 @@ public partial class OBPGame
         _uyaAuthoredClass500 = 0;
         _uyaAdmittedClass500 = 0;
         _uyaDestroyedClass500 = 0;
+        _uyaAuthoredClass5821 = 0;
+        _uyaAdmittedClass5821 = 0;
         _uyaGameplayStatus = "off";
     }
 
@@ -47,6 +51,7 @@ public partial class OBPGame
 
         _uyaMobyRuntime.RegisterWorld(world);
         _ = new UyaClass500DestructibleSession(_uyaMobyRuntime);
+        _ = new UyaClass5821DamageSession(_uyaMobyRuntime);
 
         int rejected = 0;
         int unpresented = 0;
@@ -80,11 +85,38 @@ public partial class OBPGame
             _uyaClass500Nodes.Add(node);
         }
 
+        int rejected5821 = 0;
+        foreach (var source in (world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
+            .Where(source => source.NativeClassId == UyaClass5821Actor.NativeClassId))
+        {
+            _uyaAuthoredClass5821++;
+            try
+            {
+                UyaClass5821AuthoredState authored =
+                    UyaClass5821Actor.ReadAuthored(source);
+                if (!UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored) ||
+                    !UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored))
+                {
+                    rejected5821++;
+                    continue;
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidDataException)
+            {
+                rejected5821++;
+                continue;
+            }
+
+            _uyaAdmittedClass5821++;
+        }
+
         _uyaGameplayStatus =
-            $"ready: {_uyaAdmittedClass500}/{_uyaAuthoredClass500} authored class-500 destructibles admitted";
+            $"ready: {_uyaAdmittedClass500}/{_uyaAuthoredClass500} class-500; " +
+            $"{_uyaAdmittedClass5821}/{_uyaAuthoredClass5821} class-5821 profiles admitted";
         GD.Print(
-            $"[uya-gameplay] {_uyaGameplayStatus}; {_uyaClass500Nodes.Count} presented, " +
-            $"{unpresented} unpresented, {rejected} rejected");
+            $"[uya-gameplay] {_uyaGameplayStatus}; {_uyaClass500Nodes.Count} class-500 presented, " +
+            $"{unpresented} unpresented, {rejected} class-500 rejected, " +
+            $"{rejected5821} class-5821 rejected");
     }
 
     private void ArmUyaGameplay(DebugPlayer player)
@@ -188,6 +220,8 @@ public partial class OBPGame
             $"UYA TABLE1 slice: X / west-face action uses temporary host contact; " +
             $"UYA-native class-500 damage/lifecycle\n" +
             $"class-500 authored {_uyaAuthoredClass500}, admitted {_uyaAdmittedClass500}, " +
-            $"presented live {live}, destroyed {_uyaDestroyedClass500}   {_uyaGameplayStatus}";
+            $"presented live {live}, destroyed {_uyaDestroyedClass500}\n" +
+            $"class-5821 profiles {_uyaAdmittedClass5821}/{_uyaAuthoredClass5821}; " +
+            $"runtime state/player consequence pending   {_uyaGameplayStatus}";
     }
 }

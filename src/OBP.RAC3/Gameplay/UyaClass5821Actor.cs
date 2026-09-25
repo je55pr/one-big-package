@@ -9,8 +9,9 @@ namespace OBP.RAC3.Gameplay;
 ///
 /// The native update owns a one-unit lifetime scalar, consumes UYA damage records
 /// through the common owned-record resolver, can acquire Ratchet through a PVar
-/// target pointer, and emits an exact state-25 damage record envelope. Native
-/// state timing and the UYA player-life consequence remain host-unimplemented.
+/// target pointer, and carries population-backed state-10 plus class-family
+/// state-25 damage emitters. Native state execution and the UYA player-life
+/// consequence remain host-unimplemented.
 /// </summary>
 public static class UyaClass5821Actor
 {
@@ -27,12 +28,44 @@ public static class UyaClass5821Actor
     public const int DamageConfigSameClassMultiplierOffset = 0x208;
     public const int DamageConfigOptionalMultiplierOffset = 0x20C;
     public const int RuntimeTargetPointerOffset = 0x230;
+    public const int NativeOrdinaryAttackDamageByteOffset = 0x44;
+    public const int NativeOrdinaryAttackFlagSelectorOffset = 0x5F;
 
     public const uint QueriedDamageMask = 0x00010000;
     public const byte NoLifetimeSubtractRecordKind = 10;
 
-    // TABLE1 state-25 outbound damage emitter at 0x00351D08.
+    // Population-backed TABLE1 state-10 spatial damage emitter.
+    public const byte NativeOrdinaryAttackState = 10;
+    public const float NativeOrdinaryAttackRadius = 0.5f;
+    public const float NativeOrdinaryAttackSpatialScalar = 0.75f;
+    public const float NativeOrdinaryAttackProgressLowerExclusive = 6f;
+    public const float NativeOrdinaryAttackProgressUpperExclusive = 10f;
+    public const byte NativeOrdinaryAttackRequiredMobyByte42 = 12;
+    public const uint NativeOrdinaryAttackFlagsWhenSelectorZero = 0x00000001;
+    public const uint NativeOrdinaryAttackFlagsWhenSelectorNonzero = 0x00010000;
+    public const byte NativeOrdinaryAttackRecordKind = 0;
+    public const byte NativeOrdinaryAttackRecordByte29 = 1;
+
+    // Class-family state-24 -> state-25 attack scheduler. The retained TABLE1
+    // live population has not yet proved eligibility for this subtype path.
+    public const byte NativeAttackWindupState = 24;
     public const byte NativeDamageEmitterState = 25;
+    public const byte NativeAttackFollowThroughState = 26;
+    public const int NativeAttackAccumulatorOffset = 0x300;
+    public const int NativeAttackQueryVerticalThresholdOffset = 0x328;
+    public const int NativeStateEntryFlagsOffset = 0xBE;
+    public const byte NativeStateEntrySetupMask = 0x01;
+    public const int NativeAttackWindupTicks = 33;
+    public static readonly float NativeAttackWindupInitial =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3D888889));
+    public static readonly float NativeAttackAccumulatorDelta =
+        BitConverter.Int32BitsToSingle(unchecked((int)0xBB888889));
+    public static readonly float NativeAttackWindupNormalizationSpan =
+        BitConverter.Int32BitsToSingle(unchecked((int)0x3E088889));
+    public const float NativeState25AccumulatorFloor = -1f;
+    public const float NativeState25QueryVerticalOffset = 0.5f;
+
+    // TABLE1 state-25 outbound damage emitter at 0x00351D08.
     public const float NativeDamageEmitterRadius = 0.5f;
     public const float NativeDamageEmitterDamage = 1f;
     public const uint NativeDamageEmitterFlags = 0x02000001;
@@ -78,7 +111,9 @@ public static class UyaClass5821Actor
             BinaryPrimitives.ReadSingleLittleEndian(
                 pvar.AsSpan(DamageConfigSameClassMultiplierOffset, sizeof(float))),
             BinaryPrimitives.ReadSingleLittleEndian(
-                pvar.AsSpan(DamageConfigOptionalMultiplierOffset, sizeof(float))));
+                pvar.AsSpan(DamageConfigOptionalMultiplierOffset, sizeof(float))),
+            pvar[NativeOrdinaryAttackDamageByteOffset],
+            pvar[NativeOrdinaryAttackFlagSelectorOffset]);
     }
 
     /// <summary>
@@ -96,6 +131,57 @@ public static class UyaClass5821Actor
         authored.DamageConfigSameClassMultiplier == 0f &&
         authored.DamageConfigOptionalMultiplier == 1f;
 
+    public static bool HasRecoveredTable1OrdinaryAttackProfile(
+        UyaClass5821AuthoredState authored) =>
+        authored.NativeOrdinaryAttackDamageByte == 1 &&
+        authored.NativeOrdinaryAttackFlagSelector == 0;
+
+    public static bool IsNativeState10EmitterWindow(
+        float actionProgress,
+        byte mobyByte42)
+    {
+        if (!float.IsFinite(actionProgress))
+            throw new ArgumentOutOfRangeException(nameof(actionProgress));
+
+        return actionProgress > NativeOrdinaryAttackProgressLowerExclusive &&
+               actionProgress < NativeOrdinaryAttackProgressUpperExclusive &&
+               mobyByte42 == NativeOrdinaryAttackRequiredMobyByte42;
+    }
+
+    public static UyaClass5821AttackDescriptor NativeState10Attack(
+        UyaClass5821AuthoredState authored)
+    {
+        if (!HasRecoveredTable1OrdinaryAttackProfile(authored))
+            throw new NotSupportedException(
+                "UYA class-5821 state-10 attack profile is not the recovered TABLE1 profile.");
+
+        uint flags = authored.NativeOrdinaryAttackFlagSelector == 0
+            ? NativeOrdinaryAttackFlagsWhenSelectorZero
+            : NativeOrdinaryAttackFlagsWhenSelectorNonzero;
+
+        return new UyaClass5821AttackDescriptor(
+            NativeOrdinaryAttackState,
+            NativeOrdinaryAttackRadius,
+            authored.NativeOrdinaryAttackDamageByte,
+            flags,
+            NativeOrdinaryAttackRecordKind,
+            NativeOrdinaryAttackRecordByte29,
+            NativeOrdinaryAttackSpatialScalar);
+    }
+
+    public static UyaGameplayDamageEvent NativeState10RatchetDamage(
+        UyaMobyRuntimeKey source,
+        UyaClass5821AuthoredState authored)
+    {
+        UyaClass5821AttackDescriptor attack = NativeState10Attack(authored);
+        return new UyaGameplayDamageEvent(
+            UyaGameplayEntityRef.Moby(source),
+            UyaGameplayEntityRef.Player,
+            nativeDamage: attack.Damage,
+            nativeDamageFlags: attack.Flags,
+            nativeRecordKind: attack.RecordKind);
+    }
+
     /// <summary>
     /// The class-5821 wrapper calls the common UYA resolver with mask 0x00010000.
     /// Record kind 10 follows the recovered no-lifetime-subtraction branch.
@@ -111,6 +197,56 @@ public static class UyaClass5821Actor
         nativeDamage <= float.MaxValue;
 
     /// <summary>
+    /// Replays one TABLE1 state-24 wind-up update from the class-owned
+    /// PVar+0x300 accumulator. The native code advances this once per class
+    /// update; no wall-clock cadence is inferred here.
+    /// </summary>
+    public static UyaClass5821WindupStep AdvanceNativeState24(
+        float accumulator)
+    {
+        if (!float.IsFinite(accumulator))
+            throw new ArgumentOutOfRangeException(nameof(accumulator));
+
+        float updated = accumulator + NativeAttackAccumulatorDelta;
+        float normalized =
+            1f -
+            ((updated + NativeAttackWindupInitial) /
+             NativeAttackWindupNormalizationSpan);
+
+        return new UyaClass5821WindupStep(
+            updated,
+            normalized,
+            normalized >= 1f
+                ? NativeDamageEmitterState
+                : NativeAttackWindupState);
+    }
+
+    public static bool NeedsNativeStateEntrySetup(byte mobyFlagsBe) =>
+        (mobyFlagsBe & NativeStateEntrySetupMask) == 0;
+
+    public static bool EmitsPopulationBackedNativeDamage(byte nativeState) =>
+        nativeState == NativeOrdinaryAttackState;
+
+    public static bool EmitsState25FamilyDamage(byte nativeState) =>
+        nativeState == NativeDamageEmitterState;
+
+    /// <summary>
+    /// State 25 compares the live Moby native Z coordinate with the scalar
+    /// returned by its spatial query and stored at PVar+0x328.
+    /// </summary>
+    public static bool ShouldEnterNativeState26(
+        float liveNativeZ,
+        float queryVerticalThreshold)
+    {
+        if (!float.IsFinite(liveNativeZ))
+            throw new ArgumentOutOfRangeException(nameof(liveNativeZ));
+        if (!float.IsFinite(queryVerticalThreshold))
+            throw new ArgumentOutOfRangeException(nameof(queryVerticalThreshold));
+
+        return liveNativeZ <= queryVerticalThreshold;
+    }
+
+    /// <summary>
     /// Exact outbound descriptor constructed by the TABLE1 state-25 handler.
     /// Spatial query execution and player consequence remain host-unimplemented.
     /// </summary>
@@ -121,7 +257,8 @@ public static class UyaClass5821Actor
             NativeDamageEmitterDamage,
             NativeDamageEmitterFlags,
             NativeDamageEmitterRecordKind,
-            NativeDamageEmitterRecordByte29);
+            NativeDamageEmitterRecordByte29,
+            1f);
 
     public static UyaGameplayDamageEvent NativeState25RatchetDamage(
         UyaMobyRuntimeKey source) =>
@@ -177,12 +314,19 @@ public sealed record UyaClass5821AuthoredState(
     float DamageConfigVerticalThreshold,
     byte DamageConfigByte49,
     float DamageConfigSameClassMultiplier,
-    float DamageConfigOptionalMultiplier);
+    float DamageConfigOptionalMultiplier,
+    byte NativeOrdinaryAttackDamageByte,
+    byte NativeOrdinaryAttackFlagSelector);
 
 public sealed record UyaClass5821NativeObservation(
     byte NativeState,
     double NativeLifetime,
     bool TargetsRatchet);
+
+public sealed record UyaClass5821WindupStep(
+    float Accumulator,
+    float NormalizedProgress,
+    byte NextNativeState);
 
 public sealed record UyaClass5821AttackDescriptor(
     byte NativeState,
@@ -190,7 +334,8 @@ public sealed record UyaClass5821AttackDescriptor(
     float Damage,
     uint Flags,
     byte RecordKind,
-    byte RecordByte29);
+    byte RecordByte29,
+    float SpatialScalar);
 
 public sealed record UyaClass5821DamageResult(
     UyaClass5821AuthoredState Authored,

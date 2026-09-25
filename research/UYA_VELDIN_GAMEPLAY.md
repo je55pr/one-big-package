@@ -249,30 +249,66 @@ mutation only. A lethal result is deliberately **not** presentation-terminalized
 immediately because the subsequent native reaction/death state progression is
 still class-update-owned.
 
-Outbound hostility is also directly established. The 26-entry class-5821 jump
-table maps **native state 25** to `0x00351B34`. Its emitter at `0x00351D08`
-builds a UYA damage descriptor with radius **0.5**, damage **1.0**, flags
-**`0x02000001`**, record kind **0**, and descriptor byte `+0x29 = 1`.
-The shared spatial routine `0x003FB1D0` allocates/merges the same native
-damage records and writes victim Moby `+0xA8`. After a nonzero emitter result,
-the class reads the shared selected-Moby pointer and compares it directly with
-Ratchet's live pointer; equality enters a Ratchet-specific branch and writes
-`60` to player-global `+0x1DE`. `UyaClass5821Actor` therefore exposes
-the exact state-25 attack descriptor and Ratchet damage event. Host attack
-timing/spatial execution and the UYA player-life consequence remain
-unimplemented rather than being borrowed from R&C1 Nanotech.
+Outbound damage has two distinct native paths and they must not be conflated.
 
-A prior controlled forward-input attempt was rejected after visual capture
-showed Ratchet had left the intended ground line; no teleport or memory write
-was used as evidence.
+The **TABLE1-population-backed path is native state 10** at `0x003510F0`.
+All 62 authored class-5821 PVars have byte `+0x44 = 1` and byte
+`+0x5F = 0`. State 10 converts `+0x44` to the damage scalar and the
+zero `+0x5F` branch selects flags **`0x00000001`**. Wrapper
+`0x00443790` preserves those arguments into the common spatial emitter
+`0x00443648`, giving radius **0.5**, damage **1.0**, flags
+**`0x00000001`**, record kind **0**, descriptor byte `+0x29 = 1`, and
+an additional spatial scalar **0.75**. The emitter runs only while
+`0x00436500`'s native action-progress result satisfies **`6 < progress <
+10`** and live Moby byte `+0x42 == 12`. State 8 contains a direct route
+into state 10: the target-position separation scalar must be below `1.0`,
+then the wrapped target-heading error must be below
+`0x3EDF66F3 = 0.4363323 rad` (25 degrees). State 8 also has independent
+global/contact branches, so OBP does not collapse its whole transition law to
+those two comparisons alone. `UyaClass5821Actor` exposes the exact state-10
+TABLE1 attack descriptor and engine-neutral Ratchet damage event, but transport
+still applies no player-life consequence.
+
+A second **class-family** emitter exists in state 25. State 24 initializes
+PVar `+0x300` to float bits `0x3D888889`, advances it each native update
+by live TABLE1 `gp+0xC60 = 0xBB888889` (about `-1/240`), and normalizes
+against `0x3E088889`. Direct single-precision replay matters: after 32
+updates progress is `0x3F7FFFFF`, just below one, so state 25 is entered on
+the **33rd native update**, not the ideal-fraction 32nd. The state-entry helper
+`0x00452EC8` is a one-shot Moby `+0xBE` bit-0 setter. State 25 emits on
+each update with radius **0.5**, damage **1.0**, flags **`0x02000001`**,
+kind **0**, and byte `+0x29 = 1`; it exits to state 26 when live native Z is
+at or below the query-produced scalar stored at PVar `+0x328`.
+`0x00443140` produces that scalar from a spatial query with vertical offset
+0.5, returning zero on no hit and otherwise the shared query result at
+`0x001EAAA8`.
+
+However, the state-24 entry path is gated by live Moby `+0x95 == 9`.
+The retained clean TABLE1 state has 58 resident class-5821 Mobies with
+`+0x95` values only **0 (54), 4 (3), and 1 (1)**; none is 9. The four
+nonresident authored instances 432-435 do not supply a live subtype witness.
+Therefore state 25 remains valid class-family code but is **not** promoted as
+ordinary TABLE1 population behavior.
+
+The state-25 emitter's nonzero-result branch still directly compares the shared
+selected-Moby pointer with Ratchet's live pointer and writes `60` to
+player-global `+0x1DE` on equality. The meaning and downstream player-life
+effect of that field remain unrecovered. A g007-owned clean-state visual capture
+confirmed live Veldin before a bounded ordinary forward-input trace. That trace
+showed no class-5821 state transitions, and its post-run game frame was black,
+so the approach run is explicitly rejected as behavior evidence. No teleport or
+memory write was used; the clean state was reloaded afterward.
 
 ## Live host integration
 
 The generic provider/world path now configures a UYA gameplay session whenever
 an interactive `rac3` world is adopted. It registers the complete authored Moby
-population, installs only the recovered exact-class 500 damage consumer, and
-binds the 131 admitted TABLE1 class-500 instances back to their normal
-`RuntimeWorldScene` presentation nodes.
+population, installs the recovered exact-class 500 and 5821 incoming-damage
+consumers, and audits the TABLE1 class-5821 authored profile without starting a
+synthetic AI loop. The 131 admitted class-500 instances remain bound to their
+normal `RuntimeWorldScene` presentation nodes; all 62 class-5821 instances are
+runtime-admitted only when both their incoming-damage and population-backed
+state-10 attack profiles match the retail census.
 
 The temporary non-R&C1 player action supplies only a short-range host
 aim/contact envelope. Its event uses `flags=0x00000001` and positive damage,
@@ -282,9 +318,11 @@ runtime owns the state-1 -> state-3 break decision and native deactivation route
 and the host only applies the resulting neutral inactive presentation state.
 
 An ordinary `rac3:TABLE1` Godot movement smoke from the authored ship point
-confirmed 131/131 class-500 instances admitted and presented, zero rejected,
-normal collision grounding, and the existing temporary R&C1 locomotion path.
-No witness object, teleport, or hand-authored crate was used.
+now confirms **131/131 class-500** instances admitted and presented plus
+**62/62 class-5821** runtime profiles admitted with zero class-5821 rejects.
+The same run passes normal collision grounding and the existing temporary R&C1
+locomotion path. It does not synthesize 5821 AI or player damage. No witness
+object, teleport, or hand-authored crate was used.
 
 ## Next recovery boundary
 
@@ -295,9 +333,10 @@ available. The selector, spawn identity, increment amount and add/clamp law are
 now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
-In parallel, continue class 5821 from the now-recovered bidirectional damage
-boundary. Recover the native state-25 scheduling/contact facts and the UYA player
-life consequence for its 1.0 / 0x02000001 / kind-0 Ratchet damage record, then
+In parallel, continue class 5821 from the population-backed state-10 boundary.
+Recover enough of state 8's remaining target/contact branches to execute the
+native state-8 -> state-10 attack transition for the authored TABLE1 population,
+and recover the UYA player-life consequence for its damage records. Separately,
 recover the post-lethal reaction progression after lifetime reaches non-positive.
-Only those source-native pieces should drive an all-62-instance live hostile
-controller; R&C1 Nanotech or guessed host attack timers must not substitute.
+State 25 must remain a subtype-family branch until TABLE1 eligibility is witnessed.
+R&C1 Nanotech, guessed cooldowns, or a synthetic subtype must not substitute.
