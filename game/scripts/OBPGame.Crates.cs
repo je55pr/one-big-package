@@ -54,6 +54,7 @@ public partial class OBPGame
         public GcAranosOpeningLiftSession Lift { get; } = lift;
         public bool CarryingPlayer { get; set; }
         public float RiderOffsetY { get; set; }
+        public bool ReachedUpperLogged { get; set; }
     }
 
     private sealed class GcOpeningDoorHostSession(
@@ -386,10 +387,7 @@ public partial class OBPGame
             // x=-2.785..2.715 and z=-2.951..6.778. A small margin accounts for
             // Ratchet's capsule and keeps the trigger tied to the actual platform.
             Vector3 local = session.Node.Root.ToLocal(_player.GlobalPosition);
-            bool riderPresent =
-                local.X >= -3.15f && local.X <= 3.08f &&
-                local.Z >= -3.32f && local.Z <= 7.15f &&
-                local.Y >= -0.65f && local.Y <= 3.25f;
+            bool riderPresent = IsGcOpeningLiftRiderOnPlatform(local);
             if (session.Lift.TryBeginRise(riderPresent))
             {
                 session.CarryingPlayer = true;
@@ -399,31 +397,48 @@ public partial class OBPGame
         }
 
         var step = session.Lift.AdvanceNativeTick();
-        if (Math.Abs(step.DeltaNativeZ) <= double.Epsilon)
+        if (Math.Abs(step.DeltaNativeZ) > double.Epsilon)
         {
-            return;
+            Transform3D sceneTransform = session.Node.Root.Transform;
+            Vector3 origin = sceneTransform.Origin;
+            origin.Y += (float)step.DeltaNativeZ;
+            sceneTransform.Origin = origin;
+            session.Node.ApplyState(session.Node.State.WithTransform(
+                RuntimeWorldScene.ToRuntimeTransform(sceneTransform)));
         }
-
-        Transform3D sceneTransform = session.Node.Root.Transform;
-        Vector3 origin = sceneTransform.Origin;
-        origin.Y += (float)step.DeltaNativeZ;
-        sceneTransform.Origin = origin;
-        session.Node.ApplyState(session.Node.State.WithTransform(
-            RuntimeWorldScene.ToRuntimeTransform(sceneTransform)));
 
         if (session.CarryingPlayer)
         {
             Vector3 playerPosition = _player.GlobalPosition;
-            playerPosition.Y = origin.Y + session.RiderOffsetY;
+            playerPosition.Y = session.Node.Root.GlobalPosition.Y + session.RiderOffsetY;
             _player.GlobalPosition = playerPosition;
+
+            // The dynamic lift currently has no Godot physics collider. Preserve
+            // platform support at the recovered upper stop until Ratchet
+            // actually walks off the authored platform footprint toward the
+            // class-2755 door, rather than dropping him through the lift.
+            if (step.Phase == GcAranosOpeningLiftPhase.UpperIdle)
+            {
+                Vector3 local = session.Node.Root.ToLocal(_player.GlobalPosition);
+                if (!IsGcOpeningLiftRiderOnPlatform(local))
+                {
+                    session.CarryingPlayer = false;
+                    GD.Print("[gc-lift] opening class-2753 rider left upper platform");
+                }
+            }
         }
 
-        if (step.Phase == GcAranosOpeningLiftPhase.UpperIdle)
+        if (step.Phase == GcAranosOpeningLiftPhase.UpperIdle && !session.ReachedUpperLogged)
         {
-            session.CarryingPlayer = false;
+            session.ReachedUpperLogged = true;
             GD.Print($"[gc-lift] opening class-2753 ride reached native Z={step.NativeZ:0.###}");
         }
     }
+
+    private static bool IsGcOpeningLiftRiderOnPlatform(Vector3 local) =>
+        local.X >= -3.15f && local.X <= 3.08f &&
+        local.Z >= -3.32f && local.Z <= 7.15f &&
+        local.Y >= -0.65f && local.Y <= 3.25f;
 
     private void TickGcOpeningDoorNativeTick()
     {

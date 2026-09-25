@@ -297,7 +297,16 @@ Working now:
 - opening MSR I joint contacts are collapsed at the shared-collision boundary to
   at most one player damage record per native attack cycle;
 - opening class-2755 instance 166 now uses the retail strict-6-unit proximity
-  trigger, 60-tick sequence-1 opening clock, and sequence-2 latched-open pose.
+  trigger, 60-tick sequence-1 opening clock, and sequence-2 latched-open pose;
+- an ordinary Godot browser smoke from the authored Aranos start now validates
+  the route through the lower lift and first door without teleporting/noclip.
+  The generic +8-unit initial ground snap previously placed Ratchet on overhead
+  prison collision at scene Y~58.5. LEVEL0 now narrows only that startup probe,
+  landing on the intended lower floor at Y=49.971. From there ordinary movement
+  triggers class 2753 at native Z=50.031, carries Ratchet to scene Y~100, admits
+  the class-2755 door at measured distance 5.994 (<6), and latches it open in
+  native state 2. The next live obstruction is on the upper route near scene
+  Z~205 before the first MSR I pair at Z~232.607.
 
 Still required for the goal:
 
@@ -306,12 +315,13 @@ Still required for the goal:
 - establish any additional opening trigger/gate/checkpoint behavior beyond the
   first class-2755 door that still blocks the ordinary route;
 - replace or further bound the showcase Bolt reward assumptions where needed;
-- add an honest ordinary-route Aranos gameplay smoke;
+- extend the honest ordinary-route browser smoke from the now-validated lift
+  and first door through the remaining upper-route obstruction to the live
+  205/206 encounter;
 - complete the human-playable Jess signoff and document failures verbatim.
 
-The next smallest slice is an ordinary browser smoke through the recovered lift
-and class-2755 door to the now-live 205/206 encounter without teleporting. Any
-additional blocker encountered on that route should then be recovered from its
-own LEVEL0 authority. Later class-2827 activation can be widened only where route
-evidence supports it; the opening witness must not become a fabricated global
-aggro rule.
+The next smallest slice is the upper-route blocker immediately after the
+recovered lift/door checkpoint. Recover it from LEVEL0 authority, then continue
+the same ordinary browser smoke to instances 205/206 without teleporting.
+Later class-2827 activation can be widened only where route evidence supports it;
+the opening witness must not become a fabricated global aggro rule.

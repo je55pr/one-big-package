@@ -810,6 +810,14 @@ public partial class OBPGame : Node3D
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
             UseRac1Gameplay = world.Game == "rac1",
+            // Aranos LEVEL0's authored class-0 start (native Z 49.89) sits
+            // beneath valid overhead prison collision around scene Y 58.5.
+            // Keep the generic 8-unit snap everywhere else, but prevent the
+            // Aranos authored start from snapping upward onto that roof.
+            InitialGroundSnapUpwardReach =
+                world.Game == "rac2" && world.LevelId == 0 && world.PlayerStart is not null
+                    ? 0.75f
+                    : 8f,
             // OBP deliberately reuses the retail-derived R&C1 controller in
             // all supported trilogy worlds; seed its facing from the authored
             // host spawn heading regardless of source game.
