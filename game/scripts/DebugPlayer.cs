@@ -72,7 +72,7 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Current native planar target step after analogue conditioning.</summary>
     public double Rac1TargetPlanarStep => _rac1Movement.TargetPlanarStep;
 
-    /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
+    /// <summary>Ordinary non-R&C1 primary attack input; the source-game host resolves consequences.</summary>
     public event Action? CrateStrikeRequested;
 
     /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host resolves the equipped item.</summary>

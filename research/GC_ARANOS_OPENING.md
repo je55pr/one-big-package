@@ -1,0 +1,149 @@
+# Going Commando Aranos opening gameplay
+
+**Target:** `rac2:LEVEL0` — Aranos opening slice
+**Authority:** `rac2-ntscu-v1.01` / `SCUS-97268`
+**Retail ISO SHA-256:** `9db2e33e276133cc283647fa3279b37911955e123d6199d10065547eaa9b1ce5`
+
+This note records only evidence relevant to making the ordinary LEVEL0 opening
+playable. It does not assign gameplay identities to unresolved classes.
+
+## Baseline audit
+
+The existing GC provider already reconstructs Aranos through the ordinary
+`GcWorldImport` path:
+
+- unchunked tfrag terrain and decoded textures;
+- TIE and shrub classes plus authored placements;
+- octree collision from the level core;
+- level atmosphere/death height and the settings ship tuple;
+- authored Moby geometry/placement in the static render path;
+- class-500 Mobies as individually preserved `RuntimeDynamicObject` values.
+
+The LEVEL0 retail baseline currently contains 43 authored class-500 instances.
+Before this goal, class 500 was the only GC class lifted into the per-instance
+gameplay path; other Aranos Mobies remained welded/static except for the existing
+bounded animation preview.
+
+The old GC crate interaction host was also a development harness: primary input
+fed a synthetic `flags=1, hp=1` event into the recovered class-500 predicate.
+It did not transport the retail player damage tuple.
+
+## Authored player start
+
+LEVEL0 level settings contain ship position `(20,20,20)` and yaw `0`.
+That tuple is also present on several special/non-planet retail levels and is not
+Ratchet's Aranos opening placement.
+
+Across all 27 retail GC level files, gameplay data contains exactly one
+`oClass == 0` Moby and it is always authored instance index 0. On LEVEL0:
+
+- instance index: `0`
+- UID: `0`
+- native position: `(247, 194, 49.89)`
+- native Z yaw: `pi/2`
+
+The importer therefore now projects that unique class-0 placement to
+`RuntimeWorld.PlayerStart` as OBP Y-up `(247, 49.89, 194)`, yaw `pi/2`.
+The settings tuple remains separately preserved as `RuntimeWorld.Ship`.
+`RuntimeWorld.PreferredPlayerStart` consequently selects the authored class-0
+entry without erasing ship metadata.
+
+Pinned public Wrench data independently labels GC class 0 as Ratchet. That is
+corroboration only; the production rule is established from the all-level retail
+placement invariant and is covered by authority tests.
+
+## Aranos class-500 crate family
+
+LEVEL0's loadable overlay has the normal GC section family, including
+`lvl.vtbl` at `0x002A2E80` and `.text` at `0x002A3B80`.
+The Aranos vtable resolves classes 500, 501 and 511 to the same loaded update:
+
+`0x0039B440`
+
+The class-500 update independently reproduces the previously recovered crate
+contract on Aranos itself:
+
+- Moby `+0x68` supplies the PVar pointer;
+- Moby `+0x20` dispatches seven states `0..6`;
+- the event query constructs mask `0x05830001` and calls loaded helper
+  `0x0031CA70`;
+- returned event record `+0x24` is rejected when exactly `0x01000000`;
+- state 1 reads record `+0x2C` and admits the break only when it is positive;
+- the class-family code tests the expected 500/501/502/505/511/512 numeric ids;
+- the recovered break helper later writes native state 3 and timer 15.
+
+All 43 authored Aranos class-500 PVars are `0x110` bytes and the retail census
+has `PVar+C8 == 0` and `PVar+CC == 0` for every instance. Sampled authored bolt
+fields are 58.
+
+The host now publishes the exact recovered GC player state-20 tuple through
+`GcDamageTransportSession` and lets RAC2 class-local logic decide the class-500
+consequence. The old synthetic `flags=1/hp=1` ordinary strike is gone. Optional
+crate-focus tooling remains a development targeting aid and is not required for
+normal aim-based acquisition.
+
+The existing physical Bolt payout presentation is still explicitly incomplete:
+selector/progression/RNG session inputs are deterministic host choices within
+recovered native domains, and the visible pickups are placeholder orbs. Do not
+cite that presentation as recovered native scatter/magnet/effect behaviour.
+
+## Opening authored population
+
+Distances below are from the authored class-0 player start and are used only to
+prioritize archaeology, not to infer identity:
+
+| oClass | authored count | nearest distance | PVar bytes | mesh tris | sequences |
+|---:|---:|---:|---:|---:|---:|
+| 2759 | 3 | 7.52 | 32 | 500 | 0 |
+| 2753 | 1 | 8.94 | 192 | 961 | 0 |
+| 2779 | 9 | 31.60 | 48 | 1296 | 0 |
+| 2612 | 18 | 40.01 | 0 | 146 | 1 |
+| 2755 | 10 | 52.92 | 0 | 120 | 4 |
+| 2549 | 9 | 53.73 | 0 | 296 | 1 |
+| 500 | 43 | 53.73 | 272 | 113 | 0 |
+| 2827 | 31 | 66.48 | 1584 | 2761 | 28 |
+| 511 | 10 | 79.43 | 272 | 113 | 0 |
+| 4858 | 18 | 80.82 | 16 | 660 | 0 |
+| 2826 | 14 | 93.79 | 1232 | 2988 | 29 |
+| 2460 | 13 | 137.40 | 912 | 1133 | 6 |
+| 2754 | 1 | 144.00 | 176 | 1417 | 3 |
+
+Later Insomniac-family public class tables attach suggestive names to several of
+these numbers. Those names are not GC authority and are retained only as search
+leads. Production identities remain unknown until matched to GC retail behaviour.
+
+LEVEL0 `lvl.vtbl` provides bounded update addresses for the next archaeology
+slice, including 2754 `0x003CE278`, 2755 `0x003CEC50`, 2826
+`0x003D54B0`, and 2827 `0x003D7BD0`.
+
+Class 2755's small loaded update is already structurally informative: state 0
+checks a helper result against 6.0 before entering state 1; state 1 checks Moby
+byte `+0x60` bit 1 before entering state 2. That is not yet enough evidence to
+call the class an enemy or to reproduce its behaviour.
+
+## Current playable boundary
+
+Working now:
+
+- normal GC provider loading, geometry and collision on Aranos;
+- authored class-0 player entry instead of the settings sentinel;
+- 43 authored class-500 objects with preserved identity, placement and PVars;
+- GC-local sequenced event/damage transport;
+- ordinary non-RAC1 primary input can target an authored visible class-500 and
+  feed it the recovered player state-20 event tuple;
+- the recovered Aranos class-500 break predicate and zero-C8 lifetime projection.
+
+Still required for the goal:
+
+- identify and promote the first naturally encountered hostile family;
+- recover its activation, health/damage, movement/attack and terminalisation;
+- recover GC player damage/Nanotech semantics required by that encounter;
+- establish any opening door/trigger/gate/checkpoint behaviour that blocks the
+  ordinary route;
+- replace or further bound the showcase Bolt reward assumptions where needed;
+- add an honest ordinary-route Aranos gameplay smoke;
+- complete the human-playable Jess signoff and document failures verbatim.
+
+The next smallest slice is retail recovery of the first opening-route hostile
+family from the LEVEL0 vtable/text plus its authored placement/PVars, without
+broadening into native GC locomotion.

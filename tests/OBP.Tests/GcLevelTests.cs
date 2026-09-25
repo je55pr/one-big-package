@@ -728,7 +728,40 @@ public class GcLevelTests
 
         Assert.NotNull(world.Environment);
         Assert.Equal(0f, world.Environment!.DeathHeight);
+
+        // LEVEL0's settings ship tuple is the repeated native default (20,20,20,0),
+        // not Ratchet's opening placement. The unique authored class-0 Moby at
+        // gameplay instance 0 is the player entry: native (247,194,49.89), yaw pi/2.
+        Assert.NotNull(world.Ship);
+        Assert.Equal((20d, 20d, 20d, 0d),
+            (world.Ship!.X, world.Ship.Y, world.Ship.Z, world.Ship.Yaw));
+        Assert.NotNull(world.PlayerStart);
+        Assert.Equal(247d, world.PlayerStart!.X, 6);
+        Assert.Equal(49.89d, world.PlayerStart.Y, 5);
+        Assert.Equal(194d, world.PlayerStart.Z, 6);
+        Assert.Equal(Math.PI / 2d, world.PlayerStart.Yaw, 6);
+        Assert.Same(world.PlayerStart, world.PreferredPlayerStart);
     }
+
+    [SkippableFact]
+    public void EveryRetailLevelHasOneAuthoredClassZeroPlayerSeedAtInstanceZero()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        using var reader = new FileRandomAccessReader(iso!);
+        var fs = Iso9660Filesystem.Open(reader);
+        for (int level = 0; level <= 26; level++)
+        {
+            var wad = fs.OpenFile($"/G/LEVEL{level}.WAD")
+                ?? throw new FileNotFoundException($"/G/LEVEL{level}.WAD");
+            var header = GcLevelWad.ReadHeader(wad);
+            var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
+            var start = Assert.Single(gameplay.MobyInstances, moby => moby.OClass == 0);
+            Assert.Equal(0, start.Index);
+        }
+    }
+
     private static uint Word(byte[] bytes)
     {
         if (bytes.Length != sizeof(uint))

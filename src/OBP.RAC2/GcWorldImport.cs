@@ -151,6 +151,7 @@ public static class GcWorldImport
 
         // --- tie / shrub / moby instances ---
         var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
+        var authoredPlayerStart = BuildAuthoredPlayerStart(gameplay);
         var mobyClasses = GcMobyClasses.Read(Core());
 
         CollectTextures("tie", GcLevelTextures.Table.Tie);
@@ -459,8 +460,32 @@ public static class GcWorldImport
             Lighting: lighting,
             AnimatedMeshes: animatedMeshes,
             DynamicObjects: dynamicObjects,
+            PlayerStart: authoredPlayerStart,
             LevelAudio: levelAudio,
             RepresentativeAudioOneShot: representativeOneShot);
+    }
+
+    /// <summary>
+    /// Resolve the unique authored class-0 placement as Ratchet's level entry.
+    /// The GC authority set carries exactly one class-0 instance at index 0 in
+    /// every observed level. This remains distinct from the level-settings ship
+    /// tuple, which is the repeated (20,20,20,0) default on Aranos and several
+    /// non-planet/special destinations.
+    /// </summary>
+    private static RuntimeSpawn? BuildAuthoredPlayerStart(GcInstances.Gameplay gameplay)
+    {
+        var starts = gameplay.MobyInstances.Where(instance => instance.OClass == 0).ToArray();
+        if (starts.Length != 1)
+        {
+            return null;
+        }
+
+        var start = starts[0];
+        return new RuntimeSpawn(
+            start.Position.X,
+            start.Position.Z,
+            start.Position.Y,
+            start.Rotation.Z);
     }
 
     /// <summary>

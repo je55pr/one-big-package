@@ -6,15 +6,14 @@ using OBP.Runtime;
 namespace OneBigPackage;
 
 /// <summary>
-/// Development-only GC crate interaction harness. Target acquisition is a host
-/// convenience; the actual class-500 break decision is delegated to the
-/// retail-backed RAC2 gameplay rule.
+/// GC class-500 host integration. Ordinary primary attack input resolves an
+/// authored aimed crate, transports the recovered state-20 damage tuple, and
+/// delegates the native break/lifetime decision to the RAC2 gameplay runtime.
+/// Debug focus remains an optional development targeting aid only.
 /// </summary>
 public partial class OBPGame
 {
-    private const uint DebugCrateEventFlags = 0x00000001;
-    private const float DebugCrateEventScalar = 1f;
-
+    private GcDamageTransportSession _gcDamageTransport = new();
     private RuntimeWorldScene.DynamicObjectNode? _crateDebugTarget;
     private string _crateDebugStatus = "off";
     private byte? _crateDebugPvarC8;
@@ -32,6 +31,7 @@ public partial class OBPGame
         _crateDebugPvarC8 = null;
         _crateDebugRoute = null;
         _crateDebugBroken = false;
+        _gcDamageTransport = new GcDamageTransportSession();
         _crateBoltSession = new GcFreshBoltSession();
         _crateRewardStatus = "off";
     }
@@ -65,15 +65,15 @@ public partial class OBPGame
             return;
         }
 
-        player.CrateStrikeRequested += OnDebugCrateStrikeRequested;
+        player.CrateStrikeRequested += OnGcPrimaryAttackRequested;
         if (_args.CrateAutoStrike && _crateDebugTarget is { } target)
         {
-            ApplyDebugCrateStrike(target, "auto");
+            ApplyGcClass500Strike(target, "auto");
         }
     }
-    private void OnDebugCrateStrikeRequested()
+    private void OnGcPrimaryAttackRequested()
     {
-        var target = SelectDebugCrateFromAim();
+        var target = SelectGcClass500FromAim();
         if (target is null)
         {
             _crateDebugStatus = "strike: no aimed class-500 crate";
@@ -81,10 +81,10 @@ public partial class OBPGame
             return;
         }
 
-        ApplyDebugCrateStrike(target, "manual");
+        ApplyGcClass500Strike(target, "primary");
     }
 
-    private RuntimeWorldScene.DynamicObjectNode? SelectDebugCrateFromAim()
+    private RuntimeWorldScene.DynamicObjectNode? SelectGcClass500FromAim()
     {
         if (CrateDebugRequested && _crateDebugTarget is { } focused
             && IsInstanceValid(focused.Root) && focused.Root.Visible)
@@ -132,22 +132,30 @@ public partial class OBPGame
 
         return best;
     }
-    private void ApplyDebugCrateStrike(RuntimeWorldScene.DynamicObjectNode target, string source)
+    private void ApplyGcClass500Strike(RuntimeWorldScene.DynamicObjectNode target, string source)
     {
-        if (!GcCrateInteraction.ShouldBreakClass500(DebugCrateEventFlags, DebugCrateEventScalar))
-        {
-            throw new InvalidOperationException("The deterministic debug event no longer satisfies the recovered class-500 predicate.");
-        }
+        var damageEvent = GcDamageRuntime.FromPlayerState20(target.Source);
+        var dispatch = _gcDamageTransport.Publish(damageEvent);
 
-        GcClass500LifecycleResult lifecycle;
+        GcClass500LifecycleResult? lifecycle;
         try
         {
-            lifecycle = GcClass500Lifecycle.ApplyRecoveredBreak(target.Source, target.State);
+            lifecycle = GcDamageRuntime.ApplyClass500Consequence(
+                target.Source,
+                target.State,
+                damageEvent);
         }
         catch (InvalidDataException ex)
         {
             _crateDebugStatus = "strike: target has no usable class-500 authority state";
             GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: {ex.Message}");
+            return;
+        }
+
+        if (lifecycle is null)
+        {
+            _crateDebugStatus = $"{source}: recovered damage was not admitted";
+            GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId}: no class-500 consequence");
             return;
         }
 
@@ -162,9 +170,9 @@ public partial class OBPGame
         GcClass500Payout payout;
         try
         {
-            // Harness inputs are explicit deterministic choices within recovered
-            // native domains, not claims about arbitrary retail save state. A
-            // multiplier byte of zero is the neutral native case via max(1, byte).
+            // Reward-session inputs are explicit deterministic choices within
+            // recovered native domains, not claims about arbitrary retail save
+            // state. Multiplier zero is neutral via native max(1, byte).
             payout = _crateBoltSession.PlanClass500Payout(
                 authored.Uid, authored.AuthoredBolts, rewardMultiplierByte: 0,
                 progressionLikeInput: 0, rngMod2: 1);
@@ -189,7 +197,8 @@ public partial class OBPGame
         {
             _crateDebugBroken = true;
         }
-        GD.Print($"[crate-debug] {target.Source.InteractionId} event=0x{DebugCrateEventFlags:X8}/{DebugCrateEventScalar:0.###} " +
+        GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
+                 $"state20 flags=0x{damageEvent.Damage.DamageFlags:X8} hp={damageEvent.Damage.DamageHp:0.###} " +
                  $"PVar+C8={c8} => state {GcCrateInteraction.BreakTransitionState} -> {route}");
     }
 
@@ -248,8 +257,8 @@ public partial class OBPGame
             Visible: target is { } t && IsInstanceValid(t.Root) && t.Root.Visible,
             Broken: _crateDebugBroken,
             Status: _crateDebugStatus,
-            EventFlags: $"0x{DebugCrateEventFlags:X8}",
-            EventScalar: DebugCrateEventScalar,
+            EventFlags: $"0x{GcPlayerAttackDamage.State20.DamageFlags:X8}",
+            EventScalar: GcPlayerAttackDamage.State20.DamageHp,
             PvarC8: _crateDebugPvarC8,
             Route: _crateDebugRoute,
             RewardStatus: _crateRewardStatus,
