@@ -149,6 +149,20 @@ state 12 resolves to `0x003D90A0`, state 13 to `0x003D92FC`, and state 14 to
 `0x003D95EC`. The first four route-local MSR I instances are authored with
 PVar `+0x27C == 1`; the full family census is 11 mode-1 and 20 mode-0 instances.
 
+GC helper `0x0031A658` is the native Moby state-transition primitive, not an
+animation helper. It writes the new state to Moby `+0x20`, preserves the old
+state at `+0x94`, resets the 16-bit state timer at `+0x96`, and replaces
+transition mode `+0x95` unless the caller passes `-1`. The common update
+saturates that timer at `0xFFFF`. OBP now preserves this bookkeeping through
+`GcNativeStateSession` instead of parallel host-only state flags.
+
+For authored mode-1 class-2827 instances, LEVEL0 initialization calls the helper
+with state `3` and transition mode `2`. Transition mode 2 is a separate
+pre-dispatch combat/damage lane: it services target/damage bookkeeping, queries
+mask `0x00010000`, applies the 15-tick hit cooldown, and on lethal HP calls the
+same transition helper with native state `15` and transition mode `5`.
+It is therefore not evidence for a fabricated proximity aggro radius.
+
 State 12 provides a bounded attack-admission contract: it measures distance to
 the current target, requires `< 2.8`, computes wrapped absolute yaw error through
 helper `0x002EF1E0`, and requires that error below `0x3E567751` radians

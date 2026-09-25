@@ -14,8 +14,12 @@ public sealed class GcClass2827HostileSession
     public const uint DamageQueryMask = 0x00010000;
     public const short HitCooldownTicks = 15;
     public const int OpeningRoomAuthoredMode = 1;
+    public const int OpeningRoomInitialNativeState = 3;
+    public const int OpeningRoomInitialTransitionMode = 2;
     public const int ChaseNativeState = 12;
     public const int AttackNativeState = 13;
+    public const int DeathNativeState = 15;
+    public const int DeathTransitionMode = 5;
     public const int AttackSequence16 = 0x10;
     public const int AttackSequence27 = 0x1B;
     public const float AttackContactFrameStart = 19f;
@@ -30,6 +34,7 @@ public sealed class GcClass2827HostileSession
     private float _health;
     private short _cooldown;
     private readonly float _attackContactExtent;
+    private readonly GcNativeStateSession? _nativeState;
 
     private static readonly (int JointIndex, float Radius)[] AttackVolumeGeometry =
     [
@@ -51,6 +56,11 @@ public sealed class GcClass2827HostileSession
         _health = authored.Health;
         _cooldown = authored.HitCooldownTicks;
         _attackContactExtent = authored.AttackContactExtent;
+        _nativeState = authored.AuthoredMode == OpeningRoomAuthoredMode
+            ? new GcNativeStateSession(
+                OpeningRoomInitialNativeState,
+                OpeningRoomInitialTransitionMode)
+            : null;
     }
 
     public float Health => _health;
@@ -58,12 +68,25 @@ public sealed class GcClass2827HostileSession
     public bool IsTerminal => _entityState.Presentation.Presence == RuntimeEntityPresence.Inactive;
     public RuntimeEntityState EntityState => _entityState;
     public float AttackContactExtent => _attackContactExtent;
+    public GcNativeStateSession? NativeState => _nativeState;
 
     public static bool ShouldEnterAttack(double distance, double facingError) =>
         double.IsFinite(distance) && distance >= 0d &&
         double.IsFinite(facingError) &&
         distance < AttackEntryDistanceExclusive &&
         Math.Abs(facingError) < AttackFacingErrorExclusive;
+
+    public bool TryEnterAttack(double distance, double facingError)
+    {
+        if (_nativeState?.CurrentState != ChaseNativeState ||
+            !ShouldEnterAttack(distance, facingError))
+        {
+            return false;
+        }
+
+        _nativeState.Transition(AttackNativeState);
+        return true;
+    }
 
     public GcClass2827AttackProbe ProbeAttackContact(int nativeSequence, float nativeFrame)
     {
@@ -101,6 +124,7 @@ public sealed class GcClass2827HostileSession
         _cooldown = HitCooldownTicks;
         if (_health <= 0f)
         {
+            _nativeState?.Transition(DeathNativeState, DeathTransitionMode);
             _entityState = _entityState.WithPresence(RuntimeEntityPresence.Inactive);
         }
 
@@ -112,6 +136,9 @@ public sealed class GcClass2827HostileSession
         ArgumentOutOfRangeException.ThrowIfNegative(ticks);
         _cooldown = (short)Math.Max(0, _cooldown - ticks);
     }
+
+    public ushort AdvanceNativeStateTicks(int ticks = 1) =>
+        _nativeState?.AdvanceTicks(ticks) ?? 0;
 
     private GcClass2827DamageResult Snapshot(bool admitted) =>
         new(_health, _cooldown, admitted, IsTerminal, _entityState);

@@ -19,6 +19,16 @@ public sealed class GcClass2827HostileTests
         Assert.Equal(1f, authored.AttackContactExtent);
         Assert.Equal(GcClass2827HostileSession.OpeningRoomAuthoredMode, authored.AuthoredMode);
         Assert.Equal(43, authored.AuthoredBolts);
+
+        var session = new GcClass2827HostileSession(source);
+        Assert.NotNull(session.NativeState);
+        Assert.Equal(
+            new GcNativeStateSnapshot(
+                GcClass2827HostileSession.OpeningRoomInitialNativeState,
+                PreviousState: 0,
+                GcClass2827HostileSession.OpeningRoomInitialTransitionMode,
+                StateTicks: 0),
+            session.NativeState!.Snapshot());
     }
 
     [Fact]
@@ -36,6 +46,13 @@ public sealed class GcClass2827HostileTests
         Assert.Equal(
             OBP.Runtime.Gameplay.RuntimeEntityPresence.Inactive,
             result.EntityState.Presentation.Presence);
+        Assert.Equal(
+            new GcNativeStateSnapshot(
+                GcClass2827HostileSession.DeathNativeState,
+                GcClass2827HostileSession.OpeningRoomInitialNativeState,
+                GcClass2827HostileSession.DeathTransitionMode,
+                StateTicks: 0),
+            session.NativeState!.Snapshot());
     }
 
     [Fact]
@@ -63,6 +80,25 @@ public sealed class GcClass2827HostileTests
         Assert.False(GcClass2827HostileSession.ShouldEnterAttack(2.8, 0.20));
         Assert.False(GcClass2827HostileSession.ShouldEnterAttack(2.79,
             GcClass2827HostileSession.AttackFacingErrorExclusive));
+    }
+
+    [Fact]
+    public void State12AttackAdmissionUsesRecoveredNativeTransitionBookkeeping()
+    {
+        var session = new GcClass2827HostileSession(Hostile(2f, 0, 43));
+        session.NativeState!.Transition(GcClass2827HostileSession.ChaseNativeState);
+        session.AdvanceNativeStateTicks(7);
+
+        Assert.False(session.TryEnterAttack(2.8, 0.20));
+        Assert.Equal(GcClass2827HostileSession.ChaseNativeState, session.NativeState.CurrentState);
+        Assert.True(session.TryEnterAttack(2.79, 0.20));
+        Assert.Equal(
+            new GcNativeStateSnapshot(
+                GcClass2827HostileSession.AttackNativeState,
+                GcClass2827HostileSession.ChaseNativeState,
+                GcClass2827HostileSession.OpeningRoomInitialTransitionMode,
+                StateTicks: 0),
+            session.NativeState.Snapshot());
     }
 
     [Fact]
