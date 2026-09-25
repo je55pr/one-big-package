@@ -375,15 +375,30 @@ always registered.
 The distinction matters for class 7032. Its state-0 initializer writes
 `PVar+0x50 = -1`. On state 1, 17 of the 27 authored controllers carry
 `PVar+0x40 = 6886` and `PVar+0x44` pointing to authored class-7031
-instances; the other ten carry `-1` in both fields. The controller calls its
-class-owned resolver, converts the returned live Moby pointer to a pool-slot
-index, and stores that slot at `PVar+0x50`. The later tag-1 registry call
-registers **that resolved child Moby**, not class 7032, and only when the
-controller's partner PVar byte `+0x92` is nonzero. In the retained clean
-retail Veldin snapshot, only three class-7032 controllers have resolved child
-slots; all three children are native class **6886**, and all three partner
-`+0x92` bytes are zero, so **no tag-1 child is currently registered**.
-The remaining 24 controllers have no resolved child.
+instances; the other ten carry `-1` in both fields. Direct state-1 code now
+pins the resolver boundary: it resolves the partner as
+`mobyPool + PVar[+0x44] * 0x100`, stores that pointer at controller
+`Moby+0xB8`, invokes the class descriptor factory selected from
+`PVar+0x40`, converts the returned child pointer back to a pool slot and
+writes it at `PVar+0x50`, resets `PVar+0x4C = -1`, then advances the
+controller to native state 2. A partner PVar byte `+0x90` controls an
+optional descriptor hook during this resolver; it is distinct from the later
+tag-1 registry admission byte at partner PVar `+0x92`.
+
+A fresh g007-owned run of the retained, visually verified Veldin state
+reproduces three resolved controllers: live controller slots 161, 172 and 173
+hold child slots 667, 668 and 669 respectively. All three resolved children
+are native class **6886** and all three linked partners are native class
+**7031**. Two of those child/controller pairs are about 43 native units from
+the sampled Ratchet position, proving that the runtime child family is genuinely
+resident rather than a controller-position inference. The later tag-1 registry
+call still registers **the resolved child Moby**, not class 7032, and only when
+the controller's partner PVar byte `+0x92` is nonzero. In this retained state
+all three partner `+0x92` bytes are zero, so **no tag-1 child is currently
+registered**. The remaining 24 controllers have no resolved child.
+`UyaClass7032ChildResolver` now retains the authored request/partner contract
+and the proven child-slot/state-2 mutation without inventing factory placement
+or the optional hook's behavior.
 
 The seven shared hostile-family callers now have their tag-choice branch
 pinned class-by-class. Dispatch ownership maps the calls to **5821/7072, 5860,
@@ -493,13 +508,14 @@ now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
 In parallel, continue class 5821 from the executable target-group geometry.
-Recover the class-7032 state-1 child resolver far enough to instantiate its
-runtime class-6886 child from authored controller/partner facts, preserve the
-class-7031 partner PVar `+0x92` admission gate, and feed only actually admitted
-tag-1 children into the recovered group cache. Separately pin the tag-3/tag-5
-admission branches for the seven shared hostile-family callers. Then execute
-the native Ratchet-seed versus exact-tag candidate score/replace loop and feed
-its selected target into the recovered state-8 -> state-10 transition. Also
+The class-7032 state-1 controller/partner/child-slot resolver is now pinned.
+Recover the class-6886 factory/placement boundary and the later class-7031
+partner PVar `+0x92` registry admission far enough to instantiate only
+evidence-backed runtime children and feed only actually admitted tag-1 children
+into the recovered group cache. Separately pin the tag-3/tag-5 admission
+branches for the seven shared hostile-family callers. Then execute the native
+Ratchet-seed versus exact-tag candidate score/replace loop and feed its selected
+target into the recovered state-8 -> state-10 transition. Also
 recover the UYA player-life consequence for emitted damage records and the
 post-lethal reaction progression after lifetime reaches non-positive. State 25
 must remain a subtype-family branch until TABLE1 eligibility is witnessed.

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using OBP.IO;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Level;
 
 namespace OBP.Tests;
@@ -27,29 +28,69 @@ public sealed class UyaClass7032RegistryTests
         foreach (UyaGameplay.MobyInstance controller in controllers)
         {
             Assert.NotNull(controller.PvarData);
-            ReadOnlySpan<byte> pvar = controller.PvarData!;
-            Assert.True(pvar.Length >= 0x54);
+            UyaClass7032AuthoredChildResolver authored =
+                UyaClass7032ChildResolver.DecodeAuthored(controller.PvarData!);
 
-            int requestedClass = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x40..]);
-            int partnerIndex = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x44..]);
-            int runtimeChildIndex = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x50..]);
+            Assert.Equal(-1, authored.AlternateInstanceIndex);
+            Assert.Equal(-1, authored.RuntimeChildPoolSlot);
 
-            Assert.Equal(-1, runtimeChildIndex);
-
-            if (requestedClass == -1)
+            if (!UyaClass7032ChildResolver.TryBuildTable1StateOneRequest(
+                    controller,
+                    gameplay.MobyInstances,
+                    out UyaClass7032ChildSpawnRequest? request))
             {
-                Assert.Equal(-1, partnerIndex);
+                Assert.Equal(-1, authored.RequestedChildClassId);
+                Assert.Equal(-1, authored.PartnerInstanceIndex);
+                Assert.Null(request);
                 disabled++;
                 continue;
             }
 
-            Assert.Equal(6886, requestedClass);
-            Assert.InRange(partnerIndex, 0, gameplay.MobyInstances.Count - 1);
-            Assert.Equal(7031, gameplay.MobyInstances[partnerIndex].OClass);
+            Assert.NotNull(request);
+            Assert.Equal(6886, request.RequestedChildClassId);
+            Assert.Equal(7031, request.PartnerClassId);
+            Assert.Equal(controller.Index, request.ControllerInstanceIndex);
             enabled++;
         }
 
         Assert.Equal(17, enabled);
         Assert.Equal(10, disabled);
+    }
+
+    [Fact]
+    public void StateOneResolutionRecordsFactoryChildSlotAndAdvancesToStateTwo()
+    {
+        byte[] pvar = new byte[0x80];
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass7032ChildResolver.AlternateInstanceIndexOffset),
+            37);
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass7032ChildResolver.RuntimeChildPoolSlotOffset),
+            -1);
+
+        UyaClass7032ChildResolution result =
+            UyaClass7032ChildResolver.ApplyStateOneResolution(pvar, 668);
+
+        Assert.Equal(668, result.ChildPoolSlot);
+        Assert.Equal(2, result.NativeStateAfterResolve);
+        Assert.Equal(
+            -1,
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(UyaClass7032ChildResolver.AlternateInstanceIndexOffset)));
+        Assert.Equal(
+            668,
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(UyaClass7032ChildResolver.RuntimeChildPoolSlotOffset)));
+    }
+
+    [Fact]
+    public void ResolverFailsClosedOnShortPvarAndNegativeChildSlot()
+    {
+        Assert.Throws<InvalidDataException>(
+            () => UyaClass7032ChildResolver.DecodeAuthored(new byte[0x50]));
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => UyaClass7032ChildResolver.ApplyStateOneResolution(
+                new byte[0x80],
+                -1));
     }
 }
