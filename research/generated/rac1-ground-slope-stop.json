@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / PCSX2 input recording + PINE",
+  "movieSha256": "72314d4bb283625a0cf7628d288894b10f8edf37fb6795b3dbf4a224833cdabf",
+  "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+  "releaseFrames": 80,
+  "firstPlanarZeroFrame": 167,
+  "firstPlanarZeroLocalFrame": 33,
+  "firstFullyStationaryFrame": 169,
+  "firstFullyStationaryLocalFrame": 35,
+  "stationaryFrames": 45,
+  "stationaryPosition": {
+    "nativeX": 149.38661193847656,
+    "nativeY": 110.80760192871094,
+    "nativeZ": 30.387054443359375
+  },
+  "stationarySequenceStart": 5,
+  "stationarySequenceEnd": 0,
+  "contactSlotStart": 9923,
+  "contactSlotEnd": 9967,
+  "unsupportedCounter30cStart": 0,
+  "unsupportedCounter30eStart": 0,
+  "unsupportedCounter30cEnd": 0,
+  "unsupportedCounter30eEnd": 0,
+  "boundary": "This witness proves exact neutral rest while ordinary support remains admitted at this authored Veldin position. It does not recover host collision margin or collision-iteration policy."
+}

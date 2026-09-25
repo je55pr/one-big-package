@@ -254,6 +254,9 @@ public partial class DebugPlayer : CharacterBody3D
         FloorMaxAngle = UseRac1Gameplay
             ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians
             : Mathf.DegToRad(60f);
+        // R&C1 retail neutral release reaches exact zero displacement on an
+        // admitted non-flat Veldin face. This Godot flag is the host mechanism
+        // for that witnessed no-drift behavior, not a claimed native boolean.
         FloorStopOnSlope = true;
         MaxSlides = 6;
         SafeMargin = 0.1f;

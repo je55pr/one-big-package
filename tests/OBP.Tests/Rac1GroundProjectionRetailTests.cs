@@ -1,5 +1,6 @@
 using OBP.IO;
 using OBP.RAC1;
+using OBP.RAC1.Player;
 using OBP.Runtime;
 
 namespace OBP.Tests;
@@ -72,6 +73,39 @@ public sealed class Rac1GroundProjectionRetailTests
             maxError < 0.00003d,
             $"max directional-slope error={maxError:R}{Environment.NewLine}" +
             string.Join(Environment.NewLine, diagnostics));
+    }
+
+    [SkippableFact]
+    public void RetailNeutralRelease_StopsOnAuthoredSupportedSlope()
+    {
+        string? iso = System.Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld world = Rac1WorldImport.Build(reader, 0);
+        RuntimeCollisionBlob collision = Assert.Single(world.CollisionMeshes);
+
+        // research/generated/rac1-ground-slope-stop.json: after neutral release,
+        // retail holds this exact position with zero XYZ displacement for 45
+        // consecutive updates while both unsupported counters remain zero.
+        const double nativeX = 149.38661193847656d;
+        const double nativeY = 110.80760192871094d;
+        const double nativeZ = 30.387054443359375d;
+        Triangle triangle = FindFloorTriangle(
+            collision,
+            nativeX,
+            nativeY,
+            nativeZ + 1d);
+        NativeVector normal = triangle.NativeUpNormal();
+        double slopeAngle = Math.Acos(Math.Clamp(normal.Z, -1d, 1d));
+
+        Assert.True(
+            slopeAngle > Math.PI / 36d,
+            $"stationary retail witness resolved to an effectively flat face: " +
+            $"face={triangle.Face}, normal={normal}, angle={slopeAngle:R}");
+        Assert.True(
+            slopeAngle < Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians,
+            $"stationary retail witness resolved beyond the recovered support gate: " +
+            $"face={triangle.Face}, normal={normal}, angle={slopeAngle:R}");
     }
 
     private static Triangle FindFloorTriangle(
