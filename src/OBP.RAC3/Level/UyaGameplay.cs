@@ -12,7 +12,7 @@ namespace OBP.RAC3.Level;
 public static class UyaGameplay
 {
     private const int TiePtr = 0x34, ShrubPtr = 0x40, MobyPtr = 0x4c, PvarTablePtr = 0x5c, PvarDataPtr = 0x60;
-    private const int TargetVolumePtr = 0x68, TargetGroupPtr = 0x98;
+    private const int TargetVolumePtr = 0x68, TargetPolygonPtr = 0x78, TargetGroupPtr = 0x98;
     private const int TieBytes = 0x60, ShrubBytes = 0x70, MobyBytes = 0x88;
     private const int TargetVolumeBytes = 0x80, TargetGroupBytes = 0x30;
 
@@ -21,7 +21,73 @@ public static class UyaGameplay
         (float X, float Y, float Z) Position, (float X, float Y, float Z) Rotation,
         int UidCompatibility, int Raw0x14, int PvarIndex, int ModeBits,
         byte[] RawInstance, byte[]? PvarData);
-    public sealed record TargetVolume(int Index, byte[] RawRecord);
+    public sealed record TargetVolume(
+        int Index,
+        (float X, float Y, float Z) Center,
+        (float X, float Y, float Z) InverseColumnX,
+        (float X, float Y, float Z) InverseColumnY,
+        (float X, float Y, float Z) InverseColumnZ,
+        byte[] RawRecord)
+    {
+        /// <summary>
+        /// Exact scalar form of retail UYA helper 0x00440760 -> 0x0040C2D0:
+        /// center XYZ, multiply by the stored inverse 3x3 basis, then require
+        /// each normalized component to lie inclusively in [-1,+1].
+        /// </summary>
+        public bool Contains(float x, float y, float z)
+        {
+            float dx = x - Center.X;
+            float dy = y - Center.Y;
+            float dz = z - Center.Z;
+            float nx = InverseColumnX.X * dx + InverseColumnY.X * dy + InverseColumnZ.X * dz;
+            float ny = InverseColumnX.Y * dx + InverseColumnY.Y * dy + InverseColumnZ.Y * dz;
+            float nz = InverseColumnX.Z * dx + InverseColumnY.Z * dy + InverseColumnZ.Z * dz;
+            return nx >= -1f && nx <= 1f
+                && ny >= -1f && ny <= 1f
+                && nz >= -1f && nz <= 1f;
+        }
+    }
+    public readonly record struct TargetPolygonVertex(float X, float Y, float Z, float W);
+
+    public sealed record TargetPolygon(
+        int Index,
+        IReadOnlyList<TargetPolygonVertex> Vertices,
+        byte[] RawRecord)
+    {
+        /// <summary>
+        /// Exact scalar form of retail UYA helper 0x004432C0. The native test
+        /// is an XY half-open crossing count; vertex Z/W are retained but do
+        /// not participate.
+        /// </summary>
+        public bool Contains(float x, float y)
+        {
+            bool inside = false;
+            int count = Vertices.Count;
+            if (count <= 0) return false;
+
+            for (int i = 0; i < count; i++)
+            {
+                TargetPolygonVertex current = Vertices[i];
+                TargetPolygonVertex next = Vertices[i + 1 == count ? 0 : i + 1];
+                bool crosses = (current.Y < y && y <= next.Y)
+                    || (next.Y < y && y <= current.Y);
+                if (!crosses) continue;
+
+                float vertical = next.Y - current.Y;
+                float ratio = (y - current.Y) / vertical;
+                float horizontal = next.X - current.X;
+                float scaled = ratio * horizontal;
+                float intersectionX = current.X + scaled;
+                if (intersectionX < x)
+                {
+                    inside = !inside;
+                }
+            }
+
+            return inside;
+        }
+    }
+
     public sealed record TargetGroup(
         int Index,
         (float X, float Y, float Z) Center,
@@ -34,7 +100,54 @@ public static class UyaGameplay
 
     public sealed record Gameplay(IReadOnlyList<MatrixInstance> TieInstances, IReadOnlyList<MatrixInstance> ShrubInstances,
         IReadOnlyList<MobyInstance> MobyInstances, IReadOnlyList<TargetVolume> TargetVolumes,
-        IReadOnlyList<TargetGroup> TargetGroups, byte[] RawDecoded);
+        IReadOnlyList<TargetPolygon> TargetPolygons, IReadOnlyList<TargetGroup> TargetGroups,
+        byte[] RawDecoded)
+    {
+        public bool TryContainsTargetGroup(int groupIndex, float x, float y, float z, out bool contains)
+        {
+            contains = false;
+            if ((uint)groupIndex >= (uint)TargetGroups.Count)
+            {
+                return false;
+            }
+
+            TargetGroup group = TargetGroups[groupIndex];
+            float dx = x - group.Center.X;
+            float dy = y - group.Center.Y;
+            float dz = z - group.Center.Z;
+            float distanceSquared = dx * dx + dy * dy + dz * dz;
+            float radiusSquared = group.Radius * group.Radius;
+            if (distanceSquared > radiusSquared)
+            {
+                return true;
+            }
+
+            if (group.UnknownList2.Count > 0 || group.UnknownList3.Count > 0 || group.UnknownList4.Count > 0)
+            {
+                return false;
+            }
+
+            foreach (int polygonIndex in group.PolygonRegionIndices)
+            {
+                if (TargetPolygons[polygonIndex].Contains(x, y))
+                {
+                    contains = true;
+                    return true;
+                }
+            }
+
+            foreach (int volumeIndex in group.OrientedVolumeIndices)
+            {
+                if (TargetVolumes[volumeIndex].Contains(x, y, z))
+                {
+                    contains = true;
+                    return true;
+                }
+            }
+
+            return true;
+        }
+    }
 
     public static Gameplay Read(IRandomAccessReader compressed, long maxBytes = 64L * 1024 * 1024)
         => Parse(WadLz.ReadBlock(compressed, 0, maxBytes).Data);
@@ -100,14 +213,110 @@ public static class UyaGameplay
             for (int i = 0; i < count; i++)
             {
                 int at = block + 0x10 + i * TargetVolumeBytes;
+                float F(int relative)
+                {
+                    float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(at + relative));
+                    if (!float.IsFinite(value))
+                    {
+                        throw new InvalidDataException(
+                            $"UYA target volume {i} has a non-finite float at +0x{relative:x}.");
+                    }
+                    return value;
+                }
+
                 result.Add(new TargetVolume(
                     i,
+                    (F(0x30), F(0x34), F(0x38)),
+                    (F(0x40), F(0x44), F(0x48)),
+                    (F(0x50), F(0x54), F(0x58)),
+                    (F(0x60), F(0x64), F(0x68)),
                     data.AsSpan(at, TargetVolumeBytes).ToArray()));
             }
             return result;
         }
 
-        List<TargetGroup> TargetGroups(IReadOnlyList<TargetVolume> volumes)
+        List<TargetPolygon> TargetPolygons()
+        {
+            int block = OptionalPointer(TargetPolygonPtr, "target polygon");
+            if (block == 0) return [];
+            if (block + 0x10 > data.Length)
+                throw new InvalidDataException("UYA target-polygon header is truncated.");
+
+            int count = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block));
+            int dataRelative = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block + 4));
+            int dataBytes = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(block + 8));
+            long tableEnd = (long)block + 0x10L + (long)count * sizeof(int);
+            long polygonData = (long)block + dataRelative;
+            long polygonEnd = polygonData + dataBytes;
+            if (count < 0 || count > 200_000 || dataRelative < 0 || dataBytes < 0
+                || tableEnd > data.Length || polygonData < tableEnd || polygonEnd > data.Length)
+            {
+                throw new InvalidDataException(
+                    $"UYA target-polygon count/extent is invalid ({count}, rel=0x{dataRelative:x}, bytes=0x{dataBytes:x}).");
+            }
+
+            var offsets = new int[count];
+            for (int i = 0; i < count; i++)
+            {
+                offsets[i] = BinaryPrimitives.ReadInt32LittleEndian(
+                    data.AsSpan(block + 0x10 + i * sizeof(int)));
+                if (offsets[i] < 0 || offsets[i] >= dataBytes)
+                {
+                    throw new InvalidDataException(
+                        $"UYA target polygon {i} offset 0x{offsets[i]:x} lies outside its data blob.");
+                }
+                if (i > 0 && offsets[i] < offsets[i - 1])
+                {
+                    throw new InvalidDataException(
+                        $"UYA target polygon offsets are not monotonic at {i}.");
+                }
+            }
+
+            var result = new List<TargetPolygon>(count);
+            for (int i = 0; i < count; i++)
+            {
+                int at = checked((int)polygonData + offsets[i]);
+                int next = checked((int)polygonData + (i + 1 < count ? offsets[i + 1] : dataBytes));
+                if (at + 0x10 > next)
+                    throw new InvalidDataException($"UYA target polygon {i} header overlaps the next record.");
+
+                int vertexCount = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
+                long vertexEnd = (long)at + 0x10L + (long)vertexCount * 0x10L;
+                if (vertexCount < 0 || vertexCount > 200_000 || vertexEnd > next)
+                {
+                    throw new InvalidDataException(
+                        $"UYA target polygon {i} vertex count/extent is invalid ({vertexCount}).");
+                }
+
+                var vertices = new TargetPolygonVertex[vertexCount];
+                for (int vertex = 0; vertex < vertexCount; vertex++)
+                {
+                    int v = at + 0x10 + vertex * 0x10;
+                    float F(int relative)
+                    {
+                        float value = BinaryPrimitives.ReadSingleLittleEndian(data.AsSpan(v + relative));
+                        if (!float.IsFinite(value))
+                        {
+                            throw new InvalidDataException(
+                                $"UYA target polygon {i} vertex {vertex} has a non-finite component.");
+                        }
+                        return value;
+                    }
+                    vertices[vertex] = new TargetPolygonVertex(F(0), F(4), F(8), F(12));
+                }
+
+                result.Add(new TargetPolygon(
+                    i,
+                    vertices,
+                    data.AsSpan(at, next - at).ToArray()));
+            }
+
+            return result;
+        }
+
+        List<TargetGroup> TargetGroups(
+            IReadOnlyList<TargetVolume> volumes,
+            IReadOnlyList<TargetPolygon> polygons)
         {
             int outer = OptionalPointer(TargetGroupPtr, "target-group");
             if (outer == 0) return [];
@@ -187,8 +396,13 @@ public static class UyaGameplay
                     throw new InvalidDataException(
                         $"UYA target group {i} has negative radius {radius}.");
 
-                int[] polygons = ReadList(0);
+                int[] polygonIndices = ReadList(0);
                 int[] orientedVolumes = ReadList(1);
+                if (polygonIndices.Any(index => index < 0 || index >= polygons.Count))
+                {
+                    throw new InvalidDataException(
+                        $"UYA target group {i} references an out-of-range target polygon.");
+                }
                 if (orientedVolumes.Any(index => index < 0 || index >= volumes.Count))
                 {
                     throw new InvalidDataException(
@@ -199,7 +413,7 @@ public static class UyaGameplay
                     i,
                     (F(0x00), F(0x04), F(0x08)),
                     radius,
-                    polygons,
+                    polygonIndices,
                     orientedVolumes,
                     ReadList(2),
                     ReadList(3),
@@ -246,12 +460,14 @@ public static class UyaGameplay
                 data.AsSpan(at, MobyBytes).ToArray(), ResolvePvar(pvarIndex)));
         }
         List<TargetVolume> targetVolumes = TargetVolumes();
-        List<TargetGroup> targetGroups = TargetGroups(targetVolumes);
+        List<TargetPolygon> targetPolygons = TargetPolygons();
+        List<TargetGroup> targetGroups = TargetGroups(targetVolumes, targetPolygons);
         return new Gameplay(
             Matrices(TiePtr, TieBytes, "TIE instances"),
             Matrices(ShrubPtr, ShrubBytes, "shrub instances"),
             mobies,
             targetVolumes,
+            targetPolygons,
             targetGroups,
             data);
     }

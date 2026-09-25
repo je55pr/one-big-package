@@ -39,8 +39,9 @@ public static class UyaClass5821Actor
     public const int RuntimeTargetSelectorAuxOffset = 0x5E4;
     public const float NativeTargetSelectorF13 = 10f;
     public const float NativeTargetSelectorF14 = 1f;
-    public const int NativeTargetSelectorModeOne = 1;
-    public const int NativeTargetSelectorModeTwo = 2;
+    public const int NativeTargetSelectorCandidateTagOne = 1;
+    public const int NativeTargetSelectorCandidateTagTwo = 2;
+    public const int NativeTargetSelectorAlternateTagThree = 3;
     public const byte NativeObservedSelectorSubtypePrimary = 1;
     public const byte NativeObservedSelectorSubtypeSecondaryA = 0;
     public const byte NativeObservedSelectorSubtypeSecondaryB = 4;
@@ -185,11 +186,12 @@ public static class UyaClass5821Actor
         authored.InitialTargetSelectorAux == 0;
 
     /// <summary>
-    /// Builds the exact TABLE1 request passed into shared selector 0x004539A8
-    /// for observed resident subtypes. The shared selector seeds Ratchet into
-    /// the target block first, then may replace Ratchet with the best candidate
-    /// from the runtime target-group table. OBP does not currently reconstruct
-    /// that dynamic group table, so this method describes the request only.
+    /// Builds the ordinary TABLE1 request passed into shared selector 0x004539A8
+    /// for observed resident subtypes. The shared selector seeds Ratchet first,
+    /// then admits only candidates carrying the requested exact registry tag
+    /// (Ratchet is the explicit exception) and may replace the seed with the
+    /// lowest-scoring candidate. The alternate PVar+0x5F nonzero tag-3 route
+    /// remains outside this ordinary profile.
     /// </summary>
     public static UyaClass5821TargetSelectionRequest BuildTable1TargetSelectionRequest(
         UyaClass5821AuthoredState authored,
@@ -197,9 +199,10 @@ public static class UyaClass5821Actor
         bool runtimeModeEnabled,
         bool runtimeAuxEnabled = false)
     {
-        if (!HasRecoveredTable1TargetSelectionProfile(authored))
+        if (!HasRecoveredTable1TargetSelectionProfile(authored) ||
+            authored.NativeOrdinaryAttackFlagSelector != 0)
             throw new NotSupportedException(
-                "UYA class-5821 target selection is not the recovered TABLE1 profile.");
+                "UYA class-5821 target selection is not the recovered ordinary TABLE1 profile.");
 
         bool primary = nativeSubtype switch
         {
@@ -210,16 +213,16 @@ public static class UyaClass5821Actor
                 $"UYA class-5821 subtype {nativeSubtype} has no recovered TABLE1 selector request."),
         };
 
-        int mode = runtimeModeEnabled
-            ? NativeTargetSelectorModeTwo
-            : NativeTargetSelectorModeOne;
+        int candidateTag = runtimeModeEnabled
+            ? NativeTargetSelectorCandidateTagTwo
+            : NativeTargetSelectorCandidateTagOne;
         bool aux = !runtimeModeEnabled && runtimeAuxEnabled;
 
         return new UyaClass5821TargetSelectionRequest(
             nativeSubtype,
             primary ? authored.PrimaryTargetSelectorIndex : authored.SecondaryTargetSelectorIndex,
             primary ? authored.PrimaryTargetSelectorRadius : authored.SecondaryTargetSelectorRadius,
-            mode,
+            candidateTag,
             aux,
             TargetSelectorWorkspaceOffset,
             NativeTargetSelectorF13,
@@ -228,9 +231,10 @@ public static class UyaClass5821Actor
     }
 
     /// <summary>
-    /// Exact direct state-8 gate recovered from TABLE1. The upstream selector
-    /// request is recovered, but dynamic target-group candidate resolution is
-    /// not. Callers must therefore supply an already-established current target;
+    /// Exact direct state-8 gate recovered from TABLE1. Authored target-group
+    /// geometry and ordinary candidate tags are recovered, but the final
+    /// Ratchet-versus-candidate score comparison is not yet executed by OBP.
+    /// Callers must therefore supply an already-established current target;
     /// missing target facts fail closed rather than promoting the player.
     /// </summary>
     public static bool ShouldEnterNativeState10FromState8(
@@ -447,7 +451,7 @@ public sealed record UyaClass5821TargetSelectionRequest(
     byte NativeSubtype,
     int NativeSelectorIndex,
     float Radius,
-    int NativeMode,
+    int NativeCandidateTag,
     bool NativeAuxEnabled,
     int WorkspaceOffset,
     float NativeF13,

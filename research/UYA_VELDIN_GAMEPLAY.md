@@ -302,13 +302,18 @@ index distribution is `-1:31, 13:12, 82:7, 26:4, 66:3, 73:3, 7:2`; the
 secondary distribution is `-1:21, 18:12, 82:7, 79:6, 24:4, 27:4, 66:3,
 73:3, 7:2`.
 
-`UyaClass5821TargetSelectionRequest` now preserves this exact request shape
-and explicitly records that Ratchet is seeded before candidate replacement.
-It **does not choose a target**. OBP does not yet reconstruct the dynamic
-runtime target-group table consumed by `0x00453620`, so candidate resolution
-remains fail-closed. Shared helper `0x00455E98` remains downstream steering:
-it receives an already-selected `+0x230` target, caches it at `+0x3B0`,
-and resets a steering field.
+`UyaClass5821TargetSelectionRequest` preserves the ordinary selector request
+shape and explicitly records that Ratchet is seeded before candidate
+replacement. Direct tracing through `0x004539A8 -> 0x00453620` proves the
+request's former "mode" output is an **exact desired registry tag**: runtime
+mode zero requests tag **1**, runtime mode nonzero requests tag **2**. The
+shared picker accepts a non-Ratchet candidate only when its cached tag equals
+that requested value; Ratchet is the explicit exception. The alternate
+`PVar+0x5F != 0` class path requests tag **3**, but the admitted ordinary
+TABLE1 profile has `+0x5F == 0`, so OBP now rejects that alternate path rather
+than describing it as ordinary behavior. Shared helper `0x00455E98` remains
+downstream steering: it receives an already-selected `+0x230` target, caches
+it at `+0x3B0`, and resets a steering field.
 
 The target-group **file substrate and cache-builder candidate universe are now
 recovered directly from TABLE1**. Gameplay header `+0x98` points to an outer
@@ -335,25 +340,59 @@ volume table.
 For the ten groups referenced by class 5821, every group has exactly one fine
 predicate. Groups **7, 13, 18, 24, 66, 73, 82** use condition-list 0 with
 indices **8, 18, 17, 69, 97, 106, 113** respectively. Groups **26, 27, 79**
-use condition-list 1 with volume indices **9, 117, 81**. Native
-`0x00440760` shows list 1 is an oriented-volume containment predicate: it
-indexes the `0x80` table and accepts only when three transformed coordinates
-all lie in `[-1, 1]`. Native `0x004432C0` shows list 0 is a 2D point-in-polygon
-crossing test over 16-byte-stride vertices. The list-0 pointer table itself is
-a fixed shared global at `0x0021F740`; its source/population has not yet been
-mapped back to an authorized UYA file block, so polygon membership remains
-fail-closed.
+use condition-list 1 with volume indices **9, 117, 81**.
+
+Both predicate families are now executable from authorized TABLE1 bytes.
+Gameplay header `+0x78` points to the polygon block: **159** polygons, a
+159-entry relative-offset table ending at `0x28C`, polygon data beginning at
+relative `0x290`, and `0xE8B0` bytes of polygon records. Native loader
+`0x004270E4..0x00427164` copies that blob and relocates the offsets into the
+fixed BSS pointer table at `0x0021F740`. Each polygon starts with a vertex
+count and stores 16-byte-stride XYZW vertices from `+0x10`. Native
+`0x004432C0` is an exact half-open XY crossing test:
+`(y0 < py <= y1) || (y1 < py <= y0)`, toggling parity only when the
+interpolated edge X is strictly less than candidate X. Z/W do not participate.
+
+For list 1, native `0x00440760` subtracts the volume record's `+0x30`
+center XYZ with `VSUB.xyz` and passes that centered vector plus record
+`+0x40` to `0x0040C2D0`. That helper multiplies XYZ by exactly three stored
+inverse-basis columns at `+0x40/+0x50/+0x60`; the `+0x70` column is not
+used. Membership is inclusive when all three normalized coordinates lie in
+`[-1,+1]`. The group coarse gate `0x0040C060` is likewise exact:
+`distanceSquared <= radiusSquared`. `UyaGameplay.TryContainsTargetGroup`
+executes these recovered laws and remains fail-closed only for the unrelated
+single list-3 predicate in group 52.
 
 The lazy cache builder `0x00452F80` considers Ratchet, native class 203,
 native class 7107, and a per-frame tagged Moby registry. TABLE1 authors **zero
 class-203 and zero class-7107** placements, reducing Veldin candidates to
 Ratchet plus that registry. A reverse dispatch call graph proves only eight
-authored TABLE1 classes can register: **5821 (62), 5860 (23), 6306 (18),
-6317 (3), 6476 (3), 6577 (3), 6836 (1), 7032 (27)**, 140 placements total.
-Classes 5821/5860/6306/6317/6476/6577/6836 share tag-5/tag-3 registration
-branches; class 7032 registers as tag 1. Coarse group-sphere censuses contain
-real mixed-class candidate sets, so replacing the native law with Ratchet-only
-or nearest-player targeting would be observably wrong.
+authored TABLE1 update families can reach the registry helper:
+**5821 (62), 5860 (23), 6306 (18), 6317 (3), 6476 (3), 6577 (3), 6836 (1),
+7032 (27)**. This is a caller census, not a claim that the caller Moby itself is
+always registered.
+
+The distinction matters for class 7032. Its state-0 initializer writes
+`PVar+0x50 = -1`. On state 1, 17 of the 27 authored controllers carry
+`PVar+0x40 = 6886` and `PVar+0x44` pointing to authored class-7031
+instances; the other ten carry `-1` in both fields. The controller calls its
+class-owned resolver, converts the returned live Moby pointer to a pool-slot
+index, and stores that slot at `PVar+0x50`. The later tag-1 registry call
+registers **that resolved child Moby**, not class 7032, and only when the
+controller's partner PVar byte `+0x92` is nonzero. In the retained clean
+retail Veldin snapshot, only three class-7032 controllers have resolved child
+slots; all three children are native class **6886**, and all three partner
+`+0x92` bytes are zero, so **no tag-1 child is currently registered**.
+The remaining 24 controllers have no resolved child.
+
+The seven shared hostile-family callers retain their recovered tag-5/tag-3
+branches; no authored TABLE1 path currently proves an ordinary tag-2 registrant.
+Therefore ordinary class-5821 tag-2 requests have only the Ratchet seed in the
+recovered population, while tag-1 replacement depends on runtime-spawned class-
+6886 children satisfying the class-7032 partner gate. The exact group geometry
+still matters for those future children, but an authored-position census of
+class-7032 controllers is **not** a native candidate census and must not be used
+as one.
 
 In the g007-owned, visually verified clean Veldin state, 58 class-5821 Mobies
 are resident and only four have nonzero `+0x230`; all four point to Ratchet
@@ -429,16 +468,16 @@ available. The selector, spawn identity, increment amount and add/clamp law are
 now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
-In parallel, continue class 5821 from the now-parsed target-group substrate.
-Map the fixed list-0 polygon table at `0x0021F740` back to authorized UYA
-source bytes, decode the list-1 `0x80` volume transform exactly enough to
-execute `0x00440760`, and pin the per-frame tag-3/tag-5 registration admission
-branches for the seven shared hostile-family classes. Then the Ratchet seed
-versus candidate-replacement decision can be executed source-natively through
-the recovered group definitions and candidate registry. Only after that may the
-host feed selected targets into the recovered state-8 -> state-10 transition.
-Also recover the UYA player-life consequence for emitted damage records and the
+In parallel, continue class 5821 from the executable target-group geometry.
+Recover the class-7032 state-1 child resolver far enough to instantiate its
+runtime class-6886 child from authored controller/partner facts, preserve the
+class-7031 partner PVar `+0x92` admission gate, and feed only actually admitted
+tag-1 children into the recovered group cache. Separately pin the tag-3/tag-5
+admission branches for the seven shared hostile-family callers. Then execute
+the native Ratchet-seed versus exact-tag candidate score/replace loop and feed
+its selected target into the recovered state-8 -> state-10 transition. Also
+recover the UYA player-life consequence for emitted damage records and the
 post-lethal reaction progression after lifetime reaches non-positive. State 25
 must remain a subtype-family branch until TABLE1 eligibility is witnessed.
-R&C1 Nanotech, nearest-player guesses, guessed cooldowns, or synthetic targets
-must not substitute.
+R&C1 Nanotech, controller-position stand-ins, nearest-player guesses, guessed
+cooldowns, or synthetic targets must not substitute.

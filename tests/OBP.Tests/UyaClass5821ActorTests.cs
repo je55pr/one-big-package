@@ -54,7 +54,7 @@ public sealed class UyaClass5821ActorTests
 
         Assert.Equal(13, request.NativeSelectorIndex);
         Assert.Equal(16f, request.Radius);
-        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorModeOne, request.NativeMode);
+        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorCandidateTagOne, request.NativeCandidateTag);
         Assert.False(request.NativeAuxEnabled);
         Assert.Equal(UyaClass5821Actor.TargetSelectorWorkspaceOffset, request.WorkspaceOffset);
         Assert.Equal(10f, request.NativeF13);
@@ -81,7 +81,7 @@ public sealed class UyaClass5821ActorTests
 
         Assert.Equal(18, request.NativeSelectorIndex);
         Assert.Equal(32f, request.Radius);
-        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorModeTwo, request.NativeMode);
+        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorCandidateTagTwo, request.NativeCandidateTag);
         Assert.False(request.NativeAuxEnabled);
         Assert.True(request.SeedRatchetBeforeCandidateReplacement);
     }
@@ -100,7 +100,7 @@ public sealed class UyaClass5821ActorTests
                 runtimeModeEnabled: false,
                 runtimeAuxEnabled: true);
 
-        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorModeOne, request.NativeMode);
+        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorCandidateTagOne, request.NativeCandidateTag);
         Assert.True(request.NativeAuxEnabled);
     }
 
