@@ -28,6 +28,12 @@ public partial class OBPGame
             if (destination.Game == ObpSourceGame.Rac1)
             {
                 Require(
+                    player.FloorSnapLength <= 0.000001f,
+                    "R&C1 ordinary movement still has host floor snap enabled");
+                Require(
+                    player.FloorConstantSpeed,
+                    "R&C1 ordinary slope projection is not preserving constant ground speed");
+                Require(
                     _playerAvatarView is not null &&
                     GodotObject.IsInstanceValid(_playerAvatarView) &&
                     _playerAvatarAnimationController is Rac1PlayerAnimationPresentationController &&

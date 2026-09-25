@@ -189,6 +189,9 @@ public partial class DebugPlayer : CharacterBody3D
     private readonly Rac1RatchetMovementController _rac1Movement = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
     private readonly Rac1DynamicSupportSession _rac1DynamicSupport = new();
+    private Rac1MobyRuntimeKey? _rac1HostSupportKey;
+    private Vector3 _rac1HostSupportLocalAnchor;
+    private bool _rac1HostSupportAnchorValid;
     private Rac1SurfaceActionIntent? _rac1SurfaceActionIntent;
     private readonly Rac1OrdinaryCameraController _rac1Camera = new();
     private readonly RawGamepadInput _rawInput = new();
@@ -242,7 +245,11 @@ public partial class DebugPlayer : CharacterBody3D
         _hud.AddThemeColorOverride("font_color", new Color(0.7f, 0.95f, 0.7f));
         layer.AddChild(_hud);
 
-        FloorSnapLength = 1.5f;
+        // RAC1 supplies its own recovered 54/3600 downward contact request.
+        // Do not stack Godot's arbitrary floor-snap distance on top of it.
+        FloorSnapLength = UseRac1Gameplay ? 0f : 1.5f;
+        // Retail uphill witnesses preserve the full 3D locomotion-step magnitude.
+        FloorConstantSpeed = UseRac1Gameplay;
         FloorMaxAngle = Mathf.DegToRad(60f);
         FloorStopOnSlope = true;
         MaxSlides = 6;
@@ -571,6 +578,7 @@ public partial class DebugPlayer : CharacterBody3D
         _rac1Movement.Reset();
         _rac1Yaw.Reset(nativeYaw);
         _rac1DynamicSupport.Reset();
+        ClearRac1HostSupportAnchor();
         _rac1CameraInitialized = false;
         _rac1RuntimeCameraState = null;
         _rac1JumpWasHeld = false;
@@ -632,7 +640,10 @@ public partial class DebugPlayer : CharacterBody3D
         bool hitCeiling)
     {
         if (!grounded)
+        {
+            ClearRac1HostSupportAnchor();
             return _rac1DynamicSupport.StepStatic(false, hitCeiling);
+        }
 
         Vector3 origin = GlobalPosition;
         var query = PhysicsRayQueryParameters3D.Create(
@@ -640,16 +651,17 @@ public partial class DebugPlayer : CharacterBody3D
             origin + Vector3.Down * 2.0f);
         query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
         var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
-        if (hit.Count == 0 ||
-            !hit.ContainsKey("collider") ||
-            !hit.ContainsKey("face_index"))
+        if (hit.Count == 0 || !hit.ContainsKey("collider"))
         {
+            ClearRac1HostSupportAnchor();
             return _rac1DynamicSupport.StepStatic(true, hitCeiling);
         }
 
         var collider = hit["collider"].As<Node>();
-        if (collider is RuntimeWorldScene.RuntimeCollisionBody3D collisionBody)
+        if (collider is RuntimeWorldScene.RuntimeCollisionBody3D collisionBody &&
+            hit.ContainsKey("face_index"))
         {
+            ClearRac1HostSupportAnchor();
             int faceIndex = (int)hit["face_index"];
             int? materialId = collisionBody.MaterialIdForFace(faceIndex);
             int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
@@ -662,24 +674,61 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         if (UseRac1Gameplay &&
-            RuntimeWorldScene.FindDynamicObjectOwner(collider) is { } dynamicOwner)
+            RuntimeWorldScene.FindDynamicObjectRoot(collider) is
+                { Source: { } dynamicOwner } dynamicRoot)
         {
             var contactKey = new Rac1MobyRuntimeKey(
                 dynamicOwner.NativeClassId,
                 dynamicOwner.InstanceIndex);
+            if (!hit.ContainsKey("position"))
+            {
+                ClearRac1HostSupportAnchor();
+                return _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
+                    IsGrounded: true,
+                    HitCeiling: hitCeiling,
+                    RawFaceType: null,
+                    ContactedMoby: contactKey,
+                    CurrentDynamicContact: contactKey,
+                    PersistentSupportMoby: null,
+                    SupportAnchor: new Rac1SupportAnchorState(0u, false),
+                    SupportAnchorWorldPosition: null,
+                    Conveyor: Rac1ConveyorTransfer.None));
+            }
+
+            Vector3 contactWorld = (Vector3)hit["position"];
+            if (!_rac1HostSupportAnchorValid || _rac1HostSupportKey != contactKey)
+            {
+                _rac1HostSupportKey = contactKey;
+                _rac1HostSupportLocalAnchor = dynamicRoot.ToLocal(contactWorld);
+                _rac1HostSupportAnchorValid = true;
+            }
+
+            Vector3 supportAnchorWorld = dynamicRoot.ToGlobal(_rac1HostSupportLocalAnchor);
+            Vec3 supportAnchorNative = ScenePlayerToNative(supportAnchorWorld);
             return _rac1DynamicSupport.Step(new Rac1DynamicSupportFacts(
                 IsGrounded: true,
                 HitCeiling: hitCeiling,
                 RawFaceType: null,
                 ContactedMoby: contactKey,
                 CurrentDynamicContact: contactKey,
-                PersistentSupportMoby: null,
-                SupportAnchor: new Rac1SupportAnchorState(0u, false),
-                SupportAnchorWorldPosition: null,
+                PersistentSupportMoby: contactKey,
+                SupportAnchor: new Rac1SupportAnchorState(1u, true),
+                SupportAnchorWorldPosition: new Rac1NativeVector3(
+                    supportAnchorNative.X,
+                    supportAnchorNative.Y,
+                    supportAnchorNative.Z),
                 Conveyor: Rac1ConveyorTransfer.None));
         }
 
+        ClearRac1HostSupportAnchor();
         return _rac1DynamicSupport.StepStatic(true, hitCeiling);
+    }
+
+    private void ClearRac1HostSupportAnchor()
+    {
+        _rac1HostSupportKey = null;
+        _rac1HostSupportLocalAnchor = Vector3.Zero;
+        _rac1HostSupportAnchorValid = false;
     }
 
     private void UpdateAnimationState(bool onFloor)
