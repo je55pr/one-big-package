@@ -8,6 +8,7 @@ using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
 using OBP.RAC2.Audio;
 using OBP.RAC2.Geometry;
+using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
 using OBP.Runtime;
 using OBP.Runtime.Audio;
@@ -178,13 +179,20 @@ public static class GcWorldImport
 
         CollectTextures("moby", GcLevelTextures.Table.Moby);
         var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, out var animatedInstances);
+        var dynamicClasses = new HashSet<int> { 500 };
+        if (level == 0)
+        {
+            // Aranos opening MSR I family. Retail LEVEL0 identifies class 2827
+            // as the first hostile population and supplies its class-local runtime.
+            dynamicClasses.Add(GcClass2827HostileSession.NativeClassId);
+        }
         var dynamicObjects = BuildDynamicMobyObjects(
             level,
             gameplay,
             mobyClasses,
             gameplay.DirLights,
             gameplay.PointLights,
-            dynamicClasses: new HashSet<int> { 500 },
+            dynamicClasses,
             out var dynamicInstances);
         var nonStaticMobyInstances = animatedInstances.Concat(dynamicInstances).ToHashSet();
         PlaceMobyInstances(gameplay.MobyInstances, mobyClasses, gameplay.DirLights, gameplay.PointLights, meshes, nonStaticMobyInstances);

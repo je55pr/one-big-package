@@ -14,6 +14,7 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private GcDamageTransportSession _gcDamageTransport = new();
+    private readonly Dictionary<int, GcClass2827HostileSession> _gcClass2827Hostiles = [];
     private RuntimeWorldScene.DynamicObjectNode? _crateDebugTarget;
     private string _crateDebugStatus = "off";
     private byte? _crateDebugPvarC8;
@@ -32,13 +33,27 @@ public partial class OBPGame
         _crateDebugRoute = null;
         _crateDebugBroken = false;
         _gcDamageTransport = new GcDamageTransportSession();
+        _gcClass2827Hostiles.Clear();
         _crateBoltSession = new GcFreshBoltSession();
         _crateRewardStatus = "off";
     }
     private void ConfigureCrateDebugHarness()
     {
         ResetCrateDebugHarness();
-        if (!CrateDebugRequested || _sceneResult?.DynamicObjectNodes is not { } nodes)
+        if (_sceneResult?.DynamicObjectNodes is not { } nodes)
+        {
+            return;
+        }
+
+        foreach (var node in nodes.Where(n =>
+                     n.Source.SourceGame == "rac2" &&
+                     n.Source.NativeClassId == GcClass2827HostileSession.NativeClassId))
+        {
+            _gcClass2827Hostiles[node.Source.InstanceIndex] =
+                new GcClass2827HostileSession(node.Source, node.State);
+        }
+
+        if (!CrateDebugRequested)
         {
             return;
         }
@@ -73,18 +88,24 @@ public partial class OBPGame
     }
     private void OnGcPrimaryAttackRequested()
     {
-        var target = SelectGcClass500FromAim();
+        var target = SelectGcPrimaryTargetFromAim();
         if (target is null)
         {
-            _crateDebugStatus = "strike: no aimed class-500 crate";
-            GD.Print("[crate-debug] strike ignored: no aimed class-500 crate");
+            _crateDebugStatus = "strike: no aimed GC gameplay target";
+            GD.Print("[gc-damage] strike ignored: no aimed GC gameplay target");
+            return;
+        }
+
+        if (target.Source.NativeClassId == GcClass2827HostileSession.NativeClassId)
+        {
+            ApplyGcClass2827Strike(target);
             return;
         }
 
         ApplyGcClass500Strike(target, "primary");
     }
 
-    private RuntimeWorldScene.DynamicObjectNode? SelectGcClass500FromAim()
+    private RuntimeWorldScene.DynamicObjectNode? SelectGcPrimaryTargetFromAim()
     {
         if (CrateDebugRequested && _crateDebugTarget is { } focused
             && IsInstanceValid(focused.Root) && focused.Root.Visible)
@@ -103,7 +124,9 @@ public partial class OBPGame
         float bestScore = float.PositiveInfinity;
         foreach (var node in nodes)
         {
-            if (node.Source.SourceGame != "rac2" || node.Source.NativeClassId != 500
+            bool gameplayTarget = node.Source.NativeClassId == 500 ||
+                node.Source.NativeClassId == GcClass2827HostileSession.NativeClassId;
+            if (node.Source.SourceGame != "rac2" || !gameplayTarget
                 || !IsInstanceValid(node.Root) || !node.Root.Visible)
             {
                 continue;
@@ -132,6 +155,34 @@ public partial class OBPGame
 
         return best;
     }
+
+    private void ApplyGcClass2827Strike(RuntimeWorldScene.DynamicObjectNode target)
+    {
+        if (!_gcClass2827Hostiles.TryGetValue(target.Source.InstanceIndex, out var hostile))
+        {
+            GD.PrintErr($"[gc-hostile] missing class-2827 session for {target.Source.InteractionId}");
+            return;
+        }
+
+        var damageEvent = GcDamageRuntime.FromPlayerState20(target.Source);
+        var dispatch = _gcDamageTransport.Publish(damageEvent);
+        var result = hostile.Apply(damageEvent);
+        if (!result.Admitted)
+        {
+            GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId}: class-2827 damage rejected");
+            return;
+        }
+
+        target.ApplyState(result.EntityState);
+        if (result.Terminal)
+        {
+            PlayRepresentativeAudioOneShot(AudioPosition(target.Source));
+        }
+
+        GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
+                 $"class2827 hp={result.Health:0.###} cooldown={result.HitCooldownTicks} terminal={result.Terminal}");
+    }
+
     private void ApplyGcClass500Strike(RuntimeWorldScene.DynamicObjectNode target, string source)
     {
         var damageEvent = GcDamageRuntime.FromPlayerState20(target.Source);

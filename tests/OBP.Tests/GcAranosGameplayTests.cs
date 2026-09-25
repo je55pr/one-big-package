@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.PS2.Iso;
+using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
 
 namespace OBP.Tests;
@@ -52,6 +53,34 @@ public sealed class GcAranosGameplayTests
             Assert.Equal(0x110, crate.PVarData!.Length);
             Assert.Equal(0, crate.PVarData[0xC8]);
             Assert.Equal(0, crate.PVarData[0xCC]);
+        });
+    }
+
+    [SkippableFact]
+    public void Level0Class2827MatchesOpeningMsr1Authority()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        using var reader = new FileRandomAccessReader(iso!);
+        var fs = Iso9660Filesystem.Open(reader);
+        var wad = fs.OpenFile("/G/LEVEL0.WAD")
+            ?? throw new FileNotFoundException("/G/LEVEL0.WAD");
+        var header = GcLevelWad.ReadHeader(wad);
+        var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
+        var hostiles = gameplay.MobyInstances
+            .Where(moby => moby.OClass == GcClass2827HostileSession.NativeClassId)
+            .ToArray();
+
+        Assert.Equal(31, hostiles.Length);
+        Assert.All(hostiles, hostile =>
+        {
+            Assert.Equal(43, hostile.Bolts);
+            Assert.NotNull(hostile.PVarData);
+            Assert.Equal(0x630, hostile.PVarData!.Length);
+            Assert.Equal(2f, BitConverter.ToSingle(hostile.PVarData, 0x20));
+            Assert.Equal((short)0,
+                BinaryPrimitives.ReadInt16LittleEndian(hostile.PVarData.AsSpan(0x26, 2)));
         });
     }
 }

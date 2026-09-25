@@ -121,6 +121,40 @@ checks a helper result against 6.0 before entering state 1; state 1 checks Moby
 byte `+0x60` bit 1 before entering state 2. That is not yet enough evidence to
 call the class an enemy or to reproduce its behaviour.
 
+## First opening hostile: class 2827 / MSR I
+
+LEVEL0 class 2827 is now promoted from static render soup to 31 authored dynamic
+instances. The identification is supported by converging GC evidence: the two
+nearest instances occupy the first enemy room after the opening elevator/door,
+the family has a medium humanoid/spider-legged model with 28 animation sequences,
+and its loaded update is the first route-local full hostile state machine.
+Contemporary walkthroughs independently describe that room as the first MSR I
+chainsaw encounter; that external name is corroboration, not the runtime source.
+
+Retail class-2827 authority on Aranos:
+
+- `lvl.vtbl` update: `0x003D7BD0`;
+- PVar size: `0x630` for all 31 authored instances;
+- initial HP at PVar `+0x20`: `2.0` for every instance;
+- initial hit cooldown at PVar `+0x26`: `0`;
+- authored Bolt field: `43`;
+- Moby state `+0x20` dispatches 14 active states (`1..14`);
+- damage service query mask: `0x00010000`;
+- accepted damage subtracts record `+0x2C` from PVar `+0x20`;
+- an accepted hit writes a 15-tick cooldown to PVar `+0x26`;
+- health `<= 0` selects the native death/terminal animation path.
+
+The recovered player state-20 tuple also uses damage mask `0x00010000` and deals
+`2.0` HP, so one admitted state-20 hit exactly exhausts an authored MSR I. OBP
+now carries this through `GcClass2827HostileSession`; ordinary GC primary aim can
+select class 2827, publish the recovered damage tuple, and terminalise the
+instance. Movement/chase and contact attack are deliberately not approximated yet.
+
+A live-retail visual attempt was made with the preserved GC PCSX2 profiles under
+goal-owned MjauRunner runs. Both the normal and no-card profiles visibly stopped
+at a `Memory Card Read Failed` dialog, so no gameplay or visual claim was taken
+from those runs.
+
 ## Current playable boundary
 
 Working now:
@@ -129,14 +163,15 @@ Working now:
 - authored class-0 player entry instead of the settings sentinel;
 - 43 authored class-500 objects with preserved identity, placement and PVars;
 - GC-local sequenced event/damage transport;
-- ordinary non-RAC1 primary input can target an authored visible class-500 and
-  feed it the recovered player state-20 event tuple;
-- the recovered Aranos class-500 break predicate and zero-C8 lifetime projection.
+- ordinary non-RAC1 primary input can target authored class-500 crates or the
+  opening class-2827 MSR I family and feed the recovered player state-20 tuple;
+- the recovered Aranos class-500 break predicate and zero-C8 lifetime projection;
+- all 31 authored MSR I instances preserved individually with retail HP/cooldown;
+- recovered MSR I damage admission and lethal terminalisation.
 
 Still required for the goal:
 
-- identify and promote the first naturally encountered hostile family;
-- recover its activation, health/damage, movement/attack and terminalisation;
+- recover MSR I activation, chase/movement and contact attack timing/geometry;
 - recover GC player damage/Nanotech semantics required by that encounter;
 - establish any opening door/trigger/gate/checkpoint behaviour that blocks the
   ordinary route;
@@ -144,6 +179,6 @@ Still required for the goal:
 - add an honest ordinary-route Aranos gameplay smoke;
 - complete the human-playable Jess signoff and document failures verbatim.
 
-The next smallest slice is retail recovery of the first opening-route hostile
-family from the LEVEL0 vtable/text plus its authored placement/PVars, without
-broadening into native GC locomotion.
+The next smallest slice is retail recovery of class 2827's activation, chase and
+chainsaw contact-attack handlers from the bounded LEVEL0 state machine, followed
+by the corresponding GC player Nanotech damage handoff.

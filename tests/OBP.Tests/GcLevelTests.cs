@@ -710,15 +710,17 @@ public class GcLevelTests
         var world = GcWorldImport.Build(reader, 0);
 
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
-        Assert.Equal(264, world.Meshes.Count);
+        Assert.Equal(263, world.Meshes.Count);
         Assert.Equal(33_710, Tris("tfrag"));
         Assert.Equal(771_104, Tris("tie"));
         Assert.Equal(71_334, Tris("shrub"));
         // oc2602 instances (200-frame spin) are lifted out as animated mobies;
-        // class 500 is now preserved separately as dynamic objects.
-        Assert.Equal(224_801, Tris("moby"));
-        Assert.Equal(4_859, world.TotalDynamicTriangles);
+        // class 500 crates and Aranos class-2827 MSR I hostiles are preserved
+        // separately as per-instance dynamic objects.
+        Assert.Equal(139_210, Tris("moby"));
+        Assert.Equal(90_450, world.TotalDynamicTriangles);
         Assert.Equal(43, world.DynamicObjects!.Count(o => o.NativeClassId == 500));
+        Assert.Equal(31, world.DynamicObjects.Count(o => o.NativeClassId == 2827));
         Assert.NotEmpty(world.AnimatedMeshes!);
         Assert.All(world.AnimatedMeshes!, a => Assert.Equal(200, a.Frames.Count));
 
