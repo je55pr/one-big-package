@@ -93,6 +93,43 @@ public sealed class UyaGameplayRuntimeTests
                 UyaGameplayEntityRef.Player,
                 nativeDamage: double.NaN));
     }
+    [Fact]
+    public void UpdateDispatchUsesOnlyExactRegisteredNativeClass()
+    {
+        var source = Dynamic(500, 311, 352);
+        var session = new UyaMobyRuntimeSession();
+        session.Register(source);
+        session.RegisterController(new EchoController(500));
+
+        Assert.Equal("500:311:step", session.DispatchUpdate<string>(source, "step"));
+
+        var unknown = Dynamic(501, 317, 586);
+        session.Register(unknown);
+        Assert.Throws<NotSupportedException>(() =>
+            session.DispatchUpdate<string>(unknown, "step"));
+    }
+
+    [Fact]
+    public void TerminalizedMobyCannotReceiveClassUpdate()
+    {
+        var source = Dynamic(500, 311, 352);
+        var session = new UyaMobyRuntimeSession();
+        var instance = session.Register(source);
+        session.RegisterController(new EchoController(500));
+        session.Terminalize(instance);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            session.DispatchUpdate<string>(source, "step"));
+    }
+
+    private sealed class EchoController(int nativeClassId) : IUyaMobyClassController
+    {
+        public int NativeClassId { get; } = nativeClassId;
+
+        public object Update(RuntimeDynamicObject source, object facts) =>
+            $"{source.NativeClassId}:{source.InstanceIndex}:{facts}";
+    }
+
     private static RuntimeDynamicObject Dynamic(
         int nativeClassId,
         int instanceIndex,

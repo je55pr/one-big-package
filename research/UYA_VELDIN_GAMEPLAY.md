@@ -69,12 +69,37 @@ R&C1 uses an authored class-0 player start, but that fact is not automatically
 portable to UYA. TABLE1 remains on the admitted ship transform until UYA loader
 or live-runtime evidence establishes the class-0 role and entry ordering.
 
+## TABLE1 native 500-series controller evidence
+
+Direct TABLE1 overlay archaeology now tightens the structural family. The retail
+overlay loads seven sections, with its Moby dispatch table in `lvl.vtbl` and code
+in `.text`. TABLE1 dispatch records route authored classes **500**, **501** and
+**511** to the same update routine, `0x0033A5C0`.
+
+That routine independently confirms UYA-native controller structure:
+
+- live Moby `+0x20` is the state byte;
+- live Moby `+0x68` is dereferenced as the PVar pointer;
+- state zero takes a distinct initialization path;
+- states 1 through 6 dispatch through a six-entry jump table;
+- the routine contains explicit 500-series class comparisons, including 501,
+  502, 504, 505 and 506 branches;
+- class-specific break/effect/resource helpers are called from the shared
+  controller.
+
+This is direct UYA retail evidence of the same broad 500-series gameplay family
+shape previously recovered in GC. It does **not** import GC state meanings,
+damage constants, reward selectors or terminal-state policy into UYA. The exact
+UYA hit admission and state meanings remain under recovery. Public lineage may
+corroborate the familiar crate naming, but native behavior will be promoted only
+as individual UYA paths are traced.
+
 ## Runtime seam added for this goal
 
 `OBP.RAC3.Gameplay.UyaMobyRuntimeSession` now registers the complete authored
 UYA population using native class plus authored instance index. It preserves
 immutable source identity and copies PVars into live source-owned storage.
-Unknown classes remain live authored entities with no guessed controller.
+Unknown classes remain live authored entities with no guessed controller. Exact-class update and damage-consumer dispatch fail closed until a UYA controller is explicitly registered, so later crate/enemy recovery can attach reusable behavior without privileging one witness instance.
 
 Terminalisation is currently only the neutral lifetime operation:
 active presentation becomes inactive. No R&C1/GC terminal state byte is copied

@@ -51,6 +51,16 @@ public static class UyaMobyRuntime
         };
 }
 /// <summary>
+/// Class-local update hook. Unknown UYA classes remain inert unless retail
+/// evidence registers a controller for that exact native class.
+/// </summary>
+public interface IUyaMobyClassController
+{
+    int NativeClassId { get; }
+    object Update(RuntimeDynamicObject source, object facts);
+}
+
+/// <summary>
 /// One mutable live view of an immutable authored UYA Moby definition. PVar bytes
 /// are copied into source-owned runtime storage so later class controllers can
 /// mutate live state without modifying the imported retail definition.
@@ -109,10 +119,19 @@ public sealed class UyaMobyRuntimeSession
 {
     public const string PVarPayloadFormat = "rac3-pvar-gc-layout-compat";
     private readonly Dictionary<UyaMobyRuntimeKey, UyaMobyRuntimeInstance> _instances = [];
+    private readonly Dictionary<int, IUyaMobyClassController> _controllers = [];
     private readonly Dictionary<int, IUyaMobyDamageConsumer> _damageConsumers = [];
 
     public int RegisteredCount => _instances.Count;
     public IReadOnlyCollection<UyaMobyRuntimeInstance> Instances => _instances.Values;
+
+    public void RegisterController(IUyaMobyClassController controller)
+    {
+        ArgumentNullException.ThrowIfNull(controller);
+        if (!_controllers.TryAdd(controller.NativeClassId, controller))
+            throw new InvalidOperationException(
+                $"UYA Moby class {controller.NativeClassId} already has a runtime controller.");
+    }
 
     public void RegisterDamageConsumer(IUyaMobyDamageConsumer consumer)
     {
@@ -163,6 +182,26 @@ public sealed class UyaMobyRuntimeSession
         RequireOwned(instance);
         instance.State = UyaMobyRuntime.Terminalize(instance.State);
         return instance.State;
+    }
+
+    public TOutput DispatchUpdate<TOutput>(
+        RuntimeDynamicObject source,
+        object facts)
+    {
+        var instance = Require(source);
+        if (!instance.IsActive)
+            throw new InvalidOperationException(
+                "A terminalized UYA Moby cannot run a class update.");
+        if (!_controllers.TryGetValue(source.NativeClassId, out var controller))
+            throw new NotSupportedException(
+                $"UYA Moby class {source.NativeClassId} has no recovered runtime controller.");
+
+        object result = controller.Update(source, facts);
+        if (result is not TOutput typed)
+            throw new InvalidOperationException(
+                $"UYA Moby class {source.NativeClassId} returned " +
+                $"{result?.GetType().Name ?? "null"}, expected {typeof(TOutput).Name}.");
+        return typed;
     }
 
     public bool TryResolveDamageTarget(
