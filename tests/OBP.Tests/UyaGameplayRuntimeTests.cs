@@ -71,6 +71,7 @@ public sealed class UyaGameplayRuntimeTests
         Assert.Null(damage.NativeDamage);
         Assert.Null(damage.NativeDamageFlags);
         Assert.Null(damage.NativeMarker);
+        Assert.Null(damage.NativeRecordKind);
         Assert.True(target.MatchesMoby(new UyaMobyRuntimeKey(500, 311)));
     }
 
@@ -82,11 +83,13 @@ public sealed class UyaGameplayRuntimeTests
             UyaGameplayEntityRef.Player,
             nativeDamage: 2.5,
             nativeDamageFlags: 0x40,
-            nativeMarker: 3);
+            nativeMarker: 3,
+            nativeRecordKind: 7);
 
         Assert.Equal(2.5, damage.NativeDamage);
         Assert.Equal(0x40u, damage.NativeDamageFlags);
         Assert.Equal(3d, damage.NativeMarker);
+        Assert.Equal((byte)7, damage.NativeRecordKind);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new UyaGameplayDamageEvent(
                 UyaGameplayEntityRef.Player,

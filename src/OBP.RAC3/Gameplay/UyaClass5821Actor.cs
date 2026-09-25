@@ -1,26 +1,48 @@
 using System.Buffers.Binary;
 using OBP.Runtime;
+using OBP.Runtime.Gameplay;
 
 namespace OBP.RAC3.Gameplay;
 
 /// <summary>
-/// TABLE1 evidence-safe profile for UYA native class 5821.
+/// TABLE1 retail-backed profile for UYA native class 5821.
 ///
-/// Retail proves an actor-local lifetime scalar and a live target pointer, but
-/// the native incoming-damage admission and outbound attack consequence are not
-/// yet recovered. This type therefore exposes observations only and deliberately
-/// does not implement <see cref="IUyaMobyDamageConsumer"/>.
+/// The native update owns a one-unit lifetime scalar, consumes UYA damage records
+/// through the common owned-record resolver, can acquire Ratchet through a PVar
+/// target pointer, and emits an exact state-25 damage record envelope. Native
+/// state timing and the UYA player-life consequence remain host-unimplemented.
 /// </summary>
 public static class UyaClass5821Actor
 {
     public const int NativeClassId = 5821;
     public const int PVarSize = 0x5F0;
-    public const int AuthoredLifetimeOffset = 0x34;
+
+    public const int LifetimeRelativePointerOffset = 0x00;
+    public const int DamageConfigRelativePointerOffset = 0x10;
     public const int RuntimeLifetimeOffset = 0x30;
+    public const int AuthoredLifetimeOffset = 0x34;
+    public const int DamageConfigOffset = 0x160;
+    public const int DamageConfigVerticalThresholdOffset = 0x1A0;
+    public const int DamageConfigByte49Offset = 0x1A9;
+    public const int DamageConfigSameClassMultiplierOffset = 0x208;
+    public const int DamageConfigOptionalMultiplierOffset = 0x20C;
     public const int RuntimeTargetPointerOffset = 0x230;
+
+    public const uint QueriedDamageMask = 0x00010000;
+    public const byte NoLifetimeSubtractRecordKind = 10;
+
+    // TABLE1 state-25 outbound damage emitter at 0x00351D08.
+    public const byte NativeDamageEmitterState = 25;
+    public const float NativeDamageEmitterRadius = 0.5f;
+    public const float NativeDamageEmitterDamage = 1f;
+    public const uint NativeDamageEmitterFlags = 0x02000001;
+    public const byte NativeDamageEmitterRecordKind = 0;
+    public const byte NativeDamageEmitterRecordByte29 = 1;
+
     public const byte NativeDormantState = 0x00;
     public const byte NativeObservedTerminalState = 0xFD;
     public const double NativeObservedTerminalLifetime = -1999d;
+
     public static UyaClass5821AuthoredState ReadAuthored(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -40,13 +62,76 @@ public static class UyaClass5821Actor
                 $"UYA class {NativeClassId} instance {source.InstanceIndex} has " +
                 $"PVar length {pvar.Length}, expected {PVarSize}.");
 
-        short authoredLifetime = BinaryPrimitives.ReadInt16LittleEndian(
-            pvar.AsSpan(AuthoredLifetimeOffset, sizeof(short)));
-
         return new UyaClass5821AuthoredState(
             new UyaMobyRuntimeKey(source.NativeClassId, source.InstanceIndex),
-            authoredLifetime);
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(LifetimeRelativePointerOffset, sizeof(int))),
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(DamageConfigRelativePointerOffset, sizeof(int))),
+            BinaryPrimitives.ReadSingleLittleEndian(
+                pvar.AsSpan(RuntimeLifetimeOffset, sizeof(float))),
+            BinaryPrimitives.ReadInt16LittleEndian(
+                pvar.AsSpan(AuthoredLifetimeOffset, sizeof(short))),
+            BinaryPrimitives.ReadSingleLittleEndian(
+                pvar.AsSpan(DamageConfigVerticalThresholdOffset, sizeof(float))),
+            pvar[DamageConfigByte49Offset],
+            BinaryPrimitives.ReadSingleLittleEndian(
+                pvar.AsSpan(DamageConfigSameClassMultiplierOffset, sizeof(float))),
+            BinaryPrimitives.ReadSingleLittleEndian(
+                pvar.AsSpan(DamageConfigOptionalMultiplierOffset, sizeof(float))));
     }
+
+    /// <summary>
+    /// Exact TABLE1 profile under which the recovered common damage consumer has
+    /// been traced. Other class-5821 variants remain fail-closed.
+    /// </summary>
+    public static bool HasRecoveredTable1DamageProfile(
+        UyaClass5821AuthoredState authored) =>
+        authored.LifetimeRelativePointer == RuntimeLifetimeOffset &&
+        authored.DamageConfigRelativePointer == DamageConfigOffset &&
+        authored.InitialLifetime == 1f &&
+        authored.AuthoredLifetime == 1 &&
+        authored.DamageConfigVerticalThreshold == 0f &&
+        authored.DamageConfigByte49 == 0 &&
+        authored.DamageConfigSameClassMultiplier == 0f &&
+        authored.DamageConfigOptionalMultiplier == 1f;
+
+    /// <summary>
+    /// The class-5821 wrapper calls the common UYA resolver with mask 0x00010000.
+    /// Record kind 10 follows the recovered no-lifetime-subtraction branch.
+    /// This predicate intentionally retains only positive lifetime damage.
+    /// </summary>
+    public static bool AdmitsLifetimeDamage(
+        uint nativeDamageFlags,
+        double nativeDamage,
+        byte nativeRecordKind) =>
+        (nativeDamageFlags & QueriedDamageMask) != 0 &&
+        nativeRecordKind != NoLifetimeSubtractRecordKind &&
+        nativeDamage > 0d &&
+        nativeDamage <= float.MaxValue;
+
+    /// <summary>
+    /// Exact outbound descriptor constructed by the TABLE1 state-25 handler.
+    /// Spatial query execution and player consequence remain host-unimplemented.
+    /// </summary>
+    public static UyaClass5821AttackDescriptor NativeState25Attack() =>
+        new(
+            NativeDamageEmitterState,
+            NativeDamageEmitterRadius,
+            NativeDamageEmitterDamage,
+            NativeDamageEmitterFlags,
+            NativeDamageEmitterRecordKind,
+            NativeDamageEmitterRecordByte29);
+
+    public static UyaGameplayDamageEvent NativeState25RatchetDamage(
+        UyaMobyRuntimeKey source) =>
+        new(
+            UyaGameplayEntityRef.Moby(source),
+            UyaGameplayEntityRef.Player,
+            nativeDamage: NativeDamageEmitterDamage,
+            nativeDamageFlags: NativeDamageEmitterFlags,
+            nativeRecordKind: NativeDamageEmitterRecordKind);
+
     public static UyaClass5821NativeObservation Observe(
         byte nativeState,
         double nativeLifetime,
@@ -62,21 +147,156 @@ public static class UyaClass5821Actor
     }
 
     /// <summary>
-    /// Exact terminal projection admitted by the retained TABLE1 runtime witness:
-    /// state 0xFD with a non-positive lifetime. State 0xFE is intentionally not
-    /// promoted here merely because the update routine checks it on linked Mobies.
+    /// Exact death-like terminal projection admitted by the retained TABLE1
+    /// witness. State 0xFD alone is only generic Moby inactivity: other retained
+    /// class-5821 instances are 0xFD while their lifetime remains positive.
     /// </summary>
     public static bool IsObservedTerminal(
         UyaClass5821NativeObservation observation) =>
         observation.NativeState == NativeObservedTerminalState &&
         observation.NativeLifetime <= 0d;
+
+    internal static float ReadRuntimeLifetime(UyaMobyRuntimeInstance instance) =>
+        BinaryPrimitives.ReadSingleLittleEndian(
+            instance.MutablePVar.AsSpan(RuntimeLifetimeOffset, sizeof(float)));
+
+    internal static void WriteRuntimeLifetime(
+        UyaMobyRuntimeInstance instance,
+        float lifetime) =>
+        BinaryPrimitives.WriteSingleLittleEndian(
+            instance.MutablePVar.AsSpan(RuntimeLifetimeOffset, sizeof(float)),
+            lifetime);
 }
 
 public sealed record UyaClass5821AuthoredState(
     UyaMobyRuntimeKey Key,
-    short AuthoredLifetime);
+    int LifetimeRelativePointer,
+    int DamageConfigRelativePointer,
+    float InitialLifetime,
+    short AuthoredLifetime,
+    float DamageConfigVerticalThreshold,
+    byte DamageConfigByte49,
+    float DamageConfigSameClassMultiplier,
+    float DamageConfigOptionalMultiplier);
 
 public sealed record UyaClass5821NativeObservation(
     byte NativeState,
     double NativeLifetime,
     bool TargetsRatchet);
+
+public sealed record UyaClass5821AttackDescriptor(
+    byte NativeState,
+    float Radius,
+    float Damage,
+    uint Flags,
+    byte RecordKind,
+    byte RecordByte29);
+
+public sealed record UyaClass5821DamageResult(
+    UyaClass5821AuthoredState Authored,
+    float LifetimeBefore,
+    float NativeRecordDamage,
+    float AppliedLifetimeDamage,
+    float LifetimeAfter,
+    byte NativeRecordKind,
+    bool ReachedNonPositiveLifetime,
+    RuntimeEntityState EntityState);
+
+/// <summary>
+/// Exact-class projection of the recovered TABLE1 class-5821 incoming lifetime
+/// damage path. It mutates only the copied runtime PVar lifetime scalar. Native
+/// hit/death reaction states remain owned by the unrecovered class update, so a
+/// lethal hit is not immediately projected as neutral terminal presentation.
+/// </summary>
+public sealed class UyaClass5821DamageSession : IUyaMobyDamageConsumer
+{
+    private readonly UyaMobyRuntimeSession _runtime;
+
+    public UyaClass5821DamageSession(UyaMobyRuntimeSession runtime)
+    {
+        _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+        _runtime.RegisterDamageConsumer(this);
+    }
+
+    public int NativeClassId => UyaClass5821Actor.NativeClassId;
+
+    public bool CanApplyDamage(
+        RuntimeDynamicObject source,
+        UyaGameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(damage);
+
+        if (source.SourceGame != "rac3" ||
+            source.NativeClassId != NativeClassId ||
+            !damage.Target.MatchesMoby(
+                new UyaMobyRuntimeKey(source.NativeClassId, source.InstanceIndex)) ||
+            damage.NativeDamageFlags is not uint flags ||
+            damage.NativeDamage is not double nativeDamage ||
+            damage.NativeRecordKind is not byte recordKind ||
+            !UyaClass5821Actor.AdmitsLifetimeDamage(
+                flags,
+                nativeDamage,
+                recordKind))
+            return false;
+
+        UyaClass5821AuthoredState authored;
+        try
+        {
+            authored = UyaClass5821Actor.ReadAuthored(source);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidDataException)
+        {
+            return false;
+        }
+
+        if (!UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored))
+            return false;
+
+        var instance = _runtime.Require(source);
+        float lifetime = UyaClass5821Actor.ReadRuntimeLifetime(instance);
+        return float.IsFinite(lifetime) && lifetime > 0f;
+    }
+
+    public object ApplyDamage(
+        RuntimeDynamicObject source,
+        UyaGameplayDamageEvent damage)
+    {
+        if (!CanApplyDamage(source, damage))
+            throw new NotSupportedException(
+                "UYA class-5821 damage does not match the recovered TABLE1 lifetime path.");
+
+        var instance = _runtime.Require(source);
+        var authored = UyaClass5821Actor.ReadAuthored(source);
+        float before = UyaClass5821Actor.ReadRuntimeLifetime(instance);
+        float nativeRecordDamage = (float)damage.NativeDamage!.Value;
+        byte recordKind = damage.NativeRecordKind!.Value;
+
+        // Common consumer 0x004443B0 clamps positive sub-unit damage to one
+        // when the class-owned lifetime capacity at PVar+0x34 is <= 1.
+        float applied = nativeRecordDamage;
+        if (authored.AuthoredLifetime <= 1 &&
+            applied > 0f &&
+            applied < 1f)
+            applied = 1f;
+
+        // The same consumer replaces applied damage with the current lifetime
+        // below config+0x40. TABLE1 class 5821 authors that threshold as 0.
+        double vertical = instance.EntityState.Presentation.Transform.Matrix[13];
+        if (vertical < authored.DamageConfigVerticalThreshold)
+            applied = before;
+
+        float after = before - applied;
+        UyaClass5821Actor.WriteRuntimeLifetime(instance, after);
+
+        return new UyaClass5821DamageResult(
+            authored,
+            before,
+            nativeRecordDamage,
+            applied,
+            after,
+            recordKind,
+            after <= 0f,
+            instance.EntityState);
+    }
+}

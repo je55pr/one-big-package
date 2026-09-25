@@ -46,7 +46,8 @@ public sealed record UyaGameplayDamageEvent
         UyaGameplayEntityRef target,
         double? nativeDamage = null,
         uint? nativeDamageFlags = null,
-        double? nativeMarker = null)
+        double? nativeMarker = null,
+        byte? nativeRecordKind = null)
     {
         if (nativeDamage.HasValue && !double.IsFinite(nativeDamage.Value))
             throw new ArgumentOutOfRangeException(nameof(nativeDamage));
@@ -58,6 +59,7 @@ public sealed record UyaGameplayDamageEvent
         NativeDamage = nativeDamage;
         NativeDamageFlags = nativeDamageFlags;
         NativeMarker = nativeMarker;
+        NativeRecordKind = nativeRecordKind;
     }
 
     public UyaGameplayEntityRef Source { get; }
@@ -65,6 +67,12 @@ public sealed record UyaGameplayDamageEvent
     public double? NativeDamage { get; }
     public uint? NativeDamageFlags { get; }
     public double? NativeMarker { get; }
+
+    /// <summary>
+    /// Native UYA damage-record byte at +0x28. Its wider semantic name is not
+    /// yet recovered; class consumers may use exact observed values only.
+    /// </summary>
+    public byte? NativeRecordKind { get; }
 }
 
 public sealed record UyaGameplayDamageDispatch(
