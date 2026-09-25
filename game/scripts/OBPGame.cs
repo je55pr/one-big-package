@@ -177,6 +177,7 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
+            TickGcGameplay(delta);
             TickRac1Gameplay(delta);
             UpdatePlayerHud();
             UpdateWorldHud();
@@ -888,6 +889,7 @@ public partial class OBPGame : Node3D
         }
 
         string crateDebug = GetCrateDebugHudLine();
+        string gcGameplay = GetGcGameplayHudLine();
         string rac1Gameplay = GetRac1GameplayHudLine();
 
         _worldHud.Text =
@@ -902,6 +904,7 @@ public partial class OBPGame : Node3D
             $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
             (_worldHost.AudioDiagnostics.Count > 0 ? $"\n{_worldHost.AudioStatusLine}" : "") +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
+            (string.IsNullOrEmpty(gcGameplay) ? "" : $"\n{gcGameplay}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}");
     }
 

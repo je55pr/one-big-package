@@ -13,8 +13,44 @@ namespace OneBigPackage;
 /// </summary>
 public partial class OBPGame
 {
+    private const double GcNativeTickSeconds = 1d / GcClass2827ApproachSession.NativeTicksPerSecond;
+    private const float GcOpeningMsr1WitnessActivationDistance = 10f;
+    private const int GcOpeningMsr1SecondState3DelayTicks = 105;
+    private const int GcOpeningMsr1State5Ticks = 24;
+    private const int GcOpeningMsr1State4Ticks = 22;
+    private const int GcOpeningMsr1State8Ticks = 16;
+
+    private enum GcOpeningMsr1Phase
+    {
+        Dormant,
+        State3Delay,
+        State5,
+        State4,
+        State8,
+        Chase,
+        Attack,
+        Recovery,
+    }
+
+    private sealed class GcOpeningMsr1HostSession(
+        RuntimeWorldScene.DynamicObjectNode node,
+        GcClass2827HostileSession hostile)
+    {
+        public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
+        public GcClass2827HostileSession Hostile { get; } = hostile;
+        public GcClass2827ApproachSession Approach { get; } = new();
+        public GcClass2827AttackCycleSession AttackCycle { get; } = new();
+        public GcOpeningMsr1Phase Phase { get; set; }
+        public int PhaseTicks { get; set; }
+        public int AttackSequence { get; set; }
+        public int AttackCount { get; set; }
+    }
+
     private GcDamageTransportSession _gcDamageTransport = new();
     private readonly Dictionary<int, GcClass2827HostileSession> _gcClass2827Hostiles = [];
+    private readonly Dictionary<int, GcOpeningMsr1HostSession> _gcOpeningMsr1 = [];
+    private GcRatchetNanotechSession _gcRatchetNanotech = new();
+    private double _gcNativeTickAccumulator;
     private RuntimeWorldScene.DynamicObjectNode? _crateDebugTarget;
     private string _crateDebugStatus = "off";
     private byte? _crateDebugPvarC8;
@@ -34,6 +70,9 @@ public partial class OBPGame
         _crateDebugBroken = false;
         _gcDamageTransport = new GcDamageTransportSession();
         _gcClass2827Hostiles.Clear();
+        _gcOpeningMsr1.Clear();
+        _gcRatchetNanotech = new GcRatchetNanotechSession();
+        _gcNativeTickAccumulator = 0d;
         _crateBoltSession = new GcFreshBoltSession();
         _crateRewardStatus = "off";
     }
@@ -49,8 +88,13 @@ public partial class OBPGame
                      n.Source.SourceGame == "rac2" &&
                      n.Source.NativeClassId == GcClass2827HostileSession.NativeClassId))
         {
-            _gcClass2827Hostiles[node.Source.InstanceIndex] =
-                new GcClass2827HostileSession(node.Source, node.State);
+            var hostile = new GcClass2827HostileSession(node.Source, node.State);
+            _gcClass2827Hostiles[node.Source.InstanceIndex] = hostile;
+            if (node.Source.InstanceIndex is 205 or 206)
+            {
+                _gcOpeningMsr1[node.Source.InstanceIndex] =
+                    new GcOpeningMsr1HostSession(node, hostile);
+            }
         }
 
         if (!CrateDebugRequested)
@@ -251,6 +295,279 @@ public partial class OBPGame
         GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
                  $"state20 flags=0x{damageEvent.Damage.DamageFlags:X8} hp={damageEvent.Damage.DamageHp:0.###} " +
                  $"PVar+C8={c8} => state {GcCrateInteraction.BreakTransitionState} -> {route}");
+    }
+
+    private void TickGcGameplay(double delta)
+    {
+        if (_world?.Game != "rac2" || _player is null || _gcClass2827Hostiles.Count == 0)
+        {
+            return;
+        }
+
+        _gcNativeTickAccumulator += Math.Clamp(delta, 0d, 0.25d);
+        int ticks = Math.Min(12, (int)Math.Floor(_gcNativeTickAccumulator / GcNativeTickSeconds));
+        if (ticks <= 0)
+        {
+            return;
+        }
+
+        _gcNativeTickAccumulator -= ticks * GcNativeTickSeconds;
+        for (int tick = 0; tick < ticks; tick++)
+        {
+            foreach (var hostile in _gcClass2827Hostiles.Values)
+            {
+                hostile.TickCooldown();
+            }
+
+            TickGcOpeningMsr1NativeTick();
+        }
+    }
+
+    private void TickGcOpeningMsr1NativeTick()
+    {
+        if (_player is null || !IsInstanceValid(_player))
+        {
+            return;
+        }
+
+        Vector3 playerPosition = _player.GlobalPosition;
+        bool playerDamageCommitted = false;
+        foreach (var session in _gcOpeningMsr1.Values.OrderBy(s => s.Hostile.InstanceIndex))
+        {
+            if (session.Hostile.IsTerminal ||
+                !IsInstanceValid(session.Node.Root) ||
+                !session.Node.Root.Visible)
+            {
+                continue;
+            }
+
+            Vector3 position = session.Node.Root.GlobalPosition;
+            switch (session.Phase)
+            {
+                case GcOpeningMsr1Phase.Dormant:
+                {
+                    if (position.DistanceTo(playerPosition) > GcOpeningMsr1WitnessActivationDistance)
+                    {
+                        session.Hostile.AdvanceNativeStateTicks();
+                        continue;
+                    }
+
+                    session.Phase = GcOpeningMsr1Phase.State3Delay;
+                    session.PhaseTicks = session.Hostile.InstanceIndex == 206
+                        ? GcOpeningMsr1SecondState3DelayTicks
+                        : 0;
+                    GD.Print($"[gc-msr1] {session.Node.Source.InteractionId} opening witness gate entered");
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.State3Delay:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    if (session.PhaseTicks > 0)
+                    {
+                        session.PhaseTicks--;
+                        break;
+                    }
+
+                    EnterGcOpeningMsr1Stage(
+                        session,
+                        nativeState: 5,
+                        GcOpeningMsr1Phase.State5,
+                        GcOpeningMsr1State5Ticks);
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.State5:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    SettleGcOpeningMsr1Vertical(
+                        session,
+                        playerPosition.Y,
+                        GcOpeningMsr1State4Ticks + GcOpeningMsr1State8Ticks);
+                    if (--session.PhaseTicks <= 0)
+                    {
+                        EnterGcOpeningMsr1Stage(
+                            session,
+                            nativeState: 4,
+                            GcOpeningMsr1Phase.State4,
+                            GcOpeningMsr1State4Ticks);
+                    }
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.State4:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    SettleGcOpeningMsr1Vertical(
+                        session,
+                        playerPosition.Y,
+                        GcOpeningMsr1State8Ticks);
+                    if (--session.PhaseTicks <= 0)
+                    {
+                        EnterGcOpeningMsr1Stage(
+                            session,
+                            nativeState: 8,
+                            GcOpeningMsr1Phase.State8,
+                            GcOpeningMsr1State8Ticks);
+                    }
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.State8:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    SettleGcOpeningMsr1Vertical(session, playerPosition.Y, futureTicks: 0);
+                    if (--session.PhaseTicks <= 0)
+                    {
+                        session.Hostile.NativeState?.Transition(
+                            GcClass2827HostileSession.ChaseNativeState,
+                            transitionMode: 4);
+                        session.Approach.Reset();
+                        session.Phase = GcOpeningMsr1Phase.Chase;
+                        GD.Print($"[gc-msr1] {session.Node.Source.InteractionId} entered native chase state 12");
+                    }
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.Chase:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    var step = session.Approach.Advance(
+                        position.X,
+                        position.Z,
+                        playerPosition.X,
+                        playerPosition.Z);
+                    position.X = (float)step.X;
+                    position.Z = (float)step.Z;
+                    ApplyGcClass2827Position(session, position);
+
+                    float distance = new Vector2(
+                        playerPosition.X - position.X,
+                        playerPosition.Z - position.Z).Length();
+                    if (session.Hostile.TryEnterAttack(distance, facingError: 0d))
+                    {
+                        session.AttackSequence =
+                            session.AttackCount == 0 && session.Hostile.InstanceIndex == 205
+                                ? GcClass2827HostileSession.AttackSequence16
+                                : GcClass2827HostileSession.AttackSequence27;
+                        session.AttackCount++;
+                        session.AttackCycle.Begin(session.AttackSequence);
+                        session.PhaseTicks = 0;
+                        session.Phase = GcOpeningMsr1Phase.Attack;
+                    }
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.Attack:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    session.PhaseTicks++;
+
+                    if (session.PhaseTicks == GcClass2827AttackCycleSession.ObservedPlayerContactStateTick)
+                    {
+                        float distance = new Vector2(
+                            playerPosition.X - position.X,
+                            playerPosition.Z - position.Z).Length();
+                        if (!playerDamageCommitted &&
+                            distance < GcClass2827HostileSession.AttackEntryDistanceExclusive)
+                        {
+                            var probe = session.Hostile.ProbeAttackContact(
+                                session.AttackSequence,
+                                GcClass2827HostileSession.AttackContactFrameStart);
+                            var damage = session.AttackCycle.TryAggregatePlayerContact(probe.Contacts);
+                            if (damage is { } admittedDamage)
+                            {
+                                var result = _gcRatchetNanotech.Apply(admittedDamage);
+                                if (result.Admitted)
+                                {
+                                    playerDamageCommitted = true;
+                                    GD.Print($"[gc-msr1] {session.Node.Source.InteractionId} " +
+                                             $"contact -> Nanotech {result.Current}/{result.Maximum} " +
+                                             $"player-state {result.NativeState}");
+                                }
+                            }
+                        }
+                    }
+
+                    if (session.PhaseTicks >= session.AttackCycle.ObservedDurationTicks())
+                    {
+                        session.Hostile.NativeState?.Transition(14, transitionMode: 4);
+                        session.AttackCycle.End();
+                        session.PhaseTicks = 0;
+                        session.Phase = GcOpeningMsr1Phase.Recovery;
+                    }
+                    break;
+                }
+
+                case GcOpeningMsr1Phase.Recovery:
+                {
+                    session.Hostile.AdvanceNativeStateTicks();
+                    session.PhaseTicks++;
+                    if (session.PhaseTicks >= GcClass2827AttackCycleSession.ObservedRecoveryDurationTicks)
+                    {
+                        if (_gcRatchetNanotech.PendingHitResolution)
+                        {
+                            _gcRatchetNanotech.ResolveHitReaction();
+                        }
+
+                        session.Hostile.NativeState?.Transition(
+                            GcClass2827HostileSession.ChaseNativeState,
+                            transitionMode: 4);
+                        session.Approach.Reset();
+                        session.PhaseTicks = 0;
+                        session.Phase = GcOpeningMsr1Phase.Chase;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void EnterGcOpeningMsr1Stage(
+        GcOpeningMsr1HostSession session,
+        int nativeState,
+        GcOpeningMsr1Phase phase,
+        int ticks)
+    {
+        session.Hostile.NativeState?.Transition(nativeState, transitionMode: 4);
+        session.Phase = phase;
+        session.PhaseTicks = ticks;
+    }
+
+    private static void SettleGcOpeningMsr1Vertical(
+        GcOpeningMsr1HostSession session,
+        float targetY,
+        int futureTicks)
+    {
+        Vector3 position = session.Node.Root.GlobalPosition;
+        int remainingTicks = Math.Max(session.PhaseTicks + futureTicks, 1);
+        position.Y += (targetY - position.Y) / remainingTicks;
+        ApplyGcClass2827Position(session, position);
+    }
+
+    private static void ApplyGcClass2827Position(
+        GcOpeningMsr1HostSession session,
+        Vector3 position)
+    {
+        Transform3D sceneTransform = session.Node.Root.Transform;
+        sceneTransform.Origin = position;
+        var runtimeTransform = RuntimeWorldScene.ToRuntimeTransform(sceneTransform);
+        var state = session.Hostile.ApplyPresentationTransform(runtimeTransform);
+        session.Node.ApplyState(state);
+    }
+
+    private string GetGcGameplayHudLine()
+    {
+        if (_world?.Game != "rac2" || _gcOpeningMsr1.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        string phases = string.Join(", ",
+            _gcOpeningMsr1.Values
+                .OrderBy(s => s.Hostile.InstanceIndex)
+                .Select(s => $"{s.Hostile.InstanceIndex}:{s.Phase}"));
+        return $"GC Nanotech: {_gcRatchetNanotech.Current}/{_gcRatchetNanotech.Maximum}   MSR I {phases}";
     }
 
     private bool TryGetCrateFocusPose(RuntimeWorld world, out Vector3 spawn, out float yaw)

@@ -64,11 +64,19 @@ public sealed class GcClass2827HostileSession
     }
 
     public float Health => _health;
+    public int InstanceIndex => _source.InstanceIndex;
     public short CooldownTicks => _cooldown;
     public bool IsTerminal => _entityState.Presentation.Presence == RuntimeEntityPresence.Inactive;
     public RuntimeEntityState EntityState => _entityState;
     public float AttackDamageHp => _attackDamageHp;
     public GcNativeStateSession? NativeState => _nativeState;
+
+    public RuntimeEntityState ApplyPresentationTransform(RuntimeObjectTransform transform)
+    {
+        ArgumentNullException.ThrowIfNull(transform);
+        _entityState = _entityState.WithTransform(transform);
+        return _entityState;
+    }
 
     public static bool ShouldEnterAttack(double distance, double facingError) =>
         double.IsFinite(distance) && distance >= 0d &&

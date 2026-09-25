@@ -214,6 +214,51 @@ timestamps are not promoted to a hit-stun or repeat-hit timing contract. The
 contact sheet is retained at
 `runtime/mjaurunner/logs/run-000018/captures/20260925T065334389669Z-contact.png`.
 
+Generation 6 then measured the missing approach loop with two further
+MjauRunner-owned retail witnesses. In `run-000023`, Ratchet was placed about
+9.5 native units from opening instances 205/206, solely as a controlled
+archaeology probe. The synchronized contact sheet visibly shows both blue MSR I
+moving down the corridor, surrounding Ratchet, and attacking:
+`runtime/mjaurunner/logs/run-000023/captures/20260925T082203287500Z-contact.png`.
+The live Mobies are `0x01968D00` / `0x01968E00`, with PVars
+`0x019BB3C0` / `0x019BB9F0`. Both begin in native state 3 targeting Ratchet.
+The observed engagement chain is `3 -> 5 -> 4 -> 8 -> 12`; state 12 translates
+and steers toward Ratchet, state 13 holds position for the chainsaw attack,
+state 14 recovers, then the controller returns to state 12.
+
+State-12 planar displacement ramps by approximately `0.005` native units per
+60 Hz retail tick to a `0.1`-unit/tick cap, then remains capped while chasing.
+The broad shared physics routine below `0x0032B9F0` owns the native Moby
+physics implementation; reproducing that subsystem wholesale is outside this
+opening-gameplay goal. OBP therefore projects only the measured source-tick
+ramp/cap into `GcClass2827ApproachSession`, while retaining the separately
+recovered 2.8-unit state-12 attack threshold.
+
+`run-000024` corrected the animation-byte sampling. Chase uses sequence 11.
+The leading instance's first state-13 attack uses sequence 16; subsequent
+attacks and the second instance use sequence 27; state-14 recovery uses sequence
+17. Retail Nanotech decrements occurred at state-13 timer 44-45. The observed
+first sequence-16 attack lasted about 100 native ticks, sequence-27 attack
+cycles about 114 ticks, and recovery about 90 ticks. These durations are kept
+as opening-pair witness projections, not claimed as universal GC animation
+laws.
+
+State 13 submits four joint volumes through shared helper `0x0031C050`; that
+wrapper builds contact geometry and feeds common collision accumulation through
+`0x002E10E8`. Class 2827 never receives a per-volume acceptance result, while
+Ratchet later consumes one mask-1 damage record. OBP mirrors that boundary with
+`GcClass2827AttackCycleSession`: any number of overlapping joints from one
+attack cycle collapse to at most one player damage record. This retires the old
+per-joint/repeat-hit uncertainty without inventing a generic invulnerability
+timer.
+
+The browser host projection is deliberately limited to authored opening
+instances 205/206. Their near-player activation and stagger/settle staging are
+bounded by the direct opening-room witness above; the 10-unit host gate is not a
+recovered global aggro-radius claim. The other 29 class-2827 instances remain
+without fabricated autonomous AI until their route/activation conditions are
+recovered.
+
 ## Current playable boundary
 
 Working now:
@@ -229,20 +274,24 @@ Working now:
 - recovered MSR I damage admission and lethal terminalisation;
 - recovered state-12 attack admission plus state-13 contact timing/geometry;
 - recovered GC player Nanotech damage path for opening MSR I contact, including
-  one-Nanotech damage, state 22 hit reaction, and state 57 lethal handoff.
+  one-Nanotech damage, state 22 hit reaction, and state 57 lethal handoff;
+- opening instances 205/206 now have a source-tick browser projection of the
+  witnessed approach/attack/recovery loop, using recovered attack distance and
+  measured state-12 acceleration/cap;
+- opening MSR I joint contacts are collapsed at the shared-collision boundary to
+  at most one player damage record per native attack cycle.
 
 Still required for the goal:
 
-- recover MSR I activation and approach/root-motion execution;
-- recover or reproduce the shared contact-overlap admission/repeat-hit gate that
-  decides when an active MSR I volume reaches Ratchet;
+- recover route/activation conditions for later MSR I instances rather than
+  generalising the opening-pair witness gate;
 - establish any opening door/trigger/gate/checkpoint behaviour that blocks the
   ordinary route;
 - replace or further bound the showcase Bolt reward assumptions where needed;
 - add an honest ordinary-route Aranos gameplay smoke;
 - complete the human-playable Jess signoff and document failures verbatim.
 
-The next smallest slice is retail recovery of class 2827's activation and
-approach/root-motion path plus the shared contact-overlap/repeat-hit gate. The
-attack admission, contact-volume damage, and player Nanotech consequence no
-longer need guessing.
+The next smallest slice is the ordinary opening-route gate/door path and a
+browser smoke that reaches the now-live 205/206 encounter without teleporting.
+After that, later class-2827 activation can be widened only where route evidence
+supports it; the opening witness must not become a fabricated global aggro rule.
