@@ -315,6 +315,39 @@ than describing it as ordinary behavior. Shared helper `0x00455E98` remains
 downstream steering: it receives an already-selected `+0x230` target, caches
 it at `+0x3B0`, and resets a steering field.
 
+The ordinary selector's **eligibility and score/replace law** are now pinned far
+enough to execute from native scalar facts. Helper `0x00453850` first compares
+the native horizontal-distance scalar returned by `0x0040BFE8` strictly
+against the request radius, then independently requires
+`abs(candidateZ-sourceZ) < f13`. Class 5821 passes `f13=10.0`, so both
+boundaries are strict. For nonnegative selector indices, the already-recovered
+target-group cache supplies eligibility instead; the `index == -1` path uses
+this radius/height helper directly.
+
+Shared scorer `0x00453408` uses `0x0040BFE8` as its ordinary base distance
+when global `0x001D673C == 0`; the retained clean TABLE1 snapshot pins that
+global to zero. In that mode it obtains a native heading angle through fast
+helper `0x0040C490`, folds the difference from the source heading with
+`0x0040CFB0`, and accumulates in single precision as
+`distance + headingError * distance * f14`. Class 5821 passes `f14=1.0`.
+For the authored `PVar+0x5F == 0` profile, Ratchet additionally receives a
+**20.0** score reduction clamped at zero. On indexed-group selection the
+class-owned auxiliary bit is forwarded into this scorer and suppresses that
+Ratchet reduction when nonzero; on the direct `index == -1` path the scorer
+receives the caller's zero stack flags instead, so the reduction remains active.
+Replacement uses strict score `<`, therefore a tie leaves the earlier Ratchet
+seed in place.
+
+`UyaClass5821TargetSelector` executes this recovered ordinary tag-1/tag-2
+score/replace law while deliberately accepting horizontal distance and shortest
+heading error as facts. It does **not** replace the retail VU0 distance or fast
+atan2-style helper with host math. The alternate tag-3 profile remains
+fail-closed because its Ratchet penalty branch differs. The retained clean
+snapshot also gives a live registry sanity check: cached registry count is one,
+pointing to pool slot **445**, native class **6306**, state **2**, tag **3**.
+That matches class 6306's authored-zero registry branch and cannot replace an
+ordinary class-5821 tag-1/tag-2 request.
+
 The target-group **file substrate and cache-builder candidate universe are now
 recovered directly from TABLE1**. Gameplay header `+0x98` points to an outer
 block at `0x002F9230`; its first word is copy size `0x15A4`, and the copied
@@ -508,14 +541,15 @@ now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
 In parallel, continue class 5821 from the executable target-group geometry.
-The class-7032 state-1 controller/partner/child-slot resolver is now pinned.
-Recover the class-6886 factory/placement boundary and the later class-7031
-partner PVar `+0x92` registry admission far enough to instantiate only
-evidence-backed runtime children and feed only actually admitted tag-1 children
-into the recovered group cache. Separately pin the tag-3/tag-5 admission
-branches for the seven shared hostile-family callers. Then execute the native
-Ratchet-seed versus exact-tag candidate score/replace loop and feed its selected
-target into the recovered state-8 -> state-10 transition. Also
+The class-7032 state-1 controller/partner/child-slot resolver and authored
+tag-3/tag-5 hostile-family selectors are now pinned. Recover the class-6886
+factory/placement boundary and the later class-7031 partner PVar `+0x92`
+registry admission far enough to instantiate only evidence-backed runtime
+children and feed only actually admitted tag-1 children into the group cache.
+Recover the ordinary `0x0040BFE8` horizontal-distance and `0x0040C490`
+fast-angle fact production far enough to drive the facts-based
+Ratchet-seed/exact-tag score loop from live host positions, then feed its
+selected target into the recovered state-8 -> state-10 transition. Also
 recover the UYA player-life consequence for emitted damage records and the
 post-lethal reaction progression after lifetime reaches non-positive. State 25
 must remain a subtype-family branch until TABLE1 eligibility is witnessed.

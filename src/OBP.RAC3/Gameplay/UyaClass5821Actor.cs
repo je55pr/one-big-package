@@ -231,11 +231,11 @@ public static class UyaClass5821Actor
     }
 
     /// <summary>
-    /// Exact direct state-8 gate recovered from TABLE1. Authored target-group
-    /// geometry and ordinary candidate tags are recovered, but the final
-    /// Ratchet-versus-candidate score comparison is not yet executed by OBP.
-    /// Callers must therefore supply an already-established current target;
-    /// missing target facts fail closed rather than promoting the player.
+    /// Exact direct state-8 gate recovered from TABLE1. Target-group geometry,
+    /// ordinary candidate tags, and the facts-based Ratchet-versus-candidate
+    /// score/replace loop are recovered separately. This gate still consumes
+    /// an already-established current target; missing target facts fail closed
+    /// rather than promoting the player.
     /// </summary>
     public static bool ShouldEnterNativeState10FromState8(
         UyaClass5821State8AttackFacts facts)
