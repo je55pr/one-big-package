@@ -272,17 +272,49 @@ direct gate as explicit facts and fails closed when no current target is
 provided. State 8 also has independent global/contact branches, so OBP does not
 collapse its whole transition law to these comparisons alone.
 
-Target acquisition remains upstream and unresolved. All **62 authored**
-class-5821 PVars carry zeros at target-position `+0x220/+0x224/+0x228` and
-target pointer `+0x230`, proving those fields are runtime-generated rather
-than placement data. Shared helper `0x00455E98` receives an already-selected
-`+0x230` target and the class-owned `+0x360` steering block; it caches that
-target at `+0x3B0` and resets a steering field, so it is a tracker rather than
-the selector. In the g007-owned, visually verified clean Veldin state, 58
-class-5821 Mobies are resident and only four have nonzero `+0x230`; all four
-point to Ratchet and all four are already state `0xFD`. The 38 state-0 and
-eight state-1 residents have null targets. This is valid target-identity
-evidence, not an acquisition-timing witness.
+The class-5821 **target selector request** is now recovered. All 62 authored
+PVars carry relative pointer `+0x0C = 0x220`; retail relocation turns that
+into an exact pointer to the runtime target block at `PVar+0x220`. The
+selected Moby pointer is target-block `+0x10`, therefore `PVar+0x230`.
+The authored target position/pointer bytes themselves start as zero, confirming
+that identity and coordinates are runtime-generated.
+
+Class 5821 reaches shared selector `0x004539A8` through
+`0x00351E18`. The helper loads the relocated `+0x0C` target-block pointer
+and, before candidate-group replacement, writes Ratchet's live Moby pointer
+from `0x001A4BE0+0x25C0` into target-block `+0x10`. If the authored
+selector index is not `-1`, helper `0x00453620` interprets it as an index
+into a **runtime target-group table**, iterates that group's candidate Mobies,
+scores them with `0x00453408`, and can replace the Ratchet seed with the
+best eligible candidate. This proves that a host-side "nearest player" rule
+would be wrong: Ratchet is the native seed, but dynamic group candidates may
+supersede it.
+
+The class caller passes workspace `PVar+0x310`, native scalar arguments
+`f13=10.0` and `f14=1.0`, and zeroed optional flags. For the resident
+subtypes actually retained on TABLE1, subtype **1** uses the primary authored
+selector at `PVar+0x2D0` with radius **16.0**, while observed subtypes
+**0** and **4** use the secondary selector at `+0x2D8` with radius
+**32.0**. Runtime `PVar+0x3E4 == 0` selects native mode 1; nonzero selects
+mode 2. Authored TABLE1 starts **55** instances in mode 1 and **7** in mode 2;
+all 62 author selector auxiliary field `+0x5E4 = 0`. The primary selector
+index distribution is `-1:31, 13:12, 82:7, 26:4, 66:3, 73:3, 7:2`; the
+secondary distribution is `-1:21, 18:12, 82:7, 79:6, 24:4, 27:4, 66:3,
+73:3, 7:2`.
+
+`UyaClass5821TargetSelectionRequest` now preserves this exact request shape
+and explicitly records that Ratchet is seeded before candidate replacement.
+It **does not choose a target**. OBP does not yet reconstruct the dynamic
+runtime target-group table consumed by `0x00453620`, so candidate resolution
+remains fail-closed. Shared helper `0x00455E98` remains downstream steering:
+it receives an already-selected `+0x230` target, caches it at `+0x3B0`,
+and resets a steering field.
+
+In the g007-owned, visually verified clean Veldin state, 58 class-5821 Mobies
+are resident and only four have nonzero `+0x230`; all four point to Ratchet
+and all four are already state `0xFD`. The 38 state-0 and eight state-1
+residents have null targets. This is valid target-identity evidence, not an
+acquisition-timing witness.
 
 `UyaClass5821Actor` exposes the exact state-10 TABLE1 attack descriptor and
 engine-neutral Ratchet damage event, but transport still applies no player-life
@@ -326,8 +358,8 @@ population, installs the recovered exact-class 500 and 5821 incoming-damage
 consumers, and audits the TABLE1 class-5821 authored profile without starting a
 synthetic AI loop. The 131 admitted class-500 instances remain bound to their
 normal `RuntimeWorldScene` presentation nodes; all 62 class-5821 instances are
-runtime-admitted only when both their incoming-damage and population-backed
-state-10 attack profiles match the retail census.
+runtime-admitted only when their incoming-damage, population-backed state-10
+attack, and target-selector request profiles all match the retail census.
 
 The temporary non-R&C1 player action supplies only a short-range host
 aim/contact envelope. Its event uses `flags=0x00000001` and positive damage,
@@ -352,12 +384,13 @@ available. The selector, spawn identity, increment amount and add/clamp law are
 now recovered; slot names, ordinary opening inventory ownership and host RNG
 source remain intentionally unpromoted.
 
-In parallel, continue class 5821 from the now-pinned direct state-8 attack gate.
-Recover the upstream runtime target-acquisition law that populates
-`PVar+0x220..+0x230`; only then may the host feed the recovered state-8 ->
-state-10 transition for the authored population. Also recover the UYA
-player-life consequence for emitted damage records and the post-lethal reaction
-progression after lifetime reaches non-positive. State 25 must remain a
-subtype-family branch until TABLE1 eligibility is witnessed. R&C1 Nanotech,
-nearest-player guesses, guessed cooldowns, or synthetic targets must not
-substitute.
+In parallel, continue class 5821 from the recovered target-selector request.
+Reconstruct the dynamic runtime target-group table consumed by `0x00453620`
+and its candidate membership so the Ratchet seed versus candidate-replacement
+decision can be executed source-natively. Only then may the host feed selected
+targets into the recovered state-8 -> state-10 transition for the authored
+population. Also recover the UYA player-life consequence for emitted damage
+records and the post-lethal reaction progression after lifetime reaches
+non-positive. State 25 must remain a subtype-family branch until TABLE1
+eligibility is witnessed. R&C1 Nanotech, nearest-player guesses, guessed
+cooldowns, or synthetic targets must not substitute.

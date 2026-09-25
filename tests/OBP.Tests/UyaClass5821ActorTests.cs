@@ -18,6 +18,7 @@ public sealed class UyaClass5821ActorTests
 
         Assert.Equal(new UyaMobyRuntimeKey(5821, 430), authored.Key);
         Assert.Equal(0x30, authored.LifetimeRelativePointer);
+        Assert.Equal(0x220, authored.TargetBlockRelativePointer);
         Assert.Equal(0x160, authored.DamageConfigRelativePointer);
         Assert.Equal(1f, authored.InitialLifetime);
         Assert.Equal(1, authored.AuthoredLifetime);
@@ -27,8 +28,121 @@ public sealed class UyaClass5821ActorTests
         Assert.Equal(1f, authored.DamageConfigOptionalMultiplier);
         Assert.Equal(1, authored.NativeOrdinaryAttackDamageByte);
         Assert.Equal(0, authored.NativeOrdinaryAttackFlagSelector);
+        Assert.Equal(13, authored.PrimaryTargetSelectorIndex);
+        Assert.Equal(16f, authored.PrimaryTargetSelectorRadius);
+        Assert.Equal(18, authored.SecondaryTargetSelectorIndex);
+        Assert.Equal(32f, authored.SecondaryTargetSelectorRadius);
+        Assert.Equal(0, authored.InitialTargetSelectorMode);
+        Assert.Equal(0, authored.InitialTargetSelectorAux);
         Assert.True(UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored));
         Assert.True(UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored));
+        Assert.True(UyaClass5821Actor.HasRecoveredTable1TargetSelectionProfile(authored));
+    }
+
+    [Fact]
+    public void TargetSelectionRequestUsesPrimarySelectorForObservedSubtypeOne()
+    {
+        UyaClass5821AuthoredState authored =
+            UyaClass5821Actor.ReadAuthored(
+                Class5821(instanceIndex: 430, authoredLifetime: 1));
+
+        UyaClass5821TargetSelectionRequest request =
+            UyaClass5821Actor.BuildTable1TargetSelectionRequest(
+                authored,
+                nativeSubtype: UyaClass5821Actor.NativeObservedSelectorSubtypePrimary,
+                runtimeModeEnabled: false);
+
+        Assert.Equal(13, request.NativeSelectorIndex);
+        Assert.Equal(16f, request.Radius);
+        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorModeOne, request.NativeMode);
+        Assert.False(request.NativeAuxEnabled);
+        Assert.Equal(UyaClass5821Actor.TargetSelectorWorkspaceOffset, request.WorkspaceOffset);
+        Assert.Equal(10f, request.NativeF13);
+        Assert.Equal(1f, request.NativeF14);
+        Assert.True(request.SeedRatchetBeforeCandidateReplacement);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(4)]
+    public void TargetSelectionRequestUsesSecondarySelectorForObservedResidentSubtypes(
+        byte nativeSubtype)
+    {
+        UyaClass5821AuthoredState authored =
+            UyaClass5821Actor.ReadAuthored(
+                Class5821(instanceIndex: 430, authoredLifetime: 1));
+
+        UyaClass5821TargetSelectionRequest request =
+            UyaClass5821Actor.BuildTable1TargetSelectionRequest(
+                authored,
+                nativeSubtype,
+                runtimeModeEnabled: true,
+                runtimeAuxEnabled: true);
+
+        Assert.Equal(18, request.NativeSelectorIndex);
+        Assert.Equal(32f, request.Radius);
+        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorModeTwo, request.NativeMode);
+        Assert.False(request.NativeAuxEnabled);
+        Assert.True(request.SeedRatchetBeforeCandidateReplacement);
+    }
+
+    [Fact]
+    public void TargetSelectionModeOneCarriesRecoveredAuxBit()
+    {
+        UyaClass5821AuthoredState authored =
+            UyaClass5821Actor.ReadAuthored(
+                Class5821(instanceIndex: 430, authoredLifetime: 1));
+
+        UyaClass5821TargetSelectionRequest request =
+            UyaClass5821Actor.BuildTable1TargetSelectionRequest(
+                authored,
+                nativeSubtype: 0,
+                runtimeModeEnabled: false,
+                runtimeAuxEnabled: true);
+
+        Assert.Equal(UyaClass5821Actor.NativeTargetSelectorModeOne, request.NativeMode);
+        Assert.True(request.NativeAuxEnabled);
+    }
+
+    [Fact]
+    public void TargetSelectionFailsClosedForUnobservedSubtypeOrBadRelocation()
+    {
+        RuntimeDynamicObject source =
+            Class5821(instanceIndex: 430, authoredLifetime: 1);
+        UyaClass5821AuthoredState authored =
+            UyaClass5821Actor.ReadAuthored(source);
+
+        Assert.Throws<NotSupportedException>(() =>
+            UyaClass5821Actor.BuildTable1TargetSelectionRequest(
+                authored,
+                nativeSubtype: 9,
+                runtimeModeEnabled: false));
+
+        byte[] pvar = source.NativePayloads!
+            .Single(payload =>
+                payload.Format == UyaMobyRuntimeSession.PVarPayloadFormat)
+            .Data.ToArray();
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.TargetBlockRelativePointerOffset, sizeof(int)),
+            0x224);
+        source = source with
+        {
+            NativePayloads =
+            [
+                new RuntimeOpaquePayload(
+                    UyaMobyRuntimeSession.PVarPayloadFormat,
+                    pvar),
+            ],
+        };
+        authored = UyaClass5821Actor.ReadAuthored(source);
+
+        Assert.False(
+            UyaClass5821Actor.HasRecoveredTable1TargetSelectionProfile(authored));
+        Assert.Throws<NotSupportedException>(() =>
+            UyaClass5821Actor.BuildTable1TargetSelectionRequest(
+                authored,
+                nativeSubtype: 0,
+                runtimeModeEnabled: false));
     }
 
     [Theory]
@@ -433,15 +547,50 @@ public sealed class UyaClass5821ActorTests
             .ToArray();
 
         Assert.Equal(62, sources.Length);
-        Assert.All(sources, source =>
+        UyaClass5821AuthoredState[] authoredStates = sources
+            .Select(UyaClass5821Actor.ReadAuthored)
+            .ToArray();
+
+        Assert.All(authoredStates, authored =>
         {
-            UyaClass5821AuthoredState authored =
-                UyaClass5821Actor.ReadAuthored(source);
             Assert.Equal(1, authored.AuthoredLifetime);
             Assert.True(UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored));
             Assert.True(
                 UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored));
+            Assert.True(
+                UyaClass5821Actor.HasRecoveredTable1TargetSelectionProfile(authored));
         });
+
+        var primary = authoredStates
+            .GroupBy(authored => authored.PrimaryTargetSelectorIndex)
+            .ToDictionary(group => group.Key, group => group.Count());
+        Assert.Equal(31, primary[-1]);
+        Assert.Equal(12, primary[13]);
+        Assert.Equal(7, primary[82]);
+        Assert.Equal(4, primary[26]);
+        Assert.Equal(3, primary[66]);
+        Assert.Equal(3, primary[73]);
+        Assert.Equal(2, primary[7]);
+
+        var secondary = authoredStates
+            .GroupBy(authored => authored.SecondaryTargetSelectorIndex)
+            .ToDictionary(group => group.Key, group => group.Count());
+        Assert.Equal(21, secondary[-1]);
+        Assert.Equal(12, secondary[18]);
+        Assert.Equal(7, secondary[82]);
+        Assert.Equal(6, secondary[79]);
+        Assert.Equal(4, secondary[24]);
+        Assert.Equal(4, secondary[27]);
+        Assert.Equal(3, secondary[66]);
+        Assert.Equal(3, secondary[73]);
+        Assert.Equal(2, secondary[7]);
+
+        Assert.Equal(
+            55,
+            authoredStates.Count(authored => authored.InitialTargetSelectorMode == 0));
+        Assert.Equal(
+            7,
+            authoredStates.Count(authored => authored.InitialTargetSelectorMode == 1));
     }
 
     [Fact]
@@ -484,6 +633,9 @@ public sealed class UyaClass5821ActorTests
             pvar.AsSpan(UyaClass5821Actor.LifetimeRelativePointerOffset, sizeof(int)),
             UyaClass5821Actor.RuntimeLifetimeOffset);
         BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.TargetBlockRelativePointerOffset, sizeof(int)),
+            UyaClass5821Actor.RuntimeTargetBlockOffset);
+        BinaryPrimitives.WriteInt32LittleEndian(
             pvar.AsSpan(UyaClass5821Actor.DamageConfigRelativePointerOffset, sizeof(int)),
             UyaClass5821Actor.DamageConfigOffset);
         BinaryPrimitives.WriteSingleLittleEndian(
@@ -504,6 +656,24 @@ public sealed class UyaClass5821ActorTests
             1f);
         pvar[UyaClass5821Actor.NativeOrdinaryAttackDamageByteOffset] = 1;
         pvar[UyaClass5821Actor.NativeOrdinaryAttackFlagSelectorOffset] = 0;
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.PrimaryTargetSelectorIndexOffset, sizeof(int)),
+            13);
+        BinaryPrimitives.WriteSingleLittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.PrimaryTargetSelectorRadiusOffset, sizeof(float)),
+            16f);
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.SecondaryTargetSelectorIndexOffset, sizeof(int)),
+            18);
+        BinaryPrimitives.WriteSingleLittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.SecondaryTargetSelectorRadiusOffset, sizeof(float)),
+            32f);
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.RuntimeTargetSelectorModeOffset, sizeof(int)),
+            0);
+        BinaryPrimitives.WriteInt32LittleEndian(
+            pvar.AsSpan(UyaClass5821Actor.RuntimeTargetSelectorAuxOffset, sizeof(int)),
+            0);
 
         return new RuntimeDynamicObject(
             "rac3",

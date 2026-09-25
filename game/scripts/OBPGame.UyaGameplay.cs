@@ -95,7 +95,8 @@ public partial class OBPGame
                 UyaClass5821AuthoredState authored =
                     UyaClass5821Actor.ReadAuthored(source);
                 if (!UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored) ||
-                    !UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored))
+                    !UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored) ||
+                    !UyaClass5821Actor.HasRecoveredTable1TargetSelectionProfile(authored))
                 {
                     rejected5821++;
                     continue;

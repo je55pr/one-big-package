@@ -19,6 +19,7 @@ public static class UyaClass5821Actor
     public const int PVarSize = 0x5F0;
 
     public const int LifetimeRelativePointerOffset = 0x00;
+    public const int TargetBlockRelativePointerOffset = 0x0C;
     public const int DamageConfigRelativePointerOffset = 0x10;
     public const int RuntimeLifetimeOffset = 0x30;
     public const int AuthoredLifetimeOffset = 0x34;
@@ -27,7 +28,22 @@ public static class UyaClass5821Actor
     public const int DamageConfigByte49Offset = 0x1A9;
     public const int DamageConfigSameClassMultiplierOffset = 0x208;
     public const int DamageConfigOptionalMultiplierOffset = 0x20C;
+    public const int RuntimeTargetBlockOffset = 0x220;
     public const int RuntimeTargetPointerOffset = 0x230;
+    public const int TargetSelectorWorkspaceOffset = 0x310;
+    public const int PrimaryTargetSelectorIndexOffset = 0x2D0;
+    public const int PrimaryTargetSelectorRadiusOffset = 0x2D4;
+    public const int SecondaryTargetSelectorIndexOffset = 0x2D8;
+    public const int SecondaryTargetSelectorRadiusOffset = 0x2DC;
+    public const int RuntimeTargetSelectorModeOffset = 0x3E4;
+    public const int RuntimeTargetSelectorAuxOffset = 0x5E4;
+    public const float NativeTargetSelectorF13 = 10f;
+    public const float NativeTargetSelectorF14 = 1f;
+    public const int NativeTargetSelectorModeOne = 1;
+    public const int NativeTargetSelectorModeTwo = 2;
+    public const byte NativeObservedSelectorSubtypePrimary = 1;
+    public const byte NativeObservedSelectorSubtypeSecondaryA = 0;
+    public const byte NativeObservedSelectorSubtypeSecondaryB = 4;
     public const int NativeOrdinaryAttackDamageByteOffset = 0x44;
     public const int NativeOrdinaryAttackFlagSelectorOffset = 0x5F;
 
@@ -108,6 +124,8 @@ public static class UyaClass5821Actor
             BinaryPrimitives.ReadInt32LittleEndian(
                 pvar.AsSpan(LifetimeRelativePointerOffset, sizeof(int))),
             BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(TargetBlockRelativePointerOffset, sizeof(int))),
+            BinaryPrimitives.ReadInt32LittleEndian(
                 pvar.AsSpan(DamageConfigRelativePointerOffset, sizeof(int))),
             BinaryPrimitives.ReadSingleLittleEndian(
                 pvar.AsSpan(RuntimeLifetimeOffset, sizeof(float))),
@@ -121,7 +139,19 @@ public static class UyaClass5821Actor
             BinaryPrimitives.ReadSingleLittleEndian(
                 pvar.AsSpan(DamageConfigOptionalMultiplierOffset, sizeof(float))),
             pvar[NativeOrdinaryAttackDamageByteOffset],
-            pvar[NativeOrdinaryAttackFlagSelectorOffset]);
+            pvar[NativeOrdinaryAttackFlagSelectorOffset],
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(PrimaryTargetSelectorIndexOffset, sizeof(int))),
+            BinaryPrimitives.ReadSingleLittleEndian(
+                pvar.AsSpan(PrimaryTargetSelectorRadiusOffset, sizeof(float))),
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(SecondaryTargetSelectorIndexOffset, sizeof(int))),
+            BinaryPrimitives.ReadSingleLittleEndian(
+                pvar.AsSpan(SecondaryTargetSelectorRadiusOffset, sizeof(float))),
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(RuntimeTargetSelectorModeOffset, sizeof(int))),
+            BinaryPrimitives.ReadInt32LittleEndian(
+                pvar.AsSpan(RuntimeTargetSelectorAuxOffset, sizeof(int))));
     }
 
     /// <summary>
@@ -144,11 +174,64 @@ public static class UyaClass5821Actor
         authored.NativeOrdinaryAttackDamageByte == 1 &&
         authored.NativeOrdinaryAttackFlagSelector == 0;
 
+    public static bool HasRecoveredTable1TargetSelectionProfile(
+        UyaClass5821AuthoredState authored) =>
+        authored.TargetBlockRelativePointer == RuntimeTargetBlockOffset &&
+        authored.PrimaryTargetSelectorIndex >= -1 &&
+        authored.PrimaryTargetSelectorRadius == 16f &&
+        authored.SecondaryTargetSelectorIndex >= -1 &&
+        authored.SecondaryTargetSelectorRadius == 32f &&
+        authored.InitialTargetSelectorMode is 0 or 1 &&
+        authored.InitialTargetSelectorAux == 0;
+
     /// <summary>
-    /// Exact direct state-8 gate recovered from TABLE1. Target acquisition is
-    /// upstream shared AI behavior and remains unrecovered, so callers must
-    /// supply an already-established current target. Missing target facts fail
-    /// closed rather than promoting the player as an implicit target.
+    /// Builds the exact TABLE1 request passed into shared selector 0x004539A8
+    /// for observed resident subtypes. The shared selector seeds Ratchet into
+    /// the target block first, then may replace Ratchet with the best candidate
+    /// from the runtime target-group table. OBP does not currently reconstruct
+    /// that dynamic group table, so this method describes the request only.
+    /// </summary>
+    public static UyaClass5821TargetSelectionRequest BuildTable1TargetSelectionRequest(
+        UyaClass5821AuthoredState authored,
+        byte nativeSubtype,
+        bool runtimeModeEnabled,
+        bool runtimeAuxEnabled = false)
+    {
+        if (!HasRecoveredTable1TargetSelectionProfile(authored))
+            throw new NotSupportedException(
+                "UYA class-5821 target selection is not the recovered TABLE1 profile.");
+
+        bool primary = nativeSubtype switch
+        {
+            NativeObservedSelectorSubtypePrimary => true,
+            NativeObservedSelectorSubtypeSecondaryA => false,
+            NativeObservedSelectorSubtypeSecondaryB => false,
+            _ => throw new NotSupportedException(
+                $"UYA class-5821 subtype {nativeSubtype} has no recovered TABLE1 selector request."),
+        };
+
+        int mode = runtimeModeEnabled
+            ? NativeTargetSelectorModeTwo
+            : NativeTargetSelectorModeOne;
+        bool aux = !runtimeModeEnabled && runtimeAuxEnabled;
+
+        return new UyaClass5821TargetSelectionRequest(
+            nativeSubtype,
+            primary ? authored.PrimaryTargetSelectorIndex : authored.SecondaryTargetSelectorIndex,
+            primary ? authored.PrimaryTargetSelectorRadius : authored.SecondaryTargetSelectorRadius,
+            mode,
+            aux,
+            TargetSelectorWorkspaceOffset,
+            NativeTargetSelectorF13,
+            NativeTargetSelectorF14,
+            SeedRatchetBeforeCandidateReplacement: true);
+    }
+
+    /// <summary>
+    /// Exact direct state-8 gate recovered from TABLE1. The upstream selector
+    /// request is recovered, but dynamic target-group candidate resolution is
+    /// not. Callers must therefore supply an already-established current target;
+    /// missing target facts fail closed rather than promoting the player.
     /// </summary>
     public static bool ShouldEnterNativeState10FromState8(
         UyaClass5821State8AttackFacts facts)
@@ -338,6 +421,7 @@ public static class UyaClass5821Actor
 public sealed record UyaClass5821AuthoredState(
     UyaMobyRuntimeKey Key,
     int LifetimeRelativePointer,
+    int TargetBlockRelativePointer,
     int DamageConfigRelativePointer,
     float InitialLifetime,
     short AuthoredLifetime,
@@ -346,12 +430,29 @@ public sealed record UyaClass5821AuthoredState(
     float DamageConfigSameClassMultiplier,
     float DamageConfigOptionalMultiplier,
     byte NativeOrdinaryAttackDamageByte,
-    byte NativeOrdinaryAttackFlagSelector);
+    byte NativeOrdinaryAttackFlagSelector,
+    int PrimaryTargetSelectorIndex,
+    float PrimaryTargetSelectorRadius,
+    int SecondaryTargetSelectorIndex,
+    float SecondaryTargetSelectorRadius,
+    int InitialTargetSelectorMode,
+    int InitialTargetSelectorAux);
 
 public sealed record UyaClass5821NativeObservation(
     byte NativeState,
     double NativeLifetime,
     bool TargetsRatchet);
+
+public sealed record UyaClass5821TargetSelectionRequest(
+    byte NativeSubtype,
+    int NativeSelectorIndex,
+    float Radius,
+    int NativeMode,
+    bool NativeAuxEnabled,
+    int WorkspaceOffset,
+    float NativeF13,
+    float NativeF14,
+    bool SeedRatchetBeforeCandidateReplacement);
 
 public sealed record UyaClass5821State8AttackFacts(
     bool HasCurrentTarget,
