@@ -201,13 +201,57 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
-    public void LeavingGround_EntersProvenFallRecurrence()
+    public void LeavingOrdinaryGround_UsesRetailAdhesionThenEdgeGravityRecurrence()
     {
         var controller = new Rac1RatchetMovementController();
-        var step = controller.Step(new PlayerControlIntent(0, 0, false, false), Airborne);
+        var input = new PlayerControlIntent(0, 0, false, false);
+
+        var airborne = Rac1PlayerContactResult.StaticWorld(false);
+        var firstUnsupportedControllerTick = controller.Step(input, airborne);
+        Assert.Equal(Rac1RatchetMovementPhase.Falling, firstUnsupportedControllerTick.Phase);
+        Assert.Equal(
+            -(Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick +
+              Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick),
+            firstUnsupportedControllerTick.Vertical,
+            12);
+
+        var next = controller.Step(input, airborne);
+        Assert.Equal(
+            firstUnsupportedControllerTick.Vertical -
+            Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick,
+            next.Vertical,
+            12);
+    }
+
+    [Fact]
+    public void GenericContactFallback_DoesNotImportRac1EdgeContactRecurrence()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var step = controller.Step(
+            new PlayerControlIntent(0, 0, false, false),
+            Airborne);
 
         Assert.Equal(Rac1RatchetMovementPhase.Falling, step.Phase);
         Assert.Equal(-Rac1RatchetMovementController.FallGravityPerTick, step.Vertical, 12);
+    }
+
+    [Fact]
+    public void SupportedOrdinaryGround_AddsRetailPreContactAdhesionOnlyOutsideJumpStates()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var idle = controller.Step(new PlayerControlIntent(0, 0, false, false), Grounded);
+        Assert.Equal(0d, idle.Vertical, 12);
+        Assert.Equal(
+            -Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick,
+            Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(idle, Grounded),
+            12);
+
+        var anticipation = controller.Step(new PlayerControlIntent(0, 0, true, true), Grounded);
+        Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, anticipation.Phase);
+        Assert.Equal(
+            anticipation.Vertical,
+            Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(anticipation, Grounded),
+            12);
     }
 
     [Fact]

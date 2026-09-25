@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / PCSX2 input recording + PINE",
+  "movieSha256": "565f07bae110802f535943a05a0bfe3312697bd7d98bdb4370dc541b886820e9",
+  "stateSha256": "067e5ca260233fcccc958f54e412e3fad26f38406a2a7d2f13d8f6477e92a0aa",
+  "supportLossFrame": 146,
+  "groundRequestPerTick": 0.015,
+  "edgeFallAccelerationPerTick": 0.006944444444444444,
+  "equation": "first=-54/3600; subsequent[n]=subsequent[n-1]-25/3600",
+  "unsupportedFramesBeforeRecontact": 16,
+  "witnesses": [
+    {
+      "frame": 146,
+      "requestZ": -0.015000022016465664,
+      "actualDisplacementZ": -0.015003204345703125,
+      "contactSlot300": 0,
+      "packedCounters30c": 65537,
+      "requestDelta": null
+    },
+    {
+      "frame": 147,
+      "requestZ": -0.02194446511566639,
+      "actualDisplacementZ": -0.021947860717773438,
+      "contactSlot300": 0,
+      "packedCounters30c": 131074,
+      "requestDelta": -0.0069444430992007256
+    },
+    {
+      "frame": 148,
+      "requestZ": -0.02888890914618969,
+      "actualDisplacementZ": -0.02889251708984375,
+      "contactSlot300": 0,
+      "packedCounters30c": 196611,
+      "requestDelta": -0.0069444440305233
+    },
+    {
+      "frame": 149,
+      "requestZ": -0.03583334758877754,
+      "actualDisplacementZ": -0.03583526611328125,
+      "contactSlot300": 0,
+      "packedCounters30c": 262148,
+      "requestDelta": -0.0069444384425878525
+    },
+    {
+      "frame": 150,
+      "requestZ": -0.04277779161930084,
+      "actualDisplacementZ": -0.04277992248535156,
+      "contactSlot300": 0,
+      "packedCounters30c": 327685,
+      "requestDelta": -0.0069444440305233
+    },
+    {
+      "frame": 151,
+      "requestZ": -0.04972223564982414,
+      "actualDisplacementZ": -0.049724578857421875,
+      "contactSlot300": 0,
+      "packedCounters30c": 393222,
+      "requestDelta": -0.0069444440305233
+    },
+    {
+      "frame": 152,
+      "requestZ": -0.05666667968034744,
+      "actualDisplacementZ": -0.05666923522949219,
+      "contactSlot300": 0,
+      "packedCounters30c": 458759,
+      "requestDelta": -0.0069444440305233
+    }
+  ]
+}

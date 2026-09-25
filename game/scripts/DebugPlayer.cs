@@ -608,8 +608,13 @@ public partial class DebugPlayer : CharacterBody3D
 
         UpdateRac1FacingPresentation();
 
+        double preContactVertical = UseRac1Gameplay
+            ? Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(
+                step,
+                contact.MovementFacts)
+            : step.Vertical;
         var resolvedDelta = contact.ApplySupportAndConveyor(
-            new Rac1NativeVector3(step.PlanarX, step.Vertical, step.PlanarY));
+            new Rac1NativeVector3(step.PlanarX, preContactVertical, step.PlanarY));
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(
             (float)resolvedDelta.X * nativeTicksPerSecond,

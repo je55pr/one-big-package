@@ -477,7 +477,7 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         values = {int(row["sample"]["candidate_words"][offset]) for row in rows}
         if len(values) > 1:
             changing.append({"offset": offset, "distinctWords": len(values)})
-    return {
+    report = {
         "schema": 1,
         "authority": capture["authority"],
         "movieSha256": capture["movieSha256"],
@@ -489,6 +489,34 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         "sequencePath": _sequence_path(rows),
         "changingCandidateFields": changing,
     }
+    if rows and all(
+        field in rows[0]["sample"]
+        for field in ("action_state", "contact_slot_300", "contact_counters_30c")
+    ):
+        action_path: list[int] = []
+        contact_transitions: list[dict[str, object]] = []
+        prior_supported: bool | None = None
+        for row in rows:
+            sample = row["sample"]
+            action = int(sample["action_state"])
+            if not action_path or action_path[-1] != action:
+                action_path.append(action)
+            supported = int(sample["contact_slot_300"]) != 0
+            if prior_supported is None or supported != prior_supported:
+                packed = int(sample["contact_counters_30c"])
+                contact_transitions.append({
+                    "frame": int(row["frame"]),
+                    "segment": str(row["segment"]),
+                    "supported": supported,
+                    "contactSlot300": int(sample["contact_slot_300"]),
+                    "unsupportedCounter30c": packed & 0xFFFF,
+                    "unsupportedCounter30e": (packed >> 16) & 0xFFFF,
+                    "verticalDisplacement": float(sample["disp_z"]),
+                })
+            prior_supported = supported
+        report["actionStatePath"] = action_path
+        report["contactTransitions"] = contact_transitions
+    return report
 
 def write_derived(capture_path_value: Path, output: Path) -> dict[str, object]:
     raw_path = capture_path(capture_path_value)

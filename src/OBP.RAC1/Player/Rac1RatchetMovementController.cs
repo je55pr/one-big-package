@@ -118,6 +118,7 @@ public sealed class Rac1RatchetMovementController
     private int _anticipationTicks;
     private int _jumpHeldTicks;
     private int _heldRiseTicks;
+    private bool _ordinaryEdgeFall;
     private Rac1AnalogueSpeedBand _lastGroundedActiveSpeedBand;
     private int _groundReleaseSampleIndex = -1;
 
@@ -154,18 +155,25 @@ public sealed class Rac1RatchetMovementController
                 $"Ordinary R&C1 movement cannot run on recovered alternate surface " +
                 $"{contact.SurfaceInteraction}; its native controller is not implemented.");
 
-        return Step(input, contact.MovementFacts, resolveNativeFacingYaw);
+        return StepCore(input, contact.MovementFacts, true, resolveNativeFacingYaw);
     }
 
     public StepResult Step(
         PlayerControlIntent input,
         PlayerContactFacts contact,
-        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null)
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw = null) =>
+        StepCore(input, contact, false, resolveNativeFacingYaw);
+
+    private StepResult StepCore(
+        PlayerControlIntent input,
+        PlayerContactFacts contact,
+        bool useRecoveredOrdinaryContactMotion,
+        Func<Rac1RatchetYawMode, double>? resolveNativeFacingYaw)
     {
         var analogue = Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY);
         AnalogueInput = analogue;
         bool alignGroundTranslationToFacing = UpdatePlanar(input, analogue, contact.IsGrounded);
-        UpdateVertical(input, contact);
+        UpdateVertical(input, contact, useRecoveredOrdinaryContactMotion);
         UpdateLocomotionState(input, analogue, contact);
         UpdateYawMode(input, analogue, contact);
 
@@ -189,6 +197,7 @@ public sealed class Rac1RatchetMovementController
         _anticipationTicks = 0;
         _jumpHeldTicks = 0;
         _heldRiseTicks = 0;
+        _ordinaryEdgeFall = false;
         _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
         _groundReleaseSampleIndex = -1;
         AnalogueInput = default;
@@ -404,12 +413,16 @@ public sealed class Rac1RatchetMovementController
             : Rac1RatchetYawMode.GroundStartup;
     }
 
-    private void UpdateVertical(PlayerControlIntent input, PlayerContactFacts contact)
+    private void UpdateVertical(
+        PlayerControlIntent input,
+        PlayerContactFacts contact,
+        bool useRecoveredOrdinaryContactMotion)
     {
         if (contact.IsGrounded && Phase is Rac1RatchetMovementPhase.Rising or Rac1RatchetMovementPhase.Falling)
         {
             _verticalStep = 0d;
             _heldRiseTicks = 0;
+            _ordinaryEdgeFall = false;
             Phase = Rac1RatchetMovementPhase.Grounded;
         }
 
@@ -418,7 +431,22 @@ public sealed class Rac1RatchetMovementController
             _verticalStep = 0d;
             if (!contact.IsGrounded)
             {
-                _verticalStep = -FallGravityPerTick;
+                if (useRecoveredOrdinaryContactMotion)
+                {
+                    // Retail state 2 reaches this update one tick after the
+                    // 54/3600 supported request became actual edge motion.
+                    // The next request is that carried displacement plus the
+                    // 25/3600 unsupported increment.
+                    _verticalStep = -(
+                        Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick +
+                        Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick);
+                    _ordinaryEdgeFall = true;
+                }
+                else
+                {
+                    _verticalStep = -FallGravityPerTick;
+                    _ordinaryEdgeFall = false;
+                }
                 Phase = Rac1RatchetMovementPhase.Falling;
                 return;
             }
@@ -461,7 +489,9 @@ public sealed class Rac1RatchetMovementController
         }
 
         if (Phase == Rac1RatchetMovementPhase.Falling)
-            _verticalStep -= FallGravityPerTick;
+            _verticalStep -= _ordinaryEdgeFall
+                ? Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick
+                : FallGravityPerTick;
     }
 
     private void StepJumpAnticipation(PlayerControlIntent input, PlayerContactFacts contact)

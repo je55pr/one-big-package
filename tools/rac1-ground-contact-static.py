@@ -12,7 +12,15 @@ from pathlib import Path
 
 TICK_SCALAR_ADDRESS = 0x0015ED70
 GROUND_BIAS_MULTIPLIER = 54.0
+EDGE_FALL_MULTIPLIER = 25.0
 SIGNATURES = {
+    0x0021C400: 0x10400006,
+    0x0021C404: 0xC7808170,
+    0x0021C408: 0x26050120,
+    0x0021C40C: 0x3C0141C8,
+    0x0021C410: 0x44816000,
+    0x0021C414: 0x10001363,
+    0x0021C418: 0x260400E0,
     0x0021C41C: 0x3C010016,
     0x0021C420: 0xC42CED70,
     0x0021C424: 0x260400E0,
@@ -54,20 +62,25 @@ def derive_static(memory: bytes) -> dict[str, object]:
 
     tick_scalar = _f32(memory, TICK_SCALAR_ADDRESS)
     bias = tick_scalar * GROUND_BIAS_MULTIPLIER
+    edge_fall = tick_scalar * EDGE_FALL_MULTIPLIER
     return {
         "schema": 1,
         "tickScalarAddress": f"0x{TICK_SCALAR_ADDRESS:08x}",
         "tickScalar": tick_scalar,
         "groundBiasMultiplier": GROUND_BIAS_MULTIPLIER,
         "groundDownwardRequestPerTick": bias,
-        "state2Path": "0x0021c41c..0x0021c434 -> 0x00221264",
+        "edgeFallMultiplier": EDGE_FALL_MULTIPLIER,
+        "edgeFallAccelerationPerTick": edge_fall,
+        "supportedState2Path": "0x0021c41c..0x0021c434 -> 0x00221264",
+        "unsupportedState2Path": "0x0021c400..0x0021c418 -> 0x002211a4",
         "vectorHelper": "0x002334d0",
         "ordinaryHelperBranch": "0x00233528..0x00233534",
-        "equation": "request.z = request.z - (54 * (1/3600))",
+        "supportedEquation": "request.z = request.z - (54 * (1/3600))",
+        "unsupportedEquation": "request.z = request.z - (25 * (1/3600))",
         "signaturesVerified": len(SIGNATURES),
         "scope": (
-            "ordinary action-state-2 path; later collision clipping/projection "
-            "and transition branches remain separate recovery work"
+            "ordinary action-state-2 ground/edge request; later terrain "
+            "clipping/projection and non-state-2 transitions remain separate"
         ),
     }
 

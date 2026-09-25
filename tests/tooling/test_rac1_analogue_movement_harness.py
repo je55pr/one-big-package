@@ -92,6 +92,14 @@ class Rac1AnalogueHarnessTests(unittest.TestCase):
             (HARNESS.PLAYER_BASE + 0x2FC, "u32"),
         )
         self.assertEqual(
+            HARNESS.KNOWN_FIELDS["contact_slot_300"],
+            (HARNESS.PLAYER_BASE + 0x300, "u32"),
+        )
+        self.assertEqual(
+            HARNESS.KNOWN_FIELDS["contact_counters_30c"],
+            (HARNESS.PLAYER_BASE + 0x30C, "u32"),
+        )
+        self.assertEqual(
             HARNESS.KNOWN_FIELDS["persistent_support"],
             (HARNESS.PLAYER_BASE + 0x360, "u32"),
         )

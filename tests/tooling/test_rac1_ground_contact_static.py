@@ -28,7 +28,11 @@ class Rac1GroundContactStaticTests(unittest.TestCase):
         self.assertAlmostEqual(
             report["groundDownwardRequestPerTick"], 0.015, places=9
         )
-        self.assertIn("request.z = request.z -", report["equation"])
+        self.assertAlmostEqual(
+            report["edgeFallAccelerationPerTick"], 25.0 / 3600.0, places=9
+        )
+        self.assertIn("54 * (1/3600)", report["supportedEquation"])
+        self.assertIn("25 * (1/3600)", report["unsupportedEquation"])
 
     def test_changed_loaded_signature_fails_closed(self):
         memory = fixture_memory()
