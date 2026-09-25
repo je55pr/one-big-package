@@ -116,10 +116,26 @@ LEVEL0 `lvl.vtbl` provides bounded update addresses for the next archaeology
 slice, including 2754 `0x003CE278`, 2755 `0x003CEC50`, 2826
 `0x003D54B0`, and 2827 `0x003D7BD0`.
 
-Class 2755's small loaded update is already structurally informative: state 0
-checks a helper result against 6.0 before entering state 1; state 1 checks Moby
-byte `+0x60` bit 1 before entering state 2. That is not yet enough evidence to
-call the class an enemy or to reproduce its behaviour.
+Class 2755 is now admitted narrowly for opening instance 166, the first
+double-door immediately beyond the recovered opening lift. The LEVEL0 handler at
+`0x003CEC50` is small and complete enough to reproduce this instance's route
+behavior without assigning a broader family identity:
+
+- native state 0 computes 3D distance from Moby `+0x10` to Ratchet and enters
+  state 1 only for `distance < 6.0` (strict);
+- state 1 selects native sequence 1 and waits for Moby `+0x60 & 2`, the
+  animation-complete condition;
+- sequence 1 has 30 authored frames at speed 0.5, so the retail 60 Hz state
+  clock reaches completion after 60 native ticks;
+- completion enters state 2 and selects sequence 2, a one-frame latched-open
+  pose;
+- the class model is 7-joint / 120 triangles. Both LEVEL0 class-2755 instances
+  remain preserved as dynamic render objects, but only authored instance 166 is
+  bound to this opening-door behavior.
+
+The browser bakes sequence 1 plus the final sequence-2 pose into a 31-frame,
+30 fps one-shot dynamic-object clip. This is a presentation projection of the
+retail sequence clock, not a generic dynamic-Moby animation claim.
 
 ## First opening hostile: class 2827 / MSR I
 
@@ -279,19 +295,23 @@ Working now:
   witnessed approach/attack/recovery loop, using recovered attack distance and
   measured state-12 acceleration/cap;
 - opening MSR I joint contacts are collapsed at the shared-collision boundary to
-  at most one player damage record per native attack cycle.
+  at most one player damage record per native attack cycle;
+- opening class-2755 instance 166 now uses the retail strict-6-unit proximity
+  trigger, 60-tick sequence-1 opening clock, and sequence-2 latched-open pose.
 
 Still required for the goal:
 
 - recover route/activation conditions for later MSR I instances rather than
   generalising the opening-pair witness gate;
-- establish any opening door/trigger/gate/checkpoint behaviour that blocks the
-  ordinary route;
+- establish any additional opening trigger/gate/checkpoint behavior beyond the
+  first class-2755 door that still blocks the ordinary route;
 - replace or further bound the showcase Bolt reward assumptions where needed;
 - add an honest ordinary-route Aranos gameplay smoke;
 - complete the human-playable Jess signoff and document failures verbatim.
 
-The next smallest slice is the ordinary opening-route gate/door path and a
-browser smoke that reaches the now-live 205/206 encounter without teleporting.
-After that, later class-2827 activation can be widened only where route evidence
-supports it; the opening witness must not become a fabricated global aggro rule.
+The next smallest slice is an ordinary browser smoke through the recovered lift
+and class-2755 door to the now-live 205/206 encounter without teleporting. Any
+additional blocker encountered on that route should then be recovered from its
+own LEVEL0 authority. Later class-2827 activation can be widened only where route
+evidence supports it; the opening witness must not become a fabricated global
+aggro rule.

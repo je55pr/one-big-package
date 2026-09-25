@@ -56,10 +56,19 @@ public partial class OBPGame
         public float RiderOffsetY { get; set; }
     }
 
+    private sealed class GcOpeningDoorHostSession(
+        RuntimeWorldScene.DynamicObjectNode node,
+        GcAranosOpeningDoorSession door)
+    {
+        public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
+        public GcAranosOpeningDoorSession Door { get; } = door;
+    }
+
     private GcDamageTransportSession _gcDamageTransport = new();
     private readonly Dictionary<int, GcClass2827HostileSession> _gcClass2827Hostiles = [];
     private readonly Dictionary<int, GcOpeningMsr1HostSession> _gcOpeningMsr1 = [];
     private GcOpeningLiftHostSession? _gcOpeningLift;
+    private GcOpeningDoorHostSession? _gcOpeningDoor;
     private GcRatchetNanotechSession _gcRatchetNanotech = new();
     private double _gcNativeTickAccumulator;
     private RuntimeWorldScene.DynamicObjectNode? _crateDebugTarget;
@@ -83,6 +92,7 @@ public partial class OBPGame
         _gcClass2827Hostiles.Clear();
         _gcOpeningMsr1.Clear();
         _gcOpeningLift = null;
+        _gcOpeningDoor = null;
         _gcRatchetNanotech = new GcRatchetNanotechSession();
         _gcNativeTickAccumulator = 0d;
         _crateBoltSession = new GcFreshBoltSession();
@@ -105,6 +115,17 @@ public partial class OBPGame
             _gcOpeningLift = new GcOpeningLiftHostSession(
                 openingLiftNode,
                 new GcAranosOpeningLiftSession(openingLiftNode.Source));
+        }
+
+        var openingDoorNode = nodes.FirstOrDefault(n =>
+            n.Source.SourceGame == "rac2" &&
+            n.Source.NativeClassId == GcAranosOpeningDoorSession.NativeClassId &&
+            n.Source.InstanceIndex == GcAranosOpeningDoorSession.OpeningInstanceIndex);
+        if (openingDoorNode is not null)
+        {
+            _gcOpeningDoor = new GcOpeningDoorHostSession(
+                openingDoorNode,
+                new GcAranosOpeningDoorSession(openingDoorNode.Source, openingDoorNode.State));
         }
 
         foreach (var node in nodes.Where(n =>
@@ -323,7 +344,7 @@ public partial class OBPGame
     private void TickGcGameplay(double delta)
     {
         if (_world?.Game != "rac2" || _player is null ||
-            (_gcClass2827Hostiles.Count == 0 && _gcOpeningLift is null))
+            (_gcClass2827Hostiles.Count == 0 && _gcOpeningLift is null && _gcOpeningDoor is null))
         {
             return;
         }
@@ -339,6 +360,7 @@ public partial class OBPGame
         for (int tick = 0; tick < ticks; tick++)
         {
             TickGcOpeningLiftNativeTick();
+            TickGcOpeningDoorNativeTick();
 
             foreach (var hostile in _gcClass2827Hostiles.Values)
             {
@@ -400,6 +422,34 @@ public partial class OBPGame
         {
             session.CarryingPlayer = false;
             GD.Print($"[gc-lift] opening class-2753 ride reached native Z={step.NativeZ:0.###}");
+        }
+    }
+
+    private void TickGcOpeningDoorNativeTick()
+    {
+        if (_gcOpeningDoor is not { } session ||
+            _player is null || !IsInstanceValid(_player) ||
+            !IsInstanceValid(session.Node.Root))
+        {
+            return;
+        }
+
+        if (session.Door.Phase == GcAranosOpeningDoorPhase.Closed)
+        {
+            double distance = session.Node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition);
+            if (session.Door.ObservePlayerDistance(distance))
+            {
+                session.Node.ApplyState(session.Door.EntityState);
+                GD.Print($"[gc-door] opening class-2755 trigger admitted at distance={distance:0.###}");
+            }
+        }
+
+        var before = session.Door.Phase;
+        var after = session.Door.AdvanceNativeTick();
+        if (before != GcAranosOpeningDoorPhase.Open &&
+            after == GcAranosOpeningDoorPhase.Open)
+        {
+            GD.Print("[gc-door] opening class-2755 reached native state 2 / latched-open pose");
         }
     }
 

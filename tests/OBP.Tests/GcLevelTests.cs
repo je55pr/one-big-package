@@ -11,6 +11,7 @@ using OBP.RAC2;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
+using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
@@ -710,17 +711,29 @@ public class GcLevelTests
         var world = GcWorldImport.Build(reader, 0);
 
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
-        Assert.Equal(263, world.Meshes.Count);
+        Assert.Equal(262, world.Meshes.Count);
         Assert.Equal(33_710, Tris("tfrag"));
         Assert.Equal(771_104, Tris("tie"));
         Assert.Equal(71_334, Tris("shrub"));
         // oc2602 instances (200-frame spin) are lifted out as animated mobies;
-        // class 500 crates and Aranos class-2827 MSR I hostiles are preserved
-        // separately as per-instance dynamic objects.
-        Assert.Equal(139_210, Tris("moby"));
-        Assert.Equal(90_450, world.TotalDynamicTriangles);
+        // class 500 crates, opening lift/doors and Aranos class-2827 MSR I hostiles
+        // are preserved separately as per-instance dynamic objects.
+        Assert.Equal(138_009, Tris("moby"));
+        Assert.Equal(91_651, world.TotalDynamicTriangles);
         Assert.Equal(43, world.DynamicObjects!.Count(o => o.NativeClassId == 500));
+        Assert.Single(world.DynamicObjects!, o => o.NativeClassId == GcAranosOpeningLiftSession.NativeClassId);
+        Assert.Equal(2, world.DynamicObjects!.Count(o => o.NativeClassId == GcAranosOpeningDoorSession.NativeClassId));
         Assert.Equal(31, world.DynamicObjects!.Count(o => o.NativeClassId == 2827));
+
+        var openingDoor = Assert.Single(world.DynamicObjects!, o =>
+            o.NativeClassId == GcAranosOpeningDoorSession.NativeClassId &&
+            o.InstanceIndex == GcAranosOpeningDoorSession.OpeningInstanceIndex);
+        var doorClip = Assert.Single(openingDoor.Animations!.Clips);
+        Assert.Equal(RuntimeObjectAnimationRole.Reaction, doorClip.Role);
+        Assert.Equal(31, doorClip.FrameCount);
+        Assert.Equal(30f, doorClip.ConstantFramesPerSecond);
+        Assert.Equal(6, doorClip.Surfaces.Count);
+
         Assert.NotEmpty(world.AnimatedMeshes!);
         Assert.All(world.AnimatedMeshes!, a => Assert.Equal(200, a.Frames.Count));
 

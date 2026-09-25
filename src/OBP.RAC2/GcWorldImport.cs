@@ -182,9 +182,11 @@ public static class GcWorldImport
         var dynamicClasses = new HashSet<int> { 500 };
         if (level == 0)
         {
-            // Aranos opening lift and MSR I family. Both need per-instance runtime
-            // identity rather than remaining welded into the static Moby soup.
+            // Aranos opening lift, first progression door and MSR I family need
+            // per-instance runtime identity rather than remaining welded into the
+            // static Moby soup.
             dynamicClasses.Add(GcAranosOpeningLiftSession.NativeClassId);
+            dynamicClasses.Add(GcAranosOpeningDoorSession.NativeClassId);
             dynamicClasses.Add(GcClass2827HostileSession.NativeClassId);
         }
         var dynamicObjects = BuildDynamicMobyObjects(
@@ -766,11 +768,55 @@ public static class GcWorldImport
                 InteractionId: $"level:{level}:moby:{inst.Index}",
                 Transform: new RuntimeObjectTransform(obpMatrix),
                 Meshes: surfaces,
-                NativePayloads: payloads));
+                NativePayloads: payloads,
+                Animations: BuildAdmittedDynamicAnimationSet(cls, surfaces)));
             dynamicInstances.Add(inst.Index);
         }
 
         return outp;
+    }
+
+    private static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
+        GcUyaMoby.MobyClass cls,
+        IReadOnlyList<RuntimeObjectMesh> surfaces)
+    {
+        if (cls.OClass != GcAranosOpeningDoorSession.NativeClassId)
+            return null;
+
+        if (cls.Joints.Count != 7 || cls.Mesh.Indices.Length / 3 != 120)
+            throw new InvalidDataException("Aranos class-2755 door model drifted from the retail witness.");
+
+        var opening = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 1)
+            ?? throw new InvalidDataException("Aranos class-2755 opening sequence 1 is absent.");
+        var open = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 2)
+            ?? throw new InvalidDataException("Aranos class-2755 open sequence 2 is absent.");
+        if (opening.Frames.Count != GcAranosOpeningDoorSession.OpeningSequenceFrames ||
+            opening.Frames.Any(frame => frame.Speed != 0.5f) ||
+            open.Frames.Count != 1)
+            throw new InvalidDataException("Aranos class-2755 door animation no longer matches the retail witness.");
+
+        var posedFrames = opening.Frames.Concat(open.Frames).Select(frame =>
+        {
+            var posed = OBP.RAC2.Animation.MobyAnimation.Pose(cls.Mesh, cls.Joints, frame);
+            var local = new double[posed.Length];
+            for (int i = 0; i < posed.Length; i += 3)
+            {
+                local[i] = R2(posed[i]);
+                local[i + 1] = R2(posed[i + 2]);
+                local[i + 2] = R2(posed[i + 1]);
+            }
+            return local;
+        }).ToArray();
+
+        var animatedSurfaces = Enumerable.Range(0, surfaces.Count)
+            .Select(index => new RuntimeObjectAnimationSurface(index, posedFrames))
+            .ToArray();
+        double secondsPerFrame = 1d / GcAranosOpeningDoorSession.OpeningFrameRate;
+        var durations = Enumerable.Repeat(secondsPerFrame, posedFrames.Length).ToArray();
+        return new RuntimeObjectAnimationSet([
+            new RuntimeObjectAnimationClip(
+                "opening", RuntimeObjectAnimationRole.Reaction, animatedSurfaces, durations)
+        ]);
     }
 
     /// <summary>Convert a native Z-up local-to-world matrix to the equivalent OBP Y-up matrix.</summary>
