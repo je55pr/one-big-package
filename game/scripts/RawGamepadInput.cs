@@ -34,13 +34,16 @@ internal sealed class RawGamepadInput
 
     public RawPlayerInputFrame Read()
     {
-        var move = new Vector2(
+        int? device = ResolveActiveDevice();
+        var rawMove = new Vector2(
             Axis(MoveLeft, MoveRight),
             Axis(MoveForward, MoveBack));
-        var camera = new Vector2(
+        var rawCamera = new Vector2(
             Axis(CameraLeft, CameraRight),
             Axis(CameraUp, CameraDown));
-        RawGamepadDiagnostic? diagnostic = ReadDiagnostic();
+        var move = ControllerCalibrationStore.ApplyLeft(device, rawMove);
+        var camera = ControllerCalibrationStore.ApplyRight(device, rawCamera);
+        RawGamepadDiagnostic? diagnostic = ReadDiagnostic(device);
         if (diagnostic is { } current && _announcedDevice != current.DeviceId)
         {
             _announcedDevice = current.DeviceId;
@@ -65,9 +68,8 @@ internal sealed class RawGamepadInput
             Input.GetActionRawStrength(negative, exactMatch: true),
             Input.GetActionRawStrength(positive, exactMatch: true));
 
-    private RawGamepadDiagnostic? ReadDiagnostic()
+    private static RawGamepadDiagnostic? ReadDiagnostic(int? device)
     {
-        int? device = ResolveActiveDevice();
         if (device is null)
             return null;
 

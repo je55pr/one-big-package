@@ -916,7 +916,7 @@ public partial class DebugPlayer : CharacterBody3D
         var analogue = _rac1Movement.AnalogueInput;
         string pad = _liveInput.Diagnostic is { } diagnostic ? diagnostic.Format() : "none";
         string inputLine = FormattableString.Invariant(
-            $"input raw right/forward=({_liveInput.Move.X:0.000000},{-_liveInput.Move.Y:0.000000}) conditioned=({analogue.X:0.000000},{analogue.Y:0.000000}) mag={analogue.Magnitude:0.000000} uncapped={analogue.UncappedMagnitude:0.000000} band={analogue.SpeedBand}\n");
+            $"input host right/forward=({_liveInput.Move.X:0.000000},{-_liveInput.Move.Y:0.000000}) conditioned=({analogue.X:0.000000},{analogue.Y:0.000000}) mag={analogue.Magnitude:0.000000} uncapped={analogue.UncappedMagnitude:0.000000} band={analogue.SpeedBand}\n");
         string surfaceIntent = _rac1SurfaceActionIntent is { } intent
             ? $"0x{intent.NativeActionState:x2}/{intent.Interaction}"
             : "none";

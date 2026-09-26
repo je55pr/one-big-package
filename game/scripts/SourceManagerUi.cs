@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using OBP.Core;
 using OBP.PS2;
 
@@ -9,6 +9,7 @@ public partial class SourceManagerUi : CanvasLayer
     public event Action<ObpSourceGame>? SelectRequested;
     public event Action<ObpSourceGame>? ForgetRequested;
     public event Action? BrowseWorldsRequested;
+    public event Action? ControllerSettingsRequested;
 
     private readonly Dictionary<ObpSourceGame, Label> _statusLabels = new();
     private readonly Dictionary<ObpSourceGame, Button> _selectButtons = new();
@@ -73,6 +74,17 @@ public partial class SourceManagerUi : CanvasLayer
         _browseWorlds.Pressed += () => BrowseWorldsRequested?.Invoke();
         _focusOrder.Add(_browseWorlds);
         outer.AddChild(_browseWorlds);
+
+        var controllerSettings = new Button
+        {
+            Text = "CONTROLLER SETTINGS",
+            CustomMinimumSize = new Vector2(0, 46),
+            TooltipText = "Inspect and calibrate connected controller sticks.",
+            FocusMode = Control.FocusModeEnum.All,
+        };
+        controllerSettings.Pressed += () => ControllerSettingsRequested?.Invoke();
+        _focusOrder.Add(controllerSettings);
+        outer.AddChild(controllerSettings);
 
         _message = new Label
         {
