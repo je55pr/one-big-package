@@ -2,6 +2,7 @@ using System.Text.Json;
 using OBP.Core;
 using OBP.IO;
 using OBP.RAC3;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Geometry;
 using OBP.RAC3.Level;
 using OBP.Runtime;
@@ -61,6 +62,99 @@ public sealed class Rac3WorldTests
         Assert.All(world.Meshes, m => Assert.All(m.Positions, v => Assert.True(double.IsFinite(v))));
         if (table == 1) Assert.Equal(45, world.AnimatedMeshes?.Count);
         else Assert.Empty(world.AnimatedMeshes ?? Array.Empty<RuntimeAnimatedMesh>());
+    }
+
+    [SkippableFact]
+    public void RetailProviderCarriesVeldinGameplaySidecarByWorldIdentity()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+
+        ObpDestination destination =
+            Rac3DestinationCatalogue.Instance.FindByTableIndex(1)!;
+        RuntimeWorld world =
+            Rac3WorldProvider.Instance.Load(iso!, destination);
+
+        Rac3WorldGameplayContext context =
+            Rac3WorldGameplaySidecar.Require(world);
+
+        Assert.Equal(1, context.TableIndex);
+        Assert.Equal(735, context.Gameplay.MobyInstances.Count);
+        Assert.Equal(125, context.Gameplay.TargetVolumes.Count);
+        Assert.Equal(159, context.Gameplay.TargetPolygons.Count);
+        Assert.Equal(106, context.Gameplay.TargetGroups.Count);
+        Assert.Same(
+            context,
+            Rac3WorldGameplaySidecar.Require(world));
+    }
+
+    [SkippableFact]
+    public void RetailVeldinAuthoredPopulationFeedsUyaRuntimeWithoutClassGuessing()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
+        var runtime = new UyaMobyRuntimeSession();
+
+        runtime.RegisterWorld(world);
+
+        Assert.Equal(735, runtime.RegisteredCount);
+        var class0 = Assert.Single(runtime.Instances, item => item.Key == new UyaMobyRuntimeKey(0, 0));
+        Assert.Equal(0, class0.PVar.Length);
+        Assert.InRange(class0.Source.Transform.Matrix[12], 365.31, 365.33);
+        Assert.InRange(class0.Source.Transform.Matrix[13], 78.67, 78.69);
+        Assert.InRange(class0.Source.Transform.Matrix[14], 103.49, 103.51);
+
+        var nearby500 = Assert.Single(runtime.Instances, item => item.Key == new UyaMobyRuntimeKey(500, 311));
+        Assert.Equal(352, nearby500.Identity.NativeUid);
+        Assert.Equal(320, nearby500.PVar.Length);
+        Assert.InRange(nearby500.Source.Transform.Matrix[12], 346.93, 346.95);
+        Assert.InRange(nearby500.Source.Transform.Matrix[13], 77.96, 77.98);
+        Assert.InRange(nearby500.Source.Transform.Matrix[14], 115.13, 115.15);
+        Assert.True(nearby500.IsActive);
+    }
+
+    [SkippableFact]
+    public void RetailVeldinClass500PopulationUsesRecoveredOrdinaryDestructibleRoute()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
+        var sources = world.DynamicObjects!
+            .Where(o => o.NativeClassId == UyaClass500Destructible.NativeClassId)
+            .OrderBy(o => o.InstanceIndex)
+            .ToArray();
+
+        Assert.Equal(131, sources.Length);
+        var authored = sources
+            .Select(UyaClass500Destructible.ReadAuthored)
+            .ToArray();
+        Assert.All(authored, item =>
+        {
+            Assert.Equal(0u, item.PVarB0);
+            Assert.Equal(0, item.PVarC8);
+            Assert.Equal(0, item.PVarF8);
+            Assert.Equal(0, item.PVarFb);
+            Assert.Equal(
+                UyaClass500PostBreakRoute.Deactivate,
+                UyaClass500Destructible.PostBreakRoute(item));
+        });
+        Assert.Equal(
+            new[] { (11, 14), (44, 110), (61, 7) },
+            authored.GroupBy(item => item.AuthoredValue)
+                .OrderBy(group => group.Key)
+                .Select(group => (group.Key, group.Count()))
+                .ToArray());
+
+        RuntimeDynamicObject instance311 = Assert.Single(
+            sources,
+            source => source.InstanceIndex == 311);
+        UyaClass500AuthoredState witness =
+            UyaClass500Destructible.ReadAuthored(instance311);
+        Assert.Equal(352, witness.Uid);
+        Assert.Equal(44, witness.AuthoredValue);
     }
 
     [SkippableFact]

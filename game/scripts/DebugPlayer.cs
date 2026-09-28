@@ -85,7 +85,11 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Reset host collision diagnostics without changing player/controller state.</summary>
     public void ResetRac1CollisionDiagnostics() => Rac1MaxObservedSlideCollisions = 0;
 
-    /// <summary>Ordinary non-R&C1 primary attack input; the source-game host resolves consequences.</summary>
+    /// <summary>
+    /// Non-R&C1 primary-action request. The GC debug crate harness and bounded
+    /// UYA compatibility host may resolve contact; source-game gameplay code owns
+    /// any admitted consequence.
+    /// </summary>
     public event Action? CrateStrikeRequested;
 
     /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host resolves the equipped item.</summary>

@@ -18,7 +18,12 @@ public sealed class Rac3WorldProvider : IObpWorldProvider
     {
         int table = ResolveTableIndex(destination) ?? throw new ArgumentException($"Destination '{destination.DestinationId}' is not loadable by the UYA provider.", nameof(destination));
         using var reader = new FileRandomAccessReader(sourcePath);
-        return Rac3WorldImport.Build(reader, table);
+        Rac3WorldImport.ImportResult result =
+            Rac3WorldImport.BuildObserved(reader, table);
+        Rac3WorldGameplaySidecar.Attach(
+            result.World,
+            new Rac3WorldGameplayContext(table, result.Gameplay));
+        return result.World;
     }
     public int? ResolveTableIndex(ObpDestination destination)
     {

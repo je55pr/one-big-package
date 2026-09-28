@@ -3,6 +3,7 @@ using OBP.IO;
 using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
+using OBP.RAC3.Gameplay;
 using OBP.RAC3.Geometry;
 using OBP.RAC3.Level;
 using OBP.Runtime;
@@ -17,8 +18,15 @@ namespace OBP.RAC3;
 /// </summary>
 public static partial class Rac3WorldImport
 {
-    public sealed record ImportResult(RuntimeWorld World, int TfragCount, int TieInstanceCount, int ShrubInstanceCount,
-        int MobyInstanceCount, int MobiesWithPvar, int SkyShellCount);
+    public sealed record ImportResult(
+        RuntimeWorld World,
+        UyaGameplay.Gameplay Gameplay,
+        int TfragCount,
+        int TieInstanceCount,
+        int ShrubInstanceCount,
+        int MobyInstanceCount,
+        int MobiesWithPvar,
+        int SkyShellCount);
 
     public static RuntimeWorld Build(IRandomAccessReader disc, int tableIndex) => BuildObserved(disc, tableIndex).World;
 
@@ -91,8 +99,12 @@ public static partial class Rac3WorldImport
         var animatedMeshes = BuildAnimationPreview(tableIndex, gameplay.MobyInstances, mobyClasses.Decoded, out var animatedInstances);
         var dynamicObjects = gameplay.MobyInstances.Select(m =>
         {
-            var payloads = new List<RuntimeOpaquePayload> { new("rac3-moby-instance-gc-layout-compat", m.RawInstance) };
-            if (m.PvarData is { } pv) payloads.Add(new("rac3-pvar-gc-layout-compat", pv));
+            var payloads = new List<RuntimeOpaquePayload>
+            {
+                new(UyaMobyRuntimeSession.InstancePayloadFormat, m.RawInstance),
+            };
+            if (m.PvarData is { } pv)
+                payloads.Add(new(UyaMobyRuntimeSession.PVarPayloadFormat, pv));
             IReadOnlyList<RuntimeObjectMesh> objectMeshes = animatedInstances.Contains(m.Index)
                 ? Array.Empty<RuntimeObjectMesh>()
                 : mobyModels.TryGetValue(m.OClass, out var modelMeshes)
@@ -134,8 +146,15 @@ public static partial class Rac3WorldImport
             ?? throw new InvalidDataException($"UYA table {tableIndex} has no canonical destination metadata.");
         var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, destination.PlanetLabel, destination.LocationLabel, meshes, textures, materialCount, collision, bounds, environment, ship,
             Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects, AmbientAnimations: ambientAnimations);
-        return new ImportResult(world, tfrag.TfragCount, gameplay.TieInstances.Count, gameplay.ShrubInstances.Count, gameplay.MobyInstances.Count,
-            gameplay.MobyInstances.Count(m => m.PvarData is not null), skyShellCount);
+        return new ImportResult(
+            world,
+            gameplay,
+            tfrag.TfragCount,
+            gameplay.TieInstances.Count,
+            gameplay.ShrubInstances.Count,
+            gameplay.MobyInstances.Count,
+            gameplay.MobyInstances.Count(m => m.PvarData is not null),
+            skyShellCount);
     }
 
     private static RuntimeMaterialPresentation? PresentationFor(
