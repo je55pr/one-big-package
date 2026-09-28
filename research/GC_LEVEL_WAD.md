@@ -8,11 +8,7 @@
 filesystem. See [`RETAIL_TRILOGY_DISC_LAYOUT.md`](RETAIL_TRILOGY_DISC_LAYOUT.md)
 for why Going Commando is the only trilogy game whose level data is file-addressable.
 
-Reproduce the raw header bytes:
-
-```
-node tools/container-headers.mjs "<GC iso>" --glob "/G/LEVEL{0..26}.WAD" --bytes 0x70
-```
+The original raw-header census used the retired TypeScript `tools/container-headers.mjs` helper. Current bounded parsing lives in `src/OBP.RAC2/Level/GcLevelWad.cs` and is exercised by the GC retail-gated tests; the old command is historical provenance rather than a runnable project instruction.
 
 ## Confirmed structure
 
@@ -67,8 +63,7 @@ For every one of the 27 retail files:
   **< 1 sector** (96–2016 bytes of tail padding).
 - Slot 6 appears **only** when slots 7, 8 and 9 also appear (`LEVEL19`, `LEVEL20`).
 
-`tools/gc-level-wad.mjs` re-verifies all of the above from the ISO and is the
-source of [`generated/rac2-level-catalogue.json`](generated/rac2-level-catalogue.json).
+The retired `tools/gc-level-wad.mjs` generator originally re-verified all of the above from the ISO and produced [`generated/rac2-level-catalogue.json`](generated/rac2-level-catalogue.json). That path is historical provenance, not current tooling; the retained snapshot is classified in [`generated/MANIFEST.md`](generated/MANIFEST.md).
 
 ### `unknown0x0c`
 
@@ -111,15 +106,10 @@ carrying separate NTSC/PAL gameplay ranges.
 **This retail NTSC-U v1.01 build uses `header_size == 0x60`, not `0x68`.** The
 `0x68` Wrench branch does not describe this build. Whether it describes a PAL
 Going Commando build or a different revision is not something our discs can
-answer. `packages/gc-level-wad` deliberately rejects any `headerSize != 0x60` so
-that a `0x68` (or other-family) container is a hard parse error rather than a
-silent misparse.
+answer. The current `GcLevelWad` parser deliberately rejects any `headerSize != 0x60` so that a `0x68` (or other-family) container is a hard parse error rather than a silent misparse.
 
 ## Parser
 
-`packages/gc-level-wad` (`readGcLevelWadHeader`, `openGcLevelWadLump`,
-`analyzeGcLevelWadTiling`). It performs bounded reads only (one 0x60-byte header
-read; lump payloads are never read), preserves every raw field, exposes each
-present lump as a clamped `SubRangeReader`, and rejects: short source, wrong
-`headerSize`, a lump with size but no offset, a lump offset inside the header or
-past the source, and sector-field overflow. Tests: `tests/gc-level-wad.test.mjs`.
+The current parser is `src/OBP.RAC2/Level/GcLevelWad.cs`. It performs a bounded 0x60-byte header read, preserves the raw header fields, exposes present lumps through bounded `SubRangeReader` values, and rejects short sources, wrong `headerSize`, a lump with size but no offset, offsets inside the header, offsets past the source and out-of-range lump indices. Retail-gated coverage lives in `tests/OBP.Tests/GcLevelTests.cs` and related GC tests.
+
+Older references to `packages/gc-level-wad`, `readGcLevelWadHeader`, `openGcLevelWadLump`, `analyzeGcLevelWadTiling` and `tests/gc-level-wad.test.mjs` describe the retired TypeScript implementation from which the C# parser was translated.

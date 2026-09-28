@@ -2,12 +2,7 @@
 
 **Build:** `rac2-ntscu-v1.01` (`SCUS-97268`, SHA-256 `9db2e33e…a9b1ce5`).
 
-Machine-generated: [`generated/rac2-level-catalogue.json`](generated/rac2-level-catalogue.json).
-Regenerate:
-
-```
-node tools/gc-level-wad.mjs "<GC iso>" --out research/generated/rac2-level-catalogue.json --md
-```
+Historical machine-generated snapshot: [`generated/rac2-level-catalogue.json`](generated/rac2-level-catalogue.json). Its original `tools/gc-level-wad.mjs` generator was retired with the TypeScript implementation, so the embedded/older regeneration command is provenance rather than a currently runnable instruction. The snapshot remains archival evidence; see [`generated/MANIFEST.md`](generated/MANIFEST.md).
 
 Every row below is derived from the WAD's own bytes: `levelId` is the u32 at
 `LEVEL<n>.WAD` offset `0x08` (see [`GC_LEVEL_WAD.md`](GC_LEVEL_WAD.md)). Human

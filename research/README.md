@@ -52,7 +52,7 @@ When a document contains an unresolved hypothesis, it should say so explicitly. 
 
 ## Generated evidence
 
-[`generated/`](generated/) contains deterministic reports/catalogues produced by tooling. Legacy filenames containing `stage0` describe the development stage in which those reports were introduced; they are not a claim that the whole repository is still at Stage 0.
+[`generated/`](generated/) contains payload-free reports, catalogues and retained archaeology reductions. See [`generated/MANIFEST.md`](generated/MANIFEST.md) for each artifact's lifecycle status and whether its original generator is still runnable. Legacy filenames containing `stage0` describe the development stage in which those reports were introduced; they are not a claim that the whole repository is still at Stage 0.
 
 [`manifests/`](manifests/) contains canonical authority/source manifests checked against importer constants.
 
