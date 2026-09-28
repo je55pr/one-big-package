@@ -132,6 +132,14 @@ public sealed class Rac1RatchetMovementController
     public Rac1AnalogueInput.Conditioned AnalogueInput { get; private set; }
     public double TargetPlanarStep { get; private set; }
 
+    /// <summary>
+    /// True while retail ordinary action state 2 has lost support and is applying
+    /// the recovered 25/3600 edge-fall recurrence. This is not jump/fall action 7:
+    /// retained Veldin edge traces keep action 2 and locomotion sequence 4 through
+    /// all unsupported frames before recontact.
+    /// </summary>
+    public bool IsOrdinaryEdgeFall => _ordinaryEdgeFall && Phase == Rac1RatchetMovementPhase.Falling;
+
     public readonly record struct StepResult(
         double PlanarX,
         double PlanarY,
@@ -172,7 +180,17 @@ public sealed class Rac1RatchetMovementController
     {
         var analogue = Rac1AnalogueInput.ConditionUnitAxes(input.PlanarX, input.PlanarY);
         AnalogueInput = analogue;
-        bool alignGroundTranslationToFacing = UpdatePlanar(input, analogue, contact.IsGrounded);
+        // Native ordinary action state 2 survives transient support loss. The
+        // retained edge trace stays in sequence 4/action 2 while P+0x30e counts
+        // unsupported updates, so planar/yaw state must not switch to jump-air
+        // recurrence merely because the host floor bit dropped.
+        bool ordinaryState2Motion = useRecoveredOrdinaryContactMotion &&
+            (Phase == Rac1RatchetMovementPhase.Grounded || IsOrdinaryEdgeFall);
+        bool alignGroundTranslationToFacing = UpdatePlanar(
+            input,
+            analogue,
+            contact.IsGrounded,
+            ordinaryState2Motion);
         UpdateVertical(input, contact, useRecoveredOrdinaryContactMotion);
         UpdateLocomotionState(input, analogue, contact);
         UpdateYawMode(input, analogue, contact);
@@ -186,6 +204,21 @@ public sealed class Rac1RatchetMovementController
         }
 
         return new StepResult(_planarX, _planarY, _verticalStep, Phase, LocomotionState, YawMode);
+    }
+
+    /// <summary>
+    /// Clear ordinary state-2 planar carry when another recovered player action
+    /// takes ownership of translation. Wrench action 0x13 uses its own P+0x190/
+    /// P+0x194 lunge controller, so ordinary run momentum must not survive into it.
+    /// </summary>
+    public void CancelOrdinaryPlanarMotionForAction()
+    {
+        _planarX = 0d;
+        _planarY = 0d;
+        _planarMagnitude = 0d;
+        _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
+        _groundReleaseSampleIndex = -1;
+        TargetPlanarStep = 0d;
     }
 
     public void Reset()
@@ -210,11 +243,14 @@ public sealed class Rac1RatchetMovementController
     private bool UpdatePlanar(
         PlayerControlIntent input,
         Rac1AnalogueInput.Conditioned analogue,
-        bool grounded)
+        bool grounded,
+        bool ordinaryState2Motion)
     {
         bool crouching = grounded && input.CrouchHeld;
         bool hasIntent = !crouching && analogue.IsActive;
-        bool usesAirPlanarLaw = !grounded || Phase != Rac1RatchetMovementPhase.Grounded;
+        bool usesAirPlanarLaw =
+            (!grounded || Phase != Rac1RatchetMovementPhase.Grounded) &&
+            !ordinaryState2Motion;
         TargetPlanarStep = hasIntent
             ? usesAirPlanarLaw
                 ? MaximumPlanarStep * analogue.Magnitude
@@ -375,7 +411,7 @@ public sealed class Rac1RatchetMovementController
         {
             Rac1RatchetMovementPhase.JumpAnticipation => Rac1RatchetLocomotionState.JumpAnticipation,
             Rac1RatchetMovementPhase.Rising => Rac1RatchetLocomotionState.Rising,
-            Rac1RatchetMovementPhase.Falling => Rac1RatchetLocomotionState.Falling,
+            Rac1RatchetMovementPhase.Falling when !IsOrdinaryEdgeFall => Rac1RatchetLocomotionState.Falling,
             _ when contact.IsGrounded && input.CrouchHeld =>
                 analogue.IsActive
                     ? Rac1RatchetLocomotionState.CrouchTurning
@@ -391,10 +427,10 @@ public sealed class Rac1RatchetMovementController
         Rac1AnalogueInput.Conditioned analogue,
         PlayerContactFacts contact)
     {
-        bool airborne = !contact.IsGrounded ||
-            Phase is Rac1RatchetMovementPhase.JumpAnticipation or
-                Rac1RatchetMovementPhase.Rising or
-                Rac1RatchetMovementPhase.Falling;
+        bool airborne = (!contact.IsGrounded && !IsOrdinaryEdgeFall) ||
+            Phase == Rac1RatchetMovementPhase.JumpAnticipation ||
+            Phase == Rac1RatchetMovementPhase.Rising ||
+            (Phase == Rac1RatchetMovementPhase.Falling && !IsOrdinaryEdgeFall);
 
         if (airborne)
         {

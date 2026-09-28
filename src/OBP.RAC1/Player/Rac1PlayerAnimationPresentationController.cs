@@ -33,13 +33,25 @@ public sealed class Rac1PlayerAnimationPresentationController : IPlayerAnimation
             throw new ArgumentOutOfRangeException(nameof(clockSeconds));
 
         _clockSeconds = Math.Max(0, clockSeconds);
-        CompleteLocomotionStartIfNeeded();
         CompleteAttackIfNeeded();
         return Current;
     }
 
     public PlayerAnimationPresentation SetAnimationState(PlayerAnimationState state)
     {
+        if (_currentSequenceId == Rac1RatchetSequenceSelection.LocomotionStartSequenceId &&
+            state == PlayerAnimationState.Run)
+        {
+            _airborneReturnState = PlayerAnimationState.Run;
+            Select(
+                PlayerAnimationState.Run,
+                Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
+                Rac1RatchetSequenceSelection.NeutralActionState,
+                loop: true,
+                restart: true);
+            return Current;
+        }
+
         if (state == Current.SemanticState)
             return Current;
 
@@ -146,25 +158,6 @@ public sealed class Rac1PlayerAnimationPresentationController : IPlayerAnimation
         }
 
         return Current;
-    }
-
-    private void CompleteLocomotionStartIfNeeded()
-    {
-        if (!IsLocomotion(Current.SemanticState) ||
-            _currentSequenceId != Rac1RatchetSequenceSelection.LocomotionStartSequenceId ||
-            Current.ElapsedAt(_clockSeconds) < CurrentClip.DurationSeconds)
-        {
-            return;
-        }
-
-        double completedAt = Current.ClipStartedAtSeconds + CurrentClip.DurationSeconds;
-        Select(
-            Current.SemanticState,
-            Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
-            Rac1RatchetSequenceSelection.NeutralActionState,
-            loop: true,
-            restart: true,
-            startAtSeconds: completedAt);
     }
 
     private void CompleteAttackIfNeeded()

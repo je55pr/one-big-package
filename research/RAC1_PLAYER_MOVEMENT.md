@@ -206,6 +206,18 @@ Recovered action identities are now explicit: class 0 selects shallow-water **WA
 
 `research/generated/rac1-special-surface-reachability.json` now proves these classes are not synthetic-only test inputs. An ISO-backed decoded collision census finds 3,936 class-0 triangles on Novalis (`LEVEL1`), 1,975 class-3 triangles on Aridia (`LEVEL2`), and 2,777 class-7 triangles on Hoven (`LEVEL12`); additional class-0 worlds are Rilgar, Batalia, Pokitaru, Quartu and Veldin Orbit, while Oltanis also contains class 7. `Rac1SpecialSurfaceReachabilityTests` takes an actual source material byte from the Novalis/Aridia/Hoven collision, routes it through the production contact decoder/action selector, and verifies ordinary movement still throws rather than borrowing the ground controller. Quartu (`LEVEL15`) independently contains 703 class-0 collision triangles and 18 authored class-1250 Mobies, tying the recovered `1/24` class-1250 pre-transform bias to a real decoded level population. Veldin `LEVEL0` remains the ordinary control: 86,184 collision triangles and zero decoded classes 0, 3 or 7, so this fail-closed boundary does not replace ordinary Veldin ground motion.
 
+## Generation 7 human-playable acceptance failures
+
+Jess retested the current Veldin build after calibrating her Joy-Cons through the host-only controller calibration layer. The following five failures are retained verbatim and are acceptance blockers for this milestone:
+
+1. "falling off a single pixel ledge initiates the dramatic falling animation for like a frame"
+2. "wrench swings should cancel your momentum and just move you in the swing direction a bit, currently you can swing and keep moving around"
+3. "there are also some tiny little slopes/raised bits that he can definitely just run onto in the base game, but here he gets stuck running into their edge"
+4. "he can be in the run band and speed and still do the walk animation"
+5. "running down a slope means you can't jump"
+
+The controller calibration layer remains host preprocessing only: calibrated host axes still enter the recovered R&C1 conditioner unchanged. These failures must therefore be resolved in R&C1 player-state/contact/presentation/attack-motion laws or in the narrow Godot collision adapter, not by broad analogue retuning.
+
 ## Deliberately unresolved
 
 - the exact translational walk/run selector inside the retained 62/63 live bracket, the trigger behind the flat sequence-4 right-to-left run slowdown and the special run-release 180-degree target-aligned restart, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;

@@ -69,6 +69,50 @@ public sealed class Rac1WrenchCombatTests
     }
 
     [Fact]
+    public void FirstSwingMotion_ReplaysRecoveredTargetRiseAndDecay()
+    {
+        var motion = new Rac1WrenchMotionSession();
+        motion.Begin(0d);
+
+        Rac1WrenchDirection step = default;
+        for (int i = 0; i < 8; i++)
+            step = motion.Step();
+
+        Assert.Equal(Rac1WrenchMotionSession.FirstSwingTargetStep, motion.Magnitude, 12);
+        Assert.Equal(Rac1WrenchMotionSession.FirstSwingTargetStep, step.X, 12);
+        Assert.Equal(0d, step.Y, 12);
+
+        for (int i = 8; i < Rac1WrenchMotionSession.FirstSwingTargetTicks; i++)
+            motion.Step();
+        Assert.Equal(Rac1WrenchMotionSession.FirstSwingTargetStep, motion.Magnitude, 12);
+
+        var firstDecay = motion.Step();
+        Assert.Equal(
+            Rac1WrenchMotionSession.FirstSwingTargetStep - Rac1WrenchMotionSession.DecayPerTick,
+            motion.Magnitude,
+            12);
+        Assert.Equal(motion.Magnitude, firstDecay.X, 12);
+
+        while (motion.Active)
+            motion.Step();
+        Assert.Equal(0d, motion.Magnitude, 12);
+        Assert.Equal(28, motion.Tick);
+    }
+
+    [Fact]
+    public void FirstSwingMotion_LocksAttackFacingYaw()
+    {
+        const double yaw = 1.111041784286499d;
+        var motion = new Rac1WrenchMotionSession();
+        motion.Begin(yaw);
+
+        Rac1WrenchDirection step = motion.Step();
+        Assert.Equal(Math.Cos(yaw) * Rac1WrenchMotionSession.RisePerTick, step.X, 12);
+        Assert.Equal(Math.Sin(yaw) * Rac1WrenchMotionSession.RisePerTick, step.Y, 12);
+        Assert.Equal(yaw, motion.NativeYaw, 12);
+    }
+
+    [Fact]
     public void FirstSwingFacingRejectsNonFiniteYaw()
     {
         Assert.Throws<ArgumentOutOfRangeException>(

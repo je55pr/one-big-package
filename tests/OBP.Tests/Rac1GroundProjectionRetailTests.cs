@@ -76,6 +76,65 @@ public sealed class Rac1GroundProjectionRetailTests
     }
 
     [SkippableFact]
+    public void RetailSlopeEntry_FitsRecoveredHostTransitionEnvelope()
+    {
+        string? iso = System.Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeWorld world = Rac1WorldImport.Build(reader, 0);
+        RuntimeCollisionBlob collision = Assert.Single(world.CollisionMeshes);
+
+        var witness = new RetailWitness(
+            112,
+            151.16505432128906, 114.03739166259766, 29.484375,
+            -2.0740082263946533,
+            -0.0458221435546875, -0.08322906494140625, 0.0000019073486328125);
+        Triangle prior = FindFloorTriangle(
+            collision,
+            witness.NativeX,
+            witness.NativeY,
+            witness.NativeZ + 1d);
+        Triangle destination = FindFloorTriangle(
+            collision,
+            witness.NativeX + witness.Dx,
+            witness.NativeY + witness.Dy,
+            witness.NativeZ + witness.Dz + 1d);
+        NativeVector heading = new(Math.Cos(witness.Yaw), Math.Sin(witness.Yaw), 0d);
+        NativeVector retail = new(witness.Dx, witness.Dy, witness.Dz);
+        NativeVector priorProjection = Project(heading, prior.NativeUpNormal());
+        NativeVector destinationProjection = Project(heading, destination.NativeUpNormal());
+        double priorError = (priorProjection - retail).Length();
+        double destinationError = (destinationProjection - retail).Length();
+        _ = TryFloorY(
+            destination.A,
+            destination.B,
+            destination.C,
+            witness.NativeX + witness.Dx,
+            witness.NativeY + witness.Dy,
+            out double destinationFloorZ);
+
+        double destinationAngle = Math.Acos(Math.Clamp(destination.NativeUpNormal().Z, -1d, 1d));
+        double retailPostZ = witness.NativeZ + witness.Dz;
+        double penetrationGap = destinationFloorZ - retailPostZ;
+
+        Assert.NotEqual(prior.Face, destination.Face);
+        Assert.Equal(1d, prior.NativeUpNormal().Z, 12);
+        Assert.True(priorError < 0.00001d, $"flat-entry step did not follow prior face: {priorError:R}");
+        Assert.True(destinationError > 0.04d, $"transition unexpectedly followed destination tangent: {destinationError:R}");
+        Assert.True(destinationAngle < Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians);
+        Assert.Equal(0.02753136221286212d, penetrationGap, 9);
+        Assert.True(penetrationGap > Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit);
+        Assert.True(penetrationGap < Rac1OrdinaryGroundContactMotion.OrdinarySupportTransitionHostEnvelope);
+        Assert.Equal(
+            penetrationGap,
+            Rac1OrdinaryGroundContactMotion.ResolveHostTransitionVertical(
+                -Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick,
+                penetrationGap,
+                destinationAngle),
+            12);
+    }
+
+    [SkippableFact]
     public void RetailNeutralRelease_StopsOnAuthoredSupportedSlope()
     {
         string? iso = System.Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
@@ -106,6 +165,14 @@ public sealed class Rac1GroundProjectionRetailTests
             slopeAngle < Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians,
             $"stationary retail witness resolved beyond the recovered support gate: " +
             $"face={triangle.Face}, normal={normal}, angle={slopeAngle:R}");
+    }
+
+    private static NativeVector Project(NativeVector heading, NativeVector normal)
+    {
+        double risePerPlanarUnit =
+            -((normal.X * heading.X) + (normal.Y * heading.Y)) / normal.Z;
+        var tangent = new NativeVector(heading.X, heading.Y, risePerPlanarUnit);
+        return tangent * (RunCap / tangent.Length());
     }
 
     private static Triangle FindFloorTriangle(

@@ -17,11 +17,50 @@ public static class Rac1OrdinaryGroundContactMotion
     // Loaded ordinary-support gate at 0x00212ba0..0x00212bb8.
     // Keep the exact retail f32 value rather than rounding the runtime law.
     public const double OrdinarySupportMaxAngleRadians = 0.8726646304130554d;
+    // Host collision-transition envelope, not a claimed native step-height field.
+    // It is bounded entirely by recovered ordinary contact terms: one 54/3600
+    // ground request plus the exact 0.02 contact-correction admission metric.
+    // The retained Veldin flat->slope transition penetrates the destination plane
+    // by 0.0275313622u, which lies inside this 0.035u envelope.
+    public const double OrdinarySupportTransitionHostEnvelope =
+        GroundDownwardRequestPerTick + OrdinarySupportContactMetricLimit;
 
     public readonly record struct PreContactStep(
         double PlanarX,
         double PlanarY,
         double Vertical);
+
+    public static double ResolveHostTransitionVertical(
+        double requestedVertical,
+        double prospectiveSupportRise,
+        double prospectiveSupportAngleRadians)
+    {
+        if (!double.IsFinite(requestedVertical) ||
+            !double.IsFinite(prospectiveSupportRise) ||
+            !double.IsFinite(prospectiveSupportAngleRadians))
+            throw new ArgumentOutOfRangeException(nameof(prospectiveSupportRise));
+
+        if (prospectiveSupportRise <= 0d ||
+            prospectiveSupportRise > OrdinarySupportTransitionHostEnvelope ||
+            prospectiveSupportAngleRadians < 0d ||
+            prospectiveSupportAngleRadians > OrdinarySupportMaxAngleRadians)
+            return requestedVertical;
+
+        return Math.Max(requestedVertical, prospectiveSupportRise);
+    }
+
+    public static bool AdmitsOrdinarySupport(
+        double contactCorrectionMetric,
+        double contactAngleRadians)
+    {
+        if (!double.IsFinite(contactCorrectionMetric) ||
+            !double.IsFinite(contactAngleRadians) ||
+            contactAngleRadians < 0d)
+            return false;
+
+        return Math.Abs(contactCorrectionMetric) < OrdinarySupportContactMetricLimit &&
+            contactAngleRadians <= OrdinarySupportMaxAngleRadians;
+    }
 
     /// <summary>
     /// Build the ordinary grounded request against one admitted support plane.
