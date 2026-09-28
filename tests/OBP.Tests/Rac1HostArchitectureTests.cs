@@ -158,4 +158,33 @@ public sealed class Rac1HostArchitectureTests
             gameplay,
             StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void PlayerHostResponsibilitiesRemainSplit()
+    {
+        string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
+        string core = File.ReadAllText(Path.Combine(scripts, "PlayerHost.cs"));
+
+        Assert.True(File.ReadLines(Path.Combine(scripts, "PlayerHost.cs")).Count() < 700);
+        Assert.DoesNotContain("private void EnsureRac1CameraInitialized(", core, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void StepRetailDerivedMovement(", core, StringComparison.Ordinal);
+        Assert.DoesNotContain("private string BuildInputDiagnostics(", core, StringComparison.Ordinal);
+
+        Assert.Contains(
+            "EnsureRac1CameraInitialized(",
+            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Camera.cs")),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "StepRetailDerivedMovement(",
+            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Rac1Movement.cs")),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "UpdateAnimationState(",
+            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Animation.cs")),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "BuildInputDiagnostics(",
+            File.ReadAllText(Path.Combine(scripts, "PlayerHost.Diagnostics.cs")),
+            StringComparison.Ordinal);
+    }
 }
