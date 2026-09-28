@@ -177,6 +177,7 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
+            TickGcGameplay(delta);
             TickRac1Gameplay(delta);
             UpdatePlayerHud();
             UpdateWorldHud();
@@ -827,6 +828,14 @@ public partial class OBPGame : Node3D
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
             UseRac1Gameplay = world.Game == "rac1",
+            // Aranos LEVEL0's authored class-0 start (native Z 49.89) sits
+            // beneath valid overhead prison collision around scene Y 58.5.
+            // Keep the generic 8-unit snap everywhere else, but prevent the
+            // Aranos authored start from snapping upward onto that roof.
+            InitialGroundSnapUpwardReach =
+                world.Game == "rac2" && world.LevelId == 0 && world.PlayerStart is not null
+                    ? 0.75f
+                    : 8f,
             // OBP deliberately reuses the retail-derived R&C1 controller in
             // all supported trilogy worlds; seed its facing from the authored
             // host spawn heading regardless of source game.
@@ -906,6 +915,7 @@ public partial class OBPGame : Node3D
         }
 
         string crateDebug = GetCrateDebugHudLine();
+        string gcGameplay = GetGcGameplayHudLine();
         string rac1Gameplay = GetRac1GameplayHudLine();
 
         _worldHud.Text =
@@ -920,6 +930,7 @@ public partial class OBPGame : Node3D
             $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
             (_worldHost.AudioDiagnostics.Count > 0 ? $"\n{_worldHost.AudioStatusLine}" : "") +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
+            (string.IsNullOrEmpty(gcGameplay) ? "" : $"\n{gcGameplay}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}");
     }
 

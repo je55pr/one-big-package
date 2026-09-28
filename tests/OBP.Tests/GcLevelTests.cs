@@ -11,6 +11,7 @@ using OBP.RAC2;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
+using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.Tests;
@@ -710,15 +711,29 @@ public class GcLevelTests
         var world = GcWorldImport.Build(reader, 0);
 
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
-        Assert.Equal(264, world.Meshes.Count);
+        Assert.Equal(262, world.Meshes.Count);
         Assert.Equal(33_710, Tris("tfrag"));
         Assert.Equal(771_104, Tris("tie"));
         Assert.Equal(71_334, Tris("shrub"));
         // oc2602 instances (200-frame spin) are lifted out as animated mobies;
-        // class 500 is now preserved separately as dynamic objects.
-        Assert.Equal(224_801, Tris("moby"));
-        Assert.Equal(4_859, world.TotalDynamicTriangles);
+        // class 500 crates, opening lift/doors and Aranos class-2827 MSR I hostiles
+        // are preserved separately as per-instance dynamic objects.
+        Assert.Equal(138_009, Tris("moby"));
+        Assert.Equal(91_651, world.TotalDynamicTriangles);
         Assert.Equal(43, world.DynamicObjects!.Count(o => o.NativeClassId == 500));
+        Assert.Single(world.DynamicObjects!, o => o.NativeClassId == GcAranosOpeningLiftSession.NativeClassId);
+        Assert.Equal(2, world.DynamicObjects!.Count(o => o.NativeClassId == GcAranosOpeningDoorSession.NativeClassId));
+        Assert.Equal(31, world.DynamicObjects!.Count(o => o.NativeClassId == 2827));
+
+        var openingDoor = Assert.Single(world.DynamicObjects!, o =>
+            o.NativeClassId == GcAranosOpeningDoorSession.NativeClassId &&
+            o.InstanceIndex == GcAranosOpeningDoorSession.OpeningInstanceIndex);
+        var doorClip = Assert.Single(openingDoor.Animations!.Clips);
+        Assert.Equal(RuntimeObjectAnimationRole.Reaction, doorClip.Role);
+        Assert.Equal(31, doorClip.FrameCount);
+        Assert.Equal(30f, doorClip.ConstantFramesPerSecond);
+        Assert.Equal(6, doorClip.Surfaces.Count);
+
         Assert.NotEmpty(world.AnimatedMeshes!);
         Assert.All(world.AnimatedMeshes!, a => Assert.Equal(200, a.Frames.Count));
 
@@ -728,7 +743,40 @@ public class GcLevelTests
 
         Assert.NotNull(world.Environment);
         Assert.Equal(0f, world.Environment!.DeathHeight);
+
+        // LEVEL0's settings ship tuple is the repeated native default (20,20,20,0),
+        // not Ratchet's opening placement. The unique authored class-0 Moby at
+        // gameplay instance 0 is the player entry: native (247,194,49.89), yaw pi/2.
+        Assert.NotNull(world.Ship);
+        Assert.Equal((20d, 20d, 20d, 0d),
+            (world.Ship!.X, world.Ship.Y, world.Ship.Z, world.Ship.Yaw));
+        Assert.NotNull(world.PlayerStart);
+        Assert.Equal(247d, world.PlayerStart!.X, 6);
+        Assert.Equal(49.89d, world.PlayerStart.Y, 5);
+        Assert.Equal(194d, world.PlayerStart.Z, 6);
+        Assert.Equal(Math.PI / 2d, world.PlayerStart.Yaw, 6);
+        Assert.Same(world.PlayerStart, world.PreferredPlayerStart);
     }
+
+    [SkippableFact]
+    public void EveryRetailLevelHasOneAuthoredClassZeroPlayerSeedAtInstanceZero()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
+
+        using var reader = new FileRandomAccessReader(iso!);
+        var fs = Iso9660Filesystem.Open(reader);
+        for (int level = 0; level <= 26; level++)
+        {
+            var wad = fs.OpenFile($"/G/LEVEL{level}.WAD")
+                ?? throw new FileNotFoundException($"/G/LEVEL{level}.WAD");
+            var header = GcLevelWad.ReadHeader(wad);
+            var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
+            var start = Assert.Single(gameplay.MobyInstances, moby => moby.OClass == 0);
+            Assert.Equal(0, start.Index);
+        }
+    }
+
     private static uint Word(byte[] bytes)
     {
         if (bytes.Length != sizeof(uint))

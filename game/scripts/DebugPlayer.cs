@@ -47,6 +47,13 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Use the deterministic canned input instead of the real keyboard / mouse.</summary>
     public bool Scripted { get; set; }
 
+    /// <summary>
+    /// Upward reach used by the initial ground-snap ray. The legacy host default
+    /// remains 8 units; source-game hosts may narrow it when an authored start
+    /// sits beneath valid overhead collision.
+    /// </summary>
+    public float InitialGroundSnapUpwardReach { get; set; } = 8f;
+
     /// <summary>Keep scripted captures stationary after ground placement.</summary>
     public bool ScriptedStill { get; set; }
 
@@ -78,7 +85,7 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Reset host collision diagnostics without changing player/controller state.</summary>
     public void ResetRac1CollisionDiagnostics() => Rac1MaxObservedSlideCollisions = 0;
 
-    /// <summary>Development-only request; the host resolves the aimed GC crate.</summary>
+    /// <summary>Ordinary non-R&C1 primary attack input; the source-game host resolves consequences.</summary>
     public event Action? CrateStrikeRequested;
 
     /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host resolves the equipped item.</summary>
@@ -1115,7 +1122,10 @@ public partial class DebugPlayer : CharacterBody3D
     private bool SnapToGroundBelow()
     {
         var space = GetWorld3D().DirectSpaceState;
-        var from = GlobalPosition + Vector3.Up * 8f;
+        float upwardReach = float.IsFinite(InitialGroundSnapUpwardReach)
+            ? Math.Max(0f, InitialGroundSnapUpwardReach)
+            : 8f;
+        var from = GlobalPosition + Vector3.Up * upwardReach;
         var to = GlobalPosition + Vector3.Down * 800f;
         var hit = space.IntersectRay(PhysicsRayQueryParameters3D.Create(from, to));
         if (hit.Count == 0)

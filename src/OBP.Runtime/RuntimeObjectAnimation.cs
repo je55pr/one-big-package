@@ -49,6 +49,31 @@ public sealed record RuntimeObjectAnimationClip(
             return (float)(1d / first);
         }
     }
+
+    /// <summary>
+    /// Select the clamped one-shot frame for elapsed clip time. Dynamic object
+    /// gameplay owns repetition/role changes; a completed clip holds its final
+    /// authored pose until another role is selected.
+    /// </summary>
+    public int FrameIndexAt(double elapsedSeconds)
+    {
+        if (FrameCount <= 0 || FrameDurationsSeconds.Count != FrameCount)
+            return -1;
+        if (!double.IsFinite(elapsedSeconds) || elapsedSeconds <= 0d)
+            return 0;
+
+        double cursor = 0d;
+        for (int frame = 0; frame < FrameCount; frame++)
+        {
+            double duration = FrameDurationsSeconds[frame];
+            if (!(duration > 0d) || !double.IsFinite(duration))
+                throw new InvalidDataException($"Animation clip {Id} has invalid frame duration at {frame}.");
+            cursor += duration;
+            if (elapsedSeconds < cursor)
+                return frame;
+        }
+        return FrameCount - 1;
+    }
 }
 
 /// <summary>

@@ -8,6 +8,7 @@ using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
 using OBP.RAC2.Audio;
 using OBP.RAC2.Geometry;
+using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
 using OBP.Runtime;
 using OBP.Runtime.Audio;
@@ -151,6 +152,7 @@ public static class GcWorldImport
 
         // --- tie / shrub / moby instances ---
         var gameplay = GcInstances.Read(GcLevelWad.RequireLump(wad, header, 2));
+        var authoredPlayerStart = BuildAuthoredPlayerStart(gameplay);
         var mobyClasses = GcMobyClasses.Read(Core());
 
         CollectTextures("tie", GcLevelTextures.Table.Tie);
@@ -177,13 +179,23 @@ public static class GcWorldImport
 
         CollectTextures("moby", GcLevelTextures.Table.Moby);
         var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, out var animatedInstances);
+        var dynamicClasses = new HashSet<int> { 500 };
+        if (level == 0)
+        {
+            // Aranos opening lift, first progression door and MSR I family need
+            // per-instance runtime identity rather than remaining welded into the
+            // static Moby soup.
+            dynamicClasses.Add(GcAranosOpeningLiftSession.NativeClassId);
+            dynamicClasses.Add(GcAranosOpeningDoorSession.NativeClassId);
+            dynamicClasses.Add(GcClass2827HostileSession.NativeClassId);
+        }
         var dynamicObjects = BuildDynamicMobyObjects(
             level,
             gameplay,
             mobyClasses,
             gameplay.DirLights,
             gameplay.PointLights,
-            dynamicClasses: new HashSet<int> { 500 },
+            dynamicClasses,
             out var dynamicInstances);
         var nonStaticMobyInstances = animatedInstances.Concat(dynamicInstances).ToHashSet();
         PlaceMobyInstances(gameplay.MobyInstances, mobyClasses, gameplay.DirLights, gameplay.PointLights, meshes, nonStaticMobyInstances);
@@ -459,8 +471,32 @@ public static class GcWorldImport
             Lighting: lighting,
             AnimatedMeshes: animatedMeshes,
             DynamicObjects: dynamicObjects,
+            PlayerStart: authoredPlayerStart,
             LevelAudio: levelAudio,
             RepresentativeAudioOneShot: representativeOneShot);
+    }
+
+    /// <summary>
+    /// Resolve the unique authored class-0 placement as Ratchet's level entry.
+    /// The GC authority set carries exactly one class-0 instance at index 0 in
+    /// every observed level. This remains distinct from the level-settings ship
+    /// tuple, which is the repeated (20,20,20,0) default on Aranos and several
+    /// non-planet/special destinations.
+    /// </summary>
+    private static RuntimeSpawn? BuildAuthoredPlayerStart(GcInstances.Gameplay gameplay)
+    {
+        var starts = gameplay.MobyInstances.Where(instance => instance.OClass == 0).ToArray();
+        if (starts.Length != 1)
+        {
+            return null;
+        }
+
+        var start = starts[0];
+        return new RuntimeSpawn(
+            start.Position.X,
+            start.Position.Z,
+            start.Position.Y,
+            start.Rotation.Z);
     }
 
     /// <summary>
@@ -732,11 +768,55 @@ public static class GcWorldImport
                 InteractionId: $"level:{level}:moby:{inst.Index}",
                 Transform: new RuntimeObjectTransform(obpMatrix),
                 Meshes: surfaces,
-                NativePayloads: payloads));
+                NativePayloads: payloads,
+                Animations: BuildAdmittedDynamicAnimationSet(cls, surfaces)));
             dynamicInstances.Add(inst.Index);
         }
 
         return outp;
+    }
+
+    private static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
+        GcUyaMoby.MobyClass cls,
+        IReadOnlyList<RuntimeObjectMesh> surfaces)
+    {
+        if (cls.OClass != GcAranosOpeningDoorSession.NativeClassId)
+            return null;
+
+        if (cls.Joints.Count != 7 || cls.Mesh.Indices.Length / 3 != 120)
+            throw new InvalidDataException("Aranos class-2755 door model drifted from the retail witness.");
+
+        var opening = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 1)
+            ?? throw new InvalidDataException("Aranos class-2755 opening sequence 1 is absent.");
+        var open = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 2)
+            ?? throw new InvalidDataException("Aranos class-2755 open sequence 2 is absent.");
+        if (opening.Frames.Count != GcAranosOpeningDoorSession.OpeningSequenceFrames ||
+            opening.Frames.Any(frame => frame.Speed != 0.5f) ||
+            open.Frames.Count != 1)
+            throw new InvalidDataException("Aranos class-2755 door animation no longer matches the retail witness.");
+
+        var posedFrames = opening.Frames.Concat(open.Frames).Select(frame =>
+        {
+            var posed = OBP.RAC2.Animation.MobyAnimation.Pose(cls.Mesh, cls.Joints, frame);
+            var local = new double[posed.Length];
+            for (int i = 0; i < posed.Length; i += 3)
+            {
+                local[i] = R2(posed[i]);
+                local[i + 1] = R2(posed[i + 2]);
+                local[i + 2] = R2(posed[i + 1]);
+            }
+            return local;
+        }).ToArray();
+
+        var animatedSurfaces = Enumerable.Range(0, surfaces.Count)
+            .Select(index => new RuntimeObjectAnimationSurface(index, posedFrames))
+            .ToArray();
+        double secondsPerFrame = 1d / GcAranosOpeningDoorSession.OpeningFrameRate;
+        var durations = Enumerable.Repeat(secondsPerFrame, posedFrames.Length).ToArray();
+        return new RuntimeObjectAnimationSet([
+            new RuntimeObjectAnimationClip(
+                "opening", RuntimeObjectAnimationRole.Reaction, animatedSurfaces, durations)
+        ]);
     }
 
     /// <summary>Convert a native Z-up local-to-world matrix to the equivalent OBP Y-up matrix.</summary>
