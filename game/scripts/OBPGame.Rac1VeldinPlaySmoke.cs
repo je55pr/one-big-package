@@ -196,7 +196,7 @@ public partial class OBPGame
             expectedAmmo: null);
     }
 
-    private async Task RunRac1RecoveredCameraInputSmokeAsync(DebugPlayer player)
+    private async Task RunRac1RecoveredCameraInputSmokeAsync(PlayerHost player)
     {
         if (!player.HasActiveRecoveredCamera ||
             player.CameraControllerLabel != "rac1-native-type0" ||

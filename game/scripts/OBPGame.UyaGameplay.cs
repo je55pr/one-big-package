@@ -157,7 +157,7 @@ public partial class OBPGame
             $"{rejected5821} class-5821 rejected");
     }
 
-    private void ArmUyaGameplay(DebugPlayer player)
+    private void ArmUyaGameplay(PlayerHost player)
     {
         if (_world?.Game != "rac3")
             return;

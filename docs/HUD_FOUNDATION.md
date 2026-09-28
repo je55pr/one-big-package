@@ -27,7 +27,7 @@ The repository already has useful state, but it is intentionally uneven and most
 - R&C1 owns a minimal wrench/item-10 inventory plus equipped selection and item-10 ammo in `Rac1WeaponInventory`; `Rac1BombGloveSession` proves a 40-round Bomb Glove capacity and one-round accepted-shot cost.
 - R&C1 and GC have bounded Bolt-crate sessions that can emit/collect proven denominations. Their current `CollectedBolts` counters are slice/session telemetry, not a reconstructed trilogy wallet or save economy.
 - Ordinary contextual gameplay-prompt state is not yet represented as an authoritative runtime concept.
-- `DebugPlayer.PlayerHud`, `OBPGame._worldHud`, `GetRac1GameplayHudLine()` and `GetCrateDebugHudLine()` are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
+- `PlayerHost.PlayerHud`, `OBPGame._worldHud`, `GetRac1GameplayHudLine()` and `GetCrateDebugHudLine()` are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
 - `UiTheme` is an OBP application theme. It does not establish retail HUD fonts, colours, panel shapes, spacing or animation timing.
 
 Relevant retail-backed evidence is recorded in [RAC1_NANOTECH_DAMAGE_DEATH.md](../research/RAC1_NANOTECH_DAMAGE_DEATH.md), [RAC1_WEAPON_INVENTORY.md](../research/RAC1_WEAPON_INVENTORY.md), [RAC1_BOMB_GLOVE.md](../research/RAC1_BOMB_GLOVE.md), [RAC1_CRATES_PICKUPS.md](../research/RAC1_CRATES_PICKUPS.md) and [GC_CRATES.md](../research/GC_CRATES.md).

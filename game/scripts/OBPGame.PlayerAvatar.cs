@@ -26,9 +26,9 @@ public partial class OBPGame
     /// Resolve player presentation from the active source game. A missing native
     /// avatar provider is an explicit unsupported boundary: keep the debug capsule
     /// rather than borrowing another game's model, clips, or animation selector.
-    /// Controller/collision stay on DebugPlayer and remain independent from visuals.
+    /// Controller/collision stay on PlayerHost and remain independent from visuals.
     /// </summary>
-    private void AttachPlayerAvatarVisual(DebugPlayer player)
+    private void AttachPlayerAvatarVisual(PlayerHost player)
     {
         if (_activeDestination is not { } destination)
             return;

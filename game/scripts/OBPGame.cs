@@ -47,7 +47,7 @@ public partial class OBPGame : Node3D
     private RuntimeWorldScene.Result? _sceneResult;
     private DebugOverlay? _overlay;
     private WorldInspectorPanel? _inspector;
-    private DebugPlayer? _player;
+    private PlayerHost? _player;
     private int _worldSwitches;
 
     private Camera3D _activeCamera = null!;
@@ -604,9 +604,9 @@ public partial class OBPGame : Node3D
             }
         }
 
-        var player = new DebugPlayer
+        var player = new PlayerHost
         {
-            Name = "DebugPlayer",
+            Name = "PlayerHost",
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
             UseRac1Gameplay = world.Game == "rac1",

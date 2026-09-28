@@ -42,7 +42,7 @@ The migration established native equivalents for the core path required to open 
 - `OBP.RAC2`: GC level WAD/core parsing, settings/instances, textures, tfrags, TIEs, shrubs, Mobies, sky, collision, world assembly and disc-level load/verify façade;
 - `OBP.Cli`: deterministic `test-import` summaries;
 - `OBP.Godot`: world meshes/textures/collision and camera presentation;
-- `game/DebugPlayer`: provisional capsule movement for traversing reconstructed collision;
+- `game/PlayerHost`: provisional capsule movement for traversing reconstructed collision;
 - deterministic Godot capture modes for smoke, picker, world, collision and player validation.
 
 The native codecs were ported incrementally against the preserved TypeScript implementation and retail-derived deterministic hashes/counts rather than rewritten from memory.

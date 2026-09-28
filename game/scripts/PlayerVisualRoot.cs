@@ -3,7 +3,7 @@ using Godot;
 namespace OneBigPackage;
 
 /// <summary>
-/// Presentation-only child of <see cref="DebugPlayer"/>. The controller and
+/// Presentation-only child of <see cref="PlayerHost"/>. The controller and
 /// collision remain on the CharacterBody3D; this node owns whichever visible
 /// avatar is currently attached.
 /// </summary>

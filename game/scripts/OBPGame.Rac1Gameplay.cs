@@ -269,7 +269,7 @@ public partial class OBPGame
         return node;
     }
 
-    private void ArmRac1Gameplay(DebugPlayer player)
+    private void ArmRac1Gameplay(PlayerHost player)
     {
         if (_world?.Game != "rac1") return;
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
@@ -390,7 +390,7 @@ public partial class OBPGame
     {
         if (_player is null) return double.NaN;
 
-        // DebugPlayer's CharacterBody origin is its feet. A downward ray therefore
+        // PlayerHost's CharacterBody origin is its feet. A downward ray therefore
         // supplies the live host contact-gap fact without moving the recovered threshold.
         Vector3 origin = _player.GlobalPosition;
         var query = PhysicsRayQueryParameters3D.Create(

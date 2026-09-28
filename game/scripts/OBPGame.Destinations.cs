@@ -10,7 +10,7 @@ public partial class OBPGame
 {
     private DestinationSelectorUi? _destinationSelector;
     private Rac1PlanetTravelUi? _rac1PlanetTravelUi;
-    private DebugPlayer? _rac1PlanetMapPausedPlayer;
+    private PlayerHost? _rac1PlanetMapPausedPlayer;
     private Node.ProcessModeEnum? _rac1PlanetMapPreviousPlayerMode;
     private Input.MouseModeEnum _rac1PlanetMapPreviousMouseMode;
     private ObpDestination? _activeDestination;

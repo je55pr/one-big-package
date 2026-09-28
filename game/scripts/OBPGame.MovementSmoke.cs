@@ -10,7 +10,7 @@ public partial class OBPGame
 {
     private async System.Threading.Tasks.Task RunMovementSmokeAsync(ObpDestination destination)
     {
-        DebugPlayer player = _player
+        PlayerHost player = _player
             ?? throw new InvalidOperationException("movement smoke requires a spawned player");
 
         try
@@ -131,21 +131,21 @@ public partial class OBPGame
             Input.ActionRelease(RawGamepadInput.Crouch);
             await PhysicsFramesAsync(4);
 
-            player.ResetToSpawn();
+            player.DevelopmentControls.ResetToSpawn();
             await WaitForGroundedAsync(player, 180);
             float shortJump = await MeasureJumpAsync(player, holdFrames: 2, applyPartialAirControl: false);
 
-            player.ResetToSpawn();
+            player.DevelopmentControls.ResetToSpawn();
             await WaitForGroundedAsync(player, 180);
             float longJump = await MeasureJumpAsync(player, holdFrames: 16, applyPartialAirControl: false);
             Require(longJump > shortJump + 0.20f, "held jump did not exceed tap jump apex");
 
-            player.ResetToSpawn();
+            player.DevelopmentControls.ResetToSpawn();
             await WaitForGroundedAsync(player, 180);
             float partialAirTravel = await MeasureAirControlAsync(player);
             Require(partialAirTravel > 0.10f, "partial-stick air control produced no planar travel");
 
-            player.ResetToSpawn();
+            player.DevelopmentControls.ResetToSpawn();
             await WaitForGroundedAsync(player, 180);
             SendPhysicalKey(Key.W, true);
             await PhysicsFramesAsync(30);
@@ -155,18 +155,18 @@ public partial class OBPGame
             await PhysicsFramesAsync(3);
             Vector3 beforeFly = player.GlobalPosition;
             await TapPhysicalKeyAsync(Key.F);
-            Require(player.DevelopmentFlyEnabled, "F did not enable development fly");
+            Require(player.DevelopmentControls.FlyEnabled, "F did not enable development fly");
             SendPhysicalKey(Key.W, true);
             await PhysicsFramesAsync(18);
             SendPhysicalKey(Key.W, false);
             float flyTravel = HorizontalDistance(beforeFly, player.GlobalPosition);
             Require(flyTravel > 0.5f, "development fly did not move with keyboard input");
             await TapPhysicalKeyAsync(Key.F);
-            Require(!player.DevelopmentFlyEnabled, "F did not disable development fly");
+            Require(!player.DevelopmentControls.FlyEnabled, "F did not disable development fly");
 
-            Vector3 spawn = player.DebugSpawnPosition;
+            Vector3 spawn = player.DevelopmentControls.SpawnPosition;
             if (destination.Game == ObpSourceGame.Rac1)
-                player.ResetToSpawn();
+                player.DevelopmentControls.ResetToSpawn();
             else
                 await TapPhysicalKeyAsync(Key.R);
             await WaitForGroundedAsync(player, 180);
@@ -203,7 +203,7 @@ public partial class OBPGame
     }
 
     private async System.Threading.Tasks.Task<float> MeasureJumpAsync(
-        DebugPlayer player,
+        PlayerHost player,
         int holdFrames,
         bool applyPartialAirControl,
         bool movingAtLaunch = false)
@@ -247,7 +247,7 @@ public partial class OBPGame
         throw new InvalidOperationException("jump did not land within smoke timeout");
     }
 
-    private async System.Threading.Tasks.Task<float> MeasureAirControlAsync(DebugPlayer player)
+    private async System.Threading.Tasks.Task<float> MeasureAirControlAsync(PlayerHost player)
     {
         Vector3 start = player.GlobalPosition;
         Input.ActionPress(RawGamepadInput.Jump);
@@ -278,7 +278,7 @@ public partial class OBPGame
         throw new InvalidOperationException("partial-air-control jump did not land within smoke timeout");
     }
 
-    private async System.Threading.Tasks.Task WaitForGroundedAsync(DebugPlayer player, int maxFrames)
+    private async System.Threading.Tasks.Task WaitForGroundedAsync(PlayerHost player, int maxFrames)
     {
         for (int frame = 0; frame < maxFrames; frame++)
         {
@@ -291,7 +291,7 @@ public partial class OBPGame
     }
 
     private async System.Threading.Tasks.Task WaitForAnimationStateAsync(
-        DebugPlayer player,
+        PlayerHost player,
         PlayerAnimationState expected,
         int maxFrames,
         string label)
@@ -377,7 +377,7 @@ public partial class OBPGame
         Input.ActionRelease(RawGamepadInput.MoveBack);
     }
 
-    private static float HorizontalSpeed(DebugPlayer player) =>
+    private static float HorizontalSpeed(PlayerHost player) =>
         new Vector2(player.Velocity.X, player.Velocity.Z).Length();
 
     private static float HorizontalDistance(Vector3 a, Vector3 b) =>

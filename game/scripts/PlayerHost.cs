@@ -21,19 +21,17 @@ namespace OneBigPackage;
 ///
 /// Godot owns collision, floor/ceiling contacts and scene-unit velocity. Recovered
 /// R&amp;C1 camera snapshots can own ordinary camera pose and control heading through
-/// the neutral camera contract; the old chase nodes remain a debug fallback.
-/// <c>F</c> fly/noclip and <c>R</c> spawn reset remain separate development
-/// features, but R is disabled for R&C1 gameplay so recovered restart remains
-/// lifecycle-owned. Headless capture can supply
-/// deterministic canned input.
+/// the neutral camera contract; host camera fallback remains presentation policy.
+/// Developer-only fly/noclip, diagnostics, camera override and spawn reset live in
+/// <see cref="PlayerDevelopmentControls"/> rather than this production controller.
+/// Headless capture can supply deterministic canned input.
 /// </summary>
-public partial class DebugPlayer : CharacterBody3D
+public partial class PlayerHost : CharacterBody3D
 {
-    // --- host / development tuning ---------------------------------------------
-    // Ordinary movement constants live in OBP.RAC1.Player. Only presentation
-    // camera sensitivity and development-only fly speed remain host-tunable.
+    // --- host presentation tuning ----------------------------------------------
+    // Ordinary movement constants live in OBP.RAC1.Player. Mouse sensitivity is
+    // host presentation policy; development-only tuning lives beside this host.
     public float MouseSensitivity { get; set; } = 0.0022f;
-    public float FlySpeed { get; set; } = 45f;
 
     // Development fallback only. Normal RAC1 camera state must come through
     // ApplyRac1CameraState; these values are not retail camera constants.
@@ -67,11 +65,8 @@ public partial class DebugPlayer : CharacterBody3D
     /// <summary>Deterministic label exposed in capture telemetry.</summary>
     public string MovementControllerLabel => "rac1-retail-derived-common-base";
 
-    /// <summary>Development-only fly state, exposed for deterministic host smoke coverage.</summary>
-    public bool DevelopmentFlyEnabled => _fly;
-
-    /// <summary>Host spawn remembered by the development respawn seam.</summary>
-    public Vector3 DebugSpawnPosition => _spawn;
+    /// <summary>Explicit development-only control surface attached beside the production host.</summary>
+    public PlayerDevelopmentControls DevelopmentControls { get; private set; } = null!;
 
     /// <summary>Current conditioned left-stick magnitude from the common R&amp;C1 controller.</summary>
     public double Rac1AnalogueMagnitude => _rac1Movement.AnalogueInput.Magnitude;
@@ -181,7 +176,10 @@ public partial class DebugPlayer : CharacterBody3D
 
     /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
     public bool HasActiveRecoveredCamera =>
-        UseRac1Gameplay && !_fly && !_forceHostCamera && _rac1RuntimeCameraState is not null;
+        UseRac1Gameplay &&
+        !(DevelopmentControls?.FlyEnabled ?? false) &&
+        !(DevelopmentControls?.ForceHostCamera ?? false) &&
+        _rac1RuntimeCameraState is not null;
 
     /// <summary>Latest recovered engine-neutral camera state, if one has been supplied.</summary>
     public RuntimeCameraState? Rac1RuntimeCameraState => _rac1RuntimeCameraState;
@@ -204,10 +202,7 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _landed;
     private bool _placed;
     private bool _scriptJumped;
-    private bool _fly;
-    private bool _inputDiagnosticsVisible;
     private int _placeTries;
-    private Vector3 _spawn;
     private PlayerAnimationStateMachine _animationStateMachine = new();
     private bool _animationGroundedInitialized;
     private bool _animationWasGrounded;
@@ -228,7 +223,6 @@ public partial class DebugPlayer : CharacterBody3D
     private bool _rac1JumpWasHeld;
     private RuntimeCameraState? _rac1RuntimeCameraState;
     private bool _rac1CameraInitialized;
-    private bool _forceHostCamera;
 
     // last-jump measurement
     private bool _airborne;
@@ -241,7 +235,10 @@ public partial class DebugPlayer : CharacterBody3D
     {
         const float radius = 0.6f;
         const float height = 2.6f;
-        _spawn = GlobalPosition;
+
+        DevelopmentControls = new PlayerDevelopmentControls { Name = "DevelopmentControls" };
+        AddChild(DevelopmentControls);
+        DevelopmentControls.Attach(this, GlobalPosition);
 
         AddChild(new CollisionShape3D
         {
@@ -323,49 +320,13 @@ public partial class DebugPlayer : CharacterBody3D
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
-            if (key.Keycode == Key.Tab)
-            {
-                Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
-                    ? Input.MouseModeEnum.Visible
-                    : Input.MouseModeEnum.Captured;
-            }
-            else if (key.Keycode == Key.F8)
-            {
-                _inputDiagnosticsVisible = !_inputDiagnosticsVisible;
-            }
-            else if (key.Keycode == Key.F9)
-            {
-                _forceHostCamera = !_forceHostCamera;
-                if (HasActiveRecoveredCamera)
-                    ApplyRecoveredCameraPresentation();
-                else
-                    RestoreHostCameraPresentation();
-                GD.Print($"[DebugPlayer] camera {CameraControllerLabel}");
-            }
-            else if (UseRac1Gameplay && key.Keycode == Key.Key1)
+            if (UseRac1Gameplay && key.Keycode == Key.Key1)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.Wrench);
             }
             else if (UseRac1Gameplay && key.Keycode == Key.Key2)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.FirstRanged);
-            }
-            else if (key.Keycode == Key.F)
-            {
-                _fly = !_fly;
-                Velocity = Vector3.Zero;
-                _rac1Movement.Reset();
-                _rac1JumpWasHeld = false;
-                ResetAnimationState();
-                if (_fly)
-                    RestoreHostCameraPresentation();
-                else if (HasActiveRecoveredCamera)
-                    ApplyRecoveredCameraPresentation();
-                GD.Print($"[DebugPlayer] fly mode {(_fly ? "on" : "off")}");
-            }
-            else if (key.Keycode == Key.R && !UseRac1Gameplay)
-            {
-                ResetToSpawn();
             }
         }
     }
@@ -387,7 +348,7 @@ public partial class DebugPlayer : CharacterBody3D
         }
 
         _time += delta;
-        if (UseRac1Gameplay && !_fly)
+        if (UseRac1Gameplay && !DevelopmentControls.FlyEnabled)
             EnsureRac1CameraInitialized();
 
         if (!Scripted)
@@ -399,10 +360,10 @@ public partial class DebugPlayer : CharacterBody3D
                 RequestPrimaryAction();
         }
 
-        if (_fly)
+        if (DevelopmentControls.FlyEnabled)
         {
             _attackRequested = false;
-            FlyStep((float)delta, _liveInput.Move);
+            DevelopmentControls.StepFly((float)delta, _liveInput.Move);
             UpdateHud(true);
             return;
         }
@@ -432,7 +393,7 @@ public partial class DebugPlayer : CharacterBody3D
             UpdateCameraDistance();
         }
 
-        if (UseRac1Gameplay && !_fly)
+        if (UseRac1Gameplay && !DevelopmentControls.FlyEnabled)
             StepRac1Camera(Scripted ? Vector2.Zero : _liveInput.CameraIntent);
 
         TrackJump(isOnFloor);
@@ -440,7 +401,7 @@ public partial class DebugPlayer : CharacterBody3D
         if (!_landed && isOnFloor)
         {
             _landed = true;
-            GD.Print($"[DebugPlayer] on the collision floor at {GlobalPosition} after {_time:0.00}s");
+            GD.Print($"[PlayerHost] on the collision floor at {GlobalPosition} after {_time:0.00}s");
         }
 
         UpdateHud(isOnFloor);
@@ -611,10 +572,32 @@ public partial class DebugPlayer : CharacterBody3D
         ResetAfterPlacement(placement.Yaw);
     }
 
-    public void ResetToSpawn()
+    internal Basis DevelopmentCameraBasis => _pitch.GlobalTransform.Basis;
+
+    internal void ApplyDevelopmentReset(Vector3 spawnPosition)
     {
-        GlobalPosition = _spawn;
+        GlobalPosition = spawnPosition;
         ResetAfterPlacement(_rac1Yaw.CurrentYaw);
+    }
+
+    internal void ApplyDevelopmentFlyMode(bool enabled)
+    {
+        Velocity = Vector3.Zero;
+        _rac1Movement.Reset();
+        _rac1JumpWasHeld = false;
+        ResetAnimationState();
+        if (enabled)
+            RestoreHostCameraPresentation();
+        else if (HasActiveRecoveredCamera)
+            ApplyRecoveredCameraPresentation();
+    }
+
+    internal void RefreshDevelopmentCameraPresentation()
+    {
+        if (HasActiveRecoveredCamera)
+            ApplyRecoveredCameraPresentation();
+        else
+            RestoreHostCameraPresentation();
     }
 
     private void ResetAfterPlacement(double nativeYaw)
@@ -689,7 +672,7 @@ public partial class DebugPlayer : CharacterBody3D
         if (Scripted && step.Vertical > 0d && !_scriptJumped)
         {
             _scriptJumped = true;
-            GD.Print($"[DebugPlayer] native R&C1 jump from {GlobalPosition}");
+            GD.Print($"[PlayerHost] native R&C1 jump from {GlobalPosition}");
         }
     }
 
@@ -970,7 +953,7 @@ public partial class DebugPlayer : CharacterBody3D
         PlayerAnimationState current = _animationStateMachine.Update(new PlayerAnimationFacts(
             animationGrounded, planarSpeed, verticalPresentation, justLanded, attackRequested));
         if (current != previous)
-            GD.Print($"[DebugPlayer] animation {previous} -> {current}");
+            GD.Print($"[PlayerHost] animation {previous} -> {current}");
     }
     private void RequestPrimaryAction()
     {
@@ -1019,7 +1002,7 @@ public partial class DebugPlayer : CharacterBody3D
                 float apex = _jumpApexY - _jumpStart.Y;
                 float net = p.Y - _jumpStart.Y;
                 _lastJump = $"{_time - _jumpStartTime:0.00}s  {horiz:0.0}u  apex {apex:0.0}u  net {net:+0.0;-0.0;0}u";
-                GD.Print($"[DebugPlayer] jump landed: {_lastJump}");
+                GD.Print($"[PlayerHost] jump landed: {_lastJump}");
             }
         }
     }
@@ -1066,12 +1049,10 @@ public partial class DebugPlayer : CharacterBody3D
     {
         var p = GlobalPosition;
         float speed = new Vector2(Velocity.X, Velocity.Z).Length();
-        string diagnostics = _inputDiagnosticsVisible ? BuildInputDiagnostics() : string.Empty;
-        string developmentControls = UseRac1Gameplay
-            ? "mouse / right stick debug camera / F fly / F8 diagnostics / F9 camera fallback / Tab cursor / Esc"
-            : "mouse / right stick debug camera / F fly / R respawn (development) / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
+        string diagnostics = DevelopmentControls.DiagnosticsVisible ? BuildInputDiagnostics() : string.Empty;
+        string developmentControls = DevelopmentControls.ControlSummary(UseRac1Gameplay);
         _hud.Text =
-            $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(_fly ? "FLY" : onFloor ? "ground" : "air")}" +
+            $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(DevelopmentControls.FlyEnabled ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
             $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
@@ -1139,25 +1120,8 @@ public partial class DebugPlayer : CharacterBody3D
 
         GlobalPosition = (Vector3)hit["position"] + Vector3.Up * 0.08f;
         Velocity = Vector3.Zero;
-        GD.Print($"[DebugPlayer] placed on collision at {GlobalPosition}  (normal {(Vector3)hit["normal"]})");
+        GD.Print($"[PlayerHost] placed on collision at {GlobalPosition}  (normal {(Vector3)hit["normal"]})");
         return true;
-    }
-
-    /// <summary>Free 6-DOF camera-relative movement, no gravity or collision — for exploring an imported level.</summary>
-    private void FlyStep(float delta, Vector2 move)
-    {
-        float lift = (Input.IsPhysicalKeyPressed(Key.Space) || Input.IsPhysicalKeyPressed(Key.E) ? 1f : 0f)
-                     - (Input.IsPhysicalKeyPressed(Key.Ctrl) || Input.IsPhysicalKeyPressed(Key.Q) ? 1f : 0f);
-        bool boost = Input.IsPhysicalKeyPressed(Key.Shift);
-
-        Vector3 dir = _pitch.GlobalTransform.Basis * new Vector3(move.X, 0f, move.Y);
-        dir += Vector3.Up * lift;
-        if (dir.LengthSquared() > 1e-4f)
-        {
-            GlobalPosition += dir.Normalized() * (FlySpeed * (boost ? 3f : 1f) * delta);
-        }
-
-        Velocity = Vector3.Zero;
     }
 
     /// <summary>Fixed timeline: drop + settle, walk forward, jump mid-stride, veer — so the capture shows motion + air time.</summary>

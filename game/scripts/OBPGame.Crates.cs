@@ -162,7 +162,7 @@ public partial class OBPGame
         }
     }
 
-    private void ArmCrateDebugHarness(DebugPlayer player)
+    private void ArmCrateDebugHarness(PlayerHost player)
     {
         if (_world?.Game != "rac2")
         {

@@ -9,7 +9,12 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "scripts",
-            "DebugPlayer.cs"));
+            "PlayerHost.cs"));
+        string developmentControls = File.ReadAllText(Path.Combine(
+            RepoPaths.Root,
+            "game",
+            "scripts",
+            "PlayerDevelopmentControls.cs"));
         string gameplay = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
@@ -18,9 +23,10 @@ public sealed class Rac1HostArchitectureTests
 
         Assert.DoesNotContain("Rac1RespawnRequested", player, StringComparison.Ordinal);
         Assert.DoesNotContain("Rac1RespawnRequested", gameplay, StringComparison.Ordinal);
+        Assert.DoesNotContain("Key.R", player, StringComparison.Ordinal);
         Assert.Contains(
-            "key.Keycode == Key.R && !UseRac1Gameplay",
-            player,
+            "key.Keycode == Key.R && !_host.UseRac1Gameplay",
+            developmentControls,
             StringComparison.Ordinal);
         Assert.Contains(
             "_rac1Nanotech.HasPendingRecoveredEnvironmentalRestart",
@@ -72,22 +78,27 @@ public sealed class Rac1HostArchitectureTests
     }
 
     [Fact]
-    public void Rac1DebugHudDoesNotAdvertiseDisabledRKeyRespawn()
+    public void PlayerDevelopmentControlsStayOutOfProductionInputBindings()
     {
         string player = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
             "scripts",
-            "DebugPlayer.cs"));
+            "PlayerHost.cs"));
+        string developmentControls = File.ReadAllText(Path.Combine(
+            RepoPaths.Root,
+            "game",
+            "scripts",
+            "PlayerDevelopmentControls.cs"));
 
-        Assert.Contains(
-            "string developmentControls = UseRac1Gameplay",
-            player,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "? \"mouse / right stick debug camera / F fly / F8 diagnostics",
-            player,
-            StringComparison.Ordinal);
+        foreach (string devKey in new[] { "Key.Tab", "Key.F8", "Key.F9", "Key.F", "Key.R" })
+            Assert.DoesNotContain(devKey, player, StringComparison.Ordinal);
+
+        Assert.Contains("Key.Tab", developmentControls, StringComparison.Ordinal);
+        Assert.Contains("Key.F8", developmentControls, StringComparison.Ordinal);
+        Assert.Contains("Key.F9", developmentControls, StringComparison.Ordinal);
+        Assert.Contains("Key.F", developmentControls, StringComparison.Ordinal);
+        Assert.Contains("Key.R", developmentControls, StringComparison.Ordinal);
     }
 
     [Fact]
