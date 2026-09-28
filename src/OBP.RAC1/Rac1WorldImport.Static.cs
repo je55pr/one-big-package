@@ -1,4 +1,5 @@
 using OBP.PS2.Graphics;
+using OBP.PS2.Presentation;
 using OBP.PS2.Textures;
 using OBP.RAC1.Level;
 using OBP.Runtime;
@@ -110,7 +111,7 @@ public static partial class Rac1WorldImport
         bool? alphaBlend = alphaBlendEnabled is not null && (uint)face < (uint)alphaBlendEnabled.Length
             ? alphaBlendEnabled[face]
             : null;
-        var presentation = NativeMaterialPresentation.From(
+        var presentation = Ps2MaterialPresentation.From(
             materials[stateIndex], alphaBlend, classifyMobySurface);
         return presentation.HasNativeEvidence ? presentation : null;
     }

@@ -6,6 +6,7 @@ using OBP.PS2.Compression;
 using OBP.PS2.Iso;
 using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
+using OBP.PS2.Presentation;
 using OBP.RAC2.Audio;
 using OBP.RAC2.Geometry;
 using OBP.RAC2.Gameplay;
@@ -888,7 +889,7 @@ public static class GcWorldImport
         bool? alphaBlend = alphaBlendEnabled is not null && (uint)face < (uint)alphaBlendEnabled.Length
             ? alphaBlendEnabled[face]
             : null;
-        var presentation = NativeMaterialPresentation.From(
+        var presentation = Ps2MaterialPresentation.From(
             materials[stateIndex], alphaBlend, classifyMobySurface);
         return presentation.HasNativeEvidence ? presentation : null;
     }

@@ -2,15 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>OBP.RAC2</RootNamespace>
+    <RootNamespace>OBP.PS2.Presentation</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
-    <ProjectReference Include="../OBP.IO/OBP.IO.csproj" />
     <ProjectReference Include="../OBP.PS2/OBP.PS2.csproj" />
     <ProjectReference Include="../OBP.Runtime/OBP.Runtime.csproj" />
-    <ProjectReference Include="..\OBP.PS2.Presentation\OBP.PS2.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

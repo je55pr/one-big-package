@@ -1,4 +1,5 @@
 using OBP.PS2.Graphics;
+using OBP.PS2.Presentation;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Tests;
@@ -24,7 +25,7 @@ public class RuntimeMaterialPresentationTests
             wrapT: RcTextureWrapHint.Repeat,
             minFilter: RcTextureMinFilterHint.LinearMipmapLinear);
 
-        var runtime = OBP.RAC2.NativeMaterialPresentation.From(
+        var runtime = Ps2MaterialPresentation.From(
             native, alphaBlendEnabled: true);
 
         Assert.Equal(RuntimeTextureWrap.Clamp, runtime.WrapS);
@@ -43,7 +44,7 @@ public class RuntimeMaterialPresentationTests
             AlphaBlend = new RcGsAlphaState(0, 2, 2, 1, 64),
         };
 
-        var runtime = OBP.RAC2.NativeMaterialPresentation.From(native);
+        var runtime = Ps2MaterialPresentation.From(native);
 
         Assert.Equal(RuntimeBlendEquation.AdditiveFixedAlpha, runtime.BlendEquation);
         Assert.Equal(0.5, runtime.FixedAlphaFactor);
@@ -56,14 +57,14 @@ public class RuntimeMaterialPresentationTests
     [InlineData(12, RuntimeSurfaceEffect.RegularTexture)]
     public void MapsRecoveredMobyTextureSelectors(int textureId, RuntimeSurfaceEffect expected)
     {
-        var runtime = OBP.RAC2.NativeMaterialPresentation.From(
+        var runtime = Ps2MaterialPresentation.From(
             State(textureId), classifyMobySurface: true);
 
         Assert.Equal(expected, runtime.SurfaceEffect);
     }
 
     [Fact]
-    public void TrilogyAdaptersMapSharedNativeEvidenceIdentically()
+    public void SharedAdapterMapsEvidenceWithoutGameSpecificBranching()
     {
         var native = State(
             textureId: -2,
@@ -74,25 +75,21 @@ public class RuntimeMaterialPresentationTests
             AlphaBlend = new RcGsAlphaState(0, 1, 0, 1, 0),
         };
 
-        var rac1 = OBP.RAC1.NativeMaterialPresentation.From(
-            native, alphaBlendEnabled: false, classifyMobySurface: true);
-        var rac2 = OBP.RAC2.NativeMaterialPresentation.From(
-            native, alphaBlendEnabled: false, classifyMobySurface: true);
-        var rac3 = OBP.RAC3.NativeMaterialPresentation.From(
+        var runtime = Ps2MaterialPresentation.From(
             native, alphaBlendEnabled: false, classifyMobySurface: true);
 
-        Assert.Equal(rac1, rac2);
-        Assert.Equal(rac2, rac3);
-
-        Assert.Equal(RuntimeBlendEquation.SourceAlpha, rac1.BlendEquation);
-        Assert.Null(rac1.FixedAlphaFactor);
-        Assert.Equal(RuntimeSurfaceEffect.Chrome, rac1.SurfaceEffect);
+        Assert.Equal(RuntimeTextureWrap.Repeat, runtime.WrapS);
+        Assert.Equal(RuntimeTextureWrap.Clamp, runtime.WrapT);
+        Assert.Equal(RuntimeTextureMinFilter.NearestMipmapLinear, runtime.MinFilter);
+        Assert.Equal(RuntimeBlendEquation.SourceAlpha, runtime.BlendEquation);
+        Assert.Null(runtime.FixedAlphaFactor);
+        Assert.Equal(RuntimeSurfaceEffect.Chrome, runtime.SurfaceEffect);
     }
 
     [Fact]
     public void UnknownNativeStateStaysUnresolved()
     {
-        var runtime = OBP.RAC2.NativeMaterialPresentation.From(State());
+        var runtime = Ps2MaterialPresentation.From(State());
 
         Assert.Equal(RuntimeTextureWrap.Unknown, runtime.WrapS);
         Assert.Equal(RuntimeTextureWrap.Unknown, runtime.WrapT);

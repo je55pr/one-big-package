@@ -9,6 +9,7 @@
 ## Architecture
 - `OBP.IO`: bounded/random-access IO and authority verification.
 - `OBP.PS2`: shared PS2 formats/codecs.
+- `OBP.PS2.Presentation`: narrow shared PS2-material → neutral-runtime presentation mapping only.
 - `OBP.RAC1/2/3`: game-specific formats, evidence and native behaviour.
 - `OBP.Runtime`: engine-independent runtime concepts.
 - `OBP.Godot` + `game/`: presentation/application host only.

@@ -1,13 +1,13 @@
 using OBP.PS2.Graphics;
 using OBP.Runtime.Presentation;
 
-namespace OBP.RAC1;
+namespace OBP.PS2.Presentation;
 
 /// <summary>
-/// Source-game boundary adapter from recovered PS2 material evidence to the
+/// Shared boundary adapter from recovered PS2 material evidence to the
 /// engine-independent runtime presentation contract.
 /// </summary>
-public static class NativeMaterialPresentation
+public static class Ps2MaterialPresentation
 {
     public static RuntimeMaterialPresentation From(
         RcMaterialState state,

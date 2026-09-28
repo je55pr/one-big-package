@@ -34,7 +34,7 @@ game/
   application shell, lifecycle, input, cameras, UI, audio/presentation
 ```
 
-`OBP.Core` contains shared provenance/math concepts used beneath those layers. `OBP.Cli` and `OBP.Tests` exercise the engine-independent stack without requiring Godot.
+`OBP.Core` contains shared provenance/math concepts used beneath those layers. `OBP.PS2.Presentation` is a narrow cross-layer adapter that depends on both `OBP.PS2` and `OBP.Runtime` solely to map demonstrably shared PS2 material evidence into neutral runtime presentation; it owns no game-specific parsing or semantics. `OBP.Cli` and `OBP.Tests` exercise the engine-independent stack without requiring Godot.
 
 ### Hard boundary: Godot is the host, not the parser
 

@@ -45,7 +45,7 @@ OBP.Godot       thin Godot adapter
 game/           application, input, UI, cameras and presentation
 ```
 
-Godot hosts OBP but does not define native Ratchet formats or gameplay rules. Shared abstractions belong in `OBP.Runtime` only when source evidence justifies them.
+Godot hosts OBP but does not define native Ratchet formats or gameplay rules. Shared abstractions belong in `OBP.Runtime` only when source evidence justifies them. `OBP.PS2.Presentation` is a narrow bridge from shared recovered PS2 material state to neutral runtime presentation; it depends on `OBP.PS2` and `OBP.Runtime` and owns no game-specific semantics.
 
 ## Current baseline
 The native runtime can load all three supported trilogy authorities through one neutral destination/provider path, reconstruct worlds into `RuntimeWorld`, build them in Godot, and repeatedly load/unload them. R&C1 currently has the deepest active gameplay work, including native player movement, live entity state, crates/pickups, Nanotech/death state, weapon inventory, Bomb Glove and wrench-combat slices, campaign state, and representative hostile behaviour.

@@ -28,6 +28,7 @@
     <ProjectReference Include="../../src/OBP.RAC2/OBP.RAC2.csproj" />
     <ProjectReference Include="../../src/OBP.RAC3/OBP.RAC3.csproj" />
     <ProjectReference Include="../../src/OBP.Runtime/OBP.Runtime.csproj" />
+    <ProjectReference Include="..\..\src\OBP.PS2.Presentation\OBP.PS2.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

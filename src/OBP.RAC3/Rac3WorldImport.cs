@@ -3,6 +3,7 @@ using OBP.IO;
 using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
+using OBP.PS2.Presentation;
 using OBP.RAC3.Gameplay;
 using OBP.RAC3.Geometry;
 using OBP.RAC3.Level;
@@ -178,7 +179,7 @@ public static partial class Rac3WorldImport
         bool? alphaBlend = alphaBlendEnabled is not null && (uint)face < (uint)alphaBlendEnabled.Length
             ? alphaBlendEnabled[face]
             : null;
-        var presentation = NativeMaterialPresentation.From(
+        var presentation = Ps2MaterialPresentation.From(
             materials[stateIndex], alphaBlend, classifyMobySurface);
         return presentation.HasNativeEvidence ? presentation : null;
     }
