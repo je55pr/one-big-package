@@ -15,14 +15,6 @@ public partial class SourceManagerBootstrap : Node
 
     public override void _Ready()
     {
-        // The composition / fusion lab replaces the whole OBPGame host tree, and
-        // a --shots run drives its own world entry — neither wants the trilogy
-        // source-manager navigation stack.
-        if (System.Array.Exists(OS.GetCmdlineUserArgs(), a => a is "--compose" or "--composition" or "--shots"))
-        {
-            return;
-        }
-
         _game = GetParentOrNull<OBPGame>();
         CallDeferred(nameof(Activate));
     }
@@ -65,14 +57,20 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        string[] args = OS.GetCmdlineUserArgs();
-        string? rac1Path = ValueAfter(args, "--rac1-iso");
-        string? gcPath = ValueAfter(args, "--gc-iso");
-        string? uyaPath = ValueAfter(args, "--uya-iso");
-        string? destinationId = ValueAfter(args, "--destination");
-        string? testScene = ValueAfter(args, "--test-scene");
-        bool rac1CampaignSmoke = System.Array.Exists(args, a => a == "--rac1-campaign-smoke");
-        bool rac1StartupVisibilitySmoke = System.Array.Exists(args, a => a == "--rac1-startup-visibility-smoke");
+        CommandLineArgs args = _game.StartupArgs;
+        if (args.Compose || args.ShotsPath is not null)
+        {
+            // These modes own their own navigation/lifecycle and do not use the
+            // trilogy source-manager stack.
+            _game = null;
+            return;
+        }
+
+        string? rac1Path = args.Rac1Iso;
+        string? gcPath = args.GcIso;
+        string? uyaPath = args.UyaIso;
+        string? destinationId = args.Destination;
+        string? testScene = args.TestSceneExplicit ? args.TestScene : null;
 
         if (rac1Path is not null)
         {
@@ -87,13 +85,13 @@ public partial class SourceManagerBootstrap : Node
             _game.RememberCommandLineSource(ObpSourceGame.Rac3, uyaPath);
         }
 
-        if (rac1CampaignSmoke)
+        if (args.Rac1CampaignSmoke)
         {
             _game.OpenRac1CampaignCurrentFromBootstrap();
             return;
         }
 
-        if (rac1StartupVisibilitySmoke)
+        if (args.Rac1StartupVisibilitySmoke)
         {
             _game.RunRac1StartupVisibilitySmokeFromBootstrap();
             return;
@@ -125,7 +123,7 @@ public partial class SourceManagerBootstrap : Node
         {
             // A plain double-click / "obp" launch: show the gamey title first,
             // then fall through to Game Sources. --skip-title bypasses it.
-            if (System.Array.Exists(args, a => a == "--skip-title"))
+            if (args.SkipTitle)
             {
                 _game.ShowSourceManagerFromBootstrap();
                 return;
@@ -137,15 +135,4 @@ public partial class SourceManagerBootstrap : Node
         }
     }
 
-    private static string? ValueAfter(string[] args, string option)
-    {
-        for (int i = 0; i + 1 < args.Length; i++)
-        {
-            if (args[i] == option)
-            {
-                return args[i + 1];
-            }
-        }
-        return null;
-    }
 }

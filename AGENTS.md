@@ -17,7 +17,7 @@
 ## Working style
 - `dev` is the normal working branch. Work directly there when no concurrent worker can collide with you.
 - Use a separate branch/worktree only when concurrent work needs isolation; integrate the actual result back into `dev` and do not create bookkeeping-only commits.
-- `main` is a release pointer: advance it only to a known-good `dev` commit.
+- `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer.
 - Prefer small evidence-backed changes with deterministic tests, but do not create process for process's sake.
 - Run `./tools/test.ps1 -Configuration Release` on Windows or `./tools/test.sh Release` where supported.
 - Run `dotnet format OneBigPackage.sln --verify-no-changes --no-restore` before integrating code changes.

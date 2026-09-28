@@ -17,6 +17,25 @@ public sealed class CommandLineArgsTests
     }
 
     [Fact]
+    public void SourceBootstrapOptionsShareTheParsedModel()
+    {
+        CommandLineArgs args = CommandLineArgs.Parse([
+            "--rac1-iso", "rac1.iso",
+            "--gc-iso", "gc.iso",
+            "--uya-iso", "uya.iso",
+            "--destination", "rac3:TABLE1",
+            "--skip-title",
+        ]);
+
+        Assert.Equal("rac1.iso", args.Rac1Iso);
+        Assert.Equal("gc.iso", args.GcIso);
+        Assert.Equal("uya.iso", args.UyaIso);
+        Assert.Equal("rac3:TABLE1", args.Destination);
+        Assert.True(args.SkipTitle);
+        Assert.False(args.TestSceneExplicit);
+    }
+
+    [Fact]
     public void Rac1CampaignPersistenceIsOptIn()
     {
         CommandLineArgs ordinary = CommandLineArgs.Parse([]);

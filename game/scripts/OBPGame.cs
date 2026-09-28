@@ -42,6 +42,8 @@ public partial class OBPGame : Node3D
     private Camera3D _camera = null!;
 
     private CommandLineArgs _args = new();
+    internal CommandLineArgs StartupArgs => _args;
+
     private long _frame;
     private Mode _mode = Mode.Smoke;
 
@@ -86,7 +88,7 @@ public partial class OBPGame : Node3D
         // It does not touch the single-world planet-hopping path below.
         if (_args.Compose)
         {
-            AddChild(new CompositionLab { Name = "CompositionLab" });
+            AddChild(new CompositionLab { Name = "CompositionLab", StartupArgs = _args });
             GD.Print("[OBPGame] booting composition lab");
             return;
         }

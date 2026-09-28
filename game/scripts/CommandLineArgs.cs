@@ -13,7 +13,6 @@ public sealed record CommandLineArgs
     public int? CaptureFrame { get; init; }
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
-    public string? TestLevel { get; init; }
 
     /// <summary>Path to a Going Commando retail ISO — retained for compatibility with existing GC harnesses.</summary>
     public string? GcIso { get; init; }
@@ -36,6 +35,9 @@ public sealed record CommandLineArgs
 
     /// <summary>Skip the legacy GC planet selector and load <see cref="Planet"/> / <see cref="GcLevel"/> directly.</summary>
     public bool DirectLoad { get; init; }
+
+    /// <summary>Skip the interactive title screen on an ordinary application launch.</summary>
+    public bool SkipTitle { get; init; }
 
     /// <summary>Comma-separated GC planet tokens — lifecycle stress test retained for the GC regression harness.</summary>
     public string? StressSwitch { get; init; }
@@ -133,7 +135,6 @@ public sealed record CommandLineArgs
             result = a switch
             {
                 "--test-scene" => result with { TestScene = Next() ?? result.TestScene, TestSceneExplicit = true },
-                "--test-level" => result with { TestLevel = Next() },
                 "--capture-frame" => result with { CaptureFrame = ParseInt(Next()) },
                 "--capture-out" => result with { CaptureOut = Next() },
                 "--fixed-seed" => result with { FixedSeed = ParseInt(Next()) },
@@ -144,6 +145,7 @@ public sealed record CommandLineArgs
                 "--planet" => result with { Planet = Next(), DirectLoad = true },
                 "--destination" => result with { Destination = Next() },
                 "--direct" => result with { DirectLoad = true },
+                "--skip-title" => result with { SkipTitle = true },
                 "--stress-switch" => result with { StressSwitch = Next() },
                 "--verify-hash" => result with { VerifyHash = true },
                 "--collision-debug" => result with { CollisionDebug = true },

@@ -18,7 +18,7 @@ On Windows:
 ./tools/play.ps1
 ```
 
-`dev` is the normal working branch. Work directly on it when nothing else can collide; concurrent workers use temporary isolated branches/worktrees and integrate the actual result back into `dev`. `main` is only advanced to a known-good `dev` commit for releases.
+`dev` is the maintained working and release branch. Work directly on it when nothing else can collide; concurrent work may use temporary isolated branches/worktrees, but completed work is integrated back into `dev` and temporary branches are not release pointers.
 
 There is no separate browser or TypeScript implementation to maintain.
 
