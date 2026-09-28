@@ -389,7 +389,7 @@ public partial class OBPGame : Node3D
         _inspector?.QueueFree();
         _inspector = null;
         _world = null;
-        ResetCrateDebugHarness();
+        ResetGcGameplayHost();
         ResetUyaGameplay();
     }
 
@@ -630,7 +630,7 @@ public partial class OBPGame : Node3D
         _activeCamera = player.Camera;
         _player = player;
         AttachPlayerAvatarVisual(player);
-        ArmCrateDebugHarness(player);
+        ArmGcGameplayHost(player);
         ArmRac1Gameplay(player);
         ArmUyaGameplay(player);
     }

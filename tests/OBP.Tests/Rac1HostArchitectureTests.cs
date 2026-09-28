@@ -123,39 +123,39 @@ public sealed class Rac1HostArchitectureTests
     [Fact]
     public void Rac1GameplayDoesNotInventClass749TerminalStateSelector()
     {
-        string gameplay = File.ReadAllText(Path.Combine(
+        string combat = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Gameplay.cs"));
+            "OBPGame.Rac1Combat.cs"));
 
         Assert.DoesNotContain(
             "Rac1Class749Hostile.TerminalNativeStateFd",
-            gameplay,
+            combat,
             StringComparison.Ordinal);
         Assert.DoesNotContain(
             "Rac1Class749Hostile.TerminalNativeStateFe",
-            gameplay,
+            combat,
             StringComparison.Ordinal);
         Assert.Contains(
             "_rac1Hostiles.CompleteRecoveredDamageReaction(hostile.Source)",
-            gameplay,
+            combat,
             StringComparison.Ordinal);
     }
 
     [Fact]
     public void Rac1GameplayActivityDoesNotDependOnRenderVisibility()
     {
-        string gameplay = File.ReadAllText(Path.Combine(
+        string hostiles = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
             "scripts",
-            "OBPGame.Rac1Gameplay.cs"));
+            "OBPGame.Rac1Hostiles.cs"));
 
-        Assert.DoesNotContain(".Root.Visible", gameplay, StringComparison.Ordinal);
+        Assert.DoesNotContain(".Root.Visible", hostiles, StringComparison.Ordinal);
         Assert.Contains(
             "_rac1MobyRuntime.Require(node.Source).IsActive",
-            gameplay,
+            hostiles,
             StringComparison.Ordinal);
     }
 

@@ -33,7 +33,7 @@ The repository contains:
 - `OBP.RAC1`, `OBP.RAC2`, `OBP.RAC3` — game-specific native libraries;
 - `OBP.Runtime` — engine-independent runtime world data;
 - `OBP.Godot` — the game-neutral Godot adapter;
-- `game/` — application shell, input, UI/cameras and debug player;
+- `game/` — application shell, input, UI/cameras, production player host and explicit development controls;
 - `OBP.Cli` and `OBP.Tests` — deterministic command-line validation and xUnit coverage.
 
 The architectural rule is unchanged: **Godot hosts OBP; Godot does not define Ratchet's native formats.** Native parsers stay testable without launching the engine.
@@ -99,17 +99,17 @@ The merged native C# pipeline covers:
 
 All 27 known GC level files have been exercised through the generic importer path. GC now uses the same neutral Worlds browser and provider/adoption lifecycle as R&C1 and UYA; the former GC-only picker, planet selector and direct `EnterWorld(int)` host path have been removed. Historical `--planet`, `--gc-level`, `--direct` and stress/capture conveniences resolve to canonical `ObpDestination` values before loading. Lifecycle stress work verifies that world nodes/resources do not simply accumulate on each switch.
 
-`OBP.RAC2.GcIsoLoad` provides the Godot-free disc façade for identification, level import and optional streamed authority verification. `GcWorldImport` terminates GC-specific conversion at `RuntimeWorld`; `OBP.Godot.RuntimeWorldScene` does not depend on `OBP.RAC2`.
+`OBP.RAC2.GcIsoLoad` provides the Godot-free disc façade for identification, level import and optional streamed authority verification. `GcWorldImport` terminates GC-specific conversion at `RuntimeWorld`; `OBP.Godot.RuntimeWorldScene` does not depend on `OBP.RAC2`. Godot-side gameplay hosting is no longer bundled into the old `OBPGame.Crates` catch-all: generic GC coordination lives in `OBPGame.GcGameplay`, the Aranos opening lift/door/MSR-I host path is isolated in `OBPGame.GcAranosOpeningHost`, and the optional crate focus/snapshot harness is isolated in `OBPGame.GcCrateDebugHarness`.
 
 ### World composition / Fusion Lab
 
 `OBP.Composition` is an engine-neutral placement/alignment layer consumed by the Godot Fusion Lab. Multiple independently reconstructed `RuntimeWorld` values can coexist under separate transforms, be soloed/tinted/inspected, and be aligned from equivalent landmark anchors without modifying either source reconstruction. A deterministic R&C1-level-0 + GC-Oozla composition capture succeeds, and a three-cycle cross-game build/teardown stress run reports zero orphan nodes, an empty composition root after teardown and no post-warmup object/node growth. `CompositionLab` now runs on the Milestone 1–2 spine: one `WorldHost` per placement under an independent transform root, a shared `CaptureHarness`, and one neutral shared environment (`WorldHost.Options.ManageEnvironment = false`). With all three providers registered the cross-game Veldin alignment (RAC1 `LEVEL0` vs RAC3 `TABLE1`) is unblocked. See [`WORLD_COMPOSITION.md`](WORLD_COMPOSITION.md).
 
-### Debug player / capture harness
+### Player host / development controls / capture harness
 
 The merged runtime includes:
 
-- a `CharacterBody3D` host with WASD, mouse look, development spawn reset and fly/noclip; the R reset key is disabled whenever R&C1 gameplay is active so recovered environmental restart remains automatic, while ordinary grounded/airborne play in R&C1, GC and UYA all routes through the retail-derived R&C1 60 Hz controller as an explicit **OBP-created cross-game default**, not a native-equivalence claim;
+- a production `PlayerHost` `CharacterBody3D` with ordinary movement/input/camera seams, split into core lifecycle/input, RAC1 movement/contact adaptation, camera presentation, animation/action presentation and diagnostics partials; Tab/F/F8/F9/R development bindings live only in the separate `PlayerDevelopmentControls` node, and R reset remains unavailable during R&C1 gameplay so recovered environmental restart stays automatic. Ordinary grounded/airborne play in R&C1, GC and UYA routes through the retail-derived R&C1 60 Hz controller as an explicit **OBP-created cross-game default**, not a native-equivalence claim;
 - ship/player-start placement from retail settings, with a bounds-centre fallback where no usable native point exists;
 - deterministic movement telemetry now records the selected common-controller label, recovered locomotion state, yaw mode and avatar animation state; the retired PlayerHost speed/jump/gravity calibration is no longer used by ordinary trilogy play;
 - `tools/movement-smoke.ps1` drives the live Godot InputMap/`CharacterBody3D` path through representative R&C1 `LEVEL0`, GC `LEVEL1` and UYA `TABLE1` worlds, requiring reconstructed floor contact plus low-stick walk, progressive full-stick run, arbitrary-angle steering, crouch, tap-versus-held jump, partial-stick air control, WASD fallback, development fly and development respawn. The cross-game pass validates OBP integration only: GC/UYA still reuse the R&C1 retail-derived controller as an OBP-created default, not a sequel-native equivalence claim;

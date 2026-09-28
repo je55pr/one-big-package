@@ -329,7 +329,7 @@ public partial class OBPGame
         }
         _sceneResult = result;
         SetupOverlay(result, world);
-        ConfigureCrateDebugHarness();
+        ConfigureGcGameplayHost();
         if (!staticCamera)
         {
             ConfigureRac1Gameplay(world, result);
