@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "contactOrientationVector": {
+    "playerOffset": "0x270",
+    "initialValue": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "initializer": "0x00212800..0x00212828"
+  },
+  "contactMetricGate": {
+    "playerOffset": "0x2dc",
+    "comparisonValue": 0.25,
+    "routine": "0x00212d50..0x00212d70"
+  },
+  "orientationConversion": {
+    "routine": "0x00216078",
+    "firstAngle": "atan2(transformedY, sqrt(transformedX^2 + transformedZ^2))",
+    "secondAngle": "-atan2(transformedZ, transformedX)"
+  },
+  "orientationAdmissionBoundRadians": 0.7853981633974483,
+  "orientationAdmissionBoundDegrees": 45.0,
+  "ordinaryRequestDotContactVector": "0x00213014..0x0021301c",
+  "interpretation": "P+0x270 is an ordinary contact orientation/normal-like vector. The loaded path initializes it to world up, converts it to two orientation angles, and uses it in a request dot-product.",
+  "boundaryNote": "The +/-pi/4 comparisons are proven contact-orientation gates in this path; this report does not claim they are a global walkable-slope limit.",
+  "signaturesVerified": 26,
+  "authorityStateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d"
+}

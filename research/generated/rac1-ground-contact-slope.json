@@ -1,0 +1,291 @@
+{
+  "schema": 1,
+  "authority": "R&C1 NTSC-U SCUS-97199 / PCSX2 input recording + PINE",
+  "movieSha256": "565f07bae110802f535943a05a0bfe3312697bd7d98bdb4370dc541b886820e9",
+  "stateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d",
+  "lawStatus": "runtime-observed terrain response; ordinary -0.015 downward request is statically pinned in rac1-ground-contact-static.json",
+  "runCapNativeUnitsPerTick": 0.09500919,
+  "stableWitnessCount": 81,
+  "stableFrameRange": [
+    57,
+    184
+  ],
+  "flatWitnessCount": 56,
+  "uphillWitnessCount": 25,
+  "finalMagnitudeError": {
+    "maxAbs": 6.6838518511525e-06,
+    "medianAbs": 4.919992052654365e-10
+  },
+  "componentDecomposition": {
+    "planarComponent": "G+0xb0/+0xb4/+0xb8",
+    "verticalComponent": "G+0xa0/+0xa4/+0xa8",
+    "uphillEquation": "G+0x60 = G+0xb0 + G+0xa0",
+    "uphillMaxReconstructionError": 1.666001104184886e-08,
+    "flatResidualEquation": "G+0x60 - (G+0xb0 + G+0xa0) = (0, 0, -0.015)",
+    "flatResidualZMedian": -0.015000022016465664,
+    "flatMaxResidualPlanarMagnitude": 1.862645149230957e-08,
+    "maxPlanarComponentAbsZ": 0.0,
+    "maxVerticalComponentPlanarMagnitude": 0.0,
+    "maxFinalVsPlanarHorizontalError": 1.5710066409757864e-05
+  },
+  "verticalContactCorrection": {
+    "expectedObservedValue": 0.015,
+    "min": 0.01497494988143444,
+    "max": 0.015004679560661316,
+    "median": 0.015000022016465664
+  },
+  "representativeWitnesses": [
+    {
+      "frame": 57,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04581773281097412,
+        -0.08322098851203918,
+        -0.015000022016465664
+      ],
+      "planarComponent": [
+        -0.045817725360393524,
+        -0.08322097361087799,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
+        -0.015000022016465664
+      ],
+      "finalDisplacement": [
+        -0.0458221435546875,
+        -0.083221435546875,
+        0.0
+      ],
+      "contactCorrection": [
+        -4.410743713378906e-06,
+        -4.470348358154297e-07,
+        0.015000022016465664
+      ],
+      "finalMagnitude": 0.09500250614814884
+    },
+    {
+      "frame": 58,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04581909999251366,
+        -0.0832202285528183,
+        -0.015000022016465664
+      ],
+      "planarComponent": [
+        -0.04581909999251366,
+        -0.0832202285528183,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        0.0,
+        0.0,
+        -0.015000022016465664
+      ],
+      "finalDisplacement": [
+        -0.0458221435546875,
+        -0.083221435546875,
+        0.0
+      ],
+      "contactCorrection": [
+        -3.043562173843384e-06,
+        -1.2069940567016602e-06,
+        0.015000022016465664
+      ],
+      "finalMagnitude": 0.09500250614814884
+    },
+    {
+      "frame": 77,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04581362009048462,
+        -0.08322324603796005,
+        -0.015000022016465664
+      ],
+      "planarComponent": [
+        -0.04581361263990402,
+        -0.08322323113679886,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
+        -0.015000022016465664
+      ],
+      "finalDisplacement": [
+        -0.0458221435546875,
+        -0.08322906494140625,
+        0.0
+      ],
+      "contactCorrection": [
+        -8.52346420288086e-06,
+        -5.81890344619751e-06,
+        0.015000022016465664
+      ],
+      "finalMagnitude": 0.09500918950800079
+    },
+    {
+      "frame": 97,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04581562429666519,
+        -0.08322214335203171,
+        -0.015000022016465664
+      ],
+      "planarComponent": [
+        -0.04581562429666519,
+        -0.08322214335203171,
+        0.0
+      ],
+      "verticalComponent": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "componentReconstructionError": [
+        0.0,
+        0.0,
+        -0.015000022016465664
+      ],
+      "finalDisplacement": [
+        -0.0458221435546875,
+        -0.08322906494140625,
+        0.0
+      ],
+      "contactCorrection": [
+        -6.51925802230835e-06,
+        -6.921589374542236e-06,
+        0.015000022016465664
+      ],
+      "finalMagnitude": 0.09500918950800079
+    },
+    {
+      "frame": 133,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04523249343037605,
+        -0.0821615532040596,
+        0.00011599250137805939
+      ],
+      "planarComponent": [
+        -0.045232485979795456,
+        -0.08216153830289841,
+        0.0
+      ],
+      "verticalComponent": [
+        -0.0,
+        -0.0,
+        0.00011599248682614416
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
+        1.4551915228366852e-11
+      ],
+      "finalDisplacement": [
+        -0.0452423095703125,
+        -0.0821685791015625,
+        0.0150909423828125
+      ],
+      "contactCorrection": [
+        -9.816139936447144e-06,
+        -7.02589750289917e-06,
+        0.01497494988143444
+      ],
+      "finalMagnitude": 0.09500672875553126
+    },
+    {
+      "frame": 183,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04315774142742157,
+        -0.07839659601449966,
+        0.016880685463547707
+      ],
+      "planarComponent": [
+        -0.04315774142742157,
+        -0.07839659601449966,
+        0.0
+      ],
+      "verticalComponent": [
+        -0.0,
+        -0.0,
+        0.016880685463547707
+      ],
+      "componentReconstructionError": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "finalDisplacement": [
+        -0.0431671142578125,
+        -0.078399658203125,
+        0.03188323974609375
+      ],
+      "contactCorrection": [
+        -9.372830390930176e-06,
+        -3.0621886253356934e-06,
+        0.015002554282546043
+      ],
+      "finalMagnitude": 0.09500761620218011
+    },
+    {
+      "frame": 184,
+      "segment": "forward",
+      "sequence": 4,
+      "preContact": [
+        -0.04315965250134468,
+        -0.07839560508728027,
+        0.016880521550774574
+      ],
+      "planarComponent": [
+        -0.043159645050764084,
+        -0.07839559018611908,
+        0.0
+      ],
+      "verticalComponent": [
+        -0.0,
+        -0.0,
+        0.016880521550774574
+      ],
+      "componentReconstructionError": [
+        -7.450580596923828e-09,
+        -1.4901161193847656e-08,
+        0.0
+      ],
+      "finalDisplacement": [
+        -0.0431671142578125,
+        -0.078399658203125,
+        0.03188133239746094
+      ],
+      "contactCorrection": [
+        -7.461756467819214e-06,
+        -4.0531158447265625e-06,
+        0.015000810846686363
+      ],
+      "finalMagnitude": 0.09500697613939335
+    }
+  ]
+}

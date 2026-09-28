@@ -144,7 +144,7 @@ public sealed class PlayerAvatarGodotTests
     }
 
     [Fact]
-    public void IdleToLocomotionPlaysNativeTimedStartThenSustainedLocomotion()
+    public void SteadyWalkKeepsSequence3UntilRecoveredRunBoundarySignal()
     {
         var playback = NewPlayback();
 
@@ -153,37 +153,34 @@ public sealed class PlayerAvatarGodotTests
         Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, playback.CurrentClip.Role);
         Assert.Equal(1.0, playback.ClipStartedAtSeconds, 12);
 
-        playback.SetClock(1.19);
+        playback.SetClock(2.0);
+        Assert.Equal(PlayerAnimationState.Walk, playback.CurrentAnimationState);
         Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, playback.CurrentClip.Role);
 
-        playback.SetClock(1.25);
-        Assert.Equal(PlayerAnimationState.Walk, playback.CurrentAnimationState);
+        playback.SetAnimationState(PlayerAnimationState.Run);
+        Assert.Equal(PlayerAnimationState.Run, playback.CurrentAnimationState);
         Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
-        Assert.Equal(1.2, playback.ClipStartedAtSeconds, 12);
-        Assert.Equal(0.05, playback.ClipElapsedSeconds, 12);
+        Assert.Equal(2.0, playback.ClipStartedAtSeconds, 12);
     }
 
     [Fact]
-    public void WalkRunPulsesDoNotInterruptLocomotionStartOrSustainedClip()
+    public void RunBoundaryPromotesSequence3To4WithoutClockCompletion()
     {
         var playback = NewPlayback();
 
         playback.SetClock(2.0);
         playback.SetAnimationState(PlayerAnimationState.Walk);
-        double startOneShot = playback.ClipStartedAtSeconds;
         playback.SetClock(2.05);
         playback.SetAnimationState(PlayerAnimationState.Run);
-        playback.SetClock(2.10);
-        playback.SetAnimationState(PlayerAnimationState.Walk);
 
-        Assert.Equal(PlayerAvatarAnimationRole.LocomotionStart, playback.CurrentClip.Role);
-        Assert.Equal(startOneShot, playback.ClipStartedAtSeconds);
-
-        playback.SetClock(2.21);
-        double sustained = playback.ClipStartedAtSeconds;
-        playback.SetAnimationState(PlayerAnimationState.Run);
+        Assert.Equal(PlayerAnimationState.Run, playback.CurrentAnimationState);
         Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
-        Assert.Equal(sustained, playback.ClipStartedAtSeconds);
+        Assert.Equal(2.05, playback.ClipStartedAtSeconds, 12);
+
+        playback.SetClock(3.0);
+        playback.SetAnimationState(PlayerAnimationState.Walk);
+        Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
+        Assert.Equal(2.05, playback.ClipStartedAtSeconds, 12);
     }
 
     [Fact]
@@ -211,8 +208,8 @@ public sealed class PlayerAvatarGodotTests
     public void MovingToIdleReturnsDirectlyToStandingWithoutSelectingStopVariant()
     {
         var playback = NewPlayback();
+        playback.SetAnimationState(PlayerAnimationState.Walk);
         playback.SetAnimationState(PlayerAnimationState.Run);
-        playback.SetClock(0.21);
         Assert.Equal(PlayerAvatarAnimationRole.SustainedLocomotion, playback.CurrentClip.Role);
 
         playback.SetAnimationState(PlayerAnimationState.Idle);

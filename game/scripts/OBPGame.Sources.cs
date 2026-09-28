@@ -215,6 +215,7 @@ public partial class OBPGame
         _sourceManager.SelectRequested += OpenSourcePicker;
         _sourceManager.ForgetRequested += ForgetSource;
         _sourceManager.BrowseWorldsRequested += BrowseWorlds;
+        _sourceManager.ControllerSettingsRequested += ShowControllerSettingsFromMenu;
         AddChild(_sourceManager);
         _sourceManager.Populate(_sources, TrilogyWorldProviders.Games);
 

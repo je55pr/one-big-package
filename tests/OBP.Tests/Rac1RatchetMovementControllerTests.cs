@@ -201,13 +201,214 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
-    public void LeavingGround_EntersProvenFallRecurrence()
+    public void LeavingOrdinaryGround_UsesRetailAdhesionThenEdgeGravityRecurrence()
     {
         var controller = new Rac1RatchetMovementController();
-        var step = controller.Step(new PlayerControlIntent(0, 0, false, false), Airborne);
+        var input = new PlayerControlIntent(0, 0, false, false);
+
+        var airborne = Rac1PlayerContactResult.StaticWorld(false);
+        var firstUnsupportedControllerTick = controller.Step(input, airborne);
+        Assert.Equal(Rac1RatchetMovementPhase.Falling, firstUnsupportedControllerTick.Phase);
+        Assert.Equal(
+            -(Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick +
+              Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick),
+            firstUnsupportedControllerTick.Vertical,
+            12);
+
+        var next = controller.Step(input, airborne);
+        Assert.Equal(
+            firstUnsupportedControllerTick.Vertical -
+            Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick,
+            next.Vertical,
+            12);
+    }
+
+    [Fact]
+    public void OrdinaryEdgeFall_KeepsState2LocomotionAndGroundYawLaw()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var run = new PlayerControlIntent(0, 1, false, false);
+        for (int i = 0; i < 80; i++)
+            controller.Step(run, Grounded, _ => Math.PI / 2d);
+
+        var unsupported = Rac1PlayerContactResult.StaticWorld(false);
+        var first = controller.Step(run, unsupported, _ => Math.PI / 2d);
+        Assert.True(controller.IsOrdinaryEdgeFall);
+        Assert.Equal(Rac1RatchetMovementPhase.Falling, first.Phase);
+        Assert.Equal(Rac1RatchetLocomotionState.Moving, first.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.GroundRun, first.YawMode);
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, first.PlanarMagnitude, 12);
+
+        var second = controller.Step(run, unsupported, _ => Math.PI / 2d);
+        Assert.True(controller.IsOrdinaryEdgeFall);
+        Assert.Equal(Rac1RatchetLocomotionState.Moving, second.LocomotionState);
+        Assert.Equal(Rac1RatchetYawMode.GroundRun, second.YawMode);
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, second.PlanarMagnitude, 12);
+    }
+
+    [Fact]
+    public void OrdinaryEdgeFall_KeepsWalkPlateauInsteadOfAirMagnitudeLaw()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var walk = new PlayerControlIntent(0, 0.60d, false, false);
+        for (int i = 0; i < 40; i++)
+            controller.Step(walk, Grounded, _ => Math.PI / 2d);
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, controller.PlanarMagnitude, 12);
+
+        var unsupported = Rac1PlayerContactResult.StaticWorld(false);
+        controller.Step(walk, unsupported, _ => Math.PI / 2d);
+        var second = controller.Step(walk, unsupported, _ => Math.PI / 2d);
+
+        Assert.True(controller.IsOrdinaryEdgeFall);
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, controller.TargetPlanarStep, 12);
+        Assert.Equal(Rac1RatchetMovementController.WalkPlanarStep, second.PlanarMagnitude, 12);
+        Assert.Equal(Rac1RatchetYawMode.GroundStartup, second.YawMode);
+    }
+
+    [Fact]
+    public void GenericContactFallback_DoesNotImportRac1EdgeContactRecurrence()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var step = controller.Step(
+            new PlayerControlIntent(0, 0, false, false),
+            Airborne);
 
         Assert.Equal(Rac1RatchetMovementPhase.Falling, step.Phase);
         Assert.Equal(-Rac1RatchetMovementController.FallGravityPerTick, step.Vertical, 12);
+    }
+
+    [Fact]
+    public void OrdinarySupportContactMetric_PinsRetailTwoCentimeterAdmissionGate()
+    {
+        Assert.Equal(
+            0.019999999552965164d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit,
+            15);
+    }
+
+    [Fact]
+    public void OrdinarySupportAngle_PinsRetailFiftyDegreeAdmissionGate()
+    {
+        Assert.Equal(
+            0.8726646304130554d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians,
+            15);
+        Assert.Equal(
+            50d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians * 180d / Math.PI,
+            5);
+    }
+
+    [Fact]
+    public void OrdinarySupportAdmission_UsesRecoveredMetricAndAngleTogether()
+    {
+        Assert.True(Rac1OrdinaryGroundContactMotion.AdmitsOrdinarySupport(
+            0.015d,
+            Math.PI / 4d));
+        Assert.False(Rac1OrdinaryGroundContactMotion.AdmitsOrdinarySupport(
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit,
+            0d));
+        Assert.False(Rac1OrdinaryGroundContactMotion.AdmitsOrdinarySupport(
+            0.015d,
+            Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians + 1e-6d));
+        Assert.False(Rac1OrdinaryGroundContactMotion.AdmitsOrdinarySupport(
+            double.NaN,
+            0d));
+    }
+
+    [Fact]
+    public void HostTransitionVertical_AdmitsOnlyNarrowSupportedRise()
+    {
+        const double requested = -0.015d;
+        const double witnessedRise = 0.02753136221286212d;
+        double angle = 35d * Math.PI / 180d;
+
+        Assert.Equal(
+            witnessedRise,
+            Rac1OrdinaryGroundContactMotion.ResolveHostTransitionVertical(
+                requested,
+                witnessedRise,
+                angle),
+            12);
+        Assert.Equal(
+            requested,
+            Rac1OrdinaryGroundContactMotion.ResolveHostTransitionVertical(
+                requested,
+                Rac1OrdinaryGroundContactMotion.OrdinarySupportTransitionHostEnvelope + 1e-6d,
+                angle),
+            12);
+        Assert.Equal(
+            requested,
+            Rac1OrdinaryGroundContactMotion.ResolveHostTransitionVertical(
+                requested,
+                witnessedRise,
+                Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians + 1e-6d),
+            12);
+        Assert.Equal(
+            requested,
+            Rac1OrdinaryGroundContactMotion.ResolveHostTransitionVertical(
+                requested,
+                -0.01d,
+                angle),
+            12);
+    }
+
+    [Fact]
+    public void OrdinaryGroundTerrain_UsesDirectionalSlopeWithoutCrossSlopeSteering()
+    {
+        const double yaw = -2.0740272998809814d;
+        const double runCap = 0.09500919d;
+        var movement = new Rac1RatchetMovementController.StepResult(
+            Math.Cos(yaw) * runCap,
+            Math.Sin(yaw) * runCap,
+            0d,
+            Rac1RatchetMovementPhase.Grounded,
+            Rac1RatchetLocomotionState.Moving,
+            Rac1RatchetYawMode.GroundRun);
+
+        var projected = Rac1OrdinaryGroundContactMotion.ResolvePreContactStep(
+            movement,
+            Grounded,
+            normalPlanarX: 0.07734177119116313d,
+            normalPlanarY: 0.3387449668450168d,
+            normalUp: 0.9376940321161173d);
+
+        Assert.Equal(-0.04315774142742157d, projected.PlanarX, 5);
+        Assert.Equal(-0.07839659601449966d, projected.PlanarY, 5);
+        Assert.Equal(0.016880685463547707d, projected.Vertical, 5);
+        Assert.Equal(
+            Math.Atan2(movement.PlanarY, movement.PlanarX),
+            Math.Atan2(projected.PlanarY, projected.PlanarX),
+            12);
+        Assert.Equal(
+            runCap,
+            Math.Sqrt(
+                (projected.PlanarX * projected.PlanarX) +
+                (projected.PlanarY * projected.PlanarY) +
+                Math.Pow(
+                    projected.Vertical +
+                    Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick,
+                    2)),
+            8);
+    }
+
+    [Fact]
+    public void SupportedOrdinaryGround_AddsRetailPreContactAdhesionOnlyOutsideJumpStates()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var idle = controller.Step(new PlayerControlIntent(0, 0, false, false), Grounded);
+        Assert.Equal(0d, idle.Vertical, 12);
+        Assert.Equal(
+            -Rac1OrdinaryGroundContactMotion.GroundDownwardRequestPerTick,
+            Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(idle, Grounded),
+            12);
+
+        var anticipation = controller.Step(new PlayerControlIntent(0, 0, true, true), Grounded);
+        Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, anticipation.Phase);
+        Assert.Equal(
+            anticipation.Vertical,
+            Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(anticipation, Grounded),
+            12);
     }
 
     [Fact]
@@ -238,6 +439,23 @@ public sealed class Rac1RatchetMovementControllerTests
         Assert.Equal(0d, step.PlanarMagnitude, 12);
         Assert.Equal(0d, step.Vertical, 12);
         Assert.Equal(Rac1RatchetMovementPhase.Grounded, step.Phase);
+    }
+
+    [Fact]
+    public void ExternalActionEntry_CancelsOrdinaryPlanarCarry()
+    {
+        var controller = new Rac1RatchetMovementController();
+        var run = new PlayerControlIntent(0, 1, false, false);
+        for (int i = 0; i < 80; i++)
+            controller.Step(run, Grounded, _ => Math.PI / 2d);
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.PlanarMagnitude, 12);
+
+        controller.CancelOrdinaryPlanarMotionForAction();
+
+        Assert.Equal(0d, controller.PlanarX, 12);
+        Assert.Equal(0d, controller.PlanarY, 12);
+        Assert.Equal(0d, controller.PlanarMagnitude, 12);
+        Assert.Equal(0d, controller.TargetPlanarStep, 12);
     }
 
     [Fact]

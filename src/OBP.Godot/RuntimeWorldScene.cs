@@ -70,16 +70,19 @@ public static class RuntimeWorldScene
         }
     }
 
-    public static RuntimeDynamicObject? FindDynamicObjectOwner(Node? node)
+    public static RuntimeDynamicObjectRoot3D? FindDynamicObjectRoot(Node? node)
     {
         for (Node? current = node; current is not null; current = current.GetParent())
         {
-            if (current is RuntimeDynamicObjectRoot3D { Source: { } source })
-                return source;
+            if (current is RuntimeDynamicObjectRoot3D root)
+                return root;
         }
 
         return null;
     }
+
+    public static RuntimeDynamicObject? FindDynamicObjectOwner(Node? node) =>
+        FindDynamicObjectRoot(node)?.Source;
 
     /// <summary>Godot presentation handle for one preserved gameplay entity.</summary>
     public sealed class DynamicObjectNode

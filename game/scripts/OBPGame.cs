@@ -246,9 +246,27 @@ public partial class OBPGame : Node3D
 
     public bool TryHandleInteractiveBack()
     {
+        if (TryCloseControllerSettings())
+        {
+            ApplicationLifecycle.ReportNavigation("controller-settings-close");
+            return true;
+        }
+
+        if (TryClosePauseMenu())
+        {
+            ApplicationLifecycle.ReportNavigation("pause-menu-close");
+            return true;
+        }
+
         if (TryCloseRac1PlanetMap())
         {
             ApplicationLifecycle.ReportNavigation("rac1-planet-map-close");
+            return true;
+        }
+
+        if (TryOpenPauseMenu())
+        {
+            ApplicationLifecycle.ReportNavigation("world-pause-menu-open");
             return true;
         }
 

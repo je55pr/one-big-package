@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "contactMetricLimit": 0.019999999552965164,
+  "ordinarySupportMaxAngleRadians": 0.8726646304130554,
+  "ordinarySupportMaxAngleDegrees": 50.0000002530119,
+  "angleProducer": "0x00233d30",
+  "contactMetricField": "P+0x2dc",
+  "contactMetricInitialization": 42.0,
+  "contactMetricProducer": "0x001ff450(G, P+0x2a0) -> P+0x2dc",
+  "contactMetricNormalization": "negative values are negated before the 0.02 comparison",
+  "contactAngleField": "P+0x2e0",
+  "shortContactCounterField": "P+0x30c",
+  "unsupportedCounterField": "P+0x30e",
+  "ordinaryAdmission": "after contact-metric sign normalization, P+0x2dc < 0.02; then P+0x2e0 <= 0.87266463 rad clears P+0x30e",
+  "specialOverrides": [
+    "P+0x20b3 == 1",
+    "P+0x208c == 0x16"
+  ],
+  "note": "The +/-pi/4 gates at 0x212d84..0x212e68 cache orientation components and are not the ordinary support-admission angle.",
+  "signaturesVerified": 38,
+  "authorityStateWitness": {
+    "contactMetric": -0.015003204345703125,
+    "absoluteContactMetric": 0.015003204345703125,
+    "playerStatePosition": [
+      154.7710418701172,
+      120.58262634277344,
+      29.484375
+    ],
+    "acceptedContactPosition": [
+      154.7710418701172,
+      120.58262634277344,
+      29.484375
+    ],
+    "positionDeltaAtFrameBoundary": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "groundDownwardRequestDifference": 3.204345703125555e-06,
+    "interpretationBoundary": "The fixed-state metric is retained after the player/contact positions have converged at the frame boundary; it is not a standing clearance."
+  },
+  "authorityStateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d"
+}

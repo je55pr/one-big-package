@@ -10,6 +10,76 @@ public enum Rac1WrenchContactPath
 
 public readonly record struct Rac1WrenchDirection(double X, double Y, double Z);
 
+/// <summary>
+/// Recovered ordinary action-0x13 first-swing motion. The player action handler
+/// owns P+0x190 (target) and P+0x194 (current): profile 0 targets 4.4/60 while
+/// its native timer is below 18, helper 0x212088 rises by 37/3600 and decays by
+/// 28/3600, and the vector is aligned to the attack-facing yaw at P+0xa5c.
+/// </summary>
+public sealed class Rac1WrenchMotionSession
+{
+    public const int FirstSwingTargetTicks = 18;
+    public const double FirstSwingTargetStep = 4.4d / 60d;
+    public const double RisePerTick = 37d / 3600d;
+    public const double DecayPerTick = 28d / 3600d;
+
+    private int _tick;
+    private double _magnitude;
+    private double _nativeYaw;
+
+    public bool Active { get; private set; }
+    public int Tick => _tick;
+    public double Magnitude => _magnitude;
+    public double NativeYaw => _nativeYaw;
+
+    public void Begin(double nativeYaw)
+    {
+        if (!double.IsFinite(nativeYaw))
+            throw new ArgumentOutOfRangeException(nameof(nativeYaw));
+
+        _tick = 0;
+        _magnitude = 0d;
+        _nativeYaw = nativeYaw;
+        Active = true;
+    }
+
+    public Rac1WrenchDirection Step()
+    {
+        if (!Active)
+            return default;
+
+        double target = _tick < FirstSwingTargetTicks ? FirstSwingTargetStep : 0d;
+        double amount = target > _magnitude ? RisePerTick : DecayPerTick;
+        _magnitude = MoveToward(_magnitude, target, amount);
+        _tick++;
+
+        var direction = new Rac1WrenchDirection(
+            Math.Cos(_nativeYaw) * _magnitude,
+            Math.Sin(_nativeYaw) * _magnitude,
+            0d);
+
+        if (_tick >= FirstSwingTargetTicks && _magnitude <= 1e-12d)
+            Active = false;
+        return direction;
+    }
+
+    public void Reset()
+    {
+        _tick = 0;
+        _magnitude = 0d;
+        _nativeYaw = 0d;
+        Active = false;
+    }
+
+    private static double MoveToward(double value, double target, double amount)
+    {
+        double delta = target - value;
+        return Math.Abs(delta) <= amount
+            ? target
+            : value + Math.Sign(delta) * amount;
+    }
+}
+
 public readonly record struct Rac1WrenchContactTarget(
     int NativeClassId,
     bool IsPlayerSelf);

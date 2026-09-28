@@ -27,6 +27,24 @@ public sealed class Rac1DynamicSupportSessionTests
     }
 
     [Fact]
+    public void RotatingSupportAnchorProducesOrbitalCarryFromWorldSamples()
+    {
+        var session = new Rac1DynamicSupportSession();
+        var support = new Rac1MobyRuntimeKey(900, 2);
+
+        _ = session.Step(Facts(
+            support,
+            new Rac1NativeVector3(1, 0, 0)));
+        var rotated = session.Step(Facts(
+            support,
+            new Rac1NativeVector3(0, 1, 0)));
+
+        Assert.Equal(
+            new Rac1NativeVector3(-1, 1, 0),
+            rotated.SupportCarry.TransformDelta);
+    }
+
+    [Fact]
     public void SupportSwitchEstablishesFreshHistoryWithoutCrossObjectCarry()
     {
         var session = new Rac1DynamicSupportSession();

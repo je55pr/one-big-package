@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "requestVector": "P+0xe0",
+  "acceptedContactVector": "0x00173e80",
+  "clipRange": "0x00212644..0x0021268c",
+  "ordinaryClip": "s = -(request.x * contact.x + request.y * contact.y); if s > 0: request += s * contact",
+  "directionalSlopeLaw": "for authored face normal n and horizontal heading h: rise = -(n.x*h.x + n.y*h.y)/n.z; normalize (h.x,h.y,rise) to the controller planar-step magnitude",
+  "importantBoundary": "the accepted contact vector is not assumed to be the raw authored triangle normal; the directional-slope law is independently checked against retail LEVEL0 displacement and authored collision triangles",
+  "signaturesVerified": 21,
+  "authorityStateSha256": "07677959a3b7215a89b42745dffe55bb4d4709bce01d1aab31e6514c032a436d"
+}

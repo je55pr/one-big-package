@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CAPTURES = ROOT / "captures"
 PLAYER_STATE = 0x0013F3D0
+PLAYER_BASE = PLAYER_STATE - 0x80
 PLAYER_MOBY = 0x01845E80
 READ32 = 2
 NEUTRAL = 127
@@ -38,6 +39,18 @@ KNOWN_FIELDS = {
     "control_dir_y": (PLAYER_STATE + 0x0F4, "f32"),
     "control_dir_z": (PLAYER_STATE + 0x0F8, "f32"),
     "target_yaw": (PLAYER_STATE + 0x100, "f32"),
+    "contact_orientation_x": (PLAYER_BASE + 0x270, "f32"),
+    "contact_orientation_y": (PLAYER_BASE + 0x274, "f32"),
+    "contact_orientation_z": (PLAYER_BASE + 0x278, "f32"),
+    "current_dynamic_contact": (PLAYER_BASE + 0x2FC, "u32"),
+    "contact_slot_300": (PLAYER_BASE + 0x300, "u32"),
+    "contact_flags_308": (PLAYER_BASE + 0x308, "u32"),
+    "contact_counters_30c": (PLAYER_BASE + 0x30C, "u32"),
+    "persistent_support": (PLAYER_BASE + 0x360, "u32"),
+    "support_anchor_state": (PLAYER_BASE + 0x364, "u32"),
+    "surface_word": (PLAYER_BASE + 0x12E0, "u32"),
+    "surface_effect_word": (PLAYER_BASE + 0x12EC, "u32"),
+    "action_state": (PLAYER_BASE + 0x2084, "u32"),
     "pos_x": (PLAYER_MOBY + 0x10, "f32"),
     "pos_y": (PLAYER_MOBY + 0x14, "f32"),
     "pos_z": (PLAYER_MOBY + 0x18, "f32"),
@@ -235,6 +248,10 @@ def sample_player(pine: Pine, scan_bytes: int = 0x180) -> dict[str, object]:
     sequence_word = int(sample.pop("sequence_word"))
     sample["next_sequence"] = (sequence_word >> 16) & 0xFF
     sample["sequence"] = (sequence_word >> 24) & 0xFF
+    surface_word = int(sample.pop("surface_word"))
+    effect_word = int(sample.pop("surface_effect_word"))
+    sample["surface_face_type"] = surface_word & 0xFF
+    sample["surface_effect_mode"] = (effect_word >> 8) & 0xFF
     scan_values = values[len(known_addresses):]
     sample["candidate_words"] = {
         f"0x{offset:03x}": raw for offset, raw in zip(scan_offsets, scan_values)
@@ -301,8 +318,16 @@ def _main_window(pid: int) -> int:
     windows = [(hwnd, _window_text(hwnd)) for hwnd in _windows_for_pid(pid)]
     if not windows:
         raise RuntimeError(f"visible PCSX2 window not found for pid {pid}")
-    # Game-title-only windows are normal when PCSX2 hides its branding.
-    return max(windows, key=lambda item: len(item[1]))[0]
+
+    def window_area(item: tuple[int, str]) -> int:
+        rect = wintypes.RECT()
+        if not user32.GetWindowRect(item[0], ctypes.byref(rect)):
+            return 0
+        return max(0, rect.right - rect.left) * max(0, rect.bottom - rect.top)
+
+    # Prefer the large game/main window over utility windows such as Input
+    # Recording Viewer. Game-title-only windows are normal in PCSX2.
+    return max(windows, key=lambda item: (window_area(item), len(item[1])))[0]
 
 def _wait_for_input_recording_picker(pid: int, timeout: float = 4.0) -> int:
     deadline = time.monotonic() + timeout
@@ -463,7 +488,7 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         values = {int(row["sample"]["candidate_words"][offset]) for row in rows}
         if len(values) > 1:
             changing.append({"offset": offset, "distinctWords": len(values)})
-    return {
+    report = {
         "schema": 1,
         "authority": capture["authority"],
         "movieSha256": capture["movieSha256"],
@@ -475,6 +500,34 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         "sequencePath": _sequence_path(rows),
         "changingCandidateFields": changing,
     }
+    if rows and all(
+        field in rows[0]["sample"]
+        for field in ("action_state", "contact_slot_300", "contact_counters_30c")
+    ):
+        action_path: list[int] = []
+        contact_transitions: list[dict[str, object]] = []
+        prior_supported: bool | None = None
+        for row in rows:
+            sample = row["sample"]
+            action = int(sample["action_state"])
+            if not action_path or action_path[-1] != action:
+                action_path.append(action)
+            supported = int(sample["contact_slot_300"]) != 0
+            if prior_supported is None or supported != prior_supported:
+                packed = int(sample["contact_counters_30c"])
+                contact_transitions.append({
+                    "frame": int(row["frame"]),
+                    "segment": str(row["segment"]),
+                    "supported": supported,
+                    "contactSlot300": int(sample["contact_slot_300"]),
+                    "unsupportedCounter30c": packed & 0xFFFF,
+                    "unsupportedCounter30e": (packed >> 16) & 0xFFFF,
+                    "verticalDisplacement": float(sample["disp_z"]),
+                })
+            prior_supported = supported
+        report["actionStatePath"] = action_path
+        report["contactTransitions"] = contact_transitions
+    return report
 
 def write_derived(capture_path_value: Path, output: Path) -> dict[str, object]:
     raw_path = capture_path(capture_path_value)
