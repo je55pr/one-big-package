@@ -10,26 +10,16 @@ using OBP.Runtime.Presentation;
 namespace OneBigPackage;
 
 /// <summary>
-/// Application root and the Going Commando planet-hopping runtime.
+/// Application root for the trilogy runtime host.
 ///
-/// <para>Flow: launch → (system file dialog picks a GC retail ISO, or one is
-/// passed with <c>--gc-iso</c>) → identify the supported build → show the
-/// <see cref="PlanetSelectorUi"/> → pick a planet → the generic
-/// <see cref="EnterWorld"/> path imports that level with
-/// <see cref="GcWorldImport"/>, rebuilds <c>WorldRoot</c> through
-/// <see cref="RuntimeWorldScene"/>, resets the environment and spawns the debug
-/// player → Esc returns to the selector, pick another, repeat — all without
-/// restarting the process.</para>
+/// Production world entry is source-neutral:
+/// <c>Game Sources → ObpDestination → IObpWorldProvider → RuntimeWorld → Godot</c>.
+/// Source-game parsing ends at the provider boundary; this host owns presentation,
+/// input, navigation, diagnostics and the single live-world lifecycle.
 ///
-/// <para>No planet is special: every level goes through the same
-/// <c>import → RuntimeWorld → RuntimeWorldScene → WorldRoot</c> pipe. Nothing
-/// Ratchet-specific is parsed here.</para>
-///
-/// Scenes: <c>--test-scene smoke</c> (trivial cube), <c>--test-scene picker</c>
-/// (the disc dialog, default when interactive), <c>--gc-iso &lt;path&gt;</c>
-/// (skip the dialog → selector), plus <c>--planet &lt;name|id&gt;</c> /
-/// <c>--test-scene player</c> to jump straight into a world (deterministic
-/// capture), and <c>--capture-frame</c> / <c>--capture-out</c> for the harness.
+/// Small <c>--test-scene</c> fixtures remain available for deterministic host
+/// checks. Historical GC command-line aliases are translated to canonical
+/// destinations rather than selecting a separate runtime path.
 /// </summary>
 public partial class OBPGame : Node3D
 {
@@ -50,10 +40,6 @@ public partial class OBPGame : Node3D
     // capture / smoke bookkeeping
     private string _sceneKind = "smoke";
 
-    // disc session
-    private string? _isoPath;
-    private GcIsoLoad.Identity? _identity;
-
     // the live world
     private readonly WorldHost _worldHost = new();
     private readonly HudStateAdapter _hudState = new();
@@ -65,9 +51,6 @@ public partial class OBPGame : Node3D
     private int _worldSwitches;
 
     private Camera3D _activeCamera = null!;
-    private PlanetSelectorUi? _selector;
-    private PanelContainer? _pickerPanel;
-    private Label? _pickerStatus;
     private Label? _worldHud;
     private PlayerHud? _playerHud;
     private volatile string? _verifyOutcome;
@@ -95,57 +78,30 @@ public partial class OBPGame : Node3D
 
         BuildSkeleton();
 
-        bool wantsWorldDirectly = _args.TestScene == "player" || _args.DirectLoad;
-
-        // A --shots run works for any provider (--rac1-iso / --gc-iso / --uya-iso)
-        // and drives its own world entry — handle it before the GC-only branch.
+        // A --shots run works for any provider and drives the same neutral
+        // destination/provider path used by ordinary world entry.
         if (_args.ShotsPath is { } shotList)
         {
             _ = RunShotsAsync(shotList);
             return;
         }
 
-        if (_args.Destination is not null)
+        bool bootstrapOwnsScene =
+            _args.Destination is not null ||
+            _args.GcIso is not null ||
+            _args.TestScene is "picker" or "worlds";
+
+        if (_args.TestSceneExplicit && !bootstrapOwnsScene)
         {
-            // The neutral source bootstrap owns canonical trilogy destinations.
-            // Do not pre-load the legacy GC path merely because --gc-iso is also
-            // attached; the deferred bootstrap will attach all supplied sources
-            // and enter exactly the requested destination before frames advance.
-            EnsurePlainEnvironment();
-        }
-        else if (_args.GcIso is { } iso)
-        {
-            _isoPath = iso;
-            if (!IdentifyDisc(iso))
-            {
-                BuildScene("smoke");
-            }
-            else if (_args.StressSwitch is { } seq)
-            {
-                _ = RunStressSwitchAsync(seq);
-            }
-            else if (wantsWorldDirectly)
-            {
-                EnterWorld(ResolveRequestedLevel());
-            }
-            else
-            {
-                ShowSelector();
-            }
-        }
-        else if (_args.TestScene == "picker" && _args.TestSceneExplicit)
-        {
-            BuildPickerScreen();
-        }
-        else if (_args.TestSceneExplicit)
-        {
+            // Keep small deterministic host fixtures independent of retail data.
+            // A GC-backed --test-scene player run is handled by the neutral
+            // source/destination bootstrap instead.
             BuildScene(_args.TestScene);
         }
         else
         {
-            // Production startup is owned by SourceManagerBootstrap. Keep only the
-            // neutral background until its deferred title/source/world route is ready;
-            // never render the deterministic smoke fixture as a transient placeholder.
+            // Production/navigation startup is owned by SourceManagerBootstrap.
+            // Keep only a neutral background until its deferred route is ready.
             EnsurePlainEnvironment();
         }
 
@@ -158,16 +114,6 @@ public partial class OBPGame : Node3D
             Engine.MaxFps = 60;
             _ = RunCaptureAsync(frame);
         }
-    }
-
-    private int ResolveRequestedLevel()
-    {
-        if (_args.Planet is { } token && GcPlanetCatalogue.Resolve(token) is { } id)
-        {
-            return id;
-        }
-
-        return _args.GcLevel;
     }
 
     public override void _Process(double delta)
@@ -190,12 +136,12 @@ public partial class OBPGame : Node3D
         {
             _verifyOutcome = null;
             _verifyProgressBits = -1;
-            SetPickerStatus($"{_loadSummary}   —   {outcome}", error: outcome.StartsWith('⚠'));
+            ReportVerificationStatus($"{_loadSummary}   —   {outcome}", error: outcome.StartsWith('⚠'));
         }
         else if (System.Threading.Interlocked.Read(ref _verifyProgressBits) is var bits and >= 0)
         {
             double p = System.BitConverter.Int64BitsToDouble(bits);
-            SetPickerStatus($"{_loadSummary}   —   verifying disc SHA-256… ({p * 100:0}%)");
+            ReportVerificationStatus($"{_loadSummary}   —   verifying disc SHA-256… ({p * 100:0}%)");
         }
     }
 
@@ -286,14 +232,6 @@ public partial class OBPGame : Node3D
             return true;
         }
 
-        if (_mode == Mode.World && _selector is null && _isoPath is not null &&
-            _args.CaptureFrame is null)
-        {
-            ReturnToSelector();
-            ApplicationLifecycle.ReportNavigation("legacy-world-to-selector");
-            return true;
-        }
-
         return false;
     }
 
@@ -341,166 +279,6 @@ public partial class OBPGame : Node3D
         _activeCamera = _camera;
     }
 
-    // --- disc identification --------------------------------------------------
-
-    private bool IdentifyDisc(string isoPath)
-    {
-        try
-        {
-            using var reader = new FileRandomAccessReader(isoPath);
-            var identity = GcIsoLoad.Identify(reader);
-            _identity = identity;
-            if (!identity.Supported)
-            {
-                GD.PrintErr($"[OBPGame] {identity.Problem}");
-                SetPickerStatus(identity.Problem ?? "Unsupported disc image.", error: true);
-                return false;
-            }
-
-            GD.Print($"[OBPGame] disc accepted: {identity.DiscSerial} · {identity.BuildId}");
-            return true;
-        }
-        catch (System.Exception ex)
-        {
-            GD.PrintErr($"[OBPGame] could not read disc image: {ex.Message}");
-            SetPickerStatus($"Could not read disc image: {ex.Message}", error: true);
-            return false;
-        }
-    }
-
-    // --- planet selector -----------------------------------------------------
-
-    private void ShowSelector()
-    {
-        _mode = Mode.Selector;
-        _sceneKind = "gc-selector";
-        TeardownWorld();
-        EnsurePlainEnvironment();
-
-        _pickerPanel?.QueueFree();
-        _pickerPanel = null;
-        if (_worldHud is not null && IsInstanceValid(_worldHud))
-        {
-            _worldHud.Visible = false;
-        }
-
-        _camera.Current = true;
-        _activeCamera = _camera;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
-
-        _selector?.QueueFree();
-        _selector = new PlanetSelectorUi();
-        string build = _identity is { } id
-            ? $"{id.DiscSerial}  ·  {id.BuildId}  ·  {(id.SizeMatches ? "size ✓" : "size mismatch")}"
-            : "Going Commando";
-        _selector.PlanetChosen += OnPlanetChosen;
-        AddChild(_selector);
-        _selector.Populate(build, _world?.LevelId);
-
-        GD.Print("[OBPGame] planet selector shown");
-    }
-
-    private void OnPlanetChosen(int levelId)
-    {
-        GD.Print($"[OBPGame] planet chosen: LEVEL{levelId}");
-        CallDeferred(nameof(EnterWorldDeferred), levelId);
-    }
-
-    private void EnterWorldDeferred(int levelId) => EnterWorld(levelId);
-
-    private void ReturnToSelector()
-    {
-        GD.Print("[OBPGame] returning to selector");
-        ShowSelector();
-    }
-
-    // --- generic world load / unload ---------------------------------------
-
-    private void EnterWorld(int levelId)
-    {
-        _selector?.QueueFree();
-        _selector = null;
-        _pickerPanel?.QueueFree();
-        _pickerPanel = null;
-
-        TeardownWorld();
-
-        var entry = GcPlanetCatalogue.Find(levelId);
-        string label = entry?.DisplayName ?? "Unknown destination";
-        _sceneKind = $"gc-{(entry?.Planet ?? "unknown-destination").ToLowerInvariant().Replace(' ', '-')}";
-
-        RuntimeWorld world;
-        try
-        {
-            using var reader = new FileRandomAccessReader(_isoPath!);
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            world = GcWorldImport.Build(reader, levelId);
-            sw.Stop();
-            GD.Print($"[OBPGame] imported {label} in {sw.ElapsedMilliseconds} ms — " +
-                     $"{world.Meshes.Count} meshes / {world.TotalRenderTriangles:N0} tris / {world.TotalCollisionTriangles:N0} coll tris");
-        }
-        catch (System.Exception ex)
-        {
-            GD.PrintErr($"[OBPGame] import of LEVEL{levelId} failed: {ex.Message}\n{ex.StackTrace}");
-            _world = null;
-            ShowSelector();
-            SetSelectorHint($"⚠ {label} failed to import: {ex.Message}");
-            return;
-        }
-
-        _world = world;
-        _worldSwitches++;
-
-        // A framed showcase capture (--direct + --capture-frame, no player) or a
-        // --shots run parks a static camera over the level; everything else gets
-        // the capsule.
-        bool framedCapture = _args.CaptureFrame is not null && _args.DirectLoad && _args.TestScene != "player"
-            && !_args.CrateFocus && !_args.CrateAutoStrike;
-        bool staticCamera = framedCapture || _args.ShotsPath is not null;
-
-        // Environment, hero light, welded geometry + collision, sky-follow and the
-        // per-frame presentation tick all live in the game-neutral WorldHost.
-        var result = _worldHost.Load(this, _worldRoot, world, $"Gc_{entry?.Planet ?? levelId.ToString()}", new WorldHost.Options
-        {
-            IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
-            IncludeSky = !_args.AnimSolo,
-            IncludeCollision = true,
-            ShowCollisionDebug = _args.CollisionDebug,
-            OnlyAnimatedMobies = _args.AnimSolo,
-        });
-        _sceneResult = result;
-        SetupOverlay(result, world);
-        ConfigureCrateDebugHarness();
-
-        // spawn + camera
-        if (_args.AnimSolo)
-        {
-            FrameAnimatedMobies(world);
-        }
-        else if (staticCamera)
-        {
-            FrameShowcaseCamera(world);
-        }
-        else
-        {
-            SpawnPlayer(world);
-        }
-
-        _mode = Mode.World;
-        EnsurePlayerHud();
-        EnsureWorldHud();
-        UpdatePlayerHud();
-        UpdateWorldHud();
-
-        _loadSummary = $"✓ {label} · {result.MeshInstances} meshes / {result.Triangles:N0} tris / {result.CollisionBodies} colliders";
-        GD.Print($"[OBPGame] world ready — {_loadSummary} (switch #{_worldSwitches})");
-
-        if (_args.VerifyHash && _worldSwitches == 1)
-        {
-            StartBackgroundVerify(_isoPath!);
-        }
-    }
-
     /// <summary>
     /// Phase 14 lifecycle stress test: load each planet in <paramref name="seq"/>
     /// through the generic path, let it settle, and log node / object / memory
@@ -523,18 +301,18 @@ public partial class OBPGame : Node3D
                 continue;
             }
 
-            // Every third hop, bounce through the selector — exercises the same
-            // teardown the interactive Esc path uses.
+            // Every third hop, bounce through the neutral Worlds browser. This
+            // exercises the same teardown/navigation path as interactive back.
             if (i > 0 && i % 3 == 0)
             {
-                ShowSelector();
+                ShowDestinationSelector();
                 for (int f = 0; f < 10; f++)
                 {
                     await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 }
             }
 
-            EnterWorld(lvl.Value);
+            OpenDestinationFromBootstrap($"rac2:LEVEL{lvl.Value}");
             for (int f = 0; f < 45; f++)
             {
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
@@ -941,72 +719,6 @@ public partial class OBPGame : Node3D
             (string.IsNullOrEmpty(uyaGameplay) ? "" : $"\n{uyaGameplay}");
     }
 
-    private void SetSelectorHint(string text)
-    {
-        GD.Print($"[OBPGame] {text}");
-        _selector?.SetHint(text);
-    }
-
-    // --- disc picker screen ----------------------------------------------
-
-    private void BuildPickerScreen()
-    {
-        _mode = Mode.Picker;
-        _sceneKind = "gc-picker";
-        EnsurePlainEnvironment();
-
-        _pickerPanel = new PanelContainer { Name = "PickerPanel", Position = new Vector2(28, 52) };
-        _pickerPanel.CustomMinimumSize = new Vector2(640, 0);
-        var box = new VBoxContainer();
-        box.AddThemeConstantOverride("separation", 10);
-        _pickerPanel.AddChild(box);
-
-        box.AddChild(new Label { Text = "One Big Package", ThemeTypeVariation = "HeaderLarge" });
-        box.AddChild(new Label
-        {
-            Text = $"Open a Going Commando disc image  —  {Rac2Authority.Primary.Region} {Rac2Authority.Primary.Revision} ({Rac2Authority.Primary.Serial})",
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-        });
-
-        var button = new Button { Text = "Open Going Commando ISO…" };
-        button.Pressed += OnChooseIsoPressed;
-        box.AddChild(button);
-
-        _pickerStatus = new Label
-        {
-            Text = "No disc loaded.",
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-            CustomMinimumSize = new Vector2(0, 44),
-        };
-        box.AddChild(_pickerStatus);
-        _ui.AddChild(_pickerPanel);
-    }
-
-    private void OnChooseIsoPressed()
-    {
-        var dialog = new FileDialog
-        {
-            FileMode = FileDialog.FileModeEnum.OpenFile,
-            Access = FileDialog.AccessEnum.Filesystem,
-            Title = "Select a Going Commando disc image",
-            UseNativeDialog = true,
-        };
-        dialog.AddFilter("*.iso", "PS2 disc image");
-        dialog.AddFilter("*.001", "Split disc image (first part)");
-        dialog.FileSelected += path =>
-        {
-            dialog.QueueFree();
-            _isoPath = path;
-            if (IdentifyDisc(path))
-            {
-                ShowSelector();
-            }
-        };
-        dialog.Canceled += dialog.QueueFree;
-        AddChild(dialog);
-        dialog.PopupCentered(new Vector2I(1000, 640));
-    }
-
     // --- smoke / plain scenes -------------------------------------------
 
     private void EnsurePlainEnvironment()
@@ -1104,14 +816,10 @@ public partial class OBPGame : Node3D
         });
     }
 
-    private void SetPickerStatus(string text, bool error = false)
+    private void ReportVerificationStatus(string text, bool error = false)
     {
-        GD.Print($"[OBPGame] {text}");
-        if (_pickerStatus is not null && IsInstanceValid(_pickerStatus))
-        {
-            _pickerStatus.Text = text;
-            _pickerStatus.Modulate = error ? new Color(1f, 0.5f, 0.45f) : new Color(0.7f, 0.95f, 0.7f);
-        }
+        GD.Print($"[verification] {text}");
+        _sourceManager?.SetStatus(text, error);
     }
 
     // --- deterministic capture ----------------------------------------

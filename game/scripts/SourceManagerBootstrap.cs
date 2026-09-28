@@ -4,10 +4,9 @@ using OBP.Core;
 namespace OneBigPackage;
 
 /// <summary>
-/// Small scene-level adapter that layers trilogy source ownership around the
-/// existing application root. It remembers direct trilogy source args and
-/// intercepts Escape early enough to provide the neutral navigation stack:
-/// world → Worlds → Game Sources.
+/// Scene-level startup/input adapter for the neutral trilogy navigation stack.
+/// It attaches explicit source arguments, selects the requested startup surface,
+/// and intercepts navigation input before player/world handlers consume it.
 /// </summary>
 public partial class SourceManagerBootstrap : Node
 {
@@ -103,6 +102,18 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
+        if (args.StressSwitch is { } stressSequence)
+        {
+            _game.RunGcStressSwitchFromBootstrap(stressSequence);
+            return;
+        }
+
+        if (gcPath is not null && (args.DirectLoad || testScene == "player"))
+        {
+            _game.OpenLegacyGcDestinationFromBootstrap();
+            return;
+        }
+
         if (testScene == "worlds")
         {
             _game.ShowDestinationSelectorFromBootstrap();
@@ -119,7 +130,15 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        if (testScene is null && gcPath is null)
+        if (testScene is null && gcPath is not null)
+        {
+            // Historical --gc-iso startup used to land on the GC-only planet
+            // selector. Preserve the convenience through the neutral Worlds UI.
+            _game.ShowDestinationSelectorFromBootstrap();
+            return;
+        }
+
+        if (testScene is null)
         {
             // A plain double-click / "obp" launch: show the gamey title first,
             // then fall through to Game Sources. --skip-title bypasses it.

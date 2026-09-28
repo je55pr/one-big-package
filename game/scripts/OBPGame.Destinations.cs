@@ -32,8 +32,7 @@ public partial class OBPGame
 
     /// <summary>
     /// Resolve a canonical neutral destination id (for example
-    /// <c>rac2:LEVEL1</c>) and enter it through the same provider routing path.
-    /// Legacy --planet/--gc-level options remain supported separately.
+    /// <c>rac2:LEVEL1</c>) and enter it through the production provider route.
     /// </summary>
     public void OpenDestinationFromBootstrap(string destinationId)
     {
@@ -50,6 +49,22 @@ public partial class OBPGame
         _genericNavigationActive = _args.CaptureFrame is null;
         OnDestinationChosen(destination);
     }
+
+    /// <summary>
+    /// Translate the historical GC --planet / --gc-level convenience options
+    /// into the canonical destination model. No separate GC world lifecycle is
+    /// retained for these aliases.
+    /// </summary>
+    public void OpenLegacyGcDestinationFromBootstrap()
+    {
+        int levelId = _args.Planet is { } token
+            ? OBP.RAC2.GcPlanetCatalogue.Resolve(token) ?? _args.GcLevel
+            : _args.GcLevel;
+        OpenDestinationFromBootstrap($"rac2:LEVEL{levelId}");
+    }
+
+    public void RunGcStressSwitchFromBootstrap(string sequence) =>
+        _ = RunStressSwitchAsync(sequence);
 
     /// <summary>
     /// Smoke/bootstrap convenience that enters the persisted native CurrentLevel
@@ -176,10 +191,6 @@ public partial class OBPGame
         TeardownWorld();
         EnsurePlainEnvironment();
 
-        _selector?.QueueFree();
-        _selector = null;
-        _pickerPanel?.QueueFree();
-        _pickerPanel = null;
         _sourceManager?.QueueFree();
         _sourceManager = null;
         if (_worldHud is not null && IsInstanceValid(_worldHud))
@@ -231,8 +242,6 @@ public partial class OBPGame
         _activeDestination = destination;
         _destinationSelector?.QueueFree();
         _destinationSelector = null;
-        _selector?.QueueFree();
-        _selector = null;
 
         EnterProviderWorld(provider, source.Path, destination);
     }
@@ -403,8 +412,8 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// Called in the early input phase so an interactive world entered from the
-    /// generic browser returns to Worlds rather than the legacy GC selector.
+    /// Called in the early input phase so an interactive provider world returns
+    /// to the neutral Worlds browser.
     /// </summary>
     public bool TryReturnWorldToDestinations()
     {

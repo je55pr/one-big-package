@@ -10,8 +10,8 @@
 
 .DESCRIPTION
   Builds game/ (Debug) so the latest code is used, then runs the pinned Godot
-  build against game/ with `--test-scene player`. With no ISO available it falls
-  back to the on-screen disc picker.
+  builds against game/ and resolves the GC convenience args through the neutral
+  destination/provider route. With no ISO available it falls back to Game Sources.
 
 .EXAMPLE
   ./tools/play.ps1
@@ -46,11 +46,11 @@ if ($GcIso) {
     Write-Host "OBP: straight to LEVEL$GcLevel from $GcIso" -ForegroundColor Cyan
     $sceneArgs = @('--gc-iso', $GcIso, '--planet', "$GcLevel")
   } else {
-    Write-Host "OBP: planet selector from $GcIso" -ForegroundColor Cyan
+    Write-Host "OBP: Worlds browser from $GcIso" -ForegroundColor Cyan
     $sceneArgs = @('--gc-iso', $GcIso)
   }
 } else {
-  Write-Warning "No Going Commando ISO found (set OBP_GC_ISO or pass -GcIso). Launching the disc picker."
+  Write-Warning "No Going Commando ISO found (set OBP_GC_ISO or pass -GcIso). Launching Game Sources."
   $sceneArgs = @('--test-scene', 'picker')
 }
 

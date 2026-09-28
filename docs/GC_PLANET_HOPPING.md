@@ -1,9 +1,10 @@
 # Going Commando planet hopping
 
-The first native Going Commando showcase: launch OBP, open a supported GC retail
-ISO, pick a planet from a list, and it is reconstructed straight from the disc
-and rendered in Godot with a walkable debug player. Return to the selector, pick
-another, and it loads without restarting the process.
+Going Commando uses the trilogy source/destination/provider route: attach the
+supported GC retail ISO in Game Sources, choose a GC destination in the neutral
+Worlds browser, and it is reconstructed straight from the disc and rendered in
+Godot. Return to Worlds, choose another destination, and it loads without
+restarting the process.
 
 
 ## Runtime pipeline
@@ -11,22 +12,25 @@ another, and it loads without restarting the process.
 ```
 GC retail ISO  (ordinary seekable file, bounded reads)
     │
-    ▼  OBP.RAC2.GcIsoLoad.Identify         boot serial → SCUS-97268 gate
+    ▼  ObpSourceLibrary / Rac2SourceDefinition
+    │                                      serial/build gate + remembered source
+    ▼  ObpDestination (rac2:LEVELn)
+    ▼  GcWorldProvider
     ▼  OBP.RAC2.GcWorldImport.Build(level) native decode: tfrag / tie / shrub /
     │                                      moby / sky / octree collision / settings
     ▼  OBP.Runtime.RuntimeWorld            neutral: welded per-material meshes,
     │                                      RGBA textures, triangle-soup collision,
     │                                      atmosphere, spawn — no GC or Godot types
-    ▼  OBP.Godot.RuntimeWorldScene.Build   ArrayMesh / StaticBody3D / materials
-    ▼  game/ OBPGame.EnterWorld            unload old WorldRoot, add new, reset
-    │                                      environment + camera, spawn DebugPlayer
+    ▼  OBPGame.AdoptRuntimeWorld
+    ▼  OBP.Godot.WorldHost / RuntimeWorldScene
+    │                                      environment + collision + camera/player
     ▼  play
 ```
 
 `GcWorldImport` is where GC-specific conversion **terminates**: `RuntimeWorld`
-carries no Ratchet or Godot type, so the same `RuntimeWorldScene` /
-`OBPGame` path will serve the future R&C1 and Up Your Arsenal importers. No
-planet has a hand-made `.tscn`; every level is the same generic runtime scene.
+carries no Ratchet or Godot type. R&C1, GC and UYA now all feed the same
+`AdoptRuntimeWorld` / `WorldHost` lifecycle. No planet has a hand-made `.tscn`;
+every level is presented through the same generic runtime scene boundary.
 
 ## Selector data — `OBP.RAC2.GcPlanetCatalogue`
 
@@ -35,8 +39,8 @@ Planet / location names are the decoded global-string-bank help messages
 the "*&lt;location&gt;, Planet &lt;planet&gt;*" infobot pairs at id `4592+`, and
 the level → name rule is `planet_name_index == level_id` for LEVEL0–LEVEL20.
 `LEVEL21.WAD` self-reports engine id 30; the ELF special table maps id 30 → planet 0
-(Aranos). The catalogue is the **selector's** data only — `GcWorldImport` takes
-any level id and never consults it.
+(Aranos). The catalogue supplies GC labels/aliases to the neutral destination catalogue;
+`GcWorldImport` itself still takes any level id and never consults UI state.
 
 ## Deterministic level probe (all 27 GC level WADs)
 
@@ -104,7 +108,7 @@ a true backdrop. Exact PS2 GS fog/blend is not reproduced.
 ## Lifecycle
 
 `--stress-switch oozla,endako,grelbin,oozla,boldan,…` loads each planet through
-the generic path (bouncing through the selector every third hop), settles, and
+the neutral provider path (bouncing through the Worlds browser every third hop), settles, and
 logs node / object / orphan / memory counts. Verified: **0 orphan nodes** per
 switch, `WorldRoot` descendant count returns to the exact per-planet value on
 reload (no duplication), memory tracks the current planet and does not grow
@@ -113,7 +117,7 @@ across the run, player `IsOnFloor` after every load.
 ## Commands
 
 ```
-tools/play.ps1                       # selector from $OBP_GC_ISO
+tools/play.ps1                       # Worlds browser from $OBP_GC_ISO
 tools/play.ps1 -Planet endako        # straight into one planet
 tools/play.ps1 -Planet 19            # by level id
 tools/capture-planets.ps1            # deterministic showcase capture set (scripted player)

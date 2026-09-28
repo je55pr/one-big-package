@@ -14,7 +14,7 @@ public sealed record CommandLineArgs
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
 
-    /// <summary>Path to a Going Commando retail ISO — retained for compatibility with existing GC harnesses.</summary>
+    /// <summary>Path to a Going Commando retail ISO.</summary>
     public string? GcIso { get; init; }
     public int GcLevel { get; init; } = 1;
 
@@ -24,7 +24,7 @@ public sealed record CommandLineArgs
     /// <summary>Path to an Up Your Arsenal retail ISO (composition lab source).</summary>
     public string? UyaIso { get; init; }
 
-    /// <summary>Planet / level token for the legacy GC selector-free path: "oozla", "endako", "8", "LEVEL19".</summary>
+    /// <summary>Historical GC planet/level alias resolved to a canonical <c>rac2:LEVEL*</c> destination.</summary>
     public string? Planet { get; init; }
 
     /// <summary>
@@ -33,7 +33,7 @@ public sealed record CommandLineArgs
     /// </summary>
     public string? Destination { get; init; }
 
-    /// <summary>Skip the legacy GC planet selector and load <see cref="Planet"/> / <see cref="GcLevel"/> directly.</summary>
+    /// <summary>Enter the GC destination selected by <see cref="Planet"/> / <see cref="GcLevel"/> directly.</summary>
     public bool DirectLoad { get; init; }
 
     /// <summary>Skip the interactive title screen on an ordinary application launch.</summary>

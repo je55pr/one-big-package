@@ -68,9 +68,9 @@ if ($Composition) {
 } elseif ($Destination) {
   $sourceArgs += @('--destination', $Destination)
 } elseif ($GcIso) {
-  # Preserve the established GC capture/player harness. --gc-level is ignored
-  # by the neutral picker/worlds screens but remains useful for legacy direct
-  # player/showcase captures.
+  # Preserve the established GC capture/player convenience. --gc-level is
+  # ignored by picker/worlds screens but resolves through the neutral destination
+  # route for direct player/showcase captures.
   $sourceArgs += @('--gc-level', "$GcLevel")
 }
 if ($VerifyHash) { $sourceArgs += '--verify-hash' }

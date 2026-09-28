@@ -13,12 +13,7 @@ public partial class OBPGame
     private string _sourceConfigPath = string.Empty;
     private readonly List<string> _sourceRestoreWarnings = new();
 
-    /// <summary>
-    /// Deferred hook used by the tiny scene bootstrap after the legacy picker
-    /// path has completed its normal _Ready. Keeping the source-manager
-    /// integration here avoids coupling the GC world lifecycle to trilogy
-    /// source ownership while that runtime is also evolving on Claude's branch.
-    /// </summary>
+    /// <summary>Deferred startup hook for the trilogy Game Sources screen.</summary>
     public void ShowSourceManagerFromBootstrap()
     {
         EnsureSourceLibraryInitialized();
@@ -26,9 +21,8 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// Remember a direct source argument in the shared source library without
-    /// changing the existing legacy GC direct-load path. Provider availability
-    /// is resolved separately; R&C1 and GC are currently loadable on this branch.
+    /// Attach a direct source argument to the shared source library. All world
+    /// entry remains provider/destination based after the source is attached.
     /// </summary>
     public void RememberCommandLineSource(ObpSourceGame game, string path)
     {
@@ -37,9 +31,8 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// Called during the early input phase by the bootstrap. Esc on either the
-    /// legacy GC selector or the neutral Worlds browser means "back to Game
-    /// Sources" before OBPGame's legacy unhandled-input path sees the key.
+    /// Esc on the neutral Worlds browser returns to Game Sources before world
+    /// input handlers see the key.
     /// </summary>
     public bool TryReturnSelectorToSources()
     {
@@ -95,12 +88,6 @@ public partial class OBPGame
             {
                 using var reader = new FileRandomAccessReader(entry.Path);
                 var attached = _sources.Restore(entry, reader);
-                if (attached.Game == ObpSourceGame.Rac2)
-                {
-                    _isoPath = attached.Path;
-                    _identity = null;
-                }
-
                 GD.Print($"[sources] restored {attached.Definition.DisplayName}: {attached.DiscSerial} · {attached.Identity.BuildId}");
             }
             catch (Exception ex)
@@ -146,12 +133,6 @@ public partial class OBPGame
                 _sources.SaveConfig(_sourceConfigPath);
             }
 
-            if (attached.Game == ObpSourceGame.Rac2)
-            {
-                _isoPath = attached.Path;
-                _identity = null;
-            }
-
             _sourceManager?.Refresh(_sources);
             string ok = $"✓ {attached.Definition.DisplayName} attached — {attached.DiscSerial} · {attached.Identity.BuildId}";
             GD.Print($"[sources] {ok} path={attached.Path}");
@@ -181,12 +162,8 @@ public partial class OBPGame
         TeardownWorld();
         EnsurePlainEnvironment();
 
-        _selector?.QueueFree();
-        _selector = null;
         _destinationSelector?.QueueFree();
         _destinationSelector = null;
-        _pickerPanel?.QueueFree();
-        _pickerPanel = null;
         if (_worldHud is not null && IsInstanceValid(_worldHud))
         {
             _worldHud.Visible = false;
@@ -253,12 +230,6 @@ public partial class OBPGame
         if (!_sources.Remove(game))
         {
             return;
-        }
-
-        if (game == ObpSourceGame.Rac2)
-        {
-            _isoPath = null;
-            _identity = null;
         }
 
         try

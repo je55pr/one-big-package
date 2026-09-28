@@ -1,6 +1,6 @@
 # One Big Package — Current State
 
-_Last refreshed: 2026-09-22._
+_Last refreshed: 2026-09-28._
 
 This document summarizes the current merged production baseline. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
 
@@ -16,7 +16,7 @@ trilogy retail ISO
   -> game-specific native importer
   -> neutral RuntimeWorld
   -> game-neutral Godot world builder
-  -> planet selector / repeated load-unload
+  -> neutral Worlds browser / repeated load-unload
   -> walk / jump / fly through reconstructed retail worlds
 ```
 
@@ -29,6 +29,7 @@ The repository contains:
 - `OBP.Core` — shared provenance/math primitives;
 - `OBP.IO` — bounded random access, seekable files, subranges, numbered split readers, hashing and authority verification;
 - `OBP.PS2` — ISO-9660, `SYSTEM.CNF`, ELF32 and shared PS2 codecs such as WAD-LZ, VIF, textures and collision;
+- `OBP.PS2.Presentation` — narrow shared PS2-material → neutral-runtime presentation mapping;
 - `OBP.RAC1`, `OBP.RAC2`, `OBP.RAC3` — game-specific native libraries;
 - `OBP.Runtime` — engine-independent runtime world data;
 - `OBP.Godot` — the game-neutral Godot adapter;
@@ -96,7 +97,7 @@ The merged native C# pipeline covers:
 - chunked and unchunked level import paths;
 - directional lights, point lights, environment sample points and environment transition volumes used by the current runtime lighting/fog path.
 
-All 27 known GC level files have been exercised through the generic importer path. The app has a crude native level/planet selector, can return from a loaded world to that selector and repeatedly change worlds without restarting. Lifecycle stress work verified that world nodes/resources do not simply accumulate on each switch.
+All 27 known GC level files have been exercised through the generic importer path. GC now uses the same neutral Worlds browser and provider/adoption lifecycle as R&C1 and UYA; the former GC-only picker, planet selector and direct `EnterWorld(int)` host path have been removed. Historical `--planet`, `--gc-level`, `--direct` and stress/capture conveniences resolve to canonical `ObpDestination` values before loading. Lifecycle stress work verifies that world nodes/resources do not simply accumulate on each switch.
 
 `OBP.RAC2.GcIsoLoad` provides the Godot-free disc façade for identification, level import and optional streamed authority verification. `GcWorldImport` terminates GC-specific conversion at `RuntimeWorld`; `OBP.Godot.RuntimeWorldScene` does not depend on `OBP.RAC2`.
 
@@ -151,7 +152,7 @@ These are capability goals, not a frozen campaign roadmap:
 1. Continue productionising GC world/runtime fidelity and dynamic behaviour.
 2. Promote stable R&C1 and UYA discoveries directly into engine-independent C# libraries with deterministic evidence tests.
 3. Use the now-working three-provider runtime baseline to extend composition into UYA and move into cross-game Veldin alignment without weakening each game's native provenance.
-4. Gradually route old GC-only debug/HUD/capture code through the same neutral destination/runtime path rather than maintaining two architectures indefinitely.
+4. Continue separating diagnostics/developer tooling from the production player host now that the GC-only application/navigation shell has been retired.
 5. Keep using targeted local retail probes for questions where retail bytes/executable behaviour can settle ambiguity cheaply.
 6. Preserve the native-evidence / OBP-design boundary while gameplay archaeology expands.
 7. Keep deterministic build/test/capture loops as the runtime becomes more game-like.

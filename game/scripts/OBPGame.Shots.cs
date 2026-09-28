@@ -46,15 +46,14 @@ public partial class OBPGame
         else
         {
             int levelId = token is null ? _args.GcLevel : GcPlanetCatalogue.Resolve(token) ?? _args.GcLevel;
-            _isoPath = _args.GcIso;
-            if (_isoPath is null || !IdentifyDisc(_isoPath))
+            if (_args.GcIso is null)
             {
                 GD.PrintErr("[shots] a GC planet token needs --gc-iso");
                 ApplicationLifecycle.RequestQuit(this, "shots-missing-gc-source", 2);
                 return;
             }
 
-            EnterWorld(levelId);
+            OpenDestinationFromBootstrap($"rac2:LEVEL{levelId}");
             slug = (GcPlanetCatalogue.Find(levelId)?.Planet ?? $"level{levelId}").ToLowerInvariant().Replace(' ', '-');
         }
 

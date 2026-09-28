@@ -42,10 +42,10 @@ API: `Load(hostNode, sceneParent, world, name, options)` /
 `Unload()` (frees everything + `GC.Collect`, leak-verified by the stress
 harness) / `Tick(...)`.
 
-`game/OBPGame` creates one `WorldHost` for the session and drives it from
-`EnterWorld` (legacy GC path) and `AdoptRuntimeWorld` (neutral destination
-path) — both of which used to hand-roll the same environment / light / build /
-sky / teardown code twice.
+`game/OBPGame` creates one `WorldHost` for the session and drives it from the
+single neutral `AdoptRuntimeWorld` path. The former GC-only `EnterWorld(int)`
+application path has been removed; GC, R&C1 and UYA all reach this point through
+`ObpDestination` + `IObpWorldProvider`.
 
 `CompositionLab` now uses **one `WorldHost` per placement** (with
 `ManageEnvironment = false` — the lab keeps a single shared `LabEnvironment`,

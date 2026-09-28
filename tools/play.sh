@@ -15,7 +15,7 @@ if [ -n "$gc_iso" ] && [ -f "$gc_iso" ]; then
   echo "OBP: player mode - LEVEL$gc_level from $gc_iso"
 else
   scene_args=(--test-scene picker)
-  echo "No Going Commando ISO found (set OBP_GC_ISO); launching the disc picker." >&2
+  echo "No Going Commando ISO found (set OBP_GC_ISO); launching Game Sources." >&2
 fi
 
 manifest="$script_dir/godot-toolchain.json"
