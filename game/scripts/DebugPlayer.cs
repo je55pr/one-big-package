@@ -872,7 +872,7 @@ public partial class DebugPlayer : CharacterBody3D
 
         if (UseRac1Gameplay &&
             RuntimeWorldScene.FindDynamicObjectRoot(collider) is
-                { Source: { } dynamicOwner } dynamicRoot)
+            { Source: { } dynamicOwner } dynamicRoot)
         {
             var contactKey = new Rac1MobyRuntimeKey(
                 dynamicOwner.NativeClassId,

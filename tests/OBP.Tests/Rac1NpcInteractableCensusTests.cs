@@ -27,7 +27,7 @@ public sealed class Rac1NpcInteractableCensusTests
     {
         JsonElement root = ReadRoot("rac1-npc-interactable-census.json");
         Assert.Equal(1, root.GetProperty("schema").GetInt32());
-        Assert.Equal("SCUS-97199", root.GetProperty("authority").GetProperty("serial").GetString());        Assert.Equal("static-only", root.GetProperty("authority").GetProperty("method").GetString());
+        Assert.Equal("SCUS-97199", root.GetProperty("authority").GetProperty("serial").GetString()); Assert.Equal("static-only", root.GetProperty("authority").GetProperty("method").GetString());
 
         JsonElement row = root.GetProperty("progressionMoby");
         Assert.Equal(750, row.GetProperty("oClass").GetInt32());
@@ -54,7 +54,8 @@ public sealed class Rac1NpcInteractableCensusTests
 
     [Fact]
     public void CheckedInWitnessPinsOneOffActorCandidatesWithoutResolvingPublicLabels()
-    {        JsonElement actors = ReadRoot("rac1-npc-interactable-census.json").GetProperty("actorCandidates");
+    {
+        JsonElement actors = ReadRoot("rac1-npc-interactable-census.json").GetProperty("actorCandidates");
         var expected = new[]
         {
             new { OClass = 890, Level = 3, PVar = 560, Packets = 28, Joints = 92, Update = "0x002da870" },
@@ -138,7 +139,7 @@ public sealed class Rac1NpcInteractableCensusTests
         {
             Check(row, 1);
             int level = row.GetProperty("level").GetInt32();
-            JsonElement cls = FindByOClass(classes, row.GetProperty("oClass").GetInt32());            JsonElement placed = cls.GetProperty("levels").EnumerateArray()
+            JsonElement cls = FindByOClass(classes, row.GetProperty("oClass").GetInt32()); JsonElement placed = cls.GetProperty("levels").EnumerateArray()
                 .Single(x => x.GetProperty("level").GetInt32() == level);
             Assert.Equal(1, placed.GetProperty("instances").GetInt32());
         }
