@@ -42,7 +42,7 @@ Nothing in `game/` should need to understand a GC WAD header, R&C1 disc index or
 
 Likewise, game-specific decoders should not manufacture Godot nodes. Their output should terminate in native/neutral OBP data, which the adapter/runtime layer can present.
 
-The merged A–H GC baseline still has some transitional shapes around `GcWorldImport`; active runtime work is moving those through a genuinely game-neutral `RuntimeWorld`. That is the direction of travel, not a reason to put more game-specific knowledge into Godot.
+`OBP.RAC2.GcWorldImport.Build` coordinates GC-specific world decoding; companion partial files separate terrain, instance placement, Mobies, materials, lighting and sky. Their output remains the game-neutral `RuntimeWorld`. The `OBP.Godot.RuntimeWorldScene` adapter retains one public `Build` entry point, with separate static-mesh, dynamic-entity, animated-mesh and collision builders. Those builders use neutral runtime data and must not acquire source-game parsing rules.
 
 ## Rule 1: preserve before interpreting
 
