@@ -72,5 +72,7 @@ public sealed class WorldSmokeArchitectureTests
         Assert.Contains("res://scripts/CompositionLab.cs", scene, StringComparison.Ordinal);
         Assert.DoesNotContain("OBPGame.cs", scene, StringComparison.Ordinal);
         Assert.Contains("StartupArgs ?? CommandLineArgs.Parse(OS.GetCmdlineUserArgs())", lab, StringComparison.Ordinal);
+        Assert.Contains("public override void _ExitTree() => TeardownWorlds();", lab, StringComparison.Ordinal);
+        Assert.Contains("w.Host.Unload();", lab, StringComparison.Ordinal);
     }
 }

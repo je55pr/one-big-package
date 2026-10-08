@@ -10,6 +10,8 @@ The application now uses the neutral \`GcWorldImport\` component split and the g
 
 The game-specific smoke implementations have moved **byte-for-byte unchanged** into \`game/diagnostics/\`. \`WorldSmokeHarness\` owns first-world/source-game flag dispatch; the normal destination loader makes one opt-in dispatch callback instead of selecting individual tests. The full portable suite after this move passed **958 tests**, with 121 retail-only skips and zero failed.
 
+**Composition Lab shutdown:** a dedicated headless scene with no loaded worlds exited without an ObjectDB leak warning; one- and two-world lab scenes each previously reported two leaked objects at exit. Their existing explicit reload-stress teardown path already exited cleanly. Calling that same \`TeardownWorlds()\` from \`CompositionLab._ExitTree()\` now clears the warning in both one- and two-world headless checks, with exit code 0. This is verified for the tested compositions, not a general proof that every Godot lifetime is leak-free.
+
 **Open runtime witness:** the 8 October headless \`--destination rac1:LEVEL0 --movement-smoke\` run reached the new dispatcher but failed its existing locomotion-visual check: player-avatar native sequence remained at 3 instead of progressing to sustained sequence 4. This is not a passed end-to-end movement smoke; the same test body is unchanged from the previous commit, but the root cause and whether the failure predates this refactor are not established. Diagnose in a gameplay/animation pass before using this smoke as a clean sign-off.
 
 ## Headline

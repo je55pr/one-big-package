@@ -252,6 +252,9 @@ public partial class CompositionLab : Node3D
     private void ApplyTransform(LoadedWorld w) =>
         w.TransformRoot.Transform = CompositionView.ToGodotTransform(w.Placement.Transform);
 
+    /// <summary>Release each world's host-owned resources before the lab exits.</summary>
+    public override void _ExitTree() => TeardownWorlds();
+
     /// <summary>Free every loaded world sub-tree. Safe to call when nothing is loaded.</summary>
     private void TeardownWorlds()
     {
