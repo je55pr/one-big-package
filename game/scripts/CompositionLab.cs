@@ -47,7 +47,8 @@ public partial class CompositionLab : Node3D
     private CanvasLayer _ui = null!;
     private Label _hud = null!;
     private Camera3D _camera = null!;
-    public CommandLineArgs StartupArgs { get; init; } = new();
+    /// <summary>Supplied by the legacy host, or parsed by the dedicated lab scene when omitted.</summary>
+    public CommandLineArgs? StartupArgs { get; init; }
     private CommandLineArgs _args = new();
 
     private string? _activeWorldId;
@@ -68,7 +69,7 @@ public partial class CompositionLab : Node3D
 
     public override void _Ready()
     {
-        _args = StartupArgs;
+        _args = StartupArgs ?? CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
 
         _compositionRoot = new Node3D { Name = "CompositionRoot" };
         AddChild(_compositionRoot);

@@ -187,30 +187,28 @@ Example: [`compositions/example-gc-two-world.json`](../compositions/example-gc-t
 
 ## CLI usage
 
-The lab is a mode of the existing Godot host (`OBPGame`), entered with
-`--compose`. Run windowed (headless can't render a capture) after a one-off
-`--headless --path game --import`.
+Composition Lab now has its own Godot entry scene, `res://scenes/CompositionLab.tscn`, independent of the ordinary `OBPGame` navigation/player host. Pass composition flags after `--` as usual; this entry does not need `--compose`. The older `--path game -- --compose ...` invocation is retained for compatibility. Run windowed for captures (headless can't render them), after a one-off `--headless --path game --import`.
 
 ```
 # interactive
-<godot> --path game -- --compose --gc-iso <GC.iso> \
+<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> \
     --composition compositions/example-gc-two-world.json
 
 # seed from a spec instead of a file  (id=game:level, comma-separated)
-<godot> --path game -- --compose --gc-iso <GC.iso> --compose-worlds "oozla=gc:1,endako=gc:3"
+<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> --compose-worlds "oozla=gc:1,endako=gc:3"
 
 # deterministic capture
-<godot> --path game --rendering-method gl_compatibility --resolution 1280x720 -- \
-    --compose --gc-iso <GC.iso> --composition <path> \
+<godot> --path game --rendering-method gl_compatibility --resolution 1280x720 res://scenes/CompositionLab.tscn -- \
+    --gc-iso <GC.iso> --composition <path> \
     --composition-view overview --capture-frame 30 --capture-out captures/x.png
 
 # solve the anchors on load, then capture the aligned result
-<godot> … -- --compose --gc-iso <GC.iso> --composition <path> --compose-solve --composition-view overlay …
+<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> --composition <path> --compose-solve --composition-view overlay …
 ```
 
 | Flag | Meaning |
 | --- | --- |
-| `--compose` | boot the lab |
+| `--compose` | legacy: boot the lab through the ordinary `OBPGame` scene |
 | `--gc-iso` / `--rac1-iso` / `--uya-iso` `<path>` | register a retail source per game |
 | `--composition <path>` | load a saved composition JSON |
 | `--compose-worlds <spec>` | seed worlds from `id=game:level,…` |
