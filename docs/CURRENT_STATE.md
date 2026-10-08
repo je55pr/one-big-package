@@ -1,8 +1,16 @@
 # One Big Package — Current State
 
-_Last refreshed: 2026-09-28._
+_Last refreshed: 2026-10-08._
 
 This document summarizes the current merged production baseline. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
+
+## Cleanup regression checkpoint (8 October 2026)
+
+The application now uses the neutral \`GcWorldImport\` component split and the game-neutral \`RuntimeWorldScene\` builder split. Host stress and capture telemetry live in separate diagnostic partial files, and Composition Lab has an independent \`res://scenes/CompositionLab.tscn\` entry, with legacy \`--compose\` compatibility preserved.
+
+The game-specific smoke implementations have moved **byte-for-byte unchanged** into \`game/diagnostics/\`. \`WorldSmokeHarness\` owns first-world/source-game flag dispatch; the normal destination loader makes one opt-in dispatch callback instead of selecting individual tests. The full portable suite after this move passed **958 tests**, with 121 retail-only skips and zero failed.
+
+**Open runtime witness:** the 8 October headless \`--destination rac1:LEVEL0 --movement-smoke\` run reached the new dispatcher but failed its existing locomotion-visual check: player-avatar native sequence remained at 3 instead of progressing to sustained sequence 4. This is not a passed end-to-end movement smoke; the same test body is unchanged from the previous commit, but the root cause and whether the failure predates this refactor are not established. Diagnose in a gameplay/animation pass before using this smoke as a clean sign-off.
 
 ## Headline
 

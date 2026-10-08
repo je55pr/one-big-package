@@ -44,7 +44,7 @@ public sealed class Rac1HostArchitectureTests
         string smoke = File.ReadAllText(Path.Combine(
             RepoPaths.Root,
             "game",
-            "scripts",
+            "diagnostics",
             "OBPGame.Rac1VeldinPlaySmoke.cs"));
 
         string[] forbidden =

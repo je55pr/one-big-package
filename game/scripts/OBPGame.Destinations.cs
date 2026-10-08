@@ -365,30 +365,7 @@ public partial class OBPGame
         _loadSummary = $"✓ {destination.DisplayName} · {result.MeshInstances} meshes / {result.Triangles:N0} tris / {result.CollisionBodies} colliders";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches})");
 
-        if (_args.Rac1VeldinPlaySmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
-        {
-            _ = RunRac1VeldinPlaySmokeAsync();
-        }
-
-        if (_args.Rac1MovementContactSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
-        {
-            _ = RunRac1MovementContactSmokeAsync();
-        }
-
-        if (_args.Rac1CombatContractSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
-        {
-            _ = RunRac1CombatContractSmokeAsync();
-        }
-
-        if (_args.Rac1CampaignSmoke && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac1)
-        {
-            _ = RunRac1CampaignSmokeAsync();
-        }
-
-        if (_args.MovementSmoke && _worldSwitches == 1)
-        {
-            _ = RunMovementSmokeAsync(destination);
-        }
+        DispatchRequestedWorldSmokes(destination);
 
         // Exact verification remains game-specific today. Preserve the mature GC
         // opt-in while avoiding an implicit multi-GB hash for other providers.

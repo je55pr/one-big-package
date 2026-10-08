@@ -77,7 +77,7 @@ retail behavior.
 
 `tools/rac1-combat-contract-smoke.ps1` selects
 `--rac1-combat-contract-smoke`. Its implementation lives in
-`OBPGame.Rac1CombatContractSmoke.cs`. This is explicitly a lower-level synthetic
+`game/diagnostics/OBPGame.Rac1CombatContractSmoke.cs`. This is explicitly a lower-level synthetic
 integration harness: it may stage transforms and call narrow internal seams to
 isolate wrench/contact, projectile, presentation, recovered Veldin population
 gating and lifecycle contracts.

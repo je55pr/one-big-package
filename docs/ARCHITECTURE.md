@@ -44,6 +44,10 @@ Likewise, game-specific decoders should not manufacture Godot nodes. Their outpu
 
 `OBP.RAC2.GcWorldImport.Build` coordinates GC-specific world decoding; companion partial files separate terrain, instance placement, Mobies, materials, lighting and sky. Their output remains the game-neutral `RuntimeWorld`. The `OBP.Godot.RuntimeWorldScene` adapter retains one public `Build` entry point, with separate static-mesh, dynamic-entity, animated-mesh and collision builders. Those builders use neutral runtime data and must not acquire source-game parsing rules.
 
+### Development smoke harness boundary
+
+The ordinary world loader calls only \`DispatchRequestedWorldSmokes\` after a successful provider-backed world load. \`game/diagnostics/OBPGame.SmokeDispatch.cs\` owns opt-in command-line smoke selection and first-world/source-game gating. The existing gameplay-dependent smoke bodies live in \`game/diagnostics/\` as separate \`OBPGame\` partials because their assertion helpers still need the live host, but their orchestration is no longer part of ordinary destination loading. The synthetic combat contract smoke can stage transforms and is **not** evidence of ordinary-play success. The Veldin play smoke must use ordinary player input and natural respawn instead.
+
 ## Rule 1: preserve before interpreting
 
 Game-specific native decoders normalise source data into shared OBP structures while retaining provenance. Unknown gameplay instances stay unknown until evidence supports a semantic type.
