@@ -89,7 +89,7 @@ public partial class OBPGame
 
             bool impacted = false;
             Vector3 segment = end - start;
-            var contacts = _rac1HostileNodes.Values
+            var contacts = _rac1HostileNodes.Values.Concat(_rac1CrateNodes)
                 .Where(hostile =>
                     IsInstanceValid(hostile.Root) &&
                     IsRac1GameplayActive(hostile) &&
@@ -131,8 +131,14 @@ public partial class OBPGame
                 foreach (var damageEvent in contactResolution.DamageEvents)
                 {
                     _rac1DamageTransport.Publish(damageEvent);
-                    if (_rac1MobyRuntime.CanDispatchDamage(damageEvent))
-                        admittedConsequenceCount++;
+                    if (!_rac1MobyRuntime.CanDispatchDamage(damageEvent)) continue;
+                    admittedConsequenceCount++;
+                    if (Rac1BoltCrate.IsCrateClass(damageEvent.Target.NativeClassId))
+                    {
+                        var admission = _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damageEvent);
+                        var target = _rac1CrateNodes.Single(node => node.Source.InstanceIndex == damageEvent.Target.RuntimeId);
+                        CompleteRac1CrateDamage(target, admission);
+                    }
                 }
 
                 _rac1CombatStatus =

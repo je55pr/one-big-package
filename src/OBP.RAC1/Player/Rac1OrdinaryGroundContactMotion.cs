@@ -9,6 +9,10 @@ public static class Rac1OrdinaryGroundContactMotion
 {
     public const double NativeTickScalar = 1d / 3600d;
     public const double GroundDownwardRequestPerTick = 54d * NativeTickScalar;
+    // The common jump helper zeroes vertical request, then supplies 48*sqdt
+    // before the launch age at 0x214574..0x2145a4. Ordinary measured jump
+    // anticipation has no vertical output of its own; special profiles do.
+    public const double JumpAnticipationDownwardRequestPerTick = 48f * (1f / 3600f);
     public const double EdgeFallAccelerationPerTick = 25d * NativeTickScalar;
     // P+0x2dc is the signed player/contact correction metric. Retail takes its
     // absolute value and requires it to be below this exact f32 threshold before
@@ -74,11 +78,19 @@ public static class Rac1OrdinaryGroundContactMotion
         PlayerContactFacts priorContact,
         double normalPlanarX,
         double normalPlanarY,
-        double normalUp)
+        double normalUp,
+        bool applyOrdinaryJumpAnticipationRequest = true)
     {
         double planarX = movement.PlanarX;
         double planarY = movement.PlanarY;
         double vertical = movement.Vertical;
+
+        // Special action profiles own their prelaunch vertical component.
+        // In particular action 0x1c preserves zero through the early return at
+        // 0x214544; only the measured ordinary jump needs this missing request.
+        if (applyOrdinaryJumpAnticipationRequest &&
+            movement.Phase == Rac1RatchetMovementPhase.JumpAnticipation && vertical == 0d)
+            vertical = -JumpAnticipationDownwardRequestPerTick;
 
         if (priorContact.IsGrounded &&
             movement.Phase == Rac1RatchetMovementPhase.Grounded)

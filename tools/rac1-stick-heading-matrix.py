@@ -51,6 +51,7 @@ def control_vector(sample: dict[str, object]) -> tuple[float, float, float]:
 
 
 def target_row(capture: dict[str, object]) -> dict[str, object]:
+    HARNESS.require_reducible_capture(capture)
     rows = [
         row for row in capture["samples"]
         if row["segment"] == "direction" and int(row["local_frame"]) == 1

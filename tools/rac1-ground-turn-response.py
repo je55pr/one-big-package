@@ -129,6 +129,7 @@ def row_metrics(row: dict[str, object], pre_heading: float, pre_speed: float) ->
 
 
 def derive_trial(spec: dict[str, object], capture: dict[str, object]) -> dict[str, object]:
+    HARNESS.require_reducible_capture(capture)
     rows = list(capture["samples"])
     prelude = [row for row in rows if row["segment"] == "prelude"]
     turn = [row for row in rows if row["segment"] == "turn"]
@@ -285,6 +286,7 @@ def capture_suite(
             }), flush=True)
         HARNESS.build_movie(plan_path, savestate, movie)
         capture = HARNESS.capture_trial(pid, port, plan_path, movie, raw, settle, reload_wait)
+        HARNESS.require_reducible_capture(capture)
         print(json.dumps({
             "trial": spec["id"], "index": index, "total": len(specs),
             "samples": len(capture["samples"]), "stateSha256": capture.get("stateSha256"),

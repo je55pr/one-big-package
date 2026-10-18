@@ -1,8 +1,46 @@
 # One Big Package — Current State
 
-_Last refreshed: 2026-10-08._
+_Last refreshed: 2026-10-19 for integration of the movement, wrench and crate/pickup passes into `dev`; the 8 October checkpoint remains below as history._
 
 This document summarizes the current merged production baseline. Detailed format evidence belongs in [`../research/`](../research/README.md); creative possibilities belong in [`PROJECT_VISION.md`](PROJECT_VISION.md) and [`brainstorming/`](brainstorming/README.md).
+
+## Gameplay integration checkpoint (19 October 2026)
+
+The R&C1 movement/equipment, wrench combat, crate/resource and authored world-bolt passes below are integrated together on `dev`. Their behavior has been accepted in interactive testing. Remaining movement contexts, pickup persistence/support attachment and presentation approximations stay documented; this checkpoint does not claim complete retail parity.
+
+The integration checks cover the Release and retail-authority C# suites, solution formatting and all 81 Python tooling tests. The latest Godot checks cover authored bolts on Veldin/Batalia/Pokitaru, crates on Veldin/Novalis, wrench input/contact and ordinary Veldin play. The earlier expanded movement gate covers the movement/equipment fixtures described below.
+
+## R&C1 crate and pickup working pass (18 October 2026)
+
+The runtime hosts wooden, metal, ammo and Nanotech crates with retail models/materials, dedicated fragment models, randomized bolt scattering, rebound/rest/spin, homing and exact arrival credit. Crates have solid bounds and unsupported stacks fall. Metal requires the native explosive damage flag; ammo uses item-specific models/amounts and waits at capacity; an eight-particle Nanotech cloud waits at full health and restores one point. Source rules live in `OBP.RAC1`; Godot supplies contacts and presentation. The wallet survives level changes and participates in explicitly enabled, backward-compatible OBP saves.
+
+Authored world currency bolts now reuse their original retail roots and live Moby identities. Their separate initializer starts resting, snaps to a nearby surface, preserves flagged floating placements, applies native class scale and animates the tilted/orbiting pose. Proximity and Comet-Strike share homing, sound, exact denomination credit and one-time original-entity removal. All 19 levels contain 1,542 pieces, including 14 five-bolt pieces on Pokitaru and 127 preserve-height witnesses on Batalia. Collected loose bolts remain absent during player restart while the level stays live; cross-level/save restoration and moving-support attachment remain incomplete. These collection records are separate from crate UID bitfields.
+
+Active-level sound remaps resolve crate/bolt voices from the native989snd bank using the shared `OBP.PS2` codec. Pitch/mixing, native particle sprites/dust/sparkles/chrome, exact collision, pool pressure and some fragment details remain incomplete. The implementation retains explicit approximations; full retail parity is not claimed. See [evidence](../research/RAC1_CRATES_PICKUPS.md) and [interactive checks](RAC1_CRATES_TESTING.md).
+
+Validation: the required Release and retail-authority suites each pass 1,373 tests with no skips, and solution formatting verification passes. All 19 levels load bolt models/remapped voices and satisfy the authored-bolt census. The placed-bolt gate passes Veldin, Batalia and Pokitaru: original roots, resting animation/scale, floating height, visible homing, attraction sound, one-time credit/removal and distant Comet-Strike including five-bolt pieces. The Veldin/Novalis crate gate still passes scattering, settling, homing, wallet/HUD, stacks, supply resources, Nanotech sound timing and Bomb Glove projectile contact with metal. Wrench and ordinary Veldin play regressions pass, and the Debug host builds without warnings. Private rendered captures were inspected; this does not establish matched retail frames.
+
+## R&C1 wrench working pass (18 October 2026)
+
+The runtime supports three-hit Multi-Strike, airborne Hyper-Strike and crouch/Comet-Strike using the recovered class71 model, texture15, animated Ratchet joint56 hand socket, body clips23/24/25/26/43 and the wrench's own clips3/4/5/6/10. Attack motion and authored hit/recovery gates live in `OBP.RAC1`; throws detach, spin, reverse and return to the moving hand. West/X uses the wrench independently of the selected weapon; east/E uses the selected item. Flying wrench contacts can break supported crates and collect distant bolts.
+
+Target consumers include the admitted crate family and class749 population. Precise retail narrow phase, auto-aim, broader target classes and wrench SFX/trails/impact effects remain incomplete. The crate pass above supplies bolt homing. See [wrench evidence](../research/RAC1_WRENCH_ACTIONS.md) and [testing controls](RAC1_WRENCH_TESTING.md). Full retail parity is not claimed.
+
+The follow-up corrects the neutral wrench skinning: class71 retains its stored inverse-bind translation, retracting the shaft and jaws instead of displaying the wide bind mesh. Run-stop animation samples now carry their hand transforms into idle, preventing the wrench from freezing after a run.
+
+Validation: 1,343 canonical retail-backed tests pass without skips; the portable run passes 1,207 with 136 retail-only skips. The Debug host builds without warnings and solution formatting verification passes. The wrench input/contact smoke passes the retracted neutral model, run/stop/idle hand tracking, combo, Hyper, Comet, moving-hand catch, distant bolt collection and continuously sampled standing recovery. The preceding R&C1 expanded movement and ordinary Veldin play gates also passed, including a sweep that breaks both adjacent crates88/89. The broader trilogy movement run stopped at GC/Oozla's low-stick walk check; it is not reported as a trilogy pass.
+
+## R&C1 movement working pass (18 October 2026)
+
+The runtime extends ordinary Ratchet movement with the second-Cross aerial boost, directional flips, Heli-Pack and Thruster-Pack high/stretch jumps and glides, Thruster Power Slam, wall-jump admission and motion, ledge grab/hang/shimmy/jump/drop, ice motion, and attached Swingshot pull/pendulum previews. The source contracts live in `OBP.RAC1`; their profile constants, action dispatch, animation metadata and bounded query rules are checked against the verified NTSC-U level overlay. The host loads 36 player clips, including the additional wrench attacks, and uses their authored timing. The implementation boundaries are listed below.
+
+The R&C1 host collision envelope now uses the recovered radius and a smaller foot-aligned capsule, plus separate wall and ledge queries. The capsule, Godot slide solver, some query membership and animation/action handoffs remain explicit host approximations. Swimming/Hydro-Pack, mud execution, Magneboot orientation, grind rails, ziplines and some combat movement remain incomplete. No fresh matched PCSX2 trajectory comparison was obtained. See [the movement audit](../research/RAC1_MOVEMENT_PARITY.md) for the evidence boundaries and [the testing guide](RAC1_MOVEMENT_TESTING.md) for controls and development equipment previews.
+
+The landing follow-up corrects missing Heli stretch request ramp/target ownership, native landing counters and contact-carry caps, standing interpolation and quiet landing animation handoffs. Flip flight request and controlled scalar stay separate, with corrected inherited projection and landing prediction braking. Admitted jumps now survive prelaunch support loss, and the ordinary jump adapter supplies the native 48/3600 prelaunch request. See [landing ownership](../research/RAC1_LANDING_OWNERSHIP.md) and [slope jump support](../research/RAC1_SLOPE_JUMP_SUPPORT.md).
+
+Validation for the corrected source/model pass: 1,309 canonical retail-backed C# tests passed with no skips; the portable run passed 1,177 with 132 retail-only skips. The earlier tooling run passed all 81 Python tests, whose sources are unchanged by the landing follow-up. The Debug Godot host builds without warnings, and required formatting verification passes. These establish the bounded code/data contracts and integration, not full retail trajectory parity.
+
+The expanded Godot movement smoke passes quiet ordinary landings, neutral and held-crouch flip landings, continuously interpolated standing, both stretch jumps and five ramp/seam jump cases, alongside the existing equipment/contact/Swingshot checks. The separate ordinary Veldin play gate also passes with the new collision envelope: opening inventory/population, natural fall/death/automatic restart, camera input, Bomb Glove use, natural hostile movement/damage and practical hostile/crate wrench contacts. This gate uses normal player input without transform staging or development respawn.
 
 ## Cleanup regression checkpoint (8 October 2026)
 

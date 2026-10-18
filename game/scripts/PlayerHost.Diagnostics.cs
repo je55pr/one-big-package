@@ -26,8 +26,10 @@ public partial class PlayerHost : CharacterBody3D
             $"    anim {AnimationState}\n" +
             $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
+            (UseRac1Gameplay ? $"{Rac1EquipmentLabel} / F10 pack preview / F11 Swingshot preview\n" : "") +
+            (Rac1DevelopmentSwingshotPreview ? $"Swingshot preview: hold E / east face toward a target ({Rac1SwingshotTargetIndex?.ToString() ?? "none"})\n" : "") +
             diagnostics +
-            $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face action\n" +
+            $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face wrench / E + east face equipped item\n" +
             developmentControls;
     }
 

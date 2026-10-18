@@ -230,8 +230,10 @@ public sealed class Rac1Class749HostileSession :
         return source.SourceGame == "rac1" &&
                source.NativeClassId == Rac1Class749Hostile.NativeClassId &&
                damage.Target.MatchesMoby(target) &&
-               damage.Source == Rac1GameplayEntityRef.Player &&
-               damage.NativeDamage == Rac1WrenchCombatController.RepresentativeDamage &&
+               (damage.Source == Rac1GameplayEntityRef.Player ||
+                damage.Source == Rac1GameplayEntityRef.PlayerWrench &&
+                damage.Owner?.RuntimeEntity == Rac1GameplayEntityRef.Player) &&
+               damage.NativeDamage is 1d or 2d &&
                damage.NativeDamageFlags == Rac1WrenchCombatController.RepresentativeDamageFlags &&
                damage.NativeMarker is null;
     }
@@ -243,15 +245,15 @@ public sealed class Rac1Class749HostileSession :
         ArgumentNullException.ThrowIfNull(damage);
         if (!CanApplyDamage(source, damage))
             throw new NotSupportedException(
-                "Only the bounded player-origin representative damage event is supported for class 749.");
+                "Only bounded player-owned wrench damage is supported for class 749.");
 
         Rac1NativeDamageEnvelope envelope = damage.DamageEnvelope
             ?? throw new InvalidOperationException(
-                "Class-749 representative damage requires native damage flags.");
+                "Class-749 wrench damage requires native damage flags.");
         return ApplyRepresentativeDamage(
             source,
             envelope,
-            "player-origin representative damage");
+            "player-owned wrench damage");
     }
 
     private Rac1Class749HostProbe ApplyRepresentativeDamage(
@@ -267,8 +269,11 @@ public sealed class Rac1Class749HostileSession :
                 $"R&C1 class-749 {sourceLabel} consequence is proven only for representative health 1.0, not {healthBefore}.");
 
         float healthAfter = healthBefore - checked((float)damage.NativeDamage);
-        if (healthAfter != 0f)
-            throw new InvalidOperationException("Representative class-749 damage did not produce health 0.0.");
+        // 0x2d5274..0x2d52a4 subtracts the admitted float without clamping.
+        // Hyper-Strike's two-point descriptor therefore leaves this one-health
+        // victim at -1, then selects the same state-12 lethal reaction.
+        if (healthAfter > 0f)
+            throw new InvalidOperationException("Bounded class-749 wrench damage was not lethal.");
         Rac1Class749Hostile.WriteHealth(entry.PVar, healthAfter);
         entry.NativeState = Rac1Class749Hostile.DamageNativeState;
         entry.NativeSequence = null;

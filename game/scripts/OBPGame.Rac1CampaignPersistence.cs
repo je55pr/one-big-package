@@ -1,5 +1,6 @@
 using Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 using OBP.RAC1.Progression;
 
@@ -40,6 +41,7 @@ public partial class OBPGame
             restored.Campaign,
             restored.Weapons);
         _rac1CampaignRestoreKind = restored.Kind;
+        _rac1BoltWallet = new Rac1BoltWallet(restored.Bolts);
         _rac1CampaignPersistenceInitialized = true;
 
         string persistenceMode = _rac1CampaignPersistence.Enabled
@@ -80,6 +82,8 @@ public partial class OBPGame
 
         Rac1ItemAcquisitionResult result =
             _rac1CampaignSession.Weapons.AcquireNativeItem(nativeItemId);
+        if (_player is { UseRac1Gameplay: true } player)
+            player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         PersistRac1CampaignState($"item acquisition {nativeItemId}");
 
         if (nativeItemId == (int)Rac1WeaponId.FirstRanged && result.IsFirstAcquisition)
@@ -119,7 +123,7 @@ public partial class OBPGame
 
         bool persisted = _rac1CampaignPersistence.PersistIfEnabled(
             _rac1CampaignSession.Campaign,
-            _rac1CampaignSession.Weapons);
+            _rac1CampaignSession.Weapons, _rac1BoltWallet);
         string action = persisted ? "persisted" : "session-only";
         GD.Print(
             $"[rac1-campaign] {action} {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +

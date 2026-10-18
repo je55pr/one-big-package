@@ -6,11 +6,17 @@ using OBP.Runtime.Gameplay;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Retail-backed R&C1 class-500 Bolt Crate behavior. Native record offsets,
+/// Retail-backed R&C1 crate-family behavior. Native record offsets,
 /// states, persistence identity and reward selection remain game-specific.
 /// </summary>
 public static class Rac1BoltCrate
 {
+    public static IReadOnlyList<int> CrateClasses { get; } = Array.AsReadOnly(new[] { 500, 501, 502, 511 });
+    public static bool IsCrateClass(int nativeClass) => CrateClasses.Contains(nativeClass);
+    public static bool EmitsBolts(int nativeClass) => nativeClass is 500 or 502;
+    public static bool AdmitsDamage(int nativeClass, double damage, uint? flags) =>
+        IsCrateClass(nativeClass) && ShouldBreak(damage) &&
+        (nativeClass != 502 || (flags.GetValueOrDefault() & 0x00020000) != 0);
     public const int NativeClassId = 500;
     public const int ActiveNativeState = 1;
     public const int BreakTransitionNativeState = 3;
@@ -27,12 +33,12 @@ public static class Rac1BoltCrate
 
     public static Rac1BoltCrateAuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != NativeClassId) return null;
+        if (source.SourceGame != "rac1" || !IsCrateClass(source.NativeClassId)) return null;
         byte[]? raw = source.NativePayloads?.FirstOrDefault(p => p.Format == InstancePayloadFormat)?.Data;
         if (raw is null || raw.Length < Rac1Instances.MobyRecordSize) return null;
 
         int uid = BinaryPrimitives.ReadUInt16LittleEndian(raw.AsSpan(0x0c, 2));
-        int rewardCentre = BinaryPrimitives.ReadInt32LittleEndian(raw.AsSpan(0x10, 4));
+        int rewardCentre = EmitsBolts(source.NativeClassId) ? BinaryPrimitives.ReadInt32LittleEndian(raw.AsSpan(0x10, 4)) : 0;
         if (source.NativeUid is int runtimeUid && runtimeUid != uid)
             throw new InvalidDataException($"R&C1 class-500 UID mismatch: authored {uid}, runtime {runtimeUid}.");
         if (rewardCentre < 0)
@@ -60,10 +66,13 @@ public static class Rac1BoltCrate
 
     public static Rac1BoltRewardRange RewardRange(int rewardCentre)
     {
-        if (rewardCentre != 10)
-            throw new NotSupportedException(
-                $"R&C1 Bolt Crate reward centre {rewardCentre} is not yet admitted; centre 10 is the retail-backed representative.");
-        return new Rac1BoltRewardRange(10, 3, 7, 13);
+        if (rewardCentre < 0 || rewardCentre > short.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(rewardCentre));
+        if (rewardCentre == 0) return new(0, 0, 0, 0);
+        // 0x257734: round(centre / 4) for centres >= 8; one for 2..7.
+        int jitter = rewardCentre >= 8 ? (rewardCentre + 2) / 4 : rewardCentre >= 2 ? 1 : 0;
+        return new Rac1BoltRewardRange(rewardCentre, jitter,
+            Math.Max(1, rewardCentre - jitter), rewardCentre + jitter);
     }
 
     public static int ValueForNativePickupClass(int nativeClassId) => nativeClassId switch
@@ -95,6 +104,21 @@ public static class Rac1BoltCrate
         }
         while (remaining-- > 0) values.Add(1);
         return values;
+    }
+
+    /// <summary>0x260db8..0x260e54, without the optional three-piece budget.</summary>
+    public static IReadOnlyList<int> PartitionTotal(int selectedTotal)
+    {
+        if (selectedTotal < 0 || selectedTotal > 65535)
+            throw new ArgumentOutOfRangeException(nameof(selectedTotal));
+        var values = new List<int>();
+        int remaining = selectedTotal;
+        while (remaining >= 300) { values.Add(50); remaining -= 50; }
+        while (remaining >= 200) { values.Add(20); remaining -= 20; }
+        while (remaining >= 30) { values.Add(20); values.Add(5); remaining -= 25; }
+        while (remaining >= 7) { values.Add(5); remaining -= 5; }
+        while (remaining-- > 0) values.Add(1);
+        return values.OrderByDescending(value => value).ToArray();
     }
 }
 

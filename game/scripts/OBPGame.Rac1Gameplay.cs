@@ -22,7 +22,6 @@ public partial class OBPGame
     // Host presentation anchor only. Spatial admission dimensions live in the
     // explicitly non-retail Rac1WrenchHostContactPolicy.
     private const float Rac1WrenchHostRootHeight = 1.0f;
-    private const float Rac1PickupCollectRadius = 1.4f;
     // Host-only launch-vector/contact/expiry presentation. The native class-0x79
     // ballistic recurrence is recovered in OBP.RAC1, but host launch initialization,
     // contact geometry and a terminal lifetime consumer remain unresolved.
@@ -39,6 +38,7 @@ public partial class OBPGame
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
     private Rac1MobyPersistenceSession _rac1MobyPersistence = new(levelId: 0);
     private Rac1BoltCrateSession _rac1BoltCrates = new();
+    private Rac1BoltWallet _rac1BoltWallet = new();
     private Rac1MobyRuntimeSession _rac1MobyRuntime = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
     private Rac1RatchetNanotechSession _rac1Nanotech = new();
@@ -66,6 +66,8 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
+        ResetRac1WrenchHost();
+        ResetRac1PickupPresentation();
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
         foreach (var projectile in _rac1Projectiles.Values)
@@ -73,6 +75,7 @@ public partial class OBPGame
         _rac1Projectiles.Clear();
         _rac1MobyPersistence = new Rac1MobyPersistenceSession(levelId);
         _rac1MobyRuntime = new Rac1MobyRuntimeSession();
+        _rac1PlacedBolts = new Rac1PlacedBoltSession(_rac1MobyRuntime);
         _rac1BoltCrates = new Rac1BoltCrateSession(
             _rac1MobyRuntime,
             _rac1MobyPersistence);
@@ -101,11 +104,12 @@ public partial class OBPGame
             return;
         }
 
-        _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons));
+        _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet));
+        ConfigureRac1PickupPresentation(world);
         _rac1CombatStatus = "ready";
         foreach (var source in world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
         {
-            if (source.NativeClassId != Rac1BoltCrate.NativeClassId)
+            if (!Rac1BoltCrate.IsCrateClass(source.NativeClassId))
             {
                 continue;
             }
@@ -120,7 +124,7 @@ public partial class OBPGame
                 continue;
             }
 
-            if (authored?.RewardCentre != 10)
+            if (authored is null)
             {
                 continue;
             }
@@ -129,7 +133,10 @@ public partial class OBPGame
                 ?? CreateRac1InvisibleRuntimeNode(result, source);
             _rac1BoltCrates.Register(source, node.State);
             _rac1CrateNodes.Add(node);
+            AddRac1CrateCollider(node);
         }
+
+        ConfigureRac1PlacedBolts(world, result);
 
         int authoredClass749 = 0;
         int rejectedHostiles = 0;
@@ -161,7 +168,7 @@ public partial class OBPGame
             }
         }
 
-        GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted class-500 crates, " +
+        GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted retail crates, " +
                  $"{_rac1HostileNodes.Count} recovered Veldin class-749 placements from " +
                  $"{authoredClass749} authored placements ({rejectedHostiles} rejected)");
     }
@@ -169,7 +176,7 @@ public partial class OBPGame
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
-        _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons), feedback);
+        _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet), feedback);
     }
 
     private void ArmRac1Gameplay(PlayerHost player)
@@ -177,7 +184,11 @@ public partial class OBPGame
         if (_world?.Game != "rac1") return;
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
+        player.Rac1WrenchPhysicsUpdated += OnRac1WrenchPhysicsUpdated;
         player.Rac1GameplayState = _rac1Nanotech.Probe();
+        player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
+        player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
+        player.ConfigureRac1TraversalTargets(_world.DynamicObjects ?? []);
     }
 
     private void TickRac1Gameplay(double delta)
@@ -195,13 +206,17 @@ public partial class OBPGame
         }
 
         TickRac1VeldinEnvironmentalDeath();
-        if (_rac1Nanotech.Probe().IsDead) return;
+        if (_rac1Nanotech.Probe().IsDead)
+        {
+            ResetRac1WrenchHost();
+            return;
+        }
 
         TickRac1Swing(delta);
         TickRac1BombGlove(delta);
         TickRac1Projectiles(delta);
         TickRac1Hostiles(delta);
-        TickRac1Pickups();
+        TickRac1Pickups(delta);
     }
 
     private string GetRac1GameplayHudLine()
@@ -230,10 +245,10 @@ public partial class OBPGame
             : nanotech.IsDead
                 ? "combat restart unresolved"
                 : "environmental restart evidence: levels 0 and 2 only";
-        return $"R&C1 combat: X attack · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
+        return $"R&C1 combat: X wrench · E equipped item · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
-            $"Bolts collected: {_rac1BoltCrates.CollectedBolts}   pickups: {_rac1PickupNodes.Count}   {hostile}";
+            $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}";
     }
 
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()

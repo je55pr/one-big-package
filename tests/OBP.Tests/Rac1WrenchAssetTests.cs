@@ -1,9 +1,48 @@
 using OBP.RAC1.Player;
+using OBP.RAC1.Animation;
+using OBP.RAC1.Geometry;
 
 namespace OBP.Tests;
 
 public sealed class Rac1WrenchAssetTests
 {
+    [Fact]
+    public void LocalHierarchyRetainsTheStoredMechanicalRetractionInsteadOfCancellingItAsRatchetBinding()
+    {
+        float[] root = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0];
+        float[] shaft = (float[])root.Clone();
+        shaft[12] = -2;
+        var joints = new[]
+        {
+            new Rac1Moby.SkeletonJoint(0, 0, 0, 0, root, 0, 0, 0),
+            new Rac1Moby.SkeletonJoint(1, 0, 0, 0, shaft, 1, 0, 0),
+        };
+        var mesh = new Rac1Moby.Mesh([2, 0, 0], [], [], [], 1024, 0, 0, 2)
+        { VertexJoints = [1, 0, 0], VertexWeights = [1, 0, 0] };
+        var identity = new Rac1MobyAnimation.JointQuaternion(0, 0, 0, 32767);
+        var frame = new Rac1MobyAnimation.Frame(0, 0, 1, 16, 0, 16, 0, [identity, identity], [], []);
+        Assert.Equal(new double[] { 1, 0, 0 }, Rac1MobyPose.PoseLocalHierarchy(mesh, joints, frame));
+        Assert.Equal(new double[] { 2, 0, 0 }, Rac1MobyPose.PoseRatchetHierarchy(mesh, joints, frame));
+    }
+
+    [SkippableFact]
+    public void NeutralWrenchRetractsItsShaftAndJawsFromTheWideBindMesh()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        var asset = Rac1WrenchAsset.Load(iso!);
+        var pose = Rac1WrenchAsset.DecodeAnimation(asset, Rac1WrenchAsset.NeutralNativeSequenceId).Frames[0];
+        double Extent(double[] positions, int axis)
+        {
+            var values = positions.Where((_, index) => index % 3 == axis).ToArray();
+            return values.Max() - values.Min();
+        }
+        Assert.InRange(Extent(pose, 0), .8520, .8522);
+        Assert.InRange(Extent(pose, 1), .4506, .4509);
+        Assert.InRange(Extent(asset.Mesh.Positions, 1), 1.0101, 1.0104);
+        Assert.False(pose.SequenceEqual(asset.Mesh.Positions));
+    }
+
     [SkippableFact]
     public void Level0RecoversRetailGlobalClass71Wrench()
     {

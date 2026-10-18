@@ -5,11 +5,13 @@ public enum Rac1GameplayEntityKind
     Player,
     Moby,
     Projectile,
+    PlayerEquipment,
 }
 
 /// <summary>
 /// Stable engine-neutral reference carried by shared R&C1 gameplay events.
-/// RuntimeId is an authored Moby instance index or a source-owned projectile id.
+/// RuntimeId is an authored Moby index, source-owned projectile id, or logical
+/// player-equipment item id; equipment never pretends to be an authored instance.
 /// </summary>
 public readonly record struct Rac1GameplayEntityRef(
     Rac1GameplayEntityKind Kind,
@@ -18,6 +20,11 @@ public readonly record struct Rac1GameplayEntityRef(
 {
     public static Rac1GameplayEntityRef Player { get; } =
         new(Rac1GameplayEntityKind.Player, NativeClassId: 0, RuntimeId: 0);
+
+    // Logical player-equipment identity, not an invented authored Moby index.
+    // Retail's separate class71 damage emitter is owned by Ratchet (+0xb8).
+    public static Rac1GameplayEntityRef PlayerWrench { get; } =
+        new(Rac1GameplayEntityKind.PlayerEquipment, NativeClassId: 71, RuntimeId: 8);
 
     public static Rac1GameplayEntityRef Moby(Rac1MobyRuntimeKey key) =>
         new(Rac1GameplayEntityKind.Moby, key.NativeClassId, key.InstanceIndex);
@@ -176,7 +183,8 @@ public static class Rac1DamageRuntime
     {
         ArgumentNullException.ThrowIfNull(damage);
         return new Rac1GameplayDamageEvent(
-            Rac1GameplayEntityRef.Player,
+            damage.ContactPath == Rac1WrenchContactPath.AnimatedSweepHostGeometry
+                ? Rac1GameplayEntityRef.PlayerWrench : Rac1GameplayEntityRef.Player,
             Rac1GameplayEntityRef.Moby(target),
             damage.NativeDamage,
             damage.NativeDamageFlags,

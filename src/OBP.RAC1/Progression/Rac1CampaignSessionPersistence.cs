@@ -37,7 +37,8 @@ public sealed class Rac1CampaignSessionPersistence
 
     public bool PersistIfEnabled(
         Rac1CampaignState campaign,
-        Rac1WeaponInventory weapons)
+        Rac1WeaponInventory weapons,
+        Rac1BoltWallet? wallet = null)
     {
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
@@ -45,7 +46,7 @@ public sealed class Rac1CampaignSessionPersistence
         if (!Enabled)
             return false;
 
-        Rac1CampaignSaveFile.Save(_savePath!, campaign, weapons);
+        Rac1CampaignSaveFile.Save(_savePath!, campaign, weapons, wallet);
         return true;
     }
 }

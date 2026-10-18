@@ -110,12 +110,37 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             Rac1RatchetAvatar.SustainedLocomotionSequenceId => ("sustained-locomotion", PlayerAvatarAnimationRole.SustainedLocomotion),
             Rac1RatchetAvatar.LocomotionStopVariantASequenceId => ("locomotion-stop-a", PlayerAvatarAnimationRole.LocomotionStopVariant),
             Rac1RatchetAvatar.LocomotionStopVariantBSequenceId => ("locomotion-stop-b", PlayerAvatarAnimationRole.LocomotionStopVariant),
+            Rac1RatchetAvatar.LocomotionStopMiddleSequenceId => ("locomotion-stop-middle", PlayerAvatarAnimationRole.LocomotionStopVariant),
             Rac1RatchetAvatar.StationaryJumpSequenceId => ("stationary-jump", PlayerAvatarAnimationRole.StationaryJump),
             Rac1RatchetAvatar.MovingJumpSequenceId => ("moving-jump", PlayerAvatarAnimationRole.MovingJump),
             Rac1RatchetAvatar.CrouchSequenceId => ("crouch", PlayerAvatarAnimationRole.Crouch),
             Rac1RatchetAvatar.CrouchTurnRightSequenceId => ("crouch-turn-right", PlayerAvatarAnimationRole.CrouchTurnRight),
             Rac1RatchetAvatar.CrouchTurnLeftSequenceId => ("crouch-turn-left", PlayerAvatarAnimationRole.CrouchTurnLeft),
             Rac1RatchetAvatar.WrenchAttackSequenceId => ("primary-attack", PlayerAvatarAnimationRole.PrimaryAttack),
+            24 => ("wrench-combo-second", PlayerAvatarAnimationRole.AttackVariant),
+            25 => ("wrench-combo-third", PlayerAvatarAnimationRole.AttackVariant),
+            26 => ("wrench-comet-strike", PlayerAvatarAnimationRole.AttackVariant),
+            43 => ("wrench-hyper-strike", PlayerAvatarAnimationRole.AttackVariant),
+            17 => ("thruster-high-jump", PlayerAvatarAnimationRole.JumpVariant),
+            18 => ("heli-stretch-jump", PlayerAvatarAnimationRole.JumpVariant),
+            19 => ("pack-glide", PlayerAvatarAnimationRole.Glide),
+            21 => ("heli-high-jump", PlayerAvatarAnimationRole.JumpVariant),
+            22 => ("aerial-boost", PlayerAvatarAnimationRole.JumpVariant),
+            28 => ("directional-flip-forward-right", PlayerAvatarAnimationRole.JumpVariant),
+            29 => ("directional-flip-left", PlayerAvatarAnimationRole.JumpVariant),
+            31 => ("directional-flip-back", PlayerAvatarAnimationRole.JumpVariant),
+            38 => ("thruster-stretch-jump", PlayerAvatarAnimationRole.JumpVariant),
+            32 => ("ledge-grab", PlayerAvatarAnimationRole.Traversal),
+            33 => ("ledge-hang", PlayerAvatarAnimationRole.Traversal),
+            34 => ("ledge-jump", PlayerAvatarAnimationRole.JumpVariant),
+            36 => ("ledge-shimmy-a", PlayerAvatarAnimationRole.Traversal),
+            37 => ("ledge-shimmy-b", PlayerAvatarAnimationRole.Traversal),
+            48 => ("swingshot-swing", PlayerAvatarAnimationRole.Traversal),
+            55 => ("ice-slide", PlayerAvatarAnimationRole.Traversal),
+            52 => ("swingshot-attach", PlayerAvatarAnimationRole.Traversal),
+            53 => ("swingshot-pendulum", PlayerAvatarAnimationRole.Traversal),
+            42 => ("thruster-power-slam", PlayerAvatarAnimationRole.Traversal),
+            35 => ("wall-jump", PlayerAvatarAnimationRole.JumpVariant),
             _ => throw new InvalidDataException(
                 $"R&C1 Ratchet native sequence {sequenceId} has no admitted neutral avatar role."),
         };
@@ -127,7 +152,13 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             neutral.Id,
             neutral.Role,
             clip.LocalFrames,
-            clip.FrameDurationsSeconds);
+            clip.FrameDurationsSeconds,
+            clip.FrameTimelinePositions,
+            clip.WrenchSocketFrames is null ? null :
+                new Dictionary<string, IReadOnlyList<PlayerAvatarAttachmentPose>>
+                {
+                    [Rac1WrenchAttachment.SocketKey] = clip.WrenchSocketFrames,
+                });
     }
 
     private static string MaterialId(int textureId) => $"rac1:moby:{textureId}";

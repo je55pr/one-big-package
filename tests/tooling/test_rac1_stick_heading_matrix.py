@@ -13,6 +13,10 @@ SPEC.loader.exec_module(MATRIX)
 
 
 class Rac1StickHeadingMatrixTests(unittest.TestCase):
+    def test_target_row_rejects_explicitly_invalid_capture(self):
+        with self.assertRaisesRegex(ValueError, "invalid experiment"):
+            MATRIX.target_row({"validation": {"status": "invalid"}})
+
     def test_reducer_recovers_signed_angle_and_3d_basis_rules(self):
         MATRIX.HARNESS.CAPTURES.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=MATRIX.HARNESS.CAPTURES) as directory:

@@ -64,9 +64,10 @@ public sealed class Rac1HostArchitectureTests
             Assert.DoesNotContain(shortcut, smoke, StringComparison.Ordinal);
 
         Assert.Contains(
-            "Input.ActionPress(RawGamepadInput.Action)",
+            "Input.ActionPress(action)",
             smoke,
             StringComparison.Ordinal);
+        Assert.Contains("RawGamepadInput.Traversal : RawGamepadInput.Action", smoke, StringComparison.Ordinal);
         Assert.Contains(
             "Rac1SmokeDriveToward(",
             smoke,

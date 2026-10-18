@@ -17,6 +17,7 @@ import struct
 import subprocess
 import time
 from ctypes import wintypes
+from itertools import groupby
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,8 +75,8 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 def load_plan(path: Path) -> list[dict[str, object]]:
     raw = json.loads(path.read_text(encoding="utf-8"))
-    if raw.get("schema") != 1 or not isinstance(raw.get("segments"), list):
-        raise ValueError("plan must be schema 1 with a segments array")
+    if raw.get("schema") != 1 or not isinstance(raw.get("segments"), list) or not raw["segments"]:
+        raise ValueError("plan must be schema 1 with a nonempty segments array")
     result: list[dict[str, object]] = []
     for index, item in enumerate(raw["segments"]):
         frames = int(item["frames"])
@@ -162,6 +163,45 @@ def build_movie(plan_path: Path, savestate: Path, movie: Path) -> dict[str, obje
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest
 
+def verify_movie_artifacts(plan_path: Path, movie: Path) -> dict[str, object]:
+    """Check replay bytes, not just a stale sidecar; this is not gameplay validation."""
+    movie = capture_path(movie)
+    manifest = json.loads(movie.with_suffix(movie.suffix + ".json").read_text(encoding="utf-8"))
+    companion = Path(f"{movie}_SaveState.p2s")
+    movie_digest = sha256(movie)
+    state_digest = sha256(companion)
+    if manifest.get("schema") != 1:
+        raise ValueError("unsupported movie manifest schema")
+    if manifest.get("movieSha256") != movie_digest:
+        raise ValueError("movie bytes changed after build")
+    if manifest.get("stateSha256") != state_digest:
+        raise ValueError("companion savestate changed after build")
+
+    frames = expand_plan(load_plan(plan_path))
+    data = movie.read_bytes()
+    if len(data) < 570 or data[0] != 1 or data[569] != 1:
+        raise ValueError("movie must be PCSX2 v1 input recording with a savestate anchor")
+    recorded_frames = struct.unpack_from("<I", data, 561)[0]
+    if recorded_frames != len(frames) or len(data) != 570 + len(frames) * 36:
+        raise ValueError("movie frame count/length differs from input plan")
+    if (manifest.get("totalFrames"), manifest.get("headerBytes"), manifest.get("frameBytes")) != (
+        len(frames), 570, 36
+    ):
+        raise ValueError("movie manifest dimensions differ from replay bytes")
+    neutral = pad_bytes((NEUTRAL, NEUTRAL), (NEUTRAL, NEUTRAL))
+    for index, frame in enumerate(frames):
+        expected = pad_bytes(frame["left"], frame["right"], frame["buttons"]) + neutral
+        if data[570 + index * 36:570 + (index + 1) * 36] != expected:
+            raise ValueError(f"movie input differs from plan at frame {index}")
+    return {
+        "movieSha256": movie_digest,
+        "stateSha256": state_digest,
+        "planSha256": sha256(plan_path),
+        "totalFrames": len(frames),
+        "artifactConsistency": "passed",
+    }
+
+
 def set_ini_value(text: str, section: str, key: str, value: str) -> str:
     lines = text.splitlines()
     marker = f"[{section}]"
@@ -221,18 +261,49 @@ class Pine:
             data.extend(chunk)
         return bytes(data)
 
-    def read32(self, addresses: list[int]) -> list[int]:
-        payload = b"".join(bytes((READ32,)) + struct.pack("<I", address) for address in addresses)
+    def _request(self, payload: bytes) -> bytes:
         self.sock.sendall(struct.pack("<I", len(payload) + 4) + payload)
         response_size = struct.unpack("<I", self._recv_exact(4))[0]
+        # PCSX2 2.6.3 PINE.cpp bounds its return buffer to 450000 bytes.
+        if not 5 <= response_size <= 450000:
+            raise RuntimeError(f"invalid PINE response size: {response_size}")
         body = self._recv_exact(response_size - 4)
-        if not body or body[0] != 0:
-            status = body[0] if body else "empty"
-            raise RuntimeError(f"PINE read failed with status {status}")
-        expected = 1 + 4 * len(addresses)
-        if len(body) < expected:
-            raise RuntimeError(f"short PINE response: {len(body)} < {expected}")
-        return list(struct.unpack("<" + "I" * len(addresses), body[1:expected]))
+        if body[0] != 0:
+            raise RuntimeError(f"PINE request failed with status {body[0]}")
+        return body[1:]
+
+    def read32(self, addresses: list[int]) -> list[int]:
+        payload = b"".join(bytes((READ32,)) + struct.pack("<I", address) for address in addresses)
+        body = self._request(payload)
+        expected = 4 * len(addresses)
+        if len(body) != expected:
+            raise RuntimeError(f"unexpected PINE read size: {len(body)} != {expected}")
+        return list(struct.unpack("<" + "I" * len(addresses), body))
+
+    def status(self) -> str:
+        body = self._request(bytes((15,)))
+        if len(body) != 4:
+            raise RuntimeError("invalid PINE status response")
+        value = struct.unpack("<I", body)[0]
+        if value not in (0, 1, 2):
+            raise RuntimeError(f"unknown PINE status: {value}")
+        return ("running", "paused", "shutdown")[value]
+
+    def identity(self) -> dict[str, str]:
+        """Read emulator metadata only; a game title is not proof of gameplay."""
+        result = {"status": self.status()}
+        if result["status"] == "shutdown":
+            return result
+        for name, opcode in (("emulatorVersion", 8), ("title", 11), ("serial", 12),
+                             ("discCrc", 13), ("gameVersion", 14)):
+            body = self._request(bytes((opcode,)))
+            if len(body) < 5:
+                raise RuntimeError(f"short PINE {name} response")
+            size = struct.unpack_from("<I", body)[0]
+            if size != len(body) - 4 or body[-1] != 0:
+                raise RuntimeError(f"invalid PINE {name} string")
+            result[name] = body[4:-1].decode("utf-8")
+        return result
 
 def u32_to_f32(value: int) -> float:
     return struct.unpack("<f", struct.pack("<I", value))[0]
@@ -386,6 +457,14 @@ def frame_advance(hwnd: int, settle: float) -> None:
     _foreground_key(hwnd, FRAME_ADVANCE_VK)
     time.sleep(settle)
 
+
+def require_paused_rac1(pine: Pine) -> dict[str, str]:
+    identity = pine.identity()
+    if identity.get("serial") != "SCUS-97199" or identity["status"] != "paused":
+        raise ValueError(f"capture requires paused SCUS-97199; observed {identity}")
+    return identity
+
+
 def capture_trial(
     pid: int,
     port: int,
@@ -397,24 +476,23 @@ def capture_trial(
 ) -> dict[str, object]:
     raw_out = capture_path(raw_out)
     movie = capture_path(movie)
-    manifest_path = movie.with_suffix(movie.suffix + ".json")
-    state_digest: str | None = None
-    if manifest_path.exists():
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        movie_digest = str(manifest["movieSha256"])
-        state_digest = str(manifest.get("stateSha256") or "") or None
-    else:
-        movie_digest = sha256(movie)
+    artifacts = verify_movie_artifacts(plan_path, movie)
     plan = load_plan(plan_path)
     frames = expand_plan(plan)
-    main = start_movie_replay(pid, movie)
-    time.sleep(reload_wait)
     pine = Pine("127.0.0.1", port)
     try:
+        before_replay = require_paused_rac1(pine)
+        main = start_movie_replay(pid, movie)
+        time.sleep(reload_wait)
+        identity = require_paused_rac1(pine)
+        if identity != before_replay:
+            raise ValueError("emulator/game identity changed while starting replay")
         initial = sample_player(pine)
         samples: list[dict[str, object]] = []
         for frame_index, command in enumerate(frames):
             frame_advance(main, settle)
+            if pine.status() != "paused":
+                raise ValueError(f"emulator did not return to paused state at frame {frame_index}")
             observed = sample_player(pine)
             samples.append({
                 "frame": frame_index,
@@ -431,8 +509,15 @@ def capture_trial(
     capture = {
         "schema": 1,
         "authority": "R&C1 NTSC-U SCUS-97199 / PCSX2 input recording + PINE",
-        "movieSha256": movie_digest,
-        "stateSha256": state_digest,
+        "movieSha256": artifacts["movieSha256"],
+        "stateSha256": artifacts["stateSha256"],
+        "planSha256": artifacts["planSha256"],
+        "emulatorIdentity": identity,
+        "validation": {
+            "status": "unsupported",
+            "artifactConsistency": "passed",
+            "reason": "Artifact consistency is verified; gameplay, input delivery and update cadence require independent validation.",
+        },
         "initial": initial,
         "samples": samples,
     }
@@ -448,16 +533,25 @@ def _sequence_path(rows: list[dict[str, object]]) -> list[int]:
             result.append(value)
     return result
 
+def require_reducible_capture(capture: dict[str, object]) -> None:
+    # Preserve historical reductions with an explicit integrity gap. New runs
+    # already marked invalid/unsupported must not become numerical evidence.
+    validation = capture.get("validation")
+    if validation is not None and validation.get("status") != "valid":
+        raise ValueError(f"cannot derive movement evidence from {validation.get('status')} experiment")
+
+
 def derive(capture: dict[str, object]) -> dict[str, object]:
+    require_reducible_capture(capture)
+    validation = capture.get("validation")
     rows = list(capture["samples"])
     segments: list[dict[str, object]] = []
-    labels: list[str] = []
-    for row in rows:
-        label = str(row["segment"])
-        if not labels or labels[-1] != label:
-            labels.append(label)
-    for label in labels:
-        group = [row for row in rows if row["segment"] == label]
+    # A label is descriptive, not an identity: neutral/move/neutral contains
+    # three segments. Older captures without an index retain adjacent runs.
+    for _, segment_rows in groupby(
+        rows, key=lambda row: (row.get("segment_index"), str(row["segment"]))
+    ):
+        group = list(segment_rows)
         first = group[0]
         last = group[-1]
         planar_steps = [
@@ -468,7 +562,7 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         dx = float(last["sample"]["pos_x"]) - float(first["sample"]["pos_x"])
         dy = float(last["sample"]["pos_y"]) - float(first["sample"]["pos_y"])
         segments.append({
-            "label": label,
+            "label": str(first["segment"]),
             "frames": len(group),
             "left": first["left"],
             "right": first["right"],
@@ -499,6 +593,10 @@ def derive(capture: dict[str, object]) -> dict[str, object]:
         "segments": segments,
         "sequencePath": _sequence_path(rows),
         "changingCandidateFields": changing,
+        "validation": validation or {
+            "status": "unsupported",
+            "reason": "Legacy capture has no recorded experiment-integrity verdict.",
+        },
     }
     if rows and all(
         field in rows[0]["sample"]
@@ -547,6 +645,11 @@ def build_parser() -> argparse.ArgumentParser:
     movie.add_argument("--plan", type=Path, required=True)
     movie.add_argument("--savestate", type=Path, required=True)
     movie.add_argument("--movie", type=Path, required=True)
+    verify = sub.add_parser("verify-movie", help="check replay artifacts without opening PCSX2")
+    verify.add_argument("--plan", type=Path, required=True)
+    verify.add_argument("--movie", type=Path, required=True)
+    inspect = sub.add_parser("inspect", help="read PCSX2 identity/status through PINE; sends no input")
+    inspect.add_argument("--pine-port", type=int, default=28099)
     capture = sub.add_parser("capture")
     capture.add_argument("--pid", type=int, required=True)
     capture.add_argument("--pine-port", type=int, default=28099)
@@ -566,6 +669,14 @@ def main() -> int:
         result = prepare_profile(args.source, args.out, args.pine_port)
     elif args.command == "build":
         result = build_movie(args.plan, args.savestate, args.movie)
+    elif args.command == "verify-movie":
+        result = verify_movie_artifacts(args.plan, args.movie)
+    elif args.command == "inspect":
+        pine = Pine("127.0.0.1", args.pine_port)
+        try:
+            result = pine.identity()
+        finally:
+            pine.close()
     elif args.command == "capture":
         result = capture_trial(
             args.pid, args.pine_port, args.plan, args.movie, args.out,
@@ -580,12 +691,13 @@ def main() -> int:
             "movieSha256": result["movieSha256"],
             "stateSha256": result.get("stateSha256"),
             "samples": len(result["samples"]),
+            "validation": result["validation"],
             "out": str(args.out),
         }
         print(json.dumps(summary, indent=2))
     else:
         print(json.dumps(result, indent=2))
-    return 0
+    return 3 if args.command == "capture" and result["validation"]["status"] != "valid" else 0
 
 if __name__ == "__main__":
     raise SystemExit(main())

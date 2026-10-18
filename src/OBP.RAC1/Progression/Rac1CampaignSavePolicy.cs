@@ -20,12 +20,16 @@ public enum Rac1CampaignRestoreKind
 public sealed record Rac1CampaignSaveEnvelope(
     int SchemaVersion,
     Rac1CampaignPersistentState Campaign,
-    Rac1WeaponPersistentState? Weapons = null);
+    Rac1WeaponPersistentState? Weapons = null,
+    int Bolts = 0);
 
 public sealed record Rac1CampaignRestoreResult(
     Rac1CampaignState Campaign,
     Rac1WeaponInventory Weapons,
-    Rac1CampaignRestoreKind Kind);
+    Rac1CampaignRestoreKind Kind)
+{
+    public int Bolts { get; init; }
+}
 
 /// <summary>
 /// Persistence policy for engine-neutral R&C1 campaign state. Schema 2 remains
@@ -38,14 +42,15 @@ public static class Rac1CampaignSavePolicy
 
     public static Rac1CampaignSaveEnvelope Capture(
         Rac1CampaignState campaign,
-        Rac1WeaponInventory weapons)
+        Rac1WeaponInventory weapons,
+        Rac1BoltWallet? wallet = null)
     {
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
         return new Rac1CampaignSaveEnvelope(
             CurrentSchemaVersion,
             campaign.CapturePersistentState(),
-            weapons.CapturePersistentState());
+            weapons.CapturePersistentState(), wallet?.Balance ?? 0);
     }
 
     /// <summary>
@@ -62,6 +67,7 @@ public static class Rac1CampaignSavePolicy
                 Rac1CampaignRestoreKind.DefaultedMissingState);
 
         ArgumentNullException.ThrowIfNull(save.Campaign);
+        if (save.Bolts < 0) throw new InvalidDataException("R&C1 saved bolt balance is negative.");
         if (save.SchemaVersion == 1)
             return new Rac1CampaignRestoreResult(
                 Rac1CampaignState.RestorePersistentState(save.Campaign),
@@ -78,7 +84,8 @@ public static class Rac1CampaignSavePolicy
         return new Rac1CampaignRestoreResult(
             Rac1CampaignState.RestorePersistentState(save.Campaign),
             new Rac1WeaponInventory(save.Weapons),
-            Rac1CampaignRestoreKind.RestoredCurrentSchema);
+            Rac1CampaignRestoreKind.RestoredCurrentSchema)
+        { Bolts = save.Bolts };
     }
 
     /// <summary>

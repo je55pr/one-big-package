@@ -44,6 +44,14 @@ public partial class PlayerDevelopmentControls : Node
             _host.RefreshDevelopmentCameraPresentation();
             GD.Print($"[player-dev] camera {_host.CameraControllerLabel}");
         }
+        else if (key.Keycode == Key.F10)
+        {
+            _host.CycleRac1DevelopmentPack();
+        }
+        else if (key.Keycode == Key.F11)
+        {
+            _host.ToggleRac1DevelopmentSwingshot();
+        }
         else if (key.Keycode == Key.F)
         {
             FlyEnabled = !FlyEnabled;

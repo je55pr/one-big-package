@@ -58,6 +58,9 @@ public partial class OBPGame
                     $"{destination.Game} unexpectedly attached a borrowed/native player avatar");
             }
 
+            if (destination.Game == ObpSourceGame.Rac1)
+                await RequireRac1SlopeJumpSmokeAsync(player);
+
             SetAnalogueSmokeInput(0f, 0.60f);
             await PhysicsFramesAsync(48);
             float walkSpeed = HorizontalSpeed(player);
@@ -71,11 +74,10 @@ public partial class OBPGame
                 Require(
                     CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.LocomotionStartSequenceId &&
                     PlayerAvatarPresentationIsSynchronized(),
-                    "R&C1 locomotion-start sequence 3 did not preserve its decoded one-shot duration");
-                await WaitForPlayerAvatarSequenceAsync(
-                    Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
-                    180,
-                    "native-timed sustained low-stick locomotion");
+                    "R&C1 low-stick locomotion did not retain sequence 3");
+                // Veldin 0x228c18 selects 3/4 by scalar speed. Clip completion
+                // wraps sequence 3; it does not promote a steady walk to 4.
+                await RequireWalkingAvatarLoopAsync(180);
             }
 
             SetAnalogueSmokeInput(0f, 1f);
@@ -97,6 +99,16 @@ public partial class OBPGame
                     Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
                     30,
                     "ordinary turning locomotion");
+                // The walking loop observes render frames, so its accumulated
+                // travel varies when several physics updates precede a render.
+                // Give the moving-jump trial its own settled authored start.
+                ClearMovementSmokeInput();
+                player.DevelopmentControls.ResetToSpawn();
+                await WaitForGroundedAsync(player, 180);
+                SetAnalogueSmokeInput(0f, 1f);
+                await PhysicsFramesAsync(48);
+                Require(player.IsOnFloor() && HorizontalSpeed(player) > 5.5f,
+                    "moving-jump trial did not start at supported full speed");
             }
 
             float movingJump = await MeasureJumpAsync(
@@ -116,20 +128,48 @@ public partial class OBPGame
                     "post-run standing");
             }
 
+            // The traversal portion can finish at Veldin's death-plane edge.
+            // Crouch needs a settled start, independently of an automatic
+            // environmental restart after the moving jump.
+            player.DevelopmentControls.ResetToSpawn();
+            await WaitForGroundedAsync(player, 180);
             Input.ActionPress(RawGamepadInput.Crouch);
             await PhysicsFramesAsync(4);
             Require(
                 player.Rac1LocomotionState.ToString() is "Crouched" or "CrouchTurning",
-                "crouch action did not reach the common controller");
+                $"crouch action did not reach the common controller; state={player.Rac1LocomotionState}; " +
+                $"phase={player.Rac1MovementPhase}; grounded={player.IsOnFloor()}; alive={player.Rac1GameplayAlive}");
             if (destination.Game == ObpSourceGame.Rac1)
             {
                 await WaitForPlayerAvatarSequenceAsync(
-                    Rac1RatchetSequenceSelection.StandingSequenceId,
+                    Rac1RatchetSequenceSelection.CrouchSequenceId,
                     30,
-                    "crouch neutral presentation boundary");
+                    "crouch entry presentation");
+                SetAnalogueSmokeInput(1f, 0f);
+                int firstTurn = 0;
+                for (int tick = 0; tick < 60 && firstTurn is not (14 or 15); tick++)
+                {
+                    await PhysicsFramesAsync(1);
+                    firstTurn = CurrentPlayerAvatarSourceSequence() ?? 0;
+                }
+                Require(firstTurn is 14 or 15, "crouch steering did not select a turning clip");
+                SetAnalogueSmokeInput(-1f, 0f);
+                await WaitForPlayerAvatarSequenceAsync(firstTurn == 14 ? 15 : 14, 90,
+                    "crouch turn reversal");
+                SetAnalogueSmokeInput(0f, 0f);
+                await WaitForPlayerAvatarSequenceAsync(13, 180, "crouch turn settling");
             }
             Input.ActionRelease(RawGamepadInput.Crouch);
-            await PhysicsFramesAsync(4);
+            if (destination.Game == ObpSourceGame.Rac1)
+                await WaitForPlayerAvatarSequenceAsync(0, 30, "crouch release presentation");
+            await PhysicsFramesAsync(20);
+
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                await RequireOrdinaryStopRestartAsync(player);
+                await RequireRunToCrouchStopAsync(player);
+                await RequireBlockedRunCrouchCarryAsync(player);
+            }
 
             player.DevelopmentControls.ResetToSpawn();
             await WaitForGroundedAsync(player, 180);
@@ -179,6 +219,14 @@ public partial class OBPGame
                     player.Rac1MaxObservedSlideCollisions < player.MaxSlides,
                     $"R&C1 ordinary movement saturated Godot MaxSlides={player.MaxSlides}; " +
                     $"observed={player.Rac1MaxObservedSlideCollisions}");
+            }
+
+            if (destination.Game == ObpSourceGame.Rac1)
+            {
+                await RequireRac1AirborneSmokeAsync(player);
+                await RequireRac1LandingRegressionSmokeAsync(player);
+                await RequireRac1TraversalContactSmokeAsync(player);
+                await RequireRac1SwingshotSmokeAsync(player);
             }
 
             GD.Print(
@@ -239,6 +287,34 @@ public partial class OBPGame
             apex = Math.Max(apex, player.GlobalPosition.Y);
             if (sawAir && player.IsOnFloor())
             {
+                if (movingAtLaunch && _activeDestination?.Game == ObpSourceGame.Rac1)
+                {
+                    // Retain movement across touchdown: clearing it here hid
+                    // the permanent loss of the native locomotion clock.
+                    for (int update = 0; update < 5; update++)
+                    {
+                        await PhysicsFramesAsync(1);
+                        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                        var controller = _playerAvatarAnimationController as Rac1PlayerAnimationPresentationController;
+                        Require(controller?.OrdinaryLocomotionSample is not null &&
+                            controller.Current.SampledPose is not null && PlayerAvatarPresentationIsSynchronized(),
+                            "moving landing did not reconnect physics-sampled locomotion");
+                        int sequence = controller!.OrdinaryLocomotionSample!.Value.Sequence;
+                        // This traversal can leave support again immediately.
+                        // Native ordinary edge updates retain the assigned rate;
+                        // only supported helper calls consume the current scalar.
+                        if (player.Rac1AnimationHelperAdmitted)
+                        {
+                            float expected = Rac1OrdinaryLocomotionAnimation.PlaybackMultiplier(
+                                sequence, player.Rac1AnimationScalarAtSelection);
+                            Require(Math.Abs(controller.OrdinaryLocomotionMultiplier!.Value - expected) < .00001f,
+                                $"post-jump locomotion lost its recovered speed multiplier: update={update}, " +
+                                $"actual={controller.OrdinaryLocomotionMultiplier}, expected={expected}, " +
+                                $"sequence={sequence}, scalar={player.Rac1AnimationScalarAtSelection}");
+                        }
+                    }
+                    GD.Print("[movement-smoke] moving landing retained the native locomotion clock and speed multiplier");
+                }
                 ClearMovementSmokeInput();
                 return apex - baseline;
             }
@@ -280,10 +356,18 @@ public partial class OBPGame
 
     private async System.Threading.Tasks.Task WaitForGroundedAsync(PlayerHost player, int maxFrames)
     {
+        int supportedUpdates = 0;
         for (int frame = 0; frame < maxFrames; frame++)
         {
             await PhysicsFramesAsync(1);
-            if (player.IsOnFloor())
+            // PhysicsFrame is emitted before node physics callbacks. Inspect
+            // the completed update and require settled controller support;
+            // the floor bit can still describe the pre-teleport collision.
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            supportedUpdates = player.IsOnFloor() &&
+                player.Rac1MovementPhase == Rac1RatchetMovementPhase.Grounded
+                    ? supportedUpdates + 1 : 0;
+            if (supportedUpdates >= 3)
                 return;
         }
 
@@ -324,7 +408,48 @@ public partial class OBPGame
 
         throw new InvalidOperationException(
             $"{label} did not reach synchronized player-avatar sequence {expectedSequence}; " +
-            $"current={CurrentPlayerAvatarSourceSequence()?.ToString() ?? "none"}");
+            $"current={CurrentPlayerAvatarSourceSequence()?.ToString() ?? "none"}; " +
+            $"synchronized={PlayerAvatarPresentationIsSynchronized()}; " +
+            $"avatarFrame={_playerAvatarView?.CurrentFrame}/{_playerAvatarView?.FrameCount}; " +
+            $"avatarFps={_playerAvatarView?.FramesPerSecond}; " +
+            $"loop={_playerAvatarAnimationController?.Current.Loop}; " +
+            $"semantic={_player?.AnimationState}; " +
+            $"phase={_player?.Rac1MovementPhase}; yawMode={_player?.Rac1YawMode}; " +
+            $"targetStep={_player?.Rac1TargetPlanarStep}; " +
+            $"grounded={_player?.IsOnFloor()}; recoveredSupport={_player?.Rac1RecoveredSupportGrounded}");
+    }
+
+    private async System.Threading.Tasks.Task RequireWalkingAvatarLoopAsync(int frames)
+    {
+        int previousFrame = _playerAvatarView?.CurrentFrame ?? -1;
+        bool advanced = false;
+        bool wrapped = false;
+        for (int frame = 0; frame < frames; frame++)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            int currentFrame = _playerAvatarView?.CurrentFrame ?? -1;
+            Require(
+                currentFrame >= 0 &&
+                CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.LocomotionStartSequenceId &&
+                _playerAvatarAnimationController?.Current.Loop == true &&
+                PlayerAvatarPresentationIsSynchronized(),
+                $"steady low-stick walk lost synchronized looping sequence 3; frame={currentFrame}; " +
+                $"sequence={CurrentPlayerAvatarSourceSequence()}; semantic={_player?.AnimationState}");
+            if (_activeDestination?.Game == ObpSourceGame.Rac1)
+            {
+                Require(_playerAvatarAnimationController is Rac1PlayerAnimationPresentationController
+                { OrdinaryLocomotionSample: not null, OrdinaryLocomotionMultiplier: > 2.35f and < 2.36f } &&
+                    _playerAvatarAnimationSink?.CurrentAnimationPresentation.SampledPose is not null,
+                    "steady low-stick walk is not using the physics-sampled native locomotion clock/rate");
+            }
+            advanced |= currentFrame > previousFrame;
+            wrapped |= currentFrame < previousFrame;
+            previousFrame = currentFrame;
+        }
+        Require(advanced && wrapped,
+            $"steady walking animation did not advance and wrap; advanced={advanced}; " +
+            $"wrapped={wrapped}; frame={previousFrame}");
+        GD.Print("[movement-smoke] steady walking sequence 3 advanced and wrapped");
     }
 
     private async System.Threading.Tasks.Task PhysicsFramesAsync(int count)
@@ -338,6 +463,146 @@ public partial class OBPGame
         await PhysicsFramesAsync(2);
         SendPhysicalKey(key, false);
         await PhysicsFramesAsync(2);
+    }
+
+    private async System.Threading.Tasks.Task RequireOrdinaryStopRestartAsync(PlayerHost player)
+    {
+        foreach (float strength in new[] { .6f, 1f })
+        {
+            ClearMovementSmokeInput();
+            player.DevelopmentControls.ResetToSpawn();
+            await WaitForGroundedAsync(player, 180);
+            SetAnalogueSmokeInput(0, strength);
+            await PhysicsFramesAsync(48);
+            SetAnalogueSmokeInput(0, 0);
+            bool sawStop = false;
+            for (int update = 0; update < 12; update++)
+            {
+                await PhysicsFramesAsync(1);
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                int? sequence = CurrentPlayerAvatarSourceSequence();
+                sawStop |= sequence is 5 or 6 or 20;
+                if (strength == 1 && sawStop)
+                    break;
+            }
+            var controller = (Rac1PlayerAnimationPresentationController)_playerAvatarAnimationController!;
+            if (strength == 1)
+            {
+                Require(sawStop && controller.OrdinaryStopSample is not null &&
+                    controller.Current.SampledPose is not null && PlayerAvatarPresentationIsSynchronized(),
+                    "run release did not enter the sampled native stop family");
+                // Reverse direction while the stop blend is still active.
+                SetAnalogueSmokeInput(0, -1);
+                await PhysicsFramesAsync(3);
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                Require(controller.OrdinaryLocomotionSample is not null &&
+                    controller.OrdinaryStopSample is null && CurrentPlayerAvatarSourceSequence() == 3 &&
+                    PlayerAvatarPresentationIsSynchronized(), "quick reverse restart did not re-enter native locomotion");
+                SetAnalogueSmokeInput(0, 0);
+            }
+            await PhysicsFramesAsync(100);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Require(CurrentPlayerAvatarSourceSequence() == 0 && PlayerAvatarPresentationIsSynchronized(),
+                "ordinary release did not settle to synchronized standing");
+            if (strength < 1)
+                Require(!sawStop, "low-speed walk release unexpectedly used the running stop family");
+            GD.Print($"[movement-smoke] ordinary stop/restart passed strength={strength:F1}, stopFamily={sawStop}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task RequireRunToCrouchStopAsync(PlayerHost player)
+    {
+        foreach (bool keepDirection in new[] { true, false })
+        {
+            ClearMovementSmokeInput();
+            player.DevelopmentControls.ResetToSpawn();
+            await WaitForGroundedAsync(player, 180);
+            SetAnalogueSmokeInput(0f, 1f);
+            await PhysicsFramesAsync(48);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            float startSpeed = HorizontalSpeed(player);
+            Require(startSpeed > 5.5f && player.IsOnFloor(), "run-to-crouch trial did not start at supported full speed");
+            var contactMotion = player.Rac1ContactProcessedMotion;
+            Require(contactMotion.HasValue, "run-to-crouch trial did not record static-contact motion");
+            double entryPlanar = Math.Sqrt(contactMotion!.Value.X * contactMotion.Value.X +
+                contactMotion.Value.Y * contactMotion.Value.Y);
+            Vector3 start = player.GlobalPosition;
+            if (!keepDirection)
+                SetAnalogueSmokeInput(0f, 0f);
+            Input.ActionPress(RawGamepadInput.Crouch);
+            int stoppedAt = 0;
+            ulong startedPhysicsFrame = Engine.GetPhysicsFrames();
+            float previousSpeed = startSpeed;
+            for (int tick = 1; tick <= 65; tick++)
+            {
+                await PhysicsFramesAsync(1);
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                float speed = HorizontalSpeed(player);
+                Require(player.Rac1LocomotionState is Rac1RatchetLocomotionState.Crouched or Rac1RatchetLocomotionState.CrouchTurning,
+                    $"run-to-crouch lost its state at tick {tick}; phase={player.Rac1MovementPhase}; floor={player.IsOnFloor()}; speed={speed:F4}");
+                Require(speed <= previousSpeed + 0.01f,
+                    $"run-to-crouch accelerated at tick {tick}: {previousSpeed:F4} -> {speed:F4}");
+                if (player.Rac1ControllerPlanarStep < 1e-8d && stoppedAt == 0)
+                    stoppedAt = checked((int)(Engine.GetPhysicsFrames() - startedPhysicsFrame));
+                previousSpeed = speed;
+            }
+            float distance = HorizontalDistance(start, player.GlobalPosition);
+            var entryCarry = Rac1ContactMotionProjection.EnterCrouch(contactMotion.Value);
+            double entryCarryPlanar = Math.Sqrt(entryCarry.X * entryCarry.X + entryCarry.Y * entryCarry.Y);
+            int expectedStop = (int)Math.Ceiling(entryCarryPlanar / Rac1RatchetMovementController.CrouchDecelerationPerTick);
+            // Count actual physics updates. Awaiting a render frame between
+            // observations can skip a physics tick under host scheduling load.
+            Require(stoppedAt > 0 && Math.Abs(stoppedAt - expectedStop) <= 2,
+                $"run-to-crouch stop timing changed: stop={stoppedAt}, expected={expectedStop}, distance={distance:F4}");
+            // Distance is an observation, pending a matched retail trajectory.
+            // Do not require OBP's current result as a retail-distance oracle.
+            double standingHeight = _playerAvatar?.AnimationBounds.Height ?? double.NaN;
+            GD.Print($"[movement-smoke] run-to-crouch heldDirection={keepDirection} startSpeed={startSpeed:F4} entryContactPlanar={entryPlanar:F6} stopTicks={stoppedAt} distance={distance:F4} standingHeights={distance / standingHeight:F4}");
+            ClearMovementSmokeInput();
+        }
+    }
+
+    private async System.Threading.Tasks.Task RequireBlockedRunCrouchCarryAsync(PlayerHost player)
+    {
+        // Synthetic Godot fixture: verifies the adapter consumes completed
+        // collision feedback. This is not evidence for native wall collision.
+        ClearMovementSmokeInput();
+        player.DevelopmentControls.ResetToSpawn();
+        await WaitForGroundedAsync(player, 180);
+        SetAnalogueSmokeInput(0f, 1f);
+        await PhysicsFramesAsync(48);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        Vector3 direction = new Vector3(player.Velocity.X, 0, player.Velocity.Z).Normalized();
+        var wall = new StaticBody3D { Name = "CrouchCarrySmokeWall" };
+        wall.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(6, 5, 0.4f) } });
+        AddChild(wall);
+        wall.GlobalPosition = player.GlobalPosition + direction * 0.9f + Vector3.Up * 2;
+        wall.Rotation = new Vector3(0, Mathf.Atan2(direction.X, direction.Z), 0);
+        try
+        {
+            await PhysicsFramesAsync(30);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            var motion = player.Rac1ContactProcessedMotion;
+            Require(motion.HasValue && Math.Sqrt(motion.Value.X * motion.Value.X + motion.Value.Y * motion.Value.Y) < 0.02,
+                $"blocked run did not produce bounded contact carry: {motion}");
+            Input.ActionPress(RawGamepadInput.Crouch);
+            await PhysicsFramesAsync(2);
+            wall.QueueFree();
+            await PhysicsFramesAsync(2);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Vector3 start = player.GlobalPosition;
+            await PhysicsFramesAsync(30);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            float distance = HorizontalDistance(start, player.GlobalPosition);
+            Require(distance < 0.3f, $"crouch retained phantom run momentum after wall removal: {distance:F4}");
+            GD.Print($"[movement-smoke] synthetic-wall crouch release distance={distance:F4}");
+        }
+        finally
+        {
+            if (GodotObject.IsInstanceValid(wall) && !wall.IsQueuedForDeletion())
+                wall.QueueFree();
+            ClearMovementSmokeInput();
+        }
     }
 
     private static void SendPhysicalKey(Key key, bool pressed)
@@ -367,6 +632,7 @@ public partial class OBPGame
         Input.ActionRelease(RawGamepadInput.Jump);
         Input.ActionRelease(RawGamepadInput.Crouch);
         Input.ActionRelease(RawGamepadInput.Action);
+        Input.ActionRelease(RawGamepadInput.Traversal);
     }
 
     private static void ReleaseMovementActions()

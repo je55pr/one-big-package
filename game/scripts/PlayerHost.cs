@@ -73,6 +73,13 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Current native planar target step after analogue conditioning.</summary>
     public double Rac1TargetPlanarStep => _rac1Movement.TargetPlanarStep;
+    public double Rac1ControllerPlanarStep => _rac1Movement.PlanarMagnitude;
+
+    /// <summary>Scalar supplied to the R&C1 physics animation selector for the completed update.</summary>
+    public float Rac1AnimationScalarAtSelection => _locomotionAnimationInput.ScalarAtSelection;
+
+    /// <summary>Whether ordinary support admitted a speed/rate helper call this update.</summary>
+    public bool Rac1AnimationHelperAdmitted => _locomotionAnimationInput.HelperAdmitted;
 
     /// <summary>Maximum Godot slide contacts consumed by one ordinary R&C1 movement tick since reset.</summary>
     public int Rac1MaxObservedSlideCollisions { get; private set; }
@@ -111,9 +118,7 @@ public partial class PlayerHost : CharacterBody3D
         if (!UseRac1Gameplay || !Rac1GameplayAlive)
             return;
 
-        _attackRequested = true;
-        _rac1Movement.CancelOrdinaryPlanarMotionForAction();
-        _rac1WrenchMotion.Begin(_rac1Yaw.CurrentYaw);
+        _rac1WrenchPressed = true;
     }
 
     /// <summary>Current R&amp;C1 native-space control/view yaw.</summary>
@@ -135,6 +140,9 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Live native yaw recurrence velocity in radians per update.</summary>
     public double Rac1YawVelocity => _rac1Yaw.YawVelocity;
+
+    /// <summary>Latest admitted static-contact motion used by the next crouch entry.</summary>
+    public Rac1NativeVector3? Rac1ContactProcessedMotion => _rac1Movement.ContactProcessedMotion;
 
     /// <summary>Retail-backed RAC1 locomotion state available to presentation code.</summary>
     public Rac1RatchetLocomotionState Rac1LocomotionState => _rac1Movement.LocomotionState;
@@ -210,7 +218,7 @@ public partial class PlayerHost : CharacterBody3D
     private bool _attackRequested;
     private bool _scriptAttacked;
     private readonly Rac1RatchetMovementController _rac1Movement = new();
-    private readonly Rac1WrenchMotionSession _rac1WrenchMotion = new();
+    private readonly Rac1WrenchAttackSession _rac1WrenchAttack = new();
     private readonly Rac1RatchetYawController _rac1Yaw = new();
     private readonly Rac1DynamicSupportSession _rac1DynamicSupport = new();
     private Rac1MobyRuntimeKey? _rac1HostSupportKey;
@@ -233,8 +241,11 @@ public partial class PlayerHost : CharacterBody3D
 
     public override void _Ready()
     {
-        const float radius = 0.6f;
-        const float height = 2.6f;
+        float radius = UseRac1Gameplay ? Rac1CollisionProfile.OrdinaryHorizontalRadius : 0.6f;
+        // OBP's foot-aligned capsule encloses the recovered ordinary upper
+        // contact height plus radius. Retail uses separate radial/axial and
+        // support queries; this adapter is not its complete collision solver.
+        float height = UseRac1Gameplay ? Rac1CollisionProfile.OrdinaryUpperContactHeight + radius : 2.6f;
 
         DevelopmentControls = new PlayerDevelopmentControls { Name = "DevelopmentControls" };
         AddChild(DevelopmentControls);
@@ -357,6 +368,14 @@ public partial class PlayerHost : CharacterBody3D
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
             if (_liveInput.ActionJustPressed)
+            {
+                if (UseRac1Gameplay && !Rac1Hanging && !Rac1SwingshotActive)
+                    NotifyRac1WrenchAttackAccepted();
+                else if (!UseRac1Gameplay)
+                    RequestPrimaryAction();
+            }
+            if (UseRac1Gameplay && _liveInput.EquippedUseJustPressed && !DevelopmentControls.FlyEnabled &&
+                !Rac1DevelopmentSwingshotPreview)
                 RequestPrimaryAction();
         }
 
@@ -372,6 +391,7 @@ public partial class PlayerHost : CharacterBody3D
         bool crouch = !Scripted && _liveInput.CrouchHeld;
         if (UseRac1Gameplay && !Rac1GameplayAllowsOrdinaryMovement)
         {
+            ResetRac1WrenchAttack();
             _attackRequested = false;
             _rac1JumpWasHeld = false;
             Velocity = Vector3.Zero;
@@ -382,11 +402,16 @@ public partial class PlayerHost : CharacterBody3D
         StepRetailDerivedMovement(move, jump, crouch);
         MoveAndSlide();
         if (UseRac1Gameplay)
+            RecordRac1OrdinaryContactMotion();
+        if (UseRac1Gameplay)
             Rac1MaxObservedSlideCollisions = Math.Max(
                 Rac1MaxObservedSlideCollisions,
                 GetSlideCollisionCount());
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
+        AnimationPhysicsUpdated?.Invoke(delta, AnimationState, _locomotionAnimationInput);
+        if (UseRac1Gameplay)
+            Rac1WrenchPhysicsUpdated?.Invoke(Rac1WrenchFrame);
 
         if (!Scripted && !HasActiveRecoveredCamera)
         {
@@ -436,6 +461,10 @@ public partial class PlayerHost : CharacterBody3D
 
     internal void ApplyDevelopmentFlyMode(bool enabled)
     {
+        ResetRac1WrenchAttack();
+        ResetRac1LedgeTraversal();
+        ResetRac1Tether();
+        ResetRac1SurfaceMotion();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         _rac1JumpWasHeld = false;
@@ -456,9 +485,12 @@ public partial class PlayerHost : CharacterBody3D
 
     private void ResetAfterPlacement(double nativeYaw)
     {
+        ResetRac1LedgeTraversal();
+        ResetRac1Tether();
+        ResetRac1SurfaceMotion();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
-        _rac1WrenchMotion.Reset();
+        ResetRac1WrenchAttack();
         _rac1Yaw.Reset(nativeYaw);
         _rac1DynamicSupport.Reset();
         ClearRac1HostSupportAnchor();
@@ -481,7 +513,11 @@ public partial class PlayerHost : CharacterBody3D
             : 8f;
         var from = GlobalPosition + Vector3.Up * upwardReach;
         var to = GlobalPosition + Vector3.Down * 800f;
-        var hit = space.IntersectRay(PhysicsRayQueryParameters3D.Create(from, to));
+        var placementQuery = PhysicsRayQueryParameters3D.Create(from, to);
+        // After teleport the player's capsule is already registered here. It
+        // must not become its own spawn support on a subsequent ground snap.
+        placementQuery.Exclude = [GetRid()];
+        var hit = space.IntersectRay(placementQuery);
         if (hit.Count == 0)
         {
             return false;

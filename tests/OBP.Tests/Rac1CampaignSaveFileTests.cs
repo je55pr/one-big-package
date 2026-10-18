@@ -46,7 +46,7 @@ public sealed class Rac1CampaignSaveFileTests
             Assert.True(weapons.TryUseEquipped());
             Assert.True(weapons.TryUseEquipped());
 
-            Rac1CampaignSaveFile.Save(path, campaign, weapons);
+            Rac1CampaignSaveFile.Save(path, campaign, weapons, new Rac1BoltWallet(197));
             Rac1CampaignRestoreResult restored = Rac1CampaignSaveFile.LoadOrDefault(path);
 
             Assert.Equal(Rac1CampaignRestoreKind.RestoredCurrentSchema, restored.Kind);
@@ -56,9 +56,19 @@ public sealed class Rac1CampaignSaveFileTests
             Assert.Equal(Rac1LevelVisitState.Visited, restored.Campaign.GetLevelState(1));
             Assert.Equal(Rac1LevelVisitState.Visited, restored.Campaign.GetLevelState(2));
             Assert.Equal(4, restored.Weapons.FirstRangedAmmo);
+            Assert.Equal(197, restored.Bolts);
             Assert.True(restored.Weapons.OwnsFirstRanged);
             Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
             Assert.False(File.Exists(path + ".tmp"));
+
+            // Existing schema2 files omit the new optional wallet field.
+            var oldSave = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+            oldSave.Remove("Bolts");
+            File.WriteAllText(path, oldSave.ToJsonString());
+            var legacy = Rac1CampaignSaveFile.LoadOrDefault(path);
+            Assert.Equal(0, legacy.Bolts);
+            Assert.Equal(4, legacy.Weapons.FirstRangedAmmo);
+            Assert.Equal(1, legacy.Campaign.CurrentLevel);
         }
         finally
         {

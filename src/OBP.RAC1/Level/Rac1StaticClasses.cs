@@ -29,7 +29,8 @@ public static class Rac1StaticClasses
         int JointCount,
         IReadOnlyList<Rac1Moby.SkeletonJoint> Joints,
         Rac1MobyAnimation.ClassSoundTable SoundTable,
-        IReadOnlyList<Rac1MobyAnimation.SequenceSlot> Sequences);
+        IReadOnlyList<Rac1MobyAnimation.SequenceSlot> Sequences,
+        int AssetLength = 0);
 
     public sealed record TieClass(
         int OClass,
@@ -102,7 +103,7 @@ public static class Rac1StaticClasses
             mobies.Add(entry.OClass, new MobyClass(
                 entry.OClass, entry.AssetOffset, mesh, mapped,
                 mapped.Where(v => v >= 0).Distinct().OrderBy(v => v).ToArray(),
-                mesh.JointCount, joints, soundTable, sequences));
+                mesh.JointCount, joints, soundTable, sequences, payload.Length));
         }
 
         var ties = new Dictionary<int, TieClass>();

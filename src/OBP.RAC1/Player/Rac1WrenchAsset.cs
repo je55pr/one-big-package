@@ -34,7 +34,8 @@ public static class Rac1WrenchAsset
         IReadOnlyList<Rac1MobyAnimation.SequenceSlot> Sequences,
         IReadOnlyList<Surface> Surfaces,
         IReadOnlyList<Texture> Textures,
-        int CompressedSourceOffset)
+        int CompressedSourceOffset,
+        int ContactTipJoint)
     {
         public int VertexCount => Mesh.Positions.Length / 3;
         public int TriangleCount => Mesh.Indices.Length / 3;
@@ -104,7 +105,31 @@ public static class Rac1WrenchAsset
             })
             .ToArray();
 
-        return new Asset(mesh, skeleton, sequences, surfaces, textures, sourceOffset);
+        return new Asset(mesh, skeleton, sequences, surfaces, textures, sourceOffset,
+            Rac1WrenchAttachment.ReadJoint(payload, 1));
+    }
+
+    public sealed record AnimationClip(int Sequence, IReadOnlyList<double[]> Frames,
+        IReadOnlyList<double> Durations, IReadOnlyList<OBP.Runtime.Player.PlayerAvatarPoint> TipFrames);
+
+    public static AnimationClip DecodeAnimation(Asset asset, int sequenceId)
+    {
+        if ((uint)sequenceId >= (uint)asset.Sequences.Count || asset.Sequences[sequenceId].Value is not { } sequence)
+            throw new InvalidDataException("R&C1 wrench animation is absent.");
+        var frames = sequence.Frames.Select(frame =>
+            Rac1MobyPose.PoseLocalHierarchy(asset.Mesh, asset.Skeleton, frame)).ToArray();
+        var tips = sequence.Frames.Select(frame =>
+        {
+            var p = Rac1MobyPose.PoseRatchetJoints(asset.Mesh, asset.Skeleton, frame)[asset.ContactTipJoint].Position;
+            return new OBP.Runtime.Player.PlayerAvatarPoint(p[0], p[1], p[2]);
+        }).ToArray();
+        // Single-frame poses do not advance visibly; their clock interval is
+        // adapter plumbing, not a promoted retail animation rate.
+        var durations = sequence.Frames.Select(frame => sequence.Frames.Count == 1 ? 1d / 60d :
+            1d / (60d * (sequence.ConstantTransitionRate > 0 ? sequence.ConstantTransitionRate : frame.TransitionRate))).ToArray();
+        if (durations.Any(value => !double.IsFinite(value) || value <= 0))
+            throw new InvalidDataException("R&C1 wrench animation timing is invalid.");
+        return new(sequenceId, frames, durations, tips);
     }
 
     private static (int Offset, byte[] Compressed) ReadCompressedSource(Rac1LevelCore.Core core)

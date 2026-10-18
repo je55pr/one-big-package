@@ -18,6 +18,7 @@ public partial class OBPGame
     private IPlayerAnimationPresentationSink? _playerAvatarAnimationSink;
     private IPlayerAnimationPresentationController? _playerAvatarAnimationController;
     private double _playerAvatarClock;
+    private PlayerHost? _avatarPhysicsPlayer;
     private Rac1WrenchAsset.Asset? _rac1WrenchAsset;
     private string? _rac1WrenchSourcePath;
     private Rac1WrenchView? _rac1WrenchView;
@@ -91,6 +92,12 @@ public partial class OBPGame
             _playerAvatarAnimationSink = view;
             _playerAvatarAnimationController = animationController;
             _playerAvatarClock = 0;
+            if (animationController is Rac1PlayerAnimationPresentationController && Engine.PhysicsTicksPerSecond == 60)
+            {
+                _avatarPhysicsPlayer = player;
+                player.AnimationPhysicsUpdated += StepPlayerAvatarPhysics;
+                player.AnimationPhysicsReset += ResetPlayerAvatarPhysics;
+            }
             RefreshRac1WrenchPresentationVisibility();
             HideAuthoredWorldRatchetPresentation();
             if (_rac1WrenchView is not null)
@@ -101,11 +108,7 @@ public partial class OBPGame
         }
         catch (Exception ex)
         {
-            _playerAvatarAnimationSink = null;
-            _playerAvatarAnimationController = null;
-            _playerAvatarView = null;
-            _rac1WrenchView = null;
-            _playerAvatarClock = 0;
+            ClearPlayerAvatarView();
             player.VisualRoot.ReplaceVisual(null);
             GD.PrintErr($"[player-avatar] could not attach native avatar; keeping debug capsule: {ex.Message}");
         }
@@ -127,6 +130,11 @@ public partial class OBPGame
         if (_playerAvatarView is null || !GodotObject.IsInstanceValid(_playerAvatarView))
             return;
 
+        // A bound R&C1 avatar is sampled by movement updates. Render frequency
+        // cannot select a sequence, advance a frame, or change its multiplier.
+        if (_avatarPhysicsPlayer is not null)
+            return;
+
         _playerAvatarAnimationController?.SetAnimationState(
             _player?.AnimationState ?? PlayerAnimationState.Idle);
         _playerAvatarClock += Math.Max(0, delta);
@@ -137,6 +145,39 @@ public partial class OBPGame
         }
 
         _playerAvatarView.SetClock(_playerAvatarClock);
+    }
+
+    private void StepPlayerAvatarPhysics(
+        double delta, PlayerAnimationState state, Rac1LocomotionAnimationInput input)
+    {
+        if (_playerAvatarAnimationController is not Rac1PlayerAnimationPresentationController controller)
+            return;
+        _playerAvatarClock += Math.Max(0, delta);
+        _playerAvatarAnimationSink?.SetAnimationPresentation(
+            controller.StepOrdinaryAnimation(state, _playerAvatarClock, input));
+        if (_avatarPhysicsPlayer is { } player)
+        {
+            player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
+            player.Rac1TraversalAnimationCycleCompleted = controller.TraversalAnimationCycleCompleted;
+            player.Rac1WrenchAnimationBlending = controller.TraversalSample?.IsBlending ?? false;
+            if (_rac1WrenchView is not null &&
+                controller.CurrentAttachmentPose(Rac1WrenchAttachment.SocketKey) is { } hand)
+                _rac1WrenchView.StepAttached(hand, player.Rac1WrenchFrame, _rac1WrenchThrow.Active);
+        }
+        _playerAvatarView?.SetClock(_playerAvatarClock);
+        RefreshRac1WrenchPresentationVisibility();
+    }
+
+    private void ResetPlayerAvatarPhysics()
+    {
+        ResetRac1WrenchHost();
+        _playerAvatarClock = 0;
+        if (_playerAvatarAnimationController is Rac1PlayerAnimationPresentationController controller)
+        {
+            controller.ResetPhysicsPresentation();
+            _playerAvatarAnimationSink?.SetAnimationPresentation(controller.Current);
+            _playerAvatarView?.SetClock(0);
+        }
     }
 
     private int? CurrentPlayerAvatarSourceSequence()
@@ -157,6 +198,12 @@ public partial class OBPGame
 
     private void ClearPlayerAvatarView()
     {
+        if (_avatarPhysicsPlayer is not null)
+        {
+            _avatarPhysicsPlayer.AnimationPhysicsUpdated -= StepPlayerAvatarPhysics;
+            _avatarPhysicsPlayer.AnimationPhysicsReset -= ResetPlayerAvatarPhysics;
+            _avatarPhysicsPlayer = null;
+        }
         _playerAvatarAnimationSink = null;
         _playerAvatarAnimationController = null;
         _playerAvatarView = null;
@@ -170,7 +217,8 @@ public partial class OBPGame
             return;
         _rac1WrenchView.Visible =
             _activeDestination?.Game == ObpSourceGame.Rac1 &&
-            _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Wrench;
+            (_rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
+             _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
     }
 
     /// <summary>

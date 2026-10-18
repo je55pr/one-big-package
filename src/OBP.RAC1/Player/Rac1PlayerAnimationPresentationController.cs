@@ -7,7 +7,7 @@ namespace OBP.RAC1.Player;
 /// Native sequence and action-state keys remain diagnostic metadata on the
 /// engine-neutral decision passed to presentation.
 /// </summary>
-public sealed class Rac1PlayerAnimationPresentationController : IPlayerAnimationPresentationController
+public sealed partial class Rac1PlayerAnimationPresentationController : IPlayerAnimationPresentationController
 {
     private readonly PlayerAvatar _avatar;
     private double _clockSeconds;
@@ -18,6 +18,7 @@ public sealed class Rac1PlayerAnimationPresentationController : IPlayerAnimation
     public Rac1PlayerAnimationPresentationController(PlayerAvatar avatar)
     {
         _avatar = avatar;
+        RegisterAttachmentFrames();
         Current = Presentation(
             PlayerAnimationState.Idle,
             Rac1RatchetSequenceSelection.StandingSequenceId,
@@ -92,7 +93,11 @@ public sealed class Rac1PlayerAnimationPresentationController : IPlayerAnimation
                         ? Rac1RatchetSequenceSelection.LocomotionStartSequenceId
                         : Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
                     Rac1RatchetSequenceSelection.NeutralActionState,
-                    loop: !startFromIdle,
+                    // Ordinary sequence 3 wraps just like sequence 4. Native
+                    // 0x228c18 changes sequence on scalar speed, not clip end.
+                    // The semantic-only fallback cannot supply scalar speed;
+                    // the physics adapter uses StepOrdinaryAnimation instead.
+                    loop: true,
                     restart: startFromIdle ||
                              _currentSequenceId != Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId);
                 break;
@@ -162,6 +167,8 @@ public sealed class Rac1PlayerAnimationPresentationController : IPlayerAnimation
 
     private void CompleteAttackIfNeeded()
     {
+        if (_traversalSelection?.NativeAction is 0x13 or 0x14 or 0x15)
+            return;
         if (Current.SemanticState != PlayerAnimationState.Attack ||
             Current.ElapsedAt(_clockSeconds) < CurrentClip.DurationSeconds)
         {

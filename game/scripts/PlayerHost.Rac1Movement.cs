@@ -15,8 +15,18 @@ namespace OneBigPackage;
 
 public partial class PlayerHost : CharacterBody3D
 {
+    public event Action<double, PlayerAnimationState, Rac1LocomotionAnimationInput>? AnimationPhysicsUpdated;
+    public event Action? AnimationPhysicsReset;
+    private Rac1LocomotionAnimationInput _locomotionAnimationInput;
+    private Rac1NativeVector3? _ordinaryContactRequest;
+    private Vector3 _ordinaryContactStart;
+
     private void StepRetailDerivedMovement(Vector2 move, bool jump, bool crouch)
     {
+        _locomotionAnimationInput = default;
+        _ordinaryContactRequest = null;
+        _rac1TetherRequest = null;
+        _rac1SurfaceRequest = null;
         bool grounded = IsOnFloor();
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;
@@ -27,11 +37,33 @@ public partial class PlayerHost : CharacterBody3D
         _rac1SurfaceActionIntent = UseRac1Gameplay
             ? Rac1SurfaceActionRouting.Select(contact)
             : null;
-        if (UseRac1Gameplay && _rac1WrenchMotion.Active)
+        var movementContext = UseRac1Gameplay ? ProbeRac1MovementContext(controlYaw) : default;
+        if (UseRac1Gameplay && !_rac1WrenchAttack.Active && TryStepRac1Swingshot(movementContext))
         {
-            StepRac1WrenchMotion(contact, groundNormal);
+            ResetRac1WrenchAttack();
             return;
         }
+        if (UseRac1Gameplay && !_rac1WrenchAttack.Active &&
+            TryStepRac1Ledge(move, jump, jumpPressed, crouch, contact, movementContext, out var ledgeStep))
+        {
+            ResetRac1WrenchAttack();
+            Velocity = new Vector3((float)ledgeStep.PlanarX, (float)ledgeStep.Vertical,
+                (float)ledgeStep.PlanarY) * 60f;
+            return;
+        }
+        if (UseRac1Gameplay && !_rac1WrenchAttack.Active &&
+            TryStepRac1Surface(move, jump, jumpPressed, crouch, ref contact, groundNormal, movementContext))
+        {
+            // These actions retain separate admission until their wrench
+            // interaction is recovered; never replay a stale Square afterward.
+            ResetRac1WrenchAttack();
+            return;
+        }
+        if (UseRac1Gameplay && TryStepRac1Wrench(jumpPressed, crouch,
+                contact, groundNormal, movementContext))
+            return;
+        if (UseRac1Gameplay && Rac1WrenchFrame.JumpCancelled)
+            jump = jumpPressed = true;
 
         var intent = new PlayerControlIntent(
             move.X,
@@ -44,9 +76,26 @@ public partial class PlayerHost : CharacterBody3D
         Func<Rac1RatchetYawMode, double> resolveFacing =
             mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw;
         var step = UseRac1Gameplay
-            ? _rac1Movement.Step(intent, contact, resolveFacing)
+            ? _rac1Movement.StepExtended(intent, contact, movementContext, resolveFacing)
             : _rac1Movement.Step(intent, contact.MovementFacts, resolveFacing);
         _rac1PresentationGrounded = contact.MovementFacts.IsGrounded || _rac1Movement.IsOrdinaryEdgeFall;
+        if (_rac1Movement.TraversalFacingTargetYaw is double facingTarget)
+            _rac1Yaw.Reset(facingTarget);
+
+        _locomotionAnimationInput = new Rac1LocomotionAnimationInput(
+            Active: UseRac1Gameplay && _rac1Movement.AnalogueInput.IsActive &&
+                _rac1Movement.LocomotionState == Rac1RatchetLocomotionState.Moving &&
+                (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall),
+            HelperAdmitted: contact.MovementFacts.IsGrounded,
+            ScalarAtSelection: (float)_rac1Movement.PlanarMagnitude,
+            CrouchHeld: UseRac1Gameplay && crouch &&
+                _rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded,
+            InputMagnitude: (float)_rac1Movement.AnalogueInput.Magnitude,
+            NativeYawVelocity: (float)_rac1Yaw.YawVelocity,
+            UncappedInputMagnitude: (float)_rac1Movement.AnalogueInput.UncappedMagnitude,
+            Traversal: _rac1Movement.TraversalAnimation ?? _rac1Movement.OrdinaryAirAnimation,
+            GroundEntry: _rac1Movement.GroundAnimationEntry);
+        ApplyRac1WrenchGroundAnimationHandoff();
 
         UpdateRac1FacingPresentation();
 
@@ -61,6 +110,20 @@ public partial class PlayerHost : CharacterBody3D
                 preContact.PlanarX,
                 preContact.Vertical,
                 preContact.PlanarY));
+        // Native derives P+0x110 before its separate external-transport pass.
+        // Godot combines those passes, so admit this feedback only for static
+        // ordinary contact with no support/conveyor transfer. The prospective
+        // support-rise envelope is host placement policy, not native request.
+        if (UseRac1Gameplay && contact.PersistentSupportMoby is null &&
+            contact.SupportCarry.TransformDelta.Length == 0 && contact.Conveyor.TangentialTransfer.Length == 0)
+        {
+            Vector3 normal = groundNormal ?? Vector3.Up;
+            var request = Rac1OrdinaryGroundContactMotion.ResolvePreContactStep(
+                step, contact.MovementFacts, normal.X, normal.Z, normal.Y,
+                applyOrdinaryJumpAnticipationRequest: _rac1Movement.TraversalAction is null);
+            _ordinaryContactRequest = new Rac1NativeVector3(request.PlanarX, request.PlanarY, request.Vertical);
+            _ordinaryContactStart = GlobalPosition;
+        }
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(
             (float)resolvedDelta.X * nativeTicksPerSecond,
@@ -73,46 +136,23 @@ public partial class PlayerHost : CharacterBody3D
         }
     }
 
-    private void StepRac1WrenchMotion(
-        Rac1PlayerContactResult contact,
-        Vector3? groundNormal)
+    private void RecordRac1OrdinaryContactMotion()
     {
-        var noOrdinaryInput = new PlayerControlIntent(
-            0d,
-            0d,
-            false,
-            false,
-            false,
-            GetRac1PlanarBasis(),
-            GetRac1NativePlanarBasis());
-        var contactStep = _rac1Movement.Step(noOrdinaryInput, contact);
-        _rac1PresentationGrounded = contact.MovementFacts.IsGrounded || _rac1Movement.IsOrdinaryEdgeFall;
-        Rac1WrenchDirection nativeLunge = _rac1WrenchMotion.Step();
-        var hostLunge = GetRac1NativePlanarBasis().Transform(nativeLunge.X, nativeLunge.Y);
-        var attackStep = new Rac1RatchetMovementController.StepResult(
-            hostLunge.X,
-            hostLunge.Y,
-            contactStep.Vertical,
-            contactStep.Phase,
-            hostLunge.X != 0d || hostLunge.Y != 0d
-                ? Rac1RatchetLocomotionState.Moving
-                : contactStep.LocomotionState,
-            contactStep.YawMode);
-
-        var preContact = ResolveRac1PreContactStep(
-            attackStep,
-            contact,
-            groundNormal);
-        var resolvedDelta = contact.ApplySupportAndConveyor(
-            new Rac1NativeVector3(
-                preContact.PlanarX,
-                preContact.Vertical,
-                preContact.PlanarY));
-        const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
-        Velocity = new Vector3(
-            (float)resolvedDelta.X * nativeTicksPerSecond,
-            (float)resolvedDelta.Y * nativeTicksPerSecond,
-            (float)resolvedDelta.Z * nativeTicksPerSecond);
+        RecordRac1TetherMotion();
+        RecordRac1SurfaceMotion();
+        if (_ordinaryContactRequest is { } request)
+        {
+            Vector3 displacement = GlobalPosition - _ordinaryContactStart;
+            _rac1Movement.RecordOrdinaryContactMotion(request,
+                new Rac1NativeVector3(displacement.X, displacement.Z, displacement.Y));
+        }
+        else
+            _rac1Movement.ClearOrdinaryContactMotion();
+        _locomotionAnimationInput = _locomotionAnimationInput with
+        {
+            ContactMotionLength = _rac1Movement.ContactProcessedMotion is { } motion
+                ? (float)motion.Length : null,
+        };
     }
 
     private Rac1OrdinaryGroundContactMotion.PreContactStep ResolveRac1PreContactStep(
@@ -126,7 +166,8 @@ public partial class PlayerHost : CharacterBody3D
             contact.MovementFacts,
             admittedNormal.X,
             admittedNormal.Z,
-            admittedNormal.Y);
+            admittedNormal.Y,
+            applyOrdinaryJumpAnticipationRequest: _rac1Movement.TraversalAction is null);
 
         if (!contact.MovementFacts.IsGrounded ||
             step.Phase != Rac1RatchetMovementPhase.Grounded ||

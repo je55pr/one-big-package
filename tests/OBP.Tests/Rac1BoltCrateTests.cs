@@ -220,9 +220,11 @@ public sealed class Rac1BoltCrateTests
     }
 
     [Fact]
-    public void UnadmittedRewardCentreDoesNotInventRngRange()
+    public void RecoveredQuarterCentreJitterAdmitsTheOtherVeldinCrates()
     {
-        Assert.Throws<NotSupportedException>(() => Rac1BoltCrate.RewardRange(15));
+        Assert.Equal(new Rac1BoltRewardRange(15, 4, 11, 19), Rac1BoltCrate.RewardRange(15));
+        Assert.Equal(new Rac1BoltRewardRange(0, 0, 0, 0), Rac1BoltCrate.RewardRange(0));
+        Assert.Equal(new Rac1BoltRewardRange(7, 1, 6, 8), Rac1BoltCrate.RewardRange(7));
     }
 
     [Fact]

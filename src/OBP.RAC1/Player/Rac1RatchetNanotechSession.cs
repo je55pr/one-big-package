@@ -44,6 +44,14 @@ public sealed class Rac1RatchetNanotechSession
         EnvironmentalRestartGeneration < EnvironmentalDeathGeneration;
 
     public Rac1RatchetNanotechSnapshot Probe() => Snapshot();
+
+    /// <summary>Class806's first arriving cloud particle credits one point, clamped to the ordinary capacity.</summary>
+    public bool CollectCrateNanotech()
+    {
+        if (_lifeState != Rac1RatchetLifeState.Alive || _nanotech >= RetailVeldinRespawnNanotech) return false;
+        _nanotech = Math.Min(RetailVeldinRespawnNanotech, _nanotech + Rac1CrateSupply.NanotechPerCloud);
+        return true;
+    }
     public Rac1PlayerActionRuntimeSession Actions => _actions;
 
     public Rac1RatchetNanotechSnapshot ApplyDamage(Rac1GameplayDamageEvent damage)

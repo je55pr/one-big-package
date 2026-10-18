@@ -4,6 +4,12 @@ Authority: NTSC-U original retail `SCUS-97199`, using the already-authorized loc
 
 ## Scope and result
 
+The 18 October wrench implementation supersedes the older item8 primary-use
+adapter below. Square/west now has its own source-owned attack admission,
+independent of selected weapon; circle/east uses the selected item. Current
+combo/Hyper/Comet timing and class71 contact evidence are in
+[RAC1_WRENCH_ACTIONS.md](RAC1_WRENCH_ACTIONS.md).
+
 The reusable boundary is a **weapon-use admission result**, not one universal weapon state machine. Wrench item 8 and ranged item 10 both begin from a semantic primary-use request in OBP, but retail gives them materially different timing and spawn paths:
 
 | fact | wrench / item 8 | first ranged / item 10 |

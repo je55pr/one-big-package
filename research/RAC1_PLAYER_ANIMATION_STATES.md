@@ -10,8 +10,8 @@ A controlled read-only PCSX2/PINE trace on Veldin's live class-0 Ratchet at Moby
 | --- | ---: | --- | --- | --- |
 | standing | 0 | 10 frames, 0.125 = 7.5 FPS | prior neutral class-0 witness | **ADMIT** |
 | delayed idle/fidgets | 1, 2 | 77 frames each, variable | prior neutral cycle `0 -> 2 -> 0 -> 1` | **ADMIT, neutral only** |
-| locomotion start | 3 | 33 frames, 0.25 = 15 FPS | precedes sustained movement in forward/left/right/run-jump trials | **ADMIT transition** |
-| sustained locomotion | 4 | 23 frames, 0.5 = 30 FPS | repeated while stick remains held | **ADMIT** |
+| low-speed locomotion / entry | 3 | 33 frames, base rate 0.25; player speed multiplier applies | precedes 4 in retained full-input trials; offline ordinary helper retains and loops it below the run threshold | **ADMIT loop; speed-selected** |
+| high-speed locomotion | 4 | 23 frames, base rate 0.5; player speed multiplier applies | retained high-speed cycles; offline helper proves hysteretic 3/4 selection | **ADMIT loop; speed-selected** |
 | locomotion stop/settle variants | 5, 20, 6 | 5/6 are 13 frames each at 0.25 = 15 FPS; 20 timing not yet promoted here | targeted class-0 release trials show phase-dependent 5/20/6 selection across W/A/D | **ADMIT transition-only; exact boundary predicate unresolved** |
 | stationary jump | 7 | 29 frames, variable | `2 -> 7 -> 0`, repeated | **ADMIT** |
 | moving jump | 8 | 16 frames, variable | `3 -> 4 -> 8 -> 4`, repeated | **ADMIT** |
@@ -27,6 +27,13 @@ A controlled read-only PCSX2/PINE trace on Veldin's live class-0 Ratchet at Moby
 
 ## Selection versus playback boundary
 
+The [offline ordinary-locomotion recovery](RAC1_LOCOMOTION_ANIMATION.md)
+supersedes the earlier one-shot interpretation of sequence 3. The native action-2
+helper changes between 3 and 4 by scalar speed, with guards and hysteresis;
+finishing sequence 3 alone does not select 4. It also adjusts the asset rate
+and preserves phase across sequence changes. The existing `LocomotionStart`
+names are retained for API compatibility and must not imply a one-shot policy.
+
 Sequence selection and playback metadata are deliberately separate. `Rac1RatchetSequenceSelection` carries only recovered gameplay-state-to-sequence facts: neutral cycle, locomotion entry and stop family, launch-context jump choice, crouch direction, wrench, accepted first-ranged fire, and the bounded environmental-death path. It contains no frame counts, transition rates, FPS values, or animation durations.
 
 `Rac1RatchetAvatar` remains the owner of separately decoded playback clips and their asset timing. A sequence can therefore be admitted for state selection without becoming a presentation clip. In particular, this recovery does **not** promote playback timing for stop sequence 20, ranged-fire sequence 44, or environmental-death sequences 10/11. The missing player damage-reaction selector remains explicitly unresolved rather than being inferred from Nanotech timing or hostile attack timing.
@@ -40,6 +47,14 @@ That is positive evidence for selector behaviour, not proof that retail lacks pr
 Ordinary left/right stick trials use the same `3 -> 4` locomotion family as forward input. They do not establish a separate standing turn-in-place animation. Crouch-turn is distinct and direction-specific: right selects 14, left selects 15, both entered through crouch sequence 13.
 
 ## Locomotion stop/settle phase family 5, 20, 6
+
+**Offline follow-up:** [crouch and stop recovery](RAC1_CROUCH_AND_STOP_ANIMATION.md)
+now pins the default 5/6 predicate to previous pose sequence 4 and strict
+fractional animation-time bounds (3,16). Sequence 20 has a separate caller
+path involving motion and input history. The live-trace limitations below
+remain valid historical evidence; they no longer imply that all three clips
+share one unresolved phase-only predicate. Host release integration remains
+pending those caller facts and sequence-20 playback admission.
 
 Sequence 6 has an important provenance correction. Earlier static executable archaeology rejected call site `0x22478c` as Ratchet evidence because that path is gated by `oClass == 0x25f`; that rejection remains correct. The admission for sequence 6 comes from independent live class-0 Ratchet traces, not from rehabilitating that generic-Moby call site.
 
@@ -69,8 +84,17 @@ The controlled trials sampled `Moby+0x20`, `+0x50`, `+0x51`, `+0x52`, `+0x53`, `
 
 ## Runtime-facing admission
 
-The runtime-facing selector contract now records the recovered state families without importing clip timing: neutral uses the witnessed 0/2/0/1 cycle; locomotion enters 3 then sustains 4; release may select 5/20/6 from unresolved cycle phase; stationary and moving jump select 7 and 8 from launch context; crouch selects 13 with direction-specific 14/15 turns; wrench selects 23; an accepted native-item-10 ranged shot selects 44; and the bounded Veldin environmental-death path selects 10 then 11. The class-0 damage-reaction selector remains unresolved.
+The runtime-facing selector contract records neutral's witnessed 0/2/0/1 cycle;
+speed-selected locomotion loops 3/4; the bounded default stop 5/6 time predicate
+with separate sequence-20 caller work pending; launch-context jump 7/8; crouch
+13 with yaw-selected 14/15 turns; wrench 23; accepted native-item-10 fire 44;
+and the bounded environmental-death path 10/11. The 18 October wrench pass adds
+body sequences24/25 (combo),26 (Comet) and43 (Hyper), paired own-wrench animation,
+and the recovered animated hand socket; see `RAC1_WRENCH_ACTIONS.md`. Damage reaction remains unresolved.
 
-Semantic `Fall` may continue the launch-context jump clip because retail showed no selector split, while semantic `Land` must not claim a dedicated native clip. The selector contract deliberately does not expose playback timing for sequence 20, 44, or 10/11, and it does not choose among 5/20/6 until a deterministic retail-side phase predicate is recovered.
+Semantic `Fall` may continue the launch-context jump clip because retail showed
+no selector split; `Land` must not claim a dedicated native clip. Playback for
+20, 44 and 10/11 is not admitted by this contract. The default 5/6 selector does
+not decide stop admission or substitute for the separate sequence-20 caller.
 
 This is sufficient to expose recovered R&C1 state selection without making animation the source of truth for physics, combat timing, or controller state.

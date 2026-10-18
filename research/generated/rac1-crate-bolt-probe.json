@@ -1,0 +1,196 @@
+{
+  "schema": 2,
+  "authority": {
+    "build": "rac1-ntscu-original",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "levelId": 0,
+    "overlaySha256": "eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804"
+  },
+  "blocks": {
+    "crateUpdate": {
+      "start": "0x002cf218",
+      "end": "0x002cfcb8",
+      "sha256": "93b2dc00c710a429d4eb6b489f6d2d6335e8e0b7ce3c13fcc96bc9ac7993bd69"
+    },
+    "crateBreakAndDebris": {
+      "start": "0x002d09b8",
+      "end": "0x002d1428",
+      "sha256": "8473d18f48563a4026bb6ee3544ba69c2272d987d154ab75daa8f2cd021fb7cb"
+    },
+    "crateFall": {
+      "start": "0x002d1428",
+      "end": "0x002d197c",
+      "sha256": "37c8db6e686541689f8f6f2ee12823b92ef9f15231cfafe13c7b3e4a5bf1b5eb"
+    },
+    "rewardSelection": {
+      "start": "0x00257470",
+      "end": "0x002576d0",
+      "sha256": "01fdeabe5fd30192af4af9c29fe66c9b0ca6b816fa8307ff05bce5be2f68fac2"
+    },
+    "boltEmitter": {
+      "start": "0x00260a88",
+      "end": "0x00261350",
+      "sha256": "2a8458741e8a619fb5db29df413e425e6217c2966094c90ec4f4d840400af23c"
+    },
+    "boltUpdateAndConstructor": {
+      "start": "0x002a5dd8",
+      "end": "0x002a76d0",
+      "sha256": "31c8ae381038940f6c27d3725229c200b1a65a70b93b0de5b07c298454548740"
+    },
+    "placedBoltInitialization": {
+      "start": "0x002a5e74",
+      "end": "0x002a60b8",
+      "sha256": "24188a68ee398a9cbd498c9a73dc812f219893797c9ae29040e55b32badf1383"
+    },
+    "placedBoltCollectionTracking": {
+      "start": "0x002a6a94",
+      "end": "0x002a6b34",
+      "sha256": "cc430dfab56778dba266c9f01038f56f2d6eece2aa20d661d4ff69b2fab18b1a"
+    },
+    "boltRestPoseAndSupport": {
+      "start": "0x002a6de8",
+      "end": "0x002a7210",
+      "sha256": "a73c82b5e82040887bc2e30235154a030f39fa9369690d4edb35d005c09b9d4e"
+    },
+    "fragmentConstructorAndUpdate": {
+      "start": "0x002af8b0",
+      "end": "0x002afbf0",
+      "sha256": "6c86f8e24834cbf2816ce7e153e304ca9a0dde5a43bcd52133f34714108ffe21"
+    },
+    "ammoSelection": {
+      "start": "0x00257218",
+      "end": "0x00257470",
+      "sha256": "1883b0dd104997ab53d670a1bc7422ec50d2411d43f360491040747b9f751f88"
+    },
+    "ammoConstructorAndUpdate": {
+      "start": "0x002c52a8",
+      "end": "0x002c5bd0",
+      "sha256": "4d73d1617a71af28998d575113083c735dd4b87cf454c9b960b3039cf683bfb0"
+    },
+    "nanotechUpdate": {
+      "start": "0x002d89f0",
+      "end": "0x002d97d8",
+      "sha256": "ffb3ad610128033e09f00255a4433a679c2172e23b8ba6ce9398c0b99c723b7a"
+    }
+  },
+  "boltStates": {
+    "0": "0x002a5e74",
+    "1": "0x002a60b8",
+    "2": "0x002a6408",
+    "3": "0x002a6548",
+    "4": "0x002a67d0"
+  },
+  "placedBoltProfiles": [
+    {
+      "class": 13,
+      "placedScale": 0.6499999761581421,
+      "emittedScale": 0.6499999761581421,
+      "restAngleXStep": 0.03999999910593033,
+      "restTiltY": -0.25,
+      "restNormalOffset": 0.04874999821186066,
+      "restBasisXOffset": 0.32499998807907104
+    },
+    {
+      "class": 14,
+      "placedScale": 0.699999988079071,
+      "emittedScale": 0.699999988079071,
+      "restAngleXStep": 0.029999999329447746,
+      "restTiltY": -0.5,
+      "restNormalOffset": 0.02449999935925007,
+      "restBasisXOffset": 0.3499999940395355
+    },
+    {
+      "class": 15,
+      "placedScale": 0.75,
+      "emittedScale": 0.75,
+      "restAngleXStep": 0.02500000037252903,
+      "restTiltY": -0.4000000059604645,
+      "restNormalOffset": 0.05624999850988388,
+      "restBasisXOffset": 0.375
+    },
+    {
+      "class": 16,
+      "placedScale": 0.6000000238418579,
+      "emittedScale": 0.6000000238418579,
+      "restAngleXStep": 0.017500000074505806,
+      "restTiltY": -0.3499999940395355,
+      "restNormalOffset": 0.13500000536441803,
+      "restBasisXOffset": 0.30000001192092896
+    }
+  ],
+  "crateDebrisBranches500Through511": [
+    "0x002d0c98",
+    "0x002d0c74",
+    "0x002d0c8c",
+    "0x002d0c80",
+    "0x002d0ca0",
+    "0x002d0cac",
+    "0x002d0cb8",
+    "0x002d0cc4",
+    "0x002d0cc4",
+    "0x002d0cc4",
+    "0x002d0cc4",
+    "0x002d0c98"
+  ],
+  "ammoDefinitions": [
+    {
+      "item": 10,
+      "modelClass": 226,
+      "amount": 3
+    },
+    {
+      "item": 11,
+      "modelClass": 204,
+      "amount": 2
+    },
+    {
+      "item": 13,
+      "modelClass": 222,
+      "amount": 1
+    },
+    {
+      "item": 15,
+      "modelClass": 1006,
+      "amount": 25
+    },
+    {
+      "item": 16,
+      "modelClass": 214,
+      "amount": 20
+    },
+    {
+      "item": 17,
+      "modelClass": 225,
+      "amount": 5
+    },
+    {
+      "item": 19,
+      "modelClass": 213,
+      "amount": 20
+    },
+    {
+      "item": 20,
+      "modelClass": 223,
+      "amount": 1
+    },
+    {
+      "item": 23,
+      "modelClass": 1438,
+      "amount": 1
+    },
+    {
+      "item": 24,
+      "modelClass": 1447,
+      "amount": 1
+    },
+    {
+      "item": 25,
+      "modelClass": 1449,
+      "amount": 2
+    }
+  ],
+  "limits": [
+    "Static evidence, not a live emulator replay.",
+    "Host collision queries, pool budget, random seed/call order and particle presentation are separate adapters."
+  ]
+}

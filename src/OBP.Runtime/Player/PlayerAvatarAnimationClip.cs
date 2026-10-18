@@ -13,17 +13,25 @@ public enum PlayerAvatarAnimationRole
     CrouchTurnRight,
     CrouchTurnLeft,
     PrimaryAttack,
+    JumpVariant,
+    Glide,
+    Traversal,
+    AttackVariant,
 }
 
 /// <summary>
 /// One model-local baked animation clip. Timing is stored per frame so source
 /// formats with variable native frame rates do not have to be flattened to FPS.
+/// Optional frame timeline positions retain a source's authored coordinates;
+/// they are not elapsed seconds and are interpreted only by its controller.
 /// </summary>
 public sealed record PlayerAvatarAnimationClip(
     string Id,
     PlayerAvatarAnimationRole Role,
     IReadOnlyList<double[]> LocalFrames,
-    IReadOnlyList<double> FrameDurationsSeconds)
+    IReadOnlyList<double> FrameDurationsSeconds,
+    IReadOnlyList<double>? FrameTimelinePositions = null,
+    IReadOnlyDictionary<string, IReadOnlyList<PlayerAvatarAttachmentPose>>? AttachmentFrames = null)
 {
     public int FrameCount => LocalFrames.Count;
 
@@ -91,4 +99,27 @@ public sealed record PlayerAvatarAnimationClip(
 
         return FrameCount - 1;
     }
+}
+
+/// <summary>Model-local attachment origin and basis columns before host axis conversion.</summary>
+public sealed record PlayerAvatarAttachmentPose(
+    PlayerAvatarPoint Origin, PlayerAvatarPoint X, PlayerAvatarPoint Y, PlayerAvatarPoint Z)
+{
+    public bool IsFinite => Finite(Origin) && Finite(X) && Finite(Y) && Finite(Z);
+
+    public static PlayerAvatarAttachmentPose Interpolate(
+        PlayerAvatarAttachmentPose from, PlayerAvatarAttachmentPose to, double amount) =>
+        new(Lerp(from.Origin, to.Origin, amount), Lerp(from.X, to.X, amount),
+            Lerp(from.Y, to.Y, amount), Lerp(from.Z, to.Z, amount));
+
+    public PlayerAvatarPoint Transform(PlayerAvatarPoint point) => new(
+        Origin.X + X.X * point.X + Y.X * point.Y + Z.X * point.Z,
+        Origin.Y + X.Y * point.X + Y.Y * point.Y + Z.Y * point.Z,
+        Origin.Z + X.Z * point.X + Y.Z * point.Y + Z.Z * point.Z);
+
+    private static PlayerAvatarPoint Lerp(PlayerAvatarPoint a, PlayerAvatarPoint b, double amount) =>
+        new(a.X + (b.X - a.X) * amount, a.Y + (b.Y - a.Y) * amount, a.Z + (b.Z - a.Z) * amount);
+
+    private static bool Finite(PlayerAvatarPoint value) =>
+        double.IsFinite(value.X) && double.IsFinite(value.Y) && double.IsFinite(value.Z);
 }

@@ -123,6 +123,20 @@ With the isolated controller binding repaired, R1 produces a stationary crouch i
 
 Entering crouch while already moving does not hard-stop Ratchet. Existing planar displacement decays by approximately `0.001802944` native unit/tick while sequence 13 is active. The R&C1 controller therefore suppresses new planar acceleration and jump while grounded/crouched but preserves this measured residual slide-down.
 
+The [offline momentum audit](RAC1_CROUCH_AND_STOP_ANIMATION.md) independently
+found the ordinary carry/decay path and nominal coefficient `6.48f` scaled by
+the squared update duration (about `.0018` per update). The full-speed OBP
+Veldin regression stops after 53 updates, about .88 seconds, with approximately
+2.45 units of travel; held directional input does not renew acceleration. This
+is an OBP observation supported by static decay evidence, not a new retail trial.
+
+The [contact-derived carry recovery](RAC1_CONTACT_MOTION_CARRY.md) now distinguishes
+final position delta P+0x100 from the projected controlled-motion field P+0x110.
+OBP records the admitted static-contact projection and consumes it on crouch
+entry instead of retaining the pre-contact controller momentum unconditionally.
+The decay rate is unchanged; a matched full-distance retail trajectory remains
+an outstanding validation requirement.
+
 Normal facing is measured independently of animation. Live Ratchet Moby `+0x48` is yaw, corroborated by the corresponding 2x2 rotation terms at `+0xc0/+0xc4/+0xd0/+0xd4`. In the fixed controller traces, player-state `G+0x18` (`g[6]`) is bit-identical to that live yaw and `G+0x100` (`g[64]`) supplies the turn target used by the recovered recurrence.
 
 Fixed NTSC-U traces resolve four ordinary yaw modes. With `v_n = WrapPi(yaw_n - yaw_{n-1})` and `error_n = WrapPi(target_n - yaw_{n-1})`:

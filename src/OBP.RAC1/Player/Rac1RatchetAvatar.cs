@@ -17,6 +17,7 @@ public static class Rac1RatchetAvatar
     public const int SustainedLocomotionSequenceId = Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId;
     public const int LocomotionStopVariantASequenceId = Rac1RatchetSequenceSelection.LocomotionStopEarlySequenceId;
     public const int LocomotionStopVariantBSequenceId = Rac1RatchetSequenceSelection.LocomotionStopLateSequenceId;
+    public const int LocomotionStopMiddleSequenceId = Rac1RatchetSequenceSelection.LocomotionStopMiddleSequenceId;
     public const int StationaryJumpSequenceId = Rac1RatchetSequenceSelection.StationaryJumpSequenceId;
     public const int MovingJumpSequenceId = Rac1RatchetSequenceSelection.MovingJumpSequenceId;
     public const int CrouchSequenceId = Rac1RatchetSequenceSelection.CrouchSequenceId;
@@ -47,7 +48,9 @@ public static class Rac1RatchetAvatar
     public sealed record AnimationClip(
         int SequenceId,
         IReadOnlyList<double[]> LocalFrames,
-        IReadOnlyList<double> FrameDurationsSeconds)
+        IReadOnlyList<double> FrameDurationsSeconds,
+        IReadOnlyList<double> FrameTimelinePositions,
+        IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? WrenchSocketFrames = null)
     {
         public int FrameCount => LocalFrames.Count;
         public bool HasVariableTiming =>
@@ -79,7 +82,7 @@ public static class Rac1RatchetAvatar
         public float FramesPerSecond => Clip(StandingSequenceId).ConstantFramesPerSecond ?? 0f;
     }
 
-    public static Asset Decode(Rac1LevelCore.Core core)
+    public static Asset Decode(Rac1LevelCore.Core core, bool includeTraversalClips = true)
     {
         var classes = Rac1StaticClasses.Read(core);
         if (!classes.Mobies.TryGetValue(RatchetClassId, out var cls))
@@ -94,6 +97,10 @@ public static class Rac1RatchetAvatar
             throw new InvalidDataException(
                 "R&C1 Ratchet class 0 no longer matches the pinned retail body invariants.");
         }
+
+        int handJoint = Rac1WrenchAttachment.ReadJoint(core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength), 0);
+        if (handJoint != Rac1WrenchAttachment.RatchetJoint)
+            throw new InvalidDataException("R&C1 wrench hand-joint mapping differs from its retail authority.");
 
         var sequences = Rac1MobyAnimation.ReadRatchetSequences(
             core.Assets,
@@ -118,14 +125,42 @@ public static class Rac1RatchetAvatar
             (SustainedLocomotionSequenceId, 23, 0x3f000000u),
             (LocomotionStopVariantASequenceId, 13, 0x3e800000u),
             (LocomotionStopVariantBSequenceId, 13, 0x3e800000u),
+            (LocomotionStopMiddleSequenceId, 14, 0x3e800000u),
             (StationaryJumpSequenceId, 29, null),
             (MovingJumpSequenceId, 16, null),
             (CrouchSequenceId, 15, 0x3e800000u),
             (CrouchTurnRightSequenceId, 7, 0x3e800000u),
             (CrouchTurnLeftSequenceId, 7, 0x3e800000u),
             (WrenchAttackSequenceId, 21, null),
+            (17, 25, null),
+            (18, 16, null),
+            (19, 9, 0x3e2aaaabu),
+            (21, 38, null),
+            (22, 32, 0x3f000000u),
+            (28, 33, 0x3f000000u),
+            (29, 33, 0x3f000000u),
+            (31, 33, 0x3f000000u),
+            (38, 14, null),
+            (32, 7, null),
+            (33, 10, 0x3e2aaaabu),
+            (34, 27, null),
+            (36, 8, 0x3e800000u),
+            (37, 8, 0x3e800000u),
+            (48, 6, 0x3e800000u),
+            (55, 15, 0x3e800000u),
+            (52, 8, 0x3e800000u),
+            (53, 30, 0x3e800000u),
+            (42, 31, 0x3e800000u),
+            (35, 21, 0x3e800000u),
+            (24, 22, 0x3f000000u),
+            (25, 35, 0x3f000000u),
+            (26, 45, 0x3e800000u),
+            (43, 13, 0x3e800000u),
         ];
-        var clips = clipSpecs
+        // Contextual clips are not present in every world's animation table.
+        // The playable provider deliberately uses its verified LEVEL0 carrier;
+        // cross-level standing/model checks can request the ordinary slice.
+        var clips = clipSpecs.Take(includeTraversalClips ? clipSpecs.Length : 12)
             .Select(spec => DecodeClip(cls, sequences, spec.SequenceId, spec.FrameCount, spec.ConstantRateRaw))
             .ToArray();
         var standing = clips.Single(clip => clip.SequenceId == StandingSequenceId);
@@ -186,11 +221,10 @@ public static class Rac1RatchetAvatar
                 throw new InvalidDataException(
                     $"R&C1 Ratchet sequence {sequenceId} constant timing no longer matches retail evidence.");
         }
-        else if (sequence.ConstantTransitionRateRaw != 0 ||
-                 !sequence.Frames.Select(frame => frame.TransitionRateRaw).Distinct().Skip(1).Any())
+        else if (sequence.ConstantTransitionRateRaw != 0)
         {
             throw new InvalidDataException(
-                $"R&C1 Ratchet sequence {sequenceId} no longer has the admitted variable timing.");
+                $"R&C1 Ratchet sequence {sequenceId} no longer has the admitted per-frame timing.");
         }
 
         if (sequence.Frames.Any(frame =>
@@ -216,7 +250,10 @@ public static class Rac1RatchetAvatar
                 .ToArray();
         }
 
-        return new AnimationClip(sequenceId, frames, durations);
+        return new AnimationClip(sequenceId, frames, durations,
+            sequence.Frames.Select(frame => unchecked((short)frame.TimestampUnits) / 16d).ToArray(),
+            sequence.Frames.Select(frame => Rac1WrenchAttachment.ToAttachment(
+                Rac1MobyPose.PoseRatchetJoints(cls.Mesh, cls.Joints, frame)[Rac1WrenchAttachment.RatchetJoint])).ToArray());
     }
 
     private static double FrameDuration(float transitionRate, int sequenceId)

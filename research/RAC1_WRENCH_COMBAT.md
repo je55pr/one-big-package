@@ -1,6 +1,6 @@
 # R&C1 wrench combat archaeology
 
-Status: evidence boundary for issue #55. Retail ordinary-wrench contact timing, geometry and target filtering remain unresolved. Production may use an explicitly labeled host-policy collision admission layer, but host dimensions must never be promoted as retail evidence.
+Historical issue-55 investigation. The timing, damage, combo and socket uncertainties below were superseded on 18 October by the separately scheduled class71 update recovery in [RAC1_WRENCH_ACTIONS.md](RAC1_WRENCH_ACTIONS.md). That document describes the current implementation and remaining host collision/target-filtering boundary. The notes below retain the earlier witnesses and rejected inferences, not the current production status.
 
 ## Proven player-side state
 

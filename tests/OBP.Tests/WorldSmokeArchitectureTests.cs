@@ -32,7 +32,8 @@ public sealed class WorldSmokeArchitectureTests
         Assert.Contains("RunRac1MovementContactSmokeAsync,", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1CombatContractSmokeAsync,", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1CampaignSmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunMovementSmokeAsync));", harness, StringComparison.Ordinal);
+        Assert.Contains("RunMovementSmokeAsync,", harness, StringComparison.Ordinal);
+        Assert.Contains("RunRac1WrenchSmokeAsync));", harness, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -47,6 +48,7 @@ public sealed class WorldSmokeArchitectureTests
             "OBPGame.Rac1CampaignSmoke.cs",
             "OBPGame.Rac1EnvironmentalDeathSmoke.cs",
             "OBPGame.Rac1StartupVisibilitySmoke.cs",
+            "OBPGame.Rac1WrenchSmoke.cs",
         })
         {
             Assert.True(File.Exists(Path.Combine(root, "diagnostics", name)), name);

@@ -48,17 +48,19 @@ Class **110** is also publicly named as a Wrench and has the same 9-packet / 12-
 
 The class-71 live update is `0x002a84c8`. It maintains the Ratchet owner link at `Moby+0xb8`, calls helper `0x002a7c70`, and directly branches on player action **`0x13`**, the separately recovered ordinary wrench action. This proves the held object participates in the player action path rather than being unrelated scenery.
 
-The exact Ratchet skeleton joint/socket and per-frame native attachment transform are **not yet recovered**. In particular, the evidence above does not justify naming a hand joint merely from proximity.
+The socket was recovered on 18 October through the executable's attachment lookup, not from proximity. Item8 selects semantic joint0. `0x209240` builds the attachment matrices through `0x24f8f0/0x253fa0`; the bounded class+0x1c chain terminates at Ratchet joint56. `0x20f6f8` copies that joint matrix/translation to the held wrench. See [RAC1_WRENCH_ACTIONS.md](RAC1_WRENCH_ACTIONS.md) for the complete chain and source tests.
 
-The current Godot presentation therefore makes the boundary explicit. It renders the real retail class-71 mesh and texture, parents it beneath the animated Ratchet view, and uses a host-only neutral root-relative transform calibrated from the retained neutral frame. The fallback node is named `Rac1RetailWrench_HostAttachmentFallback`, and its provenance string is `host-neutral-root-relative-fallback`.
+Godot now renders the class71 mesh under that animated hand transform and poses the wrench's own skeleton/sequences. The node is `Rac1RetailWrench_AnimatedHand`, provenance `retail-semantic-joint0-ratchet-joint56`. Baked vertex/affine blending is still a presentation approximation; the old fixed root calibration is no longer used.
 
-The retained neutral calibration is:
+Class71 uses its stored inverse-bind translation when skinning those sequences. Ratchet's common-transform binding exception must not be reused here: doing so removes the neutral shaft/jaw retraction and leaves a head about 1.01 units wide. The corrected sequence1 pose is about .45 units wide. Run/stop/idle samples now retain their accompanying hand transforms as well; generating body vertices without that metadata previously froze the wrench after running.
+
+The earlier neutral calibration is retained only as historical comparison evidence:
 
 - Ratchet position `(154.7710419, 120.5826263, 29.484375)`, native yaw `1.111041784`;
 - class-71 position `(154.9961548, 120.3641052, 29.9795303)`;
 - resulting Ratchet-local native offset `(-0.09594126, -0.29870149, 0.49515533)`.
 
-This fallback follows Ratchet's player root while Ratchet plays admitted sequence 23, but it does **not** pretend to reproduce an unresolved animation-driven hand socket. Weapon-selection presentation is still stateful: the class-71 view is visible for Wrench and hidden when the existing Bomb Glove item 10 is equipped.
+The wrench is visible while selected, attacking or flying. Attacking while Bomb Glove is equipped temporarily shows it and restores the selected equipment after recovery. Comet-Strike detaches the model and catches it at the current animated hand.
 
 ## Production boundary
 

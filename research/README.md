@@ -34,9 +34,15 @@ When a document contains an unresolved hypothesis, it should say so explicitly. 
 | GC crates / resource pickups | [`GC_CRATES.md`](GC_CRATES.md) | Loaded crate-family state machine and indexed resource-emission archaeology |
 | R&C1 crates / bolts | [`RAC1_CRATES_PICKUPS.md`](RAC1_CRATES_PICKUPS.md) | Class-500 break, authored reward centre, physical bolt denominations, collection and persistence evidence |
 | R&C1 player movement | [`RAC1_PLAYER_MOVEMENT.md`](RAC1_PLAYER_MOVEMENT.md) | 60 Hz native displacement, run/stop, variable jump, air control, crouch, turning envelope and respawn evidence |
+| R&C1 movement audit | [`RAC1_MOVEMENT_PARITY.md`](RAC1_MOVEMENT_PARITY.md) | Current coverage and explicit native/host approximation boundaries |
+| R&C1 landing regressions | [`RAC1_LANDING_OWNERSHIP.md`](RAC1_LANDING_OWNERSHIP.md), [`RAC1_SLOPE_JUMP_SUPPORT.md`](RAC1_SLOPE_JUMP_SUPPORT.md) | Landing carry/animation ownership, standing interpolation and slope jump admission corrections |
+| R&C1 airborne equipment | [`RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md`](RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md) | Aerial boost, flips, pack jumps/glides, Power Slam and wall jumps |
+| R&C1 ledges and contact | [`RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md`](RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md), [`RAC1_SURFACE_MOVEMENT.md`](RAC1_SURFACE_MOVEMENT.md) | Collision dimensions, ledge queries/traversal and alternate surface laws |
+| R&C1 traversal equipment | [`RAC1_TRAVERSAL_EQUIPMENT.md`](RAC1_TRAVERSAL_EQUIPMENT.md), [`RAC1_SWINGSHOT_PENDULUM.md`](RAC1_SWINGSHOT_PENDULUM.md) | Ownership, authored Swingshot targets, pull/pendulum motion and unresolved equipment contexts |
 | R&C1 Nanotech / damage / death | [`RAC1_NANOTECH_DAMAGE_DEATH.md`](RAC1_NANOTECH_DAMAGE_DEATH.md), [`RAC1_DEATH_RESPAWN.md`](RAC1_DEATH_RESPAWN.md) | Retail-backed Nanotech/death path plus the explicit Veldin respawn preservation/reset evidence boundary |
 | R&C1 hostile/common Moby state | [`RAC1_HOSTILE_COMMON_STATE.md`](RAC1_HOSTILE_COMMON_STATE.md) | Engine-common Moby dispatch/damage/terminalization boundary versus class-749 targeting, locomotion, health and hit-state script |
 | R&C1 enemy attack patterns | [`RAC1_ENEMY_ATTACK_PATTERNS.md`](RAC1_ENEMY_ATTACK_PATTERNS.md) | Class-749 melee cadence/range/facing/damage plus class-1440 contact-query and damage-intake boundary |
+| R&C1 wrench | [`RAC1_WRENCH_ACTIONS.md`](RAC1_WRENCH_ACTIONS.md), [`RAC1_WRENCH_VISUAL.md`](RAC1_WRENCH_VISUAL.md) | Multi-Strike, Hyper/Comet, authored hit gates, class71 animated hand attachment and bounded host collision |
 | Sky | [`GC_SKY.md`](GC_SKY.md) | Retail-backed shell geometry/settings; effects remain partial |
 | Level settings | [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md) | Retail-backed fixed settings fields |
 | UYA ship/start transform | [`UYA_RETAIL_SHIP_START_COMPATIBILITY.md`](UYA_RETAIL_SHIP_START_COMPATIBILITY.md) | Retail-corroborated shared-layout compatibility; executable field-name provenance remains open |

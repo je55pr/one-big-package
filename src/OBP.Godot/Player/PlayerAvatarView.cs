@@ -34,7 +34,8 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
         public PlayerAvatarAnimationClip CurrentClip => _clipsById[CurrentAnimationPresentation.ClipId];
         public double ClipStartedAtSeconds => CurrentAnimationPresentation.ClipStartedAtSeconds;
         public double ClipElapsedSeconds => CurrentAnimationPresentation.ElapsedAt(_clockSeconds);
-        public int CurrentFrame => CurrentClip.FrameIndexAt(ClipElapsedSeconds, CurrentAnimationPresentation.Loop);
+        public int CurrentFrame => CurrentAnimationPresentation.SampledPose?.FrameIndex ??
+            CurrentClip.FrameIndexAt(ClipElapsedSeconds, CurrentAnimationPresentation.Loop);
 
         public void SetClock(double clockSeconds)
         {
@@ -60,6 +61,17 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
             if (!double.IsFinite(presentation.ClipStartedAtSeconds))
                 throw new InvalidDataException("Player animation presentation has a non-finite clock origin.");
 
+            if (presentation.SampledPose is { } pose)
+            {
+                var clip = _clipsById[presentation.ClipId];
+                if ((uint)pose.FrameIndex >= (uint)clip.FrameCount ||
+                    pose.LocalPositions.Length != clip.LocalFrames[0].Length ||
+                    pose.LocalPositions.Any(value => !double.IsFinite(value)))
+                {
+                    throw new InvalidDataException("Player animation sampled pose has invalid frame/coordinates.");
+                }
+            }
+
             return presentation;
         }
     }
@@ -70,6 +82,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
     private readonly Playback _playback;
     private string? _currentClipId;
     private int _currentFrame = -1;
+    private PlayerAvatarSampledPose? _currentSampledPose;
 
     public PlayerAvatarView(
         PlayerAvatar avatar,
@@ -89,7 +102,7 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
 
         Name = $"PlayerAvatar_{avatar.Identity.AvatarId}";
         BuildSurfaces();
-        ApplyFrame(_playback.CurrentClip.Id, 0);
+        ApplyPresentation();
     }
 
     public PlayerAvatarIdentity Identity => _avatar.Identity;
@@ -105,13 +118,13 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
     public void SetClock(double clockSeconds)
     {
         _playback.SetClock(clockSeconds);
-        ApplyFrame(_playback.CurrentClip.Id, _playback.CurrentFrame);
+        ApplyPresentation();
     }
 
     public void SetAnimationPresentation(PlayerAnimationPresentation presentation)
     {
         _playback.SetAnimationPresentation(presentation);
-        ApplyFrame(_playback.CurrentClip.Id, _playback.CurrentFrame);
+        ApplyPresentation();
     }
 
     /// <summary>Display one exact frame of the active clip, useful for deterministic inspection.</summary>
@@ -182,6 +195,9 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
 
         foreach (var clip in avatar.AnimationClips)
         {
+            if (clip.AttachmentFrames?.Any(track => string.IsNullOrWhiteSpace(track.Key) ||
+                track.Value.Count != clip.FrameCount || track.Value.Any(pose => !pose.IsFinite)) == true)
+                throw new InvalidDataException($"Player avatar clip '{clip.Id}' has invalid attachment frames.");
             if (clip.LocalFrames.Count == 0)
                 throw new InvalidDataException($"Player avatar clip '{clip.Id}' has no frames.");
             if (clip.FrameDurationsSeconds.Count != clip.LocalFrames.Count ||
@@ -251,13 +267,19 @@ public sealed class PlayerAvatarView : Node3D, IPlayerAnimationPresentationSink
         }
     }
 
-    private void ApplyFrame(string clipId, int frame)
+    private void ApplyPresentation() => ApplyFrame(
+        _playback.CurrentClip.Id, _playback.CurrentFrame, _playback.CurrentAnimationPresentation.SampledPose);
+
+    private void ApplyFrame(string clipId, int frame, PlayerAvatarSampledPose? pose = null)
     {
-        if (string.Equals(clipId, _currentClipId, StringComparison.Ordinal) && frame == _currentFrame)
+        if (string.Equals(clipId, _currentClipId, StringComparison.Ordinal) && frame == _currentFrame &&
+            ReferenceEquals(pose, _currentSampledPose))
             return;
         _currentClipId = clipId;
         _currentFrame = frame;
-        Vector3[] vertices = _framesByClipId[clipId][frame];
+        _currentSampledPose = pose;
+        Vector3[] vertices = pose is null ? _framesByClipId[clipId][frame] :
+            ConvertFrame(pose.LocalPositions, _avatar.Axes, _avatar.BaseHeight, AlignGeometricBase);
         foreach (var surface in _surfaces)
         {
             var arrays = new global::Godot.Collections.Array();

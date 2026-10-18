@@ -24,7 +24,7 @@ public sealed class Rac1RatchetAvatarTests
         Assert.Equal(6_856, avatar.Mesh.Indices.Length / 3);
         Assert.Equal(5_583 * 2, avatar.Mesh.Uvs.Length);
         Assert.Equal(111, avatar.Skeleton.Count);
-        Assert.Equal(11, avatar.AnimationClips.Count);
+        Assert.Equal(36, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.StandingFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
 
@@ -33,12 +33,40 @@ public sealed class Rac1RatchetAvatarTests
         AssertClip(avatar, Rac1RatchetAvatar.SustainedLocomotionSequenceId, 23, 30f, variable: false);
         AssertClip(avatar, Rac1RatchetAvatar.LocomotionStopVariantASequenceId, 13, 15f, variable: false);
         AssertClip(avatar, Rac1RatchetAvatar.LocomotionStopVariantBSequenceId, 13, 15f, variable: false);
+        AssertClip(avatar, Rac1RatchetAvatar.LocomotionStopMiddleSequenceId, 14, 15f, variable: false);
+        Assert.Equal(Enumerable.Range(0, 14).Select(frame => frame * 2d),
+            avatar.Clip(Rac1RatchetAvatar.LocomotionStopMiddleSequenceId).FrameTimelinePositions);
+        Assert.Equal(Enumerable.Range(0, 23).Select(frame => (double)frame),
+            avatar.Clip(Rac1RatchetAvatar.SustainedLocomotionSequenceId).FrameTimelinePositions);
         AssertClip(avatar, Rac1RatchetAvatar.StationaryJumpSequenceId, 29, null, variable: true);
         AssertClip(avatar, Rac1RatchetAvatar.MovingJumpSequenceId, 16, null, variable: true);
         AssertClip(avatar, Rac1RatchetAvatar.CrouchSequenceId, 15, 15f, variable: false);
         AssertClip(avatar, Rac1RatchetAvatar.CrouchTurnRightSequenceId, 7, 15f, variable: false);
         AssertClip(avatar, Rac1RatchetAvatar.CrouchTurnLeftSequenceId, 7, 15f, variable: false);
         AssertClip(avatar, Rac1RatchetAvatar.WrenchAttackSequenceId, 21, null, variable: true);
+        AssertClip(avatar, 24, 22, 30f, variable: false);
+        AssertClip(avatar, 25, 35, 30f, variable: false);
+        AssertClip(avatar, 26, 45, 15f, variable: false);
+        AssertClip(avatar, 43, 13, 15f, variable: false);
+        AssertClip(avatar, 17, 25, null, variable: true);
+        AssertClip(avatar, 18, 16, null, variable: true);
+        AssertClip(avatar, 19, 9, 10f, variable: false);
+        AssertClip(avatar, 21, 38, null, variable: true);
+        AssertClip(avatar, 22, 32, 30f, variable: false);
+        foreach (int sequence in new[] { 28, 29, 31 })
+            AssertClip(avatar, sequence, 33, 30f, variable: false);
+        AssertClip(avatar, 38, 14, null, variable: true);
+        AssertClip(avatar, 32, 7, 15f, variable: false);
+        AssertClip(avatar, 33, 10, 10f, variable: false);
+        AssertClip(avatar, 34, 27, null, variable: true);
+        AssertClip(avatar, 36, 8, 15f, variable: false);
+        AssertClip(avatar, 37, 8, 15f, variable: false);
+        AssertClip(avatar, 48, 6, 15f, variable: false);
+        AssertClip(avatar, 55, 15, 15f, variable: false);
+        AssertClip(avatar, 52, 8, 15f, variable: false);
+        AssertClip(avatar, 53, 30, 15f, variable: false);
+        AssertClip(avatar, 42, 31, 15f, variable: false);
+        AssertClip(avatar, 35, 21, 15f, variable: false);
 
         var cls = Rac1StaticClasses.Read(core).Mobies[0];
         var sequences = Rac1MobyAnimation.ReadRatchetSequences(
@@ -57,6 +85,8 @@ public sealed class Rac1RatchetAvatarTests
                     : source.Frames[frame].TransitionRate;
                 double expected = 1d / (rate * Rac1RatchetAvatar.NtscUpdateHz);
                 Assert.Equal(expected, clip.FrameDurationsSeconds[frame], 12);
+                Assert.Equal(unchecked((short)source.Frames[frame].TimestampUnits) / 16d,
+                    clip.FrameTimelinePositions[frame]);
             }
         }
 

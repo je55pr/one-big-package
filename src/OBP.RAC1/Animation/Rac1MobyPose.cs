@@ -8,7 +8,7 @@ namespace OBP.RAC1.Animation;
 /// inverse-bind pivots and global frame orientations. The dedicated Ratchet path
 /// additionally decodes its sparse native channels and row-vector transform convention.
 /// </summary>
-public static class Rac1MobyPose
+public static partial class Rac1MobyPose
 {
     private const double RigidTolerance = 1e-4;
     private const double TailTolerance = 1e-5;
@@ -253,7 +253,26 @@ public static class Rac1MobyPose
     public static double[] PoseRatchetHierarchy(
         Rac1Moby.Mesh mesh,
         IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
-        Rac1MobyAnimation.Frame frame)
+        Rac1MobyAnimation.Frame frame) =>
+        PoseLocalHierarchy(mesh, joints, frame, useCommonBindTranslation: true);
+
+    /// <summary>
+    /// Parent-composed native local channels with the class's stored inverse-bind
+    /// affine translation. Class71 uses this to retract its telescoping shaft and
+    /// jaws; reconstructing bind translation from common_trans erases that offset.
+    /// Ratchet's separately recovered common-transform binding remains explicit.
+    /// </summary>
+    public static double[] PoseLocalHierarchy(
+        Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame) =>
+        PoseLocalHierarchy(mesh, joints, frame, useCommonBindTranslation: false);
+
+    private static double[] PoseLocalHierarchy(
+        Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
+        Rac1MobyAnimation.Frame frame,
+        bool useCommonBindTranslation)
     {
         if (!CanPoseRatchetHierarchy(mesh, joints, frame))
             throw new InvalidOperationException("R&C1 Ratchet pose is outside the pinned native hierarchy/channel subset.");
@@ -270,6 +289,16 @@ public static class Rac1MobyPose
         for (int j = 0; j < n; j++)
         {
             inverseBind[j] = Affine3x3(joints[j].NativeAffine);
+            if (!useCommonBindTranslation)
+            {
+                bindTail[j] = new[]
+                {
+                    joints[j].NativeAffine[12] * k,
+                    joints[j].NativeAffine[13] * k,
+                    joints[j].NativeAffine[14] * k,
+                };
+                continue;
+            }
             bindLinear[j] = Inverse3x3(inverseBind[j]);
             var common = new[]
             {
@@ -285,30 +314,7 @@ public static class Rac1MobyPose
             bindTail[j] = Negate(Multiply(Transpose(inverseBind[j]), bindPivot[j]));
         }
 
-        var channels = DecodeRatchetFrameChannels(joints, frame);
-        var animatedLinear = new double[n][,];
-        var animatedPivot = new double[n][];
-        for (int j = 0; j < n; j++)
-        {
-            var localLinear = Multiply(channels.Scales[j], QuaternionMatrix(frame.JointRotations[j]));
-            var localTranslation = new[]
-            {
-                channels.Translations[j][0] * k,
-                channels.Translations[j][1] * k,
-                channels.Translations[j][2] * k,
-            };
-            if (j == 0)
-            {
-                animatedLinear[j] = localLinear;
-                animatedPivot[j] = localTranslation;
-                continue;
-            }
-            int parent = joints[j].ParentRecordIndex;
-            animatedLinear[j] = Multiply(localLinear, animatedLinear[parent]);
-            animatedPivot[j] = Add(
-                animatedPivot[parent],
-                Multiply(Transpose(animatedLinear[parent]), localTranslation));
-        }
+        var (animatedLinear, animatedPivot) = EvaluateRatchetJointHierarchy(mesh, joints, frame);
 
         var output = new double[mesh.Positions.Length];
         int vertexCount = mesh.Positions.Length / 3;

@@ -13,6 +13,10 @@ SPEC.loader.exec_module(TURNS)
 
 
 class Rac1GroundTurnResponseTests(unittest.TestCase):
+    def test_reducer_rejects_explicitly_unvalidated_capture(self):
+        with self.assertRaisesRegex(ValueError, "unsupported experiment"):
+            TURNS.derive_trial({}, {"validation": {"status": "unsupported"}})
+
     def test_trial_matrix_covers_turns_reversals_and_release_restarts(self):
         specs = TURNS.trial_specs()
         ids = {spec["id"] for spec in specs}

@@ -19,8 +19,8 @@ public partial class PlayerHost : CharacterBody3D
     {
         // Presentation follows the recovered controller state rather than the
         // retired DebugPlayer tuning. Jump anticipation is already native-air
-        // presentation (sequence 7), while crouch states stay visually neutral
-        // until a dedicated crouch presentation state is exposed.
+        // presentation (sequence 7). Crouch keeps a neutral semantic label;
+        // the R&C1 physics presentation receives its held input and yaw facts.
         // Ordinary action state 2 keeps its locomotion selector through transient
         // support loss. The retained Veldin edge witness stays on sequence 4 for
         // all 16 unsupported ticks, so only actual jump/fall state may drive the
@@ -57,6 +57,8 @@ public partial class PlayerHost : CharacterBody3D
     }
     private void RequestPrimaryAction()
     {
+        if (Rac1Hanging || Rac1SwingshotActive)
+            return;
         if (UseRac1Gameplay && !Rac1GameplayAlive)
             return;
 
@@ -75,6 +77,8 @@ public partial class PlayerHost : CharacterBody3D
 
     private void ResetAnimationState()
     {
+        _locomotionAnimationInput = default;
+        AnimationPhysicsReset?.Invoke();
         _animationStateMachine = new PlayerAnimationStateMachine();
         _animationGroundedInitialized = false;
         _animationWasGrounded = false;

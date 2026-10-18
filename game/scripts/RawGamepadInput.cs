@@ -22,6 +22,7 @@ internal sealed class RawGamepadInput
     public static readonly StringName Jump = "obp_jump";
     public static readonly StringName Crouch = "obp_crouch";
     public static readonly StringName Action = "obp_action";
+    public static readonly StringName Traversal = "obp_traversal";
 
     private int? _activeDevice;
     private int? _announcedDevice;
@@ -60,7 +61,9 @@ internal sealed class RawGamepadInput
             Input.IsActionPressed(Jump),
             Input.IsActionPressed(Crouch),
             Input.IsActionJustPressed(Action),
-            diagnostic);
+            diagnostic,
+            Input.IsActionPressed(Traversal),
+            Input.IsActionJustPressed(Traversal));
     }
 
     private static float Axis(StringName negative, StringName positive) =>
@@ -111,4 +114,6 @@ internal readonly record struct RawPlayerInputFrame(
     bool JumpHeld,
     bool CrouchHeld,
     bool ActionJustPressed,
-    RawGamepadDiagnostic? Diagnostic);
+    RawGamepadDiagnostic? Diagnostic,
+    bool TraversalHeld = false,
+    bool EquippedUseJustPressed = false);

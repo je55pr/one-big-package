@@ -40,7 +40,7 @@ public enum Rac1RatchetLocomotionState
 /// facing produced by <see cref="Rac1RatchetYawController"/>. Air control keeps
 /// its separately recovered vector recurrence.
 /// </remarks>
-public sealed class Rac1RatchetMovementController
+public sealed partial class Rac1RatchetMovementController
 {
     public const double UpdateHz = 60d;
     public const double MaximumPlanarStep = 0.09500919d;
@@ -50,6 +50,9 @@ public sealed class Rac1RatchetMovementController
     public const double GroundDecelerationPerTick = 1d / 300d;
     public const double AirAccelerationPerTick = 1d / 180d;
     public const double AirDecelerationPerTick = 1d / 1200d;
+    // Retained ordinary-ground measurement. Native action 4 selects 6.48f times
+    // squared tick duration by default, or 1.7f when the class-7 ice flag is set.
+    // Ice action execution remains unsupported; see RAC1_CROUCH_SURFACE_BRAKING.md.
     public const double CrouchDecelerationPerTick = 0.001802944d;
 
     // Retained aligned release samples. These are bounded transition witnesses,
@@ -121,6 +124,8 @@ public sealed class Rac1RatchetMovementController
     private bool _ordinaryEdgeFall;
     private Rac1AnalogueSpeedBand _lastGroundedActiveSpeedBand;
     private int _groundReleaseSampleIndex = -1;
+    private Rac1NativeVector3? _contactProcessedMotion;
+    private bool _wasGroundedCrouch;
 
     public Rac1RatchetMovementPhase Phase { get; private set; } = Rac1RatchetMovementPhase.Grounded;
     public Rac1RatchetLocomotionState LocomotionState { get; private set; } = Rac1RatchetLocomotionState.Idle;
@@ -131,6 +136,19 @@ public sealed class Rac1RatchetMovementController
     public double VerticalStep => _verticalStep;
     public Rac1AnalogueInput.Conditioned AnalogueInput { get; private set; }
     public double TargetPlanarStep { get; private set; }
+
+    /// <summary>Latest host-admitted equivalent of native P+0x110, before external transport.</summary>
+    public Rac1NativeVector3? ContactProcessedMotion => _contactProcessedMotion;
+
+    /// <summary>
+    /// Supply one completed primary contact pass. This does not overwrite the
+    /// current locomotion scalar or an already active crouch carry vector.
+    /// </summary>
+    public void RecordOrdinaryContactMotion(Rac1NativeVector3 request, Rac1NativeVector3 displacement) =>
+        _contactProcessedMotion = Rac1ContactMotionProjection.Resolve(request, displacement);
+
+    /// <summary>Clear a missing/unadmitted host sample rather than reusing stale carry.</summary>
+    public void ClearOrdinaryContactMotion() => _contactProcessedMotion = null;
 
     /// <summary>
     /// True while retail ordinary action state 2 has lost support and is applying
@@ -213,16 +231,40 @@ public sealed class Rac1RatchetMovementController
     /// </summary>
     public void CancelOrdinaryPlanarMotionForAction()
     {
+        ResetExtendedMovement();
         _planarX = 0d;
         _planarY = 0d;
         _planarMagnitude = 0d;
         _lastGroundedActiveSpeedBand = Rac1AnalogueSpeedBand.Inactive;
         _groundReleaseSampleIndex = -1;
         TargetPlanarStep = 0d;
+        _contactProcessedMotion = null;
+        _wasGroundedCrouch = false;
+    }
+
+    /// <summary>
+    /// OBP ownership adapter: leave an external action without erasing its
+    /// collision-processed airborne step. Native action admission stays with
+    /// the caller; this does not invent a new jump or landing impulse.
+    /// </summary>
+    public void ResumeAfterExternalAction(double planarX, double planarY, double vertical, bool grounded)
+    {
+        if (!double.IsFinite(planarX) || !double.IsFinite(planarY) || !double.IsFinite(vertical))
+            throw new ArgumentOutOfRangeException(nameof(vertical));
+        Reset();
+        _planarX = planarX;
+        _planarY = planarY;
+        _planarMagnitude = Math.Sqrt(planarX * planarX + planarY * planarY);
+        _verticalStep = grounded ? 0 : vertical;
+        Phase = grounded ? Rac1RatchetMovementPhase.Grounded : vertical > 0
+            ? Rac1RatchetMovementPhase.Rising : Rac1RatchetMovementPhase.Falling;
+        LocomotionState = grounded ? Rac1RatchetLocomotionState.Idle : vertical > 0
+            ? Rac1RatchetLocomotionState.Rising : Rac1RatchetLocomotionState.Falling;
     }
 
     public void Reset()
     {
+        ResetExtendedMovement();
         _planarX = 0d;
         _planarY = 0d;
         _planarMagnitude = 0d;
@@ -235,6 +277,8 @@ public sealed class Rac1RatchetMovementController
         _groundReleaseSampleIndex = -1;
         AnalogueInput = default;
         TargetPlanarStep = 0d;
+        _contactProcessedMotion = null;
+        _wasGroundedCrouch = false;
         Phase = Rac1RatchetMovementPhase.Grounded;
         LocomotionState = Rac1RatchetLocomotionState.Idle;
         YawMode = Rac1RatchetYawMode.GroundStartup;
@@ -246,7 +290,18 @@ public sealed class Rac1RatchetMovementController
         bool grounded,
         bool ordinaryState2Motion)
     {
-        bool crouching = grounded && input.CrouchHeld;
+        bool crouching = grounded && input.CrouchHeld &&
+            (!_nativeAirPlanar || Phase == Rac1RatchetMovementPhase.Grounded);
+        if (crouching && !_wasGroundedCrouch && _contactProcessedMotion is { } contactMotion)
+        {
+            // Native entry copies contact-derived P+0x110 into independent
+            // P+0x150 carry. Later contact samples must not reseed held crouch.
+            var carry = Rac1ContactMotionProjection.EnterCrouch(contactMotion);
+            _planarX = carry.X;
+            _planarY = carry.Y;
+            _planarMagnitude = Math.Sqrt(carry.X * carry.X + carry.Y * carry.Y);
+        }
+        _wasGroundedCrouch = crouching;
         bool hasIntent = !crouching && analogue.IsActive;
         bool usesAirPlanarLaw =
             (!grounded || Phase != Rac1RatchetMovementPhase.Grounded) &&
@@ -308,7 +363,16 @@ public sealed class Rac1RatchetMovementController
         double targetX = hasIntent ? (output.X / outputLength) * TargetPlanarStep : 0d;
         double targetY = hasIntent ? (output.Y / outputLength) * TargetPlanarStep : 0d;
         double amount = hasIntent ? AirAccelerationPerTick : AirDecelerationPerTick;
-        MoveAirToward(ref _planarX, ref _planarY, targetX, targetY, amount);
+        if (_nativeAirPlanar)
+        {
+            var next = Rac1AirbornePlanarMotion.Converge(new((float)_planarX, (float)_planarY),
+                new((float)targetX, (float)targetY),
+                Rac1AirbornePlanarMotion.OrdinaryBaseAmount((float)TargetPlanarStep, nativeWallContact: false));
+            _planarX = next.X;
+            _planarY = next.Y;
+        }
+        else
+            MoveAirToward(ref _planarX, ref _planarY, targetX, targetY, amount);
         _planarMagnitude = System.Math.Sqrt((_planarX * _planarX) + (_planarY * _planarY));
         return false;
     }
@@ -532,7 +596,11 @@ public sealed class Rac1RatchetMovementController
 
     private void StepJumpAnticipation(PlayerControlIntent input, PlayerContactFacts contact)
     {
-        if (!contact.IsGrounded)
+        // Once the native jump action owns anticipation, its age/impulse
+        // path continues even if support is lost before launch. A Godot floor
+        // bit dropping on a descending slope cannot revoke admitted Cross.
+        // Keep the older compatibility path for the other source-game hosts.
+        if (!contact.IsGrounded && !_nativeAirPlanar)
         {
             _verticalStep = 0d;
             Phase = Rac1RatchetMovementPhase.Falling;

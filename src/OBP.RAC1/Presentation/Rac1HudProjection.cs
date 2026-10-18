@@ -20,7 +20,8 @@ public static class Rac1HudProjection
 
     public static HudPresentationState Capture(
         Rac1RatchetNanotechSession nanotech,
-        Rac1WeaponInventory weapons)
+        Rac1WeaponInventory weapons,
+        Rac1BoltWallet? wallet = null)
     {
         ArgumentNullException.ThrowIfNull(nanotech);
         ArgumentNullException.ThrowIfNull(weapons);
@@ -52,11 +53,9 @@ public static class Rac1HudProjection
             _ => throw new InvalidOperationException(
                 $"Unsupported R&C1 HUD weapon {weapons.Equipped}."),
         };
-        // The current crate-session counter is bounded pickup telemetry, not a
-        // reconstructed player wallet, so normal HUD currency stays absent.
         return new HudPresentationState(
             Health: hudHealth,
-            Bolts: null,
+            Bolts: wallet is null ? null : new HudCurrency(BoltsResourceKey, wallet.Balance),
             CurrentWeapon: weapon,
             ContextPrompt: null);
     }

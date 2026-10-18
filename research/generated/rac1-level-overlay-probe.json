@@ -1,0 +1,674 @@
+{
+  "schema": 4,
+  "authority": {
+    "build": "rac1-ntscu-original",
+    "serial": "SCUS-97199",
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "levelId": 0
+  },
+  "source": "disc index -> level 0 outer range 0 -> inner range 0",
+  "overlaySha256": "eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804",
+  "overlaySize": 1645644,
+  "entryPoint": "0x00245c28",
+  "sections": [
+    {
+      "headerOffset": "0x00000000",
+      "dataOffset": "0x00000010",
+      "address": "0x0015ef00",
+      "size": 12016,
+      "type": 1
+    },
+    {
+      "headerOffset": "0x00002f00",
+      "dataOffset": "0x00002f10",
+      "address": "0x00161e00",
+      "size": 16816,
+      "type": 8
+    },
+    {
+      "headerOffset": "0x000070c0",
+      "dataOffset": "0x000070d0",
+      "address": "0x00166000",
+      "size": 541360,
+      "type": 1
+    },
+    {
+      "headerOffset": "0x0008b380",
+      "dataOffset": "0x0008b390",
+      "address": "0x001ea300",
+      "size": 1284,
+      "type": 1
+    },
+    {
+      "headerOffset": "0x0008b894",
+      "dataOffset": "0x0008b8a4",
+      "address": "0x001ea880",
+      "size": 160,
+      "type": 1
+    },
+    {
+      "headerOffset": "0x0008b944",
+      "dataOffset": "0x0008b954",
+      "address": "0x001ea980",
+      "size": 24,
+      "type": 1
+    },
+    {
+      "headerOffset": "0x0008b96c",
+      "dataOffset": "0x0008b97c",
+      "address": "0x001eaa00",
+      "size": 1073872,
+      "type": 1
+    }
+  ],
+  "loadedMovementSignaturesVerified": 12,
+  "signatureAddresses": [
+    "0x002116ac",
+    "0x002116b0",
+    "0x002116c0",
+    "0x00211b5c",
+    "0x00211b60",
+    "0x0021c1d8",
+    "0x0021c254",
+    "0x00267274",
+    "0x00267284",
+    "0x00267294",
+    "0x002672a0",
+    "0x002672cc"
+  ],
+  "bootContext": {
+    "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9",
+    "reginfoGp": "0x00166c00",
+    "secondsPerUpdateAddress": "0x0015ed6c",
+    "secondsPerUpdateInitial": 0.01666666753590107,
+    "tickScaleAddress": "0x0015ed68",
+    "tickScaleInitial": 1.0,
+    "squaredUpdateScaleAddress": "0x0015ed70",
+    "squaredUpdateScaleInitial": 0.00027777778450399637
+  },
+  "ordinaryLocomotion": {
+    "scope": "mode 0, ordinary action 2, substate 0/1; caller eligibility already satisfied",
+    "entryDispatchTarget": "0x002232d4",
+    "updateDispatchTarget": "0x0022b434",
+    "blocks": {
+      "entry": {
+        "range": [
+          "0x002232d4",
+          "0x00223598"
+        ],
+        "sha256": "5e7f59e643d6770501d7fbfc69b287abc68a138764d36769d3b5e16ca5bd4521"
+      },
+      "update": {
+        "range": [
+          "0x0022b434",
+          "0x0022c2e4"
+        ],
+        "sha256": "5cdb706ccdd6a1bbe03395a328f29ab21c1a337e9d93adf42b14320bd9d1a775"
+      },
+      "selectorAndRate": {
+        "range": [
+          "0x00228c18",
+          "0x00228fa8"
+        ],
+        "sha256": "9cfea16db6221b3391feaa516631cddb0dbdd1c3061a9779a1ab0dc59ca61a10"
+      },
+      "scaledTickCount": {
+        "range": [
+          "0x001fef20",
+          "0x001fef48"
+        ],
+        "sha256": "eed63dab07612b57faa86be78559c885ebb852674c5da0fc468181bfd7a9b645"
+      },
+      "frameAdvance": {
+        "range": [
+          "0x00232670",
+          "0x002329d0"
+        ],
+        "sha256": "dc3aca07cd5734c75ec07f253dea799924c05cf71b8cd16820f37b18d127cff2"
+      },
+      "regularUpdateOrder": {
+        "range": [
+          "0x00207184",
+          "0x002071d0"
+        ],
+        "sha256": "80ccedb694612d5d974d62e1229dc76083e1f26da22aee725f48c8275117b1fe"
+      },
+      "inputMovementCounterOrder": {
+        "range": [
+          "0x00211670",
+          "0x00211830"
+        ],
+        "sha256": "cc665505013435ed79fd766780a2aaf9605bdd2c52a6e40a0eb444db906e07d5"
+      },
+      "entryBlendHistory": {
+        "range": [
+          "0x002234c0",
+          "0x00223560"
+        ],
+        "sha256": "9c519f7f4c56118e9732903e84aaa2c8bb219b0836ead641d3cb0b0b96113f18"
+      },
+      "speedTable": {
+        "range": [
+          "0x0017bdb8",
+          "0x0017bdd8"
+        ],
+        "sha256": "60fff9cd48cf76598e50af66d8489891508bbadc39d49a9e942fe6274fe00d26"
+      },
+      "phaseTables": {
+        "range": [
+          "0x0015f6c8",
+          "0x0015f6e0"
+        ],
+        "sha256": "ed9f4dbb985b034f766817aed3570a07e73f98b7ee20839443d0658d35839411"
+      }
+    },
+    "speedTableAddress": "0x0017bdb8",
+    "speedThresholds": {
+      "sequence3To4StrictlyAbove": 2.3499999046325684,
+      "sequence4To3StrictlyBelow": 1.899999976158142,
+      "secondsPerUpdateAtBoot": 0.01666666753590107,
+      "sequence3To4StepF32": 0.03916666656732559,
+      "sequence4To3StepF32": 0.03166666626930237
+    },
+    "guard": "P+0x1a0 > scaledTickCount(4) and signed16(P+0x3bc) == 0",
+    "rateField": "P+0xa90 = clamp(P+0x194 * multiplier, minimum, maximum)",
+    "rates": [
+      {
+        "sequence": 3,
+        "speedMultiplier": 157.0,
+        "minimum": 0.6000000238418579,
+        "maximum": 4.0
+      },
+      {
+        "sequence": 4,
+        "speedMultiplier": 14.0,
+        "minimum": 0.6000000238418579,
+        "maximum": 2.200000047683716
+      }
+    ],
+    "entryNextFrames": {
+      "3": 8,
+      "4": 0
+    },
+    "updateOrder": [
+      {
+        "call": "0x00207184",
+        "target": "0x00232670",
+        "role": "animation advance using the previously assigned multiplier"
+      },
+      {
+        "call": "0x0020718c",
+        "target": "0x00211670",
+        "role": "input, movement and counter update; calls movement at 0x211728, counters at 0x211814"
+      },
+      {
+        "call": "0x002071b4",
+        "target": "0x00229b70",
+        "role": "action update, including ordinary animation selection/rate assignment"
+      },
+      {
+        "call": "0x002071c8",
+        "target": "0x00216f10",
+        "role": "delayed-action timer processing; not the movement executor"
+      }
+    ],
+    "inputCounterCall": {
+      "call": "0x00211814",
+      "target": "0x002215c8"
+    },
+    "inputMovementCall": {
+      "call": "0x00211728",
+      "target": "0x00217970"
+    },
+    "defaultEntryBlendTicks": 8,
+    "entryBlendOverridesInOrder": [
+      {
+        "condition": "P+0x22a8 == 1",
+        "ticks": 12
+      },
+      {
+        "condition": "P+0x209c == 0x23",
+        "ticks": 15
+      },
+      {
+        "condition": "P+0x209c in [6, 0x2d]",
+        "ticks": 18
+      },
+      {
+        "condition": "P+0x20a0 == 4 and P+0x418 > scaledTickCount(5)",
+        "ticks": 13
+      }
+    ],
+    "transitionFrameOffsets": [
+      [
+        0,
+        1
+      ],
+      [
+        5,
+        0
+      ]
+    ],
+    "transitionNextFrame": "((oldNextFrame * newFrameCount) / oldFrameCount + offset) % newFrameCount; integer arithmetic",
+    "loopPolicy": "wrap within sequence; entry clears subrange loop; no timed 3-to-4 promotion",
+    "limits": [
+      "Static dataflow recovery, not execution of the native routine or a fresh retail trace.",
+      "Threshold products use host binary32; this is not a complete R5900 FPU model.",
+      "Boot timing values do not prove all later runtime timing configurations.",
+      "Caller support/control guards and entry blending must be preserved by any integration."
+    ]
+  },
+  "crouchAndStop": {
+    "scope": "mode 0, ordinary action-2 release, action-3 stop/restart and action 4; special equipment paths excluded",
+    "blocks": {
+      "crouchEntry": {
+        "range": [
+          "0x002238e0",
+          "0x00223a1c"
+        ],
+        "sha256": "e46e7156f8446af3493611bfdee6d8efd78792de9ab3023fca1b0586dd22410d"
+      },
+      "crouchRelease": {
+        "range": [
+          "0x0022c45c",
+          "0x0022c4c0"
+        ],
+        "sha256": "8b11c0f15d6b05e95178a2fe51c210a49e97364ec31a50da64eb8b537c96ea85"
+      },
+      "crouchTurn": {
+        "range": [
+          "0x00217bf0",
+          "0x00217e08"
+        ],
+        "sha256": "65c2d1843358984f55f6b5787954262f88d85e61a19e4f95d6d4b1f24dd5cda5"
+      },
+      "crouchDecayCaller": {
+        "range": [
+          "0x00217f4c",
+          "0x00217fcc"
+        ],
+        "sha256": "d3abcc556c6cf9ee2908c2d02f3e4750c72b2332166d5e26042099c64c313cbd"
+      },
+      "residualMotionDecay": {
+        "range": [
+          "0x00216710",
+          "0x002167cc"
+        ],
+        "sha256": "b0d8137a5645f27e1ba4ca75ba82e4fa7a64eb94173bcfd8230be729b4ddb006"
+      },
+      "contactMotionProjection": {
+        "range": [
+          "0x00213ae0",
+          "0x00213b5c"
+        ],
+        "sha256": "a7d63ca9c57da3f99e07a2acc2600c6041e3db1c40d4829946d5cccbf25efa7b"
+      },
+      "separateExternalTransport": {
+        "range": [
+          "0x00213c64",
+          "0x00213d08"
+        ],
+        "sha256": "a279e5380f07e012248ce72de8b4222beaf91eec4995f064e04ca7817fb4ddfb"
+      },
+      "vectorSetLength": {
+        "range": [
+          "0x001ff500",
+          "0x001ff550"
+        ],
+        "sha256": "5ec601583b8e7502d8e4a68f24eb807144f34a744b4b3bf3729851aab7cbed0e"
+      },
+      "vectorDot": {
+        "range": [
+          "0x001ff398",
+          "0x001ff3b8"
+        ],
+        "sha256": "5e210556aac25070659a913240992fc2b948cc4db59f1e26c09aaec053db957d"
+      },
+      "vectorMagnitudes": {
+        "range": [
+          "0x001ff3d8",
+          "0x001ff430"
+        ],
+        "sha256": "85e352f571e3c2bf6b91bfebe56c75997ad5b883e1d50399f71d3b017f957653"
+      },
+      "loopRangeSetter": {
+        "range": [
+          "0x002325e0",
+          "0x00232670"
+        ],
+        "sha256": "471c13556524e298ff7f535d0c67e6c62b4354390bf76d06ab22e25d020a0ff6"
+      },
+      "blendSelector": {
+        "range": [
+          "0x002323b8",
+          "0x002325e0"
+        ],
+        "sha256": "8a4f1131e0d2485bb88a884f706e6adbceaabb40863f3bc2c3ee356e4fbcf352"
+      },
+      "standUpCurve": {
+        "range": [
+          "0x0017be54",
+          "0x0017be94"
+        ],
+        "sha256": "d62d918c16b7e6072f55fc87c9577ee2859cad4feea10dec5ce868a29c867fa2"
+      },
+      "defaultStopSelector": {
+        "range": [
+          "0x002237c8",
+          "0x00223840"
+        ],
+        "sha256": "607bcdf85765aa46dc116498d4f954e5ee63a9548edd6fe23bb8de7dc3c8782d"
+      },
+      "ordinaryRelease": {
+        "range": [
+          "0x0022b934",
+          "0x0022bae8"
+        ],
+        "sha256": "2687409e68565e6400d26d4a3d908bb23b21aa7c780fc04af43bb6bf6031d887"
+      },
+      "recentInputReader": {
+        "range": [
+          "0x00266e80",
+          "0x00266ef0"
+        ],
+        "sha256": "7616833d9f0f643a9b2153cb6b4b9dfca30d54d5fbefa15597bff8091492dda0"
+      },
+      "delayedInputReader": {
+        "range": [
+          "0x00211830",
+          "0x0021186c"
+        ],
+        "sha256": "8372d9143ec4a6f552e90ab55b5f5f13b4ce1a730a4a2c0d74137c9e28ca53e9"
+      },
+      "delayedInputOrdering": {
+        "range": [
+          "0x00211690",
+          "0x002116c0"
+        ],
+        "sha256": "9fa107be2cf553506a4824666646ff2f6d127aaba5f00f3b7106b4d8c555b070"
+      },
+      "historyMagnitudeBase": {
+        "range": [
+          "0x0026724c",
+          "0x00267258"
+        ],
+        "sha256": "964ca58c9dec2262143e29c6ee42762bfb9fb8a8758690735dbc8ecf96eb1533"
+      },
+      "historyMagnitudeWriter": {
+        "range": [
+          "0x00267650",
+          "0x0026769c"
+        ],
+        "sha256": "074f409d9361fc61dc20d8bc2787049703c91ea8b83995132fa970fe1de482f5"
+      },
+      "historyAdvance": {
+        "range": [
+          "0x002677bc",
+          "0x00267808"
+        ],
+        "sha256": "27f2601101fbc3dc85ac4cdf98dfb9969946bd34e1dd7243933ea57f43297446"
+      },
+      "stopUpdate": {
+        "range": [
+          "0x0022c2e4",
+          "0x0022c45c"
+        ],
+        "sha256": "2079ab1e292c86369fed5917b3f80c7909e826594aa4e2de027d1942a7440ff5"
+      },
+      "evaluatedAnimationTime": {
+        "range": [
+          "0x0024edc8",
+          "0x0024eebc"
+        ],
+        "sha256": "4c5c178e085a7376560435fb55b39695ac2d950ef788d4a6d204f2f6eb881330"
+      },
+      "ordinaryStandingCurve": {
+        "range": [
+          "0x0017bdf0",
+          "0x0017be1c"
+        ],
+        "sha256": "68d15fead0760b3f739711139add183bff7e5967b24790215224633c3ee97515"
+      },
+      "restartEntryMotion": {
+        "range": [
+          "0x002232d4",
+          "0x002233a4"
+        ],
+        "sha256": "50838bf501ae62ba9e121f9c402c4179b47768f1b3b5ed7ddbf2291ce33e8077"
+      },
+      "idleRestartInput": {
+        "range": [
+          "0x0022a720",
+          "0x0022a750"
+        ],
+        "sha256": "fd3d668d8b3c19a6d72a78d11efb4d0ba62f0a289c39568ee611774054790607"
+      }
+    },
+    "crouch": {
+      "entryDispatchTarget": "0x002238e0",
+      "updateDispatchTarget": "0x0022c45c",
+      "entry": {
+        "sequence": 13,
+        "nextFrame": 2,
+        "blendTicksFromStandingPreviousPose": 9,
+        "blendTicksOtherwise": 14
+      },
+      "requestedLoop": [
+        3,
+        18
+      ],
+      "loopLimit": "setter rejects end >= decoded frame count; sequence 13 has 15 frames",
+      "turnEntryMagnitudeStrictlyAbove": 0.20000000298023224,
+      "turnAngularVelocityMagnitudeStrictlyAbove": 0.005817764438688755,
+      "turnRateDivisor": 0.05526876449584961,
+      "turnRateClamp": [
+        0.550000011920929,
+        2.5
+      ],
+      "turnSequences": {
+        "positiveYawVelocity": 14,
+        "negativeYawVelocity": 15,
+        "zeroYawVelocity": 13
+      },
+      "turnBlendTicks": 5,
+      "returnToCrouchBlendTicks": 7,
+      "smallNonzeroYawVelocity": "retain sequence and multiplier",
+      "residualMotion": {
+        "coefficient": 6.480000019073486,
+        "iceCoefficient": 1.7000000476837158,
+        "surfaceSelector": "P+0x12e2: zero uses ordinary coefficient; nonzero uses ice coefficient",
+        "scale": "multiply by native squared-update scalar at GP-0x7e90",
+        "snapMagnitude": 0.0010000000474974513,
+        "entry": "copy P+0x110 into P+0x150; cap vector length at 7 * secondsPerUpdate",
+        "decay": "zero vertical carry, subtract coefficient * timing scalar from planar magnitude; preserve heading",
+        "hostLimit": "OBP retains measured 0.001802944 per-update decay; static nominal value is about 0.0018"
+      },
+      "contactMotion": {
+        "inputRequest": "P+0xe0",
+        "primaryDisplacement": "position after primary contact minus position at pass entry",
+        "output": "P+0x110 = normalized(request) * max(dot(normalized(primaryDisplacement), request), 0)",
+        "directionSource": "0x213b58 delay slot passes request (s4), not normalized displacement (s1)",
+        "zeroLength": "set-length helper returns zero when its vector length is zero",
+        "externalTransport": "P+0x90 applied separately after P+0x110 construction; final P+0x100 includes that pass",
+        "entryCarry": "action 4 copies P+0x110 into P+0x150; later P+0x110 updates do not reseed held crouch"
+      },
+      "release": {
+        "actionAgeStrictlyAbove": 11,
+        "sequence": 0,
+        "nextFrame": 0,
+        "blendArgument": -2.0,
+        "curveLength": 16,
+        "curve": [
+          0.10000000149011612,
+          0.20000000298023224,
+          0.28999999165534973,
+          0.3799999952316284,
+          0.46000000834465027,
+          0.5400000214576721,
+          0.6100000143051147,
+          0.6800000071525574,
+          0.7400000095367432,
+          0.800000011920929,
+          0.8500000238418579,
+          0.8999999761581421,
+          0.9399999976158142,
+          0.9700000286102295,
+          0.9900000095367432,
+          1.0
+        ]
+      }
+    },
+    "defaultStop": {
+      "sequence5": "previous pose sequence Moby+0x52 == 4 and 3 < P+0xaa8 < 16; otherwise sequence 6",
+      "lowerExclusive": 3.0,
+      "upperExclusive": 16.0,
+      "nextFrame": 4,
+      "blendTicks": 9,
+      "timestamp": "P+0xaa8 is evaluated animation time, not an integer observer frame"
+    },
+    "ordinaryReleaseAndRestart": {
+      "releaseInputStrictlyBelow": 0.17000000178813934,
+      "inputTiming": "P+0x229c is the prior P+0x1d20 vector magnitude capped at 1; computed before current axes are copied",
+      "contactMagnitude": "P+0x160 is the 3D length of primary contact-derived P+0x110, not the controller scalar",
+      "lowMotionCoefficient": 2.700000047683716,
+      "highMotionCoefficient": 4.400000095367432,
+      "motionScale": "multiply coefficients by seconds per update",
+      "middleStop": "above low threshold and either below high threshold or history(4) < 0.8f: sequence 20, next frame 7, blend 9",
+      "defaultStop": "above high threshold with history(4) >= 0.8f: ordinary action-3 entry selects 5/6, next frame 4, blend 9",
+      "recentInputThreshold": 0.800000011920929,
+      "history": "30 entries of unclamped conditioned-stick magnitude; write then advance head; read head - min(available, lookback)",
+      "slowRelease": "at or below low threshold, action age > 25 and ordinary caller guard clear: standing 0 with preset -1",
+      "standingCurve": [
+        0.15000000596046448,
+        0.28999999165534973,
+        0.41999998688697815,
+        0.5299999713897705,
+        0.6299999952316284,
+        0.7200000286102295,
+        0.800000011920929,
+        0.8700000047683716,
+        0.9300000071525574,
+        0.9700000286102295,
+        1.0
+      ],
+      "restartInputStrictlyAbove": 0.20000000298023224,
+      "movingRestartInputStrictlyAbove": 0.5,
+      "idleRestartInputStrictlyAbove": 0.2199999988079071,
+      "zeroScalarRestart": "action 0 with animation selection suppressed; ordinary idle update can re-enter locomotion",
+      "terminalStop": "animation end-cycle bit enters standing before input restart checks",
+      "evaluatedTime": "interpolate signed frame timestamp / 16 normally; snapshot blend uses target time + fraction; wrap uses current time + fraction",
+      "limits": [
+        "Ordinary callers only: equipment, aiming, combat and other action overrides excluded.",
+        "Host contact data and scalar reconstruction remain approximations; movement release tables are unchanged.",
+        "Restart entry also seeds/caps native scalar and clears it for an opposed-facing stop history; full motion ownership is not integrated by presentation."
+      ]
+    }
+  },
+  "crouchSurfaceBraking": {
+    "scope": "action-4 residual carry braking; not the complete ice-slide action controller",
+    "surfaceClass": 7,
+    "iceFlag": "P+0x12e2",
+    "flagProducer": "clear 16 bytes from P+0x12e0, then set P+0x12e2 to 1 for preceding surface class 7",
+    "normalDefault": "zero ice flag selects 6.48f; no additional material-indexed coefficient in this branch",
+    "coefficientRatioOrdinaryToIce": 3.811764610184933,
+    "nominalDecayPerUpdateF32": {
+      "ordinary": 0.0018000000854954123,
+      "ice": 0.0004722222511190921
+    },
+    "levels": [
+      {
+        "levelId": 0,
+        "overlaySha256": "eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804",
+        "blocks": {
+          "surfaceFlagSetup": {
+            "range": [
+              "0x0020b960",
+              "0x0020bba4"
+            ],
+            "sha256": "33813f8b0259f07abf5a061d2b9391afeb4387896ebb9f7fb4937bf90045c641"
+          },
+          "coefficientSelection": {
+            "range": [
+              "0x00217f4c",
+              "0x00217fa0"
+            ],
+            "sha256": "4d24b0a795c0c6bd58937b9cfcbe88ba6e65695d414c6e9e6a1b6135c63aa4cf"
+          },
+          "residualCarryDecay": {
+            "range": [
+              "0x00216710",
+              "0x002167cc"
+            ],
+            "sha256": "b0d8137a5645f27e1ba4ca75ba82e4fa7a64eb94173bcfd8230be729b4ddb006"
+          },
+          "zeroFillHelper": {
+            "range": [
+              "0x001ff068",
+              "0x001ff090"
+            ],
+            "sha256": "215cab62ad8e33f5e730cb9db34dff4f602feb05bda7d9f07e6032747fee3a37"
+          }
+        },
+        "ordinaryCoefficient": 6.480000019073486,
+        "iceCoefficient": 1.7000000476837158
+      },
+      {
+        "levelId": 12,
+        "overlaySha256": "ffe8c2b5dcb8e6d02d131037472936a766cbf9aabeeeb809a17057fa69515622",
+        "blocks": {
+          "surfaceFlagSetup": {
+            "range": [
+              "0x0022de30",
+              "0x0022dfb0"
+            ],
+            "sha256": "39fc97a677f78db922db27e5a54deb4ae1cfec2638912e26cae3186d107bb10b"
+          },
+          "coefficientSelection": {
+            "range": [
+              "0x00238ed4",
+              "0x00238f28"
+            ],
+            "sha256": "4d24b0a795c0c6bd58937b9cfcbe88ba6e65695d414c6e9e6a1b6135c63aa4cf"
+          },
+          "residualCarryDecay": {
+            "range": [
+              "0x002378a8",
+              "0x00237964"
+            ],
+            "sha256": "047217d4438fa753e3d5ee678b8b6d3d60d396b7ba8d1351f98d47c2da0d5c22"
+          },
+          "zeroFillHelper": {
+            "range": [
+              "0x00221f78",
+              "0x00221fa0"
+            ],
+            "sha256": "215cab62ad8e33f5e730cb9db34dff4f602feb05bda7d9f07e6032747fee3a37"
+          }
+        },
+        "ordinaryCoefficient": 6.480000019073486,
+        "iceCoefficient": 1.7000000476837158
+      }
+    ],
+    "limits": [
+      "Both mapped overlays and their local branches are verified independently; addresses are level-specific.",
+      "Hoven class-7 floor reachability is independently retained in rac1-special-surface-reachability.json.",
+      "Other surface actions and contact corrections can change travel; the coefficient ratio is not a measured distance ratio.",
+      "OBP already uses the ordinary measured decay; ice action execution remains unsupported.",
+      "No extra ordinary friction multiplier was found in this branch; the full contact executor remains incomplete."
+    ]
+  },
+  "playerAnimation": {
+    "selectorStore": "0x00232494",
+    "advanceRoutine": "0x00232670",
+    "defaultFrameWrapRange": [
+      "0x00232930",
+      "0x00232998"
+    ],
+    "defaultFrameWrapSha256": "a213378fbacf922c74b1b985b013fda3881b0b5eda2f415423edd08b1efd87e5"
+  },
+  "limits": [
+    "Static initialized code/data only; runtime player state and current inputs are unavailable.",
+    "The twelve signatures match retained loaded-memory evidence; no new gameplay trial was run.",
+    "The default animation frame-wrap path does not alone establish every caller's playback policy."
+  ]
+}

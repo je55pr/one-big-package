@@ -12,8 +12,33 @@ public static class Rac1PlayerActionDomain
     public const int Neutral = 0x00;
     public const int Crouch = 0x04;
     public const int Jump = 0x07;
+    public const int PackGlide = 0x08;
+    public const int MovingJump = 0x09;
+    public const int HeliStretchJump = 0x0a;
+    public const int DirectionalFlip = 0x0b;
+    public const int ThrusterHighJump = 0x0d;
+    public const int AerialBoost = 0x0e;
+    public const int HeliHighJump = 0x0f;
+    public const int ThrusterStretchJump = 0x10;
+    public const int PowerSlam = 0x22;
+    public const int WallJump = 0x11;
     public const int Wrench = 0x13;
+    public const int WrenchHyperStrike = 0x14;
+    public const int WrenchCometStrike = 0x15;
     public const int FirstRangedFire = 0x23;
+    public const int LedgeGrab = 0x18;
+    public const int LedgeHang = 0x19;
+    public const int LedgeShimmyLeft = 0x1a;
+    public const int LedgeShimmyRight = 0x1b;
+    public const int LedgeJump = 0x1c;
+    public const int SwingshotReady = 0x24;
+    public const int SwingshotPull = 0x25;
+    public const int SwingshotSwing = 0x26;
+    public const int UnderwaterMoving = 0x33;
+    public const int UnderwaterIdle = 0x34;
+    public const int HydroPackSwim = 0x35;
+    public const int SurfaceSwimMoving = 0x36;
+    public const int SurfaceSwimIdle = 0x37;
     public const int IceSlide = 0x2f;
     public const int Magneboot = 0x3f;
     public const int Mud = 0x68;
@@ -42,7 +67,32 @@ public static class Rac1PlayerActionDomain
         Neutral => "neutral",
         Crouch => "crouch",
         Jump => "jump",
+        PackGlide => "pack-glide",
+        MovingJump => "moving-jump",
+        HeliStretchJump => "heli-stretch-jump",
+        DirectionalFlip => "directional-flip",
+        ThrusterHighJump => "thruster-high-jump",
+        AerialBoost => "aerial-boost",
+        HeliHighJump => "heli-high-jump",
+        ThrusterStretchJump => "thruster-stretch-jump",
+        PowerSlam => "thruster-power-slam",
+        WallJump => "wall-jump",
+        LedgeGrab => "ledge-grab",
+        LedgeHang => "ledge-hang",
+        LedgeShimmyLeft => "ledge-shimmy-left",
+        LedgeShimmyRight => "ledge-shimmy-right",
+        LedgeJump => "ledge-jump",
+        SwingshotReady => "swingshot-ready",
+        SwingshotPull => "swingshot-pull",
+        SwingshotSwing => "swingshot-swing",
+        UnderwaterMoving => "underwater-moving",
+        UnderwaterIdle => "underwater-idle",
+        HydroPackSwim => "hydro-pack-swim",
+        SurfaceSwimMoving => "surface-swim-moving",
+        SurfaceSwimIdle => "surface-swim-idle",
         Wrench => "wrench",
+        WrenchHyperStrike => "wrench-hyper-strike",
+        WrenchCometStrike => "wrench-comet-strike",
         FirstRangedFire => "first-ranged-fire",
         IceSlide => "ice-slide",
         Magneboot => "magneboot",
@@ -114,6 +164,8 @@ public sealed class Rac1PlayerActionRuntimeSession
     {
         RegisterHandler(new NeutralActionHandler());
         RegisterHandler(new WrenchActionHandler());
+        RegisterHandler(new WrenchVariantActionHandler(Rac1PlayerActionDomain.WrenchHyperStrike, 43, 4));
+        RegisterHandler(new WrenchVariantActionHandler(Rac1PlayerActionDomain.WrenchCometStrike, 26, 0));
         RegisterHandler(new FirstRangedFireActionHandler());
         RegisterHandler(new EnvironmentalFallDeathActionHandler());
         _current = new Rac1PlayerActionSnapshot(
@@ -169,6 +221,16 @@ public sealed class Rac1PlayerActionRuntimeSession
                 $"0x{nativeState:x2} entry sequence {expected.NativeSequence?.ToString() ?? "none"}.");
 
         return EnterState(nativeState);
+    }
+
+    public Rac1PlayerActionSnapshot ApplyWrenchAttack(OBP.RAC1.Gameplay.Rac1WrenchAttackProfile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+        Rac1PlayerActionDomain.Validate(profile.NativeAction);
+        _current = new(profile.NativeAction, _current.CurrentNativeState,
+            Rac1PlayerActionDomain.Describe(profile.NativeAction), profile.BodySequence, profile.EntryFrame,
+            _current.OrdinaryMovement, _current.EntryGeneration + 1, UpdateGeneration: 0);
+        return _current;
     }
 
     public Rac1PlayerActionSnapshot EnterState(int nativeState)
@@ -227,6 +289,14 @@ public sealed class Rac1PlayerActionRuntimeSession
                 0,
                 previous.OrdinaryMovement);
 
+        public Rac1PlayerActionSnapshot Update(Rac1PlayerActionSnapshot current) => current;
+    }
+
+    private sealed class WrenchVariantActionHandler(int action, int sequence, int frame) : IRac1PlayerActionHandler
+    {
+        public int NativeState => action;
+        public Rac1PlayerActionEntry Initialize(Rac1PlayerActionSnapshot previous) =>
+            new(sequence, frame, previous.OrdinaryMovement);
         public Rac1PlayerActionSnapshot Update(Rac1PlayerActionSnapshot current) => current;
     }
 

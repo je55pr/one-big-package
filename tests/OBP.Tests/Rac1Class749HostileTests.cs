@@ -230,6 +230,20 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
+    public void HyperStrikeSubtractsTwoWithoutClampingTheNativeOneHealthVictim()
+    {
+        var source = Class749(149, health: 1f);
+        var session = Registered(source);
+        var wrench = new Rac1WrenchDamageResult(Rac1WrenchContactPath.AnimatedSweepHostGeometry,
+            Rac1WrenchAttackProfile.Profiles[4].NativeDamage, Rac1WrenchAttackProfile.NativeDamageFlags);
+        var damage = Rac1DamageRuntime.FromWrench(new(749, 149), wrench);
+        var hit = session.ApplyDamage(source, damage);
+        Assert.Equal(-1f, hit.Health);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, hit.NativeState);
+        Assert.True(session.CompleteRecoveredDamageReaction(source).RuntimeState.IsTerminalized);
+    }
+
+    [Fact]
     public void GenericDamageConsumerRejectsUnrecoveredBombConsequence()
     {
         var source = Class749(149, health: 1f);

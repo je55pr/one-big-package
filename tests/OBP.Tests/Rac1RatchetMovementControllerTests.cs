@@ -393,7 +393,7 @@ public sealed class Rac1RatchetMovementControllerTests
     }
 
     [Fact]
-    public void SupportedOrdinaryGround_AddsRetailPreContactAdhesionOnlyOutsideJumpStates()
+    public void SupportedOrdinaryGround_AndAnticipationUseSeparateNativeDownRequests()
     {
         var controller = new Rac1RatchetMovementController();
         var idle = controller.Step(new PlayerControlIntent(0, 0, false, false), Grounded);
@@ -406,7 +406,7 @@ public sealed class Rac1RatchetMovementControllerTests
         var anticipation = controller.Step(new PlayerControlIntent(0, 0, true, true), Grounded);
         Assert.Equal(Rac1RatchetMovementPhase.JumpAnticipation, anticipation.Phase);
         Assert.Equal(
-            anticipation.Vertical,
+            -Rac1OrdinaryGroundContactMotion.JumpAnticipationDownwardRequestPerTick,
             Rac1OrdinaryGroundContactMotion.ResolvePreContactVertical(anticipation, Grounded),
             12);
     }
@@ -491,6 +491,34 @@ public sealed class Rac1RatchetMovementControllerTests
 
         Assert.Equal(before - Rac1RatchetMovementController.CrouchDecelerationPerTick, crouched.PlanarY, 9);
         Assert.True(crouched.PlanarMagnitude < before);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void FullRunToHeldCrouchStopsWithinOneSecondWithoutSteeringResidualMotion(bool keepDirection)
+    {
+        var controller = new Rac1RatchetMovementController();
+        var run = new PlayerControlIntent(0, 1, false, false);
+        for (int tick = 0; tick < 60; tick++)
+            controller.Step(run, Grounded, _ => Math.PI / 2d);
+        Assert.Equal(Rac1RatchetMovementController.MaximumPlanarStep, controller.PlanarMagnitude);
+        // Change facing while crouching: residual translation retains its old
+        // heading and cannot accelerate toward the stick or new facing.
+        var crouch = new PlayerControlIntent(keepDirection ? 1 : 0, 0, false, false, CrouchHeld: true);
+        double previous = controller.PlanarMagnitude;
+        int stoppedAt = 0;
+        for (int tick = 1; tick <= 90; tick++)
+        {
+            var step = controller.Step(crouch, Grounded, _ => 0d);
+            Assert.InRange(step.PlanarMagnitude, 0, previous);
+            Assert.Equal(0, step.PlanarX, 12);
+            if (step.PlanarMagnitude == 0 && stoppedAt == 0)
+                stoppedAt = tick;
+            previous = step.PlanarMagnitude;
+        }
+        Assert.Equal(53, stoppedAt);
+        Assert.Equal(0, controller.PlanarMagnitude);
     }
 
     [Theory]

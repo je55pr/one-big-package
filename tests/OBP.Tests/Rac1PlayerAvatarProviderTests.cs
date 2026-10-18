@@ -48,7 +48,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal("rac1-ntscu-original", avatar.Identity.BuildId);
         Assert.Equal("ratchet", avatar.Identity.AvatarId);
         Assert.Equal("rac1:ratchet:moby-class-0", avatar.Identity.ModelId);
-        Assert.Equal(11, avatar.AnimationClips.Count);
+        Assert.Equal(36, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.LocalAnimationFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
         Assert.Equal(5_583, avatar.VertexCount);
@@ -62,15 +62,40 @@ public sealed class Rac1PlayerAvatarProviderTests
                 "sustained-locomotion",
                 "locomotion-stop-a",
                 "locomotion-stop-b",
+                "locomotion-stop-middle",
                 "stationary-jump",
                 "moving-jump",
                 "crouch",
                 "crouch-turn-right",
                 "crouch-turn-left",
                 "primary-attack",
+                "thruster-high-jump",
+                "heli-stretch-jump",
+                "pack-glide",
+                "heli-high-jump",
+                "aerial-boost",
+                "directional-flip-forward-right",
+                "directional-flip-left",
+                "directional-flip-back",
+                "thruster-stretch-jump",
+                "ledge-grab",
+                "ledge-hang",
+                "ledge-jump",
+                "ledge-shimmy-a",
+                "ledge-shimmy-b",
+                "swingshot-swing",
+                "ice-slide",
+                "swingshot-attach",
+                "swingshot-pendulum",
+                "thruster-power-slam",
+                "wall-jump",
+                "wrench-combo-second",
+                "wrench-combo-third",
+                "wrench-comet-strike",
+                "wrench-hyper-strike",
             },
             avatar.AnimationClips.Select(clip => clip.Id).ToArray());
-        Assert.Equal(2, avatar.AnimationClips.Count(
+        Assert.Equal(3, avatar.AnimationClips.Count(
             clip => clip.Role == PlayerAvatarAnimationRole.LocomotionStopVariant));
         Assert.True(avatar.RequiredAnimationClip(PlayerAvatarAnimationRole.StationaryJump).HasVariableTiming);
         Assert.True(avatar.RequiredAnimationClip(PlayerAvatarAnimationRole.MovingJump).HasVariableTiming);
@@ -114,6 +139,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         AssertNeutralClip(avatar, "sustained-locomotion", native.Clip(Rac1RatchetAvatar.SustainedLocomotionSequenceId));
         AssertNeutralClip(avatar, "locomotion-stop-a", native.Clip(Rac1RatchetAvatar.LocomotionStopVariantASequenceId));
         AssertNeutralClip(avatar, "locomotion-stop-b", native.Clip(Rac1RatchetAvatar.LocomotionStopVariantBSequenceId));
+        AssertNeutralClip(avatar, "locomotion-stop-middle", native.Clip(Rac1RatchetAvatar.LocomotionStopMiddleSequenceId));
         AssertNeutralClip(avatar, "stationary-jump", native.Clip(Rac1RatchetAvatar.StationaryJumpSequenceId));
         AssertNeutralClip(avatar, "moving-jump", native.Clip(Rac1RatchetAvatar.MovingJumpSequenceId));
         AssertNeutralClip(avatar, "crouch", native.Clip(Rac1RatchetAvatar.CrouchSequenceId));
@@ -136,7 +162,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         foreach (var level in catalogue.Levels.OrderBy(level => level.LevelId))
         {
             var core = Rac1LevelCore.Open(reader, level);
-            var native = Rac1RatchetAvatar.Decode(core);
+            var native = Rac1RatchetAvatar.Decode(core, includeTraversalClips: false);
             Assert.Equal(canonical.Surfaces.Select(s => s.TextureId), native.TextureIds);
             Assert.Equal(canonical.LocalAnimationFrames.Count, native.StandingFrames.Count);
             for (int frame = 0; frame < native.StandingFrames.Count; frame++)
@@ -171,6 +197,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         var clip = Assert.Single(avatar.AnimationClips, clip => clip.Id == clipId);
         Assert.Equal(native.LocalFrames.Count, clip.LocalFrames.Count);
         Assert.Equal(native.FrameDurationsSeconds, clip.FrameDurationsSeconds);
+        Assert.Equal(native.FrameTimelinePositions, clip.FrameTimelinePositions);
         for (int frame = 0; frame < native.LocalFrames.Count; frame++)
             Assert.Equal(native.LocalFrames[frame], clip.LocalFrames[frame]);
     }

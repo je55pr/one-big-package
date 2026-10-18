@@ -13,8 +13,11 @@ A generator path embedded inside an archival or frozen artifact is historical pr
 
 ## Active / reproducible
 
+- `rac1-crate-bolt-probe.json`: `tools/rac1-crate-bolt-probe.py --iso AUTHORIZED_ISO --out research/generated/rac1-crate-bolt-probe.json`; schema2 verifies NTSC-U authority and emits thirteen executable block hashes, state destinations, authored/emitted bolt scales, rest-pose constants and ammo descriptor facts. No retail payloads. Consumed by `Rac1CratePickupNativeSourceTests`.
+
 | Artifact | Current producer |
 |---|---|
+| `rac1-level-overlay-probe.json` | `tools/rac1-level-overlay-probe.py`; verifies Veldin/Hoven overlays and emits payload-free addresses, hashes and derived movement/surface behavior |
 | `rac1-analogue-movement-probe.json` | `tools/rac1-analogue-movement-harness.py` |
 | `rac1-authored-moby-census.csv` | `obp rac1-authored-moby-census` in `OBP.Cli` |
 | `rac1-authored-moby-census.json` | `obp rac1-authored-moby-census` in `OBP.Cli` |

@@ -29,6 +29,18 @@ public sealed class Rac1DamageRuntimeTests
     }
 
     [Fact]
+    public void AnimatedWrenchRetainsClass71EmitterAndPlayerOwnership()
+    {
+        var damage = new Rac1WrenchDamageResult(Rac1WrenchContactPath.AnimatedSweepHostGeometry,
+            2, Rac1WrenchAttackProfile.NativeDamageFlags);
+        var transport = Rac1DamageRuntime.FromWrench(new(749, 149), damage);
+        Assert.Equal(Rac1GameplayEntityRef.PlayerWrench, transport.Source);
+        Assert.Equal(71, transport.Source.NativeClassId);
+        Assert.Equal(Rac1GameplayEntityRef.Player, transport.Owner?.RuntimeEntity);
+        Assert.Equal(2, transport.NativeDamage);
+    }
+
+    [Fact]
     public void Class749AttackCarriesSourceMobyAsExactOwner()
     {
         var source = new Rac1MobyRuntimeKey(

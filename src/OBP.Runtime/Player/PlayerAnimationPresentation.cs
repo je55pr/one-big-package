@@ -3,7 +3,7 @@ namespace OBP.Runtime.Player;
 /// <summary>
 /// Engine-neutral presentation decision for one player-avatar clip.
 /// Source-specific sequence/state identifiers are opaque diagnostics; renderers
-/// consume only the resolved clip id, clock origin, and loop policy.
+/// consume only the resolved clip, clock policy, and optional sampled pose.
 /// </summary>
 public sealed record PlayerAnimationPresentation(
     PlayerAnimationState SemanticState,
@@ -11,7 +11,8 @@ public sealed record PlayerAnimationPresentation(
     double ClipStartedAtSeconds,
     bool Loop,
     string? SourceSequenceKey = null,
-    string? SourceStateKey = null)
+    string? SourceStateKey = null,
+    PlayerAvatarSampledPose? SampledPose = null)
 {
     public double ElapsedAt(double clockSeconds)
     {
@@ -20,6 +21,14 @@ public sealed record PlayerAnimationPresentation(
         return Math.Max(0, clockSeconds - ClipStartedAtSeconds);
     }
 }
+
+/// <summary>
+/// A pose sampled by the source controller on a simulation update. Coordinates
+/// use the avatar's model-local XYZ stream; render clocks must not advance it.
+/// FrameIndex identifies the current target-clip frame for diagnostics (during
+/// a blend, the target frame). Treat LocalPositions as immutable after publishing.
+/// </summary>
+public sealed record PlayerAvatarSampledPose(int FrameIndex, double[] LocalPositions);
 
 /// <summary>
 /// Source-aware, engine-neutral owner of player animation selection semantics.

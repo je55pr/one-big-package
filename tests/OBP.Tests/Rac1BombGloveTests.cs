@@ -148,16 +148,18 @@ public sealed class Rac1BombGloveTests
     }
 
     [Fact]
-    public void ContactAdmitsOnlyRepresentativeGoalOneHostileUntilProjectileCompletes()
+    public void ContactAdmitsCratesAndRecoveredHostileUntilProjectileCompletes()
     {
         var session = new Rac1BombGloveSession(initialAmmo: 2);
         var shot = Assert.IsType<Rac1BombGloveShot>(session.Step(true).Shot);
         var crate = Dynamic(Rac1BoltCrate.NativeClassId, instanceIndex: 89);
         var hostile = Dynamic(Rac1Class749Hostile.NativeClassId, instanceIndex: 149);
 
-        Assert.Null(session.ResolveGoal1Contact(
+        var crateDamage = Assert.IsType<Rac1BombGloveDamageResult>(session.ResolveGoal1Contact(
             shot.Projectile.ProjectileId,
             Contact(crate, Rac1BoltCrate.ActiveNativeState)));
+        Assert.Equal(500, crateDamage.TargetNativeClassId);
+        Assert.NotEqual(0u, crateDamage.NativeDamageFlags & 0x20000u);
         Assert.Null(session.ResolveGoal1Contact(
             shot.Projectile.ProjectileId,
             Contact(hostile, Rac1Class749Hostile.TargetSearchNativeState, isSourceMoby: true)));
@@ -200,11 +202,13 @@ public sealed class Rac1BombGloveTests
             ]);
 
         Assert.True(resolution.ProjectileCompleted);
-        Assert.Equal(1, resolution.AdmittedContactCount);
-        Assert.Single(resolution.DamageResults);
-        Assert.Equal(Rac1Class749Hostile.NativeClassId, resolution.DamageResults[0].TargetNativeClassId);
-        Assert.Equal(hostile.InstanceIndex, resolution.DamageResults[0].TargetInstanceIndex);
-        var damageEvent = Assert.Single(resolution.DamageEvents);
+        Assert.Equal(2, resolution.AdmittedContactCount);
+        Assert.Equal(2, resolution.DamageResults.Count);
+        Assert.Equal(Rac1BoltCrate.NativeClassId, resolution.DamageResults[0].TargetNativeClassId);
+        Assert.Equal(Rac1Class749Hostile.NativeClassId, resolution.DamageResults[1].TargetNativeClassId);
+        Assert.Equal(hostile.InstanceIndex, resolution.DamageResults[1].TargetInstanceIndex);
+        Assert.Equal(2, resolution.DamageEvents.Count);
+        var damageEvent = resolution.DamageEvents[1];
         Assert.Equal(
             Rac1GameplayEntityRef.Moby(new Rac1MobyRuntimeKey(
                 hostile.NativeClassId,

@@ -11,6 +11,9 @@ public static class Rac1RatchetSequenceSelection
     public const int StandingSequenceId = 0;
     public const int IdleFidgetASequenceId = 1;
     public const int IdleFidgetBSequenceId = 2;
+    // Historical API names: 3 is also the steady low-speed loop, and 4 is the
+    // high-speed loop. Entry order does not imply a timed one-shot transition.
+    // Recovered scalar-speed/rate rules live in Rac1OrdinaryLocomotionAnimation.
     public const int LocomotionStartSequenceId = 3;
     public const int SustainedLocomotionSequenceId = 4;
     public const int LocomotionStopEarlySequenceId = 5;
@@ -51,10 +54,26 @@ public static class Rac1RatchetSequenceSelection
     public static IReadOnlyList<int> LocomotionEntry => locomotionEntry;
 
     /// <summary>
-    /// All three proven release/settle selectors. Retail chooses among them from
-    /// locomotion-cycle phase. Exact sub-frame boundaries remain unresolved.
+    /// All three proven release/settle selectors. The default action-3 path
+    /// chooses 5/6 by animation time; 20 has a separate release admission path.
     /// </summary>
     public static IReadOnlyList<int> LocomotionStopFamily => locomotionStopFamily;
+
+    /// <summary>
+    /// Default mode-0 action-3 selector (Veldin 0x2237c8), after caller guards.
+    /// Inputs are Moby+0x52 and evaluated animation time P+0xaa8, not the selected
+    /// sequence or an integer frame index. Does not decide entry to action 3 or
+    /// the separate caller-selected sequence-20 release path.
+    /// </summary>
+    public static int SelectDefaultStopSequence(int previousPoseSequence, float animationTime)
+    {
+        if ((uint)previousPoseSequence > byte.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(previousPoseSequence));
+        if (!float.IsFinite(animationTime))
+            throw new ArgumentOutOfRangeException(nameof(animationTime));
+        return previousPoseSequence == 4 && animationTime > 3f && animationTime < 16f
+            ? LocomotionStopEarlySequenceId : LocomotionStopLateSequenceId;
+    }
 
     public static IReadOnlyList<int> EnvironmentalDeathSequencePath => environmentalDeathPath;
 

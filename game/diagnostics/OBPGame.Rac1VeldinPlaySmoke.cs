@@ -187,7 +187,7 @@ public partial class OBPGame
             throw new InvalidOperationException(
                 $"Opening Nanotech was {life.Nanotech}, dead={life.IsDead}; expected 4/alive.");
         if (_rac1BoltCrates.DestroyedCrateCount != 0 ||
-            _rac1PickupNodes.Count != 0 ||
+            _rac1PickupNodes.Keys.Any(id => id > 0) ||
             _rac1Projectiles.Count != 0)
             throw new InvalidOperationException(
                 "Opening Veldin gameplay state was not clean.");
@@ -374,21 +374,22 @@ public partial class OBPGame
 
         await TapRac1PrimaryActionAsync();
         await Rac1SmokeWaitAsync(
-            () => _rac1BoltCrates.DestroyedCrateCount == destroyedBefore + 1,
+            () => _rac1BoltCrates.DestroyedCrateCount > destroyedBefore && !IsRac1GameplayActive(crate),
             120,
             "ordinary wrench crate contact");
 
-        int brokenInstance = _rac1CrateNodes
+        int[] brokenInstances = _rac1CrateNodes
             .Where(node => visibleBefore.Contains(node.Source.InstanceIndex))
             .Where(node => IsInstanceValid(node.Root) && !node.Root.Visible)
             .Select(node => node.Source.InstanceIndex)
-            .DefaultIfEmpty(-1)
-            .First();
+            .ToArray();
+        Require(brokenInstances.Contains(crate.Source.InstanceIndex),
+            "ordinary wrench sweep missed the planned crate");
 
         float travelled = HorizontalDistance(routeStart, _player.GlobalPosition);
         GD.Print(
             $"[rac1-veldin-play] crate wrench PASS: planned=i{crate.Source.InstanceIndex}, " +
-            $"broken=i{brokenInstance}, direct={directDistance:0.###}, " +
+            $"broken=[{string.Join(',', brokenInstances)}], direct={directDistance:0.###}, " +
             $"route-points={waypoints.Count}, travel={travelled:0.###}, " +
             $"final={finalApproach:0.###}");
     }
@@ -695,9 +696,11 @@ public partial class OBPGame
 
     private async Task TapRac1PrimaryActionAsync()
     {
-        Input.ActionPress(RawGamepadInput.Action);
+        StringName action = _rac1Weapons.Equipped == Rac1WeaponId.FirstRanged
+            ? RawGamepadInput.Traversal : RawGamepadInput.Action;
+        Input.ActionPress(action);
         await PhysicsFramesAsync(2);
-        Input.ActionRelease(RawGamepadInput.Action);
+        Input.ActionRelease(action);
         await PhysicsFramesAsync(2);
     }
 

@@ -4,9 +4,9 @@ using OBP.Runtime.Gameplay;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Deterministic host for the first recovered R&C1 Bolt Crate loop. The caller
-/// supplies the native RNG-selected total; this class validates it against the
-/// recovered retail range and reproduces the proven low-value partition.
+/// Source-owned break/reward session for R&C1 wood, metal, ammo and Nanotech
+/// crates. The caller supplies an RNG-selected total within the retail interval.
+/// Physical bolt motion and supply resources have their own source sessions.
 /// </summary>
 public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
 {
@@ -34,6 +34,8 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
         _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
         _runtime.RegisterDamageConsumer(this);
+        foreach (int nativeClass in Rac1BoltCrate.CrateClasses.Where(id => id != NativeClassId))
+            _runtime.RegisterDamageConsumer(new FamilyConsumer(nativeClass, this));
     }
 
     public int NativeClassId => Rac1BoltCrate.NativeClassId;
@@ -51,7 +53,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
     public int CollectedBolts { get; private set; }
     public int DestroyedCrateCount =>
         _persistence.UidStates.Count(pair =>
-            pair.Key.NativeClassId == Rac1BoltCrate.NativeClassId &&
+            Rac1BoltCrate.IsCrateClass(pair.Key.NativeClassId) &&
             pair.Value == Rac1MobyUidPersistenceBits.BothSet);
     public int OutstandingPickupCount => _outstanding.Count;
 
@@ -60,7 +62,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
         RuntimeEntityState current)
     {
         if (source.SourceGame != "rac1" ||
-            source.NativeClassId != Rac1BoltCrate.NativeClassId)
+            !Rac1BoltCrate.IsCrateClass(source.NativeClassId))
             throw new ArgumentException(
                 "Source is not an R&C1 class-500 Bolt Crate.",
                 nameof(source));
@@ -92,14 +94,14 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(damage);
         if (source.SourceGame != "rac1" ||
-            source.NativeClassId != Rac1BoltCrate.NativeClassId)
+            !Rac1BoltCrate.IsCrateClass(source.NativeClassId))
             return false;
 
         var instance = _runtime.Require(source);
         return damage.Target.MatchesMoby(instance.Key) &&
                instance.IsActive &&
                instance.State.NativeState == Rac1BoltCrate.ActiveNativeState &&
-               Rac1BoltCrate.ShouldBreak(damage.NativeDamage);
+               Rac1BoltCrate.AdmitsDamage(source.NativeClassId, damage.NativeDamage, damage.NativeDamageFlags);
     }
 
     public Rac1BoltCrateDamageAdmission AdmitDamage(
@@ -130,6 +132,8 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
 
         RuntimeDynamicObject source = runtimeInstance.Source;
         admission.EntityState.EnsureMatches(source);
+        if (!Rac1BoltCrate.AdmitsDamage(source.NativeClassId, admission.NativeDamage, admission.NativeDamageFlags))
+            throw new InvalidOperationException("Crate damage completion does not satisfy its native class flags.");
         if (!runtimeInstance.IsActive ||
             runtimeInstance.State.NativeState != Rac1BoltCrate.ActiveNativeState)
             throw new InvalidOperationException(
@@ -158,7 +162,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
                 nameof(damage));
 
         _ = Register(source, current);
-        if (!Rac1BoltCrate.ShouldBreak(damage.NativeDamage))
+        if (!Rac1BoltCrate.AdmitsDamage(source.NativeClassId, damage.NativeDamage, damage.NativeDamageFlags))
             return null;
 
         var admission =
@@ -208,13 +212,16 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
             throw new ArgumentOutOfRangeException(nameof(selectedTotal),
                 $"Native selected total {selectedTotal} is outside recovered range {range.Minimum}..{range.Maximum}.");
 
-        var values = Rac1BoltCrate.PartitionRepresentativeTotal(selectedTotal);
-        var persisted = _persistence.QueryUid(source);
+        var values = Rac1BoltCrate.PartitionTotal(selectedTotal);
+        // The common crate family uses live +b2 for persistence. Keep the
+        // globally unnamed placement field out of neutral importer identity.
+        var persistenceSource = source.NativeUid.HasValue ? source : source with { NativeUid = authored.Uid };
+        var persisted = _persistence.QueryUid(persistenceSource);
         if (persisted.LevelIndexedMap || persisted.LocalSessionMap)
             throw new InvalidOperationException(
                 $"Bolt Crate UID {authored.Uid} already has recovered persistence state in level {_persistence.LevelId}.");
 
-        _persistence.UpdateUid(source, Rac1MobyUidPersistenceBits.BothSet);
+        _persistence.UpdateUid(persistenceSource, Rac1MobyUidPersistenceBits.BothSet);
         var pickups = new List<Rac1BoltPickup>(values.Count);
         foreach (int value in values)
         {
@@ -222,6 +229,8 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
             {
                 1 => 13,
                 5 => 14,
+                20 => 15,
+                50 => 16,
                 _ => throw new InvalidOperationException($"Unexpected representative denomination {value}."),
             };
             var pickup = new Rac1BoltPickup(_nextPickupId++, nativeClassId, value);
@@ -252,6 +261,15 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
             throw new InvalidDataException($"Pickup class/value mismatch: {pickup.NativeClassId} != {pickup.Value}.");
         CollectedBolts = checked(CollectedBolts + retailValue);
         return retailValue;
+    }
+
+    public bool DiscardPickup(int pickupId) => _outstanding.Remove(pickupId);
+
+    private sealed class FamilyConsumer(int nativeClass, Rac1BoltCrateSession owner) : IRac1MobyDamageConsumer
+    {
+        public int NativeClassId => nativeClass;
+        public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) => owner.CanApplyDamage(source, damage);
+        public object ApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) => owner.AdmitDamage(source, damage);
     }
 }
 
