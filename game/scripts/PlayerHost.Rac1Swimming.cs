@@ -46,7 +46,7 @@ public partial class PlayerHost
         bool moving = move.LengthSquared() > .005f;
         _rac1SwimState = _rac1Swimming.Step(new Rac1SwimInput(
             domain, moving, DivePressed: diveHeld, AscendPressed: ascendHeld,
-            DiveAdmitted: true, SurfaceAdmitted: !diveHeld,
+            DiveAdmitted: underwater, SurfaceAdmitted: !underwater,
             OwnsHydroPack: false, HydroRequested: hydroHeld,
             OwnsOxygenMask: false,
             NativeDrowningGuardSatisfied: underwater && GlobalPosition.Y < waterY - 1f));

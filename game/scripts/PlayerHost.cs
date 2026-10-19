@@ -487,6 +487,13 @@ public partial class PlayerHost : CharacterBody3D
         ResetAfterPlacement(_rac1Yaw.CurrentYaw);
     }
 
+    /// <summary>Diagnostics-only water placement without snapping down through a pass-through surface.</summary>
+    internal void StageDevelopmentWaterPosition(Vector3 position)
+    {
+        ApplyDevelopmentReset(position);
+        _placed = true;
+    }
+
     internal void ApplyDevelopmentFlyMode(bool enabled)
     {
         ResetRac1WrenchAttack();
@@ -516,6 +523,9 @@ public partial class PlayerHost : CharacterBody3D
         ResetRac1LedgeTraversal();
         ResetRac1Tether();
         ResetRac1SurfaceMotion();
+        _rac1SwimActive = false;
+        _rac1SwimDrowningReported = false;
+        _rac1Swimming.Reset();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         ResetRac1WrenchAttack();
