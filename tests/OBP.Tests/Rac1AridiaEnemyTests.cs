@@ -111,26 +111,45 @@ public sealed class Rac1AridiaEnemyTests
     }
 
     [Fact]
-    public void NestUsesAuthoredInitialTimerAndAnExistingWaitingSharkNotPlayerProximity()
+    public void NestNeedsNearbyPlayerNativeWaitingSharkAndItsAuthoredTimer()
     {
         var session = new Rac1AridiaEnemySession();
         session.Register(9, Rac1AridiaEnemies.Nest, nestInitialWaitTicks: 60);
         var noPlayer = new Rac1AridiaEnemyFacts(Vector3.Zero, new(40, 0, 0), false, false,
             WaitingSharkCount: 1);
-        for (int i = 0; i < 69; i++)
+        for (int i = 0; i < 200; i++)
             Assert.False(session.Step(9, noPlayer).SpawnSandshark);
-        Assert.True(session.Step(9, noPlayer).SpawnSandshark);
+        var near = noPlayer with { PlayerAlive = true, LineOfSight = true,
+            PlayerPosition = new Vector3(3, 0, 0) };
+        for (int i = 0; i < 69; i++)
+            Assert.False(session.Step(9, near).SpawnSandshark);
+        Assert.True(session.Step(9, near).SpawnSandshark);
         for (int i = 0; i < 170; i++)
-            Assert.False(session.Step(9, noPlayer with { WaitingSharkCount = 0 }).SpawnSandshark);
+            Assert.False(session.Step(9, near with { WaitingSharkCount = 0 }).SpawnSandshark);
         Assert.True(session.Damage(9, 3));
-        Assert.False(session.Step(9, noPlayer).SpawnSandshark);
+        Assert.False(session.Step(9, near).SpawnSandshark);
+    }
+
+    [Fact]
+    public void OrdinaryBuriedSharksAreNeverInventedAsNativeState26NestCandidates()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(1, Rac1AridiaEnemies.Sandshark);
+        Assert.False(session.CanReleaseFromNest(1));
+        Assert.False(session.ReleaseFromNest(1, new(10, 20, 3), new(15, 20, 3)));
+        Assert.Equal(1, session.Count);
+        var close = new Rac1AridiaEnemyFacts(Vector3.Zero, new(3, 0, 0), true, true);
+        Assert.Equal(Rac1AridiaEnemyPhase.Emerging, session.Step(1, close).Phase);
+        Assert.False(session.CanReleaseFromNest(1));
+        Assert.Throws<ArgumentException>(() =>
+            session.Register(2, Rac1AridiaEnemies.Nest, nativeWaitingState26: true));
     }
 
     [Fact]
     public void NestTransfersExistingSharkIntoSourceState27AndSequence11()
     {
         var session = new Rac1AridiaEnemySession();
-        session.Register(1, Rac1AridiaEnemies.Sandshark);
+        session.Register(1, Rac1AridiaEnemies.Sandshark, nativeWaitingState26: true);
         Assert.True(session.CanReleaseFromNest(1));
         Assert.True(session.ReleaseFromNest(1, new(10, 20, 3), new(15, 20, 3)));
         Assert.False(session.CanReleaseFromNest(1));

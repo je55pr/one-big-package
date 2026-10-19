@@ -18,6 +18,8 @@ public partial class OBPGame
     private readonly Dictionary<int, Rac1HostedEnemy> _rac1Enemies = [];
     private Rac1Class1440Session? _rac1Class1440;
     private double _rac1EnemyTicks;
+    private const float AridiaHostUpdateRadius = 24f;
+    private const float AridiaAnimatedPresentationRadius = 18f;
     private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values
         .Where(enemy => !enemy.Buried).Select(enemy => enemy.Node);
 
@@ -104,7 +106,15 @@ public partial class OBPGame
                 // The retail common query solver and per-part collision primitives are not reconstructed.
                 float radius = group.Key == 749 ? .5f : group.Key == Rac1AridiaEnemies.Nest ? 1.1f : group.Key == Rac1AridiaEnemies.Sandshark ? .35f : .45f;
                 float height = group.Key == 749 ? 1 : group.Key == Rac1AridiaEnemies.Sandshark ? .7f : 1.7f;
-                var body = new CharacterBody3D { Name = $"EnemyContact_i{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1 };
+                // A buried Sandshark is not a solid collider in the native
+                // encounter. Register its shape but do not put it into broadphase
+                // contacts until it has actually emerged or been released.
+                uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ? 0u : 1u;
+                var body = new CharacterBody3D
+                {
+                    Name = $"EnemyContact_i{node.Source.InstanceIndex}",
+                    CollisionLayer = initialContactMask, CollisionMask = initialContactMask
+                };
                 body.AddChild(new CollisionShape3D { Shape = new CapsuleShape3D { Radius = radius, Height = height }, Position = Vector3.Up * (height / 2) });
                 result.Root.AddChild(body);
                 body.GlobalPosition = node.Root.GlobalPosition;
@@ -112,7 +122,9 @@ public partial class OBPGame
                 NVector3 nativeForward = ToEffectNative(forward);
                 var enemy = new Rac1HostedEnemy(node, asset, body, group.Key is 749 or 1440 ? new Rac1EnemyMotion(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X)) : null, asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min());
                 node.ConfigureAnimations(asset.Presentation);
-                node.ApplyAnimationSample(enemy.Animation.Sample);
+                if (group.Key != Rac1AridiaEnemies.Sandshark)
+                    node.ApplyAnimationSample(enemy.Animation.Sample);
+                else HideBuriedRac1AridiaEnemy(enemy);
                 SynchronizeRac1Enemy(enemy);
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
             }
@@ -135,10 +147,22 @@ public partial class OBPGame
             {
                 var node = enemy.Node;
                 if (!IsInstanceValid(node.Root) || !IsRac1GameplayActive(node)) continue;
+                bool aridia = Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId);
+                // Aridia has 137 authored enemies; most are dormant, buried or
+                // beyond Ratchet's encounter range. The legacy loop uploaded
+                // animated mesh vertices for *all of them* 60 times/sec.
+                // Freeze their animations and host physics when out of range.
+                // Original meshes stay visible for stationary bots and nests.
+                if (aridia && node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
+                    AridiaHostUpdateRadius * AridiaHostUpdateRadius)
+                {
+                    if (enemy.Buried) HideBuriedRac1AridiaEnemy(enemy);
+                    continue;
+                }
                 // Staged diagnostics may move an authored node; ordinary movement is synchronized below.
                 if (enemy.Body.GlobalPosition.DistanceSquaredTo(node.Root.GlobalPosition) > 1e-5f)
                     enemy.Body.GlobalPosition = node.Root.GlobalPosition;
-                if (enemy.NeedsGroundPlacement)
+                if (enemy.NeedsGroundPlacement && !enemy.Buried)
                 {
                     // Authored creature positions can lie inside the terrain.
                     // Wait for registered collision, then place the full capsule
@@ -148,13 +172,27 @@ public partial class OBPGame
                     enemy.NeedsGroundPlacement = false;
                     node.Root.GlobalPosition = enemy.Body.GlobalPosition;
                 }
+                // Buried Sandsharks need proximity detection only, not per-tick
+                // vertex interpolation or vertex-buffer uploads.
+                bool aridiaStepped = false;
+                if (aridia && enemy.Buried)
+                {
+                    TickRac1AridiaEnemy(enemy);
+                    if (enemy.Buried) continue;
+                    aridiaStepped = true;
+                }
                 foreach (int sound in enemy.Animation.Tick())
                     if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40)
                         PlayRac1PickupSound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
                 if (node.Source.NativeClassId == 749) TickRac1Class749(enemy);
                 else if (node.Source.NativeClassId == 1440) TickRac1Class1440(enemy);
-                else TickRac1AridiaEnemy(enemy);
-                node.ApplyAnimationSample(enemy.Animation.Sample);
+                else if (!aridiaStepped) TickRac1AridiaEnemy(enemy);
+                // All known Aridia attacks occur within the native-candidate
+                // host encounter region. Preserve gameplay ticks at 24 units,
+                // but avoid CPU skinning/GPU buffer uploads beyond 18 units.
+                if (!aridia || node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) <=
+                    AridiaAnimatedPresentationRadius * AridiaAnimatedPresentationRadius)
+                    node.ApplyAnimationSample(enemy.Animation.Sample);
                 SynchronizeRac1Enemy(enemy);
                 if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
                     RestoreRac1AridiaEnemyVisibility(enemy);

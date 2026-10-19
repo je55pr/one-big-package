@@ -97,16 +97,21 @@ public sealed class Rac1AridiaEnemySession
         public Vector3 LaunchMotion { get; set; }
         public float LaunchFallSpeed { get; set; }
         public bool WasReleasedFromNest { get; set; }
+        public bool NativeWaitingState26 { get; set; }
     }
 
     private readonly Dictionary<int, Entry> _entries = [];
     public int Count => _entries.Count;
 
-    public void Register(int instanceIndex, int nativeClass, float yaw = 0, int nestInitialWaitTicks = 60)
+    public void Register(int instanceIndex, int nativeClass, float yaw = 0, int nestInitialWaitTicks = 60,
+        bool nativeWaitingState26 = false)
     {
         if (!Rac1AridiaEnemies.IsEnemyClass(nativeClass) || nestInitialWaitTicks < 0)
             throw new ArgumentOutOfRangeException(nameof(nativeClass));
-        if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks)))
+        if (nativeWaitingState26 && nativeClass != Rac1AridiaEnemies.Sandshark)
+            throw new ArgumentException("Only a Sandshark may be in native waiting state 26.", nameof(nativeWaitingState26));
+        if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks)
+            { NativeWaitingState26 = nativeWaitingState26 }))
             throw new InvalidOperationException($"Duplicate Aridia enemy instance {instanceIndex}.");
     }
 
@@ -115,8 +120,11 @@ public sealed class Rac1AridiaEnemySession
     public bool CanReleaseFromNest(int instanceIndex)
     {
         var entry = _entries[instanceIndex];
+        // Native 0x2dd2a8 filters for *state 26*, NOT all buried sharks.
+        // None of the authored class-580 placements initially qualify merely
+        // by being invisible; only an actual state-26 transition may opt in.
         return entry.ClassId == Rac1AridiaEnemies.Sandshark && entry.Health > 0 &&
-            entry.Phase == Rac1AridiaEnemyPhase.Buried;
+            entry.Phase == Rac1AridiaEnemyPhase.Buried && entry.NativeWaitingState26;
     }
 
     /// <summary>
@@ -138,6 +146,7 @@ public sealed class Rac1AridiaEnemySession
             heading.Y * Rac1AridiaEnemies.NestReleaseSpeedPerTick, 0);
         entry.LaunchFallSpeed = 0;
         entry.WasReleasedFromNest = true;
+        entry.NativeWaitingState26 = false;
         Enter(entry, Rac1AridiaEnemyPhase.Launched);
         return true;
     }
@@ -148,7 +157,11 @@ public sealed class Rac1AridiaEnemySession
         if (entry.Health <= 0 || !double.IsFinite(nativeDamage) || nativeDamage <= 0)
             return false;
         entry.Health = Math.Max(0, entry.Health - (int)Math.Ceiling(nativeDamage));
-        if (entry.Health == 0) Enter(entry, Rac1AridiaEnemyPhase.Dead);
+        if (entry.Health == 0)
+        {
+            entry.NativeWaitingState26 = false;
+            Enter(entry, Rac1AridiaEnemyPhase.Dead);
+        }
         return true;
     }
 
@@ -166,14 +179,22 @@ public sealed class Rac1AridiaEnemySession
             return StepSandshark(entry, delta, distance, seesPlayer);
         if (entry.ClassId == Rac1AridiaEnemies.Constructorbot)
             return StepConstructorbot(entry, delta, distance, seesPlayer);
-        return StepNest(entry, facts.WaitingSharkCount);
+        return StepNest(entry, seesPlayer && distance < 12f, facts.WaitingSharkCount);
     }
 
-    private static Rac1AridiaEnemyFrame StepNest(Entry entry, int waitingSharks)
+    private static Rac1AridiaEnemyFrame StepNest(Entry entry, bool playerNearby, int waitingSharks)
     {
-        // L2:0x2dcc64 checks a countdown and looks for an eligible native
-        // class-580 Moby. Unlike the earlier host approximation, it does not
-        // depend on Ratchet being within an invented 12-unit trigger radius.
+        // L2:0x2dcc64 checks a countdown for native-state-26 sharks. The
+        // native trigger-volume predicate is not yet ported: conservatively
+        // require a living visible player within 12 units to prevent global
+        // activation while loading a level. This range is a HOST safeguard.
+        if (!playerNearby)
+        {
+            entry.SpawnTimer = 0;
+            if (entry.Phase == Rac1AridiaEnemyPhase.WindingUp)
+                Enter(entry, Rac1AridiaEnemyPhase.Guarding);
+            return new(entry.Phase, Vector3.Zero, entry.Yaw, 1);
+        }
         if (entry.Phase == Rac1AridiaEnemyPhase.Guarding)
         {
             entry.SpawnTimer++;
@@ -219,7 +240,8 @@ public sealed class Rac1AridiaEnemySession
         if (entry.WasReleasedFromNest && entry.Phase == Rac1AridiaEnemyPhase.Guarding &&
             seesPlayer && distance < 8)
             Enter(entry, Rac1AridiaEnemyPhase.Chasing);
-        if (entry.Phase == Rac1AridiaEnemyPhase.Buried && seesPlayer && distance < 8)
+        if (entry.Phase == Rac1AridiaEnemyPhase.Buried && seesPlayer && distance < 8 &&
+            !entry.NativeWaitingState26)
             Enter(entry, Rac1AridiaEnemyPhase.Emerging);
         if (entry.Phase == Rac1AridiaEnemyPhase.Emerging && entry.Ticks >= 18)
             Enter(entry, Rac1AridiaEnemyPhase.Chasing);

@@ -38,7 +38,7 @@ public partial class OBPGame
                 : 0);
         var frame = _rac1AridiaEnemies.Step(instance, facts);
         enemy.Buried = frame.Buried;
-        enemy.Body.CollisionLayer = enemy.Buried ? 0u : 1u;
+        enemy.Body.CollisionLayer = enemy.Body.CollisionMask = enemy.Buried ? 0u : 1u;
         node.Root.Visible = !enemy.Buried;
         if (enemy.Animation.SupportsSequence(frame.Sequence))
             SelectRac1EnemySequence(enemy, frame.Sequence, 6);
@@ -54,6 +54,9 @@ public partial class OBPGame
             ApplyRac1AridiaPlayerDamage(node);
         if (frame.SpawnSandshark) ActivateNearbyRac1AridiaShark(node.Root.GlobalPosition);
     }
+
+    private static void HideBuriedRac1AridiaEnemy(Rac1HostedEnemy enemy) =>
+        enemy.Node.Root.Visible = false;
 
     private void RestoreRac1AridiaEnemyVisibility(Rac1HostedEnemy enemy) =>
         enemy.Node.Root.Visible = IsRac1GameplayActive(enemy.Node) && !enemy.Buried;
@@ -76,6 +79,8 @@ public partial class OBPGame
 
     private void ActivateNearbyRac1AridiaShark(Vector3 nestPosition)
     {
+        // Only state-26 sharks can be released. Initial buried placements
+        // are not state 26 and must never be materialised as extra spawns.
         // L2:0x2dd2a8 locates an existing waiting class-580 Moby; 0x2d6118
         // relocates it to nest Z+1.5, sets heading toward its home position,
         // and selects native state 27/animation 11. Matching the original
@@ -94,7 +99,7 @@ public partial class OBPGame
             shark.Node.Root.GlobalPosition = origin;
             shark.NeedsGroundPlacement = false;
             shark.Buried = false;
-            shark.Body.CollisionLayer = 1;
+            shark.Body.CollisionLayer = shark.Body.CollisionMask = 1;
             if (shark.Animation.SupportsSequence(Rac1AridiaEnemies.NestReleasedSharkSequence))
                 SelectRac1EnemySequence(shark, Rac1AridiaEnemies.NestReleasedSharkSequence, 1);
             GD.Print($"[rac1-aridia] nest released authored class580 instance {id} with native state27/sequence11");
