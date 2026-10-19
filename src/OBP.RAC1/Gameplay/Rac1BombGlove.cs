@@ -111,7 +111,7 @@ public static class Rac1BombGlove
         return Rac1NativeHitSemantics.IsDistinctContactCandidate(facts) &&
                facts.IsTargetActive &&
                facts.Target.SourceGame == "rac1" &&
-               (facts.Target.NativeClassId is Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId ||
+               (facts.Target.NativeClassId is Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or Rac1NovalisPeckbotSession.ClassId ||
                 Rac1BoltCrate.IsCrateClass(facts.Target.NativeClassId)) &&
                !Rac1MobyRuntime.IsTerminalState(facts.TargetNativeState);
     }

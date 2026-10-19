@@ -23,7 +23,7 @@ public sealed class Rac1EnemyMotion
 
     public Rac1EnemyMotion(int nativeClass, float yaw)
     {
-        if (nativeClass is not (749 or 1440)) throw new ArgumentOutOfRangeException(nameof(nativeClass));
+        if (nativeClass is not (749 or 1440 or Rac1NovalisPeckbotSession.ClassId)) throw new ArgumentOutOfRangeException(nameof(nativeClass));
         _nativeClass = nativeClass; _yaw = new(yaw);
     }
 
@@ -42,8 +42,10 @@ public sealed class Rac1EnemyMotion
         Vector3 offset = target - position;
         float distance = distanceToPathEnd ?? offset.Length();
         _travel.SetValue(_nativeClass == 749 ? .5f : 0);
-        _travel.Step(distance, 8f / 3600, (_nativeClass == 749 ? 6f : 16f) / 3600, (_nativeClass == 749 ? 4f : 12f) / 60);
-        if (_nativeClass == 1440) return offset.LengthSquared() == 0 ? Vector3.Zero : Vector3.Normalize(offset) * StepLength;
+        _travel.Step(distance, _nativeClass == Rac1NovalisPeckbotSession.ClassId ? .3f / 60 : 8f / 3600,
+            (_nativeClass == 749 ? 6f : 16f) / 3600,
+            (_nativeClass == 749 ? 4f : _nativeClass == Rac1NovalisPeckbotSession.ClassId ? 2.7f : 12f) / 60);
+        if (_nativeClass is 1440 or Rac1NovalisPeckbotSession.ClassId) return offset.LengthSquared() == 0 ? Vector3.Zero : Vector3.Normalize(offset) * StepLength;
         _vertical = grounded ? 0 : Math.Min(_vertical, 4f / 60);
         _vertical -= 10f / 3600;
         return new(MathF.Cos(Yaw) * StepLength, MathF.Sin(Yaw) * StepLength, _vertical);
@@ -52,7 +54,7 @@ public sealed class Rac1EnemyMotion
     /// <summary>0x257470 receives the authored reward copied from packed placement+0x10.</summary>
     public static int RewardCentre(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId is not (749 or 1440))
+        if (source.SourceGame != "rac1" || source.NativeClassId is not (749 or 1440 or Rac1NovalisPeckbotSession.ClassId))
             throw new ArgumentException("Source is outside the admitted enemy families.", nameof(source));
         var payloads = source.NativePayloads?.Where(payload => payload.Format == Rac1BoltCrate.InstancePayloadFormat).ToArray();
         if (payloads is not [{ Data.Length: 0x78 }]) throw new InvalidDataException("Enemy requires its exact authored placement record.");

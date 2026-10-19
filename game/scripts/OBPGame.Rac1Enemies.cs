@@ -17,6 +17,7 @@ public partial class OBPGame
 {
     private readonly Dictionary<int, Rac1HostedEnemy> _rac1Enemies = [];
     private Rac1Class1440Session? _rac1Class1440;
+    private Rac1NovalisPeckbotSession? _rac1Peckbots;
     private double _rac1EnemyTicks;
     private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values.Select(enemy => enemy.Node);
 
@@ -43,26 +44,39 @@ public partial class OBPGame
             if (IsInstanceValid(enemy.Body)) enemy.Body.QueueFree();
             if (enemy.Flame is { } flame && IsInstanceValid(flame)) flame.QueueFree();
         }
-        _rac1Enemies.Clear(); _rac1Class1440 = null; _rac1EnemyTicks = 0;
+        _rac1Enemies.Clear(); _rac1Class1440 = null; _rac1Peckbots = null; _rac1EnemyTicks = 0;
     }
 
     private void ConfigureRac1Enemies(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId != 0) return;
+        if (world.LevelId is not (0 or 1)) return;
         var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
         var core = Rac1LevelCore.Open(reader, level);
         var classes = Rac1StaticClasses.Read(core);
-        _rac1Class1440 = new(_rac1MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
+        if (world.LevelId == 0)
+            _rac1Class1440 = new(_rac1MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
+        else
+            _rac1Peckbots = new(_rac1MobyRuntime, Rac1EffectRandom);
         var nodes = _rac1HostileNodes.Values.ToList();
-        foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1Class1440Session.ClassId))
+        foreach (var authored in (world.DynamicObjects ?? []).Where(item =>
+            world.LevelId == 0 && item.NativeClassId == Rac1Class1440Session.ClassId))
         {
             var node = FindPresentedDynamic(result, authored) ?? throw new InvalidDataException("Veldin enemy has no rendered model.");
-            var registered = _rac1Class1440.Register(authored, node.State);
+            var registered = _rac1Class1440!.Register(authored, node.State);
             node.ApplyState(registered.Instance.EntityState);
             nodes.Add(node);
         }
+        if (_rac1Peckbots is { } peckbots)
+            foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1NovalisPeckbotSession.ClassId))
+            {
+                var node = FindPresentedDynamic(result, authored)
+                    ?? throw new InvalidDataException("Novalis Peckbot has no original visual.");
+                var registered = peckbots.Register(authored, node.State);
+                node.ApplyState(registered.Instance.EntityState);
+                nodes.Add(node);
+            }
         foreach (var group in nodes.GroupBy(node => node.Source.NativeClassId))
         {
             var cls = classes.Mobies[group.Key];
@@ -73,21 +87,25 @@ public partial class OBPGame
                 // Host contact adapter: upright capsules, independent of skeletal presentation.
                 // The retail common query solver and per-part collision primitives are not reconstructed.
                 float radius = group.Key == 749 ? .5f : .45f;
-                float height = group.Key == 749 ? 1 : 1.7f;
+                float height = group.Key == 749 ? 1 : group.Key == Rac1NovalisPeckbotSession.ClassId ? 1.3f : 1.7f;
                 var body = new CharacterBody3D { Name = $"EnemyContact_i{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1 };
                 body.AddChild(new CollisionShape3D { Shape = new CapsuleShape3D { Radius = radius, Height = height }, Position = Vector3.Up * (height / 2) });
                 result.Root.AddChild(body);
                 body.GlobalPosition = node.Root.GlobalPosition;
                 Vector3 forward = EnemyForward(node);
                 NVector3 nativeForward = ToEffectNative(forward);
-                var enemy = new Rac1HostedEnemy(node, asset, body, new(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X)), 1);
+                int clip = group.Key == Rac1NovalisPeckbotSession.ClassId
+                    ? _rac1Peckbots!.Get(node.Source.InstanceIndex).Sequence : 1;
+                var enemy = new Rac1HostedEnemy(node, asset, body,
+                    new(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X)), clip);
                 node.ConfigureAnimations(asset.Presentation);
                 node.ApplyAnimationSample(enemy.Animation.Sample);
                 SynchronizeRac1Enemy(enemy);
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
             }
         }
-        GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; {_rac1Class1440.RegisteredCount} class1440");
+        GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; " +
+            $"{_rac1Class1440?.RegisteredCount ?? 0} class1440, {_rac1Peckbots?.RegisteredCount ?? 0} Novalis Peckbots");
     }
 
     private static Vector3 EnemyForward(RuntimeWorldScene.DynamicObjectNode node) =>
@@ -122,6 +140,7 @@ public partial class OBPGame
                     if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40)
                         PlayRac1PickupSound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
                 if (node.Source.NativeClassId == 749) TickRac1Class749(enemy);
+                else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId) TickRac1NovalisPeckbot(enemy);
                 else TickRac1Class1440(enemy);
                 node.ApplyAnimationSample(enemy.Animation.Sample);
                 SynchronizeRac1Enemy(enemy);
@@ -345,6 +364,11 @@ public partial class OBPGame
             var result = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(damage);
             lethal = result.Health <= 0; sequence = result.NativeSequence!.Value;
         }
+        else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId)
+        {
+            var result = _rac1MobyRuntime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(damage);
+            lethal = result.Lethal; sequence = result.Probe.Sequence;
+        }
         else
         {
             var result = _rac1MobyRuntime.DispatchDamage<Rac1Class1440Session.DamageResult>(damage);
@@ -357,8 +381,9 @@ public partial class OBPGame
         else if (damage.Source.Kind == Rac1GameplayEntityKind.Moby && _rac1Enemies.TryGetValue((int)damage.Source.RuntimeId, out var attacker))
             attackerPosition = attacker.Node.Root.GlobalPosition;
         NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);
-        enemy.Reaction = new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
-        enemy.Motion.SetFacing(enemy.Reaction.FacingYaw);
+        enemy.Reaction = node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId
+            ? null : new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
+        if (enemy.Reaction is not null) enemy.Motion.SetFacing(enemy.Reaction.FacingYaw);
         enemy.Grounded = false;
         SetRac1EnemyFlame(enemy, false);
         if (lethal && !enemy.RewardEmitted)
@@ -389,7 +414,9 @@ public partial class OBPGame
     {
         // The robot's dedicated fragment identities are native (0x2e15a8..0x2e1638).
         // Until 0x263fd8 is translated, scattering uses the existing host debris adapter.
-        foreach (int nativeClass in new[] { 1933, 1934, 1935, 1963 })
+        int[] pieces = enemy.Node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId
+            ? [1747, 1748, 1749] : [1933, 1934, 1935, 1963];
+        foreach (int nativeClass in pieces)
         {
             if (_rac1PickupAssets?.Models.ContainsKey(nativeClass) != true) continue;
             var motion = new Rac1CrateDebris(nativeClass, ToEffectNative(enemy.Node.Root.GlobalPosition) + new NVector3(0, 0, 1),
