@@ -35,6 +35,11 @@ public partial class PlayerHost : CharacterBody3D
         _rac1SmallStepEligible = false;
         _rac1TetherRequest = null;
         _rac1SurfaceRequest = null;
+        if (UseRac1Gameplay && TryStepRac1Swimming(move, jump, crouch))
+        {
+            _rac1JumpWasHeld = jump;
+            return;
+        }
         bool grounded = IsOnFloor();
         bool jumpPressed = jump && !_rac1JumpWasHeld;
         _rac1JumpWasHeld = jump;

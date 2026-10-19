@@ -30,6 +30,9 @@ public sealed class WorldHost
         /// <summary>Build the trimesh collision bodies (the surface the debug capsule stands on).</summary>
         public bool IncludeCollision { get; init; } = true;
 
+        /// <summary>Host-specific pass-through materials, filtered only from Godot physics, not the source world.</summary>
+        public Func<int, Vector3, Vector3, Vector3, bool>? AdmitCollisionFace { get; init; }
+
         /// <summary>Render the moby instance markers (cubes for triggers / spawners with no decoded mesh).</summary>
         public bool IncludeMobyMarkers { get; init; } = true;
 
@@ -138,6 +141,7 @@ public sealed class WorldHost
         {
             IncludeSky = options.IncludeSky,
             IncludeCollision = options.IncludeCollision,
+            AdmitCollisionFace = options.AdmitCollisionFace,
             IncludeMobyMarkers = options.IncludeMobyMarkers,
             ShowCollisionDebug = options.ShowCollisionDebug,
             OnlyAnimatedMobies = options.OnlyAnimatedMobies,

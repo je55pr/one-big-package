@@ -315,6 +315,9 @@ public partial class OBPGame
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,
+            AdmitCollisionFace = world is { Game: "rac1", LevelId: 1 }
+                ? AdmitRac1NovalisCollisionFace
+                : null,
             ShowCollisionDebug = _args.CollisionDebug,
             OnlyAnimatedMobies = _args.AnimSolo,
         });

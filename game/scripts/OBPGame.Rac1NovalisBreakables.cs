@@ -41,6 +41,7 @@ public partial class OBPGame
         // Class-specific fragments and bolt payouts require native consequence
         // recovery. Do not silently award arbitrary currency here.
         node.ApplyState(node.State.WithPresence(OBP.Runtime.Gameplay.RuntimeEntityPresence.Inactive));
+        PlayRac1PickupSound(node.Source.NativeClassId, 0, node.Root.GlobalPosition);
         GD.Print($"[rac1-novalis] {node.Source.NativeClassId} instance {node.Source.InstanceIndex} " +
                  $"destroyed by {contact} (host contact policy)");
         return true;

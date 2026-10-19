@@ -54,6 +54,7 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
+        _rac1NovalisWater = null;
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
         ResetRac1Enemies();
@@ -134,6 +135,7 @@ public partial class OBPGame
         ConfigureRac1GoldBolts(world, result);
         ConfigureRac1NovalisCranks(world, result);
         ConfigureRac1NovalisBreakables(world, result);
+        ConfigureRac1NovalisWater(world);
 
         int authoredClass749 = 0;
         int rejectedHostiles = 0;
@@ -184,6 +186,8 @@ public partial class OBPGame
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
         player.Rac1WrenchPhysicsUpdated += OnRac1WrenchPhysicsUpdated;
         player.Rac1CrankInput = TryTurnRac1NovalisCrank;
+        player.Rac1WaterSurfaceHeight = SampleRac1NovalisWaterHeight;
+        player.Rac1NovalisDrowned += OnRac1NovalisDrowned;
         player.Rac1GameplayState = _rac1Nanotech.Probe();
         player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
@@ -244,10 +248,12 @@ public partial class OBPGame
             : nanotech.IsDead
                 ? "Retry level"
                 : "environmental restart evidence: levels 0 and 2 only";
+        string swim = _player?.Rac1SwimState is { } state
+            ? $"   Water: {state.Water}   O2: {state.OxygenFraction:P0}" : string.Empty;
         return $"R&C1 combat: X wrench · E equipped item · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
-            $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}";
+            $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}{swim}";
     }
 
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()

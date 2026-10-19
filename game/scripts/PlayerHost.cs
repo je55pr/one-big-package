@@ -381,7 +381,7 @@ public partial class PlayerHost : CharacterBody3D
                 (Rac1CrankInput?.Invoke(_liveInput.ActionHeld, _liveInput.Move) ?? false);
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
-            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive)
+            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive && !Rac1SwimmingActive)
             {
                 if (UseRac1Gameplay && !Rac1Hanging && !Rac1SwingshotActive)
                     NotifyRac1WrenchAttackAccepted();

@@ -97,7 +97,11 @@ public partial class OBPGame
         float magnitude = Mathf.Clamp(stick.Length(), 0f, 1f);
         if (magnitude > .2f)
         {
+            double previous = _rac1NovalisCranks.Progress(crankId);
+            bool starting = previous == 0d;
             double progress = _rac1NovalisCranks.Turn(crankId, Rac1CrankHostProgressPerTick * magnitude);
+            if (starting)
+                PlayRac1PickupSound(Rac1NovalisCrankDoorSession.CrankClass, 0, closest.Root.GlobalPosition);
             foreach (var door in _rac1NovalisCranks.Doors.Where(door => door.CrankInstanceIndex == crankId))
             {
                 NVector3 target = _rac1NovalisCranks.DoorPosition(door.InstanceIndex);
@@ -108,7 +112,15 @@ public partial class OBPGame
                     collider.CollisionLayer = 0;
             }
             if (progress >= 1d)
+            {
+                if (previous < 1d)
+                {
+                    var door = _rac1NovalisCranks.Doors.First(item => item.CrankInstanceIndex == crankId);
+                    PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 0,
+                        _rac1NovalisDoorNodes[door.InstanceIndex].Root.GlobalPosition);
+                }
                 _rac1CombatStatus = $"Novalis crank {crankId} opened its paired doors";
+            }
         }
         return true;
     }
