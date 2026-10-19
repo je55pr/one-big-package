@@ -81,7 +81,8 @@ public partial class OBPGame
             _rac1PlacedBoltNodes.Remove(pickupId);
             return placed.Value;
         }
-        int value = _rac1BoltCrates.CollectPickup(pickupId);
+        int value = _rac1BoltCrates.OwnsPickup(pickupId)
+            ? _rac1BoltCrates.CollectPickup(pickupId) : _rac1BoltPickups.Collect(pickupId);
         node.QueueFree();
         return value;
     }

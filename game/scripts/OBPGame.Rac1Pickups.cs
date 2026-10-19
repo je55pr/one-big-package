@@ -17,7 +17,9 @@ public partial class OBPGame
     private readonly Dictionary<int, StaticBody3D> _rac1CrateBodies = [];
     private readonly Dictionary<int, (Node3D Node, Rac1CrateFallSession Motion, float FootOffset)> _rac1FallingCrates = [];
     private readonly Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> _rac1EffectMeshes = [];
-    private Rac1PickupRandom Rac1EffectRandom { get; } = Rac1PickupRandom.FromSeed(unchecked((uint)System.Environment.TickCount));
+    private Rac1PickupRandom? _rac1EffectRandom;
+    private Rac1PickupRandom Rac1EffectRandom => _rac1EffectRandom ??=
+        Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
     private double _rac1PickupTickAccumulator;
     private int _rac1BoltSoundDelay;
     private int _rac1PickupSoundCount;
@@ -137,7 +139,7 @@ public partial class OBPGame
                 var node = _rac1PickupNodes[pair.Key];
                 if (!IsInstanceValid(node))
                 {
-                    _rac1BoltCrates.DiscardPickup(pair.Key);
+                    if (!_rac1BoltCrates.DiscardPickup(pair.Key)) _rac1BoltPickups.Discard(pair.Key);
                     _rac1PickupMotion.Remove(pair.Key);
                     _rac1PickupNodes.Remove(pair.Key);
                     continue;

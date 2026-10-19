@@ -8,6 +8,15 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public event Action? ControllerSettingsRequested;
     public event Action? WorldsRequested;
     public event Action? QuitRequested;
+    public event Action? SaveMovementStateRequested;
+    public event Action? LoadMovementStateRequested;
+    public bool MovementStatesAvailable { get; init; }
+    private Label? _movementStatus;
+
+    public void SetMovementStatus(string text)
+    {
+        if (_movementStatus is not null) _movementStatus.Text = text;
+    }
 
     public override void _Ready()
     {
@@ -65,6 +74,29 @@ public sealed partial class PauseMenuUi : CanvasLayer
 
         column.AddChild(resume);
         column.AddChild(controller);
+        if (MovementStatesAvailable)
+        {
+            var save = MakeButton("SAVE MOVEMENT STATE  (F12)");
+            var load = MakeButton("LOAD MOVEMENT STATE  (SHIFT+F12)");
+            save.TooltipText = "Save a stationary player position, facing, camera and movement equipment for reproducing a bug.";
+            load.TooltipText = "Restore the saved movement setup in a fresh level. Enemies and crates restart; campaign progress is not restored.";
+            save.Pressed += () => SaveMovementStateRequested?.Invoke();
+            load.Pressed += () => LoadMovementStateRequested?.Invoke();
+            var movementButtons = new HBoxContainer();
+            save.Text = "SAVE STATE  (F12)";
+            load.Text = "LOAD  (SHIFT+F12)";
+            save.SizeFlagsHorizontal = load.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            movementButtons.AddChild(save);
+            movementButtons.AddChild(load);
+            column.AddChild(movementButtons);
+            _movementStatus = new Label
+            {
+                Text = "Saves cover position, camera and equipment. Loading restarts enemies and crates.",
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                CustomMinimumSize = new Vector2(420, 0),
+            };
+            column.AddChild(_movementStatus);
+        }
         column.AddChild(worlds);
         column.AddChild(quit);
 
@@ -81,6 +113,13 @@ public sealed partial class PauseMenuUi : CanvasLayer
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (MovementStatesAvailable && @event is InputEventKey { Keycode: Key.F12, Pressed: true, Echo: false } key)
+        {
+            GetViewport().SetInputAsHandled();
+            if (key.ShiftPressed) LoadMovementStateRequested?.Invoke();
+            else SaveMovementStateRequested?.Invoke();
+            return;
+        }
         if (@event.IsActionPressed("ui_cancel"))
         {
             GetViewport().SetInputAsHandled();

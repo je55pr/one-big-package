@@ -63,6 +63,51 @@ public sealed class Rac1OrdinaryCameraController
     public double ObstructionCorrection => _obstructionCorrection;
     public int ObstructionReleaseTicks => _obstructionReleaseTicks;
 
+    /// <summary>OBP development snapshot of the existing camera recurrence state.</summary>
+    public sealed record Snapshot(
+        double ControlHeading, double ManualYaw, double ManualYawVelocity,
+        double ManualPitch, double ManualPitchVelocity, double FilteredZ,
+        double FollowZVelocity, double EyeHeight, double EyeHeightVelocity,
+        double CurrentRadius, double RadialVelocity, double ObstructionCorrection,
+        int ObstructionReleaseTicks, int LateralSide, bool Initialized)
+    {
+        public void Validate()
+        {
+            double[] scalars = [ControlHeading, ManualYaw, ManualYawVelocity, ManualPitch,
+                ManualPitchVelocity, FilteredZ, FollowZVelocity, EyeHeight, EyeHeightVelocity,
+                CurrentRadius, RadialVelocity, ObstructionCorrection];
+            if (scalars.Any(value => !double.IsFinite(value)) || CurrentRadius < 0 ||
+                ObstructionReleaseTicks < 0 || LateralSide is < -1 or > 1)
+                throw new ArgumentException("Invalid ordinary camera snapshot.");
+        }
+    }
+
+    public Snapshot CaptureSnapshot() => new(
+        _controlHeading, _manualYaw, _manualYawVelocity, _manualPitch, _manualPitchVelocity,
+        _filteredZ, _followZVelocity, _eyeHeight, _eyeHeightVelocity, _currentRadius,
+        _radialVelocity, _obstructionCorrection, _obstructionReleaseTicks, _lateralSide, _initialized);
+
+    public void RestoreSnapshot(Snapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        snapshot.Validate();
+        _controlHeading = snapshot.ControlHeading;
+        _manualYaw = snapshot.ManualYaw;
+        _manualYawVelocity = snapshot.ManualYawVelocity;
+        _manualPitch = snapshot.ManualPitch;
+        _manualPitchVelocity = snapshot.ManualPitchVelocity;
+        _filteredZ = snapshot.FilteredZ;
+        _followZVelocity = snapshot.FollowZVelocity;
+        _eyeHeight = snapshot.EyeHeight;
+        _eyeHeightVelocity = snapshot.EyeHeightVelocity;
+        _currentRadius = snapshot.CurrentRadius;
+        _radialVelocity = snapshot.RadialVelocity;
+        _obstructionCorrection = snapshot.ObstructionCorrection;
+        _obstructionReleaseTicks = snapshot.ObstructionReleaseTicks;
+        _lateralSide = snapshot.LateralSide;
+        _initialized = snapshot.Initialized;
+    }
+
     public void Reset(Vec3 playerNativeZUp, double controlHeading)
     {
         ValidateFinite(playerNativeZUp, nameof(playerNativeZUp));

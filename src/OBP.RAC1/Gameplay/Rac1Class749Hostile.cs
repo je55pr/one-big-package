@@ -32,7 +32,8 @@ public static class Rac1Class749Hostile
     public const int TargetedNativeState = 6;
     public const int AttackNativeState = 7;
     public const int ReturnHomeNativeState = 8;
-    public const int StateFiveSequenceId = 1;
+    public const int RestSequenceId = 1;
+    public const int RoamingSequenceId = 4;
     public const int StateSixOrEightSequenceId = 4;
     public const int AttackSequenceId = 5;
     public const int DamageNativeState = 12;
@@ -222,7 +223,11 @@ public readonly record struct Rac1Class749TargetFacts(
     Rac1Class749WorldPoint CurrentPosition = default,
     int? StatusSentinel = null,
     Rac1Class749TargetDescriptor? TargetDescriptor = null,
-    bool LinkedObjectTerminal = false);
+    bool LinkedObjectTerminal = false,
+    float? AnimationPosition = null,
+    bool AnimationFinished = true,
+    bool AnimationBlending = false,
+    bool Grounded = true);
 
 public enum Rac1Class749NavigationIntentKind
 {
@@ -257,8 +262,10 @@ public sealed record Rac1Class749HostProbe(
     Rac1MobyRuntimeState RuntimeState,
     IReadOnlyList<IRac1MobyHostIntent> HostIntents,
     IReadOnlyList<IRac1MobyHostEvent> HostEvents,
-    int? LinkedTargetInstanceIndex = null)
+    int? LinkedTargetInstanceIndex = null,
+    float NavigationYawOffset = 0)
 {
     public int NativeState => RuntimeState.NativeState;
     public RuntimeEntityState EntityState => RuntimeState.EntityState;
+    public bool ReactionActive => NativeState == Rac1Class749Hostile.DamageNativeState;
 }

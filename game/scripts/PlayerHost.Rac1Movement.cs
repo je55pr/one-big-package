@@ -20,11 +20,13 @@ public partial class PlayerHost : CharacterBody3D
     private Rac1LocomotionAnimationInput _locomotionAnimationInput;
     private Rac1NativeVector3? _ordinaryContactRequest;
     private Vector3 _ordinaryContactStart;
+    private bool _rac1SmallStepEligible;
 
     private void StepRetailDerivedMovement(Vector2 move, bool jump, bool crouch)
     {
         _locomotionAnimationInput = default;
         _ordinaryContactRequest = null;
+        _rac1SmallStepEligible = false;
         _rac1TetherRequest = null;
         _rac1SurfaceRequest = null;
         bool grounded = IsOnFloor();
@@ -123,6 +125,10 @@ public partial class PlayerHost : CharacterBody3D
                 applyOrdinaryJumpAnticipationRequest: _rac1Movement.TraversalAction is null);
             _ordinaryContactRequest = new Rac1NativeVector3(request.PlanarX, request.PlanarY, request.Vertical);
             _ordinaryContactStart = GlobalPosition;
+            _rac1SmallStepEligible = contact.MovementFacts.IsGrounded &&
+                step.Phase == Rac1RatchetMovementPhase.Grounded &&
+                _rac1Movement.TraversalAction is null &&
+                _rac1SurfaceActionIntent is null;
         }
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(

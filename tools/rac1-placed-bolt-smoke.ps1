@@ -7,6 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-window.ps1')
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
     throw 'A supported R&C1 ISO is required.'
 }
@@ -20,7 +21,8 @@ if (-not $SkipBuild) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 foreach ($level in @(0, 8, 11)) {
-    & $godot '--path' (Join-Path $root 'game') '--rendering-method' $RenderingMethod '--resolution' '1280x720' '--' '--rac1-iso' $Rac1Iso '--destination' "rac1:LEVEL$level" '--rac1-placed-bolt-smoke'
+    $windowArgs = @(Get-ObpWindowArguments)
+    & $godot @windowArgs '--path' (Join-Path $root 'game') '--rendering-method' $RenderingMethod '--' '--rac1-iso' $Rac1Iso '--destination' "rac1:LEVEL$level" '--rac1-placed-bolt-smoke'
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 exit 0

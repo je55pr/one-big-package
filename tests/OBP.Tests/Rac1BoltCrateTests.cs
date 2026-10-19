@@ -8,6 +8,21 @@ namespace OBP.Tests;
 public sealed class Rac1BoltCrateTests
 {
     [Fact]
+    public void CrateAndEnemyEmissionsShareIdentitiesButKeepCrateAccountingSeparate()
+    {
+        var pool = new Rac1BoltPickupSession();
+        var crates = new Rac1BoltCrateSession(new(), new(levelId: 0), pool);
+        var source = Class500(uid: 121, rewardCentre: 10);
+        var broken = crates.ApplyDamage(source, RuntimeEntityState.FromAuthored(source), nativeDamage: 1, selectedTotal: 10)!;
+        var enemy = pool.Emit(22);
+        Assert.Empty(enemy.Select(pickup => pickup.PickupId).Intersect(broken.Pickups.Select(pickup => pickup.PickupId)));
+        Assert.Equal(10, broken.Pickups.Sum(pickup => crates.CollectPickup(pickup.PickupId)));
+        Assert.Equal(22, enemy.Sum(pickup => pool.Collect(pickup.PickupId)));
+        Assert.Equal(10, crates.CollectedBolts);
+        Assert.Equal(0, pool.OutstandingCount);
+    }
+
+    [Fact]
     public void ReadsAuthoredUidRewardCentreAndNativeRange()
     {
         var source = Class500(uid: 121, rewardCentre: 10);

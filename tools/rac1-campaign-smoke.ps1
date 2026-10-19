@@ -22,6 +22,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-window.ps1')
 
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
   Write-Error 'A supported R&C1 ISO is required. Pass -Rac1Iso or set OBP_RAC1_ISO.'
@@ -45,7 +46,6 @@ $statePath = Join-Path ([IO.Path]::GetTempPath()) (
 $commonArgs = @(
   '--path', (Join-Path $root 'game'),
   '--rendering-method', $RenderingMethod,
-  '--resolution', '1280x720',
   '--',
   '--rac1-iso', $Rac1Iso,
   '--rac1-campaign-smoke',
@@ -55,7 +55,8 @@ $commonArgs = @(
 try {
   foreach ($pass in 1..2) {
     Write-Host "R&C1 campaign smoke pass $pass/2" -ForegroundColor Cyan
-    & $godot @commonArgs
+    $windowArgs = @(Get-ObpWindowArguments)
+    & $godot @windowArgs @commonArgs
     if ($LASTEXITCODE -ne 0) {
       Write-Error "R&C1 campaign smoke pass $pass failed (exit $LASTEXITCODE)."
       exit $LASTEXITCODE

@@ -28,16 +28,11 @@ public partial class OBPGame
     private const float Rac1BombPresentationSpeed = 18f;
     private const float Rac1BombPresentationLifetime = 2f;
     private const float Rac1BombHostileContactRadius = 0.9f;
-    // Host-side interpolation for the recovered class-749 state-6/state-8
-    // destinations. Retail helper 0x002d54c8 proves destination-directed
-    // locomotion, but its speed/turn tuning is not yet recovered. These values
-    // make that recovered intent visible without promoting host tuning as retail.
-    private const float Rac1Class749HostPresentationSpeed = 3.5f;
-    private const float Rac1Class749HostPresentationTurnRate = 4.0f;
 
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
     private Rac1MobyPersistenceSession _rac1MobyPersistence = new(levelId: 0);
     private Rac1BoltCrateSession _rac1BoltCrates = new();
+    private Rac1BoltPickupSession _rac1BoltPickups = new();
     private Rac1BoltWallet _rac1BoltWallet = new();
     private Rac1MobyRuntimeSession _rac1MobyRuntime = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
@@ -67,6 +62,8 @@ public partial class OBPGame
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
         ResetRac1WrenchHost();
+        ResetRac1CombatRetry();
+        ResetRac1Enemies();
         ResetRac1PickupPresentation();
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
@@ -76,10 +73,11 @@ public partial class OBPGame
         _rac1MobyPersistence = new Rac1MobyPersistenceSession(levelId);
         _rac1MobyRuntime = new Rac1MobyRuntimeSession();
         _rac1PlacedBolts = new Rac1PlacedBoltSession(_rac1MobyRuntime);
+        _rac1BoltPickups = new Rac1BoltPickupSession();
         _rac1BoltCrates = new Rac1BoltCrateSession(
             _rac1MobyRuntime,
-            _rac1MobyPersistence);
-        _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime);
+            _rac1MobyPersistence, _rac1BoltPickups);
+        _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime, Rac1EffectRandom);
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1DamageTransport = new Rac1DamageTransportSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
@@ -168,6 +166,7 @@ public partial class OBPGame
             }
         }
 
+        ConfigureRac1Enemies(world, result);
         GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted retail crates, " +
                  $"{_rac1HostileNodes.Count} recovered Veldin class-749 placements from " +
                  $"{authoredClass749} authored placements ({rejectedHostiles} rejected)");
@@ -209,6 +208,7 @@ public partial class OBPGame
         if (_rac1Nanotech.Probe().IsDead)
         {
             ResetRac1WrenchHost();
+            ShowRac1CombatRetry();
             return;
         }
 
@@ -243,7 +243,7 @@ public partial class OBPGame
         string restart = nanotech.HasRecoveredEnvironmentalRespawn
             ? "automatic recovered environmental respawn pending"
             : nanotech.IsDead
-                ? "combat restart unresolved"
+                ? "Retry level"
                 : "environmental restart evidence: levels 0 and 2 only";
         return $"R&C1 combat: X wrench · E equipped item · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +

@@ -38,9 +38,12 @@ public partial class OBPGame
         _pauseMenu = new PauseMenuUi
         {
             ProcessMode = ProcessModeEnum.Always,
+            MovementStatesAvailable = _player?.UseRac1Gameplay == true,
         };
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
+        _pauseMenu.SaveMovementStateRequested += SaveMovementState;
+        _pauseMenu.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
         _pauseMenu.WorldsRequested += ReturnToWorldsFromPause;
         _pauseMenu.QuitRequested += () =>
             ApplicationLifecycle.RequestQuit(this, "pause-menu-quit");

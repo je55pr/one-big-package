@@ -119,17 +119,8 @@ public partial class OBPGame
             hostile.Source.NativeClassId,
             hostile.Source.InstanceIndex);
         var damageEvent = Rac1DamageRuntime.FromWrench(targetKey, damage);
+        if (!ApplyRac1EnemyWeaponDamage(hostile, damageEvent)) return false;
         _rac1DamageTransport.Publish(damageEvent);
-        var probe = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(
-            damageEvent);
-        // Retail proves state 12 reaches the common terminalizer, but OBP does
-        // not reconstruct the pool-side selector that chooses 0xfd versus 0xfe.
-        // Complete the recovered lifetime transition without inventing that byte.
-        probe = _rac1Hostiles.CompleteRecoveredDamageReaction(hostile.Source);
-        hostile.ApplyState(probe.EntityState);
-        _rac1CombatStatus =
-            $"hostile i{hostile.Source.InstanceIndex}: wrench damage {damage.NativeDamage} -> health {probe.Health} -> terminal lifetime (native 0xfd/0xfe selector unresolved)";
-        GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
     }
 

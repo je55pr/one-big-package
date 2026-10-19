@@ -64,7 +64,7 @@ public partial class OBPGame
                 $"hostile travel={naturalAttack.HostileTravel:0.###}, " +
                 $"Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
 
-            await RunRac1OrdinaryHostileWrenchSmokeAsync(hostile);
+            await RunRac1OrdinaryHostileWrenchSmokeAsync(_rac1HostileNodes[naturalAttack.AttackerInstance]);
             await RunRac1OrdinaryCrateWrenchSmokeAsync();
 
             GD.Print(
@@ -359,6 +359,8 @@ public partial class OBPGame
         var (crate, waypoints) = SelectRac1PracticalWrenchCrate();
         Vector3 routeStart = _player.GlobalPosition;
         float directDistance = HorizontalDistance(routeStart, crate.Root.GlobalPosition);
+        GD.Print($"[rac1-veldin-play] ordinary crate route: start={routeStart}, crate=i{crate.Source.InstanceIndex}, " +
+            $"waypoints={string.Join(';', waypoints)}");
         await Rac1SmokeFollowWalkRouteAsync(waypoints);
 
         float finalApproach = await Rac1SmokeSettleForWrenchContactAsync(
@@ -684,7 +686,10 @@ public partial class OBPGame
                 if (!reached)
                     throw new TimeoutException(
                         $"Ordinary crate route stalled before waypoint {waypoint}; " +
-                        $"player={_player.GlobalPosition}.");
+                        $"player={_player.GlobalPosition}, velocity={_player.Velocity}, " +
+                        $"phase={_player.Rac1MovementPhase}, floor={_player.IsOnFloor()}, " +
+                        $"support={_player.Rac1RecoveredSupportGrounded}, best={bestDistance}, stagnant={stagnantFrames}; " +
+                        $"contacts={string.Join(';', Enumerable.Range(0, _player.GetSlideCollisionCount()).Select(i => _player.GetSlideCollision(i).GetNormal()))}.");
             }
         }
         finally

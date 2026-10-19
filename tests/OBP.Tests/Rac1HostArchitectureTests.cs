@@ -138,10 +138,11 @@ public sealed class Rac1HostArchitectureTests
             "Rac1Class749Hostile.TerminalNativeStateFe",
             combat,
             StringComparison.Ordinal);
-        Assert.Contains(
-            "_rac1Hostiles.CompleteRecoveredDamageReaction(hostile.Source)",
+        Assert.DoesNotContain(
+            "CompleteRecoveredDamageReaction",
             combat,
             StringComparison.Ordinal);
+        Assert.Contains("ApplyRac1EnemyWeaponDamage", combat, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -158,6 +159,8 @@ public sealed class Rac1HostArchitectureTests
             "_rac1MobyRuntime.Require(node.Source).IsActive",
             hostiles,
             StringComparison.Ordinal);
+        string enemies = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.Rac1Enemies.cs"));
+        Assert.DoesNotContain(".Root.Visible", enemies, StringComparison.Ordinal);
     }
 
     [Fact]

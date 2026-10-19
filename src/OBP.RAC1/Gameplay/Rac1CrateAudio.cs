@@ -30,14 +30,15 @@ public static class Rac1CrateAudio
             Math.Pow(2, (60 - Math.Abs(centerNote) + (centerFine + pitchModulation) / 128d) / 12)), 100, 192_000);
 
     public static IReadOnlyDictionary<(int Class, int LocalSound), Sound> Decode(
-        IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level, Rac1LevelCore.Core core)
+        IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level, Rac1LevelCore.Core core,
+        IReadOnlySet<int>? admittedClasses = null)
     {
         var data = Rac1DiscIndex.OpenRange(disc, level, 0);
         var bank = Ps2SoundBank989.Open(Rac1LevelData.OpenRange(data, Rac1LevelData.ReadDirectory(data), 1));
         var result = new Dictionary<(int, int), Sound>();
         var classOffsets = Rac1StaticClasses.ReadMobyTable(core).ToDictionary(row => row.OClass, row => row.AssetOffset);
         foreach (var entry in Rac1ClassSoundRemap.Read(core).Where(entry =>
-                     entry.Key is >= 13 and <= 16 || Rac1BoltCrate.IsCrateClass(entry.Key)))
+                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is >= 13 and <= 16 or 749 or 1440 || Rac1BoltCrate.IsCrateClass(entry.Key))))
         {
             for (int local = 0; local < entry.Value.Count; local++)
             {

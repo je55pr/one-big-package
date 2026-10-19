@@ -87,3 +87,11 @@ public sealed record RuntimeObjectAnimationSet(
     public RuntimeObjectAnimationClip? Find(RuntimeObjectAnimationRole role) =>
         Clips.SingleOrDefault(clip => clip.Role == role);
 }
+
+/// <summary>
+/// Source-clocked object pose. The host interpolates baked model-local vertices;
+/// clip selection, phase, looping and transition duration belong to the producer.
+/// An optional frozen preceding sample supports interrupted cross-clip blends.
+/// </summary>
+public sealed record RuntimeObjectAnimationSample(string ClipId, int Frame, int NextFrame, float Fraction,
+    RuntimeObjectAnimationSample? BlendFrom = null, float BlendFraction = 1);

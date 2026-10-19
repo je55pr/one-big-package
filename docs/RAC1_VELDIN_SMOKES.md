@@ -1,6 +1,10 @@
 # R&C1 Veldin smoke boundaries
 
-Two Godot-host smokes cover different questions. Keep their results separate.
+Ordinary-play and staged Godot-host smokes cover different questions. Keep their results separate.
+
+Require each gate's explicit `PASS` line as well as a zero process exit code.
+Closing an automated test window is a cancellation and now exits with failure;
+older runs with `desktop-window-close` are not passed smoke evidence.
 
 ## Ordinary-play Veldin gate
 
@@ -41,6 +45,12 @@ invoke consequence handlers in place of input. The route planner and low-stick
 settling used to make the final crate contact deterministic are test policy only,
 not recovered navigation AI.
 
+The directional input driver inverts the recovered per-axis stick deadzone so
+its requested full run stays a run at diagonal headings. Previously a raw unit
+circle could condition into the walk band, causing a six-second route timeout
+despite steady forward progress. This changes test input only; gamepad input
+conditioning and the route's movement/consequence assertions remain unchanged.
+
 Earlier revisions of this smoke pressed R after observing the recovered death
 boundary. That proved only the development manual-respawn seam and did **not**
 prove natural gameplay restart. Those R-assisted results must not be cited as
@@ -73,6 +83,35 @@ not promote unresolved host contact dimensions, presentation tuning, surface
 motion laws, mission semantics, or unknown native selectors into recovered
 retail behavior.
 
+## Movement terrain regression gate
+
+`--movement-smoke` includes staged starts on the imported eastern and southern
+ship-rock rims and the exact user-saved snag pose beside the looped rocks. It
+also retains blocking at the subsequent saved dense-contact performance case,
+and crosses synthetic 0.12/0.22/0.30/0.38-unit steps, with additional walking
+and diagonal approaches. The trials drive normal stick input and require
+crossing without entering an airborne action. Negative fixtures retain blocking
+at a 0.43-unit lip, a taller wall and a step beneath insufficient headroom. These
+checks precede the existing slope-jump, landing, equipment and ledge trials.
+
+The starts and synthetic geometry are test policy. The shallow-step/crest
+adapter remains a bounded Godot approximation, described in
+`../research/RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md`; a pass does not
+establish the exact retail step limit or reproduce its radial contact solver.
+
+The collision-shape consolidation also has a deterministic structural gate:
+LEVEL0 keeps 31,423 exact geometry/material faces from 86,184 source references,
+with every emitted face mapped back to its unchanged source. Rendered replay
+profiling is available through `tools/replay-movement-state.ps1 -Profile -Rendered`.
+Keep those timing observations separate from functional smoke assertions.
+
+The cross-game movement harness still has a pre-existing GC LEVEL1 startup
+failure: its ordinary spawn snap selects terrain around height 124 instead of
+the authored height 115, then walking leaves support. Earlier
+`movement-clock-gc-smoke` and `movement-offline-smoke-gc` logs already show the
+same failed walk-plateau assertion before collision consolidation. A Veldin
+pass does not establish sequel playability.
+
 ## Synthetic combat host-contract gate
 
 `tools/rac1-combat-contract-smoke.ps1` selects
@@ -89,7 +128,27 @@ ordinary-play Veldin gate above.
 
 ## Retail boundary
 
-Both smokes exercise production code backed by the repository's retained R&C1
+`tools/rac1-enemy-smoke.ps1` adds a separate staged opening-enemy gate, with a
+fixed host random seed. It checks all 25 animated/contact bodies, health 1/2,
+nonlethal and lethal reactions, dedicated robot fragments, exact emitted-bolt
+arrival accounting, stationary toad rest clips, all eight authored robot
+entrances from their script-initialized path starts, active socket/player contact,
+ordinary wrench/Bomb Glove input against robots, wall occlusion and the explicit
+OBP combat-death retry button. It deliberately stages transforms and supplies
+admitted descriptors for the final retry-UI fixture. Its result must not be
+presented as an ordinary-play route or live retail replay. Current recovery and
+presentation limits are in `../research/RAC1_VELDIN_ENEMIES.md`.
+The entrance fixture bounds both distance from the authored route and endpoint
+error of the live Godot contact bodies. Entrances use recovered direct XYZ path
+updates, including height, rather than host floor projection. This guards
+against editor-placement backtracking, overshoot and unreachable endpoints.
+The opening-pair fixture also checks both toads' original spawn clearance and
+180 approach frames on the imported terrain. It stages only Ratchet for that
+check, tracks below-floor clearance and minimum height, and requires both
+creatures to pursue. This catches a buried spawn and subsequent tunnelling that
+an attack check accepting either creature could miss.
+
+These smokes exercise production code backed by the repository's retained R&C1
 evidence, but neither converts OBP host policy into retail evidence. In
 particular, the current Wrench spatial admission dimensions and the smoke route
 planner remain host/test policy. Native consequences stay separated from those

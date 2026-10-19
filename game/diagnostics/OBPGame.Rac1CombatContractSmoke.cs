@@ -23,6 +23,7 @@ public partial class OBPGame
                     "R&C1 combat smoke must begin in authored LEVEL0/Veldin.");
 
             GD.Print("[rac1-combat-contract] begin synthetic Veldin combat host contracts");
+            Engine.MaxFps = 60;
             if (_rac1HostileNodes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
                 _rac1Hostiles.RegisteredCount != Rac1Class749VeldinPopulation.AuthoredPlacementCount)
                 throw new InvalidOperationException(
@@ -30,6 +31,13 @@ public partial class OBPGame
                     $"class-749 placements, expected {Rac1Class749VeldinPopulation.AuthoredPlacementCount}/" +
                     $"{Rac1Class749VeldinPopulation.AuthoredPlacementCount}.");
 
+            // Capture the stationary baseline after the host has corrected
+            // authored below-floor placements. Keep the full XYZ idle check;
+            // initial grounding is covered independently by the enemy smoke.
+            await Rac1SmokeWaitAsync(
+                () => _rac1Enemies.Values.All(enemy => !enemy.NeedsGroundPlacement),
+                60,
+                "initial enemy ground placement before idle baseline");
             var launchPositions = _rac1HostileNodes.ToDictionary(
                 pair => pair.Key,
                 pair => pair.Value.Root.GlobalPosition);
@@ -81,7 +89,7 @@ public partial class OBPGame
             if (_rac1HostileNodes.Count != 16 || _rac1Hostiles.RegisteredCount != 16)
                 throw new InvalidOperationException(
                     $"Veldin active class-749 runtime count was {_rac1HostileNodes.Count}/{_rac1Hostiles.RegisteredCount}, expected recovered population 16/16.");
-            var hostile = navigationHostile;
+            var hostile = _rac1HostileNodes[naturalAttack.AttackerInstance];
             if (!_rac1HostileNodes.ContainsKey(hostile.Source.InstanceIndex) ||
                 !IsInstanceValid(hostile.Root) ||
                 !hostile.Root.Visible)
@@ -92,8 +100,8 @@ public partial class OBPGame
             // Quarantine the recovered population while isolating crate/player-avatar
             // presentation; later re-enable only the selected placement and stage it
             // outside its activation polygon for projectile/wrench contact checks.
-            foreach (var pair in _rac1HostileNodes)
-                SetRac1HostedPresence(pair.Value, RuntimeEntityPresence.Inactive);
+            foreach (var enemyNode in Rac1EnemyNodes)
+                SetRac1HostedPresence(enemyNode, RuntimeEntityPresence.Inactive);
 
             var crate = _rac1CrateNodes
                 .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
@@ -140,14 +148,24 @@ public partial class OBPGame
                 "wrench crate break");
             GD.Print($"[rac1-smoke] wrench crate break PASS; pickups={_rac1PickupNodes.Count}");
 
-            var pickup = _rac1PickupNodes.FirstOrDefault(pair => IsInstanceValid(pair.Value));
+            var pickup = _rac1PickupNodes.FirstOrDefault(pair =>
+                _rac1BoltCrates.OwnsPickup(pair.Key) && IsInstanceValid(pair.Value));
             if (pickup.Value is null)
                 throw new InvalidOperationException("Crate break emitted no hosted bolt pickup.");
-            _player.GlobalPosition = pickup.Value.GlobalPosition;
-            _player.Velocity = Vector3.Zero;
+            // Authored world bolts share the presentation dictionary. Follow an
+            // emitted crate bolt through its scatter instead of selecting a world bolt.
+            for (int frame = 0; frame < 240 && _rac1BoltCrates.CollectedBolts == 0; frame++)
+            {
+                if (frame % 30 == 0 && IsInstanceValid(pickup.Value))
+                {
+                    _player.GlobalPosition = pickup.Value.GlobalPosition;
+                    _player.Velocity = Vector3.Zero;
+                }
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            }
             await Rac1SmokeWaitAsync(
                 () => _rac1BoltCrates.CollectedBolts > 0,
-                60,
+                1,
                 "bolt collection");
             GD.Print($"[rac1-smoke] bolt collection PASS; total={_rac1BoltCrates.CollectedBolts}");
             await Rac1SmokeWaitAsync(
@@ -155,6 +173,11 @@ public partial class OBPGame
                       PlayerAvatarPresentationIsSynchronized(),
                 120,
                 "post-wrench player-avatar recovery");
+
+            // The crate contract is proven. Isolate the subsequent projectile
+            // and wrench victims from the remaining neighbouring crate contacts.
+            foreach (var crateNode in _rac1CrateNodes.Where(node => IsInstanceValid(node.Root)))
+                SetRac1HostedPresence(crateNode, RuntimeEntityPresence.Inactive);
 
             Vector3 stagedHostilePosition = crate.Root.GlobalPosition;
             hostile.Root.GlobalPosition = stagedHostilePosition;
@@ -170,7 +193,7 @@ public partial class OBPGame
                 Rac1HudProjection.BombGlovePresentationKey,
                 bombAmmoBeforeFire);
             AssertRac1SmokeWrenchPresentation(visible: false, "Bomb Glove equip");
-            Vector3 bombForward = -hostile.Root.GlobalTransform.Basis.Z;
+            Vector3 bombForward = EnemyForward(hostile);
             bombForward.Y = 0f;
             if (bombForward.LengthSquared() <= 1e-5f)
                 throw new InvalidOperationException(
@@ -215,24 +238,20 @@ public partial class OBPGame
                 bombDamage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
                 throw new InvalidOperationException("Bomb Glove contact drifted from the retained native damage envelope.");
             var postBombProbe = _rac1Hostiles.Probe(hostile.Source);
-            if (postBombProbe.Health != 1f ||
+            if (postBombProbe.Health != -1f ||
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
-                    "Bomb Glove host contact invented an unrecovered class-749 damage consequence.");
+                    "Bomb Glove contact failed the two-point descriptor and visible lethal reaction.");
             if (_rac1Projectiles.ContainsKey(bombContact.ProjectileId))
                 throw new InvalidOperationException("Bomb Glove contact did not retire the hosted projectile.");
             GD.Print(
                 $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
-                "immediate refire cadence-blocked and class-749 consequence remains unresolved");
+                "immediate refire cadence-blocked and class-749 lethal reaction admitted");
+            await Rac1SmokeWaitAsync(() => !hostile.Root.Visible, 240, "Bomb Glove enemy reaction completion");
+            hostile = _rac1HostileNodes.Values.First(node => _rac1Hostiles.Probe(node.Source).Health > 0);
+            SetRac1HostedPresence(hostile, RuntimeEntityPresence.Active);
 
-            // This lower-level harness has already proved the crate contact path above.
-            // Deactivate remaining class-500 runtime entries so the staged terminal swing
-            // isolates the class-749 host-contact contract instead of being consumed
-            // by the production crate-first contact ordering.
-            foreach (var crateNode in _rac1CrateNodes.Where(node => IsInstanceValid(node.Root)))
-                SetRac1HostedPresence(crateNode, RuntimeEntityPresence.Inactive);
-
-            Vector3 terminalForward = -hostile.Root.GlobalTransform.Basis.Z;
+            Vector3 terminalForward = EnemyForward(hostile);
             terminalForward.Y = 0f;
             if (terminalForward.LengthSquared() <= 1e-5f)
                 throw new InvalidOperationException(
@@ -262,7 +281,8 @@ public partial class OBPGame
                     return stagedHostilePosition;
                 },
                 maxFrames: 180,
-                "staged class-749 hostile");
+                "staged class-749 hostile",
+                maximumPlanarDistance: 1.3f);
             GD.Print(
                 $"[rac1-combat-contract] synthetic staged-hostile approach PASS; travel={hostileApproachTravel:0.000}");
 
@@ -286,7 +306,7 @@ public partial class OBPGame
                     return _rac1Hostiles.Probe(hostile.Source).Health == 0f &&
                            !hostile.Root.Visible;
                 },
-                120,
+                240,
                 "wrench hostile terminalization");
             GD.Print("[rac1-smoke] wrench hostile terminalization PASS");
 
@@ -433,7 +453,8 @@ public partial class OBPGame
         float HostileTravel,
         double EntryDistance,
         double EntryFacing,
-        Rac1Class749AttackEvent Attack)> Rac1SmokeProvokeClass749AttackAsync(
+        Rac1Class749AttackEvent Attack,
+        int AttackerInstance)> Rac1SmokeProvokeClass749AttackAsync(
         RuntimeWorldScene.DynamicObjectNode hostile,
         int maxFrames)
     {
@@ -449,7 +470,8 @@ public partial class OBPGame
                 $"Natural class-749 attack smoke requires 4 live Nanotech, found {nanotechBefore.Nanotech}.");
 
         Vector3 playerStart = _player.GlobalPosition;
-        Vector3 hostileStart = hostile.Root.GlobalPosition;
+        var groupStarts = _rac1HostileNodes.ToDictionary(pair => pair.Key, pair => pair.Value.Root.GlobalPosition);
+        var groupEntries = new Dictionary<int, (double Distance, double Facing)>();
         double? entryDistance = null;
         double? entryFacing = null;
         bool sawPursuit = false;
@@ -459,15 +481,13 @@ public partial class OBPGame
             Rac1Class749VeldinPopulation.TryGetActivationGroup(instanceIndex, out int group) &&
             group == activationGroup);
         var activatedGroupMembers = new HashSet<int>();
-        var expectedAttackSource = Rac1GameplayEntityRef.Moby(
-            new Rac1MobyRuntimeKey(
-                hostile.Source.NativeClassId,
-                hostile.Source.InstanceIndex));
         Rac1GameplayDamageDispatch? observedAttackDispatch = null;
         void ObserveDamage(Rac1GameplayDamageDispatch dispatch)
         {
             if (observedAttackDispatch is null &&
-                dispatch.Damage.Source == expectedAttackSource &&
+                dispatch.Damage.Source.NativeClassId == 749 &&
+                Rac1Class749VeldinPopulation.TryGetActivationGroup((int)dispatch.Damage.Source.RuntimeId, out int sourceGroup) &&
+                sourceGroup == activationGroup &&
                 dispatch.Damage.Target == Rac1GameplayEntityRef.Player)
             {
                 observedAttackDispatch = dispatch;
@@ -481,7 +501,8 @@ public partial class OBPGame
             {
                 if (!IsInstanceValid(hostile.Root) || !hostile.Root.Visible)
                     throw new InvalidOperationException(
-                        "Recovered class-749 placement disappeared during ordinary-play approach.");
+                        $"Recovered class-749 i{hostile.Source.InstanceIndex} disappeared during ordinary-play approach: " +
+                        $"state={_rac1Hostiles.Probe(hostile.Source).NativeState}, health={_rac1Hostiles.Probe(hostile.Source).Health}.");
 
                 var probe = _rac1Hostiles.Probe(hostile.Source);
                 Vector3 toPlayer = _player.GlobalPosition - hostile.Root.GlobalPosition;
@@ -496,6 +517,9 @@ public partial class OBPGame
                         memberProbe.NativeState != Rac1Class749Hostile.TargetSearchNativeState)
                     {
                         activatedGroupMembers.Add(pair.Key);
+                        if (memberProbe.NativeState == Rac1Class749Hostile.AttackNativeState && !groupEntries.ContainsKey(pair.Key))
+                            groupEntries.Add(pair.Key, (pair.Value.Root.GlobalPosition.DistanceTo(_player.GlobalPosition),
+                                Rac1SmokeClass749FacingError(pair.Value, _player.GlobalPosition)));
                     }
                 }
 
@@ -514,6 +538,9 @@ public partial class OBPGame
                 if (observedAttackDispatch is { } dispatch)
                 {
                     var damageEvent = dispatch.Damage;
+                    int attacker = (int)damageEvent.Source.RuntimeId;
+                    Require(groupEntries.TryGetValue(attacker, out var attackEntry), "attacker never entered its native attack state");
+                    entryDistance = attackEntry.Distance; entryFacing = attackEntry.Facing;
                     var nanotechAfter = _rac1Nanotech.Probe();
                     if (!sawPursuit || entryDistance is null || entryFacing is null)
                         throw new InvalidOperationException(
@@ -532,7 +559,7 @@ public partial class OBPGame
 
                     Vector3 playerTravel = _player.GlobalPosition - playerStart;
                     playerTravel.Y = 0f;
-                    Vector3 hostileTravel = hostile.Root.GlobalPosition - hostileStart;
+                    Vector3 hostileTravel = _rac1HostileNodes[attacker].Root.GlobalPosition - groupStarts[attacker];
                     hostileTravel.Y = 0f;
                     if (playerTravel.Length() < 0.5f)
                         throw new InvalidOperationException(
@@ -560,21 +587,22 @@ public partial class OBPGame
                         entryFacing.Value,
                         new Rac1Class749AttackEvent(
                             nativeMarker,
-                            damageEvent.NativeDamage));
+                            damageEvent.NativeDamage), attacker);
                 }
 
                 if (_rac1Nanotech.Probe().Nanotech != nanotechBefore.Nanotech)
                     throw new InvalidOperationException(
                         "Nanotech changed before the smoke observed the recovered class-749 attack marker.");
 
-                if (probe.NativeState == Rac1Class749Hostile.AttackNativeState &&
-                    distance <= 1.25d)
+                if (probe.NativeState == Rac1Class749Hostile.AttackNativeState)
                 {
                     ClearMovementSmokeInput();
                 }
                 else
                 {
-                    Rac1SmokeDriveToward(hostile.Root.GlobalPosition);
+                    // Settle at the attack's reach rather than driving through its
+                    // contact sphere into the enemy body during the wind-up.
+                    Rac1SmokeDriveToward(hostile.Root.GlobalPosition, distance < 4 ? .35f : 1f);
                 }
 
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
@@ -601,7 +629,7 @@ public partial class OBPGame
     {
         Vector3 toTarget = target - hostile.Root.GlobalPosition;
         toTarget.Y = 0f;
-        Vector3 forward = -hostile.Root.GlobalTransform.Basis.Z;
+        Vector3 forward = EnemyForward(hostile);
         forward.Y = 0f;
         if (toTarget.LengthSquared() <= 1e-6f || forward.LengthSquared() <= 1e-6f)
             return Math.PI;
@@ -635,7 +663,7 @@ public partial class OBPGame
             -(float)Math.Sin(controlYaw),
             0f,
             -(float)Math.Cos(controlYaw));
-        SetAnalogueSmokeInput(
+        SetRac1SmokeConditionedInput(
             inputScale * Math.Clamp(desired.Dot(controlRight), -1f, 1f),
             inputScale * Math.Clamp(desired.Dot(controlForward), -1f, 1f));
     }
@@ -645,7 +673,8 @@ public partial class OBPGame
         int maxFrames,
         string label,
         float inputScale = 1f,
-        float minimumTravel = 0.5f)
+        float minimumTravel = 0.5f,
+        float maximumPlanarDistance = float.PositiveInfinity)
     {
         if (_player is null)
             throw new InvalidOperationException("RAC1 smoke player disappeared.");
@@ -657,7 +686,8 @@ public partial class OBPGame
             for (int frame = 0; frame < maxFrames; frame++)
             {
                 targetCenter = targetCenterProvider();
-                if (Rac1SmokeCurrentWrenchPolicyAdmits(targetCenter))
+                if (Rac1SmokeCurrentWrenchPolicyAdmits(targetCenter) &&
+                    HorizontalDistance(_player.GlobalPosition, targetCenter) <= maximumPlanarDistance)
                 {
                     Vector3 travelled = _player.GlobalPosition - start;
                     travelled.Y = 0f;

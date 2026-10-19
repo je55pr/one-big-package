@@ -20,7 +20,7 @@ public class HostCoordinatorArchitectureTests
         Assert.Contains("private void TickRac1Projectiles(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Projectiles.cs")), StringComparison.Ordinal);
         Assert.Contains("private void TickRac1Hostiles(",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Hostiles.cs")), StringComparison.Ordinal);
+            File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Enemies.cs")), StringComparison.Ordinal);
         Assert.Contains("private void TickRac1Pickups(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Pickups.cs")), StringComparison.Ordinal);
     }

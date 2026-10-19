@@ -28,6 +28,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-window.ps1')
 
 # --- resolve the disc image ---------------------------------------------------
 if (-not $GcIso -or -not (Test-Path $GcIso)) {
@@ -75,7 +76,8 @@ if (-not (Test-Path (Join-Path $root 'game/.godot'))) {
 
 # --- run --------------------------------------------------------------------
 Write-Host "Controls: WASD/left stick move - mouse/right stick look - Space/south-face jump - C/right-shoulder crouch - X/west-face action - F fly - R development respawn - F8 input diagnostics - Tab cursor - Esc quit`n" -ForegroundColor DarkGray
-& $godot --path (Join-Path $root 'game') --rendering-method $RenderingMethod -- @sceneArgs
+$windowArgs = @(Get-ObpWindowArguments)
+& $godot @windowArgs --path (Join-Path $root 'game') --rendering-method $RenderingMethod -- @sceneArgs
 $code = $LASTEXITCODE
 if ($code -ne 0) { Read-Host "`nGodot exited with $code - press Enter to close" }
 exit $code

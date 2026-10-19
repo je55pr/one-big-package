@@ -38,7 +38,10 @@ public sealed class Rac1RatchetNanotechSessionTests
         Rac1RatchetNanotechSnapshot probe = session.Probe();
 
         for (int hit = 0; hit < 4; hit++)
+        {
+            for (int tick = 0; tick < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; tick++) session.UpdateNative();
             probe = session.ApplyDamage(RecoveredClass749Damage());
+        }
 
         Assert.Equal(0, probe.Nanotech);
         Assert.Equal(Rac1RatchetLifeState.Dead, probe.LifeState);

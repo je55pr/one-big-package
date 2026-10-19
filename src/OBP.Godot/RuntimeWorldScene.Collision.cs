@@ -11,61 +11,90 @@ public static partial class RuntimeWorldScene
     // Collision identities, faces, and optional collision visualization.
     /// <summary>
     /// Static collision body that preserves its source collision blob so a host
-    /// contact query can recover the native triangle/material identity. The scene
-    /// emits each source triangle twice with opposite winding, therefore Godot
-    /// face n maps deterministically to source triangle n / 2.
+    /// contact query can recover the native triangle/material identity through
+    /// an explicit face map after redundant octree references are consolidated.
     /// </summary>
     public sealed class RuntimeCollisionBody3D : StaticBody3D
     {
         public RuntimeCollisionBlob? SourceCollision { get; private set; }
         public int CollisionBlobIndex { get; private set; } = -1;
+        private int[] _sourceTriangles = [];
 
-        public void Configure(RuntimeCollisionBlob sourceCollision, int collisionBlobIndex)
+        public void Configure(RuntimeCollisionBlob sourceCollision, int collisionBlobIndex, int[] sourceTriangles)
         {
             SourceCollision = sourceCollision ?? throw new ArgumentNullException(nameof(sourceCollision));
             CollisionBlobIndex = collisionBlobIndex;
+            _sourceTriangles = sourceTriangles ?? throw new ArgumentNullException(nameof(sourceTriangles));
         }
 
         public int? SourceTriangleIndexForFace(int godotFaceIndex) =>
             SourceCollision is null
                 ? null
-                : SourceTriangleIndexForDoubledFace(
-                    godotFaceIndex,
-                    SourceCollision.Triangles);
+                : RuntimeWorldScene.SourceTriangleIndexForFace(_sourceTriangles, godotFaceIndex);
 
         public int? MaterialIdForFace(int godotFaceIndex) =>
             SourceCollision is null
                 ? null
-                : MaterialIdForDoubledFace(SourceCollision, godotFaceIndex);
+                : RuntimeWorldScene.MaterialIdForFace(SourceCollision, _sourceTriangles, godotFaceIndex);
     }
 
-    public static int? SourceTriangleIndexForDoubledFace(
-        int godotFaceIndex,
-        int sourceTriangleCount)
+    public static int? SourceTriangleIndexForFace(int[] sourceTriangles, int godotFaceIndex)
     {
-        if (godotFaceIndex < 0 || sourceTriangleCount < 0)
-            return null;
-
-        int triangleIndex = godotFaceIndex / 2;
-        return triangleIndex < sourceTriangleCount
-            ? triangleIndex
-            : null;
+        ArgumentNullException.ThrowIfNull(sourceTriangles);
+        return godotFaceIndex >= 0 && godotFaceIndex < sourceTriangles.Length
+            ? sourceTriangles[godotFaceIndex] : null;
     }
 
-    public static int? MaterialIdForDoubledFace(
-        RuntimeCollisionBlob sourceCollision,
-        int godotFaceIndex)
+    public static int? MaterialIdForFace(RuntimeCollisionBlob sourceCollision, int[] sourceTriangles, int godotFaceIndex)
     {
         ArgumentNullException.ThrowIfNull(sourceCollision);
-        int? triangleIndex = SourceTriangleIndexForDoubledFace(
-            godotFaceIndex,
-            sourceCollision.Triangles);
+        int? triangleIndex = SourceTriangleIndexForFace(sourceTriangles, godotFaceIndex);
         if (!triangleIndex.HasValue)
             return null;
 
-        return triangleIndex.Value < sourceCollision.TriangleMaterialIds.Length
+        return triangleIndex.Value >= 0 && triangleIndex.Value < sourceCollision.TriangleMaterialIds.Length
             ? sourceCollision.TriangleMaterialIds[triangleIndex.Value]
             : null;
+    }
+
+    public sealed record CollisionFacePlan(Vector3[] Faces, int[] SourceTriangleIndices);
+
+    private readonly record struct CollisionFaceKey(Vector3 A, Vector3 B, Vector3 C, int? Material);
+
+    /// <summary>
+    /// A host shape needs each geometric surface once, rather than the native
+    /// octree's repeated references. Deduplicate only exact scene-space geometry
+    /// with the same material, preserving the first source identity. Back-face
+    /// collision supplies two-sided contact without overlapping reverse copies.
+    /// The source collision blob is retained verbatim.
+    /// </summary>
+    public static CollisionFacePlan BuildCollisionFacePlan(RuntimeCollisionBlob blob)
+    {
+        ArgumentNullException.ThrowIfNull(blob);
+        var seen = new System.Collections.Generic.HashSet<CollisionFaceKey>();
+        var faces = new System.Collections.Generic.List<Vector3>();
+        var sources = new System.Collections.Generic.List<int>();
+        for (int triangle = 0; triangle < blob.Triangles; triangle++)
+        {
+            Vector3 a = Vertex(blob, blob.Indices[triangle * 3]);
+            Vector3 b = Vertex(blob, blob.Indices[triangle * 3 + 1]);
+            Vector3 c = Vertex(blob, blob.Indices[triangle * 3 + 2]);
+            Vector3 x = a, y = b, z = c;
+            static int Compare(Vector3 left, Vector3 right)
+            {
+                int comparison = left.X.CompareTo(right.X);
+                if (comparison == 0) comparison = left.Y.CompareTo(right.Y);
+                return comparison == 0 ? left.Z.CompareTo(right.Z) : comparison;
+            }
+            if (Compare(x, y) > 0) (x, y) = (y, x);
+            if (Compare(y, z) > 0) (y, z) = (z, y);
+            if (Compare(x, y) > 0) (x, y) = (y, x);
+            int? material = triangle < blob.TriangleMaterialIds.Length ? blob.TriangleMaterialIds[triangle] : null;
+            if (!seen.Add(new(x, y, z, material))) continue;
+            faces.Add(a); faces.Add(b); faces.Add(c);
+            sources.Add(triangle);
+        }
+        return new(faces.ToArray(), sources.ToArray());
     }
 
 
@@ -84,31 +113,19 @@ public static partial class RuntimeWorldScene
                     continue;
                 }
 
-                // ConcavePolygonShape3D wants a flat triangle soup: 3 vertices per
-                // face, un-indexed. The RC octree triangulation has inconsistent
-                // winding, which makes a CharacterBody3D fall through faces whose
-                // normal points away — so emit every triangle twice, both windings.
-                int triCount = blob.Indices.Length / 3;
-                var faces = new Vector3[triCount * 6];
-                for (int t = 0; t < triCount; t++)
-                {
-                    var a = Vertex(blob, blob.Indices[t * 3]);
-                    var b = Vertex(blob, blob.Indices[t * 3 + 1]);
-                    var c = Vertex(blob, blob.Indices[t * 3 + 2]);
-                    faces[t * 6] = a;
-                    faces[t * 6 + 1] = b;
-                    faces[t * 6 + 2] = c;
-                    faces[t * 6 + 3] = c;
-                    faces[t * 6 + 4] = b;
-                    faces[t * 6 + 5] = a;
-                }
+                CollisionFacePlan plan = BuildCollisionFacePlan(blob);
 
                 var body = new RuntimeCollisionBody3D { Name = $"Collision{i}" };
-                body.Configure(blob, i);
-                body.AddChild(new CollisionShape3D { Shape = new ConcavePolygonShape3D { Data = faces } });
+                body.Configure(blob, i, plan.SourceTriangleIndices);
+                body.AddChild(new CollisionShape3D
+                {
+                    Shape = new ConcavePolygonShape3D { Data = plan.Faces, BackfaceCollision = true },
+                });
                 root.AddChild(body);
                 collisionBodies++;
-                collisionTriangles += blob.Triangles;
+                collisionTriangles += plan.SourceTriangleIndices.Length;
+                GD.Print($"[collision] blob {i}: {blob.Triangles:N0} source references -> " +
+                    $"{plan.SourceTriangleIndices.Length:N0} two-sided shape faces");
 
                 if (options.ShowCollisionDebug)
                 {

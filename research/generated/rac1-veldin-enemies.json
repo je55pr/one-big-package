@@ -1,0 +1,400 @@
+{
+  "schema": 1,
+  "authority": {
+    "build": "rac1-ntscu-original",
+    "levelId": 0,
+    "isoSha256": "ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d",
+    "overlaySha256": "eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804"
+  },
+  "blocks": {
+    "class749Update": {
+      "start": "0x002d4610",
+      "end": "0x002d5160",
+      "sha256": "1c3ed935a8b2745a00ecf25e2fe6ce1d2ed2eac8fb70d958f3529e79e9630fd4"
+    },
+    "class749Damage": {
+      "start": "0x002d5160",
+      "end": "0x002d549c",
+      "sha256": "0939b53c2ae90b4dae82663b517de3df9ba0649f6df601978958bde28b58ee4b"
+    },
+    "class749Navigation": {
+      "start": "0x002d54c8",
+      "end": "0x002d56dc",
+      "sha256": "70360bc06100c5b80e52236a2c7299733a488c4c3a57c9f2fccc058449a71662"
+    },
+    "class749IdleRoaming": {
+      "start": "0x00261630",
+      "end": "0x00261858",
+      "sha256": "d7fa6c6e61b162cc7cb59b1439a68f49b066d47a4413c3f2abb7a13c86c3e4bd"
+    },
+    "class1440Update": {
+      "start": "0x002e0b88",
+      "end": "0x002e1678",
+      "sha256": "df9baa01428f9a1b37b2f70bd4dcbf166d5e56e53f333d9e6a22e713f28ca875"
+    },
+    "class1440Damage": {
+      "start": "0x002e1678",
+      "end": "0x002e1aa8",
+      "sha256": "468717158f16a63bfb6a4e1d9e8176e720ff00bb7676b50b1861af8f93cebd90"
+    },
+    "class1440AttackSlots": {
+      "start": "0x002e1f28",
+      "end": "0x002e2110",
+      "sha256": "fbf7479b9d1d82113051bcda75cc77a8e418c110ec81f4c8ea9b8ec8fc36614e"
+    },
+    "meleeDescriptor": {
+      "start": "0x002598b0",
+      "end": "0x00259bc8",
+      "sha256": "ed3e9eaa4edaf326e8c445f6ef17cf94f09673e8fbbf9bfd8e680b0ad29d7a8a"
+    },
+    "queryDamageRecordBridge": {
+      "start": "0x001f0c40",
+      "end": "0x001f0d60",
+      "sha256": "7fd0f5ccdfc10bf18516da13c219cd078f931f2680a0e107f61ebffb90d30bed"
+    },
+    "scalarSteering": {
+      "start": "0x0025b970",
+      "end": "0x0025bb38",
+      "sha256": "746feb8c4f91526d5a5bfae80d5bb28de2db8dea7325a66fc56d3df37f103cc4"
+    },
+    "angularSteering": {
+      "start": "0x0025be00",
+      "end": "0x0025bfdc",
+      "sha256": "01cd1da4d733c2c7fa12f00f3aeb1707a7afc8a1adf0cdee10650a4733e88467"
+    },
+    "sequenceSelection": {
+      "start": "0x00257880",
+      "end": "0x00257b50",
+      "sha256": "ce87454a1900e4fa5f148080dda5991318d60a2776ed5cc38bc9f62d12043c24"
+    },
+    "playerDamageIntake": {
+      "start": "0x00210ce8",
+      "end": "0x00211248",
+      "sha256": "9996d6a57b4a555f8158446e7cfced36fab237e31bbd3438481a9c1cab576d92"
+    },
+    "ordinaryPlayerHurtEntry": {
+      "start": "0x002265e0",
+      "end": "0x0022668c",
+      "sha256": "f8cd3081c29eab43d624be3106422294fcff15ced8086c79cfebfde107d0e21c"
+    },
+    "playerNativeTimerUpdate": {
+      "start": "0x00221604",
+      "end": "0x002216b0",
+      "sha256": "7852554bc87eba918b43a1bb92e645ea4fc16e8489681a138d42bd34ae610427"
+    },
+    "integerTimerDecrement": {
+      "start": "0x001fef68",
+      "end": "0x001fef98",
+      "sha256": "0a9b181bc823f5dbbe13465d88f19de77e539ce9303f0525d32513adec031d16"
+    },
+    "nativeDistanceHelpers": {
+      "start": "0x001ff450",
+      "end": "0x001ff4b8",
+      "sha256": "a1b04ccd00c8a31e4b22bf0a7286f5930866703c4c5acc3f06d4106208cadccf"
+    },
+    "nativeVectorLength": {
+      "start": "0x001ff3d8",
+      "end": "0x001ff408",
+      "sha256": "2c03ee91114a7d1120bc67f279154961b73a41789db10083e155f08b8464ef25"
+    },
+    "reactionLaunch": {
+      "start": "0x0025c558",
+      "end": "0x0025c698",
+      "sha256": "920465ab9a747c96a80311de1f3d1b34612105452e699a2daee8f04f618e4327"
+    },
+    "reactionStep": {
+      "start": "0x0025c698",
+      "end": "0x0025c758",
+      "sha256": "26bdece23daa5ec2bf99f9e4e3ec270c1e456278661ed31338d66130624eef14"
+    },
+    "class749ReactionParameters": {
+      "start": "0x00161970",
+      "end": "0x00161980",
+      "sha256": "51e2cc2c74061d0ffe2d52e49f78bf50055ef1faaff051d248b82e2768f4a001"
+    },
+    "class1440ReactionParameters": {
+      "start": "0x00161bd4",
+      "end": "0x00161be4",
+      "sha256": "e27c6fdb759b65da719f7592d19be4fdaf62528095363114d247ffbb9db36c07"
+    }
+  },
+  "signatures": [
+    {
+      "address": "0x002d46f8",
+      "word": "0x24050001",
+      "meaning": "class749 initialization selects rest sequence1"
+    },
+    {
+      "address": "0x002d4adc",
+      "word": "0x24050004",
+      "meaning": "class749 state5 selects locomotion4 for idle roaming"
+    },
+    {
+      "address": "0x002d4b14",
+      "word": "0x0c09858c",
+      "meaning": "class749 state5 invokes the roaming movement routine"
+    },
+    {
+      "address": "0x002d4fec",
+      "word": "0x24030001",
+      "meaning": "class749 return-home completion selects rest sequence1"
+    },
+    {
+      "address": "0x002e0d20",
+      "word": "0x24630010",
+      "meaning": "class1440 initialization addresses entrance point0 after the path header"
+    },
+    {
+      "address": "0x002e0d24",
+      "word": "0x78620000",
+      "meaning": "class1440 initialization loads entrance point0"
+    },
+    {
+      "address": "0x002e0d28",
+      "word": "0x7e220000",
+      "meaning": "class1440 initialization replaces the Moby position with entrance point0"
+    },
+    {
+      "address": "0x002e0f2c",
+      "word": "0x0c07fcf6",
+      "meaning": "class1440 waypoint arrival uses full XYZ vector length"
+    },
+    {
+      "address": "0x002e0fa4",
+      "word": "0x02e0202d",
+      "meaning": "class1440 entrance destination is the live Moby position pointer"
+    },
+    {
+      "address": "0x002e0fac",
+      "word": "0x0c07fc9e",
+      "meaning": "class1440 entrance directly adds displacement to position without a contact solver"
+    },
+    {
+      "address": "0x002d51cc",
+      "word": "0x3c050033",
+      "meaning": "class749 native damage mask 0x00330000"
+    },
+    {
+      "address": "0x002e16e4",
+      "word": "0x3c050033",
+      "meaning": "class1440 uses the same weapon damage mask"
+    },
+    {
+      "address": "0x002d5288",
+      "word": "0x46070001",
+      "meaning": "class749 health subtracts consumed native damage"
+    },
+    {
+      "address": "0x002d5334",
+      "word": "0x0c095d1c",
+      "meaning": "class749 emits its authored bolt reward on lethal intake"
+    },
+    {
+      "address": "0x002598bc",
+      "word": "0x00a0b02d",
+      "meaning": "melee emitter preserves the query origin pointer in s6"
+    },
+    {
+      "address": "0x0025998c",
+      "word": "0x02c0202d",
+      "meaning": "sphere query receives the preserved joint origin, not the descriptor impulse vector"
+    },
+    {
+      "address": "0x002599a8",
+      "word": "0x0c07ca1a",
+      "meaning": "melee emitter calls the sphere query at the joint origin"
+    },
+    {
+      "address": "0x00259a04",
+      "word": "0x03a0302d",
+      "meaning": "joint wrapper writes its world position to the stack"
+    },
+    {
+      "address": "0x00259a5c",
+      "word": "0x03a0282d",
+      "meaning": "joint wrapper passes that position as the emitter origin"
+    },
+    {
+      "address": "0x002e0cb4",
+      "word": "0xe6800020",
+      "meaning": "class1440 script initializes health, overriding the authored placement"
+    },
+    {
+      "address": "0x002e1784",
+      "word": "0x46060001",
+      "meaning": "class1440 subtracts consumed damage"
+    },
+    {
+      "address": "0x002e1850",
+      "word": "0x0c095d1c",
+      "meaning": "class1440 emits its authored reward on lethal intake"
+    },
+    {
+      "address": "0x002e1238",
+      "word": "0x0c093dca",
+      "meaning": "class1440 resolves semantic socket0"
+    },
+    {
+      "address": "0x002e12ac",
+      "word": "0xe7b4008c",
+      "meaning": "class1440 stores the one-point descriptor scalar"
+    },
+    {
+      "address": "0x002e1310",
+      "word": "0xafa20084",
+      "meaning": "class1440 admits active contact after animation position1"
+    },
+    {
+      "address": "0x001f0ccc",
+      "word": "0x7a240000",
+      "meaning": "query loads descriptor first quadword"
+    },
+    {
+      "address": "0x001f0cd0",
+      "word": "0x7a250010",
+      "meaning": "query loads descriptor second quadword"
+    },
+    {
+      "address": "0x001f0cdc",
+      "word": "0x7c640010",
+      "meaning": "query stores descriptor at damage record+0x10"
+    },
+    {
+      "address": "0x001f0ce0",
+      "word": "0x7c650020",
+      "meaning": "query stores descriptor second quadword at record+0x20"
+    },
+    {
+      "address": "0x0022666c",
+      "word": "0x0c07fbc8",
+      "meaning": "ordinary hurt entry converts the protection duration"
+    },
+    {
+      "address": "0x0022665c",
+      "word": "0x2404004d",
+      "meaning": "ordinary hurt duration77"
+    },
+    {
+      "address": "0x00226678",
+      "word": "0xae0201c0",
+      "meaning": "ordinary hurt stores protection at P+0x1c0"
+    },
+    {
+      "address": "0x00210d34",
+      "word": "0x8cc201c0",
+      "meaning": "common player intake reads the protection timer"
+    },
+    {
+      "address": "0x00210d40",
+      "word": "0x1440013b",
+      "meaning": "nonzero protection timer rejects the incoming descriptor"
+    },
+    {
+      "address": "0x0022163c",
+      "word": "0x0c07fbda",
+      "meaning": "ordinary update decrements an integer timer"
+    },
+    {
+      "address": "0x00221640",
+      "word": "0x260401c0",
+      "meaning": "the decremented timer is P+0x1c0"
+    },
+    {
+      "address": "0x001fef78",
+      "word": "0x2021ffff",
+      "meaning": "integer timer decrements by one per native update"
+    },
+    {
+      "address": "0x001ff490",
+      "word": "0x4b82086c",
+      "meaning": "class1440 distance helper subtracts native XY components"
+    }
+  ],
+  "class749": {
+    "placements": [
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157,
+      158
+    ],
+    "health": 1,
+    "rewardCentre": 7,
+    "visualScale": 0.75,
+    "restSequence": 1,
+    "roamingSequence": 4,
+    "pursuitSpeedPerTick": 0.06666666666666667,
+    "accelerationPerTick": 0.0022222222222222222,
+    "decelerationPerTick": 0.0016666666666666668,
+    "attackSequence": 5,
+    "attackPosition": 34,
+    "contactRadius": 0.333,
+    "contactOriginSemanticJoint": 0,
+    "descriptorPlanarImpulse": 1,
+    "descriptorVerticalImpulse": 1,
+    "damage": 1,
+    "lethalSequences": [
+      6,
+      7
+    ]
+  },
+  "class1440": {
+    "placements": [
+      189,
+      190,
+      191,
+      192,
+      193,
+      194,
+      195,
+      196,
+      197
+    ],
+    "authoredHealth": 1,
+    "scriptHealth": 2,
+    "rewardCentre": 22,
+    "entranceInitialPosition": "path point0 replaces editor placement during script initialization",
+    "entranceFirstDestinationIndex": 1,
+    "waypointArrivalDistance": "native XYZ Euclidean distance",
+    "entrancePositionUpdate": "direct XYZ position assignment; no shared navigation contact query",
+    "acquisitionPlanarDistanceInclusive": 24,
+    "sharedAttackSlots": 3,
+    "entranceSpeedPerTick": 0.2,
+    "accelerationPerTick": 0.0022222222222222222,
+    "decelerationPerTick": 0.0044444444444444444,
+    "windupSequence": 5,
+    "sweepSequence": 6,
+    "contactAfterPositionExclusive": 1,
+    "contactLength": 5,
+    "damage": 1,
+    "descriptorFlags": "0x00010001",
+    "maximumFireCycles": 4,
+    "contactRecoverySequence": 7,
+    "timeoutRecoverySequence": 12,
+    "hurtSequence": 8,
+    "lethalSequence": 11,
+    "deathFragmentClasses": [
+      1933,
+      1934,
+      1935,
+      1963
+    ]
+  },
+  "limits": [
+    "Static executable evidence, not a fresh live emulator replay.",
+    "OBP uses retail rest sequence1 for stationary class749; the native state5 roaming motion remains unimplemented.",
+    "Godot capsules, wall sliding, skeletal vertex interpolation, particle presentation and random call order are adapters.",
+    "Full native reaction physics and Ratchet hurt presentation/combat restart are separate remaining work."
+  ]
+}

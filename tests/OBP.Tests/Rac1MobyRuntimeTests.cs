@@ -428,18 +428,18 @@ public sealed class Rac1MobyRuntimeTests
                 NativeDamage: Rac1BombGlove.NativeDamage,
                 NativeDamageFlags: Rac1BombGlove.NativeDamageFlags));
 
-        Assert.False(freshRuntime.CanDispatchDamage(freshSource, bombEvent));
-        Assert.False(freshRuntime.TryDispatchDamage<Rac1Class749HostProbe>(
+        Assert.True(freshRuntime.CanDispatchDamage(freshSource, bombEvent));
+        Assert.True(freshRuntime.TryDispatchDamage<Rac1Class749HostProbe>(
             freshSource,
             bombEvent,
             out var bombResult));
-        Assert.Null(bombResult);
-        Assert.Equal(1f, freshHostiles.Probe(freshSource).Health);
+        Assert.Equal(-1f, bombResult!.Health);
+        Assert.False(freshRuntime.CanDispatchDamage(freshSource, bombEvent));
         Assert.Throws<NotSupportedException>(() =>
             freshRuntime.DispatchDamage<Rac1Class749HostProbe>(
                 freshSource,
                 bombEvent));
-        Assert.Equal(1f, freshHostiles.Probe(freshSource).Health);
+        Assert.Equal(-1f, freshHostiles.Probe(freshSource).Health);
     }
 
     [Fact]

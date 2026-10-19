@@ -96,7 +96,7 @@ public partial class OBPGame
     {
         var result = new Rac1WrenchDamageResult(Rac1WrenchContactPath.AnimatedSweepHostGeometry,
             damage, Rac1WrenchAttackProfile.NativeDamageFlags);
-        foreach (var target in _rac1CrateNodes.Concat(_rac1HostileNodes.Values))
+        foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes))
         {
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
             if (_rac1WrenchHitTargets.Contains(key) || !IsInstanceValid(target.Root) || !IsRac1GameplayActive(target))
@@ -115,7 +115,7 @@ public partial class OBPGame
             bool applied = target.Source.NativeClassId switch
             {
                 int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) => TryStrikeRac1Crate(target, result),
-                Rac1Class749Hostile.NativeClassId => TryStrikeRac1Hostile(target, result),
+                Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId => TryStrikeRac1Hostile(target, result),
                 _ => false,
             };
             // Per-target coalescing is an explicit bounded host policy. Retail's

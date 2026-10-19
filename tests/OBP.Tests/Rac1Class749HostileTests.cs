@@ -62,10 +62,11 @@ public sealed class Rac1Class749HostileTests
 
         var retained = session.Step(source, Facts(1.5, 0.1, statusSentinel: null));
         Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, retained.NativeState);
+        Assert.Equal(Rac1Class749Hostile.RoamingSequenceId, retained.NativeSequence);
 
         var promoted = session.Step(source, Facts(1.5, 0.1, statusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, promoted.NativeState);
-        Assert.Null(promoted.NativeSequence);
+        Assert.Equal(4, promoted.NativeSequence);
     }
 
     [Fact]
@@ -93,6 +94,16 @@ public sealed class Rac1Class749HostileTests
         var fallback = fallbackSession.Step(fallbackSource, Facts(2, 0, statusSentinel: 2));
         Assert.Equal(Rac1Class749Hostile.ReturnHomeNativeState, fallback.NativeState);
         Assert.Equal(Rac1Class749Hostile.StateSixOrEightSequenceId, fallback.NativeSequence);
+    }
+
+    [Fact]
+    public void PursuitWaitsForTheNativeLocomotionCompletionGateBeforeAttacking()
+    {
+        var source = Class749(149, health: 1);
+        var session = InStateSix(source);
+        var facts = Facts(1, 0);
+        Assert.Equal(6, session.Step(source, facts with { AnimationFinished = false }).NativeState);
+        Assert.Equal(7, session.Step(source, facts with { AnimationFinished = true }).NativeState);
     }
 
     [Fact]
@@ -165,7 +176,7 @@ public sealed class Rac1Class749HostileTests
             3, 0, statusSentinel: 2,
             currentPosition: new Rac1Class749WorldPoint(Math.BitDecrement(11.5), 4, -3)));
         Assert.Equal(Rac1Class749Hostile.TargetSearchNativeState, inside.NativeState);
-        Assert.Equal(Rac1Class749Hostile.StateFiveSequenceId, inside.NativeSequence);
+        Assert.Equal(Rac1Class749Hostile.RestSequenceId, inside.NativeSequence);
 
         var clearSource = Class749(150, health: 1f, home: home);
         var clearSession = InStateEight(clearSource, currentPosition: new Rac1Class749WorldPoint(20, 4, -3));
@@ -244,7 +255,7 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
-    public void GenericDamageConsumerRejectsUnrecoveredBombConsequence()
+    public void GenericDamageConsumerAdmitsBombDescriptorThroughNativeWeaponMask()
     {
         var source = Class749(149, health: 1f);
         var session = Registered(source);
@@ -256,9 +267,8 @@ public sealed class Rac1Class749HostileTests
             NativeDamageFlags: Rac1BombGlove.NativeDamageFlags);
         var damage = Rac1DamageRuntime.FromBombGlove(bomb);
 
-        Assert.Throws<NotSupportedException>(() =>
-            session.ApplyDamage(source, damage));
-        Assert.Equal(1f, session.Probe(source).Health);
+        Assert.Equal(-1f, session.ApplyDamage(source, damage).Health);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, session.Probe(source).NativeState);
     }
 
     [Fact]

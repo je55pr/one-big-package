@@ -24,13 +24,13 @@ The previously recovered movement work independently establishes that respawn pl
 
 ## Runtime promotion
 
-`Rac1RatchetNanotechSession` is RAC1-owned and engine-independent. Player damage enters through the shared `Rac1GameplayDamageEvent` transport; the Nanotech consumer then admits only the recovered class-749 marker-34/damage-1 shape and rejects unproven sources or envelopes. It starts at the witnessed Veldin value `4`, reaches dead state at zero, and records whether that boundary came from combat zero-Nanotech or the separately witnessed Veldin environmental path. Only the latter may use the recovered respawn operation that restores `4`. There is no parallel class-749-specific damage entry point in the runtime API.
+`Rac1RatchetNanotechSession` is RAC1-owned and engine-independent. Player damage enters through the shared `Rac1GameplayDamageEvent` transport. It now admits class749 marker34/damage1 and the independently traced class1440 damage1/flags0x00010001 descriptor. The ordinary hurt entry sets P+0x1c0 to77; the common player intake rejects hits while this timer is nonzero, and the common update decrements it once per native update. See [RAC1_VELDIN_ENEMIES.md](RAC1_VELDIN_ENEMIES.md) for instruction bindings. It starts at the witnessed Veldin value `4`, reaches dead state at zero, and distinguishes combat zero-Nanotech from recovered environmental death. Only the latter uses the recovered `Respawn()` operation. The explicit combat-death **Retry level** UI is an OBP full-level reload, not a recovered native checkpoint transition.
 
 This distinction prevents the host from aliasing the Veldin fall restart onto combat death. The API deliberately rejects unproven attack shapes and does not add shared Runtime or Godot health semantics. The broader preservation/reset matrix is retained in `RAC1_DEATH_RESPAWN.md`.
 
 ## Deliberately unresolved
 
 - generic checkpoint selector/activation policy beyond the proven level-2 active restart record;
-- invulnerability windows, knockback and combat death presentation;
+- full hurt impulse/presentation and combat death presentation;
 - Nanotech upgrades or health rules outside this bounded early-game witness;
-- damage consequences for enemy classes other than the recovered class-749 representative.
+- damage consequences for enemy classes beyond the two recovered opening Veldin families.

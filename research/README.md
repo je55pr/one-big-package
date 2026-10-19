@@ -42,6 +42,7 @@ When a document contains an unresolved hypothesis, it should say so explicitly. 
 | R&C1 Nanotech / damage / death | [`RAC1_NANOTECH_DAMAGE_DEATH.md`](RAC1_NANOTECH_DAMAGE_DEATH.md), [`RAC1_DEATH_RESPAWN.md`](RAC1_DEATH_RESPAWN.md) | Retail-backed Nanotech/death path plus the explicit Veldin respawn preservation/reset evidence boundary |
 | R&C1 hostile/common Moby state | [`RAC1_HOSTILE_COMMON_STATE.md`](RAC1_HOSTILE_COMMON_STATE.md) | Engine-common Moby dispatch/damage/terminalization boundary versus class-749 targeting, locomotion, health and hit-state script |
 | R&C1 enemy attack patterns | [`RAC1_ENEMY_ATTACK_PATTERNS.md`](RAC1_ENEMY_ATTACK_PATTERNS.md) | Class-749 melee cadence/range/facing/damage plus class-1440 contact-query and damage-intake boundary |
+| Opening Veldin enemies | [`RAC1_VELDIN_ENEMIES.md`](RAC1_VELDIN_ENEMIES.md) | Both families' live AI, skeletal clips, contact damage, reactions, bolt rewards and explicit adapter limits |
 | R&C1 wrench | [`RAC1_WRENCH_ACTIONS.md`](RAC1_WRENCH_ACTIONS.md), [`RAC1_WRENCH_VISUAL.md`](RAC1_WRENCH_VISUAL.md) | Multi-Strike, Hyper/Comet, authored hit gates, class71 animated hand attachment and bounded host collision |
 | Sky | [`GC_SKY.md`](GC_SKY.md) | Retail-backed shell geometry/settings; effects remain partial |
 | Level settings | [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md) | Retail-backed fixed settings fields |

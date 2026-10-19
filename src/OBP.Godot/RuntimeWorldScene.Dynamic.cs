@@ -1,4 +1,5 @@
 using Godot;
+using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -41,6 +42,9 @@ public static partial class RuntimeWorldScene
         private double _clipStartedAtSeconds;
         private int _appliedFrame = -1;
         private bool _restPoseApplied = true;
+        private RuntimeObjectAnimationSet? _configuredAnimations;
+        private readonly Dictionary<int, byte[]> _animationVertexBuffers = [];
+        public RuntimeObjectAnimationSample? AnimationSample { get; private set; }
 
         public RuntimeDynamicObject Source { get; }
         public Node3D Root { get; }
@@ -75,6 +79,7 @@ public static partial class RuntimeWorldScene
         /// <summary>Advance a source-backed dynamic-object clip on the shared world clock.</summary>
         public void AdvanceAnimation(double clockSeconds)
         {
+            if (AnimationSample is not null) return;
             var clip = Source.Animations?.Find(State.Presentation.AnimationRole);
             if (clip is null)
             {
@@ -111,6 +116,53 @@ public static partial class RuntimeWorldScene
             _restPoseApplied = false;
         }
 
+        /// <summary>Attach source-admitted clips to the existing authored render surfaces.</summary>
+        public void ConfigureAnimations(RuntimeObjectAnimationSet animations) =>
+            _configuredAnimations = animations ?? throw new ArgumentNullException(nameof(animations));
+
+        public void ApplyAnimationSample(RuntimeObjectAnimationSample sample)
+        {
+            if (sample == AnimationSample) return;
+            var animations = _configuredAnimations ?? Source.Animations
+                ?? throw new InvalidOperationException("Object has no source-admitted animation clips.");
+            if (_surfaceNodes.Count != Source.Meshes.Count)
+                throw new InvalidDataException("Animated object render surfaces do not match its source.");
+            for (int surface = 0; surface < _surfaceNodes.Count; surface++)
+            {
+                var positions = Evaluate(sample, surface, 0);
+                if (!_animationVertexBuffers.TryGetValue(surface, out var buffer))
+                {
+                    UpdateDynamicSurfaceMesh(_surfaceNodes[surface], Source.Meshes[surface], positions, dynamic: true);
+                    buffer = new byte[checked(positions.Length * sizeof(float))];
+                    _animationVertexBuffers.Add(surface, buffer);
+                }
+                UpdateDynamicSurfacePositions(_surfaceNodes[surface], positions, buffer);
+            }
+            AnimationSample = sample;
+            _restPoseApplied = false;
+
+            double[] Evaluate(RuntimeObjectAnimationSample pose, int surfaceIndex, int depth)
+            {
+                if (depth > 64 || !float.IsFinite(pose.Fraction) || pose.Fraction is < 0 or > 1 ||
+                    !float.IsFinite(pose.BlendFraction) || pose.BlendFraction is < 0 or > 1)
+                    throw new InvalidDataException("Object animation sample has invalid interpolation/blend state.");
+                var clip = animations.Clips.Single(clip => clip.Id == pose.ClipId);
+                var frames = clip.Surfaces.Single(surface => surface.SurfaceIndex == surfaceIndex).LocalFrames;
+                if ((uint)pose.Frame >= frames.Count || (uint)pose.NextFrame >= frames.Count)
+                    throw new InvalidDataException("Object animation sample references a missing frame.");
+                var from = frames[pose.Frame];
+                var to = frames[pose.NextFrame];
+                var result = new double[from.Length];
+                for (int at = 0; at < result.Length; at++) result[at] = from[at] + (to[at] - from[at]) * pose.Fraction;
+                if (pose.BlendFrom is { } previous && pose.BlendFraction < 1)
+                {
+                    var old = Evaluate(previous, surfaceIndex, depth + 1);
+                    for (int at = 0; at < result.Length; at++) result[at] = old[at] + (result[at] - old[at]) * pose.BlendFraction;
+                }
+                return result;
+            }
+        }
+
         private void RestoreRestPose()
         {
             if (_restPoseApplied || _surfaceNodes.Count != Source.Meshes.Count)
@@ -124,7 +176,8 @@ public static partial class RuntimeWorldScene
     private static void UpdateDynamicSurfaceMesh(
         MeshInstance3D node,
         RuntimeObjectMesh surface,
-        IReadOnlyList<double> positions)
+        IReadOnlyList<double> positions,
+        bool dynamic = false)
     {
         if (positions.Count != surface.Positions.Length)
             throw new InvalidDataException("Dynamic animation frame vertex count does not match its surface.");
@@ -163,8 +216,28 @@ public static partial class RuntimeWorldScene
 
         var mesh = node.Mesh as ArrayMesh ?? new ArrayMesh();
         mesh.ClearSurfaces();
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays,
+            flags: dynamic ? Mesh.ArrayFormat.FlagUseDynamicUpdate : 0);
         node.Mesh = mesh;
+    }
+
+    private static void UpdateDynamicSurfacePositions(MeshInstance3D node, double[] positions, byte[] buffer)
+    {
+        if (positions.Length == 0 || positions.Length % 3 != 0 || buffer.Length != positions.Length * sizeof(float))
+            throw new InvalidDataException("Animated vertex buffer differs from its admitted surface.");
+        Vector3 minimum = new(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+        Vector3 maximum = new(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+        for (int at = 0; at < positions.Length; at += 3)
+        {
+            Vector3 point = ToScene(positions[at], positions[at + 1], positions[at + 2]);
+            minimum = minimum.Min(point); maximum = maximum.Max(point);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(at * sizeof(float)), point.X);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan((at + 1) * sizeof(float)), point.Y);
+            BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan((at + 2) * sizeof(float)), point.Z);
+        }
+        var mesh = (ArrayMesh)node.Mesh;
+        mesh.SurfaceUpdateVertexRegion(0, 0, buffer);
+        mesh.CustomAabb = new(minimum, maximum - minimum);
     }
 
 

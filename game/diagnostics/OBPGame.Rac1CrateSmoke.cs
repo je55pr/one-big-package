@@ -54,7 +54,19 @@ public partial class OBPGame
             player.ApplyDevelopmentReset(origin + Vector3.Up * .05f);
             await PhysicsFramesAsync(8);
             await CaptureRac1CratesAsync("homing", origin + Vector3.Up * .7f);
-            await Rac1SmokeWaitAsync(() => !_rac1PickupMotion.Keys.Any(id => id > 0), 240, "bolt homing/arrival");
+            // Scattering can leave a bolt beyond attraction range of the crate
+            // origin. This staged fixture approaches remaining native pickups;
+            // it never moves them or injects collection/credit state.
+            for (int tick = 0; tick < 300 && _rac1PickupMotion.Keys.Any(id => id > 0); tick++)
+            {
+                if (tick >= 90 && tick % 30 == 0)
+                {
+                    var remaining = _rac1PickupMotion.First(pair => pair.Key > 0).Value;
+                    player.ApplyDevelopmentReset(FromEffectNative(remaining.Position) + Vector3.Up * .05f);
+                }
+                await PhysicsFramesAsync(1);
+            }
+            Require(!_rac1PickupMotion.Keys.Any(id => id > 0), "scattered bolts failed to attract/arrive after approach");
             Require(_rac1BoltWallet.Balance == balance + emitted && _rac1BoltCrates.OutstandingPickupCount == 0,
                 "bolt arrival failed exact wallet credit/cleanup");
             Require(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet).Bolts!.Balance == balance + emitted,

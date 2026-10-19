@@ -155,13 +155,13 @@ public sealed class Rac1Goal1PlayableSliceTests
             hostile,
             new Rac1Class749TargetFacts(3d, 0d, StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, hostileProbe.NativeState);
-        Assert.Null(hostileProbe.NativeSequence);
+        Assert.Equal(4, hostileProbe.NativeSequence);
 
         hostileProbe = hostileSession.Step(
             hostile,
             new Rac1Class749TargetFacts(Rac1Class749Hostile.AttackDistanceExclusive, 0d, StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, hostileProbe.NativeState);
-        Assert.Null(hostileProbe.NativeSequence);
+        Assert.Equal(4, hostileProbe.NativeSequence);
 
         hostileProbe = hostileSession.Step(
             hostile,
@@ -170,7 +170,7 @@ public sealed class Rac1Goal1PlayableSliceTests
                 Rac1Class749Hostile.AttackFacingErrorExclusive,
                 StatusSentinel: 0));
         Assert.Equal(Rac1Class749Hostile.TargetedNativeState, hostileProbe.NativeState);
-        Assert.Null(hostileProbe.NativeSequence);
+        Assert.Equal(4, hostileProbe.NativeSequence);
 
         hostileProbe = hostileSession.Step(
             hostile,

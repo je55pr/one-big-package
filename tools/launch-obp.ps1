@@ -2,12 +2,12 @@
 <#
 .SYNOPSIS
   Launch One Big Package in "Default mode" for showing people: the gamey title
-  screen, then the Game Sources / world browser. Opens maximised.
+  screen, then the Game Sources / world browser. Restores the last window placement.
 
 .DESCRIPTION
   This is the production-showcase entry point the desktop shortcut points at.
   It quietly builds the local Godot game assembly (Debug), makes sure Godot + the asset import
-  cache are in place, then starts the app windowed-maximised with no developer
+  cache are in place, then starts the app at its saved placement with no developer
   console and no test-scene arguments. Pass -SkipBuild to launch faster when
   you know the build is current.
 
@@ -22,6 +22,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-window.ps1')
 
 Write-Host ''
 Write-Host '  One Big Package - starting production showcase build...' -ForegroundColor Cyan
@@ -58,7 +59,7 @@ Write-Host '  Preparing assets...' -ForegroundColor DarkGray
 
 # --- run --------------------------------------------------------------------
 $gameArgs = @('--path', (Join-Path $root 'game'))
-if (-not $Windowed) { $gameArgs += '--maximized' }
+$gameArgs += @(Get-ObpWindowArguments -Windowed:$Windowed)
 
 Write-Host '  Launching.' -ForegroundColor Green
 Start-Process -FilePath $gameExe -ArgumentList $gameArgs -WorkingDirectory $root

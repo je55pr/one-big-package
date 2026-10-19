@@ -13,15 +13,17 @@ public sealed class Rac1Class749HostileSession :
 {
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly Dictionary<Rac1Class749Key, Entry> _entries = [];
+    private readonly Rac1PickupRandom _random;
 
     public Rac1Class749HostileSession()
         : this(new Rac1MobyRuntimeSession())
     {
     }
 
-    public Rac1Class749HostileSession(Rac1MobyRuntimeSession runtime)
+    public Rac1Class749HostileSession(Rac1MobyRuntimeSession runtime, Rac1PickupRandom? random = null)
     {
         _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+        _random = random ?? Rac1PickupRandom.FromSeed(0);
         _runtime.RegisterController(this);
         _runtime.RegisterDamageConsumer(this);
     }
@@ -119,6 +121,7 @@ public sealed class Rac1Class749HostileSession :
             runtimeInstance,
             activationGroup,
             linkedTargetInstanceIndex);
+        entry.NativeSequence = initialState == Rac1Class749Hostile.LinkedObjectNativeState ? 2 : 1;
         if (!_entries.TryAdd(key, entry))
             throw new InvalidOperationException(
                 $"R&C1 class-749 instance {source.InstanceIndex} is already registered.");
@@ -154,10 +157,13 @@ public sealed class Rac1Class749HostileSession :
                 }
                 break;
             case Rac1Class749Hostile.TargetSearchNativeState:
+                if (entry.NativeSequence != Rac1Class749Hostile.RoamingSequenceId)
+                    SetSequence(entry, Rac1Class749Hostile.RoamingSequenceId);
                 if (statusSentinel != Rac1Class749Hostile.StatusSentinelTwo)
                 {
                     entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
                     RandomizeActivationYaw(entry);
+                    SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
                 }
                 break;
 
@@ -167,7 +173,7 @@ public sealed class Rac1Class749HostileSession :
                     entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
                     SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
                 }
-                else if (target.Distance < Rac1Class749Hostile.AttackDistanceExclusive &&
+                else if (target.AnimationFinished && target.Distance < Rac1Class749Hostile.AttackDistanceExclusive &&
                          target.FacingError < Rac1Class749Hostile.AttackFacingErrorExclusive)
                 {
                     entry.NativeState = Rac1Class749Hostile.AttackNativeState;
@@ -176,6 +182,12 @@ public sealed class Rac1Class749HostileSession :
                 break;
 
             case Rac1Class749Hostile.AttackNativeState:
+                attack = target.AnimationPosition is float position
+                    ? AdvanceAttackMarker(entry, position, target.AnimationBlending)
+                    : AdvanceAttackSequence(entry);
+                // 0x2d4c74: marker emission precedes the animation-completion
+                // gate. Distance/facing are reconsidered only at cycle end.
+                if (attack is not null || !target.AnimationFinished) break;
                 if (statusSentinel == Rac1Class749Hostile.StatusSentinelTwo)
                 {
                     entry.NativeState = Rac1Class749Hostile.ReturnHomeNativeState;
@@ -187,19 +199,20 @@ public sealed class Rac1Class749HostileSession :
                     entry.NativeState = Rac1Class749Hostile.TargetedNativeState;
                     SetSequence(entry, Rac1Class749Hostile.StateSixOrEightSequenceId);
                 }
-                else
-                {
-                    attack = AdvanceAttackSequence(entry);
-                }
+                break;
+
+            case Rac1Class749Hostile.DamageNativeState:
+                if (target.AnimationFinished && target.Grounded && !target.AnimationBlending)
+                    entry.Terminalize();
                 break;
 
             case Rac1Class749Hostile.ReturnHomeNativeState:
                 double homeDistance = target.CurrentPosition.DistanceTo(
                     Rac1Class749Hostile.ReadHomePosition(entry.PVar));
-                if (homeDistance < Rac1Class749Hostile.HomeDistanceExclusive)
+                if (target.AnimationFinished && homeDistance < Rac1Class749Hostile.HomeDistanceExclusive)
                 {
                     entry.NativeState = Rac1Class749Hostile.TargetSearchNativeState;
-                    SetSequence(entry, Rac1Class749Hostile.StateFiveSequenceId);
+                    SetSequence(entry, Rac1Class749Hostile.RestSequenceId);
                 }
                 else if (statusSentinel != Rac1Class749Hostile.StatusSentinelTwo)
                 {
@@ -230,12 +243,9 @@ public sealed class Rac1Class749HostileSession :
         return source.SourceGame == "rac1" &&
                source.NativeClassId == Rac1Class749Hostile.NativeClassId &&
                damage.Target.MatchesMoby(target) &&
-               (damage.Source == Rac1GameplayEntityRef.Player ||
-                damage.Source == Rac1GameplayEntityRef.PlayerWrench &&
-                damage.Owner?.RuntimeEntity == Rac1GameplayEntityRef.Player) &&
-               damage.NativeDamage is 1d or 2d &&
-               damage.NativeDamageFlags == Rac1WrenchCombatController.RepresentativeDamageFlags &&
-               damage.NativeMarker is null;
+               (Rac1EnemyDamage.IsPlayerWeapon(damage) || Rac1EnemyDamage.IsClass1440Contact(damage)) &&
+               _entries.TryGetValue(new(source.NativeClassId, source.InstanceIndex), out var entry) &&
+               entry.RuntimeInstance.IsActive && entry.NativeState != Rac1Class749Hostile.DamageNativeState;
     }
 
     public Rac1Class749HostProbe ApplyDamage(
@@ -245,7 +255,7 @@ public sealed class Rac1Class749HostileSession :
         ArgumentNullException.ThrowIfNull(damage);
         if (!CanApplyDamage(source, damage))
             throw new NotSupportedException(
-                "Only bounded player-owned wrench damage is supported for class 749.");
+                "Class749 requires an admitted player-owned weapon descriptor and an active victim.");
 
         Rac1NativeDamageEnvelope envelope = damage.DamageEnvelope
             ?? throw new InvalidOperationException(
@@ -276,7 +286,7 @@ public sealed class Rac1Class749HostileSession :
             throw new InvalidOperationException("Bounded class-749 wrench damage was not lethal.");
         Rac1Class749Hostile.WriteHealth(entry.PVar, healthAfter);
         entry.NativeState = Rac1Class749Hostile.DamageNativeState;
-        entry.NativeSequence = null;
+        entry.NativeSequence = 6 + _random.Below(2);
         entry.NativeSequenceUpdate = 0;
 
         IReadOnlyList<IRac1MobyHostEvent> hostEvents =
@@ -366,16 +376,12 @@ public sealed class Rac1Class749HostileSession :
         return status;
     }
 
-    private static void RandomizeActivationYaw(Entry entry)
+    private void RandomizeActivationYaw(Entry entry)
     {
         entry.ActivationCount++;
-        uint mixed = unchecked(
-            (uint)(entry.InstanceIndex * 1103515245) +
-            (uint)(entry.ActivationCount * 12345));
-        double unit = (mixed & 0xffffu) / 65535d;
         const double maxRadians = 20d * Math.PI / 180d;
         Rac1Class749Hostile.WriteActivationYawOffset(
-            entry.PVar, checked((float)((unit * 2d - 1d) * maxRadians)));
+            entry.PVar, _random.Range((float)-maxRadians, (float)maxRadians));
     }
 
     private static Rac1Class749AttackEvent? AdvanceAttackSequence(Entry entry)
@@ -397,10 +403,19 @@ public sealed class Rac1Class749HostileSession :
             : null;
     }
 
+    private static Rac1Class749AttackEvent? AdvanceAttackMarker(Entry entry, float position, bool blending)
+    {
+        bool crossed = !blending && entry.PreviousAnimationPosition < Rac1Class749Hostile.AttackMarker &&
+            position >= Rac1Class749Hostile.AttackMarker;
+        entry.PreviousAnimationPosition = position;
+        return crossed ? new(Rac1Class749Hostile.AttackMarker, Rac1Class749Hostile.AttackDamage) : null;
+    }
+
     private static void SetSequence(Entry entry, int sequence)
     {
         entry.NativeSequence = sequence;
         entry.NativeSequenceUpdate = 0;
+        entry.PreviousAnimationPosition = 0;
     }
 
     private static IReadOnlyList<IRac1MobyHostIntent> HostIntentsForDispatch(
@@ -472,6 +487,8 @@ public sealed class Rac1Class749HostileSession :
              !double.IsFinite(targetPosition.Y) ||
              !double.IsFinite(targetPosition.Z)))
             throw new ArgumentOutOfRangeException(nameof(target));
+        if (target.AnimationPosition is float animationPosition && (!float.IsFinite(animationPosition) || animationPosition < 0))
+            throw new ArgumentOutOfRangeException(nameof(target));
     }
 
     private static Rac1Class749HostProbe Snapshot(
@@ -489,7 +506,8 @@ public sealed class Rac1Class749HostileSession :
             entry.RuntimeState,
             hostIntents ?? Array.Empty<IRac1MobyHostIntent>(),
             hostEvents ?? Array.Empty<IRac1MobyHostEvent>(),
-            entry.LinkedTargetInstanceIndex);
+            entry.LinkedTargetInstanceIndex,
+            BitConverter.Int32BitsToSingle(Rac1Class749Hostile.ReadInt32(entry.PVar, Rac1Class749Hostile.ActivationYawOffset)));
 
     private sealed class Entry(
         Rac1MobyRuntimeSession runtime,
@@ -511,6 +529,7 @@ public sealed class Rac1Class749HostileSession :
         }
         public int? NativeSequence { get; set; }
         public int NativeSequenceUpdate { get; set; }
+        public float PreviousAnimationPosition { get; set; }
         public RuntimeEntityState EntityState => RuntimeState.EntityState;
 
         public void Terminalize() =>

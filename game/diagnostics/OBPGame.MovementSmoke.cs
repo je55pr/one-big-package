@@ -59,6 +59,9 @@ public partial class OBPGame
             }
 
             if (destination.Game == ObpSourceGame.Rac1)
+                await RequireRac1SmallStepSmokeAsync(player);
+
+            if (destination.Game == ObpSourceGame.Rac1)
                 await RequireRac1SlopeJumpSmokeAsync(player);
 
             SetAnalogueSmokeInput(0f, 0.60f);
@@ -624,6 +627,16 @@ public partial class OBPGame
 
         if (forward > 0f) Input.ActionPress(RawGamepadInput.MoveForward, forward);
         else if (forward < 0f) Input.ActionPress(RawGamepadInput.MoveBack, -forward);
+    }
+
+    private static void SetRac1SmokeConditionedInput(double right, double forward)
+    {
+        // Invert the recovered per-axis deadzone. A unit circle supplied as
+        // raw axes otherwise becomes a walk at diagonal headings, despite the
+        // route driver requesting a full run.
+        static float RawComponent(double conditioned) => Math.Abs(conditioned) < 1e-8d
+            ? 0f : (float)Math.CopySign((48d + 76d * Math.Abs(conditioned)) / 128d, conditioned);
+        SetAnalogueSmokeInput(RawComponent(right), RawComponent(forward));
     }
 
     private static void ClearMovementSmokeInput()

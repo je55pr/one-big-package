@@ -20,11 +20,13 @@
 param(
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,
   [string]$RenderingMethod = 'gl_compatibility',
+  [int]$Seed = 1440,
   [switch]$SkipBuild
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-window.ps1')
 
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
   Write-Error 'A supported R&C1 ISO is required. Pass -Rac1Iso or set OBP_RAC1_ISO.'
@@ -42,13 +44,13 @@ if (-not $SkipBuild) {
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
-$godotArgs = @(
+$godotArgs = @(Get-ObpWindowArguments) + @(
   '--path', (Join-Path $root 'game'),
   '--rendering-method', $RenderingMethod,
-  '--resolution', '1280x720',
   '--',
   '--rac1-iso', $Rac1Iso,
   '--destination', 'rac1:LEVEL0',
+  '--fixed-seed', $Seed,
   '--rac1-veldin-play-smoke'
 )
 

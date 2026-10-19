@@ -228,13 +228,11 @@ public partial class OBPGame
         }
     }
 
-    private static void SetSyntheticNativeHeading(PlayerHost player, double nativeYaw)
+    private static void SetSyntheticNativeHeading(PlayerHost player, double nativeYaw, double magnitude = 1d)
     {
         double controlHeading = player.Rac1RuntimeCameraState?.ControlHeadingRadians ?? player.Rac1ControlYaw;
         double stickAngle = controlHeading - nativeYaw;
-        static float RawComponent(double conditioned) => Math.Abs(conditioned) < 1e-8d
-            ? 0f : (float)Math.CopySign((48d + 76d * Math.Abs(conditioned)) / 128d, conditioned);
-        SetAnalogueSmokeInput(RawComponent(Math.Sin(stickAngle)), RawComponent(Math.Cos(stickAngle)));
+        SetRac1SmokeConditionedInput(Math.Sin(stickAngle) * magnitude, Math.Cos(stickAngle) * magnitude);
     }
 
     private static void AddSyntheticTraversalMesh(
@@ -246,7 +244,6 @@ public partial class OBPGame
         var positions = new double[triangles.Length * 9];
         var indices = new int[triangles.Length * 3];
         var faceTypes = Enumerable.Repeat(rawFaceType, triangles.Length).ToArray();
-        var doubledFaces = new Vector3[triangles.Length * 6];
         for (int triangle = 0; triangle < triangles.Length; triangle++)
         {
             var (a, b, c) = triangles[triangle];
@@ -260,17 +257,15 @@ public partial class OBPGame
                 positions[offset + 2] = value.Z;
                 indices[triangle * 3 + vertex] = triangle * 3 + vertex;
             }
-            int face = triangle * 6;
-            doubledFaces[face] = a;
-            doubledFaces[face + 1] = b;
-            doubledFaces[face + 2] = c;
-            doubledFaces[face + 3] = c;
-            doubledFaces[face + 4] = b;
-            doubledFaces[face + 5] = a;
         }
         var body = new RuntimeWorldScene.RuntimeCollisionBody3D { Name = name };
-        body.Configure(new RuntimeCollisionBlob(1, positions, indices, faceTypes), -1);
-        body.AddChild(new CollisionShape3D { Shape = new ConcavePolygonShape3D { Data = doubledFaces } });
+        var blob = new RuntimeCollisionBlob(1, positions, indices, faceTypes);
+        var plan = RuntimeWorldScene.BuildCollisionFacePlan(blob);
+        body.Configure(blob, -1, plan.SourceTriangleIndices);
+        body.AddChild(new CollisionShape3D
+        {
+            Shape = new ConcavePolygonShape3D { Data = plan.Faces, BackfaceCollision = true },
+        });
         parent.AddChild(body);
     }
 }

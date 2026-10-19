@@ -10,6 +10,48 @@ public sealed class Rac1GroundProjectionRetailTests
     private const double RunCap = 0.09500919d;
 
     [SkippableFact]
+    public void VeldinSavedShipSnag_HasOrdinaryLipAbovePreviousHostLimit()
+    {
+        string? iso = System.Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeCollisionBlob collision = Assert.Single(Rac1WorldImport.Build(reader, 0).CollisionMeshes);
+        Triangle approach = FindFloorTriangle(collision, 131.64541625976562d, 108.70143127441406d, 32d);
+        Triangle top = FindFloorTriangle(collision, 131.5d, 109.125d, 32d);
+        Assert.True(TryFloorY(approach.A, approach.B, approach.C,
+            131.64541625976562d, 108.70143127441406d, out double approachHeight));
+        Assert.True(TryFloorY(top.A, top.B, top.C, 131.5d, 109.125d, out double topHeight));
+
+        Assert.Equal(31.234375d, approachHeight, 9);
+        Assert.InRange(topHeight - approachHeight, .29d, .31d);
+        Assert.Equal(31, collision.TriangleMaterialIds[top.Face]);
+        Assert.True(top.NativeUpNormal().Z > .99d);
+        // This is the actual saved snag's geometry, not the lower candidate
+        // rim tested below. No retail step-height law is inferred from it.
+    }
+
+    [SkippableFact]
+    public void VeldinShipRock_HasShallowOrdinaryRimAtCandidateApproach()
+    {
+        string? iso = System.Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        RuntimeCollisionBlob collision = Assert.Single(Rac1WorldImport.Build(reader, 0).CollisionMeshes);
+        Triangle approach = FindFloorTriangle(collision, 132d, 113.5d, 32d);
+        Triangle top = FindFloorTriangle(collision, 131.3d, 113.5d, 32d);
+        Assert.True(TryFloorY(approach.A, approach.B, approach.C, 132d, 113.5d, out double approachHeight));
+        Assert.True(TryFloorY(top.A, top.B, top.C, 131.3d, 113.5d, out double topHeight));
+
+        Assert.Equal(31.234375d, approachHeight, 9);
+        Assert.Equal(31.4375d, topHeight, 9);
+        Assert.Equal(.203125d, topHeight - approachHeight, 9);
+        Assert.Equal(31, collision.TriangleMaterialIds[top.Face]);
+        Assert.Equal(1d, top.NativeUpNormal().Z, 9);
+        // Geometry evidence only. The engine smoke exercises the enclosing
+        // capsule adapter; these bytes do not establish a retail step limit.
+    }
+
+    [SkippableFact]
     public void RetailUphillRun_MatchesAuthoredDirectionalSlopeLaw()
     {
         string? iso = System.Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

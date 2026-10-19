@@ -13,7 +13,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly Rac1MobyPersistenceSession _persistence;
     private readonly Dictionary<int, Rac1BoltPickup> _outstanding = [];
-    private int _nextPickupId = 1;
+    private readonly Rac1BoltPickupSession _pickups;
 
     public Rac1BoltCrateSession()
         : this(
@@ -29,10 +29,12 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
 
     public Rac1BoltCrateSession(
         Rac1MobyRuntimeSession runtime,
-        Rac1MobyPersistenceSession persistence)
+        Rac1MobyPersistenceSession persistence,
+        Rac1BoltPickupSession? pickups = null)
     {
         _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
+        _pickups = pickups ?? new Rac1BoltPickupSession();
         _runtime.RegisterDamageConsumer(this);
         foreach (int nativeClass in Rac1BoltCrate.CrateClasses.Where(id => id != NativeClassId))
             _runtime.RegisterDamageConsumer(new FamilyConsumer(nativeClass, this));
@@ -212,7 +214,6 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
             throw new ArgumentOutOfRangeException(nameof(selectedTotal),
                 $"Native selected total {selectedTotal} is outside recovered range {range.Minimum}..{range.Maximum}.");
 
-        var values = Rac1BoltCrate.PartitionTotal(selectedTotal);
         // The common crate family uses live +b2 for persistence. Keep the
         // globally unnamed placement field out of neutral importer identity.
         var persistenceSource = source.NativeUid.HasValue ? source : source with { NativeUid = authored.Uid };
@@ -222,20 +223,10 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
                 $"Bolt Crate UID {authored.Uid} already has recovered persistence state in level {_persistence.LevelId}.");
 
         _persistence.UpdateUid(persistenceSource, Rac1MobyUidPersistenceBits.BothSet);
-        var pickups = new List<Rac1BoltPickup>(values.Count);
-        foreach (int value in values)
+        var pickups = _pickups.Emit(selectedTotal);
+        foreach (var pickup in pickups)
         {
-            int nativeClassId = value switch
-            {
-                1 => 13,
-                5 => 14,
-                20 => 15,
-                50 => 16,
-                _ => throw new InvalidOperationException($"Unexpected representative denomination {value}."),
-            };
-            var pickup = new Rac1BoltPickup(_nextPickupId++, nativeClassId, value);
             _outstanding.Add(pickup.PickupId, pickup);
-            pickups.Add(pickup);
         }
 
         _runtime.SetNativeState(
@@ -259,11 +250,18 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
         int retailValue = Rac1BoltCrate.ValueForNativePickupClass(pickup.NativeClassId);
         if (retailValue != pickup.Value)
             throw new InvalidDataException($"Pickup class/value mismatch: {pickup.NativeClassId} != {pickup.Value}.");
+        if (_pickups.Collect(pickupId) != retailValue) throw new InvalidDataException("Shared bolt value differs from crate reward.");
         CollectedBolts = checked(CollectedBolts + retailValue);
         return retailValue;
     }
 
-    public bool DiscardPickup(int pickupId) => _outstanding.Remove(pickupId);
+    public bool OwnsPickup(int pickupId) => _outstanding.ContainsKey(pickupId);
+
+    public bool DiscardPickup(int pickupId)
+    {
+        if (!_outstanding.Remove(pickupId)) return false;
+        return _pickups.Discard(pickupId);
+    }
 
     private sealed class FamilyConsumer(int nativeClass, Rac1BoltCrateSession owner) : IRac1MobyDamageConsumer
     {

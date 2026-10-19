@@ -214,7 +214,7 @@ Payload-free movement evidence is frozen in `research/generated/rac1-ratchet-mov
 
 ## Recovered surface-action boundary
 
-The rich R&C1 contact path retains the packed collision-face byte and separates low surface class, effect mode and signed/high-bit special-face status. Godot's static collision adapter preserves source triangle material ids and maps each doubled Godot face back to its native triangle before this decode, so live static contacts can carry the same source byte into `Rac1PlayerContactResult`.
+The rich R&C1 contact path retains the packed collision-face byte and separates low surface class, effect mode and signed/high-bit special-face status. Godot's static collision adapter preserves source triangle material ids through an explicit face map after exact duplicate geometry/material references are consolidated. Back-face collision supplies two-sided contact without reverse triangle copies. The source blob remains unchanged, so live static contacts carry the same source byte into `Rac1PlayerContactResult`.
 
 Recovered action identities are now explicit: class 0 selects shallow-water **WADE** state `0x72`; class 3 selects mud state `0x68`; class 7 selects ice-slide state `0x2f`; and class 2 plus contacted Moby class `0xAD` selects Magneboot state `0x3f`. The later water-family recovery supersedes the earlier ambiguous shallow-water slot note and is the basis for naming `0x72` WADE. These are selector/action facts, not permission to invent motion laws. `Rac1SurfaceActionRouting` exposes the typed intent, while `Rac1RatchetMovementController` deliberately rejects these alternate contacts until their movement/update laws are recovered.
 

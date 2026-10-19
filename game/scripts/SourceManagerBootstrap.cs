@@ -84,6 +84,12 @@ public partial class SourceManagerBootstrap : Node
             _game.RememberCommandLineSource(ObpSourceGame.Rac3, uyaPath);
         }
 
+        if (args.LoadMovementState is not null)
+        {
+            _game.LoadMovementStateFromBootstrap();
+            return;
+        }
+
         if (args.Rac1CampaignSmoke)
         {
             _game.OpenRac1CampaignCurrentFromBootstrap();

@@ -268,13 +268,20 @@ public static partial class Rac1MobyPose
         Rac1MobyAnimation.Frame frame) =>
         PoseLocalHierarchy(mesh, joints, frame, useCommonBindTranslation: false);
 
+    /// <summary>Ordinary class channels also admit unflagged per-joint scale records.</summary>
+    public static bool CanPoseLocalHierarchy(Rac1Moby.Mesh mesh,
+        IReadOnlyList<Rac1Moby.SkeletonJoint> joints, Rac1MobyAnimation.Frame frame) =>
+        mesh.JointCount > 0 && joints.Count == mesh.JointCount &&
+        mesh.VertexJoints.Length == mesh.Positions.Length && mesh.VertexWeights.Length == mesh.Positions.Length &&
+        CanPoseRatchetJointHierarchy(joints, frame, allowUnflaggedScale: true);
+
     private static double[] PoseLocalHierarchy(
         Rac1Moby.Mesh mesh,
         IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
         Rac1MobyAnimation.Frame frame,
         bool useCommonBindTranslation)
     {
-        if (!CanPoseRatchetHierarchy(mesh, joints, frame))
+        if (!(useCommonBindTranslation ? CanPoseRatchetHierarchy(mesh, joints, frame) : CanPoseLocalHierarchy(mesh, joints, frame)))
             throw new InvalidOperationException("R&C1 Ratchet pose is outside the pinned native hierarchy/channel subset.");
 
         int n = joints.Count;
@@ -362,7 +369,7 @@ public static partial class Rac1MobyPose
 
     private static bool CanPoseRatchetJointHierarchy(
         IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
-        Rac1MobyAnimation.Frame frame)
+        Rac1MobyAnimation.Frame frame, bool allowUnflaggedScale = false)
     {
         int n = joints.Count;
         if (n == 0 || frame.JointRotations.Count != n ||
@@ -392,7 +399,7 @@ public static partial class Rac1MobyPose
         {
             ushort tag = (ushort)(raw >> 48);
             int joint = tag & 0x7fff;
-            if ((tag & 0x8000) == 0 || joint >= n || !scaleJoints.Add(joint)) return false;
+            if ((!allowUnflaggedScale && (tag & 0x8000) == 0) || joint >= n || !scaleJoints.Add(joint)) return false;
             // Retail standing frames legitimately use zero scale components to suppress
             // selected attachment geometry, so signed fixed-point values are accepted.
         }

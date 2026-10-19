@@ -163,6 +163,13 @@ public sealed class Rac1DamageTransportSession
 
 public static class Rac1DamageRuntime
 {
+    /// <summary>Class1440's descriptor enters the common record pool through 0x1f0cb8.</summary>
+    public static Rac1GameplayDamageEvent FromClass1440Contact(Rac1MobyRuntimeKey source, Rac1GameplayEntityRef? target = null) =>
+        source.NativeClassId == Rac1Class1440Session.ClassId
+            ? new(Rac1GameplayEntityRef.Moby(source), target ?? Rac1GameplayEntityRef.Player, 1, 0x00010001,
+                owner: Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Moby(source)))
+            : throw new ArgumentException("Contact source is not class1440.", nameof(source));
+
     public static Rac1GameplayDamageEvent FromClass749Attack(
         Rac1MobyRuntimeKey source,
         Rac1Class749AttackEvent attack)

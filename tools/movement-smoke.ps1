@@ -28,6 +28,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'obp-window.ps1')
 
 foreach ($source in @(
   @{ label='R&C1'; path=$Rac1Iso },
@@ -54,7 +55,6 @@ if (-not $SkipBuild) {
 $commonArgs = @(
   '--path', (Join-Path $root 'game'),
   '--rendering-method', $RenderingMethod,
-  '--resolution', '1280x720',
   '--',
   '--rac1-iso', $Rac1Iso,
   '--gc-iso', $GcIso,
@@ -65,7 +65,8 @@ $commonArgs = @(
 $destinations = @('rac1:LEVEL0', 'rac2:LEVEL1', 'rac3:TABLE1')
 foreach ($destination in $destinations) {
   Write-Host "movement smoke: $destination" -ForegroundColor Cyan
-  & $godot @commonArgs '--destination' $destination
+  $windowArgs = @(Get-ObpWindowArguments)
+  & $godot @windowArgs @commonArgs '--destination' $destination
   if ($LASTEXITCODE -ne 0) {
     Write-Error "movement smoke failed for $destination (exit $LASTEXITCODE)"
     exit $LASTEXITCODE

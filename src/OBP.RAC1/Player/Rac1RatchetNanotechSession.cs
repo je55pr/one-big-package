@@ -22,6 +22,9 @@ public enum Rac1RatchetDeathCause
 public sealed class Rac1RatchetNanotechSession
 {
     public const int RetailVeldinRespawnNanotech = 4;
+    // Ordinary state0x16 entry 0x22666c..0x226678 writes P+0x1c0=77;
+    // common intake 0x210d34..0x210d44 rejects damage while that timer is nonzero.
+    public const int EnemyHitProtectionTicks = 77;
     public const double RetailVeldinDeathContactSeparationExclusive = 2d;
     public const int RetailVeldinDeathNativeState = Rac1PlayerActionDomain.EnvironmentalFallDeath;
     public const int RetailVeldinDeathNativeSequence =
@@ -35,6 +38,7 @@ public sealed class Rac1RatchetNanotechSession
     private int _nanotech = RetailVeldinRespawnNanotech;
     private Rac1RatchetLifeState _lifeState = Rac1RatchetLifeState.Alive;
     private Rac1RatchetDeathCause _deathCause = Rac1RatchetDeathCause.None;
+    private int _enemyHitProtection;
 
     public long EnvironmentalDeathGeneration { get; private set; }
     public long EnvironmentalRestartGeneration { get; private set; }
@@ -44,6 +48,11 @@ public sealed class Rac1RatchetNanotechSession
         EnvironmentalRestartGeneration < EnvironmentalDeathGeneration;
 
     public Rac1RatchetNanotechSnapshot Probe() => Snapshot();
+
+    public void UpdateNative()
+    {
+        if (_enemyHitProtection > 0) _enemyHitProtection--;
+    }
 
     /// <summary>Class806's first arriving cloud particle credits one point, clamped to the ordinary capacity.</summary>
     public bool CollectCrateNanotech()
@@ -57,26 +66,29 @@ public sealed class Rac1RatchetNanotechSession
     public Rac1RatchetNanotechSnapshot ApplyDamage(Rac1GameplayDamageEvent damage)
     {
         ArgumentNullException.ThrowIfNull(damage);
+        bool class749 = damage.Source.NativeClassId == Rac1Class749Hostile.NativeClassId &&
+            damage.NativeMarker == Rac1Class749Hostile.AttackMarker && damage.NativeDamageFlags is null;
+        bool class1440 = damage.Source.NativeClassId == Rac1Class1440Session.ClassId &&
+            damage.NativeMarker is null && damage.NativeDamageFlags == 0x00010001;
         if (damage.Target != Rac1GameplayEntityRef.Player ||
             damage.Source.Kind != Rac1GameplayEntityKind.Moby ||
-            damage.Source.NativeClassId != Rac1Class749Hostile.NativeClassId ||
-            damage.NativeMarker != Rac1Class749Hostile.AttackMarker ||
-            damage.NativeDamage != Rac1Class749Hostile.AttackDamage ||
-            damage.NativeDamageFlags is not null)
+            !(class749 || class1440) || damage.NativeDamage != 1)
         {
             throw new NotSupportedException(
-                "Only the recovered R&C1 class-749 marker-34 damage-1 player event is admitted.");
+                "Only the recovered class749 marker or class1440 contact damage-1 player descriptors are admitted.");
         }
 
-        return ApplyRecoveredClass749Damage();
+        return ApplyRecoveredEnemyDamage();
     }
 
-    private Rac1RatchetNanotechSnapshot ApplyRecoveredClass749Damage()
+    private Rac1RatchetNanotechSnapshot ApplyRecoveredEnemyDamage()
     {
         if (_lifeState != Rac1RatchetLifeState.Alive)
-            throw new InvalidOperationException("R&C1 Ratchet cannot take the recovered class-749 hit after death.");
+            throw new InvalidOperationException("R&C1 Ratchet cannot take an enemy hit after death.");
+        if (_enemyHitProtection > 0) return Snapshot();
 
         _nanotech = Math.Max(0, _nanotech - 1);
+        _enemyHitProtection = EnemyHitProtectionTicks;
         if (_nanotech == 0)
         {
             _lifeState = Rac1RatchetLifeState.Dead;
@@ -140,6 +152,7 @@ public sealed class Rac1RatchetNanotechSession
                 "R&C1 recovered respawn requires a pending recovered environmental death.");
 
         _nanotech = RetailVeldinRespawnNanotech;
+        _enemyHitProtection = 0;
         _lifeState = Rac1RatchetLifeState.Alive;
         _deathCause = Rac1RatchetDeathCause.None;
         EnvironmentalRestartGeneration = EnvironmentalDeathGeneration;
@@ -153,7 +166,8 @@ public sealed class Rac1RatchetNanotechSession
             RetailVeldinRespawnNanotech,
             _lifeState,
             _deathCause,
-            _actions.Probe());
+            _actions.Probe(),
+            _enemyHitProtection);
 }
 
 public sealed record Rac1VeldinEnvironmentalDeathFacts(
@@ -167,7 +181,8 @@ public sealed record Rac1RatchetNanotechSnapshot(
     int RespawnNanotech,
     Rac1RatchetLifeState LifeState,
     Rac1RatchetDeathCause DeathCause,
-    Rac1PlayerActionSnapshot Action)
+    Rac1PlayerActionSnapshot Action,
+    int EnemyHitProtectionTicks = 0)
 {
     public bool IsDead => LifeState == Rac1RatchetLifeState.Dead;
     public int NativePlayerState => Action.CurrentNativeState;

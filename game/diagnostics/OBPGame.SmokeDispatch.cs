@@ -17,14 +17,18 @@ internal static class WorldSmokeHarness
         Func<ObpDestination, Task> Movement,
         Func<Task>? Crates = null,
         Func<Task>? PlacedBolts = null,
-        Func<Task>? Wrench = null);
+        Func<Task>? Wrench = null,
+        Func<Task>? Enemies = null,
+        Func<Task>? MovementState = null);
 
     internal static bool IsRequested(CommandLineArgs args) =>
+        args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
         args.Rac1VeldinPlaySmoke ||
         args.Rac1MovementContactSmoke ||
         args.Rac1CombatContractSmoke ||
         args.Rac1WrenchSmoke ||
         args.Rac1CrateSmoke ||
+        args.Rac1EnemySmoke ||
         args.Rac1PlacedBoltSmoke ||
         args.Rac1CampaignSmoke ||
         args.MovementSmoke;
@@ -51,6 +55,10 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.Wrench?.Invoke();
             if (args.Rac1CrateSmoke)
                 _ = entrypoints.Crates?.Invoke();
+            if (args.Rac1EnemySmoke)
+                _ = entrypoints.Enemies?.Invoke();
+            if (args.MovementStateSmoke)
+                _ = entrypoints.MovementState?.Invoke();
             if (args.Rac1PlacedBoltSmoke)
                 _ = entrypoints.PlacedBolts?.Invoke();
             if (args.Rac1CampaignSmoke)
@@ -85,6 +93,8 @@ public partial class OBPGame
                 RunMovementSmokeAsync,
                 RunRac1CrateSmokeAsync,
                 RunRac1PlacedBoltSmokeAsync,
-                RunRac1WrenchSmokeAsync));
+                RunRac1WrenchSmokeAsync,
+                RunRac1EnemySmokeAsync,
+                RunMovementStateSmokeAsync));
     }
 }

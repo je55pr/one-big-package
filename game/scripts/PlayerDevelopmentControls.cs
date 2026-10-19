@@ -10,6 +10,8 @@ namespace OneBigPackage;
 public partial class PlayerDevelopmentControls : Node
 {
     private PlayerHost? _host;
+    public event Action? SaveMovementStateRequested;
+    public event Action? LoadMovementStateRequested;
 
     public float FlySpeed { get; set; } = 45f;
     public bool FlyEnabled { get; private set; }
@@ -28,7 +30,13 @@ public partial class PlayerDevelopmentControls : Node
         if (_host is null || _host.Scripted ||
             @event is not InputEventKey { Pressed: true, Echo: false } key)
             return;
-        if (key.Keycode == Key.Tab)
+        if (key.Keycode == Key.F12)
+        {
+            if (key.ShiftPressed) LoadMovementStateRequested?.Invoke();
+            else SaveMovementStateRequested?.Invoke();
+            GetViewport().SetInputAsHandled();
+        }
+        else if (key.Keycode == Key.Tab && !GetWindow().Unfocusable)
         {
             Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
                 ? Input.MouseModeEnum.Visible
@@ -69,6 +77,14 @@ public partial class PlayerDevelopmentControls : Node
         if (_host is not null)
             _host.ApplyDevelopmentReset(SpawnPosition);
     }
+
+    internal void SetFlyEnabled(bool enabled)
+    {
+        FlyEnabled = enabled;
+        _host?.ApplyDevelopmentFlyMode(enabled);
+    }
+
+    internal void SetForceHostCamera(bool enabled) => ForceHostCamera = enabled;
     public void StepFly(float delta, Vector2 move)
     {
         if (_host is null || !FlyEnabled)
@@ -91,6 +107,6 @@ public partial class PlayerDevelopmentControls : Node
 
     public string ControlSummary(bool useRac1Gameplay) =>
         useRac1Gameplay
-            ? "mouse / right stick debug camera / F fly / F8 diagnostics / F9 camera fallback / Tab cursor / Esc"
+            ? "F12 save movement / Shift+F12 load\nmouse / right stick debug camera / F fly / F8 diagnostics / F9 camera fallback / Tab cursor / Esc"
             : "mouse / right stick debug camera / F fly / R respawn (development) / F8 diagnostics / F9 camera fallback / Tab cursor / Esc";
 }

@@ -1,0 +1,461 @@
+using Godot;
+using OBP.Core;
+using OBP.Godot;
+using OBP.IO;
+using OBP.RAC1.Animation;
+using OBP.RAC1.Gameplay;
+using OBP.RAC1.Level;
+using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
+using OBP.Runtime;
+using OBP.Runtime.Gameplay;
+using NVector3 = System.Numerics.Vector3;
+
+namespace OneBigPackage;
+
+public partial class OBPGame
+{
+    private readonly Dictionary<int, Rac1HostedEnemy> _rac1Enemies = [];
+    private Rac1Class1440Session? _rac1Class1440;
+    private double _rac1EnemyTicks;
+    private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values.Select(enemy => enemy.Node);
+
+    private sealed class Rac1HostedEnemy(RuntimeWorldScene.DynamicObjectNode node, Rac1MobyAnimationAssets.Asset asset,
+        CharacterBody3D body, Rac1EnemyMotion motion, int sequence)
+    {
+        public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
+        public CharacterBody3D Body { get; } = body;
+        public Rac1EnemyMotion Motion { get; } = motion;
+        public Rac1MobySequenceClock Animation { get; } = new(asset, sequence);
+        public bool Grounded { get; set; } = true;
+        public bool NeedsGroundPlacement { get; set; } = node.Source.NativeClassId == 749;
+        public int GroundPlacementAttempts { get; set; }
+        public bool RewardEmitted { get; set; }
+        public bool DeathPresented { get; set; }
+        public GpuParticles3D? Flame { get; set; }
+        public Rac1MobyReaction? Reaction { get; set; }
+    }
+
+    private void ResetRac1Enemies()
+    {
+        foreach (var enemy in _rac1Enemies.Values)
+        {
+            if (IsInstanceValid(enemy.Body)) enemy.Body.QueueFree();
+            if (enemy.Flame is { } flame && IsInstanceValid(flame)) flame.QueueFree();
+        }
+        _rac1Enemies.Clear(); _rac1Class1440 = null; _rac1EnemyTicks = 0;
+    }
+
+    private void ConfigureRac1Enemies(RuntimeWorld world, RuntimeWorldScene.Result result)
+    {
+        if (world.LevelId != 0) return;
+        var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source.");
+        using var reader = new FileRandomAccessReader(source.Path);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
+        var core = Rac1LevelCore.Open(reader, level);
+        var classes = Rac1StaticClasses.Read(core);
+        _rac1Class1440 = new(_rac1MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
+        var nodes = _rac1HostileNodes.Values.ToList();
+        foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1Class1440Session.ClassId))
+        {
+            var node = FindPresentedDynamic(result, authored) ?? throw new InvalidDataException("Veldin enemy has no rendered model.");
+            var registered = _rac1Class1440.Register(authored, node.State);
+            node.ApplyState(registered.Instance.EntityState);
+            nodes.Add(node);
+        }
+        foreach (var group in nodes.GroupBy(node => node.Source.NativeClassId))
+        {
+            var cls = classes.Mobies[group.Key];
+            var asset = Rac1MobyAnimationAssets.Bake(cls, group.First().Source.Meshes, core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength));
+            foreach (var node in group)
+            {
+                if (group.Key == 749) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
+                // Host contact adapter: upright capsules, independent of skeletal presentation.
+                // The retail common query solver and per-part collision primitives are not reconstructed.
+                float radius = group.Key == 749 ? .5f : .45f;
+                float height = group.Key == 749 ? 1 : 1.7f;
+                var body = new CharacterBody3D { Name = $"EnemyContact_i{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1 };
+                body.AddChild(new CollisionShape3D { Shape = new CapsuleShape3D { Radius = radius, Height = height }, Position = Vector3.Up * (height / 2) });
+                result.Root.AddChild(body);
+                body.GlobalPosition = node.Root.GlobalPosition;
+                Vector3 forward = EnemyForward(node);
+                NVector3 nativeForward = ToEffectNative(forward);
+                var enemy = new Rac1HostedEnemy(node, asset, body, new(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X)), 1);
+                node.ConfigureAnimations(asset.Presentation);
+                node.ApplyAnimationSample(enemy.Animation.Sample);
+                SynchronizeRac1Enemy(enemy);
+                _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
+            }
+        }
+        GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; {_rac1Class1440.RegisteredCount} class1440");
+    }
+
+    private static Vector3 EnemyForward(RuntimeWorldScene.DynamicObjectNode node) =>
+        (node.Root.ToGlobal(FromEffectNative(NVector3.UnitX)) - node.Root.GlobalPosition).Normalized();
+
+    private void TickRac1Hostiles(double delta)
+    {
+        if (_player is null) return;
+        _rac1EnemyTicks += Math.Max(0, delta) * Rac1NativeTicksPerSecond;
+        while (_rac1EnemyTicks >= 1)
+        {
+            _rac1EnemyTicks--;
+            _rac1Nanotech.UpdateNative();
+            foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
+            {
+                var node = enemy.Node;
+                if (!IsInstanceValid(node.Root) || !IsRac1GameplayActive(node)) continue;
+                // Staged diagnostics may move an authored node; ordinary movement is synchronized below.
+                if (enemy.Body.GlobalPosition.DistanceSquaredTo(node.Root.GlobalPosition) > 1e-5f)
+                    enemy.Body.GlobalPosition = node.Root.GlobalPosition;
+                if (enemy.NeedsGroundPlacement)
+                {
+                    // Authored creature positions can lie inside the terrain.
+                    // Wait for registered collision, then place the full capsule
+                    // from above before idle or pursuit can start beneath it.
+                    enemy.Grounded = TryGroundRac1Enemy(enemy, upwardReach: 1, downwardReach: 1);
+                    if (!enemy.Grounded && ++enemy.GroundPlacementAttempts < 20) continue;
+                    enemy.NeedsGroundPlacement = false;
+                    node.Root.GlobalPosition = enemy.Body.GlobalPosition;
+                }
+                foreach (int sound in enemy.Animation.Tick())
+                    if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40)
+                        PlayRac1PickupSound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
+                if (node.Source.NativeClassId == 749) TickRac1Class749(enemy);
+                else TickRac1Class1440(enemy);
+                node.ApplyAnimationSample(enemy.Animation.Sample);
+                SynchronizeRac1Enemy(enemy);
+                if (!IsRac1GameplayActive(node)) PresentRac1EnemyDeath(enemy);
+                if (_rac1Nanotech.Probe().IsDead) return;
+            }
+        }
+    }
+
+    private void TickRac1Class749(Rac1HostedEnemy enemy)
+    {
+        var node = enemy.Node;
+        var before = _rac1Hostiles.Probe(node.Source);
+        Vector3 position = node.Root.GlobalPosition, target = _player!.GlobalPosition;
+        Rac1GameplayEntityRef identity = Rac1GameplayEntityRef.Player;
+        bool linkedTerminal = false;
+        if (before.NativeState == Rac1Class749Hostile.LinkedObjectNativeState && before.LinkedTargetInstanceIndex is int linked)
+        {
+            _rac1LinkedTargetNodes.TryGetValue(linked, out var linkedNode);
+            linkedTerminal = linkedNode is null || !IsInstanceValid(linkedNode.Root) || !IsRac1GameplayActive(linkedNode);
+            if (!linkedTerminal) { target = linkedNode!.Root.GlobalPosition; identity = Rac1GameplayEntityRef.Moby(new(linkedNode.Source.NativeClassId, linked)); }
+        }
+        Vector3 difference = target - position;
+        Vector3 planar = new(difference.X, 0, difference.Z);
+        float facing = planar.LengthSquared() == 0 ? 0 : Math.Abs(EnemyForward(node).SignedAngleTo(planar.Normalized(), Vector3.Up));
+        var next = _rac1Hostiles.Step(node.Source, new(difference.Length(), facing,
+            new(-position.X, position.Y, position.Z), TargetDescriptor: new(identity, new(-target.X, target.Y, target.Z)),
+            LinkedObjectTerminal: linkedTerminal, AnimationPosition: enemy.Animation.Position,
+            AnimationFinished: enemy.Animation.Wrapped, AnimationBlending: enemy.Animation.Blending, Grounded: enemy.Grounded));
+        // Native state5 selects locomotion4 for 0x261630's roaming motion.
+        // This host does not implement that routine yet. Its stationary stand-in
+        // uses the retail rest clip1 rather than bouncing without displacement.
+        int sequence = next.NativeState == Rac1Class749Hostile.TargetSearchNativeState
+            ? Rac1Class749Hostile.RestSequenceId : next.NativeSequence ?? enemy.Animation.Sequence;
+        SelectRac1EnemySequence(enemy, sequence, next.NativeState == 7 ? 7 : 10);
+        if (next.ReactionActive) { StepRac1EnemyReaction(enemy); return; }
+        enemy.Reaction = null;
+        var intent = next.HostIntents.OfType<Rac1Class749NavigationIntent>().FirstOrDefault();
+        NVector3? destination = intent?.Destination is { } point ? new((float)point.X, (float)point.Z, (float)point.Y) : null;
+        if (destination.HasValue)
+            MoveRac1Enemy(enemy, destination.Value, destination, next.NavigationYawOffset);
+        else if (next.NativeState == Rac1Class749Hostile.LinkedObjectNativeState && !linkedTerminal)
+            MoveRac1Enemy(enemy, ToEffectNative(target), null);
+        if (next.Attack is { } attack && EnemyMeleeTouchesPlayer(enemy))
+            ApplyRac1EnemyPlayerDamage(Rac1DamageRuntime.FromClass749Attack(new(749, node.Source.InstanceIndex), attack));
+    }
+
+    private void TickRac1Class1440(Rac1HostedEnemy enemy)
+    {
+        int instance = enemy.Node.Source.InstanceIndex;
+        var before = _rac1Class1440!.Get(instance);
+        NVector3 position = ToEffectNative(enemy.Node.Root.GlobalPosition), target = ToEffectNative(_player!.GlobalPosition);
+        Rac1GameplayEntityRef? contact = before.NativeState == 5 ? EnemySweepContact(enemy) : null;
+        Rac1Class1440Session.Target? linked = before.LinkedTargetInstanceIndex is int link &&
+            _rac1Enemies.TryGetValue(link, out var linkedEnemy) && IsRac1GameplayActive(linkedEnemy.Node)
+            ? new(new(linkedEnemy.Node.Source.NativeClassId, link), ToEffectNative(linkedEnemy.Node.Root.GlobalPosition)) : null;
+        var next = _rac1Class1440.Step(instance, new(position, target, enemy.Animation.Wrapped, enemy.Animation.Blending,
+            enemy.Animation.Position, contact == Rac1GameplayEntityRef.Player, enemy.Grounded, !_rac1Nanotech.Probe().IsDead,
+            enemy.Motion.StepLength, linked, contact));
+        SelectRac1EnemySequence(enemy, next.Sequence, next.NativeState is 7 or 8 ? 1 : 10);
+        if (next.ReactionActive) StepRac1EnemyReaction(enemy);
+        else
+        {
+            enemy.Reaction = null;
+            if (next.TurnsToTarget) MoveRac1Enemy(enemy, next.Destination ?? next.LookAt, next.Destination, next.TurnOffset, next.NativeState == 5,
+                next.Destination.HasValue ? next.DistanceToPathEnd : null, directPosition: next.Destination.HasValue);
+        }
+        SetRac1EnemyFlame(enemy, next.NativeState == 5);
+        if (next.DamageTarget is { } victim)
+        {
+            var damage = Rac1DamageRuntime.FromClass1440Contact(new(1440, instance), victim);
+            if (victim == Rac1GameplayEntityRef.Player) ApplyRac1EnemyPlayerDamage(damage);
+            else if (_rac1Enemies.TryGetValue((int)victim.RuntimeId, out var targetEnemy) && ApplyRac1EnemyWeaponDamage(targetEnemy.Node, damage))
+                _rac1DamageTransport.Publish(damage);
+        }
+    }
+
+    private static void SelectRac1EnemySequence(Rac1HostedEnemy enemy, int sequence, int blendTicks)
+    {
+        if (enemy.Animation.Sequence != sequence) enemy.Animation.Select(sequence, blendTicks);
+    }
+
+    private void MoveRac1Enemy(Rac1HostedEnemy enemy, NVector3 look, NVector3? destination,
+        float yawOffset = 0, bool sweeping = false, float? pathDistance = null, bool directPosition = false)
+    {
+        Vector3 start = enemy.Body.GlobalPosition;
+        NVector3 motion = enemy.Motion.Step(ToEffectNative(start), look, destination, enemy.Animation.Blending, enemy.Grounded,
+            yawOffset, sweeping, pathDistance);
+        enemy.Node.Root.Rotation = new(0, enemy.Motion.Yaw, 0);
+        if (directPosition)
+        {
+            // 0x2e0fa4..0x2e0fb0 adds the entrance displacement directly to
+            // Moby+0x10. The authored path owns Z as well as XY; host support
+            // projection can leave its endpoint permanently out of reach.
+            enemy.Body.GlobalPosition += FromEffectNative(motion);
+            enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
+        }
+        else MoveRac1EnemyContact(enemy, FromEffectNative(motion));
+    }
+
+    private void StepRac1EnemyReaction(Rac1HostedEnemy enemy)
+    {
+        if (enemy.Reaction is not { } reaction) return;
+        enemy.Node.Root.Rotation = new(0, reaction.FacingYaw, 0);
+        MoveRac1EnemyContact(enemy, FromEffectNative(reaction.Step()));
+    }
+
+    private void MoveRac1EnemyContact(Rac1HostedEnemy enemy, Vector3 remaining)
+    {
+        for (int slide = 0; slide < 3 && remaining.LengthSquared() > 1e-9f; slide++)
+        {
+            var collision = enemy.Body.MoveAndCollide(remaining);
+            if (collision is null) break;
+            enemy.Reaction?.AcceptHostContact(ToEffectNative(collision.GetNormal()));
+            remaining = collision.GetRemainder().Slide(collision.GetNormal());
+        }
+        bool rising = enemy.Reaction?.Velocity.Z > 0;
+        enemy.Grounded = !rising && TryGroundRac1Enemy(enemy, upwardReach: 0, downwardReach: .3f);
+        enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
+    }
+
+    private bool TryGroundRac1Enemy(Rac1HostedEnemy enemy, float upwardReach, float downwardReach)
+    {
+        // Host contact policy, independent of native steering. Sweep the actual
+        // contact shape: snapping its origin to a point ray can put the uphill
+        // side of the capsule inside sloped terrain again after depenetration.
+        // Actors are not ground support; exclude Ratchet and other enemies.
+        var from = enemy.Body.GlobalTransform;
+        from.Origin += Vector3.Up * upwardReach;
+        using var parameters = new PhysicsTestMotionParameters3D
+        {
+            From = from,
+            Motion = Vector3.Down * (upwardReach + downwardReach),
+            Margin = enemy.Body.SafeMargin,
+            RecoveryAsCollision = true,
+            MaxCollisions = 4,
+            ExcludeBodies = new global::Godot.Collections.Array<Rid>(_rac1Enemies.Values.Select(other => other.Body.GetRid()).Append(_player!.GetRid())),
+        };
+        using var result = new PhysicsTestMotionResult3D();
+        if (!PhysicsServer3D.BodyTestMotion(enemy.Body.GetRid(), parameters, result)) return false;
+        for (int i = 0; i < result.GetCollisionCount(); i++)
+        {
+            Vector3 normal = result.GetCollisionNormal(i);
+            if (normal.Y <= .65f) continue;
+            enemy.Body.GlobalPosition = from.Origin + result.GetTravel();
+            enemy.Reaction?.AcceptHostContact(ToEffectNative(normal));
+            return true;
+        }
+        return false;
+    }
+
+    private void SynchronizeRac1Enemy(Rac1HostedEnemy enemy)
+    {
+        var instance = _rac1MobyRuntime.Require(enemy.Node.Source);
+        _rac1MobyRuntime.SetTransform(instance, RuntimeWorldScene.ToRuntimeTransform(enemy.Node.Root.Transform));
+        enemy.Node.ApplyState(instance.EntityState);
+    }
+
+    private Vector3 EnemySocket(Rac1HostedEnemy enemy) => enemy.Node.Root.ToGlobal(FromEffectNative(enemy.Animation.ContactSocket));
+
+    private bool EnemyMeleeTouchesPlayer(Rac1HostedEnemy enemy)
+    {
+        // 0x25998c passes the joint position preserved in s6 to the sphere
+        // query. The forward/up vector built separately belongs to its damage
+        // descriptor; adding it here moves the hit volume past a nearby player.
+        Vector3 center = EnemySocket(enemy);
+        Vector3 feet = _player!.GlobalPosition;
+        const float radius = Rac1CollisionProfile.OrdinaryHorizontalRadius;
+        Vector3 nearest = new(feet.X, Mathf.Clamp(center.Y, feet.Y + radius,
+            feet.Y + Rac1CollisionProfile.OrdinaryUpperContactHeight), feet.Z);
+        float separation = center.DistanceTo(nearest);
+        return separation <= Rac1EnemyMotion.Class749ContactRadius + radius &&
+            (separation <= .00001f || EnemyRayTouchesPlayer(enemy, center, nearest));
+    }
+
+    private Rac1GameplayEntityRef? EnemySweepContact(Rac1HostedEnemy enemy)
+    {
+        Vector3 socket = EnemySocket(enemy);
+        return EnemyRayContact(enemy, socket, enemy.Node.Root.GlobalPosition + Vector3.Up * .5f) ??
+            EnemyRayContact(enemy, socket, socket + EnemyForward(enemy.Node) * Rac1Class1440Session.ContactLength);
+    }
+
+    private bool EnemyRayTouchesPlayer(Rac1HostedEnemy enemy, Vector3 start, Vector3 end)
+        => EnemyRayContact(enemy, start, end) == Rac1GameplayEntityRef.Player;
+
+    private Rac1GameplayEntityRef? EnemyRayContact(Rac1HostedEnemy enemy, Vector3 start, Vector3 end)
+    {
+        if (start.DistanceSquaredTo(end) < 1e-9f) return null;
+        var query = PhysicsRayQueryParameters3D.Create(start, end);
+        query.Exclude = new global::Godot.Collections.Array<Rid> { enemy.Body.GetRid() };
+        query.HitFromInside = true;
+        var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (!hit.TryGetValue("collider", out var collider)) return null;
+        var body = collider.AsGodotObject();
+        if (body == _player) return Rac1GameplayEntityRef.Player;
+        var other = _rac1Enemies.Values.FirstOrDefault(candidate => candidate.Body == body);
+        return other is null ? null : Rac1GameplayEntityRef.Moby(new(other.Node.Source.NativeClassId, other.Node.Source.InstanceIndex));
+    }
+
+    private void ApplyRac1EnemyPlayerDamage(Rac1GameplayDamageEvent damage)
+    {
+        if (_rac1Nanotech.Probe().IsDead) return;
+        var before = _rac1Nanotech.Probe();
+        _rac1DamageTransport.Publish(damage);
+        var after = _rac1Nanotech.ApplyDamage(damage);
+        _player!.Rac1GameplayState = after;
+        if (after.Nanotech == before.Nanotech) return;
+        _rac1CombatStatus = $"enemy hit: Nanotech {after.Nanotech}/{after.RespawnNanotech}";
+        RefreshRac1HudState(Rac1HudProjection.DamageFeedback(before, after));
+        GD.Print($"[rac1-enemies] class{damage.Source.NativeClassId} i{damage.Source.RuntimeId}: contact; Nanotech {after.Nanotech}");
+    }
+
+    private bool ApplyRac1EnemyWeaponDamage(RuntimeWorldScene.DynamicObjectNode node, Rac1GameplayDamageEvent damage)
+    {
+        if (!_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
+        var enemy = _rac1Enemies[node.Source.InstanceIndex];
+        bool lethal;
+        int sequence;
+        if (node.Source.NativeClassId == 749)
+        {
+            var result = _rac1MobyRuntime.DispatchDamage<Rac1Class749HostProbe>(damage);
+            lethal = result.Health <= 0; sequence = result.NativeSequence!.Value;
+        }
+        else
+        {
+            var result = _rac1MobyRuntime.DispatchDamage<Rac1Class1440Session.DamageResult>(damage);
+            lethal = result.Lethal; sequence = result.Probe.Sequence;
+        }
+        enemy.Animation.Select(sequence, 1);
+        Vector3 attackerPosition = _player!.GlobalPosition;
+        if (damage.Source.Kind == Rac1GameplayEntityKind.Projectile && _rac1Projectiles.TryGetValue(damage.Source.RuntimeId, out var projectile))
+            attackerPosition = projectile.Node.GlobalPosition;
+        else if (damage.Source.Kind == Rac1GameplayEntityKind.Moby && _rac1Enemies.TryGetValue((int)damage.Source.RuntimeId, out var attacker))
+            attackerPosition = attacker.Node.Root.GlobalPosition;
+        NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);
+        enemy.Reaction = new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
+        enemy.Motion.SetFacing(enemy.Reaction.FacingYaw);
+        enemy.Grounded = false;
+        SetRac1EnemyFlame(enemy, false);
+        if (lethal && !enemy.RewardEmitted)
+        {
+            enemy.RewardEmitted = true;
+            enemy.Body.CollisionLayer = 0;
+            SpawnRac1BoltPickups(node.Root.GlobalPosition,
+                _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source))));
+        }
+        _rac1CombatStatus = $"enemy i{node.Source.InstanceIndex}: {(lethal ? "lethal reaction" : "hit reaction")}";
+        GD.Print($"[rac1-enemies] class{node.Source.NativeClassId} i{node.Source.InstanceIndex}: " +
+            $"{(lethal ? "lethal" : "nonlethal")} damage from {damage.Source.Kind} " +
+            $"class{damage.Source.NativeClassId} i{damage.Source.RuntimeId}");
+        return true;
+    }
+
+    private void PresentRac1EnemyDeath(Rac1HostedEnemy enemy)
+    {
+        if (enemy.DeathPresented) return;
+        enemy.DeathPresented = true;
+        enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
+        SetRac1EnemyFlame(enemy, false);
+        if (enemy.Node.Source.NativeClassId == 749) PlayRac1PickupSound(749, 7, enemy.Node.Root.GlobalPosition);
+        else SpawnRac1EnemyFragments(enemy);
+    }
+
+    private void SpawnRac1EnemyFragments(Rac1HostedEnemy enemy)
+    {
+        // The robot's dedicated fragment identities are native (0x2e15a8..0x2e1638).
+        // Until 0x263fd8 is translated, scattering uses the existing host debris adapter.
+        foreach (int nativeClass in new[] { 1933, 1934, 1935, 1963 })
+        {
+            if (_rac1PickupAssets?.Models.ContainsKey(nativeClass) != true) continue;
+            var motion = new Rac1CrateDebris(nativeClass, ToEffectNative(enemy.Node.Root.GlobalPosition) + new NVector3(0, 0, 1),
+                new(Rac1EffectRandom.Range(-4, 4) / 60, Rac1EffectRandom.Range(-4, 4) / 60, Rac1EffectRandom.Range(4, 8) / 60),
+                new(0, 0, Rac1EffectRandom.Angle()), 1, 1, Rac1EffectRandom);
+            var node = CreateRac1EffectNode(nativeClass, $"rac1_enemy_fragment_{nativeClass}");
+            node.GlobalPosition = FromEffectNative(motion.Position);
+            _rac1Debris.Add((node, motion));
+        }
+    }
+
+    private void SetRac1EnemyFlame(Rac1HostedEnemy enemy, bool emitting)
+    {
+        if (enemy.Node.Source.NativeClassId != 1440 || _sceneResult is null) return;
+        if (emitting && enemy.Flame is null)
+        {
+            // Host particle presentation, not a recovered retail particle/texture program.
+            var material = new StandardMaterial3D
+            {
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+                Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                AlbedoColor = Colors.White,
+                BlendMode = BaseMaterial3D.BlendModeEnum.Add,
+                VertexColorUseAsAlbedo = true,
+                AlbedoTexture = new GradientTexture2D
+                {
+                    Width = 32,
+                    Height = 32,
+                    Fill = GradientTexture2D.FillEnum.Radial,
+                    FillFrom = new(.5f, .5f),
+                    FillTo = new(.5f, 1),
+                    Gradient = new Gradient { Colors = [Colors.White, new(1, 1, 1, 0)] }
+                },
+                BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled
+            };
+            var flame = new GpuParticles3D
+            {
+                Name = $"EnemyFlame_i{enemy.Node.Source.InstanceIndex}",
+                Amount = 90,
+                Lifetime = .4,
+                Emitting = false,
+                DrawPass1 = new QuadMesh { Size = new(.28f, .28f), Material = material },
+                VisibilityAabb = new(new(-6, -6, -6), new(12, 12, 12)),
+                ProcessMaterial = new ParticleProcessMaterial
+                {
+                    Direction = Vector3.Forward,
+                    Spread = 7,
+                    InitialVelocityMin = 10,
+                    InitialVelocityMax = 12,
+                    Gravity = Vector3.Up * .3f,
+                    ScaleMin = .5f,
+                    ScaleMax = 1.3f,
+                    ColorRamp = new GradientTexture1D
+                    {
+                        Gradient = new Gradient
+                        {
+                            Colors = [new(1, .9f, .3f, .8f), new(1, .25f, .03f, 0)]
+                        }
+                    }
+                }
+            };
+            _sceneResult.Root.AddChild(flame); enemy.Flame = flame;
+        }
+        if (enemy.Flame is not { } particles) return;
+        particles.GlobalPosition = EnemySocket(enemy);
+        particles.LookAt(particles.GlobalPosition + EnemyForward(enemy.Node));
+        particles.Emitting = emitting;
+    }
+}

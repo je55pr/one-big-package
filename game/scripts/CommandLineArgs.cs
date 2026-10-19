@@ -13,6 +13,12 @@ public sealed record CommandLineArgs
     public int? CaptureFrame { get; init; }
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
+    public string? MovementStatePath { get; init; }
+    public string? LoadMovementState { get; init; }
+    public int? ReplayForwardFrames { get; init; }
+    public string? ReplayOut { get; init; }
+    public bool ReplayProfile { get; init; }
+    public bool MovementStateSmoke { get; init; }
 
     /// <summary>Path to a Going Commando retail ISO.</summary>
     public string? GcIso { get; init; }
@@ -96,6 +102,7 @@ public sealed record CommandLineArgs
 
     /// <summary>Exercise staged retail crate, fragment, bolt and resource-pickup fixtures.</summary>
     public bool Rac1CrateSmoke { get; init; }
+    public bool Rac1EnemySmoke { get; init; }
 
     /// <summary>Exercise authored world bolt resting, attraction and collection fixtures.</summary>
     public bool Rac1PlacedBoltSmoke { get; init; }
@@ -147,6 +154,12 @@ public sealed record CommandLineArgs
                 "--capture-frame" => result with { CaptureFrame = ParseInt(Next()) },
                 "--capture-out" => result with { CaptureOut = Next() },
                 "--fixed-seed" => result with { FixedSeed = ParseInt(Next()) },
+                "--movement-state-file" => result with { MovementStatePath = Next() },
+                "--load-movement-state" => result with { LoadMovementState = Next() },
+                "--replay-forward" => result with { ReplayForwardFrames = ParseInt(Next()) ?? -1 },
+                "--replay-out" => result with { ReplayOut = Next() },
+                "--replay-profile" => result with { ReplayProfile = true },
+                "--movement-state-smoke" => result with { MovementStateSmoke = true },
                 "--gc-iso" => result with { GcIso = Next() },
                 "--rac1-iso" => result with { Rac1Iso = Next() },
                 "--uya-iso" => result with { UyaIso = Next() },
@@ -176,6 +189,7 @@ public sealed record CommandLineArgs
                 "--rac1-combat-contract-smoke" => result with { Rac1CombatContractSmoke = true },
                 "--rac1-wrench-smoke" => result with { Rac1WrenchSmoke = true },
                 "--rac1-crate-smoke" => result with { Rac1CrateSmoke = true },
+                "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },

@@ -5,9 +5,9 @@ using OBP.Runtime.Gameplay;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Recovered class-1440 damageable/targeting family boundary from the fixed
-/// Veldin witness. The name deliberately stops short of assigning unresolved
-/// outgoing damage or generic hostile semantics.
+/// Retained class1440 descriptor/consumed-record boundary from the fixed witness.
+/// The complete opening Veldin script and outgoing damage trace are implemented
+/// separately by <see cref="Rac1Class1440Session"/>.
 /// </summary>
 public static class Rac1Class1440ContactFamily
 {
@@ -89,8 +89,8 @@ public sealed record Rac1Class1440AuthoredState(
 
 /// <summary>
 /// Identifies one of the two recovered VU-backed query sites in native state 5.
-/// The descriptor values are preserved as opaque native facts; the 1.0 scalar
-/// is not named as damage.
+/// The legacy field names preserve the original witness API. The expanded query
+/// bridge now binds its 1.0 scalar to common damage record+0x2c.
 /// </summary>
 public sealed record Rac1Class1440ContactQueryIntent(
     Rac1MobyRuntimeKey Source,
@@ -106,8 +106,8 @@ public sealed record Rac1Class1440PlayerContactEvent(
 
 /// <summary>
 /// Deterministic host-facing snapshot. Only recovered state-5 contact branching
-/// and class-owned damage intake are implemented; states 0..4 and 6..8 remain
-/// opaque native states until their semantics are independently recovered.
+/// and class-owned damage intake are exposed by this lower-level fixture API.
+/// The normal opening controller owns the expanded state/sequence implementation.
 /// </summary>
 public sealed record Rac1Class1440ContactProbe(
     Rac1Class1440Key Key,

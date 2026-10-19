@@ -5,8 +5,8 @@ namespace OBP.RAC1.Gameplay;
 
 /// <summary>
 /// Engine-independent runtime for the recovered class-1440 contact/damage
-/// boundary. Unrecovered native states remain opaque instead of inheriting
-/// class-749 chase, melee, or death policy.
+/// fixture boundary. The complete opening controller is
+/// <see cref="Rac1Class1440Session"/>; neither implementation inherits class749 AI.
 /// </summary>
 public sealed class Rac1Class1440ContactFamilySession :
     IRac1MobyDamageConsumer

@@ -28,6 +28,13 @@ namespace OneBigPackage;
 /// </summary>
 public partial class PlayerHost : CharacterBody3D
 {
+    internal bool DevelopmentProfileEnabled { get; set; }
+    internal (double Controller, double Contact, double Presentation, double Camera) DevelopmentProfile { get; private set; }
+    internal (double Slide, double SmallStep, double Crest) DevelopmentContactProfile { get; private set; }
+    private long DevelopmentTimestamp() => DevelopmentProfileEnabled ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+    private static double DevelopmentElapsed(long start, long end) => start == 0 ? 0 :
+        System.Diagnostics.Stopwatch.GetElapsedTime(start, end).TotalMilliseconds;
+    internal event Action? DevelopmentPhysicsCompleted;
     // --- host presentation tuning ----------------------------------------------
     // Ordinary movement constants live in OBP.RAC1.Player. Mouse sensitivity is
     // host presentation policy; development-only tuning lives beside this host.
@@ -304,7 +311,7 @@ public partial class PlayerHost : CharacterBody3D
             ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit
             : 0.1f;
 
-        if (!Scripted)
+        if (!Scripted && !GetWindow().Unfocusable)
         {
             Input.MouseMode = Input.MouseModeEnum.Captured;
         }
@@ -358,6 +365,7 @@ public partial class PlayerHost : CharacterBody3D
             }
         }
 
+        long profileStart = DevelopmentTimestamp();
         _time += delta;
         if (UseRac1Gameplay && !DevelopmentControls.FlyEnabled)
             EnsureRac1CameraInitialized();
@@ -384,6 +392,7 @@ public partial class PlayerHost : CharacterBody3D
             _attackRequested = false;
             DevelopmentControls.StepFly((float)delta, _liveInput.Move);
             UpdateHud(true);
+            DevelopmentPhysicsCompleted?.Invoke();
             return;
         }
 
@@ -396,11 +405,17 @@ public partial class PlayerHost : CharacterBody3D
             _rac1JumpWasHeld = false;
             Velocity = Vector3.Zero;
             UpdateHud(false);
+            DevelopmentPhysicsCompleted?.Invoke();
             return;
         }
 
         StepRetailDerivedMovement(move, jump, crouch);
-        MoveAndSlide();
+        long profileController = DevelopmentTimestamp();
+        if (UseRac1Gameplay)
+            MoveRac1Contact((float)delta);
+        else
+            MoveAndSlide();
+        long profileContact = DevelopmentTimestamp();
         if (UseRac1Gameplay)
             RecordRac1OrdinaryContactMotion();
         if (UseRac1Gameplay)
@@ -412,6 +427,7 @@ public partial class PlayerHost : CharacterBody3D
         AnimationPhysicsUpdated?.Invoke(delta, AnimationState, _locomotionAnimationInput);
         if (UseRac1Gameplay)
             Rac1WrenchPhysicsUpdated?.Invoke(Rac1WrenchFrame);
+        long profilePresentation = DevelopmentTimestamp();
 
         if (!Scripted && !HasActiveRecoveredCamera)
         {
@@ -430,6 +446,12 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         UpdateHud(isOnFloor);
+        if (DevelopmentProfileEnabled)
+            DevelopmentProfile = (DevelopmentElapsed(profileStart, profileController),
+                DevelopmentElapsed(profileController, profileContact),
+                DevelopmentElapsed(profileContact, profilePresentation),
+                DevelopmentElapsed(profilePresentation, DevelopmentTimestamp()));
+        DevelopmentPhysicsCompleted?.Invoke();
     }
 
     private void UpdateRac1FacingPresentation()

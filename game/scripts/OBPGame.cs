@@ -61,6 +61,12 @@ public partial class OBPGame : Node3D
     {
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        if (_args.ReplayForwardFrames.HasValue && _args.LoadMovementState is null)
+        {
+            GD.PrintErr("[movement-replay] --replay-forward requires --load-movement-state.");
+            ApplicationLifecycle.RequestQuit(this, "movement-replay-missing-state", 2);
+            return;
+        }
         if (_args.FixedSeed is { } seed)
         {
             GD.Seed((ulong)seed);
@@ -239,7 +245,10 @@ public partial class OBPGame : Node3D
     {
         if (what == NotificationWMCloseRequest)
         {
-            ApplicationLifecycle.RequestQuit(this, "desktop-window-close");
+            bool automated = WorldSmokeHarness.IsRequested(_args) ||
+                _args.Rac1StartupVisibilitySmoke || _args.CaptureFrame is not null ||
+                _args.ShotsPath is not null || _args.StressSwitch is not null || _args.ComposeReload is not null;
+            ApplicationLifecycle.RequestQuit(this, "desktop-window-close", automated ? 1 : 0);
         }
     }
 
@@ -550,6 +559,8 @@ public partial class OBPGame : Node3D
         _camera.Current = false;
         _activeCamera = player.Camera;
         _player = player;
+        player.DevelopmentControls.SaveMovementStateRequested += SaveMovementState;
+        player.DevelopmentControls.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
         AttachPlayerAvatarVisual(player);
         ArmGcGameplayHost(player);
         ArmRac1Gameplay(player);

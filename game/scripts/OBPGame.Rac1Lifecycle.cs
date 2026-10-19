@@ -13,6 +13,37 @@ namespace OneBigPackage;
 
 public partial class OBPGame
 {
+    private PanelContainer? _rac1CombatRetry;
+
+    private void ResetRac1CombatRetry()
+    {
+        if (_rac1CombatRetry is { } panel && IsInstanceValid(panel)) panel.QueueFree();
+        _rac1CombatRetry = null;
+    }
+
+    private void ShowRac1CombatRetry()
+    {
+        if (_rac1Nanotech.Probe().DeathCause != Rac1RatchetDeathCause.CombatZeroNanotech ||
+            _rac1CombatRetry is not null || _activeDestination is not { } destination) return;
+        // OBP application policy: an explicit full level reload. This does not
+        // reuse the separately recovered environmental checkpoint transition.
+        var panel = new PanelContainer { Name = "CombatRetry", Size = new(260, 110) };
+        var rows = new VBoxContainer();
+        rows.AddChild(new Label { Text = "Defeated", HorizontalAlignment = HorizontalAlignment.Center });
+        var retry = new Button { Text = "Retry level" };
+        retry.Pressed += () =>
+        {
+            Input.MouseMode = GetWindow().Unfocusable ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+            OnDestinationChosen(destination);
+        };
+        rows.AddChild(retry); panel.AddChild(rows);
+        _ui.AddChild(panel);
+        panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center);
+        retry.GrabFocus();
+        Input.MouseMode = Input.MouseModeEnum.Visible;
+        _rac1CombatRetry = panel;
+    }
+
     private bool TryCompleteRac1EnvironmentalRestart(bool automatic)
     {
         var death = _rac1Nanotech.Probe();

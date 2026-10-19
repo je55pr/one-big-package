@@ -16,6 +16,15 @@ public static partial class Rac1MobyPose
         return Enumerable.Range(0, joints.Count).Select(j => new JointPose(pivot[j], linear[j])).ToArray();
     }
 
+    public static IReadOnlyList<JointPose> PoseLocalJoints(
+        Rac1Moby.Mesh mesh, IReadOnlyList<Rac1Moby.SkeletonJoint> joints, Rac1MobyAnimation.Frame frame)
+    {
+        if (!CanPoseLocalHierarchy(mesh, joints, frame))
+            throw new InvalidOperationException("Joint pose is outside the admitted ordinary class channels.");
+        var (linear, pivot) = EvaluateRatchetJointHierarchy(mesh, joints, frame);
+        return Enumerable.Range(0, joints.Count).Select(j => new JointPose(pivot[j], linear[j])).ToArray();
+    }
+
     private static (double[][,] Linear, double[][] Pivot) EvaluateRatchetJointHierarchy(
         Rac1Moby.Mesh mesh, IReadOnlyList<Rac1Moby.SkeletonJoint> joints, Rac1MobyAnimation.Frame frame)
     {

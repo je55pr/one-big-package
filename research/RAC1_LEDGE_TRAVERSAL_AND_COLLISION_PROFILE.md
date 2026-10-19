@@ -24,6 +24,100 @@ envelope. `Rac1CollisionProfile` therefore exposes the source query inputs
 without assigning an unproved primitive type. Godot's shape, margins and
 solver remain explicit host approximation.
 
+### Small-step host adapter
+
+`PlayerHost.Rac1SmallSteps.cs` supplies bounded traversal for shallow static
+terrain lips which the foot-aligned enclosing capsule otherwise treats as a
+wall. This is **OBP host policy**, not a reproduction of `0x1f19a0` and not a
+recovered retail step-height field. Its maximum rise is a rounded-clearance
+bound chosen as `lower contact height - radius * cos(support angle)` (about
+0.411 units). This uses the recovered query inputs and 50-degree support angle
+to bound the host correction; the formula itself is not recovered native code.
+Both the current foot position and the terrain beneath it bound the rise,
+preventing the capsule from incrementally climbing a taller wall corner.
+
+Only already-supported ordinary grounded movement can use the adapter. An
+opposed real slide contact must find a nearby ordinary-material top within the
+rise limit and the recovered 50-degree support gate. Full-body upward, forward
+and downward sweeps then require clear headroom, unobstructed travel and static
+support. The resulting planar progress must improve on the original slide;
+the support witness adds no planar distance. Real slide contacts are necessary:
+a horizontal-only predictive sweep can miss corners encountered by the separate
+downward request, particularly during diagonal approaches.
+
+The capsule's radial corner normal is distinct from the queried top normal.
+During the final downward settling pass only, the adapter can classify a corner
+as floor down to normal-Up `(radius - maximum rise) / radius`; it immediately
+restores the ordinary floor angle afterward. The vertical settling reach
+accounts for the contact skin projected along that corner normal. These are
+capsule-adapter choices, allowing a slow walk over a small lip while the top
+itself still has to pass the source 50-degree gate. They are not retail radial
+contact or step-response laws.
+
+Airborne actions, ledge grabs, swingshots, known special-surface actions and moving supports
+retain their separate paths. The original source request still owns contact
+feedback and animation; placement corrections do not seed extra crouch carry.
+
+A separate crest correction can undo only the current grounded uphill request
+plus the existing contact skin when that tangent would overshoot a flat top.
+It requires a walkable static shape contact, so crossing a shallow rim does not
+briefly turn into a falling action. Global Godot floor snap remains disabled.
+
+The imported LEVEL0 collision near native `(132, 113.5)` has ordinary floor
+height `31.234375`; the adjacent ship-rock top at `(131.3, 113.5)` is
+`31.4375`, a rise of `0.203125`. Before the adapter, the headless ordinary-input
+trial stopped at scene X about `-131.803`. Both this eastern approach and the
+southern rim now cross while retaining grounded action and floor contact.
+These are Godot integration observations against retail geometry, not a live
+retail movement replay. `Rac1GroundProjectionRetailTests` verifies the source
+geometry, while `--movement-smoke` additionally checks walking, diagonal
+approaches, 0.12/0.22/0.30/0.38-unit steps, a rejected 0.43-unit lip, a taller
+wall and low headroom.
+
+The two image-derived candidate routes missed the reported snag. A subsequent
+user movement bookmark identified scene `(-131.647232, 31.240614, 108.697662)`
+and effective native forward heading `1.9442879091`. Its adjacent looped-rock
+top is about 0.30 units above the underlying `31.234375` floor, exceeding the
+adapter's former `lower height - radius` limit of 0.25. That short ray therefore
+returned the underlying floor instead of the obstructing top. The unmodified
+180-update forward replay advanced only 0.00418 planar units before stalling.
+
+With the revised clearance bound, replaying the same persisted pose and forward
+input crosses the lip by update 31 and continues beyond it. The crossing itself
+retains grounded action and floor contact; later movement off the rock can enter
+an ordinary fall. The exact starting pose and heading are now an engine-smoke
+regression in addition to the earlier candidate approaches. This validates the
+host correction against the saved case, not the retail physical solver or human
+signoff. `docs/MOVEMENT_REPRO_STATES.md` describes the local capture/replay workflow.
+
+### Host collision shape consolidation
+
+A later movement bookmark at scene `(-139.876053, 31.972511, 111.315048)`,
+effective forward heading `-0.8210970474`, reproduced a severe frame-rate drop
+while pushing into a dense static contact corner. Profiling a 600-update,
+960x540 Forward+ replay separated the initial `MoveAndSlide` from step probes,
+animation, camera and GPU rendering. Excluding startup samples, the original
+contact cost was about 8.5 ms per native update and the rendered replay reported
+about 7 FPS; the step probe itself cost about 0.07 ms and GPU rendering about
+3.3 ms. A correct final position alone had hidden this render-rate failure.
+
+The world blob retains 86,184 native octree triangle references, many repeating
+the same surface. The old Godot shape also emitted a reverse copy of each
+reference, yielding 172,368 overlapping shape faces. `BuildCollisionFacePlan`
+now consolidates only exact scene-space geometry with identical material IDs,
+keeping 31,423 faces for LEVEL0. `BackfaceCollision` supplies two-sided contact
+without reverse copies. An explicit face-to-source table preserves the first
+source triangle's identity and material byte; the source blob is not modified.
+Different materials and merely nearby geometry are not merged.
+
+The same local replay then held 60 FPS, with median contact cost about 1.3 ms.
+These are host performance observations on one machine, not native solver or
+retail frame-rate evidence. Unit tests pin the structural reduction and verify
+all emitted LEVEL0 face identities without using hardware-dependent timing
+thresholds. The dense corner remains a blocking contact; the original small-lip
+movement bookmark still crosses. Movement, enemy-grounding and save-state
+integration checks cover the shared shape boundary separately.
+
 The additional ascending steep-contact response at `0x2121c0..0x212300`
 requires a nonzero unsupported counter, support metric below `0.15f`, positive
 previous final vertical displacement, a prior radial contact, and positive

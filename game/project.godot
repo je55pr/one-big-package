@@ -14,7 +14,13 @@ config/windows_native_icon="res://assets/branding/obp-icon.ico"
 
 [autoload]
 
+WindowPlacement="*res://scripts/WindowPlacement.cs"
 UiBootstrap="*res://scripts/UiBootstrap.cs"
+
+[display]
+
+; Automated runs stay unfocusable; WindowPlacement enables focus for normal play.
+window/size/no_focus=true
 
 [dotnet]
 

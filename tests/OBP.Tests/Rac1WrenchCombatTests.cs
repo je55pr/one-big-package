@@ -82,6 +82,7 @@ public sealed class Rac1WrenchCombatTests
     [Theory]
     [InlineData("rac1", Rac1BoltCrate.NativeClassId, true)]
     [InlineData("rac1", Rac1Class749Hostile.NativeClassId, true)]
+    [InlineData("rac1", Rac1Class1440Session.ClassId, true)]
     [InlineData("rac1", 1781, false)]
     [InlineData("rac2", Rac1BoltCrate.NativeClassId, false)]
     [InlineData("rac3", Rac1Class749Hostile.NativeClassId, false)]

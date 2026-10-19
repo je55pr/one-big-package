@@ -1,5 +1,10 @@
 # R&C1 representative enemy attack patterns
 
+Historical initial recovery. The expanded source trace and current opening
+Veldin implementation are documented in [RAC1_VELDIN_ENEMIES.md](RAC1_VELDIN_ENEMIES.md).
+That later recovery closes the class749 radius and class1440 outgoing-damage
+boundaries left unresolved below; this original witness/report remains intact.
+
 Authority: retail NTSC-U original, `SCUS-97199`; ISO SHA-256 `ab849fe7cc9cc81c487d61b0d3ea15b5849943481b6a6ebf4d9aa9cf7bc40d9d`; executable SHA-256 `e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9`.
 
 This note narrows the first reusable enemy-attack boundary. It deliberately does **not** create a generic enemy combat component: the fixed Veldin overlay proves one complete outgoing melee contract for class 749 and a second independently damageable/targeting candidate, class 1440, whose outgoing contact-damage semantics remain unresolved.
