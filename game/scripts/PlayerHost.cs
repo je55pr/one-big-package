@@ -473,6 +473,15 @@ public partial class PlayerHost : CharacterBody3D
         ResetAfterPlacement(placement.Yaw);
     }
 
+    /// <summary>Host-policy exit from a Kerwan taxi; clears airborne physics/input state.</summary>
+    public void ApplyRac1TaxiArrival(RuntimeSpawn placement)
+    {
+        RuntimeSpawnScenePose pose = RuntimeSpawnSceneAdapter.ToScenePose(placement);
+        GlobalPosition = pose.Position;
+        Rotation = new Vector3(0f, pose.SceneYaw, 0f);
+        ResetAfterPlacement(placement.Yaw);
+    }
+
     internal Basis DevelopmentCameraBasis => _pitch.GlobalTransform.Basis;
 
     internal void ApplyDevelopmentReset(Vector3 spawnPosition)

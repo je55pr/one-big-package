@@ -153,6 +153,12 @@ public partial class OBPGame : Node3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (TryHandleRac1MetropolisTaxiInput(@event))
+        {
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event is not InputEventKey { Pressed: true, Echo: false } key)
         {
             return;
@@ -648,6 +654,7 @@ public partial class OBPGame : Node3D
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
             (string.IsNullOrEmpty(gcGameplay) ? "" : $"\n{gcGameplay}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}") +
+            (GetRac1MetropolisTaxiHudLine() is { Length: > 0 } taxiHint ? $"\n{taxiHint}" : "") +
             (string.IsNullOrEmpty(uyaGameplay) ? "" : $"\n{uyaGameplay}");
     }
 

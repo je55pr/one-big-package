@@ -4,6 +4,7 @@ using OBP.PS2.Collision;
 using OBP.PS2.Geometry;
 using OBP.PS2.Textures;
 using OBP.RAC1.Level;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime;
 
@@ -75,6 +76,10 @@ public static partial class Rac1WorldImport
             core, gameplay, meshes, textures, animatedMeshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
+        // Preserve Kerwan's retail taxi splines in their native Moby payloads.
+        // No cross-game runtime schema changes and no invented flight arcs.
+        if (levelId == Rac1MetropolisTaxiSession.NativeLevelId)
+            dynamicObjects = Rac1MetropolisTaxiSession.AttachRetailOutboundPaths(gameplay, dynamicObjects);
         var settings = Rac1LevelSettings.Parse(gameplay);
         const float FogDistanceScale = 1f / 1024f;
         var environment = new RuntimeEnvironment(
