@@ -146,6 +146,7 @@ public partial class OBPGame
             {
                 if (previous < 1d)
                 {
+                    OnRac1NovalisCrankMusic(crankId);
                     var door = _rac1NovalisCranks.Doors.First(item => item.CrankInstanceIndex == crankId);
                     PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 1,
                         _rac1NovalisDoorNodes[door.InstanceIndex].Root.GlobalPosition);

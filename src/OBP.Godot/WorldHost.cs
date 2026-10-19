@@ -101,6 +101,10 @@ public sealed class WorldHost
 
     public string AudioStatusLine => _audio.StatusLine;
 
+    /// <summary>Replace the current level's music/ambience with decoded source-owned audio.</summary>
+    public int StartLevelAudio(IEnumerable<RuntimeAudioPlaybackIntent> intents) =>
+        IsLoaded && _hostNode is { } host ? _audio.StartLevelAudio(host, intents) : 0;
+
     /// <summary>Present one neutral gameplay sound effect in the loaded world.</summary>
     public bool PlayEffect(RuntimeAudioPlaybackIntent intent) =>
         IsLoaded && _hostNode is { } host && _audio.PlayEffect(host, intent);

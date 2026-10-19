@@ -300,6 +300,8 @@ public partial class OBPGame
     /// </summary>
     private void AdoptRuntimeWorld(RuntimeWorld world, string sourcePath, ObpDestination destination)
     {
+        // Release the previous level's ISO-backed music reader when switching games.
+        ResetRac1NovalisMusic();
         _world = world;
         _worldSwitches++;
 

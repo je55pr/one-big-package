@@ -55,6 +55,7 @@ public partial class OBPGame
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
         _rac1NovalisWater = null;
+        ResetRac1NovalisMusic();
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
         ResetRac1Enemies();
@@ -136,6 +137,7 @@ public partial class OBPGame
         ConfigureRac1NovalisCranks(world, result);
         ConfigureRac1NovalisBreakables(world, result);
         ConfigureRac1NovalisWater(world);
+        ConfigureRac1NovalisMusic(world);
 
         int authoredClass749 = 0;
         int rejectedHostiles = 0;
@@ -216,6 +218,7 @@ public partial class OBPGame
             return;
         }
 
+        TickRac1NovalisMusic(delta);
         TickRac1Swing(delta);
         TickRac1Hostiles(delta);
         TickRac1Pickups(delta);

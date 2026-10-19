@@ -107,6 +107,7 @@ public sealed record CommandLineArgs
     public bool Rac1NovalisSwimSmoke { get; init; }
     public bool Rac1NovalisPeckbotSmoke { get; init; }
     public bool Rac1NovalisBirdbotSmoke { get; init; }
+    public bool Rac1NovalisMusicSmoke { get; init; }
 
     /// <summary>Exercise authored world bolt resting, attraction and collection fixtures.</summary>
     public bool Rac1PlacedBoltSmoke { get; init; }
@@ -196,6 +197,7 @@ public sealed record CommandLineArgs
                 "--rac1-novalis-swim-smoke" => result with { Rac1NovalisSwimSmoke = true },
                 "--rac1-novalis-peckbot-smoke" => result with { Rac1NovalisPeckbotSmoke = true },
                 "--rac1-novalis-birdbot-smoke" => result with { Rac1NovalisBirdbotSmoke = true },
+                "--rac1-novalis-music-smoke" => result with { Rac1NovalisMusicSmoke = true },
                 "--rac1-crate-smoke" => result with { Rac1CrateSmoke = true },
                 "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },
