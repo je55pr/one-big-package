@@ -19,14 +19,14 @@ public sealed class Rac1MetropolisTaxiTests
     ];
 
     // Fixture includes the source-game payload contract without an ISO.
-    private static byte[] TinyNativePath(double x, double y, double z)
+    private static byte[] TinyNativePath(double x, double y, double z, bool returning = false)
     {
         var result = new byte[4 + 3 * 12];
         BinaryPrimitives.WriteInt32LittleEndian(result, 3);
         for (int i = 0; i < 3; i++)
         {
             int at = 4 + 12 * i;
-            BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(at, 4), (float)(x + i * 5));
+            BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(at, 4), (float)(x + (returning ? 2 - i : i) * 5));
             BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(at + 4, 4), (float)z);
             BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(at + 8, 4), (float)y);
         }
@@ -59,9 +59,16 @@ public sealed class Rac1MetropolisTaxiTests
             [],
             NativePayloads: p.OutboundPoints == 0 || (missingPath && p.Index == 919)
                 ? []
-                : [new RuntimeOpaquePayload(
-                    Rac1MetropolisTaxiSession.OutboundPathFormat,
-                    TinyNativePath(p.X, p.Y, p.Z))])).ToArray());
+                : p.Class == 1012
+                    ? [
+                        new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.OutboundPathFormat,
+                            TinyNativePath(p.X, p.Y, p.Z)),
+                        new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.ReturnPathFormat,
+                            TinyNativePath(p.X, p.Y, p.Z, returning: true)),
+                    ]
+                    : [new RuntimeOpaquePayload(
+                        Rac1MetropolisTaxiSession.OutboundPathFormat,
+                        TinyNativePath(p.X, p.Y, p.Z))])).ToArray());
 
     [Fact]
     public void KerwanHasFiveNativeTaxiModelsAndFourBoardablePaths()
@@ -85,9 +92,9 @@ public sealed class Rac1MetropolisTaxiTests
     {
         var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
         Assert.Null(session.FindBoardable(new Rac1TaxiPoint(0, 0, 0)));
-        var stop = session.Stops.Single(s => s.InstanceIndex == 962);
+        var stop = session.Stops.Single(s => s.InstanceIndex == 919);
         Assert.True(session.TryBoard(stop.Position));
-        Assert.Equal(962, session.Riding!.InstanceIndex);
+        Assert.Equal(919, session.Riding!.InstanceIndex);
         Assert.False(session.TryBoard(stop.Position));
         Assert.Null(session.FindBoardable(stop.Position));
         var start = session.Tick(0)!;
@@ -105,6 +112,28 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.False(session.TryBoard(stop.Position));
         session.Tick(1.25);
         Assert.True(session.TryBoard(stop.Position));
+    }
+
+    [Fact]
+    public void Class1012CompletesBothNativeLegsBeforeDisembarking()
+    {
+        var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == 962);
+        Assert.Equal(3, stop.ReturnPath!.Count);
+        Assert.True(session.TryBoard(stop.Position));
+        double tick = 1d / Rac1MetropolisTaxiSession.ProvisionalPathSamplesPerSecond;
+        var outward = session.Tick(2 * tick)!;
+        Assert.False(outward.JustArrived);
+        Assert.Equal(stop.Position.X + 10, outward.Position.X, 3);
+        var halfwayHome = session.Tick(tick)!;
+        Assert.False(halfwayHome.JustArrived);
+        Assert.Equal(stop.Position.X + 5, halfwayHome.Position.X, 3);
+        var home = session.Tick(tick)!;
+        Assert.True(home.JustArrived);
+        Assert.Equal(stop.Position.X, home.Position.X, 3);
+        Assert.Equal(stop.Position.X, home.Arrival.X, 3);
+        Assert.Equal(1d, home.Progress, 5);
+        Assert.False(session.Tick(0)!.JustArrived);
     }
 
     [Fact]
@@ -156,6 +185,25 @@ public sealed class Rac1MetropolisTaxiTests
             Assert.Equal(route.Points, stop.OutboundPath.Count);
             var endpoint = stop.OutboundPath[^1];
             Assert.InRange(endpoint.DistanceSquared(route.End), 0, 0.0002);
+        }
+
+        foreach (var (instance, nativePath, points) in new[]
+        {
+            (961, 65, 150),
+            (962, 58, 75),
+        })
+        {
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == instance);
+            var pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            Assert.Equal(nativePath,
+                BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x90, 4)));
+            var stop = session.Stops.Single(s => s.InstanceIndex == instance);
+            Assert.NotNull(stop.ReturnPath);
+            Assert.Equal(points, stop.ReturnPath.Count);
+            Assert.InRange(stop.ReturnPath[0].DistanceSquared(stop.OutboundPath[^1]),
+                0, 0.15 * 0.15);
+            Assert.InRange(stop.ReturnPath[^1].DistanceSquared(stop.Position),
+                0, 0.15 * 0.15);
         }
     }
 }

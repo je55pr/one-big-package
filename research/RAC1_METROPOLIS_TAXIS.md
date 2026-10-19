@@ -40,10 +40,17 @@ rather than constructing synthetic Bezier curves.
 | 961 | 59 | 75 | (263.27188, 237.42558, 34.271873) |
 | 962 | 67 | 150 | (118.35907, 78.461815, 65.84171) |
 
-The inbound and additional path selectors recovered but **not yet
-executed** include class 816 indexes 62 and 70 (+0x94), class 816
-shared continuation path 61 (+0xbc), and class 1012 indexes 65 and 58
-(+0x90). These are critical for eventual continuous round-trip movement.
+Two class-1012 return paths are now included in playable round trips:
+instance 961 takes outbound **59** (75 points), then return **65**
+(150 points); instance 962 takes outbound **67** (150 points), then return
+**58** (75 points). The joints agree to less than 0.15 world units.
+Their outbound-only endpoints were tested in Godot and have **no**
+walkable landing collision, so attempting to disembark after the first
+leg would strand Ratchet in mid-air.
+
+Class-816 incoming routes **62** and **70** (+0x94) and shared
+continuation **61** (+0xbc) are recovered but still need their native
+state transitions mapped; they are not yet executed.
 
 The native PVar of taxi 921 has -1 for these path selectors, so OBP
 retains its model but does not allow boarding it.
@@ -51,35 +58,42 @@ retains its model but does not allow boarding it.
 ## Current Godot integration
 
 - Existing imported native taxi models, positions and identities remain intact.
-- At R&C1 LEVEL3 import, add a source-tagged payload with the authentic
-  outbound native XYZ spline points. No generic cross-game world change.
+- All five Kerwan taxi hulls have Godot collision derived from their actual
+  retail Moby render meshes. **Verified by direct Godot physics rays: 5/5
+  collider hits at the original taxi positions.** Other Mobies are unchanged.
+- At R&C1 LEVEL3 import, attach native XYZ splines, including the two
+  class-1012 source-backed return legs. No generic cross-game schema change.
 - Boarding near a routable taxi with T or Triangle starts flight.
-- The taxi model moves exactly along the original authored coordinates, with
-  interpolated steps, hiding the Ratchet mesh and pausing ordinary movement.
-- The endpoint uses a downward native-collision ray for disembarking.
+- Taxi models follow imported native waypoints in order. The player controller
+  is suspended while riding; class-1012 passengers return on their native
+  reverse path before disembarking at the original taxi.
+- Landing is permitted only on nearby upward-facing collision. A missing
+  destination surface logs an explicit warning and returns Ratchet safely
+  to the departure dock instead of dropping him into empty space.
 - The world/scene X-axis mirror is handled explicitly on entry, flight and exit.
 - One-time arrival/cooldown and cleanup on world teardown are implemented.
 
 **Host-created approximations, not retail facts:** 5.5-unit boarding radius,
 explicit T/Triangle interaction, 60 spline samples per second, interpolation
 between samples, immediate model reset on arrival, local player suspension,
-simple exit ray, and camera/audio presentation. The retail update functions
-have not been ported into C#.
+mesh-derived static collision, safe exit rays, and camera/audio presentation.
+The retail update functions have not been ported into C#.
 
 ## Validation
 
-- New engine-independent tests verify model gating, boarded vs parked taxis,
-  progress along source path samples, arrival, cooldown, and invalid delta.
+- Engine-independent tests verify model gating, boarded vs parked taxis,
+  progress along source path samples, native round trips, arrival, cooldown,
+  and invalid delta.
 - With `OBP_RAC1_ISO` set, tests reconstruct Kerwan from retail disc and
-  check all five models plus all four exact PVar outbound path IDs, path
-  sample counts, and endpoint coordinates.
+  check all five models plus all four exact PVar outbound path IDs, both
+  class-1012 native return selectors, sample counts, and endpoint geometry.
 - Full .NET suite, C# build and Godot headless world-load smoke are required
   before merge. Human boarding/playfeel acceptance is still outstanding.
 
 ## Next recovery targets
 
 Recover the retail spatial trigger volumes, full native state transitions,
-incoming/reverse routes, waypoint stepping and direction (not just the
-outbound spline), camera and Ratchet attach points, opening/closing
-animations, taxi-related audio, and checkpoint continuity. No PCSX2 needed
+class-816 incoming/continuation routes, automatic taxi movement, retail
+waypoint timing, camera and Ratchet attach points, opening/closing animations,
+taxi-related audio, and checkpoint continuity. No PCSX2 needed
 for static-code/level-data archaeology.

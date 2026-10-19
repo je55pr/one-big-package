@@ -14,7 +14,8 @@ public sealed record Rac1MetropolisTaxiStop(
     int NativeClassId,
     Rac1TaxiPoint Position,
     IReadOnlyList<Rac1TaxiPoint> OutboundPath,
-    string DestinationLabel);
+    string DestinationLabel,
+    IReadOnlyList<Rac1TaxiPoint>? ReturnPath = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -46,17 +47,18 @@ public sealed class Rac1MetropolisTaxiSession
     public const double BoardingRadius = 5.5;
     public const double ProvisionalPathSamplesPerSecond = 60;
     public const string OutboundPathFormat = "rac1-metropolis-outbound-native-xyz-v1";
+    public const string ReturnPathFormat = "rac1-metropolis-return-native-xyz-v1";
 
-    // The 4 outbound path indices are read from each placed taxi's actual
-    // PVar bytes, never assumed from instance order. Instance 921 has all
-    // route selectors -1 in the retail disc and remains a non-boardable model.
-    private static readonly (int Index, int Class, int OutboundOffset, string Label)[] Routes =
+    // Both class-1012 taxi paths form authored round trips. Their outbound
+    // endpoints have no safe walkable dock: passengers return before exiting.
+    // Instance 921 is the parked destination of the two class-816 routes.
+    private static readonly (int Index, int Class, int OutboundOffset, int ReturnOffset, string Label)[] Routes =
     [
-        (919, 816, 0xa8, "Ride the flying taxi"),
-        (920, 816, 0xa8, "Ride the flying taxi"),
-        (921, 816, -1, "Parked taxi"),
-        (961, 1012, 0x94, "Ride the flying taxi"),
-        (962, 1012, 0x94, "Ride the flying taxi"),
+        (919, 816, 0xa8, -1, "Ride the flying taxi"),
+        (920, 816, 0xa8, -1, "Ride the flying taxi"),
+        (921, 816, -1, -1, "Parked taxi"),
+        (961, 1012, 0x94, 0x90, "Ride the round-trip taxi"),
+        (962, 1012, 0x94, 0x90, "Ride the round-trip taxi"),
     ];
 
     private readonly List<Rac1MetropolisTaxiStop> _stops;
@@ -122,8 +124,36 @@ public sealed class Rac1MetropolisTaxiSession
                 BinaryPrimitives.WriteSingleLittleEndian(native.AsSpan(at + 8, 4), points[i].Z);
             }
             var added = (obj.NativePayloads ?? [])
-                .Append(new RuntimeOpaquePayload(OutboundPathFormat, native)).ToArray();
-            output.Add(obj with { NativePayloads = added });
+                .Append(new RuntimeOpaquePayload(OutboundPathFormat, native)).ToList();
+            if (route.ReturnOffset >= 0)
+            {
+                int returnIndex = BinaryPrimitives.ReadInt32LittleEndian(
+                    pvar.AsSpan(route.ReturnOffset, 4));
+                if (returnIndex < 0 || returnIndex >= paths.Count ||
+                    paths[returnIndex].Length < 2)
+                    throw new InvalidDataException(
+                        $"Kerwan taxi {route.Index} return path {returnIndex} is invalid.");
+                var returning = paths[returnIndex];
+                if (System.Numerics.Vector3.Distance(points[^1], returning[0]) > 0.15f ||
+                    System.Numerics.Vector3.Distance(returning[^1], points[0]) > 0.15f)
+                    throw new InvalidDataException(
+                        $"Kerwan taxi {route.Index} return path does not close its authored flight.");
+                var returnNative = new byte[4 + returning.Length * 12];
+                BinaryPrimitives.WriteInt32LittleEndian(
+                    returnNative.AsSpan(0, 4), returning.Length);
+                for (int i = 0; i < returning.Length; i++)
+                {
+                    int at = 4 + i * 12;
+                    BinaryPrimitives.WriteSingleLittleEndian(
+                        returnNative.AsSpan(at, 4), returning[i].X);
+                    BinaryPrimitives.WriteSingleLittleEndian(
+                        returnNative.AsSpan(at + 4, 4), returning[i].Y);
+                    BinaryPrimitives.WriteSingleLittleEndian(
+                        returnNative.AsSpan(at + 8, 4), returning[i].Z);
+                }
+                added.Add(new RuntimeOpaquePayload(ReturnPathFormat, returnNative));
+            }
+            output.Add(obj with { NativePayloads = added.ToArray() });
         }
         return output;
     }
@@ -169,8 +199,34 @@ public sealed class Rac1MetropolisTaxiSession
                     return null;
             }
 
+            Rac1TaxiPoint[] returning = [];
+            if (route.ReturnOffset >= 0)
+            {
+                var bytes = obj.NativePayloads?
+                    .SingleOrDefault(p => p.Format == ReturnPathFormat)?.Data;
+                if (bytes is null || bytes.Length < 28)
+                    return null;
+                int count = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0, 4));
+                if (count is < 2 or > 8192 || bytes.Length != 4 + count * 12)
+                    return null;
+                returning = new Rac1TaxiPoint[count];
+                for (int i = 0; i < count; i++)
+                {
+                    int at = 4 + i * 12;
+                    double x = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(at, 4));
+                    double nativeY = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(at + 4, 4));
+                    double nativeZ = BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(at + 8, 4));
+                    if (!double.IsFinite(x) || !double.IsFinite(nativeY) || !double.IsFinite(nativeZ))
+                        return null;
+                    returning[i] = new Rac1TaxiPoint(x, nativeZ, nativeY);
+                }
+                if (returning[0].DistanceSquared(outbound[^1]) > 0.15 * 0.15 ||
+                    returning[^1].DistanceSquared(position) > 0.15 * 0.15)
+                    return null;
+            }
+
             stops.Add(new Rac1MetropolisTaxiStop(
-                route.Index, route.Class, position, outbound, route.Label));
+                route.Index, route.Class, position, outbound, route.Label, returning));
         }
 
         return new Rac1MetropolisTaxiSession(stops);
@@ -215,10 +271,16 @@ public sealed class Rac1MetropolisTaxiSession
             return null;
         }
 
-        var path = taxi.OutboundPath;
-        double duration = (path.Count - 1) / ProvisionalPathSamplesPerSecond;
+        var outbound = taxi.OutboundPath;
+        var returning = taxi.ReturnPath is { Count: > 1 } ? taxi.ReturnPath : null;
+        double outwardDuration = (outbound.Count - 1) / ProvisionalPathSamplesPerSecond;
+        double duration = outwardDuration +
+            (returning is null ? 0 : (returning.Count - 1) / ProvisionalPathSamplesPerSecond);
         _elapsed = Math.Min(duration, _elapsed + deltaSeconds);
-        double sample = _elapsed * ProvisionalPathSamplesPerSecond;
+        bool flyingHome = returning is not null && _elapsed >= outwardDuration;
+        var path = flyingHome ? returning! : outbound;
+        double legElapsed = flyingHome ? _elapsed - outwardDuration : _elapsed;
+        double sample = Math.Min(path.Count - 1, legElapsed * ProvisionalPathSamplesPerSecond);
         int first = Math.Min(path.Count - 1, (int)sample);
         int second = Math.Min(path.Count - 1, first + 1);
         double fraction = sample - Math.Floor(sample);
@@ -227,7 +289,8 @@ public sealed class Rac1MetropolisTaxiSession
         if (justArrived) _arrivalReported = true;
 
         return new Rac1TaxiFlight(
-            taxi, position, path[^1], _elapsed / duration, justArrived);
+            taxi, position, returning is null ? outbound[^1] : returning[^1],
+            _elapsed / duration, justArrived);
     }
 
     public void CompleteArrival()
