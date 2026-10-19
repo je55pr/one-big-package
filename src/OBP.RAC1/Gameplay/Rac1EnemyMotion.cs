@@ -52,7 +52,8 @@ public sealed class Rac1EnemyMotion
     /// <summary>0x257470 receives the authored reward copied from packed placement+0x10.</summary>
     public static int RewardCentre(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId is not (749 or 1440))
+        if (source.SourceGame != "rac1" || source.NativeClassId is not
+            (749 or 1440 or Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot))
             throw new ArgumentException("Source is outside the admitted enemy families.", nameof(source));
         var payloads = source.NativePayloads?.Where(payload => payload.Format == Rac1BoltCrate.InstancePayloadFormat).ToArray();
         if (payloads is not [{ Data.Length: 0x78 }]) throw new InvalidDataException("Enemy requires its exact authored placement record.");

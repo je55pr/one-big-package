@@ -81,6 +81,9 @@ public sealed class Rac1RatchetNanotechSession
         return ApplyRecoveredEnemyDamage();
     }
 
+    /// <summary>Provisional Aridia contact consequence. No retail attack descriptor is claimed.</summary>
+    public Rac1RatchetNanotechSnapshot ApplyHostAridiaContactDamage() => ApplyRecoveredEnemyDamage();
+
     private Rac1RatchetNanotechSnapshot ApplyRecoveredEnemyDamage()
     {
         if (_lifeState != Rac1RatchetLifeState.Alive)

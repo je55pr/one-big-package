@@ -12,6 +12,7 @@ public sealed class Rac1MobySequenceClock
     private RuntimeObjectAnimationSample? _previous;
     private bool _directSoundPending;
     public int Sequence { get; private set; }
+    public bool SupportsSequence(int sequence) => _asset.Clips.ContainsKey(sequence);
     public bool Wrapped { get; private set; }
     public bool Blending => _blendLeft > 0;
     public float Multiplier { get; set; } = 1;
