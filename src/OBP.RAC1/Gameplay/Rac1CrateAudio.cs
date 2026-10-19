@@ -38,8 +38,10 @@ public static class Rac1CrateAudio
         var result = new Dictionary<(int, int), Sound>();
         var classOffsets = Rac1StaticClasses.ReadMobyTable(core).ToDictionary(row => row.OClass, row => row.AssetOffset);
         foreach (var entry in Rac1ClassSoundRemap.Read(core).Where(entry =>
-                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is >= 13 and <= 16 or 749 or 1440 || Rac1BoltCrate.IsCrateClass(entry.Key))))
+                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is >= 13 and <= 16 or 121 or 192 or 749 or 1440 || Rac1BoltCrate.IsCrateClass(entry.Key))))
         {
+            int cls = classOffsets[entry.Key];
+            ReadOnlySpan<byte> payload = cls > 0 ? core.Assets.AsSpan(cls) : Rac1GlobalMoby.Read(core, entry.Key).Payload;
             for (int local = 0; local < entry.Value.Count; local++)
             {
                 int id = entry.Value[local];
@@ -50,14 +52,13 @@ public static class Rac1CrateAudio
                 // scripted grain programs into an incorrect representative sound.
                 if (sound.Grains is not [{ Type: 1, Delay: 0, Tone: { } tone }]) continue;
                 var pcm = bank.DecodeTone(tone);
-                int cls = classOffsets[entry.Key];
-                if (cls <= 0 || cls > core.Assets.Length - 0x48 || local >= core.Assets[cls + 0xd])
+                if (payload.Length < 0x48 || local >= payload[0xd])
                     throw new InvalidDataException("R&C1 class SoundDef/remap count differs.");
-                long at = (long)cls + BinaryPrimitives.ReadInt32LittleEndian(core.Assets.AsSpan(cls + 0x28, 4)) + local * 0x20L;
-                if (at < cls + 0x48 || at > core.Assets.Length - 0x20)
+                long at = BinaryPrimitives.ReadInt32LittleEndian(payload.Slice(0x28, 4)) + local * 0x20L;
+                if (at < 0x48 || at > payload.Length - 0x20)
                     throw new InvalidDataException("R&C1 class SoundDef is outside assets.");
-                int pitchMin = BinaryPrimitives.ReadInt32LittleEndian(core.Assets.AsSpan((int)at + 0x10, 4));
-                int pitchMax = BinaryPrimitives.ReadInt32LittleEndian(core.Assets.AsSpan((int)at + 0x14, 4));
+                int pitchMin = BinaryPrimitives.ReadInt32LittleEndian(payload.Slice((int)at + 0x10, 4));
+                int pitchMax = BinaryPrimitives.ReadInt32LittleEndian(payload.Slice((int)at + 0x14, 4));
                 if (pitchMin < short.MinValue || pitchMax > short.MaxValue || pitchMin > pitchMax)
                     throw new InvalidDataException("R&C1 class SoundDef pitch range is invalid.");
                 var clip = new RuntimeAudioClip(ApproximateToneRate(tone.CenterNote, tone.CenterFine, 0), 1, pcm.Samples);

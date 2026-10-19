@@ -6,6 +6,8 @@ namespace OneBigPackage;
 
 public partial class PlayerHost
 {
+    public bool Rac1EquippedItemHeld => !Scripted && !DevelopmentControls.FlyEnabled &&
+        !Rac1Hanging && !Rac1SwingshotActive && !Rac1DevelopmentSwingshotPreview && _liveInput.TraversalHeld;
     public Rac1MovementCapabilities Rac1MovementEquipment { get; set; }
     public Rac1TraversalEquipmentId? Rac1ActiveBackpack { get; set; }
     public bool Rac1ClankAvailable { get; set; }

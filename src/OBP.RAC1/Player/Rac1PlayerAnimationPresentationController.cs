@@ -167,7 +167,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController : IPlayerA
 
     private void CompleteAttackIfNeeded()
     {
-        if (_traversalSelection?.NativeAction is 0x13 or 0x14 or 0x15)
+        if (_traversalSelection?.NativeAction is 0x13 or 0x14 or 0x15 or 0x23)
             return;
         if (Current.SemanticState != PlayerAnimationState.Attack ||
             Current.ElapsedAt(_clockSeconds) < CurrentClip.DurationSeconds)

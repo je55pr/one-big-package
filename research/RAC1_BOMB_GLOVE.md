@@ -41,7 +41,7 @@ Launch also initializes two countdown-like fields:
 
 - PVar `+0x54 = time(300)`, decremented by `0x001fef98`;
 - PVar `+0x6a = time(30)`.
-Neither field is promoted as a generic projectile lifetime. The short countdown reaches zero while the controlled projectile continues flying. The representative shot contacts while the long countdown is still `235`, so the trace does not witness natural expiry at zero.
+The short countdown reaches zero while the controlled projectile continues flying. The representative shot contacts while the long countdown is still `235`, so that trace does not witness natural expiry. Further static recovery identifies the long countdown's zero consumer at `0x2ae444..0x2ae460`: it selects the impact/effect path. OBP uses 300 ticks to enter the same blast state if geometry is never encountered; 30 is not an expiry.
 
 ## Contact, splash damage and terminalization
 
@@ -53,9 +53,129 @@ The controlled shot follows native states `1 -> 2 -> 0xfe`: state `1` begins on 
 
 The class-`0x4a` `1.0 / 0x00010000` direct-record path remains valid evidence for a **separate projectile family**. It is no longer used as Bomb Glove provenance.
 
-## Promotion boundary
+## Held assets and throw presentation (19 October recovery)
 
-Promoted into `OBP.RAC1`: item-10 ammo accounting, class-`0xc0` weapon ownership, class-`0x79` projectile identity, `0 -> 1` launch, immediate replacement staging, 20-tick fire gate, source ownership at projectile PVar `+0x50`, position-plus-step ballistic recurrence, authority-state float32 vertical decrement `0.003055555745959282`, the 300/30 countdown fields as countdowns only, state-`2` contact transition, observed `0xfe` projectile terminalization, and the `2.0 / 0x00830000` contact-volume damage envelope. Candidate contact facts also carry the shared target lifetime/presence projection; this matters for victims such as class 749 whose terminal lifetime can be proven even when its exact `0xfd`/`0xfe` selector is unresolved. Such inactive/terminal victims are rejected without inventing a native terminal byte.
-Deliberately unpromoted: a universal launch-vector formula, natural lifetime/expiry at either countdown, native contact radius/shape, a generic explosion radius, class-749 health consequence for the `2.0` splash envelope, faction/team/friendly immunity beyond source-self exclusion, visual/audio effects, and any claim that unrelated class-`0x4a` behavior is Bomb Glove behavior.
+The equipment row at `0x179ac0 + 10*0x4c` selects attachment slot6 and class192.
+Slot6 in `0x209240`'s semantic-joint query list is semantic6; class0's bounded
+attachment chain ends at **Ratchet joint54**, independently of wrench joint56.
+`0x20f6f8` applies the selected socket translation and matrix.
 
-The live Godot host therefore still owns unresolved presentation launch geometry, contact geometry and timeout presentation. It no longer converts the recovered Bomb splash envelope into the previously assumed class-749 `1.0 -> 0.0` consequence.
+Class192 is in the compressed global gadget directory, not a level-local model
+payload. Its LEVEL0 compressed size is 19180 and SHA-256 is
+`cddebd40b4c00a06edbe306c671f2d2f10e474e0e1b1455f325afa2a57a02d4f`.
+The decoded mesh has 1140 vertices, 1200 triangles and 17 joints. Its sparse
+sequence table has three populated slots: sequence0 has eleven frames at rate
+0.5; sequences1/2 are static poses. The host uses sequence1 while held and
+sequence0 on firing; this visible selection remains an adapter policy until the
+generic weapon-animation selector is recovered. The mesh and frame poses are
+retail data. Sequence0's timed local sound1 supplies the throwing sound.
+
+`0x2c2710..0x2c27c8` constructs the staged bomb position from class192 semantic0
+and its local offset `(0,-.09,-.02)`. The staged and flying bomb both use actual
+class121 geometry: 186 vertices, 160 triangles, three packets and no joints.
+Neither the glove nor bomb uses a procedural sphere or a calibrated root socket.
+
+Player action35 entry at `0x2262ec` selects body sequence44, frame9, blend7.
+The sequence contains 27 frames at rate0.25, with authored timeline positions
+0,2,...52. `0x231bac..0x231c44` permits input cancellation after authored time19
+and returns to the ordinary action at21. The host plays the grounded throw at
+the recovered entry/rate and returns its animation to the ordinary native clock.
+Airborne/traversal movement retains its owning animation. Full action35 movement
+and its contextual cancellation predicates are not recovered by this change.
+
+## Ordinary launch solution
+
+`0x2c2954..0x2c29c8` constructs the ordinary launch origin relative to native
+body origin P+80: planar radius f32 `0x3f5be9fb`, angle offset f32 `0xbeb953df`,
+height f32 `0x3efb4cc2`. The host maps its feet origin back to the body origin
+using the same geometric-base alignment as the avatar.
+
+The unupgraded ordinary target is 8.5 units ahead. `0x2c2488` caps a target
+farther than8.5 to8.49, selects native facing for a target closer than1.5 or
+outside the f32 `0x3f5f66f3` angular gate, and sets horizontal step `8.5*dt`.
+`0x25abf0` solves vertical step from planar travel time and gravity; the caller
+caps upward step at `gravity*(8.5/horizontalStep)/2`. This recovers the retained
+approximately .0916665 upward step. World position advances before gravity is
+subtracted. Native spin advances X by `2.09439516*dt`, Y by `7.85398149*dt`.
+Launch `0x2ad350..0x2ad390` also queries the body-to-launch segment at the
+launch height and clips an obstructed origin, preventing spawning past a thin wall.
+
+The host's target discovery cone, target centre and line-of-sight allowance are
+OBP policies. Native target history, special moving-target prediction,
+platform inheritance, strafe/first-person variants and upgraded aiming are
+outside this ordinary launch contract.
+
+## Blast and effects
+
+`0x2af30c..0x2af3f8` hides the bomb, retains its impact position, queries an
+expanding volume and terminalizes after counter15. With upgrade byte0 the
+query radius interpolates **.5 to2.5** over ages0..15. Damage remains2 with
+flags `0x00830000`. The session keeps each victim's consumption of a projectile
+distinct while allowing later expansion to reach additional targets. Veldin
+toad/robot consequences now use the independently recovered enemy damage paths.
+
+The source effect path creates ten small, four large and one additional class122
+fragments through `0x2af450`. Small lifetime is60..120, large lifetime60..90;
+class122 update `0x2af5b8` applies position-plus-step, gravity `14.6*dt²`, spin
+and a last-quarter shrink. Fragment impact-basis construction remains an OBP
+upper-hemisphere approximation. The source mesh has29 vertices/16 triangles.
+
+`0x2df808` creates expanding class1192 models. Registration at `0x1ea6c0`
+binds1192 to `0x2acad8`, which grows scale linearly, rotates each axis byπ*dt
+and fades alpha in the final half. The ordinary effect layers supplied at
+`0x2aeb90..0x2aec8c` have sizes4/3.5/3 and lifetimes20/27/29, coloured
+orange/red/dark red. Two additional white/orange layers are distance-gated.
+The decoded burst mesh has229 vertices/320 triangles. Local sound0 on class121
+is the ordinary explosion association at `0x2aee18..0x2aee24`; class-remapped
+bank audio is decoded through the same bounded single-tone path as crate audio.
+
+The particle lookup is separate from Moby textures. Loader `0x2447f8..0x244818`
+passes core+64 (Part pixel base) and core+6c (lookup descriptor) to `0x23f630`.
+Class122's trail constructor `0x269958` reads pool type4's initial texture,
+which is Part texture0 in LEVEL0. Class79 emits150 type34 sparks through
+`0x26f080`, which reads lookup34 at `0x1b2108`: LEVEL0 Part texture33.
+OBP uses these actual textures. Godot billboarding, particle dynamics, colour
+ramps, size projection and blending remain presentation approximations; native
+pool scheduling/collision, complete texture programmes and GS equations are not
+claimed exact. Shader/texture/mesh resources are shared between emitters.
+
+The Part table's 16-byte records are **palette offset, GS flags, pixel offset,
+square side length**. Both offsets are relative to the Part bank at core+64;
+its palettes are in that bank, independently of ordinary Moby GS-RAM palettes.
+The bounded decoder applies the shared PS2 CLUT reorder and alpha conversion.
+Synthetic contrasting palette/pixel offsets and actual rendered textures guard
+against the initial incorrect interchange of these offsets. The format is also
+corroborated by [Wrench's particle unpacker at the pinned reference revision](https://github.com/chaoticgd/wrench/blob/e67ea46e5e60ec52a0c31fcde1e3f46b20aa4cfb/src/wrenchbuild/level/level_textures.cpp#L328),
+used as corroboration rather than game-behaviour authority.
+
+## Current validation and boundaries
+
+`Rac1BombProjectileTests` pins the new executable instructions, global asset
+hash, skeleton/socket tracks, sequence44, particle lookup/texture identities,
+launch recurrence, blast expansion and burst lifetime. `Rac1BombGloveTests`
+also verifies once-per-victim consumption across successive blast queries.
+All source-dependent checks read the authorized local ISO; no payload is stored.
+
+`tools/rac1-bomb-glove-smoke.ps1` checks actual host models, animated staging,
+sequence44, the visible arc, floor/wall impacts, two-crate splash, held cadence,
+empty ammo, run/throw/idle interpolation, weapon switching and effect cleanup.
+`-Rendered -CaptureDirectory <directory>` additionally produces GPU captures in
+an unfocusable offscreen window without writing personal window preferences.
+It is a staged integration fixture, not a live retail experiment.
+
+Collision is explicitly host-owned: a Godot swept sphere for terrain, bounded
+enemy/crate admission and an occlusion adapter. The exact native query primitive,
+native actor collision volumes and contextual aiming remain unresolved.
+The host occlusion ray excludes damageable enemy/crate bodies; their own bounds
+must not reject their damage query or shield a whole stack. Terrain and walls
+still occlude the ray, without a fixed endpoint allowance. A saved Veldin throw
+reproduced the original self-occlusion bug and now breaks the nearby stack;
+the integration gate separately checks that a wall protects a crate.
+Faction/team rules beyond the admitted enemy/crate slice are not generalized.
+
+Validation on 19 October: Release and authorized retail suites each pass1414
+tests. The Bomb Glove gate passes headlessly and with inspected GPU captures;
+the existing wrench, Veldin enemy, combat-contract and ordinary-play gates pass.
+The latter two use their prescribed seed1440. New world queries also exposed
+inactive crates retaining invisible physics bodies; presence changes now update
+crate collision layers consistently with enemies, with a direct query regression.

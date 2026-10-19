@@ -125,6 +125,7 @@ public static class Rac1BombGlove
 public sealed class Rac1BombGloveSession
 {
     private readonly HashSet<long> _launchedProjectileIds = [];
+    private readonly Dictionary<long, HashSet<(int Class, int Instance)>> _blastVictims = [];
     private readonly Rac1WeaponInventory? _inventory;
     private int _ammo;
     private int _fireCooldownTicksRemaining;
@@ -260,8 +261,7 @@ public sealed class Rac1BombGloveSession
             if (damage is not null) damageResults.Add(damage);
         }
 
-        bool completed = damageResults.Count > 0 &&
-                         _launchedProjectileIds.Remove(projectileId);
+        bool completed = damageResults.Count > 0 && CompleteProjectile(projectileId);
         return new Rac1BombGloveContactResolution(
             projectileId,
             damageResults.AsReadOnly(),
@@ -269,11 +269,32 @@ public sealed class Rac1BombGloveSession
     }
 
     /// <summary>
-    /// Explicit host cleanup for a projectile removed for presentation-only
-    /// reasons such as the current unresolved visible lifetime fallback.
+    /// The class79 state2 blast queries every tick. Native damage-index
+    /// consumption permits each victim to consume this projectile once, while
+    /// later expansion may still reach other victims. Geometry is host supplied.
     /// </summary>
-    public bool CompleteProjectile(long projectileId) =>
-        _launchedProjectileIds.Remove(projectileId);
+    public Rac1BombGloveContactResolution ResolveExplosionVolume(long projectileId,
+        IReadOnlyList<Rac1MobyContactFacts> contacts)
+    {
+        ArgumentNullException.ThrowIfNull(contacts);
+        if (!_launchedProjectileIds.Contains(projectileId)) return new(projectileId, [], false);
+        if (!_blastVictims.TryGetValue(projectileId, out var victims))
+            _blastVictims.Add(projectileId, victims = []);
+        var results = new List<Rac1BombGloveDamageResult>();
+        foreach (var facts in contacts)
+        {
+            var result = ResolveGoal1Contact(projectileId, facts);
+            if (result is not null && victims.Add((result.TargetNativeClassId, result.TargetInstanceIndex)))
+                results.Add(result);
+        }
+        return new(projectileId, results, false);
+    }
+
+    public bool CompleteProjectile(long projectileId)
+    {
+        _blastVictims.Remove(projectileId);
+        return _launchedProjectileIds.Remove(projectileId);
+    }
 
     private int CurrentAmmo => _inventory?.FirstRangedAmmo ?? _ammo;
 

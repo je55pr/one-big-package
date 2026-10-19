@@ -77,7 +77,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         bool terminal = !selected.Loop && !sample.IsBlending && sample.NextFrame == 0;
         _traversalClock.PlaybackMultiplier = terminal ? 0 : selected.PlaybackMultiplier;
         _currentSequenceId = selected.Sequence;
-        var semantic = selected.NativeAction is 0x13 or 0x14 or 0x15 ? PlayerAnimationState.Attack :
+        var semantic = selected.NativeAction is 0x13 or 0x14 or 0x15 or 0x23 ? PlayerAnimationState.Attack :
             state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.Idle
             ? PlayerAnimationState.Fall : state;
         Current = Presentation(semantic, selected.Sequence, selected.NativeAction,

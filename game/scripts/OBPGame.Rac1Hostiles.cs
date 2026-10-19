@@ -52,6 +52,8 @@ public partial class OBPGame
             runtime,
             RuntimeWorldScene.ToRuntimeTransform(node.Root.Transform));
         node.ApplyState(_rac1MobyRuntime.SetPresence(runtime, presence));
+        if (_rac1CrateBodies.TryGetValue(node.Source.InstanceIndex, out var crateBody) && IsInstanceValid(crateBody))
+            crateBody.CollisionLayer = presence == RuntimeEntityPresence.Active ? 1u : 0;
         if (_rac1Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy))
         {
             enemy.Body.CollisionLayer = presence == RuntimeEntityPresence.Active && !enemy.RewardEmitted ? 1u : 0;

@@ -1,5 +1,6 @@
 using OBP.Core.Math;
 using OBP.RAC1.Camera;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Camera;
 using OneBigPackage;
@@ -43,10 +44,50 @@ public sealed class MovementReproStateTests
         {
             MovementReproState saved = Sample();
             MovementReproStateFile.Save(path, saved);
-            Assert.Throws<InvalidDataException>(() => MovementReproStateFile.Save(path, saved with { Version = 2 }));
+            Assert.Throws<InvalidDataException>(() => MovementReproStateFile.Save(path, saved with { Version = 99 }));
             Assert.Equal(saved, MovementReproStateFile.Load(path));
         }
         finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void WorldRoundtrip_RetainsDefeatedObjectsInventoryAndBoltsWithoutNativePayloads()
+    {
+        var inventory = new Rac1WeaponInventory(true, Rac1WeaponId.FirstRanged, 3);
+        var world = new MovementReproWorld(
+            [new(new(749, 143), 12, true), new(new(1440, 197), 8, true), new(new(500, 104), 0xfe, true)],
+            inventory.CapturePersistentState(), inventory.CurrentItemId, 1234);
+        MovementReproState saved = Sample() with { Version = MovementReproState.CurrentVersion, World = world };
+        string path = Path.Combine(Path.GetTempPath(), $"obp-world-repro-{Guid.NewGuid():N}.json");
+        try
+        {
+            MovementReproStateFile.Save(path, saved);
+            MovementReproState restored = MovementReproStateFile.Load(path);
+            Assert.Equal(saved.Player, restored.Player);
+            Assert.Equal(world.InactiveObjects.ToArray(), restored.World!.InactiveObjects.ToArray());
+            var restoredInventory = new Rac1WeaponInventory(restored.World.Inventory, restored.World.CurrentItemId);
+            Assert.Equal(Rac1WeaponId.FirstRanged, restoredInventory.Equipped);
+            Assert.Equal(3, restoredInventory.FirstRangedAmmo);
+            Assert.Equal(1234, restored.World.Bolts);
+            string json = File.ReadAllText(path);
+            Assert.DoesNotContain("PVar", json, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("NativePayload", json, StringComparison.OrdinalIgnoreCase);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void WorldValidation_RejectsDuplicateIdentitiesBadStatesAndInvalidInventory()
+    {
+        var inventory = Rac1WeaponInventory.CreateOpeningVeldinWitness().CapturePersistentState();
+        var world = new MovementReproWorld([], inventory, (int)Rac1WeaponId.Wrench, 0);
+        var defeated = new MovementReproInactiveObject(new(749, 143), 12, true);
+        Assert.Throws<InvalidDataException>(() => (Sample() with { Version = 2 }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { InactiveObjects = [defeated, defeated] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { InactiveObjects = [defeated with { NativeState = 256 }] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { InactiveObjects = [new(new(500, 104), 0xfe, false)] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { Inventory = inventory with { Ammo = [-1] } }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { Bolts = -1 }).Validate());
     }
 
     [Fact]

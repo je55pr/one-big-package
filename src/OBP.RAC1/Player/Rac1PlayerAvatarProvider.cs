@@ -121,6 +121,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             25 => ("wrench-combo-third", PlayerAvatarAnimationRole.AttackVariant),
             26 => ("wrench-comet-strike", PlayerAvatarAnimationRole.AttackVariant),
             43 => ("wrench-hyper-strike", PlayerAvatarAnimationRole.AttackVariant),
+            44 => ("bomb-glove-throw", PlayerAvatarAnimationRole.AttackVariant),
             17 => ("thruster-high-jump", PlayerAvatarAnimationRole.JumpVariant),
             18 => ("heli-stretch-jump", PlayerAvatarAnimationRole.JumpVariant),
             19 => ("pack-glide", PlayerAvatarAnimationRole.Glide),
@@ -158,6 +159,8 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
                 new Dictionary<string, IReadOnlyList<PlayerAvatarAttachmentPose>>
                 {
                     [Rac1WrenchAttachment.SocketKey] = clip.WrenchSocketFrames,
+                    [Gameplay.Rac1BombProjectileSession.GloveSocketKey] = clip.BombGloveSocketFrames
+                        ?? throw new InvalidDataException("R&C1 Bomb Glove attachment track is absent."),
                 });
     }
 

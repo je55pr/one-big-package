@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
@@ -22,6 +23,10 @@ public partial class OBPGame
     private Rac1WrenchAsset.Asset? _rac1WrenchAsset;
     private string? _rac1WrenchSourcePath;
     private Rac1WrenchView? _rac1WrenchView;
+    private OBP.RAC1.Gameplay.Rac1BombGloveAssets.Asset? _rac1BombGloveAsset;
+    private string? _rac1BombGloveSourcePath;
+    private Rac1BombGloveView? _rac1BombGloveView;
+    private Node3D? _rac1StagedBombView;
 
     /// <summary>
     /// Resolve player presentation from the active source game. A missing native
@@ -85,6 +90,18 @@ public partial class OBPGame
 
                 _rac1WrenchView = new Rac1WrenchView(_rac1WrenchAsset, _playerAvatar);
                 view.AddChild(_rac1WrenchView);
+                if (_rac1BombGloveAsset is null || !string.Equals(_rac1BombGloveSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
+                {
+                    _rac1BombGloveAsset = OBP.RAC1.Gameplay.Rac1BombGloveAssets.Load(source.Path);
+                    _rac1BombGloveSourcePath = source.Path;
+                }
+                _rac1BombGloveView = new Rac1BombGloveView(_rac1BombGloveAsset, _playerAvatar,
+                    new WorldMaterialFactory(_world! with { Textures = _rac1BombGloveAsset.Textures }));
+                view.AddChild(_rac1BombGloveView);
+                _rac1StagedBombView = CreateRac1EffectNode(121, "Rac1RetailStagedBomb_Class121");
+                _rac1StagedBombView.Reparent(_rac1BombGloveView, keepGlobalTransform: false);
+                // World effect meshes map native X to -sceneX; avatar-local meshes map it to +X.
+                _rac1StagedBombView.Rotation = new(0, MathF.PI, 0);
             }
             player.VisualRoot.ReplaceVisual(view);
             player.ConfigureAvatarPresentation((float)_playerAvatar.AnimationBounds.Height);
@@ -152,6 +169,8 @@ public partial class OBPGame
     {
         if (_playerAvatarAnimationController is not Rac1PlayerAnimationPresentationController controller)
             return;
+        StepRac1BombWeaponPhysics();
+        input = SelectRac1BombThrowAnimation(controller, input);
         _playerAvatarClock += Math.Max(0, delta);
         _playerAvatarAnimationSink?.SetAnimationPresentation(
             controller.StepOrdinaryAnimation(state, _playerAvatarClock, input));
@@ -163,7 +182,16 @@ public partial class OBPGame
             if (_rac1WrenchView is not null &&
                 controller.CurrentAttachmentPose(Rac1WrenchAttachment.SocketKey) is { } hand)
                 _rac1WrenchView.StepAttached(hand, player.Rac1WrenchFrame, _rac1WrenchThrow.Active);
+            if (_rac1BombGloveView is not null &&
+                controller.CurrentAttachmentPose(OBP.RAC1.Gameplay.Rac1BombProjectileSession.GloveSocketKey) is { } gloveHand)
+            {
+                _rac1BombGloveView.StepAttached(gloveHand, _rac1BombThrowGeneration);
+                if (_rac1StagedBombView is not null)
+                    _rac1StagedBombView.Position = _rac1BombGloveView.BombLocal;
+            }
         }
+        StepRac1BombProjectilesPhysics();
+        StepRac1BombEffectsPhysics();
         _playerAvatarView?.SetClock(_playerAvatarClock);
         RefreshRac1WrenchPresentationVisibility();
     }
@@ -171,6 +199,7 @@ public partial class OBPGame
     private void ResetPlayerAvatarPhysics()
     {
         ResetRac1WrenchHost();
+        _rac1BombThrowActive = false;
         _playerAvatarClock = 0;
         if (_playerAvatarAnimationController is Rac1PlayerAnimationPresentationController controller)
         {
@@ -208,11 +237,19 @@ public partial class OBPGame
         _playerAvatarAnimationController = null;
         _playerAvatarView = null;
         _rac1WrenchView = null;
+        _rac1BombGloveView = null;
+        _rac1StagedBombView = null;
         _playerAvatarClock = 0;
     }
 
     private void RefreshRac1WrenchPresentationVisibility()
     {
+        bool bombVisible = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged &&
+            _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
+        if (_rac1BombGloveView is not null && IsInstanceValid(_rac1BombGloveView))
+            _rac1BombGloveView.Visible = bombVisible;
+        if (_rac1StagedBombView is not null && IsInstanceValid(_rac1StagedBombView))
+            _rac1StagedBombView.Visible = bombVisible && _rac1Weapons.FirstRangedAmmo > 0;
         if (_rac1WrenchView is null || !GodotObject.IsInstanceValid(_rac1WrenchView))
             return;
         _rac1WrenchView.Visible =

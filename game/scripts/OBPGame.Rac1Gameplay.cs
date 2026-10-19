@@ -22,12 +22,6 @@ public partial class OBPGame
     // Host presentation anchor only. Spatial admission dimensions live in the
     // explicitly non-retail Rac1WrenchHostContactPolicy.
     private const float Rac1WrenchHostRootHeight = 1.0f;
-    // Host-only launch-vector/contact/expiry presentation. The native class-0x79
-    // ballistic recurrence is recovered in OBP.RAC1, but host launch initialization,
-    // contact geometry and a terminal lifetime consumer remain unresolved.
-    private const float Rac1BombPresentationSpeed = 18f;
-    private const float Rac1BombPresentationLifetime = 2f;
-    private const float Rac1BombHostileContactRadius = 0.9f;
 
     private readonly Rac1WrenchCombatController _rac1Wrench = new();
     private Rac1MobyPersistenceSession _rac1MobyPersistence = new(levelId: 0);
@@ -51,7 +45,6 @@ public partial class OBPGame
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1HostileNodes = [];
     private bool _rac1BombFireRequested;
     private Rac1BombGloveContactResolution? _rac1LastBombContactResolution;
-    private double _rac1BombTickAccumulator;
     // Raw retail player-state word at +0x20a4. Its semantics remain intentionally unnamed.
     private int _rac1NativePlayerState20A4;
     private Rac1RatchetNanotechSnapshot? _rac1LastEnvironmentalDeathBoundary;
@@ -86,7 +79,7 @@ public partial class OBPGame
         _rac1HostileNodes.Clear();
         _rac1BombFireRequested = false;
         _rac1LastBombContactResolution = null;
-        _rac1BombTickAccumulator = 0d;
+        ResetRac1BombPresentation();
         _rac1NativePlayerState20A4 = 0;
         _rac1LastEnvironmentalDeathBoundary = null;
         _rac1LastEnvironmentalDeathPosition = default;
@@ -192,7 +185,7 @@ public partial class OBPGame
 
     private void TickRac1Gameplay(double delta)
     {
-        if (_world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
+        if (_movementStateLoading || _world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
 
         _rac1Nanotech.Actions.Update();
         _player.Rac1GameplayState = _rac1Nanotech.Probe();
@@ -213,8 +206,6 @@ public partial class OBPGame
         }
 
         TickRac1Swing(delta);
-        TickRac1BombGlove(delta);
-        TickRac1Projectiles(delta);
         TickRac1Hostiles(delta);
         TickRac1Pickups(delta);
     }

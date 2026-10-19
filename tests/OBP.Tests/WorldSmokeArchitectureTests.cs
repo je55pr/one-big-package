@@ -35,7 +35,8 @@ public sealed class WorldSmokeArchitectureTests
         Assert.Contains("RunMovementSmokeAsync,", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1WrenchSmokeAsync,", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1EnemySmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunMovementStateSmokeAsync));", harness, StringComparison.Ordinal);
+        Assert.Contains("RunMovementStateSmokeAsync,", harness, StringComparison.Ordinal);
+        Assert.Contains("RunRac1BombGloveSmokeAsync", harness, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -51,6 +52,7 @@ public sealed class WorldSmokeArchitectureTests
             "OBPGame.Rac1EnvironmentalDeathSmoke.cs",
             "OBPGame.Rac1StartupVisibilitySmoke.cs",
             "OBPGame.Rac1WrenchSmoke.cs",
+            "OBPGame.Rac1BombGloveSmoke.cs",
             "OBPGame.MovementStateSmoke.cs",
         })
         {

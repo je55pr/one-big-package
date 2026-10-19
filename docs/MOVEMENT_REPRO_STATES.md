@@ -13,14 +13,23 @@ coordinates and facing, camera/control state including its recurrence, movement
 equipment and development previews. It also records the host assembly ID so
 different compiled builds can be identified. Loading preserves the saved origin
 without the normal spawn-to-ground snap. Controls and movement start neutral.
+Version2 also stores removed world objects, inventory, selected item, ammo and
+the bolt wallet. Defeated enemies stay absent, including enemies still playing
+their lethal reaction when saved. Broken crates retain removal and UID state;
+loading does not emit their rewards again. Collected authored bolts stay absent.
 Player positions use Godot scene coordinates `(-native X, native Z, native Y)`.
 The named source-camera recurrence fields keep their native coordinate convention.
 
-These are development movement bookmarks. Loading starts a fresh copy of the
-level, including enemies and crates; it does not restore campaign progression,
-world mutations, airborne motion, attack clocks or animation phase. Saving
-requires a stationary, alive, grounded player with fly disabled. They are OBP
-files and are not compatible with PCSX2 states or retail memory-card saves.
+These are development repro bookmarks. Loading rebuilds the level's controllers
+and applies saved removals. It does not restore campaign progression, living
+enemy positions/AI clocks, player health, airborne motion, attack clocks,
+animation phase or transient projectiles/loot effects. Saving requires a
+stationary, alive, grounded player with fly disabled. They are OBP files and are
+not compatible with PCSX2 states or retail memory-card saves.
+
+Older Version1 files remain loadable but contain only the player/camera setup:
+their enemies and crates reset. After clearing enemies, save again with F12 to
+record their absence. The loader identifies these older files in its notice.
 
 ## Replay without computer use
 

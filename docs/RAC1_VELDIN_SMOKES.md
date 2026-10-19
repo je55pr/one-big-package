@@ -6,6 +6,29 @@ Require each gate's explicit `PASS` line as well as a zero process exit code.
 Closing an automated test window is a cancellation and now exits with failure;
 older runs with `desktop-window-close` are not passed smoke evidence.
 
+## Bomb Glove presentation and impact gate
+
+`tools/rac1-bomb-glove-smoke.ps1` checks the retail class192 glove and animated
+joint54 socket, staged/flying class121 bomb, sequence44 throw, ballistic arc,
+floor/wall impact, expanding splash against two crates, held-fire cadence,
+empty ammo, ordinary standing interpolation after running/throwing, weapon
+switching and complete effect cleanup. Models, source-remapped sounds,
+class122 fragments, class1192 burst layers and particle types4/34 texture art
+come from the local retail source. Collision bounds, target discovery and
+particle rendering/dynamics remain explicit OBP adapters.
+
+This is a staged host fixture, not a live retail replay. It uses no emulator.
+The default run is headless. `-Rendered -CaptureDirectory <directory>` uses an
+unfocusable offscreen window and saves GPU captures without changing personal
+window preferences. Require `[bomb-glove-smoke] PASS` and exit0.
+
+The fixture checks diagonal crate bounds and a wall-protected crate: damageable
+objects do not occlude themselves or neighbouring splash victims, while walls
+and terrain still block the host occlusion query. Pass `-State <state.json>` to
+load a local saved setup and throw immediately without moving Ratchet or any
+crate. This mode requires the three closest crates within the blast radius to
+break, reports `[bomb-repro] PASS`, and does not overwrite the input save.
+
 ## Ordinary-play Veldin gate
 
 `tools/rac1-veldin-play-smoke.ps1` launches `rac1:LEVEL0` through the normal

@@ -11,13 +11,13 @@ public class HostCoordinatorArchitectureTests
 
         Assert.True(File.ReadLines(corePath).Count() < 400);
         Assert.DoesNotContain("private void TickRac1Swing(", core, StringComparison.Ordinal);
-        Assert.DoesNotContain("private void TickRac1Projectiles(", core, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void StepRac1BombProjectilesPhysics(", core, StringComparison.Ordinal);
         Assert.DoesNotContain("private void TickRac1Hostiles(", core, StringComparison.Ordinal);
         Assert.DoesNotContain("private void TickRac1Pickups(", core, StringComparison.Ordinal);
 
         Assert.Contains("private void TickRac1Swing(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Combat.cs")), StringComparison.Ordinal);
-        Assert.Contains("private void TickRac1Projectiles(",
+        Assert.Contains("private void StepRac1BombProjectilesPhysics(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Projectiles.cs")), StringComparison.Ordinal);
         Assert.Contains("private void TickRac1Hostiles(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac1Enemies.cs")), StringComparison.Ordinal);

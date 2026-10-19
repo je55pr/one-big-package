@@ -1,6 +1,7 @@
 using System.Text.Json;
 using OBP.Core.Math;
 using OBP.RAC1.Camera;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Camera;
 
@@ -8,7 +9,8 @@ namespace OneBigPackage;
 
 /// <summary>
 /// OBP development movement bookmark. Stores no retail payload or source paths.
-/// World object sessions and active airborne/action controllers are not serialized.
+/// Version2 also retains removed world objects and the live inventory. Active AI,
+/// airborne/action controllers and transient effects are not serialized.
 /// </summary>
 public sealed record MovementReproState(
     int Version,
@@ -16,21 +18,46 @@ public sealed record MovementReproState(
     string SourceBuildId,
     DateTimeOffset SavedAtUtc,
     Guid HostAssemblyId,
-    MovementReproPlayer Player)
+    MovementReproPlayer Player,
+    MovementReproWorld? World = null)
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public MovementReproState Validate()
     {
-        if (Version != CurrentVersion || string.IsNullOrWhiteSpace(SourceBuildId) || string.IsNullOrWhiteSpace(Destination) ||
+        if (Version is not (1 or CurrentVersion) || Version == CurrentVersion && World is null ||
+            string.IsNullOrWhiteSpace(SourceBuildId) || string.IsNullOrWhiteSpace(Destination) ||
             !Destination.StartsWith("rac1:LEVEL", StringComparison.Ordinal) ||
             !int.TryParse(Destination.AsSpan("rac1:LEVEL".Length), out int level) || level is < 0 or > 255 ||
             Player is null)
             throw new InvalidDataException("Unsupported or incomplete movement state.");
         Player.Validate();
+        World?.Validate();
         return this;
     }
 }
+
+/// <summary>OBP repro data, not a claim about the retail save format. No PVar or asset bytes.</summary>
+public sealed record MovementReproWorld(
+    IReadOnlyList<MovementReproInactiveObject> InactiveObjects,
+    Rac1WeaponPersistentState Inventory,
+    int CurrentItemId,
+    int Bolts)
+{
+    public void Validate()
+    {
+        if (InactiveObjects is null || InactiveObjects.Count > 4096 || Bolts < 0 ||
+            InactiveObjects.Any(item => item is null || item.Key.NativeClassId is < 0 or > ushort.MaxValue ||
+                item.Key.InstanceIndex is < 0 or > 1_000_000 || item.NativeState is < 0 or > byte.MaxValue ||
+                Rac1MobyRuntime.IsTerminalState(item.NativeState) && !item.Terminalized) ||
+            InactiveObjects.Select(item => item.Key).Distinct().Count() != InactiveObjects.Count)
+            throw new InvalidDataException("Invalid movement state world objects or bolt balance.");
+        try { _ = new Rac1WeaponInventory(Inventory, CurrentItemId); }
+        catch (ArgumentException ex) { throw new InvalidDataException("Invalid movement state inventory.", ex); }
+    }
+}
+
+public sealed record MovementReproInactiveObject(Rac1MobyRuntimeKey Key, int NativeState, bool Terminalized);
 
 public sealed record MovementReproPlayer(
     Vec3 Position,
@@ -67,7 +94,7 @@ public sealed record MovementReproPlayer(
 
 public static class MovementReproStateFile
 {
-    private const long MaximumBytes = 65536;
+    private const long MaximumBytes = 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
     public static MovementReproState Load(string path)

@@ -48,7 +48,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal("rac1-ntscu-original", avatar.Identity.BuildId);
         Assert.Equal("ratchet", avatar.Identity.AvatarId);
         Assert.Equal("rac1:ratchet:moby-class-0", avatar.Identity.ModelId);
-        Assert.Equal(36, avatar.AnimationClips.Count);
+        Assert.Equal(37, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.LocalAnimationFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
         Assert.Equal(5_583, avatar.VertexCount);
@@ -93,6 +93,7 @@ public sealed class Rac1PlayerAvatarProviderTests
                 "wrench-combo-third",
                 "wrench-comet-strike",
                 "wrench-hyper-strike",
+                "bomb-glove-throw",
             },
             avatar.AnimationClips.Select(clip => clip.Id).ToArray());
         Assert.Equal(3, avatar.AnimationClips.Count(

@@ -50,7 +50,8 @@ public static class Rac1RatchetAvatar
         IReadOnlyList<double[]> LocalFrames,
         IReadOnlyList<double> FrameDurationsSeconds,
         IReadOnlyList<double> FrameTimelinePositions,
-        IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? WrenchSocketFrames = null)
+        IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? WrenchSocketFrames = null,
+        IReadOnlyList<OBP.Runtime.Player.PlayerAvatarAttachmentPose>? BombGloveSocketFrames = null)
     {
         public int FrameCount => LocalFrames.Count;
         public bool HasVariableTiming =>
@@ -101,6 +102,9 @@ public static class Rac1RatchetAvatar
         int handJoint = Rac1WrenchAttachment.ReadJoint(core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength), 0);
         if (handJoint != Rac1WrenchAttachment.RatchetJoint)
             throw new InvalidDataException("R&C1 wrench hand-joint mapping differs from its retail authority.");
+        if (Rac1MobyAttachment.ReadJoint(core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength),
+                Gameplay.Rac1BombProjectileSession.GloveSemanticJoint) != Gameplay.Rac1BombProjectileSession.RatchetGloveJoint)
+            throw new InvalidDataException("R&C1 Bomb Glove hand-joint mapping differs from retail.");
 
         var sequences = Rac1MobyAnimation.ReadRatchetSequences(
             core.Assets,
@@ -156,6 +160,7 @@ public static class Rac1RatchetAvatar
             (25, 35, 0x3f000000u),
             (26, 45, 0x3e800000u),
             (43, 13, 0x3e800000u),
+            (44, 27, 0x3e800000u),
         ];
         // Contextual clips are not present in every world's animation table.
         // The playable provider deliberately uses its verified LEVEL0 carrier;
@@ -250,10 +255,11 @@ public static class Rac1RatchetAvatar
                 .ToArray();
         }
 
+        var jointFrames = sequence.Frames.Select(frame => Rac1MobyPose.PoseRatchetJoints(cls.Mesh, cls.Joints, frame)).ToArray();
         return new AnimationClip(sequenceId, frames, durations,
             sequence.Frames.Select(frame => unchecked((short)frame.TimestampUnits) / 16d).ToArray(),
-            sequence.Frames.Select(frame => Rac1WrenchAttachment.ToAttachment(
-                Rac1MobyPose.PoseRatchetJoints(cls.Mesh, cls.Joints, frame)[Rac1WrenchAttachment.RatchetJoint])).ToArray());
+            jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[Rac1WrenchAttachment.RatchetJoint])).ToArray(),
+            jointFrames.Select(joints => Rac1WrenchAttachment.ToAttachment(joints[Gameplay.Rac1BombProjectileSession.RatchetGloveJoint])).ToArray());
     }
 
     private static double FrameDuration(float transitionRate, int sequenceId)

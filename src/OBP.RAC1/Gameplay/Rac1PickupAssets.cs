@@ -33,7 +33,7 @@ public static class Rac1PickupAssets
         var classes = Rac1StaticClasses.Read(core);
         var models = new Dictionary<int, Model>();
         var textureIds = new HashSet<int>();
-        foreach (var cls in classes.Mobies.Values.Where(cls => cls.OClass is >= 13 and <= 16 or 348 or 349 or 354 or 355 or 357 or 358 or 1933 or 1934 or 1935 or 1963 ||
+        foreach (var cls in classes.Mobies.Values.Where(cls => cls.OClass is >= 13 and <= 16 or 121 or 122 or 1192 or 348 or 349 or 354 or 355 or 357 or 358 or 1933 or 1934 or 1935 or 1963 ||
                      Rac1CrateSupply.AmmoDefinitions.Any(ammo => ammo.ModelClass == cls.OClass)))
         {
             var mesh = cls.Mesh;

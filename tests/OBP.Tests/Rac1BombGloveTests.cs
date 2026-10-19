@@ -258,6 +258,20 @@ public sealed class Rac1BombGloveTests
             Contact(hostile, terminalState)));
     }
 
+    [Fact]
+    public void ExpandingBlastCanReachLaterVictimsButCannotDamageTheSameVictimAgain()
+    {
+        var session = new Rac1BombGloveSession(1);
+        long id = session.Step(true).Shot!.Projectile.ProjectileId;
+        var first = Contact(Dynamic(500, 1), 0);
+        var later = Contact(Dynamic(749, 2), Rac1Class749Hostile.TargetSearchNativeState);
+        Assert.Single(session.ResolveExplosionVolume(id, [first, first]).DamageEvents);
+        Assert.Empty(session.ResolveExplosionVolume(id, [first]).DamageEvents);
+        Assert.Single(session.ResolveExplosionVolume(id, [first, later]).DamageEvents);
+        Assert.True(session.CompleteProjectile(id));
+        Assert.Empty(session.ResolveExplosionVolume(id, [later]).DamageEvents);
+    }
+
     private static Rac1MobyContactFacts Contact(
         RuntimeDynamicObject target,
         int nativeState,

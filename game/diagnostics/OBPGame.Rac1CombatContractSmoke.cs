@@ -223,10 +223,21 @@ public partial class OBPGame
                 throw new InvalidOperationException(
                     $"Bomb Glove cadence spent a second round: {_rac1Weapons.FirstRangedAmmo}, expected {bombAmmoAfterFire}.");
 
-            await Rac1SmokeWaitAsync(
-                () => _rac1LastBombContactResolution is { ProjectileCompleted: true },
-                180,
-                "Bomb Glove class-749 contact");
+            var bombWitness = _rac1Projectiles.Values.FirstOrDefault();
+            try
+            {
+                await Rac1SmokeWaitAsync(
+                    () => _rac1LastBombContactResolution is { AdmittedContactCount: > 0 },
+                    180,
+                    "Bomb Glove class-749 contact");
+            }
+            catch
+            {
+                GD.PrintErr($"[rac1-smoke] bomb fixture: player={_player.GlobalPosition}, target={hostile.Root.GlobalPosition}, " +
+                    $"impact={bombWitness?.Motion.Position}, projectile-state={bombWitness?.Motion.NativeState}, " +
+                    $"target-active={IsRac1GameplayActive(hostile)}, target-health={_rac1Hostiles.Probe(hostile.Source).Health}");
+                throw;
+            }
             var bombContact = _rac1LastBombContactResolution
                 ?? throw new InvalidOperationException("Bomb Glove contact result disappeared.");
             if (bombContact.AdmittedContactCount != 1)
@@ -242,8 +253,8 @@ public partial class OBPGame
                 !hostile.Root.Visible)
                 throw new InvalidOperationException(
                     "Bomb Glove contact failed the two-point descriptor and visible lethal reaction.");
-            if (_rac1Projectiles.ContainsKey(bombContact.ProjectileId))
-                throw new InvalidOperationException("Bomb Glove contact did not retire the hosted projectile.");
+            await Rac1SmokeWaitAsync(() => !_rac1Projectiles.ContainsKey(bombContact.ProjectileId),
+                30, "Bomb Glove blast completion");
             GD.Print(
                 $"[rac1-smoke] Bomb Glove contact PASS; ammo {bombAmmoBeforeFire}->{bombAmmoAfterFire}, " +
                 "immediate refire cadence-blocked and class-749 lethal reaction admitted");

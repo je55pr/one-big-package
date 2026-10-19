@@ -3,7 +3,10 @@ using System.Text.Json.Serialization;
 using Godot;
 using OBP.Core.Math;
 using OBP.Godot;
+using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
+using OBP.RAC1.Progression;
+using OBP.Runtime.Gameplay;
 
 namespace OneBigPackage;
 
@@ -22,7 +25,57 @@ public partial class OBPGame
             throw new InvalidOperationException("Enter an R&C1 world before saving a movement state.");
         return new MovementReproState(MovementReproState.CurrentVersion, _activeDestination.DestinationId,
             _world.BuildId, DateTimeOffset.UtcNow, typeof(OBPGame).Module.ModuleVersionId,
-            _player.CaptureMovementRepro()).Validate();
+            _player.CaptureMovementRepro(), CaptureMovementWorld()).Validate();
+    }
+
+    private MovementReproWorld CaptureMovementWorld() => new(
+        _rac1MobyRuntime.Instances
+            .Where(instance => !instance.IsActive ||
+                _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)
+            .OrderBy(instance => instance.InstanceIndex)
+            .Select(instance => new MovementReproInactiveObject(instance.Key, instance.State.NativeState,
+                instance.State.IsTerminalized ||
+                _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)).ToArray(),
+        _rac1Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId, _rac1BoltWallet.Balance);
+
+    private void RestoreMovementWorld(MovementReproWorld world)
+    {
+        var objects = world.InactiveObjects.Select(saved =>
+            (Saved: saved, Instance: _rac1MobyRuntime.TryGet(saved.Key, out var instance) ? instance! :
+                throw new InvalidDataException($"Saved object {saved.Key} is unavailable in this world."))).ToArray();
+        foreach (var (saved, instance) in objects)
+        {
+            _rac1MobyRuntime.SetNativeState(instance, saved.NativeState);
+            if (saved.Terminalized && !instance.State.IsTerminalized) _rac1MobyRuntime.Terminalize(instance);
+            var node = FindPresentedDynamic(_sceneResult!, instance.Source);
+            if (node is not null) SetRac1HostedPresence(node, RuntimeEntityPresence.Inactive);
+            else _rac1MobyRuntime.SetPresence(instance, RuntimeEntityPresence.Inactive);
+            if (_rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy))
+            {
+                enemy.RewardEmitted = enemy.DeathPresented = saved.Terminalized;
+                enemy.Body.CollisionLayer = 0;
+                if (saved.Terminalized) enemy.Body.CollisionMask = 0;
+                SetRac1EnemyFlame(enemy, false);
+            }
+            if (Rac1BoltCrate.IsCrateClass(instance.NativeClassId))
+            {
+                DisableRac1CrateCollider(instance.InstanceIndex);
+                if (saved.Terminalized)
+                {
+                    var authored = Rac1BoltCrate.ReadAuthored(instance.Source)!;
+                    _rac1MobyPersistence.UpdateUid(instance.Source with { NativeUid = authored.Uid },
+                        Rac1MobyUidPersistenceBits.BothSet);
+                }
+            }
+            if (Rac1PlacedBolt.IsBoltClass(instance.NativeClassId))
+            {
+                int id = Rac1PlacedBoltSession.PickupId(instance.InstanceIndex);
+                _rac1PendingPlacedBolts.RemoveAll(pending => pending.Registration.PickupId == id);
+                _rac1PlacedBoltNodes.Remove(id);
+                _rac1PickupNodes.Remove(id);
+                _rac1PickupMotion.Remove(id);
+            }
+        }
     }
 
     private void SaveMovementState()
@@ -62,11 +115,20 @@ public partial class OBPGame
             _movementStateLoading = true;
             if (PauseMenuOpen) ClosePauseMenu();
             ClearMovementSmokeInput();
-            // A clean level makes the setup usable after death and gives both
-            // an interactive load and a fresh headless replay the same baseline.
+            // Rebuild transient controllers, then restore saved removals without
+            // replaying damage, rewards or death effects. Version1 had no world
+            // snapshot and retains its original fresh-level behaviour.
+            if (state.World is { } savedWorld)
+            {
+                EnsureRac1CampaignPersistenceInitialized();
+                _rac1CampaignSession = new Rac1CampaignRuntimeSession(_rac1CampaignSession.Campaign,
+                    new Rac1WeaponInventory(savedWorld.Inventory, savedWorld.CurrentItemId));
+                _rac1BoltWallet = new Rac1BoltWallet(savedWorld.Bolts);
+            }
             OpenDestinationFromBootstrap(state.Destination);
             if (_world?.BuildId != state.SourceBuildId || _player is null || !_player.UseRac1Gameplay)
                 throw new InvalidDataException("The movement state does not match the loaded retail source build.");
+            if (state.World is { } world) RestoreMovementWorld(world);
 
             restoringPlayer = _player;
             restoringPlayer.SetPhysicsProcess(false);
@@ -76,7 +138,10 @@ public partial class OBPGame
             if (_player != restoringPlayer || !IsInstanceValid(restoringPlayer))
                 throw new InvalidOperationException("The world changed while loading the movement state.");
             restoringPlayer.RestoreMovementRepro(state.Player);
-            ReportMovementState("Movement state loaded. Press forward to reproduce.");
+            ReportMovementState(state.World is null
+                ? "Movement state loaded (legacy pose only; enemies reset). F12 saves world removals too."
+                : "Movement state loaded, including defeated enemies and broken crates.");
+            RefreshRac1HudState();
             GD.Print($"[movement-state] loaded {path}; position={restoringPlayer.GlobalPosition}; " +
                 $"saved-assembly={state.HostAssemblyId}; current-assembly={typeof(OBPGame).Module.ModuleVersionId}");
         }
