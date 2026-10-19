@@ -10,6 +10,15 @@ public sealed class Rac1NovalisBreakableSession
     public const int NovalisLevelId = 1;
     public const int MushroomClass = 754;
     public const int RockFormationClass = 704;
+    // daino-selvatico/rac1-native-game@3fd14c1 novalis_mobys.cpp:
+    // plant_bolts_drop_l1 sets flags 2 only when hero is within
+    // seven native XY units; bolts_drop(m, 4, 7, flags, -1) returns otherwise.
+    public const float PlantBoltPlanarReach = 7f;
+    public const int PlantBoltMinimum = 4;
+    public const int PlantBoltMaximum = 7;
+
+    public static bool PlantBoltRewardAdmitted(float planarDistance) =>
+        float.IsFinite(planarDistance) && planarDistance < PlantBoltPlanarReach;
 
     public enum ContactKind { Wrench, Explosion }
 

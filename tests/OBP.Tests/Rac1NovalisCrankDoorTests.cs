@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Gameplay;
+using OBP.IO;
+using OBP.RAC1;
 
 namespace OBP.Tests;
 
@@ -21,6 +23,53 @@ public sealed class Rac1NovalisCrankDoorTests
         Assert.Equal(new Vector3(174.562f, 87.79f, 62f), door.Interpolate(0));
         Assert.Equal(new Vector3(173, 87, 62), door.Interpolate(1));
         Assert.Equal(62f, door.Interpolate(.5).Z);
+    }
+
+    [Fact]
+    public void CaveDoorPvarRotatesWithCrank297ByShortestWrappedAngle()
+    {
+        byte[] pvar = new byte[16];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar, 297);
+        BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(8), 75.745f);
+        var session = new Rac1NovalisCrankDoorSession();
+        session.RegisterCrank(296);
+        session.RegisterCrank(297);
+        session.RegisterCaveDoor(Rac1NovalisCrankDoorSession.DecodeCaveDoor(672, pvar, 0.25f));
+        session.ValidateLinks();
+        Assert.Equal(0.25f, session.CaveDoorYaw(672));
+        session.Turn(297, 1);
+        Assert.InRange(session.CaveDoorYaw(672), 1.321f, 1.323f);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1NovalisCrankDoorSession.DecodeCaveDoor(672, pvar[..12], 0));
+    }
+
+    [SkippableFact]
+    public void RetailNovalisCaveDoorPointsToCrank297()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var world = Rac1WorldImport.Build(reader, 1);
+        var dynamicObjects = world.DynamicObjects ?? throw new InvalidDataException("Novalis has no objects");
+        var caveSource = Assert.Single(dynamicObjects,
+            x => x.NativeClassId == Rac1NovalisCrankDoorSession.CaveDoorClass);
+        Assert.Equal(672, caveSource.InstanceIndex);
+        byte[] payload = Assert.Single(caveSource.NativePayloads!,
+            x => x.Format == "rac1-pvar").Data;
+        var cave = Rac1NovalisCrankDoorSession.DecodeCaveDoor(caveSource.InstanceIndex, payload, 0f);
+        Assert.Equal(297, cave.CrankInstanceIndex);
+        Assert.InRange(cave.OpenNativeYaw, 1.321f, 1.323f);
+        Assert.Equal(2, dynamicObjects.Count(x => x.NativeClassId == 280));
+        Assert.Equal(4, dynamicObjects.Count(x => x.NativeClassId == 665));
+    }
+
+    [Fact]
+    public void CaveDoorReferenceRequiresItsRealCrank()
+    {
+        var session = new Rac1NovalisCrankDoorSession();
+        session.RegisterCrank(296);
+        session.RegisterCaveDoor(new(672, 297, 0, 1));
+        Assert.Throws<InvalidDataException>(session.ValidateLinks);
     }
 
     [Fact]

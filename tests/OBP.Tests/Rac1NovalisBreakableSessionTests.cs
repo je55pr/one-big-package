@@ -18,6 +18,16 @@ public sealed class Rac1NovalisBreakableSessionTests
     }
 
     [Fact]
+    public void NativeGreenMushroomBoltPayoutRequiresHeroWithinSevenPlanarUnits()
+    {
+        Assert.Equal(4, Rac1NovalisBreakableSession.PlantBoltMinimum);
+        Assert.Equal(7, Rac1NovalisBreakableSession.PlantBoltMaximum);
+        Assert.True(Rac1NovalisBreakableSession.PlantBoltRewardAdmitted(6.999f));
+        Assert.False(Rac1NovalisBreakableSession.PlantBoltRewardAdmitted(7f));
+        Assert.False(Rac1NovalisBreakableSession.PlantBoltRewardAdmitted(float.NaN));
+    }
+
+    [Fact]
     public void RejectsOtherLevelsClassesAndUnregisteredContacts()
     {
         var session = new Rac1NovalisBreakableSession();

@@ -42,6 +42,20 @@ public partial class OBPGame
         // recovery. Do not silently award arbitrary currency here.
         node.ApplyState(node.State.WithPresence(OBP.Runtime.Gameplay.RuntimeEntityPresence.Inactive));
         PlayRac1PickupSound(node.Source.NativeClassId, 0, node.Root.GlobalPosition);
+        if (node.Source.NativeClassId == Rac1NovalisBreakableSession.MushroomClass && _player is not null)
+        {
+            // Retail plant_bolts_drop_l1 only enables its 4..7-value drop
+            // when Ratchet is within seven native planar units at break time.
+            Vector3 hero = _player.GlobalPosition, plant = node.Root.GlobalPosition;
+            float distance = new Vector2(hero.X - plant.X, hero.Z - plant.Z).Length();
+            if (Rac1NovalisBreakableSession.PlantBoltRewardAdmitted(distance))
+            {
+                int value = Rac1EffectRandom.Inclusive(
+                    Rac1NovalisBreakableSession.PlantBoltMinimum,
+                    Rac1NovalisBreakableSession.PlantBoltMaximum);
+                SpawnRac1BoltPickups(plant, _rac1BoltPickups.Emit(value));
+            }
+        }
         GD.Print($"[rac1-novalis] {node.Source.NativeClassId} instance {node.Source.InstanceIndex} " +
                  $"destroyed by {contact} (host contact policy)");
         return true;

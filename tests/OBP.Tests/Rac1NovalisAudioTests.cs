@@ -21,6 +21,7 @@ public sealed class Rac1NovalisAudioTests
         Assert.Equal(161, sounds[(459, 0)].BankSoundId);
         Assert.Equal(189, sounds[(577, 0)].BankSoundId);
         Assert.Equal(215, sounds[(665, 0)].BankSoundId);
+        Assert.Equal(216, sounds[(665, 1)].BankSoundId);
         Assert.Equal(226, sounds[(704, 0)].BankSoundId);
         Assert.Equal(239, sounds[(754, 0)].BankSoundId);
         Assert.All(sounds.Values, sound => Assert.NotEmpty(sound.Clip.InterleavedPcm16));

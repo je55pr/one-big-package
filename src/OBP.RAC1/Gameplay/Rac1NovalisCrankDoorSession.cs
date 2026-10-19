@@ -4,18 +4,22 @@ using System.Numerics;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// Novalis class-280 crank to class-665 paired-door relationships. The two
-/// door endpoints are authored native XY floats at PVar +0xc/+0x10; PVar +0
-/// is the crank's authored instance ordinal. Native turn rate, admission and
-/// door easing remain unknown and are supplied by a clearly host-owned policy.
+/// Novalis class-280 crank and its two native followers: class-665 sliding
+/// door halves and class-641 rotating cave door. The retail follower updates
+/// consume the crank's PVar +0 progress (0..1). Host crank input cadence and
+/// collision geometry remain explicitly provisional.
 /// </summary>
 public sealed class Rac1NovalisCrankDoorSession
 {
     public const int NativeLevelId = 1;
     public const int CrankClass = 280;
     public const int DoorClass = 665;
+    // Retail source: daino-selvatico/rac1-native-game@3fd14c1,
+    // novalis_mobys.cpp and novalis_platforms.cpp (function original addresses).
+    public const int CaveDoorClass = 641;
     public const int ExpectedCranks = 2;
     public const int ExpectedDoorHalves = 4;
+    public const int ExpectedCaveDoors = 1;
 
     public readonly record struct Door(
         int InstanceIndex, int CrankInstanceIndex, Vector3 ClosedNative, Vector3 OpenNative)
@@ -24,11 +28,26 @@ public sealed class Rac1NovalisCrankDoorSession
             Vector3.Lerp(ClosedNative, OpenNative, (float)Math.Clamp(progress, 0d, 1d));
     }
 
+    /// <summary>Native state 0 preserves the initial yaw, and PVar +8 gives a target in degrees.</summary>
+    public readonly record struct CaveDoor(int InstanceIndex, int CrankInstanceIndex,
+        float InitialNativeYaw, float OpenNativeYaw)
+    {
+        public float Interpolate(double progress)
+        {
+            float delta = MathF.Atan2(MathF.Sin(OpenNativeYaw - InitialNativeYaw),
+                MathF.Cos(OpenNativeYaw - InitialNativeYaw));
+            return InitialNativeYaw + delta * (float)Math.Clamp(progress, 0d, 1d);
+        }
+    }
+
     private readonly Dictionary<int, double> _cranks = [];
     private readonly Dictionary<int, Door> _doors = [];
+    private readonly Dictionary<int, CaveDoor> _caveDoors = [];
 
     public int CrankCount => _cranks.Count;
     public int DoorCount => _doors.Count;
+    public int CaveDoorCount => _caveDoors.Count;
+    public IEnumerable<CaveDoor> CaveDoors => _caveDoors.Values;
     public IEnumerable<Door> Doors => _doors.Values;
 
     public void RegisterCrank(int instanceIndex)
@@ -45,6 +64,26 @@ public sealed class Rac1NovalisCrankDoorSession
             throw new ArgumentException("Invalid authored Novalis crank-door identity/position.");
         if (!_doors.TryAdd(door.InstanceIndex, door))
             throw new InvalidOperationException($"Duplicate Novalis door {door.InstanceIndex}.");
+    }
+
+    public static CaveDoor DecodeCaveDoor(int instanceIndex, ReadOnlySpan<byte> pvar,
+        float initialNativeYaw)
+    {
+        if (pvar.Length != 0x10)
+            throw new InvalidDataException("Novalis class-641 cave door PVar must be 16 bytes.");
+        int crank = BinaryPrimitives.ReadInt32LittleEndian(pvar);
+        float degrees = BinaryPrimitives.ReadSingleLittleEndian(pvar.Slice(8));
+        float opened = degrees * MathF.PI / 180f;
+        if (instanceIndex < 0 || crank < 0 || !float.IsFinite(initialNativeYaw) ||
+            !float.IsFinite(opened))
+            throw new InvalidDataException("Invalid Novalis cave door link or angles.");
+        return new CaveDoor(instanceIndex, crank, initialNativeYaw, opened);
+    }
+
+    public void RegisterCaveDoor(CaveDoor door)
+    {
+        if (!_caveDoors.TryAdd(door.InstanceIndex, door))
+            throw new InvalidOperationException($"Duplicate Novalis cave door {door.InstanceIndex}.");
     }
 
     public static Door DecodeDoor(int instanceIndex, ReadOnlySpan<byte> pvar, Vector3 closedNative)
@@ -66,6 +105,9 @@ public sealed class Rac1NovalisCrankDoorSession
         foreach (var door in _doors.Values)
             if (!_cranks.ContainsKey(door.CrankInstanceIndex))
                 throw new InvalidDataException($"Door {door.InstanceIndex} references missing crank {door.CrankInstanceIndex}.");
+        foreach (var door in _caveDoors.Values)
+            if (!_cranks.ContainsKey(door.CrankInstanceIndex))
+                throw new InvalidDataException($"Cave door {door.InstanceIndex} references missing crank {door.CrankInstanceIndex}.");
     }
 
     /// <summary>
@@ -84,6 +126,9 @@ public sealed class Rac1NovalisCrankDoorSession
     }
 
     public double Progress(int crankInstanceIndex) => _cranks[crankInstanceIndex];
+
+    public float CaveDoorYaw(int instanceIndex) =>
+        _caveDoors[instanceIndex].Interpolate(Progress(_caveDoors[instanceIndex].CrankInstanceIndex));
 
     public Vector3 DoorPosition(int doorInstanceIndex)
     {

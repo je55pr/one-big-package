@@ -15,6 +15,7 @@ public partial class OBPGame
     private Rac1NovalisCrankDoorSession _rac1NovalisCranks = new();
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1NovalisCrankNodes = [];
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1NovalisDoorNodes = [];
+    private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1NovalisCaveDoorNodes = [];
     private readonly Dictionary<int, StaticBody3D> _rac1NovalisDoorColliders = [];
 
     private void ResetRac1NovalisCranks()
@@ -22,6 +23,7 @@ public partial class OBPGame
         _rac1NovalisCranks = new();
         _rac1NovalisCrankNodes.Clear();
         _rac1NovalisDoorNodes.Clear();
+        _rac1NovalisCaveDoorNodes.Clear();
         _rac1NovalisDoorColliders.Clear();
     }
 
@@ -51,9 +53,23 @@ public partial class OBPGame
             _rac1NovalisDoorNodes.Add(source.InstanceIndex, node);
             AddRac1NovalisDoorCollider(source.InstanceIndex, node);
         }
+        foreach (var source in world.DynamicObjects ?? [])
+        {
+            if (source.NativeClassId != Rac1NovalisCrankDoorSession.CaveDoorClass) continue;
+            byte[] pvar = source.NativePayloads?.SingleOrDefault(item => item.Format == "rac1-pvar")?.Data
+                ?? throw new InvalidDataException("Novalis cave door has no authored PVar.");
+            var node = FindPresentedDynamic(result, source)
+                ?? throw new InvalidDataException("Novalis cave door has no imported visual.");
+            var cave = Rac1NovalisCrankDoorSession.DecodeCaveDoor(source.InstanceIndex,
+                pvar, node.Root.Rotation.Y);
+            _rac1NovalisCranks.RegisterCaveDoor(cave);
+            _rac1NovalisCaveDoorNodes.Add(source.InstanceIndex, node);
+            AddRac1NovalisDoorCollider(source.InstanceIndex, node);
+        }
         _rac1NovalisCranks.ValidateLinks();
         GD.Print($"[rac1-crank] Novalis registered {_rac1NovalisCranks.CrankCount} cranks, " +
-                 $"{_rac1NovalisCranks.DoorCount} linked door halves");
+                 $"{_rac1NovalisCranks.DoorCount} linked door halves and " +
+                 $"{_rac1NovalisCranks.CaveDoorCount} rotating cave door(s)");
     }
 
     private void AddRac1NovalisDoorCollider(int id, RuntimeWorldScene.DynamicObjectNode node)
@@ -101,7 +117,15 @@ public partial class OBPGame
             bool starting = previous == 0d;
             double progress = _rac1NovalisCranks.Turn(crankId, Rac1CrankHostProgressPerTick * magnitude);
             if (starting)
+            {
                 PlayRac1PickupSound(Rac1NovalisCrankDoorSession.CrankClass, 0, closest.Root.GlobalPosition);
+                // Native door-half update starts its moving sound as soon as the
+                // crank's PVar progress changes, and uses sound 1 at an endpoint.
+                var movingDoor = _rac1NovalisCranks.Doors.FirstOrDefault(item => item.CrankInstanceIndex == crankId);
+                if (movingDoor != default)
+                    PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 0,
+                        _rac1NovalisDoorNodes[movingDoor.InstanceIndex].Root.GlobalPosition);
+            }
             foreach (var door in _rac1NovalisCranks.Doors.Where(door => door.CrankInstanceIndex == crankId))
             {
                 NVector3 target = _rac1NovalisCranks.DoorPosition(door.InstanceIndex);
@@ -111,12 +135,19 @@ public partial class OBPGame
                     progress >= .98d)
                     collider.CollisionLayer = 0;
             }
+            foreach (var cave in _rac1NovalisCranks.CaveDoors.Where(item => item.CrankInstanceIndex == crankId))
+            {
+                var node = _rac1NovalisCaveDoorNodes[cave.InstanceIndex];
+                Vector3 rotation = node.Root.Rotation;
+                rotation.Y = _rac1NovalisCranks.CaveDoorYaw(cave.InstanceIndex);
+                node.Root.Rotation = rotation;
+            }
             if (progress >= 1d)
             {
                 if (previous < 1d)
                 {
                     var door = _rac1NovalisCranks.Doors.First(item => item.CrankInstanceIndex == crankId);
-                    PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 0,
+                    PlayRac1PickupSound(Rac1NovalisCrankDoorSession.DoorClass, 1,
                         _rac1NovalisDoorNodes[door.InstanceIndex].Root.GlobalPosition);
                 }
                 _rac1CombatStatus = $"Novalis crank {crankId} opened its paired doors";
