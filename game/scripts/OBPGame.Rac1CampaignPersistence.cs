@@ -12,6 +12,7 @@ namespace OneBigPackage;
 /// </summary>
 public partial class OBPGame
 {
+    private readonly HashSet<int> _rac1CollectedNovalisGoldBolts = [];
     private bool _rac1CampaignPersistenceInitialized;
     private Rac1CampaignSessionPersistence _rac1CampaignPersistence =
         Rac1CampaignSessionPersistence.Ephemeral();
@@ -42,6 +43,7 @@ public partial class OBPGame
             restored.Weapons);
         _rac1CampaignRestoreKind = restored.Kind;
         _rac1BoltWallet = new Rac1BoltWallet(restored.Bolts);
+        _rac1CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
         _rac1CampaignPersistenceInitialized = true;
 
         string persistenceMode = _rac1CampaignPersistence.Enabled
@@ -123,7 +125,8 @@ public partial class OBPGame
 
         bool persisted = _rac1CampaignPersistence.PersistIfEnabled(
             _rac1CampaignSession.Campaign,
-            _rac1CampaignSession.Weapons, _rac1BoltWallet);
+            _rac1CampaignSession.Weapons, _rac1BoltWallet,
+            _rac1CollectedNovalisGoldBolts);
         string action = persisted ? "persisted" : "session-only";
         GD.Print(
             $"[rac1-campaign] {action} {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +

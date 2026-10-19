@@ -63,7 +63,8 @@ internal sealed class RawGamepadInput
             Input.IsActionJustPressed(Action),
             diagnostic,
             Input.IsActionPressed(Traversal),
-            Input.IsActionJustPressed(Traversal));
+            Input.IsActionJustPressed(Traversal),
+            ActionHeld: Input.IsActionPressed(Action));
     }
 
     private static float Axis(StringName negative, StringName positive) =>
@@ -116,4 +117,5 @@ internal readonly record struct RawPlayerInputFrame(
     bool ActionJustPressed,
     RawGamepadDiagnostic? Diagnostic,
     bool TraversalHeld = false,
-    bool EquippedUseJustPressed = false);
+    bool EquippedUseJustPressed = false,
+    bool ActionHeld = false);

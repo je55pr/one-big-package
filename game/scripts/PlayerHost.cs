@@ -104,6 +104,10 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Normal R&amp;C1 primary attack input; the RAC1 host resolves the equipped item.</summary>
     public event Action? Rac1PrimaryAttackRequested;
 
+    /// <summary>Optional source-specific interaction admission before ordinary Square attacks.</summary>
+    public Func<bool, Vector2, bool>? Rac1CrankInput { get; set; }
+    private bool _rac1CrankInputActive;
+
     /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
     public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
 
@@ -373,9 +377,11 @@ public partial class PlayerHost : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read();
+            _rac1CrankInputActive = UseRac1Gameplay && !DevelopmentControls.FlyEnabled &&
+                (Rac1CrankInput?.Invoke(_liveInput.ActionHeld, _liveInput.Move) ?? false);
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
-            if (_liveInput.ActionJustPressed)
+            if (_liveInput.ActionJustPressed && !_rac1CrankInputActive)
             {
                 if (UseRac1Gameplay && !Rac1Hanging && !Rac1SwingshotActive)
                     NotifyRac1WrenchAttackAccepted();

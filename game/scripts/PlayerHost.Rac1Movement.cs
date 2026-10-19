@@ -26,6 +26,12 @@ public partial class PlayerHost : CharacterBody3D
     {
         _locomotionAnimationInput = default;
         _ordinaryContactRequest = null;
+        if (_rac1CrankInputActive)
+        {
+            ResetRac1WrenchAttack();
+            Velocity = Vector3.Zero;
+            return;
+        }
         _rac1SmallStepEligible = false;
         _rac1TetherRequest = null;
         _rac1SurfaceRequest = null;

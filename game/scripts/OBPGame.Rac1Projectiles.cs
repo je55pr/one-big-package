@@ -194,6 +194,7 @@ public partial class OBPGame
     private void ResolveRac1BombBlast(long id, Rac1BombProjectileSession motion)
     {
         Vector3 origin = FromEffectNative(motion.Position);
+        ResolveRac1NovalisBombBreakables(origin, motion.BlastRadius);
         var facts = Rac1EnemyNodes.Concat(_rac1CrateNodes)
             .Where(node => IsInstanceValid(node.Root) && IsRac1GameplayActive(node) && HasRac1HostContactGeometry(node))
             .Where(node => origin.DistanceTo(node.Root.GlobalPosition + Vector3.Up * .5f) <= motion.BlastRadius + .35f &&

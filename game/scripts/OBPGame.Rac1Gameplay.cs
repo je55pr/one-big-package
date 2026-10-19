@@ -58,6 +58,9 @@ public partial class OBPGame
         ResetRac1CombatRetry();
         ResetRac1Enemies();
         ResetRac1PickupPresentation();
+        ResetRac1GoldBolts();
+        ResetRac1NovalisCranks();
+        ResetRac1NovalisBreakables();
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
         foreach (var projectile in _rac1Projectiles.Values)
@@ -128,6 +131,9 @@ public partial class OBPGame
         }
 
         ConfigureRac1PlacedBolts(world, result);
+        ConfigureRac1GoldBolts(world, result);
+        ConfigureRac1NovalisCranks(world, result);
+        ConfigureRac1NovalisBreakables(world, result);
 
         int authoredClass749 = 0;
         int rejectedHostiles = 0;
@@ -177,6 +183,7 @@ public partial class OBPGame
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
         player.Rac1WrenchPhysicsUpdated += OnRac1WrenchPhysicsUpdated;
+        player.Rac1CrankInput = TryTurnRac1NovalisCrank;
         player.Rac1GameplayState = _rac1Nanotech.Probe();
         player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
@@ -208,6 +215,7 @@ public partial class OBPGame
         TickRac1Swing(delta);
         TickRac1Hostiles(delta);
         TickRac1Pickups(delta);
+        TickRac1GoldBolts();
     }
 
     private string GetRac1GameplayHudLine()
