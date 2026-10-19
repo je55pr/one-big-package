@@ -72,7 +72,7 @@ public sealed class Rac1RatchetNanotechSession
             damage.NativeMarker is null && damage.NativeDamageFlags == 0x00010001;
         // Native Novalis peckbot_update_l1 passes damage amount 1 at animation time 13.
         // The common damage record's native flags are not yet recovered.
-        bool novalisPeck = damage.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId &&
+        bool novalisPeck = damage.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
             damage.NativeMarker is null && damage.NativeDamageFlags is null;
         if (damage.Target != Rac1GameplayEntityRef.Player ||
             damage.Source.Kind != Rac1GameplayEntityKind.Moby ||

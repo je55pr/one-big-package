@@ -118,7 +118,7 @@ public partial class OBPGame
             bool applied = target.Source.NativeClassId switch
             {
                 int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) => TryStrikeRac1Crate(target, result),
-                Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or Rac1NovalisPeckbotSession.ClassId => TryStrikeRac1Hostile(target, result),
+                Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId => TryStrikeRac1Hostile(target, result),
                 Rac1NovalisBreakableSession.MushroomClass or Rac1NovalisBreakableSession.RockFormationClass =>
                     TryBreakRac1NovalisProp(target, Rac1NovalisBreakableSession.ContactKind.Wrench),
                 _ => false,
