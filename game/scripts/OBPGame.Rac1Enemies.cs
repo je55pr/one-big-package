@@ -79,17 +79,23 @@ public partial class OBPGame
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => Rac1AridiaEnemies.IsEnemyClass(item.NativeClassId)))
             {
                 var node = FindPresentedDynamic(result, authored) ?? CreateRac1InvisibleRuntimeNode(result, authored);
-                var runtime = _rac1MobyRuntime.Register(authored, node.State, nativeState: 1);
+                byte[] pvar = authoredPlacements[authored.InstanceIndex].PVar
+                    ?? throw new InvalidDataException("Aridia enemy placement is missing its native PVar.");
+                int? linkedActivationMobyIndex = authored.NativeClassId == Rac1AridiaEnemies.Sandshark
+                    ? Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(pvar) : null;
+                // The Sandshark init routine's +0x258 branch enters native
+                // state 29 and waits for the linked Moby to advance.
+                var runtime = _rac1MobyRuntime.Register(authored, node.State,
+                    nativeState: linkedActivationMobyIndex.HasValue ? 29 : 1, pvar: pvar);
                 node.ApplyState(runtime.EntityState);
                 Vector3 forward = EnemyForward(node);
                 NVector3 native = ToEffectNative(forward);
                 int nestWait = authored.NativeClassId == Rac1AridiaEnemies.Nest
-                    ? Rac1AridiaEnemies.ReadNestInitialWaitTicks(
-                        authoredPlacements[authored.InstanceIndex].PVar
-                        ?? throw new InvalidDataException("Native Aridia nest has no authored PVar."))
+                    ? Rac1AridiaEnemies.ReadNestInitialWaitTicks(pvar)
                     : 60;
                 _rac1AridiaEnemies.Register(authored.InstanceIndex, authored.NativeClassId,
-                    MathF.Atan2(native.Y, native.X), nestWait);
+                    MathF.Atan2(native.Y, native.X), nestWait,
+                    linkedActivationMobyIndex: linkedActivationMobyIndex);
                 nodes.Add(node);
             }
         }

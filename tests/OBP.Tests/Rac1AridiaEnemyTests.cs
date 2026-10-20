@@ -46,6 +46,14 @@ public sealed class Rac1AridiaEnemyTests
         var bots = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Constructorbot).ToArray();
         var nests = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Nest).ToArray();
         Assert.Equal([0, 1, 13], sharks.Select(Reward).Distinct().Order());
+        // The six state-29 sharks include the three directly on Ratchet's
+        // start coordinate (#443-445). All six link to Sandmouse #756.
+        Assert.Equal([440, 441, 442, 443, 444, 445],
+            sharks.Where(moby => Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(moby.PVar!) is not null)
+                .Select(moby => moby.Index).OrderBy(id => id).ToArray());
+        Assert.All(sharks.Where(moby => moby.Index is >= 440 and <= 445), moby =>
+            Assert.Equal(756, Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(moby.PVar!)));
+        Assert.Equal(Rac1AridiaEnemies.Sandmouse, placements[756].OClass);
         Assert.Equal([38], bots.Select(Reward).Distinct().Order());
         Assert.Equal([0, 60], nests.Select(moby =>
             Rac1AridiaEnemies.ReadNestInitialWaitTicks(moby.PVar!)).Distinct().Order());
@@ -128,6 +136,43 @@ public sealed class Rac1AridiaEnemyTests
             Assert.False(session.Step(9, near with { WaitingSharkCount = 0 }).SpawnSandshark);
         Assert.True(session.Damage(9, 3));
         Assert.False(session.Step(9, near).SpawnSandshark);
+    }
+
+    [Fact]
+    public void NativeLinkedSandmouseState29BlocksEvenPointBlankAggroUntilState5()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(443, Rac1AridiaEnemies.Sandshark, linkedActivationMobyIndex: 756);
+        var pointBlank = new Rac1AridiaEnemyFacts(Vector3.Zero, new(.2f, 0, 0), true, true);
+        Assert.Equal(756, session.LinkedActivationMobyIndex(443));
+        for (int i = 0; i < 120; i++)
+            Assert.Equal(Rac1AridiaEnemyPhase.Buried, session.Step(443, pointBlank).Phase);
+        Assert.Equal(Rac1AridiaEnemyPhase.Buried,
+            session.Step(443, pointBlank with { LinkedMobyNativeState = 4 }).Phase);
+        Assert.False(session.CanReleaseFromNest(443));
+        Assert.Equal(Rac1AridiaEnemyPhase.Emerging,
+            session.Step(443, pointBlank with { LinkedMobyNativeState = 5 }).Phase);
+        // Once the native linkage has been satisfied, the state must remain
+        // unblocked even if the Sandmouse later changes its own state.
+        for (int i = 0; i < 20; i++)
+            session.Step(443, pointBlank with { LinkedMobyNativeState = 0 });
+        Assert.NotEqual(Rac1AridiaEnemyPhase.Buried, session.Step(443, pointBlank).Phase);
+    }
+
+    [Fact]
+    public void AridiaSandsharkLinkedStatePvarReaderRejectsInvalidInputs()
+    {
+        var pvar = new byte[736];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x258), -1);
+        Assert.Null(Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x258), 756);
+        Assert.Equal(756, Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x258), -2);
+        Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(pvar));
+        Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(new byte[12]));
+        var session = new Rac1AridiaEnemySession();
+        Assert.Throws<ArgumentException>(() =>
+            session.Register(3, Rac1AridiaEnemies.Nest, linkedActivationMobyIndex: 756));
     }
 
     [Fact]

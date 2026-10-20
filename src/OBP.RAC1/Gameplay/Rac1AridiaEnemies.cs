@@ -14,6 +14,14 @@ public static class Rac1AridiaEnemies
     public const int Sandshark = 580;
     public const int Constructorbot = 612;
     public const int Nest = 668;
+    public const int Sandmouse = 1818;
+
+    // Sandshark update L2:0x2d4110..0x2d4160 initializes special sharks in
+    // native state 29 when PVar+0x258 points at another authored Moby.
+    // State 29 reads that Moby's native state byte and does not release
+    // the shark until it reaches state 5 or later.
+    public const int LinkedActivationPvarOffset = 0x258;
+    public const int LinkedActivationNativeState = 5;
 
     // Nest update L2:0x2dcdf0 calls 0x2d6118 with native state 0x1b
     // and anim 11; the launch origin's vertical coordinate is nest Z+1.5.
@@ -40,6 +48,17 @@ public static class Rac1AridiaEnemies
     /// Nest L2:0x2dcc28 reads authored PVar+0xd4 as its initial timer (then
     /// passes it to frame_scale_i). This native NTSC-U host steps at 60 Hz.
     /// </summary>
+    public static int? ReadSharkLinkedActivationInstance(ReadOnlySpan<byte> pvar)
+    {
+        if (pvar.Length < LinkedActivationPvarOffset + sizeof(int))
+            throw new InvalidDataException("Aridia Sandshark is missing its authored linked-Moby PVar.");
+        int instance = BinaryPrimitives.ReadInt32LittleEndian(pvar.Slice(LinkedActivationPvarOffset, sizeof(int)));
+        if (instance == -1) return null;
+        if (instance < 0 || instance > 200_000)
+            throw new InvalidDataException("Aridia Sandshark has an invalid linked-Moby index.");
+        return instance;
+    }
+
     public static int ReadNestInitialWaitTicks(ReadOnlySpan<byte> pvar)
     {
         if (pvar.Length < NestIntervalPvarOffset + 4)
@@ -67,7 +86,7 @@ public enum Rac1AridiaEnemyPhase
 
 public readonly record struct Rac1AridiaEnemyFacts(
     Vector3 Position, Vector3 PlayerPosition, bool PlayerAlive, bool LineOfSight,
-    int WaitingSharkCount = 0);
+    int WaitingSharkCount = 0, int? LinkedMobyNativeState = null);
 
 public readonly record struct Rac1AridiaEnemyFrame(
     Rac1AridiaEnemyPhase Phase, Vector3 Motion, float Yaw, int Sequence,
@@ -98,24 +117,31 @@ public sealed class Rac1AridiaEnemySession
         public float LaunchFallSpeed { get; set; }
         public bool WasReleasedFromNest { get; set; }
         public bool NativeWaitingState26 { get; set; }
+        public int? LinkedActivationMobyIndex { get; init; }
+        public bool LinkedActivationComplete { get; set; }
     }
 
     private readonly Dictionary<int, Entry> _entries = [];
     public int Count => _entries.Count;
 
     public void Register(int instanceIndex, int nativeClass, float yaw = 0, int nestInitialWaitTicks = 60,
-        bool nativeWaitingState26 = false)
+        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null)
     {
         if (!Rac1AridiaEnemies.IsEnemyClass(nativeClass) || nestInitialWaitTicks < 0)
             throw new ArgumentOutOfRangeException(nameof(nativeClass));
+        if (linkedActivationMobyIndex < 0 ||
+            (linkedActivationMobyIndex.HasValue && nativeClass != Rac1AridiaEnemies.Sandshark))
+            throw new ArgumentException("Only Sandsharks can carry a nonnegative linked activation Moby index.", nameof(linkedActivationMobyIndex));
         if (nativeWaitingState26 && nativeClass != Rac1AridiaEnemies.Sandshark)
             throw new ArgumentException("Only a Sandshark may be in native waiting state 26.", nameof(nativeWaitingState26));
         if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks)
-            { NativeWaitingState26 = nativeWaitingState26 }))
+            { NativeWaitingState26 = nativeWaitingState26,
+                LinkedActivationMobyIndex = linkedActivationMobyIndex }))
             throw new InvalidOperationException($"Duplicate Aridia enemy instance {instanceIndex}.");
     }
 
     public int Health(int instanceIndex) => _entries[instanceIndex].Health;
+    public int? LinkedActivationMobyIndex(int instanceIndex) => _entries[instanceIndex].LinkedActivationMobyIndex;
 
     public bool CanReleaseFromNest(int instanceIndex)
     {
@@ -171,6 +197,18 @@ public sealed class Rac1AridiaEnemySession
         if (entry.Phase == Rac1AridiaEnemyPhase.Dead)
             return new(entry.Phase, Vector3.Zero, entry.Yaw, DeathSequence(entry.ClassId));
 
+        // Native Sandshark state 29 (L2:0x2d4160) waits for the linked
+        // Moby to reach state >=5. Proximity must never bypass this condition,
+        // including at the level's initial player spawn. Unknown state is not
+        // evidence of activation, so the shark stays buried.
+        if (entry.ClassId == Rac1AridiaEnemies.Sandshark &&
+            entry.LinkedActivationMobyIndex.HasValue && !entry.LinkedActivationComplete)
+        {
+            if (facts.LinkedMobyNativeState is not int nativeState ||
+                nativeState < Rac1AridiaEnemies.LinkedActivationNativeState)
+                return new(Rac1AridiaEnemyPhase.Buried, Vector3.Zero, entry.Yaw, 1);
+            entry.LinkedActivationComplete = true;
+        }
         entry.Ticks++;
         Vector3 delta = facts.PlayerPosition - facts.Position;
         float distance = MathF.Sqrt(delta.X * delta.X + delta.Y * delta.Y);

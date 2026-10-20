@@ -35,7 +35,8 @@ public partial class OBPGame
                     other.Node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark &&
                     _rac1AridiaEnemies.CanReleaseFromNest(other.Node.Source.InstanceIndex) &&
                     other.Node.Root.GlobalPosition.DistanceSquaredTo(position) < 900f)
-                : 0);
+                : 0,
+            LinkedMobyNativeState: ResolveAridiaSharkLinkedMobyState(instance));
         var frame = _rac1AridiaEnemies.Step(instance, facts);
         enemy.Buried = frame.Buried;
         enemy.Body.CollisionLayer = enemy.Body.CollisionMask = enemy.Buried ? 0u : 1u;
@@ -53,6 +54,18 @@ public partial class OBPGame
                 (node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark ? 1.25f : 5f))
             ApplyRac1AridiaPlayerDamage(node);
         if (frame.SpawnSandshark) ActivateNearbyRac1AridiaShark(node.Root.GlobalPosition);
+    }
+
+    private int? ResolveAridiaSharkLinkedMobyState(int instanceIndex)
+    {
+        int? link = _rac1AridiaEnemies.LinkedActivationMobyIndex(instanceIndex);
+        if (!link.HasValue) return null;
+        // Native class 1818 is the Aridia Sandmouse. Unless its native
+        // controller is actually running, the required state >= 5 cannot be
+        // inferred from elapsed time or the player's nearby position.
+        return _rac1MobyRuntime.TryGet(new Rac1MobyRuntimeKey(Rac1AridiaEnemies.Sandmouse, link.Value),
+            out var moby) && moby is { IsActive: true }
+            ? moby.State.NativeState : null;
     }
 
     private static void HideBuriedRac1AridiaEnemy(Rac1HostedEnemy enemy) =>
