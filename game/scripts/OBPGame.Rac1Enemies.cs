@@ -20,6 +20,9 @@ public partial class OBPGame
     private Rac1NovalisPeckbotSession? _rac1Peckbots;
     private Rac1NovalisBirdbotSession? _rac1Birdbots;
     private double _rac1EnemyTicks;
+    // Host-side distance sleep, outside Novalis' original AI acquisition range
+    // (Peckbot 28 native units). Other planets retain their prior behaviour.
+    private const float Rac1NovalisEnemySleepDistance = 42f;
     private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values.Select(enemy => enemy.Node);
 
     private sealed class Rac1HostedEnemy(RuntimeWorldScene.DynamicObjectNode node, Rac1MobyAnimationAssets.Asset asset,
@@ -140,6 +143,14 @@ public partial class OBPGame
             {
                 var node = enemy.Node;
                 if (!IsInstanceValid(node.Root) || !IsRac1GameplayActive(node)) continue;
+                // Distant Novalis actors retain their meshes, authored locations
+                // and animation phase, but need no contact probes, sounds or AI
+                // until Ratchet enters their gameplay neighbourhood.
+                if (_world is { Game: "rac1", LevelId: 1 } &&
+                    node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
+                    node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
+                        Rac1NovalisEnemySleepDistance * Rac1NovalisEnemySleepDistance)
+                    continue;
                 // Staged diagnostics may move an authored node; ordinary movement is synchronized below.
                 if (enemy.Body.GlobalPosition.DistanceSquaredTo(node.Root.GlobalPosition) > 1e-5f)
                     enemy.Body.GlobalPosition = node.Root.GlobalPosition;

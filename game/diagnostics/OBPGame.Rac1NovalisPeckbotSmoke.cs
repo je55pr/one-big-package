@@ -31,7 +31,26 @@ public partial class OBPGame
             Require(_player.GlobalPosition.DistanceTo(enemy.Node.Root.GlobalPosition) < 8f,
                 "Peckbot smoke cannot stage Ratchet near the source actor");
             Vector3 start = enemy.Node.Root.GlobalPosition;
+            var far = _rac1Enemies.Values
+                .Where(actor => actor.Node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId)
+                .OrderByDescending(actor => actor.Node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition))
+                .First();
+            float farAnimationBefore = far.Animation.Position;
+            Vector3 farPositionBefore = far.Node.Root.GlobalPosition;
+            Require(farPositionBefore.DistanceSquaredTo(_player.GlobalPosition) > 42f * 42f,
+                "Expected an authored Peckbot outside Novalis host wake distance");
+            var sampleTimer = System.Diagnostics.Stopwatch.StartNew();
             await PhysicsFramesAsync(180);
+            sampleTimer.Stop();
+            Require(far.Animation.Position == farAnimationBefore &&
+                far.Node.Root.GlobalPosition.DistanceSquaredTo(farPositionBefore) < 1e-5f,
+                "Distant Peckbot still updated despite host sleep distance");
+            int nearby = _rac1Enemies.Values.Count(actor =>
+                actor.Node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) < 42f * 42f);
+            GD.Print($"[novalis-peckbot-smoke] PERF {nearby}/{_rac1Enemies.Count} enemies near Ratchet");
+            GD.Print($"[novalis-peckbot-smoke] PERF 180 physics frames in {sampleTimer.Elapsed.TotalMilliseconds:F0} ms; " +
+                $"Godot physics={Performance.GetMonitor(Performance.Monitor.TimePhysicsProcess) * 1000:F2} ms, " +
+                $"process={Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000:F2} ms");
             var next = _rac1Peckbots.Get(sample);
             float moved = start.DistanceTo(enemy.Node.Root.GlobalPosition);
             Require(next.NativeState is >= 2 and <= 5,
