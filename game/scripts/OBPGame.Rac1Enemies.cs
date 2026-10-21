@@ -119,7 +119,8 @@ public partial class OBPGame
                 var body = new CharacterBody3D
                 {
                     Name = $"EnemyContact_i{node.Source.InstanceIndex}",
-                    CollisionLayer = initialContactMask, CollisionMask = initialContactMask
+                    CollisionLayer = initialContactMask,
+                    CollisionMask = initialContactMask
                 };
                 body.AddChild(new CollisionShape3D { Shape = new CapsuleShape3D { Radius = radius, Height = height }, Position = Vector3.Up * (height / 2) });
                 result.Root.AddChild(body);

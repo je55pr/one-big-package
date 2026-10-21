@@ -135,8 +135,10 @@ public sealed class Rac1AridiaEnemySession
         if (nativeWaitingState26 && nativeClass != Rac1AridiaEnemies.Sandshark)
             throw new ArgumentException("Only a Sandshark may be in native waiting state 26.", nameof(nativeWaitingState26));
         if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks)
-            { NativeWaitingState26 = nativeWaitingState26,
-                LinkedActivationMobyIndex = linkedActivationMobyIndex }))
+        {
+            NativeWaitingState26 = nativeWaitingState26,
+            LinkedActivationMobyIndex = linkedActivationMobyIndex
+        }))
             throw new InvalidOperationException($"Duplicate Aridia enemy instance {instanceIndex}.");
     }
 

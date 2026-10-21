@@ -127,8 +127,12 @@ public sealed class Rac1AridiaEnemyTests
             WaitingSharkCount: 1);
         for (int i = 0; i < 200; i++)
             Assert.False(session.Step(9, noPlayer).SpawnSandshark);
-        var near = noPlayer with { PlayerAlive = true, LineOfSight = true,
-            PlayerPosition = new Vector3(3, 0, 0) };
+        var near = noPlayer with
+        {
+            PlayerAlive = true,
+            LineOfSight = true,
+            PlayerPosition = new Vector3(3, 0, 0)
+        };
         for (int i = 0; i < 69; i++)
             Assert.False(session.Step(9, near).SpawnSandshark);
         Assert.True(session.Step(9, near).SpawnSandshark);
