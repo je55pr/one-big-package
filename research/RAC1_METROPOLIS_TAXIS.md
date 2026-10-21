@@ -1,6 +1,6 @@
 # R&C1 Metropolis taxis (Kerwan, native LEVEL3)
 
-Status: source-backed stateful taxi pass on isolated `chatgpt/worker4`.
+Status: **UNFINISHED / WORK IN PROGRESS.** Merged as a playable, source-backed taxi foundation, not retail-parity complete.
 Native class-816 inbound/outbound/departure sequencing is recovered and
 implemented at the gameplay level; camera, dialogue, movement recurrence,
 animation and mission gating are not yet retail-identical. No PCSX2 used.
