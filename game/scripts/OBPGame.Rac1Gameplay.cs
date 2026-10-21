@@ -54,6 +54,7 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
+        ResetRac1MetropolisTaxis();
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
         ResetRac1Enemies();
@@ -160,6 +161,7 @@ public partial class OBPGame
         }
 
         ConfigureRac1Enemies(world, result);
+        ConfigureRac1MetropolisTaxis(world, result);
         GD.Print($"[rac1-gameplay] ready: {_rac1CrateNodes.Count} admitted retail crates, " +
                  $"{_rac1HostileNodes.Count} recovered Veldin class-749 placements from " +
                  $"{authoredClass749} authored placements ({rejectedHostiles} rejected)");
@@ -205,6 +207,7 @@ public partial class OBPGame
             return;
         }
 
+        TickRac1MetropolisTaxis(delta);
         TickRac1Swing(delta);
         TickRac1Hostiles(delta);
         TickRac1Pickups(delta);
