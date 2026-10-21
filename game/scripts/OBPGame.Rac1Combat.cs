@@ -16,6 +16,12 @@ public partial class OBPGame
     private void OnRac1PrimaryAttackRequested()
     {
         if (_rac1Nanotech.Probe().IsDead) return;
+        if (Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped))
+        {
+            if (_player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active)
+                _rac1AdditionalFireRequested = true;
+            return;
+        }
         if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged)
         {
             if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active)
@@ -40,11 +46,22 @@ public partial class OBPGame
     {
         if (_rac1Weapons.TryEquip(weapon))
         {
-            _rac1CombatStatus = weapon == Rac1WeaponId.Wrench ? "equipped wrench" : "equipped Bomb Glove item 10";
+            _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             RefreshRac1WrenchPresentationVisibility();
+            if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
+                view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
+        else ReportMovementState("Press 0 to enable the full arsenal preview, then [ / ] to cycle weapons.");
+    }
+
+    private void OnRac1WeaponCycleRequested(int direction)
+    {
+        var weapons = new[] { Rac1WeaponId.Wrench, Rac1WeaponId.FirstRanged }
+            .Concat(Rac1WeaponProfiles.Additional.Select(profile => profile.Item)).Where(_rac1Weapons.Owns).ToArray();
+        int index = Array.IndexOf(weapons, _rac1Weapons.Equipped);
+        OnRac1WeaponSelectionRequested(weapons[(index + direction + weapons.Length) % weapons.Length]);
     }
 
     private void TickRac1Swing(double delta)

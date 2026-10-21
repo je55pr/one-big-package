@@ -130,7 +130,8 @@ run/stop/idle checks now compare the rendered attachment on every update.
   interrupts. Their queued Square input is discarded rather than replayed later.
 - Affine/vertex blends are the existing baked-pose presentation approximation.
   The exact hand/socket selection and model identity are recovered.
-- Audio and effect programs are separate from wrench damage/pose ownership.
+- Audio and effect programs are separate from wrench damage/pose ownership;
+  see RAC1_WEAPON_PRESENTATION_AUDIO_FIXES.md for the working sound boundary.
 
 Validation: portable/source tests, wrench Godot input/contact smoke and separate
 ordinary Veldin play. The wrench smoke labels its staged contact fixtures and

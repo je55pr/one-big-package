@@ -214,6 +214,7 @@ public partial class OBPGame
                     node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
                         Rac1NovalisEnemySleepDistance * Rac1NovalisEnemySleepDistance)
                     continue;
+                if (_rac1Chickens.ContainsKey(node.Source.InstanceIndex)) continue;
                 // Staged diagnostics may move an authored node; ordinary movement is synchronized below.
                 if (enemy.Body.GlobalPosition.DistanceSquaredTo(node.Root.GlobalPosition) > 1e-5f)
                     enemy.Body.GlobalPosition = node.Root.GlobalPosition;
@@ -264,7 +265,7 @@ public partial class OBPGame
     {
         var node = enemy.Node;
         var before = _rac1Hostiles.Probe(node.Source);
-        Vector3 position = node.Root.GlobalPosition, target = _player!.GlobalPosition;
+        Vector3 position = node.Root.GlobalPosition, target = ArsenalEnemyGoal(enemy, _player!.GlobalPosition);
         Rac1GameplayEntityRef identity = Rac1GameplayEntityRef.Player;
         bool linkedTerminal = false;
         if (before.NativeState == Rac1Class749Hostile.LinkedObjectNativeState && before.LinkedTargetInstanceIndex is int linked)
@@ -294,7 +295,7 @@ public partial class OBPGame
             MoveRac1Enemy(enemy, destination.Value, destination, next.NavigationYawOffset);
         else if (next.NativeState == Rac1Class749Hostile.LinkedObjectNativeState && !linkedTerminal)
             MoveRac1Enemy(enemy, ToEffectNative(target), null);
-        if (next.Attack is { } attack && EnemyMeleeTouchesPlayer(enemy))
+        if (next.Attack is { } attack && !ArsenalEnemyHitsDecoy(enemy) && EnemyMeleeTouchesPlayer(enemy))
             ApplyRac1EnemyPlayerDamage(Rac1DamageRuntime.FromClass749Attack(new(749, node.Source.InstanceIndex), attack));
     }
 
@@ -302,8 +303,10 @@ public partial class OBPGame
     {
         int instance = enemy.Node.Source.InstanceIndex;
         var before = _rac1Class1440!.Get(instance);
-        NVector3 position = ToEffectNative(enemy.Node.Root.GlobalPosition), target = ToEffectNative(_player!.GlobalPosition);
+        NVector3 position = ToEffectNative(enemy.Node.Root.GlobalPosition), target = ToEffectNative(ArsenalEnemyGoal(enemy, _player!.GlobalPosition));
         Rac1GameplayEntityRef? contact = before.NativeState == 5 ? EnemySweepContact(enemy) : null;
+        if (before.NativeState == 5 && _rac1Decoys.Any(decoy => decoy.Grounded &&
+            decoy.View.GlobalPosition.DistanceTo(enemy.Body.GlobalPosition) < 1.8f)) contact = Rac1GameplayEntityRef.Player;
         Rac1Class1440Session.Target? linked = before.LinkedTargetInstanceIndex is int link &&
             _rac1Enemies.TryGetValue(link, out var linkedEnemy) && IsRac1GameplayActive(linkedEnemy.Node)
             ? new(new(linkedEnemy.Node.Source.NativeClassId, link), ToEffectNative(linkedEnemy.Node.Root.GlobalPosition)) : null;
@@ -322,7 +325,7 @@ public partial class OBPGame
         if (next.DamageTarget is { } victim)
         {
             var damage = Rac1DamageRuntime.FromClass1440Contact(new(1440, instance), victim);
-            if (victim == Rac1GameplayEntityRef.Player) ApplyRac1EnemyPlayerDamage(damage);
+            if (victim == Rac1GameplayEntityRef.Player && !ArsenalEnemyHitsDecoy(enemy)) ApplyRac1EnemyPlayerDamage(damage);
             else if (_rac1Enemies.TryGetValue((int)victim.RuntimeId, out var targetEnemy) && ApplyRac1EnemyWeaponDamage(targetEnemy.Node, damage))
                 _rac1DamageTransport.Publish(damage);
         }
@@ -493,8 +496,15 @@ public partial class OBPGame
         }
         enemy.Animation.Select(sequence, 1);
         Vector3 attackerPosition = _player!.GlobalPosition;
-        if (damage.Source.Kind == Rac1GameplayEntityKind.Projectile && _rac1Projectiles.TryGetValue(damage.Source.RuntimeId, out var projectile))
+        if (damage.Source is { Kind: Rac1GameplayEntityKind.Projectile, NativeClassId: 121 } &&
+            _rac1Projectiles.TryGetValue(damage.Source.RuntimeId, out var projectile))
             attackerPosition = projectile.Node.GlobalPosition;
+        else if (damage.Source is { Kind: Rac1GameplayEntityKind.Projectile, NativeClassId: 74 } &&
+            _rac1EquipmentShots.FirstOrDefault(shot => shot.Weapon == Rac1WeaponId.MineGlove && shot.Id == damage.Source.RuntimeId) is { } mine)
+            attackerPosition = mine.Position;
+        else if (damage.Source is { Kind: Rac1GameplayEntityKind.Projectile, NativeClassId: 186 } &&
+            _rac1DoomAgents.FirstOrDefault(bot => bot.Id == damage.Source.RuntimeId) is { } bot)
+            attackerPosition = bot.Body.GlobalPosition;
         else if (damage.Source.Kind == Rac1GameplayEntityKind.Moby && _rac1Enemies.TryGetValue((int)damage.Source.RuntimeId, out var attacker))
             attackerPosition = attacker.Node.Root.GlobalPosition;
         NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);

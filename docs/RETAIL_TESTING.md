@@ -30,6 +30,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/rac1-enemy-smoke.ps1` | Opening toad/robot spawn, path entrances, reactions, attack contacts, rewards, occlusion and retry fixtures. |
 | `./tools/rac1-wrench-smoke.ps1` | Input/combo/throw, body and hand attachment, staged damage contacts and recovery. |
 | `./tools/rac1-bomb-glove-smoke.ps1` | Glove/bomb skins, socket/throw, arc, impact/splash/occlusion, ammo/cadence and cleanup. |
+| `./tools/rac1-weapons-smoke.ps1` | Full working arsenal, idle/use poses, audio lifetime, contact, cargo and deployed-agent fixtures. |
 | `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |
 | `./tools/rac1-placed-bolt-smoke.ps1` | Authored Veldin/Batalia/Pokitaru bolts, floating height, attraction, removal and exact one/five-bolt credit. |
 | `./tools/rac1-campaign-smoke.ps1` | Source-game travel and campaign-state integration. |
@@ -41,8 +42,8 @@ Each world's result is independent; the reused RAC1 controller is OBP policy.
 
 The Bomb Glove gate accepts `-State PATH` for an immediate throw from a saved
 setup. Its `-Rendered -CaptureDirectory PATH` mode stays offscreen/unfocusable
-and preserves normal window preferences. Crate/placed-bolt captures use
-`OBP_CRATE_CAPTURE_DIR`.
+and preserves normal window preferences. The weapons gate has the same rendered
+capture options. Crate/placed-bolt captures use `OBP_CRATE_CAPTURE_DIR`.
 For a personal repro use [MOVEMENT_REPRO_STATES.md](MOVEMENT_REPRO_STATES.md).
 
 Novalis host diagnostics are selected with `--rac1-novalis-swim-smoke`,
@@ -70,6 +71,9 @@ Controls below are OBP host bindings; previews do not grant campaign ownership.
 | Glide | With a pack, release then hold jump again in air |
 | Thruster Power Slam | Airborne, neutral stick, press crouch |
 | Swingshot preview | F11; face an authored target and hold E/east, release to detach |
+
+The full weapon selection/preview controls are in
+[RAC1_WEAPONS_TESTING.md](RAC1_WEAPONS_TESTING.md).
 
 Useful manual checks:
 

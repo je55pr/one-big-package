@@ -104,7 +104,9 @@ public partial class OBPGame
             if (_rac1WrenchHitTargets.Contains(key) || !IsInstanceValid(target.Root) ||
                 (isNovalisProp ? _rac1NovalisBreakables.IsDestroyed(key.InstanceIndex) : !IsRac1GameplayActive(target)))
                 continue;
-            bool contact = target.Root.GetChildren().OfType<MeshInstance3D>().Any(mesh =>
+            var meshes = _rac1Chickens.TryGetValue(target.Source.InstanceIndex, out var chicken)
+                ? chicken.View.GetChildren().OfType<MeshInstance3D>() : target.Root.GetChildren().OfType<MeshInstance3D>();
+            bool contact = meshes.Any(mesh =>
             {
                 Aabb bounds = (mesh.GlobalTransform * mesh.GetAabb()).Grow(radius);
                 return WrenchSegmentIntersects(bounds, previousHand, previousTip) ||

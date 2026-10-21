@@ -8,6 +8,20 @@ public enum Rac1WeaponId
 {
     Wrench = 8,
     FirstRanged = 10,
+    Blaster = 15,
+    Pyrocitor = 16,
+    MineGlove = 17,
+    SuckCannon = 9,
+    GloveOfDoom = 20,
+    Devastator = 11,
+    VisibombGun = 13,
+    Taunter = 14,
+    Walloper = 18,
+    TeslaClaw = 19,
+    MorphORay = 21,
+    Ryno = 23,
+    DroneDevice = 24,
+    DecoyGlove = 25,
 }
 
 /// <summary>
@@ -124,8 +138,7 @@ public sealed record Rac1WeaponPersistentState(
 
 /// <summary>
 /// R&C1-owned item/inventory state. All 37 native item slots are retained, while
-/// weapon-use behaviour remains admitted only for the separately recovered wrench
-/// and item-10 Bomb Glove slice.
+/// weapon-use behaviour remains admitted only for the implemented equipment controllers.
 /// </summary>
 public sealed class Rac1WeaponInventory
 {
@@ -199,7 +212,7 @@ public sealed class Rac1WeaponInventory
     /// Callers that need arbitrary retail ids should use CurrentItemId.
     /// </summary>
     public Rac1WeaponId Equipped =>
-        CurrentItemId is (int)Rac1WeaponId.Wrench or (int)Rac1WeaponId.FirstRanged
+        Enum.IsDefined(typeof(Rac1WeaponId), CurrentItemId)
             ? (Rac1WeaponId)CurrentItemId
             : throw new InvalidOperationException($"R&C1 item {CurrentItemId} has no implemented weapon-use controller.");
 
@@ -258,6 +271,7 @@ public sealed class Rac1WeaponInventory
 
     public bool TryEquip(Rac1WeaponId weapon)
     {
+        if (!Enum.IsDefined(weapon)) return false;
         int itemId = (int)weapon;
         if (!OwnsNativeItem(itemId))
             return false;
@@ -270,7 +284,7 @@ public sealed class Rac1WeaponInventory
     {
         if (CurrentItemId == (int)Rac1WeaponId.Wrench)
             return true;
-        if (CurrentItemId != (int)Rac1WeaponId.FirstRanged)
+        if (!Enum.IsDefined(typeof(Rac1WeaponId), CurrentItemId))
             return false;
 
         return TryConsumeAmmo(CurrentItemId, 1);

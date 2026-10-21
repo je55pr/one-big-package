@@ -102,6 +102,7 @@ public partial class OBPGame
                 _rac1StagedBombView.Reparent(_rac1BombGloveView, keepGlobalTransform: false);
                 // World effect meshes map native X to -sceneX; avatar-local meshes map it to +X.
                 _rac1StagedBombView.Rotation = new(0, MathF.PI, 0);
+                AttachRac1EquipmentViews(view);
             }
             player.VisualRoot.ReplaceVisual(view);
             player.ConfigureAvatarPresentation((float)_playerAvatar.AnimationBounds.Height);
@@ -170,10 +171,22 @@ public partial class OBPGame
         if (_playerAvatarAnimationController is not Rac1PlayerAnimationPresentationController controller)
             return;
         StepRac1BombWeaponPhysics();
+        StepRac1AdditionalWeapons();
         input = SelectRac1BombThrowAnimation(controller, input);
         _playerAvatarClock += Math.Max(0, delta);
-        _playerAvatarAnimationSink?.SetAnimationPresentation(
-            controller.StepOrdinaryAnimation(state, _playerAvatarClock, input));
+        controller.StepOrdinaryAnimation(state, _playerAvatarClock, input);
+        bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
+            OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
+            _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active && input.Traversal is null &&
+            !_rac1Nanotech.Probe().IsDead;
+        bool walloper = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Walloper && _rac1WalloperAge > 0;
+        bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
+        int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
+            holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
+                OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
+        if (equipmentPose < 0) equipmentPose = null;
+        _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
+            walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
         if (_avatarPhysicsPlayer is { } player)
         {
             player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
@@ -189,8 +202,10 @@ public partial class OBPGame
                 if (_rac1StagedBombView is not null)
                     _rac1StagedBombView.Position = _rac1BombGloveView.BombLocal;
             }
+            StepRac1EquipmentViews(controller);
         }
         StepRac1BombProjectilesPhysics();
+        StepRac1AdditionalWeaponWorld();
         StepRac1BombEffectsPhysics();
         _playerAvatarView?.SetClock(_playerAvatarClock);
         RefreshRac1WrenchPresentationVisibility();
@@ -239,11 +254,15 @@ public partial class OBPGame
         _rac1WrenchView = null;
         _rac1BombGloveView = null;
         _rac1StagedBombView = null;
+        _rac1EquipmentViews.Clear(); _rac1StagedEquipment.Clear();
         _playerAvatarClock = 0;
     }
 
     private void RefreshRac1WrenchPresentationVisibility()
     {
+        foreach (var pair in _rac1EquipmentViews)
+            if (IsInstanceValid(pair.Value)) pair.Value.Visible = _rac1Weapons.Equipped == pair.Key &&
+                _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
         bool bombVisible = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged &&
             _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
         if (_rac1BombGloveView is not null && IsInstanceValid(_rac1BombGloveView))

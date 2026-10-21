@@ -195,9 +195,12 @@ public partial class OBPGame
     private void PlayRac1PickupSound(int nativeClass, int localSound, Vector3 position)
     {
         if (_rac1PickupAssets?.Sounds is not { } sounds || !sounds.TryGetValue((nativeClass, localSound), out var sound)) return;
-        _worldHost.PlayEffect(new RuntimeAudioPlaybackIntent(sound.SelectPitch(Rac1EffectRandom), RuntimeAudioCategory.SoundEffect,
-            gain: sound.Gain, position: new RuntimeAudioPosition(-position.X, position.Y, position.Z)));
+        var clip = sound.SelectPitch(Rac1EffectRandom);
+        if (clip.FrameCount == 0) return; // A native probability program deliberately selected silence.
+        if (!_worldHost.PlayEffect(new RuntimeAudioPlaybackIntent(clip, RuntimeAudioCategory.SoundEffect,
+            gain: sound.Gain, position: new RuntimeAudioPosition(-position.X, position.Y, position.Z)))) return;
         _rac1PickupSoundCount++;
+        RecordRac1WeaponSound(nativeClass, localSound);
     }
 
     private Rac1PickupContact? ProbeRac1EffectContact(NVector3 from, NVector3 to, float radius)

@@ -30,7 +30,7 @@ public partial class OBPGame
             _rac1BombThrowGeneration++;
             _rac1BombThrowActive = true;
             SpawnRac1BombProjectile(shot);
-            PlayRac1PickupSound(192, 1, _player.GlobalPosition);
+            PlayRac1PickupSound(0, 26, _player.GlobalPosition); // 0x2c2.. hero throw, not the glove's equip cue.
             PersistRac1CampaignState("Bomb Glove ammo consumption");
             _rac1CombatStatus = $"Bomb Glove fired: ammo {shot.AmmoBefore}->{shot.AmmoAfter}";
             RefreshRac1HudState();

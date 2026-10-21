@@ -29,7 +29,7 @@ public class Ps2SoundBank989
         ushort Flags,
         int SampleOffset);
 
-    public sealed record Grain(int Type, int Delay, Tone? Tone);
+    public sealed record Grain(int Type, int Delay, Tone? Tone, byte[]? Parameters = null);
 
     public sealed record Sound(
         int Id,
@@ -171,7 +171,7 @@ public class Ps2SoundBank989
                     sampleOffsets.Add(tone.SampleOffset);
                 }
 
-                grains.Add(new Grain(type, delay, tone));
+                grains.Add(new Grain(type, delay, tone, meta.AsSpan(grainAt + 8, GrainV1Size - 8).ToArray()));
             }
 
             sounds.Add(new Sound(soundId, volume, group, pan, instanceLimit, flags, grains));

@@ -110,6 +110,13 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Host-only keyboard selection seam for the bounded R&amp;C1 weapon inventory.</summary>
     public event Action<Rac1WeaponId>? Rac1WeaponSelectionRequested;
+    public event Action? Rac1WeaponPreviewRequested;
+    public event Action<int>? Rac1WeaponCycleRequested;
+    public bool Rac1RemoteControlActive { get; set; }
+    public Vector2 Rac1RemoteSteering { get; private set; }
+    public bool Rac1RemoteDetonate { get; private set; }
+    public Vector3 Rac1EquipmentLungeVelocity { get; set; }
+    public bool Rac1EquipmentActionActive { get; set; }
 
     public Camera3D Camera { get; private set; } = null!;
 
@@ -329,6 +336,11 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         _rawInput.Observe(@event);
+        if (UseRac1Gameplay && @event is InputEventJoypadButton { Pressed: true, ButtonIndex: JoyButton.DpadLeft or JoyButton.DpadRight } button)
+        {
+            Rac1WeaponCycleRequested?.Invoke(button.ButtonIndex == JoyButton.DpadLeft ? -1 : 1);
+            return;
+        }
 
         if (@event is InputEventMouseMotion motion &&
             Input.MouseMode == Input.MouseModeEnum.Captured &&
@@ -350,6 +362,19 @@ public partial class PlayerHost : CharacterBody3D
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.FirstRanged);
             }
+            else if (UseRac1Gameplay && key.Keycode is >= Key.Key3 and <= Key.Key9)
+            {
+                Rac1WeaponId[] choices = key.ShiftPressed
+                    ? [Rac1WeaponId.Taunter, Rac1WeaponId.Walloper, Rac1WeaponId.TeslaClaw, Rac1WeaponId.MorphORay,
+                        Rac1WeaponId.Ryno, Rac1WeaponId.DroneDevice, Rac1WeaponId.DecoyGlove]
+                    : [Rac1WeaponId.Pyrocitor, Rac1WeaponId.Blaster, Rac1WeaponId.GloveOfDoom,
+                        Rac1WeaponId.MineGlove, Rac1WeaponId.SuckCannon, Rac1WeaponId.Devastator, Rac1WeaponId.VisibombGun];
+                Rac1WeaponSelectionRequested?.Invoke(choices[(int)key.Keycode - (int)Key.Key3]);
+            }
+            else if (UseRac1Gameplay && key.Keycode is Key.Bracketleft or Key.Bracketright)
+                Rac1WeaponCycleRequested?.Invoke(key.Keycode == Key.Bracketleft ? -1 : 1);
+            else if (UseRac1Gameplay && key.Keycode == Key.Key0)
+                Rac1WeaponPreviewRequested?.Invoke();
         }
     }
 
@@ -377,7 +402,18 @@ public partial class PlayerHost : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read();
-            _rac1CrankInputActive = UseRac1Gameplay && !DevelopmentControls.FlyEnabled &&
+            Rac1RemoteSteering = _liveInput.Move + _liveInput.CameraIntent;
+            Rac1RemoteDetonate = Rac1RemoteControlActive && (_liveInput.CrouchHeld || _liveInput.ActionJustPressed);
+            if (Rac1RemoteControlActive)
+                _liveInput = _liveInput with
+                {
+                    Move = Vector2.Zero,
+                    JumpHeld = false,
+                    CrouchHeld = false,
+                    ActionJustPressed = false,
+                    EquippedUseJustPressed = false
+                };
+            _rac1CrankInputActive = UseRac1Gameplay && !DevelopmentControls.FlyEnabled && !Rac1RemoteControlActive &&
                 (Rac1CrankInput?.Invoke(_liveInput.ActionHeld, _liveInput.Move) ?? false);
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
@@ -404,6 +440,7 @@ public partial class PlayerHost : CharacterBody3D
 
         var (move, jump) = Scripted ? ScriptedInput() : (_liveInput.Move, _liveInput.JumpHeld);
         bool crouch = !Scripted && _liveInput.CrouchHeld;
+        if (Rac1EquipmentActionActive) { move = Vector2.Zero; jump = crouch = false; }
         if (UseRac1Gameplay && !Rac1GameplayAllowsOrdinaryMovement)
         {
             ResetRac1WrenchAttack();
@@ -418,7 +455,12 @@ public partial class PlayerHost : CharacterBody3D
         StepRetailDerivedMovement(move, jump, crouch);
         long profileController = DevelopmentTimestamp();
         if (UseRac1Gameplay)
+        {
+            if (Rac1RemoteControlActive) Velocity = new(0, Velocity.Y, 0);
+            if (Rac1EquipmentLungeVelocity != Vector3.Zero)
+                Velocity = new(Rac1EquipmentLungeVelocity.X, Velocity.Y, Rac1EquipmentLungeVelocity.Z);
             MoveRac1Contact((float)delta);
+        }
         else
             MoveAndSlide();
         long profileContact = DevelopmentTimestamp();

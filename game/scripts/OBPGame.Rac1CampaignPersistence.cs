@@ -120,6 +120,9 @@ public partial class OBPGame
 
     private void PersistRac1CampaignState(string reason)
     {
+        // Preview equipment and its ammo are session-only. Never export this
+        // development loadout through ordinary campaign persistence.
+        if (_rac1WeaponPreviewInventory is not null) return;
         if (!_rac1CampaignPersistenceInitialized)
             EnsureRac1CampaignPersistenceInitialized();
 

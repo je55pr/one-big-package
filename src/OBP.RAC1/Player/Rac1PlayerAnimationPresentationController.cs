@@ -15,9 +15,12 @@ public sealed partial class Rac1PlayerAnimationPresentationController : IPlayerA
     private PlayerAnimationState _attackReturnState = PlayerAnimationState.Idle;
     private int _currentSequenceId = Rac1RatchetSequenceSelection.StandingSequenceId;
 
-    public Rac1PlayerAnimationPresentationController(PlayerAvatar avatar)
+    public Rac1PlayerAnimationPresentationController(PlayerAvatar avatar, IReadOnlyList<float>? equipmentMask = null,
+        Rac1RatchetEquipmentRig? equipmentRig = null)
     {
         _avatar = avatar;
+        _equipmentMask = equipmentMask;
+        _equipmentRig = equipmentRig;
         RegisterAttachmentFrames();
         Current = Presentation(
             PlayerAnimationState.Idle,

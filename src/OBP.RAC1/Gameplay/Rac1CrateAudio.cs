@@ -10,13 +10,16 @@ namespace OBP.RAC1.Gameplay;
 public static class Rac1CrateAudio
 {
     public sealed record Sound(int BankSoundId, RuntimeAudioClip Clip, double Gain,
-        int CenterNote, int CenterFine, int PitchMinimum, int PitchMaximum)
+        int CenterNote, int CenterFine, int PitchMinimum, int PitchMaximum, bool Loop = false,
+        IReadOnlyList<RuntimeAudioClip>? Alternatives = null)
     {
         public RuntimeAudioClip SelectPitch(Rac1PickupRandom random)
         {
+            var clip = Alternatives is { Count: > 0 } choices ? choices[random.Below(choices.Count)] : Clip;
             int modulation = PitchMaximum > PitchMinimum
                 ? PitchMinimum + random.Below(PitchMaximum - PitchMinimum) : PitchMinimum;
-            return new(ApproximateToneRate(CenterNote, CenterFine, modulation), 1, Clip.InterleavedPcm16);
+            return new(ApproximateToneRate(CenterNote, CenterFine, modulation), 1, clip.InterleavedPcm16,
+                clip.LoopStartFrame, clip.LoopEndFrame);
         }
     }
 
@@ -36,9 +39,11 @@ public static class Rac1CrateAudio
         var data = Rac1DiscIndex.OpenRange(disc, level, 0);
         var bank = Ps2SoundBank989.Open(Rac1LevelData.OpenRange(data, Rac1LevelData.ReadDirectory(data), 1));
         var result = new Dictionary<(int, int), Sound>();
+        var programs = new Dictionary<int, Ps2SoundRenderer989.Rendered?>();
         var classOffsets = Rac1StaticClasses.ReadMobyTable(core).ToDictionary(row => row.OClass, row => row.AssetOffset);
         foreach (var entry in Rac1ClassSoundRemap.Read(core).Where(entry =>
-                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is >= 13 and <= 16 or 121 or 192 or 280 or 459 or 577 or 665 or 704 or 754 or 749 or 1440 || Rac1BoltCrate.IsCrateClass(entry.Key))))
+                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is 0 or 71 or >= 13 and <= 16 or 74 or 121 or 153 or 172 or 186 or 190 or 192 or 203 or 229 or 230 or 270 or 280 or 457 or 459 or 479 or 577 or 665 or 704 or 749 or 754 or 1440 ||
+                         Rac1WeaponProfiles.Additional.Any(profile => profile.ModelClass == entry.Key) || Rac1BoltCrate.IsCrateClass(entry.Key))))
         {
             int cls = classOffsets[entry.Key];
             ReadOnlySpan<byte> payload = cls > 0 ? core.Assets.AsSpan(cls) : Rac1GlobalMoby.Read(core, entry.Key).Payload;
@@ -48,10 +53,6 @@ public static class Rac1CrateAudio
                 if (id == -1) continue;
                 if ((uint)id >= bank.Sounds.Count) throw new InvalidDataException("R&C1 remapped sound is outside level bank.");
                 var sound = bank.Sounds[id];
-                // This slice admits only a single immediate tone. Do not flatten
-                // scripted grain programs into an incorrect representative sound.
-                if (sound.Grains is not [{ Type: 1, Delay: 0, Tone: { } tone }]) continue;
-                var pcm = bank.DecodeTone(tone);
                 if (payload.Length < 0x48 || local >= payload[0xd])
                     throw new InvalidDataException("R&C1 class SoundDef/remap count differs.");
                 long at = BinaryPrimitives.ReadInt32LittleEndian(payload.Slice(0x28, 4)) + local * 0x20L;
@@ -61,9 +62,33 @@ public static class Rac1CrateAudio
                 int pitchMax = BinaryPrimitives.ReadInt32LittleEndian(payload.Slice((int)at + 0x14, 4));
                 if (pitchMin < short.MinValue || pitchMax > short.MaxValue || pitchMin > pitchMax)
                     throw new InvalidDataException("R&C1 class SoundDef pitch range is invalid.");
-                var clip = new RuntimeAudioClip(ApproximateToneRate(tone.CenterNote, tone.CenterFine, 0), 1, pcm.Samples);
-                result.Add((entry.Key, local), new(id, clip,
-                    Math.Clamp(sound.Volume / 127d * tone.Volume / 127d, 0, 1), tone.CenterNote, tone.CenterFine, pitchMin, pitchMax));
+                double classGain = Math.Clamp(BinaryPrimitives.ReadInt32LittleEndian(payload.Slice((int)at + 0xc, 4)) / 2048d, 0, 1);
+                if (sound.Grains is [{ Type: 1, Delay: 0, Tone: { } tone }])
+                {
+                    var pcm = bank.DecodeTone(tone);
+                    var clip = new RuntimeAudioClip(ApproximateToneRate(tone.CenterNote, tone.CenterFine, 0), 1, pcm.Samples,
+                        sound.Loop ? pcm.Info.LoopStartSample ?? 0 : 0);
+                    result.Add((entry.Key, local), new(id, clip,
+                        Math.Clamp(classGain * sound.Volume / 127d * tone.Volume / 127d, 0, 1), tone.CenterNote, tone.CenterFine, pitchMin, pitchMax, sound.Loop));
+                }
+                else
+                {
+                    if (!programs.TryGetValue(id, out var rendered))
+                        programs[id] = rendered = Ps2SoundRenderer989.TryRender(sound, bank.DecodeTone);
+                    if (rendered is null) continue;
+                    RuntimeAudioClip[]? alternatives = null;
+                    if (sound.Grains.Any(grain => grain.Type == 31))
+                    {
+                        var variants = Enumerable.Range(0, 8).Select(seed => Ps2SoundRenderer989.TryRender(sound, bank.DecodeTone, id * 17 + seed)).ToArray();
+                        if (variants.Any(variant => variant is null)) continue;
+                        alternatives = variants.Select(variant => new RuntimeAudioClip(Ps2SoundRenderer989.SampleRate, 1,
+                            variant!.Samples, variant.LoopStartFrame, variant.LoopEndFrame)).ToArray();
+                        rendered = variants.FirstOrDefault(variant => variant!.Samples.Length > 0) ?? rendered;
+                    }
+                    var clip = new RuntimeAudioClip(Ps2SoundRenderer989.SampleRate, 1, rendered.Samples,
+                        rendered.LoopStartFrame, rendered.LoopEndFrame);
+                    result.Add((entry.Key, local), new(id, clip, classGain, -60, 0, pitchMin, pitchMax, sound.Loop, alternatives));
+                }
             }
         }
         return result;

@@ -25,7 +25,7 @@ public sealed class RuntimeAudioHost
         int FrameCount,
         bool Loop,
         float VolumeDb,
-        Vector3? ScenePosition);
+        Vector3? ScenePosition, int LoopStartFrame = 0, int? LoopEndFrame = null);
 
     private readonly List<Node> _levelPlayers = [];
     private readonly List<Node> _effectPlayers = [];
@@ -98,7 +98,7 @@ public sealed class RuntimeAudioHost
             checked((int)clip.FrameCount),
             intent.Loop,
             GainToDecibels(intent.Gain),
-            scenePosition);
+            scenePosition, clip.LoopStartFrame, clip.LoopEndFrame);
         problem = null;
         return true;
     }
@@ -247,8 +247,8 @@ public sealed class RuntimeAudioHost
         LoopMode = prepared.Loop
             ? AudioStreamWav.LoopModeEnum.Forward
             : AudioStreamWav.LoopModeEnum.Disabled,
-        LoopBegin = 0,
-        LoopEnd = prepared.FrameCount,
+        LoopBegin = prepared.LoopStartFrame,
+        LoopEnd = prepared.LoopEndFrame ?? prepared.FrameCount,
     };
 
     private static AudioStreamPlayer BuildPlayer(AudioStream stream, float volumeDb) => new()

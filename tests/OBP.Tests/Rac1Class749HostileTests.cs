@@ -272,6 +272,17 @@ public sealed class Rac1Class749HostileTests
     }
 
     [Fact]
+    public void BlasterReactionReplacesRawQuarterDamageBeforeTheOneHealthConsequence()
+    {
+        var source = Class749(149, health: 1f); var session = Registered(source);
+        var damage = Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Blaster, new(749, 149), .25, Rac1WeaponProfiles.BlasterFlags);
+        var hit = session.ApplyDamage(source, damage);
+        Assert.Equal(0f, hit.Health);
+        Assert.Equal(.25, damage.NativeDamage);
+        Assert.Equal(Rac1Class749Hostile.DamageNativeState, hit.NativeState);
+    }
+
+    [Fact]
     public void WrenchDamageDoesNotGeneralizeUnprovenHealthValues()
     {
         var source = Class749(149, health: 2f);

@@ -42,6 +42,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     public PlayerAnimationPresentation StepOrdinaryAnimation(
         PlayerAnimationState state, double clockSeconds, Rac1LocomotionAnimationInput input)
     {
+        RestoreEquipmentBasePose();
         if (!float.IsFinite(input.InputMagnitude) || input.InputMagnitude < 0 || input.InputMagnitude > 1 ||
             input.ContactMotionLength is { } length && (!float.IsFinite(length) || length < 0))
             throw new ArgumentOutOfRangeException(nameof(input));
@@ -130,6 +131,8 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     /// <summary>Host teleport/restart boundary; this is not a recovered action transition.</summary>
     public void ResetPhysicsPresentation()
     {
+        RestoreEquipmentBasePose();
+        _equipmentAmount = 0;
         _clockSeconds = 0;
         _locomotionClock = null;
         _locomotionBlendSource = null;

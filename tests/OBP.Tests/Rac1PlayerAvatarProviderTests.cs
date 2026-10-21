@@ -48,7 +48,7 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal("rac1-ntscu-original", avatar.Identity.BuildId);
         Assert.Equal("ratchet", avatar.Identity.AvatarId);
         Assert.Equal("rac1:ratchet:moby-class-0", avatar.Identity.ModelId);
-        Assert.Equal(40, avatar.AnimationClips.Count);
+        Assert.Equal(48, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.LocalAnimationFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
         Assert.Equal(5_583, avatar.VertexCount);
@@ -97,6 +97,14 @@ public sealed class Rac1PlayerAvatarProviderTests
                 "underwater-moving",
                 "underwater-idle",
                 "hydro-pack-underwater",
+                "pyrocitor-hold",
+                "blaster-hold",
+                "blaster-fire",
+                "blaster-moving",
+                "devastator-hold",
+                "devastator-fire",
+                "ryno-hold",
+                "walloper-punch",
             },
             avatar.AnimationClips.Select(clip => clip.Id).ToArray());
         Assert.Equal(3, avatar.AnimationClips.Count(

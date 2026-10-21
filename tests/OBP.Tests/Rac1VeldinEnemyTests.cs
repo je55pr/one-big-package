@@ -45,6 +45,19 @@ public sealed class Rac1VeldinEnemyTests
     }
 
     [Fact]
+    public void RobotUsesItsNativeBlasterDamageClassAndAcceptsRepeatedWeakShotRecords()
+    {
+        var source = Robot(189); var session = new Rac1Class1440Session(new(), []);
+        session.Register(source, RuntimeEntityState.FromAuthored(source));
+        var damage = Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Blaster, new(1440, 189), .25, Rac1WeaponProfiles.BlasterFlags);
+        var first = session.ApplyDamage(source, damage);
+        Assert.Equal(2f - BitConverter.Int32BitsToSingle(0x3f2ac083), first.Probe.Health);
+        Assert.True(session.CanApplyDamage(source, damage)); // Native reaction11 keeps repeated shot damage.
+        Assert.False(session.ApplyDamage(source, damage).Lethal);
+        Assert.True(session.ApplyDamage(source, damage).Lethal);
+    }
+
+    [Fact]
     public void PlayerIntakeSharesRecoveredProtectionAcrossBothEnemyFamilies()
     {
         var player = new Rac1RatchetNanotechSession();

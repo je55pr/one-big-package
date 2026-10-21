@@ -412,7 +412,11 @@ public partial class OBPGame
             for (int frame = 0; frame < maxFrames; frame++)
             {
                 target = targetCenterProvider();
-                bool admitted = Rac1SmokeCurrentWrenchPolicyAdmits(target);
+                // The old planar admission cone extends beyond the recovered
+                // animated hand/tip sweep. Approach the crate itself before
+                // expecting a real contact; continue using ordinary input only.
+                bool admitted = Rac1SmokeCurrentWrenchPolicyAdmits(target) &&
+                    HorizontalDistance(_player.GlobalPosition, target) <= 1.45f;
                 float speed = HorizontalSpeed(_player);
 
                 if (admitted)

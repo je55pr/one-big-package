@@ -35,7 +35,8 @@ public partial class OBPGame
     private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
         new Rac1CampaignState(),
         Rac1WeaponInventory.CreateOpeningVeldinWitness());
-    private Rac1WeaponInventory _rac1Weapons => _rac1CampaignSession.Weapons;
+    private Rac1WeaponInventory? _rac1WeaponPreviewInventory;
+    private Rac1WeaponInventory _rac1Weapons => _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
     private Rac1BombGloveSession? _rac1BombGlove;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
@@ -80,6 +81,7 @@ public partial class OBPGame
         _rac1Nanotech = new Rac1RatchetNanotechSession();
         _rac1DamageTransport = new Rac1DamageTransportSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
+        ResetRac1AdditionalWeapons();
         _rac1Class749PresentationNodes.Clear();
         _rac1LinkedTargetNodes.Clear();
         _rac1HostileNodes.Clear();
@@ -180,7 +182,8 @@ public partial class OBPGame
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
-        _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet), feedback);
+        _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet,
+            _rac1AdditionalWeapons?.Cargo.Count ?? 0), feedback);
     }
 
     private void ArmRac1Gameplay(PlayerHost player)
@@ -188,6 +191,8 @@ public partial class OBPGame
         if (_world?.Game != "rac1") return;
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
+        player.Rac1WeaponCycleRequested += OnRac1WeaponCycleRequested;
+        player.Rac1WeaponPreviewRequested += ToggleRac1WeaponPreview;
         player.Rac1WrenchPhysicsUpdated += OnRac1WrenchPhysicsUpdated;
         player.Rac1CrankInput = TryTurnRac1NovalisCrank;
         player.Rac1WaterSurfaceHeight = SampleRac1NovalisWaterHeight;
@@ -248,7 +253,7 @@ public partial class OBPGame
             $"class-749 population {hostileProbes.Length} ({activeHostiles} active)" +
             (stateSummary.Length > 0 ? $"; {stateSummary}" : string.Empty);
         var nanotech = _rac1Nanotech.Probe();
-        string weapon = _rac1Weapons.Equipped == Rac1WeaponId.Wrench ? "Wrench" : "Bomb Glove";
+        string weapon = Rac1WeaponProfiles.Name(_rac1Weapons.Equipped);
         string restart = nanotech.HasRecoveredEnvironmentalRespawn
             ? "automatic recovered environmental respawn pending"
             : nanotech.IsDead
@@ -256,7 +261,7 @@ public partial class OBPGame
                 : "environmental restart evidence: levels 0 and 2 only";
         string swim = _player?.Rac1SwimState is { } state
             ? $"   Water: {state.Water}   O2: {state.OxygenFraction:P0}" : string.Empty;
-        return $"R&C1 combat: X wrench · E equipped item · 1 wrench · 2 Bomb Glove · {restart} · {_rac1CombatStatus}\n" +
+        return $"R&C1 combat: X wrench · E equipped item · 1–7 weapons · 0 weapon preview/refill · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
             $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}{swim}";

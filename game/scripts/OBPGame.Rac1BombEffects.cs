@@ -20,7 +20,7 @@ public partial class OBPGame
         _rac1BombThrowGeneration = 0; _rac1BombThrowActive = false; _rac1BombImpactCount = 0;
     }
 
-    private void SpawnRac1BombExplosion(Vector3 origin)
+    private void SpawnRac1BombExplosion(Vector3 origin, bool playSound = true)
     {
         bool distant = _player is not null && _player.GlobalPosition.DistanceTo(origin) > 9;
         foreach (var motion in Rac1BombExplosion.Bursts(distant))
@@ -55,7 +55,7 @@ public partial class OBPGame
             trail.LocalCoords = false;
             trail.Emitting = true;
         }
-        PlayRac1PickupSound(121, 0, origin);
+        if (playSound) PlayRac1PickupSound(121, 0, origin);
         SpawnBombParticleAdapter(origin);
     }
 
@@ -126,28 +126,7 @@ public partial class OBPGame
     private CpuParticles3D CreateBombParticles(int poolType, int count, double lifetime, float explosiveness,
         Vector3 gravity, float speedMin, float speedMax, float sizeMin, float sizeMax, Color color)
     {
-        if (!_rac1BombParticleMeshes.TryGetValue(poolType, out var mesh))
-        {
-            var texture = _rac1BombGloveAsset!.ParticleTexturesByPoolType[poolType];
-            var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
-            var material = new ShaderMaterial { Shader = new Shader { Code = """
-            shader_type spatial;
-            render_mode unshaded, blend_add, cull_disabled, depth_draw_never;
-            uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_disable;
-            void vertex() {
-                MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
-                MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz),0,0,0), vec4(0,length(MODEL_MATRIX[1].xyz),0,0), vec4(0,0,length(MODEL_MATRIX[2].xyz),0), vec4(0,0,0,1));
-            }
-            void fragment() {
-                vec4 texel = texture(albedo_texture, UV);
-                ALBEDO = texel.rgb * COLOR.rgb;
-                ALPHA = texel.a * COLOR.a;
-            }
-            """ } };
-            material.SetShaderParameter("albedo_texture", ImageTexture.CreateFromImage(image));
-            mesh = new QuadMesh { Size = Vector2.One, Material = material };
-            _rac1BombParticleMeshes.Add(poolType, mesh);
-        }
+        var mesh = GetRac1ParticleMesh(poolType);
         return new CpuParticles3D
         {
             Amount = count,
@@ -166,5 +145,34 @@ public partial class OBPGame
             ColorRamp = new Gradient { Colors = [color, color, new(color.R, color.G, color.B, 0)], Offsets = [0, .8f, 1] },
             Mesh = mesh,
         };
+    }
+
+    private QuadMesh GetRac1ParticleMesh(int poolType)
+    {
+        if (!_rac1BombParticleMeshes.TryGetValue(poolType, out var mesh))
+        {
+            var texture = _rac1EquipmentAssets?.ParticleTextures.GetValueOrDefault(poolType) ??
+                _rac1BombGloveAsset!.ParticleTexturesByPoolType[poolType];
+            var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
+            var material = new ShaderMaterial { Shader = new Shader { Code = """
+            shader_type spatial;
+            render_mode unshaded, blend_add, cull_disabled, depth_draw_never;
+            uniform sampler2D albedo_texture : source_color, filter_linear_mipmap, repeat_disable;
+            instance uniform vec4 tint : source_color = vec4(1.0);
+            void vertex() {
+                MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+                MODELVIEW_MATRIX = MODELVIEW_MATRIX * mat4(vec4(length(MODEL_MATRIX[0].xyz),0,0,0), vec4(0,length(MODEL_MATRIX[1].xyz),0,0), vec4(0,0,length(MODEL_MATRIX[2].xyz),0), vec4(0,0,0,1));
+            }
+            void fragment() {
+                vec4 texel = texture(albedo_texture, UV);
+                ALBEDO = texel.rgb * COLOR.rgb * tint.rgb;
+                ALPHA = texel.a * COLOR.a * tint.a;
+            }
+            """ } };
+            material.SetShaderParameter("albedo_texture", ImageTexture.CreateFromImage(image));
+            mesh = new QuadMesh { Size = Vector2.One, Material = material };
+            _rac1BombParticleMeshes.Add(poolType, mesh);
+        }
+        return mesh;
     }
 }

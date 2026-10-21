@@ -24,7 +24,8 @@ internal static class WorldSmokeHarness
         Func<Task>? NovalisSwim = null,
         Func<Task>? NovalisPeckbot = null,
         Func<Task>? NovalisBirdbot = null,
-        Func<Task>? NovalisMusic = null);
+        Func<Task>? NovalisMusic = null,
+        Func<Task>? Weapons = null);
 
     internal static bool IsRequested(CommandLineArgs args) =>
         args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
@@ -37,6 +38,7 @@ internal static class WorldSmokeHarness
         args.Rac1NovalisPeckbotSmoke ||
         args.Rac1NovalisBirdbotSmoke ||
         args.Rac1NovalisMusicSmoke ||
+        args.Rac1WeaponsSmoke ||
         args.Rac1CrateSmoke ||
         args.Rac1EnemySmoke ||
         args.Rac1PlacedBoltSmoke ||
@@ -73,6 +75,8 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.NovalisBirdbot?.Invoke();
             if (args.Rac1NovalisMusicSmoke)
                 _ = entrypoints.NovalisMusic?.Invoke();
+            if (args.Rac1WeaponsSmoke)
+                _ = entrypoints.Weapons?.Invoke();
             if (args.Rac1CrateSmoke)
                 _ = entrypoints.Crates?.Invoke();
             if (args.Rac1EnemySmoke)
@@ -120,6 +124,7 @@ public partial class OBPGame
                 RunRac1NovalisSwimSmokeAsync,
                 RunRac1NovalisPeckbotSmokeAsync,
                 RunRac1NovalisBirdbotSmokeAsync,
-                RunRac1NovalisMusicSmokeAsync));
+                RunRac1NovalisMusicSmokeAsync,
+                RunRac1WeaponsSmokeAsync));
     }
 }

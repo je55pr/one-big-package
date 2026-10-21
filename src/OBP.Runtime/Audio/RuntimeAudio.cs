@@ -17,6 +17,8 @@ public sealed record RuntimeAudioClip
     public int SampleRateHz { get; }
     public int ChannelCount { get; }
     public short[] InterleavedPcm16 { get; }
+    public int LoopStartFrame { get; }
+    public int LoopEndFrame { get; }
 
     public long FrameCount => InterleavedPcm16.LongLength / ChannelCount;
     public double DurationSeconds => (double)FrameCount / SampleRateHz;
@@ -24,7 +26,7 @@ public sealed record RuntimeAudioClip
     public RuntimeAudioClip(
         int sampleRateHz,
         int channelCount,
-        short[] interleavedPcm16)
+        short[] interleavedPcm16, int loopStartFrame = 0, int? loopEndFrame = null)
     {
         if (sampleRateHz <= 0)
             throw new ArgumentOutOfRangeException(nameof(sampleRateHz));
@@ -41,6 +43,10 @@ public sealed record RuntimeAudioClip
         SampleRateHz = sampleRateHz;
         ChannelCount = channelCount;
         InterleavedPcm16 = interleavedPcm16;
+        LoopStartFrame = loopStartFrame;
+        LoopEndFrame = loopEndFrame ?? checked((int)FrameCount);
+        if (LoopStartFrame < 0 || LoopEndFrame < LoopStartFrame || LoopEndFrame > FrameCount)
+            throw new ArgumentOutOfRangeException(nameof(loopStartFrame));
     }
 }
 

@@ -36,10 +36,22 @@ public partial class OBPGame
             .Select(instance => new MovementReproInactiveObject(instance.Key, instance.State.NativeState,
                 instance.State.IsTerminalized ||
                 _rac1Enemies.TryGetValue(instance.InstanceIndex, out var enemy) && enemy.RewardEmitted)).ToArray(),
-        _rac1Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId, _rac1BoltWallet.Balance);
+        _rac1Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId, _rac1BoltWallet.Balance,
+        _rac1AdditionalWeapons?.Cargo.ToArray(), _rac1WeaponPreviewInventory is not null,
+        _rac1Chickens.Values.Where(chicken => IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
+            .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
+            .Concat(_rac1ChickenCargo).Distinct().ToArray());
 
     private void RestoreMovementWorld(MovementReproWorld world)
     {
+        _rac1AdditionalWeapons?.RestoreCargo(world.CapturedMobies ?? []);
+        foreach (var key in world.MorphedMobies ?? [])
+        {
+            if (!_rac1Enemies.TryGetValue(key.InstanceIndex, out var enemy) || enemy.Node.Source.NativeClassId != key.NativeClassId)
+                throw new InvalidDataException("Saved Morph-o-Ray victim is unavailable in this level.");
+            if (world.CapturedMobies?.Contains(key) == true) _rac1ChickenCargo.Add(key);
+            else MorphArsenalEnemy(enemy.Node);
+        }
         var objects = world.InactiveObjects.Select(saved =>
             (Saved: saved, Instance: _rac1MobyRuntime.TryGet(saved.Key, out var instance) ? instance! :
                 throw new InvalidDataException($"Saved object {saved.Key} is unavailable in this world."))).ToArray();
@@ -121,8 +133,10 @@ public partial class OBPGame
             if (state.World is { } savedWorld)
             {
                 EnsureRac1CampaignPersistenceInitialized();
-                _rac1CampaignSession = new Rac1CampaignRuntimeSession(_rac1CampaignSession.Campaign,
-                    new Rac1WeaponInventory(savedWorld.Inventory, savedWorld.CurrentItemId));
+                var inventory = new Rac1WeaponInventory(savedWorld.Inventory, savedWorld.CurrentItemId);
+                _rac1WeaponPreviewInventory = savedWorld.WeaponPreview ? inventory : null;
+                if (!savedWorld.WeaponPreview)
+                    _rac1CampaignSession = new Rac1CampaignRuntimeSession(_rac1CampaignSession.Campaign, inventory);
                 _rac1BoltWallet = new Rac1BoltWallet(savedWorld.Bolts);
             }
             OpenDestinationFromBootstrap(state.Destination);

@@ -6,6 +6,22 @@ namespace OBP.RAC1.Animation;
 /// <summary>Class+0x1c semantic joint chains used by 0x253fa0 and its world-space query wrappers.</summary>
 public static class Rac1MobyAttachment
 {
+    /// <summary>Class chain's second list, consumed by 0x24f028 for joint animation layers.</summary>
+    public static IReadOnlyList<int> ReadAnimationLayerJoints(ReadOnlySpan<byte> classPayload, int semanticJoint)
+    {
+        _ = ReadJoint(classPayload, semanticJoint);
+        int table = BinaryPrimitives.ReadInt32LittleEndian(classPayload[0x1c..]);
+        int chain = BinaryPrimitives.ReadInt32LittleEndian(classPayload[(table + 4 + semanticJoint * 4)..]);
+        int count = classPayload[chain + 2];
+        int start = chain + 4 + classPayload[chain];
+        RequireRange(classPayload, start, count);
+        var joints = classPayload.Slice(start, count).ToArray().Select(joint => (int)joint).ToArray();
+        int jointCount = classPayload[8];
+        if (joints.Distinct().Count() != count || joints.Any(joint => joint >= jointCount))
+            throw new InvalidDataException("Animation layer references invalid joints.");
+        return joints;
+    }
+
     public static int ReadJoint(ReadOnlySpan<byte> classPayload, int semanticJoint)
     {
         if (classPayload.Length < Rac1Moby.ClassHeaderSize || semanticJoint < 0)

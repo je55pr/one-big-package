@@ -49,6 +49,15 @@ public sealed class RuntimeAudioHostTests
         Assert.Equal(new global::Godot.Vector3(-2, 3, 4), prepared.ScenePosition);
     }
 
+    [Fact]
+    public void LoopPlaybackKeepsTheAttackOutsideTheRepeatedRegion()
+    {
+        var clip = new RuntimeAudioClip(48_000, 1, new short[100], loopStartFrame: 20, loopEndFrame: 90);
+        Assert.True(RuntimeAudioHost.TryPrepare(new(clip, RuntimeAudioCategory.SoundEffect, loop: true), out var prepared, out _));
+        Assert.Equal(20, prepared!.LoopStartFrame); Assert.Equal(90, prepared.LoopEndFrame);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RuntimeAudioClip(48_000, 1, new short[100], 101));
+    }
+
     [Theory]
     [InlineData(0d, -80f)]
     [InlineData(1d, 0f)]

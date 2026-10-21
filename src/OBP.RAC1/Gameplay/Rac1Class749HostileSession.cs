@@ -263,13 +263,15 @@ public sealed class Rac1Class749HostileSession :
         return ApplyRepresentativeDamage(
             source,
             envelope,
-            "player-owned wrench damage");
+            "player-owned weapon damage",
+            Rac1EnemyDamage.ResolveNativeDamage(damage, RequireEntry(source).Entry.PVar));
     }
 
     private Rac1Class749HostProbe ApplyRepresentativeDamage(
         RuntimeDynamicObject source,
         Rac1NativeDamageEnvelope damage,
-        string sourceLabel)
+        string sourceLabel,
+        float? resolvedDamage = null)
     {
         var (key, entry) = RequireEntry(source);
         int nativeStateBefore = entry.NativeState;
@@ -278,7 +280,7 @@ public sealed class Rac1Class749HostileSession :
             throw new NotSupportedException(
                 $"R&C1 class-749 {sourceLabel} consequence is proven only for representative health 1.0, not {healthBefore}.");
 
-        float healthAfter = healthBefore - checked((float)damage.NativeDamage);
+        float healthAfter = healthBefore - (resolvedDamage ?? checked((float)damage.NativeDamage));
         // 0x2d5274..0x2d52a4 subtracts the admitted float without clamping.
         // Hyper-Strike's two-point descriptor therefore leaves this one-health
         // victim at -1, then selects the same state-12 lethal reaction.

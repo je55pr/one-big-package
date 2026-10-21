@@ -273,7 +273,7 @@ public static partial class Rac1MobyPose
         IReadOnlyList<Rac1Moby.SkeletonJoint> joints, Rac1MobyAnimation.Frame frame) =>
         mesh.JointCount > 0 && joints.Count == mesh.JointCount &&
         mesh.VertexJoints.Length == mesh.Positions.Length && mesh.VertexWeights.Length == mesh.Positions.Length &&
-        CanPoseRatchetJointHierarchy(joints, frame, allowUnflaggedScale: true);
+        CanPoseRatchetJointHierarchy(joints, frame, allowUnflaggedScale: true, allowScaledBindParents: true);
 
     private static double[] PoseLocalHierarchy(
         Rac1Moby.Mesh mesh,
@@ -369,7 +369,7 @@ public static partial class Rac1MobyPose
 
     private static bool CanPoseRatchetJointHierarchy(
         IReadOnlyList<Rac1Moby.SkeletonJoint> joints,
-        Rac1MobyAnimation.Frame frame, bool allowUnflaggedScale = false)
+        Rac1MobyAnimation.Frame frame, bool allowUnflaggedScale = false, bool allowScaledBindParents = false)
     {
         int n = joints.Count;
         if (n == 0 || frame.JointRotations.Count != n ||
@@ -390,8 +390,11 @@ public static partial class Rac1MobyPose
         {
             var a = Affine3x3(joints[j].NativeAffine);
             double determinant = Determinant(a);
-            if (!double.IsFinite(determinant) || determinant <= 1e-8) return false;
-            if (!IsRigid(joints[j].NativeAffine) && childCounts[j] != 0) return false;
+            if (!double.IsFinite(determinant) || (allowScaledBindParents ? System.Math.Abs(determinant) : determinant) <= 1e-8) return false;
+            // Ordinary equipment (notably class168's barrel hierarchy) retains
+            // non-unit inverse-bind scale on parents. Full matrix composition
+            // below already preserves it; a rigid-only gate discarded its clips.
+            if (!allowScaledBindParents && !IsRigid(joints[j].NativeAffine) && childCounts[j] != 0) return false;
         }
 
         var scaleJoints = new HashSet<int>();

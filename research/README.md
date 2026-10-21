@@ -21,6 +21,7 @@ validation live in code/tests and Git, not completed-task reports.
 | Player | [Movement](RAC1_PLAYER_MOVEMENT.md), [animation and handoffs](RAC1_LOCOMOTION_ANIMATION.md), [avatar](RAC1_PLAYER_AVATAR.md), [camera](RAC1_CAMERA_ARCHAEOLOGY.md) |
 | Contact/traversal | [Collision and ledges](RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md), [contact carry](RAC1_CONTACT_MOTION_CARRY.md), [surfaces](RAC1_SURFACE_MOVEMENT.md), [airborne packs/flips](RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md), [traversal equipment](RAC1_TRAVERSAL_EQUIPMENT.md), [Swingshot pendulum](RAC1_SWINGSHOT_PENDULUM.md) |
 | Combat/equipment | [Wrench actions](RAC1_WRENCH_ACTIONS.md), [wrench model](RAC1_WRENCH_VISUAL.md), [Bomb Glove](RAC1_BOMB_GLOVE.md), [inventory](RAC1_WEAPON_INVENTORY.md), [fire framework](RAC1_WEAPON_FIRE_FRAMEWORK.md), [contact records](RAC1_PROJECTILE_HIT_PATTERNS.md) |
+| Working arsenal | [Additional weapons](RAC1_ADDITIONAL_WEAPONS.md), [ordinary arsenal](RAC1_ARSENAL.md), [pose/audio contracts](RAC1_WEAPON_PRESENTATION_AUDIO_FIXES.md) |
 | Gameplay/populations | [Crates/bolts](RAC1_CRATES_PICKUPS.md), [Veldin enemies](RAC1_VELDIN_ENEMIES.md), [common hostile state](RAC1_HOSTILE_COMMON_STATE.md), [attack contracts](RAC1_ENEMY_ATTACK_PATTERNS.md), [Aridia enemies](RAC1_ARIDIA_ENEMIES.md), [Kerwan taxis](RAC1_METROPOLIS_TAXIS.md) |
 | Census/progression | [Authored Mobies](RAC1_AUTHORED_MOBY_CENSUS.md), [class families](RAC1_CLASS_FAMILIES.md), [NPC/interactables](RAC1_NPC_INTERACTABLE_CENSUS.md), [travel](RAC1_CAMPAIGN_TRAVEL.md), [checkpoints](RAC1_CHECKPOINTS.md), [start](RAC1_VELDIN_SPAWN.md), [health/death/restart](RAC1_DEATH_RESPAWN.md) |
 
@@ -43,6 +44,6 @@ validation live in code/tests and Git, not completed-task reports.
 ## Using the project
 
 [Architecture](../docs/ARCHITECTURE.md), [testing](../docs/RETAIL_TESTING.md),
-[saved repros](../docs/MOVEMENT_REPRO_STATES.md), and
-[Veldin composition alignment](VELDIN_CROSS_GAME_ALIGNMENT.md).
+[saved repros](../docs/MOVEMENT_REPRO_STATES.md), [weapon controls](../docs/RAC1_WEAPONS_TESTING.md),
+and [Veldin composition alignment](VELDIN_CROSS_GAME_ALIGNMENT.md).
 Speculative design stays in [brainstorming](../docs/brainstorming/README.md).

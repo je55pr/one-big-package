@@ -409,6 +409,20 @@ public partial class PlayerHud : Control
         {
             "weapon.wrench" or "rac1.weapon.wrench" => "Wrench",
             "weapon.bomb-glove" or "rac1.weapon.bomb-glove" => "Bomb Glove",
+            "weapon.pyrocitor" or "rac1.weapon.pyrocitor" => "Pyrocitor",
+            "weapon.blaster" or "rac1.weapon.blaster" => "Blaster",
+            "weapon.glove-of-doom" or "rac1.weapon.glove-of-doom" => "Glove of Doom",
+            "weapon.mine-glove" or "rac1.weapon.mine-glove" => "Mine Glove",
+            "weapon.suck-cannon" or "rac1.weapon.suck-cannon" => "Suck Cannon",
+            "weapon.devastator" => "Devastator",
+            "weapon.visibomb" => "Visibomb Gun",
+            "weapon.taunter" => "Taunter",
+            "weapon.walloper" => "Walloper",
+            "weapon.tesla-claw" => "Tesla Claw",
+            "weapon.morph-o-ray" => "Morph-o-Ray",
+            "weapon.ryno" => "RYNO",
+            "weapon.drone-device" => "Drone Device",
+            "weapon.decoy-glove" => "Decoy Glove",
             _ => DisplayText(key),
         };
     }

@@ -42,7 +42,10 @@ public sealed record MovementReproWorld(
     IReadOnlyList<MovementReproInactiveObject> InactiveObjects,
     Rac1WeaponPersistentState Inventory,
     int CurrentItemId,
-    int Bolts)
+    int Bolts,
+    IReadOnlyList<Rac1MobyRuntimeKey>? CapturedMobies = null,
+    bool WeaponPreview = false,
+    IReadOnlyList<Rac1MobyRuntimeKey>? MorphedMobies = null)
 {
     public void Validate()
     {
@@ -54,6 +57,15 @@ public sealed record MovementReproWorld(
             throw new InvalidDataException("Invalid movement state world objects or bolt balance.");
         try { _ = new Rac1WeaponInventory(Inventory, CurrentItemId); }
         catch (ArgumentException ex) { throw new InvalidDataException("Invalid movement state inventory.", ex); }
+        if (CapturedMobies is { } cargo && (cargo.Count > Rac1AdditionalWeaponSession.SuckCapacity ||
+            cargo.Distinct().Count() != cargo.Count || cargo.Any(key =>
+                key.NativeClassId is not (500 or 749) && !(key.NativeClassId == 1440 && MorphedMobies?.Contains(key) == true) ||
+                !InactiveObjects.Any(item => item.Key == key))))
+            throw new InvalidDataException("Invalid movement state Suck Cannon cargo.");
+        if (MorphedMobies is { } morphed && (morphed.Count > 4096 || morphed.Distinct().Count() != morphed.Count ||
+            morphed.Any(key => key.NativeClassId is not (749 or 1440) || key.InstanceIndex is < 0 or > 1_000_000 ||
+                InactiveObjects.Any(item => item.Key == key) && CapturedMobies?.Contains(key) != true)))
+            throw new InvalidDataException("Invalid movement state Morph-o-Ray transformations.");
     }
 }
 

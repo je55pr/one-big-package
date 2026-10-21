@@ -77,6 +77,52 @@ public sealed class MovementReproStateTests
     }
 
     [Fact]
+    public void WorldRoundtrip_RetainsCannonCargoAndMarksPreviewInventory()
+    {
+        var inventory = Rac1WeaponInventory.CreateOpeningVeldinWitness();
+        inventory.AcquireNativeItem((int)Rac1WeaponId.SuckCannon);
+        inventory.TryEquip(Rac1WeaponId.SuckCannon);
+        var key = new Rac1MobyRuntimeKey(749, 143);
+        var world = new MovementReproWorld([new(key, 0xfe, true)], inventory.CapturePersistentState(),
+            inventory.CurrentItemId, 0, [key], WeaponPreview: true);
+        var saved = Sample() with { Version = 2, World = world };
+        string path = Path.Combine(Path.GetTempPath(), $"obp-cannon-repro-{Guid.NewGuid():N}.json");
+        try
+        {
+            MovementReproStateFile.Save(path, saved);
+            var restored = MovementReproStateFile.Load(path);
+            Assert.True(restored.World!.WeaponPreview);
+            Assert.Equal(key, Assert.Single(restored.World.CapturedMobies!));
+            Assert.Equal(0, restored.World.Inventory.Ammo[9]);
+        }
+        finally { File.Delete(path); }
+        Assert.Throws<InvalidDataException>(() => (world with { InactiveObjects = [] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { CapturedMobies = [key, key] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { CapturedMobies = [new(1440, 197)] }).Validate());
+    }
+
+    [Fact]
+    public void WorldRoundtrip_RetainsActiveMorphIdentitiesAndRejectsDefeatedOrDuplicateVictims()
+    {
+        var inventory = Rac1WeaponInventory.CreateOpeningVeldinWitness();
+        var victim = new Rac1MobyRuntimeKey(1440, 197);
+        var world = new MovementReproWorld([], inventory.CapturePersistentState(), inventory.CurrentItemId, 0, MorphedMobies: [victim]);
+        var saved = Sample() with { Version = 2, World = world };
+        string path = Path.Combine(Path.GetTempPath(), $"obp-morph-repro-{Guid.NewGuid():N}.json");
+        try
+        {
+            MovementReproStateFile.Save(path, saved);
+            Assert.Equal(victim, Assert.Single(MovementReproStateFile.Load(path).World!.MorphedMobies!));
+        }
+        finally { File.Delete(path); }
+        Assert.Throws<InvalidDataException>(() => (world with { MorphedMobies = [victim, victim] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { MorphedMobies = [new(500, 1)] }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { InactiveObjects = [new(victim, 8, true)] }).Validate());
+        var captured = world with { InactiveObjects = [new(victim, 0xfe, true)], CapturedMobies = [victim] };
+        captured.Validate(); // A captured transformed robot retains its chicken presentation identity.
+    }
+
+    [Fact]
     public void WorldValidation_RejectsDuplicateIdentitiesBadStatesAndInvalidInventory()
     {
         var inventory = Rac1WeaponInventory.CreateOpeningVeldinWitness().CapturePersistentState();

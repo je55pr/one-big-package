@@ -21,7 +21,8 @@ public static class Rac1HudProjection
     public static HudPresentationState Capture(
         Rac1RatchetNanotechSession nanotech,
         Rac1WeaponInventory weapons,
-        Rac1BoltWallet? wallet = null)
+        Rac1BoltWallet? wallet = null,
+        int capturedMobyCount = 0)
     {
         ArgumentNullException.ThrowIfNull(nanotech);
         ArgumentNullException.ThrowIfNull(weapons);
@@ -50,8 +51,13 @@ public static class Rac1HudProjection
                 Ammo: new HudAmmo(
                     Current: weapons.FirstRangedAmmo,
                     Capacity: Rac1BombGlove.MaxAmmo)),
-            _ => throw new InvalidOperationException(
-                $"Unsupported R&C1 HUD weapon {weapons.Equipped}."),
+            var additional when Rac1WeaponProfiles.IsAdditional(additional) => new HudWeapon(
+                $"rac1.weapon.{Rac1WeaponProfiles.Get(additional).Key}",
+                $"weapon.{Rac1WeaponProfiles.Get(additional).Key}",
+                additional != Rac1WeaponId.SuckCannon && !Rac1ItemAmmoDescriptors.Get((int)additional).UsesAmmo ? null :
+                new HudAmmo(additional == Rac1WeaponId.SuckCannon ? capturedMobyCount : weapons.GetAmmo((int)additional),
+                    additional == Rac1WeaponId.SuckCannon ? Rac1AdditionalWeaponSession.SuckCapacity : Rac1ItemAmmoDescriptors.Get((int)additional).MaxAmmo)),
+            _ => throw new InvalidOperationException($"Unsupported R&C1 HUD weapon {weapons.Equipped}."),
         };
         return new HudPresentationState(
             Health: hudHealth,

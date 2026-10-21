@@ -202,7 +202,8 @@ public partial class OBPGame
 
     private async Task CaptureRac1BombAsync(string name, Vector3 focus, bool close = false)
     {
-        string? directory = System.Environment.GetEnvironmentVariable("OBP_BOMB_CAPTURE_DIR");
+        string? directory = System.Environment.GetEnvironmentVariable("OBP_BOMB_CAPTURE_DIR") ??
+            System.Environment.GetEnvironmentVariable("OBP_WEAPON_CAPTURE_DIR");
         if (string.IsNullOrWhiteSpace(directory) || DisplayServer.GetName() == "headless") return;
         Directory.CreateDirectory(directory);
         var camera = new Camera3D { Current = true, Fov = 50, Far = 10000 };

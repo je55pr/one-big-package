@@ -12,6 +12,8 @@ namespace OBP.RAC1.Player;
 /// </summary>
 public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAnimationControllerProvider
 {
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<PlayerAvatar, float[]> _equipmentMasks = new();
+    private readonly System.Runtime.CompilerServices.ConditionalWeakTable<PlayerAvatar, Rac1RatchetEquipmentRig> _equipmentRigs = new();
     public const string RatchetAvatarId = "ratchet";
     public const string RatchetModelId = "rac1:ratchet:moby-class-0";
 
@@ -41,7 +43,9 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             throw new ArgumentException("Avatar does not belong to the R&C1 player provider.", nameof(avatar));
         }
 
-        return new Rac1PlayerAnimationPresentationController(avatar);
+        _equipmentMasks.TryGetValue(avatar, out var mask);
+        _equipmentRigs.TryGetValue(avatar, out var rig);
+        return new Rac1PlayerAnimationPresentationController(avatar, mask, rig);
     }
 
     public PlayerAvatar Load(string sourcePath, string avatarId)
@@ -88,7 +92,7 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             })
             .ToArray();
 
-        return new PlayerAvatar(
+        var avatar = new PlayerAvatar(
             new PlayerAvatarIdentity(SourceGame, BuildId, RatchetAvatarId, RatchetModelId),
             native.AnimationClips.Select(RuntimeClip).ToArray(),
             surfaces,
@@ -100,6 +104,21 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             new PlayerAvatarAxes(
                 Axis(native.RightAxis), Axis(native.ForwardAxis), Axis(native.UpAxis)),
             Skeleton: null);
+        var ratchet = Rac1StaticClasses.Read(core).Mobies[0];
+        var payload = core.Assets.AsSpan(ratchet.AssetOffset, ratchet.AssetLength);
+        var layerJoints = Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 12)
+            .Concat(Animation.Rac1MobyAttachment.ReadAnimationLayerJoints(payload, 13)).ToArray();
+        // 0x20e4c8 selects the source arm lists through table0x15f6a0.
+        var upper = new bool[native.Skeleton.Count];
+        foreach (int joint in layerJoints) upper[joint] = true;
+        var mask = new float[native.Mesh.Positions.Length / 3];
+        for (int vertex = 0; vertex < mask.Length; vertex++)
+            for (int influence = 0; influence < 3; influence++)
+                if (upper[native.Mesh.VertexJoints[vertex * 3 + influence]])
+                    mask[vertex] += native.Mesh.VertexWeights[vertex * 3 + influence];
+        _equipmentMasks.Add(avatar, mask);
+        _equipmentRigs.Add(avatar, new(native, layerJoints));
+        return avatar;
     }
 
     internal static (string Id, PlayerAvatarAnimationRole Role) AnimationDescriptor(int sequenceId) =>
@@ -122,6 +141,14 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
             26 => ("wrench-comet-strike", PlayerAvatarAnimationRole.AttackVariant),
             43 => ("wrench-hyper-strike", PlayerAvatarAnimationRole.AttackVariant),
             44 => ("bomb-glove-throw", PlayerAvatarAnimationRole.AttackVariant),
+            51 => ("pyrocitor-hold", PlayerAvatarAnimationRole.AttackVariant),
+            56 => ("blaster-hold", PlayerAvatarAnimationRole.AttackVariant),
+            57 => ("blaster-fire", PlayerAvatarAnimationRole.AttackVariant),
+            62 => ("blaster-moving", PlayerAvatarAnimationRole.AttackVariant),
+            54 => ("devastator-hold", PlayerAvatarAnimationRole.AttackVariant),
+            73 => ("devastator-fire", PlayerAvatarAnimationRole.AttackVariant),
+            81 => ("ryno-hold", PlayerAvatarAnimationRole.AttackVariant),
+            103 => ("walloper-punch", PlayerAvatarAnimationRole.AttackVariant),
             17 => ("thruster-high-jump", PlayerAvatarAnimationRole.JumpVariant),
             18 => ("heli-stretch-jump", PlayerAvatarAnimationRole.JumpVariant),
             19 => ("pack-glide", PlayerAvatarAnimationRole.Glide),
@@ -164,6 +191,9 @@ public sealed class Rac1PlayerAvatarProvider : IPlayerAvatarProvider, IPlayerAni
                     [Rac1WrenchAttachment.SocketKey] = clip.WrenchSocketFrames,
                     [Gameplay.Rac1BombProjectileSession.GloveSocketKey] = clip.BombGloveSocketFrames
                         ?? throw new InvalidDataException("R&C1 Bomb Glove attachment track is absent."),
+                    [Gameplay.Rac1WeaponProfiles.HandSocket(0)] = clip.WrenchSocketFrames,
+                    [Gameplay.Rac1WeaponProfiles.HandSocket(1)] = clip.LeftHandSocketFrames!,
+                    [Gameplay.Rac1WeaponProfiles.HandSocket(6)] = clip.BombGloveSocketFrames!,
                 });
     }
 

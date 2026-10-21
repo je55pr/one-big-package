@@ -70,6 +70,7 @@ public sealed class Rac1Class1440Session : IRac1MobyDamageConsumer, IRac1MobyCla
             state = state.WithTransform(new(matrix));
         }
         Write(pvar, 0x20, BitConverter.SingleToInt32Bits(2)); // 0x2e0cb4 overwrites authored 1.0.
+        pvar[0x28] = 1; // 0x2e0cb8: health-state kind, shared Blaster damage table.
         var instance = _runtime.Register(source, state, path < 0 ? 3 : 1, pvar);
         var entry = new Entry(instance, region, path, Read(pvar, 0x1bc), _random.Below(2) != 0);
         _entries.Add(source.InstanceIndex, entry);
@@ -158,14 +159,15 @@ public sealed class Rac1Class1440Session : IRac1MobyDamageConsumer, IRac1MobyCla
     public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) =>
         source.SourceGame == "rac1" && source.NativeClassId == ClassId && damage.Target.MatchesMoby(new(ClassId, source.InstanceIndex)) &&
         Rac1EnemyDamage.IsPlayerWeapon(damage) && _entries.TryGetValue(source.InstanceIndex, out var entry) &&
-        entry.Instance.IsActive && entry.Instance.State.NativeState != 8 && entry.Cooldown == 0;
+        entry.Instance.IsActive && entry.Instance.State.NativeState != 8 &&
+        (entry.Cooldown == 0 || Rac1EnemyDamage.IsBlaster(damage));
 
     object IRac1MobyDamageConsumer.ApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) => ApplyDamage(source, damage);
     public DamageResult ApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage)
     {
         if (!CanApplyDamage(source, damage)) throw new InvalidOperationException("Class1440 cannot consume this damage event.");
         var entry = _entries[source.InstanceIndex];
-        float health = Health(entry) - (float)damage.NativeDamage;
+        float health = Health(entry) - Rac1EnemyDamage.ResolveNativeDamage(damage, entry.Instance.MutablePVar);
         Write(entry.Instance.MutablePVar, 0x20, BitConverter.SingleToInt32Bits(health));
         Release(entry);
         if (health <= 0) Select(entry, 8, 11);

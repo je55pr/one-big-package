@@ -17,6 +17,9 @@ Version2 also stores removed world objects, inventory, selected item, ammo and
 the bolt wallet. Defeated enemies stay absent, including enemies still playing
 their lethal reaction when saved. Broken crates retain removal and UID state;
 loading does not emit their rewards again. Collected authored bolts stay absent.
+Optional Version2 fields also retain Suck Cannon cargo identities and the weapon
+preview flag. Loading a preview restores its separate inventory without exporting
+those weapons to the campaign save. Live mines and Doom bots remain transient.
 Player positions use Godot scene coordinates `(-native X, native Z, native Y)`.
 The named source-camera recurrence fields keep their native coordinate convention.
 

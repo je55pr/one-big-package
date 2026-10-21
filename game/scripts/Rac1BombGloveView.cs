@@ -42,7 +42,9 @@ public sealed partial class Rac1BombGloveView : Node3D
         if (firingGeneration != _generation)
         {
             _generation = firingGeneration;
-            _sequence = firingGeneration == 0 ? 1 : 0;
+            // Sequence0 is the equip mechanism, not a throw. The native throw
+            // moves Ratchet's hand while the glove stays in its static pose.
+            _sequence = 1;
             _clock.ResumePlayback(_sequence, 0, 0, 1);
         }
         else if (_sequence == 0)
