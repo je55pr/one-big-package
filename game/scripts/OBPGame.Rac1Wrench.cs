@@ -115,7 +115,9 @@ public partial class OBPGame
             bool applied = target.Source.NativeClassId switch
             {
                 int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) => TryStrikeRac1Crate(target, result),
-                Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId => TryStrikeRac1Hostile(target, result),
+                Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
+                    Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest =>
+                    TryStrikeRac1Hostile(target, result),
                 _ => false,
             };
             // Per-target coalescing is an explicit bounded host policy. Retail's

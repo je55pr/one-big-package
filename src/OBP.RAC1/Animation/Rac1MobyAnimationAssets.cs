@@ -14,9 +14,16 @@ public static class Rac1MobyAnimationAssets
         float MinimumHeight, float MaximumHeight);
 
     public static Asset Bake(Rac1StaticClasses.MobyClass cls, IReadOnlyList<RuntimeObjectMesh> surfaces,
-        ReadOnlySpan<byte> classPayload)
+        ReadOnlySpan<byte> classPayload, bool skipUnsupportedTiming = false)
     {
-        int joint = Rac1MobyAttachment.ReadJoint(classPayload, 0);
+        int joint;
+        try { joint = Rac1MobyAttachment.ReadJoint(classPayload, 0); }
+        catch (InvalidDataException) when (skipUnsupportedTiming && cls.Joints.Count > 0)
+        {
+            // LEVEL2 models may have no semantic socket0. Use the root joint for
+            // animation contact presentation only, not native attack geometry.
+            joint = 0;
+        }
         var maps = new List<int[]>();
         foreach (var surface in surfaces)
         {
@@ -59,7 +66,14 @@ public static class Rac1MobyAnimationAssets
             var rates = sequence.Frames.Select(frame => sequence.Frames.Count == 1 ? 1f :
                 sequence.ConstantTransitionRate > 0 ? sequence.ConstantTransitionRate : frame.TransitionRate).ToArray();
             if (rates.Any(rate => !float.IsFinite(rate) || rate <= 0 || rate > 1))
-                throw new InvalidDataException("R&C1 Moby animation has an unsupported frame rate.");
+            {
+                // Some LEVEL2 source clips encode a negative transition rate.
+                // Its backwards-playback semantics are not yet reconstructed.
+                // Omit only those unusable clips instead of inventing forward timing.
+                if (skipUnsupportedTiming) continue;
+                throw new InvalidDataException($"R&C1 class {cls.OClass} sequence {slot.Index} has an unsupported frame rate: " +
+                    string.Join(",", rates.Where(rate => !float.IsFinite(rate) || rate <= 0 || rate > 1).Distinct()));
+            }
             // Opaque clip labels are source-owned. The renderer never interprets a native sequence id.
             string name = "pose-" + (char)('a' + slot.Index);
             var animated = maps.Select((map, index) => new RuntimeObjectAnimationSurface(index, posed.Select(frame =>

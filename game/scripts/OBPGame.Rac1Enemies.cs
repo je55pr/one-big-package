@@ -18,17 +18,22 @@ public partial class OBPGame
     private readonly Dictionary<int, Rac1HostedEnemy> _rac1Enemies = [];
     private Rac1Class1440Session? _rac1Class1440;
     private double _rac1EnemyTicks;
-    private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values.Select(enemy => enemy.Node);
+    private const float AridiaHostUpdateRadius = 24f;
+    private const float AridiaAnimatedPresentationRadius = 18f;
+    private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values
+        .Where(enemy => !enemy.Buried).Select(enemy => enemy.Node);
 
     private sealed class Rac1HostedEnemy(RuntimeWorldScene.DynamicObjectNode node, Rac1MobyAnimationAssets.Asset asset,
-        CharacterBody3D body, Rac1EnemyMotion motion, int sequence)
+        CharacterBody3D body, Rac1EnemyMotion? motion, int sequence)
     {
         public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
         public CharacterBody3D Body { get; } = body;
-        public Rac1EnemyMotion Motion { get; } = motion;
+        public Rac1EnemyMotion? Motion { get; } = motion;
         public Rac1MobySequenceClock Animation { get; } = new(asset, sequence);
         public bool Grounded { get; set; } = true;
-        public bool NeedsGroundPlacement { get; set; } = node.Source.NativeClassId == 749;
+        public bool NeedsGroundPlacement { get; set; } = node.Source.NativeClassId is 749 or Rac1AridiaEnemies.Sandshark;
+        public bool Buried { get; set; } = node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark;
+        public int DeathTicks { get; set; }
         public int GroundPlacementAttempts { get; set; }
         public bool RewardEmitted { get; set; }
         public bool DeathPresented { get; set; }
@@ -43,51 +48,94 @@ public partial class OBPGame
             if (IsInstanceValid(enemy.Body)) enemy.Body.QueueFree();
             if (enemy.Flame is { } flame && IsInstanceValid(flame)) flame.QueueFree();
         }
-        _rac1Enemies.Clear(); _rac1Class1440 = null; _rac1EnemyTicks = 0;
+        _rac1Enemies.Clear(); _rac1Class1440 = null; _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
     }
 
     private void ConfigureRac1Enemies(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId != 0) return;
+        if (world.LevelId is not (0 or Rac1AridiaEnemies.LevelId)) return;
         var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
         var core = Rac1LevelCore.Open(reader, level);
         var classes = Rac1StaticClasses.Read(core);
-        _rac1Class1440 = new(_rac1MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
         var nodes = _rac1HostileNodes.Values.ToList();
-        foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1Class1440Session.ClassId))
+        if (world.LevelId == 0)
         {
-            var node = FindPresentedDynamic(result, authored) ?? throw new InvalidDataException("Veldin enemy has no rendered model.");
-            var registered = _rac1Class1440.Register(authored, node.State);
-            node.ApplyState(registered.Instance.EntityState);
-            nodes.Add(node);
+            _rac1Class1440 = new(_rac1MobyRuntime, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), Rac1EffectRandom);
+            foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1Class1440Session.ClassId))
+            {
+                var node = FindPresentedDynamic(result, authored) ?? throw new InvalidDataException("Veldin enemy has no rendered model.");
+                var registered = _rac1Class1440.Register(authored, node.State);
+                node.ApplyState(registered.Instance.EntityState);
+                nodes.Add(node);
+            }
+        }
+        else
+        {
+            // The native LEVEL2 nest timer lives in the gameplay PVar, not in
+            // the general placement's 0x78-byte instance record.
+            var authoredPlacements = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level)).MobyInstances;
+            foreach (var authored in (world.DynamicObjects ?? []).Where(item => Rac1AridiaEnemies.IsEnemyClass(item.NativeClassId)))
+            {
+                var node = FindPresentedDynamic(result, authored) ?? CreateRac1InvisibleRuntimeNode(result, authored);
+                byte[] pvar = authoredPlacements[authored.InstanceIndex].PVar
+                    ?? throw new InvalidDataException("Aridia enemy placement is missing its native PVar.");
+                int? linkedActivationMobyIndex = authored.NativeClassId == Rac1AridiaEnemies.Sandshark
+                    ? Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(pvar) : null;
+                // The Sandshark init routine's +0x258 branch enters native
+                // state 29 and waits for the linked Moby to advance.
+                var runtime = _rac1MobyRuntime.Register(authored, node.State,
+                    nativeState: linkedActivationMobyIndex.HasValue ? 29 : 1, pvar: pvar);
+                node.ApplyState(runtime.EntityState);
+                Vector3 forward = EnemyForward(node);
+                NVector3 native = ToEffectNative(forward);
+                int nestWait = authored.NativeClassId == Rac1AridiaEnemies.Nest
+                    ? Rac1AridiaEnemies.ReadNestInitialWaitTicks(pvar)
+                    : 60;
+                _rac1AridiaEnemies.Register(authored.InstanceIndex, authored.NativeClassId,
+                    MathF.Atan2(native.Y, native.X), nestWait,
+                    linkedActivationMobyIndex: linkedActivationMobyIndex);
+                nodes.Add(node);
+            }
         }
         foreach (var group in nodes.GroupBy(node => node.Source.NativeClassId))
         {
             var cls = classes.Mobies[group.Key];
-            var asset = Rac1MobyAnimationAssets.Bake(cls, group.First().Source.Meshes, core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength));
+            var asset = Rac1MobyAnimationAssets.Bake(cls, group.First().Source.Meshes,
+                core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength),
+                skipUnsupportedTiming: world.LevelId == Rac1AridiaEnemies.LevelId);
             foreach (var node in group)
             {
                 if (group.Key == 749) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
                 // Host contact adapter: upright capsules, independent of skeletal presentation.
                 // The retail common query solver and per-part collision primitives are not reconstructed.
-                float radius = group.Key == 749 ? .5f : .45f;
-                float height = group.Key == 749 ? 1 : 1.7f;
-                var body = new CharacterBody3D { Name = $"EnemyContact_i{node.Source.InstanceIndex}", CollisionLayer = 1, CollisionMask = 1 };
+                float radius = group.Key == 749 ? .5f : group.Key == Rac1AridiaEnemies.Nest ? 1.1f : group.Key == Rac1AridiaEnemies.Sandshark ? .35f : .45f;
+                float height = group.Key == 749 ? 1 : group.Key == Rac1AridiaEnemies.Sandshark ? .7f : 1.7f;
+                // A buried Sandshark is not a solid collider in the native
+                // encounter. Register its shape but do not put it into broadphase
+                // contacts until it has actually emerged or been released.
+                uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ? 0u : 1u;
+                var body = new CharacterBody3D
+                {
+                    Name = $"EnemyContact_i{node.Source.InstanceIndex}",
+                    CollisionLayer = initialContactMask, CollisionMask = initialContactMask
+                };
                 body.AddChild(new CollisionShape3D { Shape = new CapsuleShape3D { Radius = radius, Height = height }, Position = Vector3.Up * (height / 2) });
                 result.Root.AddChild(body);
                 body.GlobalPosition = node.Root.GlobalPosition;
                 Vector3 forward = EnemyForward(node);
                 NVector3 nativeForward = ToEffectNative(forward);
-                var enemy = new Rac1HostedEnemy(node, asset, body, new(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X)), 1);
+                var enemy = new Rac1HostedEnemy(node, asset, body, group.Key is 749 or 1440 ? new Rac1EnemyMotion(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X)) : null, asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min());
                 node.ConfigureAnimations(asset.Presentation);
-                node.ApplyAnimationSample(enemy.Animation.Sample);
+                if (group.Key != Rac1AridiaEnemies.Sandshark)
+                    node.ApplyAnimationSample(enemy.Animation.Sample);
+                else HideBuriedRac1AridiaEnemy(enemy);
                 SynchronizeRac1Enemy(enemy);
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
             }
         }
-        GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; {_rac1Class1440.RegisteredCount} class1440");
+        GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; {_rac1Class1440?.RegisteredCount ?? 0} class1440");
     }
 
     private static Vector3 EnemyForward(RuntimeWorldScene.DynamicObjectNode node) =>
@@ -105,10 +153,22 @@ public partial class OBPGame
             {
                 var node = enemy.Node;
                 if (!IsInstanceValid(node.Root) || !IsRac1GameplayActive(node)) continue;
+                bool aridia = Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId);
+                // Aridia has 137 authored enemies; most are dormant, buried or
+                // beyond Ratchet's encounter range. The legacy loop uploaded
+                // animated mesh vertices for *all of them* 60 times/sec.
+                // Freeze their animations and host physics when out of range.
+                // Original meshes stay visible for stationary bots and nests.
+                if (aridia && node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
+                    AridiaHostUpdateRadius * AridiaHostUpdateRadius)
+                {
+                    if (enemy.Buried) HideBuriedRac1AridiaEnemy(enemy);
+                    continue;
+                }
                 // Staged diagnostics may move an authored node; ordinary movement is synchronized below.
                 if (enemy.Body.GlobalPosition.DistanceSquaredTo(node.Root.GlobalPosition) > 1e-5f)
                     enemy.Body.GlobalPosition = node.Root.GlobalPosition;
-                if (enemy.NeedsGroundPlacement)
+                if (enemy.NeedsGroundPlacement && !enemy.Buried)
                 {
                     // Authored creature positions can lie inside the terrain.
                     // Wait for registered collision, then place the full capsule
@@ -118,13 +178,30 @@ public partial class OBPGame
                     enemy.NeedsGroundPlacement = false;
                     node.Root.GlobalPosition = enemy.Body.GlobalPosition;
                 }
+                // Buried Sandsharks need proximity detection only, not per-tick
+                // vertex interpolation or vertex-buffer uploads.
+                bool aridiaStepped = false;
+                if (aridia && enemy.Buried)
+                {
+                    TickRac1AridiaEnemy(enemy);
+                    if (enemy.Buried) continue;
+                    aridiaStepped = true;
+                }
                 foreach (int sound in enemy.Animation.Tick())
                     if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40)
                         PlayRac1PickupSound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
                 if (node.Source.NativeClassId == 749) TickRac1Class749(enemy);
-                else TickRac1Class1440(enemy);
-                node.ApplyAnimationSample(enemy.Animation.Sample);
+                else if (node.Source.NativeClassId == 1440) TickRac1Class1440(enemy);
+                else if (!aridiaStepped) TickRac1AridiaEnemy(enemy);
+                // All known Aridia attacks occur within the native-candidate
+                // host encounter region. Preserve gameplay ticks at 24 units,
+                // but avoid CPU skinning/GPU buffer uploads beyond 18 units.
+                if (!aridia || node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) <=
+                    AridiaAnimatedPresentationRadius * AridiaAnimatedPresentationRadius)
+                    node.ApplyAnimationSample(enemy.Animation.Sample);
                 SynchronizeRac1Enemy(enemy);
+                if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
+                    RestoreRac1AridiaEnemyVisibility(enemy);
                 if (!IsRac1GameplayActive(node)) PresentRac1EnemyDeath(enemy);
                 if (_rac1Nanotech.Probe().IsDead) return;
             }
@@ -180,7 +257,7 @@ public partial class OBPGame
             ? new(new(linkedEnemy.Node.Source.NativeClassId, link), ToEffectNative(linkedEnemy.Node.Root.GlobalPosition)) : null;
         var next = _rac1Class1440.Step(instance, new(position, target, enemy.Animation.Wrapped, enemy.Animation.Blending,
             enemy.Animation.Position, contact == Rac1GameplayEntityRef.Player, enemy.Grounded, !_rac1Nanotech.Probe().IsDead,
-            enemy.Motion.StepLength, linked, contact));
+            enemy.Motion!.StepLength, linked, contact));
         SelectRac1EnemySequence(enemy, next.Sequence, next.NativeState is 7 or 8 ? 1 : 10);
         if (next.ReactionActive) StepRac1EnemyReaction(enemy);
         else
@@ -208,9 +285,9 @@ public partial class OBPGame
         float yawOffset = 0, bool sweeping = false, float? pathDistance = null, bool directPosition = false)
     {
         Vector3 start = enemy.Body.GlobalPosition;
-        NVector3 motion = enemy.Motion.Step(ToEffectNative(start), look, destination, enemy.Animation.Blending, enemy.Grounded,
+        NVector3 motion = enemy.Motion!.Step(ToEffectNative(start), look, destination, enemy.Animation.Blending, enemy.Grounded,
             yawOffset, sweeping, pathDistance);
-        enemy.Node.Root.Rotation = new(0, enemy.Motion.Yaw, 0);
+        enemy.Node.Root.Rotation = new(0, enemy.Motion!.Yaw, 0);
         if (directPosition)
         {
             // 0x2e0fa4..0x2e0fb0 adds the entrance displacement directly to
@@ -336,6 +413,8 @@ public partial class OBPGame
 
     private bool ApplyRac1EnemyWeaponDamage(RuntimeWorldScene.DynamicObjectNode node, Rac1GameplayDamageEvent damage)
     {
+        if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
+            return ApplyRac1AridiaWeaponDamage(node, damage);
         if (!_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
         var enemy = _rac1Enemies[node.Source.InstanceIndex];
         bool lethal;
@@ -358,7 +437,7 @@ public partial class OBPGame
             attackerPosition = attacker.Node.Root.GlobalPosition;
         NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);
         enemy.Reaction = new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
-        enemy.Motion.SetFacing(enemy.Reaction.FacingYaw);
+        enemy.Motion!.SetFacing(enemy.Reaction.FacingYaw);
         enemy.Grounded = false;
         SetRac1EnemyFlame(enemy, false);
         if (lethal && !enemy.RewardEmitted)
@@ -381,6 +460,7 @@ public partial class OBPGame
         enemy.DeathPresented = true;
         enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
         SetRac1EnemyFlame(enemy, false);
+        if (Rac1AridiaEnemies.IsEnemyClass(enemy.Node.Source.NativeClassId)) return;
         if (enemy.Node.Source.NativeClassId == 749) PlayRac1PickupSound(749, 7, enemy.Node.Root.GlobalPosition);
         else SpawnRac1EnemyFragments(enemy);
     }
@@ -403,7 +483,7 @@ public partial class OBPGame
 
     private void SetRac1EnemyFlame(Rac1HostedEnemy enemy, bool emitting)
     {
-        if (enemy.Node.Source.NativeClassId != 1440 || _sceneResult is null) return;
+        if (enemy.Node.Source.NativeClassId is not (1440 or Rac1AridiaEnemies.Constructorbot) || _sceneResult is null) return;
         if (emitting && enemy.Flame is null)
         {
             // Host particle presentation, not a recovered retail particle/texture program.

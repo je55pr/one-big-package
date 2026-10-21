@@ -83,7 +83,8 @@ public sealed class Rac1WrenchCombatController
     {
         if (source.SourceGame != "rac1") return null;
         if (!Rac1BoltCrate.IsCrateClass(source.NativeClassId) &&
-            source.NativeClassId is not (Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId))
+            source.NativeClassId is not (Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId) &&
+            !Rac1AridiaEnemies.IsEnemyClass(source.NativeClassId))
             return null;
 
         return new Rac1WrenchContactTarget(
