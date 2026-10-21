@@ -1,109 +1,121 @@
-# UYA production RAC3 importer
+# Up Your Arsenal world import reference
 
-**Authority:** `rac3-ntscu-original` / `SCUS-97353`
+Authority: NTSC-U original `SCUS-97353`, build `rac3-ntscu-original`.
+Disc SHA-256: `d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444`.
 
-Retail ISO SHA-256:
-`d2bb15c7c5b2205db868713fc0362c2b10e87751ca5bcc4e96c1e244a8c42444`
+`OBP.RAC3` imports retail data into `RuntimeWorld`; the Godot host consumes that
+neutral result. The current implementation and executable checks are
+`Rac3WorldImport`, `UyaLevelCore`, `UyaGameplay`, `UyaSky`, `UyaLevelSettings`
+and `Rac3WorldTests`. No browser or pre-generated world JSON is required.
 
-This checkpoint promotes the evidence-backed UYA reconstruction path from archaeology-only tools into the normal OBP importer contract.
+## Discovery and provenance
 
-Historical checkpoint entry points were the now-retired TypeScript RAC3 importer/world modules. The maintained production path is the native `OBP.RAC3` provider feeding `RuntimeWorld`; a pre-generated multi-megabyte world JSON is not required.
+[UYA_RETAIL_TOC.md](UYA_RETAIL_TOC.md) describes the sparse observed table.
+There are 51 main-level rows. Row 38 contains an associated container but no
+main level and is excluded. The reader preserves the table index and main
+header's raw `+0x08` word separately and requires equality for this authority.
 
-## Provenance boundary
+The LBA-1001 window is hash-verified retail evidence. Its role in the native
+loader, and the names of fields initially identified through public layouts,
+remain distinct from structural parser compatibility. Public comparison uses
+Wrench revision `e67ea46e5e60ec52a0c31fcde1e3f46b20aa4cfb`; it is not authority
+over contradictory retail bytes. Display names in `Rac3DestinationCatalogue`
+are public cross-references; numeric world identities remain independent.
 
-The importer does **not** upgrade every old public-format lead into native truth merely because the complete path succeeds.
+## Container and geometry path
 
-The resident table at candidate LBA 1001, outer level-range semantic labels and related public cross-reference names retain their documented provenance status. Retail UYA compatibility is separately established for every decoder admitted into world output.
+The bounded read path is `0x60` outer header -> `0x58` primary-data header ->
+`0xbc` core header -> WAD-LZ assets. The outer primary/gameplay ranges, index,
+GS-RAM and assets stay independently bounded. Declared compressed and decoded
+sizes must agree with the WAD-LZ stream; shared readers receive no UYA leniency.
 
-## Production path
+| Family | Retail compatibility and admission |
+|---|---|
+| Tfrags | The shared GC/VIF decoder accepted all declared fragments on sample rows 1/8/20/50, with finite geometry, complete VIF streams and in-range texture IDs. |
+| Collision | The shared RC collision reader accepted four distinct sampled blocks without relaxed validation. Core extent field names retain compatibility provenance. |
+| TIEs and shrubs | Shared class/placement readers require complete tables, finite matrices, resolved class identities and valid texture references. Gameplay pointers are `+0x34` and `+0x40`. |
+| Ordinary textures | Tfrag/Moby/TIE/shrub tables use the shared 16-byte paletted entries; dimensions, asset pixels and GS-RAM palettes are independently bounded. |
+| Part/FX textures | They are not admitted as ordinary GC texture tables. All sampled part entries had invalid dimensions; FX yielded one accidental eligible record per row with otherwise implausible types/dimensions. |
+| Mobies | A declared zero-local-core class, an empty decoded model and unresolved skinning are separate cases. Preserve every authored instance; attach render geometry only when independently supported. |
 
-For one requested retail table/native ID, the importer performs:
+The four texture-table counts on rows 1/8/20/50 were respectively:
+tfrag `109/54/76/46`, Moby `143/154/159/167`, TIE `166/57/89/100`, and shrub
+`55/10/19/9`. Moby texture byte `0xff` is the explicit no-texture sentinel;
+other out-of-range references remain errors. Native placements use `Rz * Ry * Rx`
+before the Z-up to Y-up conversion; `UyaMobyPlacementTests` guards that order.
 
-```text
-verified RAC3 disc source
-→ bounded UYA candidate ToC / main-level selection
-→ shared GC/UYA primary-data core parser
-→ shared WAD-LZ / tfrag / texture / TIE / shrub / Moby / collision codecs
-→ retail-censused UYA level settings
-→ strict UYA PVar prerequisite gate + unchanged GC PVar parser
-→ strict UYA sky decoder
-→ neutral OBPWorld
-```
+## Gameplay and PVars
 
-The current 51 observed 0x60 main headers have raw `+0x08 == physical table index`. The importer checks that equality rather than silently collapsing the two identities.
+The historical all-row census found the first 32 gameplay words populated,
+unique and in-range on every main level. The extent to the next greater pointer
+is an observation, not a native block size or sufficient evidence for a name.
 
-Normal production imports embed decoded retail texture pixels as PNG data URIs. `importRac3World(..., { embedTextureImages: false })` exists only as a deterministic census/performance option; all native texture tables are still strictly decoded and validated.
+| Gameplay header | Compatible structure |
+|---:|---|
+| `+0x48` | Moby class list |
+| `+0x4c` | Static Moby instances, `0x88` records |
+| `+0x58` | Moby-link fixups, terminated 8-byte pairs |
+| `+0x5c` | PVar table, 8-byte offset/size entries |
+| `+0x60` | PVar data spans |
+| `+0x64` | Relative-pointer fixups, terminated 8-byte pairs |
 
-## Authored Mobies
+All referenced spans and fixup targets must fit before shared GC interpretation.
+The all-row evidence contains 23,221 Mobies, 19,001 Moby-owned PVars and 19,017
+PVars referenced through the union of Mobies and fixups. The 16 fixup-only entries
+occur on rows 3/6/8/9 with deltas 4/1/3/8; a Moby-only catalogue is incomplete.
+UID, mode and link labels retain GC-layout compatibility provenance until
+independent UYA dataflow proves their semantics. Numeric oClass 500 alone does
+not identify a crate; recovered class behaviour is documented in
+[UYA_VELDIN_GAMEPLAY.md](UYA_VELDIN_GAMEPLAY.md).
 
-UYA Mobies are no longer emitted only as duplicated world-space debug geometry. The production representation uses reusable class-local `OBPModel` assets plus one `OBPInstance` for every authored static Moby.
+## Environment and spawn admission
 
-Each instance preserves:
+Sample rows 1/8/20/50 accept the shared `0x5c` settings first part, including
+finite background/fog/death-height fields. Later settings blocks and the precise
+fog-distance presentation law remain separate recovery questions.
 
-- numeric native `oClass` as `sourceClass`
-- exact authored placement position / scale / rotation, converted from native Z-up into OBP Y-up
-- native lighting fields already decoded by the shared gameplay reader
-- compatibility-layout UID, raw `+0x14`, mode bits and PVar index
-- PVar byte size/data offset when present
-- an optional `modelId` only when local class geometry is evidence-safe to render
+The compatible native-Z-up start fields are position `+0x3c/+0x40/+0x44` and
+Z rotation `+0x48`. All 51 rows are finite; 21 have non-default transforms,
+while 30 contain exactly `(20,20,20), 0`. `UyaLevelSettings` retains the values
+and admits `RuntimeSpawn` only for the non-default group. Rejecting the repeated
+tuple is OBP policy, not a recovered retail sentinel rule. `Rac3WorldTests`
+pins both the representative transforms and the 21/30 split.
 
-The UID/mode/PVar names remain GC-layout compatibility labels until RAC3 executable evidence independently proves UYA-native semantics.
+## Versioned sky layout
 
-The model library is filtered to classes actually referenced by the selected level's authored placements. For Veldin this reduces 145 decoded local-core class models to 36 used models while preserving all 427 renderable Moby instances.
+The `0x40` sky header has colour at `+0x00`, signed counts/flags through `+0x0e`,
+texture definitions/data at `+0x10/+0x14`, FX/sprites at `+0x18/+0x1c`, and eight
+shell offsets at `+0x20`. Texture definitions are four `s32` words: palette,
+pixels, width and height.
 
-A permanent transform test proves the neutral instance transform is equivalent to applying the native `Rz * Ry * Rx` matrix and then performing the native-Z-up → OBP-Y-up basis conversion. An earlier transposed-matrix implementation failed this guard and was corrected before promotion.
+UYA/DL's `0x10` shell prefix differs from GC: `s16` cluster count and flags at
+`+0x00/+0x02`, rotation XYZ at `+0x04/+0x06/+0x08`, angular velocity XYZ at
+`+0x0a/+0x0c/+0x0e`. The first cluster still starts at shell `+0x10`. Shared
+cluster/vertex/UV/face sizes are `0x20/0x08/0x04/0x04`; face texture `0xff`
+means no material. Public conversion is position `/1024`, UV `/4096`, doubled
+PS2 alpha with `0x80 -> 255`, and reversed face winding.
 
-## Four-row equivalence
+Public flag meanings are bit 0 untextured and bit 1 bloom; retail row 20
+exercises bit 1. Row 1 shells 3/4/5/6 carry raw angular velocities `(0,0,5)`,
+`(0,0,4)`, `(0,0,3)`, `(0,0,2)`; row 50 also exercises `(0,0,1)`. Retain raw
+signed values. Wrench's comparison rate is `value * framerate * 2*pi / 32768`;
+that conversion alone is not executable proof of retail playback timing.
 
-Expanded instance triangles include the reusable Moby model triangles once per linked instance.
+All four sampled sky base colours were zero. Level settings supply the separate
+background and fog values; the sky colour is not a universal clear-colour source.
+`UyaSkyPresentation` and its tests own the current host presentation policy.
 
-| row | authored Mobies | linked models | with PVar | total visible triangles | sky shells |
-|---:|---:|---:|---:|---:|---:|
-| 1 | 735 | 427 | 670 | 1,111,775 | 8 |
-| 8 | 777 | 668 | 481 | 625,753 | 3 |
-| 20 | 200 | 117 | 186 | 586,443 | 6 |
-| 50 | 198 | 182 | 191 | 152,571 | 5 |
+## Evidence and checks
 
-Row 1 exactly reproduces the previous atmosphere+sky debug-tool visible triangle total. Rows 8/20/50 exceed their older documented totals only by the newly included strict sky geometry: +1,008 / +2,048 / +496 triangles respectively.
+Detailed measurements are kept as data rather than separate progress reports:
 
-## All-main-level production census
+- [Production census](generated/rac3-ntscu-original.production-import-census.json): all 51 original reference imports; current native tests account for later material-surface splitting.
+- [Gameplay pointer census](generated/rac3-ntscu-original.uya-gameplay-block-census.json): raw pointers, apparent extents, hashes and unpromoted stride hypotheses.
+- [PVar census](generated/rac3-ntscu-original.uya-pvars.json) and [family index](generated/rac3-ntscu-original.uya-moby-pvar-families.json): all-row counts and structural families.
+- [Format witnesses](generated/rac3-ntscu-original.format-witnesses.json): retained hash/size/count tables from the original compatibility measurements, with source Git blob identities.
+- [Moby animation](UYA_MOBY_ANIMATION.md) and [Veldin gameplay](UYA_VELDIN_GAMEPLAY.md): separate recovered skeletal and class-runtime contracts.
 
-The retired TypeScript `rac3-import-census.mjs` tool exercised the same world builder with texture image serialization disabled. It discovers rows from the observed candidate ToC rather than hard-coding the campaign subset.
-
-All **51** retail main-level rows imported and passed `validateWorld`, spanning campaign, Vid-Comics, multiplayer, split-screen and the multiplayer-menu row with zero authored Mobies.
-
-After the native material-presentation surface split in `749a2f2`, five rows gain only evidence-backed TIE surface buckets: tables 2/4/14/32/49 now import as 217/242/223/166/143 runtime meshes rather than the earlier texture-only 215/238/221/164/142. In every case, each added mesh is a same-texture TIE bucket with a distinct native material presentation. Render-triangle, material, collision, linked-Moby, texture/resource and provenance baselines remain unchanged.
-
-Aggregate retail output across those 51 imports:
-
-- 34,433,048 visible render triangles after expanding linked Moby models
-- 8,237,389 collision triangles
-- 23,221 authored static Mobies
-- 19,329 Mobies linked to evidence-safe local class models
-- 19,001 Mobies carrying authored PVars
-- 59,067 TIE placements
-- 57,061 shrub placements
-
-Row 39 independently proves the zero-Moby path: zero instances/models, a valid two-triangle render world and two collision triangles. Row 38 is deliberately excluded because retail exposes no part matching the 0x60 main-level header lead; asking the production importer for row 38 fails explicitly rather than inventing a level.
-
-Committed census artefact:
-
-`research/generated/rac3-ntscu-original.production-import-census.json`
-
-- bytes: 26,758
-- SHA-256: `efe29838293c8334e41e1313dc5681dbd658287619b16b509bf888ce48ed7ca3`
-
-Reproduce locally with:
-
-```text
-npm run build
-node tools/rac3-import-census.mjs <authority.iso> --out <report.json>
-```
-
-The tool first checks the pinned retail authority ToC-window hash.
-
-## Validation
-
-At this historical checkpoint the legacy TypeScript suite passed **257/257** with zero failures. The production `rac3Importer.importWorld()` contract was also invoked directly against retail Veldin, yielding a valid world with 735 authored Moby instances, 670 PVars, and the expected 1,960 TIE / 1,894 shrub placements.
-
-This production importer is now a suitable foundation for RAC3 authored-gameplay/runtime work: an object can be selected by numeric class/instance identity while retaining its authored PVar and optional render model in the same neutral world representation.
+Run `./tools/test-retail.ps1` with the three authorized ISO variables configured.
+The relevant native suites include `Rac3WorldTests`, `UyaMobyPlacementTests`,
+`UyaSkyPresentationTests`, and the UYA gameplay/controller tests. These are
+current validation; historical browser captures and CI test totals are not.

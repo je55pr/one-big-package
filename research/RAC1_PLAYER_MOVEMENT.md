@@ -123,7 +123,7 @@ With the isolated controller binding repaired, R1 produces a stationary crouch i
 
 Entering crouch while already moving does not hard-stop Ratchet. Existing planar displacement decays by approximately `0.001802944` native unit/tick while sequence 13 is active. The R&C1 controller therefore suppresses new planar acceleration and jump while grounded/crouched but preserves this measured residual slide-down.
 
-The [offline momentum audit](RAC1_CROUCH_AND_STOP_ANIMATION.md) independently
+The [offline momentum audit](RAC1_LOCOMOTION_ANIMATION.md) independently
 found the ordinary carry/decay path and nominal coefficient `6.48f` scaled by
 the squared update duration (about `.0018` per update). The full-speed OBP
 Veldin regression stops after 53 updates, about .88 seconds, with approximately
@@ -220,23 +220,37 @@ Recovered action identities are now explicit: class 0 selects shallow-water **WA
 
 `research/generated/rac1-special-surface-reachability.json` now proves these classes are not synthetic-only test inputs. An ISO-backed decoded collision census finds 3,936 class-0 triangles on Novalis (`LEVEL1`), 1,975 class-3 triangles on Aridia (`LEVEL2`), and 2,777 class-7 triangles on Hoven (`LEVEL12`); additional class-0 worlds are Rilgar, Batalia, Pokitaru, Quartu and Veldin Orbit, while Oltanis also contains class 7. `Rac1SpecialSurfaceReachabilityTests` takes an actual source material byte from the Novalis/Aridia/Hoven collision, routes it through the production contact decoder/action selector, and verifies ordinary movement still throws rather than borrowing the ground controller. Quartu (`LEVEL15`) independently contains 703 class-0 collision triangles and 18 authored class-1250 Mobies, tying the recovered `1/24` class-1250 pre-transform bias to a real decoded level population. Veldin `LEVEL0` remains the ordinary control: 86,184 collision triangles and zero decoded classes 0, 3 or 7, so this fail-closed boundary does not replace ordinary Veldin ground motion.
 
-## Generation 7 human-playable acceptance failures
-
-Jess retested the current Veldin build after calibrating her Joy-Cons through the host-only controller calibration layer. The following five failures are retained verbatim and are acceptance blockers for this milestone:
-
-1. "falling off a single pixel ledge initiates the dramatic falling animation for like a frame"
-2. "wrench swings should cancel your momentum and just move you in the swing direction a bit, currently you can swing and keep moving around"
-3. "there are also some tiny little slopes/raised bits that he can definitely just run onto in the base game, but here he gets stuck running into their edge"
-4. "he can be in the run band and speed and still do the walk animation"
-5. "running down a slope means you can't jump"
-
-The controller calibration layer remains host preprocessing only: calibrated host axes still enter the recovered R&C1 conditioner unchanged. These failures must therefore be resolved in R&C1 player-state/contact/presentation/attack-motion laws or in the narrow Godot collision adapter, not by broad analogue retuning.
-
 ## Deliberately unresolved
 
-- the exact translational walk/run selector inside the retained 62/63 live bracket, the trigger behind the flat sequence-4 right-to-left run slowdown and the special run-release 180-degree target-aligned restart, plus the retail camera/control-heading source, chase follow/recenter, obstruction law and exact right-stick response;
-- broader death/checkpoint selection beyond the witnessed Veldin reset-to-player-start behavior;
-- an exact native collision-execution equivalent for Godot `MaxSlides = 6`, plus collision details such as ledge grabs, wall interactions and special traversal abilities;
-- combat movement, wrench lunges and hit volumes, which belong to the separate combat milestone.
+The exact translational walk/run boundary and selected reversal-history guards
+remain distinct from the admitted witnesses. Full native contact/query execution
+and checkpoint activation are separate recovery boundaries. Camera, ledges,
+special traversal and wrench behaviour have their own source contracts; use
+the subsystem index rather than interpreting this ordinary-motion note as a
+claim that those systems are absent or fully reproduced.
 
-These are not filled with DebugPlayer constants, sequel constants or animation guesses.
+## Jump anticipation and descending support
+
+Native helper `0x214574..0x2145a4` clears the gravity-axis request and applies
+`48 * dtSquared` downward during ordinary prelaunch anticipation. This differs
+from grounded locomotion's `54 * dtSquared`. An admitted jump can retain its
+anticipation through temporary support loss before launch; unsupported initial
+admission is a separate rule. Preserve action `0x1c`'s zero-output exception
+at `0x214544` and do not double-apply profile-owned prelaunch motion.
+`Rac1AirborneNativeSourceTests` pins block `0x214108..0x214658` and the literal.
+The Godot fixture covers ascending/descending 5/20-degree ramps and their seam;
+its measured clearances are host regression results, not new retail constants.
+
+## Scope of the movement reference
+
+This covers regular Ratchet. Races, minigames, vehicles and Clank-only sections
+are separate systems. Specialized rules are retained in the airborne/equipment,
+ledge/collision, surface/contact and traversal references indexed by README.md.
+The ordinary ground/crouch, physics-sampled animation, special-flight landing
+ownership and descending-jump fixtures validate integration. They do not prove
+the complete retail contact solver or matched travel-distance parity.
+
+Clear-ground crouch distance remains unresolved: the reported within-one-second
+stop was not approval of distance. Keep recording distance instead of treating
+OBP's earlier roughly 2.45-unit coast as a retail oracle. Primary-contact carry
+and source braking coefficients are separate from final collision displacement.

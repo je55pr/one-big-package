@@ -172,7 +172,7 @@ share `LocomotionStopVariant` because the retail 5-vs-6 selection rule is unreso
 that predicate is recovered, moving-to-idle returns directly to standing and gameplay never
 chooses either stop variant. All admitted clips preserve decoded per-frame native transition
 durations rather than collapsing variable timing to one FPS value. See
-[`research/RAC1_PLAYER_ANIMATION_STATES.md`](../research/RAC1_PLAYER_ANIMATION_STATES.md)
+[`research/RAC1_PLAYER_AVATAR.md`](../research/RAC1_PLAYER_AVATAR.md)
 for the retail admission boundary.
 
 **Dormant skeleton hook:** `RuntimeAnimatedMesh.Skeleton` (`RuntimeSkeleton` —
@@ -257,27 +257,3 @@ source manager, world browser, HUDs and title screen share fonts / colours /
 button styling; it also pins the window title. Cosmetic only — no layout,
 capture geometry or shot-sidecar keys change (local vizcompare UI baselines will
 need a one-off refresh).
-
-## Milestone 2 status
-
-- [x] `m2-tooling-and-materials` — `tools/vizcompare/`; `WorldMaterialFactory` +
-  `MaterialModel` (parity; histogram alpha / emission staged, not on).
-- [x] `m2-trilogy-bringup` — shots + host null-safe across RAC1/2/3; per-game
-  shot sets; `CaptureHarness` metadata-factory fix.
-- [x] `m2-world-inspector` — `WorldObjectDescriptor` + `WorldPicker` +
-  `WorldInspectorPanel` (I); animation bridge (`AnimationClock`, world-clock
-  `AnimatedMesh`, K pause, dormant `RuntimeSkeleton` + J).
-- [x] `m2-composition-refresh` — `CompositionLab` on `WorldHost` per world +
-  `CaptureHarness`.
-
-## Milestone 1 status
-
-- [x] PR 1 `presentation-core` — extract the pure maths.
-- [x] PR 2 `world-host` — `WorldHost`, one presentation tick.
-- [x] PR 3 `presentation-lighting` — `PresentationEnvironment`, AgX tone-map, ambient exposure, gentle grade.
-- [x] PR 4 `env-animation` — `RuntimeAmbientAnimation` contract, `AmbientAnimator`, `WorldHost` applier, synthesised sky drift.
-- [x] PR 5 `debug-overlays` — `DebugOverlay` runtime inspection layers (F1–F7) + `--overlay`.
-- [x] PR 6 `capture-shots` — `CaptureHarness` + `ShotSpec`/`ShotList` + `--shots` runner + `tools/shots.ps1` + golden sidecars.
-
-Deferred: extracting `WorldMaterialFactory` from `RuntimeWorldScene.Build` — a
-pure tidy-up with pixel-parity risk and no consumer that needs it yet.

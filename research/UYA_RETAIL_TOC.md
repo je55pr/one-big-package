@@ -78,15 +78,20 @@ Row 38 is particularly important: it has no `0x60` main header from which to rea
 
 The complete raw census through index 55 is machine-readable in `generated/rac3-ntscu-original.uya-toc.csv`. Column names intentionally use `slot0/1/2` and `raw_word_*` rather than prematurely promoting public meanings.
 
-## Immediate implications for GC compatibility
+## Boot executable identity and loader boundary
 
-| Concept | Retail UYA result | Relationship to GC so far |
-|---|---|---|
-| campaign discovery | coherent hidden raw-LBA candidate structure observed at public lead LBA 1001 | same broad container concept is strongly suggested, but native loader provenance is not yet proven |
-| resident TOC | header chain + sparse three-range table structure observed at candidate LBA 1001 | compatible lineage strongly supported; address semantics remain provisional |
-| table row | three sector-range pairs | same conceptual structure, UYA physical ordering differs from GC public ordering |
-| main header | physical slot 1, `0x60`, raw `+0x08` tracks index | strongly compatible-looking with GC `0x60` main header; payload copy/inner ranges still need retail comparison |
-| associated header A | slot 0, `0x1818` | changed binary format versus GC level-audio header (`0x1018`) |
-| associated header B | slot 2, `0x26f0` | changed binary format versus GC level-scene header (`0x137c`) |
+The authority ISO volume is `RATCHETANDCLANK3`, revision `VER = 1.00`.
+`SYSTEM.CNF` at LBA 1000 names `/SCUS_973.53`: LBA 1463, 771,008 bytes,
+SHA-256 `200068cb4186715521cdc1c20bc6c5a88054d0da54aa336ffdb2022633351c7d`.
+The adjacent `/I5BOOTN.ELF` is distinct: LBA 1840, 809,864 bytes,
+SHA-256 `65acfb274288a3242e05227fc7924de82f1acbfd29481bd45de31ff527c1ffa3`.
+Both have entry `0x00800008`; the adjacent image's boot role remains unresolved.
 
-The next archaeology step is to corroborate the candidate address from executable behaviour, then open one early slot-1 payload through the observed raw-LBA structure without reconstructing the full ISO.
+Historical packed-ELF scans found candidate constants for sector 1001 and byte
+address `0x001f4800`, including a lead near `0x0013d2ec`. Constant occurrence
+does not prove a loader call or table-discovery uniqueness. Preserve that
+boundary when using the observed table for reconstruction.
+
+The maintained import and format contracts are in
+[UYA_PRODUCTION_IMPORTER.md](UYA_PRODUCTION_IMPORTER.md). Detailed raw ToC
+rows remain in [the census](generated/rac3-ntscu-original.uya-toc.csv).

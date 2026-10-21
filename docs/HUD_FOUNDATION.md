@@ -30,7 +30,7 @@ The repository already has useful state, but it is intentionally uneven and most
 - `PlayerHost.PlayerHud`, `OBPGame._worldHud`, `GetRac1GameplayHudLine()` and `GetCrateDebugHudLine()` are developer telemetry. They expose positions, controller tuning, native states and smoke-test facts that do not belong in a shipping player HUD.
 - `UiTheme` is an OBP application theme. It does not establish retail HUD fonts, colours, panel shapes, spacing or animation timing.
 
-Relevant retail-backed evidence is recorded in [RAC1_NANOTECH_DAMAGE_DEATH.md](../research/RAC1_NANOTECH_DAMAGE_DEATH.md), [RAC1_WEAPON_INVENTORY.md](../research/RAC1_WEAPON_INVENTORY.md), [RAC1_BOMB_GLOVE.md](../research/RAC1_BOMB_GLOVE.md), [RAC1_CRATES_PICKUPS.md](../research/RAC1_CRATES_PICKUPS.md) and [GC_CRATES.md](../research/GC_CRATES.md).
+Relevant retail-backed evidence is recorded in [RAC1_DEATH_RESPAWN.md](../research/RAC1_DEATH_RESPAWN.md), [RAC1_WEAPON_INVENTORY.md](../research/RAC1_WEAPON_INVENTORY.md), [RAC1_BOMB_GLOVE.md](../research/RAC1_BOMB_GLOVE.md), [RAC1_CRATES_PICKUPS.md](../research/RAC1_CRATES_PICKUPS.md) and [GC_CRATES.md](../research/GC_CRATES.md).
 
 ## Minimal snapshot
 

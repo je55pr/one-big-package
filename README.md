@@ -52,7 +52,6 @@ The native runtime can load all three supported trilogy authorities through one 
 
 Useful project orientation:
 
-- [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md) — current implementation snapshot.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — runtime/import boundaries and evidence rules.
 - [`docs/PROJECT_VISION.md`](docs/PROJECT_VISION.md) — creative direction and deliberately unresolved design choices.
 - [`research/README.md`](research/README.md) — retail archaeology and generated evidence index.

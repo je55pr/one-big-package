@@ -136,7 +136,7 @@ ordinary path.
 `tools/rac1-crate-smoke.ps1` checks Veldin and Novalis: fragments, scatter/rest/
 homing, exact wallet/HUD, stack collapse, ammo, full-health cloud retention and
 metal input/projectile contact/fragments. Captures are private integration artifacts, not matched
-retail frames. See [interactive checks](../docs/RAC1_CRATES_TESTING.md).
+retail frames. See [interactive checks](../docs/RETAIL_TESTING.md).
 
 `tools/rac1-placed-bolt-smoke.ps1` checks Veldin, Batalia and Pokitaru using
 actual authored roots with staged contacts: resting height/rotation/scale,

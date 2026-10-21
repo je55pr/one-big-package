@@ -1,5 +1,5 @@
 ; One Big Package — Godot project.
-; Engine version pinned by tools/bootstrap-godot.*; see docs/MIGRATION.md.
+; Engine version pinned by tools/godot-toolchain.json.
 
 config_version=5
 

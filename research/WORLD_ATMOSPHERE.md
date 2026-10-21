@@ -12,7 +12,7 @@ All three supported trilogy importers carry recovered sky shell geometry into
 - R&C1: retail-validated RAC/GC sky block, see `RAC1_SKY.md`;
 - Going Commando: retail sky shells and textures, see `GC_SKY.md`;
 - UYA: retail-corroborated UYA shell prefix plus shared cluster payload, see
-  `UYA_RETAIL_SKY_COMPATIBILITY.md`.
+  `UYA_PRODUCTION_IMPORTER.md`.
 
 Godot keeps those shells camera-centred as presentation policy. The shell bytes
 remain native evidence; camera-relative placement is not presented as native

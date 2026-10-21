@@ -186,7 +186,7 @@ crate break. It does not privilege i143 over i144 or measure facing along the ol
 placeholder axis. Its approach slows near the creature and releases movement
 during wind-up, rather than driving through the attack volume into the contact
 body. This is test input policy, not an alteration to retail attack dimensions.
-See `../docs/RAC1_VELDIN_SMOKES.md`.
+See `../docs/RETAIL_TESTING.md`.
 
 Local validation on 2026-10-19 passed the Release and retail-authority suites
 (1,392 tests each), 81 Python tooling tests and formatting verification.

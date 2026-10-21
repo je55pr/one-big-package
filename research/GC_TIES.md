@@ -88,3 +88,24 @@ to a level `tie` texture id through `TieClassEntry.textures[slot]`
    `GcUyaMobyBlock` header differs; moby models are their own VIF format.
 3. Tie LOD 1 / LOD 2, tie ambient RGBA (per-instance baked lighting), normals.
 4. Tie/shrub/moby instance grouping (`tie_groups` etc.).
+
+## Shrub instances and class packets
+
+Instances: gameplay pointer `0x40`, `ShrubInstancePacked` (0x70): `s32 oClass`, `f32 drawDistance`, …, `Mat4 matrix @ 0x10` (same column-major layout as ties).
+
+Class geometry (`LevelCoreHeader.shrubClasses` → `ShrubClassEntry` 0x30: `s32 offset; s32 oClass; s32; s32; u8 textures[16]; ShrubBillboardInfo`):
+
+```text
+ShrubClassHeader (0x40):  0x20 f32 scale;  0x28 s16 packetCount
+ShrubPacketEntry[packetCount] @ 0x40:  { s32 offset; s32 size }
+each packet is a VIF command list with 3 UNPACKs:
+  [0] ShrubPacketHeader { s32 textureCount; s32 gifTagCount; s32 vertexCount; s32 }
+      + ShrubVertexGifTag[gifTagCount]  (0x10: u64 tag; u32 regs; s32 gsOffset)
+      + ShrubTexturePrimitive[textureCount]  (0x40: ...; s32 gsOffset @ 0x0c; tex0.data_lo @ 0x30)
+  [1] ShrubVertexPart1[vertexCount]  { s16 x,y,z; s16 gsOffset }
+  [2] ShrubVertexPart2[vertexCount]  { s16 s,t,h; s16 nAndStop }
+```
+
+GS-packet walk over a `nextOffset` counter (starting at 0): a GIF tag (`+1`, primitive type from bits 47–49 of the 64-bit tag: `3` = list, `4` = strip), an AD-GIF (`+5`, texture change), or a vertex (`+3`). Positions are `s16 * scale / 1024`, UVs `u16 / 4096`. Class-local material slots map to level `shrub` texture ids through `ShrubClassEntry.textures[]`.
+
+Verified at this checkpoint: 2,825 / 2,825 Oozla shrub instances place across 24 / 24 classes (~853k triangles); the swamp ground-cover is visible in the original reference capture.

@@ -141,3 +141,29 @@ acceleration. The identical synthetic floor at coordinates around 2,000 passes.
 The placement dependence is consistent with host floating-point precision,
 but the exact engine-side cancellation has not been isolated. No native
 coefficient was changed to mask that collision limitation.
+
+## Crouch braking and the ice flag
+
+Low face class 7 identifies ice (2,777 retained Hoven triangles); class 0 is
+water, not the ordinary-ground default. Surface refresh resets `P+0x12e0` to
+-1 for contact, restores separate effect mode `+0x12ed`, and sets ice flag
+`+0x12e2` when the preceding class equals 7. Action 4 selects coefficient
+`6.48f` for flag zero or `1.7f` for ice, both times the boot squared-update
+scalar `0x3991a2b4` (approximately 1/3600). Ordinary carry is copied from
+`P+0x110`, capped at `7*dt`; decay removes vertical carry, reduces planar
+magnitude with a zero clamp, preserves heading and adds it to the request.
+The `.001` small-magnitude snap is independent of surface selection.
+
+| Source | Veldin | Hoven |
+|---|---|---|
+| Refresh / class-7 comparison / flag store | `0x20b960 / 0x20bb74 / 0x20bb84` | `0x22de30 / 0x22df98 / 0x22dfa8` |
+| Coefficient branch | `0x217f4c..0x217fa0` | `0x238ed4..0x238f28` |
+| Carry decay | `0x216710` | `0x2378a8` |
+
+The coefficient blocks share hash
+`4d24b0a795c0c6bd58937b9cfcbe88ba6e65695d414c6e9e6a1b6135c63aa4cf`;
+the two overlays must still be mapped independently. The nominal decrements
+are `.0018` ordinary and `.00047222` ice, not a measured gameplay-distance
+ratio. The nearby `12.6f` belongs to a different action. This branch supplies
+no universal material friction table and does not resolve clear-ground slide
+distance. Source blocks and checks remain in the overlay report and tests.

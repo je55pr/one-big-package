@@ -52,7 +52,7 @@ public sealed partial class Rac1RatchetMovementController
     public const double AirDecelerationPerTick = 1d / 1200d;
     // Retained ordinary-ground measurement. Native action 4 selects 6.48f times
     // squared tick duration by default, or 1.7f when the class-7 ice flag is set.
-    // Ice action execution remains unsupported; see RAC1_CROUCH_SURFACE_BRAKING.md.
+    // See RAC1_SURFACE_MOVEMENT.md for the independently recovered ice branch.
     public const double CrouchDecelerationPerTick = 0.001802944d;
 
     // Retained aligned release samples. These are bounded transition witnesses,

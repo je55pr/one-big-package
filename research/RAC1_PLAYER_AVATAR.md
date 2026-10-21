@@ -74,3 +74,28 @@ and per-surface indices also match the four world-rendered Ratchet surfaces.
 The companion retail test pins the body counts, texture split, origin, axes,
 rest/standing bounds, base height, frame count and 7.5 FPS timing. No retail
 payload is committed; only these reproducible invariants are retained.
+
+## Sequence admission and evidence
+
+Selection and playback are separate source-game contracts. Controlled live
+class-0 witnesses, [the selector report](generated/rac1-ratchet-animation-states.json)
+and [trace reduction](generated/rac1-ratchet-animation-trace.json) establish:
+
+| Context | Native sequence family |
+|---|---|
+| Standing / neutral fidgets | 0; delayed neutral cycle 0 -> 2 -> 0 -> 1 |
+| Ordinary walk/run | Speed-selected full loops 3/4 |
+| Stop | 5/6/20 under the recovered caller/time/history predicates |
+| Ordinary stationary/moving jump | 7/8; no separate apex/fall/landing clip was witnessed |
+| Crouch / signed yaw turn | 13 / 14 / 15 |
+| Wrench / ranged item 10 use | 23 and accepted-fire 44; full wrench profiles in RAC1_WRENCH_ACTIONS.md |
+| Witnessed environmental death | 10 -> 11, bounded to that death path |
+| Combat hurt/death | Unresolved here; do not borrow the environmental selectors |
+
+`Rac1RatchetSequenceSelection` owns semantic admission; `Rac1RatchetAvatar`
+owns decoded frames/rates/timestamps. The current locomotion/crouch/stop/landing
+clock contract is in [RAC1_LOCOMOTION_ANIMATION.md](RAC1_LOCOMOTION_ANIMATION.md).
+Procedural post-animation joint work at `0x2111c4` is outside raw clip admission.
+The offline probe is `tools/rac1-ratchet-animation-probe.ps1`; controlled-trace
+reduction additionally requires the retained labelled local traces. Retail
+payloads and raw memory samples stay outside Git.

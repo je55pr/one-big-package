@@ -50,6 +50,6 @@ These labels originated in the TypeScript importer registry, but the evidence di
 
 ## Current world/import status
 
-All three trilogy games now identify, import and render through native C# production providers. The old TypeScript importer architecture is retired; older research references to it are historical provenance only. See [`../docs/CURRENT_STATE.md`](../docs/CURRENT_STATE.md) for the live capability snapshot.
+All three trilogy games now identify, import and render through native C# production providers. The old TypeScript importer architecture is retired; older research references to it are historical provenance only. See [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) for the provider boundaries; implementation and validation history live in Git and the native tests.
 
 For agent-driven retail questions, prefer a narrow direct local probe against the verified authority. Agent sandbox materialisation and remote split/range transport remain fallbacks, not production architecture.

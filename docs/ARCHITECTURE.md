@@ -1,229 +1,130 @@
 # OBP architecture
 
-One Big Package's production architecture is **native Godot 4 + C#**. The former browser/TypeScript reference tree has been retired; browser storage and WebGL are not product constraints.
-
-This document is intentionally separate from [`PROJECT_VISION.md`](PROJECT_VISION.md): architecture should enable future trilogy fusion without quietly deciding story order, progression or cross-game rules.
-
-## Core layering
-
-```text
-user-supplied retail ISO / files
-        |
-        v
-OBP.IO
-  native bounded random access, file/split readers, hashing, authority identity
-        |
-        v
-OBP.PS2
-  ISO-9660, SYSTEM.CNF, ELF32, shared PS2 compression/geometry/texture helpers
-        |
-        v
-OBP.RAC1 / OBP.RAC2 / OBP.RAC3
-  game-specific native structures, parsers and provenance
-        |
-        v
-OBP.Runtime
-  engine-independent runtime concepts and game-facing neutral data
-        |
-        v
-OBP.Godot
-  neutral/runtime data -> Godot meshes, textures, collision and scene objects
-        |
-        v
-game/
-  application shell, lifecycle, input, cameras, UI, audio/presentation
-```
-
-`OBP.Core` contains shared provenance/math concepts used beneath those layers. `OBP.PS2.Presentation` is a narrow cross-layer adapter that depends on both `OBP.PS2` and `OBP.Runtime` solely to map demonstrably shared PS2 material evidence into neutral runtime presentation; it owns no game-specific parsing or semantics. `OBP.Cli` and `OBP.Tests` exercise the engine-independent stack without requiring Godot. `ArchitectureLayeringTests` guards the actual project-reference graph and source imports: the RAC libraries stay independent and engine-free, `OBP.Runtime` stays neutral, and `OBP.Godot` cannot import retail parser modules.
-
-### Hard boundary: Godot is the host, not the parser
-
-Nothing in `game/` should need to understand a GC WAD header, R&C1 disc index or UYA native class table. Native Ratchet parsing belongs in ordinary C# libraries where it can be unit-tested and compared deterministically with retail evidence.
-
-Likewise, game-specific decoders should not manufacture Godot nodes. Their output should terminate in native/neutral OBP data, which the adapter/runtime layer can present.
-
-`OBP.RAC2.GcWorldImport.Build` coordinates GC-specific world decoding; companion partial files separate terrain, instance placement, Mobies, materials, lighting and sky. Their output remains the game-neutral `RuntimeWorld`. The `OBP.Godot.RuntimeWorldScene` adapter retains one public `Build` entry point, with separate static-mesh, dynamic-entity, animated-mesh and collision builders. Those builders use neutral runtime data and must not acquire source-game parsing rules.
-
-### Development smoke harness boundary
-
-The ordinary world loader calls only \`DispatchRequestedWorldSmokes\` after a successful provider-backed world load. \`game/diagnostics/OBPGame.SmokeDispatch.cs\` owns opt-in command-line smoke selection and first-world/source-game gating. The existing gameplay-dependent smoke bodies live in \`game/diagnostics/\` as separate \`OBPGame\` partials because their assertion helpers still need the live host, but their orchestration is no longer part of ordinary destination loading. The synthetic combat contract smoke can stage transforms and is **not** evidence of ordinary-play success. The Veldin play smoke must use ordinary player input and natural respawn instead.
-
-## Rule 1: preserve before interpreting
-
-Game-specific native decoders normalise source data into shared OBP structures while retaining provenance. Unknown gameplay instances stay unknown until evidence supports a semantic type.
-
-The shared representation is not any one game's native level format, and native archaeology must not be forced into a cross-game meaning merely because the runtime wants a convenient abstraction.
-
-A useful pipeline is:
-
-```text
-native evidence
-    -> faithful game-specific representation
-    -> neutral runtime concept where justified
-    -> optional OBP orchestration/design
-```
-
-not:
-
-```text
-native evidence -> one prematurely chosen trilogy-wide meaning
-```
-
-## Rule 2: retail builds remain authority
-
-Retail bytes and executable behaviour establish what the selected source builds actually did. Source manifests record game, stable build ID, region, serial, revision, size and cryptographic identity. No original game data belongs in Git.
-
-Public tools such as Wrench/noclip are evidence and cross-checks, not authority over contradictory retail data. OBP-created behaviour is allowed, but it belongs above the native-evidence layer and must be labelled as OBP design.
-
-## Rule 3: local-first, bounded native IO
-
-Multi-gigabyte images are ordinary seekable sources, not giant in-memory blobs.
-
-The production source path is conceptually:
-
-```text
-local file / validated numbered split set
-        |
-        v
-IRandomAccessReader
-        |
-        +--> bounded range/subrange readers
-        +--> streamed hashing / authority verification
-        |
-        v
-ISO-9660
-        |
-        +--> SYSTEM.CNF / boot ELF identification
-        |
-        v
-game-specific native containers/assets
-        |
-        v
-neutral/runtime world data
-```
-
-`OBP.IO.FileRandomAccessReader`, `SubRangeReader` and `ConcatenatedRandomAccessReader` provide the native implementation. `SplitParts` validates numbered split inputs. Hashing and identity checks stream data rather than reconstructing an entire image in RAM.
-
-The earlier browser `File`/`Blob` implementation is historical only and is no longer part of the repository or product architecture.
-
-## Shared PS2 boundary
-
-`OBP.PS2` owns formats and helpers that are demonstrably shared below the individual game boundary, including:
-
-- ISO-9660 filesystem access;
-- PS2 boot identification / `SYSTEM.CNF`;
-- ELF32 parsing and virtual mapping;
-- WAD-LZ where retail evidence confirms the common codec;
-- shared collision, VIF and texture helpers where compatibility is independently established.
-
-A codec being shared does **not** imply that the enclosing R&C1, GC and UYA containers are the same. Outer layout and provenance remain game-specific.
-
-## Per-game decoder boundary
-
-`OBP.RAC1`, `OBP.RAC2` and `OBP.RAC3` own game-specific native structures and assembly logic.
-
-Going Commando currently has the deepest merged C# implementation. Its native path covers level WAD/core data, tfrags, textures, TIEs, shrubs, Mobies, sky, settings, collision and the native ship park point. `GcIsoLoad` is the engine-free façade for identifying/verifying a supported disc and loading a level.
-
-R&C1 and UYA archaeology may prove compatibility first in research/reference tooling. Stable findings should be promoted into the C# libraries only with deterministic equivalence/authority tests. Do not weaken a GC parser merely to make another game pass; either prove the shared structure or add the correct game-specific boundary.
-
-## Runtime boundary
-
-`OBP.Runtime` is where native reconstruction becomes engine-independent game-facing data. It should contain concepts useful regardless of renderer/engine, for example:
-
-- runtime meshes/material references;
-- collision geometry/query data;
-- environment/lighting state;
-- spawns and transforms;
-- future entity/state/gameplay concepts once their semantics are justified.
-
-`RuntimeWorld.Ship` preserves the source game's native ship park point. `RuntimeWorld.PlayerStart` is a separate optional player-entry transform; hosts prefer it when present and otherwise retain the existing ship/bounds fallback. R&C1 populates that field only from the retail-backed class-0 player-start provider, so Veldin no longer overloads its distant ship coordinates as Ratchet's start.
-
-This layer should be capable, in principle, of being consumed by a non-Godot front end without teaching that front end the retail file formats.
-
-Dynamic-object animation follows the same provenance rule. `RuntimeObjectAnimationSet` can advertise source-backed neutral roles such as `Reaction`, with per-surface model-local frames aligned to `RuntimeDynamicObject.Meshes`, but it does not carry source-game sequence ids or selector flags. R&C1 keeps those details in its provider. Advertising a clip is also distinct from owning mutable gameplay state: entity activation/lifecycle remains a separate runtime boundary rather than being hidden inside presentation data.
-
-Gameplay entity lifecycle now uses that separate boundary. `RuntimeDynamicObject` is the immutable authored definition; `RuntimeEntityState` is a replaceable live snapshot containing stable authored identity plus only current transform, neutral `Active`/`Inactive` presence and neutral object-animation role. Source-game modules own native state machines, PVar interpretation, health/AI semantics and transition reasons, and project only independently justified neutral effects. `RuntimeWorldScene.DynamicObjectNode` applies the neutral snapshot to Godot and never parses source payloads. R&C1 class 1781 (Rest/Reaction without deactivation), R&C1 class 500 (native break/reward state projected to neutral deactivation), and GC class 500 (native state 1 -> 3 -> deactivate/state 6) are concrete witnesses; UYA currently corroborates authored identity/PVar preservation but has no recovered native lifecycle selector, so no UYA-specific mutable semantics are invented. See `research/TRILOGY_ENTITY_LIFECYCLE.md`.
-
-## R&C1 shared gameplay runtime
-
-Recovered R&C1 gameplay is split into reusable source-game sessions rather than embedded in Godot scene code:
-
-- `Rac1MobyRuntimeSession` owns registered live Moby identity, copied PVar bytes, native state, neutral transform/presence and terminal lifetime. Class controllers register by native class id and receive update/damage dispatch through that common store. Terminal lifetime is separate from the optional recovered `0xfd` / `0xfe` byte, so a class can become inactive without inventing an unresolved selector.
-- `Rac1Class749HostileSession` is the class-local Veldin hostile controller. All sixteen recovered LEVEL0 placements use it with authored activation groups/polygons and explicit target descriptors; instance 154's linked-object path is retained because its authored data proves that case, not as a privileged witness. LEVEL18 remains outside runtime simulation until its activation/mission semantics are recovered.
-- `Rac1PlayerActionRuntimeSession` preserves the 131-slot native player-action domain with separate entry and per-frame update dispatch. Only recovered names/entry selectors are attached to numeric states. Wrench, first-ranged-fire, environmental fall death and recovered surface-action identities flow through this vocabulary rather than unrelated host booleans.
-- `Rac1PlayerContactResult` / `Rac1DynamicSupportSession` preserve raw/effective face semantics, contacted/current/persistent Moby identities, anchor validity, anchor-transform carry and the separate conveyor channel. Static Godot collision consolidates exact duplicate geometry/material references, uses back-face collision for two-sided contact, and retains an explicit face-to-source map before R&C1 decodes the packed face byte. The source collision data remains unchanged. WADE is recovered as action `0x72`; mud, ice and Magneboot selectors are likewise retained, but their unrecovered alternate motion laws still fail closed instead of borrowing ordinary locomotion.
-- `Rac1GameplayDamageEvent` is the common damage/event payload: amount, optional native flags/marker/handoff, source, optional owner provenance and target are distinct. `Rac1DamageTransportSession` publishes those payloads synchronously with a monotonic sequence before any target-specific consequence is applied, so diagnostics/tests can observe instantaneous native events without making a Moby state machine retain them. Wrench, class-749 melee and Bomb Glove all enter through this transport. Per-class consumers decide admission/consequence; class-500 reward selection is deliberately a later class-local input, and the Bomb Glove `2.0 / 0x00830000` envelope is not converted into a class-749 health consequence without evidence.
-- `Rac1MobyPersistenceSession` is the typed per-level UID query/update boundary used by recovered class-500 persistence. It does not pretend to be a generic mission-script VM or a complete memory-card/save implementation.
-
-The remaining host policy is deliberately narrow and named as such: unresolved wrench spatial admission, Bomb launch/contact presentation geometry, class-749 presentation interpolation, live dynamic-support geometry, alternate surface motion laws and exact native selectors/timing that retail evidence has not closed. Render visibility is never Moby gameplay lifetime. The Godot R&C1 host is also split by responsibility: `OBPGame.Rac1Gameplay` coordinates the session, while combat, projectiles, hostiles/entity adaptation, pickups, lifecycle/death-restart and presentation bookkeeping live in focused partials. Native gameplay law stays in `OBP.RAC1`; these host files only coordinate Godot-facing sessions and presentation. The ordinary Veldin smoke is guarded against teleport, development-key and direct-consequence shortcuts; running that retail-backed smoke still requires an authorized R&C1 source configured on the machine.
-
-## Godot boundary
-
-`OBP.Godot` converts runtime/native-neutral data into Godot presentation objects:
-
-- `ArrayMesh` / `MeshInstance3D`;
-- `Image` / `ImageTexture` / materials;
-- `StaticBody3D` / collision shapes;
-- cameras and engine-facing scene helpers.
-
-`game/` owns application lifecycle and player-facing concerns such as the file picker, planet/world selection, input, the production player host plus explicit development controls, HUD and eventual audio/UI/gameplay presentation. Going Commando host integration follows the same separation rule: `OBPGame.GcGameplay` is the generic coordinator, `OBPGame.GcAranosOpeningHost` contains Aranos-specific lift/door/MSR-I host behavior, and `OBPGame.GcCrateDebugHarness` contains the optional crate development harness rather than making either concern look like generic GC runtime law.
-
-Ordinary Ratchet movement in R&C1, GC and UYA worlds delegates planar/jump/crouch integration to `OBP.RAC1.Player.Rac1RatchetMovementController`, which consumes neutral `PlayerControlIntent` / `PlayerContactFacts` and emits native-world displacement per 60 Hz update. `PlayerControlIntent` preserves unconditioned signed right/forward axis magnitude plus an engine-neutral planar basis; `OBP.RAC1` applies the recovered R&C1 dead zone, magnitude bands and direction semantics before transforming the conditioned direction through that basis. Reusing this R&C1 retail-derived controller across the trilogy is an explicit OBP design choice, not evidence that GC or UYA shared the same native controller. Godot converts the result to engine velocity and keeps ownership of the presentation control basis, reconstructed collision, slopes and floor/ceiling contact. Development fly/noclip, diagnostics, camera override and spawn reset live in the separate `PlayerDevelopmentControls` node; the production `PlayerHost` contains no Tab/F/F8/F9/R bindings. `PlayerHost` is split by responsibility across core lifecycle/input, RAC1 movement/contact adaptation, camera presentation, animation/action presentation and diagnostics partials. Recovered movement laws remain in `OBP.RAC1`, while raw gamepad preprocessing remains in `RawGamepadInput`. The former player-host speed/jump/gravity calibration is retired from ordinary play.
-
-Camera state follows the same split. `OBP.Runtime.Camera` carries an engine-neutral Y-up eye/forward snapshot plus geometry-neutral obstruction probe/facts; it does not expose `Camera3D`, ray-query types or source-game memory fields. `OBP.RAC1.Camera` retains the recovered native control-heading, chase-follow, type-0 framing and obstruction state and owns the verified recurrence stages. The unresolved manual right-stick producer, profile selector, radial-follow coefficients and exact obstruction primitive are explicit evidence boundaries, so the existing Godot camera controls remain a presentation fallback rather than being promoted as native R&C1 rules.
-
-## Deterministic validation is part of the architecture
-
-One of the most valuable browser-era practices survives the migration: every major decoder/runtime step should be testable without manual play.
-
-Current mechanisms include:
-
-- xUnit tests over synthetic and retail-gated fixtures;
-- TypeScript/C# equivalence checks for already-understood formats;
-- `OBP.Cli` deterministic import summaries;
-- Godot command-line capture modes producing screenshots plus metadata;
-- explicit local probes against exact retail authorities on an authorized development machine.
-
-A visual runtime feature should, where practical, have a repeatable capture or state assertion so an agent can change, run and inspect it without relying on a human play session for every iteration.
-
-## Retail-authority agent bridge
-
-Retail-backed archaeology is run explicitly on an authorized local machine against user-owned sources. Portable CI must not depend on retail payloads, and only bounded payload-free evidence may be committed.
-
-## Storage / cache boundary
-
-Production OBP no longer depends on OPFS, IndexedDB or CacheStorage. Retail source images remain user-owned local files outside the repository.
-
-Derived caches may be added where they materially improve load time, but they must be rebuildable from verified source data and should not become a second source of truth. The exact native cache/save layout remains a runtime design decision rather than an archaeology assumption.
-
-The old browser storage implementation is historical only; native bounded/random-access IO is authoritative for maintained code.
-
-## Gameplay/design boundary
-
-Recovered native campaign machinery — story flags, mission gates, encounters, vendors, saves, etc. — should be represented faithfully enough to understand and reproduce it. The shared runtime must avoid assuming that the final OBP game preserves the original orchestration unchanged.
-
-That separation lets archaeology remain trustworthy while the creative design remains open:
-
-```text
-source game truth -> faithful native model -> deliberate OBP adaptation/remix
-```
-
-When a cross-game rule is chosen, document it as an OBP design decision and keep the underlying source evidence accessible.
-
-## Current engineering principle
-
-Prefer a small evidence-backed capability with deterministic tests over a broad abstraction that guesses what the fused game will need. Preserve provenance, keep retail data local, keep game-native parsing out of Godot, and promote shared concepts only when the evidence justifies sharing them.
-
-## Player-avatar runtime boundary
-
-Playable character presentation is a separate runtime concern from world import. `OBP.Runtime/Player` carries stable avatar/model identity, decoded surface textures, per-surface UV/index groups, bounds/origin/axis metadata, and multiple animation clips in **model-local space**. Each clip has a neutral semantic role plus per-frame durations, so native variable-rate timing survives without flattening it to a guessed constant FPS. `PlayerAnimationPresentation` carries an already-resolved clip id, semantic host state, clock origin and loop policy plus optional opaque source sequence/state keys; those keys preserve provenance without teaching Runtime or Godot any game's numeric selector vocabulary.
-
-This differs from `RuntimeAnimatedMesh`: its `Frames` are already **OBP Y-up world-space** positions for a particular placed world object. Hosts must place/remap every `PlayerAvatar` clip themselves rather than treating its local frames as `RuntimeAnimatedMesh` data.
-
-Source-game providers own retail parsing. `Rac1PlayerAvatarProvider` reads the user-owned R&C1 authority independently of any loaded `RuntimeWorld`, decodes `Rac1RatchetAvatar`, and resolves Ratchet's Moby textures from explicit canonical native level 0. Its admitted neutral clip set now includes standing, locomotion start and sustained locomotion, two deliberately indistinguishable stop variants, stationary/moving jump, crouch and direction-specific crouch turns, and primary attack. The two stop clips share one neutral role because retail evidence admits both as stop transitions but does not yet establish the 5-vs-6 selection predicate.
-
-Animation selection is source-owned rather than Godot-owned. `IPlayerAvatarProvider.SourceGame` and `PlayerAvatarIdentity.SourceGame` use the shared `ObpSourceGame` provenance key, and `PlayerAvatarProviderRegistry` resolves providers strictly by the active destination game. Providers with recovered renderable selectors implement `IPlayerAnimationControllerProvider`; R&C1 supplies `Rac1PlayerAnimationPresentationController`, which owns the retained 3→4 locomotion entry, 7/8 launch-context jump choice, direct landing return and sequence-23 wrench one-shot rules and emits the corresponding native sequence/action-state keys. `PlayerAvatarView` implements only `IPlayerAnimationPresentationSink`: it validates the resolved clip id and renders frames from the supplied clock origin/loop policy, with no source-game transition table. Composition uses `GenericPlayerAnimationPresentationController` only when a selected provider explicitly lacks a native controller.
-
-GC and UYA already retain source-native player sequence/state contracts in `GcRatchetSequenceSelection` and `UyaRatchetSequenceSelection`, but neither game yet exposes a renderable `IPlayerAvatarProvider`. GC still needs its dedicated Ratchet carrier promoted to the neutral avatar contract; UYA's dedicated Ratchet sequences additionally use an unresolved special player-frame encoding. The registry therefore fails closed for Rac2/Rac3 and leaves their debug capsule visible rather than borrowing R&C1 assets or projecting recovered numeric selectors onto host-generic animation states. Physics and movement remain authoritative outside this presentation mapping.
-
-Skeleton metadata is optional at this boundary. R&C1 currently leaves it absent because the integrated avatar exposes native hierarchy/affine records, but no neutral bind/animation-transform meaning has yet been established strongly enough to publish as shared runtime semantics.
+Production is Godot 4 + C#. Retail NTSC-U bytes and executable behaviour are
+authority; public tools are cross-checks. Source evidence and deliberate OBP
+design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISION.md).
+
+## Layer ownership
+
+| Layer | Owns |
+|---|---|
+| `OBP.Core` | Shared provenance, identity and math |
+| `OBP.IO` | Bounded/random-access file and split reads, streaming hashes, authority verification |
+| `OBP.PS2` | Shared ISO/ELF, compression, texture, packet and collision formats |
+| `OBP.RAC1/2/3` | Source-specific containers, interpretation, recovered behaviour and provenance |
+| `OBP.Runtime` | Evidence-justified engine-neutral world, player, presentation, audio and gameplay concepts |
+| `OBP.PS2.Presentation` | Narrow shared PS2-material to neutral-runtime mapping; no game-specific semantics |
+| `OBP.Godot` | Neutral data to Godot meshes, materials, collision, audio and presentation objects |
+| `game/` | Application lifecycle, input, UI, cameras and host coordination |
+| `OBP.Composition` | World composition schema, transforms and anchor solving |
+| `OBP.Cli` / tests | Deterministic imports, probes and contract verification |
+
+`ArchitectureLayeringTests` guards project references/imports. Godot adapters
+do not become native parsers; RAC modules do not depend on Godot; Runtime does
+not acquire source-game numeric state machines. Share low-level codecs only
+where retail evidence supports the common structure. Preserve unknown fields.
+
+## Sources and destination providers
+
+`TrilogySourceDefinitions` supplies source-owned authority identities to the
+engine-neutral `ObpSourceLibrary`. Attachment performs bounded ISO/SYSTEM.CNF/
+ELF/serial probing plus exact expected payload length. Recognized serial alone
+does not admit an unsupported revision. Full cryptographic verification is an
+explicit streaming operation, not a startup multi-gigabyte read.
+
+`user://sources.json` stores game, expected build and local path. Restore reopens
+and re-identifies each file; saved metadata is not proof. Forget removes only
+the attachment. Retail bytes remain in user-owned files outside Git.
+
+Source availability, destination discovery and loadable-provider availability
+are distinct. `ObpDestination` preserves destination/build/game/native identity
+separately from display names. `ObpWorldProviderRegistry` resolves the correct
+`IObpWorldProvider`, whose native importer builds `RuntimeWorld` on demand.
+No exported world JSON or handmade planet scene is required.
+
+## World and entity boundary
+
+`RuntimeWorld` holds decoded render/collision, environment and authored objects.
+`Ship` and optional `PlayerStart` are distinct source facts. Hosts prefer a
+proven player start and otherwise use the supported fallback. Coordinate and
+material interpretation belongs to source providers, not scene builders.
+
+`RuntimeDynamicObject` is immutable authored identity/payload/presentation
+capability. `RuntimeEntityState` is a replaceable live snapshot of stable
+identity, neutral transform, Active/Inactive presence and animation role.
+PVar bytes, native state numbers, health, AI and transition reasons remain
+source-owned. Visibility is not gameplay lifetime. See
+[the lifecycle contracts](../research/TRILOGY_ENTITY_LIFECYCLE.md).
+
+`RuntimeWorldScene` builds static, dynamic, animated and collision presentation
+through focused adapters behind one Build entry point. GC/RAC1/RAC3 world-import
+coordinators compose their native decoders without pushing formats into Godot.
+
+## Source-game gameplay sessions
+
+RAC1 sessions own Moby registration/state, class controllers, damage events,
+Nanotech, equipment, actions, pickups, persistence, motion and camera laws.
+`Rac1MobyRuntimeSession` dispatches native class updates/damage; class-local
+controllers own their predicates and consequences. `Rac1GameplayDamageEvent`
+keeps source, owner, target, amount, flags and marker distinct. Damage transport
+publishes synchronously before the target consequence. Terminal lifetime is
+separate from an optional native terminal-state byte.
+
+The host supplies contacts and presentation facts. `Rac1PlayerContactResult`
+retains raw/effective material semantics, support identity, anchor carry and
+conveyor channels. `Rac1MobyPersistenceSession` is a per-level UID boundary,
+not a universal mission VM. Godot gameplay partials coordinate these sessions;
+they do not define native constants or invent shared class semantics.
+
+## Player movement, camera and animation
+
+`PlayerControlIntent` carries unconditioned normalized signed axes, button
+edges and a neutral control basis. Source movement applies its conditioner
+and emits native displacement per 60-Hz update; Godot supplies contact and
+converts displacement to engine motion. Applying the RAC1 movement base in
+GC/UYA worlds is an OBP design choice, not proof of equal retail controllers.
+Development fly/reset/diagnostics are separate from ordinary movement law.
+
+Camera snapshots and obstruction facts are neutral. Source modules own recovered
+recurrences and selectors; unsupported native camera channels remain explicit
+host presentation policy. A host camera vector does not establish attack facing.
+
+`PlayerAvatar` clips are model-local, with native timing, attachment tracks and
+optional skeleton metadata. Placed `RuntimeAnimatedMesh` frames are world-space;
+the two contracts cannot be interchanged. Source avatar providers parse assets;
+source animation controllers resolve numeric/native selection into neutral
+presentation. `PlayerAvatarView` consumes the resolved sampled pose and cannot
+invent source selectors or advance a physics-owned clock during rendering.
+
+RAC1 exposes a verified Ratchet carrier and source-aware animation controller.
+Its ordinary locomotion, crouch, stop and landing clocks are documented in
+[the animation reference](../research/RAC1_LOCOMOTION_ANIMATION.md). GC/UYA
+retain their own selector contracts; a source without an admitted renderable
+avatar fails closed instead of borrowing RAC1 assets. Movement is authoritative
+outside the animation mapping. Neutral skeleton metadata is optional until
+its transform semantics are independently established.
+
+## Host lifecycle and presentation
+
+`ApplicationLifecycle` owns explicit quit requests with a reason/exit code.
+Desktop close remains distinct from Back/navigation; Escape from gameplay or
+source/selector UI must not accidentally become process exit. Automated gates
+must reach their own completion; closing their window is cancellation.
+
+Opt-in smoke dispatch belongs in `game/diagnostics/`; the world loader invokes
+one diagnostic boundary after successful loading. Staged combat/contact fixtures
+and ordinary-play routes establish different claims. See
+[RETAIL_TESTING.md](RETAIL_TESTING.md) for commands and gate boundaries, and
+[GODOT_PRESENTATION.md](GODOT_PRESENTATION.md) for scene/material/UI details.
+
+## Evidence, storage and design
+
+Bounded source readers and streaming hashes avoid loading complete ISOs into
+memory. Derived caches must be rebuildable; caches, render visibility and host
+saves do not become retail authority. Commit only payload-free evidence and
+keep current native/source tests alongside the relevant behaviour.
+
+Unknown native semantics stay unknown until recovered. Cross-game campaign,
+progression or remix choices belong above the native model and must be labelled
+as OBP design. Keep implementation status in code/tests and Git history,
+technical source contracts in research, and speculative ideas in brainstorming.

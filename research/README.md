@@ -1,74 +1,48 @@
-# OBP research index
+# Retail research references
 
-This directory records evidence about the retail games, source provenance and external/public cross-checks. It is not a second product roadmap.
+Retail bytes/executable behaviour are authority. Public comparisons remain
+labelled; OBP host/design policies stay separate. Current implementation and
+validation live in code/tests and Git, not completed-task reports.
 
-## Evidence rule
+## Source identity and shared formats
 
-1. **Primary retail bytes/executable behaviour** are authority for the selected build.
-2. Other official regions/revisions are comparison evidence and possible sources of intentional fixes/content.
-3. Public tools such as Wrench/noclip are useful cross-checks, not authority over contradictory retail evidence.
-4. OBP-created behaviour belongs to game design, not archaeology.
+- [Input provenance](INPUT_PROVENANCE.md), [build confidence](BUILD_PROBING.md), [disc layouts](RETAIL_TRILOGY_DISC_LAYOUT.md).
+- [External-source policy](EXTERNAL_SOURCE_POLICY.md), [public comparisons and packet boundaries](PUBLIC_FORMAT_ARCHAEOLOGY.md).
+- [Material semantics](MATERIAL_SEMANTICS.md), [atmosphere](WORLD_ATMOSPHERE.md), [world effects](WORLD_EFFECTS.md).
+- [Entity lifetime](TRILOGY_ENTITY_LIFECYCLE.md), [common movement authority](RATCHET_MOVEMENT_BASE.md).
+- [Generated evidence manifest](generated/MANIFEST.md): current producers, frozen witnesses and authority inventories. Generated evidence is not disposable.
 
-When a document contains an unresolved hypothesis, it should say so explicitly. Older research can mention paths under the retired `reference-ts/` tree as historical provenance; those paths are not current tooling and should not be treated as runnable instructions.
+## Ratchet & Clank
 
-## Start here
+| Area | References |
+|---|---|
+| Disc/core data | [Disc index](RAC1_DISC_INDEX.md), [overlay mapping](RAC1_LEVEL_OVERLAY.md), [settings](RAC1_LEVEL_SETTINGS.md), [instances](RAC1_INSTANCES.md) |
+| Graphics | [Terrain](RAC1_STATIC_GEOMETRY.md), [textures](RAC1_TEXTURES.md), [sky](RAC1_SKY.md), [Mobies](RAC1_MOBY.md), [skinning](RAC1_MOBY_SKINNING.md), [Moby animation/audio](RAC1_MOBY_ANIMATION_SOUND.md) |
+| Player | [Movement](RAC1_PLAYER_MOVEMENT.md), [animation and handoffs](RAC1_LOCOMOTION_ANIMATION.md), [avatar](RAC1_PLAYER_AVATAR.md), [camera](RAC1_CAMERA_ARCHAEOLOGY.md) |
+| Contact/traversal | [Collision and ledges](RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md), [contact carry](RAC1_CONTACT_MOTION_CARRY.md), [surfaces](RAC1_SURFACE_MOVEMENT.md), [airborne packs/flips](RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md), [traversal equipment](RAC1_TRAVERSAL_EQUIPMENT.md), [Swingshot pendulum](RAC1_SWINGSHOT_PENDULUM.md) |
+| Combat/equipment | [Wrench actions](RAC1_WRENCH_ACTIONS.md), [wrench model](RAC1_WRENCH_VISUAL.md), [Bomb Glove](RAC1_BOMB_GLOVE.md), [inventory](RAC1_WEAPON_INVENTORY.md), [fire framework](RAC1_WEAPON_FIRE_FRAMEWORK.md), [contact records](RAC1_PROJECTILE_HIT_PATTERNS.md) |
+| Gameplay/populations | [Crates/bolts](RAC1_CRATES_PICKUPS.md), [Veldin enemies](RAC1_VELDIN_ENEMIES.md), [common hostile state](RAC1_HOSTILE_COMMON_STATE.md), [attack contracts](RAC1_ENEMY_ATTACK_PATTERNS.md), [Aridia enemies](RAC1_ARIDIA_ENEMIES.md), [Kerwan taxis](RAC1_METROPOLIS_TAXIS.md) |
+| Census/progression | [Authored Mobies](RAC1_AUTHORED_MOBY_CENSUS.md), [class families](RAC1_CLASS_FAMILIES.md), [NPC/interactables](RAC1_NPC_INTERACTABLE_CENSUS.md), [travel](RAC1_CAMPAIGN_TRAVEL.md), [checkpoints](RAC1_CHECKPOINTS.md), [start](RAC1_VELDIN_SPAWN.md), [health/death/restart](RAC1_DEATH_RESPAWN.md) |
 
-| Area | Main document | Status / purpose |
-|---|---|---|
-| Source/build identity | [`INPUT_PROVENANCE.md`](INPUT_PROVENANCE.md), [`BUILD_PROBING.md`](BUILD_PROBING.md) | Current authority/provenance rules |
-| Retail trilogy disc structure | [`RETAIL_TRILOGY_DISC_LAYOUT.md`](RETAIL_TRILOGY_DISC_LAYOUT.md) | Bounded retail disc archaeology |
-| Native audio foundation | [`AUDIO_FOUNDATION.md`](AUDIO_FOUNDATION.md) | GC selected as first audio authority; bounded recovery/runtime boundary and provenance rules |
-| GC level/file catalogue | [`GC_LEVEL_CATALOGUE.md`](GC_LEVEL_CATALOGUE.md), [`GC_PLANET_NAMES.md`](GC_PLANET_NAMES.md) | Retail-backed catalogue/name work |
-| GC level loading / RC2.HDR | [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) | Retail-backed three-header row packing; deeper loader semantics remain open |
-| RC2.HDR reconciliation | [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) | Three-header packing retail-confirmed for GC NTSC-U v1.01 |
-| GC outer WAD | [`GC_LEVEL_WAD.md`](GC_LEVEL_WAD.md) | Retail-backed container/range layout |
-| GC decompressed core | [`GC_LEVEL_CORE.md`](GC_LEVEL_CORE.md) | Retail-backed core header/section work |
-| Coordinates/chunks | [`GC_COORDINATES_AND_CHUNKS.md`](GC_COORDINATES_AND_CHUNKS.md) | Coordinate rule plus unresolved chunk-plane equality detail |
-| Collision | [`GC_COLLISION.md`](GC_COLLISION.md) | Retail-backed collision decoding |
-| Tfrags | [`GC_TFRAG.md`](GC_TFRAG.md) | Retail-backed world geometry/VIF packet work |
-| Textures | [`GC_TEXTURES.md`](GC_TEXTURES.md) | Retail-backed GC texture/CLUT decoding |
-| TIEs | [`GC_TIES.md`](GC_TIES.md) | Retail-backed TIE classes/instances |
-| Shrubs / Moby instances | [`GC_SHRUBS_MOBIES.md`](GC_SHRUBS_MOBIES.md) | Retail-backed instance/class work |
-| Moby geometry/skinning | [`GC_MOBY.md`](GC_MOBY.md) | Retail-backed, still partial for variants/animation |
-| GC gameplay Mobies / PVars | [`GC_PVARS.md`](GC_PVARS.md), [`GC_MOBY_CATALOGUE.md`](GC_MOBY_CATALOGUE.md) | Retail PVar structure, loaded `lvl.vtbl` behaviour and semantic class catalogue |
-| GC crates / resource pickups | [`GC_CRATES.md`](GC_CRATES.md) | Loaded crate-family state machine and indexed resource-emission archaeology |
-| R&C1 crates / bolts | [`RAC1_CRATES_PICKUPS.md`](RAC1_CRATES_PICKUPS.md) | Class-500 break, authored reward centre, physical bolt denominations, collection and persistence evidence |
-| R&C1 player movement | [`RAC1_PLAYER_MOVEMENT.md`](RAC1_PLAYER_MOVEMENT.md) | 60 Hz native displacement, run/stop, variable jump, air control, crouch, turning envelope and respawn evidence |
-| R&C1 movement audit | [`RAC1_MOVEMENT_PARITY.md`](RAC1_MOVEMENT_PARITY.md) | Current coverage and explicit native/host approximation boundaries |
-| R&C1 landing regressions | [`RAC1_LANDING_OWNERSHIP.md`](RAC1_LANDING_OWNERSHIP.md), [`RAC1_SLOPE_JUMP_SUPPORT.md`](RAC1_SLOPE_JUMP_SUPPORT.md) | Landing carry/animation ownership, standing interpolation and slope jump admission corrections |
-| R&C1 airborne equipment | [`RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md`](RAC1_AIRBORNE_AND_MOVEMENT_EQUIPMENT.md) | Aerial boost, flips, pack jumps/glides, Power Slam and wall jumps |
-| R&C1 ledges and contact | [`RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md`](RAC1_LEDGE_TRAVERSAL_AND_COLLISION_PROFILE.md), [`RAC1_SURFACE_MOVEMENT.md`](RAC1_SURFACE_MOVEMENT.md) | Collision dimensions, ledge queries/traversal and alternate surface laws |
-| R&C1 traversal equipment | [`RAC1_TRAVERSAL_EQUIPMENT.md`](RAC1_TRAVERSAL_EQUIPMENT.md), [`RAC1_SWINGSHOT_PENDULUM.md`](RAC1_SWINGSHOT_PENDULUM.md) | Ownership, authored Swingshot targets, pull/pendulum motion and unresolved equipment contexts |
-| R&C1 Nanotech / damage / death | [`RAC1_NANOTECH_DAMAGE_DEATH.md`](RAC1_NANOTECH_DAMAGE_DEATH.md), [`RAC1_DEATH_RESPAWN.md`](RAC1_DEATH_RESPAWN.md) | Retail-backed Nanotech/death path plus the explicit Veldin respawn preservation/reset evidence boundary |
-| R&C1 hostile/common Moby state | [`RAC1_HOSTILE_COMMON_STATE.md`](RAC1_HOSTILE_COMMON_STATE.md) | Engine-common Moby dispatch/damage/terminalization boundary versus class-749 targeting, locomotion, health and hit-state script |
-| R&C1 enemy attack patterns | [`RAC1_ENEMY_ATTACK_PATTERNS.md`](RAC1_ENEMY_ATTACK_PATTERNS.md) | Class-749 melee cadence/range/facing/damage plus class-1440 contact-query and damage-intake boundary |
-| Opening Veldin enemies | [`RAC1_VELDIN_ENEMIES.md`](RAC1_VELDIN_ENEMIES.md) | Both families' live AI, skeletal clips, contact damage, reactions, bolt rewards and explicit adapter limits |
-| R&C1 wrench | [`RAC1_WRENCH_ACTIONS.md`](RAC1_WRENCH_ACTIONS.md), [`RAC1_WRENCH_VISUAL.md`](RAC1_WRENCH_VISUAL.md) | Multi-Strike, Hyper/Comet, authored hit gates, class71 animated hand attachment and bounded host collision |
-| Sky | [`GC_SKY.md`](GC_SKY.md) | Retail-backed shell geometry/settings; effects remain partial |
-| Level settings | [`GC_LEVEL_SETTINGS.md`](GC_LEVEL_SETTINGS.md) | Retail-backed fixed settings fields |
-| UYA ship/start transform | [`UYA_RETAIL_SHIP_START_COMPATIBILITY.md`](UYA_RETAIL_SHIP_START_COMPATIBILITY.md) | Retail-corroborated shared-layout compatibility; executable field-name provenance remains open |
-| UYA Moby animation | [`UYA_MOBY_ANIMATION.md`](UYA_MOBY_ANIMATION.md) | Retail-pinned GC/UYA skin-state and first evidence-safe multi-joint UYA preview |
-| Public cross-source notes | [`PUBLIC_FORMAT_ARCHAEOLOGY.md`](PUBLIC_FORMAT_ARCHAEOLOGY.md) | Surviving Wrench/noclip findings and contradictions |
-| Geometry architecture caveats | [`PS2_GEOMETRY_PIPELINE.md`](PS2_GEOMETRY_PIPELINE.md) | VIF/packet boundary and future caveats |
-| Wrench format comparison | [`WRENCH_FORMAT_MATRIX.md`](WRENCH_FORMAT_MATRIX.md) | Public-tool comparison matrix |
-| External-source policy | [`EXTERNAL_SOURCE_POLICY.md`](EXTERNAL_SOURCE_POLICY.md) | How non-retail sources may be used |
+## Going Commando
 
-## Working research
+| Area | References |
+|---|---|
+| Disc/core | [Loading/RC2.HDR](GC_LEVEL_LOADING.md), [catalogue](GC_LEVEL_CATALOGUE.md), [names](GC_PLANET_NAMES.md), [WAD](GC_LEVEL_WAD.md), [core](GC_LEVEL_CORE.md), [settings](GC_LEVEL_SETTINGS.md) |
+| Graphics/contact | [Tfrags](GC_TFRAG.md), [TIEs/shrubs](GC_TIES.md), [textures](GC_TEXTURES.md), [Mobies](GC_MOBY.md), [collision](GC_COLLISION.md), [coordinates/chunks](GC_COORDINATES_AND_CHUNKS.md), [sky](GC_SKY.md), [lighting](GC_LIGHTING.md) |
+| Gameplay/player/audio | [PVars](GC_PVARS.md), [Moby catalogue](GC_MOBY_CATALOGUE.md), [crates](GC_CRATES.md), [Aranos](GC_ARANOS_OPENING.md), [player selectors and retained leads](GC_PLAYER_ANIMATION_STATES.md), [attacks](GC_WRENCH.md), [audio](GC_AUDIO.md) |
 
-`dev` is the integration baseline. Concurrent archaeology may use temporary isolated branches/worktrees, but accepted evidence and implementation should be integrated back into `dev` rather than maintained as a parallel specialist branch.
+## Up Your Arsenal
 
-## Generated evidence
+- [Disc discovery and boot identity](UYA_RETAIL_TOC.md).
+- [Native world formats/import and evidence](UYA_PRODUCTION_IMPORTER.md).
+- [Moby animation](UYA_MOBY_ANIMATION.md).
+- [Player states, selection and movement witnesses](UYA_PLAYER_ANIMATION_SELECTION.md).
+- [Veldin class-runtime recovery](UYA_VELDIN_GAMEPLAY.md).
 
-[`generated/`](generated/) contains payload-free reports, catalogues and retained archaeology reductions. See [`generated/MANIFEST.md`](generated/MANIFEST.md) for each artifact's lifecycle status and whether its original generator is still runnable. Legacy filenames containing `stage0` describe the development stage in which those reports were introduced; they are not a claim that the whole repository is still at Stage 0.
+## Using the project
 
-[`manifests/`](manifests/) contains canonical authority/source manifests checked against importer constants.
-
-## Sandbox/reliability notes
-
-[`SANDBOX_MATERIALIZATION_TESTS.md`](SANDBOX_MATERIALIZATION_TESTS.md) is the canonical investigation log for ChatGPT sandbox/materialisation behaviour. Individual `SANDBOX_PROBE_*` / recovery files are narrow experimental records and should be read through that canonical log rather than treated as project architecture.
-
-The concise fallback operational summary for agents lives in [`../docs/AGENT_SANDBOX_NOTES.md`](../docs/AGENT_SANDBOX_NOTES.md). Retail-backed work should use an explicitly authorized local development machine and commit only payload-free evidence.
-
-## Keeping this index useful
-
-When a new research document becomes the best entry point for a major subsystem, add it here. When a hypothesis is superseded by direct retail evidence, either update the old document prominently or remove it rather than leaving two apparently authoritative descriptions.
+[Architecture](../docs/ARCHITECTURE.md), [testing](../docs/RETAIL_TESTING.md),
+[saved repros](../docs/MOVEMENT_REPRO_STATES.md), and
+[Veldin composition alignment](VELDIN_CROSS_GAME_ALIGNMENT.md).
+Speculative design stays in [brainstorming](../docs/brainstorming/README.md).

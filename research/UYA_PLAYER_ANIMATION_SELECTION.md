@@ -1,4 +1,4 @@
-# UYA player animation selection
+# UYA player state, animation and movement evidence
 
 **Authority:** UYA NTSC-U `SCUS-97353`, build `rac3-ntscu-original`.
 
@@ -146,3 +146,35 @@ payloads are not committed. The evidence derives from the authorized local
 SCUS-97353 authority and the already-decoded `RatchetSeqsOffset` sequence
 headers, plus controlled movement witnesses in
 `research/generated/rac3-ntscu-original.uya-movement-witnesses.json`.
+
+## Controlled movement witnesses
+
+The separate [movement reduction](generated/rac3-ntscu-original.uya-movement-witnesses.json)
+uses SCUS-97353 v1.00, CRC `45FE0CC4`. These are witness values, not a complete
+GC/RAC1-derived substitute controller. Player-global base is `0x1a4be0`:
+state `+0x25c4`, live object `+0x25c0`, position `+0x80/+0x84/+0x88`,
+motion-like vector `+0xf0/+0xf4/+0xf8`, conditioned input `+0x2260/+0x2264`,
+shaped magnitude/angle `+0x2838/+0x2840`. Live-object position is
+`+0x10/+0x14/+0x18`, facing yaw `+0xf8`. Global `+0xf8` is vertical motion,
+not that yaw; non-atomic PINE reads can differ by one update.
+
+| Witness | Retained observation |
+|---|---|
+| Full-forward state 2 | Initial steps `.01027679, .02055359, .03083038`; tenth `.10277557`, settled `.10282898`. Global `+0xf0/+0xf4` stay zero, so they are not complete planar velocity. |
+| Release | First residual `.09810638`; tail `.01979065,.01487732,.00995636,.00504303,.00012207,0`, roughly `.004917` decrement after the sharp transition. |
+| State-7 jump | Ground vertical bias about `-.015`, first translated request `+.1393971`; released rise decrement `.00825`, descending decrement about `.0096525`. |
+| Tap/held jump | Six-sample tap apex `1.42793274`, 24-sample hold `1.88673401`; held rise decrement about `.00443646..00528619` before release-law recovery. Collision precedes action exit. |
+| Facing | Normal right-input yaw/travel error about `-.000094` rad; L2 keeps similar speed but error `1.5707642` rad, establishing a strafe basis. |
+| Reverse input | Eight large yaw steps near `-.194895` rad before easing; sampling does not establish a constant turn-rate law. |
+
+The tap translates at sample 18, touches floor at 54 and leaves state 7 at 65;
+the hold touches at 61 and leaves at 73. These capture indices are not native
+action-age constants. See the reduction for full trace identities.
+
+At `0x3a3158`, axes are centred at 127, zeroed below 48 raw counts, scaled by
+`(abs(raw-127)-48)/76` and clamped. Magnitude/angle producers
+`0x3a37c4/0x3a37d4` feed a 30-sample history. The later `.25` literal at
+`0x3a3848` is tested against history only after current magnitude > `.9`;
+it is a rapid-stick event detector, not a proven locomotion activation threshold.
+Partial-input response, exact yaw/assist laws and full L2/camera ownership still
+require their own recovery. These witnesses do not promote a complete controller.

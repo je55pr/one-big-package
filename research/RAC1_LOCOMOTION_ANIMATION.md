@@ -1,303 +1,187 @@
-# R&C1 ordinary locomotion animation recovery
+# R&C1 locomotion, crouch and landing animation
 
-Authority: original NTSC-U `SCUS-97199`, Veldin overlay. Recovered 2026-10-18
-directly from the verified ISO, without running PCSX2. This supersedes the
-interpretation of sequence 3 as a one-shot in the earlier animation admission
-map. **Ordinary low-speed locomotion loops sequence 3. Sequence 4 is selected
-by speed, not by completing sequence 3.**
+Authority: original NTSC-U `SCUS-97199`, using the independently mapped Veldin
+overlay and boot timing context in [RAC1_LEVEL_OVERLAY.md](RAC1_LEVEL_OVERLAY.md).
+[The overlay probe](../tools/rac1-level-overlay-probe.py) reproduces addresses,
+source-block hashes and constants in [its report](generated/rac1-level-overlay-probe.json).
+These are bounded ordinary-mode contracts, not a complete retail action machine.
 
-The [overlay probe](../tools/rac1-level-overlay-probe.py) reproduces the code
-mapping, hashes the source ISO/overlay/boot executable, and emits data, addresses
-and block hashes in
-[`generated/rac1-level-overlay-probe.json`](generated/rac1-level-overlay-probe.json).
-The source-game arithmetic contract is
-[`Rac1OrdinaryLocomotionAnimation`](../src/OBP.RAC1/Player/Rac1OrdinaryLocomotionAnimation.cs).
-It covers the regular Ratchet branch at the original 60 Hz timing context.
-It is not an emulator or a claim of complete animation parity.
+## Native ownership and update order
 
-## Call chain and field meanings
+Here `P = 0x0013f350`. Action-2 entry/update dispatch to `0x2232d4/0x22b434`;
+the ordinary animation helper is `0x228c18`, called at `0x22be04`.
 
-`P = 0x0013f350`; all player offsets below are relative to P. The native state
-entry jump table at `0x001e8030` sends action 2 to `0x002232d4`. The update jump
-table at `0x001e82b0` sends it to `0x0022b434`. Following the ordinary eligible
-path reaches a call at `0x0022be04` to `0x00228c18`.
+| Field | Recovered meaning |
+|---|---|
+| `P+0x2080/+0x2084/+0x2088` | Player Moby, action, locomotion substate |
+| `P+0x194` | Controller scalar step before collision adaptation |
+| `P+0x1a0/+0x3bc` | Substate age and signed entry guard |
+| `P+0xa90/+0xa94` | Playback multiplier and frame/blend transition rate |
+| `P+0xab0/+0xab4/+0xab8` | Optional loop/resume fields |
+| `Moby+0x50/+0x51` | Current/next frame |
+| `Moby+0x52/+0x53/+0x54` | Previous/current sequence and fractional progress |
 
-| Field | Role in this recovered path |
-| --- | --- |
-| `P+0x2080` | Pointer to player Moby |
-| `P+0x2084` | Native action state; ordinary locomotion is 2 |
-| `P+0x2088` | Locomotion substate; 0/1 select sequences 3/4 |
-| `P+0x194` | Scalar controller speed per update, before host collision adaptation |
-| `P+0x1a0` | Updates since substate change |
-| `P+0x3bc` | Signed halfword guard that can defer a substate change |
-| `P+0xa90` | Player-owned animation-rate multiplier |
-| `P+0xa94` | Current frame/blend transition rate |
-| `P+0xab0`, `P+0xab4`, `P+0xab8` | Optional loop-range/resume fields |
-| `Moby+0x50`, `Moby+0x51` | Current frame and next frame |
-| `Moby+0x52`, `Moby+0x53` | Previous/current sequence for blending |
-| `Moby+0x54` | Fractional frame/blend progress |
+The regular `0x207184..0x2071cc` path advances animation (`0x232670`) first,
+then input/movement (`0x211670`, nested movement call `0x211728 -> 0x217970`),
+then action selection (`0x229b70`). `0x216f10` processes delayed-action timers.
+Newly assigned rates affect the next advance; selection sees the updated
+controller scalar, not final host displacement. Age increments at `0x221630`
+and resets on entry/substate change; it is not a clip-completion timer.
 
-`P+0x1a0` increments at `0x00221630`. State entry resets it at `0x002275ec`,
-and substate changes reset it through `0x00231ca4..0x00231cac` and the equivalent
-end-of-update path at `0x002212a0`. It is not a clip-completion timer.
+Boot GP is `0x166c00`; tick scale at `0x15ed68` starts at 1, and the seconds
+scalar at `0x15ed6c` starts at binary32 `1/60`. `scaledTickCount` (`0x1fef20`)
+converts `0.5 + requestedTicks * tickScale` to an integer. Host binary32
+arithmetic is not a full R5900 FPU model.
 
-The caller handles support loss, input release, action changes and special
-movement flags before reaching this helper. In particular, ordinary action 2
-with cached input magnitude at least `0.17f` takes the branch at `0x0022b960`
-to the helper. This is an active-locomotion maintenance check, not the separate
-movement-admission threshold. Mode 1/3 use different rate branches; those and
-other action callers are excluded from this contract.
+## Walk/run selection and playback
 
-### Update order
+**Sequence 3 loops at low speed. Completing it does not select sequence 4.**
+The ordinary action-2 caller reaches the helper with cached magnitude >= `.17`;
+selection additionally needs age > `scaledTickCount(4)` and entry guard zero.
+Modes 1/3 and special callers are outside this contract.
 
-The regular path at `0x00207184..0x002071cc` calls these routines in order:
+| Current substate/sequence | Change predicate | Rate multiplier |
+|---|---|---|
+| 0 / 3 | Scalar step strictly above `2.35 * dt` -> 4 | `clamp(step * 157, .6, 4)` |
+| 1 / 4 | Scalar step strictly below `1.9 * dt` -> 3 | `clamp(step * 14, .6, 2.2)` |
 
-1. `0x00232670`: animation advance, using the previously assigned multiplier.
-2. `0x00211670`: input, movement and counter update. Its call at `0x00211728`
-   reaches movement executor `0x00217970`; its later call at `0x00211814`
-   reaches `0x002215c8`, which increments substate age at `0x00221630`.
-3. After intervening support/control helpers, `0x00229b70`: action update,
-   including the ordinary animation selector and rate assignment.
-4. `0x00216f10`: delayed-action timer processing. This is not the movement executor.
+The bounds are from `0x17bdb8`; equality retains the sequence. A steady `.015`
+walk never crosses the upper bound. Rates still update while selection is
+guarded. The base asset rates `.25/.5` are multiplied only on settled playback.
+Unsupported speeds beyond the recovered final upper bound are rejected.
 
-Therefore a new multiplier affects the next animation advance. The selector
-reads the updated controller scalar after the movement executor, not the
-resulting host collision displacement. The earlier pre-movement interpretation
-misidentified `0x216f10` and missed the nested `0x211728` call; the host now
-supplies the updated scalar, eliminating a one-update selector delay.
-The probe verifies these call instructions
-and hashes the surrounding update block. Intervening special-case producers
-are not modeled by the bounded normal-movement adapter.
+Ordinary entry targets sequence 3, next frame 8, blend 8; the entry-frame table
+at `0x15f6d8` is `[8,0]`. Entry-history overrides are 12 ticks for
+`P+0x22a8 == 1`, 15 for `P+0x209c == 0x23`, 18 for `0x209c == 6 or 0x2d`,
+then 13 for `P+0x20a0 == 4` with contact counter `P+0x418 > scaledTickCount(5)`.
+The host does not reconstruct every producer of that history.
 
-## Speed selector and hysteresis
+On a 3/4 change, integer phase mapping uses the old **next-frame** byte:
 
-At `0x00228ca0..0x00228ee0`, selection is eligible only when:
-
-```
-P.substateAge > scaledTickCount(4) && P.entryGuard == 0
+```text
+next = (oldNext * newCount / oldCount + offset[oldSubstate][newSubstate]) % newCount
+offset = [[0,1],[5,0]]  // table 0x15f6c8; blend 8 scaled ticks
 ```
 
-`scaledTickCount` is `0x001fef20`. Its `adda.s`/`madd.s` sequence forms
-`0.5 + requestedTicks * tickScale`, followed by integer conversion. The boot
-small-data context initializes tickScale at `0x0015ed68` to 1 and seconds per
-update at `0x0015ed6c` to binary32 `1/60`. The boot ELF's `.reginfo` identifies
-GP as `0x00166c00`. These are explicitly boot initial values, not fresh runtime
-measurements. R5900 decoding was cross-checked against the PCSX2
-[opcode tables](https://github.com/PCSX2/pcsx2/blob/master/pcsx2/R5900OpcodeTables.cpp)
-and [FPU implementation](https://github.com/PCSX2/pcsx2/blob/master/pcsx2/FPU.cpp).
+## Frame clock and standing curves
 
-The two 16-byte table rows begin at `0x0017bdb8`. The helper uses the first two
-floats of each row as lower/upper speed bounds, scaled by seconds per update.
+Default loops wrap next frame to zero at the decoded frame count and emit a
+cycle flag while retaining the sequence. Cross-sequence blends advance by
+transition rate alone, without the playback multiplier. Fractions snap to 1
+strictly inside `(.99,1.01)` and to 0 strictly inside `(-.01,.01)`.
+On a frame boundary, carry becomes `((fraction-1)/oldRate)*newFrameRate`;
+this also applies to the first frame after a blend.
 
-| Current sequence | Lower bound | Upper bound | Ordinary change |
-| --- | ---: | ---: | --- |
-| 3 (substate 0) | 0 | `2.35f` | 3 → 4 when scalar step is strictly above `2.35f * tickSeconds` |
-| 4 (substate 1) | `1.9f` | 10 | 4 → 3 when scalar step is strictly below `1.9f * tickSeconds` |
+Evaluated animation time (`0x24edc8`) interpolates signed authored timestamps
+in sixteenth units. A snapshot uses target timestamp + blend fraction; a wrap
+uses current timestamp + fraction. It is neither elapsed seconds nor an
+integer observer frame. Walk timestamps advance by 2, run by 1.
 
-With the boot timing values, host binary32 products are approximately
-`0.0391666666` and `0.0316666663` per update. Equality retains the sequence.
-Between these bounds, history determines the sequence. A steady walk at
-`0.015` never crosses the upper boundary, regardless of elapsed time.
+Negative blend arguments select preset curves, retaining the requested target
+sequence and next frame:
 
-The helper's table search can run beyond the two recovered rows at extreme
-speeds before clamping. The C# contract rejects speeds above the final upper
-bound rather than assigning behavior to those out-of-scope reads. The test
-suite exercises threshold equality, adjacent floats, both guards and both
-transition directions. Host binary32 arithmetic is not a full R5900 FPU model.
+| Preset | Source | Weights, one per original update |
+|---|---|---|
+| -1 | `0x17bdf0`, count `0x15f6e0` | `.15 .29 .42 .53 .63 .72 .80 .87 .93 .97 1` |
+| -2 | `0x17be54`, count `0x15f6e4` | `.10 .20 .29 .38 .46 .54 .61 .68 .74 .80 .85 .90 .94 .97 .99 1` |
 
-This threshold is also distinct from the host's current sampled run-yaw
-boundary (`0.039582664`). The semantic `Run` signal is an existing approximation;
-it must not be cited as the recovered native animation selector itself.
+Exactly binary32 `.99` does not complete the strict near-one snap. Standing
+retains its authored `.125` rate and interpolates the fractional pose every
+physics update; rendering does not advance its clock.
 
-## Playback rate and frame alignment
+## Crouch and yaw-selected turning
 
-The same helper always updates `P+0xa90`, including while selection is guarded:
+Action 4 entry/update are `0x2238e0/0x22c45c`. Entry selects sequence 13,
+frame 2, blending for 9 ticks from previous standing sequence 0 or 14 otherwise
+(including previous-sequence 255 snapshots). Requested loop `[3,18]` is rejected
+by `0x2325e0` because sequence 13 has only 15 frames, so the full loop remains.
+Release requires neither crouch button held and action age > 11 scaled ticks;
+the ordinary return selects standing 0/frame 0 with preset -2.
 
-| Sequence | Recovered multiplier |
-| --- | --- |
-| 3 | `clamp(P.scalarStep * 157f, 0.6f, 4f)` |
-| 4 | `clamp(P.scalarStep * 14f, 0.6f, 2.2f)` |
+The turn block (`0x217bf0..0x217e08`) is eligible at conditioned magnitude > `.2`
+or while sequence 14/15 is selected. It reads updated native yaw velocity:
 
-The exact literal loads are retained by the probe. In the settled same-sequence
-path, `0x002326e0..0x002326ec` multiplies this value by `P+0xa94` before advancing
-fractional progress. The decoded asset rates of `0.25` (sequence 3) and `0.5`
-(sequence 4) therefore are not fixed runtime rates. For example, step `0.015`
-gives sequence 3 a multiplier near `2.355`. Fraction snapping and update ordering
-still matter for exact frame cadence. During a sequence blend the advance path
-uses separate logic, so multiplying the whole presentation clock is insufficient.
+- Above `abs(velocity) > .3490658402442932 * dt`, positive selects 14 and
+  negative 15; changing sequence targets frame 0 over 5 ticks.
+- Rate is `clamp(abs(velocity)/(3.3161256313323975*dt), .55, 2.5)`.
+- Exactly zero returns to sequence 13/frame 0 over 7 ticks; small nonzero
+  velocity preserves sequence and multiplier.
 
-Ordinary entry clears substate to 0, then calls the selector with sequence
-`substate + 3`. GP-relative entry-frame table `0x0015f6d8` contains `[8, 0]`:
-the ordinary sequence-3 entry targets next frame 8, not frame 0. Entry blend
-duration defaults to `scaledTickCount(8)`. The traced block
-`0x002234c0..0x00223560` applies these overrides in order:
+Raw stick left/right is not the selector. The presentation minimum release age
+does not by itself reconstruct full native movement/action-lock ownership.
 
-| Predicate | Requested blend ticks |
-| --- | ---: |
-| `P+0x22a8 == 1` | 12 |
-| `P+0x209c == 0x23` | 15 |
-| `P+0x209c == 6` or `0x2d` | 18 |
-| `P+0x20a0 == 4` and `P+0x418 > scaledTickCount(5)` | 13 |
+## Release, history and restart
 
-The host does not yet supply this complete history. Its ordinary idle-entry
-adapter uses the default eight ticks; these overrides remain an explicit gap.
+Action selection sees the previous update's capped input magnitude at
+`P+0x229c`: `0x211690 -> 0x211830` precedes writes to current axes
+`P+0x1d20/+0x1d24`. Separate input history is an **unclamped** 30-entry magnitude
+ring at input-state `+0x2d0`, written before advancing the head. Reader
+`0x266e80(4)` indexes `(head-min(available,4)+30)%30`; it is not an average.
 
-On a 3/4 substate change, `0x00228e48..0x00228ed4` maps the old **next-frame**
-byte into the new clip using its decoded frame counts:
+Ordinary action-2 release (`0x22b934..0x22bae8`) needs delayed magnitude < `.17`
+and uses contact length `P+0x160`, the 3D length of primary motion `P+0x110`.
+With `P+0x20aa` clear:
 
-```
-next = ((oldNext * newCount / oldCount) + offset[oldSubstate][newSubstate]) % newCount
-offset = [[0, 1], [5, 0]]
-```
+| Contact/input condition | Ground selection |
+|---|---|
+| `2.7*dt < length < 4.4*dt` | Action 3, sequence 20/frame 7, blend 9 |
+| `length >= 4.4*dt`, history(4) < `.8` | Same sequence-20 path |
+| `length >= 4.4*dt`, history(4) >= `.8` | Default stop below |
+| `length <= 2.7*dt` | Remain in action 2 until age > 25 and neutral guard clear; then standing with preset -1 |
 
-The division is integer division. The phase table is at `0x0015f6c8`. R5900
-`mult` at `0x00228e94` also writes its integer destination register; generic
-MIPS decoders can display an incorrect accumulator alias here. The transition
-passes `scaledTickCount(8)` as the blend argument. It does not restart both
-clips at zero.
+Default action-3 entry (`0x2237c8..0x223840`) selects 5 only when previous pose
+sequence is 4 and `3 < evaluatedTime < 16`; otherwise 6. It targets frame 4,
+blend 9. Sequence 20 has 14 frames, 5/6 have 13, all at base rate `.25` with
+timestamp stride 32 sixteenth units. Asynchronous observer-frame release
+trials do not replace these native predicates; their raw-trace identities
+remain in [the stop witness](generated/rac1-ratchet-locomotion-stop-phase.json).
+The rejected `0x22478c` generic-Moby call remains gated by class `0x25f`.
 
-The selector at `0x002323b8` resets the optional loop range through `0x00232628`.
-Neither the ordinary state-2 entry nor this locomotion helper installs a new
-subrange. The ordinary animation advance path at `0x00232930..0x00232998`
-wraps the next-frame byte to zero at the frame count and sets an end-of-cycle
-flag while retaining the sequence. Together with the complete helper, this
-establishes full-clip looping for the recovered ordinary path.
-
-At `0x0023272c`, a cross-sequence blend increments by `P+0xa94` alone; it
-ignores the playback multiplier. Ordinary eight-tick blends use rate `1/8`.
-The fraction is snapped to 1 strictly inside `(0.99f, 1.01f)`, and to 0
-strictly inside `(-0.01f, 0.01f)`. While fraction is at least 1, the next frame
-becomes current, next increments/wraps, and remaining fraction becomes
-`((fraction - 1) / oldRate) * newlyCurrentFrameRate`. This includes the first
-frame after a blend. It is not equivalent to multiplying elapsed clip time.
-
-## OBP disposition and remaining work
-
-The previous presentation selector marked sequence 3 non-looping, freezing it
-at frame 32. That flag is corrected. The movement smoke now requires a long
-walk to retain sequence 3, advance frames and wrap; full input must still reach
-sequence 4. This replaces the unsupported timed low-stick 3 → 4 assertion with
-a stronger check of the behavior supported by the retail code.
-
-`Rac1OrdinaryLocomotionAnimation` preserves the recovered speed, guard, rate and
-phase rules independently of Godot. `Rac1LocomotionAnimationClock` now integrates
-them with the recovered advance order, fraction snapping, default loops, entry
-frame and blend timing. The source-aware presentation controller runs this
-clock once per physics update for an ordinary idle entry and its uninterrupted
-walk/run interval. `PlayerHost` supplies scalar speed after controller movement,
-held-input eligibility and support; a transient ordinary edge interval advances
-the animation but skips selector/rate reassignment. Rendering consumes a fixed
-sampled pose and cannot advance the clock. Teleport, respawn and fly-mode resets
-clear the session. The native clock is bound only at the original 60 Hz scale.
-
-The controller snapshots its current interpolated pose when switching clips,
-including a switch during another blend. **Interpolation of baked vertex
-positions is an OBP approximation**, not recovered joint-pose blending/skinning.
-The native frame indices, fraction and blend timing are separate from this
-visual approximation. Special entry history, nonzero entry-guard writers,
-release/stop, landing, attack and equipment transitions still need their own
-admission. Other action entries retain the semantic fallback until a new idle
-entry. Host support and scalar movement remain bounded reconstructions, and
-binary32 arithmetic is not a full R5900 FPU implementation.
-
-There was no new gameplay replay or rendered comparison. The dataflow, pinned
-source blocks and deterministic contract tests establish these bounded rules;
-they do not establish complete retail-versus-OBP movement parity.
-
-Validation results, including the earlier loop-only checkpoint and the physics
-integration follow-up, are recorded in [the parity audit](RAC1_MOVEMENT_PARITY.md).
-New deterministic coverage checks old-rate ordering, unscaled blends, both
-phase transitions, interrupted-blend snapshots, wrapping, variable-rate carry,
-fraction snapping, unsupported edge updates, reset/other-action handoffs and
-render-clock independence. The headless smoke also requires a sampled pose and
-the expected steady-walk multiplier, so a legacy fixed-rate loop cannot pass.
+Action 3 checks cycle completion before restart input. Update
+`0x22c2e4..0x22c45c` requires delayed input > `.2`: zero scalar enters action 0
+without animation selection; nonzero scalar needs input > `.5` to resume.
+Ordinary idle admits locomotion above `.22`. Entry reuses the interrupted pose.
+Complete opposed-facing motion-history overrides remain a separate boundary.
 
 ## Jump-return clock handoff correction
 
-The user reported slower-looking movement after jumping and continuing to move.
-The adapter discarded its locomotion clock on airborne entry, then selected
-sequence 4 through the semantic landing path. Only idle/standing could create a
-new native-rate clock. Continued moving therefore stayed on unscaled asset
-playback indefinitely: 30 FPS instead of approximately 39.9 FPS at full run
-(`30 * 14 * .09500919`). It also bypassed ordinary 4-to-3 selection when slowing
-to a walk. This was a concrete OBP handoff defect, not a new retail movement law.
-
-The physics controller now reconnects supported, active locomotion after its
-airborne semantic handoff. It preserves the selected sequence and full-loop
-phase, assigns the recovered multiplier immediately, then advances through the
-existing physics-clocked selector. It handles the explicit Land state and a
-direct Fall-to-moving handoff. Render updates cannot advance the resumed pose.
-
-`ResumePlayback` is explicitly an **OBP adapter policy**. It does not recover a
-native landing blend or action-entry phase. The existing witnessed landing
-sequence choice is retained; airborne animation, full native landing execution,
-procedural joint work and reconstructed contact facts still have their prior
-limits. Jump height, movement speed and crouch braking are unchanged.
-
-Three regression cases (run, walk, and a host handoff without Land) failed with
-no locomotion clock before the fix. They now repeat two jumps, require the
-sampled pose/rate, and verify render-clock independence. A separate test pins
-fractional phase preservation and rate on the first resumed update. The Godot
-moving-jump smoke now retains input for five observed updates after landing
-and checks the native clock, synchronized pose and, when support admits the
-helper, the scalar-derived multiplier. An initial smoke failure was diagnosed
-as an unsupported ordinary edge update (`phase=Falling`, floor false) retaining
-1.1340233 while the new scalar would produce 1.1631899. The assertion now respects
-that recovered helper gate; existing edge-clock tests require rate retention.
-The prior smoke cleared movement immediately at touchdown and missed the defect.
-
-Validation on 2026-10-18: portable C# 1,025 passed / 124 retail-dependent skipped;
-full canonical retail-backed C# 1,149 passed / zero skipped. Godot Debug build
-had zero warnings/errors; the expanded R&C1 smoke passed with held movement
-across landing. Formatter verification and diff checks passed. Local logs use
-ignored `captures/jump-return-*.log`; no new retail gameplay trace was captured.
+Held-input landing must reconnect the native-rate clock and preserve phase.
+`ResumePlayback` is an OBP adapter policy, not a recovered native landing phase.
+Otherwise full run can fall back to unscaled 30-FPS assets instead of the
+scalar-derived rate, and slowing cannot perform the native 4-to-3 selection.
+Unsupported ordinary-edge updates advance the existing clock without assigning
+a new selector/rate. Render updates cannot advance the resumed pose.
 
 ## Landing ownership and standing interpolation correction
 
-The later user report covered a different path from the held-input regression
-above: releasing input in the air with a small landing velocity briefly selected
-run before cutting to idle, and idle and flip landing poses appeared to update
-slowly. The semantic fallback selected sequence 4 from the **launch** state even
-when the landing input was neutral. Standing also lost its physics sampled pose
-after initial idle or completed crouch stand-up, leaving discrete native
-keyframes to the renderer. The sequence-0 rate of `.125` keyframes per original
-60 Hz update is retained; the fix interpolates that fractional pose every physics
-update instead of changing the asset's playback speed.
+Helper `0x2293a8..0x22965c`, called from `0x22f224` after landing counter > 1,
+distinguishes current input from residual contact motion. The admitted handoffs
+transfer the sampled air pose into the selected owner:
 
-Grounded landing selection is now supplied as a one-update `GroundEntry` by the
-movement session. The source helper `0x2293a8..0x22965c`, called from `0x22f224`
-after the landing-contact counter exceeds one, distinguishes actual movement
-input from residual contact motion. Its admitted ordinary entries transfer to
-their own standing, locomotion, stop or crouch clocks:
+| Native action | Target | Blend |
+|---|---|---|
+| 2, delayed input > `.3` | 4 / native global entry frame | 8, or 14 after contact counter 5 |
+| 3, forward request or Thruster stretch | 5 / 0 | -1 |
+| 3, Heli stretch | 5 / 0 | -2 |
+| 4, held crouch | 13 / 2 | -2 |
+| 0, cycle-exit flag | 0 / 0 | -2 |
 
-| Native action | Sequence / next frame | Selector blend |
-| --- | --- | --- |
-| 2, delayed input above `.3` | 4 / native global entry frame | 8 updates, or 14 after contact counter 5 |
-| 3, admitted forward request or Thruster long jump | 5 / 0 | preset `-1` |
-| 3, Heli long jump landing | 5 / 0 | preset `-2` |
-| 4, held crouch | 13 / 2 | preset `-2` |
-| 0, native cycle-exit flag | 0 / 0 | preset `-2` |
+A counter timeout can enter action 0 **without selecting animation**. Its
+`GroundEntry` blend 0 preserves the air clip, clock, curve and blend source
+until cycle completion, then selects standing with -2. A clip already frozen
+at its terminal pose counts as complete. Floor contact alone must not select
+run from launch history. Physics-sampled standing prevents stepped idle poses.
 
-The neutral counter timeout can enter action 0 **without selecting an animation**.
-`GroundEntry` action 0 with blend 0 represents that precise ownership transfer;
-its sequence must match the existing air clock. The complete phase, previous
-rate, preset-curve position and sampled blend source survive. The action-0 owner
-continues that clip until its native cycle flag, then selects sequence 0 with
-preset `-2`. It can also restart locomotion or be interrupted by another action.
-The session keeps its air selection while the native landing gate is still
-pending, so supported contact alone does not select run or standing.
+## Implementation and validation boundary
 
-Preset curves `-1` and `-2` now retain the requested target sequence and next
-frame. Applying `-2` to the grounded crouch entry must therefore blend toward
-sequence 13 **frame 2**, rather than incorrectly replacing the next frame with 0.
-All transitions snapshot the actual interpolated air/flip pose. Rendering cannot
-advance either the preserved clock or standing playback. Vertex blending remains
-the previously documented baked-pose approximation. The compatibility path for
-hosts without `GroundEntry` now chooses a smooth neutral landing when supported
-input is released; its entry timing remains explicitly an adapter fallback.
+`Rac1OrdinaryLocomotionAnimation`, `Rac1LocomotionAnimationClock`,
+`Rac1OrdinaryStopAnimation`, `Rac1InputMagnitudeHistory` and the source-game
+presentation controller own the rules. Reset, attack, crouch and air transitions
+clear or transfer their clock ownership explicitly. Tests cover strict bounds,
+history wrap, interrupted blends, phase carry, repeated quiet/moving/flip
+landings and render-clock independence; the movement smoke exercises host input.
 
-Deterministic regression cases cover neutral idle interpolation at the unchanged
-native rate, low-velocity released landing, repeated flip landings, every admitted
-ground-entry family, ownership transfer during both an unfinished blend and
-ordinary playback, completion into standing, moving restart and reset. They also
-retain the earlier held-run jump-return cases and crouch/stop clock tests.
+Ordinary baked-vertex interpolation approximates native joint blending.
+Native terrain/contact execution, procedural joints, all entry-guard/history
+producers and equipment/aiming overrides are not established by this contract.
+Deterministic host fixtures are not matched retail trajectory measurements.

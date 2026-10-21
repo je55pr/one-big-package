@@ -78,7 +78,7 @@ sizes, hashes, derived constants/rules and evidence limits. It does not export e
 record personal source paths.
 
 The probe also admits Hoven's independently mapped overlay for the bounded
-[ordinary-versus-ice crouch braking recovery](RAC1_CROUCH_SURFACE_BRAKING.md).
+[ordinary-versus-ice crouch braking recovery](RAC1_SURFACE_MOVEMENT.md).
 Its surface-flag producer differs, while its relocated coefficient-selection
 block matches Veldin exactly. This is not general validation of all Hoven code.
 Other levels, dynamic state initialization, full action semantics and

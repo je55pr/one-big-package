@@ -4,9 +4,9 @@ Machine-generated per-build reports live in [`research/generated/`](generated/).
 
 | Build | Report | ISO size | Payload SHA-256 |
 |---|---|---|---|
-| `rac1-ntscu-original` | [`rac1-ntscu-original.stage0.md`](generated/rac1-ntscu-original.stage0.md) | 4,214,095,872 | `ab849fe7…bc40d9d` |
-| `rac2-ntscu-v1.01` | [`rac2-ntscu-v1.01.stage0.md`](generated/rac2-ntscu-v1.01.stage0.md) | 3,828,350,976 | `9db2e33e…a9b1ce5` |
-| `rac3-ntscu-original` | [`rac3-ntscu-original.stage0.md`](generated/rac3-ntscu-original.stage0.md) | 4,379,377,664 | `d2bb15c7…8c42444` |
+| `rac1-ntscu-original` | [`rac1-ntscu-original.stage0.json`](generated/rac1-ntscu-original.stage0.json) | 4,214,095,872 | `ab849fe7…bc40d9d` |
+| `rac2-ntscu-v1.01` | [`rac2-ntscu-v1.01.stage0.json`](generated/rac2-ntscu-v1.01.stage0.json) | 3,828,350,976 | `9db2e33e…a9b1ce5` |
+| `rac3-ntscu-original` | [`rac3-ntscu-original.stage0.json`](generated/rac3-ntscu-original.stage0.json) | 4,379,377,664 | `d2bb15c7…8c42444` |
 
 All three local ISOs hash **exactly** to their canonical authority manifests (`research/manifests/*.json`). They were verified 2026-09-06 by `tools/disc-archaeology.mjs --hash` and independently by `sha256sum`.
 
@@ -60,10 +60,11 @@ Do **not** assume file number equals native level id. For example, `LEVEL21.WAD`
 
 The GC authority build uses `header_size == 0x60` across the numbered level WADs. The outer container/range layout is documented in [`GC_LEVEL_WAD.md`](GC_LEVEL_WAD.md); decompressed core/world subsystems now have dedicated retail-backed documents and packages indexed from [`README.md`](README.md).
 
-`RC2.HDR` was initially described as a seven-slot per-level grid. That interpretation is now explicitly under reconciliation; read [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) and [`GC_RC2_HDR_RECONCILIATION.md`](GC_RC2_HDR_RECONCILIATION.md) before treating slot labels as authority.
+`RC2.HDR` was initially described as a seven-slot per-level grid. That interpretation is now explicitly under reconciliation; read [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) and [`GC_LEVEL_LOADING.md`](GC_LEVEL_LOADING.md) before treating slot labels as authority.
 
 ## Historical tooling provenance
 
 The original bounded-disc pass used `tools/local-random-access.mjs`, `tools/disc-archaeology.mjs` and `tools/iso-read.mjs`. Those TypeScript helpers are retired and no longer exist in the live tree; their names remain in historical reports solely to preserve provenance. Current native source access lives under `OBP.IO` / `OBP.PS2`, with game-specific import paths in the RAC projects.
 
-For current subsystem status, see [`../docs/CURRENT_STATE.md`](../docs/CURRENT_STATE.md).
+Subsystem research is indexed in [`README.md`](README.md); current implementations
+and their validation live in the native code, tests and Git history.

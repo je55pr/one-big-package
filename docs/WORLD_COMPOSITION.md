@@ -270,43 +270,6 @@ Enter. World B aligns and the residuals print to the HUD + log.
 
 ---
 
-## Performance observations
-
-Two full GC worlds (Oozla ~1.88 M render tris, Endako ~1.53 M; Siberius ~2.5 M)
-load and coexist in the OpenGL-compat renderer. Import is ~1.5–2 s per world.
-
-`--compose-reload 6` (build every world → settle → tear down → GC), headless,
-Oozla + Endako:
-
-```
-#  0 built 2 world(s) | mem  68.5 MB (+ 0.0) | objects 2926 nodes 11 orphans 0 | compRoot desc 0
-#  5 built 2 world(s) | mem  68.5 MB (+ 0.0) | objects 2926 nodes 11 orphans 0 | compRoot desc 0
-```
-
-Flat across cycles — no orphan nodes, no object growth, `CompositionRoot` empty
-after teardown. (Fixing this surfaced a pre-existing leak in `RuntimeWorldScene`:
-a never-parented `Sky` root was left dangling whenever `IncludeSky` was false —
-now `Free()`d, which also helps the single-world planet-hopping path.)
-
-### Cross-game validation (2026-09-08)
-
-`compositions/example-rac1-gc-two-world.json` is the first two-source proof. On
-Jess-Laptop it loaded the exact R&C1 authority (`rac1:LEVEL0`) beside the exact GC
-authority (`rac2:LEVEL1` / Oozla) in one Godot scene. After the merged R&C1
-static-instance promotion, level 0 imports 286 runtime meshes / 751,435 triangles
-in ~0.6 s; current GC main imports Oozla as 304 meshes / 1,860,879 triangles in
-~1.4-1.8 s. The two extra runtime meshes are the evidence-backed material-presentation
-split of same-texture Moby surfaces; triangle and resource totals are unchanged. A deterministic
-overview capture succeeded with both worlds visible simultaneously.
-
-A three-cycle `--compose-reload 3` stress run rebuilt and tore down both games
-each cycle with **0 orphans**, 11 nodes after teardown, an empty
-`CompositionRoot`, managed memory flat at 55.2 MB across all three teardown
-samples, and no object/node growth. This is the first lifecycle proof involving
-two different source games rather than two GC worlds.
-
----
-
 ## Veldin comparison showcase
 
 `compositions/veldin-rac1-uya-comparison.json` pins the two retail authorities used

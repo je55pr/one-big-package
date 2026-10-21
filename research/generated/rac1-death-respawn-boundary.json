@@ -92,7 +92,7 @@
     "hostRespawnDoesNotClaimUnresolvedStatePreservation": true
   },
   "evidenceSources": [
-    "research/RAC1_NANOTECH_DAMAGE_DEATH.md",
+    "research/RAC1_DEATH_RESPAWN.md",
     "research/RAC1_PLAYER_MOVEMENT.md",
     "research/RAC1_VELDIN_SPAWN.md",
     "research/RAC1_WEAPON_INVENTORY.md",

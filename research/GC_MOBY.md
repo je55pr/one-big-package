@@ -15,7 +15,7 @@ Reproduce: `node tools/gc-world.mjs "<GC iso>" --level 1 --no-collision --out ca
 Gameplay pointer `0x4c`: `MobyBlockHeader` (0x10) then `GcUyaMobyInstance` (0x88)
 — `oClass` @ 0x28, `f32 scale` @ 0x2c, `Vec3f position` @ 0x40, `Vec3f rotation`
 (XYZ euler radians) @ 0x4c. `size` @ 0x00 is always `0x88`. See
-[`GC_SHRUBS_MOBIES.md`](GC_SHRUBS_MOBIES.md).
+[`GC_TIES.md`](GC_TIES.md).
 
 ## Class geometry
 
@@ -247,3 +247,12 @@ frames against the legacy TypeScript reference (180 classes / 1929 joints / 6476
    (`MobyClassHeader` byte `0x0b` != 0).
 5. `tools/gc-world.mjs` still drops a marker cube for moby instances whose class
    has no decoded mesh.
+
+## Placement record boundary
+
+Gameplay pointer `+0x4c` selects a `0x10` Moby block header (static/spawnable
+counts), followed by `0x88` records. The record size is at `+0x00`, oClass at
+`+0x28`, scale `+0x2c`, position `+0x40`, XYZ-radian rotation `+0x4c`.
+Placement uses column-major `Rz * Ry * Rx`; Oozla retains all 748 authored
+records, including 13 distant sky/camera-shaped placements. Render admission
+must not change authored identity or imply an absent class.

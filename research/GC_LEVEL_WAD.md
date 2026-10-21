@@ -98,7 +98,7 @@ Interpretation of the lump *contents* is done per lump against its own bytes:
 
 ## Relationship to Wrench
 
-`research/WRENCH_FORMAT_MATRIX.md` records that Wrench routes Going Commando and
+`research/PUBLIC_FORMAT_ARCHAEOLOGY.md` records that Wrench routes Going Commando and
 UYA level WADs through one `GcUyaLevelWadHeader` / `unpack_gc_uya_level_wad` path,
 and that Wrench additionally has a Going Commando branch where `header_size == 0x68`
 carrying separate NTSC/PAL gameplay ranges.

@@ -1,8 +1,7 @@
 # R&C1 wrench actions and animated attachment
 
-Recovered 18 October 2026 from the authorized NTSC-U original source. This
-supersedes the timing, damage and socket uncertainties in the earlier
-`RAC1_WRENCH_COMBAT.md` investigation. It does not claim complete combat parity.
+Authority: original NTSC-U retail. Native timing, damage, sockets and host
+collision policy remain separate; this is not complete combat parity.
 
 ## Source chain
 
@@ -115,15 +114,15 @@ run/stop/idle checks now compare the rendered attachment on every update.
 
 ## Explicit host boundaries
 
-- Target support remains class500 centre10 crates and the recovered class749
-  population. Other enemies, switches and world interactions need their own consumers.
+- Victim admission follows the registered source-game damage consumers. Model
+  identity or geometric overlap alone does not authorize a class interaction.
 - Hand/tip sweep inputs, damage and hit intervals are native. Victim narrow phase
   uses rendered mesh bounds with a .05 host margin; the flying radius is native .4.
   World obstruction uses a host ray. Native query membership, segment extensions,
   detailed collision volumes and shared hit-record cooldowns are incomplete.
 - Per-target hits are coalesced once per attack/flight as host policy.
-- The native bolt radius is used, but collection uses the existing immediate
-  host pickup adapter rather than the randomized native homing path.
+- The native wrench bolt radius feeds the separate pickup sessions; their
+  attraction/arrival contracts are in RAC1_CRATES_PICKUPS.md.
 - Auto-target yaw/gain, alternate-axis profile rows, first-person aimed throws,
   the Hyper projected-ground extra query and near-ground playback adjustment,
   context-specific entry blends and exact catch-loop queue delay remain incomplete.
@@ -131,8 +130,27 @@ run/stop/idle checks now compare the rendered attachment on every update.
   interrupts. Their queued Square input is discarded rather than replayed later.
 - Affine/vertex blends are the existing baked-pose presentation approximation.
   The exact hand/socket selection and model identity are recovered.
-- Wrench SFX, trails, impact effects and bolt meshes are not reconstructed here.
+- Audio and effect programs are separate from wrench damage/pose ownership.
 
 Validation: portable/source tests, wrench Godot input/contact smoke and separate
 ordinary Veldin play. The wrench smoke labels its staged contact fixtures and
-does not claim fresh matched PCSX2 captures. See `docs/RAC1_WRENCH_TESTING.md`.
+does not claim fresh matched PCSX2 captures. See `docs/RETAIL_TESTING.md`.
+
+## Live first-swing facing witnesses
+
+The ordinary first ground swing follows live native player yaw, independently
+of camera presentation. `ResolveFirstSwingFacing` returns its native-XY unit
+direction. Two controlled class-0 sequence-23 trials retained constant yaw:
+
+| Witness | Raw trace SHA-256 | Yaw | Planar displacement | Direction error |
+|---|---|---:|---|---:|
+| Neutral ground swing | `b48064406ce0e6ad528d66d3358495861ae042bf4da1d4444b9b8c9167f348c8` | 1.1110417843 | `(0.2976684570,0.6013565063)` | +.0001189532 rad |
+| Pre-faced swing | `b89502827e1f9534953e4d4834b2d73ab868db88ee3f6345764d6597536fd5f2` | .3777317405 | `(0.6141510010,0.2436218262)` | -.0000901321 rad |
+
+These prove the bounded facing relation, not camera-to-attack snapping or
+auto-targeting. Earlier action-19-only searches missed separately scheduled
+class-71 contact; sequence 23 alone never established hit-active timing.
+The shared victim pool has 64 records of `0x40` bytes at observed base
+`0x178100`; `Moby+0xa4 == 0xff` means no record, damage is record `+0x2c`, and
+victim is `+0x34`. Constructors `0x259a88/0x259bc8` and lookup `0x25a420` are
+common infrastructure, not an ordinary-Square-specific damage callback.

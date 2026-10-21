@@ -9,23 +9,22 @@ checkpoint system from host behavior.
 The payload-free machine-readable boundary is frozen in
 [`generated/rac1-death-respawn-boundary.json`](generated/rac1-death-respawn-boundary.json).
 
-## Host integration audit
+## Nanotech and gameplay restart ownership
 
-The pre-fix host could detect the recovered Veldin death boundary but could not
-complete it as ordinary gameplay. `TickRac1VeldinEnvironmentalDeath` put the
-Nanotech session into recovered death, set `Rac1GameplayAlive = false`, and
-reported state `0x77` / sequence 11 / Nanotech 0. On later host updates,
-`TickRac1Gameplay` returned immediately while the session was dead. Meanwhile
-`DebugPlayer._PhysicsProcess` only zeroed movement/jump/crouch input for a dead
-R&C1 player; it still ran the movement/physics step and `MoveAndSlide`, so an
-already-airborne `CharacterBody3D` could continue falling with no gameplay
-restart consumer.
+Routine `0x2050c0` subtracts integer damage from `P+0x22a8` (absolute
+`0x1415f8`) and clamps at zero. Class-749 marker 34 emits damage 1; player
+intake near `0x222e00` converts record damage to integer before this update.
+The hurt entry sets `P+0x1c0` to 77; common intake rejects hits while that
+timer is nonzero and decrements it once per native update. Zero-health
+checking at `0x222490` does not prove a combat death animation or checkpoint.
 
-The only path that called the recovered `Respawn()`, checkpoint placement,
-Nanotech restoration, motion/yaw reset and alive-state reset was
-`OnRac1RespawnRequested`, reached by the development R key. The old ordinary
-Veldin smoke pressed R after observing death, so its pass masked the missing
-automatic consumer and could not establish natural fall/death/restart behavior.
+`Rac1RatchetNanotechSession` preserves the witnessed opening value 4; this
+is not a trilogy-wide maximum. Environmental restart is consumed automatically
+by gameplay, restores the recovered transform/health and resets motion/yaw.
+The ordinary Veldin gate must observe that path without the development R key.
+Combat **Retry level** remains an OBP reload policy, separate from recovered
+environmental restart. Full hurt impulse, combat-death presentation, upgrades
+and generic checkpoint activation remain bounded recovery questions.
 
 ## Proven opening-Veldin environmental restart
 
@@ -157,7 +156,7 @@ not promoted retail preservation semantics.
 
 ## Related retained evidence
 
-- `RAC1_NANOTECH_DAMAGE_DEATH.md`: Nanotech address/reduction, zero-health path
+- `RAC1_DEATH_RESPAWN.md`: Nanotech address/reduction, zero-health path
   and Veldin environmental death sequence.
 - `RAC1_PLAYER_MOVEMENT.md`: native movement and restart momentum witness.
 - `RAC1_VELDIN_SPAWN.md`: authored class-0 player-start transform.

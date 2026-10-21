@@ -88,7 +88,7 @@ decay remains .001802944 per update. Contact-aligned movement can retain almost
 all of its momentum, so this correction need not substantially shorten every
 clear-ground slide. Oblique or blocked motion can produce much less entry carry.
 
-The subsequent [surface audit](RAC1_CROUCH_SURFACE_BRAKING.md) identifies the
+The subsequent [surface audit](RAC1_SURFACE_MOVEMENT.md) identifies the
 native default as `6.48f` and the class-7 ice alternative as `1.7f`, both scaled
 by squared update duration. OBP already uses the ordinary-ground rate. No extra
 ordinary-floor multiplier was found in that branch, and distance parity stays

@@ -80,17 +80,18 @@ These artifacts remain part of the current evidence base. Their exact acquisitio
 | `rac3-ntscu-original.uya-moby-pvar-families.json` | compact 892-class PVar-family index; embedded `reference-ts` generator path is historical |
 | `rac3-ntscu-original.uya-pvars.json` | retail PVar compatibility evidence |
 | `rac3-ntscu-original.uya-toc.csv` | compact UYA table-of-contents evidence |
+| `rac3-ntscu-original.format-witnesses.json` | historical hash/size/count tables retained from compatibility measurements; each source Git blob can be read with `git cat-file blob <sourceGitBlob>`; labels retain compatibility provenance |
 
 ## Archival
+
+Authority inventories and ELF metadata have one JSON report per build; duplicate
+Markdown renderings are not retained separately.
 
 | Artifact | Why it remains |
 |---|---|
 | `rac1-ntscu-original.stage0.json` | bounded authority-disc snapshot; retired `tools/disc-archaeology.mjs` path is historical provenance |
-| `rac1-ntscu-original.stage0.md` | human-readable companion to the retained authority-disc snapshot |
 | `rac2-ntscu-v1.01.stage0.json` | bounded authority-disc snapshot; retired `tools/disc-archaeology.mjs` path is historical provenance |
-| `rac2-ntscu-v1.01.stage0.md` | human-readable companion to the retained authority-disc snapshot |
 | `rac3-ntscu-original.stage0.json` | bounded authority-disc snapshot; retired `tools/disc-archaeology.mjs` path is historical provenance |
-| `rac3-ntscu-original.stage0.md` | human-readable companion to the retained authority-disc snapshot |
 | `rac2-level-catalogue.json` | exact GC catalogue snapshot; named `tools/gc-level-wad.mjs` generator is retired |
 | `rac3-ntscu-original.uya-family-500-511-pvars.json` | unique detailed class-500/501/502/505/511 PVar profiles; retired generator, no live consumer |
 | `rac3-ntscu-original.uya-level-dispatch.json` | unique 51-row level-overlay/dispatch snapshot; retired generator, no live consumer |

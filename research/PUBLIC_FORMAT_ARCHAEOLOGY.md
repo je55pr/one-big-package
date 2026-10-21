@@ -1,6 +1,6 @@
 # Public format archaeology — surviving cross-source notes
 
-This note keeps only the public-source findings that still add something after the retail-backed Going Commando work merged to `main` at `d5dc8224`.
+Public-source comparisons help locate candidate layouts and contradictions. They do not replace the supported retail authority.
 
 **Authority rule:** exact retail bytes and executable behaviour are authoritative. Public tools are used to suggest layouts, explain already-observed bytes, identify cross-game variants, and expose places where independent implementations disagree.
 
@@ -25,24 +25,6 @@ Its `src/RatchetAndClank/` implementation is useful as a separately written Type
 ### Historic index
 
 `RatchetModding/rac-modding-resources` is useful for locating older utilities and documentation, but those are supporting references rather than authority.
-
-## What retail work has superseded
-
-Do **not** use this branch's earlier public-only notes as authority for structures that are now decoded from `rac2-ntscu-v1.01`. Current retail-backed notes on `main` include:
-
-- `GC_LEVEL_WAD.md`
-- `GC_LEVEL_CORE.md`
-- `GC_COLLISION.md`
-- `GC_TFRAG.md`
-- `GC_TEXTURES.md`
-- `GC_TIES.md`
-- `GC_SHRUBS_MOBIES.md`
-- `GC_MOBY.md`
-- `GC_SKY.md`
-- `GC_LEVEL_SETTINGS.md`
-- `GC_PLANET_NAMES.md`
-
-The earlier claim that GC native level data should be thought of as a separate hidden raw-sector database was also too strong. Retail evidence shows real ISO-9660 `LEVEL<n>.WAD`, `AUDIO<n>.WAD` and `SCENE<n>.WAD` files plus `/RC2.HDR`, an engine-facing LBA directory that addresses those assets by disc sector. Both views matter.
 
 ## Remaining useful discrepancies and compatibility notes
 
@@ -78,9 +60,9 @@ Wrench explicitly documents its compressor as producing compatible streams rathe
 
 ### Minimal VIF support should remain deliberately minimal
 
-The retail-backed GC geometry parsers prove that OBP can recover current tfrags, TIEs, shrubs and Mobies without emulating VU programs. That does **not** make `packages/ps2-vif` a general PS2 VIF interpreter.
+The retail-backed GC geometry parsers prove that OBP can recover current tfrags, TIEs, shrubs and Mobies without emulating VU programs. That does **not** make `OBP.PS2` packet framing a general PS2 VIF interpreter.
 
-A notable public-reader gap is `STCYCL` filling mode where `WL > CL`. Before genericising the VIF layer to other games/formats, catalogue the actual command/cycle combinations on the relevant authority inputs. See `PS2_GEOMETRY_PIPELINE.md`.
+A notable public-reader gap is `STCYCL` filling mode where `WL > CL`. Before genericising the VIF layer to other games/formats, catalogue the actual command/cycle combinations on the relevant authority inputs.
 
 ### Do not generalise GC texture/sky details across all games
 
@@ -96,9 +78,32 @@ Shared high-level asset families do not imply identical packed layouts.
 1. Confirm the class-local RAC1/RAC2 Moby selector against representative retail GC classes, especially remaining parse failures / Museum content.
 2. Decode the level-settings chunk-plane suffix and settle the exactly-on-plane `> 0` versus `>= 0` disagreement documented in `GC_COORDINATES_AND_CHUNKS.md`.
 3. If another GC region/revision becomes an authority input, catalogue top-level header sizes and specifically look for Wrench's `0x68` form.
-4. Catalogue VIF command and `STCYCL` modes across authority games before extending `packages/ps2-vif` beyond the packet shapes already exercised.
+4. Catalogue VIF command and `STCYCL` modes across authority games before extending `OBP.PS2` packet framing beyond the packet shapes already exercised.
 5. Finish any hero-collision-group semantics from retail/executable evidence rather than inheriting public names blindly.
 
 ## Provenance policy
 
 When a public structure helps explain retail bytes, record which source supplied the hypothesis and which retail observation promoted it. Preserve unknown/native fields where practical instead of turning reverse-engineered names into permanent semantics too early.
+
+## Shared packet and layout boundaries
+
+Wrench's common asset entry points remain game-aware below the wrapper:
+`src/wrenchbuild/level/level_wad.cpp`, `level/instances_asset.cpp`,
+`classes/moby_class.cpp`, `classes/tie_class.cpp`, `classes/shrub_class.cpp`,
+`common/texture_asset.cpp`, `common/flat_wad.cpp`, and `globals/irx_wad.cpp`.
+At the pinned revision, the source comparison is:
+
+| Family | Public relationship |
+|---|---|
+| Containers | RAC1, GC/UYA and DL have distinct families; GC also has a `0x68` variant. |
+| Collision/classes/instances | Common high-level paths retain game-aware low-level codecs; DL additionally has mission/art-instance organization. |
+| Sky | RAC/GC share one shell family; UYA/DL have the rotated-shell prefix. |
+| Settings first part | RAC1 `0x50`; GC/UYA/DL `0x5c`, adding spherical-world fields. |
+| System/IRX WAD | Separate RAC1, GC, UYA/DL codec families despite shared flat-WAD entry points. |
+
+Keep VIF command framing, bounds and supported UNPACK access below asset-specific
+packet meaning. Current importers reconstruct the evidenced packet/matrix-slot
+state rather than executing arbitrary VU microcode. `STCYCL` filling (`WL>CL`)
+requires its own consumption/write semantics and fixtures before promotion.
+GS/GIF primitive/material decoding likewise belongs in the smallest evidenced
+shared layer; a common top-level asset name does not prove identical bytes.

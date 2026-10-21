@@ -158,3 +158,31 @@ ordinary attacks, hit reaction, targeting movement and death. GC-native player
 model/avatar admission and production playback remain the separate avatar
 recovery/integration boundary; special traversal and unenumerated weapon-specific
 presentation are not promoted by this selector contract.
+
+## Historical movement leads
+
+The 24 September 2026 GC audit also recorded the following input and contact
+observations for this authority. They are retained as research leads, separate
+from the tested sequence-selection contract above. Reproduce them against the
+retail executable before promoting them into a GC movement controller.
+
+- The recorded pad conditioner at `0x0032F440..0x0032F4B4` centres raw stick
+  bytes at 127. With `d = abs(raw - 127)`, it returns zero for `d < 48`, otherwise
+  signed `min((d - 48) / 76, 1)`.
+- The input path at `0x002B3900` was reported to compute
+  `min(0.5 * (max(abs(x), abs(y)) + sqrt(x*x + y*y)), 1)`, storing the
+  pre-fallback magnitude at `+0x24BC`. A strict `< 0.25` branch enters the
+  digital-direction fallback; `+0x24B8` stores the recomputed magnitude.
+- Recorded runtime witnesses were AxisScale 0.50 -> `15/76` -> fallback to
+  zero/state 0; 0.53125 -> exactly `0.25` -> state 2; and 0.5625 -> `23/76` ->
+  state 2. A first-frame `(-0.25, -0.25)` witness produced `0.301776677`.
+  The earlier provisional `0.2` activation claim does not describe this branch.
+- Contact probes examined `0x002B49D0` and `0x002B5260`, fields
+  `+0x318/+0x31C/+0x320/+0x32C` and status fields `+0x34A/+0x34C/+0x34E`.
+  Constants included 0.02, 0.05, 0.15, 0.17 and approximately 0.87266469 rad;
+  their contact semantics were not established. The attempted 181-row slope
+  sweep stayed in state 0 at an unchanged position and is not slope evidence.
+- State handoff probes recorded the previous state at `+0x22A0`, alongside
+  the current state at `+0x2294`. Helper `0x002B9930` had reset/placement-like
+  callers, but the ordinary death/respawn caller was not proven. The tested
+  state-57/sequence-69 selector above does not by itself establish respawn logic.
