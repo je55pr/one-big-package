@@ -112,6 +112,7 @@ public static class Rac1BombGlove
                facts.IsTargetActive &&
                facts.Target.SourceGame == "rac1" &&
                (facts.Target.NativeClassId is Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId ||
+                Rac1AridiaEnemies.IsEnemyClass(facts.Target.NativeClassId) ||
                 Rac1BoltCrate.IsCrateClass(facts.Target.NativeClassId)) &&
                !Rac1MobyRuntime.IsTerminalState(facts.TargetNativeState);
     }

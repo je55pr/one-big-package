@@ -206,7 +206,8 @@ public partial class OBPGame
         foreach (var damage in resolution.DamageEvents)
         {
             _rac1DamageTransport.Publish(damage);
-            if (!_rac1MobyRuntime.CanDispatchDamage(damage)) continue;
+            if (!_rac1MobyRuntime.CanDispatchDamage(damage) &&
+                !Rac1AridiaEnemies.IsEnemyClass(damage.Target.NativeClassId)) continue;
             if (Rac1BoltCrate.IsCrateClass(damage.Target.NativeClassId))
             {
                 var admission = _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage);
