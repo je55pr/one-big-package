@@ -38,7 +38,7 @@ public static class Rac1CrateAudio
         var result = new Dictionary<(int, int), Sound>();
         var classOffsets = Rac1StaticClasses.ReadMobyTable(core).ToDictionary(row => row.OClass, row => row.AssetOffset);
         foreach (var entry in Rac1ClassSoundRemap.Read(core).Where(entry =>
-                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is >= 13 and <= 16 or 121 or 192 or 749 or 1440 || Rac1BoltCrate.IsCrateClass(entry.Key))))
+                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is >= 13 and <= 16 or 121 or 192 or 280 or 459 or 577 or 665 or 704 or 754 or 749 or 1440 || Rac1BoltCrate.IsCrateClass(entry.Key))))
         {
             int cls = classOffsets[entry.Key];
             ReadOnlySpan<byte> payload = cls > 0 ? core.Assets.AsSpan(cls) : Rac1GlobalMoby.Read(core, entry.Key).Payload;

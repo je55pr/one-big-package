@@ -68,7 +68,8 @@ public static partial class RuntimeWorldScene
     /// collision supplies two-sided contact without overlapping reverse copies.
     /// The source collision blob is retained verbatim.
     /// </summary>
-    public static CollisionFacePlan BuildCollisionFacePlan(RuntimeCollisionBlob blob)
+    public static CollisionFacePlan BuildCollisionFacePlan(RuntimeCollisionBlob blob,
+        Func<int, Vector3, Vector3, Vector3, bool>? admitCollisionFace = null)
     {
         ArgumentNullException.ThrowIfNull(blob);
         var seen = new System.Collections.Generic.HashSet<CollisionFaceKey>();
@@ -76,9 +77,12 @@ public static partial class RuntimeWorldScene
         var sources = new System.Collections.Generic.List<int>();
         for (int triangle = 0; triangle < blob.Triangles; triangle++)
         {
+            int? nativeMaterial = triangle < blob.TriangleMaterialIds.Length ? blob.TriangleMaterialIds[triangle] : null;
             Vector3 a = Vertex(blob, blob.Indices[triangle * 3]);
             Vector3 b = Vertex(blob, blob.Indices[triangle * 3 + 1]);
             Vector3 c = Vertex(blob, blob.Indices[triangle * 3 + 2]);
+            if (nativeMaterial.HasValue && admitCollisionFace is not null &&
+                !admitCollisionFace(nativeMaterial.Value, a, b, c)) continue;
             Vector3 x = a, y = b, z = c;
             static int Compare(Vector3 left, Vector3 right)
             {
@@ -113,7 +117,7 @@ public static partial class RuntimeWorldScene
                     continue;
                 }
 
-                CollisionFacePlan plan = BuildCollisionFacePlan(blob);
+                CollisionFacePlan plan = BuildCollisionFacePlan(blob, options.AdmitCollisionFace);
 
                 var body = new RuntimeCollisionBody3D { Name = $"Collision{i}" };
                 body.Configure(blob, i, plan.SourceTriangleIndices);

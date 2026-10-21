@@ -70,9 +70,13 @@ public sealed class Rac1RatchetNanotechSession
             damage.NativeMarker == Rac1Class749Hostile.AttackMarker && damage.NativeDamageFlags is null;
         bool class1440 = damage.Source.NativeClassId == Rac1Class1440Session.ClassId &&
             damage.NativeMarker is null && damage.NativeDamageFlags == 0x00010001;
+        // Native Novalis peckbot_update_l1 passes damage amount 1 at animation time 13.
+        // The common damage record's native flags are not yet recovered.
+        bool novalisPeck = damage.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
+            damage.NativeMarker is null && damage.NativeDamageFlags is null;
         if (damage.Target != Rac1GameplayEntityRef.Player ||
             damage.Source.Kind != Rac1GameplayEntityKind.Moby ||
-            !(class749 || class1440) || damage.NativeDamage != 1)
+            !(class749 || class1440 || novalisPeck) || damage.NativeDamage != 1)
         {
             throw new NotSupportedException(
                 "Only the recovered class749 marker or class1440 contact damage-1 player descriptors are admitted.");

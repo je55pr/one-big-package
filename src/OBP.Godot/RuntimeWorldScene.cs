@@ -74,6 +74,9 @@ public static partial class RuntimeWorldScene
         /// <summary>Build a <see cref="StaticBody3D"/> + trimesh collider per decoded blob — the surface the debug capsule stands on.</summary>
         public bool IncludeCollision { get; init; } = true;
 
+        /// <summary>Optional host-only filtering of source collision materials, without altering native world evidence.</summary>
+        public Func<int, Vector3, Vector3, Vector3, bool>? AdmitCollisionFace { get; init; }
+
         /// <summary>Also add a translucent debug overlay mesh over each collision body.</summary>
         public bool ShowCollisionDebug { get; init; }
 

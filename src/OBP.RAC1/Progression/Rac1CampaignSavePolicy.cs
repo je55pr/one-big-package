@@ -21,7 +21,11 @@ public sealed record Rac1CampaignSaveEnvelope(
     int SchemaVersion,
     Rac1CampaignPersistentState Campaign,
     Rac1WeaponPersistentState? Weapons = null,
-    int Bolts = 0);
+    int Bolts = 0)
+{
+    // OBP host-level identity until the original retail Gold Bolt save field is recovered.
+    public int[] NovalisGoldBoltInstances { get; init; } = [];
+}
 
 public sealed record Rac1CampaignRestoreResult(
     Rac1CampaignState Campaign,
@@ -29,6 +33,7 @@ public sealed record Rac1CampaignRestoreResult(
     Rac1CampaignRestoreKind Kind)
 {
     public int Bolts { get; init; }
+    public int[] NovalisGoldBoltInstances { get; init; } = [];
 }
 
 /// <summary>
@@ -43,14 +48,18 @@ public static class Rac1CampaignSavePolicy
     public static Rac1CampaignSaveEnvelope Capture(
         Rac1CampaignState campaign,
         Rac1WeaponInventory weapons,
-        Rac1BoltWallet? wallet = null)
+        Rac1BoltWallet? wallet = null,
+        IReadOnlyCollection<int>? novalisGoldBoltInstances = null)
     {
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
         return new Rac1CampaignSaveEnvelope(
             CurrentSchemaVersion,
             campaign.CapturePersistentState(),
-            weapons.CapturePersistentState(), wallet?.Balance ?? 0);
+            weapons.CapturePersistentState(), wallet?.Balance ?? 0)
+        {
+            NovalisGoldBoltInstances = ValidateNovalisGoldBolts(novalisGoldBoltInstances),
+        };
     }
 
     /// <summary>
@@ -85,7 +94,19 @@ public static class Rac1CampaignSavePolicy
             Rac1CampaignState.RestorePersistentState(save.Campaign),
             new Rac1WeaponInventory(save.Weapons),
             Rac1CampaignRestoreKind.RestoredCurrentSchema)
-        { Bolts = save.Bolts };
+        {
+            Bolts = save.Bolts,
+            NovalisGoldBoltInstances = ValidateNovalisGoldBolts(save.NovalisGoldBoltInstances),
+        };
+    }
+
+    private static int[] ValidateNovalisGoldBolts(IEnumerable<int>? instances)
+    {
+        int[] sorted = (instances ?? []).Order().ToArray();
+        if (sorted.Length > Rac1GoldBoltSession.ExpectedNovalisBolts ||
+            sorted.Any(id => id < 0) || sorted.Distinct().Count() != sorted.Length)
+            throw new InvalidDataException("Invalid persisted Novalis Gold Bolt identities.");
+        return sorted;
     }
 
     /// <summary>

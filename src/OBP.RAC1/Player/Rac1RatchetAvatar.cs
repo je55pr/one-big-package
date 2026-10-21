@@ -161,6 +161,10 @@ public static class Rac1RatchetAvatar
             (26, 45, 0x3e800000u),
             (43, 13, 0x3e800000u),
             (44, 27, 0x3e800000u),
+            // Original Ratchet LEVEL0 carrier has the recovered Novalis swim clips.
+            (59, 15, 0x3e800000u),
+            (60, 15, 0x3e000000u),
+            (61, 12, 0x3e800000u),
         ];
         // Contextual clips are not present in every world's animation table.
         // The playable provider deliberately uses its verified LEVEL0 carrier;

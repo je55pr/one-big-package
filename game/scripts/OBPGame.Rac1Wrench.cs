@@ -96,10 +96,13 @@ public partial class OBPGame
     {
         var result = new Rac1WrenchDamageResult(Rac1WrenchContactPath.AnimatedSweepHostGeometry,
             damage, Rac1WrenchAttackProfile.NativeDamageFlags);
-        foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes))
+        foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes).Concat(_rac1NovalisBreakableNodes.Values))
         {
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
-            if (_rac1WrenchHitTargets.Contains(key) || !IsInstanceValid(target.Root) || !IsRac1GameplayActive(target))
+            bool isNovalisProp = Rac1NovalisBreakableSession.IsAdmitted(
+                _world?.LevelId ?? -1, target.Source.NativeClassId);
+            if (_rac1WrenchHitTargets.Contains(key) || !IsInstanceValid(target.Root) ||
+                (isNovalisProp ? _rac1NovalisBreakables.IsDestroyed(key.InstanceIndex) : !IsRac1GameplayActive(target)))
                 continue;
             bool contact = target.Root.GetChildren().OfType<MeshInstance3D>().Any(mesh =>
             {
@@ -116,8 +119,11 @@ public partial class OBPGame
             {
                 int nativeClass when Rac1BoltCrate.IsCrateClass(nativeClass) => TryStrikeRac1Crate(target, result),
                 Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
-                    Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest =>
+                    Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest or
+                    Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId =>
                     TryStrikeRac1Hostile(target, result),
+                Rac1NovalisBreakableSession.MushroomClass or Rac1NovalisBreakableSession.RockFormationClass =>
+                    TryBreakRac1NovalisProp(target, Rac1NovalisBreakableSession.ContactKind.Wrench),
                 _ => false,
             };
             // Per-target coalescing is an explicit bounded host policy. Retail's

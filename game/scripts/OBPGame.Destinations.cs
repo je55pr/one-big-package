@@ -300,6 +300,8 @@ public partial class OBPGame
     /// </summary>
     private void AdoptRuntimeWorld(RuntimeWorld world, string sourcePath, ObpDestination destination)
     {
+        // Release the previous level's ISO-backed music reader when switching games.
+        ResetRac1NovalisMusic();
         _world = world;
         _worldSwitches++;
 
@@ -315,6 +317,9 @@ public partial class OBPGame
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,
+            AdmitCollisionFace = world is { Game: "rac1", LevelId: 1 }
+                ? AdmitRac1NovalisCollisionFace
+                : null,
             ShowCollisionDebug = _args.CollisionDebug,
             OnlyAnimatedMobies = _args.AnimSolo,
         });
