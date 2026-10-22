@@ -120,14 +120,15 @@ mirrors X on the query point and mirrors resolved directions back, exactly as
 
 ## Interactive world inspector
 
-**I** toggles a panel showing the neutral `WorldObjectDescriptor` for whatever is
+Enable **Pause → Show debug output**, then **I** toggles a panel showing the neutral `WorldObjectDescriptor` for whatever is
 under the crosshair (or the mouse, cursor free). `OBP.Godot.WorldPicker` ray-casts
 against the visible mesh AABBs and resolves the hit to `(kind, textureId)`, the
 owning `dyn_*` `RuntimeDynamicObject`, or a `RuntimeAnimatedMesh`;
 `OBP.Runtime.Presentation.WorldObjectDescriptorBuilder` (pure, tested) turns that
 into the readout: asset kind, texture WxH + `AlphaProfile`, material flags,
 decomposed transform, local bounds, PVar **presence + format + byte length**
-(never decoded), animation state, and provenance. `--inspect` opens it on load.
+(never decoded), animation state, and provenance. `--inspect` only opens it on
+load when debug output is already enabled for the session.
 
 ## Animation presentation
 
@@ -187,6 +188,11 @@ Runtime inspection layers over a built `RuntimeWorldScene.Result`, all idempoten
 and reversible (kind tint / visibility go through `MeshInstance3D.MaterialOverlay`
 and `Visible`, never the source material; generated meshes live under one
 `DebugOverlay` node freed with the world):
+
+Interactive debug output defaults off. **Pause → Show debug output** enables
+world/player statistics, development notices, source/build details and the
+inspection shortcuts below. Turning it off closes the inspector and clears
+inspection layers; normal health, bolts, ammo and interaction prompts remain visible.
 
 | Key | Layer | |
 |---|---|---|

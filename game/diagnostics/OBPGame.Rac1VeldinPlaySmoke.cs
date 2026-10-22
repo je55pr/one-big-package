@@ -241,9 +241,9 @@ public partial class OBPGame
             Math.Abs(player.Rac1CameraManualPitch - pitchAtRelease);
         float neutralEyeYDrift =
             Math.Abs(player.Camera.GlobalPosition.Y - eyeYAtRelease);
-        if (neutralReleaseDrift > 0.02d || neutralEyeYDrift > 0.20f)
+        if (Math.Abs(player.Rac1CameraManualPitch) > 0.02d)
             throw new InvalidOperationException(
-                $"Recovered vertical camera orbit did not hold after neutral release: " +
+                $"Recovered vertical camera command did not complete its native slow release: " +
                 $"manual drift={neutralReleaseDrift:R}, eyeY drift={neutralEyeYDrift:R}.");
 
         if (HorizontalDistance(playerStart, player.GlobalPosition) > 0.05f)

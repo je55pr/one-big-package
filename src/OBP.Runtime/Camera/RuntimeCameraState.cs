@@ -14,6 +14,9 @@ public sealed record RuntimeCameraState(
     double PreferredDistance,
     double EffectiveDistance)
 {
+    /// <summary>Optional recovered lens. Hosts retain vertical framing as the viewport widens.</summary>
+    public double? VerticalFieldOfViewRadians { get; init; }
+
     public RuntimeCameraState Validate()
     {
         ValidateFinite(Eye, nameof(Eye));
@@ -21,6 +24,8 @@ public sealed record RuntimeCameraState(
         ValidateFinite(ControlHeadingRadians, nameof(ControlHeadingRadians));
         ValidateFinite(PreferredDistance, nameof(PreferredDistance));
         ValidateFinite(EffectiveDistance, nameof(EffectiveDistance));
+        if (VerticalFieldOfViewRadians is { } fov && (!double.IsFinite(fov) || fov <= 0d || fov >= Math.PI))
+            throw new ArgumentOutOfRangeException(nameof(VerticalFieldOfViewRadians));
 
         if (PreferredDistance < 0d)
             throw new ArgumentOutOfRangeException(nameof(PreferredDistance));

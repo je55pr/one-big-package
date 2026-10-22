@@ -1,9 +1,12 @@
 # Third-party acknowledgements
 
-R&C1 player-audio and weapon reconstruction uses the public `rac1-native-game` source and its
+R&C1 camera, player-audio and weapon reconstruction uses the public `rac1-native-game` source and its
 function/address annotations as a reference, including Blaster contact and
 steering behavior, Taunter queries, player sound/footstep dispatch, weapon/deployment timing,
 particle constructors/updates, weapon explosion recipes and Tesla draw routines.
+The camera reference covers the type-0 follow pipeline, native axis/speed options,
+projection and collision probe sequence. The optional research oracle builds its
+MIT-licensed R5900/VU interpreters locally to execute original disc functions.
 
 Upstream: https://github.com/daino-selvatico/rac1-native-game
 

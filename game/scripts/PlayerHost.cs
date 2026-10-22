@@ -303,7 +303,7 @@ public partial class PlayerHost : CharacterBody3D
 
         var layer = new CanvasLayer { Name = "PlayerHud" };
         AddChild(layer);
-        _hud = new Label { Position = new Vector2(16, 210) };
+        _hud = new Label { Name = "MovementDebugHud", Position = new Vector2(16, 210), Visible = DebugOutputEnabled, MouseFilter = Control.MouseFilterEnum.Ignore };
         _hud.AddThemeColorOverride("font_color", new Color(0.7f, 0.95f, 0.7f));
         layer.AddChild(_hud);
 

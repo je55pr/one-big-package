@@ -2,6 +2,7 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
+using OBP.RAC1.Camera;
 
 namespace OneBigPackage;
 
@@ -40,6 +41,7 @@ public partial class ControllerSmoke : Node
             await FocusButton("CONTROLLER SETTINGS"); await Press(JoyButton.A);
             Require(Find<ControllerSettingsUi>() is { Visible: true }, "Cross does not open controller settings");
             var settings = Find<ControllerSettingsUi>()!;
+            await CheckCameraSettingsAsync(settings);
             var settingsScroll = Descendants(settings).OfType<ScrollContainer>().Single();
             Require(settingsScroll.GetHScrollBar().MaxValue <= settingsScroll.Size.X + .1f,
                 "Bitmap font widths pushed controller settings offscreen");
@@ -140,6 +142,53 @@ public partial class ControllerSmoke : Node
         GD.Print("[controller-smoke] automatic ISO UI extraction, native glyph spacing, icons, text and source refresh PASS");
     }
 
+    private async Task CheckCameraSettingsAsync(ControllerSettingsUi settings)
+    {
+        var original = CameraSettingsStore.Current;
+        string originalPath = CameraSettingsStore.ConfigPath;
+        string fixture = System.IO.Path.GetFullPath(System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"),
+            "..", "captures", "controller-smoke", "camera-settings.cfg"));
+        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fixture)!);
+        try
+        {
+            CameraSettingsStore.ConfigPath = fixture;
+            settings.PersistSettings = true; // Only the private fixture is writable in this smoke.
+            var options = Descendants(settings).OfType<OptionButton>().ToArray();
+            var horizontal = options.Single(c => c.Name == "CameraLeftright");
+            var vertical = options.Single(c => c.Name == "CameraUpdown");
+            var speed = options.Single(c => c.Name == "CameraRotationspeed");
+            await Choose(horizontal, 1); await Choose(vertical, 0); await Choose(speed, 2);
+            Require(CameraSettingsStore.Current == new Rac1CameraOptions(Rac1CameraDirection.Inverted,
+                Rac1CameraDirection.Normal, Rac1CameraSpeed.Fast), "Controller camera options did not update independently");
+            CameraSettingsStore.Reload();
+            Require(CameraSettingsStore.Current.Horizontal == Rac1CameraDirection.Inverted &&
+                CameraSettingsStore.Current.Vertical == Rac1CameraDirection.Normal && CameraSettingsStore.Current.Speed == Rac1CameraSpeed.Fast,
+                "Camera settings did not survive a cold reload");
+            await Choose(horizontal, 0); await Choose(vertical, 1); await Choose(speed, 0);
+            Require(CameraSettingsStore.Current == new Rac1CameraOptions(Rac1CameraDirection.Normal,
+                Rac1CameraDirection.Inverted, Rac1CameraSpeed.Slow), "Camera options could not reverse the other axis / choose slow speed");
+            await Capture("camera-settings");
+            GD.Print("[controller-smoke] native axis options, all speed choices and persistent camera settings PASS");
+        }
+        finally
+        {
+            CameraSettingsStore.ConfigPath = originalPath;
+            CameraSettingsStore.Set(original, persist: false);
+            settings.PersistSettings = false;
+            System.IO.File.Delete(fixture);
+        }
+        async Task Choose(OptionButton control, int selection)
+        {
+            control.GrabFocus(); await Frames(2);
+            int from = control.Selected;
+            await Press(JoyButton.A);
+            while (from < selection) { await Press(JoyButton.DpadDown); ++from; }
+            while (from > selection) { await Press(JoyButton.DpadUp); --from; }
+            await Press(JoyButton.A);
+            Require(control.Selected == selection, $"Camera option {control.Name} ignored controller selection");
+        }
+    }
+
     private async Task CheckRawGameplayAsync()
     {
         _game.ProcessMode = ProcessModeEnum.Disabled;
@@ -181,7 +230,10 @@ public partial class ControllerSmoke : Node
         var player = Find<PlayerHost>(); Require(player is not null, "Controller world test did not load Veldin");
         Require(Find<SourceManagerUi>() is null, "World entry retained the source menu over gameplay");
         await Frames(50);
+        Require(Math.Abs(player!.Camera.Fov - Rac1CameraProjection.VerticalFieldOfViewRadians * 180d / Math.PI) < .001d,
+            "Ordinary R&C1 still uses Godot's default lens");
         await _game.CheckControllerWeaponInputAsync();
+        await CheckDebugOutputAsync(player!);
         await Press(JoyButton.Start);
         Require(GetTree().Paused && Find<PauseMenuUi>() is not null, "Start did not pause gameplay");
         var pausedPosition = player!.GlobalPosition;
@@ -199,6 +251,8 @@ public partial class ControllerSmoke : Node
         await Press(JoyButton.Start);
         await FocusButton("TOGGLE WEAPON PREVIEW"); await Press(JoyButton.A);
         Require(!GetTree().Paused, "Preview selection left gameplay paused");
+        Require(Find<PlayerHud>()!.IsVisibleInTree() && DebugLabel("DevelopmentNotice")?.IsVisibleInTree() != true,
+            "Enabling testing equipment leaked a development notice with debug output off");
         await Button(JoyButton.Y, true);
         var quick = Find<WeaponQuickSelectUi>();
         Require(quick is not null && quick.Entries.Count == 15, "Triangle did not expose the preview arsenal");
@@ -218,6 +272,70 @@ public partial class ControllerSmoke : Node
         await FocusButton("RETURN TO WORLDS"); await Press(JoyButton.A);
         Require(Find<DestinationSelectorUi>() is not null && !GetTree().Paused, "Controller could not leave gameplay for world selection");
         GD.Print("[controller-smoke] Start pause/settings, Select/R3 map, preview, paged Triangle selection and world return PASS");
+    }
+
+    private async Task CheckDebugOutputAsync(PlayerHost player)
+    {
+        await Frames(3); // Let the preceding weapon-cycle input reach the HUD snapshot.
+        CheckVisibility(false);
+        await Capture("gameplay-default");
+        await KeyPress(Key.I); await KeyPress(Key.F4); await KeyPress(Key.F8);
+        Require(Find<WorldInspectorPanel>() is { IsOpen: false }, "Inspector opened before debug output was enabled in Pause");
+        Require(!HasBoundsOverlay(), "An inspection shortcut showed debug geometry before opting in");
+        CheckVisibility(false);
+
+        await Press(JoyButton.Start);
+        await FocusButton("SHOW DEBUG OUTPUT");
+        Require(Focus() is CheckButton { ButtonPressed: false }, "Debug output does not default to off");
+        await Press(JoyButton.A);
+        Require(GetTree().Paused, "Toggling debug output unexpectedly resumed gameplay");
+        CheckVisibility(true);
+        await FocusButton("TOGGLE WEAPON PREVIEW"); await Press(JoyButton.A);
+        Require(DebugLabel("DevelopmentNotice") is { Visible: true }, "Enabled debug output omitted development notices");
+        await KeyPress(Key.I); await KeyPress(Key.F4);
+        Require(Find<WorldInspectorPanel>() is { IsOpen: true } && HasBoundsOverlay(), "Opted-in inspection shortcuts did not work");
+        CheckVisibility(true);
+        await Capture("gameplay-debug-enabled");
+
+        await Press(JoyButton.Start);
+        await FocusButton("SHOW DEBUG OUTPUT");
+        Require(Focus() is CheckButton { ButtonPressed: true }, "Reopening Pause lost the debug output selection");
+        await Press(JoyButton.A);
+        CheckVisibility(false);
+        Require(Find<WorldInspectorPanel>() is { IsOpen: false } && DebugLabel("DevelopmentNotice") is { Visible: false },
+            "Disabling debug output left the inspector or an existing notice visible");
+        await FocusButton("TOGGLE WEAPON PREVIEW"); await Press(JoyButton.A);
+        Require(!HasBoundsOverlay(), "Disabling debug output left inspection geometry in the world");
+        CheckVisibility(false);
+        await Capture("gameplay-debug-disabled");
+        GD.Print("[controller-smoke] clean gameplay by default, pause checkbox, keyboard guards, notice suppression and overlay cleanup PASS");
+
+        void CheckVisibility(bool enabled)
+        {
+            var world = DebugLabel("WorldHud"); var movement = DebugLabel("MovementDebugHud");
+            Require(world?.Visible == enabled && movement?.Visible == enabled && player.DebugOutputEnabled == enabled,
+                "World/player debug output disagrees with the pause checkbox");
+            Require(enabled || world!.Text.Length == 0 && movement!.Text.Length == 0, "Hidden diagnostics are still being rebuilt");
+            Require(DebugLabel("HealthStateDebug")?.Visible == enabled, "Player life-state diagnostics escaped the debug toggle");
+            var authoredRatchet = Descendants(_game).OfType<MeshInstance3D>()
+                .Where(mesh => mesh.Name.ToString().StartsWith("ratchet_i", StringComparison.Ordinal)).ToArray();
+            Require(authoredRatchet.Length > 0 && authoredRatchet.All(mesh => !mesh.Visible),
+                "Inspection overlays revealed the hidden authored Ratchet model");
+            Require(Find<PlayerHud>() is { } hud && hud.IsVisibleInTree() &&
+                Descendants(hud).OfType<Label>().Any(label => label.IsVisibleInTree() && label.Text.StartsWith("AMMO", StringComparison.Ordinal)),
+                "Debug toggle hid the gameplay HUD/ammo");
+        }
+        bool HasBoundsOverlay() => Descendants(_game).OfType<MeshInstance3D>().Any(node =>
+            !node.IsQueuedForDeletion() && node.Name == "WorldBounds" && node.IsVisibleInTree());
+    }
+
+    private Label? DebugLabel(string name) => Descendants(_game).OfType<Label>().FirstOrDefault(label =>
+        !label.IsQueuedForDeletion() && label.Name == name);
+
+    private async Task KeyPress(Key key)
+    {
+        Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = true }); await Frames(3);
+        Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false }); await Frames(3);
     }
 
     private async Task CheckControllerWidgetsAsync()

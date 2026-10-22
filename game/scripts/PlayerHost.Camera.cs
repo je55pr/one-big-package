@@ -15,6 +15,7 @@ namespace OneBigPackage;
 
 public partial class PlayerHost : CharacterBody3D
 {
+    private CameraGeometry? _cameraGeometry;
     /// <summary>Host camera reset binding; not a reconstruction of the native L1 aim state.</summary>
     public void CenterCameraBehindPlayer()
     {
@@ -38,7 +39,9 @@ public partial class PlayerHost : CharacterBody3D
             return;
 
         Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
-        double initialHeading = GetRac1ControlYaw();
+        // 0x002e66b8 places a new follow camera behind the hero's native facing.
+        // The debug node's conventional -Z forward differs from Ratchet's +X basis.
+        double initialHeading = Rac1CurrentYaw;
         _rac1Camera.Reset(nativePlayer, initialHeading);
         var state = _rac1Camera.Step(new Rac1OrdinaryCameraController.Input(
             nativePlayer,
@@ -52,44 +55,15 @@ public partial class PlayerHost : CharacterBody3D
     private void StepRac1Camera(Vector2 rawCameraIntent)
     {
         Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
-        RuntimeCameraObstructionFacts obstruction = ProbeRac1CameraObstruction();
+        _cameraGeometry ??= new CameraGeometry(this);
+        _cameraGeometry.BeginFrame();
         var state = _rac1Camera.Step(new Rac1OrdinaryCameraController.Input(
             nativePlayer,
             rawCameraIntent.X,
             -rawCameraIntent.Y,
-            obstruction));
+            default,
+            Options: CameraSettingsStore.Current), _cameraGeometry);
         ApplyRac1CameraState(state);
-    }
-
-    private RuntimeCameraObstructionFacts ProbeRac1CameraObstruction()
-    {
-        // The exact retail contact primitive is still intentionally unpromoted.
-        // Godot supplies only contact/orientation facts; RAC1 owns the response law.
-        double heading = _rac1Camera.ControlHeading;
-        Vector3 from = GlobalPosition + Vector3.Up * (float)Rac1OrdinaryCameraController.OrdinaryLookHeight;
-        Vec3 nativePlayer = ScenePlayerToNative(GlobalPosition);
-        var desiredEyeNative = new Vec3(
-            nativePlayer.X - (Math.Cos(heading) * Rac1OrdinaryCameraController.OrdinaryPreferredRadius),
-            nativePlayer.Y - (Math.Sin(heading) * Rac1OrdinaryCameraController.OrdinaryPreferredRadius),
-            nativePlayer.Z + Rac1OrdinaryCameraController.OrdinaryEyeHeight);
-        Vector3 to = RuntimeWorldScene.ToScene(
-            desiredEyeNative.X,
-            desiredEyeNative.Z,
-            desiredEyeNative.Y);
-
-        var query = PhysicsRayQueryParameters3D.Create(from, to);
-        query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
-        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
-        if (hit.Count == 0)
-            return default;
-
-        Vector3 normal = (Vector3)hit["normal"];
-        Vector3 sceneRight = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(
-            Math.Sin(heading),
-            -Math.Cos(heading));
-        return new RuntimeCameraObstructionFacts(
-            true,
-            normal.Dot(sceneRight));
     }
 
     private static Vec3 ScenePlayerToNative(Vector3 scene) =>
@@ -126,6 +100,7 @@ public partial class PlayerHost : CharacterBody3D
     private void RestoreHostCameraPresentation()
     {
         Camera.TopLevel = false;
+        Camera.Fov = 75f;
         Camera.Position = new Vector3(0f, 0f, _cameraDistance);
         Camera.Rotation = Vector3.Zero;
     }
