@@ -14,6 +14,7 @@ public partial class SourceManagerBootstrap : Node
 
     public override void _Ready()
     {
+        ProcessMode = ProcessModeEnum.Always;
         _game = GetParentOrNull<OBPGame>();
         CallDeferred(nameof(Activate));
     }
@@ -25,6 +26,18 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
+        if (@event is InputEventJoypadButton && @event.IsActionPressed(ControllerBindings.Pause))
+        {
+            if (_game.TryHandleInteractiveBack()) GetViewport().SetInputAsHandled();
+            return;
+        }
+
+        if (@event.IsActionPressed(ControllerBindings.QuickSelect) && _game.TryOpenWeaponQuickSelect(@event))
+        {
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         if (@event.IsActionPressed("obp_planet_map"))
         {
             if (_game.TryCloseRac1PlanetMap() || _game.TryOpenRac1PlanetMap())
@@ -32,6 +45,11 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
+    }
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (_game is null) return;
         if (@event.IsActionPressed("ui_cancel") && _game.TryCloseRac1PlanetMap())
         {
             GetViewport().SetInputAsHandled();
@@ -73,16 +91,18 @@ public partial class SourceManagerBootstrap : Node
 
         if (rac1Path is not null)
         {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path);
+            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path, persist: !args.ControllerSmoke);
         }
         if (gcPath is not null)
         {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac2, gcPath);
+            _game.RememberCommandLineSource(ObpSourceGame.Rac2, gcPath, persist: !args.ControllerSmoke);
         }
         if (uyaPath is not null)
         {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac3, uyaPath);
+            _game.RememberCommandLineSource(ObpSourceGame.Rac3, uyaPath, persist: !args.ControllerSmoke);
         }
+
+        if (args.ControllerSmoke) return;
 
         if (args.LoadMovementState is not null)
         {

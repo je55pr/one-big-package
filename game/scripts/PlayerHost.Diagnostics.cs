@@ -26,10 +26,10 @@ public partial class PlayerHost : CharacterBody3D
             $"    anim {AnimationState}\n" +
             $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
-            (UseRac1Gameplay ? $"{Rac1EquipmentLabel} / F10 pack preview / F11 Swingshot preview\n" : "") +
-            (Rac1DevelopmentSwingshotPreview ? $"Swingshot preview: hold E / east face toward a target ({Rac1SwingshotTargetIndex?.ToString() ?? "none"})\n" : "") +
+            (UseRac1Gameplay ? $"{Rac1EquipmentLabel} · previews in Pause → Testing Equipment (F10 / F11)\n" : "") +
+            (Rac1DevelopmentSwingshotPreview ? $"Swingshot preview: hold Circle / E toward a target ({Rac1SwingshotTargetIndex?.ToString() ?? "none"})\n" : "") +
             diagnostics +
-            $"WASD / left stick / Space + south face jump / C + right shoulder crouch / X + west face wrench / E + east face equipped item\n" +
+            $"Left stick / D-pad move · Cross jump · R1 crouch · Square wrench · Circle equipped item · Triangle quick select · Start pause\n" +
             developmentControls;
     }
 

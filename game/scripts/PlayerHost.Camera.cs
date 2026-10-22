@@ -15,6 +15,23 @@ namespace OneBigPackage;
 
 public partial class PlayerHost : CharacterBody3D
 {
+    /// <summary>Host camera reset binding; not a reconstruction of the native L1 aim state.</summary>
+    public void CenterCameraBehindPlayer()
+    {
+        if (HasActiveRecoveredCamera && !Rac1RemoteControlActive)
+        {
+            _rac1Camera.Reset(ScenePlayerToNative(GlobalPosition), Rac1CurrentYaw);
+            _rac1CameraInitialized = true;
+            StepRac1Camera(Vector2.Zero);
+        }
+        else if (!Rac1RemoteControlActive)
+        {
+            var forward = PlayerAvatarFacing.NativeZUpPlanarDirectionToGodot(Math.Cos(Rac1CurrentYaw), Math.Sin(Rac1CurrentYaw));
+            _yaw.Rotation = new Vector3(0, Mathf.Atan2(-forward.X, -forward.Z), 0);
+            _pitch.Rotation = new Vector3(-.25f, 0, 0);
+        }
+    }
+
     private void EnsureRac1CameraInitialized()
     {
         if (_rac1CameraInitialized)

@@ -208,6 +208,11 @@ public partial class OBPGame : Node3D
 
     public bool TryHandleInteractiveBack()
     {
+        if (QuickSelectOpen)
+        {
+            CloseWeaponQuickSelect();
+            return TryOpenPauseMenu();
+        }
         if (TryCloseControllerSettings())
         {
             ApplicationLifecycle.ReportNavigation("controller-settings-close");
@@ -311,6 +316,9 @@ public partial class OBPGame : Node3D
     /// <summary>Free the current world sub-tree and everything it owns. Safe to call when nothing is loaded.</summary>
     private void TeardownWorld()
     {
+        CloseWeaponQuickSelect();
+        TearDownInteractiveOverlays();
+        TryCloseRac1PlanetMap();
         ClearPlayerAvatarView();
         ResetRac1LevelGameplay();
         _hudState.ResetSession();

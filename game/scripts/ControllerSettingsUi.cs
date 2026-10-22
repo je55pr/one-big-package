@@ -13,8 +13,9 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
     private Label _calibrated = null!;
     private Label _savedRange = null!;
     private Label _status = null!;
-    private SpinBox _leftDeadzone = null!;
-    private SpinBox _rightDeadzone = null!;
+    private HSlider _leftDeadzone = null!;
+    private HSlider _rightDeadzone = null!;
+    private Button _back = null!;
     private Button _calibrate = null!;
     private Button _save = null!;
     private Button _reset = null!;
@@ -71,6 +72,16 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         }
     }
 
+    public override void _ExitTree() => ControllerBindings.MenuNavigationSuspended = false;
+
+    public override void _Input(InputEvent @event)
+    {
+        // Keep focus on Finish while both sticks are being calibrated.
+        // GUI consumption does not discard the raw samples read in _Process.
+        if (_capturing && @event is InputEventJoypadMotion)
+            GetViewport().SetInputAsHandled();
+    }
+
     private void BuildUi()
     {
         AddChild(new ColorRect
@@ -90,12 +101,21 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
 
         var outer = new VBoxContainer();
         outer.AddThemeConstantOverride("separation", 12);
-        margin.AddChild(outer);
+        var scroll = new ScrollContainer { FollowFocus = true, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        margin.AddChild(scroll);
+        outer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        scroll.AddChild(outer);
         outer.AddChild(new Label { Text = "SETTINGS  //  CONTROLLERS", ThemeTypeVariation = "HeaderSmall" });
         outer.AddChild(new Label { Text = "CONTROLLER CALIBRATION", ThemeTypeVariation = "HeaderLarge" });
         outer.AddChild(new Label
         {
-            Text = "Host calibration happens before any game-specific PS2 input model. It fixes imperfect hardware range without changing recovered in-game deadzones or movement laws.",
+            Text = "PLAYSTATION CONTROLS\nCross  Jump / swim up    ·    Square  Wrench / dive    ·    Circle  Weapon / gadget\nR1  Crouch / flip / pack jump    ·    Triangle  Quick select    ·    L1  Centre camera\nStart  Pause    ·    Select / R3  Map    ·    Left stick / D-pad  Move    ·    Right stick  Camera",
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            Modulate = UiTheme.Accent,
+        });
+        outer.AddChild(new Label
+        {
+            Text = "Cross selects. Triangle / Circle goes back. Use up / down to choose a setting and left / right to adjust it. L1 / R1 moves between controls.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = UiTheme.TextDim,
         });
@@ -140,11 +160,9 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         dzGrid.AddThemeConstantOverride("v_separation", 8);
         settingsColumn.AddChild(dzGrid);
         dzGrid.AddChild(new Label { Text = "Left stick host deadzone" });
-        _leftDeadzone = DeadzoneSpinBox();
-        dzGrid.AddChild(_leftDeadzone);
+        _leftDeadzone = DeadzoneSlider(dzGrid);
         dzGrid.AddChild(new Label { Text = "Right stick host deadzone" });
-        _rightDeadzone = DeadzoneSpinBox();
-        dzGrid.AddChild(_rightDeadzone);
+        _rightDeadzone = DeadzoneSlider(dzGrid);
 
         settingsColumn.AddChild(new Label
         {
@@ -176,23 +194,28 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
 
         var spacer = new Control { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         outer.AddChild(spacer);
-        var back = new Button { Text = "‹  BACK", CustomMinimumSize = new Vector2(160, 46) };
-        back.Pressed += () => BackRequested?.Invoke();
-        outer.AddChild(back);
+        _back = new Button { Text = "‹  BACK", CustomMinimumSize = new Vector2(160, 46) };
+        _back.Pressed += () => BackRequested?.Invoke();
+        outer.AddChild(_back);
         Callable.From(() => _devices.GrabFocus()).CallDeferred();
     }
 
-    private static SpinBox DeadzoneSpinBox()
+    private static HSlider DeadzoneSlider(GridContainer parent)
     {
-        return new SpinBox
+        var row = new HBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        parent.AddChild(row);
+        var value = new Label { Text = "0.00", CustomMinimumSize = new Vector2(44, 0) };
+        var slider = new HSlider
         {
             MinValue = 0,
             MaxValue = 0.30,
             Step = 0.01,
-            CustomArrowStep = 0.01,
-            Suffix = "",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             CustomMinimumSize = new Vector2(130, 40),
         };
+        slider.ValueChanged += current => value.Text = current.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+        row.AddChild(slider); row.AddChild(value);
+        return slider;
     }
 
     private void RefreshDevices(bool force)
@@ -227,6 +250,7 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
     private void LoadSelectedProfile()
     {
         _capturing = false;
+        ControllerBindings.MenuNavigationSuspended = false;
         _calibrate.Text = "START RANGE CALIBRATION";
         if (SelectedDevice() is not { } device)
         {
@@ -252,6 +276,11 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         _reset.Disabled = !enabled;
         _leftDeadzone.Editable = enabled;
         _rightDeadzone.Editable = enabled;
+        _devices.Disabled = !enabled;
+        _leftDeadzone.FocusMode = _rightDeadzone.FocusMode = enabled ? Control.FocusModeEnum.All : Control.FocusModeEnum.None;
+        Control[] controls = [_devices, _leftDeadzone, _rightDeadzone, _calibrate, _save, _reset, _back];
+        MenuFocus.WireVertical(controls);
+        if (!MenuFocus.Available(GetViewport().GuiGetFocusOwner())) MenuFocus.Restore(null, controls);
     }
     private void ToggleCalibration()
     {
@@ -262,6 +291,7 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         {
             _capture = new Capture();
             _capturing = true;
+            ControllerBindings.MenuNavigationSuspended = true;
             _calibrate.Text = "FINISH + SAVE RANGE";
             _status.Text = "Rotate BOTH sticks naturally around their full gates a few times, then press FINISH. Normal pressure only.";
             _status.Modulate = UiTheme.Accent;
@@ -269,6 +299,7 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         }
 
         _capturing = false;
+        ControllerBindings.MenuNavigationSuspended = false;
         _profile = new ControllerCalibrationProfile(
             _capture.BuildLeft(_profile.Left, (float)_leftDeadzone.Value),
             _capture.BuildRight(_profile.Right, (float)_rightDeadzone.Value));

@@ -44,8 +44,12 @@ public partial class OBPGame
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
     {
+        int previous = _rac1Weapons.CurrentItemId;
         if (_rac1Weapons.TryEquip(weapon))
         {
+            if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
+            if (previous != (int)weapon && Enum.IsDefined(typeof(Rac1WeaponId), previous))
+                _previousSelectedWeapon = (Rac1WeaponId)previous;
             _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             RefreshRac1WrenchPresentationVisibility();
@@ -53,7 +57,7 @@ public partial class OBPGame
                 view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
-        else ReportMovementState("Press 0 to enable the full arsenal preview, then [ / ] to cycle weapons.");
+        else ReportMovementState("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
     }
 
     private void OnRac1WeaponCycleRequested(int direction)

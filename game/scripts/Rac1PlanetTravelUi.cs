@@ -95,6 +95,7 @@ public partial class Rac1PlanetTravelUi : CanvasLayer
         var scroll = new ScrollContainer
         {
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+            FollowFocus = true,
         };
         outer.AddChild(scroll);
 
@@ -153,7 +154,7 @@ public partial class Rac1PlanetTravelUi : CanvasLayer
 
         _hint = new Label
         {
-            Text = "ARROWS / D-PAD  Navigate    |    ENTER / CONFIRM  Travel    |    M / START / CANCEL  Return",
+            Text = ControllerBindings.MenuHint + "   ·   Select / R3 / M  Return",
             Modulate = UiTheme.TextDim,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             HorizontalAlignment = HorizontalAlignment.Center,

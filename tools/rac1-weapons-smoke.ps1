@@ -18,7 +18,7 @@ if (-not $SkipBuild) {
     & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
-$windowArgs = if ($Rendered) { @('--windowed', '--position', '-20000,-20000', '--resolution', '960x540') } else { @('--headless') }
+[string[]]$windowArgs = if ($Rendered) { @('--windowed', '--position', '-20000,-20000', '--resolution', '960x540') } else { @('--headless') }
 $previousCaptureDirectory = $env:OBP_WEAPON_CAPTURE_DIR
 try {
     if ($CaptureDirectory) { $env:OBP_WEAPON_CAPTURE_DIR = [IO.Path]::GetFullPath($CaptureDirectory) }

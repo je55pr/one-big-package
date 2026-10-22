@@ -10,6 +10,8 @@ public partial class OBPGame
     private bool _controllerSettingsFromPause;
     private bool _pauseOwnsTreePause;
     private Input.MouseModeEnum _prePauseMouseMode;
+    private Control? _settingsReturnFocus;
+    private int _prePauseHeldButtons;
 
     private bool PauseMenuOpen =>
         _pauseMenu is not null && IsInstanceValid(_pauseMenu);
@@ -33,17 +35,26 @@ public partial class OBPGame
             return true;
 
         _prePauseMouseMode = Input.MouseMode;
+        _prePauseHeldButtons = _player?.MenuHeldButtons ?? 0;
         Input.MouseMode = Input.MouseModeEnum.Visible;
 
         _pauseMenu = new PauseMenuUi
         {
             ProcessMode = ProcessModeEnum.Always,
             MovementStatesAvailable = _player?.UseRac1Gameplay == true,
+            WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
+            EquipmentStatus = _player is { } activePlayer
+                ? $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
+                : string.Empty,
         };
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
         _pauseMenu.SaveMovementStateRequested += SaveMovementState;
         _pauseMenu.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
+        _pauseMenu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_rac1WeaponPreviewInventory is not null); };
+        _pauseMenu.RefillPreviewRequested += () => { ClosePauseMenu(); if (_rac1WeaponPreviewInventory is not null) SetRac1WeaponPreview(false); };
+        _pauseMenu.PackPreviewRequested += () => { _player?.CycleRac1DevelopmentPack(); ClosePauseMenu(); };
+        _pauseMenu.SwingshotPreviewRequested += () => { _player?.ToggleRac1DevelopmentSwingshot(); ClosePauseMenu(); };
         _pauseMenu.WorldsRequested += ReturnToWorldsFromPause;
         _pauseMenu.QuitRequested += () =>
             ApplicationLifecycle.RequestQuit(this, "pause-menu-quit");
@@ -78,8 +89,17 @@ public partial class OBPGame
             return;
 
         _controllerSettingsFromPause = fromPause && PauseMenuOpen;
+        _settingsReturnFocus = GetViewport().GuiGetFocusOwner();
         if (_controllerSettingsFromPause && _pauseMenu is not null)
+        {
             _pauseMenu.Visible = false;
+            _pauseMenu.SetProcessUnhandledInput(false);
+        }
+        else
+        {
+            if (_sourceManager is not null) _sourceManager.Visible = false;
+            if (_destinationSelector is not null) _destinationSelector.Visible = false;
+        }
 
         _controllerSettings = new ControllerSettingsUi
         {
@@ -96,17 +116,26 @@ public partial class OBPGame
         if (!ControllerSettingsOpen)
             return;
 
-        _controllerSettings!.QueueFree();
+        _controllerSettings!.ProcessMode = ProcessModeEnum.Disabled;
+        _controllerSettings.QueueFree();
         _controllerSettings = null;
 
         if (_controllerSettingsFromPause && PauseMenuOpen && _pauseMenu is not null)
         {
             _pauseMenu.Visible = true;
+            _pauseMenu.SetProcessUnhandledInput(true);
+            _pauseMenu.RestoreFocus();
         }
         else if (!PauseMenuOpen)
         {
             Input.MouseMode = Input.MouseModeEnum.Visible;
+            if (_sourceManager is not null) { _sourceManager.Visible = true; _sourceManager.RestoreFocus(); }
+            if (_destinationSelector is not null) _destinationSelector.Visible = true;
         }
+
+        MenuFocus.Restore(_settingsReturnFocus, []);
+        _settingsReturnFocus = null;
+        _player?.SuppressButtonsUntilRelease(_prePauseHeldButtons);
 
         _controllerSettingsFromPause = false;
         GD.Print("[controllers] settings closed");
@@ -122,6 +151,7 @@ public partial class OBPGame
 
         if (PauseMenuOpen)
         {
+            _pauseMenu!.ProcessMode = ProcessModeEnum.Disabled;
             _pauseMenu!.QueueFree();
             _pauseMenu = null;
         }
@@ -133,6 +163,7 @@ public partial class OBPGame
         }
 
         Input.MouseMode = _prePauseMouseMode;
+        _player?.SuppressButtonsUntilRelease(_prePauseHeldButtons);
         GD.Print("[pause] menu closed");
     }
 

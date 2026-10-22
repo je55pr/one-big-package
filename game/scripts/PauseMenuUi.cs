@@ -10,8 +10,18 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public event Action? QuitRequested;
     public event Action? SaveMovementStateRequested;
     public event Action? LoadMovementStateRequested;
+    public event Action? WeaponPreviewRequested;
+    public event Action? RefillPreviewRequested;
+    public event Action? PackPreviewRequested;
+    public event Action? SwingshotPreviewRequested;
+    public string EquipmentStatus { get; init; } = string.Empty;
+    public bool WeaponPreviewEnabled { get; init; }
     public bool MovementStatesAvailable { get; init; }
     private Label? _movementStatus;
+    private Button? _resume;
+    private readonly List<Control> _focusOrder = [];
+
+    public void RestoreFocus() => MenuFocus.Restore(_resume, _focusOrder);
 
     public void SetMovementStatus(string text)
     {
@@ -46,9 +56,17 @@ public sealed partial class PauseMenuUi : CanvasLayer
         };
         centre.AddChild(panel);
 
-        var column = new VBoxContainer();
+        var scroll = new ScrollContainer
+        {
+            FollowFocus = true,
+            CustomMinimumSize = new Vector2(460, Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 100, 220, 660)),
+        };
+        scroll.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+        scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
+        panel.AddChild(scroll);
+        var column = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         column.AddThemeConstantOverride("separation", 10);
-        panel.AddChild(column);
+        scroll.AddChild(column);
         column.AddChild(new Label
         {
             Text = "PAUSED",
@@ -63,6 +81,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
         });
 
         var resume = MakeButton("RESUME");
+        _resume = resume;
         var controller = MakeButton("CONTROLLER SETTINGS");
         var worlds = MakeButton("RETURN TO WORLDS");
         var quit = MakeButton("QUIT TO DESKTOP");
@@ -74,12 +93,25 @@ public sealed partial class PauseMenuUi : CanvasLayer
 
         column.AddChild(resume);
         column.AddChild(controller);
+        _focusOrder.AddRange([resume, controller]);
         if (MovementStatesAvailable)
         {
+            var weapons = MakeButton("TOGGLE WEAPON PREVIEW");
+            var refill = MakeButton("REFILL PREVIEW AMMO");
+            refill.Disabled = !WeaponPreviewEnabled;
+            var pack = MakeButton("CYCLE MOVEMENT PACK");
+            var swingshot = MakeButton("TOGGLE SWINGSHOT PREVIEW");
+            weapons.Pressed += () => WeaponPreviewRequested?.Invoke();
+            refill.Pressed += () => RefillPreviewRequested?.Invoke();
+            pack.Pressed += () => PackPreviewRequested?.Invoke();
+            swingshot.Pressed += () => SwingshotPreviewRequested?.Invoke();
+            column.AddChild(new Label { Text = "TESTING EQUIPMENT", ThemeTypeVariation = "HeaderSmall" });
+            column.AddChild(new Label { Text = EquipmentStatus, AutowrapMode = TextServer.AutowrapMode.WordSmart });
+            foreach (var control in new[] { weapons, refill, pack, swingshot }) { column.AddChild(control); _focusOrder.Add(control); }
             var save = MakeButton("SAVE MOVEMENT STATE  (F12)");
             var load = MakeButton("LOAD MOVEMENT STATE  (SHIFT+F12)");
             save.TooltipText = "Save a stationary player position, facing, camera and movement equipment for reproducing a bug.";
-            load.TooltipText = "Restore the saved movement setup in a fresh level. Enemies and crates restart; campaign progress is not restored.";
+            load.TooltipText = "Restore position, camera, inventory, defeated enemies, broken crates, cargo and transformations.";
             save.Pressed += () => SaveMovementStateRequested?.Invoke();
             load.Pressed += () => LoadMovementStateRequested?.Invoke();
             var movementButtons = new HBoxContainer();
@@ -89,9 +121,10 @@ public sealed partial class PauseMenuUi : CanvasLayer
             movementButtons.AddChild(save);
             movementButtons.AddChild(load);
             column.AddChild(movementButtons);
+            _focusOrder.AddRange([save, load]);
             _movementStatus = new Label
             {
-                Text = "Saves cover position, camera and equipment. Loading restarts enemies and crates.",
+                Text = "Save and restore your test setup, including defeated enemies and broken crates.",
                 AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 CustomMinimumSize = new Vector2(420, 0),
             };
@@ -99,16 +132,18 @@ public sealed partial class PauseMenuUi : CanvasLayer
         }
         column.AddChild(worlds);
         column.AddChild(quit);
+        _focusOrder.AddRange([worlds, quit]);
+        MenuFocus.WireVertical(_focusOrder);
 
         var hint = new Label
         {
-            Text = "ESC / BACK  Resume",
+            Text = "Start  Resume   ·   Cross  Select   ·   Triangle / Circle / Esc  Back",
             HorizontalAlignment = HorizontalAlignment.Center,
             Modulate = UiTheme.TextDim,
         };
         column.AddChild(hint);
 
-        Callable.From(resume.GrabFocus).CallDeferred();
+        RestoreFocus();
     }
 
     public override void _UnhandledInput(InputEvent @event)

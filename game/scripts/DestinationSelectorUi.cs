@@ -60,7 +60,7 @@ public partial class DestinationSelectorUi : CanvasLayer
             Modulate = UiTheme.TextDim,
         });
 
-        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
         outer.AddChild(scroll);
         var list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         list.AddThemeConstantOverride("separation", 12);
@@ -74,7 +74,7 @@ public partial class DestinationSelectorUi : CanvasLayer
 
         _hint = new Label
         {
-            Text = "ARROWS / D-PAD  Navigate    |    ENTER / CONFIRM  Travel    |    ESC / CANCEL  Game Sources",
+            Text = ControllerBindings.MenuHint,
             Modulate = UiTheme.TextDim,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             HorizontalAlignment = HorizontalAlignment.Center,

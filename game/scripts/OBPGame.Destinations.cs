@@ -13,6 +13,8 @@ public partial class OBPGame
     private PlayerHost? _rac1PlanetMapPausedPlayer;
     private Node.ProcessModeEnum? _rac1PlanetMapPreviousPlayerMode;
     private Input.MouseModeEnum _rac1PlanetMapPreviousMouseMode;
+    private bool _planetMapOwnsPause;
+    private int _preMapHeldButtons;
     private ObpDestination? _activeDestination;
     private string? _currentDestinationId;
     private bool _genericNavigationActive;
@@ -114,7 +116,7 @@ public partial class OBPGame
     {
         if (Rac1PlanetMapOpen)
             return true;
-        if (_mode != Mode.World || _args.CaptureFrame is not null ||
+        if (_mode != Mode.World || PauseMenuOpen || ControllerSettingsOpen || QuickSelectOpen || GetTree().Paused || _args.CaptureFrame is not null ||
             _world is not { Game: "rac1" } current ||
             current.LevelId != _rac1CampaignSession.Campaign.CurrentLevel ||
             _rac1CampaignSession.Travel.TransitionActive)
@@ -132,13 +134,16 @@ public partial class OBPGame
         }
 
         _rac1PlanetMapPreviousMouseMode = Input.MouseMode;
+        _preMapHeldButtons = _player?.MenuHeldButtons ?? 0;
         Input.MouseMode = Input.MouseModeEnum.Visible;
 
-        _rac1PlanetTravelUi = new Rac1PlanetTravelUi();
+        _rac1PlanetTravelUi = new Rac1PlanetTravelUi { ProcessMode = ProcessModeEnum.Always };
         _rac1PlanetTravelUi.TravelRequested += OnRac1PlanetTravelRequested;
         _rac1PlanetTravelUi.BackRequested += () => TryCloseRac1PlanetMap();
         AddChild(_rac1PlanetTravelUi);
         _rac1PlanetTravelUi.Populate(map);
+        GetTree().Paused = true;
+        _planetMapOwnsPause = true;
 
         GD.Print($"[rac1-travel] planet map shown — {map.UnlockedDestinations.Count} recovered destination(s)");
         return true;
@@ -149,8 +154,10 @@ public partial class OBPGame
         if (!Rac1PlanetMapOpen)
             return false;
 
-        _rac1PlanetTravelUi!.QueueFree();
+        _rac1PlanetTravelUi!.ProcessMode = ProcessModeEnum.Disabled;
+        _rac1PlanetTravelUi.QueueFree();
         _rac1PlanetTravelUi = null;
+        if (_planetMapOwnsPause) { GetTree().Paused = false; _planetMapOwnsPause = false; }
 
         if (_rac1PlanetMapPausedPlayer is { } player &&
             IsInstanceValid(player) &&
@@ -162,6 +169,7 @@ public partial class OBPGame
         _rac1PlanetMapPausedPlayer = null;
         _rac1PlanetMapPreviousPlayerMode = null;
         Input.MouseMode = _rac1PlanetMapPreviousMouseMode;
+        _player?.SuppressButtonsUntilRelease(_preMapHeldButtons);
         return true;
     }
 
@@ -242,6 +250,9 @@ public partial class OBPGame
         _activeDestination = destination;
         _destinationSelector?.QueueFree();
         _destinationSelector = null;
+
+        _sourceManager?.QueueFree();
+        _sourceManager = null;
 
         EnterProviderWorld(provider, source.Path, destination);
     }

@@ -1,0 +1,232 @@
+using Godot;
+using OBP.Godot;
+
+namespace OneBigPackage;
+
+/// <summary>Real Godot GUI/input regression. Sends logical joypad events, never desktop input.</summary>
+public partial class ControllerSmoke : Node
+{
+    private OBPGame _game = null!;
+    public override void _Ready() => _ = RunAsync();
+
+    private async Task RunAsync()
+    {
+        try
+        {
+            Engine.MaxFps = 120;
+            Input.SetIgnoreJoypadOnUnfocusedApplication(false);
+            GetTree().Root.Size = new Vector2I(960, 720);
+            GetTree().CreateTimer(90).Timeout += () => ApplicationLifecycle.RequestQuit(this, "controller-smoke-timeout", 1);
+            var args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+            _game = GD.Load<PackedScene>("res://scenes/OBPGame.tscn").Instantiate<OBPGame>();
+            _game.ProcessMode = ProcessModeEnum.Pausable;
+            AddChild(_game); await Frames(10);
+            bool titleDismissed = false;
+            var title = new TitleScreen(); title.Dismissed += () => titleDismissed = true;
+            _game.AddChild(title); await Frames(3);
+            await Press(JoyButton.Start); await Frames(55);
+            Require(titleDismissed, "Start did not dismiss the title screen");
+            _game.ShowSourceManagerFromBootstrap(); await Frames(5);
+            await Capture("sources");
+            Require(Focus() is Button, "Source menu has no controller focus");
+            var initial = Focus(); await Press(JoyButton.DpadDown);
+            Require(Focus() != initial, "D-pad does not navigate source controls");
+            await FocusButton("CONTROLLER SETTINGS"); await Press(JoyButton.A);
+            Require(Find<ControllerSettingsUi>() is { Visible: true }, "Cross does not open controller settings");
+            var settings = Find<ControllerSettingsUi>()!;
+            await Capture("controller-settings");
+            Require(Focus() is not null && settings.IsAncestorOf(Focus()), "Settings did not take focus");
+            if (Focus() is OptionButton)
+            {
+                await Press(JoyButton.A); await Press(JoyButton.B);
+                Require(IsInstanceValid(settings), "Closing device popup also closed settings");
+            }
+            await Press(JoyButton.Y);
+            Require(Find<ControllerSettingsUi>() is null && Focus() is Button { Text: "CONTROLLER SETTINGS" }, "Settings Back lost source-menu focus");
+            GD.Print("[controller-smoke] Cross / Triangle / D-pad, settings modal and restored focus PASS");
+
+            await FocusButton("SOURCE", contains: true); await Press(JoyButton.A);
+            var dialog = Find<FileDialog>();
+            Require(dialog is { Visible: true, UseNativeDialog: false }, "Source attachment escaped into a desktop-only dialog");
+            string fixture = System.IO.Path.GetFullPath(System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "controller-smoke", "browser"));
+            System.IO.Directory.CreateDirectory(System.IO.Path.Combine(fixture, "child"));
+            dialog!.CurrentDir = fixture; await Frames(5);
+            string originalDirectory = dialog.CurrentDir;
+            await Press(JoyButton.DpadDown); await Press(JoyButton.A);
+            Require(dialog.CurrentDir != originalDirectory, "Controller cannot enter directories in the disc picker");
+            await Press(JoyButton.B);
+            Require(Find<FileDialog>() is null && Focus() is Button, $"Circle did not cancel the disc picker and restore focus: visible={Find<FileDialog>()?.Visible}, focus={Focus()?.Name}");
+            GD.Print("[controller-smoke] controller source-file dialog and cancel PASS");
+            await CheckControllerWidgetsAsync();
+
+            if (args.Rac1Iso is not null || args.GcIso is not null || args.UyaIso is not null)
+            {
+                await FocusButton("ENTER WORLDS", contains: true); await Press(JoyButton.A);
+                var selector = Find<DestinationSelectorUi>();
+                Require(selector is not null, "World list did not open with Cross");
+                var beforeStick = Focus(); await Axis(JoyAxis.LeftY, 1); await Axis(JoyAxis.LeftY, 0);
+                Require(Focus() != beforeStick, "Left stick does not navigate worlds");
+                var visited = new HashSet<Control>();
+                await Button(JoyButton.DpadDown, true);
+                for (int i = 0; i < 100; i++) { if (Focus() is { } control) visited.Add(control); await Frames(1); }
+                await Button(JoyButton.DpadDown, false);
+                Require(visited.Count >= 4, "Holding a menu direction has no controlled repeat");
+                for (int i = 0; i < 18; i++) await Press(JoyButton.DpadDown);
+                var scroll = Descendants(selector!).OfType<ScrollContainer>().Single();
+                Require(scroll.ScrollVertical > 0, "World list did not scroll to its focused row");
+                await Capture("world-list-scrolled");
+                Require(Focus() is Button { Disabled: false }, "World list selected an unavailable destination");
+                await Press(JoyButton.Y);
+                Require(Find<SourceManagerUi>() is not null, "Triangle did not return from worlds to sources");
+                GD.Print("[controller-smoke] worlds stick/D-pad navigation, disabled rows and focus scrolling PASS");
+            }
+
+            await CheckRawGameplayAsync();
+            if (args.Rac1Iso is not null) await CheckWorldAsync();
+            GD.Print("[controller-smoke] PASS");
+            ApplicationLifecycle.RequestQuit(this, "controller-smoke-pass");
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[controller-smoke] FAIL: {ex}");
+            GetTree().Paused = false;
+            ApplicationLifecycle.RequestQuit(this, "controller-smoke-fail", 1);
+        }
+    }
+
+    private async Task CheckRawGameplayAsync()
+    {
+        _game.ProcessMode = ProcessModeEnum.Disabled;
+        // Independent input boundary: no gameplay queries or invented source state.
+        var input = new RawGamepadInput(); input.Read(true);
+        await Button(JoyButton.A, true);
+        Require(input.Read(true).JumpHeld, "Cross is not Jump");
+        input.SuppressButtonsUntilRelease();
+        Require(!input.Read(true).JumpHeld, "Menu dismissal leaked a held Cross into a jump");
+        await Button(JoyButton.A, false); input.Read(true);
+        await Button(JoyButton.RightShoulder, true);
+        int preserved = input.HeldButtons;
+        await Button(JoyButton.B, true); input.SuppressButtonsUntilRelease(preserved);
+        Require(input.Read(true).CrouchHeld && !input.Read(true).TraversalHeld, "Menu masks lost an existing crouch or leaked Circle");
+        await Button(JoyButton.A, true);
+        Require(input.Read(true).JumpHeld, "A held menu-dismissal button suppressed an unrelated new jump");
+        await Button(JoyButton.A, false); await Button(JoyButton.B, false); await Button(JoyButton.RightShoulder, false); input.Read(true);
+        await Button(JoyButton.X, true);
+        Require(input.Read(true).ActionHeld, "Square is not Wrench");
+        await Button(JoyButton.X, false); await Button(JoyButton.B, true);
+        Require(input.Read(true).TraversalHeld, "Circle is not equipped item");
+        await Button(JoyButton.B, false); await Button(JoyButton.RightShoulder, true);
+        Require(input.Read(true).CrouchHeld, "R1 is not Crouch");
+        await Button(JoyButton.RightShoulder, false); await Axis(JoyAxis.TriggerRight, 1);
+        Require(input.Read(true).CrouchHeld && !input.Read(false).CrouchHeld, "R2 crouch alias is not restricted to R&C1");
+        await Axis(JoyAxis.TriggerRight, 0); await Button(JoyButton.DpadRight, true);
+        Require(input.Read(true).Move.X == 1, "D-pad is not movement outside a menu");
+        await Button(JoyButton.DpadRight, false); await Axis(JoyAxis.LeftX, .05f);
+        Require(Math.Abs(input.Read(true).Move.X - .05f) < .00001f, "UI deadzone contaminated raw gameplay axes");
+        await Axis(JoyAxis.LeftX, 0);
+        _game.ProcessMode = ProcessModeEnum.Pausable;
+        GD.Print("[controller-smoke] gameplay face/shoulder bindings, D-pad movement and raw analogue range PASS");
+    }
+
+    private async Task CheckWorldAsync()
+    {
+        _game.OpenDestinationFromBootstrap("rac1:LEVEL0");
+        for (int i = 0; Find<PlayerHost>() is null && i < 600; i++) await Frames(1);
+        var player = Find<PlayerHost>(); Require(player is not null, "Controller world test did not load Veldin");
+        Require(Find<SourceManagerUi>() is null, "World entry retained the source menu over gameplay");
+        await Frames(50);
+        await Press(JoyButton.Start);
+        Require(GetTree().Paused && Find<PauseMenuUi>() is not null, "Start did not pause gameplay");
+        var pausedPosition = player!.GlobalPosition;
+        await Frames(20);
+        Require(player.GlobalPosition == pausedPosition, "World simulation continued through the pause menu");
+        await Capture("pause-menu");
+        await FocusButton("CONTROLLER SETTINGS"); await Press(JoyButton.A); await Press(JoyButton.B);
+        Require(GetTree().Paused && Find<PauseMenuUi>() is { Visible: true } && Focus() is Button, "Settings Back resumed gameplay or lost pause focus");
+        await Press(JoyButton.Start);
+        Require(!GetTree().Paused && Find<PauseMenuUi>() is null, "Start did not resume");
+        await Press(JoyButton.Back);
+        Require(Find<Rac1PlanetTravelUi>() is not null && GetTree().Paused, "Select did not open the map / suspend world simulation");
+        await Press(JoyButton.RightStick);
+        Require(Find<Rac1PlanetTravelUi>() is null && !GetTree().Paused, "R3 did not close the map");
+        await Press(JoyButton.Start);
+        await FocusButton("TOGGLE WEAPON PREVIEW"); await Press(JoyButton.A);
+        Require(!GetTree().Paused, "Preview selection left gameplay paused");
+        await Button(JoyButton.Y, true);
+        var quick = Find<WeaponQuickSelectUi>();
+        Require(quick is not null && GetTree().Paused && quick.Entries.Count == 15, "Triangle did not expose the preview arsenal");
+        await Press(JoyButton.RightShoulder); await Axis(JoyAxis.LeftX, 1); await Axis(JoyAxis.LeftX, 0);
+        Require(quick!.SelectedIndex >= 8, "R1 cannot reach the second quick-select page");
+        await Capture("quick-select");
+        await Button(JoyButton.Y, false);
+        Require(!GetTree().Paused && Find<WeaponQuickSelectUi>() is null, "Triangle release did not equip / restore gameplay");
+        await Press(JoyButton.Y); await Press(JoyButton.Y);
+        Require(Find<WeaponQuickSelectUi>() is null && !GetTree().Paused, "Double Triangle did not quick-swap the previous item");
+        Require(Descendants(_game).OfType<Label>().Any(label => label.Text == "Wrench"), "Quick swap did not actually equip the previous weapon");
+        await Button(JoyButton.Y, true); await Press(JoyButton.Start); await Button(JoyButton.Y, false);
+        Require(Find<WeaponQuickSelectUi>() is null && Find<PauseMenuUi>() is not null && GetTree().Paused, "Start nested an invalid pause over quick select");
+        await FocusButton("RETURN TO WORLDS"); await Press(JoyButton.A);
+        Require(Find<DestinationSelectorUi>() is not null && !GetTree().Paused, "Controller could not leave gameplay for world selection");
+        GD.Print("[controller-smoke] Start pause/settings, Select/R3 map, preview, paged Triangle selection and world return PASS");
+    }
+
+    private async Task CheckControllerWidgetsAsync()
+    {
+        var layer = new CanvasLayer { Layer = 400 }; _game.AddChild(layer);
+        var column = new VBoxContainer(); layer.AddChild(column);
+        var options = new OptionButton(); options.AddItem("First"); options.AddItem("Second"); options.AddItem("Third");
+        column.AddChild(options);
+        var slider = new HSlider { MinValue = 0, MaxValue = .3, Step = .01, CustomMinimumSize = new(200, 40) };
+        column.AddChild(slider); MenuFocus.WireVertical([options, slider]);
+        options.GrabFocus(); await Frames(3);
+        await Press(JoyButton.A); await Press(JoyButton.DpadDown); await Press(JoyButton.A);
+        Require(options.Selected == 1, $"Controller dropdown navigation skipped or ignored an item: {options.Selected}");
+        await Press(JoyButton.DpadDown);
+        Require(Focus() == slider, "Cannot focus a controller-adjustable slider");
+        await Press(JoyButton.DpadRight);
+        Require(Math.Abs(slider.Value - .01) < .00001, "Controller slider did not change by one step");
+        ControllerBindings.MenuNavigationSuspended = true;
+        await Axis(JoyAxis.LeftY, 1); await Frames(50); await Axis(JoyAxis.LeftY, 0);
+        Require(Focus() == slider, "Calibration stick motion changed menu focus");
+        ControllerBindings.MenuNavigationSuspended = false;
+        layer.QueueFree(); await Frames(3);
+        Find<SourceManagerUi>()!.RestoreFocus(); await Frames(3);
+        GD.Print("[controller-smoke] dropdown, slider and calibration navigation isolation PASS");
+    }
+
+    private async Task Capture(string name)
+    {
+        string? directory = System.Environment.GetEnvironmentVariable("OBP_CONTROLLER_CAPTURE_DIR");
+        if (directory is null || DisplayServer.GetName() == "headless") return;
+        var capture = await CaptureHarness.CaptureAsync(this, System.IO.Path.Combine(directory, name + ".png"), 2,
+            new Dictionary<string, object?> { ["fixture"] = "controller-navigation", ["stage"] = name });
+        Require(capture.Ok, "Controller UI capture failed");
+    }
+
+    private async Task FocusButton(string text, bool contains = false)
+    {
+        for (int i = 0; i < 160; i++)
+        {
+            if (Focus() is Button button && (contains ? button.Text.Contains(text, StringComparison.Ordinal) : button.Text == text)) return;
+            await Press(JoyButton.DpadDown);
+        }
+        throw new InvalidOperationException($"Cannot reach controller button: {text}; focus={Focus()?.Name}");
+    }
+    private Control? Focus() => GetViewport().GuiGetFocusOwner();
+    private T? Find<T>() where T : Node => Descendants(_game).OfType<T>().FirstOrDefault(node => !node.IsQueuedForDeletion());
+    private static IEnumerable<Node> Descendants(Node node)
+    {
+        foreach (var child in node.GetChildren()) { yield return child; foreach (var nested in Descendants(child)) yield return nested; }
+    }
+    private async Task Press(JoyButton button) { await Button(button, true); await Button(button, false); }
+    private async Task Button(JoyButton button, bool pressed)
+    {
+        Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = button, Pressed = pressed, Device = 0 }); await Frames(3);
+    }
+    private async Task Axis(JoyAxis axis, float value)
+    {
+        Input.ParseInputEvent(new InputEventJoypadMotion { Axis = axis, AxisValue = value, Device = 0 }); await Frames(3);
+    }
+    private async Task Frames(int count) { for (int i = 0; i < count; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame); }
+    private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
+}

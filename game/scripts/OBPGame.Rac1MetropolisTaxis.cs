@@ -130,7 +130,7 @@ public partial class OBPGame
         };
         if (!pressed || _mode != Mode.World || _rac1MetropolisTaxis is not { } taxis ||
             _player is not { } player || !IsInstanceValid(player) ||
-            _rac1Nanotech.Probe().IsDead || _args.CaptureFrame is not null)
+            _rac1Nanotech.Probe().IsDead || PauseMenuOpen || ControllerSettingsOpen || Rac1PlanetMapOpen || QuickSelectOpen || _args.CaptureFrame is not null)
             return false;
 
         if (!taxis.TryBoard(ToTaxiPoint(player.GlobalPosition)))

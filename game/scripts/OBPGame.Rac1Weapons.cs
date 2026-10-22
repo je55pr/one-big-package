@@ -82,8 +82,11 @@ public partial class OBPGame
     }
 
     private void ToggleRac1WeaponPreview()
+        => SetRac1WeaponPreview(Input.IsKeyPressed(Key.Shift));
+
+    private void SetRac1WeaponPreview(bool disable)
     {
-        if (Input.IsKeyPressed(Key.Shift))
+        if (disable)
         {
             _rac1WeaponPreviewInventory = null;
             _rac1BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
@@ -102,7 +105,7 @@ public partial class OBPGame
             {
                 _rac1BombGlove = new(_rac1Weapons); ResetRac1AdditionalWeapons();
             }
-            ReportMovementState("Full arsenal preview: [ / ] cycles weapons · E fires · 0 refills · Shift+0 restores campaign equipment.");
+            ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
         RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility();

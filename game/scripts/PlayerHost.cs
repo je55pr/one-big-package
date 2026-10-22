@@ -195,6 +195,8 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Current SDL/Godot controller diagnostic, when a joypad is connected.</summary>
     public RawGamepadDiagnostic? RawGamepadDiagnostic => _liveInput.Diagnostic;
+    public int MenuHeldButtons => _rawInput.HeldButtons;
+    public void SuppressButtonsUntilRelease(int preserveButtons = 0) => _rawInput.SuppressButtonsUntilRelease(preserveButtons);
 
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
     public string CameraControllerLabel =>
@@ -336,9 +338,10 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         _rawInput.Observe(@event);
-        if (UseRac1Gameplay && @event is InputEventJoypadButton { Pressed: true, ButtonIndex: JoyButton.DpadLeft or JoyButton.DpadRight } button)
+        if (@event.IsActionPressed(ControllerBindings.CameraCenter))
         {
-            Rac1WeaponCycleRequested?.Invoke(button.ButtonIndex == JoyButton.DpadLeft ? -1 : 1);
+            CenterCameraBehindPlayer();
+            GetViewport().SetInputAsHandled();
             return;
         }
 
@@ -401,7 +404,7 @@ public partial class PlayerHost : CharacterBody3D
 
         if (!Scripted)
         {
-            _liveInput = _rawInput.Read();
+            _liveInput = _rawInput.Read(UseRac1Gameplay);
             Rac1RemoteSteering = _liveInput.Move + _liveInput.CameraIntent;
             Rac1RemoteDetonate = Rac1RemoteControlActive && (_liveInput.CrouchHeld || _liveInput.ActionJustPressed);
             if (Rac1RemoteControlActive)

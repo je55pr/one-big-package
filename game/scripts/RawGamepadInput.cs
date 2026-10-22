@@ -26,6 +26,12 @@ internal sealed class RawGamepadInput
 
     private int? _activeDevice;
     private int? _announcedDevice;
+    private int _suppressedButtons = 15;
+
+    public int HeldButtons => (Input.IsActionPressed(Jump) ? 1 : 0) |
+        (Input.IsActionPressed(Crouch) || Input.IsActionPressed(ControllerBindings.CrouchAlternate) ? 2 : 0) |
+        (Input.IsActionPressed(Action) ? 4 : 0) | (Input.IsActionPressed(Traversal) ? 8 : 0);
+    public void SuppressButtonsUntilRelease(int preserveButtons = 0) => _suppressedButtons = HeldButtons & ~preserveButtons;
 
     public void Observe(InputEvent @event)
     {
@@ -33,7 +39,7 @@ internal sealed class RawGamepadInput
             _activeDevice = @event.Device;
     }
 
-    public RawPlayerInputFrame Read()
+    public RawPlayerInputFrame Read(bool rac1Gameplay = false)
     {
         int? device = ResolveActiveDevice();
         var rawMove = new Vector2(
@@ -55,16 +61,26 @@ internal sealed class RawGamepadInput
             _announcedDevice = null;
         }
 
+        bool jump = Input.IsActionPressed(Jump);
+        bool crouch = Input.IsActionPressed(Crouch) || rac1Gameplay && Input.IsActionPressed(ControllerBindings.CrouchAlternate);
+        bool action = Input.IsActionPressed(Action);
+        bool use = Input.IsActionPressed(Traversal);
+        int held = (jump ? 1 : 0) | (crouch ? 2 : 0) | (action ? 4 : 0) | (use ? 8 : 0);
+        _suppressedButtons &= held;
+        jump &= (_suppressedButtons & 1) == 0;
+        crouch &= (_suppressedButtons & 2) == 0;
+        action &= (_suppressedButtons & 4) == 0;
+        use &= (_suppressedButtons & 8) == 0;
         return new RawPlayerInputFrame(
             move,
             camera,
-            Input.IsActionPressed(Jump),
-            Input.IsActionPressed(Crouch),
-            Input.IsActionJustPressed(Action),
+            jump,
+            crouch,
+            action && Input.IsActionJustPressed(Action),
             diagnostic,
-            Input.IsActionPressed(Traversal),
-            Input.IsActionJustPressed(Traversal),
-            ActionHeld: Input.IsActionPressed(Action));
+            use,
+            use && Input.IsActionJustPressed(Traversal),
+            ActionHeld: action);
     }
 
     private static float Axis(StringName negative, StringName positive) =>

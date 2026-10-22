@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.Godot;
 using OBP.IO;
 using OBP.PS2;
 
@@ -24,10 +25,10 @@ public partial class OBPGame
     /// Attach a direct source argument to the shared source library. All world
     /// entry remains provider/destination based after the source is attached.
     /// </summary>
-    public void RememberCommandLineSource(ObpSourceGame game, string path)
+    public void RememberCommandLineSource(ObpSourceGame game, string path, bool persist = true)
     {
         EnsureSourceLibraryInitialized();
-        AttachExpectedSource(game, path, persist: true, reportStatus: false);
+        AttachExpectedSource(game, path, persist: persist, reportStatus: false);
     }
 
     /// <summary>
@@ -193,6 +194,7 @@ public partial class OBPGame
         _sourceManager.ForgetRequested += ForgetSource;
         _sourceManager.BrowseWorldsRequested += BrowseWorlds;
         _sourceManager.ControllerSettingsRequested += ShowControllerSettingsFromMenu;
+        _sourceManager.QuitRequested += () => ApplicationLifecycle.RequestQuit(this, "source-menu-quit");
         AddChild(_sourceManager);
         _sourceManager.Populate(_sources, TrilogyWorldProviders.Games);
 
@@ -206,23 +208,27 @@ public partial class OBPGame
 
     private void OpenSourcePicker(ObpSourceGame game)
     {
+        var returnFocus = GetViewport().GuiGetFocusOwner();
         var definition = _sources.Definition(game);
         var dialog = new FileDialog
         {
             FileMode = FileDialog.FileModeEnum.OpenFile,
             Access = FileDialog.AccessEnum.Filesystem,
             Title = $"Select {definition.DisplayName} disc image",
-            UseNativeDialog = true,
+            UseNativeDialog = false,
         };
         dialog.AddFilter("*.iso", "PS2 disc image");
         dialog.FileSelected += path =>
         {
             dialog.QueueFree();
             AttachExpectedSource(game, path);
+            MenuFocus.Restore(returnFocus, []);
         };
-        dialog.Canceled += dialog.QueueFree;
+        dialog.Canceled += () => { dialog.QueueFree(); MenuFocus.Restore(returnFocus, []); };
         AddChild(dialog);
-        dialog.PopupCentered(new Vector2I(1000, 640));
+        dialog.AddChild(new ControllerPopupInput());
+        dialog.PopupCenteredClamped(new Vector2I(1000, 640));
+        Callable.From(() => dialog.FindChildren("*", "Tree", recursive: true, owned: false).OfType<Tree>().FirstOrDefault()?.GrabFocus()).CallDeferred();
     }
 
     private void ForgetSource(ObpSourceGame game)

@@ -28,7 +28,7 @@ internal static class WorldSmokeHarness
         Func<Task>? Weapons = null);
 
     internal static bool IsRequested(CommandLineArgs args) =>
-        args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
+        args.ControllerSmoke || args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
         args.Rac1VeldinPlaySmoke ||
         args.Rac1MovementContactSmoke ||
         args.Rac1CombatContractSmoke ||

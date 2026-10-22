@@ -68,7 +68,7 @@ public sealed partial class TitleScreen : CanvasLayer
 
         _prompt = new Label
         {
-            Text = "PRESS ANY KEY",
+            Text = "PRESS START / CROSS / ENTER",
             HorizontalAlignment = HorizontalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore,
             Modulate = new Color(1, 1, 1, 0),

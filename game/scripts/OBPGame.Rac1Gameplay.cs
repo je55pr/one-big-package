@@ -55,6 +55,7 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
+        _lastQuickSelectTap = 0; _previousSelectedWeapon = null;
         ResetRac1MetropolisTaxis();
         _rac1NovalisWater = null;
         ResetRac1NovalisMusic();
@@ -261,7 +262,7 @@ public partial class OBPGame
                 : "environmental restart evidence: levels 0 and 2 only";
         string swim = _player?.Rac1SwimState is { } state
             ? $"   Water: {state.Water}   O2: {state.OxygenFraction:P0}" : string.Empty;
-        return $"R&C1 combat: X wrench · E equipped item · 1–7 weapons · 0 weapon preview/refill · {restart} · {_rac1CombatStatus}\n" +
+        return $"R&C1: Square wrench · Circle equipped item · Triangle quick select · Start testing options · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
             $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}{swim}";

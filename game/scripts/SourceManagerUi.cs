@@ -10,6 +10,7 @@ public partial class SourceManagerUi : CanvasLayer
     public event Action<ObpSourceGame>? ForgetRequested;
     public event Action? BrowseWorldsRequested;
     public event Action? ControllerSettingsRequested;
+    public event Action? QuitRequested;
 
     private readonly Dictionary<ObpSourceGame, Label> _statusLabels = new();
     private readonly Dictionary<ObpSourceGame, Button> _selectButtons = new();
@@ -52,7 +53,7 @@ public partial class SourceManagerUi : CanvasLayer
             Modulate = UiTheme.TextDim,
         });
 
-        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
         outer.AddChild(scroll);
         var cards = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         cards.AddThemeConstantOverride("separation", 10);
@@ -86,9 +87,13 @@ public partial class SourceManagerUi : CanvasLayer
         _focusOrder.Add(controllerSettings);
         outer.AddChild(controllerSettings);
 
+        var quit = new Button { Text = "QUIT TO DESKTOP", CustomMinimumSize = new Vector2(0, 42) };
+        quit.Pressed += () => QuitRequested?.Invoke();
+        outer.AddChild(quit); _focusOrder.Add(quit);
+
         _message = new Label
         {
-            Text = "ARROWS / D-PAD  Navigate    •    ENTER / CONFIRM  Select    •    ESC  Quit",
+            Text = ControllerBindings.MenuHint + "   ·   L1 / R1  Previous / next control",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             CustomMinimumSize = new Vector2(0, 42),
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -198,18 +203,12 @@ public partial class SourceManagerUi : CanvasLayer
         else _focusOrder.FirstOrDefault(button => IsInstanceValid(button) && !button.Disabled)?.GrabFocus();
     }
 
+    public void RestoreFocus() => MenuFocus.Restore(null, _focusOrder);
+
     private void WireFocus()
     {
-        var enabled = _focusOrder.Where(button => IsInstanceValid(button) && !button.Disabled).ToList();
-        for (int i = 0; i < enabled.Count; i++)
-        {
-            var current = enabled[i];
-            var previous = enabled[(i - 1 + enabled.Count) % enabled.Count];
-            var next = enabled[(i + 1) % enabled.Count];
-            current.FocusNeighborTop = current.GetPathTo(previous);
-            current.FocusPrevious = current.GetPathTo(previous);
-            current.FocusNeighborBottom = current.GetPathTo(next);
-            current.FocusNext = current.GetPathTo(next);
-        }
+        MenuFocus.WireVertical(_focusOrder);
+        if (!MenuFocus.Available(GetViewport().GuiGetFocusOwner()))
+            Callable.From(FocusInitialControl).CallDeferred();
     }
 }

@@ -5,6 +5,9 @@ its ammo. This does not acquire the weapons in the campaign inventory. Press
 **Shift+0** to return to campaign equipment. Ordinary acquisition still uses the
 source inventory; weapon vendors are not added by this pass.
 
+With a controller, use **Start → Testing Equipment → Toggle Weapon Preview**.
+The same menu restores campaign equipment and offers **Refill Preview Ammo**.
+
 | Key | Equipment |
 | --- | --- |
 | 1 | Wrench |
@@ -24,11 +27,14 @@ source inventory; weapon vendors are not added by this pass.
 | Shift+8 | Drone Device |
 | Shift+9 | Decoy Glove |
 
-**[ / ]** or **D-pad left / right** cycle owned weapons. The preview includes
+Hold **Triangle** and point with the **left stick / D-pad**, then release to
+equip. **L1 / R1** changes page; double-tap Triangle to swap the previous item.
+Keyboard **[ / ]** still cycles owned weapons. Outside the selector, the D-pad
+moves Ratchet. The preview includes
 all fifteen ordinary weapons and the wrench. Gold upgrades remain unimplemented.
 
-Hold **E / east face** to use the selected weapon. **X / west face** continues to
-use the wrench. Turn off the existing F11 Swingshot preview before testing guns.
+Hold **E / Circle** to use the selected weapon. **X / Square** continues to
+use the wrench. Selecting a weapon exits the Swingshot preview.
 
 After selecting a weapon, release all input: Ratchet should return to ordinary
 idle with his head attached, and no firing loop should continue. Check this again
