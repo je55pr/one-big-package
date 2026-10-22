@@ -386,14 +386,68 @@ provide the source-owned progression producers instead.
 
 ## Ordinary-input integration gate and remaining limits
 
+### Novalis route mechanisms
+
+The Plumber route now hosts the original level-1 mechanism families below.
+Native state, thresholds and motion live in `Rac1NovalisMechanisms`; the Godot
+adapter supplies player/camera facts and collision presentation. Admission is
+restricted to the supported original NTSC-U Novalis build.
+
+| Family | Authored instances | Original updater | Recovered law |
+|---|---|---|---|
+| Class 701 staircase rocks | 711..713 | `0x002f9080` | PVar `+0x80` selects volume 18's centre, not a standing-on-rock trigger. Player height must reach its centre and planar distance must be <10; native run-mode admits 0/1/9. Delays are 45/60/73 ticks, then 30-unit/s² acceleration drops each rock exactly 20 units. The terminal rock never retriggers. |
+| Class 703/715 pistons | 714/715, 727..731 | `0x002f95c0` | PVar `+0xa4` selects the initial end, `+0xa8` is travel height, `+0xb0` is seconds. Rest 120 ticks; travel for integer-truncated `seconds*60` ticks. Original heights are 2/4/4.5 and durations 22/45 ticks. Return to the authored end snaps to its original height. |
+| Class 768/769 approach doors | 893..900, four pairs | `0x002fed68` | PVar `+0x14` is reach 5. Open at strict planar reach and strict vertical difference <2. Each half translates ±2 along its native yaw. Close only when both player and camera exceed 1.1 times reach; reapproach reverses closing. Sound 0 belongs to class 768 only. |
+
+The finite single-precision recurrence preserves EE ADD/SUB/MUL truncation,
+including door progress taking 21 updates to reach its clamp; nearest-rounded
+host arithmetic would change this transition. `research/generated/rac1-novalis-mechanisms.json`
+retains payload-free original-code observations for all 18 authored mechanisms,
+including piston endpoint returns, door reversal/camera hold, trigger boundaries and
+a restored-rock command-bit variant. Code and overlay hashes are checked by
+retail tests. The optional generator executes the authorized original MIPS via
+the same pinned external interpreter used by the mission probe:
+
+```powershell
+dotnet run --project tools/OBP.Rac1NovalisRouteProbe -c Release -- --iso $env:OBP_RAC1_ISO --reference-root <rac1-native-game-checkout> --cxx <C++-compiler> --out research/generated/rac1-novalis-mechanisms.json
+```
+
+Godot collision uses the imported render triangles, **not recovered PS2 Moby
+collision primitives**. Dynamic support is sampled at the carried position;
+the anchor displacement is converted from native Z-up before combining it
+with scene movement. Query/contact ordering tolerance is bounded by that
+support's current displacement. This is host contact policy. Standing riders
+retain ordinary animation and can jump off/land on the platform. Dead players
+do not activate staircase rocks; host ordinary living Ratchet supplies run mode
+0, without claiming to reconstruct all native mode writers.
+
+`--rac1-novalis-route-smoke` stages authored locations, then checks approach
+rock activation, piston rise/descent with a standing rider, Cross and landing,
+and closed/open door collision. It is a **mechanism fixture**, not a solved
+route or naturally completed purchase. A human-recorded Plumber run remains
+the route acceptance gate. The opening Veldin-to-Novalis encounter has been
+completed by the user through ordinary gameplay; recorded Novalis shallow-water
+movement/jumps have also replayed without observed divergence.
+
+Remaining mechanism boundaries: class-726 path lift on the other Novalis branch,
+rock dust/shake/scripted-camera release and forced hero-state reset, exact Moby
+contact primitives, native command-index assignment/checkpoint persistence.
+The source restored-rock arm is modeled/tested but its command bits are not
+silently serialized through another system. Mechanisms currently rebuild on
+level reload; campaign destination discovery/purchases use their existing
+separate persistence boundary.
+
+### Human progression gate
+
 `tools/rac1-mission-play-smoke.ps1` is a **human-played** integration gate,
 separate from the injected campaign smoke. It observes a clean Veldin encounter,
 Novalis admission, the funded Plumber purchase, a real death/retry, map travel
 `1 -> 2 -> 1`, and duplicate-free saved admissions. A second process checks
 the save and purchased actor's retirement. It never supplies movement, currency,
 transforms, events or developer travel. Closing early is cancellation. Full
-ordinary playthrough validation is pending the user's test; the abandoned
-automated route did not complete it.
+Plumber-route validation is pending the user's recording; the abandoned
+automated route did not complete it. The earlier Veldin-to-Novalis segment was
+subsequently completed by the user through ordinary gameplay.
 
 Godot consumes native scene/movie requests with acknowledgement cards. They
 preserve source-selected order and callback ownership; cinematic playback,
