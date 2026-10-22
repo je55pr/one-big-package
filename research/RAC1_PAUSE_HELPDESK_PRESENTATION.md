@@ -1,0 +1,54 @@
+# R&C1 pause, inventory and HelpDesk Godot presentation
+
+Status: first native-art-based presentation / host navigation implemented on feature branch, 2026-10-22. **This is not a retail-perfect menu recreation.**
+
+## Source and ownership
+
+The runtime requires a supported user-attached NTSC-U `SCUS-97199` disc. `Rac1UiAssets` decodes 326 HUD animation frames, three bitmap fonts with native spacing and the original localisation archive directly into memory. `Rac1RetailUiAssets` adapts those to Godot; no retail images, font byte data, executable bytes or game text content are checked into this repository.
+
+The public Lombyte decompilation is an *architecture lead*, not imported code:
+
+- `src/ui/menus/update_menu_system.c`: page transition timer of 12 game ticks; current/pending-focus and page enter/leave state
+- `src/ui/menus/pause/draw_pause_ring.c`: native item icon family and pulsing focus treatment
+- `src/ui/menus/draw_menu_item_grid.c`: availability, equipped frame variant and selected-grid rendering
+- `src/ui/help/draw_help.c`, `update_help_state.c`, `help_draw_prompt.c`: prompt, frame expansion, text fades and dismissal phases
+
+## Current implementation
+
+- `Rac1RetailMenuNavigation` is source-game-specific but purely presentational. It owns seven retail/OBP page identities, a deterministic 12-tick page transition, per-page focus restoration, and an explicit equipped/locked admission predicate. It **does not** mutate inventory/campaign data.
+- `PauseMenuUi` now takes a `RetailEnabled` branch only for an active R&C1 session with successfully attached source data. The fallback original OBP pause menu is preserved for other games/unattached assets.
+- Root contains the original six menu topic names in the documented order: Weapons, Gadgets, Quick Select, Items, Help and Options. Start/Resume, World selector, configuration and developer commands are OBP host navigation and visibly distinguished. The Development page contains all original opt-in debug output, equipment preview/refill, movement pack, swingshot preview, save/load reproduction callbacks.
+- Weapons and gadgets use recovered native IDs, icon animation IDs and runtime-decoded font/PNG-equivalent sprites, with owned/equipped/locked display flags. The weapon page emits an equip *request* only for owned weapons; `OBPGame.OnRac1WeaponSelectionRequested` remains the final gameplay authority. Gadgets/items and Quick Select are **read-only presentations** until the native menu's actual assignment/admission semantics can be integrated safely with campaign save state. They are not fake progression toggles.
+- Godot skin primitives accept icon animation/frame IDs, render a stretchable-ish `0x7580` panel, expose font/text lookup and a highlight pulse. Source glyph bitmap RGBA is whitened only in a transient **Godot tintable copy** so labels achieve readable contrast; glyph alpha, UV coordinates and horizontal advances remain as decoded. The original palette/color and panel stretch geometry still need retail screenshot matching.
+- `Rac1HelpDeskPresentation` is a presentation-only queued state machine, with explicit opening, prompt, expansion, text fade, steady text and closing. `Rac1HelpDeskView` renders with source fonts and HUD frame/button sprites. The Help page uses the original Help category headings while displaying provisional category-label text. The in-world `PlayerHud` accepts the existing `HudContextPrompt` snapshot as input and renders a HelpDesk-style framed prompt instead of another permanent generic card when retail assets are attached.
+- Game, keyboard and pad input continue to route through the existing `ControllerBindings` and `ControllerMenuNavigation` rather than taking gamepad stick events in the widgets. No change to `WeaponQuickSelectUi.cs` or movement input ownership (#164).
+
+## Validation and screenshots
+
+- `tests/OBP.Tests/Rac1RetailMenuNavigationTests.cs` covers atomic 12-tick page handoff, focus restoration, owned/locked gating, HelpDesk phases, queued messages and invalid tick inputs.
+- An isolated Godot `res://diagnostics/Rac1RetailUiSmoke.tscn` actually instantiates the retail widget with in-memory game assets (with a locally attached R&C1 ISO). It sends injected joystick D-pad/A and keyboard Escape events, verifies page navigation, locked/owned presentation, equipped callback, HelpDesk expansion/dismissal, application options callback and development page separation, and closes with a nonzero exit code on failures.
+- Non-headless rendering outputs local ignored captures under `captures/rac1-retail-ui/`: root, weapons, gadgets, helpdesk, options, development. These captures are private visual comparisons and must not enter Git.
+- The existing full `ControllerSmoke` was updated to navigate separate Options and OBP Development pages. Isolated Godot smoke is a **GUI functional integration**, not a proof that an ordinary retail campaign was played in full.
+
+### Explicit visual comparison vs retail
+
+Reference: [PCSX2 Wiki R&C1 2002 pause screenshot](https://wiki.pcsx2.net/images/5/59/V1.5.0-dev-2155_-_Ratchet_%26_Clank_-software_mode-.jpg), source-original visual reference only.
+
+| Aspect | Original retail reference | This Godot implementation | Gap |
+|---|---|---|---|
+| Pause root | Six compact horizontally-striped, gold-border rows on top of the 3D scene, selected yellow | Six source-text-labelled, focused rows, outlined and centred; OBP navigation below | Still uses Godot panel/backdrop; no PS2 scrolling stripes or blur; wider layout |
+| Typeface | Original pixel bitmap glyphs with varied color | Exact native font atlases/widths, Godot tintable alpha copy | Colour, baseline, shadow intensity and size need measurement |
+| Weapons | Icons with native frame selection and preview object | 15 native item icon IDs, owned/equipped/locked cards | No rotating 3D preview, source equipment description or confirmed gold frame state |
+| Gadgets | Native inventory/category previews | Selected named gadget IDs with icon and ownership, presentation-only | Actual native gadget equip and preview still missing |
+| Quick Select page | Retail eight-slot reassignment/selection | Read-only current save-slot identities | Slot-edit navigation and confirmation not yet recovered |
+| HelpDesk | Contextual queued message activation, opening, audio gate, automatic timeout | Queued text/animation state driven by injected UI requests or `HudContextPrompt` snapshots | No retail native help-message ID/voice playback, button-glyph substitution, or fade/audio timing |
+| Controls | Original gamepad semantics | Existing OBP pad/keyboard focus, back and accept | Need native button sound/edge semantics and handheld-controller testing |
+
+Do not claim per-frame/menu fidelity until PCSX2 matched-state captures show colour, spacing, sprite animation, input gating and 3D previews comparable. A screenshot captured from isolated UI state is not the same as retail campaign gameplay.
+
+## Work remaining (bounded follow-ons)
+
+1. Recover native `MenuItemInfo` and HelpDesk message bindings from an actual retail menu session, not a zero-initialized file-backed table, including voice subtracks and button-glyph controls.
+2. Implement quick-slot assignment and gadget equipment navigation through native campaign sessions and save-backed state when admitted; no source-owned save values should be edited by UI.
+3. Recreate retail's 3D item-preview camera, fly-in/out frame geometry, per-item gold states, audio and HelpDesk timeouts.
+4. Test handheld joypad on real ordinary Veldin and verify interaction with pause, open dialogs, death/restart, and non-R&C1 worlds.

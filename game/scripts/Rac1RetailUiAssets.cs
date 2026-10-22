@@ -71,7 +71,15 @@ public static class Rac1RetailUiAssets
         // 16px cells, native top offsets and character advances.
         font.SetCacheAscent(0, size, baseline);
         font.SetCacheDescent(0, size, 4);
-        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height, false, Image.Format.Rgba8, source.Atlas.Rgba);
+        // Godot colours text through glyph modulation. Keep the retail alpha,
+        // UV and advances but whiten RGB in the runtime-only tintable atlas.
+        byte[] tintable = source.Atlas.Rgba.ToArray();
+        for (int index = 0; index < tintable.Length; index += 4)
+        {
+            if (tintable[index + 3] == 0) continue;
+            tintable[index] = tintable[index + 1] = tintable[index + 2] = byte.MaxValue;
+        }
+        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height, false, Image.Format.Rgba8, tintable);
         font.SetTextureImage(0, cacheSize, 0, image);
         foreach (var glyph in source.Glyphs.Where(g => g.Printable))
         {
