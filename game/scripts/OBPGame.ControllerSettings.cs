@@ -40,7 +40,7 @@ public partial class OBPGame
 
         _prePauseMouseMode = Input.MouseMode;
         _prePauseHeldButtons = _player?.MenuHeldButtons ?? 0;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        UiPointerModality.MenuOpened();
 
         _pauseMenu = new PauseMenuUi
         {
@@ -229,7 +229,7 @@ public partial class OBPGame
             _pauseOwnsTreePause = false;
         }
 
-        Input.MouseMode = _prePauseMouseMode;
+        UiPointerModality.MenuClosed(_prePauseMouseMode);
         _player?.SuppressButtonsUntilRelease(_prePauseHeldButtons);
         GD.Print("[pause] menu closed");
     }

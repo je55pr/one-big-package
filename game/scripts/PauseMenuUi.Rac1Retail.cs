@@ -24,6 +24,9 @@ public sealed partial class PauseMenuUi
     private Rac1HelpDeskView? _retailHelp;
     private readonly List<Control> _retailFocusOrder = [];
     private double _retailTickFraction;
+    private int _retailEquipmentPage;
+    private int _retailDevelopmentPage;
+    private const int EquipmentPageSize = 9;
 
     private void BuildRetail()
     {
@@ -75,18 +78,16 @@ public sealed partial class PauseMenuUi
         column.AddChild(_retailTitle);
         var separator = new HSeparator();
         column.AddChild(separator);
-        var scroll = new ScrollContainer
+        // No engine scrollbars. Retail pages are bounded and use explicit
+        // previous/next controls when their data exceeds the visible grid.
+        _retailColumn = new VBoxContainer
         {
-            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
-            FollowFocus = true,
             CustomMinimumSize = new Vector2(700, 410),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
-        column.AddChild(scroll);
-        _retailColumn = new VBoxContainer();
-        _retailColumn.AddThemeConstantOverride("separation", 11);
-        _retailColumn.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        scroll.AddChild(_retailColumn);
+        _retailColumn.AddThemeConstantOverride("separation", 6);
+        column.AddChild(_retailColumn);
 
         column.AddChild(new Label
         {
@@ -125,6 +126,8 @@ public sealed partial class PauseMenuUi
     {
         if (_retailNavigation.Navigate(target))
         {
+            _retailEquipmentPage = 0;
+            _retailDevelopmentPage = 0;
             _retailFocus = null;
             GetViewport().GuiReleaseFocus();
         }
@@ -203,15 +206,17 @@ public sealed partial class PauseMenuUi
         grid.AddThemeConstantOverride("h_separation", 8);
         grid.AddThemeConstantOverride("v_separation", 8);
         _retailColumn.AddChild(grid);
-        foreach (var entry in entries)
+        int pageCount = Math.Max(1, (entries.Count + EquipmentPageSize - 1) / EquipmentPageSize);
+        _retailEquipmentPage = Math.Clamp(_retailEquipmentPage, 0, pageCount - 1);
+        foreach (var entry in entries.Skip(_retailEquipmentPage * EquipmentPageSize).Take(EquipmentPageSize))
         {
             var item = entry;
-            string state = item.Equipped ? "  (ON)" : !item.Owned ? "  [LOCKED]" : "";
-            var button = new Button
+            string state = item.Equipped ? "\n(ON)" : !item.Owned ? "\n[LOCKED]" : "";
+            var button = new Rac1RetailMenuButton
             {
                 Text = item.Name + state,
                 Name = $"RetailItem_{item.NativeId}",
-                CustomMinimumSize = new Vector2(208, 66),
+                CustomMinimumSize = new Vector2(208, 78),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 ClipText = true,
                 FocusMode = Control.FocusModeEnum.All,
@@ -230,10 +235,12 @@ public sealed partial class PauseMenuUi
                 foreach (var other in grid.GetChildren().OfType<Button>())
                 {
                     if (other.Name.ToString().StartsWith("RetailItem_"))
-                        other.Text = other.Text.Replace("  (ON)", "");
+                        other.Text = other.Text.Replace("\n(ON)", "");
                 }
-                button.Text = item.Name + "  (ON)";
+                button.Text = item.Name + "\n(ON)";
             };
+            button.FocusEntered += () => Rac1RetailMenuAudio.Play(0);
+            button.Pressed += () => Rac1RetailMenuAudio.Play(1);
             grid.AddChild(button);
             _retailFocusOrder.Add(button);
         }
@@ -244,7 +251,29 @@ public sealed partial class PauseMenuUi
             Modulate = UiTheme.TextDim,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         });
+        if (pageCount > 1)
+        {
+            var nav = new HBoxContainer();
+            nav.AddThemeConstantOverride("separation", 8);
+            _retailColumn.AddChild(nav);
+            if (_retailEquipmentPage > 0)
+                AddRetailButton("◂ PREVIOUS", () => ChangeRetailEquipmentPage(-1), parent: nav);
+            nav.AddChild(new Label
+            {
+                Text = $"  PAGE {_retailEquipmentPage + 1} / {pageCount}  ",
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            if (_retailEquipmentPage + 1 < pageCount)
+                AddRetailButton("NEXT ▸", () => ChangeRetailEquipmentPage(1), parent: nav);
+        }
         AddRetailButton("◂ BACK", () => NavigateRetail(Rac1RetailMenuPage.Root));
+    }
+
+    private void ChangeRetailEquipmentPage(int delta)
+    {
+        _retailEquipmentPage += delta;
+        _retailNavigation.Focus(0, _retailFocusOrder.Count);
+        RebuildRetailPage();
     }
 
     private void BuildHelpPage()
@@ -257,10 +286,14 @@ public sealed partial class PauseMenuUi
         _retailHelp = new Rac1HelpDeskView
         {
             ExpandOnPrompt = false,
-            CustomMinimumSize = new Vector2(620, 120),
+            CustomMinimumSize = new Vector2(620, 85),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         _retailColumn.AddChild(_retailHelp);
+        var categoryGrid = new GridContainer { Columns = 2, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
+        categoryGrid.AddThemeConstantOverride("h_separation", 7);
+        categoryGrid.AddThemeConstantOverride("v_separation", 4);
+        _retailColumn.AddChild(categoryGrid);
         int[] categoryIds = [20209, 20210, 20211, 20212, 20213, 20214, 20215, 20216];
         foreach (int id in categoryIds)
         {
@@ -269,7 +302,7 @@ public sealed partial class PauseMenuUi
             {
                 _retailHelp?.Prompt(label);
                 _retailHelp?.Open();
-            });
+            }, parent: categoryGrid);
         }
         _retailColumn.AddChild(new Label
         {
@@ -315,26 +348,46 @@ public sealed partial class PauseMenuUi
 
         if (MovementStatesAvailable)
         {
-            _retailColumn.AddChild(new Label { Text = EquipmentStatus, AutowrapMode = TextServer.AutowrapMode.WordSmart });
-            AddRetailButton("TOGGLE WEAPON PREVIEW", () => WeaponPreviewRequested?.Invoke());
-            AddRetailButton("REFILL PREVIEW AMMO", () => RefillPreviewRequested?.Invoke(), !WeaponPreviewEnabled);
-            AddRetailButton("CYCLE MOVEMENT PACK", () => PackPreviewRequested?.Invoke());
-            AddRetailButton("TOGGLE SWINGSHOT PREVIEW", () => SwingshotPreviewRequested?.Invoke());
-            AddRetailButton("SAVE STATE  (F12)", () => SaveMovementStateRequested?.Invoke());
-            AddRetailButton("LOAD  (SHIFT+F12)", () => LoadMovementStateRequested?.Invoke());
-            _movementStatus = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
-            _retailColumn.AddChild(_movementStatus);
+            if (_retailDevelopmentPage == 0)
+            {
+                _retailColumn.AddChild(new Label
+                {
+                    Text = EquipmentStatus,
+                    AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                });
+                AddRetailButton("TOGGLE WEAPON PREVIEW", () => WeaponPreviewRequested?.Invoke());
+                AddRetailButton("REFILL PREVIEW AMMO", () => RefillPreviewRequested?.Invoke(), !WeaponPreviewEnabled);
+                AddRetailButton("CYCLE MOVEMENT PACK", () => PackPreviewRequested?.Invoke());
+                AddRetailButton("TOGGLE SWINGSHOT PREVIEW", () => SwingshotPreviewRequested?.Invoke());
+                AddRetailButton("NEXT PAGE ▸", () => ChangeRetailDevelopmentPage(1));
+            }
+            else
+            {
+                AddRetailButton("SAVE STATE  (F12)", () => SaveMovementStateRequested?.Invoke());
+                AddRetailButton("LOAD  (SHIFT+F12)", () => LoadMovementStateRequested?.Invoke());
+                _movementStatus = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
+                _retailColumn.AddChild(_movementStatus);
+                AddRetailButton("◂ PREVIOUS PAGE", () => ChangeRetailDevelopmentPage(-1));
+            }
         }
         AddRetailButton("◂ BACK", () => NavigateRetail(Rac1RetailMenuPage.Root));
     }
 
-    private void AddRetailButton(string label, Action action, bool disabled = false)
+    private void ChangeRetailDevelopmentPage(int delta)
     {
-        var button = new Button
+        _retailDevelopmentPage += delta;
+        _retailNavigation.Focus(0, _retailFocusOrder.Count);
+        RebuildRetailPage();
+    }
+
+    private void AddRetailButton(string label, Action action, bool disabled = false, Container? parent = null)
+    {
+        var button = new Rac1RetailMenuButton
         {
             Text = label,
-            CustomMinimumSize = new Vector2(0, 47),
+            CustomMinimumSize = new Vector2(0, 43),
             FocusMode = Control.FocusModeEnum.All,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             Disabled = disabled,
         };
         if (_retailNavigation.Page == Rac1RetailMenuPage.Root && label != "OBP DEVELOPMENT TOOLS  ▸" && label != "RESUME")
@@ -361,8 +414,9 @@ public sealed partial class PauseMenuUi
                 BorderWidthBottom = 3,
             });
         }
-        button.Pressed += action;
-        _retailColumn.AddChild(button);
+        button.FocusEntered += () => Rac1RetailMenuAudio.Play(0);
+        button.Pressed += () => { Rac1RetailMenuAudio.Play(1); action(); };
+        (parent ?? _retailColumn).AddChild(button);
         _retailFocusOrder.Add(button);
     }
 

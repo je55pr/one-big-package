@@ -12,6 +12,12 @@ namespace OBP.RAC1.Presentation;
 public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, Rac1BitmapFont> Fonts,
     IReadOnlyList<IReadOnlyDictionary<uint, byte[]>> Languages)
 {
+    // Per-level resident PS2 effect textures referenced by the retail menu's
+    // flashing panel (0x19/0x1A/0x1C); these are decoded only from the user disc.
+    public IReadOnlyDictionary<int, OBP.Runtime.RuntimeTexture> MenuEffects { get; init; } =
+        new Dictionary<int, OBP.Runtime.RuntimeTexture>();
+    public IReadOnlyDictionary<int, OBP.Runtime.Audio.RuntimeAudioClip> MenuSounds { get; init; } =
+        new Dictionary<int, OBP.Runtime.Audio.RuntimeAudioClip>();
     public static Rac1UiAssets Read(IRandomAccessReader disc)
     {
         var boot = Ps2Boot.OpenDisc(disc);
@@ -21,12 +27,17 @@ public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, R
         byte[] index = disc.Read((long)Rac1DiscIndex.IndexLba * Rac1DiscIndex.SectorBytes, Rac1DiscIndex.IndexSize);
         var hud = Rac1HudBank.Read(disc, index);
         var core = Rac1LevelCore.Open(disc, catalogue.Levels.Single(level => level.LevelId == 0));
-        var atlases = Rac1FxTextures.Read(core, new HashSet<int> { 1, 2, 3 });
+        var atlases = Rac1FxTextures.Read(core, new HashSet<int> { 1, 2, 3, 0x19, 0x1A, 0x1C });
         var segments = Ps2Boot.ReadBootProgramHeaders(boot);
         (string Style, int Id, long Address)[] tables = [("regular", 1, 0x1df050), ("small", 2, 0x1df3f0), ("large", 3, 0x1df790)];
         var fonts = tables.ToDictionary(t => t.Style, t => Rac1BitmapFont.Decode(t.Style, atlases[t.Id],
             Elf32Reader.ReadVirtualRange(boot.BootExecutable, segments, t.Address, Rac1BitmapFont.GlyphCount * 4)));
-        return new(hud, fonts, DecodeLanguages(ReadArchive(disc, index, 0x1528, 2 * 1024 * 1024)));
+        return new Rac1UiAssets(hud, fonts, DecodeLanguages(ReadArchive(disc, index, 0x1528, 2 * 1024 * 1024)))
+        {
+            MenuEffects = atlases.Where(pair => pair.Key is 0x19 or 0x1A or 0x1C)
+                .ToDictionary(pair => pair.Key, pair => pair.Value),
+            MenuSounds = Rac1MenuAudioBank.Read(disc, index),
+        };
     }
 
     internal static byte[] ReadArchive(IRandomAccessReader disc, byte[] index, int field, int cap)

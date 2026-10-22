@@ -93,7 +93,7 @@ public partial class Rac1PlanetTravelUi : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         });
         var scroll = new ScrollContainer
-        {
+        { VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
             FollowFocus = true,
         };

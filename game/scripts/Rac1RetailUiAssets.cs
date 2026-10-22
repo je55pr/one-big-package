@@ -13,6 +13,7 @@ public static class Rac1RetailUiAssets
 {
     private static readonly Dictionary<string, FontFile> Fonts = new();
     private static readonly Dictionary<(ushort, int), Texture2D?> Sprites = new();
+    private static readonly Dictionary<int, Texture2D?> Effects = new();
     private static Rac1UiAssets? _assets;
     public static bool IsLoaded => _assets is not null;
 
@@ -31,6 +32,7 @@ public static class Rac1RetailUiAssets
         _assets = null;
         Fonts.Clear();
         Sprites.Clear();
+        Effects.Clear();
     }
 
     public static string Text(int nativeTextId, string fallback) =>
@@ -51,6 +53,20 @@ public static class Rac1RetailUiAssets
         if (_assets?.Hud.DecodeFrame(nativeAnimationId, frame) is not { } texture) return Sprites[key] = null;
         using var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
         return Sprites[key] = ImageTexture.CreateFromImage(image);
+    }
+
+    /// <summary>The original resident menu FX texture, not a stock Godot pattern.</summary>
+    public static OBP.Runtime.Audio.RuntimeAudioClip? Sound(int sharedBankSlot) =>
+        _assets is { } assets && assets.MenuSounds.TryGetValue(sharedBankSlot, out var sound)
+            ? sound : null;
+
+    public static Texture2D? Effect(int nativeId)
+    {
+        if (Effects.TryGetValue(nativeId, out var cached)) return cached;
+        if (_assets is not { } assets || !assets.MenuEffects.TryGetValue(nativeId, out var texture))
+            return Effects[nativeId] = null;
+        using var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
+        return Effects[nativeId] = ImageTexture.CreateFromImage(image);
     }
 
     private static FontFile CreateFont(Rac1BitmapFont source)

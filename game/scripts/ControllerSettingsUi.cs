@@ -107,7 +107,7 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         var outer = new VBoxContainer();
         outer.AddThemeConstantOverride("separation", 12);
         var scroll = new ScrollContainer
-        {
+        { VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             FollowFocus = true,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,

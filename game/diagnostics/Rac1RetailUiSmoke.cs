@@ -35,6 +35,8 @@ public partial class Rac1RetailUiSmoke : Node
                 [
                     new(10, "Bomb Glove", true, true, 0xEA6A),
                     new(15, "Blaster", false, false, 0xEA6F),
+                    .. Enumerable.Range(0, 13).Select(i =>
+                        new PauseMenuUi.RetailItem(60 + i, $"Test slot {i + 1}", false, false)),
                 ],
                 Gadgets = [new(12, "Swingshot", true, false, 0xEA6C)],
                 QuickSlots = [new(10, "Bomb Glove", true, true, 0xEA6A)],
@@ -48,7 +50,21 @@ public partial class Rac1RetailUiSmoke : Node
             await Frames(4);
             Require(GetViewport().GuiGetFocusOwner() is Button { Text: "WEAPONS" }, "No initial Weapons focus");
             await Capture("root");
+            Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Root retained forbidden ScrollContainer");
+            Input.MouseMode = Input.MouseModeEnum.Visible;
             await Press(JoyButton.DpadDown);
+            Require(UiPointerModality.ControllerWasLastInput, "Controller input was not recorded");
+            if (DisplayServer.GetName() != "headless")
+                Require(Input.MouseMode == Input.MouseModeEnum.Hidden, "Controller input failed to hide cursor");
+            Input.ParseInputEvent(new InputEventMouseMotion
+            {
+                Relative = new Vector2(12, 0),
+                Position = new Vector2(200, 180),
+            });
+            await Frames(2);
+            Require(!UiPointerModality.ControllerWasLastInput, "Mouse movement did not restore pointer modality");
+            if (DisplayServer.GetName() != "headless")
+                Require(Input.MouseMode == Input.MouseModeEnum.Visible, "Physical mouse movement failed to show cursor");
             Require(GetViewport().GuiGetFocusOwner() is Button { Text: "GADGETS" },
                 "D-pad navigation did not move from Weapons to Gadgets");
             await Press(JoyButton.DpadUp);
@@ -58,12 +74,19 @@ public partial class Rac1RetailUiSmoke : Node
             await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Weapons, $"Cross did not enter Weapons: page={sample.RetailPage}, focus={(GetViewport().GuiGetFocusOwner() as Button)?.Text}");
             var buttons = Descendants(sample).OfType<Button>().Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
-            Require(buttons.Length == 2 && buttons[1].Text.Contains("[LOCKED]"), "Ownership state missing");
+            Require(buttons.Length == 9 && buttons[1].Text.Contains("[LOCKED]"), "Native inventory paging or ownership state missing");
+            Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Retail UI unexpectedly contains Godot scrollbars");
             buttons[1].GrabFocus(); await Frames(2); await Press(JoyButton.A);
             Require(equips == 0, "Unowned weapon sent an equip request");
             buttons[0].GrabFocus(); await Frames(2); await Press(JoyButton.A);
             Require(equips == 1, "Owned weapon ignored Cross");
             await Capture("weapons");
+            await FocusAndPress(sample, "NEXT ▸");
+            await Frames(4);
+            buttons = Descendants(sample).OfType<Button>().Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
+            Require(buttons.Length == 6 && buttons[0].Text.StartsWith("Test slot 8", StringComparison.Ordinal),
+                "Second inventory page did not render remaining six items");
+            await Capture("weapons-page2");
 
             await Keyboard(Key.Escape); await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Root, "Keyboard Escape did not navigate back");

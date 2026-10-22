@@ -54,7 +54,7 @@ public partial class SourceManagerUi : CanvasLayer
             Modulate = UiTheme.TextDim,
         });
 
-        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
+        var scroll = new ScrollContainer { VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever, SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
         outer.AddChild(scroll);
         var cards = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         cards.AddThemeConstantOverride("separation", 10);
