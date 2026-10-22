@@ -99,6 +99,7 @@ public partial class OBPGame
         else
         {
             _rac1WeaponPreviewInventory ??= new(_rac1CampaignSession.Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId);
+            _rac1Weapons.AcquireNativeItem(Rac1MetalDetectorSession.NativeGadgetItem);
             foreach (var weapon in Rac1WeaponProfiles.Additional.Select(profile => profile.Item).Append(Rac1WeaponId.FirstRanged))
             {
                 _rac1Weapons.AcquireNativeItem((int)weapon);
@@ -112,6 +113,12 @@ public partial class OBPGame
             ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
+        if (_world is { Game: "rac1" } world)
+        {
+            _rac1DetectorEquipped = false;
+            _rac1DetectorNearest = null;
+            ConfigureRac1MetalDetector(world);
+        }
         if (_rac1HeldItem.NativeItemId != (int)Rac1WeaponId.Wrench) HoldSelectedRac1HandItem();
         RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility();
     }
@@ -146,7 +153,7 @@ public partial class OBPGame
     {
         if (_movementStateLoading || _world?.Game != "rac1" || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = !_rac1Nanotech.Probe().IsDead && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
-            _rac1AdditionalFireRequested;
+            _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;
         _rac1ArsenalHeld = held;
         if (_rac1EquipmentUseWeapon != _rac1Weapons.Equipped)

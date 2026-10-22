@@ -1,5 +1,48 @@
 # R&C1 most common missing Moby behaviours
 
+## 22 October 2026: class-605 Metal Detector gameplay follow-up
+
+Class **605** now has an actual engine-neutral native-target selection and
+consumption session, `Rac1MetalDetectorSession`, and a Godot gameplay host.
+The 358 invisible source placements, source polygon/clip-volume references,
+nearest eligible site, less-than-20-unit proximity marker, **strictly
+less than 1 unit** digging range, and native five-value bolt-emission
+loop all have executable counterparts.
+
+- `Rac1Paths.ContainsPlanar` evaluates the 46 source polygon-index targets;
+  `Rac1ClipVolumes.Contains` evaluates the 95 clip-volume-index targets.
+  The 358 retails placements were checked for bounded indices. Path and
+  clip-volume restrictions are alternatives, not cumulative gates.
+- Native item **27** ownership gates the gadget. Until the original R&C1
+  gadget inventory wheel is hosted, **M** temporarily equips/holsters it.
+  Hold the existing equipped-item key **Circle** for the native 15-frame
+  activation and digging action. Full-arsenal testing mode makes item 27
+  available; normal campaign play requires real item ownership.
+- Extracted bolts are spawned as **physical five-value bolt pickups**, not
+  granted directly to the wallet, using the shared crate/pickup simulation.
+- Since the visible detector Moby and needle rig are not yet reconstructed,
+  the current host readout reports target distance and relative direction.
+  Source targeting uses Ratchet's body position rather than the original
+  held detector's bone position. These are explicit host adaptations.
+- Native target startup subtracts **5 times a saved 4-bit history counter**
+  from its authored 10/50-bolt budget. That 320-byte table was verified to
+  be entirely zero in the boot ELF at address 0x0014bf10. One nibble is
+  advanced per five-bolt extraction, saturating at 15. This is now modeled
+  in `Rac1BuriedBoltProgress` and included in OBP's optional campaign JSON
+  save; missing history on older saves defaults to zero. Target command
+  ordinals are assigned in authored placement order, pending direct live
+  verification of source updater dispatch order.
+- Source target selection still uses the host player position rather than
+  the exact attached detector bone, and emission visuals/audio are partial.
+  Retail fidelity beyond the recovered selection/history/drain contracts
+  remains a separate validation task.
+
+The initial rough 26/813 distinct class types and 7,673/16,232
+placement exposures become approximately **27/813 (3.3%)** and
+**8,031/16,232 (49.5%)** when counting the newly hosted class-605 family.
+These estimates classify family-level gameplay exposure, **not** exact
+feature completeness and not a systematic code-coverage measurement.
+
 ## 22 October 2026: Godot runtime follow-up
 
 The isolated `chatgpt/moby-behaviour-atlas` branch now hosts **three new

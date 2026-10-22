@@ -191,7 +191,11 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        if (key.Keycode == Key.K)
+        if (key.Keycode == Key.M && TryToggleRac1MetalDetector())
+        {
+            GetViewport().SetInputAsHandled();
+        }
+        else if (key.Keycode == Key.K)
         {
             _worldHost.SetAnimationPlaying(!_worldHost.AnimationPlaying);
             UpdateWorldHud();

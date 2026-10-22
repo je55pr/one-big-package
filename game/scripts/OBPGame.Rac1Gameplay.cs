@@ -67,6 +67,7 @@ public partial class OBPGame
         ResetRac1PulsingOrbs();
         ResetRac1ExplosiveCrates();
         ResetRac1CheckpointTriggers();
+        ResetRac1MetalDetector();
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
         ResetRac1Enemies();
@@ -146,6 +147,7 @@ public partial class OBPGame
 
         ConfigureRac1ExplosiveCrates(world, result);
         ConfigureRac1CheckpointTriggers(world);
+        ConfigureRac1MetalDetector(world);
         ConfigureRac1PlacedBolts(world, result);
         ConfigureRac1GoldBolts(world, result);
         ConfigureRac1RedPlants(world, result);
@@ -246,6 +248,7 @@ public partial class OBPGame
         TickRac1PulsingOrbs(delta);
         TickRac1ExplosiveCrates(delta);
         TickRac1CheckpointTriggers();
+        TickRac1MetalDetector(delta);
         TickRac1Pickups(delta);
         TickRac1GoldBolts();
     }
@@ -281,7 +284,7 @@ public partial class OBPGame
         return $"R&C1: Square wrench · Circle equipped item · Triangle quick select · Start testing options · {restart} · {_rac1CombatStatus}\n" +
             $"Nanotech: {nanotech.Nanotech}/{nanotech.RespawnNanotech} ({nanotech.LifeState})   " +
             $"Weapon: {weapon}   item-10 ammo: {_rac1Weapons.FirstRangedAmmo}   projectiles: {_rac1Projectiles.Count}\n" +
-            $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}{swim}";
+            $"Bolts: {_rac1BoltWallet.Balance}   pickups: {_rac1PickupNodes.Count}   {hostile}{swim}{MetalDetectorHudText()}";
     }
 
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()

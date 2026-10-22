@@ -39,7 +39,8 @@ public sealed class Rac1CampaignSessionPersistence
         Rac1CampaignState campaign,
         Rac1WeaponInventory weapons,
         Rac1BoltWallet? wallet = null,
-        IReadOnlyCollection<int>? novalisGoldBoltInstances = null)
+        IReadOnlyCollection<int>? novalisGoldBoltInstances = null,
+        Rac1BuriedBoltProgress? buriedBoltHistory = null)
     {
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
@@ -47,7 +48,7 @@ public sealed class Rac1CampaignSessionPersistence
         if (!Enabled)
             return false;
 
-        Rac1CampaignSaveFile.Save(_savePath!, campaign, weapons, wallet, novalisGoldBoltInstances);
+        Rac1CampaignSaveFile.Save(_savePath!, campaign, weapons, wallet, novalisGoldBoltInstances, buriedBoltHistory);
         return true;
     }
 }

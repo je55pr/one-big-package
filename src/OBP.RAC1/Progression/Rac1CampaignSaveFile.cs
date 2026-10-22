@@ -37,7 +37,8 @@ public static class Rac1CampaignSaveFile
         Rac1CampaignState campaign,
         Rac1WeaponInventory weapons,
         Rac1BoltWallet? wallet = null,
-        IReadOnlyCollection<int>? novalisGoldBoltInstances = null)
+        IReadOnlyCollection<int>? novalisGoldBoltInstances = null,
+        Rac1BuriedBoltProgress? buriedBoltHistory = null)
     {
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Campaign save path is required.", nameof(path));
@@ -52,7 +53,7 @@ public static class Rac1CampaignSaveFile
         string temporaryPath = fullPath + ".tmp";
         try
         {
-            Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(campaign, weapons, wallet, novalisGoldBoltInstances);
+            Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(campaign, weapons, wallet, novalisGoldBoltInstances, buriedBoltHistory);
             using (FileStream stream = new(
                 temporaryPath,
                 FileMode.Create,
