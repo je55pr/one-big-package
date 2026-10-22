@@ -91,39 +91,51 @@ public static partial class RuntimeWorldScene
         var root = new Node3D { Name = name };
         var skyRoot = new Node3D { Name = "Sky" };
         var mats = new WorldMaterialFactory(world);
-
-        var (staticMeshInstances, staticTriangles, skyMeshes) =
-            BuildStaticMeshes(world, root, skyRoot, options, mats);
-        var (dynamicObjectCount, dynamicMeshInstances, dynamicTriangles, dynamicNodes) =
-            BuildDynamicObjects(world, root, options, mats);
-        var (animatedMeshInstances, animatedTriangles, animatedPlayers) =
-            BuildAnimatedMeshes(world, root, mats);
-
-        if (mats.UntexturedTriangleReport.Count > 0)
+        try
         {
-            string report = string.Join(", ", mats.UntexturedTriangleReport.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:N0}"));
-            GD.Print($"[RuntimeWorldScene] untextured triangles (fallback tint): {report}");
+            var (staticMeshInstances, staticTriangles, skyMeshes) =
+                BuildStaticMeshes(world, root, skyRoot, options, mats);
+            var (dynamicObjectCount, dynamicMeshInstances, dynamicTriangles, dynamicNodes) =
+                BuildDynamicObjects(world, root, options, mats);
+            var (animatedMeshInstances, animatedTriangles, animatedPlayers) =
+                BuildAnimatedMeshes(world, root, mats);
+
+            if (mats.UntexturedTriangleReport.Count > 0)
+            {
+                string report = string.Join(", ", mats.UntexturedTriangleReport.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:N0}"));
+                GD.Print($"[RuntimeWorldScene] untextured triangles (fallback tint): {report}");
+            }
+
+            var (collisionBodies, collisionTriangles) = BuildCollisionBodies(world, root, options);
+
+            int Kind(string kind) => world.Meshes.Count(m => m.AssetKind == kind);
+
+            return new Result(
+                root,
+                skyMeshes > 0 ? skyRoot : null,
+                staticMeshInstances + dynamicMeshInstances,
+                staticTriangles + dynamicTriangles + animatedTriangles,
+                mats.TextureCount,
+                collisionBodies,
+                collisionTriangles,
+                Kind("tie"),
+                Kind("shrub"),
+                Kind("moby"),
+                animatedMeshInstances,
+                animatedPlayers,
+                dynamicObjectCount,
+                dynamicNodes);
         }
-
-        var (collisionBodies, collisionTriangles) = BuildCollisionBodies(world, root, options);
-
-        int Kind(string kind) => world.Meshes.Count(m => m.AssetKind == kind);
-
-        return new Result(
-            root,
-            skyMeshes > 0 ? skyRoot : null,
-            staticMeshInstances + dynamicMeshInstances,
-            staticTriangles + dynamicTriangles + animatedTriangles,
-            mats.TextureCount,
-            collisionBodies,
-            collisionTriangles,
-            Kind("tie"),
-            Kind("shrub"),
-            Kind("moby"),
-            animatedMeshInstances,
-            animatedPlayers,
-            dynamicObjectCount,
-            dynamicNodes);
+        catch
+        {
+            // A detached, partially constructed replacement has no scene-tree
+            // owner to clean it up. Do not leak it on presentation failures.
+            if (GodotObject.IsInstanceValid(root))
+                root.Free();
+            if (GodotObject.IsInstanceValid(skyRoot))
+                skyRoot.Free();
+            throw;
+        }
     }
 
 
