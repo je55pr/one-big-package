@@ -39,6 +39,16 @@ Therefore **93.1% of authored Moby placements are associated with a native
 class registration**. This does not imply their behaviour is already decoded
 or that unregistered classes are inert: they may use other engine mechanisms.
 
+## 22 October 2026: common-class identities resolved
+
+The first atlas deliberately recorded updater addresses without assigning semantics.
+The four most widespread candidates have since been traced against the original
+retail PVars, native code and matching NTSC-U decompilation. **505 = explosive
+crate, 605 = buried Metal Detector target, 805 = checkpoint marker, 1060 =
+pulsing-colour effect.** See [Common Moby behaviours](RAC1_COMMON_MOBY_BEHAVIOURS.md)
+for the retail-backed contracts and the independent level-2 checkpoint writer
+correlation. The following is retained as the initial discovery list.
+
 ## Valuable cross-level candidates
 
 These are prioritization *leads*, not confirmed semantics. Instance numbers
