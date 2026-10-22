@@ -269,8 +269,15 @@ public partial class OBPGame : Node3D
         }
     }
 
-    public override void _ExitTree() =>
+    public override void _ExitTree()
+    {
+        // Godot can exit without visiting the normal world-switch teardown path.
+        // Stop playback while the audio hosts and their Godot players are still valid.
+        _worldHost.Unload(releaseAudioImmediately: true);
+        ResetRac1PlayerAudio(freeImmediately: true);
+        ResetRac1WeaponAudio(freeImmediately: true);
         ApplicationLifecycle.ReportRootExit(Name);
+    }
 
     /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
     private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)
@@ -389,15 +396,9 @@ public partial class OBPGame : Node3D
             if (token.StartsWith("isolate:", System.StringComparison.OrdinalIgnoreCase))
             {
                 string want = token["isolate:".Length..];
-                while (overlay.IsolatedKind != want)
+                if (!overlay.TryIsolateKind(want))
                 {
-                    string? before = overlay.IsolatedKind;
-                    overlay.IsolateNextKind();
-                    if (overlay.IsolatedKind == before)
-                    {
-                        GD.PrintErr($"[OBPGame] --overlay isolate:{want} — no such asset kind");
-                        break;
-                    }
+                    GD.PrintErr($"[OBPGame] unknown --overlay isolate kind '{want}' (valid: {string.Join(", ", DebugOverlay.IsolationCycle[1..])})");
                 }
             }
             else if (System.Enum.TryParse<DebugOverlay.Layer>(token, ignoreCase: true, out var layer))

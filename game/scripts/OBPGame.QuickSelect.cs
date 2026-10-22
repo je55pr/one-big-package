@@ -43,6 +43,7 @@ public partial class OBPGame
         _quickSelect.Completed += CloseWeaponQuickSelect;
         _preQuickSelectMouse = Input.MouseMode;
         _preQuickSelectHeldButtons = player.MenuHeldButtons;
+        player.QuickSelectOwnsGameplayInput = true;
         Input.MouseMode = Input.MouseModeEnum.Visible;
         AddChild(_quickSelect);
         // R&C1 Quick Select is real-time. Do not freeze the world while it is held.
@@ -55,8 +56,12 @@ public partial class OBPGame
         _lastQuickSelectTap = _quickSelect!.NeutralTapCompleted ? PlaytestClock.Milliseconds : 0;
         _quickSelect!.ProcessMode = ProcessModeEnum.Disabled;
         _quickSelect.QueueFree(); _quickSelect = null;
+        if (_player is { } player)
+        {
+            player.QuickSelectOwnsGameplayInput = false;
+            player.SuppressButtonsUntilRelease(_preQuickSelectHeldButtons);
+        }
         if (weapon is { } selected && selected != _rac1Weapons.Equipped) OnRac1WeaponSelectionRequested(selected);
-        _player?.SuppressButtonsUntilRelease(_preQuickSelectHeldButtons);
         Input.MouseMode = _preQuickSelectMouse;
     }
 }
