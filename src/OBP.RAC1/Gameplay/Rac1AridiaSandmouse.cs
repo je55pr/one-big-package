@@ -22,6 +22,7 @@ public sealed class Rac1AridiaSandmouseSession
     {
         public int LinkedControllerInstance { get; } = linkedControllerInstance;
         public int State { get; set; }
+        public byte? PendingLinkedControllerCommand { get; set; }
     }
 
     public readonly record struct NativeFacts(
@@ -42,6 +43,20 @@ public sealed class Rac1AridiaSandmouseSession
     public int LinkedController(int instanceIndex) => _entries[instanceIndex].LinkedControllerInstance;
     public int NativeState(int instanceIndex) => _entries[instanceIndex].State;
 
+    /// <summary>
+    /// Native 0x2f159c writes value 5 to linked Moby +0xbc after the hero
+    /// cinematic entry succeeds. The caller may consume the command once,
+    /// then supply it to the class-604 controller on its next native tick.
+    /// This is a live script-control byte, not a PVar write.
+    /// </summary>
+    public byte? TakeLinkedControllerCommand(int instanceIndex)
+    {
+        var entry = _entries[instanceIndex];
+        byte? command = entry.PendingLinkedControllerCommand;
+        entry.PendingLinkedControllerCommand = null;
+        return command;
+    }
+
     public int Step(int instanceIndex, NativeFacts facts)
     {
         var entry = _entries[instanceIndex];
@@ -59,6 +74,10 @@ public sealed class Rac1AridiaSandmouseSession
                 break;
             case WaitForSceneState when facts.NativeSceneFlag && facts.NativeSceneMode == 5 &&
                 facts.NativeSceneEntryCompleted:
+                // L2:0x2f159c sets the linked class604's +0xbc command to 5
+                // before entering Sandmouse state2. Never issue on a mere
+                // global scene-mode match without successful hero entry.
+                entry.PendingLinkedControllerCommand = 5;
                 entry.State = WaitForLinkedControllerState;
                 break;
             case WaitForLinkedControllerState when facts.LinkedControllerNativeState == 5:

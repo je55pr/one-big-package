@@ -77,6 +77,12 @@ public sealed class Rac1AridiaEnemyTests
         // Native LEVEL2 shark + bot lethal branches call moby_drop_bolts
         // with (moby, 0, -1); nests instead spawn explosion/debris.
         var world = Rac1WorldImport.Build(reader, Rac1AridiaEnemies.LevelId);
+        // These are real visible imported actors, not synthetic-only class
+        // controllers. Native registration is separate from hostile collision.
+        Assert.Contains(world.DynamicObjects!, source => source.InstanceIndex == 526 &&
+            source.NativeClassId == Rac1AridiaClass604Session.NativeClassId && source.Meshes.Count > 0);
+        Assert.Contains(world.DynamicObjects!, source => source.InstanceIndex == 756 &&
+            source.NativeClassId == Rac1AridiaEnemies.Sandmouse && source.Meshes.Count > 0);
         foreach (var source in world.DynamicObjects!.Where(source =>
             source.NativeClassId is Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot))
             Assert.Equal(Reward(placements[source.InstanceIndex]), Rac1EnemyMotion.RewardCentre(source));

@@ -56,6 +56,7 @@ public partial class OBPGame
         _rac1Enemies.Clear(); _rac1Class1440 = null;
         _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null;
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
+        ResetRac1AridiaScriptActors();
         ResetRac1BirdbotProjectiles();
     }
 
@@ -109,6 +110,7 @@ public partial class OBPGame
                     groupId: Rac1AridiaEnemies.ReadAuthoredGroup(authoredPlacements[authored.InstanceIndex].RawRecord));
                 nodes.Add(node);
             }
+            ConfigureRac1AridiaScriptActors(world, result, authoredPlacements);
         }
         else
         {
