@@ -205,7 +205,9 @@ public sealed class RuntimeAudioHost
         Node? player = null;
         try
         {
-            AudioStreamWav stream = BuildStream(prepared!);
+            // The player retains a native reference; release our temporary
+            // C# wrapper deterministically instead of waiting for finalization.
+            using AudioStreamWav stream = BuildStream(prepared!);
             player = prepared!.ScenePosition is { } position
                 ? BuildSpatialPlayer(stream, prepared.VolumeDb, position)
                 : BuildPlayer(stream, prepared.VolumeDb);
