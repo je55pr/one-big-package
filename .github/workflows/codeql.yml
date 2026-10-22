@@ -8,6 +8,12 @@ on:
   schedule:
     - cron: '23 4 * * 1'
 
+# A fresh PR commit supersedes the old scan, but push/scheduled scans stay
+# independent. Do not accidentally cancel CodeQL with the native CI workflow.
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
   security-events: write
