@@ -44,7 +44,7 @@ public partial class ControllerPopupInput : Node
                 if (Input.IsActionPressed(PadActions[i])) _held[Navigation[i].Action] = ulong.MaxValue;
             return;
         }
-        ulong now = Time.GetTicksMsec();
+        ulong now = PlaytestClock.Milliseconds;
         for (int i = 0; i < Navigation.Length; i++)
         {
             var binding = Navigation[i];

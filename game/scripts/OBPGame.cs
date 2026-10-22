@@ -61,6 +61,7 @@ public partial class OBPGame : Node3D
     {
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        if (!InitializePlaytest()) return;
         if (_args.ReplayForwardFrames.HasValue && _args.LoadMovementState is null)
         {
             GD.PrintErr("[movement-replay] --replay-forward requires --load-movement-state.");
@@ -128,6 +129,7 @@ public partial class OBPGame : Node3D
 
         if (_mode == Mode.World)
         {
+            if (_playtest is { WaitingForEntry: true }) return;
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);

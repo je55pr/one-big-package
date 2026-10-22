@@ -114,6 +114,7 @@ public partial class OBPGame
 
     private async Task<List<MovementReplaySample>?> LoadMovementStateAsync(string path, bool startup = false, int? recordFrames = null)
     {
+        if (_playtest?.RejectMovementLoad() == true) return null;
         if (_movementStateLoading) return null;
         PlayerHost? restoringPlayer = null;
         try

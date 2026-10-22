@@ -5,6 +5,26 @@ namespace OBP.Tests;
 public sealed class CommandLineArgsTests
 {
     [Fact]
+    public void PlaytestOptionsAreOptInAndDistinctFromMovementBookmarks()
+    {
+        Assert.False(CommandLineArgs.Parse([]).PlaytestRequested);
+        var record = CommandLineArgs.Parse(["--destination", "rac1:LEVEL1", "--record-playtest", "run.jsonl.gz", "--playtest-smoke"]);
+        Assert.True(record.PlaytestRequested);
+        Assert.True(record.PlaytestSmoke);
+        Assert.Equal("run.jsonl.gz", record.RecordPlaytest);
+        Assert.Null(record.LoadMovementState);
+        Assert.Null(record.ReplayPlaytest);
+        var replay = CommandLineArgs.Parse(["--replay-playtest", "run.jsonl.gz", "--playtest-report", "report.json", "--playtest-allow-build-change"]);
+        Assert.True(replay.PlaytestRequested);
+        Assert.True(replay.PlaytestAllowBuildChange);
+        Assert.Equal("run.jsonl.gz", replay.ReplayPlaytest);
+        Assert.Equal("report.json", replay.PlaytestReport);
+        Assert.Null(replay.ReplayForwardFrames);
+        Assert.Equal(string.Empty, CommandLineArgs.Parse(["--record-playtest"]).RecordPlaytest);
+        Assert.Equal(string.Empty, CommandLineArgs.Parse(["--replay-playtest"]).ReplayPlaytest);
+    }
+
+    [Fact]
     public void SmokeSceneIsOnlyExplicitlyRequested()
     {
         CommandLineArgs ordinary = CommandLineArgs.Parse([]);

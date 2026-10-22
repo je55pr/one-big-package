@@ -13,6 +13,12 @@ public sealed record CommandLineArgs
     public int? CaptureFrame { get; init; }
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
+    public string? RecordPlaytest { get; init; }
+    public string? ReplayPlaytest { get; init; }
+    public string? PlaytestReport { get; init; }
+    public bool PlaytestAllowBuildChange { get; init; }
+    public bool PlaytestSmoke { get; init; }
+    public bool PlaytestRequested => RecordPlaytest is not null || ReplayPlaytest is not null;
     public string? MovementStatePath { get; init; }
     public string? LoadMovementState { get; init; }
     public int? ReplayForwardFrames { get; init; }
@@ -164,6 +170,11 @@ public sealed record CommandLineArgs
                 "--capture-frame" => result with { CaptureFrame = ParseInt(Next()) },
                 "--capture-out" => result with { CaptureOut = Next() },
                 "--fixed-seed" => result with { FixedSeed = ParseInt(Next()) },
+                "--record-playtest" => result with { RecordPlaytest = Next() ?? string.Empty },
+                "--replay-playtest" => result with { ReplayPlaytest = Next() ?? string.Empty },
+                "--playtest-report" => result with { PlaytestReport = Next() },
+                "--playtest-allow-build-change" => result with { PlaytestAllowBuildChange = true },
+                "--playtest-smoke" => result with { PlaytestSmoke = true },
                 "--movement-state-file" => result with { MovementStatePath = Next() },
                 "--load-movement-state" => result with { LoadMovementState = Next() },
                 "--replay-forward" => result with { ReplayForwardFrames = ParseInt(Next()) ?? -1 },

@@ -1,5 +1,73 @@
 # Movement repro states
 
+## Record a complete playtest
+
+For bugs that depend on the route you took, record ordinary play from a fresh
+R&C1 level entry. From PowerShell in the checkout you want to test:
+
+```powershell
+./tools/record-playtest.ps1 -Destination rac1:LEVEL1
+```
+
+This builds and launches that checkout. The default is Novalis; use
+`rac1:LEVEL0` for Veldin. To begin with earned campaign progress, add
+`-CampaignSave <campaign.json>`; the launcher copies it for this session.
+Play normally, then:
+
+- **F8** marks the bug without ending the recording.
+- **F9** saves the run and stops recording. You can continue playing afterward.
+- With a controller, **Start** pauses, then **Square** marks and **Select** saves.
+- Closing the game also finishes the completed input steps. A crash or disk
+  failure leaves an incomplete `.partial` file, which cannot count as a pass.
+
+The on-screen recorder notice confirms saving. The launcher prints the exact
+file under `captures/repros/`, named `*.run.jsonl.gz`. Give that single file to
+the developer and say which marker/end point shows the bug. The file contains
+the initial campaign, game-window controls, camera settings, simulation callback
+order, window sizes and periodic observations of player/camera/objects/enemies,
+inventory, projectiles, pickups and progression. Bug markers and F9 force an
+observation. It contains no retail assets, disc paths or typed text.
+
+Replay it in a fresh process without desktop control:
+
+```powershell
+./tools/replay-playtest.ps1 -Run <run.jsonl.gz>
+```
+
+The JSON report beside the run identifies the first differing observed field,
+its step, expected/actual values, bug markers and the final observation. Replay
+continues after a state difference so the end remains inspectable. Exit **0**
+means the observed checkpoints matched, **3** means divergence, and **2** means
+incompatible, invalid or incomplete input. Structural timing/input-count errors
+abort. A match establishes repeatability of those observations, not exhaustive
+world equality or retail parity. Checkpoints are never injected to correct drift.
+
+The engine version, source build, platform and physics backend must match.
+All referenced OBP assembly identities must match unless `-AllowBuildChange` is supplied explicitly
+when investigating a fix; the report identifies this exception. `-Rendered`
+replays in an unfocusable offscreen window. `-SkipBuild` reuses an existing build.
+The wrappers use a fixed 60-Hz simulation and cap visible human recording at
+60 FPS. A slow frame stretches wall time rather than dropping simulation steps.
+Gesture timestamps and post-calibration player controls are recorded separately,
+so replay can run faster without changing quick-select/button timing.
+
+This first version supports R&C1 gameplay, pauses and ordinary in-game travel.
+It starts at level entry, with seeded random streams; it does not restore a live
+mid-combat bookmark. Loading movement states is blocked while recording. Returning
+to the developer Worlds browser/other games ends the run as unsupported. Native
+file dialogs and device calibration are not replay fixtures. Replayed camera and
+controller settings do not overwrite personal settings. Boundaries are limited
+to one million callback steps, 128 MiB compressed and 512 MiB expanded input;
+keep a diagnostic run focused. The background writer has a bounded queue and
+fails explicitly if storage cannot keep up.
+
+`./tools/playtest-smoke.ps1` checks fresh Veldin and Novalis record/replay, including
+analogue input, jump, camera, weapon use, wrench, Quick Select, resize, controller
+pause/menu navigation, marker/save, and deliberately invalid/divergent files.
+These use ordinary input at authored starts; they do not solve either level.
+
+## Save a stationary movement bookmark
+
 In an R&C1 world, release the controls and stand at the starting point for the
 bug. Point the camera so ordinary forward input takes Ratchet into it.
 
@@ -34,7 +102,7 @@ Older Version1 files remain loadable but contain only the player/camera setup:
 their enemies and crates reset. After clearing enemies, save again with F12 to
 record their absence. The loader identifies these older files in its notice.
 
-## Replay without computer use
+## Replay a movement bookmark without computer use
 
 From PowerShell in the checkout:
 

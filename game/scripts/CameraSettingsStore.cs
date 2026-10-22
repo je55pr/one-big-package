@@ -16,7 +16,7 @@ internal static class CameraSettingsStore
     public static void Set(Rac1CameraOptions options, bool persist = true)
     {
         _current = options.Validate();
-        if (!persist) return;
+        if (!persist || PlaytestClock.Active) return;
         var config = new ConfigFile();
         _ = config.Load(ConfigPath);
         config.SetValue(Section, "horizontal", (int)options.Horizontal);
