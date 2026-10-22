@@ -27,7 +27,7 @@ The reference repository's `tools/codegen/gen_mkall.py gen aridia` was run **out
 
 ## Native Constructorbot clues not yet fully ported
 
-The native class-612 routine has **18 state slots**, including a particle emitter in states 8/9 (around `0x2d7ecc..0x2d7f8c`) and a distinct animation-gated **joint-0 contact attack** in state 12 (`0x2d812c..0x2d8228`), which builds a common damage/contact descriptor and progresses into state 13. Thus the current host flame-cycle and player-hit timing are **not** an exact translation of retail Constructorbot behaviour. Do not label the guessed contact sweep as native.
+The native class-612 routine has **18 state slots**, including a particle emitter in states 8/9 (around `0x2d7ecc..0x2d7f8c`) and a distinct **joint-0 contact query** in native state **11** (`0x2d812c..0x2d8228`, zero-based dispatcher), which runs each update; animation completion advances directly to state 13 and selects sequence 8 or 10. The contact routine builds a native hit descriptor. Thus the current host flame-cycle and player-hit timing are **not** an exact translation of retail Constructorbot behaviour. Do not label the guessed contact sweep as native.
 
 Sandshark's dispatcher has 30 slots, some repeated/unused. The current buried, emergence, pursuit, biting and host physics transitions remain approximate. Source state 27 / animation 11 is the one recovered and implemented specifically for nest releases.
 
@@ -37,7 +37,7 @@ Sandshark's dispatcher has 30 slots, some repeated/unused. The current buried, e
 - Native nest animation gate checks `moby_anim_time == 10`; Godot now passes its retail clip's animation position, with a documented host sampling tolerance and fixture fallback. The nest is additionally conservatively gated to a living player within 12 host units with LOS, not a recovered native predicate. Following nest cooldown timing is provisional.
 - Source-accurate Sandshark state machine, locomotion/pathing, return home, launch gravity/landing, melee socket queries and native damage flags.
 - The **Sandmouse's own class-1818 native state chain** is represented in a bounded engine-neutral session, and both original scripted actors register as native state 1 in Godot. The host still has no original cinematic/hero and path-43 movement adapters, so it never invents state 5. Consequently the six state-29 sharks remain correctly dormant in ordinary Godot gameplay. Post-unlock emergence still follows a provisional host approximation.
-- Constructorbot's full 18-state AI, moving/turning/pathing, flame emission texture/particle parameters, native state-12 contact volume and timing.
+- Constructorbot's full 18-state AI, moving/turning/pathing, flame emission texture/particle parameters, native state-11 joint-contact volume and timing.
 - Damage reactions, debris and explosion effects, exact animation/transition timing, and full bolt-drop spawn trajectories. Only the shared bolt reward centre/range are source backed.
 - Aridia's original sound routing and attack/death cue timings, plus human visual/gameplay comparisons.
 - Godot's current capsule collision, ray LOS and hit recovery are explicitly host adapters, not PS2 narrow-phase/physics equivalents.
@@ -104,3 +104,17 @@ Nest native update `L2:0x2dcce0` tests animation-time **10** in winding-up state
 **Sandmouse issues the class604 command.** Its native `0x2f13e0` writes class604 control `1` or `3` based on the scripted point-in-box condition while waiting for the scene entry, and `0x2f159c` writes command **5** to the linked class604 control when the cinematic/hero entry actually succeeds. The engine-neutral Sandmouse controller now exposes an explicit, one-time command-5 intent on the transition to state 2. It is not emitted for just a global mode match. The paired regression proves class604 must animate to state 5, then class1818 reaches state 5 only after additional route and cinematic conditions, then and only then do all six class580 sharks awaken.
 
 **Godot wiring boundary:** Both retail dynamic actor meshes are present in Aridia's original imported scene, and `ConfigureRac1AridiaScriptActors` registers exactly one class604 plus one class1818 in the same live `Rac1MobyRuntimeSession` as the 137 hostile actors, using their original identity and PVar. Their source-backed state0 initialization advances each to state1. The model identities and native states are now visible to the linked shark resolver during actual Godot play and reset with the Aridia enemy host. However the host does **not yet** simulate the original camera/hero cinematic, scene globals, exact animation wrap for class604, scripted `+0xbc` updates or Sandmouse path 43. Consequently both remain conservatively in native state1 and the six sharks remain dormant in normal Godot gameplay. This is intentionally NOT a playable completion claim.
+
+## Class-612 Constructorbot source-state admission (22 October 2026, further specialist pass)
+
+A closer native dispatcher read corrects the earlier misidentification: the attack routine at **LEVEL2:0x2d812c is native state 11**, **not** 12. The native indexed table in `constructorbot_update_l2` (`0x2d7748`) maps slots `0,2,3,4,5,6,7,8,9,10,11,12,13,14` plus an inert slot 1; unlisted upper slots fail closed. State 11 calls the joint-0 contact solver on **every native tick**, using a native contact descriptor; `Moby+0x70 & 2` then advances to native state **13** and picks animation **8 or 10** randomly. State **10** instead sets state **12**, animation **9**, when `+0x70 & 2` indicates animation completion. Host interaction must not conflate these separate states, and no invented hit is emitted merely because an animation is playing.
+
+The native state-0 initializer branches on authored PVar `+0x194` (signed integer):
+- `0` → state **7**, animation **0** (`L2:0x2d7918/0x2d7c00`)
+- `1` → state **10**, animation **0** (`L2:0x2d7930`)
+- `2` → state **8**, animation **2** (`L2:0x2d7958`)
+- `3` → state **9**, animation **15** (`L2:0x2d797c`)
+
+Retail Aridia's 15 placed Constructorbots contain exactly **4 mode-0, 1 mode-1, 1 mode-2, and 9 mode-3** PVars. All fifteen are now registered into the shared native runtime at their correct startup state instead of generic state 1, and initial source sequence is used when available. The provisional host combat session also preserves the relevant source startup sequence while the bot is outside attack range, rather than silently replacing it with generic idle sequence 1. Initializers reset on level transitions. `Rac1AridiaConstructorbotNative` separately models the source-backed aim/contact transitions as deterministic intents, and tests cover all four modes, invalid PVars, state numbers, sequence changes, and absence of guessed contact damage.
+
+**Still not implemented:** the native path/physics state loop, per-mode transitions after initial spawn, original source-particle texture/audio/arc settings, actual transformed joint query, contact target solver and damage flags. The existing close-range provisional host attack adapter is NOT equivalent to native states 8–13. A headless load cannot count as combat/FX acceptance.

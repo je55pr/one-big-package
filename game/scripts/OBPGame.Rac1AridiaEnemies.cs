@@ -9,6 +9,9 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
+    private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
+
+    private void ResetRac1ConstructorbotStartups() => _rac1ConstructorbotStartups.Clear();
 
     private void TickRac1AridiaEnemy(Rac1HostedEnemy enemy)
     {

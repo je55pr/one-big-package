@@ -70,6 +70,15 @@ public sealed class Rac1AridiaEnemyTests
             Assert.InRange(Rac1AridiaEnemies.ReadAuthoredGroup(moby.RawRecord), -1, 254));
         Assert.Contains(nests, nest => Rac1AridiaEnemies.ReadAuthoredGroup(nest.RawRecord) >= 0);
         Assert.Equal([38], bots.Select(Reward).Distinct().Order());
+        // The native 18-slot class612 updater dispatches FOUR authored
+        // startup modes, not a universal flame-loop actor at level load.
+        Assert.Equal(4, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 0));
+        Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 1));
+        Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 2));
+        Assert.Equal(9, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 3));
+        Assert.All(bots, bot =>
+            Assert.Contains(Rac1AridiaConstructorbotNative.Initialize(bot.PVar!).NativeState,
+                new[] { 7, 8, 9, 10 }));
         Assert.Equal([0, 60], nests.Select(moby =>
             Rac1AridiaEnemies.ReadNestInitialWaitTicks(moby.PVar!)).Distinct().Order());
         Assert.All(sharks.Concat(bots), moby =>

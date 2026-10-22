@@ -185,6 +185,7 @@ public sealed class Rac1AridiaEnemySession
         public int Ticks { get; set; }
         public float Yaw { get; set; } = yaw;
         public int NestInitialWaitTicks { get; } = nestInitialWaitTicks;
+        public int ConstructorbotStartupSequence { get; init; } = 1;
         public int SpawnTimer { get; set; }
         public Vector3 LaunchMotion { get; set; }
         public float LaunchFallSpeed { get; set; }
@@ -205,7 +206,8 @@ public sealed class Rac1AridiaEnemySession
     public int Count => _entries.Count;
 
     public void Register(int instanceIndex, int nativeClass, float yaw = 0, int nestInitialWaitTicks = 60,
-        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null, int groupId = -1)
+        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null, int groupId = -1,
+        int constructorbotStartupSequence = 1)
     {
         if (!Rac1AridiaEnemies.IsEnemyClass(nativeClass) || nestInitialWaitTicks < 0)
             throw new ArgumentOutOfRangeException(nameof(nativeClass));
@@ -219,7 +221,8 @@ public sealed class Rac1AridiaEnemySession
         if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks, groupId)
         {
             NativeWaitingState26 = nativeWaitingState26,
-            LinkedActivationMobyIndex = linkedActivationMobyIndex
+            LinkedActivationMobyIndex = linkedActivationMobyIndex,
+            ConstructorbotStartupSequence = constructorbotStartupSequence
         }))
             throw new InvalidOperationException($"Duplicate Aridia enemy instance {instanceIndex}.");
     }
@@ -474,7 +477,8 @@ public sealed class Rac1AridiaEnemySession
         bool touches = flaming && inRange && distance < 4.8f &&
             MathF.Abs(ShortestAngle(entry.Yaw + sweep, targetAngle)) < .32f;
         return new(entry.Phase, Vector3.Zero, entry.Yaw + sweep,
-            flaming ? 4 : entry.Phase == Rac1AridiaEnemyPhase.WindingUp ? 2 : 1,
+            flaming ? 4 : entry.Phase == Rac1AridiaEnemyPhase.WindingUp ? 2 :
+                entry.Phase == Rac1AridiaEnemyPhase.Guarding ? entry.ConstructorbotStartupSequence : 1,
             DamagePlayer: touches && entry.Ticks % 16 == 0, FlameActive: flaming);
     }
 
