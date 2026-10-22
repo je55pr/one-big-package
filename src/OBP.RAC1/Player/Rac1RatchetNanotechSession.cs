@@ -74,27 +74,30 @@ public sealed class Rac1RatchetNanotechSession
         // The common damage record's native flags are not yet recovered.
         bool novalisPeck = damage.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
             damage.NativeMarker is null && damage.NativeDamageFlags is null;
+        bool seekerBlast = Rac1SeekerExplosion.IsNativeExplosion(damage);
+        bool explosiveCrateBlast = Rac1ExplosiveCrateBlast.IsNativePlayerBlast(damage);
         if (damage.Target != Rac1GameplayEntityRef.Player ||
             damage.Source.Kind != Rac1GameplayEntityKind.Moby ||
-            !(class749 || class1440 || novalisPeck) || damage.NativeDamage != 1)
+            !(class749 || class1440 || novalisPeck || seekerBlast || explosiveCrateBlast) ||
+            damage.NativeDamage != (explosiveCrateBlast ? Rac1ExplosiveCrateBlast.Damage : 1))
         {
             throw new NotSupportedException(
-                "Only the recovered class749 marker or class1440 contact damage-1 player descriptors are admitted.");
+                "Only recovered enemy damage-1 or native class-505 damage-2 player descriptors are admitted.");
         }
 
-        return ApplyRecoveredEnemyDamage();
+        return ApplyRecoveredEnemyDamage(explosiveCrateBlast ? Rac1ExplosiveCrateBlast.Damage : 1);
     }
 
     /// <summary>Provisional Aridia contact consequence. No retail attack descriptor is claimed.</summary>
     public Rac1RatchetNanotechSnapshot ApplyHostAridiaContactDamage() => ApplyRecoveredEnemyDamage();
 
-    private Rac1RatchetNanotechSnapshot ApplyRecoveredEnemyDamage()
+    private Rac1RatchetNanotechSnapshot ApplyRecoveredEnemyDamage(int nanotechDamage = 1)
     {
         if (_lifeState != Rac1RatchetLifeState.Alive)
             throw new InvalidOperationException("R&C1 Ratchet cannot take an enemy hit after death.");
         if (_enemyHitProtection > 0) return Snapshot();
 
-        _nanotech = Math.Max(0, _nanotech - 1);
+        _nanotech = Math.Max(0, _nanotech - nanotechDamage);
         _enemyHitProtection = EnemyHitProtectionTicks;
         if (_nanotech == 0)
         {

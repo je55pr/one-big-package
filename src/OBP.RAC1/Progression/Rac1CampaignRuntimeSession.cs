@@ -19,15 +19,18 @@ public sealed class Rac1CampaignRuntimeSession
 {
     public Rac1CampaignRuntimeSession(
         Rac1CampaignState campaign,
-        Rac1WeaponInventory weapons)
+        Rac1WeaponInventory weapons,
+        Rac1BuriedBoltProgress? buriedBolts = null)
     {
         Campaign = campaign ?? throw new ArgumentNullException(nameof(campaign));
         Weapons = weapons ?? throw new ArgumentNullException(nameof(weapons));
+        BuriedBolts = buriedBolts ?? new Rac1BuriedBoltProgress();
         Travel = new Rac1PlanetTravelSession(Campaign);
     }
 
     public Rac1CampaignState Campaign { get; }
     public Rac1WeaponInventory Weapons { get; }
+    public Rac1BuriedBoltProgress BuriedBolts { get; }
     public Rac1PlanetTravelSession Travel { get; private set; }
     public Rac1LevelCheckpointSession? LevelCheckpoint { get; private set; }
 

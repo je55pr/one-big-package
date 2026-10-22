@@ -25,6 +25,7 @@ public sealed record Rac1CampaignSaveEnvelope(
 {
     // OBP host-level identity until the original retail Gold Bolt save field is recovered.
     public int[] NovalisGoldBoltInstances { get; init; } = [];
+    public byte[] BuriedBoltHistory { get; init; } = [];
 }
 
 public sealed record Rac1CampaignRestoreResult(
@@ -34,6 +35,7 @@ public sealed record Rac1CampaignRestoreResult(
 {
     public int Bolts { get; init; }
     public int[] NovalisGoldBoltInstances { get; init; } = [];
+    public byte[] BuriedBoltHistory { get; init; } = [];
 }
 
 /// <summary>
@@ -49,7 +51,8 @@ public static class Rac1CampaignSavePolicy
         Rac1CampaignState campaign,
         Rac1WeaponInventory weapons,
         Rac1BoltWallet? wallet = null,
-        IReadOnlyCollection<int>? novalisGoldBoltInstances = null)
+        IReadOnlyCollection<int>? novalisGoldBoltInstances = null,
+        Rac1BuriedBoltProgress? buriedBoltHistory = null)
     {
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
@@ -59,6 +62,7 @@ public static class Rac1CampaignSavePolicy
             weapons.CapturePersistentState(), wallet?.Balance ?? 0)
         {
             NovalisGoldBoltInstances = ValidateNovalisGoldBolts(novalisGoldBoltInstances),
+            BuriedBoltHistory = buriedBoltHistory?.Snapshot() ?? [],
         };
     }
 
@@ -97,6 +101,7 @@ public static class Rac1CampaignSavePolicy
         {
             Bolts = save.Bolts,
             NovalisGoldBoltInstances = ValidateNovalisGoldBolts(save.NovalisGoldBoltInstances),
+            BuriedBoltHistory = Rac1BuriedBoltProgress.Restore(save.BuriedBoltHistory).Snapshot(),
         };
     }
 

@@ -55,7 +55,7 @@ public sealed class Rac1EnemyMotion
     public static int RewardCentre(RuntimeDynamicObject source)
     {
         if (source.SourceGame != "rac1" || source.NativeClassId is not
-            (749 or 1440 or Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or
+            (749 or 1440 or Rac1SeekerSession.ClassId or Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or
                 Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId))
             throw new ArgumentException("Source is outside the admitted enemy families.", nameof(source));
         var payloads = source.NativePayloads?.Where(payload => payload.Format == Rac1BoltCrate.InstancePayloadFormat).ToArray();

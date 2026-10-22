@@ -75,6 +75,18 @@ public partial class OBPGame
 
     private bool TryStrikeRac1Crate(RuntimeWorldScene.DynamicObjectNode target, Rac1WrenchDamageResult? nativeDamage = null)
     {
+        if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
+        {
+            var explosive = _rac1Wrench.AdmitGoal1RuntimeTarget(target.Source);
+            if (explosive is null) return false;
+            var strike = nativeDamage ?? _rac1Wrench.ResolveHostAdmittedDamage(explosive.Value);
+            if (strike is null) return false;
+            var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);
+            var hit = Rac1DamageRuntime.FromWrench(key, strike);
+            if (!TryTriggerRac1ExplosiveDamage(target, hit)) return false;
+            _rac1DamageTransport.Publish(hit);
+            return true;
+        }
         var authored = Rac1BoltCrate.ReadAuthored(target.Source);
         if (authored is null)
             return false;

@@ -1,5 +1,20 @@
 # R&C1 checkpoint and environmental-restart boundary
 
+**22 October 2026 archaeological update:** the previously unknown checkpoint
+*producer* has been identified. Native class **805** is a 48-byte-PVar
+invisible clip-volume trigger that calls the common restart-record writer.
+The independently retained level-2 active checkpoint coordinates match authored
+**class-805 instance 708** exactly in X/Y, with only the native ground-probe
+height adjustment. See [common Moby behaviours](RAC1_COMMON_MOBY_BEHAVIOURS.md).
+The historical sections below document what was known before this recovery.
+**New Godot host milestone:** original 0x80-byte clip-volume records are now
+read as oriented boxes and class-805 enter transitions reach the recovered
+checkpoint session. On a normal headless Aridia load, authored marker 708
+activated directly from source clip volume 53, with no test injection. Native
+mode-gated markers, checkpoint UID and save/revisit policy remain incomplete.
+This update supersedes the prior investigation-only integration limitation.
+
+
 Authority: NTSC-U original retail (SCUS-97199, build rac1-ntscu-original). This note retains both the negative Veldin checkpoint boundary and a positive level-2 checkpoint/restart witness. It distinguishes the proven restart placement/consumer from the still-unrecovered gameplay event that activates or populates the checkpoint record.
 
 The aggregate payload-free witness is research/generated/rac1-checkpoint-boundary.json. The level-2 loaded-state reduction is independently reproducible as research/generated/rac1-level2-checkpoint.json.
@@ -37,7 +52,7 @@ This satisfies the earlier acceptance criterion for a checkpoint witness: the na
 
 Loaded level-2 routine `0x00286520` closes the record-to-player dataflow. It reads the active word at `0x001bb830`; when nonzero, `0x0028657c..0x00286598` copies record `+0x10..+0x2f` into player state `0x0013f3d0..+0x1f`. The same routine later reloads the live-Moby pool through `0x0015ffd8` and carries additional record metadata into reset setup. Small retained instruction signatures in `tools/rac1-level2-checkpoint-probe.py` fail closed if this loaded path changes.
 
-The exact writer/activation event for `0x001bb830` is still unrecovered. Accordingly, this evidence supports checkpoint **restart placement and consumption**, not a guessed trigger volume or mission-script activation rule.
+The original report did not identify the writer/activation event for `0x001bb830`. The subsequent class-805 investigation identifies the producer and its source transform; evaluating its authored clip-volume admission in the host remains to be implemented. Accordingly, this evidence supports checkpoint **restart placement and consumption**, not a guessed trigger volume or mission-script activation rule.
 
 ## Authored trigger/data exclusions
 
@@ -118,8 +133,8 @@ second process restores campaign state and revisits 1 -> 2 -> 1, with every full
 entry again starting inactive.
 
 The level-2 checkpoint activation and environmental death are test inputs copied
-from the retained retail witness. This smoke does not identify or emulate the
-native gameplay writer, trigger volume, objective condition or broader script
+from the retained retail witness. This smoke does not execute the subsequently identified native class-805
+checkpoint writer, trigger volume, objective condition or broader script
 state that creates the record. Reload/revisit clearing remains the conservative
 OBP lifetime policy while native checkpoint serialization/planet-reload semantics
 are unresolved.
@@ -128,4 +143,4 @@ are unresolved.
 
 A level-2 checkpoint record, its loaded player-placement consumer, and a controlled death restart to that non-class-0 transform are now proven. The retained Veldin route remains a valid negative witness: it has no demonstrated mid-route checkpoint activation and restarts from authored class 0 while preserving the measured class-500 UID maps.
 
-Still unresolved are the generic R&C1 checkpoint definition/selector, the gameplay event or writer that activates/populates `0x001bb830`, and whether other levels share this exact storage/consumer shape. Checkpoint-specific semantics for weapon/ammo, Bolts, pickups, enemies, UID maps and broader script state likewise require their own controlled before/death/restart measurements. The level-2 evidence must therefore not be stretched into a generic activation policy.
+The common native class-805 updater and writer are now identified, and level-2 instance 708 matches this record. Still unresolved are full source clip-volume geometry/admission in Godot, cross-level checkpoint serialization/lifetime, and whether every level shares the same loaded restart consumer shape. Checkpoint-specific semantics for weapon/ammo, Bolts, pickups, enemies, UID maps and broader script state likewise require their own controlled before/death/restart measurements. The level-2 evidence must therefore not be stretched into a generic activation policy.

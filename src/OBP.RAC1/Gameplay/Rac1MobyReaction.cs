@@ -16,6 +16,10 @@ public sealed class Rac1MobyReaction
         749 when lethal => new(40f / 3600, 14f / 3600, 13f / 60, 14f / 60),
         1440 when lethal => new(28f / 3600, 5f / 3600, 10f / 60, 9.5f / 60),
         1440 => new(28f / 3600, 5f / 3600, 3.5f / 60, 4.75f / 60),
+        // Seeker damage helper 0x2c6230 configures 14/28 fatal and 3/6 hurt.
+        // The contact solver 0x25c698 is still approximated in Godot.
+        Rac1SeekerSession.ClassId when lethal => new(28f / 3600, 14f / 3600, 14f / 60, 28f / 60),
+        Rac1SeekerSession.ClassId => new(6f / 3600, 3f / 3600, 3f / 60, 6f / 60),
         _ => throw new ArgumentOutOfRangeException(nameof(nativeClass)),
     };
 

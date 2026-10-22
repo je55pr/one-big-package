@@ -32,6 +32,61 @@ public sealed class Rac1RatchetNanotechSessionTests
     }
 
     [Fact]
+    public void NativeSeekerExplosionDamagesRatchetAndHonoursSeventySevenTickProtection()
+    {
+        var session = new Rac1RatchetNanotechSession();
+        var hit = Rac1SeekerExplosion.DamageTo(70, Rac1GameplayEntityRef.Player);
+        Assert.Equal(3, session.ApplyDamage(hit).Nanotech);
+        Assert.Equal(3, session.ApplyDamage(hit).Nanotech);
+        for (int i = 0; i < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; i++)
+            session.UpdateNative();
+        Assert.Equal(2, session.ApplyDamage(hit).Nanotech);
+
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            hit.Source, hit.Target, 1, 0x00010001, owner: hit.Owner)));
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            hit.Source, hit.Target, 1, Rac1SeekerExplosion.NativeDamageFlags)));
+        Assert.Throws<NotSupportedException>(() =>
+            session.ApplyDamage(Rac1SeekerExplosion.DamageTo(70,
+                Rac1GameplayEntityRef.Moby(new(500, 2)))));
+    }
+
+    [Fact]
+    public void Class505ExplosionConsumesTwoNanotechAndRespectsSourceHitProtection()
+    {
+        var session = new Rac1RatchetNanotechSession();
+        var hit = Rac1ExplosiveCrateBlast.ToPlayer(12);
+        Assert.True(Rac1ExplosiveCrateBlast.IsNativePlayerBlast(hit));
+        Assert.Equal(Rac1ExplosiveCrateBlast.Damage, hit.NativeDamage);
+        Assert.Equal(Rac1ExplosiveCrateBlast.PlayerDamageFlags, hit.NativeDamageFlags);
+        Assert.Equal(2, session.ApplyDamage(hit).Nanotech);
+        Assert.Equal(2, session.ApplyDamage(hit).Nanotech);
+        for (int tick = 0; tick < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; tick++)
+            session.UpdateNative();
+        var lethal = session.ApplyDamage(hit);
+        Assert.Equal(0, lethal.Nanotech);
+        Assert.True(lethal.IsDead);
+        Assert.Equal(Rac1RatchetDeathCause.CombatZeroNanotech, lethal.DeathCause);
+    }
+
+    [Fact]
+    public void Class505ExplosionRejectsSpoofedPlayerDamageEnvelopes()
+    {
+        var session = new Rac1RatchetNanotechSession();
+        var expected = Rac1ExplosiveCrateBlast.ToPlayer(12);
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            expected.Source, expected.Target, 2, 0x00000001, owner: expected.Owner)));
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            expected.Source, expected.Target, 1, Rac1ExplosiveCrateBlast.PlayerDamageFlags,
+            owner: expected.Owner)));
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            expected.Source, expected.Target, 2, Rac1ExplosiveCrateBlast.PlayerDamageFlags)));
+        Assert.Throws<NotSupportedException>(() =>
+            session.ApplyDamage(Rac1ExplosiveCrateBlast.ToMoby(12, new(193, 5))));
+        Assert.Equal(4, session.Probe().Nanotech);
+    }
+
+    [Fact]
     public void FourRecoveredClass749HitsReachZeroAndDeath()
     {
         var session = new Rac1RatchetNanotechSession();

@@ -40,7 +40,8 @@ public partial class OBPGame
 
         _rac1CampaignSession = new Rac1CampaignRuntimeSession(
             restored.Campaign,
-            restored.Weapons);
+            restored.Weapons,
+            Rac1BuriedBoltProgress.Restore(restored.BuriedBoltHistory));
         _rac1CampaignRestoreKind = restored.Kind;
         _rac1BoltWallet = new Rac1BoltWallet(restored.Bolts);
         _rac1CollectedNovalisGoldBolts.UnionWith(restored.NovalisGoldBoltInstances);
@@ -129,7 +130,7 @@ public partial class OBPGame
         bool persisted = _rac1CampaignPersistence.PersistIfEnabled(
             _rac1CampaignSession.Campaign,
             _rac1CampaignSession.Weapons, _rac1BoltWallet,
-            _rac1CollectedNovalisGoldBolts);
+            _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts);
         string action = persisted ? "persisted" : "session-only";
         GD.Print(
             $"[rac1-campaign] {action} {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +

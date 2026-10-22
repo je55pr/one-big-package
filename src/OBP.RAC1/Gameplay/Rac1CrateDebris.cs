@@ -39,6 +39,7 @@ public sealed class Rac1CrateDebris
         500 or 511 => 357,
         501 => 348,
         502 => 354,
+        505 => 363, // Native break_crate variant 5 chooses source fragments 0x16b/0x16c.
         _ => throw new ArgumentOutOfRangeException(nameof(crateClass)),
     };
 
