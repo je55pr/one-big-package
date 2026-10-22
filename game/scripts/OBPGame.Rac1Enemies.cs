@@ -109,8 +109,10 @@ public partial class OBPGame
                 if (botStartup.HasValue)
                 {
                     _rac1ConstructorbotStartups.Add(authored.InstanceIndex, botStartup.Value);
-                    _rac1ConstructorbotAuthoredCenters.Add(authored.InstanceIndex,
-                        node.Root.GlobalPosition);
+                    int nativeWaypoint = Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+                        pvar, _rac1AridiaClipVolumes.Count);
+                    _rac1ConstructorbotNativeWaypoints.Add(authored.InstanceIndex,
+                        FromEffectNative(_rac1AridiaClipVolumes[nativeWaypoint].Centre));
                 }
                 // The Sandshark init routine's +0x258 branch enters state29.
                 var runtime = _rac1MobyRuntime.Register(authored, node.State,

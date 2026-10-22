@@ -13,6 +13,38 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         return pvar;
     }
 
+    [Fact]
+    public void NativeClipRecordWaypointIndexAndFullThreeDimensionalDistanceAreBounded()
+    {
+        var p = Pvar(3);
+        BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x188), 12);
+        Assert.Equal(12, Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 86));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 12));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 0));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(new byte[0x188], 86));
+        BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x188), -1);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(p, 86));
+
+        Vector3 centre = new(100, 200, 50);
+        Assert.True(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+            centre + new Vector3(3, 4, 0), centre, 5.01f));
+        Assert.False(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+            centre + new Vector3(3, 4, 0), centre, 5f));
+        Assert.False(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+            centre + new Vector3(0, 0, 20), centre, 20f));
+        Assert.True(Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+            centre, centre, .01f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.NativeWaypointActivation(centre, centre, -1f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+                new Vector3(float.NaN, 0, 0), centre, 20f));
+    }
+
     [Theory]
     [InlineData(0, 7, 0)]
     [InlineData(1, 10, 0)]

@@ -13,6 +13,42 @@ public static class Rac1AridiaConstructorbotNative
     public const int InitialModePvarOffset = 0x194;
     public const int EngagementRadiusPvarOffset = 0x180;
     public const int ActivationVolumePvarOffset = 0x18c;
+    public const int WaypointRecordPvarOffset = 0x188;
+
+    /// <summary>
+    /// LEVEL2:0x2d7c98 and 0x2d7fac index source 0x80-byte native records,
+    /// loaded by level_load.cpp from gameplay header +0x60 into 0x1600ec.
+    /// Each record's +0x30 translation is already Rac1ClipVolume.Centre.
+    /// It is NOT the path-list structure at gameplay header +0x70.
+    /// </summary>
+    public static int ReadWaypointRecordIndex(ReadOnlySpan<byte> pvar, int recordCount)
+    {
+        if (recordCount <= 0 || pvar.Length < WaypointRecordPvarOffset + sizeof(int))
+            throw new InvalidDataException("Constructorbot waypoint records unavailable.");
+        int index = BinaryPrimitives.ReadInt32LittleEndian(
+            pvar.Slice(WaypointRecordPvarOffset, sizeof(int)));
+        if (index < 0 || index >= recordCount)
+            throw new InvalidDataException("Constructorbot waypoint index is out of native record range.");
+        return index;
+    }
+
+    /// <summary>
+    /// Source state8/9 mode -1 compares target's full XYZ distance to the
+    /// native record +0x30 centre with PVar +0x184. Never substitute a
+    /// spawn-based distance or the oriented point_in_box test.
+    /// </summary>
+    public static bool NativeWaypointActivation(
+        System.Numerics.Vector3 targetNative, System.Numerics.Vector3 waypointNative,
+        float triggerRadius)
+    {
+        if (!float.IsFinite(triggerRadius) || triggerRadius < 0 ||
+            !float.IsFinite(targetNative.X) || !float.IsFinite(targetNative.Y) ||
+            !float.IsFinite(targetNative.Z) || !float.IsFinite(waypointNative.X) ||
+            !float.IsFinite(waypointNative.Y) || !float.IsFinite(waypointNative.Z))
+            throw new ArgumentOutOfRangeException(nameof(triggerRadius));
+        return System.Numerics.Vector3.Distance(targetNative, waypointNative) < triggerRadius;
+    }
+
     public const int ActivationDistancePvarOffset = 0x184;
     public const float FollowupEngagementMargin = 1f;
     public const float FollowupHeightTolerance = 3f;
@@ -42,8 +78,8 @@ public static class Rac1AridiaConstructorbotNative
     /// <summary>
     /// LEVEL2:0x2d7f8c..0x2d8080: authored modes 8/9 share the activation
     /// decision. If +0x18c is nonnegative it is a native clip-volume index;
-    /// otherwise target distance from a native 0x80-byte path/node +0x30
-    /// is compared against PVar +0x184. Null means that the required
+    /// otherwise target distance from the native 0x80-byte clip record +0x30
+    /// is compared against PVar +0x184. Null means that a required
     /// source check is unresolved: never treat it as a true activation.
     /// Mode8 uses source sequence4 and mode9 sequence16 on admission.
     /// </summary>
@@ -116,8 +152,8 @@ public static class Rac1AridiaConstructorbotNative
     /// Source state7 branch L2:0x2d7c98..0x2d7dd4:
     /// target within native PVar+0x180 radius of waypoint, vertical delta
     /// less than 4, Moby within one unit of waypoint, facing error below
-    /// about five degrees. Original waypoint comes from native path nodes;
-    /// a host may supply an explicitly provisional authored-spawn fallback.
+    /// about five degrees. Original waypoint is the decoded header +0x60
+    /// native record at PVar +0x188, with centre at record offset +0x30.
     /// </summary>
     public static bool State7AdmitsJointContact(
         float targetToWaypointDistance, float targetVerticalDelta,

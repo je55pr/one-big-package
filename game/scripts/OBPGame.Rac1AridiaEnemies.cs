@@ -11,15 +11,15 @@ public partial class OBPGame
 {
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
-    // Explicitly provisional replacement for the native 0x1600ec path-node
-    // lookup used when class612 state7 chooses its joint-contact attack.
-    private readonly Dictionary<int, Vector3> _rac1ConstructorbotAuthoredCenters = [];
+    // Source table at 0x1600ec is the gameplay +0x60 list already decoded
+    // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
+    private readonly Dictionary<int, Vector3> _rac1ConstructorbotNativeWaypoints = [];
     private IReadOnlyList<Rac1ClipVolume> _rac1AridiaClipVolumes = [];
 
     private void ResetRac1ConstructorbotStartups()
     {
         _rac1ConstructorbotStartups.Clear();
-        _rac1ConstructorbotAuthoredCenters.Clear();
+        _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1AridiaClipVolumes = [];
     }
 
@@ -50,11 +50,19 @@ public partial class OBPGame
                     _rac1MobyRuntime.SetNativeState(instance, active.NativeState);
                 return active;
             }
-            // Native +0x188 addresses a separate 0x80-byte node table.
-            // It is NOT the decoded Rac1Paths format. Until that table is
-            // recovered, retain the explicitly provisional host adapter
-            // rather than invent a distance check from the authored spawn.
-            return null;
+            // L2:0x2d7fac uses 3D distance to the SAME native clip-list
+            // record's translation +0x30. No oriented-box check for -1.
+            if (_player is not { } target || !_rac1ConstructorbotNativeWaypoints.TryGetValue(
+                    instance.InstanceIndex, out var sourceWaypoint))
+                return null;
+            bool close = Rac1AridiaConstructorbotNative.NativeWaypointActivation(
+                ToEffectNative(target.GlobalPosition),
+                ToEffectNative(sourceWaypoint),
+                Rac1AridiaConstructorbotNative.ReadActivationDistance(instance.PVar.Span));
+            var activated = Rac1AridiaConstructorbotNative.StepActivation(state, close);
+            if (activated.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, activated.NativeState);
+            return activated;
         }
         if (state == 2 &&
             _rac1ConstructorbotStartups.TryGetValue(instance.InstanceIndex, out var startup) &&
@@ -81,12 +89,11 @@ public partial class OBPGame
         if (state == Rac1AridiaConstructorbotNative.RestState)
         {
             if (_player is { } player &&
-                _rac1ConstructorbotAuthoredCenters.TryGetValue(instance.InstanceIndex, out var anchor))
+                _rac1ConstructorbotNativeWaypoints.TryGetValue(instance.InstanceIndex, out var anchor))
             {
-                // Native L2:0x2d7c98 tests the actor's selected path-node
-                // against the current target before entering state11.
-                // The host's temporary waypoint is the AUTHORED SPAWN
-                // position, not an invented position relative to Ratchet.
+                // L2:0x2d7c98 selects the actual gameplay +0x60 record at
+                // PVar+0x188 and tests its original +0x30 translation.
+                // Unlike the previous fallback, this is a retail waypoint.
                 Vector3 position = enemy.Node.Root.GlobalPosition;
                 Vector3 target = player.GlobalPosition;
                 Vector3 planar = target - position;

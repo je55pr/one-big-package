@@ -81,6 +81,21 @@ public sealed class Rac1AridiaEnemyTests
         Assert.Equal(558, Assert.Single(bots, bot =>
             Rac1AridiaConstructorbotNative.ReadActivationVolume(bot.PVar!) == 21).Index);
         var volumes = Rac1ClipVolumes.Read(gameplay);
+        Assert.Equal(86, volumes.Count);
+        Assert.All(bots, bot =>
+            Assert.InRange(Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+                bot.PVar!, volumes.Count), 0, volumes.Count - 1));
+        Assert.Equal(22, Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+            placements[548].PVar!, volumes.Count));
+        Assert.Equal(12, Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+            placements[549].PVar!, volumes.Count));
+        var bot548 = placements[548].Position;
+        Assert.InRange(Vector3.Distance(
+            volumes[22].Centre, new Vector3(bot548.X, bot548.Y, bot548.Z)), 0, 1);
+        var bot560 = placements[560].Position;
+        Assert.True(Vector3.Distance(volumes[28].Centre,
+            new Vector3(bot560.X, bot560.Y, bot560.Z)) > 1,
+            "native waypoint is distinct from authored spawn; never substitute spawn");
         Assert.InRange(21, 0, volumes.Count - 1);
         Assert.True(volumes[21].Contains(volumes[21].Centre));
         Assert.All(bots, bot =>
