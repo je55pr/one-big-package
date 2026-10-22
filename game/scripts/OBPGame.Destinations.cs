@@ -211,7 +211,7 @@ public partial class OBPGame
         Input.MouseMode = Input.MouseModeEnum.Visible;
 
         _destinationSelector?.QueueFree();
-        _destinationSelector = new DestinationSelectorUi();
+        _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled };
         _destinationSelector.DestinationChosen += OnDestinationChosen;
         _destinationSelector.BackRequested += () =>
         {

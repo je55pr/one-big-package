@@ -12,6 +12,7 @@ public partial class OBPGame
     private Input.MouseModeEnum _prePauseMouseMode;
     private Control? _settingsReturnFocus;
     private int _prePauseHeldButtons;
+    private bool _debugOutputEnabled;
 
     private bool PauseMenuOpen =>
         _pauseMenu is not null && IsInstanceValid(_pauseMenu);
@@ -41,6 +42,7 @@ public partial class OBPGame
         _pauseMenu = new PauseMenuUi
         {
             ProcessMode = ProcessModeEnum.Always,
+            DebugOutputEnabled = _debugOutputEnabled,
             MovementStatesAvailable = _player?.UseRac1Gameplay == true,
             WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
             EquipmentStatus = _player is { } activePlayer
@@ -49,6 +51,7 @@ public partial class OBPGame
         };
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
+        _pauseMenu.DebugOutputChanged += SetDebugOutputEnabled;
         _pauseMenu.SaveMovementStateRequested += SaveMovementState;
         _pauseMenu.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
         _pauseMenu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_rac1WeaponPreviewInventory is not null); };
@@ -65,6 +68,25 @@ public partial class OBPGame
         GD.Print("[pause] menu opened");
         return true;
     }
+
+    private void SetDebugOutputEnabled(bool enabled)
+    {
+        _debugOutputEnabled = enabled;
+        _player?.SetDebugOutputEnabled(enabled);
+        if (_playerHud is not null && IsInstanceValid(_playerHud))
+            _playerHud.DebugOutputEnabled = enabled;
+        if (!enabled)
+        {
+            if (_inspector is { IsOpen: true }) _inspector.Toggle();
+            _overlay?.Clear();
+            if (_movementStateNotice is not null && IsInstanceValid(_movementStateNotice))
+                _movementStateNotice.Visible = false;
+            ++_movementStateNoticeGeneration;
+        }
+        UpdateWorldHud();
+        UpdatePlayerHud();
+    }
+
     public bool TryClosePauseMenu()
     {
         if (!PauseMenuOpen || ControllerSettingsOpen)

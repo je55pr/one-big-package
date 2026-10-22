@@ -36,6 +36,11 @@ public static class RuntimeCameraSceneAdapter
     {
         ArgumentNullException.ThrowIfNull(camera);
         ScenePose pose = ToScenePose(state);
+        if (state.VerticalFieldOfViewRadians is { } fov)
+        {
+            camera.KeepAspect = Camera3D.KeepAspectEnum.Height;
+            camera.Fov = (float)(fov * 180d / Math.PI);
+        }
         camera.LookAtFromPosition(
             pose.Eye,
             pose.Eye + pose.Forward,

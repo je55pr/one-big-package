@@ -46,6 +46,7 @@ public sealed class DebugOverlay
     private readonly RuntimeWorld _world;
     private readonly Node3D _root;
     private Node3D? _gizmos;
+    private readonly System.Collections.Generic.Dictionary<Node3D, bool> _visibilityBeforeFilter = new();
 
     private Layer _active;
     private int _isolationCursor;
@@ -146,22 +147,13 @@ public sealed class DebugOverlay
                 visible = false;
             }
 
-            mi.Visible = visible;
+            ApplyInspectionVisibility(mi, visible);
             ApplyTint(mi, tint ? KindColour.GetValueOrDefault(kind, new Color(1f, 0f, 1f)) : null);
         }
 
         if (_result.SkyRoot is { } sky && GodotObject.IsInstanceValid(sky))
         {
-            sky.Visible = !hideSky && (isolate is null || isolate == "sky");
-        }
-
-        // Collision bodies: keep physics, just toggle the fill/wire mesh.
-        foreach (var child in _root.GetChildren())
-        {
-            if (child is StaticBody3D body)
-            {
-                body.Visible = true; // physics stays; visuals handled below
-            }
+            ApplyInspectionVisibility(sky, !hideSky && (isolate is null || isolate == "sky"));
         }
 
         ClearGizmos();
@@ -183,6 +175,21 @@ public sealed class DebugOverlay
         if (IsOn(Layer.Skeleton))
         {
             BuildSkeletons();
+        }
+    }
+
+    private void ApplyInspectionVisibility(Node3D node, bool allowed)
+    {
+        if (allowed)
+        {
+            // Restore only visibility owned by this filter. A bounds/tint
+            // overlay must not reveal hidden actors or the authored Ratchet.
+            if (_visibilityBeforeFilter.Remove(node, out bool previous)) node.Visible = previous;
+        }
+        else
+        {
+            _visibilityBeforeFilter.TryAdd(node, node.Visible);
+            node.Visible = false;
         }
     }
 

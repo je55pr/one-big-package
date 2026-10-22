@@ -6,6 +6,7 @@ namespace OneBigPackage;
 
 public partial class SourceManagerUi : CanvasLayer
 {
+    public bool DebugOutputEnabled { get; init; }
     public event Action<ObpSourceGame>? SelectRequested;
     public event Action<ObpSourceGame>? ForgetRequested;
     public event Action? BrowseWorldsRequested;
@@ -119,9 +120,10 @@ public partial class SourceManagerUi : CanvasLayer
 
             if (attached is null)
             {
-                status.Text = hasWorldProvider
-                    ? $"SOURCE NEEDED  •  WORLDS READY\nExpected {definition.Authority.Serial}  •  {definition.Authority.BuildId}"
-                    : $"SOURCE NEEDED  •  RUNTIME PENDING\nExpected {definition.Authority.Serial}  •  {definition.Authority.BuildId}";
+                string expected = DebugOutputEnabled
+                    ? $"Expected {definition.Authority.Serial}  •  {definition.Authority.BuildId}"
+                    : "Select the supported NTSC-U disc image.";
+                status.Text = (hasWorldProvider ? "SOURCE NEEDED  •  WORLDS READY\n" : "SOURCE NEEDED  •  RUNTIME PENDING\n") + expected;
                 status.Modulate = UiTheme.TextDim;
                 select.Text = "ATTACH DISC IMAGE";
                 forget.Disabled = true;
@@ -131,9 +133,8 @@ public partial class SourceManagerUi : CanvasLayer
                 attachedCount++;
                 if (hasWorldProvider) playableCount++;
                 string filename = System.IO.Path.GetFileName(attached.Path);
-                status.Text = hasWorldProvider
-                    ? $"READY  •  WORLDS ONLINE\n{attached.DiscSerial}  •  {attached.Identity.BuildId}  •  {filename}"
-                    : $"ATTACHED  •  RUNTIME PENDING\n{attached.DiscSerial}  •  {attached.Identity.BuildId}  •  {filename}";
+                string details = DebugOutputEnabled ? $"{attached.DiscSerial}  •  {attached.Identity.BuildId}  •  {filename}" : filename;
+                status.Text = (hasWorldProvider ? "READY  •  WORLDS ONLINE\n" : "ATTACHED  •  RUNTIME PENDING\n") + details;
                 status.TooltipText = attached.Path;
                 status.Modulate = hasWorldProvider ? UiTheme.Ready : UiTheme.Warning;
                 select.Text = "CHANGE SOURCE";

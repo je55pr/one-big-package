@@ -15,8 +15,20 @@ namespace OneBigPackage;
 
 public partial class PlayerHost : CharacterBody3D
 {
+    public bool DebugOutputEnabled { get; private set; }
+
+    public void SetDebugOutputEnabled(bool enabled)
+    {
+        DebugOutputEnabled = enabled;
+        if (_hud is null) return;
+        _hud.Visible = enabled;
+        if (enabled) UpdateHud(IsOnFloor());
+        else _hud.Text = string.Empty;
+    }
+
     private void UpdateHud(bool onFloor)
     {
+        if (!DebugOutputEnabled) return;
         var p = GlobalPosition;
         float speed = new Vector2(Velocity.X, Velocity.Z).Length();
         string diagnostics = DevelopmentControls.DiagnosticsVisible ? BuildInputDiagnostics() : string.Empty;

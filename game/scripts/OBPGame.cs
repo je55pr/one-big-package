@@ -186,7 +186,7 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        if (_mode != Mode.World)
+        if (_mode != Mode.World || !_debugOutputEnabled)
         {
             return;
         }
@@ -349,13 +349,16 @@ public partial class OBPGame : Node3D
 
         _inspector = new WorldInspectorPanel(result, world, _worldHost);
         _ui.AddChild(_inspector);
-        if (_args.Inspect)
+        if (_args.Inspect && _debugOutputEnabled)
         {
             CallDeferred(nameof(OpenInspectorDeferred));
         }
     }
 
-    private void OpenInspectorDeferred() => _inspector?.Toggle();
+    private void OpenInspectorDeferred()
+    {
+        if (_debugOutputEnabled) _inspector?.Toggle();
+    }
 
     /// <summary>
     /// Reset the overlay and apply a comma-separated layer / <c>isolate:&lt;kind&gt;</c>
@@ -569,6 +572,7 @@ public partial class OBPGame : Node3D
             Position = spawn,
         };
         _playerRoot.AddChild(player);
+        player.SetDebugOutputEnabled(_debugOutputEnabled);
         player.RotateY(yaw);
         _camera.Current = false;
         _activeCamera = player.Camera;
@@ -590,7 +594,7 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        _playerHud = new PlayerHud();
+        _playerHud = new PlayerHud { DebugOutputEnabled = _debugOutputEnabled };
         _ui.AddChild(_playerHud);
     }
 
@@ -606,18 +610,25 @@ public partial class OBPGame : Node3D
     {
         if (_worldHud is not null && IsInstanceValid(_worldHud))
         {
-            _worldHud.Visible = true;
+            _worldHud.Visible = _debugOutputEnabled;
             return;
         }
 
-        _worldHud = new Label { Name = "WorldHud", Position = new Vector2(16, 12) };
+        _worldHud = new Label { Name = "WorldHud", Position = new Vector2(16, 12), Visible = _debugOutputEnabled, MouseFilter = Control.MouseFilterEnum.Ignore };
         _worldHud.AddThemeColorOverride("font_color", new Color(0.85f, 0.92f, 1f));
         _ui.AddChild(_worldHud);
     }
 
     private void UpdateWorldHud()
     {
-        if (_worldHud is null || _world is not { } w || _sceneResult is not { } r)
+        if (_worldHud is null) return;
+        _worldHud.Visible = _debugOutputEnabled && _mode == Mode.World && _world is not null;
+        if (!_worldHud.Visible)
+        {
+            _worldHud.Text = string.Empty;
+            return;
+        }
+        if (_world is not { } w || _sceneResult is not { } r)
         {
             return;
         }

@@ -142,7 +142,8 @@ public partial class OBPGame
             GD.Print($"[sources] {ok} path={attached.Path}");
             if (reportStatus)
             {
-                _sourceManager?.SetStatus(uiWarning is null ? ok : $"{ok}\n{uiWarning}", error: uiWarning is not null);
+                string message = _debugOutputEnabled ? ok : $"✓ {attached.Definition.DisplayName} attached";
+                _sourceManager?.SetStatus(uiWarning is null ? message : $"{message}\n{uiWarning}", error: uiWarning is not null);
             }
             return true;
         }
@@ -192,7 +193,7 @@ public partial class OBPGame
         Input.MouseMode = Input.MouseModeEnum.Visible;
 
         _sourceManager?.QueueFree();
-        _sourceManager = new SourceManagerUi();
+        _sourceManager = new SourceManagerUi { DebugOutputEnabled = _debugOutputEnabled };
         _sourceManager.SelectRequested += OpenSourcePicker;
         _sourceManager.ForgetRequested += ForgetSource;
         _sourceManager.BrowseWorldsRequested += BrowseWorlds;

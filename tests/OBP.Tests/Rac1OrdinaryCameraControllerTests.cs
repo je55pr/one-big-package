@@ -1,255 +1,190 @@
+using System.Text.Json;
 using OBP.Core.Math;
 using OBP.RAC1.Camera;
-using OBP.Runtime.Camera;
 
 namespace OBP.Tests;
 
 public sealed class Rac1OrdinaryCameraControllerTests
 {
-    [Fact]
-    public void NeutralOrdinaryCamera_DoesNotInventAlwaysOnRecenter()
+    public static IEnumerable<object[]> NativeScenarios()
     {
-        var camera = new Rac1OrdinaryCameraController();
-        var player = new Vec3(10d, 20d, 30d);
-        camera.Reset(player, 1.25d);
-
-        for (int i = 0; i < 600; i++)
-            camera.Step(new Rac1OrdinaryCameraController.Input(
-                player, 0d, 0d, default));
-
-        Assert.Equal(1.25d, camera.ControlHeading, 12);
-    }
-
-    [Fact]
-    public void FixedAuthorityFraming_ReproducesRetainedEyeWitness()
-    {
-        var camera = new Rac1OrdinaryCameraController();
-        var player = new Vec3(
-            154.7710418701172d,
-            120.58262634277344d,
-            29.484375d);
-        camera.Reset(player, -2.073779582977295d);
-
-        Rac1CameraState state = camera.Step(new Rac1OrdinaryCameraController.Input(
-            player, 0d, 0d, default));
-
-        Assert.Equal(157.66326904296875d, state.Framing.EyeNativeZUp.X, 4);
-        Assert.Equal(125.8394775390625d, state.Framing.EyeNativeZUp.Y, 4);
-        Assert.InRange(
-            state.Framing.EyeNativeZUp.Z,
-            31.4796240234375d,
-            31.4996240234375d);
-    }
-
-    [Fact]
-    public void ManualHorizontalInput_HasRecoveredDirectionAndReleaseInertia()
-    {
-        var left = new Rac1OrdinaryCameraController();
-        var player = new Vec3(0d, 0d, 0d);
-        left.Reset(player, 0d);
-        for (int i = 0; i < 36; i++)
-            left.Step(new Rac1OrdinaryCameraController.Input(
-                player, -1d, 0d, default));
-
-        double afterPulse = left.ControlHeading;
-        for (int i = 0; i < 10; i++)
-            left.Step(new Rac1OrdinaryCameraController.Input(
-                player, 0d, 0d, default));
-
-        Assert.True(afterPulse > 0d);
-        Assert.True(left.ControlHeading > afterPulse);
-
-        var right = new Rac1OrdinaryCameraController();
-        right.Reset(player, 0d);
-        for (int i = 0; i < 36; i++)
-            right.Step(new Rac1OrdinaryCameraController.Input(
-                player, 1d, 0d, default));
-
-        Assert.True(right.ControlHeading < 0d);
-    }
-
-    [Fact]
-    public void ManualHorizontalPulseAndRelease_MatchesRetainedHeadingTrace()
-    {
-        const double startHeading = -2.073779582977295d;
-        var player = new Vec3(154.7710418701172d, 120.58262634277344d, 29.484375d);
-
-        var left = new Rac1OrdinaryCameraController();
-        left.Reset(player, startHeading);
-        for (int i = 0; i < 30; i++)
-            left.Step(new Rac1OrdinaryCameraController.Input(player, 0d, 0d, default));
-        for (int i = 0; i < 36; i++)
-            left.Step(new Rac1OrdinaryCameraController.Input(player, -1d, 0d, default));
-        for (int i = 0; i < 100; i++)
-            left.Step(new Rac1OrdinaryCameraController.Input(player, 0d, 0d, default));
-        Assert.InRange(left.ControlHeading, -1.2579d, -1.2559d);
-
-        var right = new Rac1OrdinaryCameraController();
-        right.Reset(player, startHeading);
-        for (int i = 0; i < 30; i++)
-            right.Step(new Rac1OrdinaryCameraController.Input(player, 0d, 0d, default));
-        for (int i = 0; i < 36; i++)
-            right.Step(new Rac1OrdinaryCameraController.Input(player, 1d, 0d, default));
-        for (int i = 0; i < 100; i++)
-            right.Step(new Rac1OrdinaryCameraController.Input(player, 0d, 0d, default));
-        Assert.InRange(right.ControlHeading, -2.8910d, -2.8890d);
+        using var doc = ReadTrace();
+        return doc.RootElement.GetProperty("cases").EnumerateArray().Select(c => new object[] { c.GetProperty("name").GetString()! }).ToArray();
     }
 
     [Theory]
-    [InlineData(0.30d, 0d)]
-    [InlineData(-0.30d, 0d)]
-    [InlineData(1d, 1d)]
-    [InlineData(-1d, -1d)]
-    [InlineData(0.65d, 0.5d)]
-    public void VerticalManualInput_UsesRecoveredSecondaryDeadzone(
-        double input,
-        double expected)
+    [MemberData(nameof(NativeScenarios))]
+    public void FollowPipeline_MatchesOriginalMipsExecution(string scenario)
     {
-        Assert.Equal(
-            expected,
-            Rac1OrdinaryCameraController.RemapVerticalInput(input),
-            7);
+        using var doc = ReadTrace();
+        var c = doc.RootElement.GetProperty("cases").EnumerateArray().Single(c => c.GetProperty("name").GetString() == scenario);
+        var options = c.GetProperty("options").EnumerateArray().Select(v => v.GetInt32()).ToArray();
+        var camera = new Rac1OrdinaryCameraController();
+        camera.Reset(Vec3.Zero, 0d);
+        Vec3 player = Vec3.Zero;
+        int frame = 0;
+        var samples = c.GetProperty("samples").EnumerateArray().ToDictionary(s => s.GetProperty("frame").GetInt32());
+        foreach (var segment in c.GetProperty("segments").EnumerateArray())
+        {
+            var move = Vector(segment.GetProperty("move"));
+            var stick = segment.GetProperty("stick").EnumerateArray().Select(v => v.GetDouble()).ToArray();
+            for (int i = 0; i < segment.GetProperty("frames").GetInt32(); ++i)
+            {
+                player += move;
+                var state = camera.Step(new(player, stick[0], stick[1], default,
+                    Options: new((Rac1CameraDirection)options[0], (Rac1CameraDirection)options[1], (Rac1CameraSpeed)options[2])));
+                if (!samples.TryGetValue(++frame, out var expected)) continue;
+                // Independent original-code output. The initial original constructor/profile
+                // transition and PS2 math rounding account for up to .014 world units.
+                Near(Vector(expected.GetProperty("eye")), state.Framing.EyeNativeZUp, .016d, $"{scenario}/{frame} eye");
+                var runtimeForward = state.ToRuntimeState().Forward;
+                Near(Vector(expected.GetProperty("forward")), new(runtimeForward.X, runtimeForward.Z, runtimeForward.Y), .002d, $"{scenario}/{frame} view");
+                Near(Vector(expected.GetProperty("desiredOffset")), camera.CaptureSnapshot().Pipeline!.DesiredOffset, .016d, $"{scenario}/{frame} desired offset");
+                Assert.InRange(Math.Abs(camera.ManualPitchState - expected.GetProperty("manual")[1].GetDouble()), 0d, .001d);
+            }
+        }
     }
 
     [Fact]
-    public void VerticalManualInput_OrbitsEyeAroundAnchorAtConstantRadius()
+    public void NativeNormalAndInvertedOptions_AreIndependentAndUseBootDefaults()
+    {
+        var defaults = Rac1CameraOptions.Default;
+        Assert.Equal(1, (int)defaults.Horizontal);
+        Assert.Equal(1, (int)defaults.Vertical);
+        Assert.Equal(1, (int)defaults.Speed);
+        Assert.Equal((.6d, -.8d), defaults.SelectManualInput(.6d, -.8d));
+        Assert.Equal((-.6d, -.8d), (defaults with { Horizontal = Rac1CameraDirection.Inverted }).SelectManualInput(.6d, -.8d));
+        Assert.Equal((.6d, .8d), (defaults with { Vertical = Rac1CameraDirection.Inverted }).SelectManualInput(.6d, -.8d));
+        Assert.Throws<ArgumentOutOfRangeException>(() => (defaults with { Speed = (Rac1CameraSpeed)3 }).Validate());
+    }
+
+    [Fact]
+    public void OrdinaryLens_UsesNativeProjectionInsteadOfGodotDefault()
     {
         var camera = new Rac1OrdinaryCameraController();
-        var player = new Vec3(10d, 20d, 30d);
-        camera.Reset(player, 0.75d);
-        Rac1CameraState neutral = camera.Step(new Rac1OrdinaryCameraController.Input(
-            player, 0d, 0d, default));
-
-        Rac1CameraState state = neutral;
-        for (int i = 0; i < 36; i++)
-        {
-            state = camera.Step(new Rac1OrdinaryCameraController.Input(
-                player, 0d, 1d, default));
-        }
-
-        Vec3 radial = state.Framing.RadialOffsetNativeZUp;
-        double radius = Math.Sqrt(
-            (radial.X * radial.X) +
-            (radial.Y * radial.Y) +
-            (radial.Z * radial.Z));
-        Assert.Equal(camera.CurrentRadius, radius, 10);
-        Assert.Equal(0.75d, camera.ControlHeading, 12);
-        Assert.True(radial.Z < -3d);
-        Assert.NotEqual(neutral.Framing.EyeNativeZUp.Z, state.Framing.EyeNativeZUp.Z);
-        Assert.Equal(
-            state.Framing.EyeAnchorNativeZUp + radial,
-            state.Framing.EyeNativeZUp);
-
-        double planarRadius = Math.Sqrt(
-            (radial.X * radial.X) +
-            (radial.Y * radial.Y));
-        double lookTargetZ =
-            state.Follow.FilteredTargetNativeZUp.Z +
-            Rac1OrdinaryCameraController.OrdinaryLookHeight;
-        double expectedPitch = Math.Atan2(
-            state.Framing.EyeNativeZUp.Z - lookTargetZ,
-            planarRadius);
-        Assert.Equal(expectedPitch, state.Control.Pitch, 12);
+        var state = camera.Step(new(Vec3.Zero, 0, 0, default)).ToRuntimeState();
+        Assert.InRange(state.VerticalFieldOfViewRadians!.Value * 180d / Math.PI, 52.03d, 52.06d);
+        Assert.Throws<ArgumentOutOfRangeException>(() => (state with { VerticalFieldOfViewRadians = double.NaN }).Validate());
     }
 
     [Fact]
-    public void VerticalManualPulse_NeutralReleaseHoldsPlayerChosenOrbit()
+    public void NeutralCamera_DoesNotInventAlwaysOnRecenter()
     {
         var camera = new Rac1OrdinaryCameraController();
-        var player = new Vec3(10d, 20d, 30d);
-        camera.Reset(player, 0.75d);
-
-        Rac1CameraState state = null!;
-        for (int i = 0; i < 24; i++)
-        {
-            state = camera.Step(new Rac1OrdinaryCameraController.Input(
-                player, 0d, 0.8d, default));
-        }
-
-        double pitchAtRelease = camera.ManualPitchState;
-        Vec3 eyeAtRelease = state.Framing.EyeNativeZUp;
-
-        for (int i = 0; i < 180; i++)
-        {
-            state = camera.Step(new Rac1OrdinaryCameraController.Input(
-                player, 0d, 0d, default));
-        }
-
-        Assert.True(pitchAtRelease > 0.4d);
-        Assert.Equal(pitchAtRelease, camera.ManualPitchState, 12);
-        Assert.Equal(
-            -pitchAtRelease * Rac1OrdinaryCameraController.VerticalSpanRadians,
-            camera.VerticalOrbitRadians,
-            12);
-        Assert.Equal(eyeAtRelease, state.Framing.EyeNativeZUp);
+        camera.Reset(new(10, 20, 30), 1.25d);
+        for (int i = 0; i < 600; ++i) camera.Step(new(new(10, 20, 30), 0, 0, default));
+        Assert.Equal(1.25d, camera.ControlHeading, 10);
     }
 
     [Fact]
-    public void FullVerticalInput_MatchesRecoveredOrbitGeometry()
+    public void ReleasingYaw_ClearsManualCommandWhileActualEyeContinuesTurning()
     {
         var camera = new Rac1OrdinaryCameraController();
-        var player = new Vec3(0d, 0d, 0d);
-        camera.Reset(player, 0d);
-
-        Rac1CameraState state = null!;
-        for (int i = 0; i < 36; i++)
-        {
-            state = camera.Step(new Rac1OrdinaryCameraController.Input(
-                player, 0d, 1d, default));
-        }
-
-        Assert.Equal(1d, camera.ManualPitchState, 12);
-        Assert.Equal(-Rac1OrdinaryCameraController.VerticalSpanRadians,
-            camera.VerticalOrbitRadians, 12);
-        Assert.Equal(-4.596244089776054d,
-            state.Framing.RadialOffsetNativeZUp.X, 10);
-        Assert.Equal(0d, state.Framing.RadialOffsetNativeZUp.Y, 12);
-        Assert.Equal(-3.8567065614623854d,
-            state.Framing.RadialOffsetNativeZUp.Z, 10);
-        Assert.Equal(-0.630784939287828d, state.Control.Pitch, 10);
+        for (int i = 0; i < 36; ++i) camera.Step(new(Vec3.Zero, 1, 0, default));
+        double before = camera.ControlHeading;
+        var state = camera.Step(new(Vec3.Zero, 0, 0, default));
+        Assert.Equal(0d, state.Control.HeadingStep); // Separate directional-pad producer, not offset yaw velocity.
+        Assert.Equal(0d, camera.ManualYawState);
+        Assert.True(camera.ControlHeading > before);
     }
 
     [Fact]
-    public void ObstructionContact_PullsInAndClearLineUsesNativeRelease()
+    public void VerticalRelease_UsesSlowerNativeLimitAndRetainsMotionDuringRelease()
     {
         var camera = new Rac1OrdinaryCameraController();
-        var player = new Vec3(0d, 0d, 0d);
-        camera.Reset(player, 0d);
-
-        camera.Step(new Rac1OrdinaryCameraController.Input(
-            player,
-            0d,
-            0d,
-            new RuntimeCameraObstructionFacts(true, 0d)));
-
-        Assert.Equal(
-            Rac1CameraRecurrence.ObstructionPullInStep,
-            camera.ObstructionCorrection,
-            12);
-        Assert.Equal(
-            Rac1CameraRecurrence.ObstructionContactTimerTicks,
-            camera.ObstructionReleaseTicks);
-
-        double correction = camera.ObstructionCorrection;
-        camera.Step(new Rac1OrdinaryCameraController.Input(
-            player, 0d, 0d, default));
-
-        Assert.True(camera.ObstructionCorrection < correction);
-        Assert.Equal(
-            Rac1CameraRecurrence.ObstructionContactTimerTicks - 1,
-            camera.ObstructionReleaseTicks);
+        for (int i = 0; i < 60; ++i) camera.Step(new(Vec3.Zero, 0, 1, default));
+        var atRelease = camera.CaptureSnapshot();
+        var first = camera.Step(new(Vec3.Zero, 0, 0, default));
+        Assert.InRange(camera.ManualPitchState, .989d, .991d);
+        Assert.True(first.Framing.EyeNativeZUp.Z > atRelease.Pipeline!.PositionBase.Z + 2d + atRelease.Pipeline.ActualOffset.Z);
+        for (int i = 0; i < 180; ++i) camera.Step(new(Vec3.Zero, 0, 0, default));
+        Assert.Equal(0d, camera.ManualPitchState);
+        Assert.InRange(camera.VerticalOrbitRadians, -.001d, .001d);
     }
 
     [Fact]
-    public void RadialFollow_ExposesRecoveredCoefficientSelection()
+    public void Snapshot_RetainsAllSpringsAcrossResume()
     {
-        Assert.Equal(
-            (0.02d, 0.2d),
-            Rac1OrdinaryCameraController.RadialCoefficients(
-                Rac1CameraRadialFollowProfile.Baseline));
-        Assert.Equal(
-            (0.04d, 0.3d),
-            Rac1OrdinaryCameraController.RadialCoefficients(
-                Rac1CameraRadialFollowProfile.Fast));
+        var first = new Rac1OrdinaryCameraController();
+        for (int i = 0; i < 30; ++i) first.Step(new(new(i * .1, i * .02, i * .03), .7, -.8, default));
+        var second = new Rac1OrdinaryCameraController();
+        second.RestoreSnapshot(first.CaptureSnapshot());
+        for (int i = 30; i < 100; ++i)
+        {
+            var input = new Rac1OrdinaryCameraController.Input(new(i * .1, i * .02, 0), 0, 0, default);
+            Assert.Equal(first.Step(input), second.Step(input));
+        }
     }
+
+    [Fact]
+    public void LegacyBookmark_WithoutPipelineExtensionStillLoads()
+    {
+        var first = new Rac1OrdinaryCameraController(); first.Reset(new(1, 2, 3), .4d);
+        var second = new Rac1OrdinaryCameraController();
+        second.RestoreSnapshot(first.CaptureSnapshot() with { Pipeline = null });
+        Assert.NotNull(second.Step(new(new(1, 2, 3), 0, 0, default)).Validate());
+        Assert.Equal(.4d, second.ControlHeading, 10);
+    }
+
+    [Fact]
+    public void SphereProbes_KeepCameraClearOfWallAndFloorWithBoundedWork()
+    {
+        var camera = new Rac1OrdinaryCameraController();
+        var geometry = new Planes();
+        for (int frame = 0; frame < 240; ++frame)
+        {
+            geometry.Spheres = 0;
+            var state = camera.Step(new(Vec3.Zero, 0, frame < 120 ? -1 : 0, default), geometry);
+            Assert.InRange(geometry.Spheres, 1, 30);
+            Assert.InRange(state.EffectiveRadius, 1.5d, 6d);
+            if (frame > 100)
+            {
+                Assert.True(state.Framing.EyeNativeZUp.X > -3d);
+                Assert.True(state.Framing.EyeNativeZUp.Z > 0d);
+            }
+        }
+        Assert.True(camera.ObstructionCorrection > 1d);
+    }
+
+    private sealed class Planes : IRac1CameraGeometry
+    {
+        public int Spheres;
+        public Rac1CameraContact? Sphere(Vec3 p, double radius)
+        {
+            ++Spheres;
+            if (p.X - radius < -3) return new(new(-3, p.Y, p.Z), new(-3 + radius, p.Y, p.Z));
+            if (p.Z < radius) return new(new(p.X, p.Y, 0), new(p.X, p.Y, radius));
+            return null;
+        }
+        public Vec3? Segment(Vec3 a, Vec3 b) => b.Z < 0 && a.Z > 0 ? new(a.X, a.Y, 0) : null;
+    }
+
+    [Theory]
+    [InlineData(-2.073779582977295)]
+    [InlineData(.523598775598299)]
+    [InlineData(2.842167616)]
+    public void ArbitraryHeadingsAndMovingTargets_DoNotProduceNegativeClearanceFromRounding(double heading)
+    {
+        var camera = new Rac1OrdinaryCameraController();
+        camera.Reset(new(132.09, 115.48, 31.506617), heading);
+        var empty = new EmptyGeometry();
+        for (int frame = 0; frame < 1200; ++frame)
+        {
+            var player = new Vec3(132.09 + Math.Sin(frame * .01), 115.48 + frame * .01, 31.506617 + Math.Sin(frame * .03));
+            var state = camera.Step(new(player, frame % 120 < 60 ? .7 : -.7, 0, default), empty);
+            Assert.InRange(state.EffectiveRadius, 1.5d, 6d);
+        }
+    }
+
+    private sealed class EmptyGeometry : IRac1CameraGeometry
+    {
+        public Rac1CameraContact? Sphere(Vec3 p, double radius) => null;
+        public Vec3? Segment(Vec3 a, Vec3 b) => null;
+    }
+
+    private static JsonDocument ReadTrace() => JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root, "research/generated/rac1-camera-native-traces.json")));
+    private static Vec3 Vector(JsonElement v) => new(v[0].GetDouble(), v[1].GetDouble(), v[2].GetDouble());
+    private static void Near(Vec3 expected, Vec3 actual, double tolerance, string context) => Assert.True(
+        Math.Abs(expected.X - actual.X) <= tolerance && Math.Abs(expected.Y - actual.Y) <= tolerance && Math.Abs(expected.Z - actual.Z) <= tolerance,
+        $"{context}: expected {expected}, actual {actual}, tolerance {tolerance}");
 }

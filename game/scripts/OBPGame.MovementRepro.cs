@@ -291,10 +291,12 @@ public partial class OBPGame
     {
         GD.Print($"[movement-state] {message}");
         _pauseMenu?.SetMovementStatus(message);
+        if (!_debugOutputEnabled) return;
         if (_movementStateNotice is null || !IsInstanceValid(_movementStateNotice) || _movementStateNotice.IsQueuedForDeletion())
         {
             _movementStateNotice = new Label
             {
+                Name = "DevelopmentNotice",
                 AnchorTop = 1f,
                 AnchorBottom = 1f,
                 AnchorRight = 1f,

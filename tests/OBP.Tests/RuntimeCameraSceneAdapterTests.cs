@@ -46,7 +46,7 @@ public sealed class RuntimeCameraSceneAdapterTests
         var neutralPose = RuntimeCameraSceneAdapter.ToScenePose(neutral.ToRuntimeState());
         var orbitPose = RuntimeCameraSceneAdapter.ToScenePose(orbit.ToRuntimeState());
 
-        Assert.True(orbitPose.Eye.Y < neutralPose.Eye.Y);
+        Assert.True(orbitPose.Eye.Y > neutralPose.Eye.Y);
         Assert.NotEqual(neutralPose.Eye.X, orbitPose.Eye.X);
         Assert.Equal(neutralPose.Eye.Z, orbitPose.Eye.Z, 5);
         Assert.Equal(0d, orbit.Control.ControlHeading, 12);

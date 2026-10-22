@@ -80,7 +80,10 @@ public sealed record Rac1CameraState(
             forward,
             Rac1CameraRecurrence.WrapPi(Control.ControlHeading),
             Framing.PreferredRadius,
-            EffectiveRadius).Validate();
+            EffectiveRadius)
+        {
+            VerticalFieldOfViewRadians = Rac1CameraProjection.VerticalFieldOfViewRadians,
+        }.Validate();
     }
 
     public Rac1CameraState Validate()

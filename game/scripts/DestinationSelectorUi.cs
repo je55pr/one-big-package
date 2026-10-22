@@ -7,6 +7,7 @@ namespace OneBigPackage;
 
 public partial class DestinationSelectorUi : CanvasLayer
 {
+    public bool DebugOutputEnabled { get; init; }
     public event Action<ObpDestination>? DestinationChosen;
     public event Action? BackRequested;
 
@@ -55,7 +56,7 @@ public partial class DestinationSelectorUi : CanvasLayer
 
         outer.AddChild(new Label
         {
-            Text = "Pick a destination from any connected game. Every available world enters through OBP's shared runtime.",
+            Text = "Choose a world from any connected game.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = UiTheme.TextDim,
         });
@@ -160,7 +161,7 @@ public partial class DestinationSelectorUi : CanvasLayer
                 CustomMinimumSize = new Vector2(0, 50),
                 FocusMode = Control.FocusModeEnum.All,
                 Disabled = !provider.CanLoad(destination),
-                TooltipText = TechnicalTooltip(destination),
+                TooltipText = DebugOutputEnabled ? TechnicalTooltip(destination) : destination.DisplayName,
             };
             if (current) button.Modulate = UiTheme.Accent;
 

@@ -113,6 +113,14 @@ public sealed class Rac1CameraContractTests
     }
 
     [Fact]
+    public void ReversedSpring_ClampsResidualVelocityInBothDirections()
+    {
+        var result = Rac1CameraRecurrence.AdvanceDampedScalar(.99d, -.2d, 1d, .004d, .2d);
+        Assert.Equal(-.01d, result.Velocity, 12);
+        Assert.Equal(.98d, result.Value, 12);
+    }
+
+    [Fact]
     public void ObstructionPullIn_UsesRecoveredStepAndInnerFloor()
     {
         double pulled = Rac1CameraRecurrence.PullInWorkingRadius(6d);

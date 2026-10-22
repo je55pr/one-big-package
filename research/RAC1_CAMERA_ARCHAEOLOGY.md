@@ -7,6 +7,51 @@ contracts proven by the fixed savestate, loaded-overlay signatures and
 frame-advanced trials. Unresolved producer stages are called out rather than
 inferred.
 
+## Current implementation (2026-10-22)
+
+Ordinary upright follow now runs the separate desired-offset carry, input,
+collision, actual offset length/yaw/pitch springs, target translation and aim
+stages from `0x002e9c28`. It replaces the earlier direct spherical placement.
+The native manual-input coefficients are **1/1**, not the actual-offset spring's
+0.02/0.2. Release inertia belongs to the actual offset. Vertical input has distinct
+0.02 active and 0.01 release step limits; the earlier unconditional hold after
+release was incorrect. The native elevation helper measures `atan(z / length)`,
+so the 0.69813 parameter is not simply a 40-degree spherical orbit limit.
+
+Both native direction options use 0 = Reversed, 1 = Normal; rotation speed is
+Slow/Medium/Fast. The boot defaults are Normal/Normal/Medium. These options are
+now selectable by controller and persisted separately from hardware calibration.
+The camera also publishes the NTSC gameplay lens: x tangent 0.63, y tangent
+`0.63 * 0.775`, approximately 52.04 degrees vertically. Preserving that vertical
+framing on wider Godot viewports is an OBP presentation choice.
+
+`tools/rac1-camera-native-trace.py` executes the original disc's camera functions
+in the MIT native-port reference's R5900 interpreter, without PCSX2. Its 14
+scenarios retain payload-free checkpoints in `generated/rac1-camera-native-traces.json`.
+Tests compare desired offset, eye and forward direction, including both axis
+options, all speeds, partial diagonal input, movement and jumps. The runner uses
+clear-space collision callbacks and a profile radius of 6 from the retained
+ordinary Veldin witness; it does not prove all authored camera profiles. Original
+PS2 rounding/initialization differs from the host by up to 0.016 world units in
+these checks. The old pulse captures did not establish their option values.
+
+The source now owns growing sphere probes, bounded contact sliding, endpoint
+clearance and release; Godot supplies contact points and resolved sphere centres.
+Floor/ceiling height probes and the native spawn-facing basis are connected too.
+Godot triangle intersection remains the geometry adapter. Authored exclusion
+volumes, level-specific camera modifiers and other camera types remain separate
+from this ordinary-follow implementation. Historical investigation below is
+retained as evidence, not a description of the current implementation.
+
+To regenerate the original-code trace, supply the local MIT reference checkout
+and a C++20 compiler (the Zig executable accepts its `c++` driver automatically):
+
+```powershell
+python tools/rac1-camera-native-trace.py --iso $env:OBP_RAC1_ISO `
+  --reference-root <native-port-checkout> --cxx <compiler> `
+  --out research/generated/rac1-camera-native-traces.json
+```
+
 ## Known live fields
 
 The camera harness reuses the deterministic PCSX2 input-recording and PINE

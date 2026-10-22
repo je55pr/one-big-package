@@ -14,6 +14,8 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public event Action? RefillPreviewRequested;
     public event Action? PackPreviewRequested;
     public event Action? SwingshotPreviewRequested;
+    public event Action<bool>? DebugOutputChanged;
+    public bool DebugOutputEnabled { get; init; }
     public string EquipmentStatus { get; init; } = string.Empty;
     public bool WeaponPreviewEnabled { get; init; }
     public bool MovementStatesAvailable { get; init; }
@@ -94,6 +96,18 @@ public sealed partial class PauseMenuUi : CanvasLayer
         column.AddChild(resume);
         column.AddChild(controller);
         _focusOrder.AddRange([resume, controller]);
+        var debugOutput = new CheckButton
+        {
+            Name = "DebugOutputToggle",
+            Text = "SHOW DEBUG OUTPUT",
+            ButtonPressed = DebugOutputEnabled,
+            CustomMinimumSize = new Vector2(0, 44),
+            FocusMode = Control.FocusModeEnum.All,
+            TooltipText = "Show world, movement and input diagnostics, development notices and inspection shortcuts.",
+        };
+        debugOutput.Toggled += enabled => DebugOutputChanged?.Invoke(enabled);
+        column.AddChild(debugOutput);
+        _focusOrder.Add(debugOutput);
         if (MovementStatesAvailable)
         {
             var weapons = MakeButton("TOGGLE WEAPON PREVIEW");

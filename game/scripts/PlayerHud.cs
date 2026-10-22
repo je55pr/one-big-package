@@ -9,6 +9,7 @@ namespace OneBigPackage;
 /// </summary>
 public partial class PlayerHud : Control
 {
+    public bool DebugOutputEnabled { get; set; }
     private PanelContainer _healthPanel = null!;
     private PanelContainer _boltsPanel = null!;
     private PanelContainer _weaponPanel = null!;
@@ -146,6 +147,7 @@ public partial class PlayerHud : Control
         _healthKicker = Kicker("NANOTECH");
         _healthValue = ValueLabel();
         _healthState = SecondaryLabel();
+        _healthState.Name = "HealthStateDebug";
         _healthDelta = SecondaryLabel();
         _healthDelta.Visible = false;
         box.AddChild(_healthKicker);
@@ -219,7 +221,7 @@ public partial class PlayerHud : Control
         _healthValue.Text = health.Capacity is { } capacity
             ? $"{health.Current:N0} / {capacity:N0}"
             : $"{health.Current:N0}";
-        _healthState.Visible = health.LifeState is not null;
+        _healthState.Visible = DebugOutputEnabled && health.LifeState is not null;
         _healthState.Text = health.LifeState switch
         {
             HudLifeState.Dead => "DOWN",

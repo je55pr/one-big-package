@@ -88,7 +88,7 @@ public partial class Rac1PlanetTravelUi : CanvasLayer
 
         outer.AddChild(new Label
         {
-            Text = "Only destinations discovered by the recovered R&C1 campaign state appear below.",
+            Text = "Discovered destinations appear below.",
             Modulate = UiTheme.TextDim,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         });

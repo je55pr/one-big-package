@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot.Controls;
+using OBP.RAC1.Camera;
 
 namespace OneBigPackage;
 
@@ -19,6 +20,10 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
     private Button _calibrate = null!;
     private Button _save = null!;
     private Button _reset = null!;
+    private OptionButton _cameraHorizontal = null!;
+    private OptionButton _cameraVertical = null!;
+    private OptionButton _cameraSpeed = null!;
+    internal bool PersistSettings { get; set; } = true;
     private readonly List<int> _deviceIds = new();
     private ControllerCalibrationProfile _profile = ControllerCalibrationProfile.Default;
     private Capture _capture;
@@ -111,7 +116,7 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         outer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         scroll.AddChild(outer);
         outer.AddChild(new Label { Text = "SETTINGS  //  CONTROLLERS", ThemeTypeVariation = "HeaderSmall" });
-        outer.AddChild(new Label { Text = "CONTROLLER CALIBRATION", ThemeTypeVariation = "HeaderLarge", AutowrapMode = TextServer.AutowrapMode.WordSmart });
+        outer.AddChild(new Label { Text = "CONTROLLER SETTINGS", ThemeTypeVariation = "HeaderLarge", AutowrapMode = TextServer.AutowrapMode.WordSmart });
         outer.AddChild(new Label
         {
             Text = "PLAYSTATION CONTROLS\nCross  Jump / swim up    ·    Square  Wrench / dive    ·    Circle  Weapon / gadget\nR1  Crouch / flip / pack jump    ·    Triangle  Quick select    ·    L1  Centre camera\nStart  Pause    ·    Select / R3  Map    ·    Left stick / D-pad  Move    ·    Right stick  Camera",
@@ -124,6 +129,27 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = UiTheme.TextDim,
         });
+
+        var cameraPanel = new PanelContainer { ThemeTypeVariation = "MenuCard" };
+        outer.AddChild(cameraPanel);
+        var cameraColumn = new VBoxContainer();
+        cameraColumn.AddThemeConstantOverride("separation", 9);
+        cameraPanel.AddChild(cameraColumn);
+        cameraColumn.AddChild(new Label { Text = "RATCHET & CLANK CAMERA", ThemeTypeVariation = "HeaderMedium" });
+        var cameraGrid = new GridContainer { Columns = 2 };
+        cameraGrid.AddThemeConstantOverride("h_separation", 18);
+        cameraGrid.AddThemeConstantOverride("v_separation", 8);
+        cameraColumn.AddChild(cameraGrid);
+        _cameraHorizontal = CameraOption(cameraGrid, "Left / right", ["NORMAL", "INVERTED"]);
+        _cameraVertical = CameraOption(cameraGrid, "Up / down", ["NORMAL", "INVERTED"]);
+        _cameraSpeed = CameraOption(cameraGrid, "Rotation speed", ["SLOW", "MEDIUM", "FAST"]);
+        var camera = CameraSettingsStore.Current;
+        _cameraHorizontal.Select(camera.Horizontal == Rac1CameraDirection.Normal ? 0 : 1);
+        _cameraVertical.Select(camera.Vertical == Rac1CameraDirection.Normal ? 0 : 1);
+        _cameraSpeed.Select((int)camera.Speed);
+        _cameraHorizontal.ItemSelected += _ => SaveCameraOptions();
+        _cameraVertical.ItemSelected += _ => SaveCameraOptions();
+        _cameraSpeed.ItemSelected += _ => SaveCameraOptions();
 
         var deviceRow = new HBoxContainer();
         deviceRow.AddThemeConstantOverride("separation", 12);
@@ -204,8 +230,27 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         _back = new Button { Text = "‹  BACK", CustomMinimumSize = new Vector2(160, 46) };
         _back.Pressed += () => BackRequested?.Invoke();
         outer.AddChild(_back);
-        Callable.From(() => _devices.GrabFocus()).CallDeferred();
+        Callable.From(() => _cameraHorizontal.GrabFocus()).CallDeferred();
     }
+
+    private static OptionButton CameraOption(GridContainer parent, string label, string[] choices)
+    {
+        parent.AddChild(new Label { Text = label, VerticalAlignment = VerticalAlignment.Center });
+        var option = new OptionButton
+        {
+            Name = "Camera" + label.Replace(" / ", "").Replace(" ", ""),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(180, 44)
+        };
+        foreach (string choice in choices) option.AddItem(choice);
+        parent.AddChild(option);
+        return option;
+    }
+
+    private void SaveCameraOptions() => CameraSettingsStore.Set(new(
+        _cameraHorizontal.Selected == 0 ? Rac1CameraDirection.Normal : Rac1CameraDirection.Inverted,
+        _cameraVertical.Selected == 0 ? Rac1CameraDirection.Normal : Rac1CameraDirection.Inverted,
+        (Rac1CameraSpeed)_cameraSpeed.Selected), PersistSettings);
 
     private static HSlider DeadzoneSlider(GridContainer parent)
     {
@@ -285,7 +330,7 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         _rightDeadzone.Editable = enabled;
         _devices.Disabled = !enabled;
         _leftDeadzone.FocusMode = _rightDeadzone.FocusMode = enabled ? Control.FocusModeEnum.All : Control.FocusModeEnum.None;
-        Control[] controls = [_devices, _leftDeadzone, _rightDeadzone, _calibrate, _save, _reset, _back];
+        Control[] controls = [_cameraHorizontal, _cameraVertical, _cameraSpeed, _devices, _leftDeadzone, _rightDeadzone, _calibrate, _save, _reset, _back];
         MenuFocus.WireVertical(controls);
         if (!MenuFocus.Available(GetViewport().GuiGetFocusOwner())) MenuFocus.Restore(null, controls);
     }

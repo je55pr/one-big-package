@@ -96,11 +96,9 @@ public static class Rac1CameraRecurrence
         double nextVelocity =
             velocity + (acceleration * delta) - (damping * velocity);
 
-        if ((delta >= 0d && nextVelocity > delta) ||
-            (delta <= 0d && nextVelocity < delta))
-        {
-            nextVelocity = delta;
-        }
+        // 0x001eb240 clamps both signs to |remaining delta|, including stored
+        // velocity pointing away from a newly reversed target.
+        nextVelocity = Math.Clamp(nextVelocity, -Math.Abs(delta), Math.Abs(delta));
 
         return new ScalarResult(current + nextVelocity, nextVelocity);
     }
