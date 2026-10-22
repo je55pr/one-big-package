@@ -298,6 +298,32 @@ public sealed class Rac1MetropolisTaxiTests
     }
 
     [Fact]
+    public void RetailTaxiAdmissionSelectorsPreserveNativeMinusOneSentinels()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+        using var reader = new FileRandomAccessReader(iso);
+        var world = Rac1WorldImport.Build(reader, 3);
+        foreach (var (index, activeCuboid) in new[] { (919, 10), (920, 28) })
+        {
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == index);
+            byte[] pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            Assert.Equal(activeCuboid, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x80, 4)));
+            for (int i = 1; i < 5; i++)
+                Assert.Equal(-1, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x80 + i * 4, 4)));
+        }
+
+        // Class-1012 only enters point_in_box when its optional +0xa0
+        // selector is armed; both retail shuttles leave it at -1.
+        foreach (int index in new[] { 961, 962 })
+        {
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == index);
+            byte[] pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            Assert.Equal(-1, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xa0, 4)));
+        }
+    }
+
+    [Fact]
     public void RetailKerwanPvarsSelectExactOutboundSplines()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

@@ -29,7 +29,7 @@ public partial class OBPGame
         double previousTimeScale = Engine.TimeScale;
         try
         {
-            // The recovered 4.5 u/s² seek is intentionally much slower
+            // The recovered 4.5 u/sï¿½ seek is intentionally much slower
             // than the old 60-waypoints/s host preview. Accelerate only the
             // staged smoke's game clock, not ordinary retail-route gameplay.
             Engine.TimeScale = 12;
@@ -82,13 +82,20 @@ public partial class OBPGame
                 player.Rac1CurrentYaw));
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }), "class-1012 boarding rejected");
+            Vector3 cameraRelativeAtBoard = player.Camera.GlobalPosition - player.GlobalPosition;
+            bool recoveredCamera = player.Camera.TopLevel;
             await PhysicsFramesAsync(25);
             Require(taxis.IsRiding, "class-1012 shuttle did not enter flight");
+            Require(!recoveredCamera ||
+                (player.Camera.GlobalPosition - player.GlobalPosition)
+                    .DistanceTo(cameraRelativeAtBoard) < 0.1f,
+                "world-space recovered camera stayed at the boarding dock instead of following Ratchet");
             AbortRac1MetropolisTaxiRide();
             Require(!taxis.IsRiding && _rac1FlyingTaxi is null &&
+                !_rac1TaxiCameraWorldOwned &&
                 player.ProcessMode != Node.ProcessModeEnum.Disabled &&
                 _rac1TaxiCollisionBodies[962].CollisionLayer == 1,
-                "mid-flight abort stranded Ratchet or left a disabled hull");
+                "mid-flight abort stranded Ratchet, camera or moving hull");
 
             player.ApplyRac1TaxiArrival(new RuntimeSpawn(
                 shuttle.Position.X, shuttle.Position.Y, shuttle.Position.Z,
@@ -100,8 +107,9 @@ public partial class OBPGame
                 () => !taxis.IsRiding && _rac1FlyingTaxi is null, 3200,
                 "class-1012 return route failed to arrive");
             Require(player.ProcessMode != Node.ProcessModeEnum.Disabled &&
+                !_rac1TaxiCameraWorldOwned &&
                 _rac1TaxiCollisionBodies[962].CollisionLayer == 1,
-                "class-1012 return route failed to disembark and restore physics");
+                "class-1012 return route failed to disembark or restore camera/physics");
 
             GD.Print("[rac1-metropolis-taxi-smoke] PASS: retail i919 cuboid 10 -> " +
                 "docked boarding -> outbound -> grounded dismount; " +

@@ -18,6 +18,8 @@ public partial class OBPGame
     private Vector3 _rac1FlyingTaxiOrigin;
     private Vector3 _rac1TaxiBoardingPosition;
     private Vector3 _rac1TaxiRiderOffset;
+    private Vector3 _rac1TaxiCameraWorldOffset;
+    private bool _rac1TaxiCameraWorldOwned;
     private Node.ProcessModeEnum _rac1TaxiPreviousPlayerMode;
 
     /// <summary>
@@ -48,7 +50,12 @@ public partial class OBPGame
                 exit = supported;
             player.ApplyRac1TaxiArrival(new RuntimeSpawn(
                 -exit.X, exit.Y, exit.Z, player.Rac1CurrentYaw));
+            // A recovered camera has a world-space transform and was moved
+            // with the taxi while ordinary player physics was suspended.
+            if (_rac1TaxiCameraWorldOwned)
+                player.CenterCameraBehindPlayer();
         }
+        _rac1TaxiCameraWorldOwned = false;
 
         _rac1MetropolisTaxis?.AbortRide();
         // A second taxi may be approaching or parked at its destination.
@@ -189,6 +196,12 @@ public partial class OBPGame
             Mathf.Clamp(relative.X, -1.4f, 1.4f),
             Mathf.Clamp(relative.Y, 0.12f, 0.8f),
             Mathf.Clamp(relative.Z, -1.4f, 1.4f));
+        // The retail helper hero_cam_target_set invokes native player state
+        // 0x65 and tracks a world-space target. The host has not recovered
+        // that camera state yet. Preserve the current camera view relative
+        // to Ratchet instead of stranding a TopLevel camera at the dock.
+        _rac1TaxiCameraWorldOwned = player.Camera.TopLevel;
+        _rac1TaxiCameraWorldOffset = player.Camera.GlobalPosition - player.GlobalPosition;
         // Once boarded, the player is attached by the taxi host. The moving
         // hull must not interfere with the arrival ground-contact ray.
         _rac1TaxiCollisionBodies[boarding.InstanceIndex].CollisionLayer = 0;
@@ -235,6 +248,8 @@ public partial class OBPGame
         OrientRac1Taxi(taxi.Root, taxiPosition, delta);
         taxi.Root.GlobalPosition = taxiPosition;
         player.GlobalPosition = taxiPosition + _rac1TaxiRiderOffset;
+        if (_rac1TaxiCameraWorldOwned && IsInstanceValid(player.Camera))
+            player.Camera.GlobalPosition = player.GlobalPosition + _rac1TaxiCameraWorldOffset;
 
         if (!flight.JustArrived) return;
 
@@ -271,6 +286,9 @@ public partial class OBPGame
         // RuntimeSpawn is in world coordinates, not mirrored Godot scene space.
         player.ApplyRac1TaxiArrival(new RuntimeSpawn(
             -exit.X, exit.Y, exit.Z, player.Rac1CurrentYaw));
+        if (_rac1TaxiCameraWorldOwned)
+            player.CenterCameraBehindPlayer();
+        _rac1TaxiCameraWorldOwned = false;
         GD.Print($"[rac1-taxi] finished i{flight.From.InstanceIndex} at {exit}, " +
             $"destination supported={docked}");
         taxis.CompleteArrival();

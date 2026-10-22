@@ -206,3 +206,34 @@ retail Kerwan arrivals. Long authored routes take substantially longer
 with native acceleration than the old one-waypoint-per-frame preview.
 For practicality, the staged Godot route smoke uses a temporary
 12x Engine.TimeScale and restores it at exit; gameplay does not.
+
+## 23 October 2026 native input and camera target research
+
+Source overlay class-816 updater at 0x002d3604 checks an active HUD
+Moby focus, a zero HUD lock flag, pad-down bit 0x10 and player state 8
+before calling hero_cam_target_set. The class-1012 updater at
+0x002dcf24 uses its focus helper (0x002dcb70), HUD helper
+(0x002dcbc8), the same pad bit/state gate and calls the same native
+camera-target routine. These facts do **not** establish that OBP's T key
+is a retail keyboard equivalent, or that the existing fixed 5.5-unit
+host boarding radius is authentic.
+
+The translated hero_cam_target_set source, 0x00233ee8, writes the
+target's position, yaw and flag to P+0x1640, +0x164c, +0x1650, and
+requests hero state 0x65 unless already in 0x65..0x67. Native taxi
+attachment remains handled by attach_frame_set. OBP's PlayerHost
+recovered type-0 camera uses a world-space (TopLevel) pose. Suspending
+player physics on taxi boarding previously left that camera immobile
+at the dock. The Kerwan taxi host now transports the existing
+camera-to-Ratchet world offset during flight and resets the recovered
+camera on abort/dismount. This is an explicitly **provisional visual
+fallback**, not a port of native hero state 0x65, camera target/rotation
+or native attachment animation.
+
+The retail admission PVar selector census was rechecked:
+class-816 i919 slots +0x80..+0x90 = (10, -1, -1, -1, -1);
+class-816 i920 = (28, -1, -1, -1, -1). Both class-1012
+i961 and i962 have optional cuboid selector +0xa0 = -1.
+Accordingly, the host must not interpret -1 as a real cuboid or
+invent five simultaneously active class-816 triggers. These exact
+selectors now have a retail-authority regression test.
