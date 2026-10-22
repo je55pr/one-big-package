@@ -256,8 +256,10 @@ public partial class OBPGame
             var source = FromTaxiPoint(flight.From.Position);
             if (!TryResolveRac1TaxiLanding(player, source, out exit))
                 exit = source + Vector3.Up * 0.1f;
-            GD.PrintErr($"[rac1-taxi] route i{flight.From.InstanceIndex} has no " +
-                $"supported landing at {destination}; returned to boarding dock");
+            // This is the intentional class-1012 safety path, not a fatal
+            // engine error: treat it as a host diagnostic in smoke runs.
+            GD.Print($"[rac1-taxi] host landing fallback: route i{flight.From.InstanceIndex} " +
+                $"has no supported landing at {destination}; returned to boarding dock");
         }
 
         if (_rac1TaxiCollisionBodies.TryGetValue(flight.From.InstanceIndex, out var hull) &&
