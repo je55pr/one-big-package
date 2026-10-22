@@ -382,6 +382,7 @@ public partial class OBPGame
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches})");
 
         DispatchRequestedWorldSmokes(destination);
+        _playtest?.WorldEntered();
 
         // Exact verification remains game-specific today. Preserve the mature GC
         // opt-in while avoiding an implicit multi-GB hash for other providers.

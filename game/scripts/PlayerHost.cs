@@ -35,6 +35,7 @@ public partial class PlayerHost : CharacterBody3D
     private static double DevelopmentElapsed(long start, long end) => start == 0 ? 0 :
         System.Diagnostics.Stopwatch.GetElapsedTime(start, end).TotalMilliseconds;
     internal event Action? DevelopmentPhysicsCompleted;
+    internal Func<RawPlayerInputFrame, RawPlayerInputFrame>? PlaytestInputFilter { get; set; }
     // --- host presentation tuning ----------------------------------------------
     // Ordinary movement constants live in OBP.RAC1.Player. Mouse sensitivity is
     // host presentation policy; development-only tuning lives beside this host.
@@ -410,6 +411,7 @@ public partial class PlayerHost : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read(UseRac1Gameplay);
+            if (PlaytestInputFilter is { } filter) _liveInput = filter(_liveInput);
             Rac1RemoteSteering = _liveInput.Move + _liveInput.CameraIntent;
             Rac1RemoteDetonate = Rac1RemoteControlActive && (_liveInput.CrouchHeld || _liveInput.ActionJustPressed);
             if (Rac1RemoteControlActive)
