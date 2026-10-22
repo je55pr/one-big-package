@@ -18,6 +18,7 @@ public partial class OBPGame
         if (_mode != Mode.World || _player is not { UseRac1Gameplay: true, Rac1GameplayAlive: true } player ||
             player.Scripted || player.DevelopmentControls.FlyEnabled || player.Rac1RemoteControlActive || PauseMenuOpen || ControllerSettingsOpen ||
             Rac1PlanetMapOpen || GetTree().Paused) return false;
+        if (TryHandleRac1MissionInteraction(@event)) return true;
         if (TryHandleRac1MetropolisTaxiInput(@event)) return true;
         // Host input gesture timing. Native inventory ownership/equip admission
         // remains authoritative; this is not the recovered menu state machine.

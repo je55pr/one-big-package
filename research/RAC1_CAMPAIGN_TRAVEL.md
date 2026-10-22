@@ -226,7 +226,7 @@ and forwards the chosen native destination ID back to
 `Rac1CampaignRuntimeSession.BeginTravel`; it never reads the provider catalogue
 to decide what is unlocked.
 
-The current list/menu styling and the OBP `M` / controller Start shortcut are
+The current list/menu styling and the OBP `M` / controller Select/R3 shortcut are
 host presentation choices, not claims about retail pixels or the original ship
 menu binding. The normal opening campaign state therefore presents no fabricated
 travel targets: level 0 is current but is not auto-admitted, exactly as the
@@ -275,7 +275,7 @@ Godot processes against the supported retail source. Its bounded route is:
 
 1. Start from the recovered opening state at native level 0 with no admitted
    destinations and a fresh inactive level-local checkpoint session.
-2. Feed progression-dispatch values `0x25` and `0x26`, whose recovered branch
+2. Inject controller-code actions `0x25` and `0x26`, whose recovered branch
    admits native destinations 1 and 2 in that order.
 3. Travel through the ordinary provider/session path `0 -> 1 -> 2`, verifying a
    fresh class-0 checkpoint baseline after each full level entry.
@@ -295,26 +295,118 @@ without mutating campaign state before exercising ordinary travel again. The
 level-2 checkpoint/death injection is a test input sourced from retained retail
 evidence, not a producer-side trigger implementation.
 
-### Remaining campaign-script boundary
+## Native actor-owned mission progression
 
-This smoke deliberately supplies recovered dispatcher inputs directly. It does
-**not** claim that a Veldin objective, NPC, gadget, cutscene or other hosted
-gameplay event emits `0x25` or `0x26`. No production mission/objective owner is
-currently wired to `ApplyRac1CampaignProgressionEvent`, because the retail
-producer-side trigger mapping is not yet recovered. Consequently the ordinary
-opening gameplay still exposes zero travel targets until an evidence-backed
-progression producer exists or previously persisted campaign state already
-contains admissions.
+The production `Rac1MissionSession` never emits or consumes controller-code
+actions `0x25..0x36`. `Rac1TalkProgram` reads compiled records from the original
+overlays using the actor's raw `+0x74` local talker slot, the level's talker
+range, and the native program pointer table. Population registers that slot at
+`0x00242c1c/0x0024a798`. Records are `0x1c` bytes: text ID, scene/movie selector,
+next record, condition kind/argument/true/false records, and flags (1 automatic,
+4 chain next scene, 8 pay condition cost). This is a source-specific bounded
+graph, not a generic mission VM or an OBP campaign sequence.
 
-Per-level `Completed` remains a distinct recovered persistent value, but no host
-mission script currently decides when to set it. `Rac1LevelCheckpointSession`
-models the separately recovered restart-placement branch: inactive uses the
-authored class-0 seed, while an explicitly supplied active record redirects a
-recovered environmental restart. No production gameplay trigger activates a
-checkpoint yet, because the retail writer/activation event remains unrecovered;
-likewise only Veldin has an automatic hosted environmental-death gate. The
-campaign smoke injects the retained level-2 checkpoint/death witness directly and
-labels that injection as test-only. Full reload and revisit start fresh inactive
-checkpoint sessions instead of inventing serialization. The neutral Worlds browser
-remains a developer/external load route and cannot manufacture discovery,
-completion, checkpoint activation or campaign travel.
+The payload-free witness `generated/rac1-mission-progression.json` pins overlay
+and code hashes, authored Infobot fields, compiled talk records, and independent
+original-MIPS replay traces. Reproduce from the repository root:
+
+```powershell
+dotnet run --project tools/OBP.Rac1MissionProbe -c Release -- --iso $env:OBP_RAC1_ISO --reference-root <rac1-native-game-checkout> --cxx <C++-compiler> --out research/generated/rac1-mission-progression.json
+```
+
+The optional oracle builds the acknowledged MIT R5900/VU interpreters locally.
+Original actor/talk/admission instructions execute unchanged. Player facts and
+scene completion are controlled inputs; text/drawing, movie streaming, checkpoint
+and file IO are hooks. EE images, PVars and binaries stay in ignored
+`captures/mission-native-oracle/`. The traces prove those bounded transitions;
+they are not a retail emulator playthrough or a complete mission engine.
+
+### Opening Veldin to Novalis
+
+Class 834 instance 165 owns updater `0x002d9dc8`, local/global talker 1,
+program `0x001b0870`, and the authored encounter cuboid from PVar `+0x60` (4).
+After the introduction, reach is 3, expanding to 16 inside that cuboid; native
+talk compares player distance with twice the reach. It rejects zero Nanotech,
+player state `0x1d`, and non-gameplay modes.
+
+Approaching runs records 1..4: **scene 1 -> scene 2 -> movie 1 -> scene 3**.
+The owning actor's `LastPlayed >= 4` branch requests `level_exit_to(1)` at
+`0x002d9f40`. That primitive (`0x0028eeb0`) writes pending target, active flag
+and exit flag without the ship menu's prior-admission predicate. The late
+loader marks the source completed, subject to the native level-7/8 and level-14/15
+gates, commits CurrentLevel, then nonzero-level initialization admits Novalis.
+Requesting the exit alone cannot unlock or complete anything before a successful
+host load commits.
+
+OBP already begins at controllable post-introduction Veldin. Resuming record 1
+instead of opening scene 4 is an explicit **host bootstrap policy**. Native
+intro flag `0x0013d390` and talker states at `0x0013d5b0 + globalIndex*16`
+(talked-once word `+c`) are not newly serialized. Completed opening Veldin is
+suppressed on revisit using the existing completed-level value, a conservative
+host fallback.
+
+### Novalis Plumber to Aridia
+
+Class 774 instance 901 owns updater `0x002ff118`, authored reach 5, local talker
+1/global talker 3, and program `0x001b0d80`. First approach plays scene 0.
+Condition kind 1 reads original price row 37: **500 bolts**. Insufficient funds
+stay on record 1. When funds suffice, record 2 requires facing the actor and a
+Triangle edge, charges once, then runs **scene 1 -> movie 2 -> scene 2**.
+Last-played record 4 in the actor's state-2 branch calls level-1 admission
+primitive `0x002756d0` with destination 2, requests a save, and retires through
+state 3. Revisit checks VisitedPlanets[2] before offering another purchase.
+Admission and the charged wallet use the existing campaign save API together;
+there is no save-schema change or per-frame write.
+
+### Class-750 Infobot boundary
+
+The 12-state table at `0x001e9f60` dispatches updater `0x002d5de8`:
+
+| States | Recovered responsibility | Hosted status |
+|---|---|---|
+| 0/1 | Initialize active/alternate activation, or remain dormant | decoded; dormant stays dormant |
+| 2 | Already-discovered retirement; strict distance and nonzero Nanotech | supported |
+| 3/4 | Patrol/chase/path transitions | decoded selectors; motion/producer unsupported |
+| 5 | Linked class-0x336 actor release (byte +0xbc == 6) | unsupported; no invented proximity unlock |
+| 6/7 | Escape path and endpoint pickup | unsupported |
+| 8 | Admit PVar destination; collected/checkpoint effects; first scene | admission supported; secondary effects unbound |
+| 9/10/11 | Movie, following scene, save/arrival/retirement | scene requests and retirement supported |
+
+PVar: `+0` initial activity, `+4` destination, `+8` checkpoint cuboid,
+`+c/+d/+e` signed scene/movie/scene IDs (-1 none), `+50` attachment cuboid,
+`+54` linked actor, `+58` escape path, `+70..+8c` patrol paths, `+b0` alternate
+activation. Ordinary state-2 pickup requires distance **<1**, or **<3** for
+destination 12/alternate activation. State 8 calls admission at `0x002d6a20`.
+Already-admitted destinations retire without appending or emitting discovery.
+
+The replay isolates a controlled active, unlinked Infobot variant: Veldin has
+no placed Infobot and Novalis's placed instance is a dormant template. It does
+not prove a naturally activated placed Infobot. The two implemented talk actors
+provide the source-owned progression producers instead.
+
+## Ordinary-input integration gate and remaining limits
+
+`tools/rac1-mission-play-smoke.ps1` is a **human-played** integration gate,
+separate from the injected campaign smoke. It observes a clean Veldin encounter,
+Novalis admission, the funded Plumber purchase, a real death/retry, map travel
+`1 -> 2 -> 1`, and duplicate-free saved admissions. A second process checks
+the save and purchased actor's retirement. It never supplies movement, currency,
+transforms, events or developer travel. Closing early is cancellation. Full
+ordinary playthrough validation is pending the user's test; the abandoned
+automated route did not complete it.
+
+Godot consumes native scene/movie requests with acknowledgement cards. They
+preserve source-selected order and callback ownership; cinematic playback,
+native camera/actor staging, speech and subtitles remain unimplemented.
+The cards pause gameplay; stale, duplicate or foreign callbacks cannot advance
+another actor or a rebuilt level. They are OBP presentation, not retail scenes.
+
+Other executable revisions fail closed for the two talk program bindings.
+General talk inventory/gold-bolt conditions, native global talk cooldown writers,
+talker/intro flag save ownership, persistence mid-conversation, and other mission
+actors remain incomplete. Collectible markers and mission-specific checkpoint
+writes are identified side effects but are not silently mapped to generic
+checkpoint activation. Existing class-805 volume triggers are documented in
+`RAC1_CHECKPOINTS.md`; full reload/revisit keeps their conservative fresh-session
+policy. External Worlds loads cannot manufacture admission, completion or mission
+travel.

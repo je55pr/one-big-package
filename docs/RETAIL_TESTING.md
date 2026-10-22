@@ -36,6 +36,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |
 | `./tools/rac1-placed-bolt-smoke.ps1` | Authored Veldin/Batalia/Pokitaru bolts, floating height, attraction, removal and exact one/five-bolt credit. |
 | `./tools/rac1-campaign-smoke.ps1` | Source-game travel and campaign-state integration. |
+| `./tools/rac1-mission-play-smoke.ps1` | Interactive, human-played mission gate: Veldin encounter, Novalis Plumber purchase, death/retry, Aridia travel/revisit, then fresh-process save validation. No generated input or injected unlocks. |
 
 The movement wrapper requires all three sources and runs `rac1:LEVEL0`,
 `rac2:LEVEL1` and `rac3:TABLE1`. To isolate a destination, launch the built
@@ -54,6 +55,18 @@ Novalis host diagnostics are selected with `--rac1-novalis-swim-smoke`,
 fixture bodies live under `game/diagnostics/`.
 
 ## Interactive R&C1 controls and checks
+
+The mission play gate launches its own clean campaign and retains the save/logs
+under `captures/mission-play-*`. Play Veldin to the Clank encounter and acknowledge
+the conversation cards with Cross/Enter. On Novalis, collect 500 bolts, approach
+the Plumber and press Triangle/Q to purchase the Infobot. After Aridia unlocks,
+die and retry normally, use Select/R3 (keyboard M) to travel to Aridia, then
+return to Novalis. The observer finishes and the wrapper opens a second process
+to verify the saved admissions and retired purchase actor. Avoid testing equipment,
+movement-state loading, developer flight and Worlds browser shortcuts during this
+check. Closing early is cancellation. Scene cards are an OBP substitute for
+unimplemented cinematic playback; original scripts still own the sequence and
+unlock. This interactive gate is pending a complete human playthrough.
 
 Relaunch through the desktop shortcut to build the current working tree.
 Controls below are OBP host bindings; previews do not grant campaign ownership.

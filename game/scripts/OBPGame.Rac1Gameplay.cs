@@ -67,6 +67,7 @@ public partial class OBPGame
         ResetRac1PulsingOrbs();
         ResetRac1ExplosiveCrates();
         ResetRac1CheckpointTriggers();
+        ResetRac1Missions();
         ResetRac1MetalDetector();
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
@@ -147,6 +148,7 @@ public partial class OBPGame
 
         ConfigureRac1ExplosiveCrates(world, result);
         ConfigureRac1CheckpointTriggers(world);
+        ConfigureRac1Missions(world, result);
         ConfigureRac1MetalDetector(world);
         ConfigureRac1PlacedBolts(world, result);
         ConfigureRac1GoldBolts(world, result);
@@ -251,6 +253,7 @@ public partial class OBPGame
         TickRac1MetalDetector(delta);
         TickRac1Pickups(delta);
         TickRac1GoldBolts();
+        TickRac1Missions(delta);
     }
 
     private string GetRac1GameplayHudLine()

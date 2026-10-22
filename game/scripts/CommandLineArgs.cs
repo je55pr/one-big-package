@@ -117,6 +117,8 @@ public sealed record CommandLineArgs
 
     /// <summary>Run the two-pass evidence-backed R&amp;C1 campaign travel/persistence smoke.</summary>
     public bool Rac1CampaignSmoke { get; init; }
+    /// <summary>Ordinary-input mission actors, discovery, travel and durable reload; no injected unlocks.</summary>
+    public bool Rac1MissionPlaySmoke { get; init; }
 
     /// <summary>Explicitly opt this host session into R&amp;C1 campaign persistence.</summary>
     public bool Rac1CampaignPersist { get; init; }
@@ -208,6 +210,7 @@ public sealed record CommandLineArgs
                 "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
+                "--rac1-mission-play-smoke" => result with { Rac1MissionPlaySmoke = true },
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },

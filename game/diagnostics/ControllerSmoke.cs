@@ -69,6 +69,7 @@ public partial class ControllerSmoke : Node
             Require(Find<FileDialog>() is null && Focus() is Button, $"Circle did not cancel the disc picker and restore focus: visible={Find<FileDialog>()?.Visible}, focus={Focus()?.Name}");
             GD.Print("[controller-smoke] controller source-file dialog and cancel PASS");
             await CheckControllerWidgetsAsync();
+            await CheckMissionSceneAcknowledgementAsync();
 
             if (args.Rac1Iso is not null || args.GcIso is not null || args.UyaIso is not null)
             {
