@@ -10,8 +10,96 @@ public partial class OBPGame
 {
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
+    // Explicitly provisional replacement for the native 0x1600ec path-node
+    // lookup used when class612 state7 chooses its joint-contact attack.
+    private readonly Dictionary<int, Vector3> _rac1ConstructorbotAuthoredCenters = [];
 
-    private void ResetRac1ConstructorbotStartups() => _rac1ConstructorbotStartups.Clear();
+    private void ResetRac1ConstructorbotStartups()
+    {
+        _rac1ConstructorbotStartups.Clear();
+        _rac1ConstructorbotAuthoredCenters.Clear();
+    }
+
+    /// <summary>
+    /// Narrow native class612 support. The original state10 and state11
+    /// transitions use Moby+0x70 animation-complete; the host supplies a
+    /// clip-wrap approximation, never a proximity timer. State12's full
+    /// authored path/target solver is not yet implemented and must NOT be
+    /// auto-advanced. Mode8/9 still use provisional movement/host combat.
+    /// </summary>
+    private Rac1AridiaConstructorbotNative.Frame? StepRac1NativeConstructorbot(Rac1HostedEnemy enemy)
+    {
+        var instance = _rac1MobyRuntime.Require(enemy.Node.Source);
+        int state = instance.State.NativeState;
+        if (state == Rac1AridiaConstructorbotNative.RestState)
+        {
+            if (_player is { } player &&
+                _rac1ConstructorbotAuthoredCenters.TryGetValue(instance.InstanceIndex, out var anchor))
+            {
+                // Native L2:0x2d7c98 tests the actor's selected path-node
+                // against the current target before entering state11.
+                // The host's temporary waypoint is the AUTHORED SPAWN
+                // position, not an invented position relative to Ratchet.
+                Vector3 position = enemy.Node.Root.GlobalPosition;
+                Vector3 target = player.GlobalPosition;
+                Vector3 planar = target - position;
+                planar.Y = 0;
+                Vector3 facing = EnemyForward(enemy.Node);
+                facing.Y = 0;
+                float facingError = planar.LengthSquared() > .00001f &&
+                    facing.LengthSquared() > .00001f
+                    ? facing.Normalized().SignedAngleTo(planar.Normalized(), Vector3.Up)
+                    : float.PositiveInfinity;
+                if (Rac1AridiaConstructorbotNative.State7AdmitsJointContact(
+                    target.DistanceTo(anchor), target.Y - position.Y,
+                    position.DistanceTo(anchor), facingError,
+                    Rac1AridiaConstructorbotNative.ReadEngagementRadius(instance.PVar.Span)))
+                {
+                    _rac1MobyRuntime.SetNativeState(instance,
+                        Rac1AridiaConstructorbotNative.JointContactState);
+                    // Native state7 selects attack animation8, then state11
+                    // runs its per-tick joint query on the following update.
+                    return new(Rac1AridiaConstructorbotNative.JointContactState, 8);
+                }
+            }
+            return new(state, 0);
+        }
+        if (state == Rac1AridiaConstructorbotNative.AimState)
+        {
+            // Do not mistake a wrap from a provisional host-selected clip
+            // for completion of the source's required animation 0.
+            if (enemy.Animation.Sequence != 0) return new(state, 0);
+            var next = Rac1AridiaConstructorbotNative.StepAim(enemy.Animation.Wrapped);
+            if (next.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
+            return next;
+        }
+        if (state == Rac1AridiaConstructorbotNative.JointContactState)
+        {
+            // Native state11 executes its joint-0 contact query every tick.
+            bool clipCompleted = enemy.Animation.Sequence == 8 && enemy.Animation.Wrapped;
+            var next = Rac1AridiaConstructorbotNative.StepJointContact(
+                clipCompleted, clipCompleted && Rac1EffectRandom.Below(2) != 0);
+            if (next.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
+            return next;
+        }
+        if (state == Rac1AridiaConstructorbotNative.FollowupState)
+            return new(state, 9);
+        return null;
+    }
+
+    private bool AridiaConstructorbotJointTouchesPlayer(Rac1HostedEnemy enemy)
+    {
+        // Host collision adapter for native LEVEL2:0x2d812c..0x2d8228.
+        // It starts at the original sequence's semantic joint-0 socket, and
+        // approximates the native segment/contact solver with a Godot ray.
+        // The native shape, descriptor flags and target filters still differ.
+        Vector3 origin = EnemySocket(enemy);
+        Vector3 direction = EnemyForward(enemy.Node);
+        Vector3 target = origin + direction + Vector3.Down * .1f;
+        return EnemyRayTouchesPlayer(enemy, origin, target);
+    }
 
     private void TickRac1AridiaEnemy(Rac1HostedEnemy enemy)
     {
@@ -53,6 +141,29 @@ public partial class OBPGame
             NestAnimationTime: node.Source.NativeClassId == Rac1AridiaEnemies.Nest
                 ? enemy.Animation.Position : null);
         var frame = _rac1AridiaEnemies.Step(instance, facts);
+        Rac1AridiaConstructorbotNative.Frame? nativeBot = null;
+        bool sourceParticlePreview = false;
+        if (node.Source.NativeClassId == Rac1AridiaEnemies.Constructorbot)
+        {
+            nativeBot = StepRac1NativeConstructorbot(enemy);
+            if (nativeBot is { } sourceFrame)
+            {
+                // The known state10/11/12 source clips take precedence over
+                // the old timed host flamethrower. Unknown remaining states
+                // continue using the explicitly provisional host adapter.
+                frame = frame with
+                {
+                    Sequence = enemy.Animation.SupportsSequence(sourceFrame.Sequence)
+                        ? sourceFrame.Sequence : frame.Sequence,
+                    DamagePlayer = false,
+                    FlameActive = false
+                };
+            }
+            var nativeInstance = _rac1MobyRuntime.Require(node.Source);
+            sourceParticlePreview = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                nativeInstance.State.NativeState, _rac1AridiaNativeFrameCounter,
+                IsRac1GameplayActive(node));
+        }
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark &&
             _rac1AridiaEnemies.LinkedActivationSatisfied(instance))
         {
@@ -60,6 +171,11 @@ public partial class OBPGame
             if (native.State.NativeState == 29)
                 _rac1MobyRuntime.SetNativeState(native, 1);
         }
+        // Read the OLD source attack pose before a state11 completion swaps
+        // animation 8 to recovery sequence 8/10 on this same native tick.
+        bool jointContact = nativeBot is { JointContactQuery: true } &&
+            enemy.Animation.SupportsSequence(8) &&
+            AridiaConstructorbotJointTouchesPlayer(enemy);
         enemy.Buried = frame.Buried;
         enemy.Body.CollisionLayer = enemy.Body.CollisionMask = enemy.Buried ? 0u : 1u;
         node.Root.Visible = !enemy.Buried;
@@ -70,8 +186,12 @@ public partial class OBPGame
             MoveRac1EnemyContact(enemy, FromEffectNative(frame.Motion));
         else
             enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
-        SetRac1EnemyFlame(enemy, frame.FlameActive);
-        if (frame.DamagePlayer &&
+        // Temporary source-particle-15 visual proxy. The native effect is a
+        // sparse event at semantic joint0, NOT the host's continuous flame.
+        SetRac1EnemyFlame(enemy, frame.FlameActive || sourceParticlePreview);
+        if (jointContact)
+            ApplyRac1AridiaPlayerDamage(node);
+        else if (frame.DamagePlayer &&
             node.Root.GlobalPosition.DistanceTo(player) <
                 (node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark ? 1.25f : 5f))
             ApplyRac1AridiaPlayerDamage(node);

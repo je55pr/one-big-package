@@ -11,6 +11,46 @@ public static class Rac1AridiaConstructorbotNative
 {
     public const int NativeClassId = Rac1AridiaEnemies.Constructorbot;
     public const int InitialModePvarOffset = 0x194;
+    public const int EngagementRadiusPvarOffset = 0x180;
+    public const float State7HeightTolerance = 4f;
+    public const float State7WaypointTolerance = 1f;
+    public const float State7FacingTolerance = MathF.PI / 36f; // 5 degrees
+
+    public static float ReadEngagementRadius(ReadOnlySpan<byte> pvar)
+    {
+        if (pvar.Length < EngagementRadiusPvarOffset + sizeof(float))
+            throw new InvalidDataException("Constructorbot has no native engagement radius.");
+        float value = BinaryPrimitives.ReadSingleLittleEndian(
+            pvar.Slice(EngagementRadiusPvarOffset, sizeof(float)));
+        if (!float.IsFinite(value) || value is <= 0 or > 1000f)
+            throw new InvalidDataException("Constructorbot engagement radius is invalid.");
+        return value;
+    }
+
+    /// <summary>
+    /// Source state7 branch L2:0x2d7c98..0x2d7dd4:
+    /// target within native PVar+0x180 radius of waypoint, vertical delta
+    /// less than 4, Moby within one unit of waypoint, facing error below
+    /// about five degrees. Original waypoint comes from native path nodes;
+    /// a host may supply an explicitly provisional authored-spawn fallback.
+    /// </summary>
+    public static bool State7AdmitsJointContact(
+        float targetToWaypointDistance, float targetVerticalDelta,
+        float mobyToWaypointDistance, float facingErrorRadians, float engagementRadius)
+    {
+        return float.IsFinite(targetToWaypointDistance) &&
+            float.IsFinite(targetVerticalDelta) &&
+            float.IsFinite(mobyToWaypointDistance) &&
+            float.IsFinite(facingErrorRadians) &&
+            float.IsFinite(engagementRadius) &&
+            targetToWaypointDistance >= 0 &&
+            MathF.Abs(targetVerticalDelta) < State7HeightTolerance &&
+            mobyToWaypointDistance >= 0 &&
+            targetToWaypointDistance < engagementRadius &&
+            mobyToWaypointDistance < State7WaypointTolerance &&
+            MathF.Abs(facingErrorRadians) < State7FacingTolerance;
+    }
+
     public const int RestState = 7;
     public const int ParticleModeState = 8;
     public const int ParticleAlternateState = 9;
@@ -20,6 +60,21 @@ public static class Rac1AridiaConstructorbotNative
     public const int ContactRecoveryState = 13;
 
     public readonly record struct Frame(int NativeState, int Sequence, bool JointContactQuery = false);
+    public const int SourceEmitterParticleId = 15;
+    public const int NativeEmitterCadenceMask = 3;
+
+    /// <summary>
+    /// LEVEL2:0x2d7ecc..0x2d7f8c. Only state 8 invokes source particle
+    /// program 15, when the original global frame counter low two bits are
+    /// zero and Moby+0x31 is nonzero. The emission position is semantic joint
+    /// zero; native particle parameters remain in level globals and are not
+    /// invented here. State 9 shares the following detection code but does
+    /// NOT perform the particle spawn.
+    /// </summary>
+    public static bool ShouldEmitSourceParticle(
+        int nativeState, uint sourceFrameCounter, bool mobyActive) =>
+        nativeState == ParticleModeState && mobyActive &&
+        (sourceFrameCounter & NativeEmitterCadenceMask) == 0;
 
     public static int ReadInitialMode(ReadOnlySpan<byte> pvar)
     {

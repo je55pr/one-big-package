@@ -45,6 +45,57 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void StateSevenUsesAllFourNativeGatesBeforeJointContact()
+    {
+        byte[] pvar = Pvar(0);
+        BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x180), 18f);
+        Assert.Equal(18f, Rac1AridiaConstructorbotNative.ReadEngagementRadius(pvar));
+        bool Accept(float target = 17.99f, float vertical = 3.99f,
+            float anchor = .99f, float yaw = .08f) =>
+            Rac1AridiaConstructorbotNative.State7AdmitsJointContact(
+                target, vertical, anchor, yaw, 18f);
+
+        Assert.True(Accept());
+        Assert.False(Accept(target: 18f));
+        Assert.False(Accept(vertical: 4f));
+        Assert.False(Accept(vertical: -4f));
+        Assert.False(Accept(anchor: 1f));
+        Assert.False(Accept(yaw: MathF.PI / 36f));
+        Assert.False(Accept(yaw: -.2f));
+        Assert.False(Accept(target: float.NaN));
+        Assert.False(Accept(yaw: float.PositiveInfinity));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadEngagementRadius(new byte[0x180]));
+        BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x180), float.NaN);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadEngagementRadius(pvar));
+    }
+
+    [Fact]
+    public void SourceParticle15EmitsOnlyOnNativeStateEightFourTickGateAndActiveMoby()
+    {
+        Assert.Equal(15, Rac1AridiaConstructorbotNative.SourceEmitterParticleId);
+        Assert.Equal(3, Rac1AridiaConstructorbotNative.NativeEmitterCadenceMask);
+        int emitted = 0;
+        for (uint tick = 0; tick < 64; tick++)
+        {
+            bool emission = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                Rac1AridiaConstructorbotNative.ParticleModeState, tick, mobyActive: true);
+            if (emission) emitted++;
+            Assert.Equal((tick & 3) == 0, emission);
+            Assert.False(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                Rac1AridiaConstructorbotNative.ParticleAlternateState, tick, true));
+            Assert.False(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                Rac1AridiaConstructorbotNative.ParticleModeState, tick, false));
+            Assert.False(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                Rac1AridiaConstructorbotNative.JointContactState, tick, true));
+        }
+        Assert.Equal(16, emitted);
+        Assert.True(Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+            8, uint.MaxValue - 3, true));
+    }
+
+    [Fact]
     public void NativeAimAndJointContactAreDifferentStates()
     {
         Assert.Equal(10, Rac1AridiaConstructorbotNative.AimState);

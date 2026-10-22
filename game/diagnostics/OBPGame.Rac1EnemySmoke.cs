@@ -10,6 +10,11 @@ public partial class OBPGame
     /// <summary>Staged integration checks; synthetic positions are not a retail replay.</summary>
     private async Task RunRac1EnemySmokeAsync()
     {
+        if (_world is { Game: "rac1", LevelId: Rac1AridiaEnemies.LevelId })
+        {
+            await RunRac1AridiaConstructorbotSmokeAsync();
+            return;
+        }
         try
         {
             Require(_player is not null && _world is { Game: "rac1", LevelId: 0 }, "enemy smoke needs opening Veldin");

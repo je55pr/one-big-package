@@ -21,6 +21,9 @@ public partial class OBPGame
     private Rac1NovalisBirdbotSession? _rac1Birdbots;
     private Rac1SeekerSession? _rac1Seekers;
     private double _rac1EnemyTicks;
+    // LEVEL2:0x15f5cc frame-low-bits emission gate. Host 60-Hz counter;
+    // the exact retail global update phase is not yet proven.
+    private uint _rac1AridiaNativeFrameCounter;
     private const float AridiaHostUpdateRadius = 24f;
     private const float AridiaAnimatedPresentationRadius = 18f;
     private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values
@@ -56,6 +59,7 @@ public partial class OBPGame
         _rac1Enemies.Clear(); _rac1Class1440 = null;
         _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null;
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
+        _rac1AridiaNativeFrameCounter = 0;
         ResetRac1AridiaScriptActors();
         ResetRac1ConstructorbotStartups();
         ResetRac1BirdbotProjectiles();
@@ -102,7 +106,11 @@ public partial class OBPGame
                     authored.NativeClassId == Rac1AridiaEnemies.Constructorbot
                         ? Rac1AridiaConstructorbotNative.Initialize(pvar) : null;
                 if (botStartup.HasValue)
+                {
                     _rac1ConstructorbotStartups.Add(authored.InstanceIndex, botStartup.Value);
+                    _rac1ConstructorbotAuthoredCenters.Add(authored.InstanceIndex,
+                        node.Root.GlobalPosition);
+                }
                 // The Sandshark init routine's +0x258 branch enters state29.
                 var runtime = _rac1MobyRuntime.Register(authored, node.State,
                     nativeState: botStartup?.NativeState ?? (linkedActivationMobyIndex.HasValue ? 29 : 1),
@@ -229,6 +237,7 @@ public partial class OBPGame
         while (_rac1EnemyTicks >= 1)
         {
             _rac1EnemyTicks--;
+            _rac1AridiaNativeFrameCounter++;
             _rac1Nanotech.UpdateNative();
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
             {
