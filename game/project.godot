@@ -26,6 +26,11 @@ window/size/no_focus=true
 
 project/assembly_name="OneBigPackage"
 
+[gui]
+
+; Populated in memory by UiBootstrap; contains no distributed retail assets.
+theme/custom="res://assets/ui/obp-theme.tres"
+
 [input]
 
 ; Joypad events use Godot/SDL logical controls. Gameplay consumes these named

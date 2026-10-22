@@ -22,11 +22,24 @@ public static class UiTheme
     public static readonly Color GameTwo = new(0.96f, 0.72f, 0.06f);
     public static readonly Color GameThree = new(0.96f, 0.40f, 0.42f);
 
+    public static void Apply(Window root)
+    {
+        var next = Build();
+        // Control theme inheritance stops at intervening non-Control nodes,
+        // including CanvasLayer. The project theme reaches every UI subtree.
+        var shared = ThemeDB.GetProjectTheme();
+        shared.Clear();
+        shared.MergeWith(next);
+        shared.DefaultFont = next.DefaultFont;
+        shared.DefaultFontSize = next.DefaultFontSize;
+        root.Theme = shared;
+    }
+
     public static Theme Build()
     {
         var theme = new Theme { DefaultFontSize = 16 };
         // User-owned, locally decoded R&C1 bitmap font. Keep the ordinary
-        // Godot fallback when a player has not imported their retail assets.
+        // Godot fallback when a player has not attached an R&C1 source.
         if (Rac1RetailUiAssets.Font("regular") is { } retailFont)
             theme.DefaultFont = retailFont;
 

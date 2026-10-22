@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Presentation;
 
 namespace OneBigPackage;
 
@@ -19,6 +20,9 @@ public partial class ControllerSmoke : Node
             GetTree().Root.Size = new Vector2I(960, 720);
             GetTree().CreateTimer(90).Timeout += () => ApplicationLifecycle.RequestQuit(this, "controller-smoke-timeout", 1);
             var args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+            Rac1RetailUiAssets.Clear();
+            Require(Rac1RetailUiAssets.Font() is null && Rac1RetailUiAssets.Sprite(0x7544) is null,
+                "Unattached retail UI did not use the fallback");
             _game = GD.Load<PackedScene>("res://scenes/OBPGame.tscn").Instantiate<OBPGame>();
             _game.ProcessMode = ProcessModeEnum.Pausable;
             AddChild(_game); await Frames(10);
@@ -28,6 +32,7 @@ public partial class ControllerSmoke : Node
             await Press(JoyButton.Start); await Frames(55);
             Require(titleDismissed, "Start did not dismiss the title screen");
             _game.ShowSourceManagerFromBootstrap(); await Frames(5);
+            if (args.Rac1Iso is not null) CheckRetailUiAssets(args.Rac1Iso);
             await Capture("sources");
             Require(Focus() is Button, "Source menu has no controller focus");
             var initial = Focus(); await Press(JoyButton.DpadDown);
@@ -35,6 +40,9 @@ public partial class ControllerSmoke : Node
             await FocusButton("CONTROLLER SETTINGS"); await Press(JoyButton.A);
             Require(Find<ControllerSettingsUi>() is { Visible: true }, "Cross does not open controller settings");
             var settings = Find<ControllerSettingsUi>()!;
+            var settingsScroll = Descendants(settings).OfType<ScrollContainer>().Single();
+            Require(settingsScroll.GetHScrollBar().MaxValue <= settingsScroll.Size.X + .1f,
+                "Bitmap font widths pushed controller settings offscreen");
             await Capture("controller-settings");
             Require(Focus() is not null && settings.IsAncestorOf(Focus()), "Settings did not take focus");
             if (Focus() is OptionButton)
@@ -93,6 +101,43 @@ public partial class ControllerSmoke : Node
             GetTree().Paused = false;
             ApplicationLifecycle.RequestQuit(this, "controller-smoke-fail", 1);
         }
+    }
+
+    private void CheckRetailUiAssets(string path)
+    {
+        Require(Rac1RetailUiAssets.IsLoaded, "Attaching the ISO did not generate retail UI resources");
+        foreach (string style in new[] { "regular", "small", "large" })
+        {
+            var font = Rac1RetailUiAssets.Font(style);
+            Require(font is not null && font.HasChar('A') && font.GetTextureCount(0, new(16, 0)) == 1,
+                $"Retail {style} bitmap font did not load from the disc");
+        }
+        var regular = Rac1RetailUiAssets.Font()!;
+        Require(Math.Abs(regular.GetStringSize("A A", fontSize: 16).X - 33) < .01f,
+            "Font shaping lost native advances / space width");
+        Require(regular.GetGlyphSize(0, new(16, 0), ' ') == Vector2.Zero,
+            "Space incorrectly draws the A cell at its native UVs");
+        Require(GetTree().Root.Theme.DefaultFont == regular, "Source attachment left the bootstrap fallback theme active");
+        var menuLabel = Descendants(Find<SourceManagerUi>()!).OfType<Label>().First(label => label.Text == "GAME SOURCES");
+        Require(menuLabel.GetThemeFont("font") == Rac1RetailUiAssets.Font("large"),
+            "The source menu behind CanvasLayer is still using the Godot fallback font");
+        Require(Rac1RetailUiAssets.Text(20196, "missing") == "Quick Select", "Native menu text did not load");
+        Require(Rac1RetailUiAssets.Sprite(0x7544) is not null, "Cached sprite miss survived source attachment");
+        foreach (var weapon in Rac1WeaponProfiles.Additional.Select(p => p.Item).Prepend(Rac1WeaponId.FirstRanged))
+        {
+            var icon = Rac1WeaponIconCatalog.Ordinary(weapon);
+            Require(icon is { } mapped && Rac1RetailUiAssets.Sprite(mapped.AnimationId, mapped.Frame) is not null,
+                $"Missing retail icon for {weapon}");
+        }
+        Rac1RetailUiAssets.Clear();
+        Require(!Rac1RetailUiAssets.IsLoaded && Rac1RetailUiAssets.Font() is null &&
+            Rac1RetailUiAssets.Text(20196, "fallback") == "fallback" && Rac1RetailUiAssets.Sprite(0x7544) is null,
+            "Clearing the source retained retail UI resources");
+        _game.RememberCommandLineSource(OBP.Core.ObpSourceGame.Rac1, path, persist: false);
+        Require(Rac1RetailUiAssets.Font() is { } reloaded && reloaded != regular && GetTree().Root.Theme.DefaultFont == reloaded &&
+            Rac1RetailUiAssets.Sprite(0x7544) is not null, "Reattaching the ISO did not refresh the UI resource cache and theme");
+        Require(menuLabel.GetThemeFont("font") == Rac1RetailUiAssets.Font("large"), "An existing control retained a font from the previous source");
+        GD.Print("[controller-smoke] automatic ISO UI extraction, native glyph spacing, icons, text and source refresh PASS");
     }
 
     private async Task CheckRawGameplayAsync()
@@ -163,7 +208,9 @@ public partial class ControllerSmoke : Node
         await Capture("quick-select");
         await Button(JoyButton.Y, false);
         Require(!GetTree().Paused && Find<WeaponQuickSelectUi>() is null, "Triangle release did not equip / restore gameplay");
-        await Press(JoyButton.Y); await Press(JoyButton.Y);
+        // This gesture has a wall-clock tap window. Long per-button frame
+        // waits can miss it on a rendered run even though input is correct.
+        await Press(JoyButton.Y, frames: 1); await Press(JoyButton.Y, frames: 1);
         Require(Find<WeaponQuickSelectUi>() is null && !GetTree().Paused, "Double Triangle did not quick-swap the previous item");
         Require(Descendants(_game).OfType<Label>().Any(label => label.Text == "Bomb Glove"), "Quick swap did not actually equip the previous weapon");
         await Button(JoyButton.Y, true); await Press(JoyButton.Start); await Button(JoyButton.Y, false);
@@ -221,10 +268,10 @@ public partial class ControllerSmoke : Node
     {
         foreach (var child in node.GetChildren()) { yield return child; foreach (var nested in Descendants(child)) yield return nested; }
     }
-    private async Task Press(JoyButton button) { await Button(button, true); await Button(button, false); }
-    private async Task Button(JoyButton button, bool pressed)
+    private async Task Press(JoyButton button, int frames = 3) { await Button(button, true, frames); await Button(button, false, frames); }
+    private async Task Button(JoyButton button, bool pressed, int frames = 3)
     {
-        Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = button, Pressed = pressed, Device = 0 }); await Frames(3);
+        Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = button, Pressed = pressed, Device = 0 }); await Frames(frames);
     }
     private async Task Axis(JoyAxis axis, float value)
     {

@@ -60,6 +60,7 @@ public partial class OBPGame
         _sourceConfigPath = ProjectSettings.GlobalizePath("user://sources.json");
         EnsureRac1CampaignPersistenceInitialized();
         _sourcesInitialized = true;
+        RefreshRetailUiSource(null);
         RestoreRememberedSources();
     }
 
@@ -89,6 +90,7 @@ public partial class OBPGame
             {
                 using var reader = new FileRandomAccessReader(entry.Path);
                 var attached = _sources.Restore(entry, reader);
+                if (RefreshRetailUiSource(attached, reader) is { } warning) _sourceRestoreWarnings.Add(warning);
                 GD.Print($"[sources] restored {attached.Definition.DisplayName}: {attached.DiscSerial} · {attached.Identity.BuildId}");
             }
             catch (Exception ex)
@@ -129,6 +131,7 @@ public partial class OBPGame
             }
 
             var attached = _sources.Attach(path, reader);
+            string? uiWarning = RefreshRetailUiSource(attached, reader);
             if (persist)
             {
                 _sources.SaveConfig(_sourceConfigPath);
@@ -139,7 +142,7 @@ public partial class OBPGame
             GD.Print($"[sources] {ok} path={attached.Path}");
             if (reportStatus)
             {
-                _sourceManager?.SetStatus(ok);
+                _sourceManager?.SetStatus(uiWarning is null ? ok : $"{ok}\n{uiWarning}", error: uiWarning is not null);
             }
             return true;
         }
@@ -238,6 +241,8 @@ public partial class OBPGame
             return;
         }
 
+        if (game == ObpSourceGame.Rac1) RefreshRetailUiSource(null);
+
         try
         {
             _sources.SaveConfig(_sourceConfigPath);
@@ -248,5 +253,26 @@ public partial class OBPGame
         {
             _sourceManager?.SetStatus($"Source was detached for this session, but the remembered-source config could not be saved: {ex.Message}", error: true);
         }
+    }
+
+    private string? RefreshRetailUiSource(ObpAttachedSource? source, IRandomAccessReader? reader = null)
+    {
+        if (source is not null && source.Game != ObpSourceGame.Rac1) return null;
+        string? warning = null;
+        try
+        {
+            if (source is null) Rac1RetailUiAssets.Clear();
+            else Rac1RetailUiAssets.Load(reader ?? throw new InvalidOperationException("UI source has no disc reader."));
+        }
+        catch (Exception ex)
+        {
+            Rac1RetailUiAssets.Clear();
+            warning = $"Could not read R&C1 UI assets: {ex.Message}";
+            GD.PushWarning(warning);
+        }
+        // UiBootstrap initially builds a fallback theme before sources restore.
+        // Updating the root theme also refreshes controls already on screen.
+        UiTheme.Apply(GetTree().Root);
+        return warning;
     }
 }

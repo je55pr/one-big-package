@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Bounded R&C1 retail HUD bank inspection/extraction. Requires user's own NTSC-U ISO.
 
+Optional research export; production reads the ISO in C# without these files.
 No original image/font data is stored or distributed by OBP. Keep output in
-game/.retail-ui (gitignored). The native bank has animated sprite definitions.
+game/retail-ui-cache (gitignored). The bank has animated sprite definitions.
 """
 import argparse
 import json

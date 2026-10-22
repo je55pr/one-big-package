@@ -166,7 +166,7 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
             }
             else
             {
-                // A clean install without extracted retail assets remains playable.
+                // Unmapped equipment and unavailable sources retain a readable fallback.
                 string letters = string.Join("", entry.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                     .Select(word => char.ToUpperInvariant(word[0]))).PadRight(2).Substring(0, 2);
                 face.DrawString(font, new Vector2(rect.Position.X + 2f * unit, point.Y + 5f * unit),

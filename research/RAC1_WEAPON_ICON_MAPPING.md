@@ -8,7 +8,7 @@ The resident HUD animation bank exported from the authorised R&C1 NTSC-U origina
 
 **Confidence: high (sequence and visual corroboration), not yet instruction/table exact.** The game's menu UI reads the animation ID from a 0x4C-byte item-info entry at offset 0x38, as established by the reference decompilation's `src/ui/menus/pause/draw_pause_ring.c`, `src/ui/menus/build_filtered_menu_item_list.c`, and `src/ui/menus/draw_menu_item_grid.c`. The table address `0x001863D0` is zero in the executable's file-backed contents and the level-0/planet overlays do not hold its live menu table. This investigation **did not** recover an authoritative initialized menu-state copy; the mapping is independently derived from the animation bank and visual identifications instead. It should be checked against a genuine retail menu-state capture before calling it exact.
 
-No copyrighted sprites are committed: `tools/rac1-ui-assets.py` extracts the files into ignored `game/retail-ui-cache/` on each machine with a locally held game image. Godot's `Rac1RetailUiAssets.Sprite` reads those local frames.
+No copyrighted sprites are committed: `Rac1HudBank` reads them from the attached user-owned ISO, and Godot's `Rac1RetailUiAssets.Sprite` generates an `ImageTexture` in memory. This runs automatically on source attachment/restoration; the optional `tools/rac1-ui-assets.py` research exporter is not a runtime dependency.
 
 ## Mapped named ordinary equipment
 
@@ -37,9 +37,9 @@ The retail `draw_menu_item_grid.c` may select frame offset `1` when equipped, `2
 ## Integration and validation
 
 - Pure native→sprite ID mapping: `src/OBP.RAC1/Presentation/Rac1WeaponIconCatalog.cs`. Only explicit `Rac1WeaponId` variants receive icons. Wrench and unmapped IDs are left null.
-- Godot wheel: `game/scripts/WeaponQuickSelectUi.cs`. Draws an extracted sprite when present; retains the letter fallback for missing/unextracted images. No copy of any retail image is compiled into the executable.
+- Godot wheel: `game/scripts/WeaponQuickSelectUi.cs`. Draws the decoded native sprite; retains the letter fallback for unmapped equipment or an unavailable source. No retail image is compiled into the executable.
 - Tests: `tests/OBP.Tests/Rac1WeaponIconCatalogTests.cs` asserts every named quick-select weapon is covered and IDs are exactly the observed contiguous series, mappings are unique, and unknown IDs have no invented mapping.
-- Local disc asset audit: all 15 mapped `EAxx-0.png` images exist in the ignored cache and all mapped animations have frame 0 in the actual extracted `manifest.json`. `dotnet test` and Godot build/headless smoke tests should run before publishing.
+- Local disc asset audit: all fifteen mapped animations have frame 0 in the source bank. `Rac1UiAssetsTests` verifies the whole bank against independently generated RGBA hashes; `ControllerSmoke` checks that all fifteen mapped icons become usable Godot textures without exported files.
 - Still to validate: side-by-side original retail Quick Select screenshots, exact equipped/upgrade frame selection, and actual fully populated native menu-item table (prefer a read-only offline savestate probe rather than interaction with PCSX2).
 
 ## Public reference code considered as evidence only

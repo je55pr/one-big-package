@@ -1,0 +1,5 @@
+[gd_resource type="Theme" format=3]
+
+[resource]
+resource_name = "OBP Application Theme"
+default_font_size = 16

@@ -11,7 +11,7 @@ public partial class UiBootstrap : Node
     public override void _Ready()
     {
         ProcessMode = ProcessModeEnum.Always;
-        GetTree().Root.Theme = UiTheme.Build();
+        UiTheme.Apply(GetTree().Root);
         GetTree().Root.GuiEmbedSubwindows = true;
         ControllerBindings.Install();
         AddChild(new ControllerMenuNavigation());

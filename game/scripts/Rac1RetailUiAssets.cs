@@ -1,76 +1,88 @@
 using Godot;
-using System.IO;
-using System.Text.Json;
+using OBP.IO;
+using OBP.RAC1.Presentation;
 
 namespace OneBigPackage;
 
 /// <summary>
-/// Loads optional, user-extracted R&C1 bitmap fonts and sprite frames.
-/// No retail assets are distributed with OBP. The PNG/BMFont cache is created
-/// locally from the player's own NTSC-U disc with tools/rac1-ui-assets.py.
+/// Godot resources generated in memory when the player's R&C1 ISO is attached.
+/// Native decoding belongs to OBP.RAC1; no exported/imported retail files or
+/// external tools are required, and detaching the source clears this cache.
 /// </summary>
 public static class Rac1RetailUiAssets
 {
-    private const string Cache = "res://retail-ui-cache";
-    private static readonly Dictionary<string, FontFile?> Fonts = new();
-    private static readonly Dictionary<string, Texture2D?> Sprites = new();
-    private static Dictionary<int, string>? _englishText;
+    private static readonly Dictionary<string, FontFile> Fonts = new();
+    private static readonly Dictionary<(ushort, int), Texture2D?> Sprites = new();
+    private static Rac1UiAssets? _assets;
+    public static bool IsLoaded => _assets is not null;
 
-    public static string Text(int nativeTextId, string fallback)
+    public static void Load(IRandomAccessReader disc)
     {
-        _englishText ??= LoadEnglishText();
-        return _englishText.TryGetValue(nativeTextId, out string? text) ? text : fallback;
+        var assets = Rac1UiAssets.Read(disc);
+        var fonts = assets.Fonts.ToDictionary(pair => pair.Key, pair => CreateFont(pair.Value));
+        Clear();
+        _assets = assets;
+        foreach (var pair in fonts) Fonts.Add(pair.Key, pair.Value);
+        GD.Print($"[retail-ui] generated from R&C1 disc: {assets.Hud.FrameCount} sprite frames, {Fonts.Count} bitmap fonts, {assets.Languages[0].Count} English strings");
     }
 
-    private static Dictionary<int, string> LoadEnglishText()
+    public static void Clear()
     {
-        var result = new Dictionary<int, string>();
-        string path = ProjectSettings.GlobalizePath($"{Cache}/strings-language-0.json");
-        if (!File.Exists(path)) return result;
-        using var document = JsonDocument.Parse(File.ReadAllText(path));
-        foreach (JsonProperty item in document.RootElement.EnumerateObject())
-        {
-            if (int.TryParse(item.Name, out int id) &&
-                item.Value.TryGetProperty("latin1", out JsonElement value))
-                result[id] = value.GetString() ?? string.Empty;
-        }
-        return result;
+        _assets = null;
+        Fonts.Clear();
+        Sprites.Clear();
     }
+
+    public static string Text(int nativeTextId, string fallback) =>
+        nativeTextId >= 0 ? _assets?.Text((uint)nativeTextId) ?? fallback : fallback;
 
     public static FontFile? Font(string style = "regular")
     {
-        if (Fonts.TryGetValue(style, out var existing))
-            return existing;
-
         if (style is not ("regular" or "small" or "large"))
             throw new ArgumentOutOfRangeException(nameof(style));
-
-        string path = ProjectSettings.GlobalizePath($"{Cache}/fonts/{style}.fnt");
-        if (!File.Exists(path))
-            return Fonts[style] = null;
-
-        var font = new FontFile();
-        if (font.LoadBitmapFont(path) != Error.Ok)
-        {
-            GD.PushWarning($"Could not load R&C1 bitmap font from {path}");
-            font.Dispose();
-            return Fonts[style] = null;
-        }
-        return Fonts[style] = font;
+        return Fonts.GetValueOrDefault(style);
     }
 
     public static Texture2D? Sprite(ushort nativeAnimationId, int frame = 0)
     {
-        string key = $"{nativeAnimationId:x4}-{frame}";
+        var key = (nativeAnimationId, frame);
         if (Sprites.TryGetValue(key, out var existing))
             return existing;
-        string path = ProjectSettings.GlobalizePath($"{Cache}/sprites/{key}.png");
-        if (!File.Exists(path))
-            return Sprites[key] = null;
-
-        var image = Image.LoadFromFile(path);
-        if (image is null || image.IsEmpty())
-            return Sprites[key] = null;
+        if (_assets?.Hud.DecodeFrame(nativeAnimationId, frame) is not { } texture) return Sprites[key] = null;
+        using var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
         return Sprites[key] = ImageTexture.CreateFromImage(image);
+    }
+
+    private static FontFile CreateFont(Rac1BitmapFont source)
+    {
+        const int size = 16, baseline = 14;
+        Vector2I cacheSize = new(size, 0);
+        var font = new FontFile
+        {
+            FontName = $"R&C1 {source.Style}",
+            FixedSize = size,
+            FixedSizeScaleMode = TextServer.FixedSizeScaleMode.Enabled,
+            Antialiasing = TextServer.FontAntialiasing.None,
+            GenerateMipmaps = false,
+            ModulateColorGlyphs = true,
+            Fallbacks = new Godot.Collections.Array<Godot.Font> { ThemeDB.FallbackFont },
+        };
+        // Host baseline/line spacing, retaining the former BMFont adapter's
+        // 16px cells, native top offsets and character advances.
+        font.SetCacheAscent(0, size, baseline);
+        font.SetCacheDescent(0, size, 4);
+        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height, false, Image.Format.Rgba8, source.Atlas.Rgba);
+        font.SetTextureImage(0, cacheSize, 0, image);
+        foreach (var glyph in source.Glyphs.Where(g => g.Printable))
+        {
+            font.SetGlyphAdvance(0, size, glyph.Code, new(glyph.Advance, 0));
+            // Native space has A's UVs; it advances without drawing a cell.
+            bool space = glyph.Code == ' ';
+            font.SetGlyphOffset(0, cacheSize, glyph.Code, new(0, glyph.Top - baseline));
+            font.SetGlyphSize(0, cacheSize, glyph.Code, space ? Vector2.Zero : new(size, size));
+            font.SetGlyphUVRect(0, cacheSize, glyph.Code, space ? default : new(glyph.U, glyph.V, size, size));
+            font.SetGlyphTextureIdx(0, cacheSize, glyph.Code, space ? -1 : 0);
+        }
+        return font;
     }
 }

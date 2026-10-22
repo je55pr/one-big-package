@@ -101,12 +101,17 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
 
         var outer = new VBoxContainer();
         outer.AddThemeConstantOverride("separation", 12);
-        var scroll = new ScrollContainer { FollowFocus = true, SizeFlagsVertical = Control.SizeFlags.ExpandFill };
+        var scroll = new ScrollContainer
+        {
+            FollowFocus = true,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        };
         margin.AddChild(scroll);
         outer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         scroll.AddChild(outer);
         outer.AddChild(new Label { Text = "SETTINGS  //  CONTROLLERS", ThemeTypeVariation = "HeaderSmall" });
-        outer.AddChild(new Label { Text = "CONTROLLER CALIBRATION", ThemeTypeVariation = "HeaderLarge" });
+        outer.AddChild(new Label { Text = "CONTROLLER CALIBRATION", ThemeTypeVariation = "HeaderLarge", AutowrapMode = TextServer.AutowrapMode.WordSmart });
         outer.AddChild(new Label
         {
             Text = "PLAYSTATION CONTROLS\nCross  Jump / swim up    ·    Square  Wrench / dive    ·    Circle  Weapon / gadget\nR1  Crouch / flip / pack jump    ·    Triangle  Quick select    ·    L1  Centre camera\nStart  Pause    ·    Select / R3  Map    ·    Left stick / D-pad  Move    ·    Right stick  Camera",
@@ -137,14 +142,15 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
         liveColumn.AddThemeConstantOverride("separation", 7);
         live.AddChild(liveColumn);
         liveColumn.AddChild(new Label { Text = "LIVE STICKS", ThemeTypeVariation = "HeaderMedium" });
-        _raw = new Label();
-        _calibrated = new Label { Modulate = UiTheme.Ready };
+        _raw = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
+        _calibrated = new Label { Modulate = UiTheme.Ready, AutowrapMode = TextServer.AutowrapMode.WordSmart };
         liveColumn.AddChild(_raw);
         liveColumn.AddChild(_calibrated);
         liveColumn.AddChild(new Label
         {
             Text = "RAW is SDL/Godot input. HOST is what OBP sends into the selected game's own input conditioner.",
             Modulate = UiTheme.TextDim,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
         });
         var settings = new PanelContainer { ThemeTypeVariation = "MenuCard" };
         outer.AddChild(settings);
@@ -171,8 +177,9 @@ public sealed partial class ControllerSettingsUi : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         });
 
-        var actions = new HBoxContainer();
-        actions.AddThemeConstantOverride("separation", 10);
+        var actions = new HFlowContainer();
+        actions.AddThemeConstantOverride("h_separation", 10);
+        actions.AddThemeConstantOverride("v_separation", 10);
         settingsColumn.AddChild(actions);
         _calibrate = new Button { Text = "START RANGE CALIBRATION", CustomMinimumSize = new Vector2(230, 44) };
         _save = new Button { Text = "SAVE SETTINGS", CustomMinimumSize = new Vector2(180, 44) };
