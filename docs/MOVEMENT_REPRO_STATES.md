@@ -17,6 +17,8 @@ Play normally, then:
 - **F8** marks the bug without ending the recording.
 - **F9** saves the run and stops recording. You can continue playing afterward.
 - With a controller, **Start** pauses, then **Square** marks and **Select** saves.
+- Keyboard shortcuts require the game window to have keyboard focus; controller
+  input can still work in the background. The recorder shows a focus reminder.
 - Closing the game also finishes the completed input steps. A crash or disk
   failure leaves an incomplete `.partial` file, which cannot count as a pass.
 
@@ -46,8 +48,10 @@ The engine version, source build, platform and physics backend must match.
 All referenced OBP assembly identities must match unless `-AllowBuildChange` is supplied explicitly
 when investigating a fix; the report identifies this exception. `-Rendered`
 replays in an unfocusable offscreen window. `-SkipBuild` reuses an existing build.
-The wrappers use a fixed 60-Hz simulation and cap visible human recording at
-60 FPS. A slow frame stretches wall time rather than dropping simulation steps.
+The wrappers use a fixed 60-Hz simulation. The visible human recorder explicitly
+paces its callbacks because Godot's `--fixed-fps` bypasses real-time synchronization;
+`--max-fps` alone is insufficient in that mode. A slow frame stretches wall time
+rather than dropping simulation steps.
 Gesture timestamps and post-calibration player controls are recorded separately,
 so replay can run faster without changing quick-select/button timing.
 
