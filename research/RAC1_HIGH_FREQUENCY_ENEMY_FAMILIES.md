@@ -135,6 +135,32 @@ decoded and sequence cues play through the original 989snd audio decoder.
   are executable tests; both original retail levels load in Godot with
   81 and 89 Seekers respectively.
 
+**Live end-to-end host witness:** a temporary, *uncommitted and later
+removed* Godot smoke harness moved an original Gaspar Seeker (class 193,
+instance 70) to within three units of the player, then ran the real
+animation/physics/gameplay loop. It entered source chase state 3, finished
+its attack transition to timed state 4, counted down the source fuse,
+entered state 7 and emitted the explosion. The host logged
+`[rac1-enemies] class193 i70: contact; Nanotech 3` followed by
+`[rac1-seekers] class193 i70: native state7 timed detonation`.
+This caught a real missing admission in
+`Rac1RatchetNanotechSession.ApplyDamage`, which now accepts **only**
+the verified class-193 2-unit / damage-1 / 0x810001 owner-backed
+explosion descriptor and continues to honour the game's recovered
+77-tick damage protection. Both a spoofed flag and missing source
+owner are explicitly rejected by automated tests.
+A separate temporary Godot fatal-hit test delivered **two valid
+wrench damage events** to original Gaspar instance 70 and observed:
+`nonlethal damage`, `lethal damage`, then `fatal impact burst`.
+This identified and fixed another real host integration issue: generic
+enemy damage incorrectly dereferenced `enemy.Motion` even for native
+Seekers that use their own heading controller.
+
+Both smoke logs and test-run scripts remain **ignored under `.tools`**,
+not part of the shipped runtime. Each script restores the original
+source file in a `finally` block, then rebuilds the unmodified
+Godot host successfully.
+
 **Fidelity boundary:** the encounter is now functionally hosted from
 spawn through attack/kill/death, but the original PS2 common
 `mine_fall` and 0x258830 collision solvers, source 0x213928 hit-response

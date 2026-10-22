@@ -32,6 +32,26 @@ public sealed class Rac1RatchetNanotechSessionTests
     }
 
     [Fact]
+    public void NativeSeekerExplosionDamagesRatchetAndHonoursSeventySevenTickProtection()
+    {
+        var session = new Rac1RatchetNanotechSession();
+        var hit = Rac1SeekerExplosion.DamageTo(70, Rac1GameplayEntityRef.Player);
+        Assert.Equal(3, session.ApplyDamage(hit).Nanotech);
+        Assert.Equal(3, session.ApplyDamage(hit).Nanotech);
+        for (int i = 0; i < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; i++)
+            session.UpdateNative();
+        Assert.Equal(2, session.ApplyDamage(hit).Nanotech);
+
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            hit.Source, hit.Target, 1, 0x00010001, owner: hit.Owner)));
+        Assert.Throws<NotSupportedException>(() => session.ApplyDamage(new Rac1GameplayDamageEvent(
+            hit.Source, hit.Target, 1, Rac1SeekerExplosion.NativeDamageFlags)));
+        Assert.Throws<NotSupportedException>(() =>
+            session.ApplyDamage(Rac1SeekerExplosion.DamageTo(70,
+                Rac1GameplayEntityRef.Moby(new(500, 2)))));
+    }
+
+    [Fact]
     public void FourRecoveredClass749HitsReachZeroAndDeath()
     {
         var session = new Rac1RatchetNanotechSession();

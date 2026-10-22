@@ -541,7 +541,10 @@ public partial class OBPGame
         NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);
         enemy.Reaction = node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
             ? null : new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
-        if (enemy.Reaction is not null) enemy.Motion!.SetFacing(enemy.Reaction.FacingYaw);
+        // Native class-193 Seekers own their heading controller; only older
+        // generic hostiles have the separate Rac1EnemyMotion adapter.
+        if (enemy.Reaction is not null && enemy.Motion is not null)
+            enemy.Motion.SetFacing(enemy.Reaction.FacingYaw);
         enemy.Grounded = false;
         SetRac1EnemyFlame(enemy, false);
         if (lethal && !enemy.RewardEmitted)
