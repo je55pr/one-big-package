@@ -126,6 +126,7 @@ public partial class OBPGame : Node3D
     public override void _Process(double delta)
     {
         _frame++;
+        TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
         {
@@ -271,6 +272,7 @@ public partial class OBPGame : Node3D
 
     public override void _ExitTree()
     {
+        FlushRac1CampaignSaves("clean exit");
         // Godot can exit without visiting the normal world-switch teardown path.
         // Stop playback while the audio hosts and their Godot players are still valid.
         _worldHost.Unload(releaseAudioImmediately: true);
@@ -329,6 +331,7 @@ public partial class OBPGame : Node3D
     /// <summary>Free the current world sub-tree and everything it owns. Safe to call when nothing is loaded.</summary>
     private void TeardownWorld()
     {
+        FlushRac1CampaignSaves("world teardown");
         CloseWeaponQuickSelect();
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();

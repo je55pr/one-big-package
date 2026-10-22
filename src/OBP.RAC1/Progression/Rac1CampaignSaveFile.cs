@@ -44,6 +44,16 @@ public static class Rac1CampaignSaveFile
             throw new ArgumentException("Campaign save path is required.", nameof(path));
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
+        Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(
+            campaign, weapons, wallet, novalisGoldBoltInstances, buriedBoltHistory);
+        SaveEnvelope(path, envelope);
+    }
+
+    public static void SaveEnvelope(string path, Rac1CampaignSaveEnvelope envelope)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Campaign save path is required.", nameof(path));
+        ArgumentNullException.ThrowIfNull(envelope);
 
         string fullPath = Path.GetFullPath(path);
         string? directory = Path.GetDirectoryName(fullPath);
@@ -53,7 +63,6 @@ public static class Rac1CampaignSaveFile
         string temporaryPath = fullPath + ".tmp";
         try
         {
-            Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(campaign, weapons, wallet, novalisGoldBoltInstances, buriedBoltHistory);
             using (FileStream stream = new(
                 temporaryPath,
                 FileMode.Create,
