@@ -56,12 +56,13 @@ public partial class OBPGame
         _rac1Enemies.Clear(); _rac1Class1440 = null;
         _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null;
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
+        ResetRac1Amoeboids();
         ResetRac1BirdbotProjectiles();
     }
 
     private void ConfigureRac1Enemies(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId is not (0 or 1 or Rac1AridiaEnemies.LevelId or 9 or 15)) return;
+        if (world.LevelId is not (0 or 1 or Rac1AridiaEnemies.LevelId or 5 or 9 or 11 or 15)) return;
         var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
@@ -142,13 +143,14 @@ public partial class OBPGame
                 seekers.Register(authored, node.State, MathF.Atan2(nativeForward.Y, nativeForward.X));
                 nodes.Add(node);
             }
+        ConfigureRac1Amoeboids(world, result, nodes, Rac1LevelSettings.ReadGameplay(reader, level));
         foreach (var group in nodes.GroupBy(node => node.Source.NativeClassId))
         {
             var cls = classes.Mobies[group.Key];
             var asset = Rac1MobyAnimationAssets.Bake(cls, group.First().Source.Meshes,
                 core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength),
                 skipUnsupportedTiming: world.LevelId == Rac1AridiaEnemies.LevelId ||
-                    group.Key == Rac1SeekerSession.ClassId);
+                    group.Key == Rac1SeekerSession.ClassId || Rac1AmoeboidAuthored.IsFamily(group.Key));
             foreach (var node in group)
             {
                 if (group.Key == 749) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
@@ -159,7 +161,9 @@ public partial class OBPGame
                 // A buried Sandshark is not a solid collider in the native
                 // encounter. Register its shape but do not put it into broadphase
                 // contacts until it has actually emerged or been released.
-                uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ? 0u : 1u;
+                uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ||
+                    Rac1AmoeboidAuthored.IsFamily(group.Key) && !_rac1Amoeboids!.Get(node.Source.InstanceIndex).Active
+                    ? 0u : 1u;
                 var body = new CharacterBody3D
                 {
                     Name = $"EnemyContact_i{node.Source.InstanceIndex}",
@@ -177,17 +181,24 @@ public partial class OBPGame
                         ? _rac1Birdbots!.Get(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1SeekerSession.ClassId
                             ? _rac1Seekers!.Get(node.Source.InstanceIndex).Sequence
+                        : Rac1AmoeboidAuthored.IsFamily(group.Key)
+                            ? _rac1Amoeboids!.Get(node.Source.InstanceIndex).Sequence
                         : asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min();
                 var motion = group.Key is 749 or 1440 or Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
                     ? new Rac1EnemyMotion(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X))
                     : null;
                 var enemy = new Rac1HostedEnemy(node, asset, body, motion, clip);
                 node.ConfigureAnimations(asset.Presentation);
-                if (group.Key != Rac1AridiaEnemies.Sandshark)
+                if (group.Key != Rac1AridiaEnemies.Sandshark &&
+                    (!Rac1AmoeboidAuthored.IsFamily(group.Key) ||
+                     _rac1Amoeboids!.Get(node.Source.InstanceIndex).Active))
                     node.ApplyAnimationSample(enemy.Animation.Sample);
-                else HideBuriedRac1AridiaEnemy(enemy);
+                else if (group.Key == Rac1AridiaEnemies.Sandshark)
+                    HideBuriedRac1AridiaEnemy(enemy);
                 SynchronizeRac1Enemy(enemy);
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
+                if (Rac1AmoeboidAuthored.IsFamily(group.Key))
+                    InitializeRac1AmoeboidPresentation(enemy);
             }
         }
         GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; " +
@@ -207,6 +218,7 @@ public partial class OBPGame
         {
             _rac1EnemyTicks--;
             _rac1Nanotech.UpdateNative();
+            TickRac1AmoeboidGates();
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
             {
                 var node = enemy.Node;
@@ -268,6 +280,7 @@ public partial class OBPGame
                 else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId) TickRac1NovalisPeckbot(enemy);
                 else if (node.Source.NativeClassId == Rac1NovalisBirdbotSession.ClassId) TickRac1NovalisBirdbot(enemy);
                 else if (node.Source.NativeClassId == Rac1SeekerSession.ClassId) TickRac1Seeker(enemy);
+                else if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId)) TickRac1Amoeboid(enemy);
                 else if (!aridiaStepped) TickRac1AridiaEnemy(enemy);
                 // All known Aridia attacks occur within the native-candidate
                 // host encounter region. Preserve gameplay ticks at 24 units,
@@ -493,6 +506,8 @@ public partial class OBPGame
 
     private bool ApplyRac1EnemyWeaponDamage(RuntimeWorldScene.DynamicObjectNode node, Rac1GameplayDamageEvent damage)
     {
+        if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId))
+            return ApplyRac1AmoeboidDamage(node, damage);
         if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
             return ApplyRac1AridiaWeaponDamage(node, damage);
         if (!_rac1MobyRuntime.CanDispatchDamage(damage)) return false;

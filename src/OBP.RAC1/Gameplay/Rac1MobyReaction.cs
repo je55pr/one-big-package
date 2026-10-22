@@ -20,6 +20,11 @@ public sealed class Rac1MobyReaction
         // The contact solver 0x25c698 is still approximated in Godot.
         Rac1SeekerSession.ClassId when lethal => new(28f / 3600, 14f / 3600, 14f / 60, 28f / 60),
         Rac1SeekerSession.ClassId => new(6f / 3600, 3f / 3600, 3f / 60, 6f / 60),
+        // Amoeboid split helper 0x2eec68 launches child reserves through
+        // trooper_start_knockback(..., 4, 8, 0). Gravity/drag remain host
+        // approximation until the common per-family fall constants match.
+        int cls when Rac1AmoeboidAuthored.IsFamily(cls) =>
+            new(8f / 3600, 4f / 3600, 4f / 60, 8f / 60),
         _ => throw new ArgumentOutOfRangeException(nameof(nativeClass)),
     };
 

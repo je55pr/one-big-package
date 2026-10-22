@@ -75,10 +75,11 @@ public sealed class Rac1RatchetNanotechSession
         bool novalisPeck = damage.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
             damage.NativeMarker is null && damage.NativeDamageFlags is null;
         bool seekerBlast = Rac1SeekerExplosion.IsNativeExplosion(damage);
+        bool amoeboidAttack = Rac1AmoeboidAttack.IsNativePlayerAttack(damage);
         bool explosiveCrateBlast = Rac1ExplosiveCrateBlast.IsNativePlayerBlast(damage);
         if (damage.Target != Rac1GameplayEntityRef.Player ||
             damage.Source.Kind != Rac1GameplayEntityKind.Moby ||
-            !(class749 || class1440 || novalisPeck || seekerBlast || explosiveCrateBlast) ||
+            !(class749 || class1440 || novalisPeck || seekerBlast || amoeboidAttack || explosiveCrateBlast) ||
             damage.NativeDamage != (explosiveCrateBlast ? Rac1ExplosiveCrateBlast.Damage : 1))
         {
             throw new NotSupportedException(

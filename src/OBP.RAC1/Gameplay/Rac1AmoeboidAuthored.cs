@@ -20,6 +20,16 @@ public static class Rac1AmoeboidAuthored
 
     public static bool IsFamily(int nativeClass) => nativeClass is Large or Medium or Small;
 
+    // The authored 0x78-byte record stores the native group index at +0x48.
+    public static int ReadGroup(ReadOnlySpan<byte> record)
+    {
+        if (record.Length != 0x78) throw new InvalidDataException("Native Moby record must contain 0x78 bytes.");
+        int group = BinaryPrimitives.ReadInt32LittleEndian(record[0x48..]);
+        if (group == -1) return 255; // original native Moby.group = 0xff: no group list
+        if (group is < 0 or > 255) throw new InvalidDataException($"Invalid native Amoeboid group index {group}.");
+        return group;
+    }
+
     public static Rac1AmoeboidSpawnFacts Read(int nativeClass, ReadOnlySpan<byte> pvar)
     {
         if (!IsFamily(nativeClass)) throw new ArgumentOutOfRangeException(nameof(nativeClass));
@@ -35,12 +45,12 @@ public static class Rac1AmoeboidAuthored
         int state = forced != 0 || direct != 0 ? ActiveState
             : volume == -1 ? DormantPoolState : WaitingForVolumeState;
         return new(nativeClass, state, volume, path, nextPath,
-            nativeClass == Large ? Medium : nativeClass == Medium ? Small : null);
+            nativeClass == Large ? Medium : nativeClass == Medium ? Small : null, forced != 0);
     }
 }
 
 public sealed record Rac1AmoeboidSpawnFacts(int ClassId, int InitialNativeState,
-    int VolumeIndex, int PathIndex, int NextPathIndex, int? SplitChildClassId)
+    int VolumeIndex, int PathIndex, int NextPathIndex, int? SplitChildClassId, bool ForcedActive = false)
 {
     public bool IsActiveOnLoad => InitialNativeState == Rac1AmoeboidAuthored.ActiveState;
     public bool IsSpawnPoolReserve => InitialNativeState == Rac1AmoeboidAuthored.DormantPoolState;
