@@ -231,6 +231,9 @@ public partial class OBPGame
                 var admission = _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage);
                 CompleteRac1CrateDamage(_rac1CrateNodes.Single(node => node.Source.InstanceIndex == damage.Target.RuntimeId), admission);
             }
+            else if (damage.Target.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
+                TryTriggerRac1ExplosiveDamage(
+                    _rac1ExplosiveNodes[(int)damage.Target.RuntimeId], damage);
             else if (_rac1Enemies.TryGetValue((int)damage.Target.RuntimeId, out var enemy))
                 ApplyRac1EnemyWeaponDamage(enemy.Node, damage);
         }

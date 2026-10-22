@@ -64,6 +64,9 @@ public partial class OBPGame
         _rac1NovalisWater = null;
         ResetRac1NovalisMusic();
         ResetRac1RedPlants();
+        ResetRac1PulsingOrbs();
+        ResetRac1ExplosiveCrates();
+        ResetRac1CheckpointTriggers();
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
         ResetRac1Enemies();
@@ -141,9 +144,12 @@ public partial class OBPGame
             AddRac1CrateCollider(node);
         }
 
+        ConfigureRac1ExplosiveCrates(world, result);
+        ConfigureRac1CheckpointTriggers(world);
         ConfigureRac1PlacedBolts(world, result);
         ConfigureRac1GoldBolts(world, result);
         ConfigureRac1RedPlants(world, result);
+        ConfigureRac1PulsingOrbs(world, result);
         ConfigureRac1NovalisCranks(world, result);
         ConfigureRac1NovalisBreakables(world, result);
         ConfigureRac1NovalisWater(world);
@@ -237,6 +243,9 @@ public partial class OBPGame
         TickRac1Swing(delta);
         TickRac1Hostiles(delta);
         TickRac1RedPlants(delta);
+        TickRac1PulsingOrbs(delta);
+        TickRac1ExplosiveCrates(delta);
+        TickRac1CheckpointTriggers();
         TickRac1Pickups(delta);
         TickRac1GoldBolts();
     }

@@ -331,6 +331,8 @@ public partial class OBPGame
             CompleteRac1CrateDamage(target, _rac1MobyRuntime.DispatchDamage<Rac1BoltCrateDamageAdmission>(damage));
             applied = true;
         }
+        else if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
+            applied = TryTriggerRac1ExplosiveDamage(target, damage);
         else applied = ApplyRac1EnemyWeaponDamage(target, damage);
         if (applied) _rac1DamageTransport.Publish(damage);
         return applied;

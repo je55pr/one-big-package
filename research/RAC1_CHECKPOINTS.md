@@ -7,9 +7,12 @@ The independently retained level-2 active checkpoint coordinates match authored
 **class-805 instance 708** exactly in X/Y, with only the native ground-probe
 height adjustment. See [common Moby behaviours](RAC1_COMMON_MOBY_BEHAVIOURS.md).
 The historical sections below document what was known before this recovery.
-The clip-volume geometry, source-game eligibility and activation **have not
-yet been connected to the Godot host**; only the writer identity and proof of
-one saved checkpoint are established.
+**New Godot host milestone:** original 0x80-byte clip-volume records are now
+read as oriented boxes and class-805 enter transitions reach the recovered
+checkpoint session. On a normal headless Aridia load, authored marker 708
+activated directly from source clip volume 53, with no test injection. Native
+mode-gated markers, checkpoint UID and save/revisit policy remain incomplete.
+This update supersedes the prior investigation-only integration limitation.
 
 
 Authority: NTSC-U original retail (SCUS-97199, build rac1-ntscu-original). This note retains both the negative Veldin checkpoint boundary and a positive level-2 checkpoint/restart witness. It distinguishes the proven restart placement/consumer from the still-unrecovered gameplay event that activates or populates the checkpoint record.

@@ -1,5 +1,34 @@
 # R&C1 most common missing Moby behaviours
 
+## 22 October 2026: Godot runtime follow-up
+
+The isolated `chatgpt/moby-behaviour-atlas` branch now hosts **three new
+Moby families**. These are source-backed but still have bounded omissions:
+
+| Class | Retail placements | Integrated | Not yet source-exact |
+|---:|---:|---|---|
+| **505 explosive crate** | **608**, 18 levels | Native 1/5/3 fuse, blast progression and damage, original 363/364 fragment family, bolt payout, player/contact/wrench/bomb/other-weapon triggers and chain reactions | Godot contact/ray policy and tint approximate the PS2; native warning-voice mapping and draw-range rearm for the 211 repeatable crates remain incomplete |
+| **1060 pulse-colour object** | **334**, 4 levels | Authored phase and recovered two-colour sine cycle at 180 degrees per second, on original Godot model/materials | PS2 per-vertex colour/alpha blending differs from Godot material tint |
+| **805 checkpoint marker** | **97**, 18 levels | Original 0x80-byte clip-volume records, including oriented/scaled box admission and real entry edges; writes the recovered `Rac1LevelCheckpointSession` | Native global mode gates/conditional spawn slots are conservatively disabled; checkpoint UID serialization/revisit state remains incomplete |
+
+**Proof in Godot:** an ordinary headless Aridia level-2 load registered five
+native checkpoint markers and **naturally activated authored marker 708, clip
+volume 53**, without the previous manually injected checkpoint test input.
+The separately retained retail checkpoint matches its native XY and yaw. An
+independent Rilgar level-5 load registered 215 explosive crates and 25 pulsing
+objects. Retail tests check the original 608/334/97 placements and source
+payloads, the separate 505 repeat count (211), and original 363/364 debris
+model identities.
+
+**Coverage accounting:** the previous approximate 23/813 placed classes
+and 6,634/16,232 authored placements with some game-hosted behavior become
+roughly **26/813 classes (3.2%)** and **7,673/16,232 placements (47.3%)**.
+These are *partial-functional-exposure* numbers, not a claim that 47.3% of
+gameplay is retail-perfect. Only source-backed families are counted; class
+605's PVar parser alone is not an implemented Metal Detector.
+
+### Original 2026-10-22 investigation (historical prior state)
+
 Authority: original US NTSC-U `SCUS-97199` in the user-provided local
 game ISO, independently parsed by OBP's retail readers and overlay updater
 atlas. Analysed 2026-10-22. This follow-up corrects the earlier
