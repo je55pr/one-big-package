@@ -46,7 +46,9 @@ public partial class OBPGame
             node.Source.NativeClassId == Rac1AridiaEnemies.Nest
                 ? _rac1AridiaEnemies.WaitingSharkCountForNest(instance)
                 : 0,
-            LinkedMobyNativeState: ResolveAridiaSharkLinkedMobyState(instance));
+            LinkedMobyNativeState: ResolveAridiaSharkLinkedMobyState(instance),
+            NestAnimationTime: node.Source.NativeClassId == Rac1AridiaEnemies.Nest
+                ? enemy.Animation.Position : null);
         var frame = _rac1AridiaEnemies.Step(instance, facts);
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark &&
             _rac1AridiaEnemies.LinkedActivationSatisfied(instance))

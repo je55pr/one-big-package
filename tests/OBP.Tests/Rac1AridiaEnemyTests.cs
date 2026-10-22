@@ -59,6 +59,11 @@ public sealed class Rac1AridiaEnemyTests
         Assert.All(sharks.Where(moby => moby.Index is >= 440 and <= 445), moby =>
             Assert.Equal(756, Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(moby.PVar!)));
         Assert.Equal(Rac1AridiaEnemies.Sandmouse, placements[756].OClass);
+        Assert.Equal(208, placements[756].PVar!.Length);
+        Assert.Equal(526, Rac1AridiaEnemies.ReadSandmouseLinkedController(placements[756].PVar!));
+        Assert.Equal(604, placements[526].OClass);
+        Assert.Equal(43, BinaryPrimitives.ReadInt32LittleEndian(placements[756].PVar!.AsSpan(0x40)));
+        Assert.Equal(43, BinaryPrimitives.ReadInt32LittleEndian(placements[756].PVar!.AsSpan(0x44)));
         // Authored group IDs are the +0x48 placement word copied into live
         // moby +0x21. Validate the admitted 137 placements against retail.
         Assert.All(sharks.Concat(bots).Concat(nests), moby =>
@@ -153,6 +158,25 @@ public sealed class Rac1AridiaEnemyTests
     }
 
     [Fact]
+    public void NativeNestAnimationClockMustReachFrameTenWithoutUsingElapsedTicks()
+    {
+        var nest = new Rac1AridiaEnemySession();
+        nest.Register(9, Rac1AridiaEnemies.Nest, nestInitialWaitTicks: 1);
+        var near = new Rac1AridiaEnemyFacts(Vector3.Zero, Vector3.UnitX, true, true,
+            WaitingSharkCount: 1, NestAnimationTime: 100);
+        // A stale idle animation sample cannot release in the same step that
+        // the native windup sequence is selected.
+        var first = nest.Step(9, near);
+        Assert.Equal(Rac1AridiaEnemyPhase.WindingUp, first.Phase);
+        Assert.False(first.SpawnSandshark);
+        for (int i = 0; i < 40; i++)
+            Assert.False(nest.Step(9, near with { NestAnimationTime = 9.8f }).SpawnSandshark);
+        var release = nest.Step(9, near with { NestAnimationTime = 10.1f });
+        Assert.True(release.SpawnSandshark);
+        Assert.Equal(Rac1AridiaEnemyPhase.Guarding, release.Phase);
+    }
+
+    [Fact]
     public void NativeLinkedSandmouseState29BlocksEvenPointBlankAggroUntilState5()
     {
         var session = new Rac1AridiaEnemySession();
@@ -187,6 +211,19 @@ public sealed class Rac1AridiaEnemyTests
         var session = new Rac1AridiaEnemySession();
         Assert.Throws<ArgumentException>(() =>
             session.Register(3, Rac1AridiaEnemies.Nest, linkedActivationMobyIndex: 756));
+    }
+
+    [Fact]
+    public void SandmouseControllerLinkRejectsMalformedOrMissingNativePvar()
+    {
+        var pvar = new byte[208];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x48), 526);
+        Assert.Equal(526, Rac1AridiaEnemies.ReadSandmouseLinkedController(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x48), -1);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaEnemies.ReadSandmouseLinkedController(pvar));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaEnemies.ReadSandmouseLinkedController(new byte[0x48]));
     }
 
     [Fact]

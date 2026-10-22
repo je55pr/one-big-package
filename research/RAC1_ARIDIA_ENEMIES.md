@@ -86,3 +86,13 @@ Retail evidence below was regenerated directly from the user's NTSC-U R&C1 disc 
 - **Constructorbot still provisional:** its update `L2:0x2d7748` branches over 18 states, including state-8/9 emission and state-12 attachment/contact paths. Existing Godot attack detection, emitters, audio timing and collision remain host approximations, not claimed native parity.
 
 Added deterministic group, recycling, opening and retry regressions plus disc-backed group format assertions. No generated executable/decompiled source, textures, music, captures or private file paths are committed.
+
+## Follow-up native Sandmouse chain and nest animation gate (22 October 2026)
+
+Retail-linked instance #756, native class 1818, has **208 PVar bytes**. Its PVar `+0x40/+0x44` contains authored path selectors `43/43`, and `+0x48/+0x4c` links to actor **#526, class 604** (the linked actor is a distinct class, not another Sandmouse). Verified by decoding the original level-2 instance roster and PVars, without committing data payloads.
+
+Native machine translation `L2:0x2f0f88` reveals a source-ordered dependency chain: class-1818 state 0 enters state 1 (`0x2f131c`); state 1 waits for nonzero global scene flag `0x13d4c5` and mode `0x1404a8 == 5`, then performs additional hero/cinematic interactions; state 2 (`0x2f15f0`) waits for linked class-604 state **exactly 5**, not `>=5`; state 3 (`0x2f16b8..0x2f1878`) performs original path/contact movement, state 4 (`0x2f18f8..0x2f1980`) commits native state 5. Native class-604 `0x2d7190` independently responds to its `+0xbc` scripted control byte and advances through its own animation-gated states. The six linked class-580 sharks may unlock at Sandmouse state 5, not at earlier transition states.
+
+`Rac1AridiaSandmouseSession` now represents this **narrow state order** with deterministic proof of six-shark unlocking and retry reset. The scene-entry and travel-completion facts are intentionally external: OBP's Godot cutscene/hero path source does not yet supply them, so this session is **not** proof that normal gameplay reaches the unlock. No proximity/timer synthetic trigger is inserted.
+
+Nest native update `L2:0x2dcce0` tests animation-time **10** in winding-up state 2. The Aridia host now supplies the original clip's runtime animation position to the controller, with a documented fractional crossing tolerance to bridge host clock samples and a tick-only fallback for non-rendering fixtures. The windup-entering frame cannot spuriously fire on the preceding idle clip's timestamp. The native cooldown calculation and source trigger volume remain unfinished.
