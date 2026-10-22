@@ -26,6 +26,7 @@ public partial class OBPGame
         private int _nextStep, _playerReads, _processSteps, _marks, _checks;
         private ulong _epoch;
         private Task? _flush;
+        private ulong _lastProcessUsec;
         private Label? _hud;
         private PlaytestDifference? _firstDifference;
         private PlaytestCheckpoint? _lastObserved;
@@ -72,8 +73,10 @@ public partial class OBPGame
                 GetViewport().SetInputAsHandled();
                 return;
             }
-            bool keyMark = input is InputEventKey { Keycode: Key.F8, Pressed: true, Echo: false };
-            bool keySave = input is InputEventKey { Keycode: Key.F9, Pressed: true, Echo: false };
+            bool keyMark = input is InputEventKey { Pressed: true, Echo: false } mark &&
+                (mark.Keycode == Key.F8 || mark.PhysicalKeycode == Key.F8);
+            bool keySave = input is InputEventKey { Pressed: true, Echo: false } save &&
+                (save.Keycode == Key.F9 || save.PhysicalKeycode == Key.F9);
             bool padMark = GetTree().Paused && input is InputEventJoypadButton { ButtonIndex: JoyButton.X, Pressed: true };
             bool padSave = GetTree().Paused && input is InputEventJoypadButton { ButtonIndex: JoyButton.Back, Pressed: true };
             if (keyMark || keySave || padMark || padSave)
@@ -217,11 +220,26 @@ public partial class OBPGame
                 _step = null;
                 if (Reader is null && kind == PlaytestStepKind.Process)
                 {
-                    SetNotice($"RECORDING  ·  {_processSteps / 60}s  ·  {_marks} bug markers\nF8: Mark bug   F9: Save run\nPaused: Square marks · Select saves");
+                    string focus = Game.GetWindow().HasFocus() ? "" : "\nClick the game window to give F8/F9 keyboard focus.";
+                    SetNotice($"RECORDING  ·  {_processSteps / 60}s  ·  {_marks} bug markers\nF8: Mark bug   F9: Save run\nPaused: Square marks · Select saves{focus}");
                     if (_stopRequested || _nextStep >= 999_990) _ = SaveAsync();
+                    PaceHumanRecording();
                 }
             }
             catch (Exception error) { Fail(error); }
+        }
+
+        private void PaceHumanRecording()
+        {
+            if (Game._args.PlaytestSmoke) return;
+            // --fixed-fps disables Godot's real-time synchronization. Explicitly
+            // pace the visible recorder; --max-fps alone does not cap this mode.
+            // Replays and input smokes still run as fast as their host allows.
+            const ulong period = 1_000_000 / 60;
+            ulong now = Time.GetTicksUsec();
+            if (_lastProcessUsec != 0 && now - _lastProcessUsec < period)
+                OS.DelayUsec((int)(period - (now - _lastProcessUsec)));
+            _lastProcessUsec = Time.GetTicksUsec();
         }
 
         private static void RestoreActions(IReadOnlyDictionary<string, float> actions)

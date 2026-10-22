@@ -56,10 +56,22 @@ public partial class OBPGame
             for (int frame = 0; frame < 2; ++frame) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.DpadDown, Pressed = false });
             for (int frame = 0; frame < 5; ++frame) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            // Both logical and physical-only function-key events must mark.
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.F8, Pressed = true });
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.F8, Pressed = false });
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = true });
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = false });
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.X, Pressed = true });
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.X, Pressed = false });
-            Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.Back, Pressed = true });
+            if (_world?.LevelId == 0)
+                Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F9, Pressed = true });
+            else
+                Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.Back, Pressed = true });
         }
         catch (Exception error)
         {

@@ -35,7 +35,7 @@ foreach ($level in @(0, 1)) {
     if ($LASTEXITCODE -ne 0) { throw "Recording level $level failed. Inspect $runPath.log" }
     $built = $true
     $report = Test-Replay $runPath "level$level" 0 'matched'
-    if ($report.Markers.Count -ne 1 -or $report.CheckpointsCompared -lt 10 -or $report.Steps -lt 900 -or $report.BuildChanged) {
+    if ($report.Markers.Count -ne 3 -or $report.CheckpointsCompared -lt 10 -or $report.Steps -lt 900 -or $report.BuildChanged) {
         throw 'The ordinary input/marker/save sequence did not complete as expected.'
     }
 }
@@ -80,4 +80,30 @@ if ($different.FirstDifference.Field -ne 'player.position' -or $different.Steps 
 $incomplete = Write-Variant 'incomplete'
 $invalid = Test-Replay $incomplete 'incomplete-rejected' 2 'invalid'
 if ($invalid.Error -notlike '*incomplete*') { throw 'Missing completion record was not identified.' }
+
+# Exercise the real human recorder's pacing separately from the deliberately
+# fast input-smoke mode. A display is unnecessary for this timing contract.
+$manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
+$godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
+$pacedRun = Join-Path $output 'paced.run.jsonl.gz'
+& $godot --headless --path (Join-Path $root 'game') --rendering-method gl_compatibility --fixed-fps 60 --quit-after 180 --log-file ($pacedRun + '.log') -- --destination rac1:LEVEL0 --record-playtest $pacedRun --fixed-seed 1440 --rac1-iso $Rac1Iso | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'Paced recording failed.' }
+$reader = [IO.StreamReader]::new([IO.Compression.GZipStream]::new([IO.File]::OpenRead($pacedRun), [IO.Compression.CompressionMode]::Decompress))
+$processCount = 0
+$lastTime = 0
+try {
+    while ($null -ne ($line = $reader.ReadLine())) {
+        $entry = $line | ConvertFrom-Json
+        if ($entry.Step) {
+            if ($entry.Step.Kind -eq 1) { $processCount++ }
+            $lastTime = $entry.Step.Milliseconds
+        }
+    }
+}
+finally { $reader.Dispose() }
+if ($processCount -lt 60 -or $lastTime -lt (($processCount - 2) * 1000 / 60)) {
+    throw "Human recording ran faster than its 60-Hz simulation: $processCount updates in $lastTime ms."
+}
+$paced = Test-Replay $pacedRun 'human-pacing' 0 'matched'
+Write-Host "[playtest-smoke] paced $processCount process updates in $lastTime ms" -ForegroundColor Green
 Write-Host "[playtest-smoke] PASS. Local evidence: $output" -ForegroundColor Green
