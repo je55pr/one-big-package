@@ -1,5 +1,6 @@
 using Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Presentation;
 
 namespace OneBigPackage;
 
@@ -153,10 +154,24 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
                 continue;
 
             var entry = Entries[index];
-            string letters = string.Join("", entry.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(word => char.ToUpperInvariant(word[0]))).PadRight(2).Substring(0, 2);
-            face.DrawString(font, new Vector2(rect.Position.X + 2f * unit, point.Y + 5f * unit),
-                letters, HorizontalAlignment.Center, tile - 4f * unit, fontSize + 5, cream);
+            var mappedIcon = Rac1WeaponIconCatalog.Ordinary(entry.Weapon);
+            var icon = mappedIcon is { } mapped
+                ? Rac1RetailUiAssets.Sprite(mapped.AnimationId, mapped.Frame)
+                : null;
+            if (icon is not null)
+            {
+                float iconSize = tile * 0.88f;
+                face.DrawTextureRect(icon, new Rect2(point - Vector2.One * (iconSize * 0.5f),
+                    Vector2.One * iconSize), false);
+            }
+            else
+            {
+                // A clean install without extracted retail assets remains playable.
+                string letters = string.Join("", entry.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(word => char.ToUpperInvariant(word[0]))).PadRight(2).Substring(0, 2);
+                face.DrawString(font, new Vector2(rect.Position.X + 2f * unit, point.Y + 5f * unit),
+                    letters, HorizontalAlignment.Center, tile - 4f * unit, fontSize + 5, cream);
+            }
             if (current == index)
                 face.DrawCircle(point + new Vector2(tile * 0.32f, -tile * 0.32f),
                     3.5f * unit, UiTheme.Ready);
