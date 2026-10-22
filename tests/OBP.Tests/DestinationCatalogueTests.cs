@@ -20,8 +20,8 @@ public sealed class DestinationCatalogueTests
         Assert.All(catalogue.Destinations, d => Assert.Equal(ObpSourceGame.Rac2, d.Game));
 
         var aranos = catalogue.Destinations.Where(d => d.PlanetLabel == "Aranos").ToArray();
-        Assert.Equal(3, aranos.Length);
-        Assert.Equal(new[] { "rac2:LEVEL0", "rac2:LEVEL14", "rac2:LEVEL21" },
+        Assert.Equal(2, aranos.Length);
+        Assert.Equal(new[] { "rac2:LEVEL0", "rac2:LEVEL14" },
             aranos.Select(d => d.DestinationId).ToArray());
     }
 
@@ -35,7 +35,7 @@ public sealed class DestinationCatalogueTests
             "Tabora — Mining Area", "Dobbo — Testing Facility", "Hrugis Cloud — Deep Space Disposal", "Joba — Megacorp Games",
             "Todano — Megacorp Armory", "Boldan — Silver City", "Aranos", "Gorn — Thug Fleet", "Snivelak — Thug Headquarters",
             "Smolg — Distribution Center", "Damosel — Allgon City", "Grelbin — Tundor Wastes", "Yeedil — Protopet Factory",
-            "Aranos — Floating Prison", "Feltzin System — Space Arena", "Hrugis Cloud — Space Arena", "Slim Cognito's Ship Shack",
+            "Insomniac Museum", "Feltzin System — Space Arena", "Hrugis Cloud — Space Arena", "Slim Cognito's Ship Shack",
             "Starfield", "Gorn — Space Arena",
         ];
 
@@ -56,7 +56,7 @@ public sealed class DestinationCatalogueTests
         Assert.Equal("LEVEL21", level21.NativeDestinationId);
         Assert.Equal("30", level21.NativeEngineId);
         Assert.Equal("/G/LEVEL21.WAD", level21.NativeContainer);
-        Assert.Equal("Aranos — Floating Prison", level21.DisplayName);
+        Assert.Equal("Insomniac Museum", level21.DisplayName);
         Assert.True(level21.Walkable);
     }
 

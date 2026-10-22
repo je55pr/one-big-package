@@ -63,11 +63,13 @@ public partial class OBPGame
             ammo = _rac1Weapons.GetAmmo(16);
             Input.ActionPress(RawGamepadInput.Traversal);
             await PhysicsFramesAsync(18);
-            Require(_rac1Weapons.GetAmmo(16) < ammo && _rac1Flames.Count > 0, "Pyrocitor did not sustain flame/ammo");
+            Require(_rac1Weapons.GetAmmo(16) < ammo && _rac1Particles?.Live.Any(p => p.Type == 12) == true, "Pyrocitor did not sustain flame/ammo");
+            Require(_rac1ParticleView is { RenderedCount: > 0 } particleView && particleView.DrawCalls < particleView.RenderedCount,
+                "Pyrocitor particles did not use batched rendering");
             await CaptureRac1BombAsync("pyrocitor-stream", _player.GlobalPosition + EquipmentForward * 1.5f + Vector3.Up * .7f);
             Input.ActionRelease(RawGamepadInput.Traversal);
             await PhysicsFramesAsync(35);
-            Require(!IsRac1GameplayActive(crates[1]) && !_rac1PyroEmitting && _rac1Flames.Count == 0, "Pyrocitor contact or stop lifecycle");
+            Require(!IsRac1GameplayActive(crates[1]) && !_rac1PyroEmitting && _rac1Particles?.Live.All(p => p.Type != 12) != false, "Pyrocitor contact or stop lifecycle");
             GD.Print("[weapons-smoke] Pyrocitor travelling flame, damage and stop PASS");
 
             OnRac1WeaponSelectionRequested(Rac1WeaponId.MineGlove); await PhysicsFramesAsync(8);
@@ -85,6 +87,9 @@ public partial class OBPGame
             PlaceWeaponSmokeEnemy(mineVictim, mine.Position + new Vector3(1.5f, -.18f, 0));
             await Rac1SmokeWaitAsync(() => !_rac1EquipmentShots.Contains(mine), 120, "mine proximity/seek detonation");
             Require(!IsRac1GameplayActive(crates[2]), "mine source-owned blast failed");
+            Require(_rac1Particles?.Live.Any(p => p.Type == 16) == true, "ground mine did not select native dust/fire/smoke sprays");
+            await PhysicsFramesAsync(6);
+            await CaptureRac1BombAsync("mine-explosion", mine.Position);
             GD.Print("[weapons-smoke] Mine flight, ground/armed animation and blast PASS");
 
             OnRac1WeaponSelectionRequested(Rac1WeaponId.GloveOfDoom); await PhysicsFramesAsync(8);

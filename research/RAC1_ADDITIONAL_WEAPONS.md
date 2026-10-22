@@ -56,7 +56,9 @@ Ratchet's separate rigid hierarchy gate stays unchanged.
   on the global-frame modulo gate. The host follows the global ten-tick phase
   across weapon changes; it does not restore the original game's global clock.
   `0x2b8538..2b857c` builds damage1/flags`0x10000` for individual flame-particle
-  volume queries. Types12/25/2 are flame/smoke/secondary particle families.
+  volume queries. Types12/25/2 are flame/ember/secondary particle families.
+  [Retail effects](WORLD_EFFECTS.md) supersedes the old flame visual adapter with
+  source-owned particle recurrences and records the remaining coverage limits.
 - **Mine:** the retained `Rac1Class4aWeaponFamilySession` owns twenty-tick firing
   and ten-tick staging. Class190 owns class74 through PVar`+0x30`. Native child
   enumeration caps the live list at eight. `0x2abd58..2abda4` supplies ordinary

@@ -165,29 +165,47 @@ public partial class OBPGame
         projectile.Motion.Impact(ToEffectNative(position));
         projectile.Node.Visible = false;
         _rac1BombImpactCount++;
-        SpawnRac1BombExplosion(position);
+        // The sweep above supplies contact admission; resolve a terrain normal
+        // once at impact for the native reflected spray. Enemy-body contact
+        // and an expired flight retain the upward fallback.
+        Vector3 velocity = FromEffectNative(projectile.Motion.Velocity);
+        Vector3 direction = velocity.LengthSquared() > .000001f ? velocity.Normalized() : Vector3.Down;
+        var ray = PhysicsRayQueryParameters3D.Create(position - direction * .4f, position + direction * .4f);
+        ray.Exclude = Rac1DamageableRayExclusions();
+        var hit = _player!.GetWorld3D().DirectSpaceState.IntersectRay(ray);
+        Vector3 normal = hit.TryGetValue("normal", out var result) && result.AsVector3().LengthSquared() > .5f
+            ? result.AsVector3().Normalized() : Vector3.Up;
+        Vector3 push = velocity.Bounce(normal);
+        push = push.LengthSquared() > .000001f ? push.Normalized() * (2f / 60) : normal * (2f / 60);
+        SpawnRac1BombExplosion(position, impactNormal: normal, reflectedPush: push);
     }
 
     private bool BombHasLineOfSight(Vector3 from, Vector3 to)
     {
         if (_player is null || from.DistanceSquaredTo(to) < .0001f) return true;
+        var query = PhysicsRayQueryParameters3D.Create(from, to);
+        query.Exclude = Rac1DamageableRayExclusions();
+        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        return hit.Count == 0;
+    }
+
+    private global::Godot.Collections.Array<Rid> Rac1DamageableRayExclusions()
+    {
+        var player = _player ?? throw new InvalidOperationException("World queries require a player.");
         // OBP occlusion policy: damageable bodies are the separately queried
         // victims, not walls. Testing against them made diagonal rays reject a
         // crate's own box, and let the first crate shield its entire stack.
         // Keep terrain/walls in the query, with no arbitrary endpoint allowance.
         // Share one exclusion list across every candidate in this physics tick.
-        if (_rac1BombOcclusionFrame != Engine.GetPhysicsFrames() || _rac1BombOcclusionPlayer != _player.GetRid())
+        if (_rac1BombOcclusionFrame != Engine.GetPhysicsFrames() || _rac1BombOcclusionPlayer != player.GetRid())
         {
             _rac1BombOcclusionFrame = Engine.GetPhysicsFrames();
-            _rac1BombOcclusionPlayer = _player.GetRid();
-            _rac1BombOcclusionExclusions = [_player.GetRid()];
+            _rac1BombOcclusionPlayer = player.GetRid();
+            _rac1BombOcclusionExclusions = [player.GetRid()];
             foreach (var body in _rac1CrateBodies.Values.Concat<CollisionObject3D>(_rac1Enemies.Values.Select(enemy => enemy.Body)))
                 if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
         }
-        var query = PhysicsRayQueryParameters3D.Create(from, to);
-        query.Exclude = _rac1BombOcclusionExclusions;
-        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
-        return hit.Count == 0;
+        return _rac1BombOcclusionExclusions;
     }
 
     private void ResolveRac1BombBlast(long id, Rac1BombProjectileSession motion)

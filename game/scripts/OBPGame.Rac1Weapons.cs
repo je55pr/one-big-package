@@ -19,7 +19,8 @@ public partial class OBPGame
     private readonly List<HostedEquipmentShot> _rac1EquipmentShots = [];
     private readonly List<HostedDoomAgent> _rac1DoomAgents = [];
     private readonly List<HostedCapturedMoby> _rac1Captures = [];
-    private readonly List<HostedWeaponParticle> _rac1Flames = [];
+    private readonly List<HostedWeaponParticle> _rac1WeaponMotes = [];
+    private readonly List<HostedNativeFlame> _rac1NativeFlames = [];
     private readonly Dictionary<Rac1MobyRuntimeKey, ulong> _rac1FlameHitTicks = [];
     private readonly Dictionary<Rac1MobyRuntimeKey, Node3D> _rac1CargoModels = [];
     private readonly Dictionary<Rac1WeaponId, long> _rac1WeaponGenerations = [];
@@ -57,7 +58,9 @@ public partial class OBPGame
     private sealed record HostedWeaponParticle(Node3D Node, Vector3 Step)
     {
         public int Age;
-        public bool Damaging = true;
+    }
+    private sealed record HostedNativeFlame(Rac1ParticleSession.Particle Motion)
+    {
         public HashSet<Rac1MobyRuntimeKey> Victims { get; } = [];
     }
 
@@ -66,10 +69,11 @@ public partial class OBPGame
         ResetRac1WeaponAudio();
         ResetRac1Arsenal();
         foreach (var node in _rac1EquipmentShots.Select(shot => shot.Node).Concat(_rac1DoomAgents.Select(agent => agent.Body))
-            .Concat(_rac1Captures.Select(capture => capture.Visual)).Concat(_rac1CargoModels.Values).Concat(_rac1Flames.Select(flame => flame.Node)))
+            .Concat(_rac1Captures.Select(capture => capture.Visual)).Concat(_rac1CargoModels.Values).Concat(_rac1WeaponMotes.Select(mote => mote.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
         _rac1EquipmentShots.Clear(); _rac1DoomAgents.Clear(); _rac1Captures.Clear(); _rac1CargoModels.Clear();
-        _rac1Flames.Clear(); _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
+        _rac1WeaponMotes.Clear(); _rac1FlameHitTicks.Clear(); _rac1WeaponGenerations.Clear();
+        _rac1NativeFlames.Clear(); _rac1Particles?.RemoveType(12); _rac1Particles?.RemoveType(2);
         _rac1ChickenCargo.Clear();
         _rac1AdditionalWeapons = new(_rac1Weapons);
         _rac1AdditionalWeaponsInventory = _rac1Weapons;

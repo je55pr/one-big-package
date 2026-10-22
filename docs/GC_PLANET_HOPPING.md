@@ -3,7 +3,7 @@
 The source manager attaches an authorized local GC image, and the world browser
 loads destinations through `GcPlanetCatalogue` and `Rac2WorldProvider`.
 File number, native level ID and display label are separate; LEVEL21 has native
-ID 30. Source names come from the retail string-bank evidence in
+ID30 and is the Insomniac Museum. Source names come from the retail string-bank evidence in
 [GC_PLANET_NAMES.md](../research/GC_PLANET_NAMES.md).
 
 ```powershell

@@ -6,7 +6,7 @@ public enum GcLevelKind
     /// <summary>A normal walkable planet with a native ship-park spawn.</summary>
     Planet,
 
-    /// <summary>Walkable, but the ship spawn is a placeholder (Aranos airship / the Aranos return).</summary>
+    /// <summary>Walkable, but the ship spawn is a placeholder (Aranos airship / Museum).</summary>
     Hub,
 
     /// <summary>Slim Cognito's Ship Shack — the walkable vendor asteroid.</summary>
@@ -29,7 +29,8 @@ public enum GcLevelKind
 /// "&lt;location&gt;, Planet &lt;planet&gt;" infobot pairs at ids <c>4592+</c> —
 /// and the level→name rule is <c>planet_name_index == level_id</c> for the main
 /// levels (LEVEL0–LEVEL20), with <c>LEVEL21.WAD</c> self-reporting engine id 30
-/// and the ELF special table mapping id 30 → planet 0 (Aranos).
+/// and engine30's Museum editor callbacks identify that bonus level. Its ELF
+/// fallback name index0 must not be mistaken for an Aranos-return identity.
 ///
 /// <para>
 /// This is the debug planet selector's data source. It is <b>not</b> a second
@@ -81,7 +82,7 @@ public static class GcPlanetCatalogue
         new(18, "Damosel",        "Allgon City",         2903, GcLevelKind.Planet),
         new(19, "Grelbin",        "Tundor Wastes",       2904, GcLevelKind.Planet),
         new(20, "Yeedil",         "Protopet Factory",    2905, GcLevelKind.Planet),
-        new(21, "Aranos",         "Floating Prison",     2885, GcLevelKind.Hub),
+        new(21, "Insomniac Museum", "",                  2880, GcLevelKind.Hub),
         new(22, "Feltzin System", "Space Arena",         2890, GcLevelKind.SpaceCombat),
         new(23, "Hrugis Cloud",   "Space Arena",         2895, GcLevelKind.SpaceCombat),
         new(24, "Slim Cognito's Ship Shack", "",         2909, GcLevelKind.Vendor),

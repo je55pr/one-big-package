@@ -20,7 +20,7 @@ public partial class OBPGame
                 _sceneResult!.Root.AddChild(mote);
                 mote.GlobalPosition = muzzle + EquipmentForward * 3 + new Vector3(
                     Rac1EffectRandom.Signed(0, .8f), Rac1EffectRandom.Signed(0, .6f), Rac1EffectRandom.Signed(0, .8f));
-                _rac1Flames.Add(new(mote, (muzzle - mote.GlobalPosition) / 18) { Damaging = false });
+                _rac1WeaponMotes.Add(new(mote, (muzzle - mote.GlobalPosition) / 18));
             }
             // Bounded OBP eligibility adapter for opening Veldin. Full native
             // capture callbacks remain unpromoted: accept small class749 and

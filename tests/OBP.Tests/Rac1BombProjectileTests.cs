@@ -108,7 +108,7 @@ public sealed class Rac1BombProjectileTests
         var burst = Rac1BombExplosion.Bursts(false)[0];
         Assert.Equal(0, burst.Scale);
         for (int tick = 0; tick < 10; tick++) burst.Step();
-        Assert.Equal(2, burst.Scale);
+        Assert.Equal(1.8f, burst.Scale);
         Assert.Equal(.375f, burst.Alpha);
         for (int tick = 10; tick < 15; tick++) burst.Step();
         Assert.Equal(.1875f, burst.Alpha);

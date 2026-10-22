@@ -2,7 +2,8 @@
 
 R&C1 player-audio and weapon reconstruction uses the public `rac1-native-game` source and its
 function/address annotations as a reference, including Blaster contact and
-steering behavior, Taunter queries, player sound/footstep dispatch and weapon/deployment timing.
+steering behavior, Taunter queries, player sound/footstep dispatch, weapon/deployment timing,
+particle constructors/updates, weapon explosion recipes and Tesla draw routines.
 
 Upstream: https://github.com/daino-selvatico/rac1-native-game
 

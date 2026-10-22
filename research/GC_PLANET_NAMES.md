@@ -65,8 +65,10 @@ R&C1). The Museum does not use a planet name.
 The other non-planet level WADs (viewer-checked): `LEVEL24` = **Slim Cognito's
 Ship Shack** (the vendor asteroid in a starfield); `LEVEL25` = a starfield +
 asteroid scene stub; `LEVEL22 / 23 / 26` = the `is_spherical_world` ship-combat
-arenas (Feltzin System / Hrugis Cloud / Gorn); `LEVEL21` (id 30) = the
-Aranos-return.
+arenas (Feltzin System / Hrugis Cloud / Gorn). `LEVEL21` (engine id30) is the
+**Insomniac Museum**: its Museum-only editor callbacks establish that identity
+([effect evidence](WORLD_EFFECTS.md)). The earlier Aranos-return label was an
+incorrect inference from the ELF fallback name index.
 
 **Location + planet pairs** — help ids **`4592`–`4611`**, the infobot
 "Downloaded coordinates for: `<location>`, Planet `<planet>`" strings, in story
@@ -116,7 +118,8 @@ The special-level table (`0x2403c0`), `level_id` → planet-name index (0..20):
 31→6  32→11 41→3  42→0  43→14 45→14  37→8  25→12
 ```
 
-e.g. `level_id 30` (`LEVEL21.WAD`, the Aranos-return) → planet 0 = *Aranos*.
+For example, engine id30 (`LEVEL21.WAD`, the Museum) falls back to planet-name
+index0 (*Aranos*). That fallback is not an authoritative identity for bonus levels.
 The main planet levels (`level_id` 0..21) are not in this table; their mapping is
 still being pinned (see below).
 
@@ -147,9 +150,9 @@ rule:
 | 20 | Yeedil          | Protopet Factory  | industrial buildings, storm + starfield (plausible) |
 
 So **`LEVEL3` is Endako (Megapolis)** — not "Silver City". Silver City is
-**Boldan = `LEVEL13`**. (`id 14` = planet-name index 14 = a second "Aranos"
-string; the actual Aranos-return level is `LEVEL21.WAD`, `id 30`, which the
-special table maps to planet 0 — the `id 14` case is unresolved.)
+**Boldan = `LEVEL13`**. `id14` resolves to the second "Aranos" string; its
+instance placement remains unresolved. `LEVEL21.WAD` is the Museum, despite
+engine id30's fallback mapping to planet-name index0.
 
 ## Policy note
 

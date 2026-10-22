@@ -19,7 +19,10 @@ public static class Rac1EquipmentAssets
     public sealed record Model(int NativeClass, IReadOnlyList<RuntimeObjectMesh> Surfaces,
         IReadOnlyDictionary<int, Clip> Clips, int VertexCount, int TriangleCount, string SourceSha256);
     public sealed record Catalogue(IReadOnlyDictionary<int, Model> Models, IReadOnlyList<RuntimeTexture> Textures,
-        IReadOnlyDictionary<int, RuntimeTexture> ParticleTextures);
+        IReadOnlyDictionary<int, RuntimeTexture> ParticleTextures)
+    {
+        public Rac1EffectAssets? Effects { get; init; }
+    }
 
     public static Catalogue Load(string path)
     {
@@ -64,10 +67,9 @@ public static class Rac1EquipmentAssets
             .Select(texture => new RuntimeTexture("moby", texture.Index, texture.Width, texture.Height, texture.Rgba)).ToArray();
         if (ids.Except(textures.Select(texture => texture.TextureId)).Any())
             throw new InvalidDataException("An equipment material references a missing texture.");
-        int[] types = [2, 4, 12, 25, 27, 34];
-        var byType = types.ToDictionary(type => type, type => Rac1ParticleAssets.InitialTexture(core, type));
-        var particles = Rac1ParticleAssets.ReadTextures(core, byType.Values.ToHashSet()).ToDictionary(texture => texture.TextureId);
-        return new(models, textures, byType.ToDictionary(pair => pair.Key, pair => particles[pair.Value]));
+        var effects = Rac1EffectAssets.Decode(core);
+        return new(models, textures, effects.ParticleChoices.ToDictionary(pair => pair.Key, pair => effects.PartTextures[pair.Value[0]]))
+        { Effects = effects };
     }
 
     private static Model Bake(int id, Rac1Moby.Mesh mesh, IReadOnlyList<Rac1Moby.SkeletonJoint> joints,

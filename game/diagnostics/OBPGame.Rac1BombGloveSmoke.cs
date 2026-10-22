@@ -116,7 +116,7 @@ public partial class OBPGame
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             Require(!_rac1BombGloveView.Visible && !_rac1StagedBombView!.Visible && _rac1WrenchView!.Visible, "weapon switch presentation did not recover");
             await PhysicsFramesAsync(210);
-            Require(_rac1Projectiles.Count == 0 && _rac1BombBursts.Count == 0 && _rac1BombFragments.Count == 0 && _rac1BombParticles.Count == 0,
+            Require(_rac1Projectiles.Count == 0 && _rac1BombBursts.Count == 0 && _rac1BombFragments.Count == 0 && (_rac1Particles?.Count ?? 0) == 0,
                 "bomb effect lifecycle leaked nodes");
             GD.Print("[bomb-glove-smoke] wall contact, weapon switch and effect cleanup PASS");
             OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged);

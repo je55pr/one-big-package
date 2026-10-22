@@ -39,6 +39,10 @@ public partial class OBPGame
     private readonly Dictionary<int, ArsenalChicken> _rac1Chickens = [];
     private readonly Dictionary<int, int> _rac1MorphExposure = [];
     private readonly List<MeshInstance3D> _rac1ArsenalBeams = [];
+    private readonly Rac1TeslaPresentation _rac1TeslaPresentation = new();
+    private readonly Dictionary<int, ShaderMaterial> _rac1TeslaMaterials = [];
+    private Rac1PickupRandom? _rac1TeslaEffectRandom;
+    private StandardMaterial3D? _rac1PlainBeamMaterial;
     private readonly Dictionary<int, ulong> _rac1Taunts = [];
     private Camera3D? _rac1MissileCamera;
     private bool _rac1ArsenalHeld;
@@ -64,6 +68,7 @@ public partial class OBPGame
         }
         _rac1ArsenalMissiles.Clear(); _rac1Decoys.Clear(); _rac1Drones.Clear(); _rac1Chickens.Clear();
         _rac1MorphExposure.Clear(); _rac1ArsenalBeams.Clear(); _rac1Taunts.Clear();
+        _rac1TeslaPresentation.Reset(); _rac1TeslaMaterials.Clear(); _rac1TeslaEffectRandom = null;
         _rac1RynoSalvo = new(); _rac1WalloperAge = 0;
         _rac1ArsenalHeld = false; _rac1WalloperVictims.Clear();
         _rac1RynoTargets.Clear();
@@ -172,7 +177,7 @@ public partial class OBPGame
                 var position = hit?.Point ?? to;
                 ApplyArsenalBlast(missile.Weapon, position, guided ? Rac1ArsenalHostPolicy.VisibombBlastRadius : Rac1ArsenalHostPolicy.RocketBlastRadius,
                     guided ? 6 : 3, 0x830000);
-                SpawnRac1BombExplosion(position, playSound: false);
+                SpawnRac1WeaponExplosion(missile.Weapon, position);
                 PlayRac1PickupSound(guided ? 172 : missile.Weapon == Rac1WeaponId.Ryno ? 457 : 153, 0, position);
                 missile.View.QueueFree(); _rac1ArsenalMissiles.Remove(missile);
                 if (guided) EndRac1GuidedCamera();
@@ -283,7 +288,9 @@ public partial class OBPGame
                 if (hit is not null || next.DistanceTo(goal) < .35f)
                 {
                     ApplyArsenalBlast(Rac1WeaponId.DroneDevice, hit?.Point ?? next, 1.5f, Rac1ArsenalRules.DroneDamage, 0x10000);
-                    SpawnRac1BombExplosion(hit?.Point ?? next); drone.View.QueueFree(); _rac1Drones.Remove(drone); continue;
+                    SpawnRac1WeaponExplosion(Rac1WeaponId.DroneDevice, hit?.Point ?? next);
+                    PlayRac1PickupSound(479, 1, hit?.Point ?? next);
+                    drone.View.QueueFree(); _rac1Drones.Remove(drone); continue;
                 }
                 drone.View.GlobalPosition = next; OrientArsenalView(drone.View, next - from);
             }
@@ -351,6 +358,7 @@ public partial class OBPGame
         if (weapon != Rac1WeaponId.TeslaClaw) _rac1TeslaSoundTargets.Clear();
         if (weapon is not (Rac1WeaponId.TeslaClaw or Rac1WeaponId.MorphORay or Rac1WeaponId.Taunter)) return;
         if (weapon == Rac1WeaponId.TeslaClaw && _rac1Weapons.GetAmmo(19) <= 0) return;
+        if (weapon == Rac1WeaponId.TeslaClaw) _rac1TeslaPresentation.Advance();
         var from = EquipmentMuzzle(weapon);
         if (weapon is Rac1WeaponId.TeslaClaw or Rac1WeaponId.MorphORay && _rac1WeaponWorldTick % 3 == 0)
             SpawnEquipmentFlash(from, 27, weapon == Rac1WeaponId.TeslaClaw ? new(.3f, .6f, 1, .85f) : new(.4f, 1, .25f, .75f), .28f, 5);
@@ -360,7 +368,7 @@ public partial class OBPGame
             {
                 var ring = EquipmentParticle(27, new(.3f, .7f, 1, .6f), .6f);
                 _sceneResult!.Root.AddChild(ring); ring.GlobalPosition = from + EquipmentForward * .5f;
-                _rac1Flames.Add(new(ring, EquipmentForward * .25f) { Damaging = false });
+                _rac1WeaponMotes.Add(new(ring, EquipmentForward * .25f));
             }
             foreach (var node in Rac1EnemyNodes.Where(IsRac1WeaponAimTarget))
             {
@@ -423,6 +431,11 @@ public partial class OBPGame
 
     private void DrawArsenalBeam(int index, Vector3 from, Vector3 to, Color color)
     {
+        if (_rac1Weapons.Equipped == Rac1WeaponId.TeslaClaw && _rac1EquipmentAssets?.Effects is { } effects)
+        {
+            DrawRac1TeslaRibbons(index, from, to, effects);
+            return;
+        }
         while (_rac1ArsenalBeams.Count <= index)
         {
             var beam = new MeshInstance3D
@@ -438,7 +451,15 @@ public partial class OBPGame
             };
             _sceneResult!.Root.AddChild(beam); _rac1ArsenalBeams.Add(beam);
         }
-        var mesh = new ImmediateMesh(); var side = (to - from).Cross(Vector3.Up).Normalized() * .045f;
+        _rac1ArsenalBeams[index].MaterialOverride = _rac1PlainBeamMaterial ??= new StandardMaterial3D
+        {
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            VertexColorUseAsAlbedo = true,
+            Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+            CullMode = BaseMaterial3D.CullModeEnum.Disabled
+        };
+        var mesh = _rac1ArsenalBeams[index].Mesh as ImmediateMesh ?? new ImmediateMesh();
+        mesh.ClearSurfaces(); var side = (to - from).Cross(Vector3.Up).Normalized() * .045f;
         mesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
         var points = new List<Vector3> { from };
         for (int part = 1; part < 10; part++) points.Add(from.Lerp(to, part / 10f) + new Vector3(
@@ -449,6 +470,84 @@ public partial class OBPGame
                 points[part] - side, points[part + 1] + side, points[part + 1] - side })
             { mesh.SurfaceSetColor(color); mesh.SurfaceAddVertex(p); }
         mesh.SurfaceEnd(); _rac1ArsenalBeams[index].Mesh = mesh; _rac1ArsenalBeams[index].Visible = true;
+    }
+
+    private void DrawRac1TeslaRibbons(int index, Vector3 from, Vector3 to, Rac1EffectAssets effects)
+    {
+        _rac1TeslaEffectRandom ??= Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
+        var ribbons = _rac1TeslaPresentation.ProjectTargetLine(ToEffectNative(from), ToEffectNative(to), _rac1TeslaEffectRandom);
+        Vector3 eye = GetViewport().GetCamera3D()?.GlobalPosition ?? from + Vector3.Up * 5;
+        for (int layer = 0; layer < ribbons.Count; layer++)
+        {
+            int slot = index * 4 + layer;
+            while (_rac1ArsenalBeams.Count <= slot)
+            {
+                var node = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+                _sceneResult!.Root.AddChild(node); _rac1ArsenalBeams.Add(node);
+            }
+            var ribbon = ribbons[layer];
+            if (!_rac1TeslaMaterials.TryGetValue(ribbon.Texture, out var material))
+            {
+                var texture = effects.FxTextures[ribbon.Texture];
+                material = new ShaderMaterial { Shader = new Shader { Code = """
+                    shader_type spatial;
+                    render_mode unshaded, blend_add, cull_disabled, depth_draw_never, fog_disabled;
+                    uniform sampler2D art : source_color, filter_linear, repeat_enable;
+                    void fragment() {
+                        vec4 texel = texture(art, UV);
+                        ALBEDO = texel.rgb * COLOR.rgb;
+                        ALPHA = texel.a * COLOR.a;
+                    }
+                    """ } };
+                material.SetShaderParameter("art", ImageTexture.CreateFromImage(Image.CreateFromData(texture.Width,
+                    texture.Height, false, Image.Format.Rgba8, texture.Rgba)));
+                _rac1TeslaMaterials.Add(ribbon.Texture, material);
+            }
+            var beam = _rac1ArsenalBeams[slot]; beam.MaterialOverride = material;
+            var mesh = beam.Mesh as ImmediateMesh ?? new ImmediateMesh();
+            mesh.ClearSurfaces(); mesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
+            uint rgba = ribbon.Color;
+            var tint = new Color((rgba & 255) / 128f, (rgba >> 8 & 255) / 128f, (rgba >> 16 & 255) / 128f, (rgba >> 24) / 128f);
+            var points = ribbon.Points.Select(FromEffectNative).ToArray();
+            var left = new Vector3[points.Length]; var right = new Vector3[points.Length];
+            for (int i = 0; i < points.Length; i++)
+            {
+                Vector3 tangent = points[Math.Min(i + 1, points.Length - 1)] - points[Math.Max(i - 1, 0)];
+                Vector3 side = tangent.Cross(points[i] - eye);
+                if (side.LengthSquared() < .000001f) side = tangent.Cross(Vector3.Right);
+                if (side.LengthSquared() < .000001f) side = Vector3.Forward;
+                side = side.Normalized() * ribbon.HalfWidth;
+                left[i] = points[i] - side; right[i] = points[i] + side;
+            }
+            for (int i = 0; i + 1 < points.Length; i++)
+            {
+                Vector3 la = left[i], ra = right[i], lb = left[i + 1], rb = right[i + 1];
+                if (ribbon.EndExtension > 0)
+                {
+                    // 0x2bae40..2bafdc brings each blue segment's ends onto
+                    // the nearer camera sphere, then extends it along its axis.
+                    Vector3 pa = points[i], pb = points[i + 1];
+                    float da = pa.DistanceTo(eye), db = pb.DistanceTo(eye);
+                    if (da < db && db > .000001f) pb = eye + (pb - eye) * (da / db);
+                    else if (da > .000001f) pa = eye + (pa - eye) * (db / da);
+                    Vector3 extension = (pb - pa) * ribbon.EndExtension;
+                    pa -= extension; pb += extension;
+                    Vector3 side = (pb - pa).Cross(pa - eye).Normalized() * ribbon.HalfWidth;
+                    la = pa - side; ra = pa + side; lb = pb - side; rb = pb + side;
+                }
+                float a = _rac1TeslaPresentation.TexturePhase, b = a + 1;
+                Add(la, a, 0, i); Add(ra, a, 1, i); Add(rb, b, 1, i + 1);
+                Add(la, a, 0, i); Add(rb, b, 1, i + 1); Add(lb, b, 0, i + 1);
+            }
+            mesh.SurfaceEnd(); beam.Mesh = mesh; beam.Visible = true;
+
+            void Add(Vector3 p, float u, float v, int point)
+            {
+                var vertexColor = tint;
+                if (point == 0 || point == points.Length - 1) vertexColor.A = 0;
+                mesh.SurfaceSetColor(vertexColor); mesh.SurfaceSetUV(new(u, v)); mesh.SurfaceAddVertex(p);
+            }
+        }
     }
 
     private void MorphArsenalEnemy(RuntimeWorldScene.DynamicObjectNode target)

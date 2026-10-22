@@ -7,23 +7,59 @@ public partial class OBPGame
 {
     private readonly List<(Node3D Node, Rac1BombExplosion.Burst Motion, List<StandardMaterial3D> Materials)> _rac1BombBursts = [];
     private readonly List<(Node3D Node, Rac1BombExplosion.Fragment Motion)> _rac1BombFragments = [];
-    private readonly List<(Node3D Node, int Ticks)> _rac1BombParticles = [];
     private readonly Dictionary<int, QuadMesh> _rac1BombParticleMeshes = [];
+    private Rac1ParticleSession? _rac1Particles;
+    private Rac1ParticleView? _rac1ParticleView;
+
+    private Rac1ParticleSession? EnsureRac1Particles()
+    {
+        if (_rac1Particles is null && _rac1EquipmentAssets?.Effects is { } effects)
+            _rac1Particles = new(effects, Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount))));
+        return _rac1Particles;
+    }
 
     private void ResetRac1BombPresentation()
     {
         foreach (var node in _rac1BombBursts.Select(burst => burst.Node)
-            .Concat(_rac1BombFragments.Select(fragment => fragment.Node)).Concat(_rac1BombParticles.Select(particle => particle.Node)))
+            .Concat(_rac1BombFragments.Select(fragment => fragment.Node)))
             if (IsInstanceValid(node)) node.QueueFree();
-        _rac1BombBursts.Clear(); _rac1BombFragments.Clear(); _rac1BombParticles.Clear();
+        _rac1BombBursts.Clear(); _rac1BombFragments.Clear();
+        _rac1Particles?.Clear(); _rac1Particles = null;
+        if (_rac1ParticleView is not null && IsInstanceValid(_rac1ParticleView)) _rac1ParticleView.QueueFree();
+        _rac1ParticleView = null;
         _rac1BombParticleMeshes.Clear();
         _rac1BombThrowGeneration = 0; _rac1BombThrowActive = false; _rac1BombImpactCount = 0;
     }
 
-    private void SpawnRac1BombExplosion(Vector3 origin, bool playSound = true)
+    private void SpawnRac1BombExplosion(Vector3 origin, bool playSound = true, Vector3? impactNormal = null, Vector3? reflectedPush = null)
     {
-        bool distant = _player is not null && _player.GlobalPosition.DistanceTo(origin) > 9;
-        foreach (var motion in Rac1BombExplosion.Bursts(distant))
+        Vector3 camera = GetViewport().GetCamera3D()?.GlobalPosition ?? _player?.GlobalPosition ?? origin;
+        bool distant = camera.DistanceTo(origin) > 9;
+        SpawnRac1ExplosionBursts(origin, Rac1BombExplosion.Bursts(distant));
+        var push = ToEffectNative(reflectedPush ?? Vector3.Up * (2f / 60));
+        SpawnRac1ExplosionFragments(Rac1BombExplosion.Fragments(ToEffectNative(origin), Rac1EffectRandom,
+            ToEffectNative(impactNormal ?? Vector3.Up), push, ToEffectNative(camera)));
+        if (playSound) PlayRac1PickupSound(121, 0, origin);
+        EnsureRac1Particles()?.Bomb(ToEffectNative(origin), ToEffectNative(camera), push);
+    }
+
+    private void SpawnRac1WeaponExplosion(Rac1WeaponId weapon, Vector3 origin)
+    {
+        var recipe = Rac1WeaponExplosion.ForWeapon(weapon);
+        Vector3 camera = GetViewport().GetCamera3D()?.GlobalPosition ?? _player?.GlobalPosition ?? origin;
+        if (weapon == Rac1WeaponId.MineGlove && EquipmentGround(origin, .5f, 2.5f) is { } ground && origin.Y - ground.Y <= 2)
+        {
+            EnsureRac1Particles()?.MineGroundExplosion(ToEffectNative(origin), ToEffectNative(camera));
+            return;
+        }
+        SpawnRac1ExplosionBursts(origin, recipe.Bursts(origin.DistanceTo(camera)));
+        SpawnRac1ExplosionFragments(recipe.Fragments(ToEffectNative(origin), ToEffectNative(camera), Rac1EffectRandom));
+        EnsureRac1Particles()?.WeaponExplosion(recipe, ToEffectNative(origin), ToEffectNative(camera));
+    }
+
+    private void SpawnRac1ExplosionBursts(Vector3 origin, IReadOnlyList<Rac1BombExplosion.Burst> bursts)
+    {
+        foreach (var motion in bursts)
         {
             var node = CreateRac1EffectNode(Rac1BombExplosion.BurstClass, "Rac1RetailBombBurst_Class1192");
             node.GlobalPosition = origin;
@@ -42,21 +78,18 @@ public partial class OBPGame
             }
             _rac1BombBursts.Add((node, motion, materials));
         }
-        foreach (var motion in Rac1BombExplosion.Fragments(ToEffectNative(origin), Rac1EffectRandom))
+    }
+
+    private void SpawnRac1ExplosionFragments(IReadOnlyList<Rac1BombExplosion.Fragment> fragments)
+    {
+        foreach (var motion in fragments)
         {
             var node = CreateRac1EffectNode(122, "Rac1RetailBombFragment_Class122");
             node.GlobalPosition = FromEffectNative(motion.Position);
             node.Scale = Vector3.One * motion.Scale;
             SetBombOrientation(node, motion.Angles);
             _rac1BombFragments.Add((node, motion));
-            var trail = CreateBombParticles(4, 45, .75, 0, Vector3.Zero, 0, 1, .05f, .12f, new(1, .32f, .03f, .6f));
-            trail.Name = "BombFragmentTrail_RetailType4Art";
-            node.AddChild(trail);
-            trail.LocalCoords = false;
-            trail.Emitting = true;
         }
-        if (playSound) PlayRac1PickupSound(121, 0, origin);
-        SpawnBombParticleAdapter(origin);
     }
 
     private void StepRac1BombEffectsPhysics()
@@ -78,17 +111,12 @@ public partial class OBPGame
         for (int i = _rac1BombFragments.Count - 1; i >= 0; i--)
         {
             var fragment = _rac1BombFragments[i];
+            if (fragment.Motion.Trail) EnsureRac1Particles()?.Trail(fragment.Motion.Position);
             fragment.Motion.Step();
             if (fragment.Motion.Finished || !IsInstanceValid(fragment.Node))
             {
                 if (IsInstanceValid(fragment.Node))
                 {
-                    foreach (var trail in fragment.Node.GetChildren().OfType<CpuParticles3D>())
-                    {
-                        trail.Reparent(_sceneResult!.Root, keepGlobalTransform: true);
-                        trail.Emitting = false;
-                        _rac1BombParticles.Add((trail, 45));
-                    }
                     fragment.Node.QueueFree();
                 }
                 _rac1BombFragments.RemoveAt(i); continue;
@@ -97,54 +125,17 @@ public partial class OBPGame
             SetBombOrientation(fragment.Node, fragment.Motion.Angles);
             fragment.Node.Scale = Vector3.One * MathF.Max(.001f, fragment.Motion.Scale);
         }
-        for (int i = _rac1BombParticles.Count - 1; i >= 0; i--)
+        if (_rac1Particles is { } particles && _rac1EquipmentAssets?.Effects is { } effects && _sceneResult is not null)
         {
-            var particle = _rac1BombParticles[i];
-            if (particle.Ticks > 1) _rac1BombParticles[i] = (particle.Node, particle.Ticks - 1);
-            else
+            Vector3 camera = GetViewport().GetCamera3D()?.GlobalPosition ?? _player?.GlobalPosition ?? Vector3.Zero;
+            particles.Step(ToEffectNative(camera), enforceLevelBounds: !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke);
+            if (_rac1ParticleView is null)
             {
-                if (IsInstanceValid(particle.Node)) particle.Node.QueueFree();
-                _rac1BombParticles.RemoveAt(i);
+                _rac1ParticleView = new Rac1ParticleView { Name = "Rac1RetailParticlePool" };
+                _sceneResult.Root.AddChild(_rac1ParticleView);
             }
+            _rac1ParticleView.Render(particles, effects.PartTextures);
         }
-    }
-
-    private void SpawnBombParticleAdapter(Vector3 origin)
-    {
-        if (_sceneResult is null) return;
-        // Source type34 texture33 and 150-particle count. Godot supplies the
-        // billboard rasterizer and approximate particle dynamics; native pool
-        // collision, size projection and exact GS blend equations remain open.
-        var particles = CreateBombParticles(34, 150, .65, 1, new(0, -11, 0), 2, 7, .035f, .1f, new(1.25f, 1.25f, 1.25f, 1));
-        particles.Name = "BombSparks_RetailType34Art";
-        _sceneResult.Root.AddChild(particles);
-        particles.GlobalPosition = origin;
-        particles.Emitting = true;
-        _rac1BombParticles.Add((particles, 60));
-    }
-
-    private CpuParticles3D CreateBombParticles(int poolType, int count, double lifetime, float explosiveness,
-        Vector3 gravity, float speedMin, float speedMax, float sizeMin, float sizeMax, Color color)
-    {
-        var mesh = GetRac1ParticleMesh(poolType);
-        return new CpuParticles3D
-        {
-            Amount = count,
-            OneShot = explosiveness == 1,
-            Explosiveness = explosiveness,
-            Lifetime = lifetime,
-            Emitting = false,
-            Direction = Vector3.Up,
-            Spread = 180,
-            InitialVelocityMin = speedMin,
-            InitialVelocityMax = speedMax,
-            Gravity = gravity,
-            ScaleAmountMin = sizeMin,
-            ScaleAmountMax = sizeMax,
-            Color = color,
-            ColorRamp = new Gradient { Colors = [color, color, new(color.R, color.G, color.B, 0)], Offsets = [0, .8f, 1] },
-            Mesh = mesh,
-        };
     }
 
     private QuadMesh GetRac1ParticleMesh(int poolType)

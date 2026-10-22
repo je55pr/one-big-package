@@ -6,14 +6,17 @@ namespace OBP.RAC1.Level;
 
 /// <summary>
 /// Core+6c particle texture lookup, relocated by 0x23f630. Pool constructors
-/// read the first byte of their type's entry as the PartTextures index. The
-/// remaining entry bytes are not assigned unproven animation semantics here.
+/// read their type's entry as PartTextures indices. Flame constructor 0x26b230
+/// chooses among eight entries; this does not imply a timed texture animation.
 /// Part pixels and palettes use core+64, independently of Moby texture data.
 /// </summary>
 public static class Rac1ParticleAssets
 {
-    public static int InitialTexture(Rac1LevelCore.Core core, int poolType)
+    public static int InitialTexture(Rac1LevelCore.Core core, int poolType) => TextureChoices(core, poolType, 1)[0];
+
+    public static int[] TextureChoices(Rac1LevelCore.Core core, int poolType, int choices)
     {
+        if (choices is < 1 or > 256) throw new ArgumentOutOfRangeException(nameof(choices));
         int at = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(0x6c));
         if (at < Rac1LevelCore.HeaderSize || at > core.Index.Length - 16)
             throw new InvalidDataException("R&C1 particle lookup exceeds the core index.");
@@ -25,13 +28,22 @@ public static class Rac1ParticleAssets
             size < 1 || (long)at + data + size > core.Index.Length)
             throw new InvalidDataException("R&C1 particle lookup has invalid bounds.");
         int offset = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 16 + poolType * 4));
-        if (offset == 0) return 0; // Native loader binds absent entries to its zero-filled fallback.
-        if (offset < data || offset >= (long)data + size)
+        if (offset == 0) return new int[choices]; // Native zero-filled fallback.
+        int end = data + size;
+        for (int i = 0; i < count; i++)
+        {
+            int next = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 16 + i * 4));
+            if (next > offset && next < end) end = next;
+        }
+        if (offset < data || (long)offset + choices > end)
             throw new InvalidDataException("Particle type points outside its texture lookup data.");
-        int texture = core.Index[at + offset];
-        if (texture >= core.Header.PartTextures.Count)
-            throw new InvalidDataException("Particle type references an absent texture.");
-        return texture;
+        return Enumerable.Range(0, choices).Select(i =>
+        {
+            int texture = core.Index[at + offset + i];
+            if (texture >= core.Header.PartTextures.Count)
+                throw new InvalidDataException("Particle type references an absent texture.");
+            return texture;
+        }).ToArray();
     }
 
     public static IReadOnlyList<RuntimeTexture> ReadTextures(Rac1LevelCore.Core core, IReadOnlySet<int> ids)

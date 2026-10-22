@@ -20,10 +20,15 @@ public partial class OBPGame
         }
         await Equip(Rac1WeaponId.Devastator);
         var crate = Crate(7); await PhysicsFramesAsync(3);
+        Vector3 rocketImpactFocus = crate.Root.GlobalPosition + Vector3.Up * .5f;
         int ammo = _rac1Weapons.GetAmmo(11); OnRac1PrimaryAttackRequested(); await PhysicsFramesAsync(3);
         Require(_rac1Weapons.GetAmmo(11) == ammo - 1 && _rac1ArsenalMissiles.Any(missile => missile.Weapon == Rac1WeaponId.Devastator), "Devastator launch/ammo");
         await CaptureRac1BombAsync("devastator-rocket", _player!.GlobalPosition + EquipmentForward * 3 + Vector3.Up);
         await Rac1SmokeWaitAsync(() => !IsRac1GameplayActive(crate), 90, "Devastator rocket/blast crate contact");
+        Require(_rac1Particles?.Live.Any(p => p.Type == 8) == true && _rac1Particles.Live.Any(p => p.Type == 15),
+            "rocket impact reused the Bomb Glove recipe instead of its puffs/sparks");
+        await PhysicsFramesAsync(6);
+        await CaptureRac1BombAsync("devastator-explosion", rocketImpactFocus);
         Require(_rac1WeaponSoundTrace.Any(cue => cue.Class == 157 && cue.Sound == 0), "Devastator firing sound absent");
         GD.Print("[arsenal-smoke] Devastator retail rocket, travel and blast PASS");
 
@@ -82,11 +87,17 @@ public partial class OBPGame
         foreach (var drone in _rac1Drones) drone.View.QueueFree(); _rac1Drones.Clear();
         GD.Print("[arsenal-smoke] Six retail drones, enemy interception and consumption PASS");
 
+        // Let the interception effects drain so the Tesla capture actually
+        // shows its ribbons rather than a previous weapon's blast.
+        await PhysicsFramesAsync(180);
+
         await Equip(Rac1WeaponId.TeslaClaw);
         enemy = _rac1Enemies.Values.First(enemy => !enemy.RewardEmitted && enemy.Node.Source.NativeClassId == 1440);
         PlaceWeaponSmokeEnemy(enemy, _player.GlobalPosition + EquipmentForward * 6); ammo = _rac1Weapons.GetAmmo(19);
+        _rac1WeaponWorldTick = 0;
         Input.ActionPress(RawGamepadInput.Traversal); await PhysicsFramesAsync(4);
-        Require(_rac1ArsenalBeams.Count > 0 && _rac1Weapons.GetAmmo(19) < ammo, "Tesla beam/ammo");
+        Require(_rac1ArsenalBeams.Count >= 4 && _rac1ArsenalBeams.Take(4).All(beam => beam.MaterialOverride is ShaderMaterial) &&
+            _rac1Weapons.GetAmmo(19) < ammo, "Tesla textured core/glow layers/ammo");
         await CaptureRac1BombAsync("tesla-arcs", _player.GlobalPosition + EquipmentForward * 2 + Vector3.Up);
         await Rac1SmokeWaitAsync(() => enemy.RewardEmitted, 100, "Tesla contact damage");
         Input.ActionRelease(RawGamepadInput.Traversal); await PhysicsFramesAsync(2);

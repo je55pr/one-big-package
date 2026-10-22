@@ -35,14 +35,25 @@ public partial class OBPGame
         if (_movementStateLoading || _world?.Game != "rac1" || _player is null) return;
         _rac1WeaponWorldTick++;
         StepRac1ArsenalWorld();
-        if (_rac1PyroEmitting && _rac1WeaponWorldTick % Rac1WeaponReconstructionPolicy.FlameEmissionTicks == 0)
+        if (_rac1PyroEmitting && EnsureRac1Particles() is { } particles)
         {
-            var flame = EquipmentParticle(12, new(1.3f, .7f, .2f, .9f), .2f);
-            _sceneResult!.Root.AddChild(flame); flame.GlobalPosition = EquipmentMuzzle(Rac1WeaponId.Pyrocitor);
-            var spread = new Vector3(Rac1EffectRandom.Signed(0, .02f), Rac1EffectRandom.Signed(0, .02f), Rac1EffectRandom.Signed(0, .02f));
-            _rac1Flames.Add(new(flame, EquipmentForward * (Rac1WeaponProfiles.PyrocitorReach / Rac1WeaponReconstructionPolicy.FlameLifetimeTicks) + spread));
+            Vector3 nozzle = EquipmentMuzzle(Rac1WeaponId.Pyrocitor);
+            float reach = Rac1WeaponProfiles.PyrocitorReach;
+            var ray = PhysicsRayQueryParameters3D.Create(nozzle, nozzle + EquipmentForward * (reach + .75f));
+            ray.Exclude = Rac1DamageableRayExclusions();
+            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
+            if (hit.TryGetValue("position", out var contact)) reach = Math.Max(0, nozzle.DistanceTo(contact.AsVector3()) - .75f);
+            var created = particles.Pyrocitor(ToEffectNative(nozzle), ToEffectNative(EquipmentForward), reach);
+            // 0x2b8438 owns fifteen tracked slots. Only emitter index2 on every
+            // fourth update is kept for the travelling damage-volume queries.
+            if ((_rac1WeaponWorldTick & 3) == 0 && created.Count > 2)
+            {
+                if (_rac1NativeFlames.Count == 15) _rac1NativeFlames.RemoveAt(0);
+                _rac1NativeFlames.Add(new(created[2]));
+            }
         }
-        StepRac1Flames();
+        StepRac1WeaponMotes();
+        StepRac1NativeFlameContacts();
         StepRac1Vacuum();
         foreach (var shot in _rac1EquipmentShots.ToArray())
         {
@@ -143,29 +154,42 @@ public partial class OBPGame
         }
     }
 
-    private void StepRac1Flames()
+    private void StepRac1WeaponMotes()
     {
-        foreach (var flame in _rac1Flames.ToArray())
+        foreach (var mote in _rac1WeaponMotes.ToArray())
         {
-            if (!IsInstanceValid(flame.Node)) { _rac1Flames.Remove(flame); continue; }
-            var from = flame.Node.GlobalPosition; var next = from + flame.Step;
-            // Walls clip the stream. Damageable Mobies are volume candidates,
-            // so the first crate does not shield the entire flame volume.
-            if (++flame.Age > Rac1WeaponReconstructionPolicy.FlameLifetimeTicks || !BombHasLineOfSight(from, next))
-            { flame.Node.QueueFree(); _rac1Flames.Remove(flame); continue; }
-            flame.Node.GlobalPosition = next;
-            float radius = .12f + flame.Age * .025f;
-            flame.Node.Scale = Vector3.One * radius * 2;
-            if (!flame.Damaging) continue;
+            if (!IsInstanceValid(mote.Node)) { _rac1WeaponMotes.Remove(mote); continue; }
+            var from = mote.Node.GlobalPosition; var next = from + mote.Step;
+            // The remaining Taunter/Suck presentation motes are not the native
+            // flame pool and cannot submit Pyrocitor damage.
+            if (++mote.Age > Rac1WeaponReconstructionPolicy.FlameLifetimeTicks || !BombHasLineOfSight(from, next))
+            { mote.Node.QueueFree(); _rac1WeaponMotes.Remove(mote); continue; }
+            mote.Node.GlobalPosition = next;
+            float radius = .12f + mote.Age * .025f;
+            mote.Node.Scale = Vector3.One * radius * 2;
+        }
+    }
+
+    private void StepRac1NativeFlameContacts()
+    {
+        if (_rac1Particles is null) return;
+        foreach (var flame in _rac1NativeFlames.ToArray())
+        {
+            var p = flame.Motion;
+            if (!_rac1Particles.IsLive(p) || p.Remaining < 2) { _rac1NativeFlames.Remove(flame); continue; }
+            _rac1Particles.FlameSecondary(p);
+            Vector3 point = FromEffectNative(p.Position);
+            float radius = p.Size * .5f;
             foreach (var (victim, bounds) in EquipmentGeometry)
             {
                 var key = new Rac1MobyRuntimeKey(victim.Source.NativeClassId, victim.Source.InstanceIndex);
                 if (!IsRac1GameplayActive(victim) || flame.Victims.Contains(key) || _rac1FlameHitTicks.GetValueOrDefault(key) > _rac1WeaponWorldTick) continue;
-                bool touched = SegmentBoxFraction(from, next, bounds.Grow(radius), out _);
-                if (!touched || !BombHasLineOfSight(next, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
+                if (!bounds.Grow(radius).HasPoint(point) || !BombHasLineOfSight(point, victim.Root.GlobalPosition + Vector3.Up * .4f)) continue;
                 if (ApplyRac1AdditionalDamage(victim, Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Pyrocitor, key,
                     Rac1WeaponProfiles.PyrocitorDamage, Rac1WeaponProfiles.PyrocitorFlags)))
                 {
+                    // Victim repetition remains the existing bounded damage
+                    // adapter; it is separate from the recovered particle life.
                     flame.Victims.Add(key); _rac1FlameHitTicks[key] = _rac1WeaponWorldTick + Rac1WeaponReconstructionPolicy.FlameVictimRepeatTicks;
                 }
             }
@@ -219,7 +243,7 @@ public partial class OBPGame
             if (bot.Motion.Step(ToEffectNative(origin), targetPoint))
             {
                 ResolveEquipmentBlast(Rac1WeaponId.GloveOfDoom, bot.Id, 186, origin + Vector3.Up * .3f, 1, 3, Rac1WeaponProfiles.DoomFlags);
-                SpawnRac1BombExplosion(origin + Vector3.Up * .2f, playSound: false);
+                SpawnRac1WeaponExplosion(Rac1WeaponId.GloveOfDoom, origin + Vector3.Up * .2f);
                 PlayRac1PickupSound(186, 4, origin);
                 bot.Body.QueueFree(); _rac1DoomAgents.Remove(bot); continue;
             }
@@ -245,9 +269,8 @@ public partial class OBPGame
     private void ExplodeEquipment(HostedEquipmentShot shot, float radius, double damage, uint flags, int childClass)
     {
         ResolveEquipmentBlast(shot.Weapon, shot.Id, childClass, shot.Position, radius, damage, flags);
-        // Shared renderer approximation, using actual retail burst/debris art.
-        // The distinct Mine/Doom particle recipes are not yet source-complete.
-        SpawnRac1BombExplosion(shot.Position, playSound: false);
+        // The native ground/air visual recipe is separate from blast admission.
+        SpawnRac1WeaponExplosion(shot.Weapon, shot.Position);
         PlayRac1PickupSound(childClass, shot.Weapon == Rac1WeaponId.MineGlove ? 2 : 4, shot.Position);
         RetireEquipmentShot(shot);
     }
