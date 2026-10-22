@@ -40,6 +40,30 @@ public sealed class Rac1ExplosiveCrateTests
     }
 
     [Fact]
+    public void OriginalClass505DetonationProducesAdmittedTwoPointRatchetDamage()
+    {
+        var source = Source(24, repeat: false);
+        var runtime = new Rac1MobyRuntimeSession();
+        var explosive = new Rac1ExplosiveCrateSession(runtime, (min, _) => min);
+        explosive.Register(source, RuntimeEntityState.FromAuthored(source));
+        runtime.DispatchDamage<Rac1ExplosiveCrateTriggered>(Hit(24, 0x10000));
+
+        Rac1ExplosiveCrateFrame frame = explosive.Step(24, false);
+        while (!frame.Detonated)
+            frame = explosive.Step(24, false);
+
+        frame = explosive.Step(24, false);
+        Assert.True(frame.MobyBlastRadius > 0);
+        Assert.True(frame.PlayerBlastRadius > 0);
+
+        var damage = Rac1ExplosiveCrateBlast.ToPlayer(24);
+        Assert.True(Rac1ExplosiveCrateBlast.IsNativePlayerBlast(damage));
+        Assert.False(Rac1ExplosiveCrateBlast.IsNativeMobyBlast(damage));
+        var ratchet = new OBP.RAC1.Player.Rac1RatchetNanotechSession();
+        Assert.Equal(2, ratchet.ApplyDamage(damage).Nanotech);
+    }
+
+    [Fact]
     public void StandingContactStartsLongFuseAndRepeatableCratesWaitForOutOfViewRearm()
     {
         var source = Source(11, repeat: true);

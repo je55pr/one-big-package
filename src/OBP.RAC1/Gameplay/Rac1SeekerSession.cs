@@ -175,7 +175,9 @@ public sealed class Rac1SeekerSession : IRac1MobyDamageConsumer
         source.SourceGame == "rac1" && source.NativeClassId == ClassId &&
         _entries.TryGetValue(source.InstanceIndex, out var entry) && entry.Native.IsActive &&
         entry.Health > 0 && damage.Target.MatchesMoby(entry.Native.Key) &&
-        (Rac1EnemyDamage.IsPlayerWeapon(damage) || Rac1SeekerExplosion.IsNativeExplosion(damage));
+        (Rac1EnemyDamage.IsPlayerWeapon(damage) ||
+            Rac1SeekerExplosion.IsNativeExplosion(damage) ||
+            Rac1ExplosiveCrateBlast.IsNativeMobyBlast(damage));
 
     object IRac1MobyDamageConsumer.ApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) =>
         ApplyDamage(source, damage);

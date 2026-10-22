@@ -127,9 +127,7 @@ public partial class OBPGame
             BombHasLineOfSight(origin, _player.GlobalPosition + Vector3.Up * .5f))
         {
             _rac1ExplosivePlayerHits.Add(sourceIndex);
-            ApplyRac1EnemyPlayerDamage(new(
-                Rac1GameplayEntityRef.Moby(new(Rac1ExplosiveCrateSession.ClassId, sourceIndex)),
-                Rac1GameplayEntityRef.Player, 2));
+            ApplyRac1EnemyPlayerDamage(Rac1ExplosiveCrateBlast.ToPlayer(sourceIndex));
         }
 
         foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes))
@@ -140,10 +138,8 @@ public partial class OBPGame
             var centre = target.Root.GlobalPosition + Vector3.Up * .5f;
             if (origin.DistanceTo(centre) > frame.MobyBlastRadius + .35f ||
                 !BombHasLineOfSight(origin, centre)) continue;
-            var damage = new Rac1GameplayDamageEvent(
-                Rac1GameplayEntityRef.Moby(new(Rac1ExplosiveCrateSession.ClassId, sourceIndex)),
-                Rac1GameplayEntityRef.Moby(new(target.Source.NativeClassId, targetIndex)), 2,
-                nativeDamageFlags: 0x00030000);
+            var damage = Rac1ExplosiveCrateBlast.ToMoby(sourceIndex,
+                new(target.Source.NativeClassId, targetIndex));
             bool accepted;
             if (target.Source.NativeClassId == Rac1ExplosiveCrateSession.ClassId)
                 accepted = TryTriggerRac1ExplosiveDamage(target, damage);

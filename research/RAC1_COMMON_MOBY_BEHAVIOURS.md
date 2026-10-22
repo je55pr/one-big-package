@@ -1,5 +1,30 @@
 # R&C1 most common missing Moby behaviours
 
+## 22 October 2026: PR #160 class-505 blast review fixes
+
+The class-505 state-3 shared native updater `FUN_L00_002cf218` passes
+`Burst.unk1C = 2.0f` to two separate expanding sphere queries:
+the **Moby-targeted** query uses `Burst.unk14 = 1` and radius
+`2 * elapsed / 20`; the **Ratchet-targeted** query uses
+`Burst.unk14 = 0x30000` and radius `3 * elapsed / 20`.
+The R&C1 host now represents these separately in
+`Rac1ExplosiveCrateBlast` with a strict source-owner check.
+
+The original host sent an unadmitted damage-2 player event, causing
+`Rac1RatchetNanotechSession.ApplyDamage` to throw, and reused the
+player-oriented `0x30000` flags for Moby damage, which prevented
+class-193 Seekers from taking crate blast damage. Both issues have
+regression coverage. Ratchet now loses **2 Nanotech** on an admitted
+blast, subject to the existing **77-tick** hit protection; Seekers
+take **2 native damage** and enter their existing hurt/fatal response.
+
+A disposable headless **Gaspar** integration probe armed an original
+class-505 crate and relocated an original class-193 Seeker nearby.
+The live host logged Seeker nonlethal damage from class-505, Ratchet
+Nanotech `4 -> 2`, and exit status zero. The temporary probe is
+ignored under `.tools` and restored the original game source before
+completion. No runtime testing shortcuts ship in the PR.
+
 ## 22 October 2026: class-605 Metal Detector gameplay follow-up
 
 Class **605** now has an actual engine-neutral native-target selection and

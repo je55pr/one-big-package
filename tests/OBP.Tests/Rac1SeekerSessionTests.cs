@@ -125,6 +125,37 @@ public sealed class Rac1SeekerSessionTests
     }
 
     [Fact]
+    public void NativeClass505BlastDispatchesTwoDamageToSeekerAndCannotBeSpoofed()
+    {
+        var source = Source(93);
+        var runtime = new Rac1MobyRuntimeSession();
+        var seeker = new Rac1SeekerSession(runtime);
+        seeker.Register(source, RuntimeEntityState.FromAuthored(source));
+        var hit = Rac1ExplosiveCrateBlast.ToMoby(4, new(193, 93));
+
+        Assert.Equal(Rac1ExplosiveCrateBlast.Damage, hit.NativeDamage);
+        Assert.Equal(Rac1ExplosiveCrateBlast.MobyDamageFlags, hit.NativeDamageFlags);
+        Assert.True(Rac1ExplosiveCrateBlast.IsNativeMobyBlast(hit));
+        Assert.True(runtime.CanDispatchDamage(hit));
+        var result = runtime.DispatchDamage<Rac1SeekerDamageResult>(hit);
+        Assert.Equal(1f, result.Frame.Health);
+        Assert.Equal(Rac1SeekerSession.HurtState, result.Frame.NativeState);
+        Assert.False(result.Lethal);
+
+        var forged = new Rac1GameplayDamageEvent(hit.Source, hit.Target, 2,
+            Rac1ExplosiveCrateBlast.PlayerDamageFlags, owner: hit.Owner);
+        Assert.False(runtime.CanDispatchDamage(forged));
+        forged = new Rac1GameplayDamageEvent(hit.Source, hit.Target, 2,
+            Rac1ExplosiveCrateBlast.MobyDamageFlags);
+        Assert.False(runtime.CanDispatchDamage(forged));
+
+        // The next native blast of the same class is lethal.
+        var next = Rac1ExplosiveCrateBlast.ToMoby(5, new(193, 93));
+        Assert.True(runtime.CanDispatchDamage(next));
+        Assert.True(runtime.DispatchDamage<Rac1SeekerDamageResult>(next).Lethal);
+    }
+
+    [Fact]
     public void NativeTimedFuseKeepsCountingDuringNonlethalKnockback()
     {
         var source = Source(17);
