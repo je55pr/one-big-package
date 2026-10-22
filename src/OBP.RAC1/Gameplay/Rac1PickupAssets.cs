@@ -18,14 +18,19 @@ public static class Rac1PickupAssets
     public sealed record Model(int NativeClassId, double Radius,
         IReadOnlyList<RuntimeObjectMesh> Surfaces, string SourceSha256, int VertexCount, int TriangleCount);
     public sealed record Catalogue(IReadOnlyDictionary<int, Model> Models, IReadOnlyList<RuntimeTexture> Textures,
-        IReadOnlyDictionary<(int Class, int LocalSound), Rac1CrateAudio.Sound>? Sounds = null);
+        IReadOnlyDictionary<(int Class, int LocalSound), Rac1CrateAudio.Sound>? Sounds = null,
+        Player.Rac1PlayerAudioAssets? PlayerAudio = null);
 
     public static Catalogue Load(string path, int levelId)
     {
         using var reader = new FileRandomAccessReader(path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == levelId);
         var core = Rac1LevelCore.Open(reader, level);
-        return Decode(core) with { Sounds = Rac1CrateAudio.Decode(reader, level, core) };
+        return Decode(core) with
+        {
+            Sounds = Rac1CrateAudio.Decode(reader, level, core),
+            PlayerAudio = Player.Rac1PlayerAudioAssets.Decode(reader, level, core)
+        };
     }
 
     internal static Catalogue Decode(Rac1LevelCore.Core core)

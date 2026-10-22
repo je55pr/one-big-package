@@ -136,7 +136,7 @@ public partial class OBPGame
 
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
-            OnRac1PrimaryAttackRequested();
+            await TapWrenchSmokeAsync();
             await WaitForPlayerAvatarSequenceAsync(
                 Rac1RatchetSequenceSelection.WrenchAttackSequenceId,
                 120,
@@ -299,7 +299,7 @@ public partial class OBPGame
 
             OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             AssertRac1SmokeHudWeapon(Rac1HudProjection.WrenchPresentationKey, expectedAmmo: null);
-            OnRac1PrimaryAttackRequested();
+            await TapWrenchSmokeAsync();
             await Rac1SmokeWaitAsync(
                 () =>
                 {

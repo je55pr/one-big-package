@@ -50,13 +50,18 @@ public sealed class MovementReproStateTests
         finally { File.Delete(path); }
     }
 
-    [Fact]
-    public void WorldRoundtrip_RetainsDefeatedObjectsInventoryAndBoltsWithoutNativePayloads()
+    [Theory]
+    [InlineData((int)Rac1WeaponId.Wrench)]
+    [InlineData((int)Rac1WeaponId.FirstRanged)]
+    public void WorldRoundtrip_RetainsDefeatedObjectsInventoryAndBoltsWithoutNativePayloads(int heldItemId)
     {
         var inventory = new Rac1WeaponInventory(true, Rac1WeaponId.FirstRanged, 3);
         var world = new MovementReproWorld(
             [new(new(749, 143), 12, true), new(new(1440, 197), 8, true), new(new(500, 104), 0xfe, true)],
-            inventory.CapturePersistentState(), inventory.CurrentItemId, 1234);
+            inventory.CapturePersistentState(), inventory.CurrentItemId, 1234)
+        {
+            HeldItemId = heldItemId,
+        };
         MovementReproState saved = Sample() with { Version = MovementReproState.CurrentVersion, World = world };
         string path = Path.Combine(Path.GetTempPath(), $"obp-world-repro-{Guid.NewGuid():N}.json");
         try
@@ -68,6 +73,7 @@ public sealed class MovementReproStateTests
             var restoredInventory = new Rac1WeaponInventory(restored.World.Inventory, restored.World.CurrentItemId);
             Assert.Equal(Rac1WeaponId.FirstRanged, restoredInventory.Equipped);
             Assert.Equal(3, restoredInventory.FirstRangedAmmo);
+            Assert.Equal(heldItemId, restored.World.HeldItemId);
             Assert.Equal(1234, restored.World.Bolts);
             string json = File.ReadAllText(path);
             Assert.DoesNotContain("PVar", json, StringComparison.OrdinalIgnoreCase);
@@ -134,6 +140,9 @@ public sealed class MovementReproStateTests
         Assert.Throws<InvalidDataException>(() => (world with { InactiveObjects = [new(new(500, 104), 0xfe, false)] }).Validate());
         Assert.Throws<InvalidDataException>(() => (world with { Inventory = inventory with { Ammo = [-1] } }).Validate());
         Assert.Throws<InvalidDataException>(() => (world with { Bolts = -1 }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { HeldItemId = -1 }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { HeldItemId = 37 }).Validate());
+        Assert.Throws<InvalidDataException>(() => (world with { HeldItemId = (int)Rac1WeaponId.Blaster }).Validate());
     }
 
     [Fact]

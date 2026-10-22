@@ -186,6 +186,11 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Compatibility diagnostic derived from the gameplay snapshot, never host-owned state.</summary>
     public bool Rac1GameplayAlive => Rac1GameplayState is null || !Rac1GameplayState.IsDead;
 
+    public int Rac1AudioSurfaceEffectMode { get; private set; }
+    public int Rac1AudioPackId => ActiveRac1Pack;
+    public int Rac1AudioMovementAction => Rac1SwimState?.NativeAction ?? Rac1TraversalAction ?? _rac1Movement.CurrentNativeMovementAction;
+    public bool Rac1AudioGrounded => _rac1PresentationGrounded;
+
     /// <summary>Whether the recovered player lifecycle admits ordinary CharacterBody movement.</summary>
     public bool Rac1GameplayAllowsOrdinaryMovement =>
         Rac1GameplayState is null || Rac1GameplayState.AllowsOrdinaryCharacterMovement;

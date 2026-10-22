@@ -63,16 +63,16 @@ public static class Rac1CampaignSavePolicy
     }
 
     /// <summary>
-    /// Missing host state defaults both recovered owners to the retained opening
-    /// Veldin witness. Schema 1 host saves predate weapon persistence, so their
-    /// campaign survives while weapon state receives the same explicit fallback.
+    /// Missing host state uses the opening campaign and Bomb Glove loadout.
+    /// Schema 1 host saves predate weapon persistence, so their campaign survives
+    /// while weapon state receives the same explicit OBP fallback.
     /// </summary>
     public static Rac1CampaignRestoreResult RestoreOrDefault(Rac1CampaignSaveEnvelope? save)
     {
         if (save is null)
             return new Rac1CampaignRestoreResult(
                 new Rac1CampaignState(),
-                Rac1WeaponInventory.CreateOpeningVeldinWitness(),
+                Rac1WeaponInventory.CreateOpeningLoadout(),
                 Rac1CampaignRestoreKind.DefaultedMissingState);
 
         ArgumentNullException.ThrowIfNull(save.Campaign);
@@ -80,7 +80,7 @@ public static class Rac1CampaignSavePolicy
         if (save.SchemaVersion == 1)
             return new Rac1CampaignRestoreResult(
                 Rac1CampaignState.RestorePersistentState(save.Campaign),
-                Rac1WeaponInventory.CreateOpeningVeldinWitness(),
+                Rac1WeaponInventory.CreateOpeningLoadout(),
                 Rac1CampaignRestoreKind.MigratedCampaignOnlySchema1);
 
         if (save.SchemaVersion != CurrentSchemaVersion)
@@ -92,12 +92,21 @@ public static class Rac1CampaignSavePolicy
 
         return new Rac1CampaignRestoreResult(
             Rac1CampaignState.RestorePersistentState(save.Campaign),
-            new Rac1WeaponInventory(save.Weapons),
+            RestoreWeapons(save.Weapons),
             Rac1CampaignRestoreKind.RestoredCurrentSchema)
         {
             Bolts = save.Bolts,
             NovalisGoldBoltInstances = ValidateNovalisGoldBolts(save.NovalisGoldBoltInstances),
         };
+    }
+
+    private static Rac1WeaponInventory RestoreWeapons(Rac1WeaponPersistentState state)
+    {
+        var weapons = new Rac1WeaponInventory(state);
+        // The held item is transient. Prefer the opening equipment when owned,
+        // preserving the saved ammo and ownership bytes without granting a refill.
+        weapons.TryEquip(Rac1WeaponId.FirstRanged);
+        return weapons;
     }
 
     private static int[] ValidateNovalisGoldBolts(IEnumerable<int>? instances)
@@ -120,7 +129,7 @@ public static class Rac1CampaignSavePolicy
         return new Rac1CampaignSaveEnvelope(
             CurrentSchemaVersion,
             legacy,
-            Rac1WeaponInventory.CreateOpeningVeldinWitness().CapturePersistentState());
+            Rac1WeaponInventory.CreateOpeningLoadout().CapturePersistentState());
     }
 
     public static Rac1CampaignRestoreResult RestoreLegacyUnversioned(
@@ -129,7 +138,7 @@ public static class Rac1CampaignSavePolicy
         Rac1CampaignSaveEnvelope migrated = MigrateLegacyUnversioned(legacy);
         return new Rac1CampaignRestoreResult(
             Rac1CampaignState.RestorePersistentState(migrated.Campaign),
-            new Rac1WeaponInventory(migrated.Weapons!),
+            RestoreWeapons(migrated.Weapons!),
             Rac1CampaignRestoreKind.MigratedLegacyUnversioned);
     }
 }

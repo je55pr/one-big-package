@@ -170,6 +170,7 @@ public partial class OBPGame
     {
         if (_playerAvatarAnimationController is not Rac1PlayerAnimationPresentationController controller)
             return;
+        StepRac1EquippedUseInput();
         StepRac1BombWeaponPhysics();
         StepRac1AdditionalWeapons();
         input = SelectRac1BombThrowAnimation(controller, input);
@@ -177,9 +178,9 @@ public partial class OBPGame
         controller.StepOrdinaryAnimation(state, _playerAvatarClock, input);
         bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
-            _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active && input.Traversal is null &&
+            IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
             !_rac1Nanotech.Probe().IsDead;
-        bool walloper = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Walloper && _rac1WalloperAge > 0;
+        bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
@@ -204,6 +205,7 @@ public partial class OBPGame
             }
             StepRac1EquipmentViews(controller);
         }
+        StepRac1PlayerAudio(controller);
         StepRac1BombProjectilesPhysics();
         StepRac1AdditionalWeaponWorld();
         StepRac1BombEffectsPhysics();
@@ -213,6 +215,7 @@ public partial class OBPGame
 
     private void ResetPlayerAvatarPhysics()
     {
+        ResetRac1PlayerAudio();
         ResetRac1WrenchHost();
         _rac1BombThrowActive = false;
         _playerAvatarClock = 0;
@@ -242,6 +245,7 @@ public partial class OBPGame
 
     private void ClearPlayerAvatarView()
     {
+        ResetRac1PlayerAudio();
         if (_avatarPhysicsPlayer is not null)
         {
             _avatarPhysicsPlayer.AnimationPhysicsUpdated -= StepPlayerAvatarPhysics;
@@ -258,13 +262,37 @@ public partial class OBPGame
         _playerAvatarClock = 0;
     }
 
+    private void HoldSelectedRac1HandItem()
+    {
+        int previous = _rac1HeldItem.NativeItemId;
+        _rac1HeldItem.HoldSelected(_rac1Weapons);
+        RefreshRac1HeldItem(previous);
+    }
+
+    private void RefreshRac1HeldItem(int previous)
+    {
+        if (previous != _rac1HeldItem.NativeItemId &&
+            _rac1EquipmentViews.TryGetValue(_rac1Weapons.Equipped, out var view) &&
+            _playerAvatarAnimationController is Rac1PlayerAnimationPresentationController controller)
+        {
+            // A hidden weapon has not been stepping. Refresh its attachment
+            // before the first shot reads its muzzle, without advancing its clock.
+            var profile = OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped);
+            view.RefreshAttachment(controller.CurrentAttachmentPose(
+                OBP.RAC1.Gameplay.Rac1WeaponProfiles.HandSocket(profile.HandSemantic)));
+        }
+        RefreshRac1WrenchPresentationVisibility();
+    }
+
+    private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
+        _rac1HeldItem.NativeItemId == (int)item &&
+        _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
+
     private void RefreshRac1WrenchPresentationVisibility()
     {
         foreach (var pair in _rac1EquipmentViews)
-            if (IsInstanceValid(pair.Value)) pair.Value.Visible = _rac1Weapons.Equipped == pair.Key &&
-                _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
-        bool bombVisible = _rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged &&
-            _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
+            if (IsInstanceValid(pair.Value)) pair.Value.Visible = IsRac1HandEquipmentVisible(pair.Key);
+        bool bombVisible = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.FirstRanged);
         if (_rac1BombGloveView is not null && IsInstanceValid(_rac1BombGloveView))
             _rac1BombGloveView.Visible = bombVisible;
         if (_rac1StagedBombView is not null && IsInstanceValid(_rac1StagedBombView))
@@ -273,7 +301,7 @@ public partial class OBPGame
             return;
         _rac1WrenchView.Visible =
             _activeDestination?.Game == ObpSourceGame.Rac1 &&
-            (_rac1Weapons.Equipped == OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
+            (_rac1HeldItem.NativeItemId == (int)OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
              _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
     }
 

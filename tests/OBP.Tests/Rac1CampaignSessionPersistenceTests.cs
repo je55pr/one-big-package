@@ -24,9 +24,9 @@ public sealed class Rac1CampaignSessionPersistenceTests
             Assert.Equal(0, restored.Campaign.CurrentLevel);
             Assert.Equal(0, restored.Campaign.AdmittedDestinationCount);
             Assert.True(restored.Weapons.Owns(Rac1WeaponId.Wrench));
-            Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
+            Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
             Assert.True(restored.Weapons.OwnsFirstRanged);
-            Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
+            Assert.Equal(20, restored.Weapons.FirstRangedAmmo);
             Assert.Equal(
                 Rac1DestinationDiscoveryResult.Discovered,
                 restored.Campaign.ApplyProgressionEvent(0x25));

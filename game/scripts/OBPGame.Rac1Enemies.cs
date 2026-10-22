@@ -461,6 +461,7 @@ public partial class OBPGame
         var after = _rac1Nanotech.ApplyDamage(damage);
         _player!.Rac1GameplayState = after;
         if (after.Nanotech == before.Nanotech) return;
+        NotifyRac1PlayerDamageAudio(before, after);
         _rac1CombatStatus = $"enemy hit: Nanotech {after.Nanotech}/{after.RespawnNanotech}";
         RefreshRac1HudState(Rac1HudProjection.DamageFeedback(before, after));
         GD.Print($"[rac1-enemies] class{damage.Source.NativeClassId} i{damage.Source.RuntimeId}: contact; Nanotech {after.Nanotech}");

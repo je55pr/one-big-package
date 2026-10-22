@@ -21,8 +21,7 @@ public partial class OBPGame
     private void StepRac1BombWeaponPhysics()
     {
         if (_world?.Game != "rac1" || _rac1BombGlove is null || _player is null || _rac1Nanotech.Probe().IsDead) return;
-        bool fire = _rac1BombFireRequested || _rac1Weapons.Equipped == Rac1WeaponId.FirstRanged &&
-            _player.Rac1EquippedItemHeld && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
+        bool fire = _rac1BombFireRequested && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         _rac1BombFireRequested = false;
         var probe = _rac1BombGlove.Step(fire);
         if (probe.Shot is { } shot)

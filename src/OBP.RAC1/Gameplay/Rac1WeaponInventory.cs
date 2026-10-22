@@ -208,6 +208,15 @@ public sealed class Rac1WeaponInventory
             firstRangedAmmo: 6);
 
     /// <summary>
+    /// OBP's opening loadout, separate from the retained six-round gameplay witness.
+    /// </summary>
+    public static Rac1WeaponInventory CreateOpeningLoadout() =>
+        new(
+            ownsFirstRanged: true,
+            equipped: Rac1WeaponId.FirstRanged,
+            firstRangedAmmo: 20);
+
+    /// <summary>
     /// Compatibility view for the currently implemented weapon-use slice.
     /// Callers that need arbitrary retail ids should use CurrentItemId.
     /// </summary>

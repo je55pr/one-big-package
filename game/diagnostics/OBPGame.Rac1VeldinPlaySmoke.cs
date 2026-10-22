@@ -41,7 +41,7 @@ public partial class OBPGame
 
             GD.Print(
                 $"[rac1-veldin-play] opening PASS: ephemeral current=0, " +
-                $"Wrench equipped, Bomb Glove ammo={_rac1Weapons.FirstRangedAmmo}");
+                $"Bomb Glove equipped, ammo={_rac1Weapons.FirstRangedAmmo}");
 
             // Run the fall route before camera input changes the recovered control heading.
             await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
@@ -176,12 +176,12 @@ public partial class OBPGame
             throw new InvalidOperationException(
                 "Ephemeral opening campaign state was not the clean Veldin default.");
         if (!_rac1Weapons.OwnsFirstRanged ||
-            _rac1Weapons.Equipped != Rac1WeaponId.Wrench ||
-            _rac1Weapons.FirstRangedAmmo != 6)
+            _rac1Weapons.Equipped != Rac1WeaponId.FirstRanged ||
+            _rac1Weapons.FirstRangedAmmo != 20)
             throw new InvalidOperationException(
                 $"Opening inventory drifted: item10-owned={_rac1Weapons.OwnsFirstRanged}, " +
                 $"equipped={_rac1Weapons.Equipped}, ammo={_rac1Weapons.FirstRangedAmmo}; " +
-                "expected Wrench plus six usable Bomb Glove rounds.");
+                "expected Bomb Glove equipped with twenty usable rounds.");
         var life = _rac1Nanotech.Probe();
         if (life.IsDead || life.Nanotech != 4)
             throw new InvalidOperationException(
@@ -192,8 +192,8 @@ public partial class OBPGame
             throw new InvalidOperationException(
                 "Opening Veldin gameplay state was not clean.");
         AssertRac1SmokeHudWeapon(
-            Rac1HudProjection.WrenchPresentationKey,
-            expectedAmmo: null);
+            Rac1HudProjection.BombGlovePresentationKey,
+            expectedAmmo: 20);
     }
 
     private async Task RunRac1RecoveredCameraInputSmokeAsync(PlayerHost player)
@@ -259,9 +259,9 @@ public partial class OBPGame
     private async Task RunRac1OrdinaryBombGloveUseSmokeAsync()
     {
         int ammoBefore = _rac1Weapons.FirstRangedAmmo;
-        if (ammoBefore != 6)
+        if (ammoBefore != 20)
             throw new InvalidOperationException(
-                $"Bomb Glove use must begin from six opening rounds, found {ammoBefore}.");
+                $"Bomb Glove use must begin from twenty opening rounds, found {ammoBefore}.");
 
         await TapPhysicalKeyAsync(Key.Key2);
         await Rac1SmokeWaitAsync(
@@ -280,15 +280,6 @@ public partial class OBPGame
         AssertRac1SmokeHudWeapon(
             Rac1HudProjection.BombGlovePresentationKey,
             ammoBefore - 1);
-
-        await TapPhysicalKeyAsync(Key.Key1);
-        await Rac1SmokeWaitAsync(
-            () => _rac1Weapons.Equipped == Rac1WeaponId.Wrench,
-            60,
-            "ordinary Wrench reselection");
-        AssertRac1SmokeHudWeapon(
-            Rac1HudProjection.WrenchPresentationKey,
-            expectedAmmo: null);
 
         GD.Print(
             $"[rac1-veldin-play] Bomb Glove PASS: ordinary input consumed " +
@@ -325,12 +316,6 @@ public partial class OBPGame
     private async Task RunRac1OrdinaryHostileWrenchSmokeAsync(
         RuntimeWorldScene.DynamicObjectNode hostile)
     {
-        await TapPhysicalKeyAsync(Key.Key1);
-        await Rac1SmokeWaitAsync(
-            () => _rac1Weapons.Equipped == Rac1WeaponId.Wrench,
-            60,
-            "ordinary Wrench selection before hostile contact");
-
         float approach = 0f;
         if (!Rac1SmokeCurrentWrenchPolicyAdmits(hostile.Root.GlobalPosition))
         {
@@ -340,7 +325,7 @@ public partial class OBPGame
                 "naturally pursuing class-749 hostile");
         }
 
-        await TapRac1PrimaryActionAsync();
+        await TapWrenchSmokeAsync();
         await Rac1SmokeWaitAsync(
             () => _rac1Hostiles.Probe(hostile.Source).Health == 0f &&
                 !hostile.Root.Visible,
@@ -374,7 +359,7 @@ public partial class OBPGame
             .Select(node => node.Source.InstanceIndex)
             .ToArray();
 
-        await TapRac1PrimaryActionAsync();
+        await TapWrenchSmokeAsync();
         await Rac1SmokeWaitAsync(
             () => _rac1BoltCrates.DestroyedCrateCount > destroyedBefore && !IsRac1GameplayActive(crate),
             120,

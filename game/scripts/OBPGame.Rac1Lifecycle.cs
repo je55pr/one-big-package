@@ -61,6 +61,8 @@ public partial class OBPGame
         var respawn = _rac1Nanotech.Respawn();
         _player.Rac1GameplayState = respawn;
         _player.ApplyRecoveredRac1Restart(restart.Placement);
+        _rac1HeldItem.ResetForLevelEntry();
+        RefreshRac1WrenchPresentationVisibility();
         string source = automatic ? "automatic" : "development manual";
         _rac1CombatStatus =
             $"{source} environmental respawn L{world.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";

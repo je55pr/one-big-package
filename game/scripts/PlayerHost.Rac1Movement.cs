@@ -47,6 +47,7 @@ public partial class PlayerHost : CharacterBody3D
         var (contact, groundNormal) = ProbeRac1Contact(
             grounded,
             IsOnCeiling());
+        if (contact.IsGrounded) Rac1AudioSurfaceEffectMode = contact.Face?.EffectMode ?? 0;
         _rac1SurfaceActionIntent = UseRac1Gameplay
             ? Rac1SurfaceActionRouting.Select(contact)
             : null;

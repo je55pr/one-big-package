@@ -91,7 +91,7 @@ public partial class SourceManagerBootstrap : Node
 
         if (rac1Path is not null)
         {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path, persist: !args.ControllerSmoke);
+            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path, persist: !args.ControllerSmoke && !args.Rac1PlayerAudioSmoke);
         }
         if (gcPath is not null)
         {

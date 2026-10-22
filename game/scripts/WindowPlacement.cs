@@ -29,7 +29,7 @@ public partial class WindowPlacement : Node
         _window.Unfocusable = WorldSmokeHarness.IsRequested(args) ||
             args.Rac1StartupVisibilitySmoke || args.StressSwitch is not null || args.ComposeReload is not null ||
             args.CaptureFrame is not null || args.ShotsPath is not null;
-        if (args.ControllerSmoke || args.CaptureFrame is not null || args.ShotsPath is not null || args.ReplayForwardFrames.HasValue || args.Rac1BombGloveSmoke || args.Rac1WeaponsSmoke)
+        if (args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.CaptureFrame is not null || args.ShotsPath is not null || args.ReplayForwardFrames.HasValue || args.Rac1BombGloveSmoke || args.Rac1WeaponsSmoke)
         {
             _window = null; // Automated capture/replay placement never replaces personal preferences.
             SetProcess(false);

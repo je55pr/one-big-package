@@ -86,6 +86,7 @@ public partial class OBPGame
         _rac1DamageTransport.Publish(damage);
         var after = _rac1Nanotech.ApplyHostAridiaContactDamage();
         _player!.Rac1GameplayState = after;
+        NotifyRac1PlayerDamageAudio(before, after);
         if (after.Nanotech != before.Nanotech)
             RefreshRac1HudState(OBP.RAC1.Presentation.Rac1HudProjection.DamageFeedback(before, after));
     }

@@ -108,6 +108,7 @@ public partial class OBPGame
             ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
+        if (_rac1HeldItem.NativeItemId != (int)Rac1WeaponId.Wrench) HoldSelectedRac1HandItem();
         RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility();
     }
     private Rac1WeaponInventory? _rac1AdditionalWeaponsInventory;
@@ -141,7 +142,7 @@ public partial class OBPGame
     {
         if (_movementStateLoading || _world?.Game != "rac1" || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = !_rac1Nanotech.Probe().IsDead && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
-            (_rac1AdditionalFireRequested || _player.Rac1EquippedItemHeld);
+            _rac1AdditionalFireRequested;
         _rac1AdditionalFireRequested = false;
         _rac1ArsenalHeld = held;
         if (_rac1EquipmentUseWeapon != _rac1Weapons.Equipped)
@@ -201,7 +202,7 @@ public partial class OBPGame
         foreach (var profile in Rac1WeaponProfiles.Additional)
         {
             if (!_rac1EquipmentViews.TryGetValue(profile.Item, out var view) || !IsInstanceValid(view)) continue;
-            bool visible = _rac1Weapons.Equipped == profile.Item && _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
+            bool visible = IsRac1HandEquipmentVisible(profile.Item);
             view.Visible = visible;
             if (!visible) continue;
             if (profile.Item == Rac1WeaponId.Blaster)

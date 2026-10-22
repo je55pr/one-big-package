@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot;
+using OBP.RAC1.Gameplay;
 
 namespace OneBigPackage;
 
@@ -135,6 +136,7 @@ public partial class ControllerSmoke : Node
         var player = Find<PlayerHost>(); Require(player is not null, "Controller world test did not load Veldin");
         Require(Find<SourceManagerUi>() is null, "World entry retained the source menu over gameplay");
         await Frames(50);
+        await _game.CheckControllerWeaponInputAsync();
         await Press(JoyButton.Start);
         Require(GetTree().Paused && Find<PauseMenuUi>() is not null, "Start did not pause gameplay");
         var pausedPosition = player!.GlobalPosition;
@@ -154,7 +156,8 @@ public partial class ControllerSmoke : Node
         Require(!GetTree().Paused, "Preview selection left gameplay paused");
         await Button(JoyButton.Y, true);
         var quick = Find<WeaponQuickSelectUi>();
-        Require(quick is not null && GetTree().Paused && quick.Entries.Count == 15, "Triangle did not expose the preview arsenal");
+        Require(quick is not null && quick.Entries.Count == 15, "Triangle did not expose the preview arsenal");
+        Require(!GetTree().Paused, "Triangle Quick Select paused the real-time world");
         await Press(JoyButton.RightShoulder); await Axis(JoyAxis.LeftX, 1); await Axis(JoyAxis.LeftX, 0);
         Require(quick!.SelectedIndex >= 8, "R1 cannot reach the second quick-select page");
         await Capture("quick-select");
@@ -162,7 +165,7 @@ public partial class ControllerSmoke : Node
         Require(!GetTree().Paused && Find<WeaponQuickSelectUi>() is null, "Triangle release did not equip / restore gameplay");
         await Press(JoyButton.Y); await Press(JoyButton.Y);
         Require(Find<WeaponQuickSelectUi>() is null && !GetTree().Paused, "Double Triangle did not quick-swap the previous item");
-        Require(Descendants(_game).OfType<Label>().Any(label => label.Text == "Wrench"), "Quick swap did not actually equip the previous weapon");
+        Require(Descendants(_game).OfType<Label>().Any(label => label.Text == "Bomb Glove"), "Quick swap did not actually equip the previous weapon");
         await Button(JoyButton.Y, true); await Press(JoyButton.Start); await Button(JoyButton.Y, false);
         Require(Find<WeaponQuickSelectUi>() is null && Find<PauseMenuUi>() is not null && GetTree().Paused, "Start nested an invalid pause over quick select");
         await FocusButton("RETURN TO WORLDS"); await Press(JoyButton.A);
@@ -229,4 +232,80 @@ public partial class ControllerSmoke : Node
     }
     private async Task Frames(int count) { for (int i = 0; i < count; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame); }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
+}
+
+public partial class OBPGame
+{
+    internal async Task CheckControllerWeaponInputAsync()
+    {
+        var player = _player!;
+        Require(_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged && _rac1Weapons.FirstRangedAmmo == 20,
+            "ordinary opening did not equip Bomb Glove with 20 ammo");
+        await WaitForGroundedAsync(player, 360);
+        Require(_rac1HeldItem.NativeItemId == (int)Rac1WeaponId.Wrench &&
+            _rac1WrenchView is { Visible: true } && _rac1BombGloveView is { Visible: false },
+            "level entry did not hold the wrench independently of selected Bomb Glove");
+        await TapAsync(JoyButton.X);
+        Require(player.Rac1WrenchFrame.Active && _rac1Weapons.Equipped == Rac1WeaponId.FirstRanged &&
+            _rac1Weapons.FirstRangedAmmo == 20, "Square did not swing the wrench independently of selected equipment");
+        await Rac1SmokeWaitAsync(() => !player.Rac1WrenchFrame.Active, 180, "controller wrench recovery");
+        Require(_rac1WrenchView!.Visible && !_rac1BombGloveView!.Visible,
+            "wrench recovery restored the unused selected equipment");
+        await TapAsync(JoyButton.B);
+        Require(_rac1Weapons.FirstRangedAmmo == 20 && _rac1BombGloveView!.Visible && !_rac1WrenchView.Visible,
+            "Circle switch tap fired a bomb or failed to draw the selected glove");
+        await PhysicsFramesAsync(20);
+        Require(_rac1Weapons.FirstRangedAmmo == 20, "released Circle switch fired a delayed bomb");
+        await TapAsync(JoyButton.B);
+        Require(!player.Rac1WrenchFrame.Active && _rac1Weapons.FirstRangedAmmo == 19,
+            "Circle did not fire exactly one Bomb Glove round");
+        await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == 0, 120, "controller Bomb Glove recovery");
+        await PhysicsFramesAsync(60);
+        Require(_rac1BombGloveView!.Visible && !_rac1WrenchView.Visible &&
+            _rac1HeldItem.NativeItemId == (int)Rac1WeaponId.FirstRanged,
+            "Bomb Glove did not stay in hand after firing and idling");
+        await TapAsync(JoyButton.X);
+        Require(player.Rac1WrenchFrame.Active,
+            $"second Square did not enter an attack: alive={player.Rac1GameplayAlive}, " +
+            $"ground={player.Rac1RecoveredSupportGrounded}, action={player.Rac1AudioMovementAction}, " +
+            $"phase={player.Rac1MovementPhase}, position={player.GlobalPosition}, sequence={CurrentPlayerAvatarSourceSequence()}");
+        await Rac1SmokeWaitAsync(() => !player.Rac1WrenchFrame.Active, 180, "controller second wrench recovery");
+        await PhysicsFramesAsync(30);
+        Require(_rac1WrenchView.Visible && !_rac1BombGloveView.Visible &&
+            _rac1Weapons.Equipped == Rac1WeaponId.FirstRanged && _rac1Weapons.FirstRangedAmmo == 19,
+            "Square did not leave the wrench in hand while retaining Circle equipment and ammo");
+        await SetButtonAsync(JoyButton.B, true);
+        await PhysicsFramesAsync(6);
+        Require(_rac1Weapons.FirstRangedAmmo == 19 && _rac1BombGloveView.Visible,
+            "held Circle fired before the retail switch/hold gate");
+        await PhysicsFramesAsync(8);
+        Require(_rac1Weapons.FirstRangedAmmo == 18, "continuing the switch hold did not throw a bomb");
+        await SetButtonAsync(JoyButton.B, false);
+        await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == 0, 120, "held-switch Bomb Glove recovery");
+        OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
+        await TapAsync(JoyButton.B);
+        Require(!player.Rac1WrenchFrame.Active && _rac1Weapons.FirstRangedAmmo == 18,
+            "Circle fell back to wrench with legacy item 8 selected");
+        OnRac1WeaponCycleRequested(1);
+        Require(_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged, "weapon cycle did not leave the legacy wrench selection");
+        OnRac1WeaponCycleRequested(-1);
+        Require(_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged, "weapon cycle exposed the wrench as Circle equipment");
+        GD.Print("[controller-smoke] wrench on entry, Circle tap draws, second press fires, continuous switch hold fires after delay, last-used item PASS");
+
+        async Task TapAsync(JoyButton button)
+        {
+            await SetButtonAsync(button, true);
+            await PhysicsFramesAsync(3);
+            await SetButtonAsync(button, false);
+            await PhysicsFramesAsync(3);
+        }
+
+        async Task SetButtonAsync(JoyButton button, bool pressed)
+        {
+            // Inject between physics updates, as hardware events arrive, and
+            // keep the synthetic device separate from any connected controller.
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Input.ParseInputEvent(new InputEventJoypadButton { Device = 15, ButtonIndex = button, Pressed = pressed });
+        }
+    }
 }

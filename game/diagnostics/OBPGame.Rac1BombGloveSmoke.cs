@@ -135,6 +135,11 @@ public partial class OBPGame
             nearWall.QueueFree();
             await PhysicsFramesAsync(25);
             GD.Print("[bomb-glove-smoke] body-to-muzzle clearance PASS");
+            // Stage two remaining shots for this bounded empty-ammo check;
+            // the ordinary opening now has twenty rounds rather than six.
+            Require(_rac1Weapons.FirstRangedAmmo >= 2 &&
+                _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, _rac1Weapons.FirstRangedAmmo - 2),
+                "unable to stage the held-fire ammo fixture");
             SetAnalogueSmokeInput(0, 1);
             Input.ActionPress(RawGamepadInput.Traversal);
             await PhysicsFramesAsync(45);

@@ -22,7 +22,7 @@ public partial class OBPGame
         // Host input gesture timing. Native inventory ownership/equip admission
         // remains authoritative; this is not the recovered menu state machine.
         if (_lastQuickSelectTap != 0 && Time.GetTicksMsec() - _lastQuickSelectTap < 350 &&
-            _previousSelectedWeapon is { } previous && _rac1Weapons.Owns(previous))
+            _previousSelectedWeapon is { } previous && previous != Rac1WeaponId.Wrench && _rac1Weapons.Owns(previous))
         {
             _lastQuickSelectTap = 0;
             OnRac1WeaponSelectionRequested(previous);

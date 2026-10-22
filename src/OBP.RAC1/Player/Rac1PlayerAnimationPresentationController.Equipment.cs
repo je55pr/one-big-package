@@ -85,6 +85,10 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         return Current;
     }
 
+    public Rac1AnimationFrameClock.Sample AnimationSoundSample => EquipmentBaseSample();
+    public int AudioNativeAction => int.Parse(Current.SourceStateKey!, System.Globalization.CultureInfo.InvariantCulture);
+    public int AudioActionAge => (int)Math.Min(_ordinaryActionAge, int.MaxValue);
+
     private Rac1AnimationFrameClock.Sample EquipmentBaseSample()
     {
         foreach (var sample in new[] { TraversalSample, CrouchSample, OrdinaryStopSample, OrdinaryStandingSample, OrdinaryLocomotionSample })

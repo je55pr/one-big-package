@@ -6,7 +6,7 @@ namespace OBP.Tests;
 public sealed class Rac1CampaignSavePolicyTests
 {
     [Fact]
-    public void MissingCampaignPayloadDefaultsToRecoveredOpeningState()
+    public void MissingCampaignPayloadDefaultsToOpeningCampaignAndBombGloveLoadout()
     {
         Rac1CampaignRestoreResult restored =
             Rac1CampaignSavePolicy.RestoreOrDefault(null);
@@ -22,8 +22,8 @@ public sealed class Rac1CampaignSavePolicyTests
         Assert.All(restored.Campaign.VisitedPlanets, value => Assert.Equal(0, value));
         Assert.All(restored.Campaign.GalacticMap, value => Assert.Equal(0, value));
         Assert.True(restored.Weapons.OwnsFirstRanged);
-        Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
-        Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
+        Assert.Equal(20, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
     }
 
     [Fact]
@@ -48,7 +48,8 @@ public sealed class Rac1CampaignSavePolicyTests
             Rac1CampaignRestoreKind.MigratedLegacyUnversioned,
             restored.Kind);
         Assert.True(restored.Weapons.OwnsFirstRanged);
-        Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(20, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
         Assert.Equal(campaign.CurrentLevel, restored.Campaign.CurrentLevel);
         Assert.Equal(campaign.VisitedPlanets, restored.Campaign.VisitedPlanets);
         Assert.Equal(campaign.GalacticMap, restored.Campaign.GalacticMap);
@@ -80,7 +81,7 @@ public sealed class Rac1CampaignSavePolicyTests
             Rac1CampaignRestoreKind.RestoredCurrentSchema,
             restored.Kind);
         Assert.Equal(4, restored.Weapons.FirstRangedAmmo);
-        Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
+        Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
         Assert.Equal(new[] { 3, 1 }, restored.Campaign.GalacticMap.Take(2));
         Assert.True(travel.TrySelectDestination(1));
         Assert.Equal(
@@ -124,8 +125,36 @@ public sealed class Rac1CampaignSavePolicyTests
         Assert.Equal(Rac1CampaignRestoreKind.MigratedCampaignOnlySchema1, restored.Kind);
         Assert.True(restored.Campaign.CanSelectDestination(2));
         Assert.True(restored.Weapons.OwnsFirstRanged);
-        Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
-        Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
+        Assert.Equal(20, restored.Weapons.FirstRangedAmmo);
+        Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    [InlineData(40)]
+    public void RestoringEquipmentPreservesSavedAmmoRatherThanApplyingOpeningLoadout(int ammo)
+    {
+        var weapons = new Rac1WeaponInventory(true, firstRangedAmmo: ammo);
+        var save = Rac1CampaignSavePolicy.Capture(new Rac1CampaignState(), weapons);
+
+        var restored = Rac1CampaignSavePolicy.RestoreOrDefault(save).Weapons;
+
+        Assert.Equal(Rac1WeaponId.FirstRanged, restored.Equipped);
+        Assert.Equal(ammo, restored.FirstRangedAmmo);
+        Assert.Equal(weapons.Items, restored.Items);
+        Assert.Equal(weapons.QuickSelect, restored.QuickSelect);
+    }
+
+    [Fact]
+    public void RestoringInventoryWithoutBombGloveDoesNotGrantOne()
+    {
+        var save = Rac1CampaignSavePolicy.Capture(new Rac1CampaignState(), new Rac1WeaponInventory(false));
+
+        var restored = Rac1CampaignSavePolicy.RestoreOrDefault(save).Weapons;
+
+        Assert.False(restored.OwnsFirstRanged);
+        Assert.Equal(0, restored.FirstRangedAmmo);
     }
 
     [Fact]

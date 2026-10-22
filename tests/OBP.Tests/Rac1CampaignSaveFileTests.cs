@@ -19,7 +19,8 @@ public sealed class Rac1CampaignSaveFileTests
             Assert.Equal(0, restored.Campaign.CurrentLevel);
             Assert.Equal(0, restored.Campaign.AdmittedDestinationCount);
             Assert.True(restored.Weapons.OwnsFirstRanged);
-            Assert.Equal(6, restored.Weapons.FirstRangedAmmo);
+            Assert.Equal(20, restored.Weapons.FirstRangedAmmo);
+            Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
             Assert.False(File.Exists(path));
         }
         finally
@@ -60,7 +61,7 @@ public sealed class Rac1CampaignSaveFileTests
             Assert.Equal(197, restored.Bolts);
             Assert.Equal(new[] { 958, 960 }, restored.NovalisGoldBoltInstances);
             Assert.True(restored.Weapons.OwnsFirstRanged);
-            Assert.Equal(Rac1WeaponId.Wrench, restored.Weapons.Equipped);
+            Assert.Equal(Rac1WeaponId.FirstRanged, restored.Weapons.Equipped);
             Assert.False(File.Exists(path + ".tmp"));
 
             // Existing schema2 files omit the new optional wallet field.

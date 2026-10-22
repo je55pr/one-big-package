@@ -34,9 +34,11 @@ public partial class OBPGame
     private Rac1DamageTransportSession _rac1DamageTransport = new();
     private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
         new Rac1CampaignState(),
-        Rac1WeaponInventory.CreateOpeningVeldinWitness());
+        Rac1WeaponInventory.CreateOpeningLoadout());
     private Rac1WeaponInventory? _rac1WeaponPreviewInventory;
     private Rac1WeaponInventory _rac1Weapons => _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
+    private readonly Rac1HeldItemSession _rac1HeldItem = new();
+    private bool _rac1EquipmentUsePressed;
     private Rac1BombGloveSession? _rac1BombGlove;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
     private readonly Dictionary<int, Node3D> _rac1PickupNodes = [];
@@ -55,6 +57,8 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
+        _rac1HeldItem.ResetForLevelEntry();
+        _rac1EquipmentUsePressed = false;
         _lastQuickSelectTap = 0; _previousSelectedWeapon = null;
         ResetRac1MetropolisTaxis();
         _rac1NovalisWater = null;

@@ -8,6 +8,18 @@ source inventory; weapon vendors are not added by this pass.
 With a controller, use **Start → Testing Equipment → Toggle Weapon Preview**.
 The same menu restores campaign equipment and offers **Refill Preview Ammo**.
 
+Fresh sessions select the Bomb Glove for Circle with **20 ammo**. Ratchet enters
+each level holding the wrench. Square leaves it in his hand after attacking;
+using or selecting equipment draws that item and leaves it in hand until the
+next switch. Restored campaign saves keep their saved ammo counts.
+
+With the wrench in hand, a short **Circle** tap draws the selected equipment
+without firing. A second press uses it. Continuing the original hold can also
+fire the Bomb Glove after its swap/held-input delay; Visibomb and Walloper need a
+fresh press. The NTSC hand-slot swap and Bomb Glove/Blaster input age gates are
+pinned to retail code in `Rac1HeldItemSessionTests`. Other weapons retain their
+existing startup animation and cadence approximations.
+
 | Key | Equipment |
 | --- | --- |
 | 1 | Wrench |
@@ -30,11 +42,13 @@ The same menu restores campaign equipment and offers **Refill Preview Ammo**.
 Hold **Triangle** and point with the **left stick / D-pad**, then release to
 equip. **L1 / R1** changes page; double-tap Triangle to swap the previous item.
 Keyboard **[ / ]** still cycles owned weapons. Outside the selector, the D-pad
-moves Ratchet. The preview includes
-all fifteen ordinary weapons and the wrench. Gold upgrades remain unimplemented.
+moves Ratchet. The selector includes all fifteen ordinary weapons; the wrench
+is always available on Square. Gold upgrades remain unimplemented.
 
 Hold **E / Circle** to use the selected weapon. **X / Square** continues to
-use the wrench. Selecting a weapon exits the Swingshot preview.
+use the wrench independently of selected equipment. Circle never swings the
+wrench, including after the keyboard-only **1** wrench selection shortcut.
+Selecting a weapon exits the Swingshot preview.
 
 After selecting a weapon, release all input: Ratchet should return to ordinary
 idle with his head attached, and no firing loop should continue. Check this again

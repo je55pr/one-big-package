@@ -28,6 +28,8 @@ public sealed class Rac1AnimationFrameClock
 
     public Sample Current { get; private set; }
     public bool WrappedThisUpdate { get; private set; }
+    /// <summary>Snapped fractional advance before keyframe rescaling; native sound windows use this at a loop wrap.</summary>
+    public float FractionAdvanceThisUpdate { get; private set; }
     public float PlaybackMultiplier
     {
         get => _multiplier;
@@ -57,6 +59,7 @@ public sealed class Rac1AnimationFrameClock
         rebound._blendCurveIndex = _blendCurveIndex;
         rebound._multiplier = _multiplier;
         rebound.WrappedThisUpdate = WrappedThisUpdate;
+        rebound.FractionAdvanceThisUpdate = FractionAdvanceThisUpdate;
         rebound._loopStart = _loopStart;
         rebound._loopEnd = _loopEnd;
         rebound._exitLoopFrame = _exitLoopFrame;
@@ -82,6 +85,7 @@ public sealed class Rac1AnimationFrameClock
         _blendCurve = null;
         _blendCurveIndex = 0;
         WrappedThisUpdate = false;
+        FractionAdvanceThisUpdate = 0;
         _loopStart = _loopEnd = _exitLoopFrame = null;
     }
 
@@ -97,6 +101,7 @@ public sealed class Rac1AnimationFrameClock
         _blendCurve = null;
         _blendCurveIndex = 0;
         WrappedThisUpdate = false;
+        FractionAdvanceThisUpdate = 0;
         _loopStart = _loopEnd = _exitLoopFrame = null;
     }
 
@@ -142,6 +147,7 @@ public sealed class Rac1AnimationFrameClock
             fraction = 1f;
         if (fraction > -0.01f && fraction < 0.01f)
             fraction = 0f;
+        FractionAdvanceThisUpdate = fraction - Current.Fraction;
         var sample = Current;
         float[] rates = _rates[sample.Sequence];
         while (fraction >= 1f)

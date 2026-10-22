@@ -30,6 +30,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
 
     public Rac1AnimationFrameClock.Sample? OrdinaryLocomotionSample => _locomotionClock?.Current;
     public float? OrdinaryLocomotionMultiplier => _locomotionClock?.PlaybackMultiplier;
+    public float? OrdinaryLocomotionFractionAdvance => _locomotionClock?.FractionAdvanceThisUpdate;
 
     /// <summary>
     /// Call once per 60 Hz movement update, never from the render loop. Native

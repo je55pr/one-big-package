@@ -103,6 +103,8 @@ public sealed partial class Rac1EquipmentView : Node3D
         return sounds;
     }
 
+    public void RefreshAttachment(PlayerAvatarAttachmentPose? hand) => Sample(hand);
+
     private void Sample(PlayerAvatarAttachmentPose? hand)
     {
         var sample = _clock.Current;

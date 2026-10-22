@@ -40,7 +40,10 @@ public partial class OBPGame
         _rac1AdditionalWeapons?.Cargo.ToArray(), _rac1WeaponPreviewInventory is not null,
         _rac1Chickens.Values.Where(chicken => IsRac1GameplayActive(chicken.Enemy.Node) && !chicken.Enemy.RewardEmitted)
             .Select(chicken => new Rac1MobyRuntimeKey(chicken.Enemy.Node.Source.NativeClassId, chicken.Enemy.Node.Source.InstanceIndex))
-            .Concat(_rac1ChickenCargo).Distinct().ToArray());
+            .Concat(_rac1ChickenCargo).Distinct().ToArray())
+    {
+        HeldItemId = _rac1HeldItem.NativeItemId,
+    };
 
     private void RestoreMovementWorld(MovementReproWorld world)
     {
@@ -152,6 +155,9 @@ public partial class OBPGame
             if (_player != restoringPlayer || !IsInstanceValid(restoringPlayer))
                 throw new InvalidOperationException("The world changed while loading the movement state.");
             restoringPlayer.RestoreMovementRepro(state.Player);
+            if (state.World is { } handWorld)
+                _rac1HeldItem.Restore(handWorld.HeldItemId ?? handWorld.CurrentItemId, _rac1Weapons);
+            RefreshRac1WrenchPresentationVisibility();
             ReportMovementState(state.World is null
                 ? "Movement state loaded (legacy pose only; enemies reset). F12 saves world removals too."
                 : "Movement state loaded, including defeated enemies and broken crates.");

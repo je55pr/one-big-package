@@ -15,31 +15,26 @@ public partial class OBPGame
 {
     private void OnRac1PrimaryAttackRequested()
     {
-        if (_rac1Nanotech.Probe().IsDead) return;
-        if (Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped))
-        {
-            if (_player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active)
-                _rac1AdditionalFireRequested = true;
-            return;
-        }
-        if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged)
-        {
-            if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active)
-                return;
-            _rac1BombFireRequested = true;
-            _rac1CombatStatus = "Bomb Glove fire requested";
-            return;
-        }
+        // Circle uses equipment only. Square has its own wrench input path,
+        // including when a legacy repro or keyboard shortcut selects item 8.
+        if (_rac1Nanotech.Probe().IsDead || _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
+        if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
+        _rac1EquipmentUsePressed = true;
+    }
 
-        var use = _rac1Wrench.AdmitOrdinaryUse(_rac1Weapons.Equipped == Rac1WeaponId.Wrench);
-        if (!use.Accepted)
-        {
-            _rac1CombatStatus = $"wrench use rejected: {use.Rejection}";
-            return;
-        }
-
-        _player?.NotifyRac1WrenchAttackAccepted();
-        _rac1CombatStatus = "wrench input buffered";
+    private void StepRac1EquippedUseInput()
+    {
+        bool pressed = _rac1EquipmentUsePressed;
+        _rac1EquipmentUsePressed = false;
+        bool admitted = _player is not null && !_rac1Nanotech.Probe().IsDead &&
+            !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
+        int previous = _rac1HeldItem.NativeItemId;
+        var frame = _rac1HeldItem.StepCircle(_rac1Weapons, pressed,
+            _player?.Rac1EquippedItemHeld == true, admitted);
+        if (frame.HandChanged) RefreshRac1HeldItem(previous);
+        if (!frame.UseRequested) return;
+        if (_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged) _rac1BombFireRequested = true;
+        else if (Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped)) _rac1AdditionalFireRequested = true;
     }
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
@@ -48,13 +43,14 @@ public partial class OBPGame
         if (_rac1Weapons.TryEquip(weapon))
         {
             if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
-            if (previous != (int)weapon && Enum.IsDefined(typeof(Rac1WeaponId), previous))
+            if (previous != (int)weapon && previous != (int)Rac1WeaponId.Wrench &&
+                Enum.IsDefined(typeof(Rac1WeaponId), previous))
                 _previousSelectedWeapon = (Rac1WeaponId)previous;
             _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
-            RefreshRac1WrenchPresentationVisibility();
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
                 view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
+            HoldSelectedRac1HandItem();
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
         else ReportMovementState("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
@@ -62,9 +58,11 @@ public partial class OBPGame
 
     private void OnRac1WeaponCycleRequested(int direction)
     {
-        var weapons = new[] { Rac1WeaponId.Wrench, Rac1WeaponId.FirstRanged }
+        var weapons = new[] { Rac1WeaponId.FirstRanged }
             .Concat(Rac1WeaponProfiles.Additional.Select(profile => profile.Item)).Where(_rac1Weapons.Owns).ToArray();
+        if (weapons.Length == 0) return;
         int index = Array.IndexOf(weapons, _rac1Weapons.Equipped);
+        if (index < 0) index = direction < 0 ? 0 : -1;
         OnRac1WeaponSelectionRequested(weapons[(index + direction + weapons.Length) % weapons.Length]);
     }
 

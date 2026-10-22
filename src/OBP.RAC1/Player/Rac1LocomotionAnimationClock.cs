@@ -20,6 +20,7 @@ public sealed class Rac1LocomotionAnimationClock
 
     public Rac1AnimationFrameClock.Sample Current => _frames.Current;
     public float PlaybackMultiplier => _frames.PlaybackMultiplier;
+    public float FractionAdvanceThisUpdate => _frames.FractionAdvanceThisUpdate;
     public int SubstateAge { get; private set; }
 
     /// <summary>

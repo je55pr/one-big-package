@@ -83,7 +83,7 @@ obp_planet_map={
 ; OBP host binding for the source-backed traversal equipment preview.
 obp_traversal={
 "deadzone": 0.0,
-"events": [Object(InputEventKey,"physical_keycode":69), Object(InputEventJoypadButton,"button_index":1)]
+"events": [Object(InputEventKey,"device":-1,"physical_keycode":69), Object(InputEventJoypadButton,"device":-1,"button_index":1)]
 }
 
 [physics]

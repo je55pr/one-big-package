@@ -20,6 +20,7 @@ public sealed record CommandLineArgs
     public bool ReplayProfile { get; init; }
     public bool MovementStateSmoke { get; init; }
     public bool ControllerSmoke { get; init; }
+    public bool Rac1PlayerAudioSmoke { get; init; }
 
     /// <summary>Path to a Going Commando retail ISO.</summary>
     public string? GcIso { get; init; }
@@ -202,6 +203,7 @@ public sealed record CommandLineArgs
                 "--rac1-novalis-music-smoke" => result with { Rac1NovalisMusicSmoke = true },
                 "--rac1-weapons-smoke" => result with { Rac1WeaponsSmoke = true },
                 "--controller-smoke" => result with { ControllerSmoke = true },
+                "--rac1-player-audio-smoke" => result with { Rac1PlayerAudioSmoke = true },
                 "--rac1-crate-smoke" => result with { Rac1CrateSmoke = true },
                 "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },

@@ -18,6 +18,7 @@ public partial class OBPGame
             ClearMovementSmokeInput();
             await WaitForGroundedAsync(player, 360);
             Require(_rac1WrenchView is not null && _playerAvatarView is not null, "retail wrench/avatar did not load");
+            OnRac1WeaponSelectionRequested(Rac1WeaponId.Wrench);
             await CaptureWrenchSmokeAsync("neutral-wrench");
             attachmentFixture = new Node3D
             {
@@ -83,7 +84,8 @@ public partial class OBPGame
             await CaptureWrenchSmokeAsync("third-swing");
             await Rac1SmokeWaitAsync(() => !player.Rac1WrenchFrame.Active, 180, "combo recovery");
             Require(_rac1Weapons.FirstRangedAmmo == ammo, "combo spent selected-weapon ammo");
-            Require(!_rac1WrenchView.Visible, "wrench did not return to selected Bomb Glove presentation");
+            Require(_rac1WrenchView.Visible && !_rac1BombGloveView!.Visible,
+                "wrench combo did not leave the last-used wrench in hand");
             await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == 0, 60, "wrench standing recovery");
             var standing = (Rac1PlayerAnimationPresentationController)_playerAvatarAnimationController!;
             var previousPose = standing.Current.SampledPose;
@@ -147,7 +149,8 @@ public partial class OBPGame
             await CaptureWrenchSmokeAsync("comet-strike");
             await Rac1SmokeWaitAsync(() => !_rac1WrenchThrow.Active && !player.Rac1WrenchFrame.Active,
                 240, "Comet-Strike return and loop recovery");
-            Require(!_rac1WrenchView.Visible, "caught wrench did not restore equipped weapon presentation");
+            Require(_rac1WrenchView.Visible && !_rac1BombGloveView!.Visible,
+                "caught wrench did not stay in hand");
             GD.Print("[wrench-smoke] Comet-Strike release/flight/animated-hand catch/recovery PASS");
 
             // Contact fixtures are deliberately staged, unlike the separate

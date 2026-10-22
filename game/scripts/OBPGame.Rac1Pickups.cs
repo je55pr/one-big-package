@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 using OBP.Runtime;
 using OBP.Runtime.Audio;
@@ -26,6 +27,9 @@ public partial class OBPGame
 
     private void ResetRac1PickupPresentation()
     {
+        ResetRac1PlayerAudio();
+        _rac1PlayerAudio = null;
+        _rac1PlayerReactions = null;
         ResetRac1PlacedBoltPresentation();
         ResetRac1CrateSupply();
         foreach (var node in _rac1PickupNodes.Values.Concat(_rac1Debris.Select(piece => piece.Node)))
@@ -47,6 +51,9 @@ public partial class OBPGame
         var source = _sources.Get(OBP.Core.ObpSourceGame.Rac1);
         if (source is null) throw new InvalidOperationException("R&C1 pickup presentation requires the active source.");
         _rac1PickupAssets = Rac1PickupAssets.Load(source.Path, world.LevelId);
+        _rac1PlayerAudio = new Rac1PlayerAudioSession(_rac1PickupAssets.PlayerAudio!.Animations);
+        _rac1PlayerReactions = new Rac1PlayerReactionAudioSession(_rac1PickupAssets.PlayerAudio.Animations);
+        _rac1PlayerSoundTrace.Clear();
         _rac1PickupMaterials = new WorldMaterialFactory(world with { Textures = _rac1PickupAssets.Textures });
         GD.Print($"[rac1-pickups] loaded {_rac1PickupAssets.Models.Count} retail bolt/debris models");
     }

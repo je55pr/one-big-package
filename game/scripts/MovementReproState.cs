@@ -47,6 +47,8 @@ public sealed record MovementReproWorld(
     bool WeaponPreview = false,
     IReadOnlyList<Rac1MobyRuntimeKey>? MorphedMobies = null)
 {
+    public int? HeldItemId { get; init; }
+
     public void Validate()
     {
         if (InactiveObjects is null || InactiveObjects.Count > 4096 || Bolts < 0 ||
@@ -55,7 +57,11 @@ public sealed record MovementReproWorld(
                 Rac1MobyRuntime.IsTerminalState(item.NativeState) && !item.Terminalized) ||
             InactiveObjects.Select(item => item.Key).Distinct().Count() != InactiveObjects.Count)
             throw new InvalidDataException("Invalid movement state world objects or bolt balance.");
-        try { _ = new Rac1WeaponInventory(Inventory, CurrentItemId); }
+        try
+        {
+            var inventory = new Rac1WeaponInventory(Inventory, CurrentItemId);
+            new Rac1HeldItemSession().Restore(HeldItemId ?? CurrentItemId, inventory);
+        }
         catch (ArgumentException ex) { throw new InvalidDataException("Invalid movement state inventory.", ex); }
         if (CapturedMobies is { } cargo && (cargo.Count > Rac1AdditionalWeaponSession.SuckCapacity ||
             cargo.Distinct().Count() != cargo.Count || cargo.Any(key =>

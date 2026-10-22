@@ -5,6 +5,24 @@ namespace OBP.Tests;
 public sealed class Rac1WeaponInventoryTests
 {
     [Fact]
+    public void OpeningLoadoutEquipsBombGloveWithTwentyRoundsOnly()
+    {
+        var inventory = Rac1WeaponInventory.CreateOpeningLoadout();
+
+        Assert.Equal(Rac1WeaponId.FirstRanged, inventory.Equipped);
+        Assert.Equal(20, inventory.FirstRangedAmmo);
+        Assert.True(inventory.Owns(Rac1WeaponId.Wrench));
+        Assert.Equal(new[] { 10 }, Enumerable.Range(0, Rac1NativeInventoryLayout.ItemCount)
+            .Where(id => inventory.Items[id] != 0));
+        Assert.Equal(10, inventory.QuickSelect[0]);
+
+        Assert.True(inventory.TryUseEquipped());
+        Assert.Equal(19, inventory.FirstRangedAmmo);
+        Assert.Equal(20, Rac1WeaponInventory.CreateOpeningLoadout().FirstRangedAmmo);
+        Assert.Equal(6, Rac1WeaponInventory.CreateOpeningVeldinWitness().FirstRangedAmmo);
+    }
+
+    [Fact]
     public void PromotedWeaponIdsAndNativeLayoutMatchRetailWitnesses()
     {
         Assert.Equal(8, (int)Rac1WeaponId.Wrench);

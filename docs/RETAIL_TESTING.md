@@ -30,6 +30,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/rac1-combat-contract-smoke.ps1` | Lower-level staged combat/session contracts; it is not the ordinary-play gate. |
 | `./tools/rac1-enemy-smoke.ps1` | Opening toad/robot spawn, path entrances, reactions, attack contacts, rewards, occlusion and retry fixtures. |
 | `./tools/rac1-wrench-smoke.ps1` | Input/combo/throw, body and hand attachment, staged damage contacts and recovery. |
+| `./tools/rac1-player-audio-smoke.ps1` | Retail footsteps/surfaces, jump/flip/combo cues, wrench contacts/flight/catch, pack loops/pause and accepted-hit/combat-death voices. `-Rendered` exercises playback offscreen. |
 | `./tools/rac1-bomb-glove-smoke.ps1` | Glove/bomb skins, socket/throw, arc, impact/splash/occlusion, ammo/cadence and cleanup. |
 | `./tools/rac1-weapons-smoke.ps1` | Full working arsenal, idle/use poses, audio lifetime, contact, cargo and deployed-agent fixtures. |
 | `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |
@@ -56,6 +57,15 @@ fixture bodies live under `game/diagnostics/`.
 
 Relaunch through the desktop shortcut to build the current working tree.
 Controls below are OBP host bindings; previews do not grant campaign ownership.
+
+For Ratchet audio, compare low-stick walking/full running on different floors,
+jump/double-jump/flips, the three Square swings, airborne Square and R1+Square.
+Try both pack glides and pause/resume while a loop plays. Cues use the retail
+animation keyframes and level sound banks. Player self-audio is listener-relative
+in Godot; native spatial mixing, SPU pitch quantization and every grain opcode
+are not reproduced exactly. Native sound probability programs may choose silence.
+Standard enemy-hit and normal combat-death audio use the original reaction
+timelines independently while OBP's complete damage motion/pose owner is absent.
 
 Menus use **D-pad / left stick** to navigate, **Cross** to select and
 **Triangle** to return (**Circle** is also accepted). **L1 / R1** moves between
