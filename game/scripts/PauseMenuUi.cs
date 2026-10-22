@@ -65,7 +65,8 @@ public sealed partial class PauseMenuUi : CanvasLayer
         centre.AddChild(panel);
 
         var scroll = new ScrollContainer
-        { VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever,
+        {
+            VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             FollowFocus = true,
             CustomMinimumSize = new Vector2(460, Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 100, 220, 660)),
         };
