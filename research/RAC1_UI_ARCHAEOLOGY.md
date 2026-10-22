@@ -1,6 +1,6 @@
 # R&C1 retail UI archaeology and Godot adoption plan
 
-Status: investigated, 2026-10-22. **No retail UI renderer, sprite extraction or side-by-side timing verification is claimed complete.**
+Status: working extraction and first Godot integration, 2026-10-22. **Sprite/font extraction is complete for the directly recovered banks; full native icon mapping, menu coverage and side-by-side timing verification remain incomplete.**
 Authority: OBP's supported NTSC-U original retail R&C1 disc (`SCUS-97199`), with public decompilation consulted only as implementation-independent evidence leads.
 Scope: in-game HUD, Quick Select, pause/inventory menus, help windows, and map. This document is intentionally separate from OBP's current designed title/source-manager presentation.
 
@@ -103,3 +103,30 @@ The public `src/ui/hud/load_hud_banks.c`, `get_icon_frame.c`, `hud_get_icon_inde
 - `lombyte-project/Lombyte@1e40bcb` (public decompilation; inspected as evidence): `include/rnc/storage/disc_table.h`, `src/gameplay/state/transition_do_transition.c`, `src/ui/hud/load_hud_banks.c`, `get_icon_frame.c`, `include/rnc/ui/hud/hud_state.h`, `src/ui/menus/pause/draw_pause_ring.c`, `src/ui/menus/draw_menu_item_grid.c`, `src/ui/menus/update_menu_system.c`, `src/ui/help/draw_help.c`, `src/ui/map/update_map_zoom_and_pan.c`. Repository: https://github.com/lombyte-project/Lombyte
 - OBP-specific retail authority and separation contract: `research/RAC1_DISC_INDEX.md`, `research/RAC1_WEAPON_INVENTORY.md`, `research/EXTERNAL_SOURCE_POLICY.md`, `docs/HUD_FOUNDATION.md`, `AGENTS.md`.
 - **No public decompilation code was copied or translated into OBP production code.** All described algorithms/formats need a fresh OBP implementation validated against local authorized retail input.
+
+## Implementation update: UI texture bank, bitmap fonts, and localisation (2026-10-22)
+
+Production/tool additions on this experimental `three-big-package` clone:
+
+- `tools/rac1-ui-assets.py` reads the six shared HUD chunks, checks disc bounds and decompresses their WAD-LZ blocks. It decodes **326 HUD sprite frames** from **56 animation definitions**, referencing **42 palette pages** and **236 image pages**. It exports separate PNG files and a metadata manifest. The same validated local-ISO run reports zero image range failures.
+- The Veldin core FX texture table has 43 records. Records 1, 2 and 3 expose the bitmap font atlases at **256×128 pixels** each, corresponding to regular, small, and large. Glyph metrics have **232 native code entries per font** and are read from the original executable's file-backed addresses `0x001DF050`, `0x001DF3F0`, and `0x001DF790`. All three are exported as PNG + AngelCode BMFont `.fnt` with native character advances/UVs.
+- This is **not** a recoverable TTF font. It is a bitmap glyph renderer with 16×16 cells and native advances, plus control bytes `0x08..0x0F` for colour changes and special control/button icons. A local Godot 4.7 headless test confirmed that `FontFile.LoadBitmapFont` returns `Error.Ok` and that glyph `A` exists for each font.
+- The original global localisation archive is referenced at raw disc index offset `0x1528` (LBA **18179**, 308 sectors in this disc). Language slot 0 contains **1,762** entries; slot 1 contains **0**; slots 2–5 contain **1,739 / 1,736 / 1,739 / 1,736** respectively. The extractor stores native byte-preserving and Latin-1 convenience representations as user-local JSON. Slot 0 contains `20194: Weapons`, `20195: Gadgets`, `20196: Quick Select`. Proper per-language text rendering, native button control-byte substitution and word-wrap/inline-colour support remain to be completed.
+- `Rac1RetailUiAssets.cs` loads optional extracted sprites, bitmap fonts and English UI strings at runtime. `UiTheme.cs` uses the fonts if present, otherwise retains the original Godot font. `WeaponQuickSelectUi.cs` now has an eight-direction circular layout, source-derived angle spacing, icon-frame support, a highlight animation and native text for `Quick Select`. It remains a partial recreation: individual weapon icon identity is not yet mapped back to all native item IDs and the visuals have not been screenshot-compared.
+- `OBPGame.QuickSelect.cs` no longer pauses the Godot simulation while the wheel is up. Extra-page overflow for partially implemented/test-only equipment remains a clearly nonretail host extension.
+
+Run the exporter with a Python 3 interpreter against your privately owned original NTSC-U image:
+
+```powershell
+python tools/rac1-ui-assets.py "$env:OBP_RAC1_ISO"
+```
+
+Use a locally installed Python 3 interpreter. The generated data directory is `game/retail-ui-cache/`, ignored by Git along with the earlier `game/.retail-ui/` scratch output. The game loads from that cache automatically when running from this clone. **Do not commit the PNGs, font files, text tables, ISOs or other retail payloads.**
+
+### Verification and remaining work
+
+- Local authority ISO: six HUD bank ranges decoded, 326 images generated, three font atlas PNG + BMFont pairs, five populated locale tables.
+- Python-only validation: four payload-free unit tests in `tests/tooling/test_rac1_ui_assets.py`; local extraction additionally exercises the full archive.
+- `dotnet build` and the native test suite validated Godot script compilation and normal gameplay. Godot headless startup requires **Debug** game assembly; a Release-only assembly results in missing C# autoloads in this development setup.
+- The native item→HUD icon mapping is still incomplete because the decompilation's runtime-populated item icon lookup table is zero in the file-backed executable image. Never assign arbitrary sprites to inventory item IDs. Recover its runtime population path or capture known-good retail slots before declaring that part faithful.
+- A screenshot/interaction comparison is still needed for exact wheel radius scaling, animation pulse, native menu panels, font baselines, help prompts and save/travel screens.

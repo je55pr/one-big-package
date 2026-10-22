@@ -8,6 +8,10 @@ __pycache__/
 captures/
 game/captures/
 
+# extracted local retail UI/font assets (never committed)
+game/.retail-ui/
+game/retail-ui-cache/
+
 # retail source data (never committed)
 *.iso
 *.bin

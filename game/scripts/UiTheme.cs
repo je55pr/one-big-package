@@ -25,6 +25,10 @@ public static class UiTheme
     public static Theme Build()
     {
         var theme = new Theme { DefaultFontSize = 16 };
+        // User-owned, locally decoded R&C1 bitmap font. Keep the ordinary
+        // Godot fallback when a player has not imported their retail assets.
+        if (Rac1RetailUiAssets.Font("regular") is { } retailFont)
+            theme.DefaultFont = retailFont;
 
         theme.SetColor("font_color", "Label", Text);
         theme.SetColor("font_color", "RichTextLabel", Text);
@@ -38,6 +42,18 @@ public static class UiTheme
         AddHeader(theme, "HudKicker", 13, Accent);
         AddHeader(theme, "HudValue", 25, Text);
         AddHeader(theme, "HudSecondary", 14, TextDim);
+        if (Rac1RetailUiAssets.Font("large") is { } large)
+        {
+            theme.SetFont("font", "HeaderLarge", large);
+            theme.SetFont("font", "HeaderMedium", large);
+            theme.SetFont("font", "HudValue", large);
+        }
+        if (Rac1RetailUiAssets.Font("small") is { } small)
+        {
+            theme.SetFont("font", "HeaderSmall", small);
+            theme.SetFont("font", "HudKicker", small);
+            theme.SetFont("font", "HudSecondary", small);
+        }
 
         StyleButtons(theme);
         StylePanels(theme);
