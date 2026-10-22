@@ -43,6 +43,12 @@
       "sha256": "c16e063fc8c8d0d2a5d4ec103a970d6be103e3c2ae0ab06e6d795bcfd7c5a920"
     },
     {
+      "stage": "collision",
+      "start": "0x2e7d20",
+      "end": "0x2e8368",
+      "sha256": "145cbe70ab6b756ce72fe535775ed9612f94b64a4d1d62db17c5acf8925bdf25"
+    },
+    {
       "stage": "projection",
       "start": "0x1f7848",
       "end": "0x1f7b00",
@@ -4190,5 +4196,866 @@
         }
       ]
     }
-  ]
+  ],
+  "obstructionRelease": {
+    "execution": "Original cam0_collide at 0x002e7d20; clear collision helpers; seeded post-contact state",
+    "initialState": "Preferred radius 6, shortened desired offset, correction/timer below, clear release flag",
+    "limits": "Tests unobstructed release from a seeded state, not contact creation or physical wall geometry.",
+    "cases": [
+      {
+        "name": "neutral",
+        "stick": [
+          0,
+          0
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.0,
+          -0.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.872445583,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.518516302,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 2.767132759,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 1.704666018,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 1.199833512,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 1.199833512,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 1.199832797,
+            "timer": 1999
+          },
+          {
+            "frame": 200,
+            "correction": 1.197709202,
+            "timer": 1980
+          },
+          {
+            "frame": 240,
+            "correction": 1.14641273,
+            "timer": 1940
+          }
+        ]
+      },
+      {
+        "name": "horizontal-negative",
+        "stick": [
+          -1,
+          0
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          -1.0,
+          -0.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.872445583,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.518516302,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 2.767132759,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 1.704666018,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 1.199833512,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 1.199833512,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 1.199832797,
+            "timer": 1999
+          },
+          {
+            "frame": 200,
+            "correction": 1.197709202,
+            "timer": 1980
+          },
+          {
+            "frame": 240,
+            "correction": 1.14641273,
+            "timer": 1940
+          }
+        ]
+      },
+      {
+        "name": "horizontal-positive",
+        "stick": [
+          1,
+          0
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          1.0,
+          -0.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "vertical-up",
+        "stick": [
+          0,
+          1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.0,
+          -1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.872445583,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.518516302,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 2.767132759,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 1.704666018,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 1.199833512,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 1.199833512,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 1.199832797,
+            "timer": 1999
+          },
+          {
+            "frame": 200,
+            "correction": 1.197709202,
+            "timer": 1980
+          },
+          {
+            "frame": 240,
+            "correction": 1.14641273,
+            "timer": 1940
+          }
+        ]
+      },
+      {
+        "name": "vertical-down",
+        "stick": [
+          0,
+          -1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.0,
+          1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "native-negative-diagonal",
+        "stick": [
+          -1,
+          1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          -1.0,
+          -1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.872445583,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.518516302,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 2.767132759,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 1.704666018,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 1.199833512,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 1.199833512,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 1.199832797,
+            "timer": 1999
+          },
+          {
+            "frame": 200,
+            "correction": 1.197709202,
+            "timer": 1980
+          },
+          {
+            "frame": 240,
+            "correction": 1.14641273,
+            "timer": 1940
+          }
+        ]
+      },
+      {
+        "name": "native-positive-diagonal",
+        "stick": [
+          1,
+          -1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          1.0,
+          1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "native-positive-x-negative-y",
+        "stick": [
+          1,
+          1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          1.0,
+          -1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "native-negative-x-positive-y",
+        "stick": [
+          -1,
+          -1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          -1.0,
+          1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "horizontal-below-threshold",
+        "stick": [
+          0.54,
+          0
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.2778947368421053,
+          -0.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.872445583,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.518516302,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 2.767132759,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 1.704666018,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 1.199833512,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 1.199833512,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 1.199832797,
+            "timer": 1999
+          },
+          {
+            "frame": 200,
+            "correction": 1.197709202,
+            "timer": 1980
+          },
+          {
+            "frame": 240,
+            "correction": 1.14641273,
+            "timer": 1940
+          }
+        ]
+      },
+      {
+        "name": "horizontal-above-threshold",
+        "stick": [
+          0.56,
+          0
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.3115789473684211,
+          -0.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "vertical-below-threshold",
+        "stick": [
+          0,
+          -0.54
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.0,
+          0.2778947368421053
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.872445583,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.518516302,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 2.767132759,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 1.704666018,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 1.199833512,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 1.199833512,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 1.199832797,
+            "timer": 1999
+          },
+          {
+            "frame": 200,
+            "correction": 1.197709202,
+            "timer": 1980
+          },
+          {
+            "frame": 240,
+            "correction": 1.14641273,
+            "timer": 1940
+          }
+        ]
+      },
+      {
+        "name": "vertical-above-threshold",
+        "stick": [
+          0,
+          -0.56
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 2180,
+        "nativeRight": [
+          0.0,
+          0.3115789473684211
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949999809,
+            "timer": 2179
+          },
+          {
+            "frame": 6,
+            "correction": 3.949999809,
+            "timer": 2174
+          },
+          {
+            "frame": 20,
+            "correction": 3.949999809,
+            "timer": 2160
+          },
+          {
+            "frame": 60,
+            "correction": 3.949999809,
+            "timer": 2120
+          },
+          {
+            "frame": 179,
+            "correction": 3.949999809,
+            "timer": 2001
+          },
+          {
+            "frame": 180,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 181,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 200,
+            "correction": 3.949999809,
+            "timer": 2000
+          },
+          {
+            "frame": 240,
+            "correction": 3.949999809,
+            "timer": 2000
+          }
+        ]
+      },
+      {
+        "name": "positive-input-after-release-started",
+        "stick": [
+          1,
+          -1
+        ],
+        "frames": 240,
+        "initialCorrection": 3.95,
+        "initialTimer": 1999,
+        "nativeRight": [
+          1.0,
+          1.0
+        ],
+        "samples": [
+          {
+            "frame": 1,
+            "correction": 3.949989795,
+            "timer": 1998
+          },
+          {
+            "frame": 6,
+            "correction": 3.949659824,
+            "timer": 1993
+          },
+          {
+            "frame": 20,
+            "correction": 3.941937923,
+            "timer": 1979
+          },
+          {
+            "frame": 60,
+            "correction": 3.765482902,
+            "timer": 1939
+          },
+          {
+            "frame": 179,
+            "correction": 1.175970554,
+            "timer": 1820
+          },
+          {
+            "frame": 180,
+            "correction": 1.152365326,
+            "timer": 1819
+          },
+          {
+            "frame": 181,
+            "correction": 1.128979325,
+            "timer": 1818
+          },
+          {
+            "frame": 200,
+            "correction": 0.7314350008,
+            "timer": 1799
+          },
+          {
+            "frame": 240,
+            "correction": 0.2159175574,
+            "timer": 1759
+          }
+        ]
+      }
+    ]
+  }
 }

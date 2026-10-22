@@ -45,6 +45,52 @@ public sealed class Rac1OrdinaryCameraControllerTests
         }
     }
 
+    public static IEnumerable<object[]> NativeReleaseScenarios()
+    {
+        using var doc = ReadTrace();
+        return doc.RootElement.GetProperty("obstructionRelease").GetProperty("cases").EnumerateArray()
+            .Select(c => new object[] { c.GetProperty("name").GetString()! }).ToArray();
+    }
+
+    [Theory]
+    [MemberData(nameof(NativeReleaseScenarios))]
+    public void ClearLineRecovery_MatchesOriginalCollisionStageIncludingSignedInputGate(string scenario)
+    {
+        using var doc = ReadTrace();
+        var c = doc.RootElement.GetProperty("obstructionRelease").GetProperty("cases").EnumerateArray()
+            .Single(c => c.GetProperty("name").GetString() == scenario);
+        double correction = c.GetProperty("initialCorrection").GetDouble();
+        var stick = c.GetProperty("stick").EnumerateArray().Select(v => v.GetDouble()).ToArray();
+        var camera = new Rac1OrdinaryCameraController();
+        camera.Reset(Vec3.Zero, 0d);
+        var snapshot = camera.CaptureSnapshot();
+        var offset = new Vec3(-(Rac1OrdinaryCameraController.OrdinaryPreferredRadius - correction), 0, 0);
+        camera.RestoreSnapshot(snapshot with
+        {
+            CurrentRadius = Rac1OrdinaryCameraController.OrdinaryPreferredRadius - correction,
+            ObstructionCorrection = correction,
+            ObstructionReleaseTicks = c.GetProperty("initialTimer").GetInt32(),
+            Pipeline = snapshot.Pipeline! with
+            {
+                DesiredOffset = offset,
+                ActualOffset = offset,
+                PreviousDesiredEye = offset + new Vec3(0, 0, Rac1OrdinaryCameraController.OrdinaryEyeHeight),
+            },
+        });
+        var geometry = new EmptyGeometry();
+        var samples = c.GetProperty("samples").EnumerateArray().ToDictionary(s => s.GetProperty("frame").GetInt32());
+        for (int frame = 1; frame <= c.GetProperty("frames").GetInt32(); ++frame)
+        {
+            camera.Step(new(Vec3.Zero, stick[0], stick[1], default), geometry);
+            if (!samples.TryGetValue(frame, out var expected)) continue;
+            // Original float cosine approximation differs from the host's double
+            // recurrence by up to .000038 world units over these release traces.
+            Assert.True(Math.Abs(camera.ObstructionCorrection - expected.GetProperty("correction").GetDouble()) <= .00005d,
+                $"{scenario}/{frame}: correction {camera.ObstructionCorrection}, expected {expected.GetProperty("correction")}");
+            Assert.Equal(expected.GetProperty("timer").GetInt32(), camera.CaptureSnapshot().ObstructionReleaseTicks);
+        }
+    }
+
     [Fact]
     public void NativeNormalAndInvertedOptions_AreIndependentAndUseBootDefaults()
     {

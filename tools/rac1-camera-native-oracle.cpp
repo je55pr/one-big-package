@@ -35,6 +35,20 @@ int main(int argc,char**argv){
  auto tick=[&](){call(0x1eca70);call(0x2e9c28);std::memcpy(ram.data()+0x166dc0,ram.data()+C+0x30,16);};
  for(int i=0;i<300;i++)tick();
  std::cout<<std::setprecision(10);
+ if(argc==3 && std::strcmp(argv[2],"--obstruction-release")==0){
+  float rx,ry;int frames,timer;float correction;
+  if(!(std::cin>>rx>>ry>>frames>>correction>>timer))return 2;
+  real(0x13ca40,rx);real(0x13ca44,ry);
+  real(W+0x15c,6);
+  real(W+0x200,correction);word(W+0x204,timer);word(W+0x208,0);word(W+0x20c,0);
+  vec(W+0x130,-(6-correction),0,0);
+  for(int i=0;i<frames;i++){
+   call(0x2e7d20);
+   int16_t remaining;std::memcpy(&remaining,ram.data()+W+0x204,2);
+   std::cout<<f(W+0x200)<<' '<<remaining<<'\n';
+  }
+  return 0;
+ }
  float dx,dy,dz,rx,ry;int ox,oy,speed;
  while(std::cin>>dx>>dy>>dz>>rx>>ry>>ox>>oy>>speed){
   real(0x13f3d0,f(0x13f3d0)+dx);real(0x13f3d4,f(0x13f3d4)+dy);real(0x13f3d8,f(0x13f3d8)+dz);

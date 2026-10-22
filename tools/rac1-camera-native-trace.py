@@ -4,8 +4,9 @@
 Requires a local MIT native-port checkout and C++20 compiler (Zig's c++ driver is
 supported). Private EE memory/binaries stay under captures/. The output contains
 only derived numeric observations, input plans and code hashes, never retail bytes.
-Collision helpers return clear space; this proves the upright follow pipeline,
-not authored camera volumes or retail collision internals.
+Collision helpers return clear space. The release cases seed a pulled-in offset
+and execute the original collision stage, without claiming a physical wall trial
+or proving authored camera volumes or retail collision internals.
 """
 import argparse
 import hashlib
@@ -53,6 +54,29 @@ def plans():
 
 def condition(raw):
     return math.copysign(min(1.0, max(0.0, abs(raw) * 128 - 48) / 76), raw)
+
+
+def obstruction_release_plans():
+    cases = [
+        ('neutral', [0, 0]),
+        ('horizontal-negative', [-1, 0]),
+        ('horizontal-positive', [1, 0]),
+        ('vertical-up', [0, 1]),
+        ('vertical-down', [0, -1]),
+        ('native-negative-diagonal', [-1, 1]),
+        ('native-positive-diagonal', [1, -1]),
+        ('native-positive-x-negative-y', [1, 1]),
+        ('native-negative-x-positive-y', [-1, -1]),
+        ('horizontal-below-threshold', [.54, 0]),
+        ('horizontal-above-threshold', [.56, 0]),
+        ('vertical-below-threshold', [0, -.54]),
+        ('vertical-above-threshold', [0, -.56]),
+    ]
+    result = [dict(name=name, stick=stick, frames=240, initialCorrection=3.95, initialTimer=2180)
+              for name, stick in cases]
+    result.append(dict(name='positive-input-after-release-started', stick=[1, -1],
+                       frames=240, initialCorrection=3.95, initialTimer=1999))
+    return result
 
 
 def main():
@@ -107,9 +131,24 @@ def main():
         checkpoints = {1, 6, 12, 24, 36, 48, 60, 72, 90, 120, 180, len(rows)}
         case['samples'] = [dict(frame=i + 1, eye=row[:3], forward=row[3:6], manual=row[6:8], desiredOffset=row[8:11])
                            for i, row in enumerate(values) if i + 1 in checkpoints]
+    release_cases = obstruction_release_plans()
+    for case in release_cases:
+        x, up = map(condition, case['stick'])
+        case['nativeRight'] = [x, -up]
+        command = [x, -up, case['frames'], case['initialCorrection'], case['initialTimer']]
+        output = subprocess.run([str(program), str(image), '--obstruction-release'],
+                                input=' '.join(map(str, command)) + '\n', text=True,
+                                capture_output=True, check=True, timeout=30)
+        values = [list(map(float, line.split())) for line in output.stdout.splitlines()]
+        if len(values) != case['frames'] or any(len(row) != 2 or not all(map(math.isfinite, row)) for row in values):
+            raise ValueError('Incomplete or non-finite native obstruction release trace')
+        checkpoints = {1, 6, 20, 60, 179, 180, 181, 200, case['frames']}
+        case['samples'] = [dict(frame=i + 1, correction=row[0], timer=int(row[1]))
+                           for i, row in enumerate(values) if i + 1 in checkpoints]
     ranges = [('manualSelector', 0x2e89b0, 0x2e8bb8), ('turn', 0x2e8bb8, 0x2e8f40),
               ('follow', 0x2e8f40, 0x2e9010), ('aim', 0x2e9010, 0x2e9450),
               ('position', 0x2e9518, 0x2e9aa0), ('update', 0x2e9c28, 0x2e9cb8),
+              ('collision', 0x2e7d20, 0x2e8368),
               ('projection', 0x1f7848, 0x1f7b00)]
     report = dict(schema=1, authority='SCUS-97199 original NTSC-U', overlaySha256=overlay.OVERLAY_SHA256,
                   execution='Original MIPS camera_track and cam0_update in R5900 interpreter; clear collision helpers',
@@ -118,10 +157,16 @@ def main():
                   code=[dict(stage=name, start=hex(start), end=hex(end), sha256=hashlib.sha256(loaded.read(start, end-start)).hexdigest()) for name, start, end in ranges],
                   limits=['Synthetic upright player motion; no authored camera modifiers or collision-volume execution.',
                           'OBP uses double precision; the oracle uses PS2 float rounding and original math approximations.'],
-                  cases=cases)
+                  cases=cases,
+                  obstructionRelease=dict(
+                      execution='Original cam0_collide at 0x002e7d20; clear collision helpers; seeded post-contact state',
+                      initialState='Preferred radius 6, shortened desired offset, correction/timer below, clear release flag',
+                      limits='Tests unobstructed release from a seeded state, not contact creation or physical wall geometry.',
+                      cases=release_cases))
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(f"Original camera replay: {len(cases)} scenarios, {sum(len(c['samples']) for c in cases)} checkpoints")
+    print(f"Original collision release: {len(release_cases)} scenarios, {sum(len(c['samples']) for c in release_cases)} checkpoints")
 
 
 if __name__ == '__main__':

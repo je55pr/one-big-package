@@ -8,6 +8,7 @@ public sealed partial class Rac1OrdinaryCameraController
     public const int CollisionProbeCount = 8;
     public const double CollisionRadiusStep = .10000000149011612d;
     public const double CollisionEyeRadius = CollisionBaseRadius + CollisionRadiusStep * (CollisionProbeCount - 1);
+    private const double ObstructionReleaseInputThreshold = .30000001192092896d;
 
     // 0x002e5830: keep the height anchor between the floor and ceiling.
     private Vec3 ResolveHeightAnchor(IRac1CameraGeometry geometry, Vec3 player, out double targetHeight)
@@ -99,7 +100,11 @@ public sealed partial class Rac1OrdinaryCameraController
             OrdinaryPreferredRadius, _obstructionCorrection, _obstructionReleaseTicks);
         _obstructionCorrection = guard.RadialCorrection;
         _obstructionReleaseTicks = guard.ReleaseTimerTicks;
-        if (!blocked && (_obstructionReleaseTicks is > 0 and < 2000 || rightX < .3d && rightY < .3d))
+        // 0x002e7d20 compares signed native pad axes, not their magnitudes. The
+        // original collision-stage replay pins this asymmetric release gate;
+        // these axes are conditioned input before the camera inversion options.
+        if (!blocked && (_obstructionReleaseTicks is > 0 and < 2000 ||
+            rightX < ObstructionReleaseInputThreshold && rightY < ObstructionReleaseInputThreshold))
         {
             var release = Rac1CameraRecurrence.AdvanceClearLineRecovery(_obstructionCorrection, _obstructionReleaseTicks);
             _obstructionCorrection = release.RadialCorrection;

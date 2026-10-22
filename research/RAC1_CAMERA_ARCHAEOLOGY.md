@@ -35,6 +35,17 @@ ordinary Veldin witness; it does not prove all authored camera profiles. Origina
 PS2 rounding/initialization differs from the host by up to 0.016 world units in
 these checks. The old pulse captures did not establish their option values.
 
+The collision-stage release replay also calls original `0x002e7d20` directly
+from a seeded pulled-in state with clear geometry. Its 14 cases pin the signed
+stick comparisons: with correction 3.95 and timer 2180, native X=-1 recovers to
+2.767133 after 20 updates while X=+1 holds at 3.95; native Y has the same rule.
+This is a retail asymmetry, not a near-neutral magnitude test. The gate reads
+conditioned pad axes before the camera inversion options. Opposite directions,
+diagonals, both sides of the 0.3 threshold and an already-running release are
+covered through 240 updates, including the timer reaching 2000. These cases
+prove release from a seeded state; they do not simulate the preceding wall
+contact or close the geometry adapter's remaining differences.
+
 The source now owns growing sphere probes, bounded contact sliding, endpoint
 clearance and release; Godot supplies contact points and resolved sphere centres.
 Floor/ceiling height probes and the native spawn-facing basis are connected too.
