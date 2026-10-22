@@ -227,6 +227,8 @@ public partial class OBPGame
                 // and animation phase, but need no contact probes, sounds or AI
                 // until Ratchet enters their gameplay neighbourhood.
                 if (node.Source.NativeClassId == Rac1SeekerSession.ClassId &&
+                    _rac1Seekers!.Get(node.Source.InstanceIndex).NativeState is not
+                        (Rac1SeekerSession.HurtState or Rac1SeekerSession.DeathState or Rac1SeekerSession.ExplosionState) &&
                     node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
                         Rac1NovalisEnemySleepDistance * Rac1NovalisEnemySleepDistance)
                     continue;
@@ -511,7 +513,6 @@ public partial class OBPGame
         {
             var result = _rac1MobyRuntime.DispatchDamage<Rac1SeekerDamageResult>(damage);
             lethal = result.Lethal; sequence = result.Frame.Sequence;
-            if (lethal) node.ApplyState(_rac1MobyRuntime.Require(node.Source).EntityState);
         }
         else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId)
         {
@@ -523,7 +524,8 @@ public partial class OBPGame
             var result = _rac1MobyRuntime.DispatchDamage<Rac1Class1440Session.DamageResult>(damage);
             lethal = result.Lethal; sequence = result.Probe.Sequence;
         }
-        enemy.Animation.Select(sequence, 1);
+        if (node.Source.NativeClassId != Rac1SeekerSession.ClassId || enemy.Animation.Sequence != sequence)
+            enemy.Animation.Select(sequence, 1);
         Vector3 attackerPosition = _player!.GlobalPosition;
         if (damage.Source is { Kind: Rac1GameplayEntityKind.Projectile, NativeClassId: 121 } &&
             _rac1Projectiles.TryGetValue(damage.Source.RuntimeId, out var projectile))
@@ -537,7 +539,7 @@ public partial class OBPGame
         else if (damage.Source.Kind == Rac1GameplayEntityKind.Moby && _rac1Enemies.TryGetValue((int)damage.Source.RuntimeId, out var attacker))
             attackerPosition = attacker.Node.Root.GlobalPosition;
         NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);
-        enemy.Reaction = node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1SeekerSession.ClassId
+        enemy.Reaction = node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
             ? null : new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
         if (enemy.Reaction is not null) enemy.Motion!.SetFacing(enemy.Reaction.FacingYaw);
         enemy.Grounded = false;

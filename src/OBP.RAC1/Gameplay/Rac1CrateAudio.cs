@@ -42,7 +42,7 @@ public static class Rac1CrateAudio
         var programs = new Dictionary<int, Ps2SoundRenderer989.Rendered?>();
         var classOffsets = Rac1StaticClasses.ReadMobyTable(core).ToDictionary(row => row.OClass, row => row.AssetOffset);
         foreach (var entry in Rac1ClassSoundRemap.Read(core).Where(entry =>
-                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is 0 or 71 or >= 13 and <= 16 or 74 or 121 or 153 or 172 or 186 or 190 or 192 or 203 or 229 or 230 or 270 or 280 or 457 or 459 or 505 or 479 or 577 or 665 or 704 or 749 or 754 or 1440 ||
+                     admittedClasses?.Contains(entry.Key) ?? (entry.Key is 0 or 71 or >= 13 and <= 16 or 74 or 121 or 153 or 172 or 186 or 190 or 192 or 193 or 203 or 229 or 230 or 270 or 280 or 457 or 459 or 505 or 479 or 577 or 665 or 704 or 749 or 754 or 1440 ||
                          Rac1WeaponProfiles.Additional.Any(profile => profile.ModelClass == entry.Key) || Rac1BoltCrate.IsCrateClass(entry.Key))))
         {
             int cls = classOffsets[entry.Key];

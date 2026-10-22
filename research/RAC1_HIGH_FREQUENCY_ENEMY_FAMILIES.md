@@ -103,22 +103,47 @@ travel speed and animation sequence **1**. The observed transitions:
    with sequence **4** and its **180-game-tick** countdown. The original
    state 7 emits an explosion and removes the Seeker.
 
-**Implemented now:** engine-neutral `Rac1SeekerSession` with those
-native transitions, source PVar edits, player-wrench/projectile damage
-dispatch, and Godot animated/colliding presentation and chase motion.
-The source frame rates for sequence **1, 3 and 4** are valid and checked
-on both planets. Original clips **2** and **8** contain unsupported
-infinite/zero frame-rate fields, so the Godot animation baker rejects
-those specific clips rather than constructing fake timing.
+**Encounter implementation (22 October, follow-up):** the two-level Godot
+host runs the original Seeker state flow, including native-origin 3 HP,
+7.75-unit/sec source movement, 1.4/1.9 chase hysteresis, 6-unit pursuit
+transition, source height steering, native angular acceleration/drag and
+180-tick explosion countdown. Planar chase can use a decoy target while
+hovering still uses Ratchet's actual height. Source sound remaps are
+decoded and sequence cues play through the original 989snd audio decoder.
 
-**Still incomplete:** exact steering acceleration from the PS2 common
-angle integrator, source frame-scale calibration, native player-impact
-damage query, knockback/fatal falling, sound and explosion effects, and
-the original target/decoy or group-reset interactions. Host movement
-sweep and its 42-unit sleeping optimisation are explicit engine
-adapters. Death currently terminalizes the Moby without recreating
-the original aerial knockback/debris. This is **partial functional
-coverage**, not a declaration of full retail fidelity.
+- **Attacks:** native state 7 invokes the common explosion 0x25e450 with
+  a **2-unit radius**, **1 native damage** and its original 0x810001
+  descriptor. The Godot collision/LOS adapter checks Ratchet, placed
+  ordinary crates, class-505 explosive crates and other Seekers. Resulting
+  damage events use the existing authoritative consumer and transport,
+  not direct wallet/HP hacks.
+- **Damage:** weapon and bomb hits preserve the native Blaster damage-kind
+  rule and original PVar health field; nonlethal hits enter state 5,
+  continue ticking the source fuse and recover to 4 when knockback
+  settles. Lethal hits enter state 6 and persist for the actual
+  host-resolved floor impact before source-style cart-burst removal.
+- **Presentation:** source Seeker animations and embedded sound cues are
+  decoded per level; hurt/fatal state changes **preserve the preceding
+  clip**, as the original update does not directly blend to a new clip
+  in those states. The shared 1192/122 bomb particle renderer adapts
+  source-style detonation and its impact burst without inventing new
+  models or editing original assets. The Godot host sleeps distant
+  pursuit safely but keeps in-progress hurt/fatal/exploding actors awake.
+- **Regression:** exact original PVars and functional chase, state5
+  recovery, fatal floor-impact removal, timed detonation while hurt,
+  explosion descriptor/Seeker chain damage and authored clip contracts
+  are executable tests; both original retail levels load in Godot with
+  81 and 89 Seekers respectively.
+
+**Fidelity boundary:** the encounter is now functionally hosted from
+spawn through attack/kill/death, but the original PS2 common
+`mine_fall` and 0x258830 collision solvers, source 0x213928 hit-response
+classification, source particle tuning, voice-slot lifetime management,
+group-target reset, and the decoy/host LOS query are not yet bit-exact.
+The 42-unit Godot AI sleeping radius is a host performance adaptation.
+Headless runtime loading and unit tests do not replace an interactive
+combat playtest. This is **playable encounter coverage**, not a claim
+of exact PS2 equivalence.
 
 Host smoke verification: Gaspar registers **81** animated/colliding
 original Seekers and Quartu registers **89**, using the original
