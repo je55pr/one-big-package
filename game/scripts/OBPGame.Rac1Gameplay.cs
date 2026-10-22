@@ -235,6 +235,7 @@ public partial class OBPGame
         TickRac1VeldinEnvironmentalDeath();
         if (_rac1Nanotech.Probe().IsDead)
         {
+            AbortRac1MetropolisTaxiRide();
             ResetRac1WrenchHost();
             ShowRac1CombatRetry();
             return;

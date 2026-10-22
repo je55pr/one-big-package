@@ -152,6 +152,12 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Approaching, session.PhaseOf(919));
         session.TickTraffic(trigger, tick);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
+        // Cancelling a different cab must not rewind this already docked actor.
+        var shuttle = session.Stops.Single(s => s.InstanceIndex == 962);
+        Assert.True(session.TryBoard(shuttle.Position));
+        Assert.NotNull(session.Tick(tick));
+        session.AbortRide();
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
         Assert.True(session.TryBoard(taxi.Position));
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Carrying, session.PhaseOf(919));
         var reached = session.Tick(2 * tick)!;
@@ -159,6 +165,9 @@ public sealed class Rac1MetropolisTaxiTests
         session.CompleteArrival();
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination, session.PhaseOf(919));
         session.TickTraffic(reached.Arrival, 2);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination, session.PhaseOf(919));
+        session.TickTraffic(new Rac1TaxiPoint(
+            reached.Arrival.X + 15, reached.Arrival.Y, reached.Arrival.Z), 0);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination, session.PhaseOf(919));
         session.TickTraffic(new Rac1TaxiPoint(0, 0, 0), 0);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Departing, session.PhaseOf(919));
@@ -201,6 +210,45 @@ public sealed class Rac1MetropolisTaxiTests
     }
 
     [Fact]
+    public void InterruptedTaxiRideRearmsAuthoredStopAndRejectsInvalidPositions()
+    {
+        var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == 919);
+
+        Assert.Null(session.FindBoardable(new Rac1TaxiPoint(double.NaN, 0, 0)));
+        Assert.Null(session.FindBoardable(new Rac1TaxiPoint(0, double.PositiveInfinity, 0)));
+        Assert.Null(session.FindBoardable(new Rac1TaxiPoint(0, 0, double.NegativeInfinity)));
+        Assert.True(session.TryBoard(stop.Position));
+        Assert.NotNull(session.Tick(0.01));
+        Assert.True(session.IsRiding);
+
+        session.AbortRide();
+        Assert.False(session.IsRiding);
+        Assert.Null(session.Tick(0));
+        Assert.True(session.TryBoard(stop.Position));
+        Assert.Equal(0, session.Tick(0)!.Progress);
+        session.Reset();
+        Assert.False(session.IsRiding);
+        Assert.True(session.TryBoard(stop.Position));
+    }
+
+    [Fact]
+    public void Class1012NativeFifteenFrameResetDebouncesReboarding()
+    {
+        var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == 961);
+        Assert.True(session.TryBoard(stop.Position));
+        Assert.True(session.Tick(10)!.JustArrived);
+        session.CompleteArrival();
+        Assert.False(session.IsRiding);
+
+        session.Tick(14d / 60d);
+        Assert.Null(session.FindBoardable(stop.Position));
+        session.Tick(1d / 60d);
+        Assert.Same(stop, session.FindBoardable(stop.Position));
+    }
+
+    [Fact]
     public void RetailKerwanPvarsSelectExactOutboundSplines()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
@@ -217,6 +265,11 @@ public sealed class Rac1MetropolisTaxiTests
             (961, 0x94, 59, 75, new(263.27188, 34.271873, 237.42558)),
             (962, 0x94, 67, 150, new(118.35907, 65.84171, 78.461815)),
         };
+
+        // Native state-0 +0x80 side: initial path selector
+        // comes from PVar+0x90+(side*4), not always the authored Moby origin.
+        Assert.Equal(0, session.Stops.Single(s => s.InstanceIndex == 961).NativeInitialSide);
+        Assert.Equal(1, session.Stops.Single(s => s.InstanceIndex == 962).NativeInitialSide);
 
         foreach (var p in Placements)
         {

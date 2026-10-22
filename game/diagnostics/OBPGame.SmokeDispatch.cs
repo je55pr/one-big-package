@@ -26,11 +26,12 @@ internal static class WorldSmokeHarness
         Func<Task>? NovalisBirdbot = null,
         Func<Task>? NovalisMusic = null,
         Func<Task>? Weapons = null,
-        Func<Task>? PlayerAudio = null);
+        Func<Task>? PlayerAudio = null,
+        Func<Task>? MetropolisTaxi = null);
 
     internal static bool IsRequested(CommandLineArgs args) =>
         args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
-        args.Rac1VeldinPlaySmoke ||
+        args.Rac1MetropolisTaxiSmoke || args.Rac1VeldinPlaySmoke ||
         args.Rac1MovementContactSmoke ||
         args.Rac1CombatContractSmoke ||
         args.Rac1WrenchSmoke ||
@@ -76,6 +77,8 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.NovalisBirdbot?.Invoke();
             if (args.Rac1NovalisMusicSmoke)
                 _ = entrypoints.NovalisMusic?.Invoke();
+            if (args.Rac1MetropolisTaxiSmoke)
+                _ = entrypoints.MetropolisTaxi?.Invoke();
             if (args.Rac1WeaponsSmoke)
                 _ = entrypoints.Weapons?.Invoke();
             if (args.Rac1PlayerAudioSmoke)
@@ -129,6 +132,7 @@ public partial class OBPGame
                 RunRac1NovalisBirdbotSmokeAsync,
                 RunRac1NovalisMusicSmokeAsync,
                 RunRac1WeaponsSmokeAsync,
-                RunRac1PlayerAudioSmokeAsync));
+                RunRac1PlayerAudioSmokeAsync,
+                RunRac1MetropolisTaxiSmokeAsync));
     }
 }

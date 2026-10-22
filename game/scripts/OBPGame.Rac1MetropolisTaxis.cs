@@ -16,29 +16,68 @@ public partial class OBPGame
     private readonly Dictionary<int, StaticBody3D> _rac1TaxiCollisionBodies = [];
     private RuntimeWorldScene.DynamicObjectNode? _rac1FlyingTaxi;
     private Vector3 _rac1FlyingTaxiOrigin;
+    private Vector3 _rac1TaxiBoardingPosition;
     private Vector3 _rac1TaxiRiderOffset;
     private Node.ProcessModeEnum _rac1TaxiPreviousPlayerMode;
 
-    private void ResetRac1MetropolisTaxis()
+    /// <summary>
+    /// Cancel an in-flight ride before normal death/retry/world transition
+    /// processing. Collision and movement are restored together: leaving the
+    /// PlayerHost process disabled would strand Ratchet after a reset.
+    /// </summary>
+    private void AbortRac1MetropolisTaxiRide()
     {
+        var riding = _rac1MetropolisTaxis?.Riding;
+        if (_rac1FlyingTaxi is null && riding is null)
+            return;
+
+        if (riding is not null &&
+            _rac1TaxiCollisionBodies.TryGetValue(riding.InstanceIndex, out var hull) &&
+            IsInstanceValid(hull))
+            hull.CollisionLayer = 1;
+
         if (_player is { } player && IsInstanceValid(player) && _rac1FlyingTaxi is not null)
         {
-            player.VisualRoot.Visible = true;
             player.ProcessMode = _rac1TaxiPreviousPlayerMode;
+            player.VisualRoot.Visible = true;
+            Vector3 exit = _rac1TaxiBoardingPosition;
+            // The authored boarding dock is preferable to a moving vehicle or
+            // a far-end waypoint, neither of which guarantees walkable ground.
+            if (player.IsInsideTree() &&
+                TryResolveRac1TaxiLanding(player, exit, out var supported))
+                exit = supported;
+            player.ApplyRac1TaxiArrival(new RuntimeSpawn(
+                -exit.X, exit.Y, exit.Z, player.Rac1CurrentYaw));
         }
-        if (_rac1FlyingTaxi is { } oldTaxi && IsInstanceValid(oldTaxi.Root))
-            oldTaxi.Root.GlobalPosition = _rac1FlyingTaxiOrigin;
 
-        if (_rac1MetropolisTaxis?.Riding is { } riding &&
-            _rac1TaxiCollisionBodies.TryGetValue(riding.InstanceIndex, out var activeHull) &&
-            IsInstanceValid(activeHull))
-            activeHull.CollisionLayer = 1;
-
+        _rac1MetropolisTaxis?.AbortRide();
+        // A second taxi may be approaching or parked at its destination.
+        // Only rewind the interrupted actor, not the rest of the population.
+        if (riding is { } stop &&
+            _rac1TaxiNodes.TryGetValue(stop.InstanceIndex, out var node) &&
+            IsInstanceValid(node.Root))
+            node.Root.GlobalPosition = FromTaxiPoint(
+                stop.ApproachPath is { Count: > 1 }
+                    ? stop.ApproachPath[0] : stop.Position);
         _rac1FlyingTaxi = null;
-        _rac1MetropolisTaxis?.Reset();
-        _rac1MetropolisTaxis = null;
-        _rac1TaxiNodes.Clear();
+    }
+
+    private void ReleaseRac1MetropolisTaxiHulls()
+    {
+        foreach (var hull in _rac1TaxiCollisionBodies.Values)
+        {
+            if (IsInstanceValid(hull))
+                hull.QueueFree();
+        }
         _rac1TaxiCollisionBodies.Clear();
+    }
+
+    private void ResetRac1MetropolisTaxis()
+    {
+        AbortRac1MetropolisTaxiRide();
+        _rac1MetropolisTaxis = null;
+        ReleaseRac1MetropolisTaxiHulls();
+        _rac1TaxiNodes.Clear();
     }
 
     private void ConfigureRac1MetropolisTaxis(RuntimeWorld world, RuntimeWorldScene.Result result)
@@ -54,6 +93,7 @@ public partial class OBPGame
             {
                 GD.PrintErr($"[rac1-taxi] missing rendered taxi i{stop.InstanceIndex}; disabling all taxis");
                 _rac1MetropolisTaxis = null;
+                ReleaseRac1MetropolisTaxiHulls();
                 _rac1TaxiNodes.Clear();
                 return;
             }
@@ -77,8 +117,8 @@ public partial class OBPGame
             {
                 GD.PrintErr($"[rac1-taxi] i{stop.InstanceIndex} has no collision mesh; disabling taxis");
                 _rac1MetropolisTaxis = null;
+                ReleaseRac1MetropolisTaxiHulls();
                 _rac1TaxiNodes.Clear();
-                _rac1TaxiCollisionBodies.Clear();
                 return;
             }
             node.Root.AddChild(body);
@@ -130,7 +170,11 @@ public partial class OBPGame
         };
         if (!pressed || _mode != Mode.World || _rac1MetropolisTaxis is not { } taxis ||
             _player is not { } player || !IsInstanceValid(player) ||
-            _rac1Nanotech.Probe().IsDead || PauseMenuOpen || ControllerSettingsOpen || Rac1PlanetMapOpen || QuickSelectOpen || _args.CaptureFrame is not null)
+            _rac1Nanotech.Probe().IsDead || !player.Rac1GameplayAlive ||
+            player.Scripted || player.DevelopmentControls.FlyEnabled ||
+            player.Rac1RemoteControlActive || GetTree().Paused ||
+            PauseMenuOpen || ControllerSettingsOpen || Rac1PlanetMapOpen ||
+            QuickSelectOpen || _args.CaptureFrame is not null)
             return false;
 
         if (!taxis.TryBoard(ToTaxiPoint(player.GlobalPosition)))
@@ -139,6 +183,7 @@ public partial class OBPGame
         var boarding = taxis.Riding!;
         _rac1FlyingTaxi = _rac1TaxiNodes[boarding.InstanceIndex];
         _rac1FlyingTaxiOrigin = _rac1FlyingTaxi.Root.GlobalPosition;
+        _rac1TaxiBoardingPosition = FromTaxiPoint(boarding.Position);
         var relative = player.GlobalPosition - _rac1FlyingTaxiOrigin;
         _rac1TaxiRiderOffset = new Vector3(
             Mathf.Clamp(relative.X, -1.4f, 1.4f),
@@ -174,10 +219,15 @@ public partial class OBPGame
         }
 
         Rac1TaxiFlight? flight = taxis.Tick(delta);
-        if (flight is null || _rac1FlyingTaxi is not { } taxi) return;
+        if (flight is null) return;
+        if (_rac1FlyingTaxi is not { } taxi)
+        {
+            AbortRac1MetropolisTaxiRide();
+            return;
+        }
         if (!IsInstanceValid(taxi.Root))
         {
-            ResetRac1MetropolisTaxis();
+            AbortRac1MetropolisTaxiRide();
             return;
         }
 
@@ -193,8 +243,8 @@ public partial class OBPGame
         // Class-1012 is still a provisional return shuttle.
         if (flight.From.ApproachPath is not { Count: > 1 })
             taxi.Root.GlobalPosition = _rac1FlyingTaxiOrigin;
-        _rac1TaxiCollisionBodies[flight.From.InstanceIndex].CollisionLayer = 1;
-
+        // Keep the active hull out of the landing ray. Its top surface
+        // is not evidence of a permanent walkable destination.
         // A path endpoint is NOT proof of walkable ground. Retail class-1012
         // taxis have additional native path/state segments not yet recovered:
         // two currently imported outbound splines end in mid-air. Never drop
@@ -209,6 +259,10 @@ public partial class OBPGame
             GD.PrintErr($"[rac1-taxi] route i{flight.From.InstanceIndex} has no " +
                 $"supported landing at {destination}; returned to boarding dock");
         }
+
+        if (_rac1TaxiCollisionBodies.TryGetValue(flight.From.InstanceIndex, out var hull) &&
+            IsInstanceValid(hull))
+            hull.CollisionLayer = 1;
 
         player.ProcessMode = _rac1TaxiPreviousPlayerMode;
         player.VisualRoot.Visible = true;
@@ -264,7 +318,15 @@ public partial class OBPGame
         if (taxis.IsRiding) return "Taxi: in flight";
         var hero = ToTaxiPoint(player.GlobalPosition);
         var near = taxis.FindBoardable(hero);
-        if (near is not null) return "Taxi: T / Triangle to ride";
+        if (near is not null)
+        {
+            // Class 816 requests retail HUD message 0xbc9. Class 1012
+            // selects among 0xbcb/0xbcd/0xbce/0xbcf depending on side.
+            // Text is source decoded; input admission remains host policy.
+            int message = near.NativeClassId == 816 ? 0xbc9 :
+                near.NativeInitialSide == 0 ? 0xbce : 0xbcf;
+            return Rac1RetailUiAssets.Text(message, "Taxi: T / Triangle to ride");
+        }
         var inbound = taxis.Stops.FirstOrDefault(stop =>
             stop.ApproachTrigger?.Contains(hero) == true &&
             taxis.PhaseOf(stop.InstanceIndex) is

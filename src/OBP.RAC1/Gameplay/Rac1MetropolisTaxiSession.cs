@@ -23,7 +23,8 @@ public sealed record Rac1MetropolisTaxiStop(
     IReadOnlyList<Rac1TaxiPoint>? ReturnPath = null,
     IReadOnlyList<Rac1TaxiPoint>? ApproachPath = null,
     IReadOnlyList<Rac1TaxiPoint>? DeparturePath = null,
-    Rac1TaxiTriggerVolume? ApproachTrigger = null);
+    Rac1TaxiTriggerVolume? ApproachTrigger = null,
+    int NativeInitialSide = -1);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -351,9 +352,26 @@ public sealed class Rac1MetropolisTaxiSession
                     new Rac1TaxiPoint(cx, cz, cy), new Rac1TaxiPoint(hx, hz, hy));
             }
 
+            // Class 1012 state 0 reads the authored starting end from
+            // PVar+0x80. Its first selected route is +0x90+(side*4).
+            // Retain the source-dock host placement for now: i961's native
+            // initial end is airborne without a supported landing surface.
+            int nativeSide = -1;
+            if (route.Class == 1012)
+            {
+                var pvar = obj.NativePayloads?
+                    .SingleOrDefault(p => p.Format == "rac1-pvar")?.Data;
+                if (pvar is { Length: > 0x80 })
+                {
+                    nativeSide = pvar[0x80];
+                    if (nativeSide is not (0 or 1))
+                        return null;
+                }
+            }
+
             stops.Add(new Rac1MetropolisTaxiStop(
                 route.Index, route.Class, position, outbound, route.Label, returning,
-                approach, departure, trigger));
+                approach, departure, trigger, nativeSide));
         }
 
         return new Rac1MetropolisTaxiSession(stops);
@@ -406,7 +424,7 @@ public sealed class Rac1MetropolisTaxiSession
                 case TrafficPhase.ParkedAtDestination:
                     position = stop.OutboundPath[^1];
                     // Native state 6 waits until Ratchet is 15 units away.
-                    if (position.DistanceSquared(hero) >= 15d * 15d)
+                    if (position.DistanceSquared(hero) > 15d * 15d)
                     {
                         phase = TrafficPhase.Departing;
                         elapsed = 0;
@@ -444,7 +462,9 @@ public sealed class Rac1MetropolisTaxiSession
 
     public Rac1MetropolisTaxiStop? FindBoardable(Rac1TaxiPoint player)
     {
-        if (IsRiding || _boardingCooldown > 0) return null;
+        if (IsRiding || _boardingCooldown > 0 ||
+            !double.IsFinite(player.X) || !double.IsFinite(player.Y) ||
+            !double.IsFinite(player.Z)) return null;
         return _stops
             .Where(stop => stop.OutboundPath.Count >= 2 &&
                 (stop.ApproachPath is not { Count: > 1 } ||
@@ -466,12 +486,26 @@ public sealed class Rac1MetropolisTaxiSession
         return true;
     }
 
-    public void Reset()
+    /// <summary>
+    /// Fail-safe cancellation for host interruption, death or world teardown.
+    /// Native taxi camera/player detachment has not yet been ported, so this
+    /// restores the session to its authored admission state without a cooldown.
+    /// </summary>
+    public void AbortRide()
     {
+        var cancelled = _riding;
         _riding = null;
         _elapsed = 0;
         _arrivalReported = false;
         _boardingCooldown = 0;
+        // Do not rewind a different cab while cancelling a passenger ride.
+        if (cancelled is { ApproachPath.Count: > 1 })
+            _traffic[cancelled.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
+    }
+
+    public void Reset()
+    {
+        AbortRide();
         foreach (var stop in _stops.Where(s => s.ApproachPath is { Count: > 1 }))
             _traffic[stop.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
     }
@@ -511,11 +545,14 @@ public sealed class Rac1MetropolisTaxiSession
 
     public void CompleteArrival()
     {
-        if (_riding is { } stop && _traffic.ContainsKey(stop.InstanceIndex))
+        Rac1MetropolisTaxiStop? stop = _riding;
+        if (stop is not null && _traffic.ContainsKey(stop.InstanceIndex))
             _traffic[stop.InstanceIndex] = (TrafficPhase.ParkedAtDestination, 0);
         _riding = null;
         _elapsed = 0;
         _arrivalReported = false;
-        _boardingCooldown = 1.25;
+        // Native class-1012 state 3 starts frame_scale_i(15) when a
+        // route ends. Class-816's 1.25-second debouncing is still host policy.
+        _boardingCooldown = stop?.NativeClassId == 1012 ? 15d / 60d : 1.25;
     }
 }

@@ -119,3 +119,59 @@ recurrence from `lv3_2d3918_l3`, complete class-1012 two-ended
 shuttle states, recover taxi sounds/animation, and connect taxi
 availability to Kerwan mission progress. No PCSX2 required for
 the native-code/level-data archaeology.
+
+
+## 22 October 2026 retail state-machine follow-up
+
+The authorized NTSC-U (SCUS-97199) Kerwan level-3 overlay was traced
+with the native overlay translator. This records semantics and instruction
+addresses only, never original executable bytes or generated native payloads.
+
+**Class 816 updater 0x002d3198:** Native states 0..7 cover: starting
+route selection and mission-dependent actor retirement (0); scanning five
+PVar cuboid selectors at +0x80..+0x90 via point_in_box (1); inbound
+approach at +0x94 (2); yaw/focus/HUD interaction with text ID 0x0bc9,
+player-state 8, button bit 0x10, and hero_cam_target_set (3);
+cutscene handoff predicate (4); outbound +0xa8 (5); strictly greater than
+15-unit 3D clearance or 5-unit 2D clearance depending on selector (6);
+and exit +0xbc followed by admission reset (7). Position and heading
+are updated with seek helpers and attach_frame_set.
+
+**Class 1012 updater 0x002dccc0:** Native states 0..3 cover initial
+path selection based on the authored +0x80 side (0), proximity/focus and
+two-ended interaction (1), the player/camera handoff predicate (2), and
+the selected spline traversal before a 15-frame reset delay (3).
+Retail i961 initial side is 0 and i962 initial side is 1; the native
+first path is +0x90 + 4 * side, so i961 first selects path 65, not
+the path-59 source-dock approximation in OBP. HUD helper 0x002dcbc8
+requests IDs 0x0bce, 0x0bcf, 0x0bcb, 0x0bcd depending on side and
+interaction. The focus helper is 0x002dcb70.
+
+**Motion helper 0x002d3918:** PVar +0x64 is a waypoint index, +0x60
+a continuous speed. Distance to next waypoint governs advancement;
+seek_1d updates speed, a normalized displacement advances the Moby,
+and yaw_seek clamps orientation. The original movement is NOT
+fixed-rate linear interpolation of waypoint samples.
+
+**Feature-branch changes:** Native initial-side values are preserved;
+class-1012 re-admission uses the source-backed 15-frame timer;
+class-816 clearance uses a strict greater-than-15 test; native HUD
+message IDs resolve through the attached disc's text cache when present.
+Interrupted flights safely restore player physics, hull collision and
+authored placement, and do not rewind unrelated taxis. Taxi collision
+children are released on teardown/partial configuration failure, and
+the exit ray does not use the moving taxi as walkable ground.
+
+**Godot route gate:** tools/rac1-metropolis-taxi-smoke.ps1 passed with
+exit code 0 using retail Level 3. It staged Ratchet in cuboid 10, saw
+i919 dock, used the real taxi boarding handler, completed the authored
+outbound route and a grounded dismount, then boarded i962, aborted its
+mid-flight ride, reboarded, and completed its safe fallback round trip.
+This is staged player placement, NOT ordinary walk-up traversal.
+
+**Still provisional:** native player focus and button admission,
+camera/attachment handoff, mission gates, native speed constants,
+class-1012 two-ended arrival/grounding and precise native sound or
+animation timing. The source-safe host keeps T/Triangle boarding, deck
+offset and a 60-samples/s interpolation, plus an automatic class-1012
+return where authentic endpoints lack supported landing collision.
