@@ -267,8 +267,15 @@ public partial class OBPGame : Node3D
         }
     }
 
-    public override void _ExitTree() =>
+    public override void _ExitTree()
+    {
+        // Godot can exit without visiting the normal world-switch teardown path.
+        // Stop playback while the audio hosts and their Godot players are still valid.
+        _worldHost.Unload(releaseAudioImmediately: true);
+        ResetRac1PlayerAudio(freeImmediately: true);
+        ResetRac1WeaponAudio(freeImmediately: true);
         ApplicationLifecycle.ReportRootExit(Name);
+    }
 
     /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
     private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)

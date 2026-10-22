@@ -13,10 +13,10 @@ public partial class OBPGame
     private int _rac1TaunterSoundStep, _rac1TaunterSoundTicks;
     private readonly List<(ulong Tick, int Class, int Sound, bool Loop)> _rac1WeaponSoundTrace = [];
 
-    private void ResetRac1WeaponAudio()
+    private void ResetRac1WeaponAudio(bool freeImmediately = false)
     {
-        _rac1WeaponLoopAudio.StopAll(); _rac1WeaponLoop = null;
-        _rac1TaunterAudio.StopAll();
+        _rac1WeaponLoopAudio.StopAll(freeImmediately); _rac1WeaponLoop = null;
+        _rac1TaunterAudio.StopAll(freeImmediately);
         _rac1TaunterSoundTicks = _rac1TaunterSoundStep = 0;
         _rac1WeaponSoundTrace.Clear();
     }

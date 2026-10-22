@@ -182,10 +182,10 @@ public sealed class RuntimeAudioHost
     public void StopLevelAudio() => StopNodes(_levelPlayers);
 
     /// <summary>Stop and release every player owned by this adapter.</summary>
-    public void StopAll()
+    public void StopAll(bool freeImmediately = false)
     {
-        StopNodes(_levelPlayers);
-        StopNodes(_effectPlayers);
+        StopNodes(_levelPlayers, freeImmediately);
+        StopNodes(_effectPlayers, freeImmediately);
         _diagnostics.Clear();
     }
 
@@ -307,7 +307,7 @@ public sealed class RuntimeAudioHost
         }
     }
 
-    private static void StopNodes(List<Node> nodes)
+    private static void StopNodes(List<Node> nodes, bool freeImmediately = false)
     {
         foreach (var node in nodes.ToArray())
         {
@@ -317,13 +317,20 @@ public sealed class RuntimeAudioHost
                 {
                     case AudioStreamPlayer twoD:
                         twoD.Stop();
+                        twoD.Stream = null;
                         break;
                     case AudioStreamPlayer3D threeD:
                         threeD.Stop();
+                        threeD.Stream = null;
                         break;
                 }
 
-                node.QueueFree();
+                // Deferred freeing is appropriate during normal gameplay, but Godot
+                // will not process another deferred frame while tearing down its tree.
+                if (freeImmediately)
+                    node.Free();
+                else
+                    node.QueueFree();
             }
         }
 
