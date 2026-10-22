@@ -13,6 +13,7 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private readonly HashSet<int> _rac1CollectedNovalisGoldBolts = [];
+    private string? _rac1CampaignRestoreWarning;
     private bool _rac1CampaignPersistenceInitialized;
     private Rac1CampaignSessionPersistence _rac1CampaignPersistence =
         Rac1CampaignSessionPersistence.Ephemeral();
@@ -36,7 +37,12 @@ public partial class OBPGame
             _rac1CampaignPersistence = Rac1CampaignSessionPersistence.Ephemeral();
         }
 
-        Rac1CampaignRestoreResult restored = _rac1CampaignPersistence.Restore();
+        Rac1CampaignRestoreAttempt attempt = _rac1CampaignPersistence.RestoreWithRecovery();
+        _rac1CampaignPersistence = attempt.Persistence;
+        _rac1CampaignRestoreWarning = attempt.Warning;
+        if (_rac1CampaignRestoreWarning is not null)
+            GD.PushWarning($"[rac1-campaign] {_rac1CampaignRestoreWarning}");
+        Rac1CampaignRestoreResult restored = attempt.Restored;
 
         _rac1CampaignSession = new Rac1CampaignRuntimeSession(
             restored.Campaign,

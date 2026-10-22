@@ -20,7 +20,7 @@ public static class Rac1CampaignSaveFile
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Campaign save path is required.", nameof(path));
 
-        if (!File.Exists(path))
+        if (!File.Exists(path) && !Directory.Exists(path))
             return Rac1CampaignSavePolicy.RestoreOrDefault(null);
 
         using FileStream stream = File.OpenRead(path);

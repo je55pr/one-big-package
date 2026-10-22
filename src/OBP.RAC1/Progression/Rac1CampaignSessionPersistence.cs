@@ -1,3 +1,4 @@
+using System.Text.Json;
 using OBP.RAC1.Gameplay;
 
 namespace OBP.RAC1.Progression;
@@ -7,6 +8,11 @@ namespace OBP.RAC1.Progression;
 /// sessions are intentionally ephemeral; callers must explicitly construct a
 /// persistent session to read or write host save state.
 /// </summary>
+public sealed record Rac1CampaignRestoreAttempt(
+    Rac1CampaignSessionPersistence Persistence,
+    Rac1CampaignRestoreResult Restored,
+    string? Warning);
+
 public sealed class Rac1CampaignSessionPersistence
 {
     private readonly string? _savePath;
@@ -33,6 +39,27 @@ public sealed class Rac1CampaignSessionPersistence
         return Enabled
             ? Rac1CampaignSaveFile.LoadOrDefault(_savePath!)
             : Rac1CampaignSavePolicy.RestoreOrDefault(null);
+    }
+
+    /// <summary>
+    /// Recover from host-save corruption without replacing the original file.
+    /// The fallback cannot write to the damaged path during this session.
+    /// </summary>
+    public Rac1CampaignRestoreAttempt RestoreWithRecovery()
+    {
+        try
+        {
+            return new Rac1CampaignRestoreAttempt(this, Restore(), null);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidDataException
+            or NotSupportedException or IOException or UnauthorizedAccessException)
+        {
+            return new Rac1CampaignRestoreAttempt(
+                Ephemeral(),
+                Rac1CampaignSavePolicy.RestoreOrDefault(null),
+                $"R&C1 campaign save could not be restored ({ex.GetType().Name}: {ex.Message}). " +
+                "The original file is unchanged. This session uses fresh, unsaved progress.");
+        }
     }
 
     public bool PersistIfEnabled(
