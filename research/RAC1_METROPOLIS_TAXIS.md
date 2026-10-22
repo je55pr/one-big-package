@@ -90,10 +90,11 @@ retains its model but does not allow boarding it.
   cleanup are handled on the host.
 
 **Host-created approximations, not retail facts:** 5.5-unit boarding
-distance after arrival, T/Triangle confirmation, 60 spline samples per
-second (not the recovered native seek_1d recurrence), linear interpolation
-between samples, deck offset and yaw smoothing, character process
-suspension, collision-based exit and placeholder camera/audio. Retail
+distance after arrival, T/Triangle confirmation, deck offset and yaw
+smoothing, character process suspension, collision-based exit and
+placeholder camera/audio. Source-enriched paths now use native waypoint
+seeking; synthetic fixtures without retail PVars keep the old 60-samples/s
+linear interpolation for deterministic fallback coverage. Retail
 HUD message 0xbc9 and the source camera attachment/handoff are still
 not implemented. Quest-dependent Moby retirement/gating is also missing.
 
@@ -114,9 +115,9 @@ not implemented. Quest-dependent Moby retirement/gating is also missing.
 ## Next recovery targets
 
 Next: replace the host key confirmation with source HUD/camera
-handoff and player-state gating, port the native speed/acceleration
-recurrence from `lv3_2d3918_l3`, complete class-1012 two-ended
-shuttle states, recover taxi sounds/animation, and connect taxi
+handoff and player-state gating, validate the native yaw and audio
+side-effects of `lv3_2d3918_l3`, complete class-1012 two-ended
+shuttle states, recover taxi animations, and connect taxi
 availability to Kerwan mission progress. No PCSX2 required for
 the native-code/level-data archaeology.
 
@@ -170,8 +171,38 @@ mid-flight ride, reboarded, and completed its safe fallback round trip.
 This is staged player placement, NOT ordinary walk-up traversal.
 
 **Still provisional:** native player focus and button admission,
-camera/attachment handoff, mission gates, native speed constants,
-class-1012 two-ended arrival/grounding and precise native sound or
-animation timing. The source-safe host keeps T/Triangle boarding, deck
-offset and a 60-samples/s interpolation, plus an automatic class-1012
-return where authentic endpoints lack supported landing collision.
+camera/attachment handoff, mission gates, native yaw and precise native
+sound or animation timing, and class-1012 two-ended arrival/grounding.
+The source-safe host keeps T/Triangle boarding and deck offset, plus
+an automatic class-1012 return where authentic endpoints lack
+supported landing collision.
+
+
+## 22 October 2026 native seek follow-up
+
+The source-pinned NTSC-U Kerwan data section provides speed constant
+**18.0** at 0x161b08 and acceleration constant **4.5** at 0x161b0c.
+The helper lv3_2d3918_l3 (0x002d3918) reads the 18-unit maximum speed
+and multiplies it by the native frame-duration scale; acceleration and
+turn acceleration are 4.5 times the per-frame squared time scale.
+The underlying retail seek_1d_v at 0x0025b970 accelerates toward
+sqrt(2 * acceleration * distance) clipped by max speed, braking with
+the authored deceleration branches. Waypoint advancement occurs when
+the taxi enters a radius of two per-frame maximum steps (0.6 units
+at 60 Hz). Importantly, the helper starts with a zeroed local scalar
+position each tick while preserving velocity across ticks in PVar+0x60;
+a persistent spline-time interpolation is **not** native behaviour.
+
+Rac1TaxiNativeMotion now ports that translation as an engine-neutral
+60-Hz fixed-step path follower. PVar-backed retail class-816 approach,
+outbound and exit paths and class-1012 outward/return host-safety paths
+use the native stepper; test-only fixtures without retail PVars retain
+the explicitly provisional legacy sampler. Endpoints are snapped
+within the native 0.6-unit acceptance radius to support safe Godot
+landing. The 1012 return remains a *host safety policy*, not retail
+state-machine parity. Yaw and sound side effects remain unported.
+Tests cover 30/60/120-Hz host equivalence, velocity/braking and actual
+retail Kerwan arrivals. Long authored routes take substantially longer
+with native acceleration than the old one-waypoint-per-frame preview.
+For practicality, the staged Godot route smoke uses a temporary
+12x Engine.TimeScale and restores it at exit; gameplay does not.

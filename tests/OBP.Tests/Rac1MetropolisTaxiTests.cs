@@ -249,6 +249,55 @@ public sealed class Rac1MetropolisTaxiTests
     }
 
     [Fact]
+    public void RetailKerwanTaxisUseNativeSeekingAndCompleteBothFlightFamilies()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+
+        using var reader = new FileRandomAccessReader(iso);
+        var session = Rac1MetropolisTaxiSession.TryCreate(Rac1WorldImport.Build(reader, 3))!;
+        Assert.All(session.Stops.Where(s => s.OutboundPath.Count > 1),
+            stop => Assert.True(stop.NativeSeekEvidenced));
+
+        var inbound = session.Stops.Single(s => s.InstanceIndex == 919);
+        Assert.NotNull(inbound.ApproachTrigger);
+        session.TickTraffic(inbound.ApproachTrigger!.Center, 0);
+        int frames = 0;
+        Rac1TaxiPoint last = inbound.ApproachPath![0];
+        while (session.PhaseOf(919) != Rac1MetropolisTaxiSession.TrafficPhase.Docked &&
+            frames++ < 24000)
+            last = session.TickTraffic(inbound.ApproachTrigger.Center, 1d / 60)
+                .Single(f => f.InstanceIndex == 919).Position;
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
+        Assert.InRange(frames, 151, 24000);
+
+        Assert.True(session.TryBoard(inbound.Position));
+        frames = 0;
+        Rac1TaxiFlight? flight = null;
+        while (frames++ < 24000)
+        {
+            flight = session.Tick(1d / 60);
+            if (flight?.JustArrived == true) break;
+        }
+        Assert.True(flight?.JustArrived);
+        Assert.Equal(inbound.OutboundPath[^1], flight!.Position);
+        session.CompleteArrival();
+
+        session.Reset();
+        var shuttle = session.Stops.Single(s => s.InstanceIndex == 962);
+        Assert.True(session.TryBoard(shuttle.Position));
+        frames = 0;
+        while (frames++ < 24000)
+        {
+            flight = session.Tick(1d / 60);
+            if (flight?.JustArrived == true) break;
+        }
+        Assert.True(flight?.JustArrived);
+        Assert.Equal(shuttle.ReturnPath![^1], flight!.Position);
+        Assert.InRange(frames, 301, 24000);
+    }
+
+    [Fact]
     public void RetailKerwanPvarsSelectExactOutboundSplines()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");

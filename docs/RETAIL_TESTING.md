@@ -36,7 +36,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |
 | `./tools/rac1-placed-bolt-smoke.ps1` | Authored Veldin/Batalia/Pokitaru bolts, floating height, attraction, removal and exact one/five-bolt credit. |
 | `./tools/rac1-campaign-smoke.ps1` | Source-game travel and campaign-state integration. |
-| `./tools/rac1-metropolis-taxi-smoke.ps1` | Staged retail Kerwan i919/i962 taxi boarding, travel, dismount, flight abort/relaunch and hull collision restoration. Uses the in-world input handler but stages player position, so this is not an ordinary walk-up route. |
+| `./tools/rac1-metropolis-taxi-smoke.ps1` | Staged retail Kerwan i919/i962 taxi boarding, travel, dismount, flight abort/relaunch and hull collision restoration. Uses the in-world input handler but stages player position and temporarily fast-forwards game time 12x, so this is not an ordinary walk-up route. |
 
 The movement wrapper requires all three sources and runs `rac1:LEVEL0`,
 `rac2:LEVEL1` and `rac3:TABLE1`. To isolate a destination, launch the built
