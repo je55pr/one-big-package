@@ -63,6 +63,7 @@ public partial class OBPGame
         ResetRac1MetropolisTaxis();
         _rac1NovalisWater = null;
         ResetRac1NovalisMusic();
+        ResetRac1RedPlants();
         ResetRac1WrenchHost();
         ResetRac1CombatRetry();
         ResetRac1Enemies();
@@ -142,6 +143,7 @@ public partial class OBPGame
 
         ConfigureRac1PlacedBolts(world, result);
         ConfigureRac1GoldBolts(world, result);
+        ConfigureRac1RedPlants(world, result);
         ConfigureRac1NovalisCranks(world, result);
         ConfigureRac1NovalisBreakables(world, result);
         ConfigureRac1NovalisWater(world);
@@ -234,6 +236,7 @@ public partial class OBPGame
         TickRac1NovalisMusic(delta);
         TickRac1Swing(delta);
         TickRac1Hostiles(delta);
+        TickRac1RedPlants(delta);
         TickRac1Pickups(delta);
         TickRac1GoldBolts();
     }
