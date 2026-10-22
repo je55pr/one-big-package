@@ -100,7 +100,11 @@ public partial class OBPGame
         {
             // Native mine_fall impact bit 0x121 calls cart_burst with scale
             // 0.5 and lifetime 13; preserve the separate fatal path.
-            SpawnBombParticleAdapter(node.Root.GlobalPosition);
+            // Retain a single short-lived impact flash through the new
+            // retail particle presentation host (the original cart_burst
+            // tuning is still distinct from a full bomb detonation).
+            SpawnRac1ExplosionBursts(node.Root.GlobalPosition,
+                Rac1BombExplosion.Bursts(false).Take(1).ToArray());
             GD.Print($"[rac1-seekers] class193 i{index}: fatal impact burst");
         }
         if (frame.Terminal)
