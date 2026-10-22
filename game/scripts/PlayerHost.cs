@@ -203,6 +203,9 @@ public partial class PlayerHost : CharacterBody3D
     public int MenuHeldButtons => _rawInput.HeldButtons;
     public void SuppressButtonsUntilRelease(int preserveButtons = 0) => _rawInput.SuppressButtonsUntilRelease(preserveButtons);
 
+    /// <summary>Host input ownership for the real-time R&C1 weapon wheel; physics keeps running.</summary>
+    public bool QuickSelectOwnsGameplayInput { get; set; }
+
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
     public string CameraControllerLabel =>
         HasActiveRecoveredCamera ? "rac1-native-type0" : "host-debug-fallback";
@@ -343,6 +346,9 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         _rawInput.Observe(@event);
+        if (QuickSelectOwnsGameplayInput)
+            return;
+
         if (@event.IsActionPressed(ControllerBindings.CameraCenter))
         {
             CenterCameraBehindPlayer();
@@ -410,6 +416,17 @@ public partial class PlayerHost : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read(UseRac1Gameplay);
+            if (QuickSelectOwnsGameplayInput)
+                _liveInput = _liveInput with
+                {
+                    Move = Vector2.Zero,
+                    JumpHeld = false,
+                    CrouchHeld = false,
+                    ActionJustPressed = false,
+                    ActionHeld = false,
+                    TraversalHeld = false,
+                    EquippedUseJustPressed = false
+                };
             Rac1RemoteSteering = _liveInput.Move + _liveInput.CameraIntent;
             Rac1RemoteDetonate = Rac1RemoteControlActive && (_liveInput.CrouchHeld || _liveInput.ActionJustPressed);
             if (Rac1RemoteControlActive)
