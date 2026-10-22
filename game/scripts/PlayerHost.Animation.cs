@@ -88,6 +88,9 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Measure each jump: air time, horizontal distance, apex height, net height change.</summary>
     private void TrackJump(bool onFloor)
     {
+        if (UseRac1Gameplay)
+            onFloor = _rac1PresentationGrounded &&
+                (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall);
         if (!_airborne && !onFloor && Velocity.Y > 0.1f)
         {
             _airborne = true;

@@ -113,6 +113,7 @@ public sealed record CommandLineArgs
     public bool Rac1EnemySmoke { get; init; }
     public bool Rac1BombGloveSmoke { get; init; }
     public bool Rac1NovalisSwimSmoke { get; init; }
+    public bool Rac1NovalisRouteSmoke { get; init; }
     public bool Rac1NovalisPeckbotSmoke { get; init; }
     public bool Rac1NovalisBirdbotSmoke { get; init; }
     public bool Rac1NovalisMusicSmoke { get; init; }
@@ -211,6 +212,7 @@ public sealed record CommandLineArgs
                 "--rac1-wrench-smoke" => result with { Rac1WrenchSmoke = true },
                 "--rac1-bomb-glove-smoke" => result with { Rac1BombGloveSmoke = true },
                 "--rac1-novalis-swim-smoke" => result with { Rac1NovalisSwimSmoke = true },
+                "--rac1-novalis-route-smoke" => result with { Rac1NovalisRouteSmoke = true },
                 "--rac1-novalis-peckbot-smoke" => result with { Rac1NovalisPeckbotSmoke = true },
                 "--rac1-novalis-birdbot-smoke" => result with { Rac1NovalisBirdbotSmoke = true },
                 "--rac1-novalis-music-smoke" => result with { Rac1NovalisMusicSmoke = true },

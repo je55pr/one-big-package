@@ -123,6 +123,13 @@ public partial class OBPGame : Node3D
         }
     }
 
+    public override void _PhysicsProcess(double delta)
+    {
+        if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
+        StepRac1NovalisMechanisms();
+        StepRac1PlayerAudioPhysics();
+    }
+
     public override void _Process(double delta)
     {
         _frame++;

@@ -251,6 +251,7 @@ public partial class PlayerHost : CharacterBody3D
     private readonly Rac1RatchetYawController _rac1Yaw = new();
     private readonly Rac1DynamicSupportSession _rac1DynamicSupport = new();
     private Rac1MobyRuntimeKey? _rac1HostSupportKey;
+    private Node3D? _rac1HostSupportRoot;
     private Vector3 _rac1HostSupportLocalAnchor;
     private bool _rac1HostSupportAnchorValid;
     private Rac1SurfaceActionIntent? _rac1SurfaceActionIntent;

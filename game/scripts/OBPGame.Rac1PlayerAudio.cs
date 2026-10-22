@@ -91,12 +91,11 @@ public partial class OBPGame
             TraceRac1PlayerSound(cue, false);
     }
 
-    public override void _PhysicsProcess(double delta)
+    private void StepRac1PlayerAudioPhysics()
     {
-        if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
         if (_rac1PlayerReactions?.Step() is int sound) PlayRac1PlayerSound(new(0, sound), reaction: true);
         // Avatar updates stop at death; detached source particles still age out.
-        if (!_player.Rac1GameplayAlive) StepRac1BombEffectsPhysics();
+        if (!_player!.Rac1GameplayAlive) StepRac1BombEffectsPhysics();
     }
 
     private void NotifyRac1PlayerDamageAudio(Rac1RatchetNanotechSnapshot before, Rac1RatchetNanotechSnapshot after)

@@ -76,6 +76,7 @@ public partial class OBPGame
         ResetRac1GoldBolts();
         ResetRac1NovalisCranks();
         ResetRac1NovalisBreakables();
+        _rac1NovalisMechanisms.Clear();
         _rac1CrateNodes.Clear();
         _rac1PickupNodes.Clear();
         foreach (var projectile in _rac1Projectiles.Values)
@@ -156,6 +157,7 @@ public partial class OBPGame
         ConfigureRac1PulsingOrbs(world, result);
         ConfigureRac1NovalisCranks(world, result);
         ConfigureRac1NovalisBreakables(world, result);
+        ConfigureRac1NovalisMechanisms(world, result);
         ConfigureRac1NovalisWater(world);
         ConfigureRac1NovalisMusic(world);
 
