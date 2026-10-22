@@ -267,9 +267,9 @@ public sealed class WorldHost
     }
 
     /// <summary>Free the loaded world and everything it owns. Safe when nothing is loaded.</summary>
-    public void Unload()
+    public void Unload(bool releaseAudioImmediately = false)
     {
-        _audio.StopAll();
+        _audio.StopAll(releaseAudioImmediately);
 
         if (Result?.Root is { } root && GodotObject.IsInstanceValid(root))
         {
