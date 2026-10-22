@@ -113,6 +113,18 @@ up-axis physics to a wall or ceiling.
 
 ## Host integration validation boundary
 
+The Novalis adapter also distinguishes a thin water-tagged surface over walkable
+solid terrain from free swimming. At the reported opening puddle (native X/Z
+179.8/129.5), source face class zero/raw `0x60` is at height 59.74244 and solid
+raw `0x1f` is at 59.55494, only 0.1875 below it. Swimming previously took ownership
+from the ordinary controller and suspended Ratchet above this bottom, freezing
+the unsupported surface-swim pose and preventing ordinary jumps. The host now
+queries the solid bottom and retains ordinary walking/jumping when the standing
+water depth is below its capsule centre. This depth gate is **OBP host policy**;
+it is not the recovered native water-volume admission or action-`0x72` law.
+The Novalis swim smoke covers walking animation, Cross launch and landing at
+this authored puddle as well as the existing deeper-water/dive/oxygen checks.
+
 The ice overspeed test reads `P+0x160`, which the contact tail stores as a
 single at `0x213c38`. The runtime rounds the reconstructed contact length to
 that source cell's precision before comparing with `5.9f * dt`. This avoids

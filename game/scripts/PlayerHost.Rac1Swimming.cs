@@ -24,7 +24,8 @@ public partial class PlayerHost
         float? surfaceHeight = Rac1WaterSurfaceHeight?.Invoke(GlobalPosition);
         if (surfaceHeight is not float waterY ||
             GlobalPosition.Y > waterY + .35f ||
-            GlobalPosition.Y < waterY - 20f)
+            GlobalPosition.Y < waterY - 20f ||
+            HasShallowRac1WaterSupport(waterY))
         {
             if (_rac1SwimActive)
             {
@@ -88,5 +89,22 @@ public partial class PlayerHost
                 ? new(_rac1SwimState.NativeAction, sequence, 0, 0, 10, Loop: true)
                 : null);
         return true;
+    }
+
+    private bool HasShallowRac1WaterSupport(float waterY)
+    {
+        // OBP admission policy, not a recovered retail depth threshold. A thin
+        // water surface over a walkable bottom must not suspend the ordinary
+        // ground/jump controller. Use the current host capsule's centre height
+        // as the standing-depth boundary until native volume admission is known.
+        float standingDepth = (Rac1CollisionProfile.OrdinaryUpperContactHeight +
+            Rac1CollisionProfile.OrdinaryHorizontalRadius) * .5f;
+        Vector3 from = new(GlobalPosition.X, Math.Max(waterY, GlobalPosition.Y) + .02f, GlobalPosition.Z);
+        Vector3 to = new(GlobalPosition.X, waterY - standingDepth, GlobalPosition.Z);
+        var query = PhysicsRayQueryParameters3D.Create(from, to);
+        query.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
+        var hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+        return hit.TryGetValue("normal", out var normal) &&
+            normal.AsVector3().Dot(Vector3.Up) >= MathF.Cos(FloorMaxAngle);
     }
 }

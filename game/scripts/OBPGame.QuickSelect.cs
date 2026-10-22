@@ -22,7 +22,7 @@ public partial class OBPGame
         if (TryHandleRac1MetropolisTaxiInput(@event)) return true;
         // Host input gesture timing. Native inventory ownership/equip admission
         // remains authoritative; this is not the recovered menu state machine.
-        if (_lastQuickSelectTap != 0 && Time.GetTicksMsec() - _lastQuickSelectTap < 350 &&
+        if (_lastQuickSelectTap != 0 && PlaytestClock.Milliseconds - _lastQuickSelectTap < 350 &&
             _previousSelectedWeapon is { } previous && previous != Rac1WeaponId.Wrench && _rac1Weapons.Owns(previous))
         {
             _lastQuickSelectTap = 0;
@@ -43,6 +43,7 @@ public partial class OBPGame
         _quickSelect.Completed += CloseWeaponQuickSelect;
         _preQuickSelectMouse = Input.MouseMode;
         _preQuickSelectHeldButtons = player.MenuHeldButtons;
+        player.QuickSelectOwnsGameplayInput = true;
         Input.MouseMode = Input.MouseModeEnum.Visible;
         AddChild(_quickSelect);
         // R&C1 Quick Select is real-time. Do not freeze the world while it is held.
@@ -52,11 +53,15 @@ public partial class OBPGame
     private void CloseWeaponQuickSelect(Rac1WeaponId? weapon = null)
     {
         if (!QuickSelectOpen) return;
-        _lastQuickSelectTap = _quickSelect!.NeutralTapCompleted ? Time.GetTicksMsec() : 0;
+        _lastQuickSelectTap = _quickSelect!.NeutralTapCompleted ? PlaytestClock.Milliseconds : 0;
         _quickSelect!.ProcessMode = ProcessModeEnum.Disabled;
         _quickSelect.QueueFree(); _quickSelect = null;
+        if (_player is { } player)
+        {
+            player.QuickSelectOwnsGameplayInput = false;
+            player.SuppressButtonsUntilRelease(_preQuickSelectHeldButtons);
+        }
         if (weapon is { } selected && selected != _rac1Weapons.Equipped) OnRac1WeaponSelectionRequested(selected);
-        _player?.SuppressButtonsUntilRelease(_preQuickSelectHeldButtons);
         Input.MouseMode = _preQuickSelectMouse;
     }
 }

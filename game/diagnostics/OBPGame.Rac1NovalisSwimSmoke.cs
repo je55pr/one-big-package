@@ -75,6 +75,41 @@ public partial class OBPGame
                 surfaced.Oxygen == OBP.RAC1.Player.Rac1TraversalEquipmentWater.MaximumOxygen,
                 $"Surfacing failed to refill: {surfaced} pos={player.GlobalPosition}");
             GD.Print($"[novalis-swim-smoke] surfaced playerY={player.GlobalPosition.Y:F3}, full oxygen");
+
+            // The reported opening puddle has a 0x60 water face only 0.1875
+            // above solid 0x1f terrain. It cannot own surface-swim buoyancy.
+            // This stages the authored location; movement/jumping use input.
+            Vector3 puddle = new(-179.8f, 59.9f, 129.5f);
+            float puddleHeight = SampleRac1NovalisWaterHeight(puddle)
+                ?? throw new InvalidDataException("Reported shallow water is missing");
+            player.StageDevelopmentWaterPosition(puddle);
+            await PhysicsFramesAsync(30);
+            Require(!player.Rac1SwimmingActive && player.Rac1RecoveredSupportGrounded &&
+                player.Rac1MovementPhase == OBP.RAC1.Player.Rac1RatchetMovementPhase.Grounded,
+                $"Shallow water stole grounded motion: swim={player.Rac1SwimmingActive}, phase={player.Rac1MovementPhase}, pos={player.GlobalPosition}");
+            float bottomY = player.GlobalPosition.Y;
+            Require(puddleHeight - bottomY is > .1f and < .25f,
+                $"Expected the reported thin puddle, water={puddleHeight:F4}, feet={bottomY:F4}");
+            Vector3 walkStart = player.GlobalPosition;
+            SetAnalogueSmokeInput(1f, 0f);
+            await PhysicsFramesAsync(18);
+            float walked = new Vector2(player.GlobalPosition.X - walkStart.X,
+                player.GlobalPosition.Z - walkStart.Z).Length();
+            Require(walked > .1f && player.AnimationState is
+                OBP.Runtime.Player.PlayerAnimationState.Walk or OBP.Runtime.Player.PlayerAnimationState.Run,
+                $"Puddle walking/animation failed: distance={walked:F4}, animation={player.AnimationState}");
+            SetAnalogueSmokeInput(0f, 0f);
+            await PhysicsFramesAsync(6);
+            Require(!player.Rac1SwimmingActive, "Walking through the puddle entered swimming");
+            Input.ActionPress(RawGamepadInput.Jump);
+            await PhysicsFramesAsync(14);
+            Input.ActionRelease(RawGamepadInput.Jump);
+            Require(!player.Rac1SwimmingActive && player.GlobalPosition.Y > bottomY + .4f,
+                $"Cross failed from shallow water: phase={player.Rac1MovementPhase}, pos={player.GlobalPosition}");
+            await PhysicsFramesAsync(90);
+            Require(!player.Rac1SwimmingActive && player.Rac1RecoveredSupportGrounded,
+                "Landing back in shallow water did not restore ordinary support");
+            GD.Print("[novalis-swim-smoke] reported shallow puddle: walk, Cross jump and landing PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-swim-smoke-pass", 0);
         }
         catch (Exception ex)
