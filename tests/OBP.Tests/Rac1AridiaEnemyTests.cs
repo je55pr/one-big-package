@@ -76,6 +76,13 @@ public sealed class Rac1AridiaEnemyTests
         Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 1));
         Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 2));
         Assert.Equal(9, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 3));
+        Assert.Equal([21], bots.Select(bot => Rac1AridiaConstructorbotNative.ReadActivationVolume(bot.PVar!))
+            .Where(index => index >= 0).ToArray());
+        Assert.Equal(558, Assert.Single(bots, bot =>
+            Rac1AridiaConstructorbotNative.ReadActivationVolume(bot.PVar!) == 21).Index);
+        var volumes = Rac1ClipVolumes.Read(gameplay);
+        Assert.InRange(21, 0, volumes.Count - 1);
+        Assert.True(volumes[21].Contains(volumes[21].Centre));
         Assert.All(bots, bot =>
             Assert.Equal(18f, Rac1AridiaConstructorbotNative.ReadEngagementRadius(bot.PVar!)));
         Assert.All(bots, bot =>

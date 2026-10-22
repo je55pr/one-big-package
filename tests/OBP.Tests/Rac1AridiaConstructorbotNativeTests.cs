@@ -95,6 +95,76 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             8, uint.MaxValue - 3, true));
     }
 
+    [Theory]
+    [InlineData(8, 2, 4)]
+    [InlineData(9, 2, 16)]
+    public void NativeVolumeOrWaypointActivationRequiresAffirmativeEvidence(
+        int start, int activatedState, int activatedSequence)
+    {
+        Assert.Equal(start, Rac1AridiaConstructorbotNative.StepActivation(start, null).NativeState);
+        Assert.Equal(start, Rac1AridiaConstructorbotNative.StepActivation(start, false).NativeState);
+        Assert.Equal(new(activatedState, activatedSequence),
+            Rac1AridiaConstructorbotNative.StepActivation(start, true));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepActivation(7, true));
+    }
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(16)]
+    public void SourceStateTwoRetainsActivationClipUntilAnimationCompletion(int sequence)
+    {
+        for (int tick = 0; tick < 200; tick++)
+            Assert.Equal(new(2, sequence),
+                Rac1AridiaConstructorbotNative.StepActivatedAnimation(false, sequence));
+        Assert.Equal(new(3, 4),
+            Rac1AridiaConstructorbotNative.StepActivatedAnimation(true, sequence));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepActivatedAnimation(true, 15));
+    }
+
+    [Fact]
+    public void NativeStateTwelveChecksAnimationThenRangeAndHeightWithoutInventedCooldown()
+    {
+        Assert.Equal(new(12, 9), Rac1AridiaConstructorbotNative.StepFollowup(false, 500, 25, 18));
+        Assert.Equal(new(12, 9), Rac1AridiaConstructorbotNative.StepFollowup(true, 18.99f, 2.99f, 18));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepFollowup(true, 19f, 0, 18));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepFollowup(true, 0, 3f, 18));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepFollowup(true, 0, -3f, 18));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepFollowup(true, float.NaN, 0, 18));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepFollowup(true, 0, float.PositiveInfinity, 18));
+    }
+
+    [Fact]
+    public void NativeStateThirteenWaitsForPhysicsContactInsteadOfElapsedTicks()
+    {
+        for (int tick = 0; tick < 800; tick++)
+            Assert.Equal(new(13, 10), Rac1AridiaConstructorbotNative.StepRecovery(false, 10));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepRecovery(true, 10));
+    }
+
+    [Fact]
+    public void NativeActivationPvarSelectorsRejectUnknownAndMalformedValues()
+    {
+        var pvar = Pvar(3);
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x18c), -1);
+        BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x184), 20);
+        Assert.Equal(-1, Rac1AridiaConstructorbotNative.ReadActivationVolume(pvar));
+        Assert.Equal(20, Rac1AridiaConstructorbotNative.ReadActivationDistance(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x18c), 21);
+        Assert.Equal(21, Rac1AridiaConstructorbotNative.ReadActivationVolume(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x18c), -2);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadActivationVolume(pvar));
+        BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x184), float.NaN);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadActivationDistance(pvar));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadActivationVolume(new byte[0x18c]));
+    }
+
     [Fact]
     public void NativeAimAndJointContactAreDifferentStates()
     {

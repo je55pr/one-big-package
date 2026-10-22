@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Level;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -13,11 +14,13 @@ public partial class OBPGame
     // Explicitly provisional replacement for the native 0x1600ec path-node
     // lookup used when class612 state7 chooses its joint-contact attack.
     private readonly Dictionary<int, Vector3> _rac1ConstructorbotAuthoredCenters = [];
+    private IReadOnlyList<Rac1ClipVolume> _rac1AridiaClipVolumes = [];
 
     private void ResetRac1ConstructorbotStartups()
     {
         _rac1ConstructorbotStartups.Clear();
         _rac1ConstructorbotAuthoredCenters.Clear();
+        _rac1AridiaClipVolumes = [];
     }
 
     /// <summary>
@@ -31,6 +34,50 @@ public partial class OBPGame
     {
         var instance = _rac1MobyRuntime.Require(enemy.Node.Source);
         int state = instance.State.NativeState;
+        if (state is Rac1AridiaConstructorbotNative.ParticleModeState or
+            Rac1AridiaConstructorbotNative.ParticleAlternateState)
+        {
+            int volumeIndex = Rac1AridiaConstructorbotNative.ReadActivationVolume(instance.PVar.Span);
+            if (volumeIndex >= 0)
+            {
+                if (volumeIndex >= _rac1AridiaClipVolumes.Count)
+                    throw new InvalidDataException("Constructorbot references a missing retail activation volume.");
+                if (_player is not { } player) return null;
+                bool inside = _rac1AridiaClipVolumes[volumeIndex].Contains(
+                    ToEffectNative(player.GlobalPosition));
+                var active = Rac1AridiaConstructorbotNative.StepActivation(state, inside);
+                if (active.NativeState != state)
+                    _rac1MobyRuntime.SetNativeState(instance, active.NativeState);
+                return active;
+            }
+            // Native +0x188 addresses a separate 0x80-byte node table.
+            // It is NOT the decoded Rac1Paths format. Until that table is
+            // recovered, retain the explicitly provisional host adapter
+            // rather than invent a distance check from the authored spawn.
+            return null;
+        }
+        if (state == 2 &&
+            _rac1ConstructorbotStartups.TryGetValue(instance.InstanceIndex, out var startup) &&
+            startup.NativeState is Rac1AridiaConstructorbotNative.ParticleModeState or
+                Rac1AridiaConstructorbotNative.ParticleAlternateState)
+        {
+            int entrySequence = startup.NativeState == Rac1AridiaConstructorbotNative.ParticleModeState
+                ? 4 : 16;
+            var next = Rac1AridiaConstructorbotNative.StepActivatedAnimation(
+                enemy.Animation.Sequence == entrySequence && enemy.Animation.Wrapped, entrySequence);
+            if (next.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
+            return next;
+        }
+        if (state == 3 &&
+            _rac1ConstructorbotStartups.TryGetValue(instance.InstanceIndex, out var activatedStartup) &&
+            activatedStartup.NativeState is Rac1AridiaConstructorbotNative.ParticleModeState or
+                Rac1AridiaConstructorbotNative.ParticleAlternateState)
+        {
+            // Native state3 uses the unresolved 0x1600ec movement node.
+            // Preserve its original clip4 while that path work is pending.
+            return new(state, 4);
+        }
         if (state == Rac1AridiaConstructorbotNative.RestState)
         {
             if (_player is { } player &&
@@ -85,7 +132,29 @@ public partial class OBPGame
             return next;
         }
         if (state == Rac1AridiaConstructorbotNative.FollowupState)
-            return new(state, 9);
+        {
+            if (_player is null) return new(state, 9);
+            Vector3 delta = _player.GlobalPosition - enemy.Node.Root.GlobalPosition;
+            float planarDistance = new Vector2(delta.X, delta.Z).Length();
+            bool completed = enemy.Animation.Sequence == 9 && enemy.Animation.Wrapped;
+            var next = Rac1AridiaConstructorbotNative.StepFollowup(
+                completed, planarDistance, delta.Y,
+                Rac1AridiaConstructorbotNative.ReadEngagementRadius(instance.PVar.Span));
+            if (next.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
+            return next;
+        }
+        if (state == Rac1AridiaConstructorbotNative.ContactRecoveryState)
+        {
+            // Native requires enemy_physics result bit 0x40. Godot's on-floor
+            // contact is the host's acknowledged approximation of that flag,
+            // never an elapsed-time recovery or an unconditional transition.
+            var next = Rac1AridiaConstructorbotNative.StepRecovery(
+                enemy.Body.IsOnFloor(), enemy.Animation.Sequence);
+            if (next.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
+            return next;
+        }
         return null;
     }
 

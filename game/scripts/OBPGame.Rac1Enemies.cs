@@ -91,6 +91,7 @@ public partial class OBPGame
             // the general placement's 0x78-byte instance record.
             var levelGameplay = Rac1LevelSettings.ReadGameplay(reader, level);
             var authoredPlacements = Rac1Instances.Parse(levelGameplay).MobyInstances;
+            _rac1AridiaClipVolumes = Rac1ClipVolumes.Read(levelGameplay);
             _rac1AridiaEnemies.SetAuthoredGroupRoster(Rac1AridiaEnemies.ReadAuthoredGroupRoster(levelGameplay));
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => Rac1AridiaEnemies.IsEnemyClass(item.NativeClassId)))
             {

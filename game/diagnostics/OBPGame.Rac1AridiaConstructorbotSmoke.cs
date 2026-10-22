@@ -78,6 +78,27 @@ public partial class OBPGame
             GD.Print($"[aridia-bot-smoke] real class612 i{botId} state7->11 " +
                 $"at authored spawn, original model/contact body and player staging PASS; " +
                 $"nativeFrame={_rac1MobyRuntime.Require(bot.Node.Source).State.NativeState}");
+            // A second retail actor, #558, starts in native state9 and
+            // uniquely references authentic clip volume 21 at PVar+0x18c.
+            // No fabricated route-node fallback is used for this actor.
+            const int volumeBotId = 558;
+            var volumeBot = _rac1Enemies[volumeBotId];
+            var sourceVolume = _rac1AridiaClipVolumes[21];
+            Require(Rac1AridiaConstructorbotNative.ReadActivationVolume(
+                _rac1MobyRuntime.Require(volumeBot.Node.Source).PVar.Span) == 21,
+                "volume bot does not reference native volume21");
+            Require(_rac1MobyRuntime.Require(volumeBot.Node.Source).State.NativeState == 9,
+                "volume Constructorbot was activated before Ratchet entered its volume");
+            Require(!_rac1AridiaClipVolumes[21].Contains(ToEffectNative(_player.GlobalPosition)),
+                "initial contact fixture accidentally overlapped the volume");
+            _player.StageDevelopmentWaterPosition(FromEffectNative(sourceVolume.Centre));
+            await Rac1SmokeWaitAsync(() =>
+                _rac1MobyRuntime.Require(volumeBot.Node.Source).State.NativeState == 2, 80,
+                "retail class612 instance558 clip-volume21 activation state9->2");
+            Require(!volumeBot.Animation.SupportsSequence(16) || volumeBot.Animation.Sequence == 16,
+                "source clip16 was not selected after volume activation");
+            GD.Print($"[aridia-bot-smoke] real class612 i558 clip-volume21 " +
+                $"state9->2 source clip={volumeBot.Animation.Sequence} admission PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-pass", 0);
         }
         catch (Exception ex)

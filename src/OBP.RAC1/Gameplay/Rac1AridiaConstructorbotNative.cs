@@ -12,6 +12,91 @@ public static class Rac1AridiaConstructorbotNative
     public const int NativeClassId = Rac1AridiaEnemies.Constructorbot;
     public const int InitialModePvarOffset = 0x194;
     public const int EngagementRadiusPvarOffset = 0x180;
+    public const int ActivationVolumePvarOffset = 0x18c;
+    public const int ActivationDistancePvarOffset = 0x184;
+    public const float FollowupEngagementMargin = 1f;
+    public const float FollowupHeightTolerance = 3f;
+
+    public static int ReadActivationVolume(ReadOnlySpan<byte> pvar)
+    {
+        if (pvar.Length < ActivationVolumePvarOffset + sizeof(int))
+            throw new InvalidDataException("Constructorbot has no native activation volume selector.");
+        int index = BinaryPrimitives.ReadInt32LittleEndian(
+            pvar.Slice(ActivationVolumePvarOffset, sizeof(int)));
+        if (index is < -1 or > 65535)
+            throw new InvalidDataException("Constructorbot activation volume selector is invalid.");
+        return index;
+    }
+
+    public static float ReadActivationDistance(ReadOnlySpan<byte> pvar)
+    {
+        if (pvar.Length < ActivationDistancePvarOffset + sizeof(float))
+            throw new InvalidDataException("Constructorbot has no native activation distance.");
+        float value = BinaryPrimitives.ReadSingleLittleEndian(
+            pvar.Slice(ActivationDistancePvarOffset, sizeof(float)));
+        if (!float.IsFinite(value) || value < 0)
+            throw new InvalidDataException("Constructorbot activation distance is invalid.");
+        return value;
+    }
+
+    /// <summary>
+    /// LEVEL2:0x2d7f8c..0x2d8080: authored modes 8/9 share the activation
+    /// decision. If +0x18c is nonnegative it is a native clip-volume index;
+    /// otherwise target distance from a native 0x80-byte path/node +0x30
+    /// is compared against PVar +0x184. Null means that the required
+    /// source check is unresolved: never treat it as a true activation.
+    /// Mode8 uses source sequence4 and mode9 sequence16 on admission.
+    /// </summary>
+    public static Frame StepActivation(int nativeState, bool? triggerSatisfied)
+    {
+        if (nativeState is not (ParticleModeState or ParticleAlternateState))
+            throw new ArgumentOutOfRangeException(nameof(nativeState));
+        if (triggerSatisfied != true)
+            return new(nativeState, nativeState == ParticleModeState ? 2 : 15);
+        return new(2, nativeState == ParticleModeState ? 4 : 16);
+    }
+
+    /// <summary>
+    /// LEVEL2:0x2d79a4: state2 retains its entry clip (4 from mode8,
+    /// 16 from mode9) until source animation completion, then enters
+    /// state3 and selects sequence4. No host time-based substitute.
+    /// </summary>
+    public static Frame StepActivatedAnimation(
+        bool animationCompleted, int entrySequence)
+    {
+        if (entrySequence is not (4 or 16))
+            throw new ArgumentOutOfRangeException(nameof(entrySequence));
+        return animationCompleted ? new(3, 4) : new(2, entrySequence);
+    }
+
+    /// <summary>
+    /// LEVEL2:0x2d82a0..0x2d83a8: source state12 turns toward target,
+    /// waits for animation completion, then chooses state7/sequence0 if
+    /// target planar distance is at least engagement radius + 1 OR if its
+    /// vertical difference is at least 3. Otherwise stays in state12/seq9.
+    /// </summary>
+    public static Frame StepFollowup(bool animationCompleted, float planarDistance,
+        float verticalDelta, float engagementRadius)
+    {
+        if (!animationCompleted)
+            return new(FollowupState, 9);
+        if (!float.IsFinite(planarDistance) || !float.IsFinite(verticalDelta) ||
+            !float.IsFinite(engagementRadius) || planarDistance < 0 || engagementRadius <= 0)
+            throw new ArgumentOutOfRangeException(nameof(planarDistance));
+        return planarDistance >= engagementRadius + FollowupEngagementMargin ||
+            MathF.Abs(verticalDelta) >= FollowupHeightTolerance
+            ? new(RestState, 0)
+            : new(FollowupState, 9);
+    }
+
+    /// <summary>
+    /// LEVEL2:0x2d838c: source state13 calls enemy_physics and returns
+    /// to state7/animation0 only when the native result has flag 0x40.
+    /// The caller must supply an actual physics contact signal, not a timer.
+    /// </summary>
+    public static Frame StepRecovery(bool nativePhysicsContactFlag40, int currentSequence) =>
+        nativePhysicsContactFlag40 ? new(RestState, 0) : new(ContactRecoveryState, currentSequence);
+
     public const float State7HeightTolerance = 4f;
     public const float State7WaypointTolerance = 1f;
     public const float State7FacingTolerance = MathF.PI / 36f; // 5 degrees
