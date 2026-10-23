@@ -58,15 +58,22 @@ public sealed class Rac1MenuPanelPages
         IReadOnlyList<WeaponCell> Cells);
     public sealed record GadgetsGrid(int PageAddress, int InitialFocusScreen,
         IReadOnlyList<GadgetGroup> Groups);
+    public sealed record QuickSelectGroup(int PanelSlot, int ScreenAddress, int Rows,
+        int Columns, int Flags, float MarginX, float MarginY,
+        int UpScreen, int DownScreen, IReadOnlyList<WeaponCell> Cells);
+    public sealed record QuickSelectPage(int PageAddress, int InitialFocusScreen,
+        IReadOnlyList<QuickSelectGroup> Groups);
 
     private readonly IReadOnlyDictionary<Page, Assignment> _pages;
     private Rac1MenuPanelPages(IReadOnlyDictionary<Page, Assignment> pages,
-        IReadOnlyList<RootEntry> rootEntries, WeaponsGrid weaponsGrid, GadgetsGrid gadgetsGrid)
+        IReadOnlyList<RootEntry> rootEntries, WeaponsGrid weaponsGrid,
+        GadgetsGrid gadgetsGrid, QuickSelectPage quickSelectPage)
     {
         _pages = pages;
         NativeRootEntries = rootEntries;
         NativeWeaponsGrid = weaponsGrid;
         NativeGadgetsGrid = gadgetsGrid;
+        NativeQuickSelectPage = quickSelectPage;
     }
 
     public IReadOnlyDictionary<Page, Assignment> Pages => _pages;
@@ -74,6 +81,7 @@ public sealed class Rac1MenuPanelPages
     public IReadOnlyList<RootEntry> NativeRootEntries { get; }
     public WeaponsGrid NativeWeaponsGrid { get; }
     public GadgetsGrid NativeGadgetsGrid { get; }
+    public QuickSelectPage NativeQuickSelectPage { get; }
 
     public static Rac1MenuPanelPages Read(IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level0)
     {
@@ -267,9 +275,69 @@ public sealed class Rac1MenuPanelPages
             if (group.UpScreen != expectedUp || group.DownScreen != expectedDown)
                 throw new InvalidDataException("R&C1 Gadgets linked grid navigation is not a four-group ring.");
         }
+        // Quick Select uses the original Weapons 15-cell array and a
+        // second SIX-GADGET candidate grid. This second 2x3 is NOT the
+        // set of quick-select slots: the native save has eight slot entries
+        // and update_menu_item_slots manages those independently.
+        uint quickRootScreen = ReadSourceWord(rootPage + 0x44u + 8u);
+        uint quickPage = ReadSourceWord(ReadSourceWord(quickRootScreen + 0x34u) + 4u);
+        uint quickFocus = ReadSourceWord(quickPage + 0x40u);
+        if (quickPage != 0x001B32B8 || ReadSourceWord(quickPage + 0x38u) != rootPage)
+            throw new InvalidDataException("R&C1 Quick Select link differs from the authored overlay.");
+        int[] quickSlots = [2, 3];
+        int[] quickRows = [3, 2];
+        int[] quickColumns = [5, 3];
+        int[] quickFlags = [0x20, 0];
+        var quickGroups = new List<QuickSelectGroup>(2);
+        for (int groupIndex = 0; groupIndex < quickSlots.Length; groupIndex++)
+        {
+            int slot = quickSlots[groupIndex];
+            uint screen = ReadSourceWord(quickPage + 0x44u + (uint)(slot * 4));
+            int r = checked((int)ReadSourceWord(screen + 0x40u));
+            int c = checked((int)ReadSourceWord(screen + 0x44u));
+            int f = checked((int)ReadSourceWord(screen + 0x30u));
+            float mx = BitConverter.Int32BitsToSingle((int)ReadSourceWord(screen + 0x34u));
+            float my = BitConverter.Int32BitsToSingle((int)ReadSourceWord(screen + 0x38u));
+            if (ReadSourceWord(screen) != 0x002794A0 || ReadSourceWord(screen + 4) != 0x0027B590 ||
+                r != quickRows[groupIndex] || c != quickColumns[groupIndex] ||
+                f != quickFlags[groupIndex] || ReadSourceWord(screen + 0x3cu) != 0 ||
+                !float.IsFinite(mx) || !float.IsFinite(my) ||
+                mx is < 0 or >= 1 || my is < 0 or >= 1)
+                throw new InvalidDataException($"R&C1 Quick Select grid {slot} is not the retail shape.");
+            uint at = ReadSourceWord(screen + 0x48u);
+            if (groupIndex == 0 && at != cellsPointer)
+                throw new InvalidDataException("Quick Select does not share the native Weapons cell table.");
+            var quickCells = new List<WeaponCell>(r * c);
+            for (int index = 0; index < r * c; index++)
+            {
+                uint first = ReadSourceWord(at + (uint)(index * 10));
+                uint second = ReadSourceWord(at + (uint)(index * 10 + 4));
+                int id = unchecked((short)(second >> 16));
+                ushort icon = unchecked((ushort)first);
+                short frame = unchecked((short)(first >> 16));
+                short kind = unchecked((short)second);
+                if (id is < 1 or >= 37 || icon is < 0xEA60 or > 0xEAC9 || frame != 0 ||
+                    kind != 0 || quickCells.Any(cell => cell.NativeId == id))
+                    throw new InvalidDataException($"R&C1 Quick Select cell {slot}:{index} is invalid.");
+                quickCells.Add(new WeaponCell(id, icon, frame, kind));
+            }
+            if (groupIndex == 0 && !quickCells.SequenceEqual(cells))
+                throw new InvalidDataException("Quick Select Weapons candidates differ from native Weapons cells.");
+            quickGroups.Add(new QuickSelectGroup(slot, checked((int)screen), r, c, f, mx, my,
+                checked((int)ReadSourceWord(screen + 0x4cu)),
+                checked((int)ReadSourceWord(screen + 0x50u)), quickCells));
+        }
+        if (quickFocus != (uint)quickGroups[0].ScreenAddress ||
+            quickGroups[0].UpScreen != quickGroups[1].ScreenAddress ||
+            quickGroups[0].DownScreen != quickGroups[1].ScreenAddress ||
+            quickGroups[1].UpScreen != quickGroups[0].ScreenAddress ||
+            quickGroups[1].DownScreen != quickGroups[0].ScreenAddress)
+            throw new InvalidDataException("Quick Select does not have its authored two-group focus ring.");
+
         return new Rac1MenuPanelPages(pages, entries,
             new WeaponsGrid(checked((int)weaponsPage), checked((int)weaponsScreen),
                 rows, columns, gridFlags, marginX, marginY, cells),
-            new GadgetsGrid(checked((int)gadgetsPage), checked((int)gadgetFocus), gadgetGroups));
+            new GadgetsGrid(checked((int)gadgetsPage), checked((int)gadgetFocus), gadgetGroups),
+            new QuickSelectPage(checked((int)quickPage), checked((int)quickFocus), quickGroups));
     }
 }

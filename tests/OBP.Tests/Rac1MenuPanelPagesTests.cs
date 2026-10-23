@@ -92,6 +92,26 @@ public sealed class Rac1MenuPanelPagesTests
             Assert.Equal(gadgets.Groups[(groupIndex + 1) % gadgets.Groups.Count].ScreenAddress,
                 group.DownScreen);
         }
+        // Quick Select shares all fifteen Weapons candidates, plus a
+        // separate two-row gadget candidate grid. The save-backed wheel
+        // is EIGHT slots, not this six-cell gadget screen.
+        var quick = pages.NativeQuickSelectPage;
+        Assert.Equal(0x001B32B8, quick.PageAddress);
+        Assert.Equal(0x001B3398, quick.InitialFocusScreen);
+        Assert.Equal([2, 3], quick.Groups.Select(group => group.PanelSlot));
+        Assert.Equal([3, 2], quick.Groups.Select(group => group.Rows));
+        Assert.Equal([5, 3], quick.Groups.Select(group => group.Columns));
+        Assert.Equal([0x20, 0], quick.Groups.Select(group => group.Flags));
+        Assert.Equal(weapons.Cells, quick.Groups[0].Cells);
+        Assert.Equal([26, 22, 12, 32, 27, 31],
+            quick.Groups[1].Cells.Select(cell => cell.NativeId));
+        Assert.Equal([0xEA7A, 0xEA76, 0xEA6C, 0xEA80, 0xEA7B, 0xEA7F],
+            quick.Groups[1].Cells.Select(cell => (int)cell.Icon));
+        Assert.Equal(quick.Groups[1].ScreenAddress, quick.Groups[0].UpScreen);
+        Assert.Equal(quick.Groups[1].ScreenAddress, quick.Groups[0].DownScreen);
+        Assert.Equal(quick.Groups[0].ScreenAddress, quick.Groups[1].UpScreen);
+        Assert.Equal(quick.Groups[0].ScreenAddress, quick.Groups[1].DownScreen);
+
         Assert.Equal([0, 1, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             pages[Rac1MenuPanelPages.Page.Opening].Animations.ToArray());
         Assert.Equal([21, 22, 23, 24, 25, 5, 6, 7, 8, 9, 10, 11, 12, 13],

@@ -100,6 +100,8 @@ public partial class OBPGame
                 : string.Empty,
         };
         _pauseMenu.EquipRequested += OnRac1WeaponSelectionRequested;
+        _pauseMenu.QuickSelectAssignRequested = (slot, nativeId) =>
+            _rac1Weapons.TryAssignQuickSelect(slot, nativeId);
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
         _pauseMenu.DebugOutputChanged += SetDebugOutputEnabled;

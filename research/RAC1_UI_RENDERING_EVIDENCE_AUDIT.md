@@ -710,3 +710,69 @@ focus-transfer parity. Screen sizes, positions, text detail,
 presentation camera and transition animations are still Godot
 adaptations. The original icon textures and authored identity,
 column/row/group data and link topology are confirmed.
+
+## 23 October: original Quick Select candidate grids and save-backed assignment
+
+The ordinary root's Quick Select action points to
+`MenuPage 0x001B32B8` (back `0x001B2588`,
+initial focus `0x001B3398`, page state 5). This page
+has **two source item-candidate grids**:
+
+- Panel slot 2 / screen `0x001B3398`: **3 rows x 5
+  columns**, flags `0x20`, margins `.08/.08`. Its 15
+  weapon cells are the **same pointer `0x001B3220`**
+  as the authored Weapons menu page; the native IDs/icons
+  therefore follow the identical original ordering.
+- Panel slot 3 / screen `0x001B3400`: **2 rows x 3
+  columns**, flags `0`, margins `.1/.1`, cell pointer
+  `0x001B2D20`, gadget candidates `26,22,12 / 32,27,31`
+  and icon animations `EA7A,EA76,EA6C / EA80,EA7B,EA7F`.
+
+Both screens call updater `0x002794A0` and drawer
+`0x0027B590`. Both their up/down links point at each
+other, crossing between five and three columns. The
+resident `update_menu_grid_selection` advances a
+column by +1 when moving 3→5, and decrements/clamps
+when moving 5→3. This is a **candidate list**, not an
+eight-slot quick-select assignment wheel.
+
+The native `update_menu_item_slots` (`FUN_0021C7A0`)
+controls the separate **eight slot** array. Shoulder
+directions move the selected slot modulo eight; Cross
+on an owned nonzero candidate first clears any previous
+instance of that item, stores it at the selected slot,
+and moves the cursor to the following slot modulo eight.
+An unowned or zero item does not assign anything.
+The native updater separately records a usage statistic
+not yet hosted by this implementation.
+
+`Rac1MenuPanelPages.Read` now decodes and validates
+both original grids and their links through bounded
+initialized overlay data. `Rac1WeaponInventory.
+TryAssignQuickSelect` implements the save-backed
+item assignment rule with strict slot/ID/ownership
+checks and uniqueness while preserving current
+equipped item and ammo. The Godot pause page uses
+21 source candidates in the native two-grid layout,
+but represents the **eight save-backed slots** as an
+explicit host strip until the rotating native wheel's
+geometry has been recovered. The slot strip does
+not claim to be retail artwork.
+
+While Quick Select is open, the modal UI temporarily
+suspends only Godot's default L1/R1 focus-cycle bindings.
+The native slot cursor owns those buttons, while
+D-pad continues to navigate candidate grids. Original
+input bindings are restored on page navigation or
+tree exit, and the frame-local focus guard prevents
+Godot's default focus shift from selecting a different
+candidate during a shoulder press. The rendered smoke
+tests binding restoration and the selected candidate.
+
+**Limits:** no fabrication of original Quick Select
+wheel/preview geometry, native Moby poses, button
+prompts, animations, or usage-stats effects. Cross-game
+weapon overflow admission and assignment remain
+separate work; this pass changes only the original
+21 R&C1 candidate grid and the eight-slot R&C1
+save-backed block.

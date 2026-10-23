@@ -42,7 +42,13 @@ public partial class Rac1RetailUiSmoke : Node
                 QuickSlots = [new(10, "Bomb Glove", true, true, 0xEA6A)],
                 Items = [new(31, "Native item 31", true, false)],
             };
-            int equips = 0, options = 0, resumed = 0;
+            int equips = 0, options = 0, resumed = 0, quickAssignments = 0;
+            var quickInventory = Rac1WeaponInventory.CreateOpeningLoadout();
+            sample.QuickSelectAssignRequested = (slot, id) =>
+            {
+                quickAssignments++;
+                return quickInventory.TryAssignQuickSelect(slot, id);
+            };
             sample.EquipRequested += _ => equips++;
             sample.ControllerSettingsRequested += () => options++;
             sample.ResumeRequested += () => resumed++;
@@ -259,7 +265,58 @@ public partial class Rac1RetailUiSmoke : Node
             await Capture("gadgets");
             await Keyboard(Key.Escape); await Frames(25);
             await Open(sample, "Quick Select", Rac1RetailMenuPage.QuickSelect);
+            if (Rac1RetailUiAssets.NativeMenuPages is { } quickPages)
+            {
+                var groups = Descendants(sample).OfType<GridContainer>()
+                    .Where(grid => grid.Name.ToString().StartsWith("NativeQuickCandidates_", StringComparison.Ordinal))
+                    .ToArray();
+                var source = quickPages.NativeQuickSelectPage;
+                Require(groups.Length == 2 &&
+                    groups.Select(group => group.Columns).SequenceEqual(source.Groups.Select(group => group.Columns)) &&
+                    groups.SelectMany(group => group.GetChildren().OfType<Rac1RetailEquipmentCell>())
+                        .Select(cell => cell.Name.ToString())
+                        .SequenceEqual(source.Groups.SelectMany(group => group.Cells)
+                            .Select(cell => $"QuickCandidate_{cell.NativeId}")),
+                    "Quick Select did not preserve its 15 weapon and 6 gadget candidates");
+                var slotButtons = Descendants(sample).OfType<Button>()
+                    .Where(button => button.Name.ToString().StartsWith("QuickSlot_", StringComparison.Ordinal))
+                    .OrderBy(button => button.Name.ToString()).ToArray();
+                Require(slotButtons.Length == 8 && slotButtons[0].Text == "1: 10" &&
+                    slotButtons.Skip(1).All(button => button.Text.EndsWith("-", StringComparison.Ordinal)),
+                    "Quick Select conflated the six gadget candidates with eight save-backed slots");
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "QuickCandidate_10",
+                    "Quick Select must initially focus the first original weapon candidate");
+                await Press(JoyButton.DpadUp);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "QuickCandidate_32",
+                    "Quick Select Up from 5-column group failed 5-to-3 index shift");
+                await Press(JoyButton.DpadDown);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "QuickCandidate_16",
+                    "Quick Select Down from 3-column group failed 3-to-5 index shift");
+                await Press(JoyButton.A);
+                Require(quickAssignments == 0, "Quick Select accepted an unowned weapon candidate");
+                var bomb = Descendants(sample).OfType<Rac1RetailEquipmentCell>()
+                    .Single(cell => cell.Name.ToString() == "QuickCandidate_10");
+                bomb.GrabFocus(); await Frames(2);
+                Require(!InputMap.ActionGetEvents("ui_focus_next").OfType<InputEventJoypadButton>()
+                    .Any(ev => ev.ButtonIndex == JoyButton.RightShoulder),
+                    "Quick Select must own R1 without Godot also cycling weapon focus");
+                await Press(JoyButton.RightShoulder);
+                Require(GetViewport().GuiGetFocusOwner() == bomb,
+                    "R1 slot cycling unexpectedly moved the source weapon candidate focus");
+                await Press(JoyButton.A);
+                Require(quickAssignments == 1 && quickInventory.QuickSelect[0] == 0 &&
+                    quickInventory.QuickSelect[1] == 10 &&
+                    slotButtons[0].Text == "1: -" && slotButtons[1].Text == "2: 10",
+                    $"Native Quick Select assignment mismatch: events={quickAssignments}, slots={string.Join(",", quickInventory.QuickSelect)}, labels={slotButtons[0].Text}/{slotButtons[1].Text}, focus={GetViewport().GuiGetFocusOwner()?.Name}");
+                Require(equips == 1 && quickInventory.CurrentItemId == 10,
+                    "Quick Select assignment unexpectedly changed the held weapon or equip handler");
+            }
+            await Capture("quickselect");
             await Keyboard(Key.Escape); await Frames(25);
+            if (Rac1RetailUiAssets.NativeMenuPages is not null)
+                Require(InputMap.ActionGetEvents("ui_focus_next").OfType<InputEventJoypadButton>()
+                    .Any(ev => ev.ButtonIndex == JoyButton.RightShoulder),
+                    "Leaving Quick Select did not restore the user's gamepad focus mapping");
             await Open(sample, "Items", Rac1RetailMenuPage.Items);
             await Keyboard(Key.Escape); await Frames(25);
 

@@ -14,6 +14,8 @@ public sealed partial class PauseMenuUi
     public IReadOnlyList<RetailItem> Items { get; init; } = [];
     public IReadOnlyList<RetailItem> QuickSlots { get; init; } = [];
     public event Action<Rac1WeaponId>? EquipRequested;
+    /// <summary>Gameplay owner validates and persists an eight-slot native assignment.</summary>
+    public Func<int, int, bool>? QuickSelectAssignRequested { get; set; }
 
     public Rac1RetailMenuPage RetailPage => _retailNavigation.Page;
     private readonly Rac1RetailMenuNavigation _retailNavigation = new();
@@ -120,6 +122,7 @@ public sealed partial class PauseMenuUi
     public override void _Process(double delta)
     {
         if (!RetailEnabled || !IsInsideTree()) return;
+        RetainQuickSelectCandidateFocus();
         if (_retailNativeRootMotion is not null &&
             GetViewport().GetVisibleRect().Size != _nativeRootLastViewportSize)
             UpdateNativeRootPanels();
@@ -149,6 +152,9 @@ public sealed partial class PauseMenuUi
     {
         if (_retailNavigation.Navigate(target))
         {
+            if (_retailNavigation.Page == Rac1RetailMenuPage.QuickSelect &&
+                target != Rac1RetailMenuPage.QuickSelect)
+                RestoreQuickSelectShoulderBindings();
             if (_retailNavigation.Page == Rac1RetailMenuPage.Root &&
                 target != Rac1RetailMenuPage.Root && _retailNativeRootMotion is { } motion &&
                 motion.RemainingUpdates == 0)
@@ -176,6 +182,8 @@ public sealed partial class PauseMenuUi
         }
         _retailFocusOrder.Clear();
         _nativeGadgetGroups.Clear();
+        _nativeQuickSelectGroups.Clear();
+        _quickSelectSlotButtons = [];
         _retailHelp = null;
         Rac1RetailMenuPage page = _retailNavigation.Page;
         bool root = page == Rac1RetailMenuPage.Root;
@@ -213,7 +221,9 @@ public sealed partial class PauseMenuUi
             case Rac1RetailMenuPage.Gadgets:
                 if (!BuildNativeGadgetsPage()) BuildEquipmentPage(Gadgets, allowEquip: false);
                 break;
-            case Rac1RetailMenuPage.QuickSelect: BuildEquipmentPage(QuickSlots, allowEquip: false); break;
+            case Rac1RetailMenuPage.QuickSelect:
+                if (!BuildNativeQuickSelectPage()) BuildEquipmentPage(QuickSlots, allowEquip: false);
+                break;
             case Rac1RetailMenuPage.Items: BuildEquipmentPage(Items, allowEquip: false); break;
             case Rac1RetailMenuPage.Help: BuildHelpPage(); break;
             case Rac1RetailMenuPage.Options: BuildOptionsPage(); break;
@@ -222,6 +232,8 @@ public sealed partial class PauseMenuUi
         MenuFocus.WireVertical(_retailFocusOrder);
         if (page == Rac1RetailMenuPage.Gadgets && _nativeGadgetGroups.Count > 0)
             WireNativeGadgetsFocus();
+        else if (page == Rac1RetailMenuPage.QuickSelect && _nativeQuickSelectGroups.Count > 0)
+            WireNativeQuickSelectFocus();
         else if (page is Rac1RetailMenuPage.Weapons or Rac1RetailMenuPage.Gadgets or
             Rac1RetailMenuPage.QuickSelect or Rac1RetailMenuPage.Items)
             WireRetailGrid(_retailFocusOrder.OfType<Rac1RetailEquipmentCell>().ToArray());
