@@ -2,6 +2,7 @@ using Godot;
 using OBP.Core;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
+using NVector3 = System.Numerics.Vector3;
 
 namespace OneBigPackage;
 
@@ -90,6 +91,42 @@ public partial class OBPGame
                 finally { _player.GlobalPosition = previousPlayer; }
             }
 
+            if (_world.LevelId == 6)
+            {
+                // Source-backed FUN_L06_002e9d10 launch, with an explicit
+                // simulated producer callback. Source group membership and
+                // actual Queen/trigger event timing are not yet hosted.
+                var dormantLaunch = population.First(e =>
+                    frogs.Get(e.Node.Source.InstanceIndex) is
+                    { NativeState: 15, StartsHidden: true, Lives: 1, SwitchGated: false });
+                int launchId = dormantLaunch.Node.Source.InstanceIndex;
+                NVector3 launchPosition = ToEffectNative(dormantLaunch.Node.Root.GlobalPosition) +
+                    NVector3.UnitZ * 15f;
+                Require(LaunchRac1FrogFromNativeProducer(launchId, launchPosition,
+                    Rac1FrogLaunchProducer.QueenGroup),
+                    "Confirmed native group callback could not activate original hidden Frog");
+                Require(frogs.Get(launchId) is { NativeState: 6, Presented: true, Lives: 1 } &&
+                    dormantLaunch.Node.Root.Visible &&
+                    dormantLaunch.Body.CollisionLayer == 1 &&
+                    dormantLaunch.Body.CollisionMask == 1 &&
+                    dormantLaunch.Node.Root.GlobalPosition.DistanceTo(
+                        FromEffectNative(launchPosition)) < .001f,
+                    "Native hidden Frog state6 spawn did not restore pose/presentation/contact");
+                Require(!LaunchRac1FrogFromNativeProducer(launchId, launchPosition,
+                        Rac1FrogLaunchProducer.QueenGroup),
+                    "Duplicate list callback woke a non-state15 Frog");
+                Vector3 beforeFlight = dormantLaunch.Node.Root.GlobalPosition;
+                TickRac1Frog(dormantLaunch);
+                Require(frogs.Get(launchId).NativeState == 6 &&
+                    dormantLaunch.Node.Root.GlobalPosition.Y > beforeFlight.Y,
+                    "Native state6 launch gravity/rise never moved the hosted Frog");
+                // Landing fact supplied explicitly in the smoke fixture.
+                dormantLaunch.Grounded = true;
+                TickRac1Frog(dormantLaunch);
+                Require(frogs.Get(launchId).NativeState == 7,
+                    "Confirmed native landing did not enter Frog state7");
+                GD.Print($"[frog-smoke] original hidden i{launchId} explicitly launched state15->6->7; mesh/contact and gravity PASS");
+            }
             if (_world.LevelId == 6)
             {
                 Require(_rac1PickupAssets is not null &&

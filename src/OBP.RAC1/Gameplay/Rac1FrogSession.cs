@@ -27,6 +27,8 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public const int CarrierChildClassId = Rac1BoltCrate.NativeClassId;
     public const float CarrierReleaseDistance = 4f;
     public const int CarrierIgnoredHitSourceClass = 0xaf;
+    public const float NativeLaunchGravityPerTick = 20f / (NativeTicksPerSecond * NativeTicksPerSecond);
+    public const float NativeLaunchRisePerTick = 2f / NativeTicksPerSecond;
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly IReadOnlyList<Vector3[]> _paths;
     private readonly Dictionary<int, Entry> _entries = [];
@@ -46,6 +48,7 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         public bool AttackEmitted { get; set; }
         public bool CarrierChildOwned { get; set; }
         public bool CarrierReleased { get; set; }
+        public float LaunchVerticalVelocity { get; set; }
         public uint RandomState { get; set; } = (uint)(native.InstanceIndex + 1) * 747796405u + 2891336453u;
     }
 
@@ -74,7 +77,6 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
             var entry = pair.Value;
             bool shouldPresent = !entry.Native.State.IsTerminalized &&
                 (entry.Authored.HasCarrier == 0 || entry.CarrierReleased) &&
-                (entry.Authored.StartsHidden == 0 || entry.CarrierReleased) &&
                 entry.Native.State.NativeState != 15 &&
                 entry.Authored.UpdateEligible(enabled);
             if (entry.Native.IsActive == shouldPresent) continue;
@@ -108,6 +110,39 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
 
     public Rac1FrogFrame Get(int instance) => Snapshot(_entries[instance]);
     public Rac1FrogAuthored GetAuthored(int instance) => _entries[instance].Authored;
+
+    /// <summary>
+    /// FUN_L06_002e9d10, invoked only by a confirmed native producer:
+    /// the Queen's listed wave or the clip-volume animation trigger.
+    /// Ordinary target proximity, shuttle changes and elapsed time are
+    /// never sufficient to release a source hidden/state-15 Frog.
+    /// </summary>
+    public Rac1FrogLaunch? LaunchFromNativeProducer(int instance, Vector3 launchPosition,
+        Rac1FrogLaunchProducer producer)
+    {
+        if (!Finite(launchPosition)) throw new ArgumentOutOfRangeException(nameof(launchPosition));
+        if (producer is not (Rac1FrogLaunchProducer.QueenGroup or Rac1FrogLaunchProducer.IntervalTrigger))
+            throw new ArgumentOutOfRangeException(nameof(producer));
+        var e = _entries[instance];
+        if (e.Native.State.NativeState != 15 || e.Native.State.IsTerminalized ||
+            !e.Authored.UpdateEligible(ShuttleSwitchEnabled) ||
+            e.CarrierChildOwned || e.CarrierReleased)
+            return null;
+        e.Yaw = NextFloat(e) * MathF.Tau;
+        e.LaunchVerticalVelocity = NativeLaunchRisePerTick;
+        // These exact native PVar writes originate from FUN_L06_002e9d10:
+        // +0x130 gravity, +0x138/+0x13c initial rise, +0x144 mode 5,
+        // +0x15d selector 3. Remaining vendor arc solver is host-adapted.
+        var pvar = e.Native.MutablePVar.AsSpan();
+        BinaryPrimitives.WriteSingleLittleEndian(pvar[0x130..], NativeLaunchGravityPerTick);
+        BinaryPrimitives.WriteSingleLittleEndian(pvar[0x138..], NativeLaunchRisePerTick);
+        BinaryPrimitives.WriteSingleLittleEndian(pvar[0x13c..], NativeLaunchRisePerTick);
+        BinaryPrimitives.WriteInt32LittleEndian(pvar[0x144..], 5);
+        pvar[0x15d] = 3;
+        SetState(e, 6, e.Sequence);
+        _runtime.SetPresence(e.Native, RuntimeEntityPresence.Active);
+        return new(Snapshot(e), launchPosition, producer);
+    }
 
     /// <summary>Native FUN_L06_002e94f0 checks the owned class-500 child's
     /// hit slot first, ignores class 0xAF, bursts the crate and removes the
@@ -188,8 +223,15 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
                 }
                 break;
             case 5: // Retail transitions via mine_fall bit 1; supplied by host.
-            case 6:
                 if (grounded) SetState(e, 7, 3);
+                break;
+            case 6: // Native launch: gravity 20 frame_time^2, rise 2 frame_time.
+                if (grounded) SetState(e, 7, 3);
+                else
+                {
+                    movement = Vector3.UnitZ * e.LaunchVerticalVelocity;
+                    e.LaunchVerticalVelocity -= NativeLaunchGravityPerTick;
+                }
                 break;
             case 7:
                 if (animationWrapped) SetState(e, 8, 4);
@@ -296,6 +338,7 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
             BinaryPrimitives.WriteInt16LittleEndian(e.Native.MutablePVar.AsSpan(0x240), (short)e.Lives);
             BinaryPrimitives.WriteSingleLittleEndian(e.Native.MutablePVar.AsSpan(0x20), e.Health);
             SetState(e, 15, e.Sequence);
+            e.LaunchVerticalVelocity = 0;
             _runtime.SetPresence(e.Native, RuntimeEntityPresence.Inactive);
             return new(Snapshot(e), false, true);
         }
@@ -344,4 +387,13 @@ public sealed record Rac1FrogFrame(int NativeState, int Sequence, float Health,
     int Lives, float Yaw, Vector3 Displacement, bool Presented, bool Contact,
     bool Terminal, int PathIndex, bool CarrierMode, bool StartsHidden, bool SwitchGated,
     bool CarrierChildOwned, bool CarrierReleased);
+public enum Rac1FrogLaunchProducer
+{
+    QueenGroup,
+    IntervalTrigger
+}
+
+public sealed record Rac1FrogLaunch(Rac1FrogFrame Frame, Vector3 NativePosition,
+    Rac1FrogLaunchProducer Producer);
+
 public sealed record Rac1FrogDamageResult(Rac1FrogFrame Frame, bool Lethal, bool RespawnParked);

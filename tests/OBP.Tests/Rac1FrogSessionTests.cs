@@ -231,6 +231,99 @@ public sealed class Rac1FrogSessionTests
     }
 
     [Fact]
+    public void NativeControllerLaunchMakesOnlyConfirmedHiddenFrogAirborne()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var frogs = new Rac1FrogSession(runtime, []);
+        var hidden = Source(101, hidden: 1);
+        var ordinary = Source(102);
+        frogs.Register(hidden, RuntimeEntityState.FromAuthored(hidden), new(5, 5, 5));
+        frogs.Register(ordinary, RuntimeEntityState.FromAuthored(ordinary), new(1, 1, 1));
+        Assert.Equal(15, frogs.Step(101, Vector3.Zero, Vector3.Zero, true).NativeState);
+        Assert.False(frogs.Get(101).Presented);
+        Assert.Null(frogs.LaunchFromNativeProducer(102, Vector3.Zero,
+            Rac1FrogLaunchProducer.QueenGroup));
+        var nativePosition = new Vector3(5, 5, 20);
+        var launched = frogs.LaunchFromNativeProducer(101, nativePosition,
+            Rac1FrogLaunchProducer.QueenGroup);
+        Assert.NotNull(launched);
+        Assert.Equal(Rac1FrogLaunchProducer.QueenGroup, launched.Producer);
+        Assert.Equal(nativePosition, launched.NativePosition);
+        Assert.Equal(6, launched.Frame.NativeState);
+        Assert.True(launched.Frame.Presented);
+        Assert.Equal(2, frogs.PresentedCount);
+        Assert.Null(frogs.LaunchFromNativeProducer(101, nativePosition,
+            Rac1FrogLaunchProducer.IntervalTrigger));
+        var pvar = runtime.Require(hidden).PVar.Span;
+        Assert.Equal(Rac1FrogSession.NativeLaunchGravityPerTick,
+            BinaryPrimitives.ReadSingleLittleEndian(pvar[0x130..]));
+        Assert.Equal(Rac1FrogSession.NativeLaunchRisePerTick,
+            BinaryPrimitives.ReadSingleLittleEndian(pvar[0x138..]));
+        Assert.Equal(Rac1FrogSession.NativeLaunchRisePerTick,
+            BinaryPrimitives.ReadSingleLittleEndian(pvar[0x13c..]));
+        Assert.Equal(5, BinaryPrimitives.ReadInt32LittleEndian(pvar[0x144..]));
+        Assert.Equal(3, pvar[0x15d]);
+        float previousRise = Rac1FrogSession.NativeLaunchRisePerTick;
+        var position = nativePosition;
+        for (int tick = 0; tick < 12; tick++)
+        {
+            var next = frogs.Step(101, position, Vector3.Zero, false, grounded: false);
+            Assert.Equal(6, next.NativeState);
+            Assert.Equal(previousRise, next.Displacement.Z, 5);
+            previousRise -= Rac1FrogSession.NativeLaunchGravityPerTick;
+            position += next.Displacement;
+            Assert.Equal(Vector3.Zero, new Vector3(next.Displacement.X, next.Displacement.Y, 0));
+        }
+        Assert.Equal(7, frogs.Step(101, position, Vector3.Zero, false, grounded: true).NativeState);
+        Assert.Equal(8, frogs.Step(101, position, Vector3.Zero, false,
+            animationWrapped: true).NativeState);
+        Assert.Null(frogs.LaunchFromNativeProducer(101, nativePosition,
+            Rac1FrogLaunchProducer.QueenGroup));
+        Assert.Equal(2, runtime.RegisteredCount);
+    }
+
+    [Fact]
+    public void NativeLaunchRespectsShuttleGateAndRepairsRespawnParkWithoutRetargeting()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var frogs = new Rac1FrogSession(runtime, []);
+        var gated = Source(103, hidden: 1, gate: 1);
+        frogs.Register(gated, RuntimeEntityState.FromAuthored(gated), Vector3.Zero);
+        Assert.Null(frogs.LaunchFromNativeProducer(103, Vector3.One,
+            Rac1FrogLaunchProducer.IntervalTrigger));
+        frogs.ApplyShuttleSwitch(true);
+        Assert.False(frogs.Get(103).Presented);
+        Assert.NotNull(frogs.LaunchFromNativeProducer(103, Vector3.One,
+            Rac1FrogLaunchProducer.IntervalTrigger));
+        Assert.Equal(1, frogs.PresentedCount);
+        frogs.ApplyShuttleSwitch(false);
+        Assert.False(frogs.Get(103).Presented);
+        frogs.ApplyShuttleSwitch(true);
+        Assert.True(frogs.Get(103).Presented);
+        Assert.Equal(6, frogs.Get(103).NativeState);
+
+        var once = Source(104, lives: 1);
+        var runtime2 = new Rac1MobyRuntimeSession();
+        var repeat = new Rac1FrogSession(runtime2, []);
+        repeat.Register(once, RuntimeEntityState.FromAuthored(once), Vector3.Zero);
+        var hit = new Rac1GameplayDamageEvent(Rac1GameplayEntityRef.PlayerWrench,
+            Rac1GameplayEntityRef.Moby(new(827, 104)), 1, 0x10000,
+            owner: Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Player));
+        Assert.True(repeat.ApplyDamage(once, hit).RespawnParked);
+        Assert.Equal(15, repeat.Get(104).NativeState);
+        Assert.NotNull(repeat.LaunchFromNativeProducer(104, Vector3.UnitZ * 17,
+            Rac1FrogLaunchProducer.QueenGroup));
+        Assert.Equal(0, repeat.Get(104).Lives);
+        Assert.Equal(1, repeat.Get(104).Health);
+        Assert.Equal(1, repeat.RegisteredCount);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            repeat.LaunchFromNativeProducer(104, Vector3.Zero, (Rac1FrogLaunchProducer)999));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            repeat.LaunchFromNativeProducer(104, new(float.NaN, 0, 0),
+                Rac1FrogLaunchProducer.QueenGroup));
+    }
+
+    [Fact]
     public void FatalHitRemovesOnlyOneFrogWhileLifeModeParksInState15()
     {
         var runtime = new Rac1MobyRuntimeSession();

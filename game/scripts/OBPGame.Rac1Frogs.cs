@@ -59,6 +59,30 @@ public partial class OBPGame
         }
     }
 
+    /// <summary>
+    /// Only a witnessed LEVEL6 native producer/group callback may call this.
+    /// The exact retail group-directory decoding is still under investigation,
+    /// so general player proximity does not call it.
+    /// </summary>
+    private bool LaunchRac1FrogFromNativeProducer(int instance, NVector3 nativePosition,
+        Rac1FrogLaunchProducer producer)
+    {
+        if (_rac1Frogs is null || !_rac1Enemies.TryGetValue(instance, out var enemy))
+            return false;
+        var launched = _rac1Frogs.LaunchFromNativeProducer(instance, nativePosition, producer);
+        if (launched is null) return false;
+        Vector3 position = FromEffectNative(launched.NativePosition);
+        enemy.Node.Root.GlobalPosition = position;
+        enemy.Node.Root.Rotation = new(0, launched.Frame.Yaw, 0);
+        enemy.Body.GlobalPosition = position;
+        enemy.Body.CollisionLayer = 1;
+        enemy.Body.CollisionMask = 1;
+        enemy.Grounded = false; // Native state6 awaits mine_fall landing.
+        SynchronizeRac1Enemy(enemy);
+        GD.Print($"[frog-launch] native {producer} activated class827 i{instance} state15->6");
+        return true;
+    }
+
     private void TickRac1Frog(Rac1HostedEnemy enemy)
     {
         if (_rac1Frogs is null || _player is null) return;
