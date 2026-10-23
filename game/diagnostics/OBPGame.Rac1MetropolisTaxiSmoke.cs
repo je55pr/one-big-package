@@ -150,13 +150,24 @@ public partial class OBPGame
             bool recoveredCamera = player.Camera.TopLevel;
             await PhysicsFramesAsync(25);
             Require(taxis.IsRiding, "class-1012 shuttle did not enter flight");
+            Require(_rac1TaxiRiderFrame is not null &&
+                _rac1FlyingTaxi is not null,
+                "class-1012 lost cab-relative passenger pose during flight");
+            var carryingTaxi = _rac1FlyingTaxi!;
+            var cabPose = carryingTaxi.Root.GlobalPosition;
+            var expected = _rac1TaxiRiderFrame!.PositionAt(
+                new Rac1TaxiPoint(cabPose.X, cabPose.Y, cabPose.Z),
+                carryingTaxi.Root.GlobalRotation.Y);
+            Require(player.GlobalPosition.DistanceTo(new Vector3(
+                (float)expected.X, (float)expected.Y, (float)expected.Z)) < 0.05f,
+                "Ratchet stayed at a world-fixed offset instead of following taxi heading");
             Require(!recoveredCamera ||
                 (player.Camera.GlobalPosition - player.GlobalPosition)
                     .DistanceTo(cameraRelativeAtBoard) < 0.1f,
                 "world-space recovered camera stayed at the boarding dock instead of following Ratchet");
             AbortRac1MetropolisTaxiRide();
             Require(!taxis.IsRiding && _rac1FlyingTaxi is null &&
-                !_rac1TaxiCameraWorldOwned &&
+                _rac1TaxiRiderFrame is null && !_rac1TaxiCameraWorldOwned &&
                 player.ProcessMode != Node.ProcessModeEnum.Disabled &&
                 _rac1TaxiCollisionBodies[962].CollisionLayer == 1,
                 "mid-flight abort stranded Ratchet, camera or moving hull");
@@ -173,7 +184,7 @@ public partial class OBPGame
                 () => !taxis.IsRiding && _rac1FlyingTaxi is null, 3200,
                 "class-1012 return route failed to arrive");
             Require(player.ProcessMode != Node.ProcessModeEnum.Disabled &&
-                !_rac1TaxiCameraWorldOwned &&
+                !_rac1TaxiCameraWorldOwned && _rac1TaxiRiderFrame is null &&
                 _rac1TaxiCollisionBodies[962].CollisionLayer == 1,
                 "class-1012 return route failed to disembark or restore camera/physics");
 

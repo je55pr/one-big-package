@@ -627,3 +627,39 @@ reset and the fifteen-frame delay; retail ISO tests traverse
 both actual unoccupied routes for i961 and i962 and validate
 the authored endpoints. The playable encounter regression probes
 collision ground and preserves the previously validated rides.
+
+## 23 October 2026: attachment-frame correction and rider orientation
+
+The native taxi updaters **do not call an API that directly attaches
+Ratchet to the cab**. Both class-816 at L3:0x002d38d8 and class-1012
+at L3:0x002dd06c invoke `attach_frame_set` (native 0x00260738)
+after constructing the world displacement **Ratchet position minus cab
+position**. The common engine helper stores that displacement at
+output +0x10, and stores angles from the rotation
+`transpose(base_ang) * cab_ang` at output +0. The output is the
+taxi Moby PVar +0x20. This is a relative attachment **frame**
+used by source update/presentation, not itself a hero-state,
+animation, movement or camera ownership transition. Previous
+comments describing it as an actual passenger attachment were
+incorrect.
+
+The Godot rider originally kept its clamped passenger offset in
+world axes. Consequently, the taxi hull turned with the recovered
+native yaw seek while Ratchet remained frozen to the same world-side
+position, sliding across the deck. New engine-neutral
+`Rac1TaxiPassengerFrame` preserves the actual boarding offset and
+reapplies the taxi's **relative scene yaw change** each tick,
+retaining the original height offset and cab-translated camera
+following. The bounded clamping still occurs only at boarding,
+and 2*pi wrap, yaw reversal, invalid poses and nonzero boarding
+headings have deterministic regression tests. The host clears
+the passenger pose on cancellation, level transition and landing;
+the real Godot smoke validates both attached position during flight
+and cleanup on abort/dismount.
+
+This is explicitly a **Y-up, yaw-only host visual approximation**.
+The native attachment frame carries full pitch/yaw/roll matrices,
+and true Ratchet 0x65..0x67 animation and camera request ownership
+remain unported. The scene's existing collision-safe landing and
+source-class boarding admission are unchanged; this increment must
+not be claimed as native passenger parenting.

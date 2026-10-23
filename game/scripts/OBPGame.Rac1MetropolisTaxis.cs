@@ -21,7 +21,7 @@ public partial class OBPGame
     private RuntimeWorldScene.DynamicObjectNode? _rac1FlyingTaxi;
     private Vector3 _rac1FlyingTaxiOrigin;
     private Vector3 _rac1TaxiBoardingPosition;
-    private Vector3 _rac1TaxiRiderOffset;
+    private Rac1TaxiPassengerFrame? _rac1TaxiRiderFrame;
     private Vector3 _rac1TaxiCameraWorldOffset;
     private bool _rac1TaxiCameraWorldOwned;
     private Node.ProcessModeEnum _rac1TaxiPreviousPlayerMode;
@@ -69,6 +69,7 @@ public partial class OBPGame
                 player.CenterCameraBehindPlayer();
         }
         _rac1TaxiCameraWorldOwned = false;
+        _rac1TaxiRiderFrame = null;
 
         _rac1MetropolisTaxis?.AbortRide();
         // A second taxi may be approaching or parked at its destination.
@@ -96,6 +97,7 @@ public partial class OBPGame
     {
         AbortRac1MetropolisTaxiRide();
         _rac1MetropolisTaxis = null;
+        _rac1TaxiRiderFrame = null;
         ReleaseRac1MetropolisTaxiHulls();
         _rac1TaxiNodes.Clear();
         _rac1TaxiHovers.Clear();
@@ -287,10 +289,17 @@ public partial class OBPGame
         _rac1FlyingTaxiOrigin = _rac1FlyingTaxi.Root.GlobalPosition;
         _rac1TaxiBoardingPosition = FromTaxiPoint(boarding.Position);
         var relative = player.GlobalPosition - _rac1FlyingTaxiOrigin;
-        _rac1TaxiRiderOffset = new Vector3(
+        var bounded = new Vector3(
             Mathf.Clamp(relative.X, -1.4f, 1.4f),
             Mathf.Clamp(relative.Y, 0.12f, 0.8f),
             Mathf.Clamp(relative.Z, -1.4f, 1.4f));
+        // The native attach_frame_set call updates a relative transform
+        // frame each tick, not the hero state. While proper frame and
+        // animation parenting remain unported, keep Ratchet's boarding
+        // offset in the rotating cab frame instead of world-space XYZ.
+        _rac1TaxiRiderFrame = new Rac1TaxiPassengerFrame(
+            new Rac1TaxiPoint(bounded.X, bounded.Y, bounded.Z),
+            _rac1FlyingTaxi.Root.GlobalRotation.Y);
         // Native hero_cam_target_set enters the scripted walk-to point
         // state 0x65, with braking/settling states 0x66/0x67, not an
         // immediate camera cut. The source-backed state gate is now in
@@ -304,8 +313,8 @@ public partial class OBPGame
         _rac1TaxiCollisionBodies[boarding.InstanceIndex].CollisionLayer = 0;
         _rac1TaxiPreviousPlayerMode = player.ProcessMode;
         player.ProcessMode = Node.ProcessModeEnum.Disabled;
-        // Native attach_frame_set carries the visible character; hiding
-        // Ratchet throughout the flight was not retail behavior.
+        // The native attach frame does not itself hide Ratchet. Keep
+        // the character visible during the host provisional ride.
         player.VisualRoot.Visible = true;
         GD.Print($"[rac1-taxi] boarded i{boarding.InstanceIndex} -> {boarding.DestinationLabel}");
     }
@@ -402,7 +411,16 @@ public partial class OBPGame
 
         var taxiPosition = PresentRac1Taxi(
             flight.From.InstanceIndex, taxi.Root, FromTaxiPoint(flight.Position), delta);
-        player.GlobalPosition = taxiPosition + _rac1TaxiRiderOffset;
+        if (_rac1TaxiRiderFrame is not { } rider)
+        {
+            AbortRac1MetropolisTaxiRide();
+            return;
+        }
+        var passenger = rider.PositionAt(
+            new Rac1TaxiPoint(taxiPosition.X, taxiPosition.Y, taxiPosition.Z),
+            taxi.Root.GlobalRotation.Y);
+        player.GlobalPosition = new Vector3(
+            (float)passenger.X, (float)passenger.Y, (float)passenger.Z);
         if (_rac1TaxiCameraWorldOwned && IsInstanceValid(player.Camera))
             player.Camera.GlobalPosition = player.GlobalPosition + _rac1TaxiCameraWorldOffset;
 
@@ -447,6 +465,7 @@ public partial class OBPGame
         GD.Print($"[rac1-taxi] finished i{flight.From.InstanceIndex} at {exit}, " +
             $"destination supported={docked}");
         taxis.CompleteArrival();
+        _rac1TaxiRiderFrame = null;
         _rac1FlyingTaxi = null;
     }
 
