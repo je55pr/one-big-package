@@ -9,6 +9,7 @@ public partial class ControllerMenuNavigation : Node
         new[] { "ui_up", "ui_down", "ui_left", "ui_right", "ui_focus_next", "ui_focus_prev" }
             .Select(action => ((StringName)action, ControllerBindings.PadAction(action))).ToArray();
     private readonly Dictionary<StringName, ulong> _held = [];
+    public void ResetRepeat() => _held.Clear();
     public override void _Ready() => ProcessMode = ProcessModeEnum.Always;
 
     private bool Active => !ControllerBindings.MenuNavigationSuspended &&

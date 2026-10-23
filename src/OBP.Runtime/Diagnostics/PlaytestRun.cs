@@ -11,6 +11,7 @@ public sealed record PlaytestRunHeader(
 {
     public const int CurrentVersion = 1;
     public IReadOnlyDictionary<string, Guid> Assemblies { get; init; } = new Dictionary<string, Guid>();
+    public string ApplicationVersion { get; init; } = "";
     public void Validate()
     {
         if (Version != CurrentVersion || AssemblyId == Guid.Empty || PhysicsHz != 60 ||
@@ -20,7 +21,8 @@ public sealed record PlaytestRunHeader(
             string.IsNullOrWhiteSpace(EngineVersion) || EngineVersion.Length > 128 ||
             Platform is null || Platform.Length > 128 || PhysicsEngine is null || PhysicsEngine.Length > 128 ||
             Campaign.ValueKind != JsonValueKind.Object || CameraOptions.ValueKind != JsonValueKind.Object ||
-            Campaign.GetRawText().Length > 65536 || CameraOptions.GetRawText().Length > 4096)
+            Campaign.GetRawText().Length > 65536 || CameraOptions.GetRawText().Length > 4096 ||
+            ApplicationVersion is null || ApplicationVersion.Length > 256 || ApplicationVersion.Any(char.IsControl))
             throw new InvalidDataException("Unsupported or incomplete playtest header.");
         if (InitialState is null) throw new InvalidDataException("Recording lacks its initial observation.");
         if (Assemblies is null || Assemblies.Count is < 1 or > 64 ||
