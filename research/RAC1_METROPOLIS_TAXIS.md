@@ -482,3 +482,44 @@ After the correction, the complete Kerwan staged Godot smoke passed:
 i919 native walk-to -> abort -> retry -> flight -> grounded dismount,
 then i962 bounded direct boarding -> flight interruption -> reboarding
 -> safe return-to-source landing. Audio retired cleanly.
+
+## 23 October 2026: native taxi heading recurrence
+
+The generic Godot `Mathf.LerpAngle(currentYaw, desiredYaw, delta*5)`
+was a provisional orientation trick: it did not model the original
+taxi's persistent spin or braking. The native path helper
+`lv3_2d3918_l3` at **L3:0x002d3918** calls
+`yaw_seek` at **0x0025be00** on the taxi Moby's yaw
+`+0x48` with angular velocity stored at **PVar+0x68**.
+Source constants at L3:0x00161b14 are **45 degrees**, and
+the updater scales by the native frame delta; its spin limit is
+`2*pi * frame delta`. At normalized 60 Hz this gives acceleration
+and deceleration of **pi/240 radians per step** and a maximum spin
+of **2*pi/60 radians per step**.
+
+The helper accelerates angular velocity toward the shortest signed
+heading error, brakes when the existing spin would overshoot, slows
+wrong-way spin before reversing direction, and clamps the last
+rotation to the target without resetting the persistent spin. The
+translated routine appears to compute `sqrt(2*decel*err)` even
+for a negative error: `Rac1TaxiNativeYawSeek` uses the magnitude
+for the negative branch, preventing a host NaN while retaining
+the documented bidirectional intention. This sign guard is an
+explicit safety interpretation, not a byte-exact assertion.
+
+Godot now keeps a separate heading/spin session for each of the
+five taxi actors, initializes it with the imported mesh's rotation,
+and updates yaw through the native 60 Hz recurrence when authored
+movement points are observed. Stationary frames brake accumulated
+spin; discontinuous host route resets do not trigger a guessed
+heading. Visual X mirroring and the existing hover pitch/roll are
+still handled by Godot presentation. The engine-neutral tests cover
+first/second native increments, both turn directions, seam
+wraparound, reversal braking, long-run target convergence, 30/120 Hz
+host chunking and invalid inputs.
+
+This ports **yaw seeking only**, not the other two body-axis
+steering calls in the native path helper, native camera ownership or
+full off-centre boarding geometry. Source-authored waypoint motion,
+existing hover, collision-safe dismount and class-1012 return
+fallback are unchanged.

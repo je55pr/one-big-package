@@ -17,6 +17,7 @@ public partial class OBPGame
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1TaxiNodes = [];
     private readonly Dictionary<int, StaticBody3D> _rac1TaxiCollisionBodies = [];
     private readonly Dictionary<int, Rac1TaxiNativeHover> _rac1TaxiHovers = [];
+    private readonly Dictionary<int, Rac1TaxiNativeYawSeek> _rac1TaxiYawSeeks = [];
     private RuntimeWorldScene.DynamicObjectNode? _rac1FlyingTaxi;
     private Vector3 _rac1FlyingTaxiOrigin;
     private Vector3 _rac1TaxiBoardingPosition;
@@ -98,6 +99,7 @@ public partial class OBPGame
         ReleaseRac1MetropolisTaxiHulls();
         _rac1TaxiNodes.Clear();
         _rac1TaxiHovers.Clear();
+        _rac1TaxiYawSeeks.Clear();
     }
 
     private void ConfigureRac1MetropolisTaxis(RuntimeWorld world, RuntimeWorldScene.Result result)
@@ -116,9 +118,12 @@ public partial class OBPGame
                 ReleaseRac1MetropolisTaxiHulls();
                 _rac1TaxiNodes.Clear();
                 _rac1TaxiHovers.Clear();
+                _rac1TaxiYawSeeks.Clear();
                 return;
             }
             _rac1TaxiNodes.Add(stop.InstanceIndex, node);
+            _rac1TaxiYawSeeks.Add(stop.InstanceIndex,
+                new Rac1TaxiNativeYawSeek(node.Root.GlobalRotation.Y));
             if (stop.NativeHoverPhases is { } phases)
                 _rac1TaxiHovers.Add(stop.InstanceIndex,
                     new Rac1TaxiNativeHover(phases));
@@ -144,6 +149,7 @@ public partial class OBPGame
                 ReleaseRac1MetropolisTaxiHulls();
                 _rac1TaxiNodes.Clear();
                 _rac1TaxiHovers.Clear();
+                _rac1TaxiYawSeeks.Clear();
                 return;
             }
             node.Root.AddChild(body);
@@ -167,21 +173,25 @@ public partial class OBPGame
     private static Vector3 FromTaxiPoint(Rac1TaxiPoint position) =>
         RuntimeWorldScene.ToScene(position.X, position.Y, position.Z);
 
-    // Native class 816/1012 both steer moby yaw toward their travel direction.
-    // The source yaw-seek recurrence is still being recovered; this smooth
-    // host presentation at least prevents the cabs sliding sideways.
-    private static void OrientRac1Taxi(Node3D root, Vector3 target, double delta)
+    // Retail taxi path helper 0x002d3918 updates yaw using yaw_seek
+    // (0x0025be00): persistent angular velocity with native acceleration,
+    // braking and shortest-arc wrap. The Godot scene mirrors world X, so
+    // the requested visual heading is still calculated in scene space.
+    // Large discontinuities (host route resets) must not introduce turns.
+    private void OrientRac1Taxi(
+        int instanceIndex, Node3D root, Vector3 target, double delta)
     {
+        if (!_rac1TaxiYawSeeks.TryGetValue(instanceIndex, out var seek))
+            return;
         Vector3 motion = target - root.GlobalPosition;
         motion.Y = 0;
-        if (motion.LengthSquared() < 0.0001f || motion.LengthSquared() > 100f)
-            return;
-        float targetYaw = Mathf.Atan2(motion.X, motion.Z);
-        float currentYaw = root.GlobalRotation.Y;
-        float fraction = Mathf.Clamp((float)delta * 5f, 0f, 1f);
-        root.GlobalRotation = new(
-            root.GlobalRotation.X,
-            Mathf.LerpAngle(currentYaw, targetYaw, fraction),
+        float distanceSquared = motion.LengthSquared();
+        double heading = distanceSquared is >= 0.0001f and <= 100f
+            ? Mathf.Atan2(motion.X, motion.Z)
+            : seek.HeadingRadians;
+        seek.Advance(heading, delta);
+        root.GlobalRotation = new Vector3(
+            root.GlobalRotation.X, (float)seek.HeadingRadians,
             root.GlobalRotation.Z);
     }
 
@@ -191,7 +201,7 @@ public partial class OBPGame
     private Vector3 PresentRac1Taxi(
         int instanceIndex, Node3D root, Vector3 authoredPosition, double delta)
     {
-        OrientRac1Taxi(root, authoredPosition, delta);
+        OrientRac1Taxi(instanceIndex, root, authoredPosition, delta);
         if (_rac1TaxiHovers.TryGetValue(instanceIndex, out var hover))
         {
             authoredPosition.Y += (float)hover.HeightOffset;
