@@ -20,6 +20,22 @@ public sealed class Rac1MenuPanelPagesTests
         Assert.Equal(2, ordinary.State);
         Assert.Equal([14, 15, 16, 17, 18, 19, 20, 7, 8, 9, 10, 11, 12, 13],
             ordinary.Animations.ToArray());
+        // The first seven R&C1 root screens use their own overlay draw
+        // callback, not the shared text-label/shadow callback. The first
+        // six are ordinary choices; slot 6 requires menu_system.unkD8.
+        var rootEntries = pages.NativeRootEntries;
+        Assert.Equal(7, rootEntries.Count);
+        Assert.Equal([20194, 20195, 20196, 20197, 20198, 20199, 20418],
+            rootEntries.Select(entry => entry.TextId).ToArray());
+        Assert.Equal(Enumerable.Range(0, 7), rootEntries.Select(entry => entry.Slot));
+        Assert.All(rootEntries, entry =>
+        {
+            Assert.Equal(3, entry.Action);
+            Assert.Equal(4, entry.Flags);
+            Assert.Equal(0x00278E10u, entry.DrawCallback);
+        });
+        Assert.All(rootEntries.Take(6), entry => Assert.False(entry.RequiresNativeAdmission));
+        Assert.True(rootEntries[6].RequiresNativeAdmission);
         Assert.Equal([0, 1, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             pages[Rac1MenuPanelPages.Page.Opening].Animations.ToArray());
         Assert.Equal([21, 22, 23, 24, 25, 5, 6, 7, 8, 9, 10, 11, 12, 13],

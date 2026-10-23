@@ -20,13 +20,18 @@ public sealed partial class PauseMenuUi
             return false;
         var names = new[]
         {
-            (20194, "Weapons", Rac1RetailMenuPage.Weapons),
-            (20195, "Gadgets", Rac1RetailMenuPage.Gadgets),
-            (20196, "Quick Select", Rac1RetailMenuPage.QuickSelect),
-            (20197, "Items", Rac1RetailMenuPage.Items),
-            (20198, "Help", Rac1RetailMenuPage.Help),
-            (20199, "Options", Rac1RetailMenuPage.Options),
+            ("Weapons", Rac1RetailMenuPage.Weapons),
+            ("Gadgets", Rac1RetailMenuPage.Gadgets),
+            ("Quick Select", Rac1RetailMenuPage.QuickSelect),
+            ("Items", Rac1RetailMenuPage.Items),
+            ("Help", Rac1RetailMenuPage.Help),
+            ("Options", Rac1RetailMenuPage.Options),
         };
+        var sourceChoices = Rac1RetailUiAssets.NativeMenuPages?.NativeRootEntries;
+        if (sourceChoices is not { Count: 7 } ||
+            sourceChoices.Take(names.Length).Any(choice => choice.RequiresNativeAdmission) ||
+            !sourceChoices[6].RequiresNativeAdmission)
+            throw new InvalidDataException("Original pause root choices or conditional seventh slot are missing.");
         // The original 14 panels initialise at each sequence's last
         // frame. These original six menu choices are displayed at frame 0;
         // their outgoing animations run for the native twelve updates.
@@ -37,7 +42,8 @@ public sealed partial class PauseMenuUi
         overlay.Visible = true;
         for (int slot = 0; slot < names.Length; slot++)
         {
-            var (id, fallback, target) = names[slot];
+            var (fallback, target) = names[slot];
+            int id = sourceChoices[slot].TextId;
             var button = new Rac1RetailMenuButton
             {
                 Name = $"NativePanelSlot_{slot}",

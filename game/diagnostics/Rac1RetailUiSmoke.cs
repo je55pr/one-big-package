@@ -68,6 +68,16 @@ public partial class Rac1RetailUiSmoke : Node
                     .Where(b => b.Name.ToString().StartsWith("NativePanelSlot_", StringComparison.Ordinal))
                     .ToArray();
                 Require(nativeButtons.Length == 6, "Projected class-0x472 geometry did not replace fixed root rows");
+                var sourceLabels = Rac1RetailUiAssets.NativeMenuPages!.NativeRootEntries;
+                Require(sourceLabels.Count == 7 && sourceLabels[6].RequiresNativeAdmission,
+                    "Retail ordinary root lost its conditional seventh text screen");
+                for (int slot = 0; slot < nativeButtons.Length; slot++)
+                {
+                    var entry = sourceLabels[slot];
+                    Require(entry.Slot == slot && !entry.RequiresNativeAdmission &&
+                        nativeButtons[slot].Text == Rac1RetailUiAssets.Text(entry.TextId, "<missing native text>"),
+                        $"Root label at slot {slot} is not the authored retail text entry");
+                }
                 var sourceTrack = Rac1RetailUiAssets.CreateNativePanelMotion()!;
                 sourceTrack.BeginTransition(Rac1MenuPanelPages.Page.OrdinaryPause, backwards: true);
                 for (int tick = 0; tick < 12; tick++) sourceTrack.Tick();

@@ -516,3 +516,49 @@ ordinary root labels. The ordinary root uses its own Veldin-overlay
 before altering the root's font baseline or claiming the generic
 configured-label shadow is used there. This research did not copy raw
 overlay payloads or alter host typography.
+
+## 23 October: ordinary root text-list callback recovered and admitted
+
+The Veldin overlay's initialized page `0x001B2588` contains seven
+single-item `MenuTextListData` screens, addresses `0x001B26B8` through
+`0x001B2898` in 0x50-byte steps. Every screen uses update callback
+`0x00278840`, draw callback **`0x00278E10`**, and text-list flags 4.
+The embedded text array at `0x001B2610` advances 0x18 bytes per entry;
+each active entry has an action 3 (open page), no subtitle and a zero
+terminator. The original authored text identities for slots 0..6 are
+**20194, 20195, 20196, 20197, 20198, 20199, 20418**.
+
+Disassembly of the local authorized Veldin overlay's draw routine
+confirms the key typographic distinctions from `FUN_0021A328`:
+
+- Flag 4 selects source large-font metrics (texture kind 3) and a
+  14-native-pixel line-size parameter. Each root slot holds one item.
+- With no fixed-step flag, each item's row height is
+  `panel_height / (entry_count + 1)`; the initial vertical text anchor
+  is `row_height - 14 / 2 - 1` for these single-item panels.
+- Horizontal text placement measures the localized string and starts it
+  at `panel_width/2 - measured_width/2`. Native enabled normal and
+  selected colours match the already used `0x80FFA888` and
+  `0x8020FFFF` values. Text entry action 0 is a distinct disabled mode.
+- For these seven records there is no subtitle, and the callback does
+  **not** call the configured-label renderer with its +2/+2 black
+  shadow. Do not apply that other screen's shadow by assumption.
+- Slot **6** is not an unconditional seventh pause button:
+  `render_level_effects_and_screen_sprites` gates it on
+  `menu_system.unkD8`. This branch intentionally leaves it dormant.
+
+`Rac1MenuPanelPages.Read` now reads this typed seven-entry root census
+from bounded initialized overlay sections instead of guessing labels.
+It validates that each record has the supported callback/flag/list shape
+and exposes its native text identity, action and admission status.
+`PauseMenuUi.Rac1Projection` takes the six ordinary labels from these
+source records rather than hardcoding their IDs; safe host navigation
+is unchanged, and slot 6 remains dormant. Retail tests and rendered
+Godot smoke assert the six labels and the extra gate.
+
+**Still provisional:** Godot's bitmap-font scaling and ascent/baseline
+are not yet raster-parity matched to the PS2 font print packet at a
+native display size. The host currently centers the labels with the
+source font and colours; no arbitrary shadow, new glyph style, or
+seventh slot is added. Pixel-exact typography requires an emulator
+reference capture or further native font packet recovery.
