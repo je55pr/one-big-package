@@ -184,9 +184,25 @@ damage receiver; it must not be fed a Godot visibility heuristic.
 ### Native class-623 receiver boundary
 
 A further Rilgar trace identifies the native hit/reaction helper at
-**0x00303390**. It calls **0x002846d8** to obtain a native hit
-result and **0x00284730** for the contact query, checks the returned
-status at **0x003034f4–0x003034fc** and declines repeat processing
+**0x00303390**. Its first call, **0x002846d8**, is specifically
+a **native interaction-marker prefilter**, not a damage-result query.
+It examines the source Moby's **+0xa4** marker ID, with **0xff**
+meaning empty, indexes a **0x40-byte-stride** registry at **0x00178500**,
+compares the registry's owner pointer **+0x34** against that exact
+Moby, and reads registry flags **+0x24**. The caller's
+`lui a1,0x33` passes the full **0x00330000 mask**, **not**
+the integer 0x33; the third call argument is zero. Only a
+nonempty marker with the matching owner and
+`(registryFlags & 0x00330000) == 0` is cleared to **0xff**.
+Unknown registry identity or flags are not grounds for removal.
+The engine-neutral `Rac1Class623ImpactMarkerFilter` now
+models this exact marker-invalidating predicate, tested against
+native call-site and helper instruction words. This does not
+run the native registry in Godot or admit any hit.
+
+The separate **0x00284730** contact/impact service supplies the
+subsequent query status and scalar outputs. The class-623 helper
+checks status at **0x003034f4–0x003034fc** and declines repeat processing
 when the source actor is already native state **14**
 (**0x00303504–0x0030350c**). The non-terminal reaction path writes
 native state **11** at **0x0030364c–0x00303654**. The terminal path
