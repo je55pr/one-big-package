@@ -57,6 +57,7 @@ public partial class OBPGame
         _rac1Enemies.Clear(); _rac1Class1440 = null;
         _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null; _rac1Frogs = null; _rac1FrogShuttle = null;
         _rac1FrogWaves = null; _rac1FrogQueen = null; _rac1FrogWaveNodes.Clear();
+        _rac1QueenRecovery = null; _rac1QueenAnimation = null; _rac1QueenNode = null;
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
         ResetRac1BirdbotProjectiles();
     }
@@ -207,7 +208,9 @@ public partial class OBPGame
             var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
             var triggerClass = classes.Mobies[Rac1FrogWaveTriggers.ClassId];
             var groups = Rac1MobyIndexGroups.Read(gameplay, world.DynamicObjects?.Count ?? 0);
-            ConfigureRac1FrogQueen(world, groups);
+            var queenClass = classes.Mobies[Rac1FrogQueenGroup.QueenClassId];
+            ConfigureRac1FrogQueen(world, result, groups, queenClass,
+                core.Assets.AsSpan(queenClass.AssetOffset, queenClass.AssetLength));
             ConfigureRac1FrogWaves(world, result,
                 groups, Rac1ClipVolumes.Read(gameplay), triggerClass,
                 core.Assets.AsSpan(triggerClass.AssetOffset, triggerClass.AssetLength));
@@ -232,6 +235,7 @@ public partial class OBPGame
             _rac1Nanotech.UpdateNative();
             TickRac1FrogShuttleSwitch();
             TickRac1FrogWaves();
+            TickRac1QueenRecovery();
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
             {
                 var node = enemy.Node;

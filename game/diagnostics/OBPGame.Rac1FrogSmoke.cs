@@ -178,10 +178,11 @@ public partial class OBPGame
 
             if (_world.LevelId == 6)
             {
-                // The real Queen class1051 and signed group22 are present,
-                // but her boss AI is not yet hosted. Supply ONLY the native
-                // sequence6 completion event, not a fabricated player-distance
-                // trigger. This exercises source-owned group dispatch.
+                // Stage only an admitted native combat hit on the real
+                // Queen. The retail health helper then owns the 30-tick
+                // threshold recovery into state3; the original class1051
+                // animation clock supplies sequence6 completion naturally.
+                // Boss movement, hitbox and camera gameplay remain unhosted.
                 var queen = _rac1FrogQueen
                     ?? throw new InvalidOperationException("Retail class1051 Queen missing.");
                 Require(queen.QueenInstance == 626 && queen.GroupIndex == 22 &&
@@ -193,10 +194,36 @@ public partial class OBPGame
                     ObserveRac1QueenFrogEvent(3, 5, true) == 0 &&
                     queen.Members.All(id => frogs.Get(id).NativeState == 15),
                     "Queen wrong-sequence/noncompleted animation prematurely launched Frogs");
-                Require(ObserveRac1QueenFrogEvent(3, 6, true) == 12 &&
-                    ObserveRac1QueenFrogEvent(3, 6, true) == 0 &&
-                    ObserveRac1QueenFrogEvent(4, 1, false) == 0,
-                    "Queen native state3-sequence6 signal failed twelve-Frog launch or duplicated a wave.");
+                var queenRecovery = _rac1QueenRecovery
+                    ?? throw new InvalidOperationException("Original Queen recovery not configured.");
+                Require(queenRecovery is { NativeState: 1, Health: 30f },
+                    "Original Queen did not retain native 30 health / pre-encounter state.");
+                // The missing boss entrance/camera is explicitly staged here.
+                queenRecovery.AdmitNativeState(8, 3);
+                Require(ApplyRac1QueenAdmittedHit(7f, 0x79) is
+                { RecoveryStarted: true, Health: 20f } &&
+                    queenRecovery.Timer == Rac1AlienQueenRecovery.RecoveryTicks,
+                    "Source damage amplification failed to enter Queen protected 20-HP recovery.");
+                for (int tick = 0; tick < Rac1AlienQueenRecovery.RecoveryTicks - 1; tick++)
+                {
+                    TickRac1QueenRecovery();
+                    Require(queenRecovery.NativeState == 8 &&
+                        queen.Members.All(id => frogs.Get(id).NativeState == 15),
+                        "Alien Queen Frogs woke before native recovery elapsed.");
+                }
+                TickRac1QueenRecovery();
+                Require(queenRecovery is { NativeState: 3, Sequence: 6, Health: 19.9f } &&
+                    _rac1QueenAnimation is { Sequence: 6 },
+                    "Native Queen 20-HP recovery failed to select original sequence6.");
+                int animationTicks = 0;
+                while (queenRecovery.Sequence == 6 && animationTicks++ < 2400)
+                    TickRac1QueenRecovery();
+                Require(animationTicks < 2400 && queenRecovery is
+                { NativeState: 3, Sequence: 1 } &&
+                    _rac1QueenAnimation is { Sequence: 1 } &&
+                    queen.Members.All(id => frogs.Get(id).NativeState == 6) &&
+                    ObserveRac1QueenFrogEvent(3, 6, true) == 0,
+                    "Real retail Queen sequence6 completion did not launch exactly twelve source Frogs.");
                 Require(queen.Members.All(id =>
                 {
                     NVector3 before = originalQueenMembers[id];
@@ -211,7 +238,7 @@ public partial class OBPGame
                 Require(Enumerable.Range(387, 4).All(id =>
                     frogs.Get(id) is { NativeState: 15, Presented: false }),
                     "Unowned Frog group8 was awakened by the Queen event.");
-                GD.Print("[frog-smoke] Alien Queen i626 state3/seq6 synthetic event dispatched twelve original group22 Frogs +15..20z; group8 parked PASS");
+                GD.Print($"[frog-smoke] Alien Queen i626 staged hit, native 30-tick 20-HP recovery, retail seq6 wrap after {animationTicks} ticks; group22 twelve Frogs +15..20z and group8 parked PASS");
                 var dormantLaunch = _rac1Enemies[448];
                 int launchId = 448;
                 Vector3 beforeFlight = dormantLaunch.Node.Root.GlobalPosition;

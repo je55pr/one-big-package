@@ -93,6 +93,78 @@ public sealed class Rac1FrogQueenGroupTests
     }
 
     [Fact]
+    public void QueenNativeThirtyTwentyTenRecoveryChoosesCorrectFrogWave()
+    {
+        var boss = new Rac1AlienQueenRecovery(Queen());
+        Assert.Equal(626, boss.QueenInstance);
+        Assert.Equal(30f, boss.Health);
+        Assert.Equal(1, boss.NativeState);
+        boss.AdmitNativeState(8, 3);
+        var first = boss.ApplyAdmittedHit(7, 0x79); // amplified 1.5; crosses 20
+        Assert.True(first.RecoveryStarted);
+        Assert.Equal(20f, first.Health);
+        Assert.True(boss.Recovering);
+        Assert.Equal(30, boss.Timer);
+        var shielded = boss.ApplyAdmittedHit(500);
+        Assert.False(shielded.DeathTriggered);
+        Assert.Equal(20f, boss.Health);
+        Assert.Throws<InvalidOperationException>(() => boss.AdmitNativeState(3, 6));
+        for (int tick = 0; tick < 29; tick++)
+        {
+            var frame = boss.Step();
+            Assert.True(frame.Recovering);
+            Assert.Equal(8, frame.NativeState);
+        }
+        var entry = boss.Step();
+        Assert.False(entry.Recovering);
+        Assert.Equal(3, entry.NativeState);
+        Assert.Equal(6, entry.Sequence);
+        Assert.Equal(19.9f, entry.Health);
+        Assert.Equal(0, entry.RemainingTicks);
+        Assert.False(boss.ApplyAdmittedHit(100).Accepted); // native state3 damage immune
+        boss.AdmitNativeState(4, 1);
+        Assert.Equal(19.9f, boss.Health);
+        for (int i = 0; i < 10; i++) boss.Step();
+        boss.AdmitNativeState(8, 3);
+        var second = boss.ApplyAdmittedHit(10, 0x131); // reduced 0.666; crosses 10?
+        Assert.False(second.RecoveryStarted);
+        second = boss.ApplyAdmittedHit(4);
+        Assert.True(second.RecoveryStarted);
+        Assert.Equal(10f, second.Health);
+        for (int i = 0; i < 30; i++) boss.Step();
+        Assert.Equal(5, boss.NativeState);
+        Assert.Equal(6, boss.Sequence);
+        Assert.Equal(9.9f, boss.Health);
+        Assert.False(boss.ApplyAdmittedHit(100).Accepted);
+        boss.AdmitNativeState(8, 3);
+        for (int i = 0; i < 10; i++) boss.Step();
+        var lethal = boss.ApplyAdmittedHit(10);
+        Assert.True(lethal.DeathTriggered);
+        Assert.Equal(14, boss.NativeState);
+        Assert.Equal(10, boss.Sequence);
+        Assert.True(boss.DeathTriggered);
+    }
+
+    [Fact]
+    public void QueenRecoveryInputGuardsAndOneThresholdPerHit()
+    {
+        var boss = new Rac1AlienQueenRecovery(Queen());
+        boss.AdmitNativeState(8, 3);
+        Assert.Throws<ArgumentOutOfRangeException>(() => boss.ApplyAdmittedHit(float.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => boss.ApplyAdmittedHit(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => boss.AdmitNativeState(-1, 0));
+        Assert.Throws<ArgumentException>(() => new Rac1AlienQueenRecovery(Queen(cls: 1052)));
+        Assert.Throws<InvalidDataException>(() => new Rac1AlienQueenRecovery(Queen(size: 0xf0)));
+        Assert.False(boss.ApplyAdmittedHit(0).Accepted);
+        var massive = boss.ApplyAdmittedHit(100);
+        Assert.True(massive.RecoveryStarted);
+        Assert.Equal(20f, boss.Health); // first threshold wins, never leapfrog phase5
+        for (int i = 0; i < 30; i++) boss.Step();
+        Assert.Equal(3, boss.NativeState);
+        Assert.Equal(19.9f, boss.Health);
+    }
+
+    [Fact]
     public void OnlyOriginalQueenAndAllFrogGroupMembersAccepted()
     {
         var groups = new int[23][];

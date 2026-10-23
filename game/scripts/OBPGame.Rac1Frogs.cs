@@ -17,6 +17,9 @@ public partial class OBPGame
     private Rac1FrogShuttleSwitch? _rac1FrogShuttle;
     private Rac1FrogWaveTriggers? _rac1FrogWaves;
     private Rac1FrogQueenGroup? _rac1FrogQueen;
+    private Rac1AlienQueenRecovery? _rac1QueenRecovery;
+    private Rac1MobySequenceClock? _rac1QueenAnimation;
+    private RuntimeWorldScene.DynamicObjectNode? _rac1QueenNode;
     private sealed record HostedFrogWave(RuntimeWorldScene.DynamicObjectNode Node,
         Rac1MobySequenceClock Animation);
     private readonly Dictionary<int, HostedFrogWave> _rac1FrogWaveNodes = [];
@@ -42,7 +45,9 @@ public partial class OBPGame
         }
     }
 
-    private void ConfigureRac1FrogQueen(RuntimeWorld world, IReadOnlyList<int[]> groups)
+    private void ConfigureRac1FrogQueen(RuntimeWorld world, RuntimeWorldScene.Result result,
+        IReadOnlyList<int[]> groups, Rac1StaticClasses.MobyClass cls,
+        ReadOnlySpan<byte> classBytes)
     {
         if (world.LevelId != 6) return;
         var queen = (world.DynamicObjects ?? [])
@@ -52,7 +57,58 @@ public partial class OBPGame
         _rac1FrogQueen = new(queen, groups,
             (world.DynamicObjects ?? []).Where(m => m.NativeClassId == Rac1FrogSession.ClassId)
                 .Select(m => m.InstanceIndex));
+        _rac1QueenRecovery = new(queen);
+        _rac1QueenNode = FindPresentedDynamic(result, queen)
+            ?? throw new InvalidDataException("Original Alien Queen model is unavailable.");
+        var animationAsset = Rac1MobyAnimationAssets.Bake(cls, _rac1QueenNode.Source.Meshes,
+            classBytes, skipUnsupportedTiming: true);
+        if (!animationAsset.Clips.ContainsKey(6) || !animationAsset.Clips.ContainsKey(1))
+            throw new InvalidDataException("Alien Queen requires original animations 1 and 6.");
+        _rac1QueenNode.ConfigureAnimations(animationAsset.Presentation);
+        _rac1QueenAnimation = new(animationAsset,
+            animationAsset.Clips.ContainsKey(0) ? 0 : animationAsset.Clips.Keys.Min());
+        _rac1QueenNode.ApplyAnimationSample(_rac1QueenAnimation.Sample);
         GD.Print($"[frog-queen] original class1051 i{queen.InstanceIndex}, native group {_rac1FrogQueen.GroupIndex}, {_rac1FrogQueen.Members.Count} source Frogs; waiting for real boss event");
+    }
+
+    /// <summary>
+    /// FUN_L06_002fa9c0 native Queen 30->20->10 recovery state handoff.
+    /// The boss weapon contact, camera, and full progression still require
+    /// a separate host, so this method is called only on authenticated hits.
+    /// </summary>
+    private Rac1AlienQueenHit ApplyRac1QueenAdmittedHit(float nativeDamage, int? sourceClass)
+    {
+        return (_rac1QueenRecovery ?? throw new InvalidOperationException(
+            "No original class1051 Queen registered."))
+            .ApplyAdmittedHit(nativeDamage, sourceClass);
+    }
+
+    private void TickRac1QueenRecovery()
+    {
+        if (_rac1QueenRecovery is null || _rac1QueenAnimation is null ||
+            _rac1QueenNode is null) return;
+        var phase = _rac1QueenRecovery.Step();
+        if (phase.PreviousState != phase.NativeState &&
+            phase.NativeState is Rac1AlienQueenRecovery.WaveRecoveryState or
+                Rac1AlienQueenRecovery.FinalRecoveryState)
+        {
+            _rac1QueenAnimation.Select(Rac1AlienQueenRecovery.RecoveryAnimation, 5);
+            GD.Print($"[frog-queen] native damage recovery -> Queen state{phase.NativeState}, retail seq6");
+        }
+        if (phase.NativeState != Rac1AlienQueenRecovery.WaveRecoveryState) return;
+        _rac1QueenAnimation.Tick();
+        bool wrapped = _rac1QueenAnimation.Wrapped &&
+            _rac1QueenAnimation.Sequence == Rac1AlienQueenRecovery.RecoveryAnimation;
+        if (wrapped)
+        {
+            ObserveRac1QueenFrogEvent(phase.NativeState, phase.Sequence, true);
+            // Retail changes to sequence1 in state3 before its external
+            // camera interpolator transitions it to state4. Do not invent
+            // that camera completion or automatically enter state4.
+            _rac1QueenRecovery.AdmitNativeState(3, 1);
+            _rac1QueenAnimation.Select(1, 20);
+        }
+        _rac1QueenNode.ApplyAnimationSample(_rac1QueenAnimation.Sample);
     }
 
     /// <summary>Only a verified Queen state3/sequence6 completion or a
