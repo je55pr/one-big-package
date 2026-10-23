@@ -309,13 +309,38 @@ public partial class OBPGame
                 GD.Print("[frog-smoke] class1021 i573/i578: fourteen independent retail-mesh children 1->3->5->7(hidden)->9(visible), parents0->2->4->6(hidden)->8(visible) PASS");
                 entrance.StepWaiting(true, false, linkedActorAndCameraCallbacksCommitted: true);
                 Require(entrance.NativeState == 2, "Queen did not enter native airborne state2.");
-                queenRecovery.AdmitNativeState(2, 8);
-                Require(entrance.ObserveLanding(false, false).NativeState == 2 &&
-                    entrance.ObserveLanding(true, true).NativeState == 7 &&
+                float sourceLandingZ = _rac1QueenAuthoredNativeZ;
+                Require(Math.Abs(ToEffectNative(queenNode.Root.GlobalPosition).Z -
+                    sourceLandingZ - Rac1AlienQueenFlight.SourceHeight) < .001f,
+                    "Native Queen state0 model placement was not elevated 17.5 units.");
+                TickRac1QueenFlight();
+                Require(_rac1QueenFlight is { Sequence: 8, NativeState: 2 } &&
+                    Math.Abs(_rac1QueenFlight.Z - sourceLandingZ -
+                        Rac1AlienQueenFlight.SourceHeight) < .001f &&
+                    queenRecovery.NativeState == 2,
+                    "Original Queen failed to initialize source 17.5-unit elevated airborne start.");
+                int flightTicks = 1;
+                while (flightTicks++ < 1000 &&
+                    !(_rac1QueenFlight?.CameraCompletionCandidate ?? false))
+                    TickRac1QueenFlight();
+                Require(flightTicks < 1000 &&
+                    _rac1QueenFlight is { Sequence: 1, NativeState: 2, CameraBlend: 1f } &&
+                    Math.Abs(_rac1QueenFlight.Z - sourceLandingZ) < .001f &&
+                    _rac1QueenPendingCamera is { CanCompleteWithAppliedCamera: true } &&
+                    entrance.ObserveLanding(false, false).NativeState == 2,
+                    "Source native gravity, animation8->9->6->1 or camera convergence failed.");
+                // The native camera subsystem and player-state restore are
+                // still unhosted. A positive camera-commit acknowledgement is
+                // staged only here; the regular host never fabricates one.
+                TickRac1QueenFlight(cameraOutputApplied: true);
+                Require(entrance.NativeState == 7 &&
+                    _rac1QueenFlight?.NativeState == 7 &&
                     entrance.ObserveLanding(false, true).NativeState == 7 &&
                     entrance.ObserveLanding(false, false).NativeState == 8,
-                    "Queen native flight/landing and target-mode handoff failed.");
+                    "Queen source camera-committed state2->7->8 handoff failed.");
+                GD.Print($"[frog-smoke] Queen class1051 source gravity +17.5->ground, retail seq8->9->6->1, camera blend1 after {flightTicks} native ticks, external camera acknowledgment 2->7->8 PASS");
                 queenRecovery.AdmitNativeState(8, 3);
+                queenContact = (queenMesh.GlobalTransform * queenMesh.GetAabb()).GetCenter();
                 _rac1EquipmentGeometryFrame = ulong.MaxValue;
                 Require(EquipmentGeometry.Any(entry => entry.Node == queenNode) &&
                     IsRac1WeaponAimTarget(queenNode),

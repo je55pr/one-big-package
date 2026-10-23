@@ -82,6 +82,74 @@ public sealed class Rac1FrogQueenGroupTests
     }
 
     [Fact]
+    public void NativeQueenFlightUsesSourceGravityAndAnimationBeforeCameraLanding()
+    {
+        var flight = new Rac1AlienQueenFlight(100f);
+        Assert.Equal(117.5f, flight.Z);
+        Assert.Equal(8, flight.Sequence);
+        Assert.Equal(2, flight.NativeState);
+        var anchor = new Vector3(5, 9, 30);
+        var hero = new Vector3(0, 0, 100);
+        var queen = new Vector3(1, 2, flight.Z);
+        var start = flight.SampleCamera(queen, Vector3.UnitY, hero,
+            Vector3.UnitX, anchor);
+        Assert.Equal(anchor, start.NativeCameraPosition);
+        Assert.Equal(0f, start.Blend);
+        Assert.False(start.CanCompleteWithAppliedCamera);
+        Assert.False(flight.CommitCameraAndComplete(true));
+        var first = flight.StepDescent(false);
+        Assert.Equal(117.5f, first.NativeZ);
+        Assert.Equal(-30f / 3600f, first.VerticalVelocity);
+        Assert.Equal(8, first.Sequence);
+        for (int tick = 1; tick < 200 && flight.Sequence == 8; tick++)
+            flight.StepDescent(false);
+        Assert.Equal(9, flight.Sequence);
+        Assert.InRange(flight.NativeTicks, 45, 90);
+        Assert.True(flight.Z > 100f);
+        Assert.Equal(2, flight.NativeState);
+        Assert.False(flight.CommitCameraAndComplete(true));
+        var seq6 = flight.StepDescent(true);
+        Assert.Equal(6, seq6.Sequence);
+        Assert.True(seq6.SequenceChanged);
+        var seq1 = flight.StepDescent(true);
+        Assert.Equal(1, seq1.Sequence);
+        Assert.True(seq1.SequenceChanged);
+        for (int tick = 0; tick < 40 && flight.Z > 100f; tick++) flight.StepDescent(false);
+        Assert.Equal(100f, flight.Z);
+        Assert.False(flight.CommitCameraAndComplete(true));
+        Rac1AlienQueenFlightCamera camera = start;
+        for (int tick = 0; tick < 300 && !flight.CameraCompletionCandidate; tick++)
+        {
+            queen.Z = flight.Z;
+            camera = flight.SampleCamera(queen, Vector3.UnitY, hero,
+                Vector3.UnitX, anchor);
+        }
+        Assert.True(camera.CanCompleteWithAppliedCamera);
+        Assert.Equal(1f, camera.Blend);
+        Assert.Equal(new Vector3(-7, 0, 104), camera.NativeCameraPosition);
+        Assert.False(flight.CommitCameraAndComplete(false));
+        Assert.Equal(2, flight.NativeState);
+        Assert.True(flight.CommitCameraAndComplete(true));
+        Assert.Equal(7, flight.NativeState);
+        Assert.False(flight.CommitCameraAndComplete(true));
+    }
+
+    [Fact]
+    public void NativeQueenCameraCannotBeFakedByGroundOrUntrustedCoordinates()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Rac1AlienQueenFlight(float.NaN));
+        var flight = new Rac1AlienQueenFlight(0);
+        Assert.Throws<ArgumentOutOfRangeException>(() => flight.SampleCamera(
+            new(float.PositiveInfinity, 0, 0), Vector3.UnitY,
+            Vector3.Zero, Vector3.UnitX, Vector3.Zero));
+        for (int tick = 0; tick < 200; tick++) flight.StepDescent(false);
+        Assert.True(flight.Z >= 0);
+        Assert.Equal(2, flight.NativeState);
+        Assert.False(flight.CommitCameraAndComplete(true)); // sequence1 is mandatory
+        Assert.Equal(0f, flight.CameraBlend);
+    }
+
+    [Fact]
     public void QueenEntranceRefusesUnrelatedLinkedClassesOrInvalidPvar()
     {
         var linked = new Dictionary<int, int> { [573] = 1021, [578] = 1021 };

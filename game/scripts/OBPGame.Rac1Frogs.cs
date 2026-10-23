@@ -19,6 +19,10 @@ public partial class OBPGame
     private Rac1FrogQueenGroup? _rac1FrogQueen;
     private Rac1AlienQueenRecovery? _rac1QueenRecovery;
     private Rac1AlienQueenEntrance? _rac1QueenEntrance;
+    private Rac1AlienQueenFlight? _rac1QueenFlight;
+    private float _rac1QueenAuthoredNativeZ;
+    private NVector3 _rac1QueenCameraAnchor;
+    private Rac1AlienQueenFlightCamera? _rac1QueenPendingCamera;
     private Rac1AlienQueenLinkedGate? _rac1QueenLinkedGate;
     private Rac1AlienQueenGateNative? _rac1QueenGateNative;
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1QueenLinkedNodes = [];
@@ -52,10 +56,12 @@ public partial class OBPGame
 
     private void ConfigureRac1FrogQueen(RuntimeWorld world, RuntimeWorldScene.Result result,
         IReadOnlyList<int[]> groups, Rac1StaticClasses.MobyClass cls,
-        ReadOnlySpan<byte> classBytes, Rac1AlienQueenGateNative tuning)
+        ReadOnlySpan<byte> classBytes, Rac1AlienQueenGateNative tuning,
+        NVector3 cameraAnchor)
     {
         if (world.LevelId != 6) return;
         _rac1QueenGateNative = tuning;
+        _rac1QueenCameraAnchor = cameraAnchor;
         var queen = (world.DynamicObjects ?? [])
             .SingleOrDefault(source => source.NativeClassId == Rac1FrogQueenGroup.QueenClassId);
         if (queen is null)
@@ -81,6 +87,12 @@ public partial class OBPGame
         ConfigureRac1QueenLinkedChildren(result.Root);
         _rac1QueenNode = FindPresentedDynamic(result, queen)
             ?? throw new InvalidDataException("Original Alien Queen model is unavailable.");
+        var queenSpawn = ToEffectNative(_rac1QueenNode.Root.GlobalPosition);
+        _rac1QueenAuthoredNativeZ = queenSpawn.Z;
+        // FUN_L06_002f9a28 native state0 elevates the Queen by 17.5
+        // while it saves the authored ground height in PVar +0xc8.
+        _rac1QueenNode.Root.GlobalPosition = FromEffectNative(new NVector3(
+            queenSpawn.X, queenSpawn.Y, queenSpawn.Z + Rac1AlienQueenFlight.SourceHeight));
         var animationAsset = Rac1MobyAnimationAssets.Bake(cls, _rac1QueenNode.Source.Meshes,
             classBytes, skipUnsupportedTiming: true);
         if (!animationAsset.Clips.ContainsKey(6) || !animationAsset.Clips.ContainsKey(1))
@@ -161,6 +173,55 @@ public partial class OBPGame
                 continue;
             _rac1WrenchHitTargets.Add(key);
         }
+    }
+
+    /// <summary>
+    /// Drive the retail state2 descent, 8->9->6->1 sequences and native
+    /// camera blend request. The owning camera is not yet intercepted by the
+    /// Queen host. Only a positively acknowledged external camera install
+    /// may transition state2->7 and restore normal gameplay.
+    /// </summary>
+    private Rac1AlienQueenFlightFrame? TickRac1QueenFlight(bool cameraOutputApplied = false)
+    {
+        if (_rac1QueenEntrance?.NativeState != 2 ||
+            _rac1QueenNode is null || _rac1QueenAnimation is null ||
+            _rac1QueenRecovery is null) return null;
+        if (_rac1QueenFlight is null)
+        {
+            _rac1QueenFlight = new(_rac1QueenAuthoredNativeZ);
+            if (!_rac1QueenAnimation.SupportsSequence(8) ||
+                !_rac1QueenAnimation.SupportsSequence(9) ||
+                !_rac1QueenAnimation.SupportsSequence(6) ||
+                !_rac1QueenAnimation.SupportsSequence(1))
+                throw new InvalidDataException("Retail Alien Queen requires animation sequences 8,9,6,1.");
+            _rac1QueenAnimation.Select(8, 1);
+            _rac1QueenRecovery.AdmitNativeState(2, 8);
+        }
+        _rac1QueenAnimation.Tick();
+        var frame = _rac1QueenFlight.StepDescent(_rac1QueenAnimation.Wrapped);
+        if (frame.SequenceChanged)
+        {
+            _rac1QueenAnimation.Select(frame.Sequence, frame.Sequence is 9 ? 5 : 30);
+            _rac1QueenRecovery.AdmitNativeState(2, frame.Sequence);
+        }
+        var current = ToEffectNative(_rac1QueenNode.Root.GlobalPosition);
+        var worldPosition = new NVector3(current.X, current.Y, frame.NativeZ);
+        _rac1QueenNode.Root.GlobalPosition = FromEffectNative(worldPosition);
+        _rac1QueenNode.ApplyAnimationSample(_rac1QueenAnimation.Sample);
+        var hero = _player is not null && IsInstanceValid(_player)
+            ? ToEffectNative(_player.GlobalPosition) : worldPosition;
+        var heroForward = _player is not null && IsInstanceValid(_player)
+            ? ToEffectNative(_player.GlobalTransform.Basis.Z) : NVector3.UnitY;
+        _rac1QueenPendingCamera = _rac1QueenFlight.SampleCamera(
+            worldPosition, ToEffectNative(EnemyForward(_rac1QueenNode)),
+            hero, heroForward, _rac1QueenCameraAnchor);
+        if (_rac1QueenFlight.CommitCameraAndComplete(cameraOutputApplied))
+        {
+            _rac1QueenEntrance.ObserveLanding(true, true);
+            _rac1QueenRecovery.AdmitNativeState(7, frame.Sequence);
+            GD.Print("[frog-queen] retail camera blend acknowledged; native state2->7");
+        }
+        return frame;
     }
 
     private void TickRac1QueenRecovery()

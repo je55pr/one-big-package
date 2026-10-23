@@ -58,7 +58,9 @@ public partial class OBPGame
         _rac1Enemies.Clear(); _rac1Class1440 = null;
         _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null; _rac1Frogs = null; _rac1FrogShuttle = null;
         _rac1FrogWaves = null; _rac1FrogQueen = null; _rac1FrogWaveNodes.Clear();
-        _rac1QueenRecovery = null; _rac1QueenEntrance = null; _rac1QueenAnimation = null; _rac1QueenNode = null;
+        _rac1QueenRecovery = null; _rac1QueenEntrance = null;
+        _rac1QueenFlight = null; _rac1QueenPendingCamera = null;
+        _rac1QueenAnimation = null; _rac1QueenNode = null;
         _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
         _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
@@ -212,9 +214,14 @@ public partial class OBPGame
             var triggerClass = classes.Mobies[Rac1FrogWaveTriggers.ClassId];
             var groups = Rac1MobyIndexGroups.Read(gameplay, world.DynamicObjects?.Count ?? 0);
             var queenClass = classes.Mobies[Rac1FrogQueenGroup.QueenClassId];
+            var overlay = Rac1ExecutableOverlay.Read(reader, level);
+            var cameraAnchor = overlay.Read(0x167540, 12);
             ConfigureRac1FrogQueen(world, result, groups, queenClass,
                 core.Assets.AsSpan(queenClass.AssetOffset, queenClass.AssetLength),
-                Rac1AlienQueenGateNative.Read(Rac1ExecutableOverlay.Read(reader, level)));
+                Rac1AlienQueenGateNative.Read(overlay), new NVector3(
+                    System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(cameraAnchor),
+                    System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(cameraAnchor.Slice(4)),
+                    System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(cameraAnchor.Slice(8))));
             ConfigureRac1FrogWaves(world, result,
                 groups, Rac1ClipVolumes.Read(gameplay), triggerClass,
                 core.Assets.AsSpan(triggerClass.AssetOffset, triggerClass.AssetLength));
@@ -239,6 +246,7 @@ public partial class OBPGame
             _rac1Nanotech.UpdateNative();
             TickRac1FrogShuttleSwitch();
             TickRac1FrogWaves();
+            TickRac1QueenFlight();
             TickRac1QueenRecovery();
             TickRac1QueenLinkedChildren();
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
