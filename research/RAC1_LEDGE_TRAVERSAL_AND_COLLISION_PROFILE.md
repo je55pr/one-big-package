@@ -162,6 +162,18 @@ clearance body uses an enclosing Godot capsule; resolved host displacement
 substitutes for `P+0x110` in prediction. Those three seams remain host
 approximations. Unidentified dynamic tops fail closed.
 
+The native material getter at Veldin `0x1f35d8` / Novalis `0x2151d8`
+returns **-1**, not a forbidden surface class, when the low five face bits
+are 31. For example, the static edge after Novalis's first two pistons has
+raw face byte `0x3f`. This sentinel passes the ledge class exclusions;
+static world collision has no dynamic-owner traversal flag to check.
+`Rac1TraversalRayHit.StaticWorld` preserves that distinction without changing
+ordinary floor material classification. Signed/high-bit face query membership
+is still unsupported and conservatively rejected by this adapter. Both original
+material-getter blocks are pinned by retail tests. The Novalis route fixture
+also jumps toward this actual source edge, waits for hang and uses Cross to
+jump onto it; it does not inject a candidate or traversal state.
+
 ## Grab, hang, shimmy and ledge jump
 
 | Action | Entry / update | Motion | Source animation |

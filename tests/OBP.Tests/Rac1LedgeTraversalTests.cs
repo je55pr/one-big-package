@@ -56,6 +56,32 @@ public sealed class Rac1LedgeTraversalTests
         Assert.DoesNotContain(world.Rays, ray => ray.Mask == Rac1TraversalRayMask.Support);
     }
 
+    [Theory]
+    [InlineData(0x1f)]
+    [InlineData(0x3f)]
+    [InlineData(0x5f)]
+    [InlineData(0x7f)]
+    public void StaticUnclassifiedFacesAreClimbableWithoutInventingAnOrdinarySurfaceClass(int rawFaceType)
+    {
+        Assert.Null(Rac1CollisionFaceSemantics.Decode(rawFaceType).SurfaceClass);
+        var hit = Rac1TraversalRayHit.StaticWorld(default, new(0, 0, 1), rawFaceType);
+        Assert.Equal(-1, hit.SurfaceClass);
+        Assert.True(hit.TraversalAllowed);
+        Assert.True(Probe(new LedgeFixture { RawFaceType = rawFaceType }, out _));
+    }
+
+    [Fact]
+    public void StaticFaceMappingRetainsNativeExclusionsAndUnsupportedSignedMembership()
+    {
+        foreach (int raw in Enumerable.Range(0, 128))
+        {
+            bool excluded = (raw & 31) is 0 or 9 or 12;
+            Assert.Equal(!excluded, Probe(new LedgeFixture { RawFaceType = raw }, out _));
+        }
+        Assert.False(Probe(new LedgeFixture { RawFaceType = 0xbf }, out _));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Rac1TraversalRayHit.StaticWorld(default, default, 256));
+    }
+
     [Fact]
     public void TopRequiresEnoughDropBelowItAndCannotBeGrabbedThroughCeiling()
     {
@@ -222,6 +248,19 @@ public sealed class Rac1LedgeTraversalTests
     }
 
     [SkippableFact]
+    public void NovalisNativeMaterialGetterRetainsTheUnclassifiedSentinel()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(iso!);
+        var overlay = Rac1ExecutableOverlay.Read(disc, Rac1DiscIndex.Read(disc).Levels.Single(l => l.LevelId == 1));
+        Assert.Equal("bcd0054808f70a13edcb79367704eb07f1d31ef9e121459f2f7750e0715cd307",
+            Convert.ToHexString(SHA256.HashData(overlay.Read(0x2151d8, 0x30))).ToLowerInvariant());
+        Assert.Equal(0x2003001f, BinaryPrimitives.ReadInt32LittleEndian(overlay.Read(0x2151e4, 4)));
+        Assert.Equal(0x2002ffff, BinaryPrimitives.ReadInt32LittleEndian(overlay.Read(0x215204, 4)));
+    }
+
+    [SkippableFact]
     public void CanonicalVeldinOverlayPinsCollisionProfileLedgeQueriesAndAuthoredMotion()
     {
         var read = ReadOverlay();
@@ -232,6 +271,7 @@ public sealed class Rac1LedgeTraversalTests
             (0x2133a8, 0x2137a4, "000d07da032f1afc4673a02be9260517261ff0ce1115bb47ddbb8348a39457d7"),
             (0x2121c0, 0x212318, "b17a1f4c8f07c816fea1e1931a0405b6b8be69265e80f396b1e026ee90ce8115"),
             (0x20bed0, 0x20c704, "f6d62613f9847ab74cd9b45ddef1548a9ea006ac23b5aeeeaa60c7d63d077966"),
+            (0x1f35d8, 0x1f3608, "ba80e6c37a5a0ab209bd817243119c756f805da29abb8704c3e60af72e2d0d30"),
             (0x20c758, 0x20cd04, "e5f157d32bea9140f12ec78bda114a37578b4273785a06fdd0de46a7e9d0c4d4"),
             (0x21dfd0, 0x21e3a0, "b0f7093c486e8ec8cdadcba272956fc376189bcf9b8a67c1a867c75697d6a7e3"),
             (0x224158, 0x2242d4, "c7dbaf7765682d9881778f80a5fd9a3847885595456e629927ecf7ac6abcb326"),
@@ -247,6 +287,8 @@ public sealed class Rac1LedgeTraversalTests
             return BitConverter.Int32BitsToSingle(high | ((next >> 16) == 0x3421 ? next & 0xffff : 0));
         }
         Assert.Equal(Rac1CollisionProfile.OrdinaryHorizontalRadius, literal(0x204fa0));
+        Assert.Equal(0x2003001f, word(0x1f35e4)); // low-class mask/sentinel 31
+        Assert.Equal(0x2002ffff, word(0x1f3604)); // native unclassified result -1
         Assert.Equal(Rac1CollisionProfile.OrdinaryUpperContactHeight, literal(0x204f84));
         Assert.Equal(Rac1CollisionProfile.OrdinaryLowerContactHeight, literal(0x204f90));
         Assert.Equal(-Rac1LedgeProbe.HangHeightBelowTop, literal(0x20c0bc));
@@ -286,6 +328,7 @@ public sealed class Rac1LedgeTraversalTests
     private sealed class LedgeFixture
     {
         public int SurfaceClass { get; init; } = 1;
+        public int? RawFaceType { get; init; }
         public bool TraversalAllowed { get; init; } = true;
         public bool CeilingBlocks { get; init; }
         public bool BodyBlocked { get; init; }
@@ -298,14 +341,18 @@ public sealed class Rac1LedgeTraversalTests
             Rays.Add(ray);
             if (Math.Abs(ray.From.X - ray.To.X) < 1e-9d &&
                 ray.From.X >= .6d - 1e-6d && ray.From.Z >= 1.4d && ray.To.Z <= 1.4d)
-                return new(new(ray.From.X, ray.From.Y, 1.4d), TopNormal, SurfaceClass, TraversalAllowed);
+                return Hit(new(ray.From.X, ray.From.Y, 1.4d), TopNormal);
             if (Math.Abs(ray.From.Z - ray.To.Z) < 1e-9d &&
                 ray.From.X < .6d && ray.To.X >= .6d && ray.From.Z < 1.4d)
-                return new(new(.6d, ray.From.Y, ray.From.Z), WallNormal, SurfaceClass, TraversalAllowed);
+                return Hit(new(.6d, ray.From.Y, ray.From.Z), WallNormal);
             if (CeilingBlocks && Math.Abs(ray.From.Z - ray.To.Z) < 1e-9d && ray.From.Z > 1.4d)
                 return new(new(.3d, 0d, ray.From.Z), new(-1d, 0d, 0d), 1);
             return null;
         }
+        private Rac1TraversalRayHit Hit(Rac1NativeVector3 position, Rac1NativeVector3 normal) =>
+            RawFaceType is int raw
+                ? Rac1TraversalRayHit.StaticWorld(position, normal, raw)
+                : new(position, normal, SurfaceClass, TraversalAllowed);
         public bool Overlaps(Rac1TraversalBodyQuery body)
         {
             BodyQueries.Add(body);

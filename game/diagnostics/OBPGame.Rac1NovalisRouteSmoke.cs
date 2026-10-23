@@ -85,6 +85,49 @@ public partial class OBPGame
             Require(opened.Count == 0 || RuntimeWorldScene.FindDynamicObjectOwner(opened["collider"].As<Node>())?.NativeClassId is not (768 or 769),
                 "Opened door collider still blocks the corridor");
             GD.Print("[novalis-route-smoke] authored approach door opened from proximity");
+            // This source collision edge blocked the human run after the first
+            // two pistons. Stage only the approach; stick and Cross input must
+            // produce grab, hang and the jump onto it.
+            ClearMovementSmokeInput();
+            const double ledgeHeading = .9827937067159747;
+            player.Rac1CurrentYaw = ledgeHeading;
+            player.StageDevelopmentWaterPosition(new(-239.42148f, 75.65f, 117.96786f));
+            await PhysicsFramesAsync(8);
+            Require(player.Rac1RecoveredSupportGrounded, "Reported ledge approach has no floor");
+            Input.ActionPress(RawGamepadInput.Jump);
+            bool grabbedLedge = false;
+            for (int i = 0; i < 120; i++)
+            {
+                if (i == 16) Input.ActionRelease(RawGamepadInput.Jump);
+                SetSyntheticNativeHeading(player, ledgeHeading);
+                await PhysicsFramesAsync(1);
+                if (player.Rac1Hanging)
+                {
+                    grabbedLedge = true;
+                    break;
+                }
+            }
+            ClearMovementSmokeInput();
+            Require(grabbedLedge, $"Ordinary jump did not grab reported static ledge: {player.GlobalPosition}");
+            for (int i = 0; i < 90 && player.Rac1TraversalAction != 0x19; i++)
+                await PhysicsFramesAsync(1);
+            Require(player.Rac1Hanging && player.Rac1TraversalAction == 0x19,
+                "Reported ledge did not retain the native hanging action");
+            Input.ActionPress(RawGamepadInput.Jump);
+            await PhysicsFramesAsync(2);
+            Input.ActionRelease(RawGamepadInput.Jump);
+            Require(!player.Rac1Hanging && player.Rac1TraversalAction == 0x1c,
+                "Cross did not jump from reported ledge");
+            for (int i = 0; i < 75; i++)
+            {
+                SetSyntheticNativeHeading(player, ledgeHeading, .4);
+                await PhysicsFramesAsync(1);
+                if (player.Rac1RecoveredSupportGrounded && player.GlobalPosition.Y > 78.45f) break;
+            }
+            ClearMovementSmokeInput();
+            Require(player.Rac1RecoveredSupportGrounded && player.GlobalPosition.Y > 78.45f,
+                $"Ledge jump did not land above the reported edge: {player.GlobalPosition}");
+            GD.Print($"[novalis-route-smoke] reported unclassified static ledge grabbed, held and jumped onto: {player.GlobalPosition}");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-route-smoke-pass", 0);
         }
         catch (Exception ex)

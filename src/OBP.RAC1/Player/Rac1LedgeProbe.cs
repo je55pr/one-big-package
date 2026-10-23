@@ -20,7 +20,21 @@ public readonly record struct Rac1TraversalRayHit(
     Rac1NativeVector3 Position,
     Rac1NativeVector3 Normal,
     int SurfaceClass,
-    bool TraversalAllowed = true);
+    bool TraversalAllowed = true)
+{
+    /// <summary>
+    /// Identified static-world face. Native 0x1f35d8 returns -1 for low class
+    /// 31; that sentinel is not one of the ledge query's excluded classes.
+    /// A static face needs no dynamic-owner traversal flag. Signed/special
+    /// face query membership remains unsupported and conservatively closed.
+    /// </summary>
+    public static Rac1TraversalRayHit StaticWorld(
+        Rac1NativeVector3 position, Rac1NativeVector3 normal, int rawFaceType)
+    {
+        var face = Rac1CollisionFaceSemantics.Decode(rawFaceType);
+        return new(position, normal, face.SurfaceClass ?? -1, !face.IsSpecialHighBitFace);
+    }
+}
 
 /// <summary>
 /// Raw parameters of the native 0x1f19a0 clearance query, whose exact
