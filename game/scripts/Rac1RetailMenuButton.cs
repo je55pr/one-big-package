@@ -3,88 +3,141 @@ using Godot;
 namespace OneBigPackage;
 
 /// <summary>
-/// R&C1-source animated menu panel. The original uses the E99E sprite
-/// family plus FX #0x19/#0x1A/#0x1C for texture, noise and highlight.
-/// UI-scale/alpha here are host approximations, not claimed PS2 pixel parity.
+/// Source-backed E99E/FX layers and native menu text colours. The 2002
+/// renderer's geometry and PS2 GS alpha combine still require capture-level
+/// reconstruction; the root-only placement is calibrated to a retail image.
 /// </summary>
 public sealed partial class Rac1RetailMenuButton : Button
 {
-    private double _seconds;
+    public bool RetailPauseRoot { get; set; }
+    private double _fraction;
+    private bool _flashActive;
+    private int _flashTime;
+    private readonly RandomNumberGenerator _random = new();
+
     public Rac1RetailMenuButton()
     {
         FocusMode = FocusModeEnum.All;
         MouseDefaultCursorShape = CursorShape.PointingHand;
         AddThemeFontOverride("font", Rac1RetailUiSkin.Font("regular"));
         AddThemeFontSizeOverride("font_size", 20);
-        AddThemeColorOverride("font_color", Rac1RetailUiSkin.Cream);
-        AddThemeColorOverride("font_focus_color", Colors.White);
-        AddThemeColorOverride("font_hover_color", Colors.White);
-        AddThemeColorOverride("font_disabled_color", new Color(.6f, .63f, .71f));
-        AddThemeStyleboxOverride("normal", Style(new Color(.045f, .06f, .11f, .94f), new Color(.35f, .43f, .50f)));
-        AddThemeStyleboxOverride("hover", Style(new Color(.075f, .087f, .14f, .96f), new Color(.8f, .76f, .48f)));
-        AddThemeStyleboxOverride("pressed", Style(new Color(.12f, .10f, .055f, 1), new Color(1, .92f, .46f)));
-        AddThemeStyleboxOverride("focus", Style(new Color(0, 0, 0, 0), new Color(.99f, .81f, .25f)));
-        AddThemeStyleboxOverride("disabled", Style(new Color(.045f, .05f, .075f, .8f), new Color(.2f, .22f, .3f)));
+        AddThemeColorOverride("font_color", Rac1RetailUiSkin.NativeNormal);
+        AddThemeColorOverride("font_focus_color", Rac1RetailUiSkin.NativeSelected);
+        AddThemeColorOverride("font_hover_color", Rac1RetailUiSkin.NativeSelected);
+        AddThemeColorOverride("font_pressed_color", Rac1RetailUiSkin.NativeSelected);
+        AddThemeColorOverride("font_disabled_color", new Color(.375f, .375f, .375f));
+        AddThemeStyleboxOverride("normal", MakeFallbackStyle(new Color(.040f, .048f, .075f),
+            new Color(.35f, .4f, .42f)));
+        AddThemeStyleboxOverride("hover", MakeFallbackStyle(new Color(.052f, .062f, .083f),
+            new Color(.55f, .56f, .46f)));
+        AddThemeStyleboxOverride("pressed", MakeFallbackStyle(new Color(.052f, .062f, .083f),
+            new Color(.55f, .56f, .46f)));
+        AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+        AddThemeStyleboxOverride("disabled", MakeFallbackStyle(new Color(.035f, .040f, .055f),
+            new Color(.24f, .27f, .29f)));
         SetProcess(true);
     }
 
-    private static StyleBoxFlat Style(Color fill, Color border) => new()
+    public override void _Ready()
+    {
+        // In the PS2 pause menu there is no pointer hover state.
+        // Prevent a stale hidden cursor from highlighting a second item.
+        MouseFilter = UiPointerModality.ControllerWasLastInput ?
+            MouseFilterEnum.Ignore : MouseFilterEnum.Stop;
+
+        if (!RetailPauseRoot) return;
+        AddThemeFontOverride("font", Rac1RetailUiSkin.Font("large"));
+        AddThemeFontSizeOverride("font_size", 25);
+        // No Godot filled backgrounds or focus frame in the six-choice root.
+        var empty = new StyleBoxEmpty();
+        foreach (var state in new[] { "normal", "hover", "pressed", "focus", "disabled" })
+            AddThemeStyleboxOverride(state, empty);
+        AddThemeColorOverride("font_color", Rac1RetailUiSkin.NativeNormal);
+        AddThemeColorOverride("font_focus_color", Rac1RetailUiSkin.NativeSelected);
+        AddThemeColorOverride("font_hover_color", Rac1RetailUiSkin.NativeSelected);
+    }
+
+    private static StyleBoxFlat MakeFallbackStyle(Color fill, Color border) => new()
     {
         BgColor = fill,
         BorderColor = border,
-        BorderWidthLeft = 2,
-        BorderWidthRight = 2,
-        BorderWidthTop = 2,
-        BorderWidthBottom = 2,
-        ContentMarginLeft = 9,
-        ContentMarginRight = 9,
-        ContentMarginTop = 4,
-        ContentMarginBottom = 4,
+        BorderWidthLeft = 2, BorderWidthTop = 2,
+        BorderWidthRight = 2, BorderWidthBottom = 2,
+        ContentMarginLeft = 9, ContentMarginRight = 9,
+        ContentMarginTop = 4, ContentMarginBottom = 4,
     };
 
     public override void _Process(double delta)
     {
-        _seconds += Math.Max(0, delta);
-        if (HasFocus() || IsHovered()) QueueRedraw();
+        var filter = UiPointerModality.ControllerWasLastInput ?
+            MouseFilterEnum.Ignore : MouseFilterEnum.Stop;
+        if (MouseFilter != filter) MouseFilter = filter;
+
+        // Native FUN_00223e28: an inactive panel triggers a 1-in-2000 flash
+        // per 60Hz update; active time increments by two until 0x100.
+        _fraction += Math.Min(.2, Math.Max(0, delta)) * 60.0;
+        int ticks = Math.Min(12, (int)_fraction);
+        _fraction -= ticks;
+        for (int i = 0; i < ticks; i++)
+        {
+            if (_flashActive)
+            {
+                _flashTime += 2;
+                if (_flashTime >= 0x100) _flashActive = false;
+            }
+            else if (_random.RandiRange(0, 1999) == 0)
+            {
+                _flashActive = true;
+                _flashTime = 0;
+            }
+        }
+        if (_flashActive) QueueRedraw();
     }
 
     public override void _Draw()
     {
         if (!Rac1RetailUiAssets.IsLoaded) return;
-        // Source sprite: retail menu panel underlay.
+        Rect2 rect = new(0, 0, Size.X, Size.Y);
         var basePanel = Rac1RetailUiAssets.Sprite(0xE99E, 7);
         if (basePanel is not null)
-            DrawTextureRect(basePanel, new Rect2(3, 3, Size.X - 6, Size.Y - 6),
-                false, new Color(.72f, .82f, 1f, .26f));
+            DrawTextureRect(basePanel, rect, false, Colors.White);
+
+        // Source GS alpha equations are not yet reproduced by Godot's
+        // standard texture blending. Low-amplitude FX preserve the retail
+        // dark-striped panel instead of producing an incorrect grey gradient.
+        var streak = Rac1RetailUiAssets.Effect(0x1C);
+        if (streak is not null)
+            DrawTextureRect(streak, rect, false, new Color(.75f, .75f, .75f, .020f));
 
         var surface = Rac1RetailUiAssets.Effect(0x19);
         if (surface is not null)
-            DrawTextureRect(surface, new Rect2(5, 5, Size.X - 10, Size.Y - 10),
-                false, new Color(.9f, .94f, 1f, .10f));
+            DrawTextureRectRegion(surface, rect.Grow(-1),
+                new Rect2(1, 1, .0f + Math.Min(62, surface.GetWidth() - 1),
+                    Math.Min(62, surface.GetHeight() - 1)),
+                new Color(.75f, .75f, .75f, .022f));
 
-        bool selected = HasFocus() || IsHovered();
-        if (!selected) return;
-        // Selected marker: the original E99E frame 1.
-        var marker = Rac1RetailUiAssets.Sprite(0xE99E, 1);
-        if (marker is not null)
-            DrawTextureRect(marker, new Rect2(2, Size.Y * .5f - 13f, 24, 26), false,
-                new Color(1f, 1f, .85f, .95f));
-        float pulse = Rac1RetailUiSkin.SelectionPulse(Time.GetTicksMsec());
-        // Native FX 0x1A uses a scrolling/randomised UV offset and fades after
-        // activation. This repeats during selection as a readable host fallback.
-        var flash = Rac1RetailUiAssets.Effect(0x1A);
-        if (flash is not null)
+        if (_flashActive && Rac1RetailUiAssets.Effect(0x1A) is { } flash)
         {
-            var extent = new Rect2(5, 4, Size.X - 10, Size.Y - 8);
-            float u = (float)(_seconds * 34 % Math.Max(1, flash.GetWidth() - 2));
-            float v = (float)(_seconds * 25 % Math.Max(1, flash.GetHeight() - 2));
-            var src = new Rect2(u, v, Math.Min(flash.GetWidth() - u, Math.Max(4f, extent.Size.X / 5)),
-                Math.Min(flash.GetHeight() - v, Math.Max(4f, extent.Size.Y)));
-            DrawTextureRectRegion(flash, extent, src, new Color(.95f, .85f, .32f, .11f + .16f * pulse));
+            float alpha = Math.Min(128, 2 * Math.Max(0, 128 - Math.Max(0, _flashTime - 128))) / 128f;
+            float u = _random.RandiRange(0, Math.Min(199, Math.Max(0, flash.GetWidth() - 2)));
+            float v = _random.RandiRange(0, Math.Min(199, Math.Max(0, flash.GetHeight() - 2)));
+            DrawTextureRectRegion(flash, rect,
+                new Rect2(u, v, Math.Min(rect.Size.X, flash.GetWidth() - u),
+                    Math.Min(rect.Size.Y, flash.GetHeight() - v)),
+                new Color(1, 1, 1, alpha));
         }
-        var streak = Rac1RetailUiAssets.Effect(0x1C);
-        if (streak is not null)
-            DrawTextureRect(streak, new Rect2(4, 4, Size.X - 8, Size.Y - 8), false,
-                new Color(1f, .84f, .35f, .09f + .13f * pulse));
+
+        if (RetailPauseRoot)
+        {
+            // Screenshot-calibrated outline, not a recovered GS packet.
+            // The exact palette/margins of the original panel Moby are pending.
+            DrawRect(rect.Grow(-1), new Color(.64f, .63f, .47f, .92f), false, 2);
+            return;
+        }
+
+        // Native FUN_0021d4a8 draws the red check marker only for text-list
+        // flags 0x200/0x800 (unlock/language selection). The Help/Options
+        // page flag values have NOT been recovered; don't display this
+        // sprite on every focused option. Selected font colour is evidenced.
     }
 }

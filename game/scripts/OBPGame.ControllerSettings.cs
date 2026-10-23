@@ -174,7 +174,7 @@ public partial class OBPGame
         };
         _controllerSettings.BackRequested += CloseControllerSettings;
         AddChild(_controllerSettings);
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        UiPointerModality.MenuOpened();
         GD.Print($"[controllers] settings opened from {(fromPause ? "pause" : "menu")}");
     }
 

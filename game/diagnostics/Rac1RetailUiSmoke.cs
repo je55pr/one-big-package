@@ -35,7 +35,7 @@ public partial class Rac1RetailUiSmoke : Node
                 [
                     new(10, "Bomb Glove", true, true, 0xEA6A),
                     new(15, "Blaster", false, false, 0xEA6F),
-                    .. Enumerable.Range(0, 13).Select(i =>
+                    .. Enumerable.Range(0, 20).Select(i =>
                         new PauseMenuUi.RetailItem(60 + i, $"Test slot {i + 1}", false, false)),
                 ],
                 Gadgets = [new(12, "Swingshot", true, false, 0xEA6C)],
@@ -46,9 +46,14 @@ public partial class Rac1RetailUiSmoke : Node
             sample.EquipRequested += _ => equips++;
             sample.ControllerSettingsRequested += () => options++;
             sample.ResumeRequested += () => resumed++;
+            UiPointerModality.MenuOpened();
             AddChild(sample);
             await Frames(4);
-            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "WEAPONS" }, "No initial Weapons focus");
+            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "Weapons" }, "No initial Weapons focus");
+            Require(Descendants(sample).OfType<Rac1RetailMenuButton>().Count(b => b.RetailPauseRoot) == 6,
+                "Retail root must contain exactly six original menu choices");
+            Require(!Descendants(sample).OfType<Label>().Any(l => l.Text.Contains("OBP NAVIGATION", StringComparison.Ordinal)),
+                "OBP chrome leaked into retail pause root");
             await Capture("root");
             Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Root retained forbidden ScrollContainer");
             Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -56,6 +61,7 @@ public partial class Rac1RetailUiSmoke : Node
             Require(UiPointerModality.ControllerWasLastInput, "Controller input was not recorded");
             if (DisplayServer.GetName() != "headless")
                 Require(Input.MouseMode == Input.MouseModeEnum.Hidden, "Controller input failed to hide cursor");
+            await Frames(30); // Allow pause-open warp suppression to expire.
             Input.ParseInputEvent(new InputEventMouseMotion
             {
                 Relative = new Vector2(12, 0),
@@ -65,17 +71,22 @@ public partial class Rac1RetailUiSmoke : Node
             Require(!UiPointerModality.ControllerWasLastInput, "Mouse movement did not restore pointer modality");
             if (DisplayServer.GetName() != "headless")
                 Require(Input.MouseMode == Input.MouseModeEnum.Visible, "Physical mouse movement failed to show cursor");
-            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "GADGETS" },
+            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "Gadgets" },
                 "D-pad navigation did not move from Weapons to Gadgets");
             await Press(JoyButton.DpadUp);
-            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "WEAPONS" },
+            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "Weapons" },
                 "D-pad Up did not restore Weapons");
             await Press(JoyButton.A);
             await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Weapons, $"Cross did not enter Weapons: page={sample.RetailPage}, focus={(GetViewport().GuiGetFocusOwner() as Button)?.Text}");
             var buttons = Descendants(sample).OfType<Button>().Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
-            Require(buttons.Length == 9 && buttons[1].Text.Contains("[LOCKED]"), "Native inventory paging or ownership state missing");
+            Require(buttons.Length == 15 && buttons[1] is Rac1RetailEquipmentCell { Owned: false }, "Native inventory paging or ownership state missing");
             Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Retail UI unexpectedly contains Godot scrollbars");
+            buttons[0].GrabFocus(); await Frames(2);
+            await Press(JoyButton.DpadRight);
+            Require(GetViewport().GuiGetFocusOwner() == buttons[1], "R&C1 five-column D-pad right navigation failed");
+            await Press(JoyButton.DpadDown);
+            Require(GetViewport().GuiGetFocusOwner() == buttons[6], "R&C1 grid D-pad down must advance five cells");
             buttons[1].GrabFocus(); await Frames(2); await Press(JoyButton.A);
             Require(equips == 0, "Unowned weapon sent an equip request");
             buttons[0].GrabFocus(); await Frames(2); await Press(JoyButton.A);
@@ -84,21 +95,21 @@ public partial class Rac1RetailUiSmoke : Node
             await FocusAndPress(sample, "NEXT ▸");
             await Frames(4);
             buttons = Descendants(sample).OfType<Button>().Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
-            Require(buttons.Length == 6 && buttons[0].Text.StartsWith("Test slot 8", StringComparison.Ordinal),
+            Require(buttons.Length == 7 && buttons[0].TooltipText == "Test slot 14",
                 "Second inventory page did not render remaining six items");
             await Capture("weapons-page2");
 
             await Keyboard(Key.Escape); await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Root, "Keyboard Escape did not navigate back");
-            await Open(sample, "GADGETS", Rac1RetailMenuPage.Gadgets);
+            await Open(sample, "Gadgets", Rac1RetailMenuPage.Gadgets);
             await Capture("gadgets");
             await Keyboard(Key.Escape); await Frames(25);
-            await Open(sample, "QUICK SELECT", Rac1RetailMenuPage.QuickSelect);
+            await Open(sample, "Quick Select", Rac1RetailMenuPage.QuickSelect);
             await Keyboard(Key.Escape); await Frames(25);
-            await Open(sample, "ITEMS", Rac1RetailMenuPage.Items);
+            await Open(sample, "Items", Rac1RetailMenuPage.Items);
             await Keyboard(Key.Escape); await Frames(25);
 
-            await Open(sample, "HELP", Rac1RetailMenuPage.Help);
+            await Open(sample, "Help", Rac1RetailMenuPage.Help);
             await FocusAndPress(sample, "Controls");
             await Frames(18);
             var help = Descendants(sample).OfType<Rac1HelpDeskView>().First();
@@ -108,18 +119,17 @@ public partial class Rac1RetailUiSmoke : Node
             await Keyboard(Key.Escape); await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Root, "HelpDesk Back did not return to root");
 
-            await Open(sample, "OPTIONS", Rac1RetailMenuPage.Options);
+            await Open(sample, "Options", Rac1RetailMenuPage.Options);
             await FocusAndPress(sample, "CONTROLLER SETTINGS");
             Require(options == 1, "Options did not forward settings event");
             await Capture("options");
-            await Keyboard(Key.Escape); await Frames(25);
             await Open(sample, "OBP DEVELOPMENT TOOLS", Rac1RetailMenuPage.Development, contains: true);
             Require(Descendants(sample).OfType<CheckButton>().Any(c => c.Text == "SHOW DEBUG OUTPUT"),
                 "Development controls disappeared");
             await Capture("development");
             await Keyboard(Key.Escape); await Frames(25);
-            await FocusAndPress(sample, "RESUME");
-            Require(resumed == 1, "Resume event did not fire");
+            await Keyboard(Key.Escape); await Frames(2);
+            Require(resumed == 1, "Escape did not resume from retail root");
             GD.Print("[rac1-retail-ui-smoke] keyboard, joypad, pages, lockouts, HelpDesk and developer separation PASS");
             GetTree().Quit();
         }

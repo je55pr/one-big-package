@@ -20,6 +20,9 @@ public sealed partial class PauseMenuUi
     private VBoxContainer _retailColumn = null!;
     private Label _retailTitle = null!;
     private Label _retailBrand = null!;
+    private PanelContainer _retailFrame = null!;
+    private HSeparator _retailSeparator = null!;
+    private Label _retailFooter = null!;
     private Control? _retailFocus;
     private Rac1HelpDeskView? _retailHelp;
     private readonly List<Control> _retailFocusOrder = [];
@@ -33,7 +36,9 @@ public sealed partial class PauseMenuUi
         SetProcess(true);
         var shade = new ColorRect
         {
-            Color = new Color(0.015f, 0.022f, 0.055f, 0.80f),
+            // The retail pause remains drawn over the actual level scene.
+            // Any menu-stage world colour grading must be recovered separately.
+            Color = Colors.Transparent,
             AnchorRight = 1,
             AnchorBottom = 1,
             MouseFilter = Control.MouseFilterEnum.Stop,
@@ -59,6 +64,7 @@ public sealed partial class PauseMenuUi
             SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
         };
         centred.AddChild(frame);
+        _retailFrame = frame;
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 12);
         frame.AddChild(column);
@@ -76,8 +82,8 @@ public sealed partial class PauseMenuUi
             ThemeTypeVariation = "HeaderMedium",
         };
         column.AddChild(_retailTitle);
-        var separator = new HSeparator();
-        column.AddChild(separator);
+        _retailSeparator = new HSeparator();
+        column.AddChild(_retailSeparator);
         // No engine scrollbars. Retail pages are bounded and use explicit
         // previous/next controls when their data exceeds the visible grid.
         _retailColumn = new VBoxContainer
@@ -89,12 +95,13 @@ public sealed partial class PauseMenuUi
         _retailColumn.AddThemeConstantOverride("separation", 6);
         column.AddChild(_retailColumn);
 
-        column.AddChild(new Label
+        _retailFooter = new Label
         {
             Text = "START  Close    ·    CROSS / ENTER  Select    ·    CIRCLE / ESC  Back",
             HorizontalAlignment = HorizontalAlignment.Center,
             Modulate = UiTheme.TextDim,
-        });
+        };
+        column.AddChild(_retailFooter);
         RebuildRetailPage();
     }
 
@@ -113,12 +120,8 @@ public sealed partial class PauseMenuUi
         {
             _retailFocus = current;
             _retailNavigation.Focus(_retailFocusOrder.IndexOf(current), _retailFocusOrder.Count);
-            // Host time pulse follows native frame-counter cadence in spirit,
-            // but pixel brightness needs screenshot comparison.
-            if (current is Button button && button.HasFocus())
-                button.AddThemeColorOverride("font_focus_color",
-                    Rac1RetailUiSkin.Cream.Lerp(Colors.White,
-                        (Rac1RetailUiSkin.SelectionPulse(Time.GetTicksMsec()) - 0.72f) * 0.75f));
+            // Native source text colours are configured by Rac1RetailMenuButton.
+            // Avoid injecting a second, invented time-dependent highlight.
         }
     }
 
@@ -139,8 +142,15 @@ public sealed partial class PauseMenuUi
         _retailFocusOrder.Clear();
         _retailHelp = null;
         Rac1RetailMenuPage page = _retailNavigation.Page;
-        _retailBrand.Visible = page != Rac1RetailMenuPage.Root;
-        _retailTitle.Visible = page != Rac1RetailMenuPage.Root;
+        bool root = page == Rac1RetailMenuPage.Root;
+        _retailFrame.CustomMinimumSize = root ? Vector2.Zero : new Vector2(720, 560);
+        if (root) _retailFrame.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+        else _retailFrame.RemoveThemeStyleboxOverride("panel");
+        _retailColumn.CustomMinimumSize = root ? Vector2.Zero : new Vector2(700, 410);
+        _retailBrand.Visible = !root;
+        _retailTitle.Visible = !root;
+        _retailSeparator.Visible = !root;
+        _retailFooter.Visible = !root;
         _retailTitle.Text = page switch
         {
             Rac1RetailMenuPage.Weapons => Rac1RetailUiSkin.NativeText(20194, "Weapons"),
@@ -180,77 +190,91 @@ public sealed partial class PauseMenuUi
             (20199, "Options", Rac1RetailMenuPage.Options),
         };
         foreach (var (id, fallback, page) in pages)
-            AddRetailButton(Rac1RetailUiSkin.NativeText(id, fallback).ToUpperInvariant(), () => NavigateRetail(page));
-        _retailColumn.AddChild(new HSeparator());
-        _retailColumn.AddChild(new Label
+            AddRetailButton(Rac1RetailUiSkin.NativeText(id, fallback), () => NavigateRetail(page));
+        // 2002 pause screenshot places the six rows above vertical centre.
+        // Spacer positioning is screenshot-calibrated, NOT native UI geometry.
+        _retailColumn.AddChild(new Control
         {
-            Text = "OBP NAVIGATION  •  NOT RETAIL",
-            ThemeTypeVariation = "HeaderSmall",
-            HorizontalAlignment = HorizontalAlignment.Center,
+            CustomMinimumSize = new Vector2(0, 130),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
         });
-        AddRetailButton("RESUME", () => ResumeRequested?.Invoke());
-        AddRetailButton("OBP DEVELOPMENT TOOLS  ▸", () => NavigateRetail(Rac1RetailMenuPage.Development));
     }
-
     private void BuildEquipmentPage(IReadOnlyList<RetailItem> entries, bool allowEquip)
     {
-        if (entries.Count == 0)
-            _retailColumn.AddChild(new Label
-            {
-                Text = "No supported equipment or item identities in this category.",
-                AutowrapMode = TextServer.AutowrapMode.WordSmart,
-                HorizontalAlignment = HorizontalAlignment.Center,
-            });
-
-        var grid = new GridContainer { Columns = 3, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        grid.AddThemeConstantOverride("h_separation", 8);
-        grid.AddThemeConstantOverride("v_separation", 8);
-        _retailColumn.AddChild(grid);
-        int pageCount = Math.Max(1, (entries.Count + EquipmentPageSize - 1) / EquipmentPageSize);
+        // Native FUN_0021d948 draws icon-only grid cells. Its actual cols/rows
+        // are supplied by MenuScreen, not hard-coded in the draw routine. Five
+        // columns is evidenced as a supported native grid width by
+        // update_menu_grid_selection.c; this page's choice is provisional.
+        const int columns = 5;
+        const int pageSize = 15;
+        int pageCount = Math.Max(1, (entries.Count + pageSize - 1) / pageSize);
         _retailEquipmentPage = Math.Clamp(_retailEquipmentPage, 0, pageCount - 1);
-        foreach (var entry in entries.Skip(_retailEquipmentPage * EquipmentPageSize).Take(EquipmentPageSize))
+
+        var detail = new Label
+        {
+            Text = entries.Count == 0 ? "No items" : "",
+            CustomMinimumSize = new Vector2(0, 40),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        detail.AddThemeFontOverride("font", Rac1RetailUiSkin.Font("regular"));
+        detail.AddThemeColorOverride("font_color", Rac1RetailUiSkin.NativeNormal);
+
+        var grid = new GridContainer
+        {
+            Columns = columns,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            CustomMinimumSize = new Vector2(690, 290),
+        };
+        grid.AddThemeConstantOverride("h_separation", 4);
+        grid.AddThemeConstantOverride("v_separation", 4);
+        _retailColumn.AddChild(grid);
+
+        void Describe(RetailItem item)
+        {
+            string suffix = item.Equipped ? "  (ON)" : !item.Owned ? "  [LOCKED]" : "";
+            detail.Text = item.Name + suffix;
+        }
+
+        int shown = 0;
+        foreach (var entry in entries.Skip(_retailEquipmentPage * pageSize).Take(pageSize))
         {
             var item = entry;
-            string state = item.Equipped ? "\n(ON)" : !item.Owned ? "\n[LOCKED]" : "";
-            var button = new Rac1RetailMenuButton
+            var cell = new Rac1RetailEquipmentCell
             {
-                Text = item.Name + state,
                 Name = $"RetailItem_{item.NativeId}",
-                CustomMinimumSize = new Vector2(208, 78),
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                ClipText = true,
-                FocusMode = Control.FocusModeEnum.All,
-                TooltipText = item.Owned ? item.Name : $"{item.Name}: not owned",
+                TooltipText = item.Name,
+                NativeAnimationId = item.Icon,
+                Owned = item.Owned,
+                Equipped = item.Equipped,
             };
-            if (item.Icon is { } id && Rac1RetailUiAssets.Sprite(id, 0) is { } icon)
+            cell.FocusEntered += () =>
             {
-                button.Icon = icon;
-                button.ExpandIcon = false;
-            }
-            if (!item.Owned) button.Modulate = new Color(.57f, .63f, .72f);
-            button.Pressed += () =>
+                Describe(item);
+                Rac1RetailMenuAudio.Play(0);
+            };
+            cell.Pressed += () =>
             {
+                Rac1RetailMenuAudio.Play(1);
                 if (!allowEquip || !Rac1RetailMenuNavigation.MayEquip(item.Owned)) return;
+                // Only an equip request. The existing gameplay handler owns
+                // campaign state and decides whether it is admitted.
                 EquipRequested?.Invoke((Rac1WeaponId)item.NativeId);
-                foreach (var other in grid.GetChildren().OfType<Button>())
-                {
-                    if (other.Name.ToString().StartsWith("RetailItem_"))
-                        other.Text = other.Text.Replace("\n(ON)", "");
-                }
-                button.Text = item.Name + "\n(ON)";
             };
-            button.FocusEntered += () => Rac1RetailMenuAudio.Play(0);
-            button.Pressed += () => Rac1RetailMenuAudio.Play(1);
-            grid.AddChild(button);
-            _retailFocusOrder.Add(button);
+            grid.AddChild(cell);
+            _retailFocusOrder.Add(cell);
+            shown++;
         }
-        _retailColumn.AddChild(new Label
-        {
-            Text = allowEquip ? "Select an owned weapon to equip. Locked items cannot be used."
-                : "Inventory presentation only. Campaign ownership and progression stay source-owned.",
-            Modulate = UiTheme.TextDim,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-        });
+        for (int i = shown; i < pageSize; i++)
+            grid.AddChild(new Control
+            {
+                CustomMinimumSize = new Vector2(112, 94),
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            });
+
+        _retailColumn.AddChild(detail);
+        if (shown > 0) Describe(entries[_retailEquipmentPage * pageSize]);
+
         if (pageCount > 1)
         {
             var nav = new HBoxContainer();
@@ -267,6 +291,39 @@ public sealed partial class PauseMenuUi
                 AddRetailButton("NEXT ▸", () => ChangeRetailEquipmentPage(1), parent: nav);
         }
         AddRetailButton("◂ BACK", () => NavigateRetail(Rac1RetailMenuPage.Root));
+    }
+
+    /// <summary>
+    /// The retail grid updater (FUN_0021b858) navigates up/down by the
+    /// number of columns and wraps at edges when flag 0x8000 is absent.
+    /// Preserve that native behaviour instead of Godot's nearest-node
+    /// heuristic, which jumps diagonally through the icon grid.
+    /// </summary>
+    private static void WireRetailGrid(IReadOnlyList<Rac1RetailEquipmentCell> cells)
+    {
+        const int columns = 5;
+        if (cells.Count == 0) return;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            int row = i / columns;
+            int start = row * columns;
+            int end = Math.Min(start + columns, cells.Count);
+            int left = i == start ? end - 1 : i - 1;
+            int right = i + 1 == end ? start : i + 1;
+            int up = i - columns;
+            if (up < 0)
+            {
+                int lastRowStart = ((cells.Count - 1) / columns) * columns;
+                up = Math.Min(lastRowStart + i % columns, cells.Count - 1);
+            }
+            int down = i + columns;
+            if (down >= cells.Count)
+                down = Math.Min(i % columns, cells.Count - 1);
+            cells[i].FocusNeighborLeft = cells[i].GetPathTo(cells[left]);
+            cells[i].FocusNeighborRight = cells[i].GetPathTo(cells[right]);
+            cells[i].FocusNeighborTop = cells[i].GetPathTo(cells[up]);
+            cells[i].FocusNeighborBottom = cells[i].GetPathTo(cells[down]);
+        }
     }
 
     private void ChangeRetailEquipmentPage(int delta)
@@ -324,6 +381,7 @@ public sealed partial class PauseMenuUi
         });
         AddRetailButton("RETURN TO WORLDS", () => WorldsRequested?.Invoke());
         AddRetailButton("QUIT TO DESKTOP", () => QuitRequested?.Invoke());
+        AddRetailButton("OBP DEVELOPMENT TOOLS", () => NavigateRetail(Rac1RetailMenuPage.Development));
         AddRetailButton("◂ BACK", () => NavigateRetail(Rac1RetailMenuPage.Root));
     }
 
@@ -389,30 +447,12 @@ public sealed partial class PauseMenuUi
             FocusMode = Control.FocusModeEnum.All,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             Disabled = disabled,
+            RetailPauseRoot = _retailNavigation.Page == Rac1RetailMenuPage.Root,
         };
-        if (_retailNavigation.Page == Rac1RetailMenuPage.Root && label != "OBP DEVELOPMENT TOOLS  ▸" && label != "RESUME")
+        if (button.RetailPauseRoot)
         {
-            button.CustomMinimumSize = new Vector2(365, 49);
+            button.CustomMinimumSize = new Vector2(365, 64);
             button.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            var normal = new StyleBoxFlat
-            {
-                BgColor = new Color(.035f, .052f, .11f, .96f),
-                BorderColor = new Color(.42f, .46f, .48f),
-                BorderWidthLeft = 2,
-                BorderWidthTop = 2,
-                BorderWidthRight = 2,
-                BorderWidthBottom = 2,
-            };
-            button.AddThemeStyleboxOverride("normal", normal);
-            button.AddThemeStyleboxOverride("focus", new StyleBoxFlat
-            {
-                BgColor = new Color(0, 0, 0, 0),
-                BorderColor = new Color(.98f, .81f, .28f),
-                BorderWidthLeft = 3,
-                BorderWidthTop = 3,
-                BorderWidthRight = 3,
-                BorderWidthBottom = 3,
-            });
         }
         button.FocusEntered += () => Rac1RetailMenuAudio.Play(0);
         button.Pressed += () => { Rac1RetailMenuAudio.Play(1); action(); };

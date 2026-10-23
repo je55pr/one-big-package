@@ -10,6 +10,7 @@ public sealed partial class UiPointerModality : Node
 {
     private static bool _controllerLast;
     private static bool _hiddenForController;
+    private static ulong _ignoreMouseUntil;
     public static bool ControllerWasLastInput => _controllerLast;
 
     public override void _Ready() => ProcessMode = ProcessModeEnum.Always;
@@ -17,8 +18,12 @@ public sealed partial class UiPointerModality : Node
     /// <summary>Call after opening a pointer-capable menu.</summary>
     public static void MenuOpened()
     {
-        _hiddenForController = _controllerLast;
-        Input.MouseMode = _controllerLast ? Input.MouseModeEnum.Hidden : Input.MouseModeEnum.Visible;
+        // A pause activated by Start must never expose a previous mouse-hover
+        // position. Only fresh physical mouse movement re-enables the pointer.
+        _controllerLast = true;
+        _hiddenForController = true;
+        _ignoreMouseUntil = Time.GetTicksMsec() + 260;
+        Input.MouseMode = Input.MouseModeEnum.Hidden;
     }
 
     /// <summary>Restore a gameplay/input mode when the owning menu closes.</summary>
@@ -40,8 +45,9 @@ public sealed partial class UiPointerModality : Node
                 _hiddenForController = true;
             }
         }
-        else if (@event is InputEventMouseMotion motion && motion.Relative.LengthSquared() >= 4f ||
-                 @event is InputEventMouseButton { Pressed: true })
+        else if (Time.GetTicksMsec() >= _ignoreMouseUntil &&
+                 (@event is InputEventMouseMotion motion && motion.Relative.LengthSquared() >= 4f ||
+                  @event is InputEventMouseButton { Pressed: true }))
         {
             _controllerLast = false;
             if (_hiddenForController && Input.MouseMode == Input.MouseModeEnum.Hidden)

@@ -9,6 +9,10 @@ namespace OneBigPackage;
 /// </summary>
 public static class Rac1RetailUiSkin
 {
+    // Packed PS2 ABGR constants from retail FUN_0021d4a8:
+    // 0x8020FFFF selected; 0x80FFA888 normal enabled.
+    public static readonly Color NativeSelected = new(1f, 1f, 32f / 255f);
+    public static readonly Color NativeNormal = new(136f / 255f, 168f / 255f, 1f);
     public static readonly Color Cream = new(1f, 0.92f, 0.69f);
     public static readonly Color Ink = new(0.024f, 0.035f, 0.085f, 0.94f);
     public static readonly Color Outline = new(0.39f, 0.62f, 0.77f, 0.9f);
@@ -21,20 +25,16 @@ public static class Rac1RetailUiSkin
 
     public static void Frame(Control canvas, Rect2 rect, float alpha = 1f)
     {
-        // The original game uses stretchable sprite 0x7580, edges from frame 1.
-        // Render readable fill underneath so absent assets still yield a UI.
-        canvas.DrawRect(rect, new Color(Ink.R, Ink.G, Ink.B, Ink.A * alpha));
-        var middle = Rac1RetailUiAssets.Sprite(0x7580, 0);
-        if (middle is not null)
-            canvas.DrawTextureRect(middle, rect.Grow(-4), false, new Color(1, 1, 1, alpha));
-        canvas.DrawRect(rect, new Color(Outline.R, Outline.G, Outline.B, alpha), false, 2);
-        var edge = Rac1RetailUiAssets.Sprite(0x7580, 1);
-        if (edge is not null)
-        {
-            float width = Math.Min(18, rect.Size.X / 5);
-            canvas.DrawTextureRect(edge, new Rect2(rect.Position.X, rect.Position.Y + 4,
-                width, rect.Size.Y - 8), false, new Color(1, 1, 1, alpha));
-        }
+        // Original FUN_001f5f18 (draw_ui_frame) makes a dark PS2
+        // 0x040404 rectangle at alpha 0x60 with six narrow offset strips.
+        // It does NOT use 0x7580 HUD sprites or a blue outline.
+        // The four-layer scaling here approximates the GS overlay raster.
+        var sourceFill = new Color(4f / 255f, 4f / 255f, 4f / 255f,
+            Math.Clamp(0x60 / 128f * alpha, 0f, 1f));
+        canvas.DrawRect(rect, sourceFill);
+        canvas.DrawRect(rect.Grow(-1), sourceFill);
+        canvas.DrawRect(rect.Grow(-2), sourceFill);
+        canvas.DrawRect(rect.Grow(-3), sourceFill);
     }
 
     public static void Icon(Control canvas, ushort animation, int frame, Rect2 rect, Color? tint = null)
@@ -126,7 +126,8 @@ public sealed partial class Rac1HelpDeskView : Control
         _text.Text = State.Message;
         _text.Visible = State.Current is Rac1HelpDeskPresentation.Phase.FadeIn or
             Rac1HelpDeskPresentation.Phase.Text or Rac1HelpDeskPresentation.Phase.FadeOut;
-        _text.Modulate = new Color(1f, 0.90f, 0.71f, State.Opacity);
+        _text.Modulate = new Color(Rac1RetailUiSkin.NativeNormal.R,
+            Rac1RetailUiSkin.NativeNormal.G, Rac1RetailUiSkin.NativeNormal.B, State.Opacity);
         QueueRedraw();
     }
 

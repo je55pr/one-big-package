@@ -240,24 +240,24 @@ public partial class ControllerSmoke : Node
         await Frames(20);
         Require(player.GlobalPosition == pausedPosition, "World simulation continued through the pause menu");
         await Capture("pause-menu");
-        await EnterRetailPageAsync(Rac1RetailMenuPage.Weapons, "WEAPONS");
+        await EnterRetailPageAsync(Rac1RetailMenuPage.Weapons, "Weapons");
         var weaponCards = Descendants(Find<PauseMenuUi>()!).OfType<Button>()
             .Where(button => button.Name.ToString().StartsWith("RetailItem_", StringComparison.Ordinal)).ToArray();
-        Require(weaponCards.Length == 15 && weaponCards.Any(button => button.Text.Contains("[LOCKED]", StringComparison.Ordinal)),
+        Require(weaponCards.Length == 15 && weaponCards.OfType<Rac1RetailEquipmentCell>().Any(cell => !cell.Owned),
             "Retail weapons page did not render equipped/unowned source entries");
         await KeyPress(Key.Escape); await Frames(20);
         Require(Find<PauseMenuUi>()?.RetailPage == Rac1RetailMenuPage.Root, "Keyboard Escape failed to return to retail root");
-        await EnterRetailPageAsync(Rac1RetailMenuPage.Gadgets, "GADGETS");
+        await EnterRetailPageAsync(Rac1RetailMenuPage.Gadgets, "Gadgets");
         await Press(JoyButton.B); await Frames(20);
-        await EnterRetailPageAsync(Rac1RetailMenuPage.QuickSelect, "QUICK SELECT");
+        await EnterRetailPageAsync(Rac1RetailMenuPage.QuickSelect, "Quick Select");
         await Press(JoyButton.B); await Frames(20);
-        await EnterRetailPageAsync(Rac1RetailMenuPage.Help, "HELP");
+        await EnterRetailPageAsync(Rac1RetailMenuPage.Help, "Help");
         await FocusButton("Controls"); await Press(JoyButton.A); await Frames(15);
         Require(Find<Rac1HelpDeskView>() is { State.Current: Rac1HelpDeskPresentation.Phase.Text },
             "HelpDesk did not expand to text");
         await Press(JoyButton.B); await Frames(10);
         await Press(JoyButton.B); await Frames(20);
-        await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "OPTIONS");
+        await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "Options");
         await FocusButton("CONTROLLER SETTINGS"); await Press(JoyButton.A); await Press(JoyButton.B);
         Require(GetTree().Paused && Find<PauseMenuUi>() is { Visible: true } && Focus() is Button, "Settings Back resumed gameplay or lost pause focus");
         await Press(JoyButton.Start);
@@ -288,7 +288,7 @@ public partial class ControllerSmoke : Node
         Require(Descendants(_game).OfType<Label>().Any(label => label.Text == "Bomb Glove"), "Quick swap did not actually equip the previous weapon");
         await Button(JoyButton.Y, true); await Press(JoyButton.Start); await Button(JoyButton.Y, false);
         Require(Find<WeaponQuickSelectUi>() is null && Find<PauseMenuUi>() is not null && GetTree().Paused, "Start nested an invalid pause over quick select");
-        await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "OPTIONS");
+        await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "Options");
         await FocusButton("RETURN TO WORLDS"); await Press(JoyButton.A);
         Require(Find<DestinationSelectorUi>() is not null && !GetTree().Paused, "Controller could not leave gameplay for world selection");
         GD.Print("[controller-smoke] Start pause/settings, Select/R3 map, preview, paged Triangle selection and world return PASS");
@@ -396,6 +396,8 @@ public partial class ControllerSmoke : Node
     private async Task EnterRetailPageAsync(Rac1RetailMenuPage page, string buttonText)
     {
         if (Find<PauseMenuUi>() is not { RetailEnabled: true } menu) return;
+        if (page == Rac1RetailMenuPage.Development && menu.RetailPage == Rac1RetailMenuPage.Root)
+            await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "Options");
         await FocusButton(buttonText, contains: buttonText.StartsWith("OBP ", StringComparison.Ordinal));
         await Press(JoyButton.A);
         await Frames(20);
