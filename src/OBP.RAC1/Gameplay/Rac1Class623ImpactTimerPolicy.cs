@@ -61,10 +61,38 @@ public static class Rac1Class623ImpactTimerPolicy
     }
 
     /// <summary>
+    /// Native allocator 0x22dbd8 converts duration to float, loads a
+    /// source-owned scale from gp-0x7e98, forms ACC=0.25f+0.25f,
+    /// computes ACC + duration*scale using the EE MADD.S instruction,
+    /// then CVT.W.S converts the result toward zero.
+    /// The native scale is NOT recoverable from these instructions and
+    /// must be supplied from the actual source runtime. Finite-range
+    /// arithmetic here is a bounded host approximation, not bit-exact
+    /// EE FPU rounding, denormal handling or overflow saturation.
+    /// </summary>
+    public static int? TicksForDuration(int duration, float? nativeGlobalScale)
+    {
+        if (duration < 0 ||
+            nativeGlobalScale is not float scale ||
+            !float.IsFinite(scale) ||
+            scale <= 0f)
+            return null;
+
+        float accumulator = 0.25f + 0.25f;
+        float scaled = (float)duration * scale + accumulator;
+        // Original selected durations 15/30/37/45/60 and ordinary
+        // positive source scales fit signed 32-bit timer storage.
+        if (!float.IsFinite(scaled) || scaled >= 2147483648f)
+            return null;
+        return (int)MathF.Truncate(scaled);
+    }
+
+    /// <summary>
     /// Native response index selects the proposed timer *duration*
     /// through jump table 0x217670 only when countdown result != 0.
-    /// Actual timer value is written by a separate 0x22dbd8 helper
-    /// not represented here. Index 7 needs the real byte at 0x13e533;
+    /// The timer allocator can then convert this selected duration
+    /// only if the real native global scale is observed. Index 7
+    /// needs the real byte at 0x13e533;
     /// absence means unknown, never an inferred duration.
     /// </summary>
     public static int? DurationForResponseIndex(int responseIndex, bool? alternateDurationFlag)

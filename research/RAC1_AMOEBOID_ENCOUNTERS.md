@@ -274,11 +274,29 @@ index 1, **60** for indices 4/11, **30** for other indices
 or indices outside the twelve-entry table, and **45 or 60**
 for index 7 depending on live global byte **0x0013e533**
 (nonzero / zero respectively). Native allocator output is
-stored into the collision slot **+0x1c**; the allocator's
-floating-point time conversion and original runtime inputs
-are not yet hosted. `Rac1Class623ImpactTimerPolicy.DurationForResponseIndex`
+stored into the collision slot **+0x1c**. The native allocator
+at **0x0022dbd8–0x0022dbfc** is now decoded further:
+`MTC1` passes the selected integer duration to float register f1;
+`CVT.S.W` converts it to single precision; source float f2 is loaded
+from **`gp - 0x7e98`** (a live original global scale, **not**
+an immediate or a generic Godot frame delta); `ADDA.S` places
+**0.25f + 0.25f = 0.5f** in the native FPU accumulator;
+`MADD.S` combines **duration × source scale + accumulator**;
+`CVT.W.S` converts the result to a 32-bit integer **toward zero**
+and `MFC1` returns it in v0, to be stored at collision-slot
+**+0x1c**. Instruction bytes and the allocator call/store are
+asserted against the authorised source overlay. The chosen global
+scale's *runtime value* is not yet imported, and the PS2 EE FPU's
+non-IEEE intermediate rounding/overflow behavior is not presumed.
+
+`Rac1Class623ImpactTimerPolicy.DurationForResponseIndex`
 exposes only the proven duration argument, returning unknown
-for index 7 until the real global flag is supplied.
+for index 7 until the real global flag is supplied. The new
+`TicksForDuration` reproduces the finite ordinary-range conversion
+from an **explicitly supplied native global scale** with a documented
+host floating-point approximation. Missing/invalid scale fails
+closed; neither routine manufactures a timer in ordinary Godot play
+or implies an admitted collision.
 
 The *other* service branch, when the countdown callback returns
 **0** (a still-active countdown), now has its original source

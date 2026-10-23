@@ -137,6 +137,78 @@ public sealed class Rac1Class623ImpactTimerPolicyTests
         Assert.Equal(0xa6560014u, Word(overlay, 0x00284c28)); // clear ID +0x14
     }
 
+    [Theory]
+    [InlineData(15, 1f, 15)]
+    [InlineData(30, 1f, 30)]
+    [InlineData(37, 1f, 37)]
+    [InlineData(45, 1f, 45)]
+    [InlineData(60, 1f, 60)]
+    [InlineData(15, 0.25f, 4)]
+    [InlineData(30, 0.25f, 8)]
+    [InlineData(37, 0.25f, 9)]
+    [InlineData(45, 0.25f, 11)]
+    [InlineData(60, 0.25f, 15)]
+    [InlineData(0, 0.25f, 0)]
+    public void OriginalTimerAllocatorPipelineUsesSuppliedNativeScale(
+        int duration, float scale, int expected)
+    {
+        Assert.Equal(expected, Rac1Class623ImpactTimerPolicy.TicksForDuration(duration, scale));
+    }
+
+    [Fact]
+    public void TimerAllocatorRequiresRealFinitePositiveScale()
+    {
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(37, null));
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(37, 0f));
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(37, -1f));
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(37, float.NaN));
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(37, float.PositiveInfinity));
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(37, float.MaxValue));
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(-1, 1f));
+    }
+
+    [Fact]
+    public void NativeDurationSelectionAndAllocatorRequireBothSourceObservations()
+    {
+        int? fromTable = Rac1Class623ImpactTimerPolicy.DurationForResponseIndex(
+            7, alternateDurationFlag: null);
+        Assert.Null(fromTable);
+        Assert.Null(Rac1Class623ImpactTimerPolicy.TicksForDuration(45, null));
+        Assert.Equal(45,
+            Rac1Class623ImpactTimerPolicy.TicksForDuration(
+                Rac1Class623ImpactTimerPolicy.DurationForResponseIndex(7, true)!.Value, 1f));
+        Assert.Equal(60,
+            Rac1Class623ImpactTimerPolicy.TicksForDuration(
+                Rac1Class623ImpactTimerPolicy.DurationForResponseIndex(7, false)!.Value, 1f));
+    }
+
+    [SkippableFact]
+    public void RetailTimerAllocatorUsesEeAccumulatorAndRuntimeScaleNotAnEmbeddedConstant()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5);
+        var overlay = Rac1ExecutableOverlay.Read(reader, level);
+        static uint Word(Rac1ExecutableOverlay o, int address) =>
+            BinaryPrimitives.ReadUInt32LittleEndian(o.Read(address, 4));
+
+        // 0x3e800000 -> f3=0.25; ADDA.S f3,f3 sets ACC=0.5.
+        // Source gp-0x7e98, not a hardcoded guessed tick rate.
+        Assert.Equal(0x3c013e80u, Word(overlay, 0x0022dbd8));
+        Assert.Equal(0xc7828168u, Word(overlay, 0x0022dbdc));
+        Assert.Equal(0x44840800u, Word(overlay, 0x0022dbe0)); // mtc1 a0,f1
+        Assert.Equal(0x44811800u, Word(overlay, 0x0022dbe4)); // mtc1 at,f3
+        Assert.Equal(0x46800860u, Word(overlay, 0x0022dbe8)); // cvt.s.w f1
+        Assert.Equal(0x46031818u, Word(overlay, 0x0022dbec)); // adda.s f3,f3
+        Assert.Equal(0x4602085cu, Word(overlay, 0x0022dbf0)); // madd.s f1,f1,f2
+        Assert.Equal(0x46000864u, Word(overlay, 0x0022dbf4)); // cvt.w.s f1
+        Assert.Equal(0x03e00008u, Word(overlay, 0x0022dbf8)); // return
+        Assert.Equal(0x44020800u, Word(overlay, 0x0022dbfc)); // mfc1 v0,f1
+        Assert.Equal(0x0c08b6f6u, Word(overlay, 0x00284b98)); // service call
+        Assert.Equal(0xa642001cu, Word(overlay, 0x00284ba4)); // stores native halfword
+    }
+
     [Fact]
     public void CountdownCannotBeMistakenForRealImpactAdmission()
     {
