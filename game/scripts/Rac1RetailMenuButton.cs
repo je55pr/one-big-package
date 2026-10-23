@@ -61,10 +61,14 @@ public sealed partial class Rac1RetailMenuButton : Button
     {
         BgColor = fill,
         BorderColor = border,
-        BorderWidthLeft = 2, BorderWidthTop = 2,
-        BorderWidthRight = 2, BorderWidthBottom = 2,
-        ContentMarginLeft = 9, ContentMarginRight = 9,
-        ContentMarginTop = 4, ContentMarginBottom = 4,
+        BorderWidthLeft = 2,
+        BorderWidthTop = 2,
+        BorderWidthRight = 2,
+        BorderWidthBottom = 2,
+        ContentMarginLeft = 9,
+        ContentMarginRight = 9,
+        ContentMarginTop = 4,
+        ContentMarginBottom = 4,
     };
 
     public override void _Process(double delta)

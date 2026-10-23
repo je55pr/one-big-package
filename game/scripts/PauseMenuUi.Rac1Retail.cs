@@ -144,13 +144,16 @@ public sealed partial class PauseMenuUi
         Rac1RetailMenuPage page = _retailNavigation.Page;
         bool root = page == Rac1RetailMenuPage.Root;
         _retailFrame.CustomMinimumSize = root ? Vector2.Zero : new Vector2(720, 560);
-        if (root) _retailFrame.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
-        else _retailFrame.RemoveThemeStyleboxOverride("panel");
+        bool development = page == Rac1RetailMenuPage.Development;
+        // Native pages are projected menu panels over the actual game scene,
+        // not one solid Godot "MenuCard". Keep OBP debug tools visibly distinct.
+        if (development) _retailFrame.RemoveThemeStyleboxOverride("panel");
+        else _retailFrame.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
         _retailColumn.CustomMinimumSize = root ? Vector2.Zero : new Vector2(700, 410);
-        _retailBrand.Visible = !root;
+        _retailBrand.Visible = development;
         _retailTitle.Visible = !root;
-        _retailSeparator.Visible = !root;
-        _retailFooter.Visible = !root;
+        _retailSeparator.Visible = development;
+        _retailFooter.Visible = development;
         _retailTitle.Text = page switch
         {
             Rac1RetailMenuPage.Weapons => Rac1RetailUiSkin.NativeText(20194, "Weapons"),
@@ -175,6 +178,9 @@ public sealed partial class PauseMenuUi
             case Rac1RetailMenuPage.Development: BuildDevelopmentPage(); break;
         }
         MenuFocus.WireVertical(_retailFocusOrder);
+        if (page is Rac1RetailMenuPage.Weapons or Rac1RetailMenuPage.Gadgets or
+            Rac1RetailMenuPage.QuickSelect or Rac1RetailMenuPage.Items)
+            WireRetailGrid(_retailFocusOrder.OfType<Rac1RetailEquipmentCell>().ToArray());
         RestoreRetailFocus();
     }
 
@@ -335,11 +341,6 @@ public sealed partial class PauseMenuUi
 
     private void BuildHelpPage()
     {
-        _retailColumn.AddChild(new Label
-        {
-            Text = "HELPDESK  •  Native headings and bitmap glyphs",
-            ThemeTypeVariation = "HeaderSmall",
-        });
         _retailHelp = new Rac1HelpDeskView
         {
             ExpandOnPrompt = false,
@@ -361,12 +362,6 @@ public sealed partial class PauseMenuUi
                 _retailHelp?.Open();
             }, parent: categoryGrid);
         }
-        _retailColumn.AddChild(new Label
-        {
-            Text = "Topic headings are native. Full contextual HelpDesk message IDs/audio gates are not yet wired.",
-            Modulate = UiTheme.TextDim,
-            AutowrapMode = TextServer.AutowrapMode.WordSmart,
-        });
         AddRetailButton("◂ BACK", () => NavigateRetail(Rac1RetailMenuPage.Root));
     }
 

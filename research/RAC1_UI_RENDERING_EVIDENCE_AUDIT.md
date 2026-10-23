@@ -93,3 +93,17 @@ The `Rac1RetailEquipmentCell` stores native animation IDs, ownership and current
 Visual caveats: native `D_00160290`/`D_00160294` cell dimensions and the Moby panel's camera/projection are not yet replicated, nor are GS selection-rectangle blending and exact item preview Moby camera; those are host approximations. The Help page remains provisional and must not be claimed native-faithful.
 
 Verification target: native-disc Godot UI smoke for 15 icons on the first page and overflow page when necessary, left/right/up/down gamepad focus, locked equip rejection, original bitmap glyphs, no Godot scrollbars. Full regular gameplay still needs user playtest after review.
+
+
+## 23 October rendered-pass correction
+
+The screenshot of the newly icon-based Weapons page confirmed that the old opaque
+`MenuCard` still covered the paused world and had a large invented
+"RATCHET & CLANK" header. Retail `FUN_002196b8` projects individual menu
+panel Mobys and their contents in front of the scene; this is *not*
+evidence for a global solid navy dialog. The generic enclosing card, large
+branding, debug footer and separator are hidden on retail pages. OBP
+Development Tools retains its card to distinguish it from the game UI.
+The Help topic panel also no longer prints implementation-status notes
+in the player-facing interface; source-evidence qualifications live here.
+The precise panel Moby frames and GS render state remain unimplemented.

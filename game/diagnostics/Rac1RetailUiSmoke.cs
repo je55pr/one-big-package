@@ -86,7 +86,8 @@ public partial class Rac1RetailUiSmoke : Node
             await Press(JoyButton.DpadRight);
             Require(GetViewport().GuiGetFocusOwner() == buttons[1], "R&C1 five-column D-pad right navigation failed");
             await Press(JoyButton.DpadDown);
-            Require(GetViewport().GuiGetFocusOwner() == buttons[6], "R&C1 grid D-pad down must advance five cells");
+            Require(GetViewport().GuiGetFocusOwner() == buttons[6],
+                $"R&C1 grid D-pad down failed: actual={GetViewport().GuiGetFocusOwner()?.Name}, expected={buttons[6].Name}, bottomPath={buttons[1].FocusNeighborBottom}, btn1={buttons[1].GetPath()}");
             buttons[1].GrabFocus(); await Frames(2); await Press(JoyButton.A);
             Require(equips == 0, "Unowned weapon sent an equip request");
             buttons[0].GrabFocus(); await Frames(2); await Press(JoyButton.A);
