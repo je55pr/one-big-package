@@ -90,10 +90,11 @@ retains its model but does not allow boarding it.
   cleanup are handled on the host.
 
 **Host-created approximations, not retail facts:** 5.5-unit boarding
-distance after arrival, T/Triangle confirmation, 60 spline samples per
-second (not the recovered native seek_1d recurrence), linear interpolation
-between samples, deck offset and yaw smoothing, character process
-suspension, collision-based exit and placeholder camera/audio. Retail
+distance after arrival, T/Triangle confirmation, deck offset and yaw
+smoothing, character process suspension, collision-based exit and
+placeholder camera/audio. Source-enriched paths now use native waypoint
+seeking; synthetic fixtures without retail PVars keep the old 60-samples/s
+linear interpolation for deterministic fallback coverage. Retail
 HUD message 0xbc9 and the source camera attachment/handoff are still
 not implemented. Quest-dependent Moby retirement/gating is also missing.
 
@@ -114,8 +115,737 @@ not implemented. Quest-dependent Moby retirement/gating is also missing.
 ## Next recovery targets
 
 Next: replace the host key confirmation with source HUD/camera
-handoff and player-state gating, port the native speed/acceleration
-recurrence from `lv3_2d3918_l3`, complete class-1012 two-ended
-shuttle states, recover taxi sounds/animation, and connect taxi
+handoff and player-state gating, validate the native yaw and audio
+side-effects of `lv3_2d3918_l3`, complete class-1012 two-ended
+shuttle states, recover taxi animations, and connect taxi
 availability to Kerwan mission progress. No PCSX2 required for
 the native-code/level-data archaeology.
+
+
+## 22 October 2026 retail state-machine follow-up
+
+The authorized NTSC-U (SCUS-97199) Kerwan level-3 overlay was traced
+with the native overlay translator. This records semantics and instruction
+addresses only, never original executable bytes or generated native payloads.
+
+**Class 816 updater 0x002d3198:** Native states 0..7 cover: starting
+route selection and mission-dependent actor retirement (0); scanning five
+PVar cuboid selectors at +0x80..+0x90 via point_in_box (1); inbound
+approach at +0x94 (2); yaw/focus/HUD interaction with text ID 0x0bc9,
+player-state 8, button bit 0x10, and hero_cam_target_set (3);
+cutscene handoff predicate (4); outbound +0xa8 (5); strictly greater than
+15-unit 3D clearance or 5-unit 2D clearance depending on selector (6);
+and exit +0xbc followed by admission reset (7). Position and heading
+are updated with seek helpers and attach_frame_set.
+
+**Class 1012 updater 0x002dccc0:** Native states 0..3 cover initial
+path selection based on the authored +0x80 side (0), proximity/focus and
+two-ended interaction (1), the player/camera handoff predicate (2), and
+the selected spline traversal before a 15-frame reset delay (3).
+Retail i961 initial side is 0 and i962 initial side is 1; the native
+first path is +0x90 + 4 * side, so i961 first selects path 65, not
+the path-59 source-dock approximation in OBP. HUD helper 0x002dcbc8
+requests IDs 0x0bce, 0x0bcf, 0x0bcb, 0x0bcd depending on side and
+interaction. The focus helper is 0x002dcb70.
+
+**Motion helper 0x002d3918:** PVar +0x64 is a waypoint index, +0x60
+a continuous speed. Distance to next waypoint governs advancement;
+seek_1d updates speed, a normalized displacement advances the Moby,
+and yaw_seek clamps orientation. The original movement is NOT
+fixed-rate linear interpolation of waypoint samples.
+
+**Feature-branch changes:** Native initial-side values are preserved;
+class-1012 re-admission uses the source-backed 15-frame timer;
+class-816 clearance uses a strict greater-than-15 test; native HUD
+message IDs resolve through the attached disc's text cache when present.
+Interrupted flights safely restore player physics, hull collision and
+authored placement, and do not rewind unrelated taxis. Taxi collision
+children are released on teardown/partial configuration failure, and
+the exit ray does not use the moving taxi as walkable ground.
+
+**Godot route gate:** tools/rac1-metropolis-taxi-smoke.ps1 passed with
+exit code 0 using retail Level 3. It staged Ratchet in cuboid 10, saw
+i919 dock, used the real taxi boarding handler, completed the authored
+outbound route and a grounded dismount, then boarded i962, aborted its
+mid-flight ride, reboarded, and completed its safe fallback round trip.
+This is staged player placement, NOT ordinary walk-up traversal.
+
+**Still provisional:** native player focus and button admission,
+camera/attachment handoff, mission gates, native yaw and precise native
+sound or animation timing, and class-1012 two-ended arrival/grounding.
+The source-safe host keeps T/Triangle boarding and deck offset, plus
+an automatic class-1012 return where authentic endpoints lack
+supported landing collision.
+
+
+## 22 October 2026 native seek follow-up
+
+The source-pinned NTSC-U Kerwan data section provides speed constant
+**18.0** at 0x161b08 and acceleration constant **4.5** at 0x161b0c.
+The helper lv3_2d3918_l3 (0x002d3918) reads the 18-unit maximum speed
+and multiplies it by the native frame-duration scale; acceleration and
+turn acceleration are 4.5 times the per-frame squared time scale.
+The underlying retail seek_1d_v at 0x0025b970 accelerates toward
+sqrt(2 * acceleration * distance) clipped by max speed, braking with
+the authored deceleration branches. Waypoint advancement occurs when
+the taxi enters a radius of two per-frame maximum steps (0.6 units
+at 60 Hz). Importantly, the helper starts with a zeroed local scalar
+position each tick while preserving velocity across ticks in PVar+0x60;
+a persistent spline-time interpolation is **not** native behaviour.
+
+Rac1TaxiNativeMotion now ports that translation as an engine-neutral
+60-Hz fixed-step path follower. PVar-backed retail class-816 approach,
+outbound and exit paths and class-1012 outward/return host-safety paths
+use the native stepper; test-only fixtures without retail PVars retain
+the explicitly provisional legacy sampler. Endpoints are snapped
+within the native 0.6-unit acceptance radius to support safe Godot
+landing. The 1012 return remains a *host safety policy*, not retail
+state-machine parity. Yaw and sound side effects remain unported.
+Tests cover 30/60/120-Hz host equivalence, velocity/braking and actual
+retail Kerwan arrivals. Long authored routes take substantially longer
+with native acceleration than the old one-waypoint-per-frame preview.
+For practicality, the staged Godot route smoke uses a temporary
+12x Engine.TimeScale and restores it at exit; gameplay does not.
+
+## 23 October 2026 native input and camera target research
+
+Source overlay class-816 updater at 0x002d3604 checks an active HUD
+Moby focus, a zero HUD lock flag, pad-down bit 0x10 and player state 8
+before calling hero_cam_target_set. The class-1012 updater at
+0x002dcf24 uses its focus helper (0x002dcb70), HUD helper
+(0x002dcbc8), the same pad bit/state gate and calls the same native
+camera-target routine. These facts do **not** establish that OBP's T key
+is a retail keyboard equivalent, or that the existing fixed 5.5-unit
+host boarding radius is authentic.
+
+The translated hero_cam_target_set source, 0x00233ee8, writes the
+target's position, yaw and flag to P+0x1640, +0x164c, +0x1650, and
+requests hero state 0x65 unless already in 0x65..0x67. Native taxi
+attachment remains handled by attach_frame_set. OBP's PlayerHost
+recovered type-0 camera uses a world-space (TopLevel) pose. Suspending
+player physics on taxi boarding previously left that camera immobile
+at the dock. The Kerwan taxi host now transports the existing
+camera-to-Ratchet world offset during flight and resets the recovered
+camera on abort/dismount. This is an explicitly **provisional visual
+fallback**, not a port of native hero state 0x65, camera target/rotation
+or native attachment animation.
+
+The retail admission PVar selector census was rechecked:
+class-816 i919 slots +0x80..+0x90 = (10, -1, -1, -1, -1);
+class-816 i920 = (28, -1, -1, -1, -1). Both class-1012
+i961 and i962 have optional cuboid selector +0xa0 = -1.
+Accordingly, the host must not interpret -1 as a real cuboid or
+invent five simultaneously active class-816 triggers. These exact
+selectors now have a retail-authority regression test.
+
+## 23 October 2026: original Kerwan taxi hover and tilt
+
+The previously unexplored visual helper calls turned out to be source-backed
+taxi dynamics, not path movement or camera handoff. Class-816's native
+`lv3_2d3c40_l3` at 0x002d3c40 and class-1012's
+`lv3_2dd0f0_l3` at 0x002dd0f0 both invoke retail
+`sub_00262b00` (0x00262b00) and `sub_00262b80` (0x00262b80).
+The first adds a sine offset to the Moby's native vertical coordinate
+using the phase remembered at a PVar offset. The second writes the two
+sway angles from independent sine/cosine phases. They run on every
+admitted native updater tick, not once per ride.
+
+Constants recovered from the NTSC-U overlay data section (same for both
+families): vertical amplitude 0.2 units, vertical phase 120 degrees/second,
+sway amplitude 0.078539819 radians (4.5 degrees), angular phase rates
+70 and 100 degrees/second. Original source PVar phases are at
++0xec/+0xf0/+0xf4 for class 816 and +0xac/+0xb0/+0xb4 for class
+1012, respectively. The first sine phase advances before writing the
+new vertical offset. The angles are written from the old two angular
+phases, which are then advanced.
+
+`Rac1TaxiNativeHover` ports these steps as a deterministic 60 Hz,
+engine-neutral presentation oscillator. The retail importer preserves
+each taxi's three actual authored phases. The Godot taxi presentation
+adds vertical bob and tilts to the hull (and therefore to the carried
+player), while route geometry, class-1012 host return-to-source fallback
+and collision-supported dismount probes remain unchanged. Stationary
+retail taxi 921 is also presented with its native hover. The Godot
+pitch/roll axis remapping is host rendering policy pending exact matrix
+verification, not a claim of full native orientation parity.
+Synthetic test fixtures without PVars retain their original unanimated
+presentation.
+
+## 23 October 2026: class-1012 native HUD selector correction
+
+The original class-1012 focus helper at Kerwan 0x002dcb70
+recognizes several eligible Ratchet state/focus-pointer combinations;
+the corresponding HUD helper at 0x002dcbc8 is passed a PVar-backed
+message selector, **not** the initial side flag. After focus admission
+the updater at 0x002dcf34 toggles its active side and passes
+`PVar + 0x98 + 4*(side ^ 1)` to the HUD helper, with this exact mapping:
+selector 1 -> 0x0bce; selector 2 -> 0x0bcf; selector 3 -> 0x0bcb;
+selector 4 -> 0x0bcd. The helper also requests native HUD element slot
+0x0c when its PVar+0xa4 HUD serial is unallocated. OBP's HUD
+request/lifecycle and hero native state 0x65 are not ported.
+
+The four retail PVar selectors were verified directly:
+i961 has side-zero/side-one selectors (1,2), i962 has (3,4).
+The OBP host currently boards at the authored **start of path
+PVar+0x94** (native side one) for both taxis, even though i961's
+initial-side PVar+0x80 is zero. The correct current host source-dock
+prompts are therefore i961 -> 0x0bce and i962 -> 0x0bcb.
+The earlier approximation chose i962's prompt as 0x0bcf,
+incorrectly conflating a route-side selector with the authored
+message selector.
+
+`Rac1TaxiNativeHud` now holds both source PVar message selectors,
+resolves the requested prompt for the next side and returns no retail
+message for unsupported selector/side values. The Godot HUD uses
+these PVars instead of initial-side parity. This recovers the prompt
+mapping, **not** native HUD focus allocation, gameplay state gates,
+two-ended class-1012 boarding or the camera transition.
+
+## 23 October 2026: Ratchet's scripted taxi walk-to contract
+
+The shared `hero_cam_target_set` routine (0x00233ee8) does **not**
+immediately trigger a taxi camera cut or attach the passenger. It copies a
+target world position into hero +0x1640, target yaw into +0x164c and an
+optional flag into +0x1650. Unless already in 0x65/0x66/0x67 it enters
+hero state **0x65**. The class-816 and class-1012 updaters then use
+`sub_00233f38` (0x00233f38) to wait for those states to finish.
+
+The original hero-state routines are explicit: `walk_to_update`
+(0x00217970), `walk_to_input` (0x00229b70), and the state transition
+handlers in `hero_transitions.cpp`. In 0x65 Ratchet steers toward the
+planar target; inside 0.2 native units, he tries to face the saved yaw.
+If his planar speed is below 2.7/60 units per frame and yaw differs by
+less than two degrees, he enters 0x67. With a nonzero movement mode and
+higher speed, he instead enters 0x66 and brakes until the current
+animation finishes, then resumes 0x65. State 0x67 waits for animation
+completion (or a nonzero target flag) and returns to normal, unless
+Ratchet has moved farther than 0.2 from the target. Only when the
+native 0x65/0x66/0x67 group is left does the taxi updater advance
+toward passenger attachment and flight.
+
+`Rac1TaxiHeroTargetSession` now implements the **source-backed state
+transition contract**, independent of Godot: arbitrary target and
+heading changes, planar radius, speed/facing admission, braking and
+retargeting, 0x67 recovery, 0x00233f38 status and departure eligibility.
+Regression tests exercise target acquisition, wrong orientation, the
+nonzero-movement-mode 0x66 branch, leaving the spot while settled,
+forced flag release, and angle wraparound.
+
+**Integration limitation:** the native hero walking motion itself
+depends on collision, Ratchet's animation completion, movement mode,
+and per-frame velocity from the shared player controller. Until these
+are fed into the source state session by the Godot host, the existing
+bounded source-dock direct flight remains in place. Do not claim the
+walk-in, camera request, or native attach-frame presentation is
+implemented solely because the state-gating session now exists. We
+must not manufacture Ratchet's final approach by teleporting through
+unproven walkable geometry.
+
+## 23 October 2026: Godot controller-driven taxi walk-to
+
+The Godot taxi host now queues a pending boarding request rather than
+immediately calling `TryBoard` and disabling Ratchet. It starts the
+source-backed `Rac1TaxiHeroTargetSession` at the *first authored outbound
+waypoint*, which is the retail taxi's dock placement; the facing heading
+comes from the next authored waypoint. While pending, the new
+`PlayerHost.Rac1TaxiWalk` host adapter supplies a camera-relative
+movement intention to the **existing RAC1 movement controller**. Ordinary
+`MoveRac1Contact` continues to resolve geometry, including floor and
+hull collision. Ratchet's actual pose, yaw, velocity and the host
+`PlayerAnimationState.Idle` semantic are fed into the target session
+each tick. Only when its native status is zero may the host attach the
+passenger, disable moving hull collision and start the recovered flight.
+
+The source routine `hero_cam_target_set` actually writes the world
+target and heading and enters native hero state 0x65. The source's
+animation-done signal and 0x65 yaw recurrence do not yet have a
+matching Godot-native clip/time signal, so this host uses the **Idle
+semantic as an animation-complete approximation** and a bounded angular
+correction (0.12 radians per physics update) for target facing. The
+near-target raw stick strength reduction is also host policy. Neither
+should be described as recovered native constants.
+
+Abort, death and level reset release a pending target immediately,
+without toggling the taxi hull or changing Ratchet's physics process.
+An 8-second game-clock limit cancels blocked/unwalkable approaches
+rather than attaching through walls or leaving input captured. Direct
+flight and collision-safe dismount retain the previous safe fallback.
+The staged Godot smoke now checks 0x65 admission, separation of
+walk-to from in-flight mode, interruption during the walk, and
+reboarding, in addition to its existing flight/dismount checks.
+
+### Source-dock collision qualification
+
+A staged Kerwan class-1012 attempt on i962 proved that its currently
+imported source waypoint sits above unsupported ground: during the
+attempted `0x65` walk Ratchet fell more than 13 vertical units and the
+native boarding radius gate could not complete safely. The retained
+class-1012 host therefore **does not enable physical walk-to yet**:
+i961/i962 continue using bounded direct boarding with safe camera,
+flight interruption, and return-to-source fallback. This is explicitly
+provisional, not authentic class-1012 passenger attachment. The original
+class-816 arrival dock is supported, so its pending `0x65` walk-to,
+interruption/retry and native release-to-flight can be exercised
+without giving Ratchet a target in open air.
+
+The earlier generic Godot integration description is conditional on
+the source dock having supported collision; no complete class-1012
+walk-to parity is claimed. The staged smoke now exercises an off-centre
+class-816 start and asserts actual horizontal movement through the
+ordinary controller before flight, as well as preserving class-1012's
+safe original fallback.
+
+### Bounded walk-to admission after collision smoke
+
+Off-centre i919 staging (0.65 world units from the source marker)
+demonstrated the imported taxi surface cannot presently support that
+walk: after 30 normal physics frames Ratchet had moved just 0.002
+units horizontally, fallen 1.46 units vertically, and had no live
+planar step. This is real evidence that an uninterrupted 0x65
+approach from the generic 5.5-unit boarding radius is unsafe.
+
+The Godot host therefore only enters 0x65 for **close source-dock
+alignment** (planar distance at most 0.2 units). Wider admissions
+retain the previously working provisional direct-attach host policy.
+A native target with more than 2 units vertical deviation is cancelled
+without claiming a boarding, with ordinary controls retained. The
+smoke retains native 0x65 entry/abort/retry at the authored dock and
+full ride/dismount checks but **does not prove a walk from off-centre
+ground to taxi**. That requires recovered boarding geometry and
+proper collision support before the 0x65 steering can be admitted
+beyond the immediate dock.
+
+The close-dock host gate additionally requires the player to be
+within 1.5 vertical units of the authored taxi target; Ratchet on
+the lower ordinary floor must use direct boarding instead of a
+false 0x65 admission above his head. These radius and height
+restrictions are conservative OBP collision-safety policy, not
+recovered native focus constants.
+
+## 23 October 2026: state-6 authored taxi exit selectors
+
+The native Kerwan class-816 state-6 updater at **L3:0x002d3754**
+reads the slot selected by the taxi's original Moby byte +0xbc
+from the five original PVar selectors at **+0xbc + slot*4**.
+It distinguishes two post-ride clearance transitions:
+
+- With a departure path selector other than -1, Ratchet must be
+  **strictly farther than 15 units in three dimensions** (native
+  `vec3_distance` at 0x002d3804). The taxi then enters state 7,
+  travels its authored departure path, and returns to idle.
+- With selector **-1**, it checks only horizontal X/Y native world
+  distance (**strictly greater than 5 units**, `vec2_distance` at
+  0x002d3854), then returns directly to idle state 1. Vertical
+  separation by itself must not release this special/pathless case.
+
+Previously the OBP traffic host unconditionally required 15 units
+of full 3D separation before creating departure motion, conflating
+both native states. `Rac1TaxiNativeDepartureClearance` now owns the
+finite-input-safe source threshold decision; the session returns a
+pathless variant to idle instead of manufacturing an outbound spline.
+The original **five** integer path selectors are retained from
+authored PVars on each class-816 Moby instead of discarding the dormant
+variants. The existing Godot host still admits only slot zero, so
+storing other selectors does not awaken unused/special modes.
+
+Retail i919 and i920 both use **exit path 61** in slot zero. This
+ordinary admitted path keeps its proven 15-unit native gate. For
+synthetic worlds without retail PVar selectors, the provisional
+15-unit path-mode default is retained. Tests exercise exact 15/5
+boundaries, vertical-only clearance, NaN/Infinity rejection and
+all five retail exit selector slots. Native camera/focus/player
+attachment and other slot selection remain separate work.
+
+### Staged Godot admission fix, 23 October 2026
+
+A follow-up staged smoke unexpectedly chose the **safe direct boarding**
+fallback for retail i919 instead of beginning state 0x65. This did not
+indicate a regression in the native class-816 state-6 exit logic.
+Instrumentation showed the staged player position was precisely
+**3.0 OBP units above** the authored dock, with zero planar error.
+The culprit was the unrelated host
+`RuntimeSpawnSceneAdapter.GroundingLift = 3` used by
+`ApplyRac1TaxiArrival`, which the smoke had used for staging.
+The live taxi host was correctly enforcing its 1.5-unit vertical
+collision-safety admission limit.
+
+The smoke now subtracts that *host-only* clearance lift when staging
+the exact retail source waypoint and **asserts** its position matches
+the authored taxi point before invoking the ordinary taxi input
+handler. This stages an isolated state-0x65 check without relaxing
+normal gameplay's safety policy or claiming an off-centre walkable
+taxi surface. Class-816 host fallback diagnostics record the actual
+player/dock 3D offsets when admission is deliberately kept on the
+direct-boarding path.
+
+After the correction, the complete Kerwan staged Godot smoke passed:
+i919 native walk-to -> abort -> retry -> flight -> grounded dismount,
+then i962 bounded direct boarding -> flight interruption -> reboarding
+-> safe return-to-source landing. Audio retired cleanly.
+
+## 23 October 2026: native taxi heading recurrence
+
+The generic Godot `Mathf.LerpAngle(currentYaw, desiredYaw, delta*5)`
+was a provisional orientation trick: it did not model the original
+taxi's persistent spin or braking. The native path helper
+`lv3_2d3918_l3` at **L3:0x002d3918** calls
+`yaw_seek` at **0x0025be00** on the taxi Moby's yaw
+`+0x48` with angular velocity stored at **PVar+0x68**.
+Source constants at L3:0x00161b14 are **45 degrees**, and
+the updater scales by the native frame delta; its spin limit is
+`2*pi * frame delta`. At normalized 60 Hz this gives acceleration
+and deceleration of **pi/240 radians per step** and a maximum spin
+of **2*pi/60 radians per step**.
+
+The helper accelerates angular velocity toward the shortest signed
+heading error, brakes when the existing spin would overshoot, slows
+wrong-way spin before reversing direction, and clamps the last
+rotation to the target without resetting the persistent spin. The
+translated routine appears to compute `sqrt(2*decel*err)` even
+for a negative error: `Rac1TaxiNativeYawSeek` uses the magnitude
+for the negative branch, preventing a host NaN while retaining
+the documented bidirectional intention. This sign guard is an
+explicit safety interpretation, not a byte-exact assertion.
+
+Godot now keeps a separate heading/spin session for each of the
+five taxi actors, initializes it with the imported mesh's rotation,
+and updates yaw through the native 60 Hz recurrence when authored
+movement points are observed. Stationary frames brake accumulated
+spin; discontinuous host route resets do not trigger a guessed
+heading. Visual X mirroring and the existing hover pitch/roll are
+still handled by Godot presentation. The engine-neutral tests cover
+first/second native increments, both turn directions, seam
+wraparound, reversal braking, long-run target convergence, 30/120 Hz
+host chunking and invalid inputs.
+
+This ports **yaw seeking only**, not the other two body-axis
+steering calls in the native path helper, native camera ownership or
+full off-centre boarding geometry. Source-authored waypoint motion,
+existing hover, collision-safe dismount and class-1012 return
+fallback are unchanged.
+
+## 23 October 2026: class-1012 two-ended dock selection
+
+The translated native class-1012 updater **L3:0x002dccc0**
+has a significant original two-ended mode that is not replicated by
+the current OBP auto-return passenger ride. State 0 reads the authored
+PVar **+0x80** initial side (0 or 1) and chooses the first path from
+**+0x90 + 4*side**; it places the actor at that selected path's first
+waypoint. The retail i961 initial side is **0**, so its native startup
+waypoint is the first point of path 65 (the reverse leg), not the
+class-1012 source Moby placement at the start of path 59. Retail i962
+initial side is **1**, selecting path 67 (the source leg).
+
+In state 1, the updater compares 3D distances from **Ratchet** to the
+first waypoints of both routes and separately compares distances from
+the **cab** to those same two waypoints. Its temporary selectors
+s4/s7 become **1 when closer to path +0x90's first waypoint** and 0
+otherwise, with strict tie-breaking to zero. If those selectors
+differ and the explicit interaction branch has not taken control,
+the updater selects s4 as the next route side and enters state 3,
+moving toward the other end. This is an automatic **shuttle
+reposition**, distinct from requesting a passenger ride. The
+additional focus, hero state, button, animation and camera admission
+conditions must still be satisfied separately for a rider.
+
+The retail PVar admission census on both i961/i962 confirms
+**+0x7c=0, +0x8c=0, +0xa0=-1**. The optional cuboid branch at
++0xa0 is therefore *not* armed. Enabling a generic proximity-cuboid
+trigger would manufacture an activation that the source instances
+do not have.
+
+`Rac1TaxiNativeShuttleDock` now retains the exact class-1012
+initial-side path and optional cuboid selector and reproduces the
+two nearest-end comparisons and reposition-side selection as an
+engine-neutral admission-model component. `Rac1MetropolisTaxiStop`
+exposes this retail-backed `NativeShuttleDock` when valid PVar and
+both authored paths exist. Tests verify source startup path,
+both relative-end choices, strict distance ties, nonfinite input
+rejection, and both original PVar variants. Synthetic worlds without
+a native PVar retain their existing behaviour.
+
+**Not enabled in Godot yet:** i961's opposite initial dock and the
+far endpoints of the other paths have not passed collision-safe
+landing tests. The current single-source-dock/direct-board plus
+round-trip return is still explicitly a **host safety policy**, not
+a faithful original native two-ended shuttle journey. The new
+geometry model does not move the live taxi, enable passenger
+attachment in midair, or change established dismount/camera
+fallbacks. Actual source-pinned two-ended traversal and focus/
+camera admission are the next steps.
+
+## 23 October 2026: permanent-ground docking probe and autonomous class-1012 state 3
+
+The staged Godot encounter now probes **both authored route starts** for
+i961/i962 using the same 3D physics space as actual dismounting,
+excluding Ratchet and all **four mobile taxi hull RIDs** while
+retaining the permanently parked i921 platform. A moving cab hull,
+whether currently occupied or not, is not proof of permanent
+landing geometry. The collision walker still tests an
+upward-facing slope and source-waypoint vertical corridor, but now
+also limits the selected contact to at most **2 horizontal Godot units**
+from the proposed waypoint. This is a conservative **OBP host
+safety policy**, not a source-game boarding constant; an unrelated
+diagonal patch 2.55 units away is not accepted as a finished dock.
+
+An initial probe without filtering the taxi hulls appeared to find
+direct collision at both source docks; this was **not evidence of
+permanent level ground**. Ratchet can stand on the temporarily parked
+moving cab itself, but the cab cannot remain as the landing support
+after it departs. A diagonal contact also appeared near i962's far
+endpoint approximately 2.55 units from the waypoint.
+
+After excluding every **mobile** taxi hull and imposing the 2-unit
+lateral gate, neither side of either class-1012 retail shuttle has a
+verified permanent landing surface. This includes both source docks.
+The nonmoving class-816 i921 destination taxi is a distinct authored
+permanent platform and remains eligible for class-816 dismount.
+
+Thus the existence of the two original flight splines does *not*
+authorize forcing the original two-ended passenger attachment in
+the current imported collision scene. The host still retains its
+bounded direct boarding, auto-return and safe grounded landing,
+and has not activated far-end passenger admission.
+
+`Rac1TaxiNativeShuttleTraffic` now separately models the original
+**unoccupied** state 1 -> state 3 -> state 1 reposition choice:
+initial Moby placement at the authored +0x80 side's first waypoint,
+independent Ratchet/cab nearest-end comparisons, selection of
+PVar+0x90+4*side for the corresponding side, the already recovered
+`Rac1TaxiNativeMotion` 60 Hz seek, and the native 15-frame
+post-arrival focus delay. State 1 selects and anchors the path,
+then the motion begins on a subsequent update rather than
+immediately teleporting a rider. It exposes explicit methods,
+state and reset, but is **not wired to move a live Godot actor
+yet**. The original HUD ownership, scripted Ratchet states,
+camera lifecycle and interactivity are separate native branches
+whose safe integration is still pending.
+
+Synthetic tests cover both initial modes, source/far selection,
+reversal after arrival, 30/120 Hz determinism, invalid input,
+reset and the fifteen-frame delay; retail ISO tests traverse
+both actual unoccupied routes for i961 and i962 and validate
+the authored endpoints. The playable encounter regression probes
+collision ground and preserves the previously validated rides.
+
+## 23 October 2026: attachment-frame correction and rider orientation
+
+The native taxi updaters **do not call an API that directly attaches
+Ratchet to the cab**. Both class-816 at L3:0x002d38d8 and class-1012
+at L3:0x002dd06c invoke `attach_frame_set` (native 0x00260738)
+after constructing the world displacement **Ratchet position minus cab
+position**. The common engine helper stores that displacement at
+output +0x10, and stores angles from the rotation
+`transpose(base_ang) * cab_ang` at output +0. The output is the
+taxi Moby PVar +0x20. This is a relative attachment **frame**
+used by source update/presentation, not itself a hero-state,
+animation, movement or camera ownership transition. Previous
+comments describing it as an actual passenger attachment were
+incorrect.
+
+The Godot rider originally kept its clamped passenger offset in
+world axes. Consequently, the taxi hull turned with the recovered
+native yaw seek while Ratchet remained frozen to the same world-side
+position, sliding across the deck. New engine-neutral
+`Rac1TaxiPassengerFrame` preserves the actual boarding offset and
+reapplies the taxi's **relative scene yaw change** each tick,
+retaining the original height offset and cab-translated camera
+following. The bounded clamping still occurs only at boarding,
+and 2*pi wrap, yaw reversal, invalid poses and nonzero boarding
+headings have deterministic regression tests. The host clears
+the passenger pose on cancellation, level transition and landing;
+the real Godot smoke validates both attached position during flight
+and cleanup on abort/dismount.
+
+This is explicitly a **Y-up, yaw-only host visual approximation**.
+The native attachment frame carries full pitch/yaw/roll matrices,
+and true Ratchet 0x65..0x67 animation and camera request ownership
+remain unported. The scene's existing collision-safe landing and
+source-class boarding admission are unchanged; this increment must
+not be claimed as native passenger parenting.
+
+## 23 October 2026: corrected class-1012 native HUD element callbacks
+
+Native helper L3:0x002dcbc8 requests the message selected by
+PVar+0x98/+0x9c, then works with PVar+0xa4. Its shared routine named
+camera_request (0x00235700) is **the native 13-element HUD-slot
+allocator**, not a 3D camera request. The translated executable calls
+the same routine from ammo and other HUD elements, and
+hud_update/hud_draw iterate the slots at 0x0017dc50.
+
+For class 1012, the request uses HUD **slot 12**, key 0, arguments 0
+and 0, and these three callbacks recovered directly from the NTSC-U
+Kerwan overlay:
+
+| Callback | Native behavior and evidence |
+|---|---|
+| L3:0x00226960, initialize | Clears halfwords at element +0x48/+0x4a, sets +0x58 and +0x5c to 32, sets the +0x7c lifetime using a 30-plus-randomized helper result, then calls element-size helper 0x00225450 |
+| L3:0x002269b0, update | Calls 0x00225670, which adjusts the HUD element's animated value/target fields +0x74/+0x78, its timers and fade/size counters |
+| L3:0x002269d0, draw | Issues HUD element/text draw calls (0x00229f48, 0x0022a218, 0x0022a5a0, 0x0022bcc0), conditional formatted text and world-related numeric displays. It neither acquires nor transforms a 3D camera |
+
+The HUD engine invokes start/update/draw through element callback
+offsets +0x10/+0x14/+0x18. Pending requests start after the old
+element fades. The serial returned by camera_request is stored in
+PVar+0xa4; 0 on refusal and unallocated -1 remain distinct.
+
+Subsequent focus does **not raise a camera priority**. It calls
+sub_00235e18(serial, 10), which raises the matching HUD element's
+**remaining visibility ticks at +0x7c** to at least 10 when the
+request is active and not pending. Both class-1012 shuttles request
+**the same global slot with identical callbacks and arguments**;
+they can receive the same serial. Their PVar serial snapshots are
+separate, but they do not own independent HUD slots or cameras.
+Native taxi state zero sets its own PVar+0xa4 to -1, not a global
+HUD release.
+
+Rac1TaxiNativeHudElementLease models request/extension intents and
+native PVar serial snapshots without inventing serial numbers.
+Deterministic tests verify the callback roles, shared-slot serial,
+native zero refusal, re-focus visibility extension and reset. The
+Godot smoke checks the source-backed HUD request contract.
+
+**Camera parity remains open and independent of these callbacks.**
+OBP's established bounded camera-follow, interruption, collision
+and landing fallbacks remain in place. No purported camera lease is
+created by the HUD focus. Further native hero/camera research must
+trace a genuinely camera-owning call before replacing the host view.
+
+## 23 October 2026: full-orientation cab-relative host passenger pose
+
+Following the yaw-only frame correction, the live Godot taxi host now
+captures the cab's **orthonormalized full scene-space basis** when the
+passenger boards. It projects the bounded Ratchet-minus-cab world offset
+into that basis once, and during every flight tick reprojects the same
+local offset using the current full cab basis (yaw, pitch and roll).
+Rac1TaxiCabBasis is engine-neutral; Rac1TaxiPassengerFrame retains
+its yaw-only overload for existing consumers but the Godot taxi host
+passes full orientation. The Moby's authored model scale does **not**
+scale the passenger displacement.
+
+This is a deliberate **3D host presentation correction**, not proof
+that the original game physically parents Ratchet to the cab. Retail
+attach_frame_set at 0x00260738 records a displacement and
+transpose(base_ang) * cab_ang orientation frame, and both Kerwan taxi
+classes continuously supply that information. The new passenger offset
+tracks the recovered native taxi hover/sway pitch and roll as well as
+yaw, instead of letting Ratchet slide through a tilting cab. It does
+not yet reproduce the source's full native camera or hero parenting.
+
+Deterministic tests cover pitch, roll, boarding with an already pitched
+cab, translation, heading continuity, preservation of displacement
+length and invalid/skewed bases. Godot smoke asserts the live passenger
+pose against the actual cab's three-axis orientation. Boarding
+admission, collision hull suppression, interruption, camera-follow
+fallback, return-to-source fallback and supported landing remain
+unchanged.
+
+The native walk_to_input block in hero_transitions.cpp
+(0x00229b70 / state 0x65) performs planar target distance, speed and
+heading gates; it does **not** itself switch the 3D game camera. The
+state-entry routine in hero_state.cpp selects animation sequence
+1 for hero movement mode 3, 2 for mode 1, or mode-specific gait
+(+0x2088 + 3) for mode 0. State 0x66 calls stop_anim and waits for
+animation-ended bit (P+0xa98 & 2) before returning to 0x65. State
+0x67 uses the native idle animation and exits when that bit is set
+(or P+0x1650 is nonzero), unless Ratchet moves back beyond 0.2 units.
+These are additional source facts, **not** a claim that Godot's
+current provisional Idle semantic supplies that native completion bit.
+
+## 23 October 2026: v1 integration boundary, not a reconstruction gate
+
+**Proposed first playable milestone:** Kerwan imports and presents five
+source taxi Mobies. Class-816 i919/i920 respond to their original
+cuboid-triggered approach, present a boarding prompt near a docked cab,
+carry Ratchet along native-seek authored flight and dismount him onto
+the verified parked i921 platform. Class-1012 i961/i962 offer a
+host-controlled sightseeing round trip along the authored two legs,
+then place Ratchet back at the source rather than dismounting at an
+unsupported aerial endpoint. Ordinary gameplay input is T / Triangle.
+Death, abort, retry and world teardown must always restore physics,
+mobile hull collision, visible player, camera follow and taxi state.
+
+**Retail-backed elements:** Moby classes/placements and original PVars,
+class-816 activation cuboids and approach/departure paths,
+class-1012 two source routes and HUD selector messages, native fixed
+60 Hz seek recurrence, yaw seek, hover and tilt phases, hero target
+state contract 0x65/0x66/0x67, source-derived departure clearance,
+and the original 1012 HUD request callback identity (NOT a camera).
+These are claims about original data and state semantics, not proof
+that Godot recreates the full original encounter.
+
+**Explicit host fallbacks:** 5.5-unit proximity input admission,
+host T/Triangle control, only close-dock (<0.2 planar and <=1.5
+vertical) class-816 alignment using provisional animation completion,
+direct boarding from other accepted locations, bounded 8-second walk
+abort, rider frame with clamped boarding offset, camera world-offset
+follow while the player is disabled, permanent-ground landing probes
+and the class-1012 return-to-source ride. The current shuttle does
+NOT deliver passengers to a second accessible destination. These
+policies must not be reported as original native logic.
+
+**Integration risk:** the published staged Kerwan smoke begins its
+class-816 taxi approach inside a source cuboid and places Ratchet
+exactly at the docking waypoint; class-1012 boarding is also staged.
+This proves the flight and cleanup path, not that a normal player can
+walk/jump onto every taxi using imported world collision. An off-centre
+i919 boarding attempt (+0.65 units) previously lost contact and dropped
+to a lower floor. The strict permanent-floor probe excludes moving
+hulls and does not find static footing near i919's source or either
+end of the class-1012 routes. Actual walk-up reachability must be
+verified independently before claiming a fully discoverable encounter.
+
+**Intentionally deferred and separately tracked:**
+- #220 collision-supported ordinary approach and non-staged boarding
+- #222 native hero animation completion and actual 3D camera handoff
+- #223 supported class-1012 two-ended arrival and autonomous shuttle travel
+- #224 original HUD focus and mission-state admission parity
+
+The practical review criterion is safe, visible, player-controlled
+interaction with an actually reachable class-816 dock, working
+destination dismount, predictable class-1012 sightseeing-only labelling
+and reliable cleanup. Do not hold this milestone for byte-exact
+animation or 1012 second-end restoration; equally, do not claim
+ordinary boarding is proven by a staged smoke.
+
+## 23 October 2026: issue #229 human ride presentation and time calibration
+
+A normal controller playtest showed a class-1012 complete source-return flight,
+but the taxi visually flew sideways and the route took too long. Native data
+inspection showed all four route actors share a local-X-elongated mesh
+(native mesh x bounds approximately -3.61 to +2.34, y -1.62 to +0.96)
+and source poses with X-forward Moby basis. After world-X reflection,
+its visible longitudinal/front axis in Godot is **local -X**, not +Z.
+The prior `atan2(sceneDx, sceneDz)` visual yaw incorrectly steered
+a +Z-forward model. The bounded host presentation now adds +90 degrees
+so that the imported -X model axis points along the route tangent.
+This visual frame correction carries the child collision shape and
+cab-relative rider attachment with it. Native PVar yaw seeking remains
+the underlying turn recurrence, now targeting the right visual axis.
+
+The native `seek_1d` model still calls per-waypoint velocity braking.
+For original Kerwan path geometry at native **60 Hz**, the computed
+unmodified clock is approximately:
+
+| Actor | Route | Length | Native seek clock | Host v1 clock |
+| --- | --- | ---: | ---: | ---: |
+| i919 | 816 outbound | 438.7 u | 131.8 s | 33.0 s |
+| i920 | 816 outbound | 188.5 u | 66.4 s | 16.6 s |
+| i961 | 1012 out/back | 118.6 / 110.8 u | 40.1 / 42.1 s | 10.0 / 10.5 s |
+| i962 | 1012 out/back | 210.2 / 115.1 u | 72.1 / 39.0 s | 18.0 / 9.8 s |
+
+The original constant values **18 u/s maximum and 4.5 u/s²** and
+60 Hz seek algorithm were not changed. The playable Godot host applies
+an **explicitly provisional 4x route-only playback clock**, producing
+recorded peak host movement below 18 u/s on all retail taxi legs.
+This speed-up is NOT a recovered native constant or a claim of
+original game timing equivalence; actual retail audiovisual pacing
+remains unverified. Crucially, cooldown, player state, HUD and bobbing
+still use their ordinary clock, while traffic/flight yaw use the same
+accelerated route clock as movement. Tests pin real normal-time
+durations and peak speed rather than hiding the issue behind the
+separate 12x diagnostic Engine.TimeScale.
+
+The bounded first milestone still uses a disabled player controller
+and fixed camera offset during flight. Full native passenger animation,
+interactive camera ownership and class-1012 far-end landing are **not**
+addressed by #229; they remain explicitly deferred to #222/#223.

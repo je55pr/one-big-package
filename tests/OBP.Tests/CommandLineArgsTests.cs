@@ -51,6 +51,13 @@ public sealed class CommandLineArgsTests
     }
 
     [Fact]
+    public void KerwanTaxiSmokeIsOptIn()
+    {
+        Assert.False(CommandLineArgs.Parse([]).Rac1MetropolisTaxiSmoke);
+        Assert.True(CommandLineArgs.Parse(["--rac1-metropolis-taxi-smoke"]).Rac1MetropolisTaxiSmoke);
+    }
+
+    [Fact]
     public void SourceBootstrapOptionsShareTheParsedModel()
     {
         CommandLineArgs args = CommandLineArgs.Parse([

@@ -4,11 +4,16 @@ using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
+using Xunit.Abstractions;
 
 namespace OBP.Tests;
 
 public sealed class Rac1MetropolisTaxiTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public Rac1MetropolisTaxiTests(ITestOutputHelper output) => _output = output;
+
     private static readonly (int Index, int Class, double X, double Y, double Z, int OutboundPoints)[] Placements =
     [
         (919, 816, 179.77748, 50, 244.59235, 150),
@@ -17,6 +22,84 @@ public sealed class Rac1MetropolisTaxiTests
         (961, 1012, 280.74213, 48.165154, 149.90324, 75),
         (962, 1012, 207.35722, 61.993126, 133.20839, 150),
     ];
+
+    [Fact]
+    public void RetailTaxisLogNormalSpeedPathDurationsAndMeshDirection()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+
+        using var reader = new FileRandomAccessReader(iso);
+        var world = Rac1WorldImport.Build(reader, 3);
+        var session = Rac1MetropolisTaxiSession.TryCreate(world)!;
+        foreach (var stop in session.Stops.Where(s => s.OutboundPath.Count > 1))
+        {
+            var actor = world.DynamicObjects!.Single(o => o.InstanceIndex == stop.InstanceIndex);
+            var m = actor.Transform.Matrix;
+            _output.WriteLine($"i{stop.InstanceIndex} class={stop.NativeClassId} initial Moby basis X=({m[0]:F2},{m[1]:F2},{m[2]:F2}) Y=({m[4]:F2},{m[5]:F2},{m[6]:F2})");
+            if (actor.Meshes.Count > 0)
+            {
+                var verts = actor.Meshes.SelectMany(mesh => mesh.Positions)
+                    .ToArray();
+                _output.WriteLine($"    raw vertex coordinate extents: {verts.Length}");
+                foreach (var mesh in actor.Meshes.Take(1))
+                {
+                    var v = mesh.Positions;
+                    _output.WriteLine($"    local bounds xyz: ({Enumerable.Range(0, v.Length / 3).Min(i => v[i * 3]):F2},{Enumerable.Range(0, v.Length / 3).Max(i => v[i * 3]):F2}) ({Enumerable.Range(0, v.Length / 3).Min(i => v[i * 3 + 1]):F2},{Enumerable.Range(0, v.Length / 3).Max(i => v[i * 3 + 1]):F2}) ({Enumerable.Range(0, v.Length / 3).Min(i => v[i * 3 + 2]):F2},{Enumerable.Range(0, v.Length / 3).Max(i => v[i * 3 + 2]):F2})");
+                }
+            }
+            foreach (var (leg, path) in new[] { ("out", stop.OutboundPath), ("back", stop.ReturnPath) })
+            {
+                if (path is not { Count: > 1 }) continue;
+                var motion = new Rac1TaxiNativeMotion(path);
+                double len = 0;
+                for (int i = 1; i < path.Count; i++)
+                    len += Math.Sqrt(path[i].DistanceSquared(path[i - 1]));
+                int frames = 0;
+                double peak = 0;
+                while (!motion.Arrived && frames < 24000)
+                {
+                    motion.Advance(1d / 60);
+                    frames++;
+                    peak = Math.Max(peak, motion.SpeedPerFrame * 60);
+                }
+                Assert.True(motion.Arrived);
+                double presentationSeconds = frames / 60d /
+                    Rac1TaxiHostPresentationPolicy.RouteClockMultiplier;
+                // Every Kerwan route must remain under the retail 18u/s
+                // maximum even with our explicitly provisional host pacing.
+                Assert.InRange(peak * Rac1TaxiHostPresentationPolicy.RouteClockMultiplier,
+                    0, Rac1TaxiNativeMotion.MaxUnitsPerSecond);
+                Assert.InRange(presentationSeconds, 8d, 35d);
+                _output.WriteLine($"    {leg}: points={path.Count} length={len:F1}u nativeClock={frames / 60d:F1}s hostClock={presentationSeconds:F1}s avg={len / presentationSeconds:F2}u/s peak={peak * Rac1TaxiHostPresentationPolicy.RouteClockMultiplier:F2}u/s");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(-1d, 0d)]
+    [InlineData(1d, 0d)]
+    [InlineData(0d, -1d)]
+    [InlineData(0d, 1d)]
+    [InlineData(2d, 1d)]
+    [InlineData(-2d, -1d)]
+    public void KerwanHostVisualYawRotatesImportedLocalNegativeXIntoTravel(double dx, double dz)
+    {
+        double yaw = Rac1TaxiHostPresentationPolicy.SceneVisualYaw(dx, dz);
+        double length = Math.Sqrt(dx * dx + dz * dz);
+        // Godot yaw rotates imported model front -X to (-cos, sin) in XZ.
+        Assert.Equal(dx / length, -Math.Cos(yaw), 10);
+        Assert.Equal(dz / length, Math.Sin(yaw), 10);
+    }
+
+    [Fact]
+    public void KerwanHostVisualYawRejectsUndefinedTangent()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1TaxiHostPresentationPolicy.SceneVisualYaw(0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1TaxiHostPresentationPolicy.SceneVisualYaw(double.NaN, 1));
+    }
 
     // Fixture includes the source-game payload contract without an ISO.
     private static byte[] TinyNativePath(double x, double y, double z, bool returning = false)
@@ -78,6 +161,9 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.Equal(5, session.Stops.Count);
         Assert.Equal(3, session.Stops.Count(x => x.NativeClassId == 816));
         Assert.Equal(2, session.Stops.Count(x => x.NativeClassId == 1012));
+        // Synthetic fixtures without original PVars intentionally do not
+        // attach native hover phases to their route animations.
+        Assert.All(session.Stops, stop => Assert.Null(stop.NativeHoverPhases));
         Assert.Equal(4, session.Stops.Count(x => x.OutboundPath.Count > 0));
         var parked = session.Stops.Single(x => x.InstanceIndex == 921);
         Assert.Empty(parked.OutboundPath);
@@ -152,6 +238,12 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Approaching, session.PhaseOf(919));
         session.TickTraffic(trigger, tick);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
+        // Cancelling a different cab must not rewind this already docked actor.
+        var shuttle = session.Stops.Single(s => s.InstanceIndex == 962);
+        Assert.True(session.TryBoard(shuttle.Position));
+        Assert.NotNull(session.Tick(tick));
+        session.AbortRide();
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
         Assert.True(session.TryBoard(taxi.Position));
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Carrying, session.PhaseOf(919));
         var reached = session.Tick(2 * tick)!;
@@ -160,10 +252,83 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination, session.PhaseOf(919));
         session.TickTraffic(reached.Arrival, 2);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination, session.PhaseOf(919));
+        session.TickTraffic(new Rac1TaxiPoint(
+            reached.Arrival.X + 15, reached.Arrival.Y, reached.Arrival.Z), 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination, session.PhaseOf(919));
         session.TickTraffic(new Rac1TaxiPoint(0, 0, 0), 0);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Departing, session.PhaseOf(919));
         session.TickTraffic(new Rac1TaxiPoint(0, 0, 0), 2 * tick);
         Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.WaitingForHero, session.PhaseOf(919));
+    }
+
+    [Fact]
+    public void PathlessClass816ModeReturnsToIdleAfterFivePlanarUnitsWithoutDepartureFlight()
+    {
+        var world = Kerwan();
+        var objects = world.DynamicObjects!.ToArray();
+        int slot = Array.FindIndex(objects, obj => obj.InstanceIndex == 919);
+        var placement = Placements.Single(p => p.Index == 919);
+        var cuboid = new byte[24];
+        float[] values =
+        [
+            (float)placement.X - 12, (float)placement.Z, (float)placement.Y,
+            4f, 4f, 4f,
+        ];
+        for (int i = 0; i < values.Length; i++)
+            BinaryPrimitives.WriteSingleLittleEndian(cuboid.AsSpan(i * 4, 4), values[i]);
+
+        var pvar = new byte[0xd0];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0xbc, 4), -1);
+        objects[slot] = objects[slot] with
+        {
+            NativePayloads = objects[slot].NativePayloads!.Concat([
+                new RuntimeOpaquePayload("rac1-pvar", pvar),
+                new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.ApproachPathFormat,
+                    TinyNativePath(placement.X - 10, placement.Y, placement.Z)),
+                new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.DeparturePathFormat,
+                    TinyNativePath(placement.X + 10, placement.Y, placement.Z)),
+                new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.TriggerVolumeFormat, cuboid),
+            ]).ToArray(),
+        };
+
+        var session = Rac1MetropolisTaxiSession.TryCreate(
+            world with { DynamicObjects = objects })!;
+        var taxi = session.Stops.Single(s => s.InstanceIndex == 919);
+        Assert.Equal(-1, taxi.NativeFirstDepartureSelector);
+        Assert.Equal(-1, taxi.NativeDepartureSelectors![0]);
+        var trigger = taxi.ApproachTrigger!.Center;
+        session.TickTraffic(trigger, 0);
+        for (int frame = 0; frame < 24000 &&
+             session.PhaseOf(919) != Rac1MetropolisTaxiSession.TrafficPhase.Docked; frame++)
+            session.TickTraffic(trigger, 1d / 60);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
+
+        Assert.True(session.TryBoard(taxi.Position));
+        Rac1TaxiFlight? flight = null;
+        for (int frame = 0; frame < 24000; frame++)
+        {
+            flight = session.Tick(1d / 60);
+            if (flight?.JustArrived == true) break;
+        }
+        Assert.True(flight?.JustArrived);
+        session.CompleteArrival();
+
+        var destination = taxi.OutboundPath[^1];
+        session.TickTraffic(destination with { Y = destination.Y + 100 }, 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination,
+            session.PhaseOf(919));
+        session.TickTraffic(destination with { X = destination.X + 5 }, 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination,
+            session.PhaseOf(919));
+        var frames = session.TickTraffic(
+            destination with { X = destination.X + 5.01 }, 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.WaitingForHero,
+            session.PhaseOf(919));
+        Assert.Equal(destination,
+            frames.Single(frame => frame.InstanceIndex == 919).Position);
+        var next = session.TickTraffic(new Rac1TaxiPoint(0, 0, 0), 0);
+        Assert.Equal(taxi.ApproachPath![0],
+            next.Single(frame => frame.InstanceIndex == 919).Position);
     }
 
     [Fact]
@@ -201,6 +366,204 @@ public sealed class Rac1MetropolisTaxiTests
     }
 
     [Fact]
+    public void InterruptedTaxiRideRearmsAuthoredStopAndRejectsInvalidPositions()
+    {
+        var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == 919);
+
+        Assert.Null(session.FindBoardable(new Rac1TaxiPoint(double.NaN, 0, 0)));
+        Assert.Null(session.FindBoardable(new Rac1TaxiPoint(0, double.PositiveInfinity, 0)));
+        Assert.Null(session.FindBoardable(new Rac1TaxiPoint(0, 0, double.NegativeInfinity)));
+        Assert.True(session.TryBoard(stop.Position));
+        Assert.NotNull(session.Tick(0.01));
+        Assert.True(session.IsRiding);
+
+        session.AbortRide();
+        Assert.False(session.IsRiding);
+        Assert.Null(session.Tick(0));
+        Assert.True(session.TryBoard(stop.Position));
+        Assert.Equal(0, session.Tick(0)!.Progress);
+        session.Reset();
+        Assert.False(session.IsRiding);
+        Assert.True(session.TryBoard(stop.Position));
+    }
+
+    [Fact]
+    public void Class1012NativeFifteenFrameResetDebouncesReboarding()
+    {
+        var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == 961);
+        Assert.True(session.TryBoard(stop.Position));
+        Assert.True(session.Tick(10)!.JustArrived);
+        session.CompleteArrival();
+        Assert.False(session.IsRiding);
+
+        session.Tick(14d / 60d);
+        Assert.Null(session.FindBoardable(stop.Position));
+        session.Tick(1d / 60d);
+        Assert.Same(stop, session.FindBoardable(stop.Position));
+    }
+
+    [Fact]
+    public void RetailKerwanTaxisUseNativeSeekingAndCompleteBothFlightFamilies()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+
+        using var reader = new FileRandomAccessReader(iso);
+        var session = Rac1MetropolisTaxiSession.TryCreate(Rac1WorldImport.Build(reader, 3))!;
+        Assert.All(session.Stops.Where(s => s.OutboundPath.Count > 1),
+            stop => Assert.True(stop.NativeSeekEvidenced));
+
+        var inbound = session.Stops.Single(s => s.InstanceIndex == 919);
+        Assert.NotNull(inbound.ApproachTrigger);
+        session.TickTraffic(inbound.ApproachTrigger!.Center, 0);
+        int frames = 0;
+        Rac1TaxiPoint last = inbound.ApproachPath![0];
+        while (session.PhaseOf(919) != Rac1MetropolisTaxiSession.TrafficPhase.Docked &&
+            frames++ < 24000)
+            last = session.TickTraffic(inbound.ApproachTrigger.Center, 1d / 60)
+                .Single(f => f.InstanceIndex == 919).Position;
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
+        Assert.InRange(frames, 151, 24000);
+
+        Assert.True(session.TryBoard(inbound.Position));
+        frames = 0;
+        Rac1TaxiFlight? flight = null;
+        while (frames++ < 24000)
+        {
+            flight = session.Tick(1d / 60);
+            if (flight?.JustArrived == true) break;
+        }
+        Assert.True(flight?.JustArrived);
+        Assert.Equal(inbound.OutboundPath[^1], flight!.Position);
+        session.CompleteArrival();
+
+        session.Reset();
+        var shuttle = session.Stops.Single(s => s.InstanceIndex == 962);
+        Assert.True(session.TryBoard(shuttle.Position));
+        frames = 0;
+        while (frames++ < 24000)
+        {
+            flight = session.Tick(1d / 60);
+            if (flight?.JustArrived == true) break;
+        }
+        Assert.True(flight?.JustArrived);
+        Assert.Equal(shuttle.ReturnPath![^1], flight!.Position);
+        Assert.InRange(frames, 301, 24000);
+    }
+
+    [Theory]
+    [InlineData(961, 1, 2, 0x0bce, 0x0bcf)]
+    [InlineData(962, 3, 4, 0x0bcb, 0x0bcd)]
+    public void RetailClass1012HudMessagesFollowAuthoredNextSideSelectors(
+        int instance, int sideZero, int sideOne,
+        int sourceDockMessage, int otherEndMessage)
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+        using var reader = new FileRandomAccessReader(iso);
+        var world = Rac1WorldImport.Build(reader, 3);
+        var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == instance);
+        var pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+        Assert.Equal(sideZero, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x98, 4)));
+        Assert.Equal(sideOne, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x9c, 4)));
+
+        var taxis = Rac1MetropolisTaxiSession.TryCreate(world)!;
+        var stop = taxis.Stops.Single(s => s.InstanceIndex == instance);
+        var lease = Assert.IsType<Rac1TaxiNativeHudElementLease>(stop.NativeHudElementLease);
+        Assert.Equal(
+            Rac1TaxiNativeHudElementLease.HudCommandKind.Request,
+            lease.FocusCommand().Kind);
+        lease.AcceptRequestResult(47 + instance);
+        Assert.Equal(
+            Rac1TaxiNativeHudElementLease.HudCommandKind.ExtendVisibility,
+            lease.FocusCommand().Kind);
+        Assert.Equal(10, lease.FocusCommand().MinimumVisibleTicks);
+        taxis.Reset();
+        Assert.Equal(-1, lease.NativePvarHudSerial);
+        Assert.Equal(
+            Rac1TaxiNativeHudElementLease.HudCommandKind.Request,
+            lease.FocusCommand().Kind);
+        Assert.Equal(sideZero, stop.NativeHudSelectors!.Value.SideZeroSelector);
+        Assert.Equal(sideOne, stop.NativeHudSelectors.Value.SideOneSelector);
+        Assert.Equal(sourceDockMessage,
+            stop.NativeHudSelectors.Value.MessageForCurrentSide(1));
+        Assert.Equal(otherEndMessage,
+            stop.NativeHudSelectors.Value.MessageForCurrentSide(0));
+    }
+
+    [Fact]
+    public void InvalidNativeHudSelectorOrSideDoesNotInventRetailMessage()
+    {
+        var selectors = new Rac1TaxiNativeHud(1, 4);
+        Assert.Null(selectors.MessageForCurrentSide(-1));
+        Assert.Null(selectors.MessageForCurrentSide(2));
+        Assert.Equal(0x0bce, selectors.MessageForCurrentSide(1));
+        Assert.Equal(0x0bcd, selectors.MessageForCurrentSide(0));
+        Assert.Null(new Rac1TaxiNativeHud(-1, 9).MessageForCurrentSide(1));
+        Assert.All(Rac1MetropolisTaxiSession.TryCreate(Kerwan())!.Stops,
+            stop => Assert.Null(stop.NativeHudSelectors));
+    }
+
+    [Theory]
+    [InlineData(961, 0)]
+    [InlineData(962, 1)]
+    public void RetailClass1012RepositionsAlongCorrectUnoccupiedNativeLeg(
+        int instance, int initialSide)
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+
+        using var reader = new FileRandomAccessReader(iso);
+        var session = Rac1MetropolisTaxiSession.TryCreate(
+            Rac1WorldImport.Build(reader, 3))!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == instance);
+        var dock = Assert.IsType<Rac1TaxiNativeShuttleDock>(stop.NativeShuttleDock);
+        var autonomous = new Rac1TaxiNativeShuttleTraffic(dock);
+
+        Assert.Equal(initialSide, autonomous.CurrentSide);
+        Assert.Equal(dock.NativeInitialWaypoint, autonomous.Position);
+        Rac1TaxiPoint playerOtherEnd = initialSide == 0
+            ? dock.SideOnePath[0] : dock.SideZeroPath[0];
+        Assert.True(autonomous.TryStartUnoccupiedReposition(playerOtherEnd));
+        Assert.Equal(3, autonomous.NativeState);
+        for (int i = 0; i < 24000 && autonomous.NativeState == 3; i++)
+            autonomous.Advance(1d / 60);
+        Assert.Equal(1, autonomous.NativeState);
+        Assert.Equal(initialSide == 0
+                ? dock.SideZeroPath[^1] : dock.SideOnePath[^1],
+            autonomous.Position);
+        Assert.Equal(15d / 60, autonomous.FocusDelayRemaining, 10);
+    }
+
+    [Fact]
+    public void RetailTaxiAdmissionSelectorsPreserveNativeMinusOneSentinels()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+        using var reader = new FileRandomAccessReader(iso);
+        var world = Rac1WorldImport.Build(reader, 3);
+        foreach (var (index, activeCuboid) in new[] { (919, 10), (920, 28) })
+        {
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == index);
+            byte[] pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            Assert.Equal(activeCuboid, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x80, 4)));
+            for (int i = 1; i < 5; i++)
+                Assert.Equal(-1, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x80 + i * 4, 4)));
+        }
+
+        // Class-1012 only enters point_in_box when its optional +0xa0
+        // selector is armed; both retail shuttles leave it at -1.
+        foreach (int index in new[] { 961, 962 })
+        {
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == index);
+            byte[] pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            Assert.Equal(-1, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xa0, 4)));
+        }
+    }
+
+    [Fact]
     public void RetailKerwanPvarsSelectExactOutboundSplines()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
@@ -217,6 +580,43 @@ public sealed class Rac1MetropolisTaxiTests
             (961, 0x94, 59, 75, new(263.27188, 34.271873, 237.42558)),
             (962, 0x94, 67, 150, new(118.35907, 65.84171, 78.461815)),
         };
+
+        // Native state-0 +0x80 side: initial path selector
+        // comes from PVar+0x90+(side*4), not always the authored Moby origin.
+        Assert.Equal(0, session.Stops.Single(s => s.InstanceIndex == 961).NativeInitialSide);
+        Assert.Equal(1, session.Stops.Single(s => s.InstanceIndex == 962).NativeInitialSide);
+        foreach (var (index, nativeSide) in new[] { (961, 0), (962, 1) })
+        {
+            var shuttle = session.Stops.Single(s => s.InstanceIndex == index);
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == index);
+            var pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            // Retail instances have neither the optional cuboid trigger
+            // nor the separate forced-start / exit flags armed.
+            Assert.Equal(-1, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xa0, 4)));
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x7c, 4)));
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x8c, 4)));
+            var dock = Assert.IsType<Rac1TaxiNativeShuttleDock>(shuttle.NativeShuttleDock);
+            Assert.Equal(nativeSide, dock.InitialSide);
+            Assert.Equal(-1, dock.OptionalCuboidSelector);
+            Assert.Equal(shuttle.ReturnPath![0], dock.SideZeroPath[0]);
+            Assert.Equal(shuttle.OutboundPath[0], dock.SideOnePath[0]);
+            Assert.Equal(nativeSide == 0 ? dock.SideZeroPath[0] : dock.SideOnePath[0],
+                dock.NativeInitialWaypoint);
+            if (index == 961)
+                Assert.True(dock.NativeInitialWaypoint.DistanceSquared(shuttle.Position) > 25);
+            else
+                Assert.True(dock.NativeInitialWaypoint.DistanceSquared(shuttle.Position) < 0.01);
+            Assert.Equal(1, dock.RepositionSide(dock.SideZeroPath[0], dock.SideOnePath[0]));
+            Assert.Equal(0, dock.RepositionSide(dock.SideOnePath[0], dock.SideZeroPath[0]));
+            Assert.Null(dock.RepositionSide(dock.SideOnePath[0], dock.SideOnePath[0]));
+        }
+        Assert.All(session.Stops, stop =>
+        {
+            Assert.True(stop.NativeHoverPhases.HasValue);
+            var phases = stop.NativeHoverPhases!.Value;
+            Assert.True(double.IsFinite(phases.Height) &&
+                double.IsFinite(phases.Tilt) && double.IsFinite(phases.Spin));
+        });
 
         foreach (var p in Placements)
         {
@@ -251,6 +651,16 @@ public sealed class Rac1MetropolisTaxiTests
                 BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x94, 4)));
             Assert.Equal(61,
                 BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xbc, 4)));
+            var nativeExitSelectors = session.Stops.Single(s =>
+                s.InstanceIndex == instance).NativeDepartureSelectors;
+            Assert.NotNull(nativeExitSelectors);
+            Assert.Equal(5, nativeExitSelectors.Count);
+            for (int slot = 0; slot < 5; slot++)
+                Assert.Equal(
+                    BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xbc + slot * 4, 4)),
+                    nativeExitSelectors[slot]);
+            Assert.Equal(61, session.Stops.Single(s =>
+                s.InstanceIndex == instance).NativeFirstDepartureSelector);
             Assert.Equal(cuboidId,
                 BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x80, 4)));
             var stop = session.Stops.Single(s => s.InstanceIndex == instance);

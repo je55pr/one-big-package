@@ -419,6 +419,7 @@ public partial class PlayerHost : CharacterBody3D
         {
             _liveInput = _rawInput.Read(UseRac1Gameplay);
             if (PlaytestInputFilter is { } filter) _liveInput = filter(_liveInput);
+            MaskRac1TaxiWalkActions();
             if (QuickSelectOwnsGameplayInput)
                 _liveInput = _liveInput with
                 {
@@ -467,7 +468,12 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         var (move, jump) = Scripted ? ScriptedInput() : (_liveInput.Move, _liveInput.JumpHeld);
-        bool crouch = !Scripted && _liveInput.CrouchHeld;
+        if (Rac1TaxiWalking)
+        {
+            move = Rac1TaxiWalkIntent();
+            jump = false;
+        }
+        bool crouch = !Scripted && _liveInput.CrouchHeld && !Rac1TaxiWalking;
         if (Rac1EquipmentActionActive) { move = Vector2.Zero; jump = crouch = false; }
         if (UseRac1Gameplay && !Rac1GameplayAllowsOrdinaryMovement)
         {
@@ -500,6 +506,7 @@ public partial class PlayerHost : CharacterBody3D
                 GetSlideCollisionCount());
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
+        PresentRac1TaxiWalkFacing();
         AnimationPhysicsUpdated?.Invoke(delta, AnimationState, _locomotionAnimationInput);
         if (UseRac1Gameplay)
             Rac1WrenchPhysicsUpdated?.Invoke(Rac1WrenchFrame);
