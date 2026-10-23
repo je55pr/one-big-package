@@ -1,0 +1,90 @@
+{
+  "schema": "obp.gc-lancer.v1",
+  "authority": {
+    "buildId": "rac2-ntscu-v1.01",
+    "isoSha256": "9db2e33e276133cc283647fa3279b37911955e123d6199d10065547eaa9b1ce5"
+  },
+  "method": "Static retail tables and loaded overlay dataflow; no live emulator observation claimed.",
+  "identity": {
+    "sourceGame": "rac2",
+    "weaponIndex": 30,
+    "nameTextId": 2677,
+    "name": "Lancer",
+    "heldClass": 1490,
+    "projectileClass": 3070
+  },
+  "rules": {
+    "capacity": 200,
+    "ammoPerShot": 1,
+    "equipDelaySeconds": 0.1,
+    "fireRate": 7,
+    "projectileSpeed": 60,
+    "projectileRange": 20,
+    "flightTicks": 20,
+    "impactEffectTicks": 6,
+    "damageFlags": "0x00010000",
+    "damageClass": 1,
+    "damageStrength": 1,
+    "damageIndex": 3070,
+    "damageHp": 0.5,
+    "flags": 1
+  },
+  "assets": {
+    "heldFile": "/G/GADGET.WAD",
+    "directoryRow": 15,
+    "dataSector": 449,
+    "dataSectors": 17,
+    "soundBankSector": 466,
+    "soundBankSectors": 9,
+    "heldTriangles": 1325,
+    "heldSequenceFrames": [
+      11,
+      1,
+      5
+    ],
+    "heldTextureWidth": 128,
+    "heldTextureHeight": 128,
+    "fireSound": 0,
+    "emptySound": 1,
+    "projectileFile": "/G/LEVEL1.WAD",
+    "projectileTriangles": 24,
+    "oozlaProjectileTexture": 153
+  },
+  "code": [
+    {
+      "address": "0x002651e0",
+      "size": 224,
+      "sha256": "3322ab9c4ac5f382cfb06ce9fc64613b42b82ba70626a6552d6fc9196e0e6877"
+    },
+    {
+      "address": "0x0039fa88",
+      "size": 3200,
+      "sha256": "d7b642c69bd9dfe21c22e4f943aac4ef5544b1610ea547b9c748924675184c9f"
+    },
+    {
+      "address": "0x003a0948",
+      "size": 320,
+      "sha256": "a242732641b2c4043024bf27be9c6dafcedba4a21575bb73a782cd09118cf661"
+    },
+    {
+      "address": "0x003e38f8",
+      "size": 912,
+      "sha256": "f462439cfce44c297b0f11aeae698f1757c686c6f8a577ea084347d393303f63"
+    },
+    {
+      "address": "0x003e3c88",
+      "size": 1728,
+      "sha256": "d06076b053340d7dcbc1dc8f6d62d6f8d72a0ea5df1102068f48122bb7f492cc"
+    },
+    {
+      "address": "0x002c96b0",
+      "size": 128,
+      "sha256": "268fbc3d57e5a32273468fae193aaa40c9da8fa61e40eac1f45c0df84c6a415d"
+    },
+    {
+      "address": "0x002e3170",
+      "size": 64,
+      "sha256": "245a37d1d5426de1805083d49489783c2fbf2b1c5b632c4ead2729688a696dad"
+    }
+  ]
+}
