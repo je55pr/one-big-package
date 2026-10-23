@@ -31,7 +31,7 @@ public sealed record Rac1MetropolisTaxiStop(
     int? NativeFirstDepartureSelector = null,
     IReadOnlyList<int>? NativeDepartureSelectors = null,
     Rac1TaxiNativeShuttleDock? NativeShuttleDock = null,
-    Rac1TaxiNativeCameraLease? NativeCameraLease = null);
+    Rac1TaxiNativeHudElementLease? NativeHudElementLease = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -458,7 +458,7 @@ public sealed class Rac1MetropolisTaxiSession
                 approach, departure, trigger, nativeSide, nativeSeek,
                 hoverPhases, nativeHud, firstDepartureSelector,
                 allDepartureSelectors, nativeDock,
-                nativeHud.HasValue ? new Rac1TaxiNativeCameraLease() : null));
+                nativeHud.HasValue ? new Rac1TaxiNativeHudElementLease() : null));
         }
 
         return new Rac1MetropolisTaxiSession(stops);
@@ -656,8 +656,8 @@ public sealed class Rac1MetropolisTaxiSession
         foreach (var stop in _stops)
         {
             // Class-1012 native state zero discards PVar +0xa4 even when
-            // a previous camera serial was allocated by the retail engine.
-            stop.NativeCameraLease?.ResetOnStateZero();
+            // a previous HUD element serial was allocated by the retail engine.
+            stop.NativeHudElementLease?.ResetOnStateZero();
             if (stop.ApproachPath is { Count: > 1 })
                 _traffic[stop.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
         }

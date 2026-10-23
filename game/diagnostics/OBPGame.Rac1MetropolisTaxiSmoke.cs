@@ -138,17 +138,17 @@ public partial class OBPGame
                 GetRac1MetropolisTaxiHudLine() ==
                     Rac1RetailUiAssets.Text(0x0bcb, "Taxi: T / Triangle to ride"),
                 "class-1012 retail HUD message is not selected from PVar+0x98 at source dock");
-            // Source camera_request is a controller *slot* 0x0c, not
-            // a Godot camera-cut. The native lease remains unallocated
-            // until a real controller supplies its request serial.
-            var nativeCamera = shuttle.NativeCameraLease?.FocusCommand();
-            Require(nativeCamera is
+            // The native camera_request name masks HUD element slot 0x0c, not
+            // a Godot camera-cut. The HUD serial stays unallocated
+            // until a real HUD controller supplies its request serial.
+            var nativeHudElement = shuttle.NativeHudElementLease?.FocusCommand();
+            Require(nativeHudElement is
             {
-                Kind: Rac1TaxiNativeCameraLease.CameraCommandKind.Request,
+                Kind: Rac1TaxiNativeHudElementLease.HudCommandKind.Request,
                 SlotId: 0x0c,
                 Key: 0,
-                StartAddress: 0x00226960
-            }, "class-1012 retail camera controller request contract was lost");
+                InitializeAddress: 0x00226960
+            }, "class-1012 retail HUD element request contract was lost");
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }), "class-1012 boarding rejected");
             // 1012's source dock is currently above unsupported ground.

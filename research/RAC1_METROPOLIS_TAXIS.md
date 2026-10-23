@@ -280,8 +280,8 @@ message selector, **not** the initial side flag. After focus admission
 the updater at 0x002dcf34 toggles its active side and passes
 `PVar + 0x98 + 4*(side ^ 1)` to the HUD helper, with this exact mapping:
 selector 1 -> 0x0bce; selector 2 -> 0x0bcf; selector 3 -> 0x0bcb;
-selector 4 -> 0x0bcd. The helper also requests retail camera kind
-0x0c when its PVar+0xa4 camera handle is unallocated. OBP's camera
+selector 4 -> 0x0bcd. The helper also requests native HUD element slot
+0x0c when its PVar+0xa4 HUD serial is unallocated. OBP's HUD
 request/lifecycle and hero native state 0x65 are not ported.
 
 The four retail PVar selectors were verified directly:
@@ -664,54 +664,48 @@ remain unported. The scene's existing collision-safe landing and
 source-class boarding admission are unchanged; this increment must
 not be claimed as native passenger parenting.
 
-## 23 October 2026: class-1012 native camera request serial and focus priority
+## 23 October 2026: corrected class-1012 native HUD element callbacks
 
-The original class-1012 helper `lv3_2dcbc8_l3`
-(**L3:0x002dcbc8**) does more than choose a HUD message. After
-calling `hud_message_request` for the selected PVar +0x98/+0x9c
-message, it reads **PVar+0xa4** as the camera controller request's
-serial handle.
+Native helper L3:0x002dcbc8 requests the message selected by
+PVar+0x98/+0x9c, then works with PVar+0xa4. Its shared routine named
+camera_request (0x00235700) is **the native 13-element HUD-slot
+allocator**, not a 3D camera request. The translated executable calls
+the same routine from ammo and other HUD elements, and
+hud_update/hud_draw iterate the slots at 0x0017dc50.
 
-- If **PVar+0xa4 == -1**, it calls common engine
-  `camera_request` (**0x00235700**) with **slot ID `0x0c`**
-  (a controller slot, not a camera type), **key 0**,
-  controller callback addresses **0x00226960**, **0x002269b0**,
-  **0x002269d0**, and both arguments **0**. The returned serial is
-  stored at PVar+0xa4. Generic camera_request manages 13 independent
-  0x90-byte slots, can return the previous serial for an identical
-  request, and allocates a new serial for an altered request. The
-  translated camera code says **0** can be returned on refusal. The
-  taxi's `!= -1` test must not silently treat serial 0 as
-  unallocated.
-- If **PVar+0xa4 != -1**, it calls `sub_00235e18(handle, 10)`
-  (**0x00235e18**) instead of making another request. This
-  increases the matching slot's `+0x7c` priority to at least **10**
-  when the slot is applicable and not pending. The return value
-  indicates whether that operation was applicable; it is **not**
-  a camera-cut action or a new serial.
-- Native class-1012 updater state **0** explicitly restores
-  PVar+0xa4 to **-1**. The source does not show a corresponding
-  cab-owned `camera_release` on every taxi boarding or
-  dismount; camera slot ownership is global and controller-owned.
+For class 1012, the request uses HUD **slot 12**, key 0, arguments 0
+and 0, and these three callbacks recovered directly from the NTSC-U
+Kerwan overlay:
 
-`Rac1TaxiNativeCameraLease` now preserves the above request/refresh
-contract as testable, engine-neutral **intent**. Each retail-backed
-class-1012 stop carries a separate lease alongside its authored
-HUD selectors; `Rac1MetropolisTaxiSession.Reset` invalidates its
-serial in the native state-zero manner. Tests verify the precise
-request slot/key/callbacks, one-time allocation, priority floor,
-refused serial zero, rejection of invalid/duplicate results, reset,
-and **both retail taxi populations** i961/i962. Synthetic
-placements with no original selector PVar do not receive a fabricated
-camera lease.
+| Callback | Native behavior and evidence |
+|---|---|
+| L3:0x00226960, initialize | Clears halfwords at element +0x48/+0x4a, sets +0x58 and +0x5c to 32, sets the +0x7c lifetime using a 30-plus-randomized helper result, then calls element-size helper 0x00225450 |
+| L3:0x002269b0, update | Calls 0x00225670, which adjusts the HUD element's animated value/target fields +0x74/+0x78, its timers and fade/size counters |
+| L3:0x002269d0, draw | Issues HUD element/text draw calls (0x00229f48, 0x0022a218, 0x0022a5a0, 0x0022bcc0), conditional formatted text and world-related numeric displays. It neither acquires nor transforms a 3D camera |
 
-**Important boundary:** Neither `camera_request` nor
-`sub_00235e18` is actually called by the provisional Godot host.
-The callback implementations at 0x00226960/0x002269b0/0x002269d0
-and their camera transform/animation ownership are not yet
-recovered. Assigning a fabricated serial or switching Godot's
-live view to a guessed camera would be false native parity.
-The existing bounded taxi-follow camera and its landing/abort
-restoration remain in effect. The next camera increment requires
-resolving the retail callbacks and introducing a Godot camera
-adapter that can truthfully acknowledge and release a request.
+The HUD engine invokes start/update/draw through element callback
+offsets +0x10/+0x14/+0x18. Pending requests start after the old
+element fades. The serial returned by camera_request is stored in
+PVar+0xa4; 0 on refusal and unallocated -1 remain distinct.
+
+Subsequent focus does **not raise a camera priority**. It calls
+sub_00235e18(serial, 10), which raises the matching HUD element's
+**remaining visibility ticks at +0x7c** to at least 10 when the
+request is active and not pending. Both class-1012 shuttles request
+**the same global slot with identical callbacks and arguments**;
+they can receive the same serial. Their PVar serial snapshots are
+separate, but they do not own independent HUD slots or cameras.
+Native taxi state zero sets its own PVar+0xa4 to -1, not a global
+HUD release.
+
+Rac1TaxiNativeHudElementLease models request/extension intents and
+native PVar serial snapshots without inventing serial numbers.
+Deterministic tests verify the callback roles, shared-slot serial,
+native zero refusal, re-focus visibility extension and reset. The
+Godot smoke checks the source-backed HUD request contract.
+
+**Camera parity remains open and independent of these callbacks.**
+OBP's established bounded camera-follow, interruption, collision
+and landing fallbacks remain in place. No purported camera lease is
+created by the HUD focus. Further native hero/camera research must
+trace a genuinely camera-owning call before replacing the host view.
