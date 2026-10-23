@@ -274,11 +274,41 @@ index 1, **60** for indices 4/11, **30** for other indices
 or indices outside the twelve-entry table, and **45 or 60**
 for index 7 depending on live global byte **0x0013e533**
 (nonzero / zero respectively). Native allocator output is
-stored into the collision slot **+0x1c**; its time conversion,
-and the separate branch for callback result zero, are not
-yet hosted. `Rac1Class623ImpactTimerPolicy.DurationForResponseIndex`
+stored into the collision slot **+0x1c**; the allocator's
+floating-point time conversion and original runtime inputs
+are not yet hosted. `Rac1Class623ImpactTimerPolicy.DurationForResponseIndex`
 exposes only the proven duration argument, returning unknown
 for index 7 until the real global flag is supplied.
+
+The *other* service branch, when the countdown callback returns
+**0** (a still-active countdown), now has its original source
+dispatch recovered. A second twelve-entry native table at
+**0x002176a0** (used at **0x00284ba8–0x00284bc0**) selects
+the following outcomes according to the provisional response
+index and original runtime collision-flag mask held in `s8`:
+
+| Initial response | Primary bit | Secondary bit | Outcome |
+| --- | --- | --- | --- |
+| 0 or 1 | 0x10 | 0x20 | Missing primary changes response to 11; missing secondary changes status to 1 |
+| 4 | 0x01 | 0x02 | Same independent response/status gates |
+| 7 | 0x04 | 0x08 | Same independent response/status gates |
+| 11 | n/a | n/a | Response changes to 12; scalar is not forcibly cleared |
+| 2,3,5,6,8,9,10 or outside 0–11 | n/a | n/a | Response changes to 13; native scalar is cleared |
+
+In the paired-bit cases the scalar is cleared regardless of
+which bits are present; secondary-bit suppression writes native
+status **1** at **0x00284c04–0x00284c08**. The source uses
+a branch-likely instruction at **0x00284bfc** to conditionally
+skip that status write while still clearing the scalar.
+At **0x00284c24–0x00284c28**, *every* active-countdown
+branch resets the collision slot's halfwords **+0x16/+0x14**.
+The engine-neutral
+`Rac1Class623ImpactTimerPolicy.ResolveActiveCountdown`
+models only these intermediate outputs from an explicitly
+provided native flag mask; it does **not** manufacture the mask,
+collision owner, scalar or final contact event. An original-ISO
+test anchors all twelve table entries and the conditional
+MIPS flag/status/slot instructions.
 
 The original class-623 reaction dispatch table begins at
 **0x002186f0**, as indexed by instructions **0x00303590-0x003035a4**.

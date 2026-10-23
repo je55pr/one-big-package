@@ -50,6 +50,93 @@ public sealed class Rac1Class623ImpactTimerPolicyTests
         Assert.Equal(60, Rac1Class623ImpactTimerPolicy.DurationForResponseIndex(7, false));
     }
 
+    [Theory]
+    [InlineData(0, 0, 1, 11, true)]
+    [InlineData(0, 0x10, 1, 0, true)]
+    [InlineData(0, 0x20, 2, 11, true)]
+    [InlineData(0, 0x30, 2, 0, true)]
+    [InlineData(1, 0x30, 2, 1, true)]
+    [InlineData(4, 0, 1, 11, true)]
+    [InlineData(4, 1, 1, 4, true)]
+    [InlineData(4, 2, 2, 11, true)]
+    [InlineData(4, 3, 2, 4, true)]
+    [InlineData(7, 0, 1, 11, true)]
+    [InlineData(7, 4, 1, 7, true)]
+    [InlineData(7, 8, 2, 11, true)]
+    [InlineData(7, 12, 2, 7, true)]
+    [InlineData(2, 0, 2, 13, true)]
+    [InlineData(3, 0, 2, 13, true)]
+    [InlineData(5, 0, 2, 13, true)]
+    [InlineData(6, 0, 2, 13, true)]
+    [InlineData(8, 0, 2, 13, true)]
+    [InlineData(9, 0, 2, 13, true)]
+    [InlineData(10, 0, 2, 13, true)]
+    [InlineData(11, 0, 2, 12, false)]
+    [InlineData(11, 0xffff, 2, 12, false)]
+    [InlineData(12, 0, 2, 13, true)]
+    [InlineData(17, 0, 2, 13, true)]
+    [InlineData(-1, 0, 2, 13, true)]
+    public void ActiveCountdownSecondTableAppliesOriginalCollisionMask(
+        int initialIndex, uint collisionFlags, int expectedStatus, int expectedIndex, bool clearsScalar)
+    {
+        Assert.Equal(new Rac1ActiveImpactTimerResult(expectedStatus, expectedIndex, clearsScalar),
+            Rac1Class623ImpactTimerPolicy.ResolveActiveCountdown(
+                nativeStatus: 2, responseIndex: initialIndex, collisionFlags));
+    }
+
+    [Fact]
+    public void ActiveCountdownPreservesExistingNonTwoStatusWhenMaskAllowsIt()
+    {
+        Assert.Equal(new Rac1ActiveImpactTimerResult(4, 4, true),
+            Rac1Class623ImpactTimerPolicy.ResolveActiveCountdown(4, 4, 3));
+        Assert.Equal(new Rac1ActiveImpactTimerResult(3, 11, true),
+            Rac1Class623ImpactTimerPolicy.ResolveActiveCountdown(3, 4, 2));
+        Assert.Equal(new Rac1ActiveImpactTimerResult(3, 13, true),
+            Rac1Class623ImpactTimerPolicy.ResolveActiveCountdown(3, 8, 0xff));
+        Assert.Equal(new Rac1ActiveImpactTimerResult(3, 12, false),
+            Rac1Class623ImpactTimerPolicy.ResolveActiveCountdown(3, 11, 0xff));
+    }
+
+    [SkippableFact]
+    public void RetailActiveCountdownTableAndMaskWritesMatchOriginalExecutable()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5);
+        var overlay = Rac1ExecutableOverlay.Read(reader, level);
+        static uint Word(Rac1ExecutableOverlay o, int address) =>
+            BinaryPrimitives.ReadUInt32LittleEndian(o.Read(address, 4));
+
+        Assert.Equal(0x1040001cu, Word(overlay, 0x00284ba8)); // response outside table
+        Assert.Equal(0x244276a0u, Word(overlay, 0x00284bb0)); // 0x2176a0
+        Assert.Equal(0x8c430000u, Word(overlay, 0x00284bb8)); // pointer
+        uint[] expectedTargets =
+        [
+            0x00284bc4, 0x00284bc4, 0x00284c1c, 0x00284c1c,
+            0x00284bd8, 0x00284c1c, 0x00284c1c, 0x00284bec,
+            0x00284c1c, 0x00284c1c, 0x00284c1c, 0x00284c14
+        ];
+        for (int i = 0; i < expectedTargets.Length; i++)
+            Assert.Equal(expectedTargets[i], Word(overlay, 0x002176a0 + i * 4));
+
+        Assert.Equal(0x33c20010u, Word(overlay, 0x00284bc4)); // index 0/1 primary
+        Assert.Equal(0x0062880au, Word(overlay, 0x00284bcc)); // MOVZ response=11
+        Assert.Equal(0x33c40020u, Word(overlay, 0x00284bd4)); // index 0/1 secondary
+        Assert.Equal(0x33c20001u, Word(overlay, 0x00284bd8)); // index 4 primary
+        Assert.Equal(0x33c40002u, Word(overlay, 0x00284be8)); // index 4 secondary
+        Assert.Equal(0x33c20004u, Word(overlay, 0x00284bec)); // index 7 primary
+        Assert.Equal(0x33c40008u, Word(overlay, 0x00284bf8)); // index 7 secondary
+        Assert.Equal(0x54800009u, Word(overlay, 0x00284bfc)); // BNEL flag
+        Assert.Equal(0x24020001u, Word(overlay, 0x00284c04)); // status 1
+        Assert.Equal(0xae620000u, Word(overlay, 0x00284c08)); // store status
+        Assert.Equal(0x2411000cu, Word(overlay, 0x00284c18)); // index 11 -> 12
+        Assert.Equal(0xae80002cu, Word(overlay, 0x00284c1c)); // clear scalar
+        Assert.Equal(0x2411000du, Word(overlay, 0x00284c20)); // other -> 13
+        Assert.Equal(0xa6560016u, Word(overlay, 0x00284c24)); // clear ID +0x16
+        Assert.Equal(0xa6560014u, Word(overlay, 0x00284c28)); // clear ID +0x14
+    }
+
     [Fact]
     public void CountdownCannotBeMistakenForRealImpactAdmission()
     {

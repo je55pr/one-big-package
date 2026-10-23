@@ -20,6 +20,47 @@ public static class Rac1Class623ImpactTimerPolicy
     }
 
     /// <summary>
+    /// The separate callback-result-0 path (active countdown) uses
+    /// original table 0x2176a0 and the source collision flag mask
+    /// held in s8 at Rilgar 0x284bc4–0x284c24. Status and response
+    /// below are intermediate generic-service values. This does not
+    /// reconstruct a final collision, owner or damage event.
+    /// </summary>
+    public static Rac1ActiveImpactTimerResult ResolveActiveCountdown(
+        int nativeStatus, int responseIndex, uint collisionFlags)
+    {
+        if (responseIndex == 11)
+            return new(nativeStatus, 12, false);
+
+        uint primary;
+        uint secondary;
+        switch (responseIndex)
+        {
+            case 0:
+            case 1:
+                primary = 0x10;
+                secondary = 0x20;
+                break;
+            case 4:
+                primary = 0x01;
+                secondary = 0x02;
+                break;
+            case 7:
+                primary = 0x04;
+                secondary = 0x08;
+                break;
+            default:
+                return new(nativeStatus, 13, true);
+        }
+
+        int nextResponse = (collisionFlags & primary) == 0
+            ? 11 : responseIndex;
+        int nextStatus = (collisionFlags & secondary) == 0
+            ? 1 : nativeStatus;
+        return new(nextStatus, nextResponse, true);
+    }
+
+    /// <summary>
     /// Native response index selects the proposed timer *duration*
     /// through jump table 0x217670 only when countdown result != 0.
     /// Actual timer value is written by a separate 0x22dbd8 helper
@@ -41,3 +82,12 @@ public static class Rac1Class623ImpactTimerPolicy
 
 public readonly record struct Rac1ImpactCountdownResult(
     short Remaining, int CallbackResult);
+
+/// <param name="Status">Source status after the active-countdown path.</param>
+/// <param name="ResponseIndex">Source response after this branch, not
+/// proof of impact ownership/admission.</param>
+/// <param name="ClearsScalar">Whether the branch writes zero to the
+/// native scalar slot at Moby +0x2c. All paths clear the native
+/// collision halfwords +0x14/+0x16 before return.</param>
+public readonly record struct Rac1ActiveImpactTimerResult(
+    int Status, int ResponseIndex, bool ClearsScalar);
