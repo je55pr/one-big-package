@@ -348,21 +348,16 @@ public partial class OBPGame
                 var stolen = new Camera3D { Name = "QueenCameraOwnerConflictTest" };
                 _sceneResult!.Root.AddChild(stolen);
                 stolen.MakeCurrent();
+                // Ordinary flight ticking (not diagnostic cleanup) must
+                // notice the lost lease, release Ratchet and leave the new
+                // camera's viewport ownership untouched.
                 TickRac1QueenFlight();
                 Require(_rac1QueenFlight?.NativeState == 2 &&
-                    _rac1QueenScriptedCamera is { Current: false } &&
-                    GetViewport().GetCamera3D() == stolen,
-                    "Queen camera falsely accepted a cue when another owner took the viewport.");
-                // Cancel while another camera STILL owns the viewport. The
-                // Queen must release its input lock and stale _activeCamera
-                // without stealing this unrelated camera's lease.
-                EndRac1QueenScriptedCamera();
-                Require(_rac1QueenScriptedCamera is null &&
+                    _rac1QueenScriptedCamera is null &&
                     !_player!.Rac1RemoteControlActive &&
                     GetViewport().GetCamera3D() == stolen &&
-                    _activeCamera == _player.Camera &&
-                    _rac1QueenFlight?.NativeState == 2,
-                    "Queen cancellation stole an external camera or left input locked.");
+                    _activeCamera == _player.Camera,
+                    "Queen did not automatically retire a stolen camera lease.");
                 stolen.QueueFree();
                 _player.Camera.MakeCurrent();
                 TickRac1QueenFlight();
@@ -375,14 +370,18 @@ public partial class OBPGame
                 TickRac1QueenFlight();
                 Require(_rac1MissileCamera is { Current: true } &&
                     _rac1QueenFlight?.NativeState == 2 &&
-                    GetViewport().GetCamera3D() == _rac1MissileCamera,
-                    "Queen stole Visibomb camera or falsely finished its sequence.");
-                EndRac1QueenScriptedCamera();
-                Require(_rac1QueenScriptedCamera is null &&
+                    _rac1QueenScriptedCamera is null &&
                     _player.Rac1RemoteControlActive &&
                     _activeCamera == _player.Camera &&
                     GetViewport().GetCamera3D() == _rac1MissileCamera,
-                    "Queen cancellation released Visibomb input or stole its viewport.");
+                    "Queen did not relinquish its lease while preserving Visibomb's input lock.");
+                // Even on the next normal tick, Queen must not reacquire
+                // until Visibomb itself has finished and restored Ratchet.
+                TickRac1QueenFlight();
+                Require(_rac1QueenScriptedCamera is null &&
+                    _player.Rac1RemoteControlActive &&
+                    GetViewport().GetCamera3D() == _rac1MissileCamera,
+                    "Queen reacquired the viewport during Visibomb remote control.");
                 EndRac1GuidedCamera();
                 Require(!_player.Rac1RemoteControlActive && _player.Camera.Current,
                     "Visibomb camera did not release its own input lock.");

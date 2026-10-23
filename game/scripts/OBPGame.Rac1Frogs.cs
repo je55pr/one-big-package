@@ -183,6 +183,17 @@ public partial class OBPGame
     /// </summary>
     private bool ApplyRac1QueenScriptedCamera(Rac1AlienQueenFlightCamera? cue)
     {
+        // A different viewport owner has superseded our camera lease. Retire
+        // it immediately; otherwise the stale non-current camera can never
+        // acknowledge completion or take the normal creation path again.
+        // End only releases Queen-owned controls, preserving Visibomb's lock.
+        if (_rac1QueenScriptedCamera is { } leased &&
+            (!IsInstanceValid(leased) || !leased.Current ||
+                GetViewport().GetCamera3D() != leased))
+        {
+            EndRac1QueenScriptedCamera();
+            return false;
+        }
         if (cue is null || _sceneResult is null || _player is null ||
             !IsInstanceValid(_player)) return false;
         if (_rac1QueenScriptedCamera is null)
