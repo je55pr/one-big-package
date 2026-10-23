@@ -39,7 +39,12 @@ public sealed class Rac1AridiaEnemyTests
         Skip.If(string.IsNullOrWhiteSpace(path), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(path!);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(item => item.LevelId == Rac1AridiaEnemies.LevelId);
-        var placements = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level)).MobyInstances;
+        byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+        var placements = Rac1Instances.Parse(gameplay).MobyInstances;
+        var groups = Rac1AridiaEnemies.ReadAuthoredGroupRoster(gameplay);
+        Assert.NotEmpty(groups);
+        Assert.All(groups.Values.SelectMany(members => members), member =>
+            Assert.InRange(member, 0, placements.Count - 1));
         int Reward(Rac1Instances.MobyInstance moby) =>
             BinaryPrimitives.ReadInt32LittleEndian(moby.RawRecord.AsSpan(0x10));
         var sharks = placements.Where(moby => moby.OClass == Rac1AridiaEnemies.Sandshark).ToArray();
@@ -54,6 +59,11 @@ public sealed class Rac1AridiaEnemyTests
         Assert.All(sharks.Where(moby => moby.Index is >= 440 and <= 445), moby =>
             Assert.Equal(756, Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(moby.PVar!)));
         Assert.Equal(Rac1AridiaEnemies.Sandmouse, placements[756].OClass);
+        // Authored group IDs are the +0x48 placement word copied into live
+        // moby +0x21. Validate the admitted 137 placements against retail.
+        Assert.All(sharks.Concat(bots).Concat(nests), moby =>
+            Assert.InRange(Rac1AridiaEnemies.ReadAuthoredGroup(moby.RawRecord), -1, 254));
+        Assert.Contains(nests, nest => Rac1AridiaEnemies.ReadAuthoredGroup(nest.RawRecord) >= 0);
         Assert.Equal([38], bots.Select(Reward).Distinct().Order());
         Assert.Equal([0, 60], nests.Select(moby =>
             Rac1AridiaEnemies.ReadNestInitialWaitTicks(moby.PVar!)).Distinct().Order());
@@ -225,6 +235,146 @@ public sealed class Rac1AridiaEnemyTests
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0xd4), 60);
         Assert.Equal(60, Rac1AridiaEnemies.ReadNestInitialWaitTicks(pvar));
         Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadNestInitialWaitTicks(new byte[64]));
+    }
+
+    [Fact]
+    public void NativeGroupReaderRequiresValidSignedAuthoredIndex()
+    {
+        var record = new byte[0x78];
+        BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(0x48), -1);
+        Assert.Equal(-1, Rac1AridiaEnemies.ReadAuthoredGroup(record));
+        BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(0x48), 8);
+        Assert.Equal(8, Rac1AridiaEnemies.ReadAuthoredGroup(record));
+        BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(0x48), 255);
+        Assert.Equal(-1, Rac1AridiaEnemies.ReadAuthoredGroup(record));
+        BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(0x48), 256);
+        Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadAuthoredGroup(record));
+        Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadAuthoredGroup(new byte[8]));
+    }
+
+    [Fact]
+    public void NativeNestGroupCannotReleaseBuriedOrWrongGroupSharks()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(10, Rac1AridiaEnemies.Nest, groupId: 3);
+        session.Register(11, Rac1AridiaEnemies.Nest, groupId: 4);
+        session.Register(20, Rac1AridiaEnemies.Sandshark, groupId: 3);
+        session.Register(21, Rac1AridiaEnemies.Sandshark, groupId: 4, nativeWaitingState26: true);
+        session.Register(22, Rac1AridiaEnemies.Sandshark, groupId: 3, nativeWaitingState26: true);
+        session.Register(23, Rac1AridiaEnemies.Sandshark, groupId: 3, nativeWaitingState26: true);
+        Assert.Equal(2, session.WaitingSharkCountForNest(10));
+        Assert.Equal(22, session.FindWaitingSharkForNest(10));
+        Assert.Equal(21, session.FindWaitingSharkForNest(11));
+        Assert.False(session.ReleaseFromNest(10, 21, Vector3.Zero, Vector3.UnitX));
+        Assert.False(session.ReleaseFromNest(10, 20, Vector3.Zero, Vector3.UnitX));
+        Assert.True(session.ReleaseFromNest(10, 22, Vector3.Zero, Vector3.UnitX));
+        Assert.Equal(23, session.FindWaitingSharkForNest(10));
+        Assert.Equal(1, session.WaitingSharkCountForNest(10));
+        Assert.Equal(6, session.Count);
+    }
+
+    [Fact]
+    public void RetailGroupRosterReaderPreservesSourceOrderAndTermination()
+    {
+        var gameplay = new byte[0xc0];
+        BinaryPrimitives.WriteInt32LittleEndian(gameplay.AsSpan(0x48), 0x80);
+        BinaryPrimitives.WriteInt32LittleEndian(gameplay.AsSpan(0x80), 3);
+        BinaryPrimitives.WriteInt32LittleEndian(gameplay.AsSpan(0x84), 8);
+        BinaryPrimitives.WriteInt32LittleEndian(gameplay.AsSpan(0x90), 0);
+        BinaryPrimitives.WriteInt32LittleEndian(gameplay.AsSpan(0x94), -1);
+        BinaryPrimitives.WriteInt32LittleEndian(gameplay.AsSpan(0x98), 4);
+        BinaryPrimitives.WriteUInt16LittleEndian(gameplay.AsSpan(0x9c), 23);
+        BinaryPrimitives.WriteUInt16LittleEndian(gameplay.AsSpan(0x9e), 0x8016);
+        BinaryPrimitives.WriteUInt16LittleEndian(gameplay.AsSpan(0xa0), 0x8009);
+        var roster = Rac1AridiaEnemies.ReadAuthoredGroupRoster(gameplay);
+        Assert.Equal([23, 22], roster[0]);
+        Assert.Equal([9], roster[2]);
+        Assert.False(roster.ContainsKey(1));
+
+        var session = new Rac1AridiaEnemySession();
+        session.Register(10, Rac1AridiaEnemies.Nest, groupId: 0);
+        session.Register(22, Rac1AridiaEnemies.Sandshark, groupId: 0, nativeWaitingState26: true);
+        session.Register(23, Rac1AridiaEnemies.Sandshark, groupId: 0, nativeWaitingState26: true);
+        session.SetAuthoredGroupRoster(roster);
+        Assert.Equal(23, session.FindWaitingSharkForNest(10));
+        Assert.True(session.ReleaseFromNest(10, 23, Vector3.Zero, Vector3.UnitX));
+        Assert.Equal(22, session.FindWaitingSharkForNest(10));
+    }
+
+    [Fact]
+    public void DeadGroupSharkOnlyRetiresToNative26WithLivingNestAndReusesIdentity()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(10, Rac1AridiaEnemies.Nest, groupId: 7);
+        session.Register(20, Rac1AridiaEnemies.Sandshark, groupId: 7);
+        session.Register(21, Rac1AridiaEnemies.Sandshark, groupId: 8);
+        session.Register(22, Rac1AridiaEnemies.Sandshark);
+        Assert.False(session.RetireToNestPool(20));
+        Assert.True(session.Damage(20, 1));
+        Assert.True(session.Damage(21, 1));
+        Assert.True(session.Damage(22, 1));
+        Assert.False(session.RetireToNestPool(21));
+        Assert.False(session.RetireToNestPool(22));
+        Assert.True(session.RetireToNestPool(20));
+        Assert.True(session.CanReleaseFromNest(20));
+        Assert.Equal(0, session.Health(20));
+        Assert.Equal(20, session.FindWaitingSharkForNest(10));
+        Assert.True(session.ReleaseFromNest(10, 20, Vector3.UnitY, Vector3.UnitX));
+        Assert.Equal(1, session.Health(20));
+        Assert.False(session.CanReleaseFromNest(20));
+        Assert.Equal(4, session.Count);
+    }
+
+    [Fact]
+    public void OpeningPopulationDoesNotAdmitEarlyNestCandidatesOrSandmouseLinkedSharks()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(100, Rac1AridiaEnemies.Nest, groupId: 1, nestInitialWaitTicks: 0);
+        for (int i = 0; i < 115; i++)
+            session.Register(200 + i, Rac1AridiaEnemies.Sandshark, groupId: 1,
+                linkedActivationMobyIndex: i < 6 ? 756 : null);
+        var besidePlayer = new Rac1AridiaEnemyFacts(Vector3.Zero, new(.1f, 0, 0), true, true);
+        for (int tick = 0; tick < 180; tick++)
+        {
+            foreach (int id in Enumerable.Range(200, 6))
+                Assert.Equal(Rac1AridiaEnemyPhase.Buried, session.Step(id, besidePlayer).Phase);
+            Assert.False(session.Step(100, besidePlayer with
+            {
+                WaitingSharkCount = session.WaitingSharkCountForNest(100)
+            }).SpawnSandshark);
+        }
+        Assert.Null(session.FindWaitingSharkForNest(100));
+        Assert.Equal(116, session.Count);
+        foreach (int id in Enumerable.Range(200, 6))
+            Assert.Equal(Rac1AridiaEnemyPhase.Emerging,
+                session.Step(id, besidePlayer with { LinkedMobyNativeState = 5 }).Phase);
+    }
+
+    [Fact]
+    public void NewLevelSessionClearsReleasedAndPooledStatesOnRetry()
+    {
+        static Rac1AridiaEnemySession NewSession()
+        {
+            var session = new Rac1AridiaEnemySession();
+            session.Register(1, Rac1AridiaEnemies.Nest, groupId: 1);
+            session.Register(2, Rac1AridiaEnemies.Sandshark, groupId: 1);
+            session.Register(3, Rac1AridiaEnemies.Sandshark, groupId: 1,
+                linkedActivationMobyIndex: 756);
+            session.SetAuthoredGroupRoster(new Dictionary<int, int[]> { [1] = [1, 2, 3] });
+            return session;
+        }
+
+        var first = NewSession();
+        Assert.True(first.Damage(2, 1));
+        Assert.True(first.RetireToNestPool(2));
+        Assert.True(first.ReleaseFromNest(1, 2, Vector3.Zero, Vector3.UnitX));
+        Assert.False(first.CanReleaseFromNest(2));
+        var retry = NewSession();
+        Assert.Equal(3, retry.Count);
+        Assert.Null(retry.FindWaitingSharkForNest(1));
+        Assert.False(retry.CanReleaseFromNest(2));
+        var touching = new Rac1AridiaEnemyFacts(Vector3.Zero, Vector3.Zero, true, true);
+        Assert.Equal(Rac1AridiaEnemyPhase.Buried, retry.Step(3, touching).Phase);
     }
 
     [Fact]

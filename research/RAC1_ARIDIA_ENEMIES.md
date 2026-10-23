@@ -73,3 +73,16 @@ A negative rate (`-0.125`) occurs in original Sandshark sequence 10. The forward
 - Human playtest with wrench/Bomb Glove against all three families, in particular weapon damage, normal emerge/attack, Constructorbot flames, death pickups and respawn. Nests will not launch until the native state-26 lifecycle is supported. Check for wall clipping, enemies sunk into geometry, and frame pacing during dense encounters.
 
 Keep Aridia changes isolated until reviewed; do not modify parallel Veldin or Novalis worktrees.
+
+## 22 October 2026: source-backed group and recycling reconstruction (partial)
+
+Retail evidence below was regenerated directly from the user's NTSC-U R&C1 disc using the separate native-game codegen, without checking generated source or disc payloads into OBP.
+
+- **Authentic group source:** authored Moby placement record offset `+0x48` is read as the low byte into live Moby `+0x21`; `0xff` means ungrouped. The gameplay block at header offset `+0x48` carries per-group ordered halfword Moby IDs, terminated by bit 15. Retail level loader `level_load.cpp` around `0x001ab840`; native `group_first/group_next` at `0x2591d0`/`0x2592b8`. OBP now reads original ordering from the retail source at runtime and does not choose by nearest distance.
+- **Native shark state-26 admission:** Aridia overlay `L2:0x2d54e8..0x2d5534` follows death/falling physics and calls group selector `0x2d5658`. It selects an eligible *live class-668 nest in the same group*, then transitions the shark into state 26, a recyclable pool. OBP now mirrors this after its existing provisional 36-tick death presentation; its exact physics, timing, bolts, and health restoration remain host stand-ins.
+- **Nest candidate:** `L2:0x2dd2a8..0x2dd360` tests the nest's original group roster and selects **class 580 already in state 26**. No arbitrary buried shark or neighbour within 30 units qualifies. `L2:0x2d6118` relocates that very Moby into state 27, animation 11. The host now sets that state explicitly and preserves identity.
+- **Native nest timing still pending:** `L2:0x2dcce0..` triggers at animation time 10, calculates subsequent wait from its PVar interval plus a capped group-size-dependent term, then launches. The OBP ten-tick windup, 12-unit activation gate and simple cooldown are not yet those native conditions.
+- **Sandmouse unlock evidence:** class 1818 uses update `L2:0x2f0f88` (not the separate class-437 update `0x2ccc08`). Its eight-plus-state cinematic/controller path requires level/hero conditions and volume/interaction logic. Native state 4 transitions to 5 at `L2:0x2f18f8..0x2f1980`; the six authored sharks linked to #756 must not wake before that. OBP still has no verified host equivalent for the preceding cinematic, so the state-29 safety gate intentionally stays closed during ordinary gameplay.
+- **Constructorbot still provisional:** its update `L2:0x2d7748` branches over 18 states, including state-8/9 emission and state-12 attachment/contact paths. Existing Godot attack detection, emitters, audio timing and collision remain host approximations, not claimed native parity.
+
+Added deterministic group, recycling, opening and retry regressions plus disc-backed group format assertions. No generated executable/decompiled source, textures, music, captures or private file paths are committed.

@@ -31,6 +31,9 @@ public static class Rac1AridiaEnemies
     // L2:0x2dcdc0 sends 2 * the game's 1/60-s frame scalar into vec2_set_length.
     public const float NestReleaseSpeedPerTick = 2f / 60f;
     public const int NestIntervalPvarOffset = 0xd4;
+    // Retail level gameplay Moby placement +0x48 is the group index, loaded
+    // into live Moby +0x21. 0xff denotes no group (level_load.cpp).
+    public const int GroupRecordOffset = 0x48;
 
     public static bool IsEnemyClass(int nativeClass) =>
         nativeClass is Sandshark or Constructorbot or Nest;
@@ -57,6 +60,59 @@ public static class Rac1AridiaEnemies
         if (instance < 0 || instance > 200_000)
             throw new InvalidDataException("Aridia Sandshark has an invalid linked-Moby index.");
         return instance;
+    }
+
+    public static int ReadAuthoredGroup(ReadOnlySpan<byte> record)
+    {
+        if (record.Length < GroupRecordOffset + sizeof(int))
+            throw new InvalidDataException("Aridia Moby placement is missing its group index.");
+        int group = BinaryPrimitives.ReadInt32LittleEndian(record.Slice(GroupRecordOffset, sizeof(int)));
+        // Retail level loader uses lbu at +0x48, so both encodings
+        // of the 0xff sentinel denote an ungrouped Moby.
+        if (group is -1 or 255) return -1;
+        if (group is < 0 or >= 255)
+            throw new InvalidDataException("Aridia Moby group is outside the native byte index range.");
+        return group;
+    }
+
+    /// <summary>
+    /// LEVEL2 native load 0x001ab840 group rosters. Header slot +0x48
+    /// points to (count, byte size, reserved, reserved, group offsets[],
+    /// group halfwords[]). Each halfword is an authored Moby UID; bit 15
+    /// terminates that group. Preserve authored order, not spatial order.
+    /// </summary>
+    public static IReadOnlyDictionary<int, int[]> ReadAuthoredGroupRoster(ReadOnlySpan<byte> gameplay)
+    {
+        var groups = new Dictionary<int, int[]>();
+        if (gameplay.Length < 0x4c) throw new InvalidDataException("Aridia gameplay has no Moby group header.");
+        int block = BinaryPrimitives.ReadInt32LittleEndian(gameplay.Slice(0x48, 4));
+        if (block == 0) return groups;
+        if (block < 0 || (long)block + 16 > gameplay.Length)
+            throw new InvalidDataException("Aridia Moby group block is out of bounds.");
+        int count = BinaryPrimitives.ReadInt32LittleEndian(gameplay.Slice(block, 4));
+        int size = BinaryPrimitives.ReadInt32LittleEndian(gameplay.Slice(block + 4, 4));
+        long start = (long)block + 16 + (long)count * 4;
+        if (count is < 0 or > 255 || size < 0 || start + size > gameplay.Length)
+            throw new InvalidDataException("Aridia Moby group roster has invalid dimensions.");
+        for (int group = 0; group < count; group++)
+        {
+            int offset = BinaryPrimitives.ReadInt32LittleEndian(gameplay.Slice(block + 16 + group * 4, 4));
+            if (offset < 0) continue;
+            if (offset >= size) throw new InvalidDataException("Aridia Moby group pointer is out of range.");
+            var members = new List<int>();
+            bool terminated = false;
+            for (int at = offset; at + 2 <= size; at += 2)
+            {
+                ushort encoded = BinaryPrimitives.ReadUInt16LittleEndian(gameplay.Slice((int)start + at, 2));
+                members.Add(encoded & 0x7fff);
+                if ((encoded & 0x8000) == 0) continue;
+                terminated = true;
+                break;
+            }
+            if (!terminated) throw new InvalidDataException("Aridia Moby group has no terminating member.");
+            groups.Add(group, [.. members]);
+        }
+        return groups;
     }
 
     public static int ReadNestInitialWaitTicks(ReadOnlySpan<byte> pvar)
@@ -103,9 +159,10 @@ public readonly record struct Rac1AridiaEnemyFrame(
 /// </summary>
 public sealed class Rac1AridiaEnemySession
 {
-    private sealed class Entry(int nativeClass, float yaw, int nestInitialWaitTicks)
+    private sealed class Entry(int nativeClass, float yaw, int nestInitialWaitTicks, int groupId)
     {
         public int ClassId { get; } = nativeClass;
+        public int GroupId { get; } = groupId;
         public int Health { get; set; } = Rac1AridiaEnemies.InitialHealth(nativeClass);
         public Rac1AridiaEnemyPhase Phase { get; set; } =
             nativeClass == Rac1AridiaEnemies.Sandshark ? Rac1AridiaEnemyPhase.Buried : Rac1AridiaEnemyPhase.Guarding;
@@ -122,19 +179,28 @@ public sealed class Rac1AridiaEnemySession
     }
 
     private readonly Dictionary<int, Entry> _entries = [];
+    private IReadOnlyDictionary<int, int[]>? _authoredGroupRoster;
+
+    public void SetAuthoredGroupRoster(IReadOnlyDictionary<int, int[]> roster)
+    {
+        ArgumentNullException.ThrowIfNull(roster);
+        _authoredGroupRoster = roster.ToDictionary(item => item.Key, item => item.Value.ToArray());
+    }
     public int Count => _entries.Count;
 
     public void Register(int instanceIndex, int nativeClass, float yaw = 0, int nestInitialWaitTicks = 60,
-        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null)
+        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null, int groupId = -1)
     {
         if (!Rac1AridiaEnemies.IsEnemyClass(nativeClass) || nestInitialWaitTicks < 0)
             throw new ArgumentOutOfRangeException(nameof(nativeClass));
         if (linkedActivationMobyIndex < 0 ||
             (linkedActivationMobyIndex.HasValue && nativeClass != Rac1AridiaEnemies.Sandshark))
             throw new ArgumentException("Only Sandsharks can carry a nonnegative linked activation Moby index.", nameof(linkedActivationMobyIndex));
+        if (groupId is < -1 or >= 255)
+            throw new ArgumentOutOfRangeException(nameof(groupId));
         if (nativeWaitingState26 && nativeClass != Rac1AridiaEnemies.Sandshark)
             throw new ArgumentException("Only a Sandshark may be in native waiting state 26.", nameof(nativeWaitingState26));
-        if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks)
+        if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks, groupId)
         {
             NativeWaitingState26 = nativeWaitingState26,
             LinkedActivationMobyIndex = linkedActivationMobyIndex
@@ -144,6 +210,55 @@ public sealed class Rac1AridiaEnemySession
 
     public int Health(int instanceIndex) => _entries[instanceIndex].Health;
     public int? LinkedActivationMobyIndex(int instanceIndex) => _entries[instanceIndex].LinkedActivationMobyIndex;
+    public bool LinkedActivationSatisfied(int instanceIndex) => _entries[instanceIndex].LinkedActivationComplete;
+
+    // LEVEL2:0x2dd2a8 iterates its authored +0x21 group list and admits only
+    // class 580 in native state 26. A group-less nest cannot release anyone.
+    // Native source order is retained when the retail group block is loaded.
+    public int? FindWaitingSharkForNest(int nestIndex)
+    {
+        var nest = _entries[nestIndex];
+        if (nest.ClassId != Rac1AridiaEnemies.Nest)
+            throw new ArgumentException("The selector requires a Sandshark nest.", nameof(nestIndex));
+        if (nest.Health == 0 || nest.GroupId < 0) return null;
+        if (_authoredGroupRoster is not null)
+        {
+            if (!_authoredGroupRoster.TryGetValue(nest.GroupId, out var members)) return null;
+            foreach (int id in members)
+                if (_entries.TryGetValue(id, out var shark) &&
+                    shark.GroupId == nest.GroupId && CanReleaseFromNest(id)) return id;
+            return null;
+        }
+        // Engine-neutral fixtures without a retail group roster use authored
+        // instance-index order only, never proximity.
+        return _entries.Where(item => item.Value.GroupId == nest.GroupId &&
+                item.Value.ClassId == Rac1AridiaEnemies.Sandshark && CanReleaseFromNest(item.Key))
+            .OrderBy(item => item.Key).Select(item => (int?)item.Key).FirstOrDefault();
+    }
+
+    public int WaitingSharkCountForNest(int nestIndex)
+    {
+        var nest = _entries[nestIndex];
+        if (nest.ClassId != Rac1AridiaEnemies.Nest)
+            throw new ArgumentException("The selector requires a Sandshark nest.", nameof(nestIndex));
+        return nest.GroupId < 0 || nest.Health == 0 ? 0 : _entries.Count(item =>
+            item.Value.GroupId == nest.GroupId && item.Value.ClassId == Rac1AridiaEnemies.Sandshark &&
+            CanReleaseFromNest(item.Key));
+    }
+
+    // LEVEL2:0x2d54e8..0x2d5534 retires a dead shark into state 26 ONLY
+    // when 0x2d5658 finds a living class-668 nest in its own group.
+    // Actual native contact/death timing is still supplied by the host.
+    public bool RetireToNestPool(int instanceIndex)
+    {
+        var shark = _entries[instanceIndex];
+        if (shark.ClassId != Rac1AridiaEnemies.Sandshark || shark.Phase != Rac1AridiaEnemyPhase.Dead ||
+            shark.GroupId < 0 || !_entries.Values.Any(nest => nest.ClassId == Rac1AridiaEnemies.Nest &&
+                nest.Health > 0 && nest.GroupId == shark.GroupId)) return false;
+        shark.NativeWaitingState26 = true;
+        Enter(shark, Rac1AridiaEnemyPhase.Buried);
+        return true;
+    }
 
     public bool CanReleaseFromNest(int instanceIndex)
     {
@@ -151,7 +266,7 @@ public sealed class Rac1AridiaEnemySession
         // Native 0x2dd2a8 filters for *state 26*, NOT all buried sharks.
         // None of the authored class-580 placements initially qualify merely
         // by being invisible; only an actual state-26 transition may opt in.
-        return entry.ClassId == Rac1AridiaEnemies.Sandshark && entry.Health > 0 &&
+        return entry.ClassId == Rac1AridiaEnemies.Sandshark &&
             entry.Phase == Rac1AridiaEnemyPhase.Buried && entry.NativeWaitingState26;
     }
 
@@ -160,6 +275,12 @@ public sealed class Rac1AridiaEnemySession
     /// position, faces it along the vector toward its authored home point,
     /// and enters state 27/sequence 11. No new entity identity is allocated.
     /// </summary>
+    public bool ReleaseFromNest(int nestIndex, int instanceIndex, Vector3 nestPosition, Vector3 sharkHome)
+    {
+        if (FindWaitingSharkForNest(nestIndex) != instanceIndex) return false;
+        return ReleaseFromNest(instanceIndex, nestPosition, sharkHome);
+    }
+
     public bool ReleaseFromNest(int instanceIndex, Vector3 nestPosition, Vector3 sharkHome)
     {
         if (!CanReleaseFromNest(instanceIndex)) return false;
@@ -174,6 +295,9 @@ public sealed class Rac1AridiaEnemySession
             heading.Y * Rac1AridiaEnemies.NestReleaseSpeedPerTick, 0);
         entry.LaunchFallSpeed = 0;
         entry.WasReleasedFromNest = true;
+        // The returned native state 27 is re-used for combat; the exact PVar
+        // health restoration is not yet mapped. Host resets its 1 HP on launch.
+        entry.Health = Rac1AridiaEnemies.InitialHealth(entry.ClassId);
         entry.NativeWaitingState26 = false;
         Enter(entry, Rac1AridiaEnemyPhase.Launched);
         return true;

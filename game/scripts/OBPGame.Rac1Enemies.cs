@@ -83,7 +83,9 @@ public partial class OBPGame
         {
             // The native LEVEL2 nest timer lives in the gameplay PVar, not in
             // the general placement's 0x78-byte instance record.
-            var authoredPlacements = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level)).MobyInstances;
+            var levelGameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+            var authoredPlacements = Rac1Instances.Parse(levelGameplay).MobyInstances;
+            _rac1AridiaEnemies.SetAuthoredGroupRoster(Rac1AridiaEnemies.ReadAuthoredGroupRoster(levelGameplay));
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => Rac1AridiaEnemies.IsEnemyClass(item.NativeClassId)))
             {
                 var node = FindPresentedDynamic(result, authored) ?? CreateRac1InvisibleRuntimeNode(result, authored);
@@ -103,7 +105,8 @@ public partial class OBPGame
                     : 60;
                 _rac1AridiaEnemies.Register(authored.InstanceIndex, authored.NativeClassId,
                     MathF.Atan2(native.Y, native.X), nestWait,
-                    linkedActivationMobyIndex: linkedActivationMobyIndex);
+                    linkedActivationMobyIndex: linkedActivationMobyIndex,
+                    groupId: Rac1AridiaEnemies.ReadAuthoredGroup(authoredPlacements[authored.InstanceIndex].RawRecord));
                 nodes.Add(node);
             }
         }
