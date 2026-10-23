@@ -397,23 +397,55 @@ public static class Rac1AridiaConstructorbotNative
         return Math.Clamp(speed, -limit, limit);
     }
 
+    public const int RoamingState = 6;
+    public const int RoamingDestinationPvarOffset = 0x1e0;
+    public const float RoamingMinimumOffset = 1f;
+    public const float RoamingMaximumOffset = 2f;
+
     /// <summary>
-    /// Native state5 tests entire solver return == 4 (not &amp;4);
-    /// if true enters state7/animation0. State6 tests
-    /// (return &amp; 0x6)==0 for state7, otherwise enters state5/clip6.
-    /// Unknown contact bits must not be silently treated as zero.
+    /// Native L2:0x2d7e10..0x2d7ebc chooses an angle and TWO independent
+    /// random magnitudes in [1,2], storing (cos(angle)*rx,
+    /// sin(angle)*ry,0) + the authored +0x188 waypoint into PVar+0x1e0.
+    /// Source rand_angle and rand_range_f generate the samples; this
+    /// adapter takes their values rather than inventing an RNG recurrence.
     /// </summary>
-    public static Frame StepWalkerState(int nativeState, int solverFlags, bool resultKnown)
+    public static System.Numerics.Vector3 CreateRoamingDestination(
+        System.Numerics.Vector3 waypoint, float angle, float xMagnitude, float yMagnitude)
     {
-        if (nativeState is not (5 or 6))
+        if (!Finite(waypoint) || !float.IsFinite(angle) ||
+            !float.IsFinite(xMagnitude) || !float.IsFinite(yMagnitude) ||
+            xMagnitude < RoamingMinimumOffset || xMagnitude > RoamingMaximumOffset ||
+            yMagnitude < RoamingMinimumOffset || yMagnitude > RoamingMaximumOffset)
+            throw new ArgumentOutOfRangeException(nameof(xMagnitude));
+        return waypoint + new System.Numerics.Vector3(
+            MathF.Cos(angle) * xMagnitude, MathF.Sin(angle) * yMagnitude, 0);
+    }
+
+    public static Frame StepStateSevenRoam(bool sourceAnimationComplete) =>
+        sourceAnimationComplete ? new(RoamingState, 6) : new(RestState, 0);
+
+    /// <summary>
+    /// Native state5 checks the ENTIRE walker result ==4 for state7/clip0.
+    /// Native state6 at L2:0x2d7bb4 is DIFFERENT: (result &amp;6)!=0
+    /// immediately returns to state7/clip0. If clear it keeps state6
+    /// unless Ratchet lies within the authored waypoint engagement
+    /// distance with vertical separation under 4, then enters state5/6.
+    /// Do not infer success from missing collision observations.
+    /// </summary>
+    public static Frame StepWalkerState(
+        int nativeState, int solverFlags, bool resultKnown, bool playerNearAnchor = false)
+    {
+        if (nativeState is not (5 or RoamingState))
             throw new ArgumentOutOfRangeException(nameof(nativeState));
-        if (!resultKnown) return nativeState == 5 ? new(5, 6) : new(6, 6);
+        if (!resultKnown)
+            return nativeState == 5 ? new(5, 6) : new(RoamingState, 6);
         if (solverFlags < 0 || (solverFlags & ~0x3f) != 0)
             throw new ArgumentOutOfRangeException(nameof(solverFlags));
         if (nativeState == 5)
             return solverFlags == WalkerNearTargetFlag ? new(RestState, 0) : new(5, 6);
-        return (solverFlags & WalkerHeadingOrContactMask) == 0
-            ? new(RestState, 0) : new(5, 6);
+        if ((solverFlags & WalkerHeadingOrContactMask) != 0)
+            return new(RestState, 0);
+        return playerNearAnchor ? new(5, 6) : new(RoamingState, 6);
     }
 
 

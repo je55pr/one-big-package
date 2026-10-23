@@ -454,6 +454,37 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void StateSevenOnlySelectsRoamAfterNativeAnimationCompletion()
+    {
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepStateSevenRoam(false));
+        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepStateSevenRoam(true));
+    }
+
+    [Fact]
+    public void RoamingTargetUsesAuthorWaypointAndIndependentNativeRandomRadii()
+    {
+        var anchor = new Vector3(50, 60, 70);
+        Assert.Equal(new Vector3(51, 60, 70),
+            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, 0, 1, 2));
+        var target = Rac1AridiaConstructorbotNative.CreateRoamingDestination(
+            anchor, MathF.PI / 2, 1, 2);
+        Assert.InRange(target.X, 49.9999f, 50.0001f);
+        Assert.InRange(target.Y, 61.9999f, 62.0001f);
+        Assert.Equal(70, target.Z);
+        var diagonal = Rac1AridiaConstructorbotNative.CreateRoamingDestination(
+            anchor, MathF.PI / 4, 1, 2);
+        Assert.InRange(diagonal.X, 50.70f, 50.72f);
+        Assert.InRange(diagonal.Y, 61.41f, 61.42f);
+        Assert.Equal(70, diagonal.Z);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, 0, .99f, 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, 0, 1, 2.01f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.CreateRoamingDestination(anchor, float.NaN, 1, 1));
+    }
+
+    [Fact]
     public void WalkerStateFiveNeedsExactlyBitFourAndStateSixTestsBitsTwoOrFour()
     {
         // LEVEL2:0x2d7b6c tests the entire return word ==4, not a bitwise flag.
@@ -462,10 +493,18 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(5, flags, true));
         Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(5, 4, false));
 
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, true));
-        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0x10, true));
-        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 2, true));
-        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 4, true));
+        // Source state6 only goes to state7 on flags & 6 != 0;
+        // when clear, proximity can instead lead to state5.
+        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, true));
+        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0x10, true));
+        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(
+            6, 0, true, playerNearAnchor: true));
+        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(
+            6, 0x10, true, playerNearAnchor: true));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 2, true));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 4, true));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+            6, 6, true, playerNearAnchor: true));
         Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, false));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             Rac1AridiaConstructorbotNative.StepWalkerState(7, 0, true));

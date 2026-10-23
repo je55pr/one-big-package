@@ -20,6 +20,7 @@ public partial class OBPGame
             Require(_world is { Game: "rac1", LevelId: Rac1AridiaEnemies.LevelId } &&
                 _player is not null, "Aridia Constructorbot smoke requires retail level 2");
             Engine.MaxFps = 60;
+            Vector3 originalPlayerSpawn = _player!.GlobalPosition;
             ClearMovementSmokeInput();
             Require(_rac1Enemies.Count == 137, "Aridia hostile census changed");
             const int botId = 548; // retail mode0, state7, sequence0
@@ -273,6 +274,59 @@ public partial class OBPGame
                 "source clip16 was not selected after volume activation");
             GD.Print($"[aridia-bot-smoke] real class612 i558 clip-volume21 " +
                 $"state9->2 source clip={volumeBot.Animation.Sequence} admission PASS");
+            // Original state7 creates a return destination only after
+            // source clip0 completes. Use a retail actor and the saved
+            // original player spawn to keep Ratchet outside this bot's
+            // source engagement radius. The enemy itself is NOT given
+            // a fabricated return point.
+            float roamingEngagementRadius =
+                Rac1AridiaConstructorbotNative.ReadEngagementRadius(particleNative.PVar.Span);
+            Vector3 outward = originalPlayerSpawn - actualWaypoint;
+            outward.Y = 0;
+            Require(outward.LengthSquared() > 1f,
+                "initial player spawn must distinguish the source waypoint");
+            // Keep the player OUTSIDE native combat admission but INSIDE
+            // Aridia's intentional 24-unit animation/AI update radius.
+            // Moving all the way to spawn freezes the retail clip0 clock.
+            Require(roamingEngagementRadius + 2f < AridiaHostUpdateRadius - 1f,
+                "there is no safe source roam fixture within the host update radius");
+            _player.StageDevelopmentWaterPosition(
+                actualWaypoint + outward.Normalized() * (roamingEngagementRadius + 2f));
+            Require(_player.GlobalPosition.DistanceTo(actualWaypoint) >
+                    roamingEngagementRadius,
+                "staged player must remain beyond native engagement radius");
+            _rac1MobyRuntime.SetNativeState(particleNative,
+                Rac1AridiaConstructorbotNative.RestState);
+            SelectRac1EnemySequence(particleBot, 0, 1);
+            _rac1ConstructorbotRoamingTargets.Remove(particleBotId);
+            await Rac1SmokeWaitAsync(
+                () => _rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                240, "source state7 completed idle animation selects dynamic state6 target");
+            Require(_rac1ConstructorbotRoamingTargets.TryGetValue(particleBotId, out var roam),
+                "retail Constructorbot did not store its dynamic roaming target");
+            Require(MathF.Abs(roam.X - actualWaypoint.X) <= 2.001f &&
+                    MathF.Abs(roam.Z - actualWaypoint.Z) <= 2.001f &&
+                    MathF.Abs(roam.Y - actualWaypoint.Y) < .001f,
+                "native state6 destination is not anchored to original waypoint record14");
+            GD.Print($"[aridia-bot-smoke] original class612 i551 " +
+                $"state7 clip0->state6 roaming target={roam} anchor={actualWaypoint} PASS");
+            Vector3 originalRoamPosition = particleBot.Body.GlobalPosition;
+            float roamDistanceBefore = new Vector2(
+                originalRoamPosition.X - roam.X, originalRoamPosition.Z - roam.Z).Length();
+            await PhysicsFramesAsync(45);
+            float roamDistanceAfter = new Vector2(
+                particleBot.Body.GlobalPosition.X - roam.X,
+                particleBot.Body.GlobalPosition.Z - roam.Z).Length();
+            Require(roamDistanceAfter < roamDistanceBefore - .005f,
+                $"native state6 did not move on actual terrain toward its dynamic target: " +
+                $"before={roamDistanceBefore:F3} after={roamDistanceAfter:F3}");
+            Require(particleNative.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RoamingState,
+                "state6 changed state despite clear walker return bits and distant player");
+            GD.Print($"[aridia-bot-smoke] class612 i551 45-frame roam " +
+                $"distance={roamDistanceBefore:F3}->{roamDistanceAfter:F3} " +
+                $"state={particleNative.State.NativeState} PASS");
+
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-pass", 0);
         }
         catch (Exception ex)

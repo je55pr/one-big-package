@@ -20,6 +20,7 @@ public partial class OBPGame
     // Source table at 0x1600ec is the gameplay +0x60 list already decoded
     // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
     private readonly Dictionary<int, Vector3> _rac1ConstructorbotNativeWaypoints = [];
+    private readonly Dictionary<int, Vector3> _rac1ConstructorbotRoamingTargets = [];
     private IReadOnlyList<Rac1ClipVolume> _rac1AridiaClipVolumes = [];
 
     private void ResetRac1ConstructorbotStartups()
@@ -31,6 +32,7 @@ public partial class OBPGame
         _rac1ConstructorbotSphereContactCounts.Clear();
         _rac1ConstructorbotStateThreeVerticalSteps.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
+        _rac1ConstructorbotRoamingTargets.Clear();
         _rac1AridiaClipVolumes = [];
     }
 
@@ -120,11 +122,11 @@ public partial class OBPGame
             // permits transition to rest; no timed host melee pulse.
             return new(state, 6);
         }
-        if (state == 6)
+        if (state == Rac1AridiaConstructorbotNative.RoamingState)
         {
-            // L2:0x2d7bb4 uses a different native 0x1e0 return target.
-            // We cannot infer its live target from the authored centre;
-            // retain source sequence6 until that vector is supplied.
+            // Native 0x2d7bb4 feeds PVar+0x1e0, which is generated
+            // ONLY by state7 after source animation completion. If the
+            // target has not been observed do not invent a destination.
             return new(state, 6);
         }
         if (state == Rac1AridiaConstructorbotNative.RestState)
@@ -157,7 +159,34 @@ public partial class OBPGame
                     return new(Rac1AridiaConstructorbotNative.JointContactState, 8);
                 }
             }
-            return new(state, 0);
+            if (_player is { } nearby &&
+                _rac1ConstructorbotNativeWaypoints.TryGetValue(instance.InstanceIndex,
+                    out var home) &&
+                nearby.GlobalPosition.DistanceTo(home) <
+                    Rac1AridiaConstructorbotNative.ReadEngagementRadius(instance.PVar.Span) &&
+                MathF.Abs(nearby.GlobalPosition.Y - enemy.Node.Root.GlobalPosition.Y) < 4f &&
+                enemy.Node.Root.GlobalPosition.DistanceTo(home) >= 1f)
+            {
+                // L2:0x2d7de4: in-range player, actor still too far from
+                // source waypoint for joint attack; approach home first.
+                _rac1MobyRuntime.SetNativeState(instance, 5);
+                return new(5, 6);
+            }
+            var roam = Rac1AridiaConstructorbotNative.StepStateSevenRoam(
+                enemy.Animation.Sequence == 0 && enemy.Animation.Wrapped);
+            if (roam.NativeState == Rac1AridiaConstructorbotNative.RoamingState &&
+                _rac1ConstructorbotNativeWaypoints.TryGetValue(instance.InstanceIndex,
+                    out var roamAnchor))
+            {
+                var target = Rac1AridiaConstructorbotNative.CreateRoamingDestination(
+                    ToEffectNative(roamAnchor), Rac1EffectRandom.Angle(),
+                    Rac1EffectRandom.Range(1f, 2f), Rac1EffectRandom.Range(1f, 2f));
+                _rac1ConstructorbotRoamingTargets[instance.InstanceIndex] =
+                    FromEffectNative(target);
+                _rac1ConstructorbotWalkerSpeeds.Remove(instance.InstanceIndex);
+                _rac1MobyRuntime.SetNativeState(instance, roam.NativeState);
+            }
+            return roam;
         }
         if (state == Rac1AridiaConstructorbotNative.AimState)
         {
@@ -509,6 +538,7 @@ public partial class OBPGame
         int sourceWalkerProbeFlags = 0;
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Constructorbot)
         {
+            int nativeStateAtTickStart = _rac1MobyRuntime.Require(node.Source).State.NativeState;
             nativeBot = StepRac1NativeConstructorbot(enemy);
             if (nativeBot is { } sourceFrame)
             {
@@ -553,9 +583,14 @@ public partial class OBPGame
                         Yaw = nextYaw
                     };
                 }
-                sourceWalkerMotion = sourceFrame.NativeState == 5 &&
-                    _rac1MobyRuntime.Require(node.Source).State.NativeState == 5 &&
-                    _rac1ConstructorbotNativeWaypoints.TryGetValue(instance, out sourceWalkerGoal);
+                sourceWalkerMotion = sourceFrame.NativeState == nativeStateAtTickStart &&
+                    (nativeStateAtTickStart == 5 ||
+                     nativeStateAtTickStart == Rac1AridiaConstructorbotNative.RoamingState) &&
+                    (nativeStateAtTickStart == 5
+                        ? _rac1ConstructorbotNativeWaypoints.TryGetValue(
+                            instance, out sourceWalkerGoal)
+                        : _rac1ConstructorbotRoamingTargets.TryGetValue(
+                            instance, out sourceWalkerGoal));
                 if (sourceWalkerMotion)
                 {
                     Vector3 worldDelta = sourceWalkerGoal - node.Root.GlobalPosition;
@@ -736,13 +771,25 @@ public partial class OBPGame
             int flags = Rac1AridiaConstructorbotNative.WalkerFlags(
                 enemy.Body.GlobalPosition.DistanceTo(sourceWalkerGoal),
                 sourceWalkerYawError, collisionFlags);
+            int walkingState = _rac1MobyRuntime.Require(node.Source).State.NativeState;
+            bool returnToHome = walkingState ==
+                Rac1AridiaConstructorbotNative.RoamingState &&
+                _rac1ConstructorbotNativeWaypoints.TryGetValue(instance, out var anchor) &&
+                player.DistanceTo(anchor) <
+                    Rac1AridiaConstructorbotNative.ReadEngagementRadius(
+                        _rac1MobyRuntime.Require(node.Source).PVar.Span) &&
+                MathF.Abs(player.Y - enemy.Body.GlobalPosition.Y) < 4f;
             var walker = Rac1AridiaConstructorbotNative.StepWalkerState(
-                5, flags, resultKnown: sourceWalkerProbeFlags != 0 || enemy.Grounded);
-            if (walker.NativeState == Rac1AridiaConstructorbotNative.RestState)
+                walkingState, flags,
+                resultKnown: sourceWalkerProbeFlags != 0 || enemy.Grounded,
+                playerNearAnchor: returnToHome);
+            if (walker.NativeState != walkingState)
             {
                 _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source),
                     walker.NativeState);
                 _rac1ConstructorbotWalkerSpeeds.Remove(instance);
+                if (walkingState == Rac1AridiaConstructorbotNative.RoamingState)
+                    _rac1ConstructorbotRoamingTargets.Remove(instance);
             }
         }
         // Temporary source-particle-15 visual proxy. The native effect is a
