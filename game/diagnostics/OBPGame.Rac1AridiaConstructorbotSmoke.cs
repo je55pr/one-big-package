@@ -194,6 +194,25 @@ public partial class OBPGame
             GD.Print("[aridia-bot-smoke] real class612 i551 native radius0.625 " +
                 "swept-segment Godot ray branch PASS");
 
+            // Probe a real overlap on the imported floor without moving
+            // the retail enemy itself: lower the tentative Moby origin so
+            // its +1-raised source sphere centre intersects level terrain.
+            // The returned correction must come from an actual Godot
+            // collide_shape contact pair, not invented upward grounding.
+            var sphereStarting = beforeSweepBody - Vector3.Up * .8f;
+            var sphereResult = ProbeRac1AridiaWalkerSpherePushouts(
+                particleBot, sphereStarting);
+            Require(sphereResult.Contacts > 0,
+                "retail class612 host sphere query did not observe real terrain overlap");
+            Require(FromEffectNative(sphereResult.Position).Y > sphereStarting.Y + .01f,
+                "source six-attempt sphere host adapter failed to push out of real ground");
+            Require(sphereResult.Contacts <=
+                    Rac1AridiaConstructorbotNative.WalkerSpherePushoutAttempts,
+                "source walker sphere pushout exceeded six attempts");
+            GD.Print($"[aridia-bot-smoke] class612 i551 source six-attempt " +
+                $"sphere overlap contacts={sphereResult.Contacts} " +
+                $"lift={FromEffectNative(sphereResult.Position).Y - sphereStarting.Y:F3} PASS");
+
             // Negative scene fixture: same real collision body, but suspended
             // well above any terrain. Native walker_probe must return no
             // support; the host may turn, but cannot move or finish state5.

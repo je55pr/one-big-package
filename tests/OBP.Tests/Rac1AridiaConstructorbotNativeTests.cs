@@ -265,6 +265,60 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void WalkerSpherePushoutUsesExactlySixNativeAttemptsAndStopsAtFirstMiss()
+    {
+        int probes = 0;
+        var frame = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+            Vector3.Zero, position =>
+            {
+                probes++;
+                return probes <= 3 ? position + Vector3.UnitX * .1f : null;
+            });
+        Assert.Equal(4, probes);
+        Assert.Equal(3, frame.Contacts);
+        Assert.False(frame.AttemptLimitReached);
+        Assert.InRange(frame.Position.X, .29999f, .30001f);
+        Assert.Equal(0f, frame.Position.Y);
+        Assert.Equal(0f, frame.Position.Z);
+        var none = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+            new(2, 0, 0), _ => null);
+        Assert.Equal(0, none.Contacts);
+        Assert.False(none.AttemptLimitReached);
+        Assert.Equal(new(2, 0, 0), none.Position);
+        int busy = 0;
+        var limit = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+            Vector3.Zero, position => { busy++; return position + Vector3.UnitX * .01f; });
+        Assert.Equal(Rac1AridiaConstructorbotNative.WalkerSpherePushoutAttempts, busy);
+        Assert.Equal(6, limit.Contacts);
+        Assert.True(limit.AttemptLimitReached);
+        Assert.InRange(limit.Position.X, .05999f, .06001f);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepSpherePushouts(Vector3.Zero, _ => null, 7));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepSpherePushouts(Vector3.Zero, _ => null, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepSpherePushouts(Vector3.Zero, _ => new(float.NaN, 0, 0)));
+    }
+
+    [Fact]
+    public void HostSpherePointPairsProvideOnlyBoundedContactCorrections()
+    {
+        // Godot returns sphere-surface point first, world collision point
+        // second, unlike the original PS2 +0x173e70 corrected centre.
+        var correction = Rac1AridiaConstructorbotNative.SpherePairCorrection(
+            new(1, 0, 0), new(.8f, .1f, 0), .625f);
+        Assert.InRange(correction.X, -.200001f, -.199999f);
+        Assert.Equal(.1f, correction.Y);
+        Assert.Equal(0f, correction.Z);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.SpherePairCorrection(
+                Vector3.Zero, new(5, 0, 0), .625f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.SpherePairCorrection(
+                Vector3.Zero, new(float.NaN, 0, 0), .625f));
+    }
+
+    [Fact]
     public void OriginalWalkerFixedPointCollisionRadiusIsNotBehaviorFlags()
     {
         Assert.Equal(640, Rac1AridiaConstructorbotNative.WalkerCollisionRadiusFixed);

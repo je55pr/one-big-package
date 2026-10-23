@@ -13,6 +13,9 @@ public partial class OBPGame
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
     private readonly Dictionary<int, float> _rac1ConstructorbotWalkerSpeeds = [];
     private readonly Dictionary<int, int> _rac1ConstructorbotSweepProbeCounts = [];
+    private readonly Dictionary<int, int> _rac1ConstructorbotSphereProbeCounts = [];
+    private readonly Dictionary<int, int> _rac1ConstructorbotSphereContactCounts = [];
+    private SphereShape3D? _rac1ConstructorbotWalkerSphere;
     private readonly Dictionary<int, float> _rac1ConstructorbotStateThreeVerticalSteps = [];
     // Source table at 0x1600ec is the gameplay +0x60 list already decoded
     // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
@@ -24,6 +27,8 @@ public partial class OBPGame
         _rac1ConstructorbotStartups.Clear();
         _rac1ConstructorbotWalkerSpeeds.Clear();
         _rac1ConstructorbotSweepProbeCounts.Clear();
+        _rac1ConstructorbotSphereProbeCounts.Clear();
+        _rac1ConstructorbotSphereContactCounts.Clear();
         _rac1ConstructorbotStateThreeVerticalSteps.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1AridiaClipVolumes = [];
@@ -319,6 +324,69 @@ public partial class OBPGame
     }
 
     /// <summary>
+    /// Host counterpart of sphere_collide_v's corrected-centre loop.
+    /// Godot CollideShape provides contact pairs, NOT the original hit
+    /// record +0x30. Choose the largest bounded separating correction,
+    /// apply it to the query sphere, and re-query at most six times.
+    /// Source Moby/filter/triangle flags are not reproduced by this query.
+    /// The original actor's body is only moved by the separate host
+    /// motion adapter after these tentative corrections have finished.
+    /// </summary>
+    private Rac1AridiaConstructorbotNative.WalkerPushoutFrame
+        ProbeRac1AridiaWalkerSpherePushouts(Rac1HostedEnemy enemy, Vector3 proposed)
+    {
+        _rac1ConstructorbotWalkerSphere ??= new SphereShape3D
+        {
+            Radius = Rac1AridiaConstructorbotNative.WalkerCollisionRadius
+        };
+        int instance = enemy.Node.Source.InstanceIndex;
+        int observedContacts = 0;
+        var excluded = new global::Godot.Collections.Array<Rid>(
+            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                .Append(_player!.GetRid()));
+        var result = Rac1AridiaConstructorbotNative.StepSpherePushouts(
+            ToEffectNative(proposed), sourceCandidate =>
+            {
+                _rac1ConstructorbotSphereProbeCounts[instance] =
+                    _rac1ConstructorbotSphereProbeCounts.GetValueOrDefault(instance) + 1;
+                var candidate = FromEffectNative(sourceCandidate);
+                using var query = new PhysicsShapeQueryParameters3D
+                {
+                    Shape = _rac1ConstructorbotWalkerSphere,
+                    Transform = new(Basis.Identity,
+                        candidate + Vector3.Up *
+                        Rac1AridiaConstructorbotNative.WalkerCollisionUp),
+                    Exclude = excluded
+                };
+                var pairs = enemy.Body.GetWorld3D().DirectSpaceState.CollideShape(query, 8);
+                Vector3 largest = Vector3.Zero;
+                for (int pair = 0; pair + 1 < pairs.Count; pair += 2)
+                {
+                    // Godot point pair 0 is on our sphere; point pair 1
+                    // is on level geometry. Source hit data differs.
+                    if ((pairs[pair + 1] - pairs[pair]).Length() >
+                        Rac1AridiaConstructorbotNative.WalkerCollisionRadius * 2 + .01f)
+                        continue;
+                    var correction = FromEffectNative(
+                        Rac1AridiaConstructorbotNative.SpherePairCorrection(
+                            ToEffectNative(pairs[pair]),
+                            ToEffectNative(pairs[pair + 1]),
+                            Rac1AridiaConstructorbotNative.WalkerCollisionRadius));
+                    if (correction.LengthSquared() > largest.LengthSquared())
+                        largest = correction;
+                }
+                if (largest.LengthSquared() < 1e-10f) return null;
+                observedContacts++;
+                return ToEffectNative(candidate + largest);
+            });
+        if (observedContacts > 0)
+            _rac1ConstructorbotSphereContactCounts[instance] =
+                _rac1ConstructorbotSphereContactCounts.GetValueOrDefault(instance) +
+                observedContacts;
+        return result;
+    }
+
+    /// <summary>
     /// Bounded Godot collision adapter for source walker_move_fx. Unlike
     /// generic enemy movement this returns whether an ACTUAL collision
     /// occurred; the native walker uses that fact to distinguish contact
@@ -361,6 +429,17 @@ public partial class OBPGame
                 remaining = sourceStopped - previous;
                 touched = true;
             }
+        }
+        // Source performs sphere_collide_v even when the segment was
+        // skipped for a sub-radius step. Translate its six returned
+        // corrected centres through the host's point-pair query before
+        // applying the final bounded Godot character movement.
+        var pushout = ProbeRac1AridiaWalkerSpherePushouts(
+            enemy, previous + remaining);
+        if (pushout.Contacts > 0)
+        {
+            remaining = FromEffectNative(pushout.Position) - previous;
+            touched = true;
         }
         for (int slide = 0; slide < 3 && remaining.LengthSquared() > 1e-9f; slide++)
         {

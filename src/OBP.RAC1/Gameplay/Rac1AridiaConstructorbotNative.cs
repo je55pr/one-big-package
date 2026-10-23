@@ -230,6 +230,57 @@ public static class Rac1AridiaConstructorbotNative
     private static bool Finite(System.Numerics.Vector3 v) =>
         float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 
+    /// <summary>
+    /// Source walker_move_v invokes sphere_collide_v at most six times,
+    /// advancing its sphere centre to each returned corrected position.
+    /// The engine supplies those observed corrections; neither distance
+    /// to a waypoint nor a guessed normal can count as a collision.
+    /// </summary>
+    public readonly record struct WalkerPushoutFrame(
+        System.Numerics.Vector3 Position, int Contacts, bool AttemptLimitReached);
+
+    public static WalkerPushoutFrame StepSpherePushouts(
+        System.Numerics.Vector3 originalPosition,
+        Func<System.Numerics.Vector3, System.Numerics.Vector3?> correctedCentre,
+        int attempts = WalkerSpherePushoutAttempts)
+    {
+        ArgumentNullException.ThrowIfNull(correctedCentre);
+        if (!Finite(originalPosition) || attempts is < 1 or > WalkerSpherePushoutAttempts)
+            throw new ArgumentOutOfRangeException(nameof(attempts));
+        var position = originalPosition;
+        int contacts = 0;
+        for (int i = 0; i < attempts; i++)
+        {
+            var corrected = correctedCentre(position);
+            if (corrected is null) return new(position, contacts, false);
+            if (!Finite(corrected.Value))
+                throw new ArgumentOutOfRangeException(nameof(correctedCentre));
+            position = corrected.Value;
+            contacts++;
+        }
+        return new(position, contacts, true);
+    }
+
+    /// <summary>
+    /// Godot's collide_shape() supplies contact point pairs: first point
+    /// on query sphere, second on the world collider. The host translates
+    /// these to a correction (world point - sphere point). The PS2
+    /// sphere_collide_v instead returns its own hit record +0x30 centre;
+    /// this translation is only a documented host geometry adapter.
+    /// </summary>
+    public static System.Numerics.Vector3 SpherePairCorrection(
+        System.Numerics.Vector3 spherePoint,
+        System.Numerics.Vector3 worldPoint, float radius)
+    {
+        if (!Finite(spherePoint) || !Finite(worldPoint) ||
+            !float.IsFinite(radius) || radius <= 0)
+            throw new ArgumentOutOfRangeException(nameof(radius));
+        var separation = worldPoint - spherePoint;
+        if (separation.Length() > radius * 2f + .01f)
+            throw new ArgumentOutOfRangeException(nameof(worldPoint));
+        return separation;
+    }
+
     public const int WalkerMoveFloorContactFlag = 0x2;
     public const float WalkerCollisionMinimumForwardFraction = .2f;
     public const float WalkerMoveFloorLiftFraction = .3f;
