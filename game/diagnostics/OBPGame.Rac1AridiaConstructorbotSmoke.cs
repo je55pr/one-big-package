@@ -84,6 +84,33 @@ public partial class OBPGame
             GD.Print($"[aridia-bot-smoke] real class612 i{botId} state7->11 " +
                 $"at authored spawn, original model/contact body and player staging PASS; " +
                 $"nativeFrame={_rac1MobyRuntime.Require(bot.Node.Source).State.NativeState}");
+
+            // PR #190 P2: the real host moves with MoveAndCollide, which
+            // does NOT update CharacterBody3D.IsOnFloor(). Keep Ratchet in
+            // range while the imported bot's attack clip reaches recovery,
+            // support the actual body against imported level geometry, and
+            // demand a normal native state11 -> 13 -> 7 cycle without
+            // directly writing any of those native states.
+            _player!.ApplyDevelopmentReset(bot.Body.GlobalPosition +
+                forward * 3 + Vector3.Up * .05f);
+            Require(TryGroundRac1Enemy(bot, upwardReach: 1, downwardReach: 3),
+                "retail Constructorbot cannot find real terrain for state13 regression");
+            bot.Node.Root.GlobalPosition = bot.Body.GlobalPosition;
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => native.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.ContactRecoveryState,
+                400, "real class612 i548 clip8 completes state11->13");
+            Require(!bot.Body.IsOnFloor(),
+                "state13 regression no longer exercises the MoveAndCollide floor-flag gap");
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => native.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RestState,
+                16, "real floor-supported class612 i548 state13->7");
+            Require(bot.Animation.Sequence == 0,
+                "state13 terrain contact did not select original rest clip0");
+            GD.Print("[aridia-bot-smoke] real class612 i548 clip8 " +
+                "state11->13->7 from Godot terrain support, without MoveAndSlide PASS");
+
             // Also prove the native STATE8 branch, not just the more
             // numerous state9 Constructorbots. #551 is the one retail
             // mode2 bot: activation from record14 must select source clip4.

@@ -234,11 +234,17 @@ public partial class OBPGame
         }
         if (state == Rac1AridiaConstructorbotNative.ContactRecoveryState)
         {
-            // Native requires enemy_physics result bit 0x40. Godot's on-floor
-            // contact is the host's acknowledged approximation of that flag,
-            // never an elapsed-time recovery or an unconditional transition.
+            // Source enemy_physics checks contact bit 0x40. Our enemy bodies
+            // use MoveAndCollide, not MoveAndSlide, so IsOnFloor() is never
+            // populated. Observe terrain support with the SAME shape sweep
+            // used by this host's movement/grounding path, excluding actors.
+            // This grounded signal is still a provisional mapping to native
+            // bit 0x40, not an unconditional or elapsed-time recovery.
+            bool floorContact = TryGroundRac1Enemy(
+                enemy, upwardReach: 0, downwardReach: .3f);
+            enemy.Grounded = floorContact;
             var next = Rac1AridiaConstructorbotNative.StepRecovery(
-                enemy.Body.IsOnFloor(), enemy.Animation.Sequence);
+                floorContact, enemy.Animation.Sequence);
             if (next.NativeState != state)
                 _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
             return next;
