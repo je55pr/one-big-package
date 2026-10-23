@@ -16,6 +16,7 @@ public static class Rac1RetailUiAssets
     private static readonly Dictionary<int, Texture2D?> Effects = new();
     private static Rac1UiAssets? _assets;
     public static bool IsLoaded => _assets is not null;
+    public static Rac1MenuPanelModel? NativeMenuPanels => _assets?.NativeMenuPanels;
 
     public static void Load(IRandomAccessReader disc)
     {

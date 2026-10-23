@@ -55,6 +55,9 @@ public partial class Rac1RetailUiSmoke : Node
             if (Rac1RetailUiAssets.IsLoaded)
             {
                 var panels = Descendants(sample).OfType<Rac1RetailPanelSurface>().ToArray();
+                Require(Rac1RetailUiAssets.NativeMenuPanels is
+                { JointCount: 5 } recovered && recovered.Sequences.Count == 216,
+                    "Original class-0x472 geometry/animation data did not load");
                 Require(panels.Length == 6, "Native panel compositing must cover all six pause rows");
                 Require(panels.All(panel => panel.Material is ShaderMaterial { Shader: not null }),
                     "Original retail panel shader did not load");
@@ -169,7 +172,11 @@ public partial class Rac1RetailUiSmoke : Node
     private async Task Press(JoyButton button)
     {
         Input.ParseInputEvent(new InputEventJoypadButton { Device = 0, ButtonIndex = button, Pressed = true });
-        await Frames(3);
+        // The menu repeat period is real time (350ms); three long frames
+        // under concurrent builds can count as a held controller press
+        // and traverse multiple rows. A one-frame tap is the right fixture.
+        await Frames(button is JoyButton.DpadUp or JoyButton.DpadDown or
+            JoyButton.DpadLeft or JoyButton.DpadRight ? 1 : 3);
         Input.ParseInputEvent(new InputEventJoypadButton { Device = 0, ButtonIndex = button, Pressed = false });
         await Frames(3);
     }

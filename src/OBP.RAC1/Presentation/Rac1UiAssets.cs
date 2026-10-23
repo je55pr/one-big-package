@@ -12,6 +12,10 @@ namespace OBP.RAC1.Presentation;
 public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, Rac1BitmapFont> Fonts,
     IReadOnlyList<IReadOnlyDictionary<uint, byte[]>> Languages)
 {
+    // Original level-local Moby class 0x472. Projected panel geometry and
+    // animation frames stay source-owned, not invented Godot meshes.
+    public Rac1MenuPanelModel? NativeMenuPanels { get; init; }
+
     // Per-level resident PS2 effect textures referenced by the retail menu's
     // flashing panel (0x19/0x1A/0x1C); these are decoded only from the user disc.
     public IReadOnlyDictionary<int, OBP.Runtime.RuntimeTexture> MenuEffects { get; init; } =
@@ -37,6 +41,7 @@ public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, R
             MenuEffects = atlases.Where(pair => pair.Key is 0x19 or 0x1A or 0x1C)
                 .ToDictionary(pair => pair.Key, pair => pair.Value),
             MenuSounds = Rac1MenuAudioBank.Read(disc, index),
+            NativeMenuPanels = Rac1MenuPanelModel.Read(core),
         };
     }
 

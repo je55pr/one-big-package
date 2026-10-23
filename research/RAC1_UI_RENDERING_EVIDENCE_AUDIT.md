@@ -180,3 +180,56 @@ sequence from the user's disc, recover updater `FUN_L00_002df638`,
 match camera projection and route the resulting bounds into
 `Rac1RetailPanelSurface.projected_size`. Using another arbitrary 3D
 cube or quad would not be more authentic.
+
+
+## Source class-0x472 model and native projection (23 October continuation)
+
+The original Veldin level core's **ordinary Moby table**, not the global
+compressed gadget directory, contains class `0x472` (decimal 1138).
+The supported disc census pins the following source facts:
+
+| Evidence | Verified native data |
+| --- | --- |
+| Level0 Moby directory row | 94 (of 125), asset offset 9,732,224 |
+| Class payload | 167,232 bytes (not copied to Git) |
+| Base geometry | 48 vertices, 32 triangles, 5 joints |
+| Material | Moby texture ID 91 |
+| Mesh plane | local X=0; local Y/Z approximately -1.0688..+1.0688 |
+| Animation table | 216 sequence slots; 0..13 static single-frame; 14..128 seven-frame; 129/130 and 133 single-frame; remaining mostly seven-frame |
+| Initial pose | source hierarchy decoder accepts five joints and all tested sequence frames |
+
+`Rac1MenuPanelModel.Read` now imports the canonical asset from Level0 with
+the existing `Rac1StaticClasses` and `Rac1MobyPose` codecs. It retains
+source-space bind vertices, triangle indices, native sequence identities,
+per-frame skinned vertices and timing rates as engine-neutral runtime
+presentation evidence. The `Rac1UiAssets` lifetime owns this decoded
+instance; the Godot source attachment exposes it without writing asset bytes.
+
+The native `project_graphics_bounds.c` (`FUN_00237a78`) establishes
+the two-corner screen projection used by `FUN_002196b8`:
+subtract camera position, multiply by 1024, set w=1, transform by
+camera-relative view matrix, perspective divide, multiply X/Y by
+`view_context.screen_scale`, multiply by 1/4 and offset by
+`screen_extent.half_width/half_height`. The integer packet coordinates
+then use `convert_float_to_integer` (the exact rounding instruction still
+needs executable verification). `Rac1MenuPanelProjection.ProjectFloat`
+implements the exact floating-point path with an explicit injected native
+view transform; the unknown camera matrix is **not guessed**.
+
+The same renderer allocates per-panel offscreen texture dimensions starting
+at 2^7 by 2^7, growing each axis to enclose projected bounds and reducing
+the *height* logarithm while `widthLog+heightLog >= 18`. This can crop
+oversized panels (for instance 256x750 resolves to 256x512). The engine-neutral
+`OffscreenTarget` port has deterministic boundary tests.
+
+**Runtime integration achieved:** original class 0x472 is decoded on
+source attachment, and the Godot retail UI smoke verifies its identity and
+animation data alongside the six resident source-blend shader panels.
+
+**Not complete:** `MenuPage.moby_anims[14]` mapping per actual page,
+`FUN_L00_002df638` live panel-updater transform, the retail camera matrix
+at the screen-transition instant, the exact quantised integer projection,
+and the offscreen 2-pass framebuffer blit. The UI shader still uses host
+rectangular bounds as inputs until the camera and slot animation mapping
+are verified. Never treat this importer/projection function alone as
+proof that class-0x472 is already driving visible panel movement.
