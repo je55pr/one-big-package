@@ -107,3 +107,76 @@ Development Tools retains its card to distinguish it from the game UI.
 The Help topic panel also no longer prints implementation-status notes
 in the player-facing interface; source-evidence qualifications live here.
 The precise panel Moby frames and GS render state remain unimplemented.
+
+
+## Native GS blending compositor pass (23 October 2026)
+
+Native references checked directly against the local Lombyte R&C1 decompilation:
+
+- `src/ui/menus/draw_menu_flashing_panel.c` / `FUN_00223e28`
+- `src/ui/menus/render_level_effects_and_screen_sprites.c` / `FUN_002196b8`
+- `src/ui/menus/update_menu_system.c` / `FUN_002192a8`
+- `src/OBP.PS2/Textures/Ps2Texture.cs` (resident CLUT alpha expansion 0..128 to 0..255)
+
+The original panel overlay sequence is explicit and differs substantially
+from the formerly chosen near-zero Godot alpha/outline combination:
+
+1. `get_icon_frame(0xE99E, 7)` covers the panel in native source-over mode
+   (GS `ALPHA=0x44`, `(Cs-Cd)*As/128+Cd`).
+2. Rare flash: 1-in-2000 probability when idle. Once active, native time
+   advances by 2 per tick until 0x100. The flash samples effect texture
+   `0x1A` with a new random (0..199, 0..199) UV origin each update and
+   uses GS `ALPHA=0x68`, `(Cs-0)*FIX/128+Cd`, with FIX supplied as
+   `min(0x80, 2*(0x80-clamp(time-0x80)))`. The translucent result is
+   added to the framebuffer, not alpha-blended as a normal image.
+3. `0x1C` draws with UV span `(panel_width, 1.5*panel_height)`
+   and colour `0x50606060`, i.e. RGB*96/128 and alpha*80/128.
+4. `0x19` draws with native sampled source rectangle `(1,1,62,62)`
+   over an inset destination; the destination width/height adjust by
+   -2 if below 0x4c, -1 from 0x4c to below 0x97, and 0 thereafter.
+
+The new `game/shaders/Rac1RetailPanel.gdshader` implements these four
+draw stages in order against the current scene colour with explicit native
+alpha arithmetic; `Rac1RetailPanelSurface` draws that shader behind each
+menu label. `Rac1RetailPanelBlend` contains engine-neutral time/threshold/
+tint rules with deterministic xUnit tests. Godot scene-buffer sampling keeps
+the original world visible instead of introducing a guessed solid dialog
+behind the six-item pause menu. The original runtime-only R&C1 sprite/FX
+decoder is still the sole source of all menu pixels.
+
+Important scope boundary: **the compositor now follows original GS blend
+*formulas* and layer order; it is NOT a pixel-perfect 2002 GS emulator.**
+Godot's OpenGL/colour-space and sampling conventions may differ, the flash
+alpha-test is an educated transparent-texel gate rather than a recovered
+TEST_1 register, and a `Camera3D` projection of native 3D menu-Moby
+vertices has not yet been reconstructed. We currently feed the shader
+Godot's existing host-defined panel rectangles as `projected_size`.
+Native `FUN_002196b8` instead draws 3D menu Mobys, projects four frame
+corners, allocates an appropriate power-of-two render texture, draws menu
+contents offscreen in two passes and blits that result to the projected
+bounds. That stage remains the next fidelity task, not something claimed
+as complete by this shader.
+
+Validation:
+- Assert six loaded panel compositor materials in native-disc Godot smoke.
+- Compare `captures/rac1-retail-ui/root.png` captured by a rendered
+  OpenGL Compatibility-mode smoke, never commit the capture/artwork.
+- Preserve ordinary-controller, equipped/unowned and HelpDesk flow from the
+  existing smoke suite.
+
+
+Further 3D panel identity recovered while tracing this pass:
+`src/overlays/shared/audio/voices/00276368.c`, original shared
+scene initializer near `FUN_L00_002765xx`, creates **14 class-0x472
+menu panel Mobys** via `create_menu_preview_moby(0x472)`, installs updater
+`FUN_L00_002df638`, initializes their position at the player's camera
+coordinates, sets zero rotation, and places each at the final frame of
+its page-selected animation. The menu update later reverses/advances
+those animations on screen change. `FUN_002196b8` projects their frame
+corners to determine screen bounds before offscreen composition.
+
+**Remaining genuine 3D task:** decode class 0x472 model and its animation
+sequence from the user's disc, recover updater `FUN_L00_002df638`,
+match camera projection and route the resulting bounds into
+`Rac1RetailPanelSurface.projected_size`. Using another arbitrary 3D
+cube or quad would not be more authentic.

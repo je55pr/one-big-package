@@ -52,6 +52,13 @@ public partial class Rac1RetailUiSmoke : Node
             Require(GetViewport().GuiGetFocusOwner() is Button { Text: "Weapons" }, "No initial Weapons focus");
             Require(Descendants(sample).OfType<Rac1RetailMenuButton>().Count(b => b.RetailPauseRoot) == 6,
                 "Retail root must contain exactly six original menu choices");
+            if (Rac1RetailUiAssets.IsLoaded)
+            {
+                var panels = Descendants(sample).OfType<Rac1RetailPanelSurface>().ToArray();
+                Require(panels.Length == 6, "Native panel compositing must cover all six pause rows");
+                Require(panels.All(panel => panel.Material is ShaderMaterial { Shader: not null }),
+                    "Original retail panel shader did not load");
+            }
             Require(!Descendants(sample).OfType<Label>().Any(l => l.Text.Contains("OBP NAVIGATION", StringComparison.Ordinal)),
                 "OBP chrome leaked into retail pause root");
             await Capture("root");
@@ -75,7 +82,9 @@ public partial class Rac1RetailUiSmoke : Node
                 "D-pad navigation did not move from Weapons to Gadgets");
             await Press(JoyButton.DpadUp);
             Require(GetViewport().GuiGetFocusOwner() is Button { Text: "Weapons" },
-                "D-pad Up did not restore Weapons");
+                $"D-pad Up did not restore Weapons: focus={GetViewport().GuiGetFocusOwner()?.Name}," +
+                $" text={(GetViewport().GuiGetFocusOwner() as Button)?.Text}," +
+                $" controllerLast={UiPointerModality.ControllerWasLastInput}");
             await Press(JoyButton.A);
             await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Weapons, $"Cross did not enter Weapons: page={sample.RetailPage}, focus={(GetViewport().GuiGetFocusOwner() as Button)?.Text}");
