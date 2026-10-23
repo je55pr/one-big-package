@@ -12,6 +12,16 @@ public partial class OBPGame
     /// </summary>
     private async Task RunRac1NovalisSwimSmokeAsync()
     {
+        var middleTrace = new List<string>();
+        void TraceMiddle(string stage)
+        {
+            var p = _player!;
+            middleTrace.Add($"{stage}: pos={p.GlobalPosition} velocity={p.Velocity} " +
+                $"yaw={p.Rac1CurrentYaw:F6} control={p.MovementReproControlHeading:F6} " +
+                $"action={p.Rac1TraversalAction} phase={p.Rac1MovementPhase} " +
+                $"grounded={p.Rac1RecoveredSupportGrounded} hanging={p.Rac1Hanging} " +
+                $"water={p.Rac1SwimState} nanotech={_rac1Nanotech.Probe()}");
+        }
         try
         {
             Require(_world is { Game: "rac1", LevelId: 1 } && _player is not null &&
@@ -19,6 +29,14 @@ public partial class OBPGame
                 "Novalis swimming smoke requires decoded LEVEL1");
             Engine.MaxFps = 60;
             ClearMovementSmokeInput();
+            // Isolate every water fixture from combat, not only drowning. A
+            // live Peckbot can reach this staged pool and interrupt the ledge
+            // jump with contact damage. This is not an encounter/playthrough.
+            foreach (var enemy in _rac1Enemies.Values)
+            {
+                enemy.Node.Root.GlobalPosition = new(2000, 100, 2000);
+                enemy.Body.GlobalPosition = enemy.Node.Root.GlobalPosition;
+            }
             await PhysicsFramesAsync(3);
 
             var player = _player!;
@@ -127,6 +145,7 @@ public partial class OBPGame
             player.Rac1CurrentYaw = middleHeading;
             player.StageDevelopmentWaterPosition(new(-294.6f, 82.85f, 148.9f));
             await PhysicsFramesAsync(90);
+            TraceMiddle("staged surface");
             for (int i = 0; i < 75; i++)
             {
                 double stickYaw = player.MovementReproControlHeading - middleHeading;
@@ -135,6 +154,7 @@ public partial class OBPGame
             }
             ClearMovementSmokeInput();
             await PhysicsFramesAsync(90);
+            TraceMiddle("approach settled");
             Require(player.Rac1SwimState is { NativeSequence: 58 },
                 $"Middle-section approach did not settle to surface idle: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
             Input.ActionPress(RawGamepadInput.Jump);
@@ -146,16 +166,26 @@ public partial class OBPGame
             Require(player.Rac1Hanging,
                 $"Cross from water did not grab the middle step: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
             await PhysicsFramesAsync(60);
+            TraceMiddle("hang settled, Cross released");
             Require(player.Rac1Hanging && player.Rac1TraversalAction == 0x19,
                 $"Middle step did not retain its ledge hang: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
             Input.ActionPress(RawGamepadInput.Jump);
             bool landedMiddle = false;
             for (int i = 0; i < 120; i++)
             {
+                // A distinct Cross edge starts the native ledge jump. Release
+                // it after admission, rather than holding it through re-entry.
+                if (i == 2)
+                {
+                    Input.ActionRelease(RawGamepadInput.Jump);
+                    Require(!player.Rac1Hanging && player.Rac1TraversalAction == 0x1c,
+                        "Cross did not admit the native middle-section ledge jump");
+                }
                 double stickYaw = player.MovementReproControlHeading - middleHeading;
                 if (i < 18) SetRac1SmokeConditionedInput(Math.Sin(stickYaw), Math.Cos(stickYaw));
                 else SetAnalogueSmokeInput(0, 0);
                 await PhysicsFramesAsync(1);
+                if (i < 3 || i % 10 == 9) TraceMiddle($"ledge jump tick {i + 1}");
                 if (!player.Rac1Hanging && player.Rac1RecoveredSupportGrounded && player.GlobalPosition.Y > 83.49f)
                 {
                     landedMiddle = true;
@@ -163,6 +193,7 @@ public partial class OBPGame
                 }
             }
             ClearMovementSmokeInput();
+            TraceMiddle("ledge jump completed");
             Require(landedMiddle && !player.Rac1SwimmingActive,
                 $"Cross from the hang did not reach the middle section: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
             GD.Print($"[novalis-swim-smoke] human middle section: surface, Cross, grab, hang, Cross and solid landing PASS pos={player.GlobalPosition}");
@@ -204,14 +235,6 @@ public partial class OBPGame
 
             // No oxygen/state injection: let the source counter exhaust and
             // require the actual sequence95 clock to deliver the death event.
-            // This long fixture isolates water from hostile contact damage;
-            // enemies had legitimately killed the idle player before breath
-            // could exhaust. It is not an ordinary encounter/playthrough claim.
-            foreach (var enemy in _rac1Enemies.Values)
-            {
-                enemy.Node.Root.GlobalPosition = new(2000, 100, 2000);
-                enemy.Body.GlobalPosition = enemy.Node.Root.GlobalPosition;
-            }
             ClearMovementSmokeInput();
             player.StageDevelopmentWaterPosition(reportedPool);
             await PhysicsFramesAsync(90);
@@ -232,6 +255,8 @@ public partial class OBPGame
         }
         catch (Exception ex)
         {
+            foreach (string sample in middleTrace)
+                GD.PrintErr($"[novalis-swim-smoke] middle trace {sample}");
             GD.PrintErr($"[novalis-swim-smoke] FAIL {ex}");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-swim-smoke-fail", 1);
         }
