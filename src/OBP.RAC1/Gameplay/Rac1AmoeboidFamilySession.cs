@@ -86,6 +86,12 @@ public sealed class Rac1AmoeboidFamilySession
 
     public Rac1AmoeboidFrame Get(int index) => Frame(_actors[index]);
 
+    public int TargetCandidateGroup(int index) => _actors[index].Facts.TargetGroup;
+
+    // Source selects +0x224 during a target-search countdown and +20
+    // otherwise. The countdown is not yet modeled in the family host.
+    public float HostDetectionRange(int index) => AttackAdmission(_actors[index]) + 20f;
+
     public IReadOnlyList<Rac1AmoeboidFrame> ActivateGates(Vector3 heroPosition,
         Func<int, Vector3, bool> containsVolume)
     {

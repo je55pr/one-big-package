@@ -75,6 +75,31 @@ contact descriptor (`0x10001`, **1** damage). Source group allocation,
 health decrement, and active vs reserve lifetime live entirely in
 `Rac1AmoeboidFamilySession`, never in Godot.
 
+### Original Rilgar target candidate groups
+
+Native `FUN_L01_002ef478` scans PVar **+0x248**'s indexed
+group list, selecting the nearest live **class-623 / 0x26f** Moby
+within **120 native units**. Native state must be below 0x7f and
+source flags include 0x1000. The updater only swaps from its current
+target if the candidate is inside the current detection range and is
+closer than the current target. This is a distinct relationship from
+Amoeboid split groups at authored record +0x48.
+
+On the retail Rilgar disc there are **56 class-623** placed Mobys.
+Exactly **52 Amoeboid** instances reference candidate groups
+**2, 74, 77 and 101**, all containing matching class-623 placements.
+There are none of these referenced candidates on Novalis or Pokitaru.
+The engine-neutral `Rac1AmoeboidTargetSelection` validates this
+retail census and applies nearest-valid-target admission with
+group/range/liveness and stable list-order tie resolution.
+
+Godot only treats **rendered, active** class-623 objects as eligible
+because their native state machine and 0x1000 source flag tracking
+are not yet imported. It prevents attacks targeting such Mobys from
+accidentally damaging Ratchet; **the class-623 damage receiver still
+needs its own native reconstruction** before those hits can damage
+the authored object. This remains an explicit partial integration.
+
 ## Verified population on an authorised retail ISO
 
 | Level | 572 large | 865 medium | 866 small | Total | Initially active | Volume gated | Dormant reserves |
@@ -131,6 +156,10 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
   existing Godot collision/knockback adapter, with provisional
   gravity and drag. Retail ground/contact reattachment and movement
   state transitions are not fully equivalent to PS2 common solvers.
+- Rilgar's class-623 candidate selection uses the original class, group,
+  120-unit search limit and current-target proximity comparisons.
+  The class-623 native state/flags and actual damage receiver remain
+  unported, so these authored targets do not yet take damage.
 - The host tests a valid player contact at source lunge frame >=15.5.
   Exact `FUN_00214cc8` subframe admission, target filtering,
   audio voice lifetime, and particle/debris tuning remain bounded

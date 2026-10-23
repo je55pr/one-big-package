@@ -15,12 +15,14 @@ public partial class OBPGame
 {
     private Rac1AmoeboidFamilySession? _rac1Amoeboids;
     private IReadOnlyList<Rac1ClipVolume> _rac1AmoeboidVolumes = [];
+    private readonly Dictionary<int, List<RuntimeWorldScene.DynamicObjectNode>> _rac1AmoeboidTargetGroups = [];
     private const float Rac1AmoeboidHostActiveRadius = 45f;
 
     private void ResetRac1Amoeboids()
     {
         _rac1Amoeboids = null;
         _rac1AmoeboidVolumes = [];
+        _rac1AmoeboidTargetGroups.Clear();
     }
 
     private void ConfigureRac1Amoeboids(RuntimeWorld world, RuntimeWorldScene.Result result,
@@ -29,6 +31,17 @@ public partial class OBPGame
         if (world.LevelId is not (1 or 5 or 11)) return;
         _rac1AmoeboidVolumes = Rac1ClipVolumes.Read(gameplay);
         var instances = Rac1Instances.Parse(gameplay).MobyInstances;
+        _rac1AmoeboidTargetGroups.Clear();
+        foreach (var candidate in (world.DynamicObjects ?? [])
+            .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
+        {
+            var node = FindPresentedDynamic(result, candidate);
+            if (node is null) continue; // No source-backed presented target.
+            int group = Rac1AmoeboidAuthored.ReadGroup(instances[candidate.InstanceIndex].RawRecord);
+            if (!_rac1AmoeboidTargetGroups.TryGetValue(group, out var members))
+                _rac1AmoeboidTargetGroups.Add(group, members = []);
+            members.Add(node);
+        }
         _rac1Amoeboids = new(_rac1MobyRuntime,
             Rac1AmoeboidPathRouter.Read(gameplay),
             // Exact source 0x276fe8 waypoint/mask search, but Godot's
@@ -112,9 +125,27 @@ public partial class OBPGame
             StepRac1EnemyReaction(enemy);
         var pos = ToEffectNative(node.Root.GlobalPosition);
         var target = ToEffectNative(ArsenalEnemyGoal(enemy, _player.GlobalPosition));
+        bool targetingNativeMoby = false;
+        int candidateGroup = _rac1Amoeboids.TargetCandidateGroup(node.Source.InstanceIndex);
+        if (candidateGroup >= 0 && _rac1AmoeboidTargetGroups.TryGetValue(candidateGroup, out var targets))
+        {
+            var nearest = Rac1AmoeboidTargetSelection.Select(candidateGroup, pos, target,
+                _rac1Amoeboids.HostDetectionRange(node.Source.InstanceIndex),
+                targets.Select(candidate => new Rac1AmoeboidTargetSelection.Candidate(
+                    candidate.Source.InstanceIndex, candidate.Source.NativeClassId, candidateGroup,
+                    ToEffectNative(candidate.Root.GlobalPosition),
+                    candidate.Root.Visible &&
+                        candidate.State.Presentation.Presence == RuntimeEntityPresence.Active,
+                    0))); // Native state<0x7f not reconstructed for class-623 targets.
+            if (nearest is not null)
+            {
+                target = nearest.Position;
+                targetingNativeMoby = true;
+            }
+        }
         bool contact = NVector2.Distance(new(pos.X, pos.Y), new(target.X, target.Y)) < Rac1AmoeboidFamilySession.NativeAttackRange &&
             BombHasLineOfSight(node.Root.GlobalPosition + Vector3.Up * .6f,
-                _player.GlobalPosition + Vector3.Up * .6f);
+                FromEffectNative(target) + Vector3.Up * .6f);
         var next = _rac1Amoeboids.Step(node.Source.InstanceIndex, pos, target,
             enemy.Animation.Wrapped, enemy.Grounded, contact, enemy.Animation.Position);
         if (before.NativeState == Rac1AmoeboidFamilySession.KnockbackState &&
@@ -124,7 +155,10 @@ public partial class OBPGame
         if (enemy.Reaction is null && next.Displacement.LengthSquared() > 0)
             MoveRac1EnemyContact(enemy, FromEffectNative(next.Displacement));
         node.Root.Rotation = new(0, next.Yaw, 0);
-        if (next.Attack && !ArsenalEnemyHitsDecoy(enemy))
+        // A class-623 source candidate displaces the hero target. Do not
+        // incorrectly damage Ratchet when the Amoeboid lunges at that Moby;
+        // class-623's own damage adapter is still a separate subsystem.
+        if (next.Attack && !targetingNativeMoby && !ArsenalEnemyHitsDecoy(enemy))
             ApplyRac1EnemyPlayerDamage(Rac1AmoeboidAttack.ToPlayer(next.ClassId, next.InstanceIndex));
     }
 

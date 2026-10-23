@@ -40,17 +40,20 @@ public static class Rac1AmoeboidAuthored
         int volume = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x25c..]);
         int path = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x240..]);
         int nextPath = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x244..]);
-        if (volume < -1 || path < -1 || nextPath < -1)
+        int targetGroup = BinaryPrimitives.ReadInt32LittleEndian(pvar[0x248..]);
+        if (volume < -1 || path < -1 || nextPath < -1 || targetGroup is < -1 or > 255)
             throw new InvalidDataException("Invalid Amoeboid authored volume/path source index.");
         int state = forced != 0 || direct != 0 ? ActiveState
             : volume == -1 ? DormantPoolState : WaitingForVolumeState;
         return new(nativeClass, state, volume, path, nextPath,
-            nativeClass == Large ? Medium : nativeClass == Medium ? Small : null, forced != 0);
+            nativeClass == Large ? Medium : nativeClass == Medium ? Small : null,
+            forced != 0, targetGroup);
     }
 }
 
 public sealed record Rac1AmoeboidSpawnFacts(int ClassId, int InitialNativeState,
-    int VolumeIndex, int PathIndex, int NextPathIndex, int? SplitChildClassId, bool ForcedActive = false)
+    int VolumeIndex, int PathIndex, int NextPathIndex, int? SplitChildClassId,
+    bool ForcedActive = false, int TargetGroup = -1)
 {
     public bool IsActiveOnLoad => InitialNativeState == Rac1AmoeboidAuthored.ActiveState;
     public bool IsSpawnPoolReserve => InitialNativeState == Rac1AmoeboidAuthored.DormantPoolState;
