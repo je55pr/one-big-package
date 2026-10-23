@@ -750,3 +750,59 @@ animation-ended bit (P+0xa98 & 2) before returning to 0x65. State
 (or P+0x1650 is nonzero), unless Ratchet moves back beyond 0.2 units.
 These are additional source facts, **not** a claim that Godot's
 current provisional Idle semantic supplies that native completion bit.
+
+## 23 October 2026: v1 integration boundary, not a reconstruction gate
+
+**Proposed first playable milestone:** Kerwan imports and presents five
+source taxi Mobies. Class-816 i919/i920 respond to their original
+cuboid-triggered approach, present a boarding prompt near a docked cab,
+carry Ratchet along native-seek authored flight and dismount him onto
+the verified parked i921 platform. Class-1012 i961/i962 offer a
+host-controlled sightseeing round trip along the authored two legs,
+then place Ratchet back at the source rather than dismounting at an
+unsupported aerial endpoint. Ordinary gameplay input is T / Triangle.
+Death, abort, retry and world teardown must always restore physics,
+mobile hull collision, visible player, camera follow and taxi state.
+
+**Retail-backed elements:** Moby classes/placements and original PVars,
+class-816 activation cuboids and approach/departure paths,
+class-1012 two source routes and HUD selector messages, native fixed
+60 Hz seek recurrence, yaw seek, hover and tilt phases, hero target
+state contract 0x65/0x66/0x67, source-derived departure clearance,
+and the original 1012 HUD request callback identity (NOT a camera).
+These are claims about original data and state semantics, not proof
+that Godot recreates the full original encounter.
+
+**Explicit host fallbacks:** 5.5-unit proximity input admission,
+host T/Triangle control, only close-dock (<0.2 planar and <=1.5
+vertical) class-816 alignment using provisional animation completion,
+direct boarding from other accepted locations, bounded 8-second walk
+abort, rider frame with clamped boarding offset, camera world-offset
+follow while the player is disabled, permanent-ground landing probes
+and the class-1012 return-to-source ride. The current shuttle does
+NOT deliver passengers to a second accessible destination. These
+policies must not be reported as original native logic.
+
+**Integration risk:** the published staged Kerwan smoke begins its
+class-816 taxi approach inside a source cuboid and places Ratchet
+exactly at the docking waypoint; class-1012 boarding is also staged.
+This proves the flight and cleanup path, not that a normal player can
+walk/jump onto every taxi using imported world collision. An off-centre
+i919 boarding attempt (+0.65 units) previously lost contact and dropped
+to a lower floor. The strict permanent-floor probe excludes moving
+hulls and does not find static footing near i919's source or either
+end of the class-1012 routes. Actual walk-up reachability must be
+verified independently before claiming a fully discoverable encounter.
+
+**Intentionally deferred and separately tracked:**
+- #220 collision-supported ordinary approach and non-staged boarding
+- #222 native hero animation completion and actual 3D camera handoff
+- #223 supported class-1012 two-ended arrival and autonomous shuttle travel
+- #224 original HUD focus and mission-state admission parity
+
+The practical review criterion is safe, visible, player-controlled
+interaction with an actually reachable class-816 dock, working
+destination dismount, predictable class-1012 sightseeing-only labelling
+and reliable cleanup. Do not hold this milestone for byte-exact
+animation or 1012 second-end restoration; equally, do not claim
+ordinary boarding is proven by a staged smoke.

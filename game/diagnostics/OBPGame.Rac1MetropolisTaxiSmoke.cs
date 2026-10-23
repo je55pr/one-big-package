@@ -46,6 +46,43 @@ public partial class OBPGame
             Engine.MaxFps = 60;
             await PhysicsFramesAsync(5);
 
+            // Exercise ordinary world input at the actual Kerwan spawn,
+            // BEFORE any smoke-only taxi teleport or disabled player process.
+            // This checks controller/contact movement and a real rejected
+            // out-of-range taxi key, not just direct TryHandle calls.
+            Engine.TimeScale = 1;
+            Vector3 worldSpawn = player.GlobalPosition;
+            Require(taxis.FindBoardable(ToTaxiPoint(worldSpawn)) is null &&
+                string.IsNullOrEmpty(GetRac1MetropolisTaxiHudLine()),
+                "ordinary Kerwan spawn falsely offers a taxi");
+            Input.ParseInputEvent(new InputEventKey
+            { Keycode = Key.T, PhysicalKeycode = Key.T, Pressed = true });
+            Input.ParseInputEvent(new InputEventKey
+            { Keycode = Key.T, PhysicalKeycode = Key.T, Pressed = false });
+            await PhysicsFramesAsync(2);
+            Require(!taxis.IsRiding && _rac1TaxiPendingStop is null,
+                "ordinary out-of-range taxi input boarded from world spawn");
+            try
+            {
+                Input.ActionPress(RawGamepadInput.MoveRight);
+                await PhysicsFramesAsync(28);
+            }
+            finally
+            {
+                Input.ActionRelease(RawGamepadInput.MoveRight);
+            }
+            float ordinaryMotion = new Vector2(
+                player.GlobalPosition.X - worldSpawn.X,
+                player.GlobalPosition.Z - worldSpawn.Z).Length();
+            Require(ordinaryMotion > 0.08f &&
+                Math.Abs(player.GlobalPosition.Y - worldSpawn.Y) < 3f &&
+                player.ProcessMode != Node.ProcessModeEnum.Disabled &&
+                !taxis.IsRiding,
+                $"ordinary grounded Kerwan traversal failed: moved {ordinaryMotion:F3}u");
+            GD.Print($"[rac1-taxi-smoke] ordinary world spawn: " +
+                $"raw input moved {ordinaryMotion:F3}u; out-of-range T rejected");
+            Engine.TimeScale = 12;
+
             // Inspect the imported *permanent* ground under both real
             // class-1012 dock ends. The probe excludes mobile taxi hulls
             // but preserves i921's permanently parked landing platform.
@@ -71,6 +108,11 @@ public partial class OBPGame
             }
 
             var incoming = taxis.Stops.Single(s => s.InstanceIndex == 919);
+            bool sourceGround = TryResolveRac1TaxiLanding(player,
+                FromTaxiPoint(incoming.Position), out var sourceGroundPoint);
+            GD.Print($"[rac1-taxi-smoke] i919 permanent source ground={sourceGround}, " +
+                $"point={(sourceGround ? sourceGroundPoint.ToString() : "none")}; " +
+                "native off-centre walk-in remains unproven");
             Require(incoming.ApproachTrigger is not null &&
                 incoming.ApproachPath is { Count: 200 }, "missing native cuboid/approach for i919");
             // Stage a static hero inside retail cuboid 10 to exercise admission.
@@ -124,6 +166,29 @@ public partial class OBPGame
             Require(player.GlobalPosition.DistanceTo(
                 FromTaxiPoint(incoming.OutboundPath[^1])) < 2f,
                 "class-816 failed to land at its permanently parked i921 platform");
+            // Genuine controller/contact movement after the supported i921
+            // dismount, without setting any taxi position or suppressing physics.
+            Engine.TimeScale = 1;
+            Vector3 recoveredLanding = player.GlobalPosition;
+            try
+            {
+                Input.ActionPress(RawGamepadInput.MoveRight);
+                await PhysicsFramesAsync(18);
+            }
+            finally
+            {
+                Input.ActionRelease(RawGamepadInput.MoveRight);
+            }
+            float postRideMotion = new Vector2(
+                player.GlobalPosition.X - recoveredLanding.X,
+                player.GlobalPosition.Z - recoveredLanding.Z).Length();
+            Require(postRideMotion > 0.05f &&
+                player.ProcessMode != Node.ProcessModeEnum.Disabled &&
+                !taxis.IsRiding && !_rac1TaxiCameraWorldOwned,
+                $"ordinary movement not restored after supported landing: {postRideMotion:F3}u");
+            GD.Print($"[rac1-taxi-smoke] i921 grounded dismount: " +
+                $"ordinary player movement resumed ({postRideMotion:F3}u)");
+            Engine.TimeScale = 12;
             // Let the ordinary post-ride admission cooldown expire before
             // staging a separate taxi encounter.
             await PhysicsFramesAsync(90);
@@ -149,8 +214,19 @@ public partial class OBPGame
                 Key: 0,
                 InitializeAddress: 0x00226960
             }, "class-1012 retail HUD element request contract was lost");
-            Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
-            { Keycode = Key.T, Pressed = true }), "class-1012 boarding rejected");
+            // Dispatch an actual keyboard event through OBPGame._UnhandledInput
+            // rather than calling the taxi handler directly. Placement here
+            // is still smoke-only, not proof of a walkable shuttle platform.
+            Require(taxis.FindBoardable(ToTaxiPoint(player.GlobalPosition))?.InstanceIndex == 962,
+                "class-1012 actual input probe lost boarding admission before keypress");
+            Input.ParseInputEvent(new InputEventKey
+            { Keycode = Key.T, PhysicalKeycode = Key.T, Pressed = true });
+            // The input event pump can defer dispatch to a frame boundary.
+            // Keep the key pressed during two live physics ticks, as a human
+            // press would, before dispatching the release event.
+            await PhysicsFramesAsync(2);
+            Input.ParseInputEvent(new InputEventKey
+            { Keycode = Key.T, PhysicalKeycode = Key.T, Pressed = false });
             // 1012's source dock is currently above unsupported ground.
             // It retains the safe direct-boarding host fallback until the
             // two-ended native landing/attachment geometry is recovered.
@@ -202,7 +278,8 @@ public partial class OBPGame
 
             GD.Print("[rac1-metropolis-taxi-smoke] PASS: retail i919 cuboid 10 -> " +
                 "native walk-to -> abort -> retry -> outbound -> grounded dismount; " +
-                "i962 safe direct board -> interrupted flight -> reset/reboard -> round trip");
+                "i962 safe direct board -> interrupted flight -> reset/reboard -> round trip; " +
+                "ordinary world input, physical motion and post-ride control recovery");
             ApplicationLifecycle.RequestQuit(this, "rac1-metropolis-taxi-smoke-pass", 0);
         }
         catch (Exception ex)
