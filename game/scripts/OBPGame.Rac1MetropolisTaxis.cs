@@ -452,9 +452,22 @@ public partial class OBPGame
 
     // Limit dismounts to nearby upward-facing real collision. In particular,
     // never use the old "endpoint + 1.5" fallback: it stranded Ratchet in air.
-    private static bool TryResolveRac1TaxiLanding(
+    private bool TryResolveRac1TaxiLanding(
         PlayerHost player, Vector3 target, out Vector3 exit)
     {
+        // A taxi that subsequently flies away cannot support a permanent
+        // dismount. Exclude the four mobile class-816/1012 hulls, including
+        // inactive cabs whose current meshes overlap a dock probe. However,
+        // the authored static class-816 i921 is deliberately a walkable
+        // parked platform at the destination and must remain eligible.
+        var exclude = new Godot.Collections.Array<Rid> { player.GetRid() };
+        foreach (var stop in _rac1MetropolisTaxis?.Stops ?? [])
+        {
+            if (stop.OutboundPath.Count > 1 &&
+                _rac1TaxiCollisionBodies.TryGetValue(stop.InstanceIndex, out var hull) &&
+                IsInstanceValid(hull))
+                exclude.Add(hull.GetRid());
+        }
         Vector2[] nearby =
         [
             Vector2.Zero,
@@ -468,7 +481,7 @@ public partial class OBPGame
             var sample = target + new Vector3(offset.X, 0, offset.Y);
             var query = PhysicsRayQueryParameters3D.Create(
                 sample + Vector3.Up * 8f, sample + Vector3.Down * 35f);
-            query.Exclude = [player.GetRid()];
+            query.Exclude = exclude;
             var hit = player.GetWorld3D().DirectSpaceState.IntersectRay(query);
             if (!hit.TryGetValue("position", out var contact) ||
                 !hit.TryGetValue("normal", out var normal) ||
@@ -476,6 +489,14 @@ public partial class OBPGame
                 continue;
             Vector3 point = contact.AsVector3();
             if (point.Y < target.Y - 6f || point.Y > target.Y + 3f)
+                continue;
+            // An unrelated floor several units diagonally from an
+            // airborne waypoint is not a taxi dock. Keep the nearest
+            // cardinal samples (1.8u) but reject 2.55u diagonal jumps.
+            // This is conservative OBP landing safety, NOT a native
+            // class-1012 focus or docking constant.
+            Vector2 lateral = new(point.X - target.X, point.Z - target.Z);
+            if (lateral.LengthSquared() > 2f * 2f)
                 continue;
             exit = point + Vector3.Up * 0.1f;
             return true;

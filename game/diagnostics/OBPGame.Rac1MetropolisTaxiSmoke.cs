@@ -46,6 +46,30 @@ public partial class OBPGame
             Engine.MaxFps = 60;
             await PhysicsFramesAsync(5);
 
+            // Inspect the imported *permanent* ground under both real
+            // class-1012 dock ends. The probe excludes mobile taxi hulls
+            // but preserves i921's permanently parked landing platform.
+            // This is a diagnostic of imported geometry, not an assertion
+            // that the other native dock is currently playable.
+            foreach (var shuttleStop in taxis.Stops.Where(s => s.NativeShuttleDock is not null))
+            {
+                var dock = shuttleStop.NativeShuttleDock!;
+                Require(dock.OptionalCuboidSelector == -1,
+                    "retail class-1012 accidentally enabled optional cuboid admission");
+                foreach (var (side, waypoint) in new[]
+                {
+                    (Side: 0, Waypoint: dock.SideZeroPath[0]),
+                    (Side: 1, Waypoint: dock.SideOnePath[0]),
+                })
+                {
+                    Vector3 point = FromTaxiPoint(waypoint);
+                    bool supported = TryResolveRac1TaxiLanding(player, point, out var grounded);
+                    GD.Print($"[rac1-taxi-smoke] i{shuttleStop.InstanceIndex} native side {side} " +
+                        $"permanent-ground={supported}, waypoint={point}, " +
+                        $"ground={(supported ? grounded.ToString() : "none")}");
+                }
+            }
+
             var incoming = taxis.Stops.Single(s => s.InstanceIndex == 919);
             Require(incoming.ApproachTrigger is not null &&
                 incoming.ApproachPath is { Count: 200 }, "missing native cuboid/approach for i919");
@@ -97,6 +121,9 @@ public partial class OBPGame
                 _rac1TaxiCollisionBodies[919].CollisionLayer == 1 &&
                 taxis.PhaseOf(919) == Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination,
                 "class-816 route failed to dismount or restore physics");
+            Require(player.GlobalPosition.DistanceTo(
+                FromTaxiPoint(incoming.OutboundPath[^1])) < 2f,
+                "class-816 failed to land at its permanently parked i921 platform");
             // Let the ordinary post-ride admission cooldown expire before
             // staging a separate taxi encounter.
             await PhysicsFramesAsync(90);

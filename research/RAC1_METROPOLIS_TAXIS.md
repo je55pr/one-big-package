@@ -573,3 +573,57 @@ geometry model does not move the live taxi, enable passenger
 attachment in midair, or change established dismount/camera
 fallbacks. Actual source-pinned two-ended traversal and focus/
 camera admission are the next steps.
+
+## 23 October 2026: permanent-ground docking probe and autonomous class-1012 state 3
+
+The staged Godot encounter now probes **both authored route starts** for
+i961/i962 using the same 3D physics space as actual dismounting,
+excluding Ratchet and all **four mobile taxi hull RIDs** while
+retaining the permanently parked i921 platform. A moving cab hull,
+whether currently occupied or not, is not proof of permanent
+landing geometry. The collision walker still tests an
+upward-facing slope and source-waypoint vertical corridor, but now
+also limits the selected contact to at most **2 horizontal Godot units**
+from the proposed waypoint. This is a conservative **OBP host
+safety policy**, not a source-game boarding constant; an unrelated
+diagonal patch 2.55 units away is not accepted as a finished dock.
+
+An initial probe without filtering the taxi hulls appeared to find
+direct collision at both source docks; this was **not evidence of
+permanent level ground**. Ratchet can stand on the temporarily parked
+moving cab itself, but the cab cannot remain as the landing support
+after it departs. A diagonal contact also appeared near i962's far
+endpoint approximately 2.55 units from the waypoint.
+
+After excluding every **mobile** taxi hull and imposing the 2-unit
+lateral gate, neither side of either class-1012 retail shuttle has a
+verified permanent landing surface. This includes both source docks.
+The nonmoving class-816 i921 destination taxi is a distinct authored
+permanent platform and remains eligible for class-816 dismount.
+
+Thus the existence of the two original flight splines does *not*
+authorize forcing the original two-ended passenger attachment in
+the current imported collision scene. The host still retains its
+bounded direct boarding, auto-return and safe grounded landing,
+and has not activated far-end passenger admission.
+
+`Rac1TaxiNativeShuttleTraffic` now separately models the original
+**unoccupied** state 1 -> state 3 -> state 1 reposition choice:
+initial Moby placement at the authored +0x80 side's first waypoint,
+independent Ratchet/cab nearest-end comparisons, selection of
+PVar+0x90+4*side for the corresponding side, the already recovered
+`Rac1TaxiNativeMotion` 60 Hz seek, and the native 15-frame
+post-arrival focus delay. State 1 selects and anchors the path,
+then the motion begins on a subsequent update rather than
+immediately teleporting a rider. It exposes explicit methods,
+state and reset, but is **not wired to move a live Godot actor
+yet**. The original HUD ownership, scripted Ratchet states,
+camera lifecycle and interactivity are separate native branches
+whose safe integration is still pending.
+
+Synthetic tests cover both initial modes, source/far selection,
+reversal after arrival, 30/120 Hz determinism, invalid input,
+reset and the fifteen-frame delay; retail ISO tests traverse
+both actual unoccupied routes for i961 and i962 and validate
+the authored endpoints. The playable encounter regression probes
+collision ground and preserves the previously validated rides.

@@ -409,6 +409,37 @@ public sealed class Rac1MetropolisTaxiTests
             stop => Assert.Null(stop.NativeHudSelectors));
     }
 
+    [Theory]
+    [InlineData(961, 0)]
+    [InlineData(962, 1)]
+    public void RetailClass1012RepositionsAlongCorrectUnoccupiedNativeLeg(
+        int instance, int initialSide)
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+
+        using var reader = new FileRandomAccessReader(iso);
+        var session = Rac1MetropolisTaxiSession.TryCreate(
+            Rac1WorldImport.Build(reader, 3))!;
+        var stop = session.Stops.Single(s => s.InstanceIndex == instance);
+        var dock = Assert.IsType<Rac1TaxiNativeShuttleDock>(stop.NativeShuttleDock);
+        var autonomous = new Rac1TaxiNativeShuttleTraffic(dock);
+
+        Assert.Equal(initialSide, autonomous.CurrentSide);
+        Assert.Equal(dock.NativeInitialWaypoint, autonomous.Position);
+        Rac1TaxiPoint playerOtherEnd = initialSide == 0
+            ? dock.SideOnePath[0] : dock.SideZeroPath[0];
+        Assert.True(autonomous.TryStartUnoccupiedReposition(playerOtherEnd));
+        Assert.Equal(3, autonomous.NativeState);
+        for (int i = 0; i < 24000 && autonomous.NativeState == 3; i++)
+            autonomous.Advance(1d / 60);
+        Assert.Equal(1, autonomous.NativeState);
+        Assert.Equal(initialSide == 0
+                ? dock.SideZeroPath[^1] : dock.SideOnePath[^1],
+            autonomous.Position);
+        Assert.Equal(15d / 60, autonomous.FocusDelayRemaining, 10);
+    }
+
     [Fact]
     public void RetailTaxiAdmissionSelectorsPreserveNativeMinusOneSentinels()
     {
