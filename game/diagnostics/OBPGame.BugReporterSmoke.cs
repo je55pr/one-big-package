@@ -149,7 +149,8 @@ public partial class OBPGame
                 list.GrabFocus();
                 if (index > 0) await BugPad(JoyButton.DpadDown);
                 await ClickBugButton("REPLAY SELECTED");
-                await WaitBugAsync(() => _bugReportUi is { Busy: false }, "Separate replay did not finish.", 30000);
+                // A cold Novalis import can exceed 30s while other builds run.
+                await WaitBugAsync(() => _bugReportUi is { Busy: false }, "Separate replay did not finish.", 90000);
                 Require(_bugReportUi!.Status.Contains("checks matched"), "Separate replay failed: " + _bugReportUi.Status);
             }
             foreach (string file in Directory.GetFiles(Path.Combine(_bugReports.Root, "replay-results"), "*.json"))
