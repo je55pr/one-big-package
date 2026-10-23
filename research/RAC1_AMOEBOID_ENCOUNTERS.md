@@ -127,12 +127,36 @@ reactivation routes are covered by retail tests.
 
 All **44** state-15 class-623 targets point at source **class-830**
 controller Mobys. There are **25** class-830 placements on Rilgar.
-The class-830 updater at **0x0030c69c–0x0030c6a8** can enter native
-state **2** and set Moby **+0xbc = 2** directly. Its alternate
-state-1 completion path at **0x0030c868–0x0030c880** enters native
-state **2** but instead writes **+0xbc = 1**. The class-623 state-15
-routine accepts **either nonzero byte** from the linked controller;
-Godot must not require one particular positive value.
+The class-830 updater at **0x0030c5b0** has now been traced
+through its state-0 and state-1 completion branches. In state 0,
+the native world-cell byte at **0x001cb6b0 + 0x454** (read at
+0x0030c620) or native bit-table mask from **0x0015c190** (read at
+0x0030c64c–0x0030c658) immediately sets native state **2** and
+Moby **+0xbc = 2** at **0x0030c690–0x0030c6a8**. When neither
+gate fires, the PVar **+0x08** branch selector decides whether
+to check a third native table at **0x0015c050** for sentinel
+**0xff** (another immediate completion) or enter state **1**
+at **0x0030c72c–0x0030c734**. All **25 authored controllers**
+have **0x10-byte PVars**, with 23 zero selectors and **i1094,
+i1095** using selector 1.
+
+Native state 1 waits for the live owner pointer at
+**0x0014f350 + 0x2fc** to equal this exact Moby and its
+halfword control slot **+0x30e** to be zero, as checked at
+**0x0030c7d4–0x0030c7e4**. It then enters native state **2**
+at **0x0030c868–0x0030c880**, writing **+0xbc = 1**.
+Class-623 state 15 accepts **either nonzero byte**, not a
+specific value. A new engine-neutral
+`Rac1Class830ControllerSession` reproduces these **source
+state/byte transitions** from *explicitly supplied native
+table/owner observations*, remaining unchanged when inputs are
+unknown; source instruction words and authored PVars are tested.
+Its snapshots are wired to the class-623 activation consumer,
+but Godot does **not** currently supply the native world-cell,
+bit-table or owner-slot state. The 25 controllers therefore
+remain uncompleted in ordinary host play until those source
+facts are imported; this is deliberate and must not be
+replaced with a visibility heuristic.
 This proves that the link is a controller-completion signal, **not**
 mere visibility or generic Moby activity. Nine waiting class-623s
 also specify alternative authored **volume indices 51, 52 or 58**.

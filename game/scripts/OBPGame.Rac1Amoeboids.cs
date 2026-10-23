@@ -17,6 +17,7 @@ public partial class OBPGame
     private IReadOnlyList<Rac1ClipVolume> _rac1AmoeboidVolumes = [];
     private readonly Dictionary<int, List<RuntimeWorldScene.DynamicObjectNode>> _rac1AmoeboidTargetGroups = [];
     private readonly Rac1Class623ActivationSession _rac1Class623Activation = new();
+    private readonly Rac1Class830ControllerSession _rac1Class830Controllers = new();
     private readonly Rac1AmoeboidLungeTargetLatch _rac1AmoeboidLungeTargets = new();
     private const float Rac1AmoeboidHostActiveRadius = 45f;
 
@@ -26,6 +27,7 @@ public partial class OBPGame
         _rac1AmoeboidVolumes = [];
         _rac1AmoeboidTargetGroups.Clear();
         _rac1Class623Activation.Clear();
+        _rac1Class830Controllers.Clear();
         _rac1AmoeboidLungeTargets.Clear();
     }
 
@@ -37,6 +39,14 @@ public partial class OBPGame
         var instances = Rac1Instances.Parse(gameplay).MobyInstances;
         _rac1AmoeboidTargetGroups.Clear();
         _rac1Class623Activation.Clear();
+        _rac1Class830Controllers.Clear();
+        // Source-owned controller roster, not a guessed live state machine.
+        // Live state-0 lookup/owner facts have not yet been imported, so
+        // every controller stays uncompleted until real native facts arrive.
+        if (world.LevelId == 5)
+            foreach (var placement in instances.Where(x => x.OClass == 830))
+                _rac1Class830Controllers.Register(placement.Index, placement.OClass,
+                    placement.PVar ?? throw new InvalidDataException("Class-830 controller has no PVar."));
         foreach (var candidate in (world.DynamicObjects ?? [])
             .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
         {
@@ -104,11 +114,12 @@ public partial class OBPGame
     {
         if (_rac1Amoeboids is null || _player is null) return;
         var point = ToEffectNative(_player.GlobalPosition);
-        // State 15 permits a separate, authored player-volume trigger.
-        // Its linked class-830 +0xbc signal stays UNKNOWN until that
-        // controller's native runtime state is hosted; visibility is not it.
+        // No fake native input is fed to class-830 based on scene
+        // visibility/activity. The source controller session currently
+        // returns an unknown completion, unless a genuine native input
+        // provider is introduced; volume-driven admission is independent.
         _rac1Class623Activation.Advance(
-            _ => null, // class-830 runtime signal is not yet hosted
+            _rac1Class830Controllers.Snapshot,
             volume => _rac1AmoeboidVolumes[volume].Contains(point));
         foreach (var frame in _rac1Amoeboids.ActivateGates(point,
                      (volume, probe) => volume >= 0 && volume < _rac1AmoeboidVolumes.Count &&
