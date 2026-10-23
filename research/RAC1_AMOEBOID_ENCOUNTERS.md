@@ -152,10 +152,19 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
   runtime group-list ordering remains inferred by native instance
   index. A retail witness should verify allocation selection under
   exhausted/nonsequential lists.
-- Source `trooper_start_knockback(...,4,8,0)` is mapped into the
-  existing Godot collision/knockback adapter, with provisional
-  gravity and drag. Retail ground/contact reattachment and movement
-  state transitions are not fully equivalent to PS2 common solvers.
+- The `trooper_start_knockback(...,4,8,0)` initializer at source
+  `FUN_L00_0025c558` takes the source horizontal velocity from
+  **PVar +0x78**, vertical velocity from **+0x7c**, and
+  `FUN_L00_0025c698` advances the trajectory with gravity
+  **+0x70** and horizontal drag **+0x74**. Retail-backed testing of
+  **all 227 instances** establishes the original values
+  **0.2, 0.125, 0.008, 0.006944444** per native tick, respectively.
+  The Godot host now reads each *activated child's actual runtime PVar*
+  rather than injecting a class-wide launch guess; a deterministic
+  unit test also proves that distinct PVars yield distinct velocities.
+  **PS2 ground probing, bounce, material effects and reattachment**
+  remain Godot collision-adapter approximations rather than claimed
+  exact native physics.
 - Rilgar's class-623 candidate selection uses the original class, group,
   120-unit search limit and current-target proximity comparisons.
   The class-623 native state/flags and actual damage receiver remain

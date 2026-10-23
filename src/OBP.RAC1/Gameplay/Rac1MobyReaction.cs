@@ -20,11 +20,11 @@ public sealed class Rac1MobyReaction
         // The contact solver 0x25c698 is still approximated in Godot.
         Rac1SeekerSession.ClassId when lethal => new(28f / 3600, 14f / 3600, 14f / 60, 28f / 60),
         Rac1SeekerSession.ClassId => new(6f / 3600, 3f / 3600, 3f / 60, 6f / 60),
-        // Amoeboid split helper 0x2eec68 launches child reserves through
-        // trooper_start_knockback(..., 4, 8, 0). Gravity/drag remain host
-        // approximation until the common per-family fall constants match.
+        // Amoeboid state-8 launch reads PVar +0x70/74/78/7c.
+        // These authored defaults are identical across 227 retail variants;
+        // Godot reads the particular child PVar for per-source behaviour.
         int cls when Rac1AmoeboidAuthored.IsFamily(cls) =>
-            new(8f / 3600, 4f / 3600, 4f / 60, 8f / 60),
+            new(0.008f, 0.006944444f, 0.2f, 0.125f),
         _ => throw new ArgumentOutOfRangeException(nameof(nativeClass)),
     };
 
@@ -33,9 +33,16 @@ public sealed class Rac1MobyReaction
     public float FacingYaw { get; }
 
     public Rac1MobyReaction(int nativeClass, bool lethal, float directionYaw)
+        : this(For(nativeClass, lethal), directionYaw) { }
+
+    public Rac1MobyReaction(Profile profile, float directionYaw)
     {
         if (!float.IsFinite(directionYaw)) throw new ArgumentOutOfRangeException(nameof(directionYaw));
-        _profile = For(nativeClass, lethal);
+        if (profile is null || !float.IsFinite(profile.Gravity) || !float.IsFinite(profile.Drag) ||
+            !float.IsFinite(profile.PlanarLaunch) || !float.IsFinite(profile.VerticalLaunch) ||
+            profile.Gravity < 0 || profile.Drag < 0 || profile.PlanarLaunch < 0 || profile.VerticalLaunch < 0)
+            throw new ArgumentOutOfRangeException(nameof(profile));
+        _profile = profile;
         Velocity = new(MathF.Cos(directionYaw) * _profile.PlanarLaunch, MathF.Sin(directionYaw) * _profile.PlanarLaunch, _profile.VerticalLaunch);
         FacingYaw = Rac1MobySteering.Wrap(directionYaw + MathF.PI);
     }

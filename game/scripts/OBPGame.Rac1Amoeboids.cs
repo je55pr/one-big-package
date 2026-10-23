@@ -108,7 +108,8 @@ public partial class OBPGame
         SelectRac1EnemySequence(enemy, frame.Sequence, 5);
         enemy.Grounded = false;
         enemy.Reaction = frame.NativeState == Rac1AmoeboidFamilySession.KnockbackState
-            ? new Rac1MobyReaction(frame.ClassId, lethal: false, frame.Yaw)
+            ? new Rac1MobyReaction(Rac1AmoeboidKnockbackProfile.Read(
+                frame.ClassId, instance.PVar.Span), frame.Yaw)
             : null;
     }
 
