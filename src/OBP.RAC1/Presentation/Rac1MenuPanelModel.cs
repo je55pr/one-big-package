@@ -12,7 +12,8 @@ namespace OBP.RAC1.Presentation;
 public sealed class Rac1MenuPanelModel
 {
     public const int NativeClassId = 0x472;
-    public sealed record Clip(int NativeSequence, IReadOnlyList<double[]> Frames, float Rate);
+    public sealed record Clip(int NativeSequence, IReadOnlyList<double[]> Frames, float Rate,
+        IReadOnlyList<Vector3[]> AttachmentFrameCorners);
     public IReadOnlyList<Vector3> RestPositions { get; }
     public IReadOnlyList<int> TriangleIndices { get; }
     public IReadOnlyList<Vector2> Uvs { get; }
@@ -21,10 +22,20 @@ public sealed class Rac1MenuPanelModel
     public Vector3 Min { get; }
     public Vector3 Max { get; }
     public int JointCount { get; }
+    public IReadOnlyList<int> AttachmentFrameJoints { get; }
 
-    private Rac1MenuPanelModel(Rac1StaticClasses.MobyClass native)
+    private Rac1MenuPanelModel(Rac1StaticClasses.MobyClass native, ReadOnlySpan<byte> payload)
     {
         JointCount = native.JointCount;
+        // FUN_0023a318 transforms the executable's D_00160ED0 table
+        // {0,1,2,3} through the class attachment chains, then
+        // FUN_002196b8 projects resulting frame points 0 and 3.
+        var attachmentJoints = new int[4];
+        for (int semantic = 0; semantic < attachmentJoints.Length; semantic++)
+            attachmentJoints[semantic] = Rac1MobyAttachment.ReadJoint(payload, semantic);
+        AttachmentFrameJoints = attachmentJoints;
+        if (AttachmentFrameJoints.Distinct().Count() != 4)
+            throw new InvalidDataException("R&C1 panel frame attachment joints are not distinct.");
         var mesh = native.Mesh;
         RestPositions = Enumerable.Range(0, mesh.Positions.Length / 3)
             .Select(i => new Vector3((float)mesh.Positions[3 * i],
@@ -46,7 +57,16 @@ public sealed class Rac1MenuPanelModel
                 double[][] poses = sequence.Frames
                     .Select(f => Rac1MobyPose.PoseLocalHierarchy(mesh, native.Joints, f))
                     .ToArray();
-                return new Clip(s.Index, poses, sequence.ConstantTransitionRate);
+                Vector3[][] corners = sequence.Frames.Select(frame =>
+                {
+                    var joints = Rac1MobyPose.PoseLocalJoints(mesh, native.Joints, frame);
+                    return AttachmentFrameJoints.Select(joint =>
+                    {
+                        var pos = joints[joint].Position;
+                        return new Vector3((float)pos[0], (float)pos[1], (float)pos[2]);
+                    }).ToArray();
+                }).ToArray();
+                return new Clip(s.Index, poses, sequence.ConstantTransitionRate, corners);
             });
     }
 
@@ -57,6 +77,7 @@ public sealed class Rac1MenuPanelModel
         if (native.JointCount != 5 || native.Mesh.Positions.Length != 48 * 3 ||
             native.Mesh.Indices.Length != 32 * 3 || native.Sequences.Count != 216)
             throw new InvalidDataException("R&C1 0x472 model differs from the supported retail baseline.");
-        return new Rac1MenuPanelModel(native);
+        return new Rac1MenuPanelModel(native,
+            level0.Assets.AsSpan(native.AssetOffset, native.AssetLength));
     }
 }

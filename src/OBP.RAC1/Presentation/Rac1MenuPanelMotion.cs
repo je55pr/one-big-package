@@ -12,7 +12,8 @@ namespace OBP.RAC1.Presentation;
 public sealed class Rac1MenuPanelMotion
 {
     public readonly record struct PanelPose(
-        int Slot, int NativeSequence, int Frame, Vector3 Min, Vector3 Max);
+        int Slot, int NativeSequence, int Frame, Vector3 Min, Vector3 Max,
+        Vector3 FirstCorner, Vector3 OppositeCorner);
 
     private readonly Rac1MenuPanelModel _model;
     private readonly Rac1MenuPanelPages _pages;
@@ -97,6 +98,13 @@ public sealed class Rac1MenuPanelMotion
             min = Vector3.Min(min, point);
             max = Vector3.Max(max, point);
         }
-        return new PanelPose(slot, seq, frame, min, max);
+        // Unlike textured mesh extrema, these are the original four
+        // transformed semantic frame points from Moby+0x78. The menu
+        // projector consumes only opposite points 0 and 3.
+        var corners = clip.AttachmentFrameCorners[frame];
+        if (corners.Length != 4 || corners.Any(point =>
+            !float.IsFinite(point.X) || !float.IsFinite(point.Y) || !float.IsFinite(point.Z)))
+            throw new InvalidDataException("Native menu frame has invalid attachment corners.");
+        return new PanelPose(slot, seq, frame, min, max, corners[0], corners[3]);
     }
 }

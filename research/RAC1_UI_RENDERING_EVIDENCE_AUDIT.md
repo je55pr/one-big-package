@@ -324,15 +324,14 @@ pages are intentionally not remapped to arbitrary 3D slots.
 Rendered R&C1 source-backed OpenGL smoke on JESS-PC captures
 `captures/rac1-retail-ui/root.png`: six dark striped panels are
 centred horizontally and spaced across the picture. In the 960x720
-test viewport they span approximately X=282..679, rather than the
-previous host-defined 365-pixel width. The capture is ignored by Git.
+test viewport the original mesh-extrema implementation spanned
+X=282..679; the later exact attachment-frame update below narrows
+that to about X=290..670. The capture is ignored by Git.
 
-**Remaining uncertainties:** `FUN_002196b8` gets the first/opposite
-corner of a native transformed four-point attachment frame at
-`Moby+0x78`, not the all-vertex min/max currently used as a geometrical
-proxy. On class 0x472's planar six-unit geometry, the mesh extrema
-reproduce the broad screen shape, but corner offsets may differ by
-pixels. The exact PS2 `convert_float_to_integer` rounding and original
+**Historical limitation, resolved in the attachment-frame update below:**
+this first implementation used all-vertex min/max instead of `Moby+0x78`
+semantic attachment points 0 and 3. The exact original panel corners are
+now implemented. The PS2 `convert_float_to_integer` rounding and original
 720/448/512/640 render-target scaling remain to be verified. Current
 host viewport is passed through unchanged for widescreen, an explicit
 OBP presentation adaptation. We have **not** invented 3D page
@@ -408,7 +407,8 @@ shadow copy of the label at the +2,+2 offset. **They are not yet
 applied to every pause-menu choice:** the exact label draw callback
 associated with the ordinary six-row root needs verification before
 we can claim that all six choices use this shadow path. This evidence
-is ready for the remaining typography/attachment-corner pass.
+is ready for the remaining typography pass; the attachment-corner
+reconstruction is documented below.
 
 ## 23 October: actual Veldin gameplay pause contrast gate
 
@@ -432,3 +432,36 @@ On JESS-PC the full rendered ordinary Veldin play smoke passed, including
 the added panel checks, native collision/movement, combat and natural
 restart. This establishes *Godot gameplay integration and readability*,
 not pixel-exact PS2 GS output or a frame-matched PCSX2 comparison.
+
+## 23 October: exact menu attachment-frame corner indices and geometry
+
+The previous native projected root used extremal skinned mesh Y/Z as the
+panel rectangle. This was a grounded approximation, but the source renderer
+uses a smaller four-point **attachment frame**, not those art vertices.
+
+- `FUN_002196b8` copies four `Vec4` records through Moby pointer `+0x78`
+  and projects records **0 and 3** with `FUN_00237a78`.
+- The class-0x472 callback `FUN_0023a2c0` invokes `FUN_0023a318` to update
+  those records. Its `FUN_0020cd48` batch transforms the semantic indices
+  stored at NTSC-U ELF address `0x00160ED0`.
+- That exact executable table contains little-endian words **0,1,2,3**;
+  Veldin's original class-0x472 attachment-chain table maps them to
+  skeleton joints **2,1,4,3** respectively. These are semantic attachment
+  IDs, not indices into the 48 rendered mesh vertices.
+- At animation 14 frame zero, `Rac1MobyPose.PoseLocalJoints` yields the
+  first and opposite corners `(6,1.5,2.32)` and `(6,-1.5,1.82)` native
+  units. The rendered mesh extends about 0.069 native units beyond these
+  frame bounds in Y and Z. Slots 14–19 preserve the same 3-by-0.5 frame
+  while changing vertical position.
+
+`Rac1MenuPanelModel` now retains four source-derived attachment positions
+for each frame of all 216 source sequences. `Rac1MenuPanelMotion` exposes
+corner 0/3 with each panel pose; `Rac1MenuPanelCamera` projects those exact
+semantic corners instead of the outer art extrema. Disc-backed tests pin
+joint mapping, first-frame endpoints, frame census and the gap to mesh
+bounds. The four semantic chains are dynamically read from source class
+payloads; no retail bytes or synthetic point positions are embedded.
+
+Remaining: the precise PS2 float-to-integer conversion in the projection
+packet, native `screen_x++/screen_y++` integer raster offset and
+original output-target scaling still need frame-matched PS2 verification.

@@ -21,6 +21,14 @@ public sealed class Rac1MenuPanelModelTests
         Assert.Equal(32, model.TriangleTextureIds.Count);
         Assert.All(model.TriangleTextureIds, id => Assert.Equal(91, id));
         Assert.Equal(216, model.Sequences.Count);
+        // FUN_0023a318 uses native D_00160ED0 semantic point indices
+        // 0,1,2,3. The original class attachment table resolves those
+        // into distinct local joints 2,1,4,3, not mesh vertex indices.
+        Assert.Equal([2, 1, 4, 3], model.AttachmentFrameJoints);
+        var firstFrame = model.Sequences[14].AttachmentFrameCorners[0];
+        Assert.Equal(4, firstFrame.Length);
+        Assert.InRange(Vector3.Distance(new Vector3(6f, 1.5f, 2.32f), firstFrame[0]), 0, .002f);
+        Assert.InRange(Vector3.Distance(new Vector3(6f, -1.5f, 1.82f), firstFrame[3]), 0, .002f);
         Assert.Single(model.Sequences[0].Frames);
         Assert.Equal(7, model.Sequences[14].Frames.Count);
         Assert.Equal(7, model.Sequences[215].Frames.Count);
@@ -37,6 +45,8 @@ public sealed class Rac1MenuPanelModelTests
         {
             Assert.True(clip.Frames.Count is 1 or 7);
             Assert.All(clip.Frames, vertices => Assert.Equal(48 * 3, vertices.Length));
+            Assert.Equal(clip.Frames.Count, clip.AttachmentFrameCorners.Count);
+            Assert.All(clip.AttachmentFrameCorners, corners => Assert.Equal(4, corners.Length));
         });
     }
 

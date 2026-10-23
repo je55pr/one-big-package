@@ -19,7 +19,7 @@ public sealed class Rac1RetailPanelBackingTests
     }
 
     [Fact]
-    public void PackedBackingAgreesWithOriginalExecutableMappedAddress()
+    public void PackedBackingAndFramePointIndicesAgreeWithOriginalExecutable()
     {
         string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
@@ -72,6 +72,16 @@ public sealed class Rac1RetailPanelBackingTests
             Assert.InRange(mapped - elfStart, 0, exeLength - 4);
             byte[] original = ReadAt(stream, mapped, 4);
             Assert.Equal(Rac1RetailPanelBlend.NativePanelClearRgba, ReadU32(original, 0));
+            // FUN_0023a318 transforms four panel frame attachments using
+            // the semantic indices at D_00160ED0, then FUN_002196b8
+            // projects the first and fourth entries, not mesh bounds.
+            const uint frameIndicesAddress = 0x00160ED0;
+            Assert.True(frameIndicesAddress >= vaddr &&
+                (ulong)frameIndicesAddress + 16 <= (ulong)vaddr + filesz);
+            byte[] nativePoints = ReadAt(stream,
+                elfStart + offset + frameIndicesAddress - vaddr, 16);
+            for (int point = 0; point < 4; point++)
+                Assert.Equal((uint)point, ReadU32(nativePoints, point * 4));
             found = true;
             break;
         }

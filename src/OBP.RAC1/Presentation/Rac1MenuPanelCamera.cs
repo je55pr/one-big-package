@@ -34,19 +34,17 @@ public static class Rac1MenuPanelCamera
     }
 
     /// <summary>
-    /// Source animation changes the four projected frame corners rather than
-    /// inventing a flat rectangle. For supported class 0x472 each decoded
-    /// mesh vertex has one identical X=6 distance, so extremal projected Y/Z
-    /// bound the rectangle exactly. Frame points vs full mesh bounds remain
-    /// a minor native uncertainty until point IDs are recovered.
+    /// FUN_002196b8 projects semantic frame points 0 and 3, transformed
+    /// from the class's native attachment chains by FUN_0023a318. Unlike
+    /// textured mesh extrema, these exclude the source art's outside fringe.
     /// </summary>
     public static Rac1MenuPanelProjection.Bounds ProjectPanel(
         Rac1MenuPanelMotion.PanelPose pose, Vector2 viewportSize)
     {
-        if (MathF.Abs(pose.Min.X - pose.Max.X) > .0001f)
-            throw new InvalidDataException("Class 0x472's source panel no longer lies in a camera-facing plane.");
-        Vector2 topLeft = ProjectRelative(new Vector3(pose.Min.X, pose.Max.Y, pose.Max.Z), viewportSize);
-        Vector2 bottomRight = ProjectRelative(new Vector3(pose.Max.X, pose.Min.Y, pose.Min.Z), viewportSize);
+        if (MathF.Abs(pose.FirstCorner.X - pose.OppositeCorner.X) > .0001f)
+            throw new InvalidDataException("Class 0x472's native attachment frame no longer lies in a camera-facing plane.");
+        Vector2 topLeft = ProjectRelative(pose.FirstCorner, viewportSize);
+        Vector2 bottomRight = ProjectRelative(pose.OppositeCorner, viewportSize);
         return new Rac1MenuPanelProjection.Bounds(topLeft.X, topLeft.Y,
             bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
     }

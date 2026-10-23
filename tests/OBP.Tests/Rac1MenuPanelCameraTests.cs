@@ -38,6 +38,19 @@ public sealed class Rac1MenuPanelCameraTests
         var rows = Enumerable.Range(0, 6)
             .Select(slot => Rac1MenuPanelCamera.ProjectPanel(motion.Pose(slot), screen))
             .ToArray();
+        var native = motion.Pose(0);
+        // Attachment-frame bounds deliberately exclude approximately .069
+        // native units of artwork overhang on each projected edge.
+        Assert.True(native.Max.Y > native.FirstCorner.Y);
+        Assert.True(native.Min.Y < native.OppositeCorner.Y);
+        Assert.True(native.Max.Z > native.FirstCorner.Z);
+        Assert.True(native.Min.Z < native.OppositeCorner.Z);
+        var exactFirst = Rac1MenuPanelCamera.ProjectRelative(native.FirstCorner, screen);
+        var exactOpposite = Rac1MenuPanelCamera.ProjectRelative(native.OppositeCorner, screen);
+        Assert.Equal(exactFirst.X, rows[0].X, 3);
+        Assert.Equal(exactFirst.Y, rows[0].Y, 3);
+        Assert.Equal(exactOpposite.X - exactFirst.X, rows[0].Width, 3);
+        Assert.Equal(exactOpposite.Y - exactFirst.Y, rows[0].Height, 3);
         Assert.All(rows, row =>
         {
             Assert.True(row.HasArea);
