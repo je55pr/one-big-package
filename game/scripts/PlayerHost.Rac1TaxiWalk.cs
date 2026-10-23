@@ -62,4 +62,19 @@ public partial class PlayerHost
         if (Math.Abs(change) <= .001) return;
         Rac1CurrentYaw += Math.Clamp(change, -0.12d, 0.12d);
     }
+
+    private void MaskRac1TaxiWalkActions()
+    {
+        if (!Rac1TaxiWalking) return;
+        _liveInput = _liveInput with
+        {
+            CameraIntent = Vector2.Zero,
+            ActionJustPressed = false,
+            ActionHeld = false,
+            EquippedUseJustPressed = false,
+            JumpHeld = false,
+            CrouchHeld = false,
+            TraversalHeld = false
+        };
+    }
 }

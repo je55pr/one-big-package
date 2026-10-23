@@ -419,17 +419,7 @@ public partial class PlayerHost : CharacterBody3D
         {
             _liveInput = _rawInput.Read(UseRac1Gameplay);
             if (PlaytestInputFilter is { } filter) _liveInput = filter(_liveInput);
-            if (Rac1TaxiWalking)
-                _liveInput = _liveInput with
-                {
-                    CameraIntent = Vector2.Zero,
-                    ActionJustPressed = false,
-                    ActionHeld = false,
-                    EquippedUseJustPressed = false,
-                    JumpHeld = false,
-                    CrouchHeld = false,
-                    TraversalHeld = false
-                };
+            MaskRac1TaxiWalkActions();
             if (QuickSelectOwnsGameplayInput)
                 _liveInput = _liveInput with
                 {
