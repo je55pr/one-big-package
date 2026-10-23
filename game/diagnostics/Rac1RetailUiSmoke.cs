@@ -64,6 +64,23 @@ public partial class Rac1RetailUiSmoke : Node
                 Require(Rac1RetailUiAssets.CreateNativePanelMotion() is { } motion &&
                     motion.Pose(0).NativeSequence == 14 && motion.Pose(0).Frame == 6,
                     "Original panel motion track was not available to the Godot host");
+                var nativeButtons = Descendants(sample).OfType<Rac1RetailMenuButton>()
+                    .Where(b => b.Name.ToString().StartsWith("NativePanelSlot_", StringComparison.Ordinal))
+                    .ToArray();
+                Require(nativeButtons.Length == 6, "Projected class-0x472 geometry did not replace fixed root rows");
+                var sourceTrack = Rac1RetailUiAssets.CreateNativePanelMotion()!;
+                sourceTrack.BeginTransition(Rac1MenuPanelPages.Page.OrdinaryPause, backwards: true);
+                for (int tick = 0; tick < 12; tick++) sourceTrack.Tick();
+                var viewportSize = GetViewport().GetVisibleRect().Size;
+                var projected = Rac1MenuPanelCamera.ProjectPanel(sourceTrack.Pose(0),
+                    new System.Numerics.Vector2(viewportSize.X, viewportSize.Y));
+                // Compare live button positions against the source camera's
+                // recovered projection, not against a host-calibrated rectangle.
+                Require(Mathf.Abs(nativeButtons[0].Position.X - projected.X) < 2 &&
+                    Mathf.Abs(nativeButtons[0].Position.Y - projected.Y) < 2 &&
+                    Mathf.Abs(nativeButtons[0].Size.X - projected.Width) < 2 &&
+                    nativeButtons[0].Position.Y < nativeButtons[1].Position.Y,
+                    "Source camera projection differs from actual Godot panel placement");
                 Require(panels.Length == 6, "Native panel compositing must cover all six pause rows");
                 Require(panels.All(panel => panel.Material is ShaderMaterial { Shader: not null }),
                     "Original retail panel shader did not load");

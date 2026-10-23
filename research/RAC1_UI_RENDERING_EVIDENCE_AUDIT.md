@@ -283,3 +283,59 @@ retail camera view transform and front-end Moby-frame projection remain to be
 recovered. Source-valid animation trajectories are now available for use by
 a future projected geometry adapter; DO NOT stretch native coordinates into
 a guessed screen axis and call the result retail faithful.
+
+
+## 23 October: camera projection now drives the visible six-panel pause root
+
+The source-backed pause camera was recovered from actual R&C1 native functions:
+- `FUN_00218d10` resets the camera position to **(256,256,64)** and
+  its three basis directions to identity.
+- Both menu initialisers position all fourteen class-`0x472` Mobys
+  at this camera location, so source pose vertices are camera-relative.
+- `FUN_001f2260` derives the view mapping **screen X=-world Y**,
+  **screen Y=-world Z**, and **forward depth=world X** with identity basis.
+- `FUN_L00_00276368` sets `view_context.fov[0]=0.63` before
+  `FUN_001f2d98`, which derives NTSC vertical FOV as `0.775 * 0.63`.
+- `FUN_001f2c60` and `FUN_001f33b8` set screen half extents and
+  quadruple-space screen scale, undone by `FUN_00237a78`'s
+  quarter-screen final projection.
+
+The visible source panel meshes all have relative **X=6**, a consistent
+six-unit distance directly in front of this camera. This yields a
+well-defined, source-supported projection for screen coordinates:
+
+`screen_x = viewport_width/2 - y * (viewport_width/2) / (0.63 * x)`
+`screen_y = viewport_height/2 - z * (viewport_height/2) / (0.63*0.775*x)`
+
+`Rac1MenuPanelCamera` implements that mapping and rejects nonpositive
+depth. Dedicated retail-disc tests confirm the six visible root strips
+are centred, nonoverlapping, and ordered correctly, and that the known
+camera origin, axes and FOV are preserved.
+
+`PauseMenuUi.Rac1Projection.cs` now renders the root's six buttons as
+absolute-positioned Controls whose geometry comes from the real
+class-`0x472` frame-zero mesh and native camera projection. The old
+365x64 fixed-height VBox fallback remains ONLY when original assets
+cannot be attached. Leaving the root page plays the source
+`0x472` panel tracks from their visible starting frame to offscreen
+over 12 native update ticks. Equipment, HelpDesk and OBP development
+pages are intentionally not remapped to arbitrary 3D slots.
+
+Rendered R&C1 source-backed OpenGL smoke on JESS-PC captures
+`captures/rac1-retail-ui/root.png`: six dark striped panels are
+centred horizontally and spaced across the picture. In the 960x720
+test viewport they span approximately X=282..679, rather than the
+previous host-defined 365-pixel width. The capture is ignored by Git.
+
+**Remaining uncertainties:** `FUN_002196b8` gets the first/opposite
+corner of a native transformed four-point attachment frame at
+`Moby+0x78`, not the all-vertex min/max currently used as a geometrical
+proxy. On class 0x472's planar six-unit geometry, the mesh extrema
+reproduce the broad screen shape, but corner offsets may differ by
+pixels. The exact PS2 `convert_float_to_integer` rounding and original
+720/448/512/640 render-target scaling remain to be verified. Current
+host viewport is passed through unchanged for widescreen, an explicit
+OBP presentation adaptation. We have **not** invented 3D page
+assignments for OBP-only screens, and the root entry animation starts
+in the visible pose to preserve input smoke and accessibility; only the
+source-defined exit track is currently played.

@@ -26,6 +26,9 @@ public sealed partial class PauseMenuUi
     private Control? _retailFocus;
     private Rac1HelpDeskView? _retailHelp;
     private readonly List<Control> _retailFocusOrder = [];
+    private Control? _retailNativeRootOverlay;
+    private Rac1MenuPanelMotion? _retailNativeRootMotion;
+    private readonly List<Rac1RetailMenuButton> _retailNativeRootButtons = [];
     private double _retailTickFraction;
     private int _retailEquipmentPage;
     private int _retailDevelopmentPage;
@@ -102,18 +105,34 @@ public sealed partial class PauseMenuUi
             Modulate = UiTheme.TextDim,
         };
         column.AddChild(_retailFooter);
+        _retailNativeRootOverlay = new Control
+        {
+            Name = "NativeProjectedRootPanels",
+            AnchorRight = 1,
+            AnchorBottom = 1,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        AddChild(_retailNativeRootOverlay);
         RebuildRetailPage();
     }
 
     public override void _Process(double delta)
     {
         if (!RetailEnabled || !IsInsideTree()) return;
+        if (_retailNativeRootMotion is not null &&
+            GetViewport().GetVisibleRect().Size != _nativeRootLastViewportSize)
+            UpdateNativeRootPanels();
         _retailTickFraction += delta * 60d;
         int ticks = Math.Min(12, (int)_retailTickFraction);
         if (ticks <= 0) return;
         _retailTickFraction -= ticks;
         bool transitioning = _retailNavigation.IsTransitioning;
         _retailNavigation.Step(ticks);
+        if (_retailNativeRootMotion is { RemainingUpdates: > 0 } motion)
+        {
+            for (int i = 0; i < ticks && motion.RemainingUpdates > 0; i++) motion.Tick();
+            UpdateNativeRootPanels();
+        }
         if (transitioning && !_retailNavigation.IsTransitioning) RebuildRetailPage();
         var current = GetViewport().GuiGetFocusOwner();
         if (current is not null && _retailFocusOrder.Contains(current))
@@ -129,6 +148,10 @@ public sealed partial class PauseMenuUi
     {
         if (_retailNavigation.Navigate(target))
         {
+            if (_retailNavigation.Page == Rac1RetailMenuPage.Root &&
+                target != Rac1RetailMenuPage.Root && _retailNativeRootMotion is { } motion &&
+                motion.RemainingUpdates == 0)
+                motion.BeginTransition(Rac1MenuPanelPages.Page.OrdinaryPause, backwards: false);
             _retailEquipmentPage = 0;
             _retailDevelopmentPage = 0;
             _retailFocus = null;
@@ -139,10 +162,25 @@ public sealed partial class PauseMenuUi
     private void RebuildRetailPage()
     {
         foreach (Node child in _retailColumn.GetChildren()) { _retailColumn.RemoveChild(child); child.QueueFree(); }
+        if (_retailNativeRootOverlay is { } nativeOverlay)
+        {
+            foreach (Node child in nativeOverlay.GetChildren())
+            {
+                nativeOverlay.RemoveChild(child);
+                child.QueueFree();
+            }
+            _retailNativeRootButtons.Clear();
+            _retailNativeRootMotion = null;
+            nativeOverlay.Visible = false;
+        }
         _retailFocusOrder.Clear();
         _retailHelp = null;
         Rac1RetailMenuPage page = _retailNavigation.Page;
         bool root = page == Rac1RetailMenuPage.Root;
+        bool nativeProjectedRoot = root && _retailNativeRootOverlay is not null &&
+            Rac1RetailUiAssets.NativeMenuPages is not null &&
+            Rac1RetailUiAssets.NativeMenuPanels is not null;
+        _retailFrame.Visible = !nativeProjectedRoot;
         _retailFrame.CustomMinimumSize = root ? Vector2.Zero : new Vector2(720, 560);
         bool development = page == Rac1RetailMenuPage.Development;
         // Native pages are projected menu panels over the actual game scene,
@@ -186,6 +224,7 @@ public sealed partial class PauseMenuUi
 
     private void BuildRetailRoot()
     {
+        if (BuildNativeProjectedRoot()) return;
         var pages = new[]
         {
             (20194, "Weapons", Rac1RetailMenuPage.Weapons),
