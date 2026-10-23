@@ -140,6 +140,30 @@ public sealed class BugReportInboxTests : IDisposable
     }
 
     [Fact]
+    public async Task RejectedCorruptImport_LeavesNoSessionDirectoryOrUnreadableInboxEntry()
+    {
+        var source = Inbox;
+        Guid id = Guid.NewGuid();
+        using var writer = new PlaytestRunWriter(Run, Header());
+        var report = AddReport(writer, 0, "corrupt import");
+        var saved = await source.SaveAsync(id, writer, report);
+        string archive = source.Export(id, report.Id);
+        using (var zip = ZipFile.Open(archive, ZipArchiveMode.Update))
+        {
+            zip.GetEntry(saved.Recording.FileName)!.Delete();
+            using var entry = zip.CreateEntry(saved.Recording.FileName).Open();
+            entry.Write([1, 2, 3, 4]);
+        }
+
+        var target = new BugReportInbox(Path.Combine(_directory, "developer"));
+        var error = Assert.Throws<InvalidDataException>(() => target.Import(archive));
+        Assert.Contains("size/hash", error.Message);
+        Assert.Empty(target.List());
+        Assert.Empty(Directory.EnumerateFileSystemEntries(target.Root));
+        Assert.Equal(report, source.Resolve(id, report.Id).Report);
+    }
+
+    [Fact]
     public async Task Import_RejectsExtraFiles_AndDeleteIsExplicitAndSessionScoped()
     {
         var inbox = Inbox;

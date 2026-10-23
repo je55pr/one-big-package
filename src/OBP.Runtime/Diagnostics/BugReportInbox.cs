@@ -173,7 +173,16 @@ public sealed class BugReportInbox
             WriteAtomic(Path.Combine(directory, "session.json"), session);
             return session;
         }
-        catch { TryDelete(path); throw; }
+        catch
+        {
+            TryDelete(path);
+            // Non-recursive: remove only this failed import's empty directory.
+            // Cleanup must not replace the original copy/verification error.
+            try { Directory.Delete(directory); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            throw;
+        }
     }
 
     public void Delete(Guid sessionId)
