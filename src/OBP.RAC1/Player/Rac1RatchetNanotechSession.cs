@@ -74,12 +74,14 @@ public sealed class Rac1RatchetNanotechSession
         // The common damage record's native flags are not yet recovered.
         bool novalisPeck = damage.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
             damage.NativeMarker is null && damage.NativeDamageFlags is null;
+        // Frog state12 provides native damage-1; its contact flags remain unknown.
+        bool frogContact = Rac1FrogContact.IsAdmitted(damage);
         bool seekerBlast = Rac1SeekerExplosion.IsNativeExplosion(damage);
         bool amoeboidAttack = Rac1AmoeboidAttack.IsNativePlayerAttack(damage);
         bool explosiveCrateBlast = Rac1ExplosiveCrateBlast.IsNativePlayerBlast(damage);
         if (damage.Target != Rac1GameplayEntityRef.Player ||
             damage.Source.Kind != Rac1GameplayEntityKind.Moby ||
-            !(class749 || class1440 || novalisPeck || seekerBlast || amoeboidAttack || explosiveCrateBlast) ||
+            !(class749 || class1440 || novalisPeck || frogContact || seekerBlast || amoeboidAttack || explosiveCrateBlast) ||
             damage.NativeDamage != (explosiveCrateBlast ? Rac1ExplosiveCrateBlast.Damage : 1))
         {
             throw new NotSupportedException(
