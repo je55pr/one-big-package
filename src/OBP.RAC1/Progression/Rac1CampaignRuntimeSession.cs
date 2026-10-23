@@ -61,6 +61,14 @@ public sealed class Rac1CampaignRuntimeSession
         return Travel.BeginSelectedTravel();
     }
 
+    public Rac1PlanetTravelStartResult BeginMissionLevelExit(Rac1MissionLevelExit request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Owner.LevelId != Campaign.CurrentLevel)
+            throw new InvalidOperationException("Mission exit belongs to a different source level.");
+        return Travel.BeginMissionLevelExit(request.Destination);
+    }
+
     /// <summary>
     /// Commit a successfully loaded target at the recovered late-entry boundary.
     /// Host/debug loads that did not originate in campaign travel never rewrite

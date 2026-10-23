@@ -15,6 +15,7 @@ public partial class OBPGame
     private readonly HashSet<int> _rac1CollectedNovalisGoldBolts = [];
     private Rac1CampaignSaveBatcher? _rac1SaveBatcher;
     private string? _rac1SaveFailureReported;
+    private string? _rac1CampaignRestoreWarning;
     private bool _rac1CampaignPersistenceInitialized;
     private Rac1CampaignSessionPersistence _rac1CampaignPersistence =
         Rac1CampaignSessionPersistence.Ephemeral();
@@ -32,15 +33,21 @@ public partial class OBPGame
                 ? ProjectSettings.GlobalizePath("user://rac1-campaign.json")
                 : Path.GetFullPath(_args.Rac1CampaignSavePath);
             _rac1CampaignPersistence = Rac1CampaignSessionPersistence.Persistent(savePath);
-            _rac1SaveBatcher = new Rac1CampaignSaveBatcher(
-                snapshot => Rac1CampaignSaveFile.SaveEnvelope(savePath, snapshot));
         }
         else
         {
             _rac1CampaignPersistence = Rac1CampaignSessionPersistence.Ephemeral();
         }
 
-        Rac1CampaignRestoreResult restored = _rac1CampaignPersistence.Restore();
+        Rac1CampaignRestoreAttempt attempt = _rac1CampaignPersistence.RestoreWithRecovery();
+        _rac1CampaignPersistence = attempt.Persistence;
+        // A corrupt or unreadable save switches to an unsaved session. Never
+        // construct a writer for a path recovery has declared unsafe.
+        _rac1SaveBatcher = Rac1CampaignSaveWriterFactory.CreateIfEnabled(_rac1CampaignPersistence);
+        _rac1CampaignRestoreWarning = attempt.Warning;
+        if (_rac1CampaignRestoreWarning is not null)
+            GD.PushWarning($"[rac1-campaign] {_rac1CampaignRestoreWarning}");
+        Rac1CampaignRestoreResult restored = attempt.Restored;
 
         _rac1CampaignSession = new Rac1CampaignRuntimeSession(
             restored.Campaign,

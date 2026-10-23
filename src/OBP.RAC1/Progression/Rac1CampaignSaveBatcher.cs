@@ -18,6 +18,8 @@ public sealed class Rac1CampaignSaveBatcher
     private bool _dirty;
     private double _quiet;
     private double _age;
+    private double _retrySecondsRemaining;
+    private int _consecutiveWriteFailures;
 
     public Rac1CampaignSaveBatcher(Action<Rac1CampaignSaveEnvelope> write) =>
         _write = write ?? throw new ArgumentNullException(nameof(write));
@@ -38,29 +40,45 @@ public sealed class Rac1CampaignSaveBatcher
     /// <summary>Called by the main thread; capture must snapshot mutable state.</summary>
     public bool Tick(double seconds, Func<Rac1CampaignSaveEnvelope> capture)
     {
-        if (!_dirty) return false;
         if (!double.IsFinite(seconds) || seconds < 0)
             throw new ArgumentOutOfRangeException(nameof(seconds));
 
-        _quiet += seconds;
-        _age += seconds;
-        if (_quiet < QuietSeconds && _age < MaximumDelaySeconds) return false;
+        bool queued = false;
+        if (_dirty)
+        {
+            _quiet += seconds;
+            _age += seconds;
+            if (_quiet >= QuietSeconds || _age >= MaximumDelaySeconds)
+            {
+                // Snapshot mutable gameplay state on the main thread.
+                Rac1CampaignSaveEnvelope snapshot = capture();
+                _dirty = false;
+                _quiet = 0;
+                _age = 0;
+                lock (_gate)
+                {
+                    // A newer snapshot supersedes a failed or waiting write.
+                    _pending = snapshot;
+                }
+                queued = true;
+            }
+        }
 
-        Rac1CampaignSaveEnvelope snapshot = capture();
-        _dirty = false;
-        _quiet = 0;
-        _age = 0;
         lock (_gate)
         {
-            // Only the latest not-yet-started snapshot needs to reach disk.
-            _pending = snapshot;
-            if (!_draining)
+            // Idle frames must retry after an IO failure even when _dirty is
+            // false and no further pickups or gameplay mutations occur.
+            if (!_draining && _pending is not null && _failure is not null)
+                _retrySecondsRemaining = Math.Max(0, _retrySecondsRemaining - seconds);
+
+            if (!_draining && _pending is not null && _retrySecondsRemaining <= 0)
             {
                 _draining = true;
                 _worker = Task.Run(Drain);
+                return true;
             }
         }
-        return true;
+        return queued;
     }
 
     private void Drain()
@@ -82,7 +100,12 @@ public sealed class Rac1CampaignSaveBatcher
             try
             {
                 _write(snapshot);
-                lock (_gate) _failure = null;
+                lock (_gate)
+                {
+                    _failure = null;
+                    _consecutiveWriteFailures = 0;
+                    _retrySecondsRemaining = 0;
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                 or ArgumentException or InvalidOperationException)
@@ -91,6 +114,10 @@ public sealed class Rac1CampaignSaveBatcher
                 {
                     _pending ??= snapshot;
                     _failure = ex;
+                    _consecutiveWriteFailures++;
+                    // Exponential backoff, capped to avoid busy-looping on a
+                    // broken volume. Main-thread Tick schedules the retry.
+                    _retrySecondsRemaining = Math.Min(5, .5 * Math.Pow(2, Math.Min(_consecutiveWriteFailures - 1, 5)));
                     _draining = false;
                 }
                 return;
@@ -122,7 +149,16 @@ public sealed class Rac1CampaignSaveBatcher
         {
             running.GetAwaiter().GetResult();
             _write(capture());
-            lock (_gate) _failure = null;
+            lock (_gate)
+            {
+                // Background failure may have requeued an older snapshot
+                // while we waited. The just-flushed authoritative snapshot
+                // supersedes it; do not let a stale retry overwrite it.
+                _pending = null;
+                _failure = null;
+                _consecutiveWriteFailures = 0;
+                _retrySecondsRemaining = 0;
+            }
             _dirty = false;
             _quiet = 0;
             _age = 0;

@@ -60,6 +60,7 @@ public partial class OBPGame : Node3D
     public override void _Ready()
     {
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
+        ApplicationLifecycle.SetQuitPreparation(PrepareForQuitAsync);
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
         if (!InitializePlaytest()) return;
         if (_args.ReplayForwardFrames.HasValue && _args.LoadMovementState is null)
@@ -121,6 +122,13 @@ public partial class OBPGame : Node3D
             Engine.MaxFps = 60;
             _ = RunCaptureAsync(frame);
         }
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
+        StepRac1NovalisMechanisms();
+        StepRac1PlayerAudioPhysics();
     }
 
     public override void _Process(double delta)
@@ -270,14 +278,50 @@ public partial class OBPGame : Node3D
         }
     }
 
-    public override void _ExitTree()
+    private void ReleaseAudioForExit()
     {
+        // An external exit can bypass normal world teardown. Finish campaign
+        // persistence before shutting down its owning Godot session.
         FlushRac1CampaignSaves("clean exit");
-        // Godot can exit without visiting the normal world-switch teardown path.
-        // Stop playback while the audio hosts and their Godot players are still valid.
         _worldHost.Unload(releaseAudioImmediately: true);
         ResetRac1PlayerAudio(freeImmediately: true);
         ResetRac1WeaponAudio(freeImmediately: true);
+    }
+
+    private async Task PrepareForQuitAsync()
+    {
+        // Stop gameplay before releasing its audio, otherwise a final physics
+        // update can start another footstep/voice during shutdown.
+        ProcessMode = ProcessModeEnum.Disabled;
+        ReleaseAudioForExit();
+
+        // Godot 4.7.2 retires stopped playbacks on the mixing thread, then
+        // releases their references in AudioServer's main-thread update. Tree
+        // teardown alone cannot guarantee either has run. Observe two mixes
+        // before the final quit; use wall time even with --fixed-fps.
+        static double LastMixTime() => Time.GetTicksUsec() / 1_000_000d - AudioServer.GetTimeSinceLastMix();
+        double lastMix = LastMixTime();
+        ulong deadline = Time.GetTicksMsec() + 1000;
+        int mixes = 0;
+        while (mixes < 2 && Time.GetTicksMsec() < deadline)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            double mix = LastMixTime();
+            if (mix > lastMix + .001d)
+            {
+                mixes++;
+                lastMix = mix;
+            }
+        }
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        GD.Print($"[lifecycle] audio retired before quit (mixes={mixes})");
+    }
+
+    public override void _ExitTree()
+    {
+        // Also cover external/engine exits which bypass RequestQuit.
+        ReleaseAudioForExit();
+        ApplicationLifecycle.SetQuitPreparation(null);
         ApplicationLifecycle.ReportRootExit(Name);
     }
 

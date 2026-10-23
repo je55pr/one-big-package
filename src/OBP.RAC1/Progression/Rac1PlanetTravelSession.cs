@@ -38,6 +38,7 @@ public sealed class Rac1PlanetTravelSession
     public int? LoaderDestination { get; private set; }
     public bool TransitionActive { get; private set; }
     public bool CurrentLevelCommitted { get; private set; }
+    public bool MissionLevelExit { get; private set; }
 
     /// <summary>
     /// The pending slot remains stale after retail clears the transfer-active flag.
@@ -103,6 +104,18 @@ public sealed class Rac1PlanetTravelSession
         return Rac1PlanetTravelStartResult.Started;
     }
 
+    /// <summary>0x28eeb0 writes a mission target without the ship/map unlock predicate.</summary>
+    internal Rac1PlanetTravelStartResult BeginMissionLevelExit(int destinationId)
+    {
+        ValidateDestination(destinationId);
+        if (TransitionActive) throw new InvalidOperationException("R&C1 planet travel is already active.");
+        SourceLevel = _campaign.CurrentLevel;
+        PendingDestinationStorage = LoaderDestination = destinationId;
+        TransitionActive = MissionLevelExit = true;
+        CurrentLevelCommitted = false;
+        return Rac1PlanetTravelStartResult.Started;
+    }
+
     /// <summary>
     /// Mirrors the late retail commit where CurrentLevel takes the pending target.
     /// The transition remains active until new-level initialization completes.
@@ -116,7 +129,9 @@ public sealed class Rac1PlanetTravelSession
 
         int target = PendingDestinationStorage
             ?? throw new InvalidOperationException("Active R&C1 travel has no pending target.");
-        if (!_campaign.BeginTravel(target))
+        if (MissionLevelExit)
+            _campaign.CommitMissionLevelExit(target);
+        else if (!_campaign.BeginTravel(target))
             throw new InvalidOperationException("Pending R&C1 destination became unavailable before commit.");
 
         CurrentLevelCommitted = true;
@@ -133,6 +148,7 @@ public sealed class Rac1PlanetTravelSession
         // storage. Preserve that distinction so stale target bytes cannot masquerade
         // as an in-flight transfer.
         TransitionActive = false;
+        MissionLevelExit = false;
         CurrentLevelCommitted = false;
         SourceLevel = null;
     }

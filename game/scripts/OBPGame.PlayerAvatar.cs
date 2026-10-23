@@ -192,6 +192,7 @@ public partial class OBPGame
         {
             player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
             player.Rac1TraversalAnimationCycleCompleted = controller.TraversalAnimationCycleCompleted;
+            player.Rac1WaterAnimationFacts = controller.WaterAnimationFacts;
             player.Rac1WrenchAnimationBlending = controller.TraversalSample?.IsBlending ?? false;
             if (_rac1WrenchView is not null &&
                 controller.CurrentAttachmentPose(Rac1WrenchAttachment.SocketKey) is { } hand)
@@ -286,6 +287,7 @@ public partial class OBPGame
 
     private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
         _rac1HeldItem.NativeItemId == (int)item &&
+        _player?.Rac1WaterHandItemHidden != true &&
         _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
 
     private void RefreshRac1WrenchPresentationVisibility()
@@ -301,6 +303,7 @@ public partial class OBPGame
             return;
         _rac1WrenchView.Visible =
             _activeDestination?.Game == ObpSourceGame.Rac1 &&
+            _player?.Rac1WaterHandItemHidden != true &&
             (_rac1HeldItem.NativeItemId == (int)OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
              _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
     }

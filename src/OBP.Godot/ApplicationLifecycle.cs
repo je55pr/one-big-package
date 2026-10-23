@@ -11,6 +11,8 @@ public static class ApplicationLifecycle
 {
     private static string? _lastQuitReason;
     private static int _lastExitCode;
+    private static Func<Task>? _prepareQuit;
+    private static bool _quitPending;
 
     public enum EscapeFallback
     {
@@ -33,12 +35,36 @@ public static class ApplicationLifecycle
     public static void RequestQuit(Node owner, string reason, int exitCode = 0) =>
         RequestQuit(owner.GetTree(), reason, exitCode);
 
+    /// <summary>Install the application root's asynchronous resource teardown.</summary>
+    public static void SetQuitPreparation(Func<Task>? prepareQuit) => _prepareQuit = prepareQuit;
+
     public static void RequestQuit(SceneTree tree, string reason, int exitCode = 0)
     {
+        // A failure during shutdown must still turn an earlier pass into failure.
+        if (_quitPending && exitCode == 0) return;
         _lastQuitReason = reason;
         _lastExitCode = exitCode;
         GD.Print($"[lifecycle] quit-request reason={reason} exitCode={exitCode}");
-        tree.Quit(exitCode);
+        if (_quitPending) return;
+        _quitPending = true;
+        _ = CompleteQuitAsync(tree);
+    }
+
+    private static async Task CompleteQuitAsync(SceneTree tree)
+    {
+        try
+        {
+            if (_prepareQuit is { } prepareQuit) await prepareQuit();
+        }
+        catch (Exception ex)
+        {
+            GD.PrintErr($"[lifecycle] quit preparation failed: {ex}");
+            if (_lastExitCode == 0) _lastExitCode = 1;
+        }
+        finally
+        {
+            tree.Quit(_lastExitCode);
+        }
     }
 
     public static void ReportNavigation(string reason) =>

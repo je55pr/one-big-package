@@ -14,4 +14,13 @@ public sealed class Rac1BoltWallet
         if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value));
         Balance = checked(Balance + value);
     }
+
+    /// <summary>Native talk-step condition-kind 1 payment; insufficient funds do not mutate the wallet.</summary>
+    public bool TrySpend(int value)
+    {
+        if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
+        if (value > Balance) return false;
+        Balance -= value;
+        return true;
+    }
 }

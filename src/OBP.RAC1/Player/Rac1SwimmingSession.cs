@@ -25,7 +25,8 @@ public readonly record struct Rac1SwimInput(
 
 /// <summary>
 /// Deterministic source-owned action/oxygen boundary. Does not invent swim
-/// velocities, water geometry, animation for surface states or death resets.
+/// velocities, water geometry or death resets. The complete bounded motion
+/// controller is Rac1WaterMovementSession; this retains the vocabulary API.
 /// </summary>
 public readonly record struct Rac1SwimSnapshot(
     Rac1WaterDomain Water,
@@ -63,8 +64,7 @@ public sealed class Rac1SwimmingSession
             throw new ArgumentOutOfRangeException(nameof(input));
 
         if (_drowning)
-            return Snapshot(input.Water, Rac1TraversalEquipmentWater.UnderwaterDomain,
-                Rac1PlayerActionDomain.Drown, null);
+            return Snapshot(input.Water, 20, Rac1PlayerActionDomain.Drown, 95);
 
         Rac1WaterDomain next = input.Water;
         if (next == Rac1WaterDomain.Surface && input.DivePressed && input.DiveAdmitted)
@@ -104,9 +104,12 @@ public sealed class Rac1SwimmingSession
             Rac1TraversalEquipmentWater.UnderwaterMovingAction => 59,
             Rac1TraversalEquipmentWater.UnderwaterIdleAction => 60,
             Rac1TraversalEquipmentWater.HydroPackAction => 61,
+            Rac1TraversalEquipmentWater.SurfaceIdleAction => 58,
+            Rac1TraversalEquipmentWater.SurfaceMovingAction => 101,
+            Rac1PlayerActionDomain.Drown => 95,
             _ => null,
         };
-        return Snapshot(next, domain, action, sequence);
+        return Snapshot(next, _drowning ? 20 : domain, action, sequence);
     }
 
     private Rac1SwimSnapshot Snapshot(Rac1WaterDomain water, int domain,
