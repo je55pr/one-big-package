@@ -65,12 +65,13 @@ public partial class OBPGame
         _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
         _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
+        ResetRac1Amoeboids();
         ResetRac1BirdbotProjectiles();
     }
 
     private void ConfigureRac1Enemies(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId is not (0 or 1 or Rac1AridiaEnemies.LevelId or 6 or 9 or 10 or 15)) return;
+        if (world.LevelId is not (0 or 1 or Rac1AridiaEnemies.LevelId or 5 or 6 or 9 or 10 or 11 or 15)) return;
         var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
@@ -160,13 +161,15 @@ public partial class OBPGame
                 seekers.Register(authored, node.State, MathF.Atan2(nativeForward.Y, nativeForward.X));
                 nodes.Add(node);
             }
+        ConfigureRac1Amoeboids(world, result, nodes, Rac1LevelSettings.ReadGameplay(reader, level));
         foreach (var group in nodes.GroupBy(node => node.Source.NativeClassId))
         {
             var cls = classes.Mobies[group.Key];
             var asset = Rac1MobyAnimationAssets.Bake(cls, group.First().Source.Meshes,
                 core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength),
                 skipUnsupportedTiming: world.LevelId == Rac1AridiaEnemies.LevelId ||
-                    group.Key is Rac1SeekerSession.ClassId or Rac1FrogAuthored.ClassId);
+                    group.Key == Rac1SeekerSession.ClassId || Rac1AmoeboidAuthored.IsFamily(group.Key) ||
+                    group.Key == Rac1FrogAuthored.ClassId);
             foreach (var node in group)
             {
                 if (group.Key == 749) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
@@ -178,7 +181,9 @@ public partial class OBPGame
                 // encounter. Register its shape but do not put it into broadphase
                 // contacts until it has actually emerged or been released.
                 uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ||
-                    group.Key == Rac1FrogAuthored.ClassId && !_rac1Frogs!.Get(node.Source.InstanceIndex).Presented ? 0u : 1u;
+                    (Rac1AmoeboidAuthored.IsFamily(group.Key) && !_rac1Amoeboids!.Get(node.Source.InstanceIndex).Active) ||
+                    (group.Key == Rac1FrogAuthored.ClassId && !_rac1Frogs!.Get(node.Source.InstanceIndex).Presented)
+                    ? 0u : 1u;
                 var body = new CharacterBody3D
                 {
                     Name = $"EnemyContact_i{node.Source.InstanceIndex}",
@@ -196,6 +201,8 @@ public partial class OBPGame
                         ? _rac1Birdbots!.Get(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1SeekerSession.ClassId
                             ? _rac1Seekers!.Get(node.Source.InstanceIndex).Sequence
+                        : Rac1AmoeboidAuthored.IsFamily(group.Key)
+                            ? _rac1Amoeboids!.Get(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1FrogAuthored.ClassId
                             ? _rac1Frogs!.Get(node.Source.InstanceIndex).Sequence
                         : asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min();
@@ -204,11 +211,16 @@ public partial class OBPGame
                     : null;
                 var enemy = new Rac1HostedEnemy(node, asset, body, motion, clip);
                 node.ConfigureAnimations(asset.Presentation);
-                if (group.Key != Rac1AridiaEnemies.Sandshark)
+                if (group.Key != Rac1AridiaEnemies.Sandshark &&
+                    (!Rac1AmoeboidAuthored.IsFamily(group.Key) ||
+                     _rac1Amoeboids!.Get(node.Source.InstanceIndex).Active))
                     node.ApplyAnimationSample(enemy.Animation.Sample);
-                else HideBuriedRac1AridiaEnemy(enemy);
+                else if (group.Key == Rac1AridiaEnemies.Sandshark)
+                    HideBuriedRac1AridiaEnemy(enemy);
                 SynchronizeRac1Enemy(enemy);
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
+                if (Rac1AmoeboidAuthored.IsFamily(group.Key))
+                    InitializeRac1AmoeboidPresentation(enemy);
             }
         }
         ConfigureRac1FrogCarriers(result);
@@ -248,6 +260,7 @@ public partial class OBPGame
         {
             _rac1EnemyTicks--;
             _rac1Nanotech.UpdateNative();
+            TickRac1AmoeboidGates();
             TickRac1FrogShuttleSwitch();
             TickRac1FrogWaves();
             TickRac1QueenFlight();
@@ -321,6 +334,7 @@ public partial class OBPGame
                 else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId) TickRac1NovalisPeckbot(enemy);
                 else if (node.Source.NativeClassId == Rac1NovalisBirdbotSession.ClassId) TickRac1NovalisBirdbot(enemy);
                 else if (node.Source.NativeClassId == Rac1SeekerSession.ClassId) TickRac1Seeker(enemy);
+                else if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId)) TickRac1Amoeboid(enemy);
                 else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId) TickRac1Frog(enemy);
                 else if (!aridiaStepped) TickRac1AridiaEnemy(enemy);
                 // All known Aridia attacks occur within the native-candidate
@@ -547,6 +561,8 @@ public partial class OBPGame
 
     private bool ApplyRac1EnemyWeaponDamage(RuntimeWorldScene.DynamicObjectNode node, Rac1GameplayDamageEvent damage)
     {
+        if (Rac1AmoeboidAuthored.IsFamily(node.Source.NativeClassId))
+            return ApplyRac1AmoeboidDamage(node, damage);
         if (Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId))
             return ApplyRac1AridiaWeaponDamage(node, damage);
         if (!_rac1MobyRuntime.CanDispatchDamage(damage)) return false;
