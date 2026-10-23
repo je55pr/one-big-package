@@ -169,6 +169,92 @@ public sealed class Rac1AmoeboidTargetSelectionTests
         Assert.DoesNotContain(eligible, x => Rac1AmoeboidAuthored.ReadGroup(x.RawRecord) is 2 or 74 or 77);
     }
 
+    [Fact]
+    public void WaitingClass623RequiresMatchingNativeControllerOrVolumeSignal()
+    {
+        byte[] pvar = new byte[Rac1AmoeboidClass623Admission.PVarSize];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x2b8), 1071);
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x2bc), -1);
+        var waiting = Rac1AmoeboidClass623Admission.Read(pvar);
+        var links = Rac1AmoeboidClass623Admission.ReadActivationLinks(pvar);
+        Assert.Equal(new Rac1Class623ActivationLinks(1071, -1), links);
+        Assert.Equal(new Rac1Class623InitialTargetState(15, false), waiting);
+        Assert.Equal(waiting, Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, null, true));
+        Assert.Equal(waiting, Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, 0, null));
+        Assert.Equal(new Rac1Class623InitialTargetState(1, true),
+            Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, 2, null));
+
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x2bc), 58);
+        links = Rac1AmoeboidClass623Admission.ReadActivationLinks(pvar);
+        Assert.Equal(waiting, Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, null, false));
+        Assert.Equal(new Rac1Class623InitialTargetState(1, true),
+            Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, null, true));
+        var admitted = Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, null, true);
+        Assert.Equal(admitted,
+            Rac1AmoeboidClass623Admission.AdvanceWaiting(admitted, links, 0, false));
+        Assert.Equal(new Rac1Class623InitialTargetState(12, false),
+            Rac1AmoeboidClass623Admission.AdvanceWaiting(new(12, false), links, 2, true));
+
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x2b8), -2);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AmoeboidClass623Admission.ReadActivationLinks(pvar));
+    }
+
+    [SkippableFact]
+    public void RetailClass623WaitingLinksResolveToClass830AndAuthoredTriggerVolumes()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5);
+        var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+        var mobys = Rac1Instances.Parse(gameplay).MobyInstances;
+        var volumes = Rac1ClipVolumes.Read(gameplay);
+        var waiting = mobys.Where(x => x.OClass == 623 &&
+            Rac1AmoeboidClass623Admission.Read(x.PVar!).NativeState == 15).ToArray();
+        Assert.Equal(44, waiting.Length);
+        Assert.Equal(25, mobys.Count(x => x.OClass == 830));
+        foreach (var target in waiting)
+        {
+            var links = Rac1AmoeboidClass623Admission.ReadActivationLinks(target.PVar!);
+            Assert.InRange(links.LinkedMobyIndex, 0, mobys.Count - 1);
+            Assert.Equal(830, mobys[links.LinkedMobyIndex].OClass);
+            if (links.TriggerVolumeIndex >= 0)
+            {
+                Assert.InRange(links.TriggerVolumeIndex, 0, volumes.Count - 1);
+                Assert.True(volumes[links.TriggerVolumeIndex].Contains(volumes[links.TriggerVolumeIndex].Centre));
+            }
+        }
+        Assert.Equal(new[] { 51, 52, 58 }, waiting
+            .Select(x => Rac1AmoeboidClass623Admission.ReadActivationLinks(x.PVar!).TriggerVolumeIndex)
+            .Where(x => x >= 0).Distinct().OrderBy(x => x));
+        Assert.Equal(9, waiting.Count(x =>
+            Rac1AmoeboidClass623Admission.ReadActivationLinks(x.PVar!).TriggerVolumeIndex >= 0));
+    }
+
+    [SkippableFact]
+    public void RetailClass830WritesActivationByteAndClass623ChecksBothGates()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var overlay = Rac1ExecutableOverlay.Read(reader,
+            Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5));
+        static uint Word(Rac1ExecutableOverlay source, int address) =>
+            BinaryPrimitives.ReadUInt32LittleEndian(source.Read(address, 4));
+
+        Assert.Equal(0xa2040020u, Word(overlay, 0x0030c69c)); // class-830 state 2
+        Assert.Equal(0xa20400bcu, Word(overlay, 0x0030c6a8)); // state-2 signal byte
+        Assert.Equal(0x906400bcu, Word(overlay, 0x00302844)); // class-623 link signal
+        Assert.Equal(0x54800009u, Word(overlay, 0x00302848)); // activate if nonzero
+        Assert.Equal(0x8e2502bcu, Word(overlay, 0x00302850)); // alternate volume index
+        Assert.Equal(0x0c0a271au, Word(overlay, 0x0030285c)); // native volume predicate
+        Assert.Equal(0x34421000u, Word(overlay, 0x0030287c)); // restore 0x1000 flag
+        Assert.Equal(0xa2640020u, Word(overlay, 0x00302880)); // state 1
+        // Native volume query uses its 0x80-stride source cuboid table.
+        Assert.Equal(0x000511c0u, Word(overlay, 0x00289c84));
+    }
+
     [SkippableFact]
     public void RetailRilgarAmoeboidTargetGroupsContainAuthenticClass623Members()
     {

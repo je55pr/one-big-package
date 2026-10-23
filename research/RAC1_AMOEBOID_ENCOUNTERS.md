@@ -121,14 +121,39 @@ arm starts at **0x0030282c** (jump-table entry +0x3c at
 and checks that Moby's runtime **+0xbc** byte; a nonzero value
 branches to the state-1 reactivation at **0x0030287c–0x00302888**,
 which restores flags **0x1000**. An alternate gate reads
-PVar **+0x2bc** and invokes native **0x00289c68**; its
-full predicate still needs recovery. The instruction words for
-this first reactivation route are covered by the retail test.
+PVar **+0x2bc** and invokes native **0x00289c68**, a
+3D clip-volume containment test. The source instructions for both
+reactivation routes are covered by retail tests.
 
-Godot has no source-backed runtime ownership of the linked Moby's
-+0xbc byte or the alternate predicate yet, so this native reactivation
-is **documented but not hosted**. The class-623 damage receiver and
-full subsequent state/flag lifecycle also remain unimplemented.
+All **44** state-15 class-623 targets point at source **class-830**
+controller Mobys. There are **25** class-830 placements on Rilgar.
+The class-830 updater at **0x0030c69c–0x0030c6a8** sets its own
+native state **2** and Moby **+0xbc = 2** on activation; the class-623
+state-15 routine reads this same byte from the linked controller.
+This proves that the link is a controller-completion signal, **not**
+mere visibility or generic Moby activity. Nine waiting class-623s
+also specify alternative authored **volume indices 51, 52 or 58**.
+The native alternate predicate `0x00289c68` indexes the **0x80-byte
+3D clip-volume table** and checks a transformed point against cube
+bounds. The caller passes source pointer **0x0013f3d0**;
+the Godot host supplies Ratchet's position as an explicit adapter
+rather than claiming a verified byte-for-byte pointer equivalence.
+
+`Rac1AmoeboidClass623Admission` now decodes both PVar links and
+reproduces the state-15 transition to state **1** and flag **0x1000**
+only when the **real controller completion byte** is nonzero or the
+separate authorised volume predicate succeeds. Unknown runtime
+signals must remain unknown; an inactive native controller is never
+inferred ready from Godot visibility.
+
+The Godot adapter now hosts the **nine volume-gated** candidates
+through source `Rac1ClipVolumes.Contains` on the player's native
+position (Godot clip containment is a bounded geometric stand-in
+for the PS2 floating-point test). The native class-830 update/byte
+owner is not hosted, so **controller-triggered** activation, the
+class-623 damage receiver and full subsequent state/flag lifecycle
+remain unimplemented. Existing initially eligible group-101 targets
+remain unaffected.
 
 On the retail Rilgar disc there are **56 class-623** placed Mobys.
 Exactly **52 Amoeboid** instances reference candidate groups
@@ -138,15 +163,14 @@ The engine-neutral `Rac1AmoeboidTargetSelection` validates this
 retail census and applies nearest-valid-target admission with
 group/range/liveness and stable list-order tie resolution.
 
-Godot now requires both **rendered, active** class-623 presence
-and its **source-backed initial state-1 / 0x1000 flag** before
-admitting an Amoeboid target. It keeps the originally state-15
-population in the candidate registry but excludes them until genuine
-later activation is recovered. It does not pretend those objects
-remain in state 15 forever in retail. An engine-neutral source-owned
-lunge-envelope factory retains the **class-623 victim ID** separately
-from the Amoeboid attacker/owner, with the recovered 0x10001/1-point
-contact descriptor. A conservative **Godot-only per-lunge target latch** rejects
+Godot requires **rendered, active** class-623 presence and a native
+state **1** with flag **0x1000** before admitting an Amoeboid target.
+It keeps the state-15 population registered but ineligible until a
+source-backed activation predicate succeeds; volume-gated candidates
+can now activate, while unresolved class-830 runtime links cannot.
+The engine-neutral lunge-envelope factory retains the **class-623
+victim ID** separately from the Amoeboid attacker/owner, with the
+recovered 0x10001/1-point contact descriptor. A conservative **Godot-only per-lunge target latch** rejects
 contact if the selected victim switches mid-animation. This prevents an
 attack initially aimed at a class-623 Moby from damaging Ratchet, and
 the inverse switch cannot create a hit on Ratchet either. The latch
@@ -224,10 +248,13 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
   exact native physics.
 - Rilgar's class-623 candidate selection uses the original class, group,
   120-unit search limit and current-target proximity comparisons.
-  The **initial state/flag admission** has now been recovered from the
-  retail executable and all 56 PVars. Native state-15 reactivation,
-  subsequent flag changes and the actual class-623 damage receiver
-  remain unported, so these targets do not yet take damage.
+  The **initial state/flag admission**, nine authored volume-trigger
+  activation cases and class-830 completion-byte link are recovered
+  from the retail executable and all 56 PVars. The host activates
+  state-15 candidates only through the volume route; native class-830
+  controller runtime signals, subsequent flag changes and the
+  class-623 damage receiver remain unported, so these targets do not
+  yet take damage.
 - The host tests a valid player contact at source lunge frame >=15.5.
   Exact `FUN_00214cc8` subframe admission, target filtering,
   audio voice lifetime, and particle/debris tuning remain bounded
