@@ -62,6 +62,70 @@ public static class Rac1AridiaConstructorbotNative
     public const int WalkerLedgeFlag = 0x8;
     public const int WalkerHeadingOrContactMask = 0x6;
     public const float WalkerStopDistance = .1f;
+    public const int WalkerInitialRecordFlags = 0x280;
+    public const float WalkerProbeUp = .5f;
+    public const float WalkerProbeDown = .5f;
+    public const float WalkerSlopeLookaheadThreshold = .5f;
+    public const float WalkerLookaheadSpeedThreshold = .1f;
+
+    /// <summary>
+    /// walker_probe (L2:0x2583f0) emits a vertical source-native line segment
+    /// from candidateZ+up to max(0, candidateZ-down); a missing collision
+    /// reports no support. Caller supplies original collision metadata.
+    /// </summary>
+    public static (float StartZ, float EndZ) WalkerProbeHeights(
+        float candidateZ, float up, float down)
+    {
+        if (!float.IsFinite(candidateZ) || !float.IsFinite(up) ||
+            !float.IsFinite(down) || up < 0 || down < 0)
+            throw new ArgumentOutOfRangeException(nameof(candidateZ));
+        return (candidateZ + up, MathF.Max(0, candidateZ - down));
+    }
+
+    /// <summary>
+    /// walker_record_step L2:0x258b50: first probe with no valid source
+    /// collision stops the walker with 0x22, or ledge code 8 when record
+    /// bit 8 is set. A valid source probe contributes no flags by itself.
+    /// </summary>
+    public static int WalkerInitialProbeFlags(bool hasValidFloorHit, int recordFlags)
+    {
+        if ((recordFlags & ~0x2a9) != 0 || recordFlags < 0)
+            throw new ArgumentOutOfRangeException(nameof(recordFlags));
+        return hasValidFloorHit ? 0 : (recordFlags & WalkerLedgeFlag) != 0
+            ? WalkerLedgeFlag : 0x22;
+    }
+
+    /// <summary>
+    /// The native post-move contact response rolls back movement if source
+    /// floor height differs from the previous Moby Z by more than record
+    /// +8 downward reach or +0xc upward reach. Boundaries are inclusive.
+    /// </summary>
+    public static bool WalkerFloorHeightRejectsStep(
+        float previousZ, float hitFloorZ, float maximumDown, float maximumUp)
+    {
+        if (!float.IsFinite(previousZ) || !float.IsFinite(hitFloorZ) ||
+            !float.IsFinite(maximumDown) || !float.IsFinite(maximumUp) ||
+            maximumDown < 0 || maximumUp < 0)
+            throw new ArgumentOutOfRangeException(nameof(hitFloorZ));
+        return previousZ - hitFloorZ > maximumDown ||
+            hitFloorZ - previousZ > maximumUp;
+    }
+
+    /// <summary>
+    /// The original walker checks atan2(surfaceNormalZ, normalXYLength) &gt; .5
+    /// and horizontal speed &gt; .1 before performing its ahead-of-actor
+    /// slope/ledge probe. Godot surfaces use Y as vertical instead.
+    /// </summary>
+    public static bool WalkerNeedsLookahead(float verticalSurfaceNormal, float planarSpeed)
+    {
+        if (!float.IsFinite(verticalSurfaceNormal) ||
+            !float.IsFinite(planarSpeed) || verticalSurfaceNormal is < -1 or > 1 ||
+            planarSpeed < 0)
+            throw new ArgumentOutOfRangeException(nameof(verticalSurfaceNormal));
+        return MathF.Asin(verticalSurfaceNormal) > WalkerSlopeLookaheadThreshold &&
+            planarSpeed > WalkerLookaheadSpeedThreshold;
+    }
+
     public const float WalkerYawTolerance = 1.57f;
     public const float WalkerAcceleration = .3f;
     public const float WalkerMaxSpeed = 2.7f;

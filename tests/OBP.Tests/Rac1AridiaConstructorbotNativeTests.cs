@@ -142,6 +142,62 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void WalkerVerticalProbeClampsNativeGroundAndRejectsBadExtents()
+    {
+        Assert.Equal((12.5f, 11.5f),
+            Rac1AridiaConstructorbotNative.WalkerProbeHeights(12, .5f, .5f));
+        Assert.Equal((.7f, 0f),
+            Rac1AridiaConstructorbotNative.WalkerProbeHeights(.2f, .5f, .5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerProbeHeights(12, -.1f, .5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerProbeHeights(float.NaN, .5f, .5f));
+    }
+
+    [Theory]
+    [InlineData(true, 0x280, 0)]
+    [InlineData(false, 0x280, 0x22)]
+    [InlineData(false, 0x288, 8)]
+    [InlineData(true, 0x288, 0)]
+    public void WalkerMissingFloorProbeSelectsActualRecordLedgeMode(
+        bool hasSupport, int recordFlags, int expected)
+    {
+        Assert.Equal(expected, Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
+            hasSupport, recordFlags));
+    }
+
+    [Fact]
+    public void WalkerRejectsFloorHeightOutsideOriginalAsymmetricBounds()
+    {
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+            10, 9.5f, .5f, .5f));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+            10, 10.5f, .5f, .5f));
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+            10, 9.49f, .5f, .5f));
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+            10, 10.51f, .5f, .5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+                10, 10, float.NaN, .5f));
+    }
+
+    [Fact]
+    public void WalkerSteepOrFlatSurfaceLookaheadUsesNativeThresholdAndSpeed()
+    {
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+            1, .10001f));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+            1, .1f));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+            0, 2));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(
+            MathF.Sin(.5f), 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(2, .2f));
+    }
+
+    [Fact]
     public void WalkerFlagsPreserveNativeBitmaskAndNeverInventCollision()
     {
         Assert.Equal(4, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, 0, 0));

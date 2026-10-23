@@ -209,6 +209,68 @@ public partial class OBPGame
         return EnemyRayTouchesPlayer(enemy, origin, target);
     }
 
+    /// <summary>
+    /// Host adapter for the native 0x2583f0 walker_probe vertical segment.
+    /// The source uses collision kind 0x22 and hit-record metadata. Godot
+    /// supplies a real scene raycast, excluding self and Ratchet. This
+    /// deliberately does not infer a floor from IsOnFloor or elapsed ticks.
+    /// </summary>
+    private bool ProbeRac1AridiaWalkerSupport(
+        Rac1HostedEnemy enemy, Vector3 candidate, out float floorY,
+        out float normalY)
+    {
+        var source = Rac1AridiaConstructorbotNative.WalkerProbeHeights(
+            ToEffectNative(candidate).Z,
+            Rac1AridiaConstructorbotNative.WalkerProbeUp,
+            Rac1AridiaConstructorbotNative.WalkerProbeDown);
+        Vector3 start = candidate with { Y = source.StartZ };
+        Vector3 end = candidate with { Y = source.EndZ };
+        floorY = normalY = 0;
+        if (start.DistanceSquaredTo(end) < 1e-10f) return false;
+        var query = PhysicsRayQueryParameters3D.Create(start, end);
+        query.Exclude = [enemy.Body.GetRid(), _player!.GetRid()];
+        var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (hit.TryGetValue("position", out var hitPosition) &&
+            hit.TryGetValue("normal", out var hitNormal))
+        {
+            floorY = hitPosition.AsVector3().Y;
+            normalY = hitNormal.AsVector3().Y;
+            return true;
+        }
+
+        // Original walker_probe tests a line in source geometry. Some
+        // imported, two-sided triangle meshes have gaps beneath a character
+        // centre even though its HOST capsule has genuine floor support.
+        // Use the same source +/-0.5 vertical window in a bounded Godot
+        // capsule sweep, with all other actors excluded, as a conservative
+        // collision-shape adapter. Still require an actual collision.
+        var from = enemy.Body.GlobalTransform;
+        from.Origin = start;
+        using var parameters = new PhysicsTestMotionParameters3D
+        {
+            From = from,
+            Motion = end - start,
+            Margin = enemy.Body.SafeMargin,
+            RecoveryAsCollision = true,
+            MaxCollisions = 4,
+            ExcludeBodies = new global::Godot.Collections.Array<Rid>(
+                _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                    .Append(_player.GetRid()))
+        };
+        using var result = new PhysicsTestMotionResult3D();
+        if (!PhysicsServer3D.BodyTestMotion(enemy.Body.GetRid(), parameters, result))
+            return false;
+        for (int i = 0; i < result.GetCollisionCount(); i++)
+        {
+            Vector3 normal = result.GetCollisionNormal(i);
+            if (normal.Y <= .65f) continue;
+            floorY = start.Y + result.GetTravel().Y;
+            normalY = normal.Y;
+            return true;
+        }
+        return false;
+    }
+
     private void TickRac1AridiaEnemy(Rac1HostedEnemy enemy)
     {
         if (_player is null) return;
@@ -256,6 +318,7 @@ public partial class OBPGame
         Vector3 sourceWalkerGoal = default;
         float sourceWalkerYawError = 0;
         Vector3 sourceWalkerRequestedWorldStep = default;
+        int sourceWalkerProbeFlags = 0;
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Constructorbot)
         {
             nativeBot = StepRac1NativeConstructorbot(enemy);
@@ -314,9 +377,24 @@ public partial class OBPGame
                         nextYaw - node.Root.Rotation.Y).Normalized();
                     sourceWalkerRequestedWorldStep = newForward * MathF.Min(
                         MathF.Max(0, speed), planarDistance);
+                    // Native walker_probe checks the candidate ground
+                    // BEFORE walker_move_fx. Use a real scene support ray;
+                    // never treat a missing floor as completed travel.
+                    Vector3 candidate = node.Root.GlobalPosition + sourceWalkerRequestedWorldStep;
+                    bool supported = ProbeRac1AridiaWalkerSupport(enemy, candidate,
+                        out float floorHeight, out float supportNormalY);
+                    sourceWalkerProbeFlags = Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
+                        supported, Rac1AridiaConstructorbotNative.WalkerInitialRecordFlags);
+                    if (supported && Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+                        node.Root.GlobalPosition.Y, floorHeight,
+                        Rac1AridiaConstructorbotNative.WalkerProbeDown,
+                        Rac1AridiaConstructorbotNative.WalkerProbeUp))
+                        sourceWalkerProbeFlags |= 0x22;
                     frame = frame with
                     {
-                        Motion = ToEffectNative(sourceWalkerRequestedWorldStep),
+                        Motion = sourceWalkerProbeFlags == 0
+                            ? ToEffectNative(sourceWalkerRequestedWorldStep)
+                            : System.Numerics.Vector3.Zero,
                         Yaw = nextYaw
                     };
                 }
@@ -371,19 +449,20 @@ public partial class OBPGame
         }
         if (sourceWalkerMotion)
         {
-            // Source 0x25b710 returns bit4 only near its original record
-            // target, and may OR collision/floor flags from walker_move_fx.
-            // Collision travel is host-observed; native floor probing and
-            // its 0x22 collision flags are still provisional.
+            // Native walker_probe's valid support/missing floor decision
+            // now comes from a Godot vertical scene ray. Contact/slide
+            // results of walker_move_fx remain a bounded host estimate.
             float requested = sourceWalkerRequestedWorldStep.Length();
             float travelled = (enemy.Body.GlobalPosition - position).Length();
-            int collisionFlags = requested > .001f && travelled < requested * .5f
-                ? 0x22 : 0;
+            int collisionFlags = sourceWalkerProbeFlags;
+            if (sourceWalkerProbeFlags == 0 && requested > .001f &&
+                travelled < requested * .5f)
+                collisionFlags |= 0x22;
             int flags = Rac1AridiaConstructorbotNative.WalkerFlags(
                 enemy.Body.GlobalPosition.DistanceTo(sourceWalkerGoal),
                 sourceWalkerYawError, collisionFlags);
             var walker = Rac1AridiaConstructorbotNative.StepWalkerState(
-                5, flags, resultKnown: enemy.Grounded);
+                5, flags, resultKnown: sourceWalkerProbeFlags != 0 || enemy.Grounded);
             if (walker.NativeState == Rac1AridiaConstructorbotNative.RestState)
             {
                 _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source),

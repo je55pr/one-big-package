@@ -122,6 +122,13 @@ public partial class OBPGame
             // Isolate state5's source walker without inventing success for the
             // currently partial state3 floor-height convergence. The player
             // is staged and the native state is deliberately forced here.
+            // Native state3 has a separate source floor_probe_v + approach_f
+            // vertical path. That recurrence is not ported yet, so this
+            // *explicitly staged* state5 test first settles its real Godot
+            // capsule on an actual level surface. No invented ground height.
+            Require(TryGroundRac1Enemy(particleBot, upwardReach: .5f, downwardReach: 40f),
+                "cannot stage native state5 from real collision floor");
+            particleBot.Node.Root.GlobalPosition = particleBot.Body.GlobalPosition;
             _rac1MobyRuntime.SetNativeState(particleNative, 5);
             SelectRac1EnemySequence(particleBot, 6, 1);
             float walkerStart = new Vector2(
@@ -137,6 +144,24 @@ public partial class OBPGame
             GD.Print($"[aridia-bot-smoke] staged class612 i551 state5 " +
                 $"walker moved toward record14 before={walkerStart:F3} " +
                 $"after={walkerEnd:F3} state={particleNative.State.NativeState} PASS");
+
+            // Negative scene fixture: same real collision body, but suspended
+            // well above any terrain. Native walker_probe must return no
+            // support; the host may turn, but cannot move or finish state5.
+            Vector3 supportedLocation = particleBot.Body.GlobalPosition;
+            Vector3 airborneLocation = supportedLocation + Vector3.Up * 30f;
+            particleBot.Body.GlobalPosition = airborneLocation;
+            particleBot.Node.Root.GlobalPosition = airborneLocation;
+            _rac1MobyRuntime.SetNativeState(particleNative, 5);
+            await PhysicsFramesAsync(8);
+            Require(particleBot.Body.GlobalPosition.DistanceTo(airborneLocation) < .002f,
+                "Constructorbot walker moved through unsupported air");
+            Require(particleNative.State.NativeState == 5,
+                "Constructorbot walker falsely completed while floor probe was missing");
+            GD.Print("[aridia-bot-smoke] real class612 i551 missing-floor " +
+                "walker blocked without phantom state7 PASS");
+            particleBot.Body.GlobalPosition = supportedLocation;
+            particleBot.Node.Root.GlobalPosition = supportedLocation;
 
             // Third fixture: mode3 class612 #549 has PVar+0x18c=-1;
             // native L2:0x2d7fac checks its PVar+0x188 record12's centre
