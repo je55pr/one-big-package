@@ -48,6 +48,7 @@ public partial class OBPGame
 
     private void ResetRac1Enemies()
     {
+        EndRac1QueenScriptedCamera();
         ResetRac1FrogCarriers();
         ResetRac1QueenLinkedChildren();
         foreach (var enemy in _rac1Enemies.Values)

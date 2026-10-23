@@ -317,28 +317,48 @@ public partial class OBPGame
                 Require(_rac1QueenFlight is { Sequence: 8, NativeState: 2 } &&
                     Math.Abs(_rac1QueenFlight.Z - sourceLandingZ -
                         Rac1AlienQueenFlight.SourceHeight) < .001f &&
-                    queenRecovery.NativeState == 2,
-                    "Original Queen failed to initialize source 17.5-unit elevated airborne start.");
+                    queenRecovery.NativeState == 2 &&
+                    _rac1QueenScriptedCamera is { Current: true } &&
+                    GetViewport().GetCamera3D() == _rac1QueenScriptedCamera &&
+                    _activeCamera == _rac1QueenScriptedCamera &&
+                    _player!.Rac1RemoteControlActive,
+                    "Original Queen failed elevated flight or real scripted-camera ownership.");
+                var stolen = new Camera3D { Name = "QueenCameraOwnerConflictTest" };
+                _sceneResult!.Root.AddChild(stolen);
+                stolen.MakeCurrent();
+                TickRac1QueenFlight();
+                Require(_rac1QueenFlight?.NativeState == 2 &&
+                    _rac1QueenScriptedCamera is { Current: false } &&
+                    GetViewport().GetCamera3D() == stolen,
+                    "Queen camera falsely accepted a cue when another owner took the viewport.");
+                stolen.QueueFree();
+                _rac1QueenScriptedCamera!.MakeCurrent();
+                EndRac1QueenScriptedCamera();
+                Require(_rac1QueenScriptedCamera is null &&
+                    !_player!.Rac1RemoteControlActive && _player.Camera.Current &&
+                    GetViewport().GetCamera3D() == _player.Camera,
+                    "Queen camera cancellation failed to restore normal Ratchet camera ownership.");
+                TickRac1QueenFlight();
+                Require(_rac1QueenScriptedCamera is { Current: true } &&
+                    _player!.Rac1RemoteControlActive && _rac1QueenFlight?.NativeState == 2,
+                    "Queen camera could not reacquire the viewport after cancellation.");
                 int flightTicks = 1;
                 while (flightTicks++ < 1000 &&
                     !(_rac1QueenFlight?.CameraCompletionCandidate ?? false))
                     TickRac1QueenFlight();
                 Require(flightTicks < 1000 &&
-                    _rac1QueenFlight is { Sequence: 1, NativeState: 2, CameraBlend: 1f } &&
+                    _rac1QueenFlight is { Sequence: 1, NativeState: 7, CameraBlend: 1f } &&
                     Math.Abs(_rac1QueenFlight.Z - sourceLandingZ) < .001f &&
                     _rac1QueenPendingCamera is { CanCompleteWithAppliedCamera: true } &&
-                    entrance.ObserveLanding(false, false).NativeState == 2,
-                    "Source native gravity, animation8->9->6->1 or camera convergence failed.");
-                // The native camera subsystem and player-state restore are
-                // still unhosted. A positive camera-commit acknowledgement is
-                // staged only here; the regular host never fabricates one.
-                TickRac1QueenFlight(cameraOutputApplied: true);
-                Require(entrance.NativeState == 7 &&
-                    _rac1QueenFlight?.NativeState == 7 &&
+                    entrance.NativeState == 7 &&
+                    _rac1QueenScriptedCamera is null &&
+                    !_player!.Rac1RemoteControlActive &&
+                    _player.Camera.Current && _activeCamera == _player.Camera &&
+                    GetViewport().GetCamera3D() == _player.Camera &&
                     entrance.ObserveLanding(false, true).NativeState == 7 &&
                     entrance.ObserveLanding(false, false).NativeState == 8,
-                    "Queen source camera-committed state2->7->8 handoff failed.");
-                GD.Print($"[frog-smoke] Queen class1051 source gravity +17.5->ground, retail seq8->9->6->1, camera blend1 after {flightTicks} native ticks, external camera acknowledgment 2->7->8 PASS");
+                    "Native Queen camera takeover, source completion and player-camera restore failed.");
+                GD.Print($"[frog-smoke] Queen class1051 source gravity +17.5->ground, retail seq8->9->6->1, real camera takeover/restore after {flightTicks} native ticks, 2->7->8 PASS");
                 queenRecovery.AdmitNativeState(8, 3);
                 queenContact = (queenMesh.GlobalTransform * queenMesh.GetAabb()).GetCenter();
                 _rac1EquipmentGeometryFrame = ulong.MaxValue;

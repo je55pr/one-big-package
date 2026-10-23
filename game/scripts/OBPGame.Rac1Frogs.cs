@@ -23,6 +23,7 @@ public partial class OBPGame
     private float _rac1QueenAuthoredNativeZ;
     private NVector3 _rac1QueenCameraAnchor;
     private Rac1AlienQueenFlightCamera? _rac1QueenPendingCamera;
+    private Camera3D? _rac1QueenScriptedCamera;
     private Rac1AlienQueenLinkedGate? _rac1QueenLinkedGate;
     private Rac1AlienQueenGateNative? _rac1QueenGateNative;
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1QueenLinkedNodes = [];
@@ -176,12 +177,65 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// Drive the retail state2 descent, 8->9->6->1 sequences and native
-    /// camera blend request. The owning camera is not yet intercepted by the
-    /// Queen host. Only a positively acknowledged external camera install
-    /// may transition state2->7 and restore normal gameplay.
+    /// Exclusive camera lease for the source class1051 opening shot. Do not
+    /// steal from a Visibomb or another scripted camera. Only a real viewport
+    /// camera installation acknowledges the original native landing helper.
     /// </summary>
-    private Rac1AlienQueenFlightFrame? TickRac1QueenFlight(bool cameraOutputApplied = false)
+    private bool ApplyRac1QueenScriptedCamera(Rac1AlienQueenFlightCamera? cue)
+    {
+        if (cue is null || _sceneResult is null || _player is null ||
+            !IsInstanceValid(_player)) return false;
+        if (_rac1QueenScriptedCamera is null)
+        {
+            if (!IsInstanceValid(_player.Camera) || !_player.Camera.Current ||
+                _player.Rac1RemoteControlActive ||
+                GetViewport().GetCamera3D() != _player.Camera) return false;
+            _rac1QueenScriptedCamera = new Camera3D
+            {
+                Name = "AlienQueenSourceCamera59",
+                Fov = _player.Camera.Fov,
+                Near = _player.Camera.Near,
+                Far = _player.Camera.Far
+            };
+            _sceneResult.Root.AddChild(_rac1QueenScriptedCamera);
+            _rac1QueenScriptedCamera.MakeCurrent();
+            _activeCamera = _rac1QueenScriptedCamera;
+            _player.Rac1RemoteControlActive = true;
+        }
+        var shot = _rac1QueenScriptedCamera;
+        if (!IsInstanceValid(shot) || !shot.Current ||
+            GetViewport().GetCamera3D() != shot) return false;
+        Vector3 position = FromEffectNative(cue.NativeCameraPosition);
+        Vector3 target = FromEffectNative(cue.NativeLookAt);
+        if (position.DistanceSquaredTo(target) < .0001f) return false;
+        shot.GlobalPosition = position;
+        shot.LookAt(target, Vector3.Up);
+        return shot.Current && GetViewport().GetCamera3D() == shot;
+    }
+
+    private void EndRac1QueenScriptedCamera()
+    {
+        var shot = _rac1QueenScriptedCamera;
+        if (shot is null) return;
+        bool owned = IsInstanceValid(shot) && shot.Current;
+        if (owned && _player is { } player && IsInstanceValid(player) &&
+            IsInstanceValid(player.Camera))
+        {
+            player.Camera.MakeCurrent();
+            _activeCamera = player.Camera;
+            player.Rac1RemoteControlActive = false;
+            player.CenterCameraBehindPlayer();
+        }
+        if (IsInstanceValid(shot)) shot.QueueFree();
+        _rac1QueenScriptedCamera = null;
+    }
+
+    /// <summary>
+    /// Drive the retail state2 descent, 8->9->6->1 sequences and native
+    /// camera blend. A camera takeover and applied cue must be acknowledged
+    /// before this source helper can enter state7.
+    /// </summary>
+    private Rac1AlienQueenFlightFrame? TickRac1QueenFlight()
     {
         if (_rac1QueenEntrance?.NativeState != 2 ||
             _rac1QueenNode is null || _rac1QueenAnimation is null ||
@@ -215,8 +269,10 @@ public partial class OBPGame
         _rac1QueenPendingCamera = _rac1QueenFlight.SampleCamera(
             worldPosition, ToEffectNative(EnemyForward(_rac1QueenNode)),
             hero, heroForward, _rac1QueenCameraAnchor);
-        if (_rac1QueenFlight.CommitCameraAndComplete(cameraOutputApplied))
+        bool cameraApplied = ApplyRac1QueenScriptedCamera(_rac1QueenPendingCamera);
+        if (_rac1QueenFlight.CommitCameraAndComplete(cameraApplied))
         {
+            EndRac1QueenScriptedCamera();
             _rac1QueenEntrance.ObserveLanding(true, true);
             _rac1QueenRecovery.AdmitNativeState(7, frame.Sequence);
             GD.Print("[frog-queen] retail camera blend acknowledged; native state2->7");
