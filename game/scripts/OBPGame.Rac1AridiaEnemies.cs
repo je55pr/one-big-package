@@ -935,7 +935,7 @@ public partial class OBPGame
         int? candidate = _rac1AridiaEnemies.FindWaitingSharkForNest(nestInstance);
         if (candidate is not int id || !_rac1Enemies.TryGetValue(id, out var shark)) return;
         if (!_rac1AridiaEnemies.ReleaseFromNest(nestInstance, id,
-                ToEffectNative(nestPosition), ToEffectNative(shark.Node.Root.GlobalPosition))) return;
+                ToEffectNative(nestPosition), ToEffectNative(shark.AuthoredHomePosition))) return;
         var native = _rac1MobyRuntime.Require(shark.Node.Source);
         _rac1MobyRuntime.SetNativeState(native, Rac1AridiaEnemies.NestReleasedSharkState);
         var origin = nestPosition + Vector3.Up * Rac1AridiaEnemies.NestReleaseHeight;

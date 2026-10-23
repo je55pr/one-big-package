@@ -35,6 +35,10 @@ public partial class OBPGame
         CharacterBody3D body, Rac1EnemyMotion? motion, int sequence)
     {
         public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
+        // Capture the imported placement before any launches, contacts or
+        // deaths can move Root. Native Aridia nest relaunch heading uses
+        // the same shark's authored home across multiple recycle cycles.
+        public Vector3 AuthoredHomePosition { get; } = node.Root.GlobalPosition;
         public CharacterBody3D Body { get; } = body;
         public Rac1EnemyMotion? Motion { get; } = motion;
         public Rac1MobySequenceClock Animation { get; } = new(asset, sequence);

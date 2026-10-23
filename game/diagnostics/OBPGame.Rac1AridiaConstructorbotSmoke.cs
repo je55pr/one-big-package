@@ -480,12 +480,107 @@ public partial class OBPGame
             GD.Print($"[aridia-bot-smoke] class612 i551 unsupported-floor " +
                 $"state6->7 flags=0x{blockedFlags:X2} target cleanup PASS");
 
+            VerifyAridiaSharkTwoCycleAuthoredHome();
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-pass", 0);
         }
         catch (Exception ex)
         {
             GD.PrintErr($"[aridia-bot-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-fail", 4);
+        }
+    }
+
+    /// <summary>
+    /// Staged regression for PR #169's reviewed repeated-recycling bug.
+    /// Use real imported Godot shark/nest host nodes but an isolated
+    /// engine-neutral group fixture so no ordinary player activation,
+    /// nest timer or death animation is silently claimed as exercised.
+    /// The host release method must use the immutable registration pose
+    /// even when the live shark root is at two opposite death positions.
+    /// </summary>
+    private void VerifyAridiaSharkTwoCycleAuthoredHome()
+    {
+        var shark = _rac1Enemies.Values.First(
+            e => e.Node.Source.NativeClassId == Rac1AridiaEnemies.Sandshark);
+        var nest = _rac1Enemies.Values.First(
+            e => e.Node.Source.NativeClassId == Rac1AridiaEnemies.Nest);
+        int sharkId = shark.Node.Source.InstanceIndex;
+        int nestId = nest.Node.Source.InstanceIndex;
+        var originalSession = _rac1AridiaEnemies;
+        var originalRoot = shark.Node.Root.GlobalPosition;
+        var originalBody = shark.Body.GlobalPosition;
+        bool originalVisible = shark.Node.Root.Visible;
+        bool originalBuried = shark.Buried;
+        bool originalPlacement = shark.NeedsGroundPlacement;
+        uint originalLayer = shark.Body.CollisionLayer;
+        uint originalMask = shark.Body.CollisionMask;
+        int originalDeathTicks = shark.DeathTicks;
+        int originalSequence = shark.Animation.Sequence;
+        var native = _rac1MobyRuntime.Require(shark.Node.Source);
+        int originalNativeState = native.State.NativeState;
+        try
+        {
+            var fixture = new Rac1AridiaEnemySession();
+            fixture.Register(nestId, Rac1AridiaEnemies.Nest, groupId: 7);
+            fixture.Register(sharkId, Rac1AridiaEnemies.Sandshark, groupId: 7);
+            fixture.SetAuthoredGroupRoster(new Dictionary<int, int[]>
+            {
+                [7] = [sharkId]
+            });
+            _rac1AridiaEnemies = fixture;
+            // Keep the nest offset well clear of the real shark home.
+            // The two simulated death points face opposite directions
+            // relative to this nest. Neither is the imported home.
+            Vector3 nestPosition = shark.AuthoredHomePosition + Vector3.Right * 3f;
+            var expected = ToEffectNative(shark.AuthoredHomePosition) -
+                ToEffectNative(nestPosition);
+            float sourceYaw = MathF.Atan2(expected.Y, expected.X);
+            float? firstYaw = null;
+            foreach (float z in new[] { 5f, -5f })
+            {
+                Vector3 deathPosition = nestPosition + Vector3.Back * z;
+                shark.Node.Root.GlobalPosition = deathPosition;
+                shark.Body.GlobalPosition = deathPosition;
+                Require(fixture.Damage(sharkId, 1) &&
+                    fixture.RetireToNestPool(sharkId) &&
+                    fixture.FindWaitingSharkForNest(nestId) == sharkId,
+                    "staged shark death was not admitted to its nest pool");
+                ActivateNearbyRac1AridiaShark(nestId, nestPosition);
+                var launched = fixture.Step(sharkId, new(
+                    ToEffectNative(deathPosition), ToEffectNative(deathPosition),
+                    PlayerAlive: false, LineOfSight: false));
+                Require(launched.Phase == Rac1AridiaEnemyPhase.Launched &&
+                    launched.Sequence == Rac1AridiaEnemies.NestReleasedSharkSequence &&
+                    MathF.Abs(launched.Yaw - sourceYaw) < .001f &&
+                    launched.Motion.X > 0 &&
+                    _rac1MobyRuntime.Require(shark.Node.Source).State.NativeState ==
+                    Rac1AridiaEnemies.NestReleasedSharkState,
+                    "staged recycled shark aimed toward its mutable death location");
+                if (firstYaw.HasValue)
+                    Require(MathF.Abs(firstYaw.Value - launched.Yaw) < .001f,
+                        "second shark relaunch did not preserve first authored heading");
+                firstYaw = launched.Yaw;
+            }
+            Require(shark.AuthoredHomePosition.DistanceTo(originalRoot) < .001f,
+                "Aridia source home changed during staged recycle");
+            GD.Print($"[aridia-bot-smoke] class580 i{sharkId} staged two-cycle " +
+                "authored-home relaunch heading PASS");
+        }
+        finally
+        {
+            _rac1AridiaEnemies = originalSession;
+            shark.Node.Root.GlobalPosition = originalRoot;
+            shark.Body.GlobalPosition = originalBody;
+            shark.Node.Root.Visible = originalVisible;
+            shark.Buried = originalBuried;
+            shark.NeedsGroundPlacement = originalPlacement;
+            shark.DeathTicks = originalDeathTicks;
+            shark.Body.CollisionLayer = originalLayer;
+            shark.Body.CollisionMask = originalMask;
+            _rac1MobyRuntime.SetNativeState(native, originalNativeState);
+            if (shark.Animation.Sequence != originalSequence &&
+                shark.Animation.SupportsSequence(originalSequence))
+                SelectRac1EnemySequence(shark, originalSequence, 1);
         }
     }
 

@@ -338,6 +338,40 @@ public sealed class Rac1AridiaEnemyTests
     }
 
     [Fact]
+    public void RecycledSharkRelaunchesTowardSameAuthoredHomeOnSecondLife()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(10, Rac1AridiaEnemies.Nest, groupId: 7);
+        session.Register(20, Rac1AridiaEnemies.Sandshark, groupId: 7);
+        var nest = new Vector3(10, 20, 3);
+        var authoredHome = new Vector3(15, 20, 3);
+        var firstDeath = new Vector3(10, 28, 3);
+        var secondDeath = new Vector3(10, 12, 3);
+        // The host must keep authoredHome immutable. Passing either
+        // death location instead would produce a different launch heading.
+        Rac1AridiaEnemyFrame LaunchFromDeath(Vector3 death)
+        {
+            Assert.NotEqual(authoredHome, death);
+            Assert.True(session.Damage(20, 1));
+            Assert.True(session.RetireToNestPool(20));
+            Assert.Equal(20, session.FindWaitingSharkForNest(10));
+            Assert.True(session.ReleaseFromNest(10, 20, nest, authoredHome));
+            return session.Step(20, new(death, death, false, false));
+        }
+
+        var first = LaunchFromDeath(firstDeath);
+        var second = LaunchFromDeath(secondDeath);
+        Assert.Equal(Rac1AridiaEnemyPhase.Launched, first.Phase);
+        Assert.Equal(Rac1AridiaEnemyPhase.Launched, second.Phase);
+        Assert.Equal(Rac1AridiaEnemies.NestReleasedSharkSequence, second.Sequence);
+        Assert.Equal(first.Yaw, second.Yaw, 5);
+        Assert.Equal(first.Motion.X, second.Motion.X, 5);
+        Assert.Equal(first.Motion.Y, second.Motion.Y, 5);
+        Assert.True(second.Motion.X > 0);
+        Assert.Equal(2, session.Count);
+    }
+
+    [Fact]
     public void NativeNestGroupCannotReleaseBuriedOrWrongGroupSharks()
     {
         var session = new Rac1AridiaEnemySession();
