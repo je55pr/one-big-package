@@ -18,9 +18,11 @@ public sealed class Rac1Class623ActivationSession
 {
     private sealed record Target(
         Rac1Class623ActivationLinks Links,
-        Rac1Class623InitialTargetState Initial)
+        Rac1Class623InitialTargetState Initial,
+        float InitialHealth)
     {
         public Rac1Class623InitialTargetState State { get; set; } = Initial;
+        public float Health { get; set; } = InitialHealth;
     }
 
     private readonly Dictionary<int, Target> _targets = [];
@@ -35,7 +37,10 @@ public sealed class Rac1Class623ActivationSession
             throw new ArgumentOutOfRangeException(nameof(nativeClassId));
         var state = Rac1AmoeboidClass623Admission.Read(pvar);
         var links = Rac1AmoeboidClass623Admission.ReadActivationLinks(pvar);
-        if (!_targets.TryAdd(targetIndex, new(links, state)))
+        float health = Rac1Class623ImpactAccounting.ReadAuthoredHealth(pvar);
+        if (!float.IsFinite(health))
+            throw new InvalidDataException("Class-623 source health must be finite.");
+        if (!_targets.TryAdd(targetIndex, new(links, state, health)))
             throw new InvalidOperationException($"Duplicate class-623 target i{targetIndex}.");
     }
 
@@ -44,6 +49,45 @@ public sealed class Rac1Class623ActivationSession
 
     public Rac1Class623ActivationLinks Links(int targetIndex) =>
         _targets[targetIndex].Links;
+
+    public float Health(int targetIndex) => _targets[targetIndex].Health;
+
+    /// <summary>
+    /// Consume an *already observed* native 0x284730 service status/scalar
+    /// for a target in hosted eligible state 1. On nonpositive health,
+    /// Rilgar 0x303530 selects response index 1; the source jump table
+    /// at 0x2186f4 routes to 0x303660, which clears the 0x1000 flag and
+    /// enters state 14. The native service's independent return
+    /// classification may also select response indices 1/2, both of
+    /// which route to the same terminal handler at 0x303660.
+    /// Unavailable return classification is null and cannot trigger
+    /// that additional terminal path. No collision or service result
+    /// is synthesized. Requiring hosted state 1 is the conservative
+    /// host-admission policy, not complete retail receiver parity.
+    /// </summary>
+    public Rac1Class623ImpactAccountingResult ApplyObservedNativeImpact(
+        int targetIndex, int? nativeServiceStatus, float? nativeServiceScalar,
+        int? nativeResponseIndex = null)
+    {
+        var target = _targets[targetIndex];
+        if (target.State.NativeState != Rac1AmoeboidClass623Admission.EligibleState ||
+            !target.State.HasTargetableFlag)
+            return new(false, target.Health, false);
+
+        var result = Rac1Class623ImpactAccounting.Evaluate(
+            target.Health, target.State.NativeState, nativeServiceStatus, nativeServiceScalar);
+        if (!result.Applied)
+            return result;
+
+        target.Health = result.RemainingHealth;
+        // Nonpositive health overwrites the service's return index with 1.
+        // With positive health, explicitly observed indices 1/2 also
+        // dispatch the same flag-clearing terminal response.
+        bool terminal = result.TakesTerminalPath || nativeResponseIndex is 1 or 2;
+        if (terminal)
+            target.State = new(14, false);
+        return result with { TakesTerminalPath = terminal };
+    }
 
     /// <summary>
     /// Accept an independently observed *native receiver* transition to

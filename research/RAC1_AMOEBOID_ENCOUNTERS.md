@@ -218,6 +218,45 @@ native jump table points to the terminal response helper. The
 other response indices still depend on the generic service's
 returned classification and have not been fully reconstructed.
 
+The original class-623 reaction dispatch table begins at
+**0x002186f0**, as indexed by instructions **0x00303590-0x003035a4**.
+Response **index 1** (selected when source health is nonpositive)
+and **index 2** both resolve to the native terminal handler at
+**0x00303660**. That path clears **0x1000** targetability and enters
+state **14** at **0x00303714-0x0030371c**. Source index **0** instead
+returns through **0x0030376c**, while indices 3-8 route to the
+alternative reaction arm **0x003035b8**. The generic impact service's
+entire classification policy and other reaction consequences remain
+unrecovered. Retail instruction tests now pin the dispatch pointer
+and index-1/2 table entries.
+
+The per-level engine-neutral `Rac1Class623ActivationSession` now
+retains each target's original PVar **+0x20 health** and provides
+`ApplyObservedNativeImpact` as an input-only bridge from the native
+service's trusted status/scalar output. For an eligible state-1
+target, it accumulates non-terminal health changes; nonpositive
+health follows source response index 1 to state **14**, with
+targetability withdrawn. Independently, when the trusted native
+service's actual **return response index** is supplied and equals
+**1 or 2**, the same terminal handler is selected even if the
+health subtraction remains positive. The service's return-index
+output is **separate** from its status and scalar outputs; a
+missing classification is not guessed. Indices 3-8 have other
+reaction side effects which are still unhosted, so their source
+health accounting does not fabricate a state/animation transition.
+Repeated terminal hits and state-15 hits
+cannot apply. A retail-backed test replays **56 source placements**
+with explicitly injected native-shaped results, then verifies
+the restored 12/44 eligible/waiting split and 1.0 health on reload.
+Restricting dispatch to state-1, rejecting unknown/nonfinite service
+inputs and refusing any synthetic contact are *host safety policies*,
+not claims of a fully reconstructed native receiver.
+
+**Godot still does not provide actual 0x00284730 contact results**,
+so no live class-623 health, terminal state or damage is fabricated.
+The existing `ObserveNativeTerminal` external-notice method is
+also preserved for independently witnessed source outcomes.
+
 All **56** original Rilgar class-623 PVars have 0x2e0 bytes
 and **initial float health 1.0** at +0x20
 (IEEE-754 `0x3f800000`), independently verified on the authorised
