@@ -16,6 +16,7 @@ public partial class OBPGame
     private Rac1FrogSession? _rac1Frogs;
     private Rac1FrogShuttleSwitch? _rac1FrogShuttle;
     private Rac1FrogWaveTriggers? _rac1FrogWaves;
+    private Rac1FrogQueenGroup? _rac1FrogQueen;
     private sealed record HostedFrogWave(RuntimeWorldScene.DynamicObjectNode Node,
         Rac1MobySequenceClock Animation);
     private readonly Dictionary<int, HostedFrogWave> _rac1FrogWaveNodes = [];
@@ -39,6 +40,36 @@ public partial class OBPGame
             node.ApplyState(_rac1MobyRuntime.Require(authored).EntityState);
             nodes.Add(node);
         }
+    }
+
+    private void ConfigureRac1FrogQueen(RuntimeWorld world, IReadOnlyList<int[]> groups)
+    {
+        if (world.LevelId != 6) return;
+        var queen = (world.DynamicObjects ?? [])
+            .SingleOrDefault(source => source.NativeClassId == Rac1FrogQueenGroup.QueenClassId);
+        if (queen is null)
+            throw new InvalidDataException("Original class1051 Alien Queen is missing from LEVEL6.");
+        _rac1FrogQueen = new(queen, groups,
+            (world.DynamicObjects ?? []).Where(m => m.NativeClassId == Rac1FrogSession.ClassId)
+                .Select(m => m.InstanceIndex));
+        GD.Print($"[frog-queen] original class1051 i{queen.InstanceIndex}, native group {_rac1FrogQueen.GroupIndex}, {_rac1FrogQueen.Members.Count} source Frogs; waiting for real boss event");
+    }
+
+    /// <summary>Only a verified Queen state3/sequence6 completion or a
+    /// genuine Queen state4 update may feed this native subroutine.
+    /// The Queen boss AI itself has not yet been hosted: no player-distance
+    /// or elapsed-time fallback is permitted to emit this event.</summary>
+    private int ObserveRac1QueenFrogEvent(int queenState, int queenSequence, bool completed)
+    {
+        if (_rac1FrogQueen is null || _rac1Frogs is null) return 0;
+        int count = 0;
+        foreach (var candidate in _rac1FrogQueen.ObserveNativeUpdate(
+            queenState, queenSequence, completed,
+            id => ToEffectNative(_rac1Enemies[id].Node.Root.GlobalPosition), Rac1EffectRandom))
+            if (LaunchRac1FrogFromNativeProducer(candidate.FrogInstance,
+                candidate.NativePosition, Rac1FrogLaunchProducer.QueenGroup))
+                count++;
+        return count;
     }
 
     private void ConfigureRac1FrogWaves(RuntimeWorld world, RuntimeWorldScene.Result result,
@@ -134,8 +165,8 @@ public partial class OBPGame
 
     /// <summary>
     /// Only a witnessed LEVEL6 native producer/group callback may call this.
-    /// The exact retail group-directory decoding is still under investigation,
-    /// so general player proximity does not call it.
+    /// Original Moby group IDs are decoded. Native Queen AI still does not
+    /// emit its boss-owned event during ordinary play; proximity never does.
     /// </summary>
     private bool LaunchRac1FrogFromNativeProducer(int instance, NVector3 nativePosition,
         Rac1FrogLaunchProducer producer)

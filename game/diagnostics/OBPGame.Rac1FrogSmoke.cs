@@ -178,28 +178,42 @@ public partial class OBPGame
 
             if (_world.LevelId == 6)
             {
-                // Source-backed FUN_L06_002e9d10 launch, with an explicit
-                // simulated producer callback. Source group membership and
-                // actual Queen/trigger event timing are not yet hosted.
-                var dormantLaunch = population.First(e =>
-                    frogs.Get(e.Node.Source.InstanceIndex) is
-                    { NativeState: 15, StartsHidden: true, Lives: 1, SwitchGated: false });
-                int launchId = dormantLaunch.Node.Source.InstanceIndex;
-                NVector3 launchPosition = ToEffectNative(dormantLaunch.Node.Root.GlobalPosition) +
-                    NVector3.UnitZ * 15f;
-                Require(LaunchRac1FrogFromNativeProducer(launchId, launchPosition,
-                    Rac1FrogLaunchProducer.QueenGroup),
-                    "Confirmed native group callback could not activate original hidden Frog");
-                Require(frogs.Get(launchId) is { NativeState: 6, Presented: true, Lives: 1 } &&
-                    dormantLaunch.Node.Root.Visible &&
-                    dormantLaunch.Body.CollisionLayer == 1 &&
-                    dormantLaunch.Body.CollisionMask == 1 &&
-                    dormantLaunch.Node.Root.GlobalPosition.DistanceTo(
-                        FromEffectNative(launchPosition)) < .001f,
-                    "Native hidden Frog state6 spawn did not restore pose/presentation/contact");
-                Require(!LaunchRac1FrogFromNativeProducer(launchId, launchPosition,
-                        Rac1FrogLaunchProducer.QueenGroup),
-                    "Duplicate list callback woke a non-state15 Frog");
+                // The real Queen class1051 and signed group22 are present,
+                // but her boss AI is not yet hosted. Supply ONLY the native
+                // sequence6 completion event, not a fabricated player-distance
+                // trigger. This exercises source-owned group dispatch.
+                var queen = _rac1FrogQueen
+                    ?? throw new InvalidOperationException("Retail class1051 Queen missing.");
+                Require(queen.QueenInstance == 626 && queen.GroupIndex == 22 &&
+                    queen.Members.SequenceEqual(Enumerable.Range(448, 12)),
+                    "Original Alien Queen source group does not match retail.");
+                var originalQueenMembers = queen.Members.ToDictionary(id => id,
+                    id => ToEffectNative(_rac1Enemies[id].Node.Root.GlobalPosition));
+                Require(ObserveRac1QueenFrogEvent(3, 6, false) == 0 &&
+                    ObserveRac1QueenFrogEvent(3, 5, true) == 0 &&
+                    queen.Members.All(id => frogs.Get(id).NativeState == 15),
+                    "Queen wrong-sequence/noncompleted animation prematurely launched Frogs");
+                Require(ObserveRac1QueenFrogEvent(3, 6, true) == 12 &&
+                    ObserveRac1QueenFrogEvent(3, 6, true) == 0 &&
+                    ObserveRac1QueenFrogEvent(4, 1, false) == 0,
+                    "Queen native state3-sequence6 signal failed twelve-Frog launch or duplicated a wave.");
+                Require(queen.Members.All(id =>
+                {
+                    NVector3 before = originalQueenMembers[id];
+                    NVector3 after = ToEffectNative(_rac1Enemies[id].Node.Root.GlobalPosition);
+                    return frogs.Get(id) is { NativeState: 6, Presented: true, Lives: 1 } &&
+                        Math.Abs(after.X - before.X) < .001f &&
+                        Math.Abs(after.Y - before.Y) < .001f &&
+                        after.Z - before.Z is >= 15f and <= 20.001f &&
+                        _rac1Enemies[id].Body.CollisionLayer == 1 &&
+                        _rac1Enemies[id].Body.CollisionMask == 1;
+                }), "Queen group22 did not preserve all twelve original airborne Moby identities.");
+                Require(Enumerable.Range(387, 4).All(id =>
+                    frogs.Get(id) is { NativeState: 15, Presented: false }),
+                    "Unowned Frog group8 was awakened by the Queen event.");
+                GD.Print("[frog-smoke] Alien Queen i626 state3/seq6 synthetic event dispatched twelve original group22 Frogs +15..20z; group8 parked PASS");
+                var dormantLaunch = _rac1Enemies[448];
+                int launchId = 448;
                 Vector3 beforeFlight = dormantLaunch.Node.Root.GlobalPosition;
                 TickRac1Frog(dormantLaunch);
                 Require(frogs.Get(launchId).NativeState == 6 &&
