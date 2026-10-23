@@ -20,6 +20,17 @@ void fragment() {
     vec2 pixel = UV * extent;
     vec3 result = texture(scene_tex, SCREEN_UV).rgb;
 
+    // FUN_002196b8 draws a PS2 RGBAQ rectangle *before* the sprites,
+    // inside the projected frame [x+1,y+1]..[x+w-1,y+h-1].
+    // SCUS_971.99 at virtual 0x001601B0 stores 0x80100808:
+    // RGB (8,8,16), GS alpha 0x80 = 128/128 = fully opaque.
+    // Previously we skipped this pass and let the bright world colour
+    // shine through the partially translucent retail sprite textures.
+    if (all(greaterThanEqual(pixel, vec2(1.0))) &&
+        all(lessThan(pixel, extent - vec2(1.0)))) {
+        result = vec3(8.0 / 255.0, 8.0 / 255.0, 16.0 / 255.0);
+    }
+
     // Anim E99E frame 7, source-over (native ALPHA=0x44).
     vec4 base = texture(base_frame, UV);
     result = mix(result, base.rgb, base.a);

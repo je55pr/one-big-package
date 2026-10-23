@@ -88,6 +88,37 @@ public partial class Rac1RetailUiSmoke : Node
             Require(!Descendants(sample).OfType<Label>().Any(l => l.Text.Contains("OBP NAVIGATION", StringComparison.Ordinal)),
                 "OBP chrome leaked into retail pause root");
             await Capture("root");
+            if (Rac1RetailUiAssets.IsLoaded && DisplayServer.GetName() != "headless")
+            {
+                // The original ELF panel-clear rectangle must keep all six
+                // text strips legible against a deliberately bright scene.
+                var brightWorld = new ColorRect
+                {
+                    Name = "UiContrastStressWorld",
+                    Color = new Color(1, 1, .88f),
+                    Size = GetViewport().GetVisibleRect().Size,
+                    MouseFilter = Control.MouseFilterEnum.Ignore,
+                };
+                AddChild(brightWorld);
+                MoveChild(brightWorld, 0);
+                await Frames(4);
+                await Capture("root-bright");
+                var image = GetViewport().GetTexture().GetImage();
+                var outside = image.GetPixel(15, 15);
+                Require(outside.R > .85f && outside.G > .85f,
+                    "The bright world fixture was not rendered underneath the pause menu");
+                foreach (var button in Descendants(sample).OfType<Rac1RetailMenuButton>()
+                    .Where(b => b.Name.ToString().StartsWith("NativePanelSlot_", StringComparison.Ordinal)))
+                {
+                    var px = (Vector2I)(button.Position +
+                        new Vector2(button.Size.X * .10f, button.Size.Y * .48f));
+                    var inside = image.GetPixel(px.X, px.Y);
+                    Require(inside.R < .26f && inside.G < .26f && inside.B < .3f,
+                        $"Original panel clear pass failed over bright background, {button.Name}: {inside}");
+                }
+                brightWorld.QueueFree();
+                await Frames(3);
+            }
             Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Root retained forbidden ScrollContainer");
             Input.MouseMode = Input.MouseModeEnum.Visible;
             await Press(JoyButton.DpadDown);

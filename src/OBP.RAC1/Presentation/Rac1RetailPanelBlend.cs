@@ -8,6 +8,16 @@ public static class Rac1RetailPanelBlend
 {
     // GS ALPHA=(Cs-Cd)*As/128+Cd for 0x44, with the CLUT's
     // 0..128 alpha expanded to 0..255 before rendering on Godot.
+    // Original NTSC-U ELF SCUS_971.99 at virtual address 0x001601B0:
+    // RGBAQ packet 0x80100808. The alpha byte 0x80 is fully opaque
+    // under GS (Cs-Cd)*As/128+Cd, not an 0x80/255 half-transparent wash.
+    // FUN_002196b8 draws it before the 0xE99E HUD sprite/effect stack.
+    public const uint NativePanelClearRgba = 0x80100808;
+    public const byte ClearRed = 0x08;
+    public const byte ClearGreen = 0x08;
+    public const byte ClearBlue = 0x10;
+    public const byte ClearAlpha = 0x80;
+
     public const float StreakRgbScale = 96f / 128f;
     public const float StreakAlphaScale = 80f / 128f;
 

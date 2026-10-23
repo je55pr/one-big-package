@@ -339,3 +339,73 @@ OBP presentation adaptation. We have **not** invented 3D page
 assignments for OBP-only screens, and the root entry animation starts
 in the visible pose to preserve input smoke and accessibility; only the
 source-defined exit track is currently played.
+
+## 23 October: definitive panel clear colour, from the NTSC-U executable
+
+**Major readability fix.** `FUN_002196b8`
+(`src/ui/menus/render_level_effects_and_screen_sprites.c`)
+does not begin each projected panel from the level's bright scene pixels.
+Before it draws text and later invokes the source sprite/effect stack, it
+issues an `append_screen_rect_packet` with `panel_clear_color_gp`
+(`D_001601B0`) for the rectangle
+`(projected_x + 1, projected_y + 1)` to
+`(projected_x + width - 1, projected_y + height - 1)`.
+It also clears each offscreen menu-content render target to that same
+colour via `draw_hud_rect_depth`.
+
+The exact source value was recovered from **the user's actual R&C1
+NTSC-U ISO**, not chosen by inspection:
+`SCUS_971.99;1`, ELF PT_LOAD segment (file offset `0x1000`,
+virtual address `0x00100080`), memory address `0x001601B0`,
+little-endian dword `0x80100808`.
+
+| Native value | PS2 RGBAQ meaning |
+| --- | --- |
+| `R=0x08` | Red 8/255 |
+| `G=0x08` | Green 8/255 |
+| `B=0x10` | Blue 16/255 |
+| `A=0x80` | Full coverage at GS alpha denominator 128, **not** half opacity |
+
+The previous Godot shader skipped the rectangle entirely and began its
+`E99E / 0x1A / 0x1C / 0x19` composite from the underlying scene colour.
+Partially transparent source art therefore produced broad, medium-grey
+panels, especially over bright level geometry.
+
+The shader now applies the exact opaque blue-black source clear in the
+one-pixel-inset projected region **before** compositing the original art
+and effects. This preserves the genuine texture's stripes and edge
+pixels without adding a guessed gradient, global scene overlay, or
+invented colour.
+
+**Verification:** `Rac1RetailPanelBackingTests` opens the user's disc,
+reads the ISO9660 root, locates `SCUS_971.99`, follows the ELF PT_LOAD
+virtual address mapping and asserts the original word is exactly
+`Rac1RetailPanelBlend.NativePanelClearRgba`. A separate rendered Godot
+`Rac1RetailUiSmoke` creates an almost-white (`1,1,0.88`) world
+background, captures `captures/rac1-retail-ui/root-bright.png`,
+samples an uncovered screen pixel to prove the fixture is bright,
+then samples a panel interior pixel to prove the dark clear is present
+(`R,G < .26`, `B < .30`), alongside its normal grey-world capture.
+This protects the precise user-reported readability regression in a
+real GPU frame. Both captures remain ignored local evidence.
+
+**Not yet claimed:** exact GS framebuffer quantisation/dither,
+the offscreen content's separate target pass and clipping on secondary
+pages, four menu Moby frame attachment-corner IDs, and exact retail
+font baseline and shadow settings.
+
+### Adjacent original menu text configuration
+
+Further ELF constants from `SCUS_971.99`:
+`D_001601B4 = 10` (fade duration),
+`D_001601B8 = 2` (text shadow X),
+`D_001601BC = 2` (text shadow Y),
+`D_00160258 = 4` (text region vertical inset),
+`D_00160268 = 16` (line advance).
+These are used by `FUN_0021a328`
+(`render_configured_text_label.c`), which prints a second black
+shadow copy of the label at the +2,+2 offset. **They are not yet
+applied to every pause-menu choice:** the exact label draw callback
+associated with the ordinary six-row root needs verification before
+we can claim that all six choices use this shadow path. This evidence
+is ready for the remaining typography/attachment-corner pass.
