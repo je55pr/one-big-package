@@ -4,9 +4,22 @@
 
 # One Big Package
 
-One Big Package (OBP) is a Godot 4 and C# project reconstructing the original PlayStation 2 games *Ratchet & Clank*, *Going Commando* and *Up Your Arsenal*.
+One Big Package (OBP) is a Godot 4 and C# project to combine the original PlayStation 2 games *Ratchet & Clank*, *Going Commando* and *Up Your Arsenal* into one game.
 
-It reads data from locally supplied game discs and implements their formats and gameplay systems in a shared runtime. **The project is still in development and is not a complete playable trilogy.**
+The first step is reconstructing the original games' levels and systems from user-supplied discs. These are the building blocks for the combined game, rather than three separate campaigns being the final goal.
+
+## Goals
+
+The long-term aim is to let content and progression cross the boundaries between the three games. For example:
+
+- **One connected galaxy:** Travel between planets from all three games on a shared galaxy map, with one save for equipment, bolts, collectibles and mission progress.
+- **Equipment across games:** Keep weapons from the whole trilogy, use later gadgets or Clank abilities on earlier planets, and work out how upgrades and vendors fit together.
+- **Reasons to revisit planets:** Return to familiar locations with new equipment, routes, characters and missions.
+- **Combined encounters:** Mix enemies from different games, including arena challenges that draw on the full weapon collection and enemy roster.
+
+The original mechanics and encounters are being recovered first, so they can be preserved or deliberately adapted. The final campaign structure, balance and progression have not been decided yet.
+
+**OBP is still in development and is not a complete playable trilogy.**
 
 ## Current status
 

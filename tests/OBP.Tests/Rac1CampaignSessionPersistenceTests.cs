@@ -78,6 +78,83 @@ public sealed class Rac1CampaignSessionPersistenceTests
         }
     }
 
+    [Fact]
+    public void MissingSaveKeepsPersistenceEnabled()
+    {
+        string directory = CreateTemporaryDirectory();
+        try
+        {
+            string path = Path.Combine(directory, "missing.json");
+            var attempt = Rac1CampaignSessionPersistence.Persistent(path).RestoreWithRecovery();
+            Assert.True(attempt.Persistence.Enabled);
+            Assert.Null(attempt.Warning);
+            Assert.Equal(Rac1CampaignRestoreKind.DefaultedMissingState, attempt.Restored.Kind);
+            Assert.False(File.Exists(path));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InvalidOrUnsupportedSaveIsPreservedAndFallsBackToEphemeral(bool unsupported)
+    {
+        string directory = CreateTemporaryDirectory();
+        try
+        {
+            string path = Path.Combine(directory, "campaign.json");
+            if (unsupported)
+            {
+                SeedStaleSave(path);
+                string valid = File.ReadAllText(path);
+                File.WriteAllText(path, valid.Replace(
+                    "\"SchemaVersion\": 2", "\"SchemaVersion\": 900", StringComparison.Ordinal));
+            }
+            else
+            {
+                File.WriteAllText(path, "{ invalid JSON");
+            }
+
+            string damagedContents = File.ReadAllText(path);
+            var attempt = Rac1CampaignSessionPersistence.Persistent(path).RestoreWithRecovery();
+
+            Assert.False(attempt.Persistence.Enabled);
+            Assert.NotNull(attempt.Warning);
+            Assert.Contains("original file is unchanged", attempt.Warning);
+            Assert.Equal(Rac1CampaignRestoreKind.DefaultedMissingState, attempt.Restored.Kind);
+            Assert.Equal(0, attempt.Restored.Campaign.CurrentLevel);
+            Assert.False(attempt.Persistence.PersistIfEnabled(attempt.Restored.Campaign, attempt.Restored.Weapons));
+            Assert.Equal(damagedContents, File.ReadAllText(path));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void UnreadableSavePathRecoversWithoutOverwriting()
+    {
+        string directory = CreateTemporaryDirectory();
+        try
+        {
+            // An existing directory cannot be read as the requested save file.
+            // This exercises a repeatable IO/permission failure on Windows and Unix.
+            var attempt = Rac1CampaignSessionPersistence.Persistent(directory).RestoreWithRecovery();
+            Assert.False(attempt.Persistence.Enabled);
+            Assert.NotNull(attempt.Warning);
+            Assert.True(Directory.Exists(directory));
+            Assert.Empty(Directory.GetFiles(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static void SeedStaleSave(string path)
     {
         var campaign = new Rac1CampaignState();

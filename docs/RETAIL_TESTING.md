@@ -26,6 +26,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 |---|---|
 | `./tools/controller-smoke.ps1` | Logical PlayStation button events through real Godot menus, file picker, dropdowns, sliders, repeat, pause, map and weapon selection. Retail sources add world/gameplay checks. |
 | `./tools/playtest-smoke.ps1` | Fresh-process Veldin/Novalis input recording and replay, observations/markers, resize/menu timing, and rejection of invalid/divergent files. Repeatability checks, not retail-parity or level-solving claims. |
+| `./tools/bug-report-smoke.ps1` | F8/paused-Square reporting, text isolation, pause/Quick Select restoration, shared completed tapes, inbox/ZIP and two fresh-process replays to selected markers. `-Rendered` checks the actual offscreen UI. Player workflow: [BUG_REPORTS.md](BUG_REPORTS.md). |
 | `./tools/movement-smoke.ps1` | Movement, step/crest contacts, slope jumps, quiet/moving/flip landings, equipment, ledges, ice and Swingshot fixtures. Starts/geometry may be staged. |
 | `./tools/rac1-veldin-play-smoke.ps1` | Ordinary input on authored Veldin: natural fall/restart, camera, opening inventory, enemy pursuit/damage and reachable wrench/crate contacts. No transform staging, development respawn or direct consequences. |
 | `./tools/rac1-combat-contract-smoke.ps1` | Lower-level staged combat/session contracts; it is not the ordinary-play gate. |

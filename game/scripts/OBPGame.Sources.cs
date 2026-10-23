@@ -202,7 +202,9 @@ public partial class OBPGame
         AddChild(_sourceManager);
         _sourceManager.Populate(_sources, TrilogyWorldProviders.Games);
 
-        if (_sourceRestoreWarnings.Count > 0)
+        if (_rac1CampaignRestoreWarning is not null)
+            _sourceManager.SetStatus(_rac1CampaignRestoreWarning, error: true);
+        else if (_sourceRestoreWarnings.Count > 0)
         {
             _sourceManager.SetStatus("⚠ " + string.Join("\n", _sourceRestoreWarnings), error: true);
         }

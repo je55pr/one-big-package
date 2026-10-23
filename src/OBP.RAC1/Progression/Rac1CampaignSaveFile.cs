@@ -20,16 +20,26 @@ public static class Rac1CampaignSaveFile
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentException("Campaign save path is required.", nameof(path));
 
-        if (!File.Exists(path))
+        // File.Exists hides access-denied failures by returning false. Open
+        // directly so a genuinely unreadable save cannot masquerade as missing.
+        try
+        {
+            using FileStream stream = File.OpenRead(path);
+            Rac1CampaignSaveEnvelope? envelope =
+                JsonSerializer.Deserialize<Rac1CampaignSaveEnvelope>(stream, JsonOptions);
+            if (envelope is null)
+                throw new InvalidDataException("R&C1 campaign save contained no envelope.");
+
+            return Rac1CampaignSavePolicy.RestoreOrDefault(envelope);
+        }
+        catch (FileNotFoundException)
+        {
             return Rac1CampaignSavePolicy.RestoreOrDefault(null);
-
-        using FileStream stream = File.OpenRead(path);
-        Rac1CampaignSaveEnvelope? envelope =
-            JsonSerializer.Deserialize<Rac1CampaignSaveEnvelope>(stream, JsonOptions);
-        if (envelope is null)
-            throw new InvalidDataException("R&C1 campaign save contained no envelope.");
-
-        return Rac1CampaignSavePolicy.RestoreOrDefault(envelope);
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return Rac1CampaignSavePolicy.RestoreOrDefault(null);
+        }
     }
 
     public static void Save(
@@ -44,6 +54,16 @@ public static class Rac1CampaignSaveFile
             throw new ArgumentException("Campaign save path is required.", nameof(path));
         ArgumentNullException.ThrowIfNull(campaign);
         ArgumentNullException.ThrowIfNull(weapons);
+        Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(
+            campaign, weapons, wallet, novalisGoldBoltInstances, buriedBoltHistory);
+        SaveEnvelope(path, envelope);
+    }
+
+    public static void SaveEnvelope(string path, Rac1CampaignSaveEnvelope envelope)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Campaign save path is required.", nameof(path));
+        ArgumentNullException.ThrowIfNull(envelope);
 
         string fullPath = Path.GetFullPath(path);
         string? directory = Path.GetDirectoryName(fullPath);
@@ -53,7 +73,6 @@ public static class Rac1CampaignSaveFile
         string temporaryPath = fullPath + ".tmp";
         try
         {
-            Rac1CampaignSaveEnvelope envelope = Rac1CampaignSavePolicy.Capture(campaign, weapons, wallet, novalisGoldBoltInstances, buriedBoltHistory);
             using (FileStream stream = new(
                 temporaryPath,
                 FileMode.Create,

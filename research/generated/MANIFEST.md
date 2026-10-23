@@ -17,6 +17,7 @@ A generator path embedded inside an archival or frozen artifact is historical pr
 
 | Artifact | Current producer |
 |---|---|
+| `gc-lancer.json` | `GcLancerRetailTests` with `OBP_UPDATE_GC_LANCER_EVIDENCE=1`; checked native identities, descriptor scalars, loaded-code hashes and local-disc asset locations |
 | `rac1-level-overlay-probe.json` | `tools/rac1-level-overlay-probe.py`; verifies Veldin/Hoven overlays and emits payload-free addresses, hashes and derived movement/surface behavior |
 | `rac1-analogue-movement-probe.json` | `tools/rac1-analogue-movement-harness.py` |
 | `rac1-authored-moby-census.csv` | `obp rac1-authored-moby-census` in `OBP.Cli` |

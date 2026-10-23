@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 namespace OBP.PS2.Audio;
 
 /// <summary>
-/// Bounded SBlk v1 tone/grain rendering: 240-Hz delays, branch selection,
+/// Bounded SBlk v1/v3 tone/grain rendering: 240-Hz delays, branch selection,
 /// pitch changes, key-off and SPU ADSR. Unsupported control programs remain
 /// explicit. Interpolation, LFO waveforms and mixing are host approximations.
 /// The 989snd reference implementation is acknowledged in THIRD_PARTY_NOTICES.
@@ -12,14 +12,55 @@ public static class Ps2SoundRenderer989
 {
     public const int SampleRate = 48_000, GrainRate = 240;
     public sealed record Rendered(short[] Samples, int LoopStartFrame, int LoopEndFrame);
+    /// <summary>
+    /// Independently scheduled voice. A looping voice retains its own pitch,
+    /// intro and sample cycle; unrelated sustained voices must not share a loop.
+    /// </summary>
+    public sealed record ScheduledVoice(int StartFrame, bool Loop, Rendered Audio);
     private sealed record Voice(Ps2SoundBank989.Tone Tone, Ps2SpuAdpcm.DecodedSample Source, double Start, double Bend)
     {
         public double? Release;
         public double? Kill;
     }
     private sealed record Lfo(int Target, int Shape, int Depth, uint Step, int Start);
+    private sealed record Program(List<Voice> Voices, List<Lfo> Lfos, double Tick, int PitchModifier = 0);
 
     public static Rendered? TryRender(Ps2SoundBank989.Sound sound, Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed = null)
+    {
+        var program = Interpret(sound, decode, seed);
+        return program is null ? null : Render(sound, program);
+    }
+
+    /// <summary>
+    /// Uses the same grain interpreter as TryRender, but returns separate voice
+    /// clips for hosts capable of scheduling them. Time-varying program LFOs
+    /// need a live synthesizer and are deliberately not admitted here.
+    /// </summary>
+    public static IReadOnlyList<ScheduledVoice>? TryRenderVoices(Ps2SoundBank989.Sound sound,
+        Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed = null, int pitchModifier = 0)
+    {
+        if (pitchModifier is < short.MinValue or > short.MaxValue) throw new ArgumentOutOfRangeException(nameof(pitchModifier));
+        var program = Interpret(sound, decode, seed, pitchModifier);
+        if (program is null || program.Lfos.Count != 0) return null;
+        var output = new List<ScheduledVoice>();
+        foreach (var voice in program.Voices)
+        {
+            bool loop = voice.Source.Info.Repeats && voice.Release is null && voice.Kill is null;
+            var local = new Voice(voice.Tone, voice.Source, 0, voice.Bend)
+            {
+                Release = voice.Release - voice.Start,
+                Kill = voice.Kill - voice.Start,
+            };
+            var single = sound with { Flags = loop ? (ushort)1 : (ushort)0 };
+            Rendered? audio = Render(single, new([local], [], Math.Max(0, program.Tick - voice.Start * GrainRate), program.PitchModifier));
+            if (audio is null) return null;
+            output.Add(new((int)Math.Round(voice.Start * SampleRate), loop, audio));
+        }
+        return output.AsReadOnly();
+    }
+
+    private static Program? Interpret(Ps2SoundBank989.Sound sound,
+        Func<Ps2SoundBank989.Tone, Ps2SpuAdpcm.DecodedSample> decode, int? seed, int pitchModifier = 0)
     {
         var voices = new List<Voice>(); var lfos = new List<Lfo>();
         var random = new Random(seed ?? sound.Id); double tick = 0, bend = 0;
@@ -38,7 +79,18 @@ public static class Ps2SoundRenderer989
                 case 0: case 20: case 35: break;
                 case 1:
                 case 9:
-                    if (grain.Tone is not { } tone || tone.Volume < 0 || (tone.Flags & 8) != 0) return null;
+                    if (grain.Tone is not { } tone || (tone.Flags & 8) != 0) return null;
+                    if (tone.Volume < 0)
+                    {
+                        int volume = tone.Volume switch
+                        {
+                            >= -4 => registers[-tone.Volume - 1],
+                            -5 => random.Next(127),
+                            _ => -1, // Global block registers require their own caller-owned state.
+                        };
+                        if (volume < 0) return null;
+                        tone = tone with { Volume = (sbyte)Math.Min(volume, 127) };
+                    }
                     voices.Add(new(tone, decode(tone), tick / GrainRate, bend)); break;
                 case 4:
                     if (p.Length < 16 || p[1] is not (0 or 1 or 2 or 3 or 4)) return null;
@@ -95,14 +147,20 @@ public static class Ps2SoundRenderer989
             }
             pc++;
         }
+        return new(voices, lfos, tick, pitchModifier);
+    }
+
+    private static Rendered? Render(Ps2SoundBank989.Sound sound, Program program)
+    {
+        var (voices, lfos, tick, pitchModifier) = program;
         if (voices.Count == 0) return new([], 0, 0); // A successfully interpreted, intentionally silent probability branch.
         double end = Math.Max(tick / GrainRate, voices.Max(voice => voice.Start +
-            voice.Source.Samples.Length / ToneRate(voice.Tone, voice.Bend)));
+            voice.Source.Samples.Length / ToneRate(voice.Tone, voice.Bend, pitchModifier: pitchModifier)));
         int loopStart = 0;
         var sustained = voices.LastOrDefault(voice => voice.Release is null && voice.Kill is null && voice.Source.Info.Repeats);
         if (sound.Loop && sustained is not null)
         {
-            var info = sustained.Source.Info; double rate = ToneRate(sustained.Tone, sustained.Bend);
+            var info = sustained.Source.Info; double rate = ToneRate(sustained.Tone, sustained.Bend, pitchModifier: pitchModifier);
             double cycle = (info.PcmSampleCount - (info.LoopStartSample ?? 0)) / rate;
             double start = sustained.Start + (info.LoopStartSample ?? 0) / rate;
             double stable = Math.Max(tick / GrainRate + .25, start + .25);
@@ -148,18 +206,18 @@ public static class Ps2SoundRenderer989
                     if (lfo.Target == 4) currentBend += wave * lfo.Depth / 1024d;
                 }
                 mix[frame] += value * level * volume * voice.Tone.Volume / 127d * sound.Volume / 127d;
-                cursor += ToneRate(voice.Tone, currentBend, modulation) / SampleRate;
+                cursor += ToneRate(voice.Tone, currentBend, modulation, pitchModifier) / SampleRate;
             }
         }
         var result = mix.Select(sample => (short)Math.Clamp((int)Math.Round(sample), short.MinValue, short.MaxValue)).ToArray();
         return new(result, loopStart, result.Length);
     }
 
-    private static double ToneRate(Ps2SoundBank989.Tone tone, double bend, double modulation = 0)
+    private static double ToneRate(Ps2SoundBank989.Tone tone, double bend, double modulation = 0, int pitchModifier = 0)
     {
         double semitones = bend >= 0 ? bend * tone.PitchBendHigh : bend * Math.Abs((int)tone.PitchBendLow);
         return (tone.CenterNote < 0 ? 48_000 : 44_100) * Math.Pow(2,
-            (60 - Math.Abs((int)tone.CenterNote) + (tone.CenterFine + modulation) / 128d + semitones) / 12);
+            (60 - Math.Abs((int)tone.CenterNote) + (tone.CenterFine + modulation + pitchModifier) / 128d + semitones) / 12);
     }
 
     // SPU envelope arithmetic follows the 989snd reference's ADSR fields and

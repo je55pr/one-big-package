@@ -67,6 +67,8 @@ public partial class OBPGame
         catch (Exception error)
         {
             GD.PrintErr("[playtest] startup failed: " + error.Message);
+            if (_args.BugCapture && !_args.BugReportSmoke && DisplayServer.GetName() != "headless")
+                OS.Alert(error.Message, "OBP Bug Capture could not start");
             if (_args.ReplayPlaytest is not null)
             {
                 try
@@ -122,6 +124,7 @@ public partial class OBPGame
         JsonSerializer.SerializeToElement(CameraSettingsStore.Current), CapturePlaytestCheckpoint())
     {
         Assemblies = PlaytestAssemblyIds(),
+        ApplicationVersion = typeof(OBPGame).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown",
     };
 
     private PlaytestCheckpoint CapturePlaytestCheckpoint()

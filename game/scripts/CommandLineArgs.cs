@@ -18,6 +18,12 @@ public sealed record CommandLineArgs
     public string? PlaytestReport { get; init; }
     public bool PlaytestAllowBuildChange { get; init; }
     public bool PlaytestSmoke { get; init; }
+    public bool BugCapture { get; init; }
+    public bool BugReportSmoke { get; init; }
+    public string? BugReportInbox { get; init; }
+    public string? ReplayBugReport { get; init; }
+    public string? BugReportId { get; init; }
+    public bool PlaytestInspectMarker { get; init; }
     public bool PlaytestRequested => RecordPlaytest is not null || ReplayPlaytest is not null;
     public string? MovementStatePath { get; init; }
     public string? LoadMovementState { get; init; }
@@ -177,6 +183,12 @@ public sealed record CommandLineArgs
                 "--playtest-report" => result with { PlaytestReport = Next() },
                 "--playtest-allow-build-change" => result with { PlaytestAllowBuildChange = true },
                 "--playtest-smoke" => result with { PlaytestSmoke = true },
+                "--bug-capture" => result with { BugCapture = true },
+                "--bug-report-smoke" => result with { BugReportSmoke = true },
+                "--bug-report-inbox" => result with { BugReportInbox = Next() },
+                "--replay-bug-report" => result with { ReplayBugReport = Next() },
+                "--bug-report-id" => result with { BugReportId = Next() },
+                "--playtest-inspect-marker" => result with { PlaytestInspectMarker = true },
                 "--movement-state-file" => result with { MovementStatePath = Next() },
                 "--load-movement-state" => result with { LoadMovementState = Next() },
                 "--replay-forward" => result with { ReplayForwardFrames = ParseInt(Next()) ?? -1 },
