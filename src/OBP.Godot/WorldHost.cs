@@ -115,7 +115,20 @@ public sealed class WorldHost
     /// parents the geometry/collision sub-tree. Call <see cref="Unload"/> first if
     /// a world is already loaded.
     /// </summary>
-    public RuntimeWorldScene.Result Load(Node hostNode, Node3D sceneParent, RuntimeWorld world, string name, Options options)
+    public static RuntimeWorldScene.Result PrepareScene(RuntimeWorld world, string name, Options options) =>
+        RuntimeWorldScene.Build(world, name, new RuntimeWorldScene.Options
+        {
+            IncludeSky = options.IncludeSky,
+            IncludeCollision = options.IncludeCollision,
+            AdmitCollisionFace = options.AdmitCollisionFace,
+            IncludeMobyMarkers = options.IncludeMobyMarkers,
+            ShowCollisionDebug = options.ShowCollisionDebug,
+            OnlyAnimatedMobies = options.OnlyAnimatedMobies,
+        });
+
+    public RuntimeWorldScene.Result Load(
+        Node hostNode, Node3D sceneParent, RuntimeWorld world, string name, Options options,
+        RuntimeWorldScene.Result? preparedScene = null)
     {
         if (IsLoaded)
         {
@@ -141,15 +154,7 @@ public sealed class WorldHost
             _env.AddChild(_heroLight);
         }
 
-        var result = RuntimeWorldScene.Build(world, name, new RuntimeWorldScene.Options
-        {
-            IncludeSky = options.IncludeSky,
-            IncludeCollision = options.IncludeCollision,
-            AdmitCollisionFace = options.AdmitCollisionFace,
-            IncludeMobyMarkers = options.IncludeMobyMarkers,
-            ShowCollisionDebug = options.ShowCollisionDebug,
-            OnlyAnimatedMobies = options.OnlyAnimatedMobies,
-        });
+        var result = preparedScene ?? PrepareScene(world, name, options);
         Result = result;
         _skyRoot = result.SkyRoot;
         sceneParent.AddChild(result.Root);

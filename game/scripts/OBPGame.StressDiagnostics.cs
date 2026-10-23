@@ -22,8 +22,33 @@ public partial class OBPGame
         for (int i = 0; i < tokens.Length; i++)
         {
             string tok = tokens[i];
-            int? lvl = GcPlanetCatalogue.Resolve(tok);
-            if (lvl is null)
+            if (tok == "__bad-import")
+            {
+                var retainedWorld = _world;
+                var retainedRoot = _worldHost.Root;
+                var retainedPlayer = _player;
+                int retainedLevel = _rac1CampaignSession.Campaign.CurrentLevel;
+                var activeDestination = _activeDestination;
+                bool rejected = activeDestination is not null && retainedRoot is not null &&
+                    !EnterProviderWorld(
+                        System.IO.Path.Combine(System.IO.Path.GetTempPath(), "obp-world-does-not-exist-" + System.Guid.NewGuid().ToString("N") + ".iso"),
+                        activeDestination);
+                if (!rejected || retainedWorld != _world || retainedRoot != _worldHost.Root ||
+                    retainedPlayer != _player || retainedLevel != _rac1CampaignSession.Campaign.CurrentLevel)
+                {
+                    GD.PrintErr("[stress] FAIL failed import destroyed the active world or campaign state");
+                    ApplicationLifecycle.RequestQuit(this, "stress-import-retention-failed", 1);
+                    return;
+                }
+                GD.Print("[stress] PASS rejected bad import, retained world/player/campaign");
+                continue;
+            }
+
+            int? lvl = tok.StartsWith("rac", System.StringComparison.OrdinalIgnoreCase)
+                ? null : GcPlanetCatalogue.Resolve(tok);
+            string? destinationId = tok.StartsWith("rac", System.StringComparison.OrdinalIgnoreCase)
+                ? tok : lvl is null ? null : $"rac2:LEVEL{lvl.Value}";
+            if (destinationId is null)
             {
                 GD.PrintErr($"[stress] unknown planet '{tok}' — skipped");
                 continue;
@@ -40,7 +65,7 @@ public partial class OBPGame
                 }
             }
 
-            OpenDestinationFromBootstrap($"rac2:LEVEL{lvl.Value}");
+            OpenDestinationFromBootstrap(destinationId);
             for (int f = 0; f < 45; f++)
             {
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
@@ -59,7 +84,7 @@ public partial class OBPGame
                 baseMem = mem;
             }
 
-            string row = $"#{i,2} {tok,-10} L{lvl,-2} | mem {mem,7:0.0} MB (+{mem - baseMem,6:0.0}) | " +
+            string row = $"#{i,2} {tok,-10} L{(_world?.LevelId ?? -1),-2} | mem {mem,7:0.0} MB (+{mem - baseMem,6:0.0}) | " +
                          $"objects {objs,7:0} nodes {nodes,6:0} orphans {orphans,4:0} | " +
                          $"worldRoot desc {CountDescendants(_worldRoot),5} | onFloor {_player?.IsOnFloor()}";
             rows.Add(row);
