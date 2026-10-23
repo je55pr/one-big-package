@@ -414,3 +414,10 @@ full ride/dismount checks but **does not prove a walk from off-centre
 ground to taxi**. That requires recovered boarding geometry and
 proper collision support before the 0x65 steering can be admitted
 beyond the immediate dock.
+
+The close-dock host gate additionally requires the player to be
+within 1.5 vertical units of the authored taxi target; Ratchet on
+the lower ordinary floor must use direct boarding instead of a
+false 0x65 admission above his head. These radius and height
+restrictions are conservative OBP collision-safety policy, not
+recovered native focus constants.

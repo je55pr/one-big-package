@@ -239,7 +239,8 @@ public partial class OBPGame
         // Only attempt 0x65 target alignment from the immediate dock.
         // Wider approaches retain the safe bounded attachment path.
         if (stop.NativeClassId == 1012 ||
-            sourceDx * sourceDx + sourceDz * sourceDz > 0.2d * 0.2d)
+            sourceDx * sourceDx + sourceDz * sourceDz > 0.2d * 0.2d ||
+            Math.Abs(stop.Position.Y - heroPosition.Y) > 1.5d)
         {
             if (!taxis.TryBoard(heroPosition))
                 return false;
