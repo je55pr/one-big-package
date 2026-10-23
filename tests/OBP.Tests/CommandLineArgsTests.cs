@@ -5,6 +5,20 @@ namespace OBP.Tests;
 public sealed class CommandLineArgsTests
 {
     [Fact]
+    public void BugCaptureAndReportReplay_AreExplicitModesWithLocalInboxAndStableReportIdentity()
+    {
+        Assert.False(CommandLineArgs.Parse([]).BugCapture);
+        var capture = CommandLineArgs.Parse(["--bug-capture", "--bug-report-inbox", "reports", "--bug-report-smoke"]);
+        Assert.True(capture.BugCapture);
+        Assert.True(capture.BugReportSmoke);
+        Assert.Equal("reports", capture.BugReportInbox);
+        Assert.Null(capture.ReplayPlaytest);
+        var replay = CommandLineArgs.Parse(["--replay-bug-report", "session.json", "--bug-report-id", "stable-id"]);
+        Assert.Equal("session.json", replay.ReplayBugReport);
+        Assert.Equal("stable-id", replay.BugReportId);
+        Assert.False(replay.BugCapture);
+    }
+    [Fact]
     public void PlaytestOptionsAreOptInAndDistinctFromMovementBookmarks()
     {
         Assert.False(CommandLineArgs.Parse([]).PlaytestRequested);
