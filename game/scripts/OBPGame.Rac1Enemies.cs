@@ -54,7 +54,7 @@ public partial class OBPGame
             if (enemy.Flame is { } flame && IsInstanceValid(flame)) flame.QueueFree();
         }
         _rac1Enemies.Clear(); _rac1Class1440 = null;
-        _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null; _rac1Frogs = null;
+        _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null; _rac1Frogs = null; _rac1FrogShuttle = null;
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
         ResetRac1BirdbotProjectiles();
     }
@@ -115,7 +115,11 @@ public partial class OBPGame
                 _rac1Seekers = new(_rac1MobyRuntime);
         }
         if (world.LevelId is 6 or 10)
-            ConfigureRac1Frogs(world, result, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), nodes);
+        {
+            var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
+            ConfigureRac1Frogs(world, result, Rac1Paths.Read(gameplay),
+                Rac1ClipVolumes.Read(gameplay), nodes);
+        }
         if (_rac1Peckbots is { } peckbots)
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1NovalisPeckbotSession.ClassId))
             {
@@ -213,6 +217,7 @@ public partial class OBPGame
         {
             _rac1EnemyTicks--;
             _rac1Nanotech.UpdateNative();
+            TickRac1FrogShuttleSwitch();
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
             {
                 var node = enemy.Node;

@@ -200,6 +200,18 @@ public sealed class Rac1FrogSessionTests
             }
             Assert.Equal(placements.Count, session.RegisteredCount);
             Assert.Equal(level.LevelId == 6 ? 108 : 24, session.PresentedCount);
+            if (level.LevelId == 6)
+            {
+                int sourceSwitchOne = placements.Count(m =>
+                    BinaryPrimitives.ReadInt16LittleEndian(m.PVar!.AsSpan(0x242)) != 0 &&
+                    BinaryPrimitives.ReadInt16LittleEndian(m.PVar.AsSpan(0x200)) == 0 &&
+                    BinaryPrimitives.ReadInt16LittleEndian(m.PVar.AsSpan(0x202)) == 0);
+                session.ApplyShuttleSwitch(true);
+                Assert.Equal(sourceSwitchOne, session.PresentedCount);
+                Assert.Equal(169, session.RegisteredCount);
+                session.ApplyShuttleSwitch(false);
+                Assert.Equal(108, session.PresentedCount);
+            }
             // Run dormant sources through a thousand native ticks: renderer,
             // collider and population must remain parked with no over-spawn.
             var dormant = placements.Where(m => !session.Get(m.Index).Presented).ToArray();

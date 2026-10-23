@@ -40,9 +40,9 @@ public sealed record Rac1FrogAuthored(
     /// +0x242 is an independent *update* gate, not an initialization mode.</summary>
     public int InitialState => HasCarrier != 0 ? 1 : StartsHidden != 0 ? 15 : PathIndex >= 0 ? 3 : 8;
 
-    /// <summary>When the original global +0x15fdf8 switch is unknown the host
-    /// deliberately uses its observed initial zero policy; selector-one frogs
-    /// must not be awoken by generic nearby-enemy registration.</summary>
+    /// <summary>Original LEVEL6 shuttle global +0x15fdf8 defaults to zero;
+    /// only a confirmed class-1109 stop selection changes this gate. Generic
+    /// nearby-enemy admission must not wake the opposite Frog group.</summary>
     public bool UpdateEligible(bool switchEnabled) => (SwitchSelector != 0) == switchEnabled;
 
     public bool OrdinaryHostAdmission(bool switchEnabled = false) =>

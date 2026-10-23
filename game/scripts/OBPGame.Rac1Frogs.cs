@@ -13,13 +13,17 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private Rac1FrogSession? _rac1Frogs;
+    private Rac1FrogShuttleSwitch? _rac1FrogShuttle;
     private const float FrogHostSleepRadius = 30f;
     private const float FrogHostAggroRadius = 12f; // provisional common-target query
 
     private void ConfigureRac1Frogs(RuntimeWorld world, RuntimeWorldScene.Result result,
-        IReadOnlyList<NVector3[]> paths, List<RuntimeWorldScene.DynamicObjectNode> nodes)
+        IReadOnlyList<NVector3[]> paths, IReadOnlyList<Rac1ClipVolume> volumes,
+        List<RuntimeWorldScene.DynamicObjectNode> nodes)
     {
         _rac1Frogs = new Rac1FrogSession(_rac1MobyRuntime, paths);
+        _rac1FrogShuttle = world.LevelId == 6
+            ? Rac1FrogShuttleSwitch.FromRetail(world.DynamicObjects ?? [], volumes) : null;
         foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1FrogAuthored.ClassId))
         {
             var node = FindPresentedDynamic(result, authored)
@@ -29,6 +33,22 @@ public partial class OBPGame
                 ToEffectNative(node.Root.GlobalPosition), MathF.Atan2(forward.Y, forward.X));
             node.ApplyState(_rac1MobyRuntime.Require(authored).EntityState);
             nodes.Add(node);
+        }
+    }
+
+    private void TickRac1FrogShuttleSwitch()
+    {
+        if (_rac1FrogShuttle is null || _rac1Frogs is null || _player is null) return;
+        // The LEVEL6 shuttle's class-1109 waiting-state volume test is native.
+        // Its cutscene/travel state is not yet hosted; only wait-volume changes
+        // are used here, never implied arrivals or generic nearby-Frog wakeups.
+        if (!_rac1FrogShuttle.ObserveWaitingShuttle(ToEffectNative(_player.GlobalPosition))) return;
+        foreach (int instance in _rac1Frogs.ApplyShuttleSwitch(_rac1FrogShuttle.SwitchEnabled))
+        {
+            if (!_rac1Enemies.TryGetValue(instance, out var enemy)) continue;
+            bool active = _rac1Frogs.Get(instance).Presented;
+            enemy.Body.CollisionLayer = active ? 1u : 0u;
+            enemy.Node.ApplyState(_rac1MobyRuntime.Require(enemy.Node.Source).EntityState);
         }
     }
 

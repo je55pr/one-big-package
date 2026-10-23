@@ -48,6 +48,30 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public int NativeClassId => ClassId;
     public int RegisteredCount => _entries.Count;
     public int PresentedCount => _entries.Values.Count(entry => entry.Native.IsActive);
+    public bool ShuttleSwitchEnabled { get; private set; }
+
+    /// <summary>Apply only an event from the LEVEL6 class-1109 shuttle. The
+    /// native global D_L06_0015FDF8 selects exactly one 16-bit +0x242
+    /// population; carrier, hidden/respawn and terminal actors stay parked.</summary>
+    public IReadOnlyList<int> ApplyShuttleSwitch(bool enabled)
+    {
+        if (ShuttleSwitchEnabled == enabled) return [];
+        ShuttleSwitchEnabled = enabled;
+        var changed = new List<int>();
+        foreach (var pair in _entries)
+        {
+            var entry = pair.Value;
+            bool shouldPresent = !entry.Native.State.IsTerminalized &&
+                entry.Authored.HasCarrier == 0 && entry.Authored.StartsHidden == 0 &&
+                entry.Native.State.NativeState != 15 &&
+                entry.Authored.UpdateEligible(enabled);
+            if (entry.Native.IsActive == shouldPresent) continue;
+            _runtime.SetPresence(entry.Native,
+                shouldPresent ? RuntimeEntityPresence.Active : RuntimeEntityPresence.Inactive);
+            changed.Add(pair.Key);
+        }
+        return changed;
+    }
 
     public Rac1FrogFrame Register(RuntimeDynamicObject source, RuntimeEntityState state,
         Vector3 home, float yaw = 0, bool switchEnabled = false)
@@ -58,6 +82,9 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
             authored.PathIndex >= 0 && _paths[authored.PathIndex].Length < 2)
             throw new InvalidDataException("Authored Frog path cannot be resolved from this level.");
         if (_entries.ContainsKey(source.InstanceIndex)) throw new InvalidOperationException("Duplicate authored Frog.");
+        if (_entries.Count == 0) ShuttleSwitchEnabled = switchEnabled;
+        else if (ShuttleSwitchEnabled != switchEnabled)
+            throw new InvalidOperationException("Cannot register one Frog population with inconsistent shuttle switch values.");
         var payload = source.NativePayloads!.Single(p => p.Format == Rac1BoltCrate.PVarPayloadFormat).Data;
         var native = _runtime.Register(source, state, authored.InitialState, payload);
         if (!authored.OrdinaryHostAdmission(switchEnabled))
