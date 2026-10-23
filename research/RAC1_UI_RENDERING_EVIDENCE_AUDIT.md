@@ -603,3 +603,56 @@ a recovered PS2 output-target scale. No evidence was invented for
 final native framebuffer dimensions, GS sampler details or
 interlaced raster offset. Native-vs-Godot pixel-difference assertions
 must wait for a reference PS2 screenshot.
+
+## 23 October: original Weapons submenu grid and source cell ordering
+
+The ordinary Veldin root's *Weapons* text item (ID 20194, action 3)
+links to native `MenuPage 0x001B2DB8`, back pointer
+`0x001B2588`. Its focus screen `0x001B2F58` is a
+`MenuItemGridData` driven by the original overlay callbacks
+`0x002794A0` (update) and `0x0027B590` (draw).
+The retail record definitively specifies **3 rows, 5 columns**,
+margin fractions **0.08 / 0.08**, selected cell **0**, flags
+**0x20** and pointer **0x001B3220** to 15 contiguous,
+10-byte `MenuGridCell` records.
+
+Native row-major slot identities are:
+
+| Row | Slot 1 | Slot 2 | Slot 3 | Slot 4 | Slot 5 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Bomb Glove (10) | Pyrocitor (16) | Blaster (15) | Glove of Doom (20) | Mine Glove (17) |
+| 2 | Taunter (14) | Suck Cannon (9) | Devastator (11) | Walloper (18) | Visibomb Gun (13) |
+| 3 | Decoy Glove (25) | Drone Device (24) | Tesla Claw (19) | Morph-o-Ray (21) | RYNO (23) |
+
+Original icon animations are read from each cell's `icon` field
+(`EA6A EA70 EA6F EA74 EA71 / EA6E EA69 EA6B EA72 EA6D /
+EA79 EA78 EA73 EA75 EA77`); the entire page has frame zero and
+`kind = 0`. With grid flag `0x20`, source
+`FUN_0021d948` **does not draw the +1 equipped frame** on
+this screen. Unowned native items occupy their original slots but
+draw no icon; selecting an unowned slot does not request an equip.
+
+`Rac1MenuPanelPages.Read` validates this screen and reads all fifteen
+original cells through initialized, bounded overlay sections. The
+Godot Weapons menu now sorts its first fifteen entries by **the
+original native grid** and uses exact native icon IDs, rather than
+sorting by C# enum value. Missing entries become unowned native
+placeholders without inventing unlocked equipment. Additional OBP or
+cross-game entries are kept on clearly separate overflow pages,
+preserving original R&C1 weapon positions and leaving the gameplay
+inventory and equip handler as authority. This is intentionally a
+first page, not a claim that OBP's overflow paging is native R&C1.
+
+Other subpage layout facts were discovered without changing those UIs:
+Gadgets has authored 2x3, 1x3, 1x3, and 1x2 grid
+screens with distinct admission flags; Quick Select reuses the 3x5
+weapon cell table alongside a 2x3 screen; Items has a 3x3 grid
+including `kind = 1` alternative availability cells. These screens
+require separate focus-transfer and menu lockout validation before
+turning them into host replacements.
+
+Still provisional: the exact VU/GS projection of weapon-icon
+rectangles, native preview 3D Moby/camera, text details and full
+weapons page transition animation. Only original grid structure,
+cells, icons, slot ownership gating and the equipped-frame
+suppression are asserted as source-backed.

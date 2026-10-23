@@ -50,17 +50,23 @@ public sealed class Rac1MenuPanelPages
     public sealed record RootEntry(int Slot, int TextId, int Action,
         int Flags, uint DrawCallback, bool RequiresNativeAdmission);
 
+    public sealed record WeaponCell(int NativeId, ushort Icon, short Frame, short Kind);
+    public sealed record WeaponsGrid(int PageAddress, int ScreenAddress, int Rows, int Columns,
+        int Flags, float MarginX, float MarginY, IReadOnlyList<WeaponCell> Cells);
+
     private readonly IReadOnlyDictionary<Page, Assignment> _pages;
     private Rac1MenuPanelPages(IReadOnlyDictionary<Page, Assignment> pages,
-        IReadOnlyList<RootEntry> rootEntries)
+        IReadOnlyList<RootEntry> rootEntries, WeaponsGrid weaponsGrid)
     {
         _pages = pages;
         NativeRootEntries = rootEntries;
+        NativeWeaponsGrid = weaponsGrid;
     }
 
     public IReadOnlyDictionary<Page, Assignment> Pages => _pages;
     public Assignment this[Page page] => _pages[page];
     public IReadOnlyList<RootEntry> NativeRootEntries { get; }
+    public WeaponsGrid NativeWeaponsGrid { get; }
 
     public static Rac1MenuPanelPages Read(IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level0)
     {
@@ -153,6 +159,46 @@ public sealed class Rac1MenuPanelPages
             entries.Add(new RootEntry(slot, textId, action, checked((int)flags),
                 draw, RequiresNativeAdmission: slot == 6));
         }
-        return new Rac1MenuPanelPages(pages, entries);
+        // Root text action 3 points to the native Weapons MenuPage. Its
+        // focused third screen is a 5-by-3 grid, with fifteen authored
+        // ten-byte MenuGridCell records. Preserve the order and icons rather
+        // than relying on the host inventory enum's incidental sorting.
+        uint firstRootScreen = ReadSourceWord(rootPage + 0x44u);
+        uint firstItemList = ReadSourceWord(firstRootScreen + 0x34u);
+        uint weaponsPage = ReadSourceWord(firstItemList + 4u);
+        uint weaponsScreen = ReadSourceWord(weaponsPage + 0x44u + 2u * 4u);
+        int rows = checked((int)ReadSourceWord(weaponsScreen + 0x40u));
+        int columns = checked((int)ReadSourceWord(weaponsScreen + 0x44u));
+        int gridFlags = checked((int)ReadSourceWord(weaponsScreen + 0x30u));
+        float marginX = BitConverter.Int32BitsToSingle((int)ReadSourceWord(weaponsScreen + 0x34u));
+        float marginY = BitConverter.Int32BitsToSingle((int)ReadSourceWord(weaponsScreen + 0x38u));
+        if (weaponsPage != 0x001B2DB8 ||
+            ReadSourceWord(weaponsPage + 0x40u) != weaponsScreen ||
+            ReadSourceWord(weaponsPage + 0x38u) != rootPage ||
+            ReadSourceWord(weaponsScreen) != 0x002794A0 ||
+            ReadSourceWord(weaponsScreen + 4) != 0x0027B590 ||
+            rows != 3 || columns != 5 || gridFlags != 0x20 ||
+            !float.IsFinite(marginX) || !float.IsFinite(marginY) ||
+            marginX is < 0 or >= 1 || marginY is < 0 or >= 1)
+            throw new InvalidDataException("R&C1 Weapons page does not contain the expected native five-column grid.");
+        uint cellsPointer = ReadSourceWord(weaponsScreen + 0x48u);
+        var cells = new List<WeaponCell>(checked(rows * columns));
+        for (int cell = 0; cell < rows * columns; cell++)
+        {
+            uint at = cellsPointer + (uint)(cell * 10);
+            uint first = ReadSourceWord(at);
+            uint second = ReadSourceWord(at + 4);
+            int nativeId = (short)(second >> 16);
+            short kind = unchecked((short)second);
+            short frame = unchecked((short)(first >> 16));
+            ushort icon = unchecked((ushort)first);
+            if (nativeId is < 1 or > 63 || kind != 0 || frame != 0 || icon is < 0xEA60 or > 0xEAC9 ||
+                cells.Any(existing => existing.NativeId == nativeId))
+                throw new InvalidDataException($"R&C1 Weapons grid cell {cell} is not a supported retail weapon.");
+            cells.Add(new WeaponCell(nativeId, icon, frame, kind));
+        }
+        return new Rac1MenuPanelPages(pages, entries,
+            new WeaponsGrid(checked((int)weaponsPage), checked((int)weaponsScreen),
+                rows, columns, gridFlags, marginX, marginY, cells));
     }
 }

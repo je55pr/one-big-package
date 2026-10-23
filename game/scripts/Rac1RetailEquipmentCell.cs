@@ -13,6 +13,7 @@ public sealed partial class Rac1RetailEquipmentCell : Button
     public bool Owned { get; init; }
     public bool Equipped { get; set; }
     public bool Upgraded { get; init; }
+    public bool SuppressEquippedFrame { get; init; }
 
     private ulong _elapsedFrames;
 
@@ -55,7 +56,7 @@ public sealed partial class Rac1RetailEquipmentCell : Button
         }
 
         if (!Owned || NativeAnimationId is not ushort id) return;
-        int offset = Equipped ? 1 : Upgraded ? 4 : 0;
+        int offset = Equipped && !SuppressEquippedFrame ? 1 : Upgraded ? 4 : 0;
         var icon = Rac1RetailUiAssets.Sprite(id, offset) ??
                    Rac1RetailUiAssets.Sprite(id, 0);
         if (icon is null) return;

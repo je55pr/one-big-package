@@ -170,7 +170,20 @@ public partial class Rac1RetailUiSmoke : Node
             await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Weapons, $"Cross did not enter Weapons: page={sample.RetailPage}, focus={(GetViewport().GuiGetFocusOwner() as Button)?.Text}");
             var buttons = Descendants(sample).OfType<Button>().Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
-            Require(buttons.Length == 15 && buttons[1] is Rac1RetailEquipmentCell { Owned: false }, "Native inventory paging or ownership state missing");
+            Require(buttons.Length == 15 && buttons[1] is Rac1RetailEquipmentCell { Owned: false },
+                "Native inventory paging or ownership state missing");
+            if (Rac1RetailUiAssets.NativeMenuPages is { } nativePages)
+            {
+                var source = nativePages.NativeWeaponsGrid;
+                Require(source.Columns == 5 && source.Rows == 3 &&
+                    buttons.Select(button => button.Name.ToString()).SequenceEqual(
+                        source.Cells.Select(cell => $"RetailItem_{cell.NativeId}")),
+                    "Godot Weapons page does not preserve all fifteen original item grid slots");
+                Require(((Rac1RetailEquipmentCell)buttons[0]).NativeAnimationId ==
+                    source.Cells[0].Icon, "Native weapon icons did not come from source item cells");
+                Require(((Rac1RetailEquipmentCell)buttons[0]).SuppressEquippedFrame,
+                    "Weapons grid flag 0x20 must suppress the equipped-icon frame variant");
+            }
             Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Retail UI unexpectedly contains Godot scrollbars");
             buttons[0].GrabFocus(); await Frames(2);
             await Press(JoyButton.DpadRight);
@@ -186,9 +199,24 @@ public partial class Rac1RetailUiSmoke : Node
             await FocusAndPress(sample, "NEXT ▸");
             await Frames(4);
             buttons = Descendants(sample).OfType<Button>().Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
-            Require(buttons.Length == 7 && buttons[0].TooltipText == "Test slot 14",
-                "Second inventory page did not render remaining six items");
-            await Capture("weapons-page2");
+            if (Rac1RetailUiAssets.NativeMenuPages is not null)
+            {
+                Require(buttons.Length == 15 && buttons[0].TooltipText == "Test slot 1",
+                    "Source Weapons page did not put host-only items on a separate overflow page");
+                await Capture("weapons-page2");
+                await FocusAndPress(sample, "NEXT", contains: true);
+                await Frames(4);
+                buttons = Descendants(sample).OfType<Button>()
+                    .Where(b => b.Name.ToString().StartsWith("RetailItem_")).ToArray();
+                Require(buttons.Length == 5 && buttons[0].TooltipText == "Test slot 16",
+                    "Final overflow page did not retain the host-only inventory entries");
+            }
+            else
+            {
+                Require(buttons.Length == 7 && buttons[0].TooltipText == "Test slot 14",
+                    "Fallback second inventory page lost six host entries");
+                await Capture("weapons-page2");
+            }
 
             await Keyboard(Key.Escape); await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Root, "Keyboard Escape did not navigate back");

@@ -246,12 +246,28 @@ public sealed partial class PauseMenuUi
     }
     private void BuildEquipmentPage(IReadOnlyList<RetailItem> entries, bool allowEquip)
     {
-        // Native FUN_0021d948 draws icon-only grid cells. Its actual cols/rows
-        // are supplied by MenuScreen, not hard-coded in the draw routine. Five
-        // columns is evidenced as a supported native grid width by
-        // update_menu_grid_selection.c; this page's choice is provisional.
-        const int columns = 5;
-        const int pageSize = 15;
+        // FUN_0021d948 takes its dimensions, cell ordering, native icon
+        // IDs and frame variants from the authored MenuScreen. The Weapons
+        // page is now recovered directly from the ordinary root's linked
+        // Veldin overlay page. Keep additional cross-game/host items on
+        // separate, explicitly OBP overflow pages.
+        var sourceWeapons = allowEquip ? Rac1RetailUiAssets.NativeMenuPages?.NativeWeaponsGrid : null;
+        int columns = sourceWeapons?.Columns ?? 5;
+        int pageSize = sourceWeapons?.Cells.Count ?? 15;
+        if (sourceWeapons is not null)
+        {
+            var byId = entries.ToDictionary(item => item.NativeId);
+            var nativeIds = sourceWeapons.Cells.Select(cell => cell.NativeId).ToHashSet();
+            entries = sourceWeapons.Cells.Select(cell =>
+            {
+                if (byId.TryGetValue(cell.NativeId, out var item))
+                    return item with { Icon = cell.Icon };
+                var weapon = (Rac1WeaponId)cell.NativeId;
+                string label = Enum.IsDefined(weapon)
+                    ? Rac1WeaponProfiles.Name(weapon) : $"Native item {cell.NativeId}";
+                return new RetailItem(cell.NativeId, label, false, false, cell.Icon);
+            }).Concat(entries.Where(item => !nativeIds.Contains(item.NativeId))).ToArray();
+        }
         int pageCount = Math.Max(1, (entries.Count + pageSize - 1) / pageSize);
         _retailEquipmentPage = Math.Clamp(_retailEquipmentPage, 0, pageCount - 1);
 
@@ -292,6 +308,8 @@ public sealed partial class PauseMenuUi
                 NativeAnimationId = item.Icon,
                 Owned = item.Owned,
                 Equipped = item.Equipped,
+                SuppressEquippedFrame = sourceWeapons is not null &&
+                    (sourceWeapons.Flags & 0x20) != 0,
             };
             cell.FocusEntered += () =>
             {
@@ -346,7 +364,7 @@ public sealed partial class PauseMenuUi
     /// </summary>
     private static void WireRetailGrid(IReadOnlyList<Rac1RetailEquipmentCell> cells)
     {
-        const int columns = 5;
+        int columns = Rac1RetailUiAssets.NativeMenuPages?.NativeWeaponsGrid.Columns ?? 5;
         if (cells.Count == 0) return;
         for (int i = 0; i < cells.Count; i++)
         {

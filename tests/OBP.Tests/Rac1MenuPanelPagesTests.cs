@@ -36,6 +36,28 @@ public sealed class Rac1MenuPanelPagesTests
         });
         Assert.All(rootEntries.Take(6), entry => Assert.False(entry.RequiresNativeAdmission));
         Assert.True(rootEntries[6].RequiresNativeAdmission);
+        // The ordinary root's Weapons action points to its own authored
+        // MenuPage. The focus is the original 3x5 item-grid screen, not an
+        // inventory-order-derived list of weapon profiles.
+        var weapons = pages.NativeWeaponsGrid;
+        Assert.Equal(0x001B2DB8, weapons.PageAddress);
+        Assert.Equal(0x001B2F58, weapons.ScreenAddress);
+        Assert.Equal(3, weapons.Rows);
+        Assert.Equal(5, weapons.Columns);
+        Assert.Equal(0x20, weapons.Flags); // native suppress-equipped-icon variant
+        Assert.Equal(.08f, weapons.MarginX, 5);
+        Assert.Equal(.08f, weapons.MarginY, 5);
+        Assert.Equal(15, weapons.Cells.Count);
+        Assert.Equal([10, 16, 15, 20, 17, 14, 9, 11, 18, 13, 25, 24, 19, 21, 23],
+            weapons.Cells.Select(cell => cell.NativeId).ToArray());
+        Assert.Equal([0xEA6A, 0xEA70, 0xEA6F, 0xEA74, 0xEA71, 0xEA6E, 0xEA69,
+            0xEA6B, 0xEA72, 0xEA6D, 0xEA79, 0xEA78, 0xEA73, 0xEA75, 0xEA77],
+            weapons.Cells.Select(cell => (int)cell.Icon).ToArray());
+        Assert.All(weapons.Cells, cell =>
+        {
+            Assert.Equal(0, cell.Kind);
+            Assert.Equal(0, cell.Frame);
+        });
         Assert.Equal([0, 1, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             pages[Rac1MenuPanelPages.Page.Opening].Animations.ToArray());
         Assert.Equal([21, 22, 23, 24, 25, 5, 6, 7, 8, 9, 10, 11, 12, 13],
