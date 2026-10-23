@@ -25,6 +25,12 @@ public sealed class Rac1FrogShuttleSwitch
     public int SelectedStop { get; private set; }
     public bool SwitchEnabled => SelectedStop == 1;
 
+    public Vector3 StopVolumeCentre(int stop)
+    {
+        if (stop is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(stop));
+        return _zones[stop].Centre;
+    }
+
     public static Rac1FrogShuttleSwitch? FromRetail(
         IEnumerable<RuntimeDynamicObject> placements, IReadOnlyList<Rac1ClipVolume> volumes)
     {

@@ -42,12 +42,19 @@ public partial class OBPGame
         // The LEVEL6 shuttle's class-1109 waiting-state volume test is native.
         // Its cutscene/travel state is not yet hosted; only wait-volume changes
         // are used here, never implied arrivals or generic nearby-Frog wakeups.
-        if (!_rac1FrogShuttle.ObserveWaitingShuttle(ToEffectNative(_player.GlobalPosition))) return;
+        if (_rac1FrogShuttle.ObserveWaitingShuttle(ToEffectNative(_player.GlobalPosition)))
+            ApplyRac1FrogShuttleSelection();
+    }
+
+    private void ApplyRac1FrogShuttleSelection()
+    {
+        if (_rac1FrogShuttle is null || _rac1Frogs is null) return;
         foreach (int instance in _rac1Frogs.ApplyShuttleSwitch(_rac1FrogShuttle.SwitchEnabled))
         {
             if (!_rac1Enemies.TryGetValue(instance, out var enemy)) continue;
             bool active = _rac1Frogs.Get(instance).Presented;
             enemy.Body.CollisionLayer = active ? 1u : 0u;
+            enemy.Body.CollisionMask = active ? 1u : 0u;
             enemy.Node.ApplyState(_rac1MobyRuntime.Require(enemy.Node.Source).EntityState);
         }
     }

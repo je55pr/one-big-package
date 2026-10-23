@@ -35,6 +35,45 @@ public partial class OBPGame
                 "Frog source paths were flattened");
             GD.Print($"[frog-smoke] LEVEL{_world.LevelId} {expected} registered, {frogs.PresentedCount} admitted, {expectedPaths} routed; dormant collider check PASS");
             await PhysicsFramesAsync(5);
+            if (_world.LevelId == 6 && _rac1FrogShuttle is { } shuttle)
+            {
+                // Stage player at the authored class-1109 stop-1 clip volume
+                // without advancing physics. Exercise the actual host gate,
+                // renderer and contact masks, not merely the neutral session.
+                Vector3 previousPlayer = _player!.GlobalPosition;
+                try
+                {
+                    _player.GlobalPosition = FromEffectNative(shuttle.StopVolumeCentre(2));
+                    TickRac1FrogShuttleSwitch();
+                    Require(shuttle.SwitchEnabled, "Shuttle stop-1 clip did not select native Frog gate");
+                    int alternate = population.Count(e =>
+                    {
+                        var entry = frogs.Get(e.Node.Source.InstanceIndex);
+                        return entry.SwitchGated && !entry.CarrierMode && !entry.StartsHidden;
+                    });
+                    Require(alternate > 0 && frogs.PresentedCount == alternate,
+                        "Shuttle native gate selected an incorrect Frog population");
+                    Require(population.All(e =>
+                    {
+                        bool present = frogs.Get(e.Node.Source.InstanceIndex).Presented;
+                        return e.Body.CollisionLayer == (present ? 1u : 0u) &&
+                            e.Body.CollisionMask == (present ? 1u : 0u);
+                    }), "Switch-gated Frog collision masks differ from runtime presence");
+                    // A confirmed shuttle arrival is supplied explicitly.
+                    // Ordinary player proximity must never imply this callback.
+                    Require(shuttle.AcceptShuttleArrival(0), "Shuttle return selection not accepted");
+                    ApplyRac1FrogShuttleSelection();
+                    Require(frogs.PresentedCount == 108 &&
+                        population.All(e =>
+                        {
+                            bool present = frogs.Get(e.Node.Source.InstanceIndex).Presented;
+                            return e.Body.CollisionLayer == (present ? 1u : 0u) &&
+                                e.Body.CollisionMask == (present ? 1u : 0u);
+                        }), "Shuttle arrival failed to restore original Frog collision population");
+                    GD.Print($"[frog-smoke] shuttle stop1 {alternate} admitted, original stop0 restored 108; mesh/contact admission PASS");
+                }
+                finally { _player.GlobalPosition = previousPlayer; }
+            }
 
             // Stage one *authored* ordinary frog into an isolated reachable
             // collision fixture. The physics/animation/gameplay loops below are

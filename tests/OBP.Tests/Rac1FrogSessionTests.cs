@@ -76,6 +76,45 @@ public sealed class Rac1FrogSessionTests
     }
 
     [Fact]
+    public void NativeRadiusAndCadenceBoundDeterministicIdleRoaming()
+    {
+        Assert.Equal(45, Rac1FrogSession.RoamMinTicks);
+        Assert.Equal(75, Rac1FrogSession.RoamMaxTicks);
+        Assert.Equal(.5f, Rac1FrogSession.RoamMinRadius);
+        Assert.Equal(2f, Rac1FrogSession.RoamMaxRadius);
+        var source = Source(321);
+        var session = new Rac1FrogSession(new(), []);
+        var other = new Rac1FrogSession(new(), []);
+        var home = new Vector3(17, -9, 4);
+        session.Register(source, RuntimeEntityState.FromAuthored(source), home);
+        other.Register(source, RuntimeEntityState.FromAuthored(source), home);
+        var first = home;
+        var second = home;
+        float displacement = 0;
+        for (int tick = 0; tick < 600; tick++)
+        {
+            var move = session.Step(321, first, home + Vector3.UnitX * 100, false);
+            var same = other.Step(321, second, home + Vector3.UnitX * 100, false);
+            Assert.Equal(8, move.NativeState);
+            Assert.Equal(move.Displacement, same.Displacement);
+            Assert.Equal(move.Yaw, same.Yaw);
+            Assert.False(move.Contact);
+            Assert.InRange(move.Displacement.Length(), 0, 4f / 60f + 1e-5f);
+            first += move.Displacement;
+            second += same.Displacement;
+            displacement += move.Displacement.Length();
+            Assert.InRange(Vector2.Distance(new(first.X, first.Y), new(home.X, home.Y)),
+                0, Rac1FrogSession.RoamMaxRadius + 1e-4f);
+            Assert.Equal(home.Z, first.Z);
+        }
+        Assert.True(displacement > 2, "native-bound roaming never moved");
+        Assert.Equal(first, second);
+        var parked = session.Step(321, first, Vector3.Zero, false, roamingAllowed: false);
+        Assert.Equal(Vector3.Zero, parked.Displacement);
+        Assert.Equal(8, parked.NativeState);
+    }
+
+    [Fact]
     public void FatalHitRemovesOnlyOneFrogWhileLifeModeParksInState15()
     {
         var runtime = new Rac1MobyRuntimeSession();

@@ -20,6 +20,10 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public const float RetreatCompletionDistance = 2f;
     public const float NativeTicksPerSecond = 60f;
     public const int AttackSequence = 5;
+    public const int RoamMinTicks = 45;
+    public const int RoamMaxTicks = 75;
+    public const float RoamMinRadius = .5f;
+    public const float RoamMaxRadius = 2f;
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly IReadOnlyList<Vector3[]> _paths;
     private readonly Dictionary<int, Entry> _entries = [];
@@ -34,6 +38,8 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         public float Health { get; set; } = authored.Health;
         public int Lives { get; set; } = authored.RespawnLives;
         public int PathPoint { get; set; }
+        public Vector3 RoamGoal { get; set; } = home;
+        public int RoamTicks { get; set; }
         public bool AttackEmitted { get; set; }
         public uint RandomState { get; set; } = (uint)(native.InstanceIndex + 1) * 747796405u + 2891336453u;
     }
@@ -105,7 +111,7 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public Rac1FrogFrame Step(int instance, Vector3 position, Vector3 target,
         bool targetEligible, bool animationWrapped = false,
         float animationPosition = 0, bool attackTouchesPlayer = false,
-        bool grounded = true)
+        bool grounded = true, bool roamingAllowed = true)
     {
         if (!Finite(position) || !Finite(target) || !float.IsFinite(animationPosition))
             throw new ArgumentOutOfRangeException(nameof(position));
@@ -137,6 +143,23 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
                 if (animationWrapped) SetState(e, 8, 4);
                 break;
             case 8:
+                // Source state8 chooses a home-relative wander destination
+                // within radius .5..2 and a 45..75-tick refresh. Native Moby
+                // +0x31 activation and exact PRNG are not yet recovered;
+                // this movement is an opt-in host fallback for admitted frogs.
+                if (roamingAllowed)
+                {
+                    if (e.RoamTicks <= 0 || Vector3.Distance(position, e.RoamGoal) < .05f)
+                    {
+                        float angle = NextFloat(e) * 2f * MathF.PI;
+                        float radius = RoamMinRadius + NextFloat(e) * (RoamMaxRadius - RoamMinRadius);
+                        e.RoamGoal = e.Home + new Vector3(MathF.Cos(angle) * radius,
+                            MathF.Sin(angle) * radius, 0);
+                        e.RoamTicks = RoamMinTicks + NextInt(e, RoamMaxTicks - RoamMinTicks + 1);
+                    }
+                    else e.RoamTicks--;
+                    movement = Travel(e, position, e.RoamGoal);
+                }
                 // Retail chooses a random entrance to 9 (1/9 per update)
                 // if its native target mode is not 2. Target *selection* is a
                 // separate common function. The host radius below is fallback.
@@ -237,6 +260,8 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         var xy = Vector2.Normalize(planar) * MathF.Min(speed, planar.Length());
         return new(xy.X, xy.Y, 0);
     }
+
+    private static float NextFloat(Entry e) => NextInt(e, 1 << 24) / (float)(1 << 24);
 
     private static int NextInt(Entry e, int max)
     {
