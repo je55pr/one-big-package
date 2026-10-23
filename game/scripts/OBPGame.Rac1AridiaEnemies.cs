@@ -366,9 +366,10 @@ public partial class OBPGame
     /// <summary>
     /// Host counterpart of sphere_collide_v's corrected-centre loop.
     /// Godot CollideShape provides contact pairs, NOT the original hit
-    /// record +0x30. Choose the largest bounded separating correction,
-    /// apply it to the query sphere, and re-query at most six times.
-    /// Source Moby/filter/triangle flags are not reproduced by this query.
+    /// record +0x30. Choose the nearest bounded world contact from
+    /// observed Godot pairs, apply its separation to the query sphere,
+    /// and re-query at most six times. Original Moby eligibility/primitive
+    /// masks and PS2 triangle flags are NOT inferred from host capsules.
     /// The original actor's body is only moved by the separate host
     /// motion adapter after these tentative corrections have finished.
     /// </summary>

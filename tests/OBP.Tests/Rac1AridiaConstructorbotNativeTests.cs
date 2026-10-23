@@ -1,6 +1,9 @@
 using System.Buffers.Binary;
 using System.Numerics;
+using OBP.IO;
+using OBP.RAC1;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Level;
 
 namespace OBP.Tests;
 
@@ -351,6 +354,175 @@ public sealed class Rac1AridiaConstructorbotNativeTests
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
                 centre, contacts, 0));
+    }
+
+    [SkippableFact]
+    public void RetailAridiaMobyClassCollisionHeaderPointersAreObservable()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(
+            item => item.LevelId == Rac1AridiaEnemies.LevelId);
+        var core = Rac1LevelCore.Open(reader, level);
+        var classes = Rac1StaticClasses.Read(core).Mobies;
+        Rac1AridiaConstructorbotNative.WalkerNativeCollisionResource Read(int classId)
+        {
+            var cls = classes[classId];
+            return Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(
+                core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength))!;
+        }
+        var bot = Read(Rac1AridiaEnemies.Constructorbot);
+        Assert.Equal(0x2c810, bot.ClassRelativeOffset);
+        Assert.Equal((ushort)15, bot.JointCountForFlag4);
+        Assert.Equal((ushort)15, bot.JointCountForFlag0);
+        Assert.Equal((uint)0xe0, bot.PrimitiveRecordBytes);
+        Assert.Equal((uint)0, bot.TriangleCount);
+        Assert.Equal((uint)0, bot.VertexBytes);
+        Assert.Equal(
+            new (byte Type, short ModeBits)[]
+            {
+                (3, 1), (3, 2), (3, 2), (4, 3),
+                (2, 2), (2, 2), (2, -32766)
+            }, bot.Primitives.Select(p => (p.Type, p.ModeBits)).ToArray());
+        Assert.Equal(new[] { 0, 3 }, bot.Primitives.Select((p, i) => (p, i))
+            .Where(t => Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(
+                t.p.ModeBits, 0, t.i))
+            .Select(t => t.i).ToArray());
+
+        var shark = Read(Rac1AridiaEnemies.Sandshark);
+        Assert.Equal(0x38010, shark.ClassRelativeOffset);
+        Assert.Equal((ushort)0, shark.JointCountForFlag4);
+        Assert.Equal((uint)0x20, shark.PrimitiveRecordBytes);
+        Assert.Equal((uint)0, shark.TriangleCount);
+        Assert.Equal((uint)0, shark.VertexBytes);
+        Assert.Equal(new Rac1AridiaConstructorbotNative.WalkerNativeCollisionPrimitive(
+            1, -32765), Assert.Single(shark.Primitives));
+
+        var controller = Read(604);
+        Assert.Equal(0x3070, controller.ClassRelativeOffset);
+        Assert.Equal((ushort)6, controller.JointCountForFlag4);
+        Assert.Equal((uint)0x40, controller.PrimitiveRecordBytes);
+        Assert.Equal((uint)0, controller.TriangleCount);
+        Assert.Equal((uint)0, controller.VertexBytes);
+        Assert.Equal(new (byte, short)[] { (4, 3), (4, -32765) },
+            controller.Primitives.Select(p => (p.Type, p.ModeBits)).ToArray());
+
+        var sandmouseClass = classes[Rac1AridiaEnemies.Sandmouse];
+        Assert.Null(Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(
+            core.Assets.AsSpan(sandmouseClass.AssetOffset, sandmouseClass.AssetLength)));
+    }
+
+    [Fact]
+    public void SourceMobyCollisionHeaderParserIsBoundedAndDoesNotInventRecords()
+    {
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(
+                new byte[0x13]));
+        byte[] payload = new byte[0x80];
+        Assert.Null(Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), 0x20);
+        BinaryPrimitives.WriteUInt16LittleEndian(payload.AsSpan(0x20), 2);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x24), 0x20);
+        payload[0x30] = 3;
+        BinaryPrimitives.WriteInt16LittleEndian(payload.AsSpan(0x32), 1);
+        var decoded = Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload)!;
+        Assert.Equal(0x20, decoded.ClassRelativeOffset);
+        Assert.Equal((ushort)2, decoded.JointCountForFlag4);
+        Assert.Equal((uint)0x20, decoded.PrimitiveRecordBytes);
+        Assert.Equal(new Rac1AridiaConstructorbotNative.WalkerNativeCollisionPrimitive(
+            3, 1), Assert.Single(decoded.Primitives));
+
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), 0x80);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), 0x20);
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x24), 0x21);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x24), 0x80);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+        BinaryPrimitives.WriteUInt32LittleEndian(payload.AsSpan(0x10), uint.MaxValue);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.ReadWalkerNativeCollisionResource(payload));
+    }
+
+    [Fact]
+    public void OriginalWalkerSphereMobyBroadphaseRequiresSourceCollisionMetadata()
+    {
+        Assert.Equal(4, Rac1AridiaConstructorbotNative.WalkerSphereMobyQueryFlags);
+        Assert.Equal(1, Rac1AridiaConstructorbotNative.WalkerSpherePrimitiveMode);
+        const float r = Rac1AridiaConstructorbotNative.WalkerCollisionRadius;
+        // The source broadphase uses Moby+0 centre, not its gameplay
+        // position at +0x10. A bounds hit is not enough if there is no
+        // source collision-data header at Moby+0x94.
+        var source = new Rac1AridiaConstructorbotNative.WalkerMobyCollisionCandidate(
+            548, new(1, 2, 3), .5f,
+            HasNativeCollisionHeader: true, AlreadyVisited: false,
+            JointCount: 2, VertexBytes: 0x20, HasPrimitiveRecords: true);
+        var query = new Vector3(1, 2, 4.125f);
+        var admitted = Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+            query, r, 551, source);
+        Assert.Equal(new(true, true, true), admitted);
+        Assert.Equal(default,
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 548, source));
+        Assert.Equal(default,
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { HasNativeCollisionHeader = false }));
+        Assert.Equal(default,
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { AlreadyVisited = true }));
+        Assert.Equal(default,
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query + Vector3.UnitZ * .0001f, r, 551, source));
+
+        // The flags4/flags2-off branch's native joint/vbytes==1 skip,
+        // and independently gated triangle/primitive data.
+        Assert.Equal(default,
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { VertexBytes = 1 }));
+        Assert.Equal(new(true, true, true),
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { JointCount = 0, VertexBytes = 1 }));
+        Assert.Equal(new(true, false, true),
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { VertexBytes = 0 }));
+        Assert.Equal(new(true, true, false),
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { HasPrimitiveRecords = false }));
+        Assert.Equal(new(true, false, false),
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { VertexBytes = 0, HasPrimitiveRecords = false }));
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                new(float.NaN, 0, 0), r, 551, source));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, 0, 551, source));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, 551, source with { BroadphaseRadius = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.AdmitWalkerMobyCollision(
+                query, r, -1, source));
+
+        // Primitive records with rec+2 mode bit2 alone are not in the
+        // original class612 flags4 collision category. A disabled bit
+        // at Moby+0x98 excludes the record regardless of its mode bits.
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0, 0));
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(3, 0, 0));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(2, 0, 0));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(0, 0, 0));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 1, 0));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 8, 3));
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 8, 2));
+        Assert.False(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0x80000000, 31));
+        Assert.True(Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0xffffffff, 32));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerMobyPrimitiveAdmitted(1, 0, -1));
     }
 
     [Fact]

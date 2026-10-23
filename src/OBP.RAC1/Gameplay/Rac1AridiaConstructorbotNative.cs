@@ -190,6 +190,142 @@ public static class Rac1AridiaConstructorbotNative
     public const float WalkerCollisionUp = 1f;
     public const int WalkerRecordBehaviorFlags = 0;
 
+    // The class612 walker_record_step passes record+0x38 == 0 to
+    // walker_move_fx. walker_move_v derives f=(flags << 1)&0x20 and
+    // sphere_collide_v receives f|4, hence query flags are exactly 4.
+    // In sphere_collide_v, flag4 selects primitive mode bit1 rather
+    // than the alternate bit2. It does NOT admit every Moby collider.
+    public const int WalkerSphereMobyQueryFlags = 0x04;
+    public const int WalkerSpherePrimitiveMode = 0x01;
+
+    /// <summary>
+    /// Original live Moby +0x94 is populated from its class +0x10
+    /// collision pointer (e.g. L2 ship_init 0x28e8a0). The retail
+    /// class payload stores a class-relative offset at +0x10. The
+    /// pointed-to header has two joint counts at +0/+2, primitive
+    /// section length at +4, triangle count at +8 and vertex byte
+    /// length at +0xc. Primitive records start at header+0x10 and
+    /// occupy 0x20 bytes each; rec+0 is type, rec+2 signed mode bits.
+    /// An end marker sets the high bit in the final signed mode.
+    /// This decodes STATIC class availability only. A live Moby may
+    /// disable its collision pointer or mask individual primitives.
+    /// </summary>
+    public readonly record struct WalkerNativeCollisionPrimitive(byte Type, short ModeBits);
+    public sealed record WalkerNativeCollisionResource(
+        int ClassRelativeOffset,
+        ushort JointCountForFlag4,
+        ushort JointCountForFlag0,
+        uint PrimitiveRecordBytes,
+        uint TriangleCount,
+        uint VertexBytes,
+        IReadOnlyList<WalkerNativeCollisionPrimitive> Primitives);
+
+    public static WalkerNativeCollisionResource? ReadWalkerNativeCollisionResource(
+        ReadOnlySpan<byte> classPayload)
+    {
+        if (classPayload.Length < 0x14)
+            throw new InvalidDataException("Native R&C1 Moby class header is truncated.");
+        uint relative = BinaryPrimitives.ReadUInt32LittleEndian(classPayload[0x10..]);
+        if (relative == 0) return null;
+        if (relative > int.MaxValue ||
+            (long)relative + 0x10 > classPayload.Length)
+            throw new InvalidDataException("Native Moby collision pointer escapes its class payload.");
+        int baseOffset = (int)relative;
+        var header = classPayload.Slice(baseOffset, 0x10);
+        ushort joint4 = BinaryPrimitives.ReadUInt16LittleEndian(header);
+        ushort joint0 = BinaryPrimitives.ReadUInt16LittleEndian(header[2..]);
+        uint recordsBytes = BinaryPrimitives.ReadUInt32LittleEndian(header[4..]);
+        uint triangles = BinaryPrimitives.ReadUInt32LittleEndian(header[8..]);
+        uint vertices = BinaryPrimitives.ReadUInt32LittleEndian(header[12..]);
+        if (recordsBytes % 0x20 != 0 ||
+            recordsBytes / 0x20 > 1024 ||
+            (long)baseOffset + 0x10 + recordsBytes > classPayload.Length)
+            throw new InvalidDataException("Native Moby collision primitive records are out of bounds.");
+        var records = new WalkerNativeCollisionPrimitive[(int)(recordsBytes / 0x20)];
+        for (int i = 0; i < records.Length; i++)
+        {
+            int at = baseOffset + 0x10 + i * 0x20;
+            records[i] = new(
+                classPayload[at],
+                BinaryPrimitives.ReadInt16LittleEndian(classPayload[(at + 2)..]));
+        }
+        return new(baseOffset, joint4, joint0, recordsBytes,
+            triangles, vertices, records);
+    }
+
+    /// <summary>
+    /// Source sphere_collide_v L2:0x1f0d60 broadphase and Moby collision
+    /// header admission. It uses the Moby's broadphase centre at +0
+    /// (NOT its gameplay position +0x10), its radius at +0x0c, the
+    /// optional collision-record pointer at +0x94 and the per-query
+    /// visited marker at +0x9c. Its collision header's joint count is
+    /// selected from +0 if flag4 is present, otherwise +2. When a joint
+    /// header exists, vbytes == 1 is an exact native skip for flag2-off.
+    /// A matching broadphase does NOT prove a collision primitive:
+    /// triangle bytes and enabled primitive records remain mandatory.
+    /// </summary>
+    public readonly record struct WalkerMobyCollisionCandidate(
+        int MobyIndex,
+        System.Numerics.Vector3 BroadphaseCentre,
+        float BroadphaseRadius,
+        bool HasNativeCollisionHeader,
+        bool AlreadyVisited,
+        ushort JointCount,
+        uint VertexBytes,
+        bool HasPrimitiveRecords);
+
+    public readonly record struct WalkerMobyCollisionAdmission(
+        bool CandidateAccepted,
+        bool ScanTriangles,
+        bool ScanPrimitives);
+
+    public static WalkerMobyCollisionAdmission AdmitWalkerMobyCollision(
+        System.Numerics.Vector3 sphereCentre,
+        float sphereRadius,
+        int queryingMobyIndex,
+        WalkerMobyCollisionCandidate candidate)
+    {
+        if (!Finite(sphereCentre) ||
+            !Finite(candidate.BroadphaseCentre) ||
+            !float.IsFinite(sphereRadius) || sphereRadius <= 0 ||
+            !float.IsFinite(candidate.BroadphaseRadius) ||
+            candidate.BroadphaseRadius < 0 ||
+            queryingMobyIndex < 0 || candidate.MobyIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(candidate));
+        // Original source uses a strict-positive signed float to reject
+        // distanceSquared - (r+boundRadius)^2: equality is admitted.
+        float reach = sphereRadius + candidate.BroadphaseRadius;
+        if (candidate.MobyIndex == queryingMobyIndex ||
+            candidate.AlreadyVisited || !candidate.HasNativeCollisionHeader ||
+            !float.IsFinite(reach) ||
+            System.Numerics.Vector3.DistanceSquared(
+                candidate.BroadphaseCentre, sphereCentre) > reach * reach)
+            return default;
+        if (candidate.JointCount != 0 && candidate.VertexBytes == 1)
+            return default;
+        return new(true,
+            candidate.VertexBytes != 0,
+            candidate.HasPrimitiveRecords);
+    }
+
+    /// <summary>
+    /// Source primitive loop at 0x1f0d60 tests the per-Moby m+0x98
+    /// disabled bit for EACH record and rec+2 mode bits. Walker flags
+    /// are 0x04, so only mode bit1 participates (bit2 does not).
+    /// </summary>
+    public static bool WalkerMobyPrimitiveAdmitted(
+        short nativeModeBits, uint disabledPrimitiveMask, int recordIndex)
+    {
+        if (recordIndex < 0)
+            throw new ArgumentOutOfRangeException(nameof(recordIndex));
+        // Native shifts a 32-bit m+0x98 mask once per record. After 32
+        // shifts it is zero; C# shift operators would wrap modulo 32,
+        // so an explicit >=32 check preserves the source recurrence.
+        bool maskedOff = recordIndex < 32 &&
+            (disabledPrimitiveMask & (1u << recordIndex)) != 0;
+        return !maskedOff && (nativeModeBits & WalkerSpherePrimitiveMode) != 0;
+    }
+
     /// <summary>
     /// Source walker_move_v L2:0x258830 only sweeps when the full 3D
     /// requested displacement is STRICTLY longer than the collision
