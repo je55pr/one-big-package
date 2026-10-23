@@ -218,6 +218,40 @@ native jump table points to the terminal response helper. The
 other response indices still depend on the generic service's
 returned classification and have not been fully reconstructed.
 
+The source general impact service at **0x00284730** has a
+distinct, earlier **provisional mode classifier** at
+**0x002849cc–0x00284afc**. Its eight-entry jump table at
+**0x00217650** branches on a native impact-context byte **+0x28**,
+with submode byte **+0x29** and (for mode zero) source kind
+halfword **+0x2a**. The source table has modes **0–7**;
+modes outside that range take status **2**, response **1**.
+The recovered table proposals are:
+
+| Mode | Source submode/kind | Proposed status | Proposed response |
+| --- | --- | --- | --- |
+| 0 | kind 1 or 2 / other | 2 | 0 / 1 |
+| 1 | submode 0–1 / 2 / 3+ | 2 | 11 / 5 / 9 |
+| 2 | submode 0–1 / 2+ | 2 | 8 / 13 |
+| 3 | submode 0–1 / 2 / 3+ | 2 | 10 / 15 / 16 |
+| 4 | any | 2 | 14 |
+| 5 | submode 0–1 / 2+ | 3 / 4 | 4 / 7 |
+| 6 | any | 2 | 1 |
+| 7 | submode 0–1 / 2+ | 2 | 12 / 17 |
+
+The mode-3 high-submode branch also clears the source collision
+slot's halfwords **+0x14** and **+0x1c**, as shown at
+**0x00284a94** and **0x00284a9c**. Crucially, these are
+**provisional** responses: the native routine subsequently invokes
+**0x0022dc50** at **0x00284b30**, dispatches a separate
+reaction/timer table at **0x00217670**, and evaluates control flags
+through **0x00284c74** before returning its final response index.
+The new bounded engine-neutral
+`Rac1Class623ImpactModeClassifier` reproduces just this table
+from explicit native context inputs and does **not** feed its
+proposal into `ApplyObservedNativeImpact` as an authentic final
+result. Original-ISO instruction tests assert the table, mode and
+submode access, tracking reset writes, and later callback boundary.
+
 The original class-623 reaction dispatch table begins at
 **0x002186f0**, as indexed by instructions **0x00303590-0x003035a4**.
 Response **index 1** (selected when source health is nonpositive)
