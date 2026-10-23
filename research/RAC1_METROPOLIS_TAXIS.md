@@ -663,3 +663,55 @@ and true Ratchet 0x65..0x67 animation and camera request ownership
 remain unported. The scene's existing collision-safe landing and
 source-class boarding admission are unchanged; this increment must
 not be claimed as native passenger parenting.
+
+## 23 October 2026: class-1012 native camera request serial and focus priority
+
+The original class-1012 helper `lv3_2dcbc8_l3`
+(**L3:0x002dcbc8**) does more than choose a HUD message. After
+calling `hud_message_request` for the selected PVar +0x98/+0x9c
+message, it reads **PVar+0xa4** as the camera controller request's
+serial handle.
+
+- If **PVar+0xa4 == -1**, it calls common engine
+  `camera_request` (**0x00235700**) with **slot ID `0x0c`**
+  (a controller slot, not a camera type), **key 0**,
+  controller callback addresses **0x00226960**, **0x002269b0**,
+  **0x002269d0**, and both arguments **0**. The returned serial is
+  stored at PVar+0xa4. Generic camera_request manages 13 independent
+  0x90-byte slots, can return the previous serial for an identical
+  request, and allocates a new serial for an altered request. The
+  translated camera code says **0** can be returned on refusal. The
+  taxi's `!= -1` test must not silently treat serial 0 as
+  unallocated.
+- If **PVar+0xa4 != -1**, it calls `sub_00235e18(handle, 10)`
+  (**0x00235e18**) instead of making another request. This
+  increases the matching slot's `+0x7c` priority to at least **10**
+  when the slot is applicable and not pending. The return value
+  indicates whether that operation was applicable; it is **not**
+  a camera-cut action or a new serial.
+- Native class-1012 updater state **0** explicitly restores
+  PVar+0xa4 to **-1**. The source does not show a corresponding
+  cab-owned `camera_release` on every taxi boarding or
+  dismount; camera slot ownership is global and controller-owned.
+
+`Rac1TaxiNativeCameraLease` now preserves the above request/refresh
+contract as testable, engine-neutral **intent**. Each retail-backed
+class-1012 stop carries a separate lease alongside its authored
+HUD selectors; `Rac1MetropolisTaxiSession.Reset` invalidates its
+serial in the native state-zero manner. Tests verify the precise
+request slot/key/callbacks, one-time allocation, priority floor,
+refused serial zero, rejection of invalid/duplicate results, reset,
+and **both retail taxi populations** i961/i962. Synthetic
+placements with no original selector PVar do not receive a fabricated
+camera lease.
+
+**Important boundary:** Neither `camera_request` nor
+`sub_00235e18` is actually called by the provisional Godot host.
+The callback implementations at 0x00226960/0x002269b0/0x002269d0
+and their camera transform/animation ownership are not yet
+recovered. Assigning a fabricated serial or switching Godot's
+live view to a guessed camera would be false native parity.
+The existing bounded taxi-follow camera and its landing/abort
+restoration remain in effect. The next camera increment requires
+resolving the retail callbacks and introducing a Godot camera
+adapter that can truthfully acknowledge and release a request.

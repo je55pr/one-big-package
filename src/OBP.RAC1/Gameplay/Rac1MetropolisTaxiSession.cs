@@ -30,7 +30,8 @@ public sealed record Rac1MetropolisTaxiStop(
     Rac1TaxiNativeHud? NativeHudSelectors = null,
     int? NativeFirstDepartureSelector = null,
     IReadOnlyList<int>? NativeDepartureSelectors = null,
-    Rac1TaxiNativeShuttleDock? NativeShuttleDock = null);
+    Rac1TaxiNativeShuttleDock? NativeShuttleDock = null,
+    Rac1TaxiNativeCameraLease? NativeCameraLease = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -456,7 +457,8 @@ public sealed class Rac1MetropolisTaxiSession
                 route.Index, route.Class, position, outbound, route.Label, returning,
                 approach, departure, trigger, nativeSide, nativeSeek,
                 hoverPhases, nativeHud, firstDepartureSelector,
-                allDepartureSelectors, nativeDock));
+                allDepartureSelectors, nativeDock,
+                nativeHud.HasValue ? new Rac1TaxiNativeCameraLease() : null));
         }
 
         return new Rac1MetropolisTaxiSession(stops);
@@ -651,8 +653,14 @@ public sealed class Rac1MetropolisTaxiSession
     {
         AbortRide();
         _nativeTraffic.Clear();
-        foreach (var stop in _stops.Where(s => s.ApproachPath is { Count: > 1 }))
-            _traffic[stop.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
+        foreach (var stop in _stops)
+        {
+            // Class-1012 native state zero discards PVar +0xa4 even when
+            // a previous camera serial was allocated by the retail engine.
+            stop.NativeCameraLease?.ResetOnStateZero();
+            if (stop.ApproachPath is { Count: > 1 })
+                _traffic[stop.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
+        }
     }
 
     public Rac1TaxiFlight? Tick(double deltaSeconds)

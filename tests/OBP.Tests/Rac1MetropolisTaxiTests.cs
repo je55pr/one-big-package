@@ -386,8 +386,22 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.Equal(sideZero, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x98, 4)));
         Assert.Equal(sideOne, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x9c, 4)));
 
-        var stop = Rac1MetropolisTaxiSession.TryCreate(world)!.Stops
-            .Single(s => s.InstanceIndex == instance);
+        var taxis = Rac1MetropolisTaxiSession.TryCreate(world)!;
+        var stop = taxis.Stops.Single(s => s.InstanceIndex == instance);
+        var lease = Assert.IsType<Rac1TaxiNativeCameraLease>(stop.NativeCameraLease);
+        Assert.Equal(
+            Rac1TaxiNativeCameraLease.CameraCommandKind.Request,
+            lease.FocusCommand().Kind);
+        lease.AcceptRequestResult(47 + instance);
+        Assert.Equal(
+            Rac1TaxiNativeCameraLease.CameraCommandKind.RaisePriorityFloor,
+            lease.FocusCommand().Kind);
+        Assert.Equal(10, lease.FocusCommand().Priority);
+        taxis.Reset();
+        Assert.Equal(-1, lease.NativePvarCameraHandle);
+        Assert.Equal(
+            Rac1TaxiNativeCameraLease.CameraCommandKind.Request,
+            lease.FocusCommand().Kind);
         Assert.Equal(sideZero, stop.NativeHudSelectors!.Value.SideZeroSelector);
         Assert.Equal(sideOne, stop.NativeHudSelectors.Value.SideOneSelector);
         Assert.Equal(sourceDockMessage,
