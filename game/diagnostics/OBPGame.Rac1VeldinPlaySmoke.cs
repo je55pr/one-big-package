@@ -39,6 +39,7 @@ public partial class OBPGame
 
             await RunRac1VeldinPopulationOpeningIdleSmokeAsync();
             await RunRac1VeldinRetailPauseSmokeAsync();
+            await RunRac1WorldRetailNavigationSmokeAsync("Veldin");
 
             GD.Print(
                 $"[rac1-veldin-play] opening PASS: ephemeral current=0, " +

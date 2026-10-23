@@ -1,6 +1,6 @@
 # R&C1 pause, inventory and HelpDesk Godot presentation
 
-Status: first native-art-based presentation / host navigation implemented on feature branch, 2026-10-22. **This is not a retail-perfect menu recreation.**
+Status: historical first-pass audit (2026-10-22). **This is not a retail-perfect menu recreation.** The early statements below describing Quick Select as read-only, root panel placement as generic Godot, or Items as a paginated overflow list have since been superseded by the source-backed Quick Select/Items/model work. For the 2026-10-23 review milestone and exact native/provisional boundary, use the current PR #170 description and `research/RAC1_UI_RENDERING_EVIDENCE_AUDIT.md`.
 
 ## Source and ownership
 
