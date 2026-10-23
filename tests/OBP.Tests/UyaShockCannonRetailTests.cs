@@ -9,7 +9,7 @@ using OBP.RAC3.Level;
 
 namespace OBP.Tests;
 
-public sealed class UyaShockCannonRetailTests
+public sealed partial class UyaShockCannonRetailTests
 {
     [SkippableFact]
     public void OriginalDiscNamesDefinitionsUpgradeLinksAndAmmoIdentifyV5Cannon()

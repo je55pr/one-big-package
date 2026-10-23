@@ -136,11 +136,82 @@ class number as UYA. Cross-game target resistance requires an explicit host adap
 | Charge particles | Calls to native emitter **`0x0046DCB8`** in the held controller |
 | Ratchet animation | Definition fields `+24/+28/+2C = 49/-1/65`; selector compares `+24` at `0x0038606C`; player action **29** requested at `0x00385A44` |
 
-Global gadget payload family is resident header `TOC+4588`, size `3C8`, payload
-LBA `E51DE`; global audio family is `TOC+2248`. These identify local disc
-containers, **not a completed class-1882 extraction map**. Held-model geometry,
-class sound-table-to-bank resolution, procedural textures/particles/materials,
-and visual transforms still need their UYA-specific extraction/presentation path.
+`UyaGlobalGadget` now extracts the original resident gadget package. Header
+`TOC+4588` is `3C8` bytes, payload LBA `E51DE`, with 48 rows of `0x14` bytes.
+Class `1882` is row **14**: model relative sector **811**, **22** sectors;
+audio relative sector **833**, **24** sectors. The first 16 model bytes contain
+two compressed offset/size pairs relative to the gadget payload: class and
+texture WADs. They are neither EE pointers nor a level Moby remap.
+
+The admitted model has **2,205 vertices, 1,866 triangles, 10 joints**, and
+three source clips of **11/2/11 frames** at speed `.5`. Pose it through
+`GcUyaMobyPose`; the legacy static reconstruction folds the gun incorrectly.
+The texture bundle has one **128x128 PSMT8/RGBA32 PIF**. The source assets expose
+explicit sequence/frame selection; a recovered weapon-idle selector and Ratchet
+mount are not inferred from the availability of these clips.
+
+The separate **SBlk v3** bank contains six sounds, 20 compact grains and eight
+unique ADPCM voices. A compact grain is eight bytes: opcode (type in high byte,
+body offset/immediate in low 24 bits) and signed 240-Hz delay. `GrainData` at
+metadata `+34` supplies tone bodies. Control parameters are three signed bytes;
+ordinary fire uses `RAND_PB`, `SET_REGISTER_RAND` and register-selected tone
+volume. The shared parser preserves the packed opcode as well as normalized
+parameters; the existing grain interpreter supplies both mixed and independent
+voice rendering.
+
+| Local cue | Voices / source timing | SoundDef max volume / range / pitch |
+|---|---|---|
+| 0 charged fire | Five tones at 0, 20, 28, 78, 84 ticks | 1843 / 35 / 0 |
+| 1 empty | One tone | 1536 / 35 / 381 |
+| 2 recovery | Original silent 11-frame ADPCM sample | 2048 / 64 / 0 |
+| 3 charge | Intro, then sustained voices at 225 and 275 ticks | 1945 / 35 / 0 |
+| 4 ordinary fire | Five tones at 0, 0, 0, 8, 18 ticks | 1126 / 35 / 0 |
+| 5 unassociated | Decodable; not requested by this controller slice | 1024 / 35 / 0 |
+
+Charge's two sustained tones use the same ADPCM loop at different pitches.
+`UyaShockCannonAssets.Audio` schedules them independently, each with its own
+intro/loop range; replaying the entire mixed charge clip introduces a seam.
+Stop the complete owned charge program, including pending tones, on StopLoop.
+`0x004A53D0` supplies integer distance attenuation, linear unless flags bit 0
+or the caller forces quadratic falloff. Native SoundDef volume units remain
+available. Normalization by 2048 is **OBP playback policy**; pitch interpolation,
+ADSR rendering and host mixing do not claim bit-exact SPU output or native RNG.
+SoundDef pitch modifies the tone cursor at 48 kHz, preserving the envelope and
+240-Hz grain clock instead of changing the playback rate of an entire program.
+
+### Charged beam rendering
+
+`UyaShockCannonBeam` projects `0x003873F8` and `0x00409A50`. The latter draws
+ellipsoid rings, **22 vertices per alternating strip**, with azimuth samples at
+ten divisions and polar steps of **pi/10**. Native local +Z points against the
+aim: length scale **15**, translation **muzzle + aim*14.5**, so the first pole
+is at muzzle minus half a unit. This visual extent is distinct from damage's
+40-unit sampling. The host supplies the proven muzzle and aim-to-matrix axes.
+
+| Layer | Fx texture | Rings | Base RGBA word | Alpha | Scroll per draw |
+|---|---|---|---|---|---|
+| 1 | 23 | 8 | `00804020` | remaining counter <<25 | .15 |
+| 2 | 23 | 8 | `00801040` | remaining counter <<25 | .10 |
+| 3 | 23 | 8 | `00804010` | remaining counter <<25 | .05 |
+| Outer | 10 | 6 | `00D20A40` | remaining counter <<24 | .15 |
+
+Rotate both cross-section axes +pi/4 around the native axial basis before the
+first layer, then -pi/2 before the next two. Outer widths are multiplied by 1.1.
+Widths start at 1, grow by .1 while the decremented counter is at least 16,
+then shrink by .075/.125 on the respective axes. Scrolls wrap at 7; V advances
+one repeat per polar ring. Colours fade to black preserving the source blend
+alpha, using `0x0040D020`'s weighted VU MAC/conversion order. Reassociating that
+calculation changes colour bytes on the six-ring layer. Blend is source-alpha
+additive (`GS ALPHA=8000000048`), with repeating linear-filtered textures.
+
+Loader `0x00428FE8..0x00429010` connects core `+58/+5C` to `0x004225E8` and the
+runtime Fx table at `001E7D00`; its independent image bank is core `+68`.
+`UyaFxTextures` admits the observed PSMT8 palette/pixel/width/height rows.
+TABLE1 has Fx **23 = 32x32** and **10 = 64x64**. These come from UYA, not RAC1
+Tesla art. Neutral meshes retain source texture identity, vertex RGBA, wrap and
+blend requirements. Host shader, lighting and output colour-space fidelity
+remain presentation responsibilities.
+
 Item field `+3A = 1883` is retained as an unresolved secondary class reference;
 this Cannon path does not justify spawning class 1883 as its projectile.
 
@@ -168,12 +239,35 @@ operands/call targets. No retail payload is stored in Git.
 
 Run `tools/test-retail.ps1 -Configuration Release` with authorized local ISOs.
 Focused tests: `dotnet test tests/OBP.Tests -c Release --filter FullyQualifiedName~UyaShockCannon`.
-This establishes engine-neutral contracts and a target fixture, **not ordinary
-Godot firing or a live PCSX2 comparison**. Host geometry/rotation conventions,
-global native RNG state, player admission/aim, ancillary native status helper
-`0x0034BF98`, full particle/audio rendering, special modes and UYA weapon-switch
-continuation remain outside this projection. Native damage is emitted unchanged;
-electric chains/stun are not invented from the weapon's name.
+Asset tests additionally pin the gadget directory, decoded class/texture and Fx
+RGBA hashes, every sound program, exact clip counts and loader/draw instructions.
+
+`tools/uya-shock-cannon-native-trace.py --iso <original> --reference-root <MIT-reference>
+--cxx <C++20-compiler>` builds the optional original-instruction oracle and runs
+its managed comparisons. Zig's executable is accepted as the compiler. Original
+code remains in ignored `captures/`; only the harness is distributed. The oracle
+loads **UYA's** boot VIF0 math chain at `0010F1A0`, not the interpreter's RAC1
+default. It executes original ring geometry/colour/UV and aim-to-layer setup,
+across six aim directions including both vertical poles, and compares both
+attenuation branches. GPU submission and muzzle position are
+external facts. Ring positions agree within 2e-6, full beam placement within
+2e-5; packed colours, strip/UV order and layer arguments agree. Trigonometry and
+matrix arithmetic remain float host projections rather than bit-exact VU ports.
+
+`tools/uya-shock-cannon-preview.ps1` launches a separate Godot source-asset
+fixture using `OBP_UYA_ISO`. Space/Circle exercises the session; 1/2/3 selects a
+source clip. `-Smoke -Rendered -Capture` stages a real Godot input hold/release,
+renders offscreen, checks two shot admissions, all 29 beam updates and owned
+audio cleanup, and saves an ignored preview image. It uses the neutral assets
+and audio preparation boundary. Its unlit model view, camera, mount and gain
+are preview policy, **not ordinary integrated gameplay or a live PCSX2 A/B**.
+R&C1 Quick Select and OBPGame are untouched.
+
+Remaining: native global RNG state; Ratchet pose/hand attachment and clip
+selection; charge/muzzle particles, spread trails and impacts beyond their
+emitter requests; ancillary status helper `0x0034BF98`; special modes and UYA
+weapon-switch continuation. Native direct damage remains unchanged; electric
+chains/stun are not invented from the weapon's name.
 
 In particular, normal contacts also call `0x0034BF98`. Its initial path checks
 resource flag bit 1, target definition kind 5, target mode `1000`, live state,
@@ -184,7 +278,9 @@ the direct shot/beam records, not a claim about total damage including modifiers
 
 Public search leads were [OpenRAC rac3-decomp at `3d9bb40`](https://github.com/OpenRAC/rac3-decomp/tree/3d9bb40cd871a14b3f868b5fac61864de75c8dfd)
 (generic function maps; GPL-3.0) and [Wrench at `46e8043`](https://github.com/chaoticgd/wrench/tree/46e80430158a4a11e9cbd51424c84a015bbab058)
-(global text header offsets; GPL-3.0). No reference implementation was copied.
+(global text header offsets; GPL-3.0). No GPL implementation was copied.
 Names, fields, code paths and timing above were independently read from the
 authorized original. Multiplayer weapon IDs/table strides from public UYA
-patches were not transplanted into this single-player slice.
+patches were not transplanted into this single-player slice. The optional
+instruction oracle and shared 989snd semantics use the separately acknowledged
+MIT/ISC references in [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES.md).

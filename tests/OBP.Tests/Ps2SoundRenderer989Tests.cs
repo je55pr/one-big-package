@@ -43,4 +43,39 @@ public sealed class Ps2SoundRenderer989Tests
     {
         Assert.Null(Ps2SoundRenderer989.TryRender(Sound(new(99, 0, null), new(1, 0, Tone())), tone => Sample(tone)));
     }
+
+    [Fact]
+    public void ToneRegisterVolumeIsResolvedWhenTheGrainExecutes()
+    {
+        byte[] parameters = new byte[32]; parameters[2] = 32;
+        var sound = Sound(new(30, 0, null, parameters), new(1, 0, Tone() with { Volume = -1 }));
+        var rendered = Assert.IsType<Ps2SoundRenderer989.Rendered>(Ps2SoundRenderer989.TryRender(sound, tone => Sample(tone)));
+        Assert.InRange(rendered.Samples.Max(), 2500, 2530);
+        Assert.Null(Ps2SoundRenderer989.TryRender(Sound(new Ps2SoundBank989.Grain(1, 0, Tone() with { Volume = -6 })), tone => Sample(tone)));
+    }
+
+    [Fact]
+    public void SustainedVoicesHaveIndependentPitchedCyclesAndKeepTheirOwnGrainDelays()
+    {
+        var sound = Sound(new(1, 0, Tone()), new(1, 225, Tone(1) with { CenterNote = -61 }), new(1, 50, Tone(2)));
+        var plan = Ps2SoundRenderer989.TryRenderVoices(sound, tone => Sample(tone, tone.SampleOffset != 0));
+        Assert.NotNull(plan);
+        Assert.Equal(new[] { 0, 45000, 55000 }, plan.Select(v => v.StartFrame));
+        Assert.False(plan[0].Loop);
+        Assert.True(plan[1].Loop); Assert.True(plan[2].Loop);
+        Assert.NotEqual(plan[1].Audio.LoopEndFrame - plan[1].Audio.LoopStartFrame,
+            plan[2].Audio.LoopEndFrame - plan[2].Audio.LoopStartFrame);
+        Assert.True(plan[1].Audio.LoopStartFrame > 0);
+    }
+
+    [Fact]
+    public void CallerPitchChangesSampleCursorWithoutSpeedingTheEnvelopeOrGrainClock()
+    {
+        var sound = Sound(new Ps2SoundBank989.Grain(1, 48, Tone()));
+        var normal = Assert.Single(Ps2SoundRenderer989.TryRenderVoices(sound, tone => Sample(tone), seed: 0)!);
+        var octave = Assert.Single(Ps2SoundRenderer989.TryRenderVoices(sound, tone => Sample(tone), seed: 0, pitchModifier: 1536)!);
+        Assert.Equal(9600, normal.StartFrame); Assert.Equal(normal.StartFrame, octave.StartFrame);
+        Assert.Equal(normal.Audio.Samples.Take(400), octave.Audio.Samples.Take(400));
+        Assert.True(octave.Audio.Samples.Length < normal.Audio.Samples.Length);
+    }
 }
