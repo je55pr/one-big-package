@@ -201,10 +201,38 @@ native call-site and helper instruction words. This does not
 run the native registry in Godot or admit any hit.
 
 The separate **0x00284730** contact/impact service supplies the
-subsequent query status and scalar outputs. The class-623 helper
-checks status at **0x003034f4–0x003034fc** and declines repeat processing
-when the source actor is already native state **14**
-(**0x00303504–0x0030350c**). The non-terminal reaction path writes
+subsequent query status and scalar outputs. The class-623 caller passes
+the actor's **PVar+0x20** pointer as the service's third argument,
+an output-status address on its stack **+0x20**, an output-scalar
+address at stack **+0x24**, and native query mode **4**
+(**0x003034d4–0x003034ec**). Status value **1** skips the
+health/reaction logic at **0x003034f4–0x003034fc**, as does an actor
+already in native state **14** (**0x00303504–0x0030350c**).
+Otherwise it loads source float **PVar+0x20** and the service's
+observed float scalar, executes `sub.s health,health,scalar`
+(**0x00303510–0x0030351c**), writes the updated float back at
+**0x0030352c**, and compares the result against zero using the
+native ordered `c.le.s` at **0x00303520**. The nonpositive
+branch selects response index **1** at **0x00303530**, whose
+native jump table points to the terminal response helper. The
+other response indices still depend on the generic service's
+returned classification and have not been fully reconstructed.
+
+All **56** original Rilgar class-623 PVars have 0x2e0 bytes
+and **initial float health 1.0** at +0x20
+(IEEE-754 `0x3f800000`), independently verified on the authorised
+retail source. New engine-neutral `Rac1Class623ImpactAccounting`
+models **only** the caller's status-1 / terminal-state skips and
+floating-point subtraction using externally supplied **authentic**
+service status and scalar. Unknown or nonfinite service facts
+fail closed as a clearly labeled host-safety policy. A retail
+instruction test asserts the source service call, stack-output
+contract, skip gates and floating-point arithmetic; a 56-placement
+test checks the actual authored health values. Godot still cannot
+supply these native service outputs, so no hit is generated or
+damage applied from host presentation or inferred proximity.
+
+The non-terminal reaction path writes
 native state **11** at **0x0030364c–0x00303654**. The terminal path
 clears the **0x1000 targetability flag** from native Moby **+0x34**
 at **0x0030369c–0x003036a0** and writes native state **14**
