@@ -16,6 +16,7 @@ public partial class OBPGame
     private readonly Dictionary<int, int> _rac1ConstructorbotSweepProbeCounts = [];
     private readonly Dictionary<int, int> _rac1ConstructorbotSphereProbeCounts = [];
     private readonly Dictionary<int, int> _rac1ConstructorbotSphereContactCounts = [];
+    private readonly Dictionary<int, int> _rac1ConstructorbotNativeLiftCounts = [];
     private SphereShape3D? _rac1ConstructorbotWalkerSphere;
     private readonly Dictionary<int, float> _rac1ConstructorbotStateThreeVerticalSteps = [];
     // Source table at 0x1600ec is the gameplay +0x60 list already decoded
@@ -36,6 +37,7 @@ public partial class OBPGame
         _rac1ConstructorbotSweepProbeCounts.Clear();
         _rac1ConstructorbotSphereProbeCounts.Clear();
         _rac1ConstructorbotSphereContactCounts.Clear();
+        _rac1ConstructorbotNativeLiftCounts.Clear();
         _rac1ConstructorbotStateThreeVerticalSteps.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1ConstructorbotRoamingTargets.Clear();
@@ -425,6 +427,37 @@ public partial class OBPGame
     }
 
     /// <summary>
+    /// Source walker_move_v 0x258830 post-movement vertical segment.
+    /// This is deliberately separate from the earlier +/-0.5 step-admission
+    /// probe: record+0x30 is zero for class612, so the original ray ends
+    /// only 0.05 below the proposed native Moby origin. It requires a real
+    /// imported terrain hit, not an inferred floor from the host capsule.
+    /// Godot's triangle normals and Moby filtering still differ from PS2.
+    /// </summary>
+    private float? ProbeRac1AridiaWalkerGroundLift(
+        Rac1HostedEnemy enemy, Vector3 candidate)
+    {
+        var segment = Rac1AridiaConstructorbotNative.WalkerGroundSegment(
+            ToEffectNative(candidate),
+            Rac1AridiaConstructorbotNative.WalkerCollisionUp,
+            Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
+        var query = PhysicsRayQueryParameters3D.Create(
+            FromEffectNative(segment.Start), FromEffectNative(segment.End));
+        query.Exclude = new global::Godot.Collections.Array<Rid>(
+            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                .Append(_player!.GetRid()));
+        var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
+        if (!hit.TryGetValue("position", out var contact) ||
+            !hit.TryGetValue("normal", out var normal) ||
+            normal.AsVector3().Y <= .65f)
+            return null;
+        return Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            ToEffectNative(candidate).Z,
+            ToEffectNative(contact.AsVector3()).Z,
+            Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
+    }
+
+    /// <summary>
     /// Bounded Godot collision adapter for source walker_move_fx. Unlike
     /// generic enemy movement this returns whether an ACTUAL collision
     /// occurred; the native walker uses that fact to distinguish contact
@@ -487,9 +520,30 @@ public partial class OBPGame
             enemy.Reaction?.AcceptHostContact(ToEffectNative(collision.GetNormal()));
             remaining = collision.GetRemainder().Slide(collision.GetNormal());
         }
+        // The retail walker_move_v raises its Moby 30% toward a source
+        // segment-observed floor above the candidate. Apply that correction
+        // before the generic Godot shape snap, which would otherwise replace
+        // the partial lift with a full floor relocation. Use a bounded
+        // shape move to avoid moving through a ceiling; if it cannot lift,
+        // retain the existing observed-contact grounding fallback.
+        float? sourceLift = ProbeRac1AridiaWalkerGroundLift(
+            enemy, enemy.Body.GlobalPosition);
+        bool appliedNativeLift = false;
+        if (sourceLift is > 0)
+        {
+            float previousY = enemy.Body.GlobalPosition.Y;
+            enemy.Body.MoveAndCollide(Vector3.Up * sourceLift.Value);
+            appliedNativeLift = enemy.Body.GlobalPosition.Y > previousY + .00001f;
+            if (appliedNativeLift)
+            {
+                int actor = enemy.Node.Source.InstanceIndex;
+                _rac1ConstructorbotNativeLiftCounts[actor] =
+                    _rac1ConstructorbotNativeLiftCounts.GetValueOrDefault(actor) + 1;
+            }
+        }
         bool rising = enemy.Reaction?.Velocity.Z > 0;
-        enemy.Grounded = !rising && TryGroundRac1Enemy(enemy,
-            upwardReach: 0, downwardReach: .3f);
+        enemy.Grounded = !rising && (appliedNativeLift ||
+            TryGroundRac1Enemy(enemy, upwardReach: 0, downwardReach: .3f));
         enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
         return touched;
     }

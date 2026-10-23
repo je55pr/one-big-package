@@ -177,9 +177,14 @@ public partial class OBPGame
             Require(walkedEnd < walkedStart - .025f,
                 $"source walker with lookahead did not move across real terrain: " +
                 $"before={walkedStart:F3} after={walkedEnd:F3}");
+            int nativeLiftsApplied =
+                _rac1ConstructorbotNativeLiftCounts.GetValueOrDefault(particleBotId);
+            Require(nativeLiftsApplied > 0,
+                "original class612 walker never applied source 30%-floor lift " +
+                "during the real waypoint traversal");
             GD.Print($"[aridia-bot-smoke] class612 i551 staged state5 " +
                 $"first+lookahead ground probes before={walkedStart:F3} " +
-                $"after={walkedEnd:F3} PASS");
+                $"after={walkedEnd:F3} source-lift-applied={nativeLiftsApplied} PASS");
 
             // Deliberate native swept-segment branch fixture: source
             // walker_move_v skips its segment for <=0.625 distance.
@@ -214,6 +219,26 @@ public partial class OBPGame
             GD.Print($"[aridia-bot-smoke] class612 i551 source six-attempt " +
                 $"sphere overlap contacts={sphereResult.Contacts} " +
                 $"lift={FromEffectNative(sphereResult.Position).Y - sphereStarting.Y:F3} PASS");
+
+            // Real imported terrain must actually intersect the DIFFERENT
+            // post-motion walker_move_v ray at position+1 to position-0.05.
+            // Deliberately LOWER only its candidate, not the real enemy,
+            // to expose a nonzero 30%-lift example on original scene data.
+            Vector3 partialLiftCandidate = beforeSweepBody - Vector3.Up * .4f;
+            float? observedLift = ProbeRac1AridiaWalkerGroundLift(
+                particleBot, partialLiftCandidate);
+            Require(observedLift is > .01f && observedLift < .3f,
+                $"class612 original post-move floor segment did not observe " +
+                $"a bounded partial lift (lift={observedLift})");
+            float? unsupportedLift = ProbeRac1AridiaWalkerGroundLift(
+                particleBot, beforeSweepBody + Vector3.Up * 30f);
+            Require(!unsupportedLift.HasValue,
+                "original walker post-move segment invented airborne floor contact");
+            Require(particleBot.Body.GlobalPosition.DistanceTo(beforeSweepBody) < .001f,
+                "non-mutating source floor ray unexpectedly relocated class612 body");
+            GD.Print($"[aridia-bot-smoke] class612 i551 real source vertical " +
+                $"segment positive 30%-lift={observedLift.GetValueOrDefault():F3} " +
+                $"airborne miss PASS");
 
             // Negative scene fixture: same real collision body, but suspended
             // well above any terrain. Native walker_probe must return no

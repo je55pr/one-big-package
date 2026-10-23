@@ -292,6 +292,10 @@ public static class Rac1AridiaConstructorbotNative
     public const float WalkerCollisionMinimumForwardFraction = .2f;
     public const float WalkerMoveFloorLiftFraction = .3f;
     public const float WalkerMoveGroundProbeExtension = .05f;
+    // The shared walker initializer leaves record+0x30 untouched, and
+    // class612's retail PVar+0x100 is zero. The initial record's
+    // +/-0.5 support probe is a DIFFERENT operation.
+    public const float ConstructorbotFloorDrop = 0f;
     public const int WalkerSpherePushoutAttempts = 6;
 
     /// <summary>
@@ -342,6 +346,23 @@ public static class Rac1AridiaConstructorbotNative
             return new(flags | 0x22, true);
 
         return new(flags, false);
+    }
+
+    /// <summary>
+    /// Original walker_move_v 0x258830 issues a post-motion collision ray
+    /// from Moby position + record+4 up, to position - record+0x30 drop
+    /// - 0.05. This is NOT the separate walker_record_step +/-0.5 probe.
+    /// A miss must never invent a source lift or ground-contact bit.
+    /// </summary>
+    public static (System.Numerics.Vector3 Start, System.Numerics.Vector3 End)
+        WalkerGroundSegment(System.Numerics.Vector3 position, float up, float drop)
+    {
+        if (!Finite(position) || !float.IsFinite(up) || !float.IsFinite(drop) ||
+            up < 0 || drop < 0)
+            throw new ArgumentOutOfRangeException(nameof(drop));
+        return (position + System.Numerics.Vector3.UnitZ * up,
+            position - System.Numerics.Vector3.UnitZ *
+                (drop + WalkerMoveGroundProbeExtension));
     }
 
     /// <summary>

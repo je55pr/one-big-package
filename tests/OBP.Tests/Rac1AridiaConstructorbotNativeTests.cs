@@ -421,6 +421,26 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     [Fact]
     public void NativeWalkerMoveFloorLiftAppliesSourceThirtyPercentWithoutForcedDrop()
     {
+        Assert.Equal(0f, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
+        var nativeSegment = Rac1AridiaConstructorbotNative.WalkerGroundSegment(
+            new Vector3(3, 4, 10), Rac1AridiaConstructorbotNative.WalkerCollisionUp,
+            Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop);
+        Assert.Equal(new Vector3(3, 4, 11), nativeSegment.Start);
+        Assert.Equal(new Vector3(3, 4, 9.95f), nativeSegment.End);
+        // The original class612 drop is ZERO. A level floor at the
+        // current Moby height cannot raise the actor by 0.3 * 0.5.
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            10, 10, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop));
+        Assert.Equal(.075f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            10, 10.25f, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop), 5);
+        Assert.Equal(0f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            10, 9.95f, Rac1AridiaConstructorbotNative.ConstructorbotFloorDrop));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerGroundSegment(
+                new(float.NaN, 0, 0), 1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerGroundSegment(
+                Vector3.Zero, 1, -.01f));
         Assert.Equal(.075f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
             10, 9.75f, .5f), 5);
         Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
