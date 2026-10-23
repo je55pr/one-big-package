@@ -182,6 +182,8 @@ public sealed class Rac1AmoeboidTargetSelectionTests
         Assert.Equal(waiting, Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, null, true));
         Assert.Equal(waiting, Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, 0, null));
         Assert.Equal(new Rac1Class623InitialTargetState(1, true),
+            Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, 1, null));
+        Assert.Equal(new Rac1Class623InitialTargetState(1, true),
             Rac1AmoeboidClass623Admission.AdvanceWaiting(waiting, links, 2, null));
 
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x2bc), 58);
@@ -244,7 +246,10 @@ public sealed class Rac1AmoeboidTargetSelectionTests
             BinaryPrimitives.ReadUInt32LittleEndian(source.Read(address, 4));
 
         Assert.Equal(0xa2040020u, Word(overlay, 0x0030c69c)); // class-830 state 2
-        Assert.Equal(0xa20400bcu, Word(overlay, 0x0030c6a8)); // state-2 signal byte
+        Assert.Equal(0xa20400bcu, Word(overlay, 0x0030c6a8)); // immediate state-2 signal 2
+        Assert.Equal(0x24040001u, Word(overlay, 0x0030c868)); // state-1 transition signal 1
+        Assert.Equal(0xa20400bcu, Word(overlay, 0x0030c878)); // write completion byte 1
+        Assert.Equal(0xa2030020u, Word(overlay, 0x0030c880)); // transition to state 2
         Assert.Equal(0x906400bcu, Word(overlay, 0x00302844)); // class-623 link signal
         Assert.Equal(0x54800009u, Word(overlay, 0x00302848)); // activate if nonzero
         Assert.Equal(0x8e2502bcu, Word(overlay, 0x00302850)); // alternate volume index

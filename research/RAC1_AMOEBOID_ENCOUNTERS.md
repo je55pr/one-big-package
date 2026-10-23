@@ -127,9 +127,12 @@ reactivation routes are covered by retail tests.
 
 All **44** state-15 class-623 targets point at source **class-830**
 controller Mobys. There are **25** class-830 placements on Rilgar.
-The class-830 updater at **0x0030c69c–0x0030c6a8** sets its own
-native state **2** and Moby **+0xbc = 2** on activation; the class-623
-state-15 routine reads this same byte from the linked controller.
+The class-830 updater at **0x0030c69c–0x0030c6a8** can enter native
+state **2** and set Moby **+0xbc = 2** directly. Its alternate
+state-1 completion path at **0x0030c868–0x0030c880** enters native
+state **2** but instead writes **+0xbc = 1**. The class-623 state-15
+routine accepts **either nonzero byte** from the linked controller;
+Godot must not require one particular positive value.
 This proves that the link is a controller-completion signal, **not**
 mere visibility or generic Moby activity. Nine waiting class-623s
 also specify alternative authored **volume indices 51, 52 or 58**.
