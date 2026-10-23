@@ -151,6 +151,34 @@ public partial class OBPGame
                 $"walker waypoint before={walkerStart:F3} after={walkerEnd:F3} " +
                 $"state={particleNative.State.NativeState} PASS");
 
+            // Re-stage the SAME retail body one unit toward its authored
+            // arrival position along actual level geometry. Unlike a
+            // waypoint-at-zero check, this gives state5 a nonzero travel
+            // vector and exercises its first AND ahead-of-actor probes.
+            Vector3 back = originalMotionPosition - actualWaypoint;
+            back.Y = 0;
+            Require(back.LengthSquared() > .25f, "missing authored arrival direction");
+            Vector3 offWaypoint = actualWaypoint + back.Normalized() * 1.1f;
+            particleBot.Body.GlobalPosition = offWaypoint;
+            particleBot.Node.Root.GlobalPosition = offWaypoint;
+            Require(TryGroundRac1Enemy(particleBot, upwardReach: .5f, downwardReach: 40f),
+                "cannot stage walker lookahead onto imported ground");
+            particleBot.Node.Root.GlobalPosition = particleBot.Body.GlobalPosition;
+            _rac1MobyRuntime.SetNativeState(particleNative, 5);
+            float walkedStart = new Vector2(
+                particleBot.Body.GlobalPosition.X - actualWaypoint.X,
+                particleBot.Body.GlobalPosition.Z - actualWaypoint.Z).Length();
+            await PhysicsFramesAsync(85);
+            float walkedEnd = new Vector2(
+                particleBot.Body.GlobalPosition.X - actualWaypoint.X,
+                particleBot.Body.GlobalPosition.Z - actualWaypoint.Z).Length();
+            Require(walkedEnd < walkedStart - .025f,
+                $"source walker with lookahead did not move across real terrain: " +
+                $"before={walkedStart:F3} after={walkedEnd:F3}");
+            GD.Print($"[aridia-bot-smoke] class612 i551 staged state5 " +
+                $"first+lookahead ground probes before={walkedStart:F3} " +
+                $"after={walkedEnd:F3} PASS");
+
             // Negative scene fixture: same real collision body, but suspended
             // well above any terrain. Native walker_probe must return no
             // support; the host may turn, but cannot move or finish state5.

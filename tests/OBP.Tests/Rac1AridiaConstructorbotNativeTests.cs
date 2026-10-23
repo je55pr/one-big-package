@@ -183,6 +183,56 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void WalkerLookaheadOnlyRunsAboveNativeSlopeAndSpeedThresholds()
+    {
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1f, .1f, null, 0, 2, 0, 2, 0x280));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            0f, 2f, null, 0, 2, 0, 2, 0x280));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            MathF.Sin(.5f), 2f, null, 0, 2, 0, 2, 0x280));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+                1f, 2f, null, 0, 2, 0, 2, 0x280));
+    }
+
+    [Fact]
+    public void WalkerLookaheadBlocksMissingGroundAndSecondSteepHit()
+    {
+        // Native class612 record 0x280 cannot use bit8 ledge mode.
+        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, .11f, false, 0, 10, 0, 10, 0x280));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, .11f, true, 0, 10, 10, 10, 0x280));
+        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, .11f, true, 1, 9.9f, 9.9f, 10, 0x280));
+        // Second normal exactly at 0.5-radian threshold still blocks,
+        // although first-hit admission requires strictly greater than 0.5.
+        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, .11f, true, MathF.Sin(.5f), 10, 10, 10, 0x280));
+    }
+
+    [Fact]
+    public void WalkerLedgeModeRequiresOriginalHitHeightChecks()
+    {
+        int ledgeMode = 0x288;
+        Assert.Equal(8, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, 1, false, 0, 9.9f, 0, 10, ledgeMode));
+        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, 1, false, 0, 10.1f, 0, 10, ledgeMode));
+        Assert.Equal(8, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, 1, true, 1, 9.9f, 9.99f, 10, ledgeMode));
+        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+            1, 1, true, 1, 9.9f, 10.05f, 10, ledgeMode));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+                1, 1, true, float.NaN, 10, 10, 10, ledgeMode));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
+                1, 1, true, 1, 10, 10, 10, 0x400));
+    }
+
+    [Fact]
     public void WalkerSteepOrFlatSurfaceLookaheadUsesNativeThresholdAndSpeed()
     {
         Assert.True(Rac1AridiaConstructorbotNative.WalkerNeedsLookahead(

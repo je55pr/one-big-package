@@ -68,6 +68,50 @@ public static class Rac1AridiaConstructorbotNative
     public const float WalkerSlopeLookaheadThreshold = .5f;
     public const float WalkerLookaheadSpeedThreshold = .1f;
 
+    public const float WalkerLookaheadDistance = .57f;
+    public const float WalkerLedgeHeightMargin = .04f;
+
+    /// <summary>
+    /// Original walker_record_step L2:0x258b50 performs a second
+    /// walker_probe at a fixed 0.57 native-unit planar lookahead when the
+    /// first hit is sufficiently upright and horizontal speed exceeds 0.1.
+    /// It blocks with 0x22 when that ahead probe misses, or when its
+    /// supported surface remains at least 0.5 radians upright. Record
+    /// bit8 permits ledge code8 only when both relevant hit elevations
+    /// are below the original Moby Z + 0.04. The Constructorbot's 0x280
+    /// record does not enable this ledge-mode exception.
+    /// The caller MUST provide real scene probe results; an unknown
+    /// second probe is not evidence of successful travel.
+    /// </summary>
+    public static int WalkerLookaheadFlags(
+        float firstNormalUp, float planarSpeed, bool? aheadSupported,
+        float aheadNormalUp, float firstFloor, float aheadFloor,
+        float actorHeight, int recordFlags)
+    {
+        if (!float.IsFinite(firstFloor) || !float.IsFinite(aheadFloor) ||
+            !float.IsFinite(actorHeight) || !float.IsFinite(aheadNormalUp) ||
+            aheadNormalUp is < -1 or > 1 ||
+            recordFlags < 0 || (recordFlags & ~0x2a9) != 0)
+            throw new ArgumentOutOfRangeException(nameof(recordFlags));
+        if (!WalkerNeedsLookahead(firstNormalUp, planarSpeed))
+            return 0;
+        if (aheadSupported is null)
+            throw new InvalidDataException("Native walker lookahead has no host probe observation.");
+
+        bool ledge = (recordFlags & WalkerLedgeFlag) != 0;
+        float top = actorHeight + WalkerLedgeHeightMargin;
+        if (aheadSupported == false)
+            return ledge && firstFloor < top ? WalkerLedgeFlag : 0x22;
+
+        // The second source branch uses >=0.5, whereas admission to
+        // lookahead uses >0.5. This difference matters on the boundary.
+        if (MathF.Asin(aheadNormalUp) < WalkerSlopeLookaheadThreshold)
+            return 0;
+        return ledge && firstFloor < top && aheadFloor < top
+            ? WalkerLedgeFlag : 0x22;
+    }
+
+
     /// <summary>
     /// walker_probe (L2:0x2583f0) emits a vertical source-native line segment
     /// from candidateZ+up to max(0, candidateZ-down); a missing collision

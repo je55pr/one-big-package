@@ -449,9 +449,35 @@ public partial class OBPGame
                     // never treat a missing floor as completed travel.
                     Vector3 candidate = node.Root.GlobalPosition + sourceWalkerRequestedWorldStep;
                     bool supported = ProbeRac1AridiaWalkerSupport(enemy, candidate,
-                        out float floorHeight, out float supportNormalY);
+                        out float floorHeight, out _);
                     sourceWalkerProbeFlags = Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
                         supported, Rac1AridiaConstructorbotNative.WalkerInitialRecordFlags);
+                    if (sourceWalkerProbeFlags == 0 &&
+                        sourceWalkerRequestedWorldStep.Length() >
+                        Rac1AridiaConstructorbotNative.WalkerLookaheadSpeedThreshold)
+                    {
+                        // The native routine checks a SECOND segment 0.57
+                        // units ahead. The pure source helper also recovers
+                        // its surface-normal test, but Godot's imported
+                        // triangle normals have not been proven equivalent
+                        // to the PS2 collision hit normal at 0x173e80.
+                        // On flat imported Aridia terrain both Godot normals
+                        // are +Y, which wrongly signals a native blockage.
+                        // Until source-normal parity is recovered, run the
+                        // conservative missing-floor guard WITHOUT assuming
+                        // those normals match. A missing ahead hit still
+                        // blocks with original 0x22 (Constructorbot mode).
+                        Vector3 aheadDirection = sourceWalkerRequestedWorldStep;
+                        aheadDirection.Y = 0;
+                        Vector3 aheadPosition = node.Root.GlobalPosition +
+                            aheadDirection.Normalized() *
+                            Rac1AridiaConstructorbotNative.WalkerLookaheadDistance;
+                        bool aheadSupported = ProbeRac1AridiaWalkerSupport(
+                            enemy, aheadPosition, out _, out _);
+                        sourceWalkerProbeFlags |= Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
+                            aheadSupported,
+                            Rac1AridiaConstructorbotNative.WalkerInitialRecordFlags);
+                    }
                     if (supported && Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
                         node.Root.GlobalPosition.Y, floorHeight,
                         Rac1AridiaConstructorbotNative.WalkerProbeDown,
