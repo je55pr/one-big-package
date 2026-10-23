@@ -66,7 +66,9 @@ public partial class OBPGame
             // the guard, rather than merely relying on an idle test PC.
             using (var unsolicitedPress = new InputEventAction
             {
-                Action = "ui_down", Pressed = true, Strength = 1f,
+                Action = "ui_down",
+                Pressed = true,
+                Strength = 1f,
             })
             {
                 Input.ParseInputEvent(unsolicitedPress); // Not admitted.
@@ -74,7 +76,8 @@ public partial class OBPGame
             }
             using (var unsolicitedRelease = new InputEventAction
             {
-                Action = "ui_down", Pressed = false,
+                Action = "ui_down",
+                Pressed = false,
             })
                 Input.ParseInputEvent(unsolicitedRelease);
             await ReviewFrames(2);
