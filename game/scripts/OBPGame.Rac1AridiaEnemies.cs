@@ -12,6 +12,7 @@ public partial class OBPGame
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
     private readonly Dictionary<int, float> _rac1ConstructorbotWalkerSpeeds = [];
+    private readonly Dictionary<int, int> _rac1ConstructorbotSweepProbeCounts = [];
     private readonly Dictionary<int, float> _rac1ConstructorbotStateThreeVerticalSteps = [];
     // Source table at 0x1600ec is the gameplay +0x60 list already decoded
     // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
@@ -22,6 +23,7 @@ public partial class OBPGame
     {
         _rac1ConstructorbotStartups.Clear();
         _rac1ConstructorbotWalkerSpeeds.Clear();
+        _rac1ConstructorbotSweepProbeCounts.Clear();
         _rac1ConstructorbotStateThreeVerticalSteps.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1AridiaClipVolumes = [];
@@ -327,6 +329,39 @@ public partial class OBPGame
     private bool MoveRac1AridiaWalkerContact(Rac1HostedEnemy enemy, Vector3 remaining)
     {
         bool touched = false;
+        // Source walker_move_v sweeps only if requested 3D travel exceeds
+        // the initializer's 0x280 / 1024 = 0.625 radius. The segment
+        // extends one radius past the proposed endpoint. The Godot ray
+        // observes imported static collision, not source segment_collide
+        // hit-record metadata or moby interpenetration; character contact
+        // below remains a separate bounded host adapter.
+        Vector3 previous = enemy.Body.GlobalPosition;
+        var sweep = Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            ToEffectNative(previous), ToEffectNative(remaining),
+            Rac1AridiaConstructorbotNative.WalkerCollisionRadius,
+            Rac1AridiaConstructorbotNative.WalkerCollisionUp);
+        if (sweep is { } sourceSweep)
+        {
+            int actor = enemy.Node.Source.InstanceIndex;
+            _rac1ConstructorbotSweepProbeCounts[actor] =
+                _rac1ConstructorbotSweepProbeCounts.GetValueOrDefault(actor) + 1;
+            var query = PhysicsRayQueryParameters3D.Create(
+                FromEffectNative(sourceSweep.Start),
+                FromEffectNative(sourceSweep.End));
+            query.Exclude = new global::Godot.Collections.Array<Rid>(
+                _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                    .Append(_player!.GetRid()));
+            var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
+            if (hit.TryGetValue("position", out var hitPoint))
+            {
+                Vector3 sourceStopped = FromEffectNative(
+                    Rac1AridiaConstructorbotNative.WalkerSweptHitPosition(
+                        ToEffectNative(hitPoint.AsVector3()), sourceSweep,
+                        Rac1AridiaConstructorbotNative.WalkerCollisionUp));
+                remaining = sourceStopped - previous;
+                touched = true;
+            }
+        }
         for (int slide = 0; slide < 3 && remaining.LengthSquared() > 1e-9f; slide++)
         {
             var collision = enemy.Body.MoveAndCollide(remaining);

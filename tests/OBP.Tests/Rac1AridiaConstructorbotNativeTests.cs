@@ -155,10 +155,10 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Theory]
-    [InlineData(true, 0x280, 0)]
-    [InlineData(false, 0x280, 0x22)]
-    [InlineData(false, 0x288, 8)]
-    [InlineData(true, 0x288, 0)]
+    [InlineData(true, 0, 0)]
+    [InlineData(false, 0, 0x22)]
+    [InlineData(false, 8, 8)]
+    [InlineData(true, 8, 0)]
     public void WalkerMissingFloorProbeSelectsActualRecordLedgeMode(
         bool hasSupport, int recordFlags, int expected)
     {
@@ -186,36 +186,36 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     public void WalkerLookaheadOnlyRunsAboveNativeSlopeAndSpeedThresholds()
     {
         Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            1f, .1f, null, 0, 2, 0, 2, 0x280));
+            1f, .1f, null, 0, 2, 0, 2, 0));
         Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            0f, 2f, null, 0, 2, 0, 2, 0x280));
+            0f, 2f, null, 0, 2, 0, 2, 0));
         Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            MathF.Sin(.5f), 2f, null, 0, 2, 0, 2, 0x280));
+            MathF.Sin(.5f), 2f, null, 0, 2, 0, 2, 0));
         Assert.Throws<InvalidDataException>(() =>
             Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-                1f, 2f, null, 0, 2, 0, 2, 0x280));
+                1f, 2f, null, 0, 2, 0, 2, 0));
     }
 
     [Fact]
     public void WalkerLookaheadBlocksMissingGroundAndSecondSteepHit()
     {
-        // Native class612 record 0x280 cannot use bit8 ledge mode.
+        // Native class612 behavior flags +0x38 = 0 cannot use bit8 ledge mode.
         Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            1, .11f, false, 0, 10, 0, 10, 0x280));
+            1, .11f, false, 0, 10, 0, 10, 0));
         Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            1, .11f, true, 0, 10, 10, 10, 0x280));
+            1, .11f, true, 0, 10, 10, 10, 0));
         Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            1, .11f, true, 1, 9.9f, 9.9f, 10, 0x280));
+            1, .11f, true, 1, 9.9f, 9.9f, 10, 0));
         // Second normal exactly at 0.5-radian threshold still blocks,
         // although first-hit admission requires strictly greater than 0.5.
         Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
-            1, .11f, true, MathF.Sin(.5f), 10, 10, 10, 0x280));
+            1, .11f, true, MathF.Sin(.5f), 10, 10, 10, 0));
     }
 
     [Fact]
     public void WalkerLedgeModeRequiresOriginalHitHeightChecks()
     {
-        int ledgeMode = 0x288;
+        int ledgeMode = 8;
         Assert.Equal(8, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
             1, 1, false, 0, 9.9f, 0, 10, ledgeMode));
         Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerLookaheadFlags(
@@ -262,6 +262,54 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             Rac1AridiaConstructorbotNative.WalkerFlags(0, float.NaN, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             Rac1AridiaConstructorbotNative.WalkerFlags(0, 0, 0x40));
+    }
+
+    [Fact]
+    public void OriginalWalkerFixedPointCollisionRadiusIsNotBehaviorFlags()
+    {
+        Assert.Equal(640, Rac1AridiaConstructorbotNative.WalkerCollisionRadiusFixed);
+        Assert.Equal(.625f, Rac1AridiaConstructorbotNative.WalkerCollisionRadius);
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerInitialRecordFlags);
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerRecordBehaviorFlags);
+        Assert.Equal(0x22, Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
+            false, Rac1AridiaConstructorbotNative.WalkerRecordBehaviorFlags));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerInitialProbeFlags(
+            true, Rac1AridiaConstructorbotNative.WalkerRecordBehaviorFlags));
+    }
+
+    [Fact]
+    public void SourceSweepOnlyStartsWhenRequestedMotionStrictlyExceedsNativeRadius()
+    {
+        Vector3 old = new(1, 2, 3);
+        Assert.Null(Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            old, Vector3.Zero, .625f, 1));
+        Assert.Null(Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            old, new(.625f, 0, 0), .625f, 1));
+        var sweep = Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            old, new(1, 0, 0), .625f, 1);
+        Assert.True(sweep.HasValue);
+        Assert.Equal(new(1, 2, 4), sweep.Value.Start);
+        Assert.Equal(new(2.625f, 2, 4), sweep.Value.End);
+        Assert.Equal(new(.625f, 0, 0), sweep.Value.RadiusAdvance);
+        // Source hit is backed off by the radius AND then un-raised.
+        Assert.Equal(new(1.625f, 2, 3),
+            Rac1AridiaConstructorbotNative.WalkerSweptHitPosition(
+                new(2.25f, 2, 4), sweep.Value, 1));
+
+        var diagonal = Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            Vector3.Zero, new(3, 4, 0), .625f, 1)!.Value;
+        Assert.Equal(new(0, 0, 1), diagonal.Start);
+        Assert.Equal(new(.375f, .5f, 0), diagonal.RadiusAdvance);
+        Assert.Equal(new(3.375f, 4.5f, 1), diagonal.End);
+        // Source vec3_length includes the height component.
+        Assert.NotNull(Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+            Vector3.Zero, new(0, 0, .7f), .625f, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+                Vector3.Zero, Vector3.UnitX, -.01f, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.BuildWalkerSweep(
+                Vector3.Zero, new(float.NaN, 0, 0), .625f, 1));
     }
 
     [Fact]

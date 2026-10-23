@@ -76,6 +76,15 @@ public sealed class Rac1AridiaEnemyTests
         Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 1));
         Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 2));
         Assert.Equal(9, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 3));
+        // All 15 source-authored walker records are zero-initialized.
+        // Behavior flags live at record+0x38 (PVar+0x108), not at +0
+        // where native walker_record_init writes the 0x280 fixed radius.
+        Assert.All(bots, bot =>
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(
+                bot.PVar!.AsSpan(0x108))));
+        Assert.All(bots, bot =>
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(
+                bot.PVar!.AsSpan(0xd0))));
         Assert.Equal([21], bots.Select(bot => Rac1AridiaConstructorbotNative.ReadActivationVolume(bot.PVar!))
             .Where(index => index >= 0).ToArray());
         Assert.Equal(558, Assert.Single(bots, bot =>

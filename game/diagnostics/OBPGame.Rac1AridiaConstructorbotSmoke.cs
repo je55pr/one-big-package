@@ -179,6 +179,21 @@ public partial class OBPGame
                 $"first+lookahead ground probes before={walkedStart:F3} " +
                 $"after={walkedEnd:F3} PASS");
 
+            // Deliberate native swept-segment branch fixture: source
+            // walker_move_v skips its segment for <=0.625 distance.
+            // Exercise a real >0.625 Godot scene ray with the original
+            // class612 body, without fabricating a collision hit.
+            Vector3 beforeSweepBody = particleBot.Body.GlobalPosition;
+            int priorSweeps = _rac1ConstructorbotSweepProbeCounts.GetValueOrDefault(particleBotId);
+            MoveRac1AridiaWalkerContact(particleBot, back.Normalized() * .8f);
+            Require(_rac1ConstructorbotSweepProbeCounts.GetValueOrDefault(particleBotId) ==
+                    priorSweeps + 1,
+                "retail class612 state5 sweep did not use original 0x280 radius gate");
+            particleBot.Body.GlobalPosition = beforeSweepBody;
+            particleBot.Node.Root.GlobalPosition = beforeSweepBody;
+            GD.Print("[aridia-bot-smoke] real class612 i551 native radius0.625 " +
+                "swept-segment Godot ray branch PASS");
+
             // Negative scene fixture: same real collision body, but suspended
             // well above any terrain. Native walker_probe must return no
             // support; the host may turn, but cannot move or finish state5.

@@ -62,7 +62,9 @@ public static class Rac1AridiaConstructorbotNative
     public const int WalkerLedgeFlag = 0x8;
     public const int WalkerHeadingOrContactMask = 0x6;
     public const float WalkerStopDistance = .1f;
-    public const int WalkerInitialRecordFlags = 0x280;
+    // Retail class612 PVar+0x108 (record+0x38) is zero for all 15 bots.
+    // This is distinct from the initializer's +0 radius word 0x280.
+    public const int WalkerInitialRecordFlags = 0;
     public const float WalkerProbeUp = .5f;
     public const float WalkerProbeDown = .5f;
     public const float WalkerSlopeLookaheadThreshold = .5f;
@@ -78,8 +80,8 @@ public static class Rac1AridiaConstructorbotNative
     /// It blocks with 0x22 when that ahead probe misses, or when its
     /// supported surface remains at least 0.5 radians upright. Record
     /// bit8 permits ledge code8 only when both relevant hit elevations
-    /// are below the original Moby Z + 0.04. The Constructorbot's 0x280
-    /// record does not enable this ledge-mode exception.
+    /// are below the original Moby Z + 0.04. Original class612 walker
+    /// behavior flags +0x38 are zero, so no ledge-mode exception.
     /// The caller MUST provide real scene probe results; an unknown
     /// second probe is not evidence of successful travel.
     /// </summary>
@@ -172,6 +174,62 @@ public static class Rac1AridiaConstructorbotNative
 
     // walker_move_v return bit2 indicates floor contact. The same bit
     // has a different meaning (blocked) in walker_record_step's flags.
+    // Original class612 source calls L2:0x25b1c0 on its PVar+0xd0
+    // walker record. Shared retail initializer stores fixed-point 0x280
+    // at record +0, consumed by walker_move_fx as radius/1024, while
+    // behavior flags are a DIFFERENT word at record +0x38.
+    public const int WalkerCollisionRadiusFixed = 0x280;
+    public const float WalkerCollisionRadius = WalkerCollisionRadiusFixed / 1024f;
+    public const float WalkerCollisionUp = 1f;
+    public const int WalkerRecordBehaviorFlags = 0;
+
+    /// <summary>
+    /// Source walker_move_v L2:0x258830 only sweeps when the full 3D
+    /// requested displacement is STRICTLY longer than the collision
+    /// radius. The original segment goes from old+up to
+    /// (old+displacement)+(displacement normalised to radius)+up.
+    /// This is NOT equivalent to a ray that ends at the requested point.
+    /// </summary>
+    public readonly record struct WalkerSweepSegment(
+        System.Numerics.Vector3 Start,
+        System.Numerics.Vector3 End,
+        System.Numerics.Vector3 RadiusAdvance);
+
+    public static WalkerSweepSegment? BuildWalkerSweep(
+        System.Numerics.Vector3 oldPosition, System.Numerics.Vector3 requestedMove,
+        float radius, float up)
+    {
+        if (!Finite(oldPosition) || !Finite(requestedMove) ||
+            !float.IsFinite(radius) || radius < 0 ||
+            !float.IsFinite(up) || up < 0)
+            throw new ArgumentOutOfRangeException(nameof(radius));
+        float length = requestedMove.Length();
+        if (length <= radius || length <= 0)
+            return null;
+        var advance = requestedMove * (radius / length);
+        var raised = System.Numerics.Vector3.UnitZ * up;
+        return new(oldPosition + raised,
+            oldPosition + requestedMove + advance + raised, advance);
+    }
+
+    /// <summary>
+    /// Upon source segment hit, original Moby position becomes recorded
+    /// collision hit - radiusAdvance - vertical up offset. The following
+    /// six sphere-pushouts / partial floor-lift are separate native work.
+    /// </summary>
+    public static System.Numerics.Vector3 WalkerSweptHitPosition(
+        System.Numerics.Vector3 hit, WalkerSweepSegment sweep, float up)
+    {
+        if (!Finite(hit) || !Finite(sweep.Start) || !Finite(sweep.End) ||
+            !Finite(sweep.RadiusAdvance) || !float.IsFinite(up) || up < 0)
+            throw new ArgumentOutOfRangeException(nameof(up));
+        return hit - sweep.RadiusAdvance -
+            System.Numerics.Vector3.UnitZ * up;
+    }
+
+    private static bool Finite(System.Numerics.Vector3 v) =>
+        float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
+
     public const int WalkerMoveFloorContactFlag = 0x2;
     public const float WalkerCollisionMinimumForwardFraction = .2f;
     public const float WalkerMoveFloorLiftFraction = .3f;
