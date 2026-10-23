@@ -1,4 +1,5 @@
 using Godot;
+using OBP.RAC1.Gameplay;
 
 namespace OneBigPackage;
 
@@ -23,7 +24,11 @@ public sealed partial class PauseMenuUi : CanvasLayer
     private Button? _resume;
     private readonly List<Control> _focusOrder = [];
 
-    public void RestoreFocus() => MenuFocus.Restore(_resume, _focusOrder);
+    public void RestoreFocus()
+    {
+        if (RetailEnabled) { RestoreRetailFocus(); return; }
+        MenuFocus.Restore(_resume, _focusOrder);
+    }
 
     public void SetMovementStatus(string text)
     {
@@ -35,6 +40,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
         Name = "PauseMenu";
         Layer = 250;
         ProcessMode = ProcessModeEnum.Always;
+        if (RetailEnabled) { BuildRetail(); return; }
 
         AddChild(new ColorRect
         {
@@ -60,6 +66,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
 
         var scroll = new ScrollContainer
         {
+            VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             FollowFocus = true,
             CustomMinimumSize = new Vector2(460, Mathf.Clamp(GetViewport().GetVisibleRect().Size.Y - 100, 220, 660)),
         };
@@ -162,6 +169,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
 
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (RetailEnabled) { HandleRetailInput(@event); return; }
         if (MovementStatesAvailable && @event is InputEventKey { Keycode: Key.F12, Pressed: true, Echo: false } key)
         {
             GetViewport().SetInputAsHandled();

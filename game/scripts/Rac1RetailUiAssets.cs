@@ -13,8 +13,39 @@ public static class Rac1RetailUiAssets
 {
     private static readonly Dictionary<string, FontFile> Fonts = new();
     private static readonly Dictionary<(ushort, int), Texture2D?> Sprites = new();
+    private static readonly Dictionary<int, Texture2D?> Effects = new();
+    private static Texture2D? _rootLargeGlyphTexture;
     private static Rac1UiAssets? _assets;
     public static bool IsLoaded => _assets is not null;
+    public static Rac1MenuPanelModel? NativeMenuPanels => _assets?.NativeMenuPanels;
+    public static Rac1MenuPanelPages? NativeMenuPages => _assets?.NativeMenuPages;
+    public static Rac1BitmapFont? NativeRootFont =>
+        _assets?.Fonts.GetValueOrDefault("large");
+
+    /// <summary>Original large-font atlas, white-modulated for the source per-entry tints.</summary>
+    public static Texture2D? NativeRootGlyphAtlas()
+    {
+        if (_rootLargeGlyphTexture is not null) return _rootLargeGlyphTexture;
+        if (NativeRootFont is not { } source) return null;
+        byte[] tinted = source.Atlas.Rgba.ToArray();
+        for (int i = 0; i < tinted.Length; i += 4)
+        {
+            if (tinted[i + 3] == 0) continue;
+            tinted[i] = tinted[i + 1] = tinted[i + 2] = 255;
+        }
+        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height,
+            false, Image.Format.Rgba8, tinted);
+        return _rootLargeGlyphTexture = ImageTexture.CreateFromImage(image);
+    }
+
+    /// <summary>
+    /// Recovered 14-slot native animation playback, independent of the
+    /// provisional Godot camera/screen rectangles. The eventual projected
+    /// panel adapter owns advancing this track, not the gameplay model.
+    /// </summary>
+    public static Rac1MenuPanelMotion? CreateNativePanelMotion() =>
+        _assets?.NativeMenuPanels is { } model && _assets.NativeMenuPages is { } pages
+            ? new Rac1MenuPanelMotion(model, pages) : null;
 
     public static void Load(IRandomAccessReader disc)
     {
@@ -31,6 +62,8 @@ public static class Rac1RetailUiAssets
         _assets = null;
         Fonts.Clear();
         Sprites.Clear();
+        Effects.Clear();
+        _rootLargeGlyphTexture = null;
     }
 
     public static string Text(int nativeTextId, string fallback) =>
@@ -53,6 +86,20 @@ public static class Rac1RetailUiAssets
         return Sprites[key] = ImageTexture.CreateFromImage(image);
     }
 
+    /// <summary>The original resident menu FX texture, not a stock Godot pattern.</summary>
+    public static OBP.Runtime.Audio.RuntimeAudioClip? Sound(int sharedBankSlot) =>
+        _assets is { } assets && assets.MenuSounds.TryGetValue(sharedBankSlot, out var sound)
+            ? sound : null;
+
+    public static Texture2D? Effect(int nativeId)
+    {
+        if (Effects.TryGetValue(nativeId, out var cached)) return cached;
+        if (_assets is not { } assets || !assets.MenuEffects.TryGetValue(nativeId, out var texture))
+            return Effects[nativeId] = null;
+        using var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
+        return Effects[nativeId] = ImageTexture.CreateFromImage(image);
+    }
+
     private static FontFile CreateFont(Rac1BitmapFont source)
     {
         const int size = 16, baseline = 14;
@@ -71,7 +118,15 @@ public static class Rac1RetailUiAssets
         // 16px cells, native top offsets and character advances.
         font.SetCacheAscent(0, size, baseline);
         font.SetCacheDescent(0, size, 4);
-        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height, false, Image.Format.Rgba8, source.Atlas.Rgba);
+        // Godot colours text through glyph modulation. Keep the retail alpha,
+        // UV and advances but whiten RGB in the runtime-only tintable atlas.
+        byte[] tintable = source.Atlas.Rgba.ToArray();
+        for (int index = 0; index < tintable.Length; index += 4)
+        {
+            if (tintable[index + 3] == 0) continue;
+            tintable[index] = tintable[index + 1] = tintable[index + 2] = byte.MaxValue;
+        }
+        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height, false, Image.Format.Rgba8, tintable);
         font.SetTextureImage(0, cacheSize, 0, image);
         foreach (var glyph in source.Glyphs.Where(g => g.Printable))
         {

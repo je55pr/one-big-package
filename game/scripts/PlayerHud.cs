@@ -14,6 +14,8 @@ public partial class PlayerHud : Control
     private PanelContainer _boltsPanel = null!;
     private PanelContainer _weaponPanel = null!;
     private PanelContainer _promptPanel = null!;
+    // Both source-driven HelpDesk and the newer native air HUD are retained.
+    private Rac1HelpDeskView _retailHelpDesk = null!;
     private PanelContainer _airPanel = null!;
     private ProgressBar _airProgress = null!;
     private Label _airLabel = null!;
@@ -124,6 +126,8 @@ public partial class PlayerHud : Control
         promptRow.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
         _promptPanel = BuildPromptPanel();
         promptRow.AddChild(_promptPanel);
+        _retailHelpDesk = Passive(new Rac1HelpDeskView { ExpandOnPrompt = true });
+        promptRow.AddChild(_retailHelpDesk);
         promptRow.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
         outer.AddChild(promptRow);
 
@@ -296,6 +300,8 @@ public partial class PlayerHud : Control
     private void RenderPrompt(HudContextPrompt? prompt)
     {
         _hasPrompt = prompt is not null;
+        if (Rac1RetailUiAssets.IsLoaded) _retailHelpDesk.Prompt(prompt is null ? null : DisplayText(prompt.MessageKey));
+        else _retailHelpDesk.Dismiss();
         if (prompt is null)
         {
             return;
@@ -370,7 +376,7 @@ public partial class PlayerHud : Control
             0.15d);
         promptTint.A = (float)Math.Clamp(feedback.PromptOpacity, 0d, 1d);
         _promptPanel.Modulate = promptTint;
-        _promptPanel.Visible = feedback.PromptOpacity > 0.001d;
+        _promptPanel.Visible = !Rac1RetailUiAssets.IsLoaded && feedback.PromptOpacity > 0.001d;
     }
 
     private void UpdateVisibility()
@@ -378,7 +384,8 @@ public partial class PlayerHud : Control
         Visible = _airPanel.Visible || _healthPanel.Visible ||
                   _boltsPanel.Visible ||
                   _weaponPanel.Visible ||
-                  _promptPanel.Visible;
+                  _promptPanel.Visible ||
+                  _retailHelpDesk.Visible;
     }
 
     private static string SignedDelta(int delta) =>
