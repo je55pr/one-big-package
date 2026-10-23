@@ -252,6 +252,34 @@ proposal into `ApplyObservedNativeImpact` as an authentic final
 result. Original-ISO instruction tests assert the table, mode and
 submode access, tracking reset writes, and later callback boundary.
 
+The later general-impact callback is also now bounded by the
+original Rilgar code. Before invoking it, **0x00284b24–0x00284b2c**
+compares the source collision slot's previous halfword **+0x14**
+with the new linked identifier and clears countdown halfword
+**+0x1c** when they differ. The callback at **0x0022dc50**
+reads that signed halfword, returns **1** if it was already zero,
+otherwise clamps it to at least **1** using the native `PMAXW`
+instruction **0x702208c8**, decrements it and stores the result.
+It returns **0** if the countdown remains positive or **2**
+if it has just expired. Source instructions and a bounded
+`Rac1Class623ImpactTimerPolicy.Tick` reproduce this transition;
+it does not mean the collision itself has been admitted.
+
+The subsequent branch at **0x00284b38** selects an
+original twelve-entry response-index duration table
+**0x00217670** for a *nonzero countdown callback result*.
+The timer-duration arguments provided to native allocator
+**0x0022dbd8** are **37** for response index 0, **15** for
+index 1, **60** for indices 4/11, **30** for other indices
+or indices outside the twelve-entry table, and **45 or 60**
+for index 7 depending on live global byte **0x0013e533**
+(nonzero / zero respectively). Native allocator output is
+stored into the collision slot **+0x1c**; its time conversion,
+and the separate branch for callback result zero, are not
+yet hosted. `Rac1Class623ImpactTimerPolicy.DurationForResponseIndex`
+exposes only the proven duration argument, returning unknown
+for index 7 until the real global flag is supplied.
+
 The original class-623 reaction dispatch table begins at
 **0x002186f0**, as indexed by instructions **0x00303590-0x003035a4**.
 Response **index 1** (selected when source health is nonpositive)
