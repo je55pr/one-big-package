@@ -198,4 +198,21 @@ public sealed class Rac1AlienQueenLinkedGateTests
         Assert.Equal(14, gate.RuntimeChildCount);
         Assert.Equal(2, gate.OriginalParentCount);
     }
+
+    [SkippableFact]
+    public void RetailQueenAuthoredTargetModeStartsAtZero()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 6);
+        var queen = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level))
+            .MobyInstances[626];
+        var pvar = queen.PVar!;
+        // Authored bytes are an initial state, not proof that native runtime
+        // target selection leaves +0xb4 unchanged when the encounter starts.
+        Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xb0)));
+        Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xb4)));
+        Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xb8)));
+    }
 }

@@ -272,7 +272,29 @@ public partial class OBPGame
                             .NativeState == 2 &&
                         linked.Step(parentId, nativeParent, false, 0).NativeState == 2,
                         "Native strict six-unit/globally gated class1021 trigger admitted early.");
-                    Require(linked.Step(parentId, nativeParent, true, 0).NativeState == 4 &&
+                }
+                // The authored parent and its children now tick during normal
+                // play. Stage only Ratchet's position; the host must read it,
+                // evaluate the original strict <6 gate and admit state4 itself.
+                Vector3 savedQueenGatePlayer = _player!.GlobalPosition;
+                try
+                {
+                    foreach (int parentId in linked.OriginalParentIds)
+                    {
+                        _player.GlobalPosition = _rac1QueenLinkedNodes[parentId].Root.GlobalPosition;
+                        TickRac1QueenLinkedChildren();
+                        Require(linked.Get(parentId).NativeState == 4,
+                            "Normal Godot class1021 update did not admit native player proximity.");
+                    }
+                }
+                finally
+                {
+                    _player.GlobalPosition = savedQueenGatePlayer;
+                }
+                foreach (int parentId in linked.OriginalParentIds)
+                {
+                    NVector3 nativeParent = linked.Get(parentId).NativePosition;
+                    Require(linked.Get(parentId).NativeState == 4 &&
                         linked.Get(parentId).Children.All(child => child.NativeState == 5) &&
                         !linked.ActivateFromQueen(parentId),
                         "Source class1021 trigger failed parent state4 and child state5.");

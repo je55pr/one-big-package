@@ -73,16 +73,25 @@ public partial class OBPGame
     private void TickRac1QueenLinkedChildren()
     {
         if (_rac1QueenLinkedGate is null || _rac1QueenGateNative is null) return;
+        // The original class1021 parents use Ratchet's *current* native position
+        // in state2, not their own source position. The source global starts at
+        // zero; no other producer of D_L06_00161D44 is hosted yet.
+        bool initialGlobalAdmits = _rac1QueenGateNative.InitialProximityGate == 0f;
+        bool hasPlayer = _player is not null && IsInstanceValid(_player);
+        var playerNative = hasPlayer ? ToEffectNative(_player!.GlobalPosition) : default;
         foreach (int id in _rac1QueenLinkedGate.OriginalParentIds)
         {
             var parent = _rac1QueenLinkedGate.Get(id);
-            if (parent.NativeState is 4 or 8)
-                _rac1QueenLinkedGate.StepNative(id, parent.NativePosition, false,
-                    _rac1QueenGateNative);
+            if (parent.NativeState is 2 or 4 or 8)
+                _rac1QueenLinkedGate.StepNative(id, playerNative,
+                    hasPlayer && initialGlobalAdmits, _rac1QueenGateNative);
             foreach (var member in _rac1QueenLinkedGate.Get(id).Children)
             {
-                if (_rac1QueenLinkedChildVisuals.TryGetValue(member.RuntimeId, out var visual) &&
-                    IsInstanceValid(visual))
+                if (!_rac1QueenLinkedChildVisuals.TryGetValue(member.RuntimeId, out var visual) ||
+                    !IsInstanceValid(visual)) continue;
+                if (member.NativeState == 1)
+                    _rac1QueenLinkedGate.ConfirmChildInitialized(member.RuntimeId);
+                else
                     _rac1QueenLinkedGate.StepChildNative(member.RuntimeId, _rac1QueenGateNative);
             }
         }
