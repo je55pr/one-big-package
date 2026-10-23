@@ -16,9 +16,9 @@
 - Godot must not become the source of truth for native game formats or gameplay rules.
 
 ## Working style
-- `dev` is the normal working branch. Work directly there when no concurrent worker can collide with you.
-- Use a separate branch/worktree only when concurrent work needs isolation; integrate the actual result back into `dev` and do not create bookkeeping-only commits.
-- `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer.
+- `dev` is the protected integration branch. Never push directly to `dev`; work in a feature branch or isolated worktree and open a pull request targeting `dev`.
+- Pull requests must pass the required GitHub checks and resolve review conversations. All merges are deliberate and manual; do not enable auto-merge.
+- `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer. Keep changes focused and avoid bookkeeping-only commits.
 - Prefer small evidence-backed changes with deterministic tests, but do not create process for process's sake.
 - Run `./tools/test.ps1 -Configuration Release` on Windows or `./tools/test.sh Release` where supported.
 - Run `dotnet format OneBigPackage.sln --verify-no-changes --no-restore` before integrating code changes.
