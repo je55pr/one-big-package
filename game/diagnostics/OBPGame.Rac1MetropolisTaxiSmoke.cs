@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot;
+using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 
@@ -56,11 +57,17 @@ public partial class OBPGame
                 2400, "class-816 taxi failed to approach the retail docking endpoint");
 
             player.ProcessMode = Node.ProcessModeEnum.Inherit;
-            // Start off-centre on the source taxi to exercise physical
-            // controller-driven approach, not just a scripted yaw turn.
+            // Precisely stage the retail dock for the 0x65 handoff.
+            // ApplyRac1TaxiArrival's reusable restart adapter adds 3 host
+            // collision-clearance units, so reverse only that host lift here.
+            // This staging is NOT evidence of an off-centre walkable deck.
             player.ApplyRac1TaxiArrival(new RuntimeSpawn(
-                incoming.Position.X, incoming.Position.Y, incoming.Position.Z,
-                player.Rac1CurrentYaw));
+                incoming.Position.X,
+                incoming.Position.Y - RuntimeSpawnSceneAdapter.GroundingLift,
+                incoming.Position.Z, player.Rac1CurrentYaw));
+            Require(ToTaxiPoint(player.GlobalPosition)
+                .DistanceSquared(incoming.Position) < 0.001,
+                "class-816 smoke source staging drifted off native boarding dock");
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }),
                 "class-816 ordinary taxi input handler rejected a docked cab");

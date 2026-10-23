@@ -242,6 +242,10 @@ public partial class OBPGame
             sourceDx * sourceDx + sourceDz * sourceDz > 0.2d * 0.2d ||
             Math.Abs(stop.Position.Y - heroPosition.Y) > 1.5d)
         {
+            if (stop.NativeClassId == 816)
+                GD.Print($"[rac1-taxi] host direct-board source safety i{stop.InstanceIndex}: " +
+                    $"hero={heroPosition}, dock={stop.Position}, dx={sourceDx:0.000}, " +
+                    $"dz={sourceDz:0.000}, dy={stop.Position.Y - heroPosition.Y:0.000}");
             if (!taxis.TryBoard(heroPosition))
                 return false;
             AttachRac1MetropolisTaxiPassenger(taxis, player);

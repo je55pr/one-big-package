@@ -455,3 +455,30 @@ synthetic worlds without retail PVar selectors, the provisional
 boundaries, vertical-only clearance, NaN/Infinity rejection and
 all five retail exit selector slots. Native camera/focus/player
 attachment and other slot selection remain separate work.
+
+### Staged Godot admission fix, 23 October 2026
+
+A follow-up staged smoke unexpectedly chose the **safe direct boarding**
+fallback for retail i919 instead of beginning state 0x65. This did not
+indicate a regression in the native class-816 state-6 exit logic.
+Instrumentation showed the staged player position was precisely
+**3.0 OBP units above** the authored dock, with zero planar error.
+The culprit was the unrelated host
+`RuntimeSpawnSceneAdapter.GroundingLift = 3` used by
+`ApplyRac1TaxiArrival`, which the smoke had used for staging.
+The live taxi host was correctly enforcing its 1.5-unit vertical
+collision-safety admission limit.
+
+The smoke now subtracts that *host-only* clearance lift when staging
+the exact retail source waypoint and **asserts** its position matches
+the authored taxi point before invoking the ordinary taxi input
+handler. This stages an isolated state-0x65 check without relaxing
+normal gameplay's safety policy or claiming an off-centre walkable
+taxi surface. Class-816 host fallback diagnostics record the actual
+player/dock 3D offsets when admission is deliberately kept on the
+direct-boarding path.
+
+After the correction, the complete Kerwan staged Godot smoke passed:
+i919 native walk-to -> abort -> retry -> flight -> grounded dismount,
+then i962 bounded direct boarding -> flight interruption -> reboarding
+-> safe return-to-source landing. Audio retired cleanly.
