@@ -72,15 +72,55 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// FUN_L06_002fa9c0 native Queen 30->20->10 recovery state handoff.
-    /// The boss weapon contact, camera, and full progression still require
-    /// a separate host, so this method is called only on authenticated hits.
+    /// The retail Queen target is exposed to weapon collision producers only
+    /// after the real encounter admits a combat state. Her native entrance,
+    /// camera and boss navigation remain independent source work.
     /// </summary>
-    private Rac1AlienQueenHit ApplyRac1QueenAdmittedHit(float nativeDamage, int? sourceClass)
+    private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1QueenDamageTargets
     {
-        return (_rac1QueenRecovery ?? throw new InvalidOperationException(
-            "No original class1051 Queen registered."))
-            .ApplyAdmittedHit(nativeDamage, sourceClass);
+        get
+        {
+            if (_rac1QueenNode is { } node && IsInstanceValid(node.Root) &&
+                _rac1QueenRecovery?.CanReceiveHostWeaponContact == true)
+                yield return node;
+        }
+    }
+
+    private bool ApplyRac1QueenWeaponDamage(RuntimeWorldScene.DynamicObjectNode target,
+        Rac1GameplayDamageEvent damage)
+    {
+        if (_rac1QueenNode != target || _rac1QueenRecovery is null) return false;
+        var result = _rac1QueenRecovery.ApplyNativeDamageEvent(damage);
+        if (!result.Accepted) return false;
+        _rac1DamageTransport.Publish(damage);
+        GD.Print($"[frog-queen] real weapon event {damage.Source.Kind} class{damage.Source.NativeClassId}, health={result.Health}, recovery={result.RecoveryStarted}");
+        if (result.DeathTriggered)
+            _rac1QueenAnimation?.Select(10, 10);
+        return true;
+    }
+
+    private void ResolveRac1QueenWrenchContacts(Vector3 previousHand, Vector3 previousTip,
+        Vector3 hand, Vector3 tip, float radius, Rac1WrenchDamageResult result)
+    {
+        foreach (var queen in Rac1QueenDamageTargets)
+        {
+            var key = new Rac1MobyRuntimeKey(queen.Source.NativeClassId, queen.Source.InstanceIndex);
+            if (_rac1WrenchHitTargets.Contains(key)) continue;
+            bool contact = queen.Root.GetChildren().OfType<MeshInstance3D>().Any(mesh =>
+            {
+                Aabb bounds = (mesh.GlobalTransform * mesh.GetAabb()).Grow(radius);
+                return WrenchSegmentIntersects(bounds, previousHand, previousTip) ||
+                    WrenchSegmentIntersects(bounds, hand, tip) ||
+                    WrenchSegmentIntersects(bounds, previousHand, hand) ||
+                    WrenchSegmentIntersects(bounds, previousTip, tip) ||
+                    WrenchSegmentIntersects(bounds, previousHand, tip) ||
+                    WrenchSegmentIntersects(bounds, previousTip, hand);
+            });
+            if (!contact) continue;
+            if (!ApplyRac1QueenWeaponDamage(queen, Rac1DamageRuntime.FromWrench(key, result)))
+                continue;
+            _rac1WrenchHitTargets.Add(key);
+        }
     }
 
     private void TickRac1QueenRecovery()

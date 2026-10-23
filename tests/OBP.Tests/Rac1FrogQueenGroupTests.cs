@@ -146,6 +146,72 @@ public sealed class Rac1FrogQueenGroupTests
     }
 
     [Fact]
+    public void RealWeaponTransportRequiresOriginalQueenTargetAndAdmittedCombatState()
+    {
+        var queen = new Rac1AlienQueenRecovery(Queen());
+        var target = Rac1GameplayEntityRef.Moby(new(1051, 626));
+        var other = Rac1GameplayEntityRef.Moby(new(1051, 627));
+        Rac1GameplayDamageEvent Event(Rac1GameplayEntityRef to, double amount,
+            Rac1GameplayDamageOwner? owner = null, uint? flags = 0x10000) =>
+            new(Rac1GameplayEntityRef.PlayerWrench, to, amount, flags,
+                owner: owner ?? Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Player));
+        Assert.False(queen.CanReceiveHostWeaponContact);
+        Assert.False(queen.ApplyNativeDamageEvent(Event(target, 5)).Accepted);
+        queen.AdmitNativeState(8, 3);
+        Assert.True(queen.CanReceiveHostWeaponContact);
+        Assert.False(queen.ApplyNativeDamageEvent(Event(other, 5)).Accepted);
+        Assert.False(queen.ApplyNativeDamageEvent(Event(target, 5,
+            Rac1GameplayDamageOwner.FromEntity(Rac1GameplayEntityRef.Moby(new(827, 448))))).Accepted);
+        Assert.False(queen.ApplyNativeDamageEvent(Event(target, 5, flags: null)).Accepted);
+        Assert.False(queen.ApplyNativeDamageEvent(new(
+            Rac1GameplayEntityRef.PlayerWrench, target, 5, 0x10000)).Accepted);
+        Assert.Equal(30f, queen.Health);
+        var hit = queen.ApplyNativeDamageEvent(Event(target, 4));
+        Assert.True(hit.Accepted);
+        Assert.Equal(26f, hit.Health);
+        Assert.False(hit.RecoveryStarted);
+        hit = queen.ApplyNativeDamageEvent(Event(target, 6));
+        Assert.True(hit.RecoveryStarted);
+        Assert.Equal(20f, hit.Health);
+        Assert.False(queen.CanReceiveHostWeaponContact);
+        Assert.False(queen.ApplyNativeDamageEvent(Event(target, 20)).Accepted);
+        Assert.Equal(20f, queen.Health);
+        for (int i = 0; i < 30; i++) queen.Step();
+        Assert.Equal(3, queen.NativeState);
+        Assert.False(queen.CanReceiveHostWeaponContact);
+    }
+
+    [Fact]
+    public void RangedWeaponProfileEmitsQueenTargetAndPlayerOwnedSource()
+    {
+        var queen = new Rac1AlienQueenRecovery(Queen());
+        var target = new Rac1MobyRuntimeKey(1051, 626);
+        var eventFromBlaster = Rac1WeaponProfiles.DirectDamage(Rac1WeaponId.Blaster,
+            target, 1, Rac1WeaponProfiles.BlasterFlags);
+        Assert.True(eventFromBlaster.Target.MatchesMoby(target));
+        Assert.False(queen.ApplyNativeDamageEvent(eventFromBlaster).Accepted);
+        queen.AdmitNativeState(8, 3);
+        var hit = queen.ApplyNativeDamageEvent(eventFromBlaster);
+        Assert.True(hit.Accepted);
+        Assert.Equal(29f, hit.Health);
+        Assert.False(hit.RecoveryStarted);
+    }
+
+    [Fact]
+    public void QueenNativeDamageEventPreservesAmplifiedFrogClassAndNativeSourceIdentity()
+    {
+        var queen = new Rac1AlienQueenRecovery(Queen());
+        queen.AdmitNativeState(8, 3);
+        var frog = Rac1GameplayEntityRef.Moby(new(827, 448));
+        var target = Rac1GameplayEntityRef.Moby(new(1051, 626));
+        var eventFromFrog = new Rac1GameplayDamageEvent(frog, target, 7, 0x330000,
+            owner: Rac1GameplayDamageOwner.FromEntity(frog));
+        var hit = queen.ApplyNativeDamageEvent(eventFromFrog);
+        Assert.True(hit.RecoveryStarted);
+        Assert.Equal(20f, hit.Health); // class 827 ×1.5
+    }
+
+    [Fact]
     public void QueenRecoveryInputGuardsAndOneThresholdPerHit()
     {
         var boss = new Rac1AlienQueenRecovery(Queen());

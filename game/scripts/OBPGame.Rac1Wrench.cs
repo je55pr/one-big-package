@@ -108,6 +108,7 @@ public partial class OBPGame
         var result = new Rac1WrenchDamageResult(Rac1WrenchContactPath.AnimatedSweepHostGeometry,
             damage, Rac1WrenchAttackProfile.NativeDamageFlags);
         ResolveRac1FrogCarrierWrenchContacts(previousHand, previousTip, hand, tip, radius);
+        ResolveRac1QueenWrenchContacts(previousHand, previousTip, hand, tip, radius, result);
         foreach (var target in _rac1CrateNodes.Concat(Rac1EnemyNodes).Concat(_rac1NovalisBreakableNodes.Values))
         {
             var key = new Rac1MobyRuntimeKey(target.Source.NativeClassId, target.Source.InstanceIndex);

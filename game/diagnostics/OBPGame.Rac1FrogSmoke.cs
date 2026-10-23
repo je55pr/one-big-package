@@ -198,12 +198,46 @@ public partial class OBPGame
                     ?? throw new InvalidOperationException("Original Queen recovery not configured.");
                 Require(queenRecovery is { NativeState: 1, Health: 30f },
                     "Original Queen did not retain native 30 health / pre-encounter state.");
-                // The missing boss entrance/camera is explicitly staged here.
+                // Boss entrance/camera is explicitly staged. Afterwards
+                // source class71 damage is admitted via real retail model
+                // geometry sweeps and the shared damage transport.
+                var queenNode = _rac1QueenNode
+                    ?? throw new InvalidOperationException("Original Queen mesh not hosted.");
+                var queenMesh = queenNode.Root.GetChildren().OfType<MeshInstance3D>().First();
+                Vector3 queenContact = (queenMesh.GlobalTransform * queenMesh.GetAabb()).GetCenter();
+                var queenKey = new Rac1MobyRuntimeKey(Rac1FrogQueenGroup.QueenClassId, 626);
+                var wrench = new Rac1WrenchDamageResult(
+                    Rac1WrenchContactPath.AnimatedSweepHostGeometry, 1f,
+                    Rac1WrenchAttackProfile.NativeDamageFlags);
+                long beforeQueenHits = _rac1DamageTransport.Sequence;
+                ResolveRac1QueenWrenchContacts(queenContact, queenContact,
+                    queenContact, queenContact, .01f, wrench);
+                Require(queenRecovery.Health == 30f &&
+                    _rac1DamageTransport.Sequence == beforeQueenHits,
+                    "Queen accepted an attack before native combat admission.");
                 queenRecovery.AdmitNativeState(8, 3);
-                Require(ApplyRac1QueenAdmittedHit(7f, 0x79) is
-                { RecoveryStarted: true, Health: 20f } &&
-                    queenRecovery.Timer == Rac1AlienQueenRecovery.RecoveryTicks,
-                    "Source damage amplification failed to enter Queen protected 20-HP recovery.");
+                _rac1EquipmentGeometryFrame = ulong.MaxValue;
+                Require(EquipmentGeometry.Any(entry => entry.Node == queenNode) &&
+                    IsRac1WeaponAimTarget(queenNode),
+                    "Native combat-ready Queen was excluded from ranged-weapon retail mesh targeting.");
+                for (int hit = 0; hit < 10; hit++)
+                {
+                    // Ten independent 1-damage wrench swings; each new
+                    // swing clears the per-attack duplicate-contact marker.
+                    _rac1WrenchHitTargets.Remove(queenKey);
+                    ResolveRac1QueenWrenchContacts(queenContact, queenContact,
+                        queenContact, queenContact, .01f, wrench);
+                    Require(queenRecovery.Health == 29f - hit &&
+                        _rac1DamageTransport.Sequence == beforeQueenHits + hit + 1,
+                        "Original Queen wrench contact was rejected or mis-scaled.");
+                }
+                ResolveRac1QueenWrenchContacts(queenContact, queenContact,
+                    queenContact, queenContact, .01f, wrench);
+                Require(queenRecovery is { Health: 20f, Recovering: true } &&
+                    queenRecovery.Timer == Rac1AlienQueenRecovery.RecoveryTicks &&
+                    _rac1DamageTransport.Sequence == beforeQueenHits + 10,
+                    "Queen wrench coalescing or 20-HP recovery is incorrect.");
+                GD.Print("[frog-smoke] class1051 retail mesh, 10 source class71 wrench hits, damage transport, native 20HP recovery PASS");
                 for (int tick = 0; tick < Rac1AlienQueenRecovery.RecoveryTicks - 1; tick++)
                 {
                     TickRac1QueenRecovery();

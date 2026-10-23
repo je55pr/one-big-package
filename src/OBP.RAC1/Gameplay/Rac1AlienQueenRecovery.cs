@@ -41,6 +41,36 @@ public sealed class Rac1AlienQueenRecovery
     public float ProtectedThreshold { get; private set; }
     public bool DeathTriggered { get; private set; }
 
+    public bool CanReceiveHostWeaponContact =>
+        NativeState is 2 or 4 or 6 or 7 or 8 or 9 or 10 or 11 or 12 or 13 &&
+        !Recovering && !DeathTriggered;
+
+    /// <summary>
+    /// Admit an existing transport event only if it targets the original Queen
+    /// and carries source-owner-consistent provenance. Do not synthesize hit
+    /// sources, infer boss entry, or route another enemy's damage to the Queen.
+    /// A class-827 native damage producer is allowed, including its 1.5x
+    /// modifier, rather than assuming all hits must originate from Ratchet.
+    /// </summary>
+    public Rac1AlienQueenHit ApplyNativeDamageEvent(Rac1GameplayDamageEvent damage)
+    {
+        ArgumentNullException.ThrowIfNull(damage);
+        if (!damage.Target.MatchesMoby(new(QueenClassId, QueenInstance)))
+            return new(false, Health, false, DeathTriggered);
+        if (damage.NativeDamage < 0 || damage.NativeDamageFlags is null ||
+            damage.Owner is not { } owner || !OwnerMatchesSource(owner, damage.Source) ||
+            !CanReceiveHostWeaponContact)
+            return new(false, Health, false, DeathTriggered);
+        return ApplyAdmittedHit((float)damage.NativeDamage, damage.Source.NativeClassId);
+    }
+
+    private static bool OwnerMatchesSource(Rac1GameplayDamageOwner owner,
+        Rac1GameplayEntityRef source) =>
+        owner.RuntimeEntity is { } named
+            ? named == Rac1GameplayEntityRef.Player || named == source
+            : owner.NativeClassId == source.NativeClassId ||
+                owner.NativeClassId == Rac1GameplayEntityRef.Player.NativeClassId;
+
     /// <summary>
     /// Native Queen damage helper takes the already-admitted hit and multiplies
     /// selected source classes before checking threshold crossings. The
