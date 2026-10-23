@@ -142,6 +142,61 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void WalkerFlagsPreserveNativeBitmaskAndNeverInventCollision()
+    {
+        Assert.Equal(4, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, 0, 0));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerFlags(.1f, 0, 0));
+        Assert.Equal(0x14, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, MathF.PI, 0));
+        Assert.Equal(0x16, Rac1AridiaConstructorbotNative.WalkerFlags(.099f, MathF.PI, 0x2));
+        Assert.Equal(0x26, Rac1AridiaConstructorbotNative.WalkerFlags(.05f, 0, 0x22));
+        Assert.Equal(0x5, Rac1AridiaConstructorbotNative.WalkerFlags(0, 0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerFlags(-1, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerFlags(0, float.NaN, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerFlags(0, 0, 0x40));
+    }
+
+    [Fact]
+    public void WalkerSourceSpeedAcceleratesDragsAndClampsWithoutOverwritingPhysics()
+    {
+        float speed = 0;
+        speed = Rac1AridiaConstructorbotNative.WalkerSpeed(speed, 100f, 1f);
+        Assert.Equal(.3f, speed, 4);
+        speed = Rac1AridiaConstructorbotNative.WalkerSpeed(speed, 100f, 1f);
+        Assert.Equal(.6f, speed, 4);
+        for (int i = 0; i < 30; i++)
+            speed = Rac1AridiaConstructorbotNative.WalkerSpeed(speed, 100f, 1f);
+        Assert.Equal(Rac1AridiaConstructorbotNative.WalkerMaxSpeed, speed, 4);
+        float near = Rac1AridiaConstructorbotNative.WalkerSpeed(1f, .05f, 1f);
+        Assert.InRange(near, .70f, .72f);
+        Assert.Equal(0f, Rac1AridiaConstructorbotNative.WalkerSpeed(.7f, 10, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerSpeed(float.NaN, 1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerSpeed(0, 0, 1.1f));
+    }
+
+    [Fact]
+    public void WalkerStateFiveNeedsExactlyBitFourAndStateSixTestsBitsTwoOrFour()
+    {
+        // LEVEL2:0x2d7b6c tests the entire return word ==4, not a bitwise flag.
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(5, 4, true));
+        foreach (int flags in new[] { 0, 1, 2, 5, 6, 8, 0x14, 0x24 })
+            Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(5, flags, true));
+        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(5, 4, false));
+
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, true));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0x10, true));
+        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 2, true));
+        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 4, true));
+        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, false));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepWalkerState(7, 0, true));
+    }
+
+    [Fact]
     public void StateThreeHorizontalClampsTowardSourceWaypointWithoutMovingVerticalCoordinate()
     {
         var current = new Vector3(0, 0, 100);

@@ -51,6 +51,81 @@ public static class Rac1AridiaConstructorbotNative
 
     public const int ActivationDistancePvarOffset = 0x184;
 
+    // LEVEL2:0x25b710 original wrapper and walker_record_step (0x258b50):
+    // bit4 = current actor inside walker record's +0x2c stop radius;
+    // bit0x10 = error at least record +0x28 tolerance. Bits 1/2/8/0x20
+    // are collision/floor-probe outputs and MUST be host-provided.
+    public const int WalkerNearTargetFlag = 0x4;
+    public const int WalkerHeadingOutsideToleranceFlag = 0x10;
+    public const int WalkerBlockedFlag = 0x2;
+    public const int WalkerTouchedFlag = 0x1;
+    public const int WalkerLedgeFlag = 0x8;
+    public const int WalkerHeadingOrContactMask = 0x6;
+    public const float WalkerStopDistance = .1f;
+    public const float WalkerYawTolerance = 1.57f;
+    public const float WalkerAcceleration = .3f;
+    public const float WalkerMaxSpeed = 2.7f;
+    public const float WalkerDrag = .3f;
+
+    /// <summary>
+    /// Source 0x25b710 + walker_record_step. The collision bits are supplied
+    /// by the caller, never inferred from target distance. This flag builder
+    /// is deliberately independent of Godot physics.
+    /// </summary>
+    public static int WalkerFlags(float distanceToTarget, float yawErrorRadians, int collisionFlags)
+    {
+        if (!float.IsFinite(distanceToTarget) || distanceToTarget < 0 ||
+            !float.IsFinite(yawErrorRadians) ||
+            (collisionFlags & ~0x2b) != 0)
+            throw new ArgumentOutOfRangeException(nameof(collisionFlags));
+        int flags = collisionFlags;
+        if (distanceToTarget < WalkerStopDistance) flags |= WalkerNearTargetFlag;
+        float error = MathF.Abs(MathF.Atan2(MathF.Sin(yawErrorRadians), MathF.Cos(yawErrorRadians)));
+        if (error >= WalkerYawTolerance) flags |= WalkerHeadingOutsideToleranceFlag;
+        return flags;
+    }
+
+    /// <summary>
+    /// Walker's source record recurrence at 0x258b50 before collision:
+    /// speed += min(accel * planarDistance, accel), reduced by record drag
+    /// if within speed*10, then clamped to ±vmax. Source 0x25b710 uses
+    /// (tolerance-angle)/tolerance as its walker scale while a short
+    /// stateful turn timer is live. This method only computes speed,
+    /// not collisions or inferred source timer validity.
+    /// </summary>
+    public static float WalkerSpeed(float previousSpeed, float planarDistance, float movementScale)
+    {
+        if (!float.IsFinite(previousSpeed) || !float.IsFinite(planarDistance) ||
+            !float.IsFinite(movementScale) || planarDistance < 0 ||
+            movementScale < 0 || movementScale > 1)
+            throw new ArgumentOutOfRangeException(nameof(movementScale));
+        float acceleration = WalkerAcceleration * movementScale;
+        float speed = previousSpeed + MathF.Min(acceleration * planarDistance, acceleration);
+        if (planarDistance < speed * 10) speed -= WalkerDrag * speed;
+        float limit = WalkerMaxSpeed * movementScale;
+        return Math.Clamp(speed, -limit, limit);
+    }
+
+    /// <summary>
+    /// Native state5 tests entire solver return == 4 (not &amp;4);
+    /// if true enters state7/animation0. State6 tests
+    /// (return &amp; 0x6)==0 for state7, otherwise enters state5/clip6.
+    /// Unknown contact bits must not be silently treated as zero.
+    /// </summary>
+    public static Frame StepWalkerState(int nativeState, int solverFlags, bool resultKnown)
+    {
+        if (nativeState is not (5 or 6))
+            throw new ArgumentOutOfRangeException(nameof(nativeState));
+        if (!resultKnown) return nativeState == 5 ? new(5, 6) : new(6, 6);
+        if (solverFlags < 0 || (solverFlags & ~0x3f) != 0)
+            throw new ArgumentOutOfRangeException(nameof(solverFlags));
+        if (nativeState == 5)
+            return solverFlags == WalkerNearTargetFlag ? new(RestState, 0) : new(5, 6);
+        return (solverFlags & WalkerHeadingOrContactMask) == 0
+            ? new(RestState, 0) : new(5, 6);
+    }
+
+
     /// <summary>
     /// LEVEL2:0x2d7a44..0x2d7a98: state 3 subtracts the live Moby position
     /// from the PVar+0x188 record's centre, ZEROES the resulting native Z,

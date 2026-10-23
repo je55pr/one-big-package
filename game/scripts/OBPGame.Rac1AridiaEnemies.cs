@@ -11,6 +11,7 @@ public partial class OBPGame
 {
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
+    private readonly Dictionary<int, float> _rac1ConstructorbotWalkerSpeeds = [];
     // Source table at 0x1600ec is the gameplay +0x60 list already decoded
     // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
     private readonly Dictionary<int, Vector3> _rac1ConstructorbotNativeWaypoints = [];
@@ -19,6 +20,7 @@ public partial class OBPGame
     private void ResetRac1ConstructorbotStartups()
     {
         _rac1ConstructorbotStartups.Clear();
+        _rac1ConstructorbotWalkerSpeeds.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1AridiaClipVolumes = [];
     }
@@ -104,9 +106,16 @@ public partial class OBPGame
             movementStartup.NativeState is Rac1AridiaConstructorbotNative.ParticleModeState or
                 Rac1AridiaConstructorbotNative.ParticleAlternateState)
         {
-            // Source state5 uses lv2_25b710, not yet translated.
-            // Preserve native clip6 and NEVER substitute the generic
-            // host melee/flame pulse for this unsolved source state.
+            // Source 0x25b710 walker flags and speed are applied after
+            // the real Godot collision movement. Only source return ==4
+            // permits transition to rest; no timed host melee pulse.
+            return new(state, 6);
+        }
+        if (state == 6)
+        {
+            // L2:0x2d7bb4 uses a different native 0x1e0 return target.
+            // We cannot infer its live target from the authored centre;
+            // retain source sequence6 until that vector is supplied.
             return new(state, 6);
         }
         if (state == Rac1AridiaConstructorbotNative.RestState)
@@ -243,6 +252,10 @@ public partial class OBPGame
         Rac1AridiaConstructorbotNative.Frame? nativeBot = null;
         bool sourceParticlePreview = false;
         bool sourceStateThreeMotion = false;
+        bool sourceWalkerMotion = false;
+        Vector3 sourceWalkerGoal = default;
+        float sourceWalkerYawError = 0;
+        Vector3 sourceWalkerRequestedWorldStep = default;
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Constructorbot)
         {
             nativeBot = StepRac1NativeConstructorbot(enemy);
@@ -268,6 +281,44 @@ public partial class OBPGame
                     float nextYaw = Rac1AridiaConstructorbotNative.StepStateThreeYaw(
                         node.Root.Rotation.Y, yawError, frameScale);
                     frame = frame with { Motion = sourceDisplacement, Yaw = nextYaw };
+                }
+                sourceWalkerMotion = sourceFrame.NativeState == 5 &&
+                    _rac1MobyRuntime.Require(node.Source).State.NativeState == 5 &&
+                    _rac1ConstructorbotNativeWaypoints.TryGetValue(instance, out sourceWalkerGoal);
+                if (sourceWalkerMotion)
+                {
+                    Vector3 worldDelta = sourceWalkerGoal - node.Root.GlobalPosition;
+                    worldDelta.Y = 0;
+                    float planarDistance = worldDelta.Length();
+                    Vector3 forward = EnemyForward(node);
+                    forward.Y = 0;
+                    sourceWalkerYawError = forward.LengthSquared() > .00001f &&
+                        planarDistance > .00001f
+                        ? forward.Normalized().SignedAngleTo(worldDelta.Normalized(), Vector3.Up)
+                        : 0;
+                    const float frameScale = (float)(1.0 / Rac1NativeTicksPerSecond);
+                    float nextYaw = Rac1AridiaConstructorbotNative.StepStateThreeYaw(
+                        node.Root.Rotation.Y, sourceWalkerYawError, frameScale);
+                    // Full native yaw_turn_damped, timer_tick_i32 and
+                    // walker_move_fx are NOT reconstructed. Keep the source
+                    // speed recurrence but use bounded Godot contact motion.
+                    float scaledTurn = MathF.Abs(sourceWalkerYawError);
+                    float movementScale = Math.Clamp(
+                        (Rac1AridiaConstructorbotNative.WalkerYawTolerance - scaledTurn) /
+                        Rac1AridiaConstructorbotNative.WalkerYawTolerance, 0, 1);
+                    float speed = Rac1AridiaConstructorbotNative.WalkerSpeed(
+                        _rac1ConstructorbotWalkerSpeeds.GetValueOrDefault(instance),
+                        planarDistance, movementScale);
+                    _rac1ConstructorbotWalkerSpeeds[instance] = speed;
+                    Vector3 newForward = forward.Rotated(Vector3.Up,
+                        nextYaw - node.Root.Rotation.Y).Normalized();
+                    sourceWalkerRequestedWorldStep = newForward * MathF.Min(
+                        MathF.Max(0, speed), planarDistance);
+                    frame = frame with
+                    {
+                        Motion = ToEffectNative(sourceWalkerRequestedWorldStep),
+                        Yaw = nextYaw
+                    };
                 }
                 // The known state10/11/12 source clips take precedence over
                 // the old timed host flamethrower. Unknown remaining states
@@ -317,6 +368,28 @@ public partial class OBPGame
                 enemy.Grounded ? true : null);
             if (landing.NativeState == 4)
                 _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source), 4);
+        }
+        if (sourceWalkerMotion)
+        {
+            // Source 0x25b710 returns bit4 only near its original record
+            // target, and may OR collision/floor flags from walker_move_fx.
+            // Collision travel is host-observed; native floor probing and
+            // its 0x22 collision flags are still provisional.
+            float requested = sourceWalkerRequestedWorldStep.Length();
+            float travelled = (enemy.Body.GlobalPosition - position).Length();
+            int collisionFlags = requested > .001f && travelled < requested * .5f
+                ? 0x22 : 0;
+            int flags = Rac1AridiaConstructorbotNative.WalkerFlags(
+                enemy.Body.GlobalPosition.DistanceTo(sourceWalkerGoal),
+                sourceWalkerYawError, collisionFlags);
+            var walker = Rac1AridiaConstructorbotNative.StepWalkerState(
+                5, flags, resultKnown: enemy.Grounded);
+            if (walker.NativeState == Rac1AridiaConstructorbotNative.RestState)
+            {
+                _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source),
+                    walker.NativeState);
+                _rac1ConstructorbotWalkerSpeeds.Remove(instance);
+            }
         }
         // Temporary source-particle-15 visual proxy. The native effect is a
         // sparse event at semantic joint0, NOT the host's continuous flame.

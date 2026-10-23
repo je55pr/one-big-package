@@ -119,6 +119,25 @@ public partial class OBPGame
                 $"before={originalPlanarDistance:F3} after={movedPlanarDistance:F3} " +
                 $"state={particleNative.State.NativeState} PASS");
 
+            // Isolate state5's source walker without inventing success for the
+            // currently partial state3 floor-height convergence. The player
+            // is staged and the native state is deliberately forced here.
+            _rac1MobyRuntime.SetNativeState(particleNative, 5);
+            SelectRac1EnemySequence(particleBot, 6, 1);
+            float walkerStart = new Vector2(
+                particleBot.Node.Root.GlobalPosition.X - actualWaypoint.X,
+                particleBot.Node.Root.GlobalPosition.Z - actualWaypoint.Z).Length();
+            await PhysicsFramesAsync(36);
+            float walkerEnd = new Vector2(
+                particleBot.Node.Root.GlobalPosition.X - actualWaypoint.X,
+                particleBot.Node.Root.GlobalPosition.Z - actualWaypoint.Z).Length();
+            Require(walkerEnd < walkerStart - .025f,
+                $"state5 source walker failed to approach native waypoint: " +
+                $"before={walkerStart:F3} after={walkerEnd:F3}");
+            GD.Print($"[aridia-bot-smoke] staged class612 i551 state5 " +
+                $"walker moved toward record14 before={walkerStart:F3} " +
+                $"after={walkerEnd:F3} state={particleNative.State.NativeState} PASS");
+
             // Third fixture: mode3 class612 #549 has PVar+0x18c=-1;
             // native L2:0x2d7fac checks its PVar+0x188 record12's centre
             // and PVar+0x184 full-XYZ radius20, NOT an inferred spawn.
