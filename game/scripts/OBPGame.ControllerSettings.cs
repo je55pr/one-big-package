@@ -84,6 +84,10 @@ public partial class OBPGame
                     id != 0 && _rac1Weapons.Equipped == weapon,
                     icon?.AnimationId);
             }).ToArray(),
+            // Retail Items kind=0 reads item_available[]. Kind=1 reads
+            // independent alternate_item_available[] progression flags,
+            // which this campaign host does not yet model or invent.
+            NativePrimaryItemAvailability = _rac1Weapons.Items,
             Items = Enumerable.Range(0, Rac1NativeInventoryLayout.ItemCount)
                 .Where(id => _rac1Weapons.OwnsNativeItem(id) &&
                     !Enum.IsDefined((Rac1WeaponId)id) &&

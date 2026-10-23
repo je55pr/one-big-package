@@ -63,17 +63,35 @@ public sealed class Rac1MenuPanelPages
         int UpScreen, int DownScreen, IReadOnlyList<WeaponCell> Cells);
     public sealed record QuickSelectPage(int PageAddress, int InitialFocusScreen,
         IReadOnlyList<QuickSelectGroup> Groups);
+    public sealed record ItemsGrid(int PageAddress, int ScreenAddress, int Rows,
+        int Columns, int Flags, int Selected, float MarginX, float MarginY,
+        IReadOnlyList<WeaponCell> Cells)
+    {
+        /// <summary>Retail grid painter selects one of two distinct
+        /// availability arrays by kind. Alternate indices start at zero
+        /// and are NOT R&C1 weapon inventory IDs.</summary>
+        public bool IsAvailable(WeaponCell cell, IReadOnlyList<byte> primary,
+            IReadOnlyList<byte> alternate)
+        {
+            ArgumentNullException.ThrowIfNull(primary);
+            ArgumentNullException.ThrowIfNull(alternate);
+            var source = cell.Kind == 0 ? primary : alternate;
+            return cell.NativeId >= 0 && cell.NativeId < source.Count &&
+                source[cell.NativeId] != 0;
+        }
+    }
 
     private readonly IReadOnlyDictionary<Page, Assignment> _pages;
     private Rac1MenuPanelPages(IReadOnlyDictionary<Page, Assignment> pages,
         IReadOnlyList<RootEntry> rootEntries, WeaponsGrid weaponsGrid,
-        GadgetsGrid gadgetsGrid, QuickSelectPage quickSelectPage)
+        GadgetsGrid gadgetsGrid, QuickSelectPage quickSelectPage, ItemsGrid itemsGrid)
     {
         _pages = pages;
         NativeRootEntries = rootEntries;
         NativeWeaponsGrid = weaponsGrid;
         NativeGadgetsGrid = gadgetsGrid;
         NativeQuickSelectPage = quickSelectPage;
+        NativeItemsGrid = itemsGrid;
     }
 
     public IReadOnlyDictionary<Page, Assignment> Pages => _pages;
@@ -82,6 +100,7 @@ public sealed class Rac1MenuPanelPages
     public WeaponsGrid NativeWeaponsGrid { get; }
     public GadgetsGrid NativeGadgetsGrid { get; }
     public QuickSelectPage NativeQuickSelectPage { get; }
+    public ItemsGrid NativeItemsGrid { get; }
 
     public static Rac1MenuPanelPages Read(IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level0)
     {
@@ -334,10 +353,57 @@ public sealed class Rac1MenuPanelPages
             quickGroups[1].DownScreen != quickGroups[0].ScreenAddress)
             throw new InvalidDataException("Quick Select does not have its authored two-group focus ring.");
 
+        // Items is not the generic overflow inventory. Its original
+        // 3x3 grid deliberately mixes normal item_available[] entries
+        // with alternate_item_available[] entries (including index zero).
+        // Flag 1 disables the grid updater's Cross-to-equip branch.
+        uint itemsRootScreen = ReadSourceWord(rootPage + 0x44u + 3u * 4u);
+        uint itemsPage = ReadSourceWord(ReadSourceWord(itemsRootScreen + 0x34u) + 4u);
+        uint itemsScreen = ReadSourceWord(itemsPage + 0x44u + 4u);
+        int itemRows = checked((int)ReadSourceWord(itemsScreen + 0x40u));
+        int itemColumns = checked((int)ReadSourceWord(itemsScreen + 0x44u));
+        int itemFlags = checked((int)ReadSourceWord(itemsScreen + 0x30u));
+        int itemSelected = checked((int)ReadSourceWord(itemsScreen + 0x3cu));
+        float itemMarginX = BitConverter.Int32BitsToSingle((int)ReadSourceWord(itemsScreen + 0x34u));
+        float itemMarginY = BitConverter.Int32BitsToSingle((int)ReadSourceWord(itemsScreen + 0x38u));
+        if (itemsPage != 0x001B5CB8 || itemsScreen != 0x001B5E60 ||
+            ReadSourceWord(itemsPage + 0x38u) != rootPage ||
+            ReadSourceWord(itemsPage + 0x40u) != itemsScreen ||
+            ReadSourceWord(itemsPage + 0x3cu) != 6 ||
+            ReadSourceWord(itemsScreen) != 0x002794A0 ||
+            ReadSourceWord(itemsScreen + 4u) != 0x0027B590 ||
+            itemRows != 3 || itemColumns != 3 || itemFlags != 1 ||
+            itemSelected != 0 || itemMarginX != 0.5f || itemMarginY != 0.1f)
+            throw new InvalidDataException("R&C1 Items page no longer matches the retail 3x3 item grid.");
+        uint itemCellsAt = ReadSourceWord(itemsScreen + 0x48u);
+        if (itemCellsAt != 0x001B5E00)
+            throw new InvalidDataException("R&C1 Items grid cell table moved unexpectedly.");
+        var itemCells = new List<WeaponCell>(itemRows * itemColumns);
+        for (int index = 0; index < itemRows * itemColumns; index++)
+        {
+            uint at = itemCellsAt + (uint)(index * 10);
+            uint iconWord = ReadSourceWord(at);
+            uint kindAndId = ReadSourceWord(at + 4u);
+            uint streamWord = ReadSourceWord(at + 8u);
+            int id = unchecked((short)(kindAndId >> 16));
+            ushort icon = unchecked((ushort)iconWord);
+            short frame = unchecked((short)(iconWord >> 16));
+            short kind = unchecked((short)kindAndId);
+            if (kind is not (0 or 1) || id < 0 ||
+                (kind == 0 && id >= 37) || (kind == 1 && id >= 128) ||
+                frame is < 0 or > 4 || icon is < 0xEA60 or > 0xEAC9 ||
+                (short)streamWord != 0 ||
+                itemCells.Any(cell => cell.NativeId == id && cell.Kind == kind))
+                throw new InvalidDataException($"R&C1 Items cell {index} is not a supported retail kind/id/frame.");
+            itemCells.Add(new WeaponCell(id, icon, frame, kind));
+        }
+
         return new Rac1MenuPanelPages(pages, entries,
             new WeaponsGrid(checked((int)weaponsPage), checked((int)weaponsScreen),
                 rows, columns, gridFlags, marginX, marginY, cells),
             new GadgetsGrid(checked((int)gadgetsPage), checked((int)gadgetFocus), gadgetGroups),
-            new QuickSelectPage(checked((int)quickPage), checked((int)quickFocus), quickGroups));
+            new QuickSelectPage(checked((int)quickPage), checked((int)quickFocus), quickGroups),
+            new ItemsGrid(checked((int)itemsPage), checked((int)itemsScreen),
+                itemRows, itemColumns, itemFlags, itemSelected, itemMarginX, itemMarginY, itemCells));
     }
 }

@@ -27,9 +27,18 @@ public partial class Rac1RetailUiSmoke : Node
                 Rac1RetailUiAssets.Load(disc);
                 UiTheme.Apply(GetTree().Root);
             }
+            var itemFlags = new byte[37];
+            itemFlags[30] = 1;
+            itemFlags[34] = 1;
+            itemFlags[4] = 1; // Not an alternate item index.
+            var alternateFlags = new byte[128];
+            alternateFlags[0] = 1; // Valid alternate index zero.
+            alternateFlags[5] = 1;
             var sample = new PauseMenuUi
             {
                 RetailEnabled = true,
+                NativePrimaryItemAvailability = itemFlags,
+                NativeAlternateItemAvailability = alternateFlags,
                 MovementStatesAvailable = true,
                 Weapons =
                 [
@@ -318,6 +327,47 @@ public partial class Rac1RetailUiSmoke : Node
                     .Any(ev => ev.ButtonIndex == JoyButton.RightShoulder),
                     "Leaving Quick Select did not restore the user's gamepad focus mapping");
             await Open(sample, "Items", Rac1RetailMenuPage.Items);
+            if (Rac1RetailUiAssets.NativeMenuPages is { } itemPages)
+            {
+                var native = itemPages.NativeItemsGrid;
+                var itemGrid = Descendants(sample).OfType<GridContainer>()
+                    .Single(grid => grid.Name.ToString() == "NativeItemsGrid");
+                var cells = itemGrid.GetChildren().OfType<Rac1RetailEquipmentCell>().ToArray();
+                Require(itemGrid.Columns == 3 && cells.Length == 9,
+                    "Retail Items must contain exactly nine source-authored 3x3 cells");
+                for (int index = 0; index < cells.Length; index++)
+                {
+                    var source = native.Cells[index];
+                    var cell = cells[index];
+                    Require(cell.Name.ToString() == $"NativeItemsCell_{index}" &&
+                        cell.NativeAnimationId == source.Icon && cell.NativeFrame == source.Frame &&
+                        cell.Owned == native.IsAvailable(source, itemFlags, alternateFlags),
+                        $"Items cell {index} lost its native icon frame or independent availability");
+                }
+                Require(!cells[3].Owned && cells[4].Owned && cells[6].Owned &&
+                    cells[0].Owned && !cells[1].Owned,
+                    "Kind=1 availability must not alias kind=0 inventory IDs, including alternate index zero");
+                Require(cells[2].NativeAnimationId == cells[3].NativeAnimationId &&
+                    cells[2].NativeFrame != cells[3].NativeFrame,
+                    "Multiple Items icons share the same retail animation with distinct authored frames");
+                Require(GetViewport().GuiGetFocusOwner() == cells[0],
+                    "Items must initially focus the first source grid cell");
+                await Press(JoyButton.DpadRight);
+                Require(GetViewport().GuiGetFocusOwner() == cells[1],
+                    "Items D-pad right must advance one column in its 3x3 grid");
+                await Press(JoyButton.DpadDown);
+                Require(GetViewport().GuiGetFocusOwner() == cells[4],
+                    "Items D-pad down must move three cells, not the Weapons five-column stride");
+                int beforeEquip = equips;
+                await Press(JoyButton.A);
+                cells[0].GrabFocus(); await Frames(2);
+                await Press(JoyButton.A);
+                Require(equips == beforeEquip,
+                    "Original Items grid flag 1 must prevent Cross from equipping anything");
+                Require(!Descendants(sample).OfType<ScrollContainer>().Any(),
+                    "Original Items page introduced a host scrollbar");
+            }
+            await Capture("items");
             await Keyboard(Key.Escape); await Frames(25);
 
             await Open(sample, "Help", Rac1RetailMenuPage.Help);

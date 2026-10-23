@@ -112,6 +112,41 @@ public sealed class Rac1MenuPanelPagesTests
         Assert.Equal(quick.Groups[0].ScreenAddress, quick.Groups[1].UpScreen);
         Assert.Equal(quick.Groups[0].ScreenAddress, quick.Groups[1].DownScreen);
 
+        // Original Items page has a read-only 3x3 source grid. Its
+        // kind=1 cells index alternate_item_available[], not weapon
+        // inventory, and alternate index zero is explicitly valid.
+        var items = pages.NativeItemsGrid;
+        Assert.Equal(0x001B5CB8, items.PageAddress);
+        Assert.Equal(0x001B5E60, items.ScreenAddress);
+        Assert.Equal(3, items.Rows);
+        Assert.Equal(3, items.Columns);
+        Assert.Equal(1, items.Flags); // Disables Cross equip in retail updater.
+        Assert.Equal(0, items.Selected);
+        Assert.Equal(.5f, items.MarginX, 5);
+        Assert.Equal(.1f, items.MarginY, 5);
+        Assert.Equal([30, 35, 34, 4, 5, 33, 0, 1, 2],
+            items.Cells.Select(cell => cell.NativeId));
+        Assert.Equal([0, 0, 0, 1, 1, 0, 1, 1, 1],
+            items.Cells.Select(cell => (int)cell.Kind));
+        Assert.Equal([0, 0, 2, 3, 4, 1, 0, 1, 2],
+            items.Cells.Select(cell => (int)cell.Frame));
+        Assert.Equal([0xEA7E, 0xEAC9, 0xEAC9, 0xEAC9, 0xEAC9,
+            0xEAC9, 0xEAC8, 0xEAC8, 0xEAC8],
+            items.Cells.Select(cell => (int)cell.Icon));
+        byte[] primary = new byte[37], alternate = new byte[128];
+        primary[30] = 1;
+        primary[4] = 1; // MUST NOT admit alternate cell with id=4.
+        alternate[0] = 1; // Valid alternate index zero.
+        alternate[5] = 1; // MUST NOT admit primary item id=5.
+        Assert.True(items.IsAvailable(items.Cells[0], primary, alternate));
+        Assert.False(items.IsAvailable(items.Cells[1], primary, alternate));
+        Assert.False(items.IsAvailable(items.Cells[3], primary, alternate));
+        Assert.True(items.IsAvailable(items.Cells[4], primary, alternate));
+        Assert.True(items.IsAvailable(items.Cells[6], primary, alternate));
+        Assert.False(items.IsAvailable(items.Cells[7], primary, alternate));
+        Assert.False(items.IsAvailable(items.Cells[0], Array.Empty<byte>(), alternate));
+        Assert.False(items.IsAvailable(items.Cells[6], primary, Array.Empty<byte>()));
+
         Assert.Equal([0, 1, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             pages[Rac1MenuPanelPages.Page.Opening].Animations.ToArray());
         Assert.Equal([21, 22, 23, 24, 25, 5, 6, 7, 8, 9, 10, 11, 12, 13],

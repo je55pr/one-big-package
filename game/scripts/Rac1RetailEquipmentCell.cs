@@ -10,6 +10,8 @@ namespace OneBigPackage;
 public sealed partial class Rac1RetailEquipmentCell : Button
 {
     public ushort? NativeAnimationId { get; init; }
+    /// <summary>Exact authored frame, independent of equipped/upgraded state.</summary>
+    public int NativeFrame { get; init; }
     public bool Owned { get; init; }
     public bool Equipped { get; set; }
     public bool Upgraded { get; init; }
@@ -57,8 +59,10 @@ public sealed partial class Rac1RetailEquipmentCell : Button
 
         if (!Owned || NativeAnimationId is not ushort id) return;
         int offset = Equipped && !SuppressEquippedFrame ? 1 : Upgraded ? 4 : 0;
-        var icon = Rac1RetailUiAssets.Sprite(id, offset) ??
-                   Rac1RetailUiAssets.Sprite(id, 0);
+        // The Items page authors several distinct pictures as *frames*
+        // of EAC8/EAC9. Never fall back to frame zero for these cells.
+        var icon = Rac1RetailUiAssets.Sprite(id, NativeFrame + offset) ??
+                   (NativeFrame == 0 ? Rac1RetailUiAssets.Sprite(id, 0) : null);
         if (icon is null) return;
         float size = Math.Min(78f, Math.Min(Size.X - 20, Size.Y - 12));
         Vector2 topLeft = (Size - new Vector2(size, size)) / 2;

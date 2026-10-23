@@ -776,3 +776,57 @@ weapon overflow admission and assignment remain
 separate work; this pass changes only the original
 21 R&C1 candidate grid and the eight-slot R&C1
 save-backed block.
+
+## 23 October: original R&C1 Items grid
+
+Ordinary pause root item 3 points to Items `MenuPage
+0x001B5CB8`, state 6 and back to `0x001B2588`.
+The initially focused grid is panel slot 1, screen
+`0x001B5E60`, updater `0x002794A0`, draw callback
+`0x0027B590`, cells at `0x001B5E00`, **3 rows x 3
+columns**, margins `0.5,0.1`, selected cell 0, flags
+`0x1`. The updater `FUN_0021B858` gates Cross-to-equip
+on `!(grid.flags & 1)`, so Items cannot equip weapons
+or toggle equipment. Its directional navigation is a
+wrapping three-column grid, not Weapons' five columns.
+
+Original ten-byte cell records (row-major), as
+`(kind, id, icon animation, frame)`:
+
+- Row 0: `(0,30,EA7E,0)`; `(0,35,EAC9,0)`;
+  `(0,34,EAC9,2)`
+- Row 1: `(1,4,EAC9,3)`; `(1,5,EAC9,4)`;
+  `(0,33,EAC9,1)`
+- Row 2: `(1,0,EAC8,0)`; `(1,1,EAC8,1)`;
+  `(1,2,EAC8,2)`
+
+The first `kind=0` entries are owned according to
+`item_available[id]`; `kind=1` entries are drawn
+**only** if `alternate_item_available[id]` is nonzero.
+This distinct native array is also referenced by retail
+mission-condition handling. Alternate index **zero is
+a valid cell**. IDs with different kinds are not
+interchangeable even if numerically equal. The original
+grid renderer uses `get_icon_frame(cell.icon,
+cell.frame+frame_offset)`, including alternate cells'
+authored nonzero frames. The host must not collapse
+them all to EAC9/EAC8 frame 0.
+
+The decoded, bounded overlay data is exposed as
+`Rac1MenuPanelPages.NativeItemsGrid`, with an
+availability lookup based on exact source kind.
+Godot builds all nine native cells and uses the
+saved primary R&C1 item flags for `kind=0`.
+**The current campaign host has no proven mapping
+for alternate_item_available[] save/progression**, so
+`kind=1` stays unavailable unless explicit alternate
+flags are supplied; ordinary weapon/gadget ownership
+is never guessed to be an alternate unlock. That
+state requires separate research and implementation.
+There is no invented selection/equip action, no
+scrollbar or fabricated rewards.
+
+The grid's absolute icon positions and per-panel
+retail Moby projection remain unresolved; the current
+Godot GridContainer is a bounded structural host,
+not an assertion of pixel-exact retail placement.

@@ -12,6 +12,11 @@ public sealed partial class PauseMenuUi
     public IReadOnlyList<RetailItem> Weapons { get; init; } = [];
     public IReadOnlyList<RetailItem> Gadgets { get; init; } = [];
     public IReadOnlyList<RetailItem> Items { get; init; } = [];
+    /// <summary>Retail item_available[] bytes. Do not conflate with
+    /// alternate_item_available[], which has independent progression.</summary>
+    public IReadOnlyList<byte> NativePrimaryItemAvailability { get; init; } = [];
+    /// <summary>Explicit alternate retail flags only, never inferred from weapon ownership.</summary>
+    public IReadOnlyList<byte> NativeAlternateItemAvailability { get; init; } = [];
     public IReadOnlyList<RetailItem> QuickSlots { get; init; } = [];
     public event Action<Rac1WeaponId>? EquipRequested;
     /// <summary>Gameplay owner validates and persists an eight-slot native assignment.</summary>
@@ -224,7 +229,9 @@ public sealed partial class PauseMenuUi
             case Rac1RetailMenuPage.QuickSelect:
                 if (!BuildNativeQuickSelectPage()) BuildEquipmentPage(QuickSlots, allowEquip: false);
                 break;
-            case Rac1RetailMenuPage.Items: BuildEquipmentPage(Items, allowEquip: false); break;
+            case Rac1RetailMenuPage.Items:
+                if (!BuildNativeItemsPage()) BuildEquipmentPage(Items, allowEquip: false);
+                break;
             case Rac1RetailMenuPage.Help: BuildHelpPage(); break;
             case Rac1RetailMenuPage.Options: BuildOptionsPage(); break;
             case Rac1RetailMenuPage.Development: BuildDevelopmentPage(); break;
@@ -236,7 +243,10 @@ public sealed partial class PauseMenuUi
             WireNativeQuickSelectFocus();
         else if (page is Rac1RetailMenuPage.Weapons or Rac1RetailMenuPage.Gadgets or
             Rac1RetailMenuPage.QuickSelect or Rac1RetailMenuPage.Items)
-            WireRetailGrid(_retailFocusOrder.OfType<Rac1RetailEquipmentCell>().ToArray());
+            WireRetailGrid(_retailFocusOrder.OfType<Rac1RetailEquipmentCell>().ToArray(),
+                page == Rac1RetailMenuPage.Items
+                    ? Rac1RetailUiAssets.NativeMenuPages?.NativeItemsGrid.Columns ?? 5
+                    : Rac1RetailUiAssets.NativeMenuPages?.NativeWeaponsGrid.Columns ?? 5);
         RestoreRetailFocus();
     }
 
@@ -380,9 +390,8 @@ public sealed partial class PauseMenuUi
     /// Preserve that native behaviour instead of Godot's nearest-node
     /// heuristic, which jumps diagonally through the icon grid.
     /// </summary>
-    private static void WireRetailGrid(IReadOnlyList<Rac1RetailEquipmentCell> cells)
+    private static void WireRetailGrid(IReadOnlyList<Rac1RetailEquipmentCell> cells, int columns)
     {
-        int columns = Rac1RetailUiAssets.NativeMenuPages?.NativeWeaponsGrid.Columns ?? 5;
         if (cells.Count == 0) return;
         for (int i = 0; i < cells.Count; i++)
         {
