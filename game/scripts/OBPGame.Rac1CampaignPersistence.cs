@@ -13,6 +13,8 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private readonly HashSet<int> _rac1CollectedNovalisGoldBolts = [];
+    private Rac1CampaignSaveBatcher? _rac1SaveBatcher;
+    private string? _rac1SaveFailureReported;
     private string? _rac1CampaignRestoreWarning;
     private bool _rac1CampaignPersistenceInitialized;
     private Rac1CampaignSessionPersistence _rac1CampaignPersistence =
@@ -39,6 +41,9 @@ public partial class OBPGame
 
         Rac1CampaignRestoreAttempt attempt = _rac1CampaignPersistence.RestoreWithRecovery();
         _rac1CampaignPersistence = attempt.Persistence;
+        // A corrupt or unreadable save switches to an unsaved session. Never
+        // construct a writer for a path recovery has declared unsafe.
+        _rac1SaveBatcher = Rac1CampaignSaveWriterFactory.CreateIfEnabled(_rac1CampaignPersistence);
         _rac1CampaignRestoreWarning = attempt.Warning;
         if (_rac1CampaignRestoreWarning is not null)
             GD.PushWarning($"[rac1-campaign] {_rac1CampaignRestoreWarning}");
@@ -125,6 +130,30 @@ public partial class OBPGame
         return result;
     }
 
+    private Rac1CampaignSaveEnvelope CaptureRac1CampaignSnapshot() =>
+        Rac1CampaignSavePolicy.Capture(
+            _rac1CampaignSession.Campaign, _rac1CampaignSession.Weapons, _rac1BoltWallet,
+            _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts);
+
+    private void TickRac1CampaignSaves(double delta)
+    {
+        if (_rac1SaveBatcher is null) return;
+        _rac1SaveBatcher.Tick(delta, CaptureRac1CampaignSnapshot);
+        string? failure = _rac1SaveBatcher.Failure?.Message;
+        if (failure is not null && failure != _rac1SaveFailureReported)
+            GD.PushWarning($"[rac1-campaign] save failed; latest progress retained for retry: {failure}");
+        _rac1SaveFailureReported = failure;
+    }
+
+    private void FlushRac1CampaignSaves(string boundary)
+    {
+        if (_rac1SaveBatcher is null || _rac1WeaponPreviewInventory is not null) return;
+        if (!_rac1SaveBatcher.FlushNow(CaptureRac1CampaignSnapshot, out Exception? error))
+            GD.PushWarning($"[rac1-campaign] {boundary} save failed; progress remains unsaved: {error!.Message}");
+        else
+            GD.Print($"[rac1-campaign] {boundary} save flush complete");
+    }
+
     private void PersistRac1CampaignState(string reason)
     {
         // Preview equipment and its ammo are session-only. Never export this
@@ -133,15 +162,12 @@ public partial class OBPGame
         if (!_rac1CampaignPersistenceInitialized)
             EnsureRac1CampaignPersistenceInitialized();
 
-        bool persisted = _rac1CampaignPersistence.PersistIfEnabled(
-            _rac1CampaignSession.Campaign,
-            _rac1CampaignSession.Weapons, _rac1BoltWallet,
-            _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts);
-        string action = persisted ? "persisted" : "session-only";
-        GD.Print(
-            $"[rac1-campaign] {action} {reason}: current={_rac1CampaignSession.Campaign.CurrentLevel}, " +
-            $"admitted={_rac1CampaignSession.Campaign.AdmittedDestinationCount}, " +
-            $"item10-owned={_rac1CampaignSession.Weapons.OwnsFirstRanged}, " +
-            $"ammo={_rac1CampaignSession.Weapons.FirstRangedAmmo}");
+        if (_rac1SaveBatcher is null) return;
+        bool wasDirty = _rac1SaveBatcher.Dirty;
+        _rac1SaveBatcher.MarkDirty();
+        if (reason == "completed campaign travel")
+            FlushRac1CampaignSaves("campaign travel");
+        else if (!wasDirty)
+            GD.Print($"[rac1-campaign] save queued ({reason})");
     }
 }
