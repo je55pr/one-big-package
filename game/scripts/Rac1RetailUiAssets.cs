@@ -14,10 +14,29 @@ public static class Rac1RetailUiAssets
     private static readonly Dictionary<string, FontFile> Fonts = new();
     private static readonly Dictionary<(ushort, int), Texture2D?> Sprites = new();
     private static readonly Dictionary<int, Texture2D?> Effects = new();
+    private static Texture2D? _rootLargeGlyphTexture;
     private static Rac1UiAssets? _assets;
     public static bool IsLoaded => _assets is not null;
     public static Rac1MenuPanelModel? NativeMenuPanels => _assets?.NativeMenuPanels;
     public static Rac1MenuPanelPages? NativeMenuPages => _assets?.NativeMenuPages;
+    public static Rac1BitmapFont? NativeRootFont =>
+        _assets?.Fonts.GetValueOrDefault("large");
+
+    /// <summary>Original large-font atlas, white-modulated for the source per-entry tints.</summary>
+    public static Texture2D? NativeRootGlyphAtlas()
+    {
+        if (_rootLargeGlyphTexture is not null) return _rootLargeGlyphTexture;
+        if (NativeRootFont is not { } source) return null;
+        byte[] tinted = source.Atlas.Rgba.ToArray();
+        for (int i = 0; i < tinted.Length; i += 4)
+        {
+            if (tinted[i + 3] == 0) continue;
+            tinted[i] = tinted[i + 1] = tinted[i + 2] = 255;
+        }
+        using var image = Image.CreateFromData(source.Atlas.Width, source.Atlas.Height,
+            false, Image.Format.Rgba8, tinted);
+        return _rootLargeGlyphTexture = ImageTexture.CreateFromImage(image);
+    }
 
     /// <summary>
     /// Recovered 14-slot native animation playback, independent of the
@@ -44,6 +63,7 @@ public static class Rac1RetailUiAssets
         Fonts.Clear();
         Sprites.Clear();
         Effects.Clear();
+        _rootLargeGlyphTexture = null;
     }
 
     public static string Text(int nativeTextId, string fallback) =>

@@ -562,3 +562,44 @@ native display size. The host currently centers the labels with the
 source font and colours; no arbitrary shadow, new glyph style, or
 seventh slot is added. Pixel-exact typography requires an emulator
 reference capture or further native font packet recovery.
+
+## 23 October: native large-font glyph quads replace Godot button shaping
+
+Recovered resident renderer semantics from
+`src/ui/text/font_print.c` (`FUN_001f62b0`) and
+`src/ui/text/measure_text_width.c` (`FUN_001f6200`).
+The original renderer advances by each **signed glyph byte+3** width,
+places a **16x16** source texture cell at `(pen, y + glyph.top)`,
+and draws no cell for the ASCII space, despite advancing the pen.
+Normal ASCII root labels have no special palette/control/diacritic
+drawing. `font_print_window.c` establishes that the generic label's
+scissor, center flags, and shadow are independent from the Veldin
+root's recovered text-list draw callback.
+
+For the seven authored single-text screens, the callback uses large
+font metrics and a 14-unit text parameter, single-entry
+`rowHeight=panelHeight/2`, and an initial text anchor at
+`rowHeight-14/2-1`. Horizontal layout uses the native signed
+advance-width and `(panelWidth >> 1)-(width >> 1)`.
+The original US English texts produce these measured widths:
+Weapons=87, Gadgets=84, Quick Select=118, Items=52, Help=43,
+Options=77 native pixels.
+
+`Rac1MenuRootTextLayout` now models this as engine-neutral, tested
+native glyph quads, with source byte U/V offsets, signed vertical
+offsets and advances. `Rac1RetailRootText` draws each atlas cell in
+Godot without Button/Label text shaping; `Rac1RetailMenuButton`
+retains its native text for accessibility and input semantics but
+makes the built-in text ink transparent only on the six source root
+buttons. The original large-font RGBA atlas is whitened in memory for
+native selected/normal palette modulation. No texture or source game
+byte is checked into the repo.
+
+**Scaling boundary:** original glyph cells are 16px. The host adapter
+retains its prior *25px* visual glyph size via explicit
+`25/16` scaling, and maps the source integer layout into each
+already-projected panel. This is a documented viewport adaptation, not
+a recovered PS2 output-target scale. No evidence was invented for
+final native framebuffer dimensions, GS sampler details or
+interlaced raster offset. Native-vs-Godot pixel-difference assertions
+must wait for a reference PS2 screenshot.

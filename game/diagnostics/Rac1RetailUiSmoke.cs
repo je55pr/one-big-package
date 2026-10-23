@@ -68,6 +68,13 @@ public partial class Rac1RetailUiSmoke : Node
                     .Where(b => b.Name.ToString().StartsWith("NativePanelSlot_", StringComparison.Ordinal))
                     .ToArray();
                 Require(nativeButtons.Length == 6, "Projected class-0x472 geometry did not replace fixed root rows");
+                Require(Rac1RetailUiAssets.NativeRootFont is not null &&
+                    Rac1RetailUiAssets.NativeRootGlyphAtlas() is not null,
+                    "Source R&C1 large-font glyph atlas was not decoded");
+                Require(nativeButtons.All(button =>
+                    button.GetChildren().OfType<Rac1RetailRootText>().Count() == 1 &&
+                    button.GetThemeColor("font_color").A == 0),
+                    "Original pause glyphs must replace Godot-shaped Button text exactly once");
                 var sourceLabels = Rac1RetailUiAssets.NativeMenuPages!.NativeRootEntries;
                 Require(sourceLabels.Count == 7 && sourceLabels[6].RequiresNativeAdmission,
                     "Retail ordinary root lost its conditional seventh text screen");

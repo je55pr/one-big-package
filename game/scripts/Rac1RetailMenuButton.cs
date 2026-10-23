@@ -41,8 +41,16 @@ public sealed partial class Rac1RetailMenuButton : Button
 
         if (RetailPauseRoot)
         {
-            AddThemeFontOverride("font", Rac1RetailUiSkin.Font("large"));
-            AddThemeFontSizeOverride("font_size", 25);
+            // Preserve Button.Text for accessibility, gamepad focus and
+            // native-label assertions, but paint root glyphs ourselves from
+            // the original 16x16 atlas and signed per-glyph advances.
+            // Godot's button font shaping/centering is not the PS2 printer.
+            var transparent = Colors.Transparent;
+            foreach (string state in new[] { "font_color", "font_focus_color",
+                "font_hover_color", "font_pressed_color", "font_disabled_color",
+                "font_hover_pressed_color" })
+                AddThemeColorOverride(state, transparent);
+            AddChild(new Rac1RetailRootText());
         }
 
         if (Rac1RetailUiAssets.IsLoaded)
