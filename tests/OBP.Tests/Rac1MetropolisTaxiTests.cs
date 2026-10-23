@@ -179,6 +179,76 @@ public sealed class Rac1MetropolisTaxiTests
     }
 
     [Fact]
+    public void PathlessClass816ModeReturnsToIdleAfterFivePlanarUnitsWithoutDepartureFlight()
+    {
+        var world = Kerwan();
+        var objects = world.DynamicObjects!.ToArray();
+        int slot = Array.FindIndex(objects, obj => obj.InstanceIndex == 919);
+        var placement = Placements.Single(p => p.Index == 919);
+        var cuboid = new byte[24];
+        float[] values =
+        [
+            (float)placement.X - 12, (float)placement.Z, (float)placement.Y,
+            4f, 4f, 4f,
+        ];
+        for (int i = 0; i < values.Length; i++)
+            BinaryPrimitives.WriteSingleLittleEndian(cuboid.AsSpan(i * 4, 4), values[i]);
+
+        var pvar = new byte[0xd0];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0xbc, 4), -1);
+        objects[slot] = objects[slot] with
+        {
+            NativePayloads = objects[slot].NativePayloads!.Concat([
+                new RuntimeOpaquePayload("rac1-pvar", pvar),
+                new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.ApproachPathFormat,
+                    TinyNativePath(placement.X - 10, placement.Y, placement.Z)),
+                new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.DeparturePathFormat,
+                    TinyNativePath(placement.X + 10, placement.Y, placement.Z)),
+                new RuntimeOpaquePayload(Rac1MetropolisTaxiSession.TriggerVolumeFormat, cuboid),
+            ]).ToArray(),
+        };
+
+        var session = Rac1MetropolisTaxiSession.TryCreate(
+            world with { DynamicObjects = objects })!;
+        var taxi = session.Stops.Single(s => s.InstanceIndex == 919);
+        Assert.Equal(-1, taxi.NativeFirstDepartureSelector);
+        Assert.Equal(-1, taxi.NativeDepartureSelectors![0]);
+        var trigger = taxi.ApproachTrigger!.Center;
+        session.TickTraffic(trigger, 0);
+        for (int frame = 0; frame < 24000 &&
+             session.PhaseOf(919) != Rac1MetropolisTaxiSession.TrafficPhase.Docked; frame++)
+            session.TickTraffic(trigger, 1d / 60);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.Docked, session.PhaseOf(919));
+
+        Assert.True(session.TryBoard(taxi.Position));
+        Rac1TaxiFlight? flight = null;
+        for (int frame = 0; frame < 24000; frame++)
+        {
+            flight = session.Tick(1d / 60);
+            if (flight?.JustArrived == true) break;
+        }
+        Assert.True(flight?.JustArrived);
+        session.CompleteArrival();
+
+        var destination = taxi.OutboundPath[^1];
+        session.TickTraffic(destination with { Y = destination.Y + 100 }, 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination,
+            session.PhaseOf(919));
+        session.TickTraffic(destination with { X = destination.X + 5 }, 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.ParkedAtDestination,
+            session.PhaseOf(919));
+        var frames = session.TickTraffic(
+            destination with { X = destination.X + 5.01 }, 0);
+        Assert.Equal(Rac1MetropolisTaxiSession.TrafficPhase.WaitingForHero,
+            session.PhaseOf(919));
+        Assert.Equal(destination,
+            frames.Single(frame => frame.InstanceIndex == 919).Position);
+        var next = session.TickTraffic(new Rac1TaxiPoint(0, 0, 0), 0);
+        Assert.Equal(taxi.ApproachPath![0],
+            next.Single(frame => frame.InstanceIndex == 919).Position);
+    }
+
+    [Fact]
     public void Class1012CompletesBothNativeLegsBeforeDisembarking()
     {
         var session = Rac1MetropolisTaxiSession.TryCreate(Kerwan())!;
@@ -428,6 +498,16 @@ public sealed class Rac1MetropolisTaxiTests
                 BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x94, 4)));
             Assert.Equal(61,
                 BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xbc, 4)));
+            var nativeExitSelectors = session.Stops.Single(s =>
+                s.InstanceIndex == instance).NativeDepartureSelectors;
+            Assert.NotNull(nativeExitSelectors);
+            Assert.Equal(5, nativeExitSelectors.Count);
+            for (int slot = 0; slot < 5; slot++)
+                Assert.Equal(
+                    BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xbc + slot * 4, 4)),
+                    nativeExitSelectors[slot]);
+            Assert.Equal(61, session.Stops.Single(s =>
+                s.InstanceIndex == instance).NativeFirstDepartureSelector);
             Assert.Equal(cuboidId,
                 BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x80, 4)));
             var stop = session.Stops.Single(s => s.InstanceIndex == instance);

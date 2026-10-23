@@ -27,7 +27,9 @@ public sealed record Rac1MetropolisTaxiStop(
     int NativeInitialSide = -1,
     bool NativeSeekEvidenced = false,
     Rac1TaxiHoverPhases? NativeHoverPhases = null,
-    Rac1TaxiNativeHud? NativeHudSelectors = null);
+    Rac1TaxiNativeHud? NativeHudSelectors = null,
+    int? NativeFirstDepartureSelector = null,
+    IReadOnlyList<int>? NativeDepartureSelectors = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -407,6 +409,27 @@ public sealed class Rac1MetropolisTaxiSession
                 nativeHud = new Rac1TaxiNativeHud(zero, one);
             }
 
+            // The class-816 state-6 clearance gate reads its currently
+            // selected PVar +0xbc+(slot*4) exit selector, and uses a
+            // distinct 5-unit planar rule for a -1 (pathless) slot.
+            // The host currently admits only authored slot zero.
+            int? firstDepartureSelector = null;
+            IReadOnlyList<int>? allDepartureSelectors = null;
+            if (route.Class == 816 && route.DepartureOffset >= 0 &&
+                pvar is { Length: >= 0xd0 } departurePvar)
+            {
+                int[] selectors = new int[5];
+                for (int slot = 0; slot < selectors.Length; slot++)
+                {
+                    selectors[slot] = BinaryPrimitives.ReadInt32LittleEndian(
+                        departurePvar.AsSpan(route.DepartureOffset + 4 * slot, 4));
+                    if (selectors[slot] < -1)
+                        return null;
+                }
+                firstDepartureSelector = selectors[0];
+                allDepartureSelectors = selectors;
+            }
+
             // Real authored PVars prove the original speed/index fields
             // are present. Synthetic regression worlds omit this payload.
             bool nativeSeek = route.OutboundOffset >= 0 &&
@@ -415,7 +438,8 @@ public sealed class Rac1MetropolisTaxiSession
             stops.Add(new Rac1MetropolisTaxiStop(
                 route.Index, route.Class, position, outbound, route.Label, returning,
                 approach, departure, trigger, nativeSide, nativeSeek,
-                hoverPhases, nativeHud));
+                hoverPhases, nativeHud, firstDepartureSelector,
+                allDepartureSelectors));
         }
 
         return new Rac1MetropolisTaxiSession(stops);
@@ -486,14 +510,27 @@ public sealed class Rac1MetropolisTaxiSession
                     break;
                 case TrafficPhase.ParkedAtDestination:
                     position = stop.OutboundPath[^1];
-                    // Native state 6 waits until Ratchet is 15 units away.
-                    if (position.DistanceSquared(hero) > 15d * 15d)
+                    // Native class-816 state 6 checks the current slot:
+                    // departure path: >15 in 3D, pathless -1: >5 in
+                    // the native horizontal plane, then idle directly.
+                    if (Rac1TaxiNativeDepartureClearance.Cleared(
+                        position, hero, stop.NativeFirstDepartureSelector))
                     {
-                        phase = TrafficPhase.Departing;
                         elapsed = 0;
-                        if (stop.NativeSeekEvidenced)
-                            _nativeTraffic[stop.InstanceIndex] =
-                                new Rac1TaxiNativeMotion(stop.DeparturePath!);
+                        if (stop.NativeFirstDepartureSelector == -1)
+                        {
+                            // State 6 changes its byte to idle state 1
+                            // without moving the Moby this update. State
+                            // 1 restores the idle path on the next tick.
+                            phase = TrafficPhase.WaitingForHero;
+                        }
+                        else
+                        {
+                            phase = TrafficPhase.Departing;
+                            if (stop.NativeSeekEvidenced)
+                                _nativeTraffic[stop.InstanceIndex] =
+                                    new Rac1TaxiNativeMotion(stop.DeparturePath!);
+                        }
                     }
                     break;
                 case TrafficPhase.Departing:

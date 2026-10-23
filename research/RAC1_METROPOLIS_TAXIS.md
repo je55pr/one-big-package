@@ -421,3 +421,37 @@ the lower ordinary floor must use direct boarding instead of a
 false 0x65 admission above his head. These radius and height
 restrictions are conservative OBP collision-safety policy, not
 recovered native focus constants.
+
+## 23 October 2026: state-6 authored taxi exit selectors
+
+The native Kerwan class-816 state-6 updater at **L3:0x002d3754**
+reads the slot selected by the taxi's original Moby byte +0xbc
+from the five original PVar selectors at **+0xbc + slot*4**.
+It distinguishes two post-ride clearance transitions:
+
+- With a departure path selector other than -1, Ratchet must be
+  **strictly farther than 15 units in three dimensions** (native
+  `vec3_distance` at 0x002d3804). The taxi then enters state 7,
+  travels its authored departure path, and returns to idle.
+- With selector **-1**, it checks only horizontal X/Y native world
+  distance (**strictly greater than 5 units**, `vec2_distance` at
+  0x002d3854), then returns directly to idle state 1. Vertical
+  separation by itself must not release this special/pathless case.
+
+Previously the OBP traffic host unconditionally required 15 units
+of full 3D separation before creating departure motion, conflating
+both native states. `Rac1TaxiNativeDepartureClearance` now owns the
+finite-input-safe source threshold decision; the session returns a
+pathless variant to idle instead of manufacturing an outbound spline.
+The original **five** integer path selectors are retained from
+authored PVars on each class-816 Moby instead of discarding the dormant
+variants. The existing Godot host still admits only slot zero, so
+storing other selectors does not awaken unused/special modes.
+
+Retail i919 and i920 both use **exit path 61** in slot zero. This
+ordinary admitted path keeps its proven 15-unit native gate. For
+synthetic worlds without retail PVar selectors, the provisional
+15-unit path-mode default is retained. Tests exercise exact 15/5
+boundaries, vertical-only clearance, NaN/Infinity rejection and
+all five retail exit selector slots. Native camera/focus/player
+attachment and other slot selection remain separate work.
