@@ -233,11 +233,10 @@ public partial class OBPGame
         }
         if (_activeCamera == shot)
         {
-            // Never leave world-host camera updates pointing at a freed node.
-            var current = GetViewport().GetCamera3D();
-            if (current is not null && current != shot)
-                _activeCamera = current;
-            else if (_player is { } remainingPlayer && IsInstanceValid(remainingPlayer) &&
+            // The other viewport owner may also be temporary (Visibomb).
+            // Keep the world-host pointer on Ratchet's stable camera, rather
+            // than retaining a camera another system will later free.
+            if (_player is { } remainingPlayer && IsInstanceValid(remainingPlayer) &&
                 IsInstanceValid(remainingPlayer.Camera))
                 _activeCamera = remainingPlayer.Camera;
             else

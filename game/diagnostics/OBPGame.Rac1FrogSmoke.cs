@@ -359,7 +359,8 @@ public partial class OBPGame
                 EndRac1QueenScriptedCamera();
                 Require(_rac1QueenScriptedCamera is null &&
                     !_player!.Rac1RemoteControlActive &&
-                    GetViewport().GetCamera3D() == stolen && _activeCamera == stolen &&
+                    GetViewport().GetCamera3D() == stolen &&
+                    _activeCamera == _player.Camera &&
                     _rac1QueenFlight?.NativeState == 2,
                     "Queen cancellation stole an external camera or left input locked.");
                 stolen.QueueFree();
@@ -368,6 +369,27 @@ public partial class OBPGame
                 Require(_rac1QueenScriptedCamera is { Current: true } &&
                     _player.Rac1RemoteControlActive && _rac1QueenFlight?.NativeState == 2,
                     "Queen camera could not reacquire after an external lease ended.");
+                // Visibomb keeps its independent input lock: releasing the
+                // Queen lease must never disable another owner's controls.
+                BeginRac1GuidedCamera();
+                TickRac1QueenFlight();
+                Require(_rac1MissileCamera is { Current: true } &&
+                    _rac1QueenFlight?.NativeState == 2 &&
+                    GetViewport().GetCamera3D() == _rac1MissileCamera,
+                    "Queen stole Visibomb camera or falsely finished its sequence.");
+                EndRac1QueenScriptedCamera();
+                Require(_rac1QueenScriptedCamera is null &&
+                    _player.Rac1RemoteControlActive &&
+                    _activeCamera == _player.Camera &&
+                    GetViewport().GetCamera3D() == _rac1MissileCamera,
+                    "Queen cancellation released Visibomb input or stole its viewport.");
+                EndRac1GuidedCamera();
+                Require(!_player.Rac1RemoteControlActive && _player.Camera.Current,
+                    "Visibomb camera did not release its own input lock.");
+                TickRac1QueenFlight();
+                Require(_rac1QueenScriptedCamera is { Current: true } &&
+                    _player.Rac1RemoteControlActive && _rac1QueenFlight?.NativeState == 2,
+                    "Queen camera could not reacquire after Visibomb handoff.");
                 EndRac1QueenScriptedCamera();
                 Require(_rac1QueenScriptedCamera is null &&
                     !_player.Rac1RemoteControlActive && _player.Camera.Current &&
