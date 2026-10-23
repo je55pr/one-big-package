@@ -24,6 +24,12 @@ public sealed class Rac1MenuPanelModelTests
         Assert.Single(model.Sequences[0].Frames);
         Assert.Equal(7, model.Sequences[14].Frames.Count);
         Assert.Equal(7, model.Sequences[215].Frames.Count);
+        // The native 0x472 panel movement lives in per-joint scale and
+        // translation channels. Rigid-only pose decoding erases all motion.
+        double[] opening = model.Sequences[14].Frames[0];
+        double[] endpoint = model.Sequences[14].Frames[^1];
+        Assert.True(opening.Zip(endpoint, (a, b) => Math.Abs(a - b)).Max() > 5d,
+            "Native menu panel animation was flattened into the bind pose.");
         Assert.True(model.Max.Y > model.Min.Y);
         Assert.True(model.Max.Z > model.Min.Z);
         Assert.All(model.RestPositions, position => Assert.Equal(0f, position.X));

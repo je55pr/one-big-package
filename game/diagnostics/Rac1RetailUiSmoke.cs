@@ -58,6 +58,12 @@ public partial class Rac1RetailUiSmoke : Node
                 Require(Rac1RetailUiAssets.NativeMenuPanels is
                 { JointCount: 5 } recovered && recovered.Sequences.Count == 216,
                     "Original class-0x472 geometry/animation data did not load");
+                Require(Rac1RetailUiAssets.NativeMenuPages is { } pages &&
+                    pages[Rac1MenuPanelPages.Page.OrdinaryPause].ForSlot(0) == 14,
+                    "Original 14-slot menu animation table did not load");
+                Require(Rac1RetailUiAssets.CreateNativePanelMotion() is { } motion &&
+                    motion.Pose(0).NativeSequence == 14 && motion.Pose(0).Frame == 6,
+                    "Original panel motion track was not available to the Godot host");
                 Require(panels.Length == 6, "Native panel compositing must cover all six pause rows");
                 Require(panels.All(panel => panel.Material is ShaderMaterial { Shader: not null }),
                     "Original retail panel shader did not load");

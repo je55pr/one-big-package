@@ -44,7 +44,7 @@ public sealed class Rac1MenuPanelModel
                 // Keep native frame boundaries and IDs intact. A view adapter
                 // may sample them once we recover each MenuPage.moby_anims slot.
                 double[][] poses = sequence.Frames
-                    .Select(f => Rac1MobyPose.PoseRigidHierarchy(mesh, native.Joints, f))
+                    .Select(f => Rac1MobyPose.PoseLocalHierarchy(mesh, native.Joints, f))
                     .ToArray();
                 return new Clip(s.Index, poses, sequence.ConstantTransitionRate);
             });

@@ -15,6 +15,7 @@ public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, R
     // Original level-local Moby class 0x472. Projected panel geometry and
     // animation frames stay source-owned, not invented Godot meshes.
     public Rac1MenuPanelModel? NativeMenuPanels { get; init; }
+    public Rac1MenuPanelPages? NativeMenuPages { get; init; }
 
     // Per-level resident PS2 effect textures referenced by the retail menu's
     // flashing panel (0x19/0x1A/0x1C); these are decoded only from the user disc.
@@ -42,6 +43,8 @@ public sealed record Rac1UiAssets(Rac1HudBank Hud, IReadOnlyDictionary<string, R
                 .ToDictionary(pair => pair.Key, pair => pair.Value),
             MenuSounds = Rac1MenuAudioBank.Read(disc, index),
             NativeMenuPanels = Rac1MenuPanelModel.Read(core),
+            NativeMenuPages = Rac1MenuPanelPages.Read(disc,
+                catalogue.Levels.Single(level => level.LevelId == 0)),
         };
     }
 

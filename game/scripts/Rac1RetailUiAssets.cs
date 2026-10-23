@@ -17,6 +17,16 @@ public static class Rac1RetailUiAssets
     private static Rac1UiAssets? _assets;
     public static bool IsLoaded => _assets is not null;
     public static Rac1MenuPanelModel? NativeMenuPanels => _assets?.NativeMenuPanels;
+    public static Rac1MenuPanelPages? NativeMenuPages => _assets?.NativeMenuPages;
+
+    /// <summary>
+    /// Recovered 14-slot native animation playback, independent of the
+    /// provisional Godot camera/screen rectangles. The eventual projected
+    /// panel adapter owns advancing this track, not the gameplay model.
+    /// </summary>
+    public static Rac1MenuPanelMotion? CreateNativePanelMotion() =>
+        _assets?.NativeMenuPanels is { } model && _assets.NativeMenuPages is { } pages
+            ? new Rac1MenuPanelMotion(model, pages) : null;
 
     public static void Load(IRandomAccessReader disc)
     {

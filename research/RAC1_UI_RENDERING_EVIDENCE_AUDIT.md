@@ -233,3 +233,53 @@ and the offscreen 2-pass framebuffer blit. The UI shader still uses host
 rectangular bounds as inputs until the camera and slot animation mapping
 are verified. Never treat this importer/projection function alone as
 proof that class-0x472 is already driving visible panel movement.
+
+
+## 23 October: Veldin overlay page assignments and source 3D motion
+
+The original Veldin level-overlay section chain contains six independently pinned
+MenuPage entrypoints, recovered from `FUN_L00_00276368` and read at runtime
+from user-supplied disc bytes (no hard-coded image/text payloads).
+
+| Overlay address | Initial menu state | Class-0x472 animation IDs, slots 0–6 |
+| --- | --- | --- |
+| `0x1B2588` | 2 | 14, 15, 16, 17, 18, 19, 20 |
+| `0x1B86C8` | 46 | 0, 1, 16, 17, 18, 5, 6 |
+| `0x1B3518` | 11 | 21, 22, 23, 24, 25, 5, 6 |
+| `0x1B6088` | 15 | 99, 100, 101, 102, 103, 5, 6 |
+| `0x1B6B38` | 37 | 134, 135, 136, 137, 157, 5, 6 |
+| `0x1B71F0` | 34 | 158, 159, 2, 161, 4, 5, 6 |
+
+All fourteen IDs for every page are checked in original-disc tests. The
+native `MenuPage` struct begins with exactly fourteen signed animation IDs,
+followed by its back-page pointer and state at +0x38 and +0x3c. Screen
+slots 7–13 normally carry static sequences 7–13.
+
+**Critical decoder correction:** `Rac1MobyPose.PoseRigidHierarchy` returned
+identical vertices for every frame because it only considers the local joint
+quaternions and bind hierarchy. These menu sequences also contain five
+packed translation entries per frame and optional fixed-point scale entries;
+`Rac1MobyPose.PoseLocalHierarchy` already correctly decodes these channels
+from the original Ratchet equipment work. Using the latter exposes genuinely
+changing panel geometry: e.g., Veldin ordinary page animation 14 spans a
+greater-than-6-unit difference from start to end and clearly translates
+its first strip laterally as it progresses. Original sequence frame timestamps
+are 0,16,..,96, each seven-frame clip has transition rate 0.5, consistent
+with the native 12-update screen-change timer.
+
+`Rac1MenuPanelPages.Read` recovers these tables from the bounded level-
+overlay section chain (not guessed assignments). `Rac1MenuPanelMotion` is
+the deterministic engine-neutral 14-slot track. Forward page changes set
+incoming animation IDs to their first frame and speed +1; backward
+changes play outgoing IDs from the last frame at speed -1; both complete
+after 12 engine updates. Motion poses yield real per-frame world-space bounds.
+These transitions follow `FUN_002192a8` and `FUN_0023a2c0`; runtime uses
+the source per-sequence transition rates.
+
+The Godot source loader now exposes both `NativeMenuPanels` and
+`NativeMenuPages`, and disc-backed UI smoke rejects a missing page table.
+The live visual root still uses host-calibrated screen rectangles because the
+retail camera view transform and front-end Moby-frame projection remain to be
+recovered. Source-valid animation trajectories are now available for use by
+a future projected geometry adapter; DO NOT stretch native coordinates into
+a guessed screen axis and call the result retail faithful.
