@@ -181,6 +181,29 @@ retail replay are tested. This is an **admission consumer**, not
 an implementation of the class-830 signal *producer* or class-623
 damage receiver; it must not be fed a Godot visibility heuristic.
 
+### Native class-623 receiver boundary
+
+A further Rilgar trace identifies the native hit/reaction helper at
+**0x00303390**. It calls **0x002846d8** to obtain a native hit
+result and **0x00284730** for the contact query, checks the returned
+status at **0x003034f4–0x003034fc** and declines repeat processing
+when the source actor is already native state **14**
+(**0x00303504–0x0030350c**). The non-terminal reaction path writes
+native state **11** at **0x0030364c–0x00303654**. The terminal path
+clears the **0x1000 targetability flag** from native Moby **+0x34**
+at **0x0030369c–0x003036a0** and writes native state **14**
+at **0x00303714–0x0030371c**. These instruction words are now
+asserted against the original Rilgar overlay.
+
+The target activation session accepts **only an externally observed
+native state-14/cleared-flag pair** as a terminal notice. It withdraws
+the target once, disallows subsequent class-830 or volume reactivation,
+and resets on world reload. This is a bounded receiver *outcome*
+adapter, not an implementation of the **0x2846d8/0x284730 hit filters,
+health/impact calculation, damage ownership or reaction physics**.
+No Godot code manufactures a terminal notice or dispatches class-623
+damage while those gates remain unrecovered.
+
 The Godot adapter now hosts the **nine volume-gated** candidates
 through `Rac1Class623ActivationSession` using source
 `Rac1ClipVolumes.Contains` on the player's native position (Godot

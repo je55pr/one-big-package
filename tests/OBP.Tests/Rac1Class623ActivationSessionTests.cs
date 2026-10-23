@@ -15,6 +15,49 @@ public sealed class Rac1Class623ActivationSessionTests
         return pvar;
     }
 
+    [SkippableFact]
+    public void RetailClass623ReceiverBranchesProveTerminalFlagWithdrawal()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5);
+        var overlay = Rac1ExecutableOverlay.Read(reader, level);
+        static uint Word(Rac1ExecutableOverlay o, int address) =>
+            BinaryPrimitives.ReadUInt32LittleEndian(o.Read(address, 4));
+
+        Assert.Equal(0x0c0a11b6u, Word(overlay, 0x003033cc));
+        Assert.Equal(0x0c0a11ccu, Word(overlay, 0x003034e8));
+        Assert.Equal(0x8fa30020u, Word(overlay, 0x003034f4));
+        Assert.Equal(0x106200a0u, Word(overlay, 0x003034fc));
+        Assert.Equal(0x92630020u, Word(overlay, 0x00303504));
+        Assert.Equal(0x1062009cu, Word(overlay, 0x0030350c));
+        Assert.Equal(0x2402000bu, Word(overlay, 0x0030364c));
+        Assert.Equal(0xa2620020u, Word(overlay, 0x00303654));
+        Assert.Equal(0x3042efffu, Word(overlay, 0x0030369c));
+        Assert.Equal(0xa6620034u, Word(overlay, 0x003036a0));
+        Assert.Equal(0x2402000eu, Word(overlay, 0x00303714));
+        Assert.Equal(0xa2620020u, Word(overlay, 0x0030371c));
+    }
+
+    [Fact]
+    public void ObservedNativeTerminalWithdrawsOnlyAnEligibleTarget()
+    {
+        byte[] eligible = new byte[Rac1AmoeboidClass623Admission.PVarSize];
+        BinaryPrimitives.WriteInt64LittleEndian(eligible.AsSpan(0x2b8), -1);
+        var targets = new Rac1Class623ActivationSession();
+        targets.Register(1009, 623, eligible);
+        Assert.Throws<ArgumentException>(() => targets.ObserveNativeTerminal(1009, 11, 0));
+        Assert.Throws<ArgumentException>(() => targets.ObserveNativeTerminal(1009, 14, 0x1000));
+        Assert.True(targets.ObserveNativeTerminal(1009, 14, 0));
+        Assert.False(targets.ObserveNativeTerminal(1009, 14, 0));
+        Assert.Equal(new Rac1Class623InitialTargetState(14, false), targets.Get(1009));
+        Assert.Empty(targets.Advance(_ => null, _ => true));
+        targets.Clear();
+        targets.Register(1009, 623, eligible);
+        Assert.Equal(new Rac1Class623InitialTargetState(1, true), targets.Get(1009));
+    }
+
     [Fact]
     public void ControllerSignalMustBeLiveOwnerQualifiedAndNonzero()
     {

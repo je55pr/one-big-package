@@ -46,6 +46,25 @@ public sealed class Rac1Class623ActivationSession
         _targets[targetIndex].Links;
 
     /// <summary>
+    /// Accept an independently observed *native receiver* transition to
+    /// terminal state 14 after its native +0x34 target flag was cleared.
+    /// Rilgar 0x303714/0x30369c–0x3036a0. This does not infer a hit,
+    /// subtract health or run the unported receiver.
+    /// </summary>
+    public bool ObserveNativeTerminal(int targetIndex, int nativeState,
+        ushort nativeFlags)
+    {
+        if (nativeState != 14 || (nativeFlags & Rac1AmoeboidClass623Admission.TargetableFlag) != 0)
+            throw new ArgumentException("Only source-observed terminal state 14 with 0x1000 cleared is admitted.");
+        var target = _targets[targetIndex];
+        if (target.State.NativeState == 14) return false;
+        if (target.State.NativeState != Rac1AmoeboidClass623Admission.EligibleState)
+            return false;
+        target.State = new(14, false);
+        return true;
+    }
+
+    /// <summary>
     /// Advance only waiting targets. The lookup is keyed to each target's
     /// exact linked native controller index and must return genuine runtime
     /// +0xbc state, not a visibility proxy. Null = unknown and never admits.
