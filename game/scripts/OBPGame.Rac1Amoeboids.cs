@@ -16,6 +16,7 @@ public partial class OBPGame
     private Rac1AmoeboidFamilySession? _rac1Amoeboids;
     private IReadOnlyList<Rac1ClipVolume> _rac1AmoeboidVolumes = [];
     private readonly Dictionary<int, List<RuntimeWorldScene.DynamicObjectNode>> _rac1AmoeboidTargetGroups = [];
+    private readonly Dictionary<int, Rac1Class623InitialTargetState> _rac1AmoeboidClass623InitialStates = [];
     private readonly Rac1AmoeboidLungeTargetLatch _rac1AmoeboidLungeTargets = new();
     private const float Rac1AmoeboidHostActiveRadius = 45f;
 
@@ -24,6 +25,7 @@ public partial class OBPGame
         _rac1Amoeboids = null;
         _rac1AmoeboidVolumes = [];
         _rac1AmoeboidTargetGroups.Clear();
+        _rac1AmoeboidClass623InitialStates.Clear();
         _rac1AmoeboidLungeTargets.Clear();
     }
 
@@ -34,12 +36,19 @@ public partial class OBPGame
         _rac1AmoeboidVolumes = Rac1ClipVolumes.Read(gameplay);
         var instances = Rac1Instances.Parse(gameplay).MobyInstances;
         _rac1AmoeboidTargetGroups.Clear();
+        _rac1AmoeboidClass623InitialStates.Clear();
         foreach (var candidate in (world.DynamicObjects ?? [])
             .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
         {
             var node = FindPresentedDynamic(result, candidate);
             if (node is null) continue; // No source-backed presented target.
-            int group = Rac1AmoeboidAuthored.ReadGroup(instances[candidate.InstanceIndex].RawRecord);
+            var placement = instances[candidate.InstanceIndex];
+            int group = Rac1AmoeboidAuthored.ReadGroup(placement.RawRecord);
+            // Native class-623 state 0 clears its 0x1000 targeting flag in
+            // the authored state-12/15 gates. Later activation is not hosted.
+            _rac1AmoeboidClass623InitialStates.Add(candidate.InstanceIndex,
+                Rac1AmoeboidClass623Admission.Read(placement.PVar ??
+                    throw new InvalidDataException("Class-623 target has no PVar.")));
             if (!_rac1AmoeboidTargetGroups.TryGetValue(group, out var members))
                 _rac1AmoeboidTargetGroups.Add(group, members = []);
             members.Add(node);
@@ -138,8 +147,9 @@ public partial class OBPGame
                     candidate.Source.InstanceIndex, candidate.Source.NativeClassId, candidateGroup,
                     ToEffectNative(candidate.Root.GlobalPosition),
                     candidate.Root.Visible &&
-                        candidate.State.Presentation.Presence == RuntimeEntityPresence.Active,
-                    0))); // Native state<0x7f not reconstructed for class-623 targets.
+                        candidate.State.Presentation.Presence == RuntimeEntityPresence.Active &&
+                        _rac1AmoeboidClass623InitialStates[candidate.Source.InstanceIndex].HasTargetableFlag,
+                    _rac1AmoeboidClass623InitialStates[candidate.Source.InstanceIndex].NativeState)));
             if (nearest is not null)
             {
                 target = nearest.Position;

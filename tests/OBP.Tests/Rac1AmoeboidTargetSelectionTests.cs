@@ -92,6 +92,81 @@ public sealed class Rac1AmoeboidTargetSelectionTests
         Assert.Equal(0x96630034u, Word(overlay, 0x00302080));
         Assert.Equal(0x34631000u, Word(overlay, 0x0030208c));
         Assert.Equal(0xa6630034u, Word(overlay, 0x00302090));
+        // The +0x2b4 gate moves to state 12 and clears the targetable bit.
+        Assert.Equal(0x8e2202b4u, Word(overlay, 0x0030215c));
+        Assert.Equal(0xa2630020u, Word(overlay, 0x0030217c));
+        Assert.Equal(0x3042efffu, Word(overlay, 0x00302180));
+        Assert.Equal(0xa6620034u, Word(overlay, 0x00302188));
+        // The eight-byte +0x2b8 sentinel chooses state 15 (ineligible)
+        // or state 1 (initially eligible) when +0x2b4 is zero.
+        Assert.Equal(0xde2302b8u, Word(overlay, 0x0030219c));
+        Assert.Equal(0x1062000eu, Word(overlay, 0x003021a4));
+        Assert.Equal(0x3042efffu, Word(overlay, 0x003021b4));
+        Assert.Equal(0xa2630020u, Word(overlay, 0x003021b8));
+        Assert.Equal(0xa6620034u, Word(overlay, 0x003021c0));
+        Assert.Equal(0xa2620020u, Word(overlay, 0x003021ec));
+        // Native state 15 is not permanently dormant: the updater tests
+        // its authored linked Moby at +0x2b8 (live flag at Moby+0xbc),
+        // then an alternate +0x2bc gate, and can reenter state 1 while
+        // restoring the 0x1000 native target flag.
+        Assert.Equal(0x0030282cu, Word(overlay, 0x002186ec));
+        Assert.Equal(0x8e2302b8u, Word(overlay, 0x0030282c));
+        Assert.Equal(0x906400bcu, Word(overlay, 0x00302844));
+        Assert.Equal(0x54800009u, Word(overlay, 0x00302848));
+        Assert.Equal(0x8e2502bcu, Word(overlay, 0x00302850));
+        Assert.Equal(0x34421000u, Word(overlay, 0x0030287c));
+        Assert.Equal(0xa2640020u, Word(overlay, 0x00302880));
+        Assert.Equal(0xa6620034u, Word(overlay, 0x00302888));
+    }
+
+    [Fact]
+    public void Class623AuthoredInitializationRespectsBothSourceGates()
+    {
+        byte[] pvar = new byte[Rac1AmoeboidClass623Admission.PVarSize];
+        BinaryPrimitives.WriteInt64LittleEndian(pvar.AsSpan(0x2b8), -1);
+        Assert.Equal(new Rac1Class623InitialTargetState(1, true),
+            Rac1AmoeboidClass623Admission.Read(pvar));
+
+        BinaryPrimitives.WriteInt64LittleEndian(pvar.AsSpan(0x2b8), 984);
+        Assert.Equal(new Rac1Class623InitialTargetState(15, false),
+            Rac1AmoeboidClass623Admission.Read(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x2b4), 1);
+        Assert.Equal(new Rac1Class623InitialTargetState(12, false),
+            Rac1AmoeboidClass623Admission.Read(pvar));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AmoeboidClass623Admission.Read(new byte[0x2b8]));
+    }
+
+    [SkippableFact]
+    public void RetailRilgarClass623InitialTargetEligibilityMatchesStateZeroBranches()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5);
+        var sources = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level)).MobyInstances
+            .Where(x => x.OClass == 623).ToArray();
+
+        Assert.Equal(56, sources.Length);
+        Assert.All(sources, source =>
+        {
+            Assert.NotNull(source.PVar);
+            Assert.Equal(Rac1AmoeboidClass623Admission.PVarSize, source.PVar!.Length);
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(source.PVar.AsSpan(0x2b4)));
+        });
+        var eligible = sources.Where(x =>
+            Rac1AmoeboidClass623Admission.Read(x.PVar!).HasTargetableFlag).ToArray();
+        Assert.Equal(12, eligible.Length);
+        Assert.Equal(44, sources.Count(x =>
+            Rac1AmoeboidClass623Admission.Read(x.PVar!).NativeState == 15));
+        Assert.Equal(new[] { 1002, 1003, 1004, 1005, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016 },
+            eligible.Select(x => x.Index).ToArray());
+        Assert.Equal(new[] { 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016 },
+            eligible.Where(x => Rac1AmoeboidAuthored.ReadGroup(x.RawRecord) == 101)
+                .Select(x => x.Index).ToArray());
+        Assert.Equal(15, Rac1AmoeboidClass623Admission.Read(
+            sources.Single(x => x.Index == 984).PVar!).NativeState);
+        Assert.DoesNotContain(eligible, x => Rac1AmoeboidAuthored.ReadGroup(x.RawRecord) is 2 or 74 or 77);
     }
 
     [SkippableFact]

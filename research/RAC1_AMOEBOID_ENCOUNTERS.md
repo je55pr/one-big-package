@@ -19,11 +19,20 @@ using the source trooper knockback helper. The original parent is removed.
 
 The original 0x78-byte authored instance record stores the Moby group
 index at **+0x48**, with `-1` meaning the native `0xff` none-group
-sentinel. Within a group, the current session scans dormant members in
-**ascending native instance index**. That is deterministic and preserves
-groups, but remains an explicitly documented assumption about the
-retail group's *list ordering* until the complete imported linked-list
-table has been independently decoded. The split helper **also copies
+sentinel. Original Novalis split helper **0x002ef350** reads native
+`Moby.group` at **+0x21**, indexes the group-head table at
+**0x001abcc0**, and walks unsigned **16-bit entries in stored order**.
+Each entry's lower 15 bits select the Moby index (multiplied by the
+native **0x100-byte Moby stride**), and the top bit marks the **last
+entry**. An engine-neutral decoder and original-executable instruction
+test preserve this exact packed representation, including nonsequential
+member order and a terminal entry that is itself a member.
+
+The retail **loader's group-list construction order is not yet proven**:
+the Godot session still scans dormant members in **ascending instance
+index** as a documented fallback, not a claim of recovered runtime
+iteration order. No authored reserve is reused or sourced from another
+group. The split helper **also copies
 PVar +0x224** (the parent's current detection radius) into the activated
 child, not just HP and world transform. A regression test specifically
 checks inherited radius when authored parent/child values differ.
@@ -87,12 +96,39 @@ Amoeboid split groups at authored record +0x48.
 
 The Rilgar class-623 retail updater is at **0x00301f48**. Its
 state dispatch reads the native state byte at Moby **+0x20** via the
-jump table at **0x002186b0**. The state-0 arm
-(**0x00302080–0x00302090**) ORs native Moby flags at **+0x34** with
-**0x1000**. A retail-ISO test now asserts the dispatch and flag-setting
-instruction words rather than inferring this flag from an authored
-placement. This establishes state-0 eligibility initialization, **not**
-the later flag-clearing, hit receiver, or complete class-623 lifecycle.
+jump table at **0x002186b0**. State 0 first sets Moby.flags
+**+0x34 |= 0x1000** at **0x00302080–0x00302090**. The PVar
+**+0x2b4** nonzero branch (0x0030215c–0x00302194) enters native state
+**12** and clears flag 0x1000; otherwise, if the full eight-byte
+PVar **+0x2b8** field differs from **-1**, the branch at
+0x0030219c–0x003021c0 enters state **15** and clears 0x1000.
+Only the remaining -1 branch enters state **1**, retaining 0x1000.
+A retail-ISO test asserts each branch's instruction words.
+
+All 56 Rilgar class-623 PVars are **0x2e0 bytes**, with +0x2b4
+equal to zero. **44** have a non--1 eight-byte gate and begin in
+state 15, **12** begin in state 1 and retain the targetable flag.
+Of those 12, **eight are original instances 1009–1016 in group 101**;
+the other four are ungrouped instances 1002–1005. The initially
+inactive target groups **2, 74 and 77** contribute no valid state-1
+candidates. Source class-623 i984 (group 101's neighbor in the earlier
+staged encounter) is itself state 15, so its earlier proximity-only
+staged selection was not evidence of true retail *initial* admission.
+
+These are **startup** state/flag semantics. The native state-15
+arm starts at **0x0030282c** (jump-table entry +0x3c at
+0x002186ec). It reads the linked Moby index at PVar **+0x2b8**
+and checks that Moby's runtime **+0xbc** byte; a nonzero value
+branches to the state-1 reactivation at **0x0030287c–0x00302888**,
+which restores flags **0x1000**. An alternate gate reads
+PVar **+0x2bc** and invokes native **0x00289c68**; its
+full predicate still needs recovery. The instruction words for
+this first reactivation route are covered by the retail test.
+
+Godot has no source-backed runtime ownership of the linked Moby's
++0xbc byte or the alternate predicate yet, so this native reactivation
+is **documented but not hosted**. The class-623 damage receiver and
+full subsequent state/flag lifecycle also remain unimplemented.
 
 On the retail Rilgar disc there are **56 class-623** placed Mobys.
 Exactly **52 Amoeboid** instances reference candidate groups
@@ -102,12 +138,15 @@ The engine-neutral `Rac1AmoeboidTargetSelection` validates this
 retail census and applies nearest-valid-target admission with
 group/range/liveness and stable list-order tie resolution.
 
-Godot only treats **rendered, active** class-623 objects as eligible
-because their native state machine and 0x1000 source flag tracking
-are not yet imported. An engine-neutral source-owned lunge-envelope
-factory now retains the **class-623 victim ID** separately from the
-Amoeboid attacker/owner, with the recovered 0x10001/1-point contact
-descriptor. A conservative **Godot-only per-lunge target latch** rejects
+Godot now requires both **rendered, active** class-623 presence
+and its **source-backed initial state-1 / 0x1000 flag** before
+admitting an Amoeboid target. It keeps the originally state-15
+population in the candidate registry but excludes them until genuine
+later activation is recovered. It does not pretend those objects
+remain in state 15 forever in retail. An engine-neutral source-owned
+lunge-envelope factory retains the **class-623 victim ID** separately
+from the Amoeboid attacker/owner, with the recovered 0x10001/1-point
+contact descriptor. A conservative **Godot-only per-lunge target latch** rejects
 contact if the selected victim switches mid-animation. This prevents an
 attack initially aimed at a class-623 Moby from damaging Ratchet, and
 the inverse switch cannot create a hit on Ratchet either. The latch
@@ -164,10 +203,12 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
   direct steering after a waypoint is selected and a 45-unit active
   simulation radius. Thus **complete native movement remains
   provisional**, even though routing decisions use the original paths.
-- Group membership comes from the original source record, but source
-  runtime group-list ordering remains inferred by native instance
-  index. A retail witness should verify allocation selection under
-  exhausted/nonsequential lists.
+- Group membership comes from the original source record. The native
+  packed-halfword group-list **format and traversal** have been recovered;
+  the loader's **actual runtime ordering** still needs proof. The
+  ascending-index fallback has deterministic tests for
+  interleaved/nonsequential and exhausted groups. A retail witness
+  must establish the imported runtime ordering before replacing it.
 - The `trooper_start_knockback(...,4,8,0)` initializer at source
   `FUN_L00_0025c558` takes the source horizontal velocity from
   **PVar +0x78**, vertical velocity from **+0x7c**, and
@@ -183,8 +224,10 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
   exact native physics.
 - Rilgar's class-623 candidate selection uses the original class, group,
   120-unit search limit and current-target proximity comparisons.
-  The class-623 native state/flags and actual damage receiver remain
-  unported, so these authored targets do not yet take damage.
+  The **initial state/flag admission** has now been recovered from the
+  retail executable and all 56 PVars. Native state-15 reactivation,
+  subsequent flag changes and the actual class-623 damage receiver
+  remain unported, so these targets do not yet take damage.
 - The host tests a valid player contact at source lunge frame >=15.5.
   Exact `FUN_00214cc8` subframe admission, target filtering,
   audio voice lifetime, and particle/debris tuning remain bounded
