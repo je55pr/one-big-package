@@ -20,6 +20,8 @@ public sealed class Rac1AmoeboidFamilySession
     public const int KnockbackRecoveryState = 9;
     public const float NativeAttackRange = 2f;
     private readonly Rac1MobyRuntimeSession _runtime;
+    private readonly Rac1AmoeboidPathRouter? _pathRouter;
+    private readonly Func<int, Vector3, Vector3, bool>? _segmentIntersects;
     private readonly Dictionary<int, Entry> _actors = [];
     private readonly Dictionary<int, List<Entry>> _groups = [];
 
@@ -38,9 +40,15 @@ public sealed class Rac1AmoeboidFamilySession
         public int Sequence { get; set; } = 0;
     }
 
-    public Rac1AmoeboidFamilySession(Rac1MobyRuntimeSession runtime)
+    public Rac1AmoeboidFamilySession(Rac1MobyRuntimeSession runtime,
+        Rac1AmoeboidPathRouter? pathRouter = null,
+        Func<int, Vector3, Vector3, bool>? segmentIntersects = null)
     {
         _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+        if ((pathRouter is null) != (segmentIntersects is null))
+            throw new ArgumentException("Native path routing needs both the source path table and collision adapter.");
+        _pathRouter = pathRouter;
+        _segmentIntersects = segmentIntersects;
         foreach (int cls in new[] { Rac1AmoeboidAuthored.Large, Rac1AmoeboidAuthored.Medium, Rac1AmoeboidAuthored.Small })
             _runtime.RegisterDamageConsumer(new FamilyDamageConsumer(this, cls));
     }
@@ -86,7 +94,11 @@ public sealed class Rac1AmoeboidFamilySession
         {
             if (entry.Native.State.NativeState != Rac1AmoeboidAuthored.WaitingForVolumeState ||
                 !containsVolume(entry.Facts.VolumeIndex, heroPosition)) continue;
-            entry.Position = new(entry.Position.X, entry.Position.Y, entry.Position.Z + 20f);
+            // Native state 0 hides gated actors at authored Z - 20, then
+            // state 13 restores +20. The Godot host hides the original
+            // Moby visually without lowering it: restore its authored home
+            // instead of lifting the rendered actor above the level.
+            entry.Position = entry.Home;
             Activate(entry, Rac1AmoeboidAuthored.ActiveState, 0);
             activated.Add(Frame(entry));
         }
@@ -109,8 +121,17 @@ public sealed class Rac1AmoeboidFamilySession
         switch (state)
         {
             case 1:
-                // Native follow_path admission. Direct nav is a host fallback.
-                Transition(entry, 2, 1);
+                // Native state 1 checks the source path first and enters 4
+                // on a successful route; state 2 is the failed-path fallback.
+                if (_pathRouter is not null && _segmentIntersects is not null &&
+                    _pathRouter.TryFollowPath(entry.Facts.PathIndex, entry.Facts.NextPathIndex,
+                        Size(entry.Native.NativeClassId) * 0.8f, position, target,
+                        _segmentIntersects, out _))
+                    Transition(entry, FollowPathState, 1);
+                else
+                    Transition(entry, 2, 1);
+                // Native state 1 probes the route and changes animation/state,
+                // but does not submit a movement vector until the next tick.
                 break;
             case 2:
                 if (planar < AttackAdmission(entry)) Transition(entry, 15, 1);
@@ -125,7 +146,8 @@ public sealed class Rac1AmoeboidFamilySession
             case FollowPathState:
                 if (planar < NativeAttackRange) Transition(entry, LungeState, 2);
                 else if (planar > AttackAdmission(entry) + 20) Transition(entry, ReturnState, 1);
-                else next = MoveTowards(entry, position, target);
+                else if (!TryPathMove(entry, position, target, out next))
+                    Transition(entry, ReturnState, 1);
                 break;
             case LungeState:
                 if (targetInContact && !entry.ContactEmitted && planar < NativeAttackRange &&
@@ -147,7 +169,8 @@ public sealed class Rac1AmoeboidFamilySession
             case ReturnState:
                 if (Vector2.Distance(new(position.X, position.Y), new(entry.Home.X, entry.Home.Y)) < 1)
                     Transition(entry, 1, 0);
-                else next = MoveTowards(entry, position, entry.Home);
+                else if (!TryPathMove(entry, position, entry.Home, out next))
+                    next = Vector3.Zero; // Preserve source blocked route, don't walk through obstacles.
                 break;
             case KnockbackState:
                 if (grounded) Transition(entry, KnockbackRecoveryState, 5);
@@ -189,6 +212,12 @@ public sealed class Rac1AmoeboidFamilySession
                 child.Yaw = parent.Yaw;
                 child.Health = parent.Health;
                 BinaryPrimitives.WriteSingleLittleEndian(child.Native.MutablePVar.AsSpan(0x20), child.Health);
+                // Native 0x2ef350 copies the parent's actual attack range
+                // (+0x224) into each reused child, rather than leaving the
+                // reserve's originally authored detection radius in place.
+                BinaryPrimitives.WriteSingleLittleEndian(
+                    child.Native.MutablePVar.AsSpan(0x224),
+                    BinaryPrimitives.ReadSingleLittleEndian(parent.Native.PVar.Span[0x224..]));
                 child.UsedReserve = true;
                 Activate(child, KnockbackState, 0);
                 children.Add(Frame(child));
@@ -202,6 +231,21 @@ public sealed class Rac1AmoeboidFamilySession
     {
         float authored = BinaryPrimitives.ReadSingleLittleEndian(e.Native.PVar.Span[0x224..]);
         return authored > 0 && float.IsFinite(authored) ? authored : 15f;
+    }
+
+    private bool TryPathMove(Entry entry, Vector3 position, Vector3 target, out Vector3 movement)
+    {
+        Vector3 waypoint = target;
+        if (_pathRouter is not null && _segmentIntersects is not null &&
+            !_pathRouter.TryFollowPath(entry.Facts.PathIndex, entry.Facts.NextPathIndex,
+                Size(entry.Native.NativeClassId) * 0.8f, position, target,
+                _segmentIntersects, out waypoint))
+        {
+            movement = Vector3.Zero;
+            return false;
+        }
+        movement = MoveTowards(entry, position, waypoint);
+        return true;
     }
 
     private static Vector3 MoveTowards(Entry e, Vector3 position, Vector3 target)

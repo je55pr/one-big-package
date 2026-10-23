@@ -29,7 +29,12 @@ public partial class OBPGame
         if (world.LevelId is not (1 or 5 or 11)) return;
         _rac1AmoeboidVolumes = Rac1ClipVolumes.Read(gameplay);
         var instances = Rac1Instances.Parse(gameplay).MobyInstances;
-        _rac1Amoeboids = new(_rac1MobyRuntime);
+        _rac1Amoeboids = new(_rac1MobyRuntime,
+            Rac1AmoeboidPathRouter.Read(gameplay),
+            // Exact source 0x276fe8 waypoint/mask search, but Godot's
+            // world ray query substitutes for native 0x261968 segment collision.
+            (_, from, to) => !BombHasLineOfSight(
+                FromEffectNative(from), FromEffectNative(to)));
         foreach (var source in (world.DynamicObjects ?? [])
             .Where(moby => Rac1AmoeboidAuthored.IsFamily(moby.NativeClassId)))
         {

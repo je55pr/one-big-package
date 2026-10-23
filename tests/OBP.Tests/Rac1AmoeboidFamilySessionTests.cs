@@ -73,9 +73,70 @@ public sealed class Rac1AmoeboidFamilySessionTests
         Assert.Empty(family.ActivateGates(Vector3.Zero, (volume, _) => false));
         var admitted = Assert.Single(family.ActivateGates(Vector3.Zero, (volume, _) => volume == 44));
         Assert.Equal(1, admitted.NativeState);
-        Assert.Equal(20, admitted.Position.Z);
+        Assert.Equal(0, admitted.Position.Z);
         Assert.True(runtime.CanDispatchDamage(Wrench(20, 866)));
         Assert.Empty(family.ActivateGates(Vector3.Zero, (volume, _) => true));
+    }
+
+    [Fact]
+    public void SplittingCopiesParentsOriginalDetectionRadiusIntoDormantChildPvar()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var family = new Rac1AmoeboidFamilySession(runtime);
+        var parentBytes = new byte[Rac1AmoeboidAuthored.PVarSize];
+        BinaryPrimitives.WriteInt32LittleEndian(parentBytes.AsSpan(0x230), 1);
+        BinaryPrimitives.WriteInt32LittleEndian(parentBytes.AsSpan(0x25c), -1);
+        BinaryPrimitives.WriteSingleLittleEndian(parentBytes.AsSpan(0x224), 40f);
+        var childBytes = new byte[Rac1AmoeboidAuthored.PVarSize];
+        BinaryPrimitives.WriteInt32LittleEndian(childBytes.AsSpan(0x25c), -1);
+        BinaryPrimitives.WriteSingleLittleEndian(childBytes.AsSpan(0x224), 15f);
+        var parent = Source(3, 572,
+            Rac1AmoeboidAuthored.Read(572, parentBytes), 7, parentBytes);
+        var child = Source(8, 865,
+            Rac1AmoeboidAuthored.Read(865, childBytes), 7, childBytes);
+        family.Register(parent, RuntimeEntityState.FromAuthored(parent),
+            Rac1AmoeboidAuthored.Read(572, parentBytes), 7, Vector3.Zero, 0);
+        family.Register(child, RuntimeEntityState.FromAuthored(child),
+            Rac1AmoeboidAuthored.Read(865, childBytes), 7, Vector3.Zero, 0);
+        Assert.Equal(15f, BinaryPrimitives.ReadSingleLittleEndian(
+            runtime.Require(child).PVar.Span[0x224..]));
+        Assert.Single(runtime.DispatchDamage<Rac1AmoeboidDamageResult>(Wrench(3, 572)).Children);
+        Assert.Equal(40f, BinaryPrimitives.ReadSingleLittleEndian(
+            runtime.Require(child).PVar.Span[0x224..]));
+        Assert.Equal(2f, BinaryPrimitives.ReadSingleLittleEndian(
+            runtime.Require(child).PVar.Span[0x20..]));
+    }
+
+    [Fact]
+    public void NativeSourcePathAdmissionRoutesAroundObstructionsWithoutInventingWaypoints()
+    {
+        var router = new Rac1AmoeboidPathRouter(
+            [new([new(2, 0, 0), new(8, 0, 0)], [2, 1])]);
+        var clear = new Rac1AmoeboidFamilySession(new Rac1MobyRuntimeSession(), router,
+            (_, _, _) => false);
+        Register(clear, 10, 572, 6, direct: true);
+        var target = new Vector3(10, 0, 0);
+        var admitted = clear.Step(10, Vector3.Zero, target);
+        Assert.Equal(Rac1AmoeboidFamilySession.FollowPathState, admitted.NativeState);
+        Assert.Equal(Vector3.Zero, admitted.Displacement);
+        Assert.True(clear.Step(10, Vector3.Zero, target).Displacement.X > 0);
+
+        bool Intersects(int _, Vector3 from, Vector3 to) =>
+            (from.X < 3 && to.X > 6) || (from.X > 9 && to.X < 3);
+        var routed = new Rac1AmoeboidFamilySession(new Rac1MobyRuntimeSession(), router,
+            Intersects);
+        Register(routed, 10, 572, 6, direct: true);
+        var first = routed.Step(10, Vector3.Zero, target);
+        Assert.Equal(Rac1AmoeboidFamilySession.FollowPathState, first.NativeState);
+        Assert.Equal(Vector3.Zero, first.Displacement);
+        Assert.True(routed.Step(10, Vector3.Zero, target).Displacement.X > 0);
+
+        var blocked = new Rac1AmoeboidFamilySession(new Rac1MobyRuntimeSession(), router,
+            (_, _, _) => true);
+        Register(blocked, 10, 572, 6, direct: true);
+        var stopped = blocked.Step(10, Vector3.Zero, target);
+        Assert.Equal(2, stopped.NativeState);
+        Assert.Equal(Vector3.Zero, stopped.Displacement);
     }
 
     [Fact]

@@ -23,15 +23,46 @@ sentinel. Within a group, the current session scans dormant members in
 **ascending native instance index**. That is deterministic and preserves
 groups, but remains an explicitly documented assumption about the
 retail group's *list ordering* until the complete imported linked-list
-table has been independently decoded.
+table has been independently decoded. The split helper **also copies
+PVar +0x224** (the parent's current detection radius) into the activated
+child, not just HP and world transform. A regression test specifically
+checks inherited radius when authored parent/child values differ.
+
+### Recovered native route selection
+
+The source `FUN_L01_00276fe8` follows a visibility-first rule: it
+tries a direct segment through the authored obstacle-region ID
+(PVar +0x240), probing two sideways clearance rays for nonzero radius.
+If obstructed, it searches candidate vertices from the original
+path (PVar +0x244), builds visible-source and visible-destination
+masks, and expands the destination mask across the path's original
+per-vertex connection words, up to 32 iterations
+(`FUN_L01_00276c40`). It chooses the connected vertex with minimum
+distance to the destination, **or returns failure** if none is
+reachable. The engine-neutral `Rac1AmoeboidPathRouter` now implements
+these mask/waypoint choices, without inventing a route when blocked.
+Godot supplies the segment-obstruction predicate by its world ray
+query; the original PS2 `FUN_L00_00261968` region collision service
+has not been ported bit-for-bit.
+
+The original three planets' authored Amoeboid path indices reference
+only 2–4-vertex source paths. The retail-backed test verifies all
+**227** path indices and unobstructed selections; unit cases check
+clearance probes, neighbor-mask expansion, blocked routes and first
+reachable waypoint. `follow_path` now owns the path-following and
+return navigation decisions when a route is available, while the
+separate direct-chase state retains its native direct steering.
 
 Initialization sets native health to **3** except the +0x258 force-active
 branch, which sets **1**; the actor enters native state 1 if +0x230
 is nonzero or +0x258 forces activation. Otherwise it enters 12
 (dormant reserve, PVar+0x25c=-1) or 13 (awaiting original 3D
 clip volume). State-13 entry raises the hidden actor from the source
-Z-20 offscreen position on first admission. No hidden actor is solid,
-animated or ticked in Godot while it remains waiting.
+Z-20 offscreen position on first admission. Godot instead hides the
+actor at its **unchanged authored Z**, then reveals it on admission,
+so it must **not** apply an extra +20 height offset (fixed and tested
+after the initial PR). No hidden actor is solid, animated or ticked
+in Godot while it remains waiting.
 
 State map in the native updater: **1** acquire path, **2** approach the
 stored home, **3** await entry animation, **4** follow path to target,
@@ -84,12 +115,14 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
 
 ## Deliberate host fallbacks and remaining work
 
-- Native `follow_path`, source search-path targets `+0x240/0x244`,
-  path reachability, blocked state 16 and `+0x260` linked gate logic
-  are not fully decoded. Godot currently supplies direct planar
-  steering and a bounded 45-unit gameplay activation radius.
-  Native states are preserved where supported, but **pathing is not
-  yet retail-exact**.
+- Native `follow_path` waypoint visibility and connectivity are now
+  decoded and used with the authored `+0x240/+0x244` obstacle region
+  and path. The **original PS2 collision callback**, `+0x260`
+  linked-target gate, `+0x248` candidate-list admission and blocked
+  state 16 still lack exact host reproduction. Godot supplies LOS rays,
+  direct steering after a waypoint is selected and a 45-unit active
+  simulation radius. Thus **complete native movement remains
+  provisional**, even though routing decisions use the original paths.
 - Group membership comes from the original source record, but source
   runtime group-list ordering remains inferred by native instance
   index. A retail witness should verify allocation selection under
