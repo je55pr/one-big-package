@@ -265,6 +265,73 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void WalkerContactOnlyMarksActualTouchAndForwardTravelBelowNativeTwentyPercent()
+    {
+        Vector3 requested = new(1, 0, 0);
+        var untouched = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            requested, Vector3.Zero, 0, 10, null);
+        Assert.Equal(new(0, false), untouched);
+        // walker_move bit2 is floor contact, NOT a walker_record return bit.
+        var floorOnly = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            requested, new(.6f, 0, 0), 2, 10, null);
+        Assert.Equal(new(0, false), floorOnly);
+        var mild = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            requested, new(.201f, .5f, 0), 3, 10, 9.9f);
+        Assert.Equal(new(1, false), mild);
+        var exact = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            requested, new(.2f, .5f, 0), 1, 10, 10);
+        Assert.Equal(new(1, false), exact);
+        var blocked = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            requested, new(.199f, .5f, 0), 1, 10, 10);
+        Assert.Equal(new(3, false), blocked);
+        var backwards = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            requested, new(-.25f, 0, 0), 1, 10, 10);
+        Assert.Equal(new(3, false), backwards);
+        var orthogonal = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            new(0, 4, 0), new(2, 0, 0), 1, 10, 10);
+        Assert.Equal(new(3, false), orthogonal);
+    }
+
+    [Fact]
+    public void WalkerContactRollbackOnlyAfterActualTouchAndInvalidFollowUpFloor()
+    {
+        Vector3 request = new(1, 0, 0);
+        Assert.Equal(new(0x23, true), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            request, new(.6f, 0, 0), 1, 10, null));
+        Assert.Equal(new(0x23, true), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            request, new(.6f, 0, 0), 1, 10, 9.499f));
+        Assert.Equal(new(0x23, true), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            request, new(.6f, 0, 0), 1, 10, 10.501f));
+        Assert.Equal(new(1, false), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            request, new(.6f, 0, 0), 1, 10, 9.5f));
+        Assert.Equal(new(1, false), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            request, new(.6f, 0, 0), 1, 10, 10.5f));
+        Assert.Equal(new(0, false), Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+            request, Vector3.Zero, 0, 10, null));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+                request, new(float.NaN, 0, 0), 1, 10, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+                request, Vector3.Zero, 4, 10, 10));
+    }
+
+    [Fact]
+    public void NativeWalkerMoveFloorLiftAppliesSourceThirtyPercentWithoutForcedDrop()
+    {
+        Assert.Equal(.075f, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            10, 9.75f, .5f), 5);
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            10, 9.25f, .5f));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.WalkerGroundLift(
+            10, 9.5f, .5f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerGroundLift(10, 9.5f, -.1f));
+        Assert.Equal(6, Rac1AridiaConstructorbotNative.WalkerSpherePushoutAttempts);
+        Assert.Equal(.05f, Rac1AridiaConstructorbotNative.WalkerMoveGroundProbeExtension);
+    }
+
+    [Fact]
     public void WalkerSourceSpeedAcceleratesDragsAndClampsWithoutOverwritingPhysics()
     {
         float speed = 0;

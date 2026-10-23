@@ -316,6 +316,32 @@ public partial class OBPGame
         return false;
     }
 
+    /// <summary>
+    /// Bounded Godot collision adapter for source walker_move_fx. Unlike
+    /// generic enemy movement this returns whether an ACTUAL collision
+    /// occurred; the native walker uses that fact to distinguish contact
+    /// bit1 from poor forward progress bit2. Godot's three slide attempts
+    /// replace native swept segment + six sphere pushouts, pending a
+    /// complete PS2-to-host collision equivalence mapping.
+    /// </summary>
+    private bool MoveRac1AridiaWalkerContact(Rac1HostedEnemy enemy, Vector3 remaining)
+    {
+        bool touched = false;
+        for (int slide = 0; slide < 3 && remaining.LengthSquared() > 1e-9f; slide++)
+        {
+            var collision = enemy.Body.MoveAndCollide(remaining);
+            if (collision is null) break;
+            touched = true;
+            enemy.Reaction?.AcceptHostContact(ToEffectNative(collision.GetNormal()));
+            remaining = collision.GetRemainder().Slide(collision.GetNormal());
+        }
+        bool rising = enemy.Reaction?.Velocity.Z > 0;
+        enemy.Grounded = !rising && TryGroundRac1Enemy(enemy,
+            upwardReach: 0, downwardReach: .3f);
+        enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
+        return touched;
+    }
+
     private void TickRac1AridiaEnemy(Rac1HostedEnemy enemy)
     {
         if (_player is null) return;
@@ -362,6 +388,7 @@ public partial class OBPGame
         bool sourceStateThreeVerticalReached = false;
         float? sourceStateThreeTargetHeight = null;
         bool sourceWalkerMotion = false;
+        bool sourceWalkerTouched = false;
         Vector3 sourceWalkerGoal = default;
         float sourceWalkerYawError = 0;
         Vector3 sourceWalkerRequestedWorldStep = default;
@@ -540,6 +567,9 @@ public partial class OBPGame
                 sourceStateThreeTargetHeight is { } terrain &&
                 MathF.Abs(destination.Y - terrain) < .035f;
         }
+        else if (sourceWalkerMotion && frame.Motion.LengthSquared() > 0)
+            sourceWalkerTouched = MoveRac1AridiaWalkerContact(
+                enemy, FromEffectNative(frame.Motion));
         else if (frame.Motion.LengthSquared() > 0)
             MoveRac1EnemyContact(enemy, FromEffectNative(frame.Motion));
         else
@@ -562,15 +592,33 @@ public partial class OBPGame
         }
         if (sourceWalkerMotion)
         {
-            // Native walker_probe's valid support/missing floor decision
-            // now comes from a Godot vertical scene ray. Contact/slide
-            // results of walker_move_fx remain a bounded host estimate.
-            float requested = sourceWalkerRequestedWorldStep.Length();
-            float travelled = (enemy.Body.GlobalPosition - position).Length();
+            // walker_record_step checks the native walker_move_fx
+            // collision bit1, THEN projected travel along the original
+            // velocity with a source 0.2 threshold. No invented 50%
+            // movement cutoff or phantom collision from mere grounding.
             int collisionFlags = sourceWalkerProbeFlags;
-            if (sourceWalkerProbeFlags == 0 && requested > .001f &&
-                travelled < requested * .5f)
-                collisionFlags |= 0x22;
+            if (sourceWalkerProbeFlags == 0)
+            {
+                float? floor = sourceWalkerTouched
+                    ? ProbeRac1ConstructorbotStateThreeFloor(
+                        enemy, enemy.Body.GlobalPosition)
+                    : null;
+                var contact = Rac1AridiaConstructorbotNative.WalkerPostMoveContact(
+                    ToEffectNative(sourceWalkerRequestedWorldStep),
+                    ToEffectNative(enemy.Body.GlobalPosition - position),
+                    (sourceWalkerTouched ? Rac1AridiaConstructorbotNative.WalkerTouchedFlag : 0) |
+                    (enemy.Grounded ? Rac1AridiaConstructorbotNative.WalkerMoveFloorContactFlag : 0),
+                    ToEffectNative(position).Z,
+                    floor.HasValue ? ToEffectNative(new Vector3(0, floor.Value, 0)).Z : null);
+                collisionFlags |= contact.Flags;
+                if (contact.RestorePreviousPosition)
+                {
+                    // Native source rollback from home when the post-contact
+                    // floor elevation exceeds its +8/+0xc reach.
+                    enemy.Body.GlobalPosition = position;
+                    enemy.Node.Root.GlobalPosition = position;
+                }
+            }
             int flags = Rac1AridiaConstructorbotNative.WalkerFlags(
                 enemy.Body.GlobalPosition.DistanceTo(sourceWalkerGoal),
                 sourceWalkerYawError, collisionFlags);

@@ -170,6 +170,80 @@ public static class Rac1AridiaConstructorbotNative
             planarSpeed > WalkerLookaheadSpeedThreshold;
     }
 
+    // walker_move_v return bit2 indicates floor contact. The same bit
+    // has a different meaning (blocked) in walker_record_step's flags.
+    public const int WalkerMoveFloorContactFlag = 0x2;
+    public const float WalkerCollisionMinimumForwardFraction = .2f;
+    public const float WalkerMoveFloorLiftFraction = .3f;
+    public const float WalkerMoveGroundProbeExtension = .05f;
+    public const int WalkerSpherePushoutAttempts = 6;
+
+    /// <summary>
+    /// Source walker_move_v at L2:0x258830. A source collision (return
+    /// bit1) is distinct from its floor-contact bit2. Only bit1 makes
+    /// walker_record_step set result bit1; bit2 resets its vertical
+    /// velocity, but is NOT itself a returned state-transition flag.
+    /// The observed travel projected onto the requested planar direction
+    /// must be strictly below 0.2 of that requested length for bit2.
+    /// A floor_probe_v miss after touching is rejected by the host because
+    /// it cannot support the original distance test without a hit height.
+    /// A floor delta outside the source record's up/down limits adds 0x22
+    /// and requires restoring the old position.
+    /// </summary>
+    public readonly record struct WalkerContactFrame(int Flags, bool RestorePreviousPosition);
+
+    public static WalkerContactFrame WalkerPostMoveContact(
+        System.Numerics.Vector3 requestedNative,
+        System.Numerics.Vector3 actualNative, int hostMoveFlags,
+        float previousZ, float? floorZ)
+    {
+        if (!float.IsFinite(requestedNative.X) || !float.IsFinite(requestedNative.Y) ||
+            !float.IsFinite(requestedNative.Z) || !float.IsFinite(actualNative.X) ||
+            !float.IsFinite(actualNative.Y) || !float.IsFinite(actualNative.Z) ||
+            !float.IsFinite(previousZ) ||
+            floorZ is { } observed && !float.IsFinite(observed) ||
+            hostMoveFlags < 0 || (hostMoveFlags & ~3) != 0)
+            throw new ArgumentOutOfRangeException(nameof(hostMoveFlags));
+
+        if ((hostMoveFlags & WalkerTouchedFlag) == 0)
+            return new(0, false);
+
+        int flags = WalkerTouchedFlag;
+        float planarLength = MathF.Sqrt(
+            requestedNative.X * requestedNative.X +
+            requestedNative.Y * requestedNative.Y);
+        if (planarLength > 0)
+        {
+            float along = (actualNative.X * requestedNative.X +
+                actualNative.Y * requestedNative.Y) / planarLength;
+            if (along < planarLength * WalkerCollisionMinimumForwardFraction)
+                flags |= WalkerBlockedFlag;
+        }
+
+        if (!floorZ.HasValue ||
+            WalkerFloorHeightRejectsStep(previousZ, floorZ.Value,
+                WalkerProbeDown, WalkerProbeUp))
+            return new(flags | 0x22, true);
+
+        return new(flags, false);
+    }
+
+    /// <summary>
+    /// Source walker_move_v's support correction: after a successful
+    /// segment test to below (posZ-drop-0.05), if recorded floor is higher
+    /// than posZ-drop then lift by 30% of the difference. It never lowers
+    /// the Moby during this support correction.
+    /// </summary>
+    public static float WalkerGroundLift(float positionZ, float hitFloorZ, float drop)
+    {
+        if (!float.IsFinite(positionZ) || !float.IsFinite(hitFloorZ) ||
+            !float.IsFinite(drop) || drop < 0)
+            throw new ArgumentOutOfRangeException(nameof(drop));
+        float bottom = positionZ - drop;
+        return hitFloorZ > bottom
+            ? (hitFloorZ - bottom) * WalkerMoveFloorLiftFraction : 0f;
+    }
+
     public const float WalkerYawTolerance = 1.57f;
     public const float WalkerAcceleration = .3f;
     public const float WalkerMaxSpeed = 2.7f;
