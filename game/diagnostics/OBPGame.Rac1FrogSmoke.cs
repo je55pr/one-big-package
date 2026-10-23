@@ -240,20 +240,21 @@ public partial class OBPGame
                     "Queen activated before authentic linked actor and camera callbacks.");
                 var linked = _rac1QueenLinkedGate
                     ?? throw new InvalidOperationException("Original class1021 linked gate parents missing.");
-                Require(linked.OriginalParentCount == 2 && linked.RuntimeChildCount == 0 &&
+                TickRac1QueenLinkedChildren();
+                Require(linked.OriginalParentCount == 2 && linked.RuntimeChildCount == 14 &&
+                    _rac1QueenLinkedChildVisuals.Count == 14 &&
                     linked.OriginalParentIds.SequenceEqual(new[] { 573, 578 }),
-                    "Source Queen linked class1021 parents do not match retail.");
+                    "Source Queen linked class1021 retail-mesh children do not match source population.");
                 foreach (int parentId in linked.OriginalParentIds)
                 {
                     NVector3 nativeParent = linked.Get(parentId).NativePosition;
-                    Require(linked.Step(parentId, nativeParent, false, 0).NativeState == 2 &&
+                    Require(linked.Get(parentId).NativeState == 2 &&
                         linked.Get(parentId).Children.Count == 7 &&
-                        linked.Get(parentId).Children.All(child => child.NativeState == 1),
-                        "Native linked class1021 parent did not create exactly seven runtime children.");
-                    Require(linked.Step(parentId, nativeParent, true, 0).NativeState == 2,
-                        "Linked class1021 parent activated before its seven children were ready.");
-                    foreach (var child in linked.Get(parentId).Children)
-                        linked.ConfirmChildInitialized(child.RuntimeId);
+                        linked.Get(parentId).Children.All(child => child.NativeState == 3 &&
+                            _rac1QueenLinkedChildVisuals.TryGetValue(child.RuntimeId, out var visual) &&
+                            IsInstanceValid(visual) && visual.Visible &&
+                            visual.GetChildren().OfType<MeshInstance3D>().Any(m => m.Mesh is not null)),
+                        "Seven original source-mesh class1021 children were not created and initialized.");
                     Require(linked.Step(parentId, nativeParent + NVector3.UnitX * 6, true, 0)
                             .NativeState == 2 &&
                         linked.Step(parentId, nativeParent, false, 0).NativeState == 2,
@@ -266,7 +267,16 @@ public partial class OBPGame
                         linked.Step(parentId, nativeParent, false, .2f);
                     Require(linked.Get(parentId) is { NativeState: 6, Visible: false },
                         "Native class1021 parent did not reach hidden state6.");
+                    foreach (var child in linked.Get(parentId).Children)
+                    {
+                        linked.StepChild(child.RuntimeId, 1.1f);
+                        Require(linked.GetChildState(child.RuntimeId) == 7,
+                            "Independent native child state5 failed to rotate and hide.");
+                    }
                     SynchronizeRac1QueenLinkedParents();
+                    Require(linked.Get(parentId).Children.All(child =>
+                        !_rac1QueenLinkedChildVisuals[child.RuntimeId].Visible),
+                        "Native child state7 failed to hide its original class1021 visual.");
                     Require(!_rac1QueenLinkedNodes[parentId].Root.Visible,
                         "Original linked class1021 parent mesh failed to hide.");
                 }
@@ -279,9 +289,11 @@ public partial class OBPGame
                         !linked.ActivateFromQueen(parentId),
                         "Queen linked native activation failed source parent6->8 / child5->9.");
                 SynchronizeRac1QueenLinkedParents();
-                Require(linked.OriginalParentIds.All(id => _rac1QueenLinkedNodes[id].Root.Visible),
-                    "Original class1021 parent visibility did not restore on Queen activation.");
-                GD.Print("[frog-smoke] Queen source class1021 i573/i578: 14 runtime children 1->3->5->9, parents 0->2->4->6(hidden)->8(visible) PASS");
+                Require(linked.OriginalParentIds.All(id => _rac1QueenLinkedNodes[id].Root.Visible) &&
+                    _rac1QueenLinkedChildVisuals.Count == 14 &&
+                    _rac1QueenLinkedChildVisuals.Values.All(node => node.Visible),
+                    "Original class1021 parent or child visibility did not restore on Queen activation.");
+                GD.Print("[frog-smoke] class1021 i573/i578: fourteen independent retail-mesh children 1->3->5->7(hidden)->9(visible), parents0->2->4->6(hidden)->8(visible) PASS");
                 entrance.StepWaiting(true, false, linkedActorAndCameraCallbacksCommitted: true);
                 Require(entrance.NativeState == 2, "Queen did not enter native airborne state2.");
                 queenRecovery.AdmitNativeState(2, 8);

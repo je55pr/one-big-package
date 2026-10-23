@@ -49,6 +49,7 @@ public partial class OBPGame
     private void ResetRac1Enemies()
     {
         ResetRac1FrogCarriers();
+        ResetRac1QueenLinkedChildren();
         foreach (var enemy in _rac1Enemies.Values)
         {
             if (IsInstanceValid(enemy.Body)) enemy.Body.QueueFree();
@@ -237,6 +238,7 @@ public partial class OBPGame
             TickRac1FrogShuttleSwitch();
             TickRac1FrogWaves();
             TickRac1QueenRecovery();
+            TickRac1QueenLinkedChildren();
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
             {
                 var node = enemy.Node;

@@ -73,6 +73,7 @@ public partial class OBPGame
         _rac1QueenLinkedGate = new(queen, world.DynamicObjects ?? [],
             _rac1QueenLinkedNodes.ToDictionary(pair => pair.Key,
                 pair => ToEffectNative(pair.Value.Root.GlobalPosition)));
+        ConfigureRac1QueenLinkedChildren(result.Root);
         _rac1QueenNode = FindPresentedDynamic(result, queen)
             ?? throw new InvalidDataException("Original Alien Queen model is unavailable.");
         var animationAsset = Rac1MobyAnimationAssets.Bake(cls, _rac1QueenNode.Source.Meshes,
@@ -97,6 +98,7 @@ public partial class OBPGame
         foreach (var pair in _rac1QueenLinkedNodes)
             if (IsInstanceValid(pair.Value.Root))
                 pair.Value.Root.Visible = _rac1QueenLinkedGate.Get(pair.Key).Visible;
+        SynchronizeRac1QueenLinkedChildVisibility();
     }
 
     /// <summary>

@@ -61,11 +61,33 @@ public sealed class Rac1AlienQueenLinkedGateTests
         Assert.True(gate.Get(573).Visible);
         Assert.Equal(6, gate.Step(573, Vector3.Zero, false, 1f).NativeState);
         Assert.False(gate.Get(573).Visible);
+        // Independent child update has already reached state7; the source
+        // Queen helper still reopens them. It does not require state5.
+        foreach (var child in first)
+        {
+            Assert.Equal(5, gate.StepChild(child.RuntimeId, .5f).NativeState);
+            var hidden = gate.StepChild(child.RuntimeId, 1f);
+            Assert.Equal(7, hidden.NativeState);
+            Assert.False(hidden.Visible);
+        }
         Assert.True(gate.ActivateFromQueen(573));
         Assert.True(gate.Get(573).Visible);
         Assert.Equal(8, gate.Get(573).NativeState);
-        Assert.All(first, child => Assert.Equal(9, gate.GetChildState(child.RuntimeId)));
+        Assert.All(first, child =>
+        {
+            var opened = gate.Children(573).Single(c => c.RuntimeId == child.RuntimeId);
+            Assert.Equal(9, opened.NativeState);
+            Assert.True(opened.Visible);
+            Assert.InRange(opened.RotationOffset, 1.047f, 1.048f);
+        });
         Assert.False(gate.ActivateFromQueen(573));
+        foreach (var child in first)
+        {
+            var restored = gate.StepChild(child.RuntimeId, 1.1f);
+            Assert.Equal(3, restored.NativeState);
+            Assert.True(restored.Visible);
+            Assert.Equal(0f, restored.RotationOffset);
+        }
         Assert.Equal(8, gate.Step(573, Vector3.Zero, false, .7f).NativeState);
         Assert.Equal(2, gate.Step(573, Vector3.Zero, false, .7f).NativeState);
         Assert.Equal(14, gate.RuntimeChildCount); // always native runtime, not source placements

@@ -30,7 +30,16 @@ public sealed class Rac1AlienQueenLinkedGate
     }
 
     private readonly Dictionary<int, Parent> _parents = [];
-    private readonly Dictionary<int, (int Parent, int Slot)> _children = [];
+    private sealed class Child(int parent, int slot)
+    {
+        public int Parent { get; } = parent;
+        public int Slot { get; } = slot;
+        public int NativeState { get; set; } = 1;
+        public float RotationOffset { get; set; }
+        public bool Visible { get; set; } = true;
+    }
+
+    private readonly Dictionary<int, Child> _children = [];
     private int _nextChildId = -1;
 
     public Rac1AlienQueenLinkedGate(RuntimeDynamicObject queen,
@@ -91,8 +100,7 @@ public sealed class Rac1AlienQueenLinkedGate
                 {
                     int childId = _nextChildId--;
                     p.Children[slot] = childId;
-                    _children.Add(childId, (parent, slot));
-                    SetChildState(childId, 1);
+                    _children.Add(childId, new Child(parent, slot));
                 }
                 p.NativeState = 2;
                 break;
@@ -104,7 +112,11 @@ public sealed class Rac1AlienQueenLinkedGate
                     p.Children.All(id => GetChildState(id) == 3))
                 {
                     p.NativeState = 4;
-                    foreach (int id in p.Children) SetChildState(id, 5);
+                    foreach (int id in p.Children)
+                    {
+                        _children[id].NativeState = 5;
+                        _children[id].RotationOffset = 0;
+                    }
                 }
                 break;
             case 4:
@@ -141,41 +153,73 @@ public sealed class Rac1AlienQueenLinkedGate
             throw new InvalidOperationException("Class1021 dynamic child ownership mismatch.");
         if (GetChildState(runtimeChildId) != 1)
             throw new InvalidOperationException("Class1021 child was not waiting in state1.");
-        SetChildState(runtimeChildId, 3);
+        StepChild(runtimeChildId, 0);
     }
 
     public bool ActivateFromQueen(int parent)
     {
         var p = _parents[parent];
         if (p.NativeState != 6 || p.Children.Length != ChildrenPerParent ||
-            p.Children.Any(id => GetChildState(id) != 5))
+            p.Children.Any(id => !_children.ContainsKey(id)))
             return false;
         // FUN_L06_002f53e8 only admits state6, returning parent to state8
         // and moving every spawned child to state9 with collision enabled.
         p.NativeState = 8;
         p.Visible = true;
-        foreach (int child in p.Children) SetChildState(child, 9);
+        foreach (int child in p.Children)
+        {
+            _children[child].NativeState = 9;
+            _children[child].Visible = true;
+        }
         return true;
     }
 
-    public int GetChildState(int runtimeChildId)
+    /// <summary>Independent class1021 updater for a dynamically spawned child.
+    /// State1 initializes its source base transform, state5 rotates until it
+    /// hides in state7, and state9 restores state3. The angular advancement
+    /// is provided externally because native SDA acceleration is unresolved.</summary>
+    public Rac1AlienQueenLinkedChildFrame StepChild(int runtimeChildId, float angularAdvanceRadians)
     {
-        if (!_children.ContainsKey(runtimeChildId))
-            throw new KeyNotFoundException($"Unknown dynamic class1021 child {runtimeChildId}");
-        return _childStates[runtimeChildId];
+        if (!float.IsFinite(angularAdvanceRadians) || angularAdvanceRadians < 0)
+            throw new ArgumentOutOfRangeException(nameof(angularAdvanceRadians));
+        var child = RequireChild(runtimeChildId);
+        switch (child.NativeState)
+        {
+            case 1:
+                child.NativeState = 3;
+                break;
+            case 5:
+                child.RotationOffset = MathF.Min(HideRotation, child.RotationOffset + angularAdvanceRadians);
+                if (child.RotationOffset >= HideRotation)
+                {
+                    child.NativeState = 7;
+                    child.Visible = false;
+                }
+                break;
+            case 9:
+                child.RotationOffset = MathF.Max(0, child.RotationOffset - angularAdvanceRadians);
+                if (child.RotationOffset <= 0)
+                    child.NativeState = 3;
+                break;
+        }
+        return ChildFrame(runtimeChildId, child);
     }
 
-    private readonly Dictionary<int, int> _childStates = [];
-    private void SetChildState(int id, int state) => _childStates[id] = state;
+    public int GetChildState(int runtimeChildId) => RequireChild(runtimeChildId).NativeState;
+
+    private Child RequireChild(int id) => _children.TryGetValue(id, out var value)
+        ? value : throw new KeyNotFoundException($"Unknown dynamic class1021 child {id}");
+
+    private static Rac1AlienQueenLinkedChildFrame ChildFrame(int id, Child c) =>
+        new(id, c.Parent, c.Slot, (c.Slot + 1) * ChildYawIncrement,
+            c.NativeState, c.Visible, c.RotationOffset);
 
     public IReadOnlyList<Rac1AlienQueenLinkedChildFrame> Children(int parent)
     {
         var p = _parents[parent];
         return p.Children.Where(id => id != 0).Select(id =>
         {
-            var child = _children[id];
-            return new Rac1AlienQueenLinkedChildFrame(id, parent, child.Slot,
-                (child.Slot + 1) * ChildYawIncrement, GetChildState(id));
+            return ChildFrame(id, _children[id]);
         }).ToArray();
     }
 
@@ -191,4 +235,5 @@ public sealed record Rac1AlienQueenGateFrame(int AuthoredInstance, int NativeSta
     IReadOnlyList<Rac1AlienQueenLinkedChildFrame> Children);
 
 public sealed record Rac1AlienQueenLinkedChildFrame(int RuntimeId, int Parent,
-    int Slot, float RelativeYawRadians, int NativeState);
+    int Slot, float RelativeYawRadians, int NativeState, bool Visible,
+    float RotationOffset);
