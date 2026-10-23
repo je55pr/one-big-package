@@ -953,6 +953,17 @@ public static class Rac1AridiaConstructorbotNative
         nativeState == ParticleModeState && mobyActive &&
         (sourceFrameCounter & NativeEmitterCadenceMask) == 0;
 
+    /// <summary>
+    /// Presentation-only boundary: native states 8 and 9 own the source
+    /// event-15 preview. The legacy timed host flame may not override its
+    /// four-frame state-8 gate or state-9 exclusion. Other unfinished states
+    /// can retain their explicitly provisional host visual.
+    /// </summary>
+    public static bool HostFlameVisible(
+        int nativeState, bool hostFallbackFlame, bool sourceParticlePreview) =>
+        nativeState is ParticleModeState or ParticleAlternateState
+            ? sourceParticlePreview : hostFallbackFlame;
+
     public static int ReadInitialMode(ReadOnlySpan<byte> pvar)
     {
         if (pvar.Length < InitialModePvarOffset + sizeof(int))

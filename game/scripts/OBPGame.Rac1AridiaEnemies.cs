@@ -881,9 +881,16 @@ public partial class OBPGame
                 }
             }
         }
-        // Temporary source-particle-15 visual proxy. The native effect is a
-        // sparse event at semantic joint0, NOT the host's continuous flame.
-        SetRac1EnemyFlame(enemy, frame.FlameActive || sourceParticlePreview);
+        // In native state8/9 the source event-15 preview exclusively owns
+        // the visual gate. Do not let a nearby player's legacy host flame
+        // bypass the original four-frame cadence or state9 exclusion.
+        // Other unimplemented states retain their provisional host visual.
+        bool flameVisible = node.Source.NativeClassId == Rac1AridiaEnemies.Constructorbot
+            ? Rac1AridiaConstructorbotNative.HostFlameVisible(
+                _rac1MobyRuntime.Require(node.Source).State.NativeState,
+                frame.FlameActive, sourceParticlePreview)
+            : frame.FlameActive;
+        SetRac1EnemyFlame(enemy, flameVisible);
         if (jointContact)
             ApplyRac1AridiaPlayerDamage(node);
         else if (frame.DamagePlayer &&

@@ -130,6 +130,55 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             8, uint.MaxValue - 3, true));
     }
 
+    [Fact]
+    public void InRangeLegacyConstructorbotFlameCannotBypassNativeStateEightOrNineEmitter()
+    {
+        var host = new Rac1AridiaEnemySession();
+        host.Register(80, Rac1AridiaEnemies.Constructorbot,
+            constructorbotStartupSequence: 2);
+        host.Register(90, Rac1AridiaEnemies.Constructorbot,
+            constructorbotStartupSequence: 15);
+        var close = new Rac1AridiaEnemyFacts(
+            Vector3.Zero, new Vector3(3, 0, 0), true, true);
+        int inRangeLegacyFlameTicks = 0;
+        int nativeEightPreviewTicks = 0;
+        for (uint tick = 0; tick < 72; tick++)
+        {
+            bool oldStateEightFlame = host.Step(80, close).FlameActive;
+            bool oldStateNineFlame = host.Step(90, close).FlameActive;
+            bool eightParticle = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                Rac1AridiaConstructorbotNative.ParticleModeState, tick, true);
+            bool nineParticle = Rac1AridiaConstructorbotNative.ShouldEmitSourceParticle(
+                Rac1AridiaConstructorbotNative.ParticleAlternateState, tick, true);
+
+            bool eightVisual = Rac1AridiaConstructorbotNative.HostFlameVisible(
+                Rac1AridiaConstructorbotNative.ParticleModeState,
+                oldStateEightFlame, eightParticle);
+            bool nineVisual = Rac1AridiaConstructorbotNative.HostFlameVisible(
+                Rac1AridiaConstructorbotNative.ParticleAlternateState,
+                oldStateNineFlame, nineParticle);
+            Assert.Equal((tick & 3) == 0, eightVisual);
+            Assert.False(nineVisual);
+            Assert.False(Rac1AridiaConstructorbotNative.HostFlameVisible(
+                Rac1AridiaConstructorbotNative.ParticleModeState,
+                oldStateEightFlame, sourceParticlePreview: false));
+            if (oldStateEightFlame && oldStateNineFlame)
+                inRangeLegacyFlameTicks++;
+            if (eightVisual)
+                nativeEightPreviewTicks++;
+        }
+        Assert.True(inRangeLegacyFlameTicks > 8,
+            "Fixture must exercise the legacy continuous host flame in range.");
+        Assert.Equal(18, nativeEightPreviewTicks);
+        // Source-independent unfinished states retain their previous host look.
+        Assert.True(Rac1AridiaConstructorbotNative.HostFlameVisible(
+            Rac1AridiaConstructorbotNative.RestState,
+            hostFallbackFlame: true, sourceParticlePreview: false));
+        Assert.False(Rac1AridiaConstructorbotNative.HostFlameVisible(
+            Rac1AridiaConstructorbotNative.RestState,
+            hostFallbackFlame: false, sourceParticlePreview: false));
+    }
+
     [Theory]
     [InlineData(8, 2, 4)]
     [InlineData(9, 2, 16)]
