@@ -237,3 +237,36 @@ i961 and i962 have optional cuboid selector +0xa0 = -1.
 Accordingly, the host must not interpret -1 as a real cuboid or
 invent five simultaneously active class-816 triggers. These exact
 selectors now have a retail-authority regression test.
+
+## 23 October 2026: original Kerwan taxi hover and tilt
+
+The previously unexplored visual helper calls turned out to be source-backed
+taxi dynamics, not path movement or camera handoff. Class-816's native
+`lv3_2d3c40_l3` at 0x002d3c40 and class-1012's
+`lv3_2dd0f0_l3` at 0x002dd0f0 both invoke retail
+`sub_00262b00` (0x00262b00) and `sub_00262b80` (0x00262b80).
+The first adds a sine offset to the Moby's native vertical coordinate
+using the phase remembered at a PVar offset. The second writes the two
+sway angles from independent sine/cosine phases. They run on every
+admitted native updater tick, not once per ride.
+
+Constants recovered from the NTSC-U overlay data section (same for both
+families): vertical amplitude 0.2 units, vertical phase 120 degrees/second,
+sway amplitude 0.078539819 radians (4.5 degrees), angular phase rates
+70 and 100 degrees/second. Original source PVar phases are at
++0xec/+0xf0/+0xf4 for class 816 and +0xac/+0xb0/+0xb4 for class
+1012, respectively. The first sine phase advances before writing the
+new vertical offset. The angles are written from the old two angular
+phases, which are then advanced.
+
+`Rac1TaxiNativeHover` ports these steps as a deterministic 60 Hz,
+engine-neutral presentation oscillator. The retail importer preserves
+each taxi's three actual authored phases. The Godot taxi presentation
+adds vertical bob and tilts to the hull (and therefore to the carried
+player), while route geometry, class-1012 host return-to-source fallback
+and collision-supported dismount probes remain unchanged. Stationary
+retail taxi 921 is also presented with its native hover. The Godot
+pitch/roll axis remapping is host rendering policy pending exact matrix
+verification, not a claim of full native orientation parity.
+Synthetic test fixtures without PVars retain their original unanimated
+presentation.

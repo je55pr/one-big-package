@@ -25,7 +25,8 @@ public sealed record Rac1MetropolisTaxiStop(
     IReadOnlyList<Rac1TaxiPoint>? DeparturePath = null,
     Rac1TaxiTriggerVolume? ApproachTrigger = null,
     int NativeInitialSide = -1,
-    bool NativeSeekEvidenced = false);
+    bool NativeSeekEvidenced = false,
+    Rac1TaxiHoverPhases? NativeHoverPhases = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -370,6 +371,27 @@ public sealed class Rac1MetropolisTaxiSession
                 if (nativeSide is not (0 or 1))
                     return null;
             }
+            // The source class-816 bob/tilt helper uses PVar +0xec/0xf0/0xf4.
+            // Class-1012 uses +0xac/+0xb0/+0xb4. The originally authored
+            // phase values must survive the retail import (synthetic worlds
+            // lacking PVars intentionally do not animate).
+            int firstPhaseOffset = route.Class == 816 ? 0xec : 0xac;
+            Rac1TaxiHoverPhases? hoverPhases = null;
+            if (pvar is { } sourcePvar &&
+                sourcePvar.Length >= firstPhaseOffset + 12)
+            {
+                double height = BinaryPrimitives.ReadSingleLittleEndian(
+                    sourcePvar.AsSpan(firstPhaseOffset, 4));
+                double tilt = BinaryPrimitives.ReadSingleLittleEndian(
+                    sourcePvar.AsSpan(firstPhaseOffset + 4, 4));
+                double spin = BinaryPrimitives.ReadSingleLittleEndian(
+                    sourcePvar.AsSpan(firstPhaseOffset + 8, 4));
+                if (!double.IsFinite(height) || !double.IsFinite(tilt) ||
+                    !double.IsFinite(spin))
+                    return null;
+                hoverPhases = new Rac1TaxiHoverPhases(height, tilt, spin);
+            }
+
             // Real authored PVars prove the original speed/index fields
             // are present. Synthetic regression worlds omit this payload.
             bool nativeSeek = route.OutboundOffset >= 0 &&
@@ -377,7 +399,7 @@ public sealed class Rac1MetropolisTaxiSession
 
             stops.Add(new Rac1MetropolisTaxiStop(
                 route.Index, route.Class, position, outbound, route.Label, returning,
-                approach, departure, trigger, nativeSide, nativeSeek));
+                approach, departure, trigger, nativeSide, nativeSeek, hoverPhases));
         }
 
         return new Rac1MetropolisTaxiSession(stops);

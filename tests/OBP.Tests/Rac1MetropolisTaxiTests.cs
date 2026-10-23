@@ -78,6 +78,9 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.Equal(5, session.Stops.Count);
         Assert.Equal(3, session.Stops.Count(x => x.NativeClassId == 816));
         Assert.Equal(2, session.Stops.Count(x => x.NativeClassId == 1012));
+        // Synthetic fixtures without original PVars intentionally do not
+        // attach native hover phases to their route animations.
+        Assert.All(session.Stops, stop => Assert.Null(stop.NativeHoverPhases));
         Assert.Equal(4, session.Stops.Count(x => x.OutboundPath.Count > 0));
         var parked = session.Stops.Single(x => x.InstanceIndex == 921);
         Assert.Empty(parked.OutboundPath);
@@ -345,6 +348,13 @@ public sealed class Rac1MetropolisTaxiTests
         // comes from PVar+0x90+(side*4), not always the authored Moby origin.
         Assert.Equal(0, session.Stops.Single(s => s.InstanceIndex == 961).NativeInitialSide);
         Assert.Equal(1, session.Stops.Single(s => s.InstanceIndex == 962).NativeInitialSide);
+        Assert.All(session.Stops, stop =>
+        {
+            Assert.True(stop.NativeHoverPhases.HasValue);
+            var phases = stop.NativeHoverPhases!.Value;
+            Assert.True(double.IsFinite(phases.Height) &&
+                double.IsFinite(phases.Tilt) && double.IsFinite(phases.Spin));
+        });
 
         foreach (var p in Placements)
         {

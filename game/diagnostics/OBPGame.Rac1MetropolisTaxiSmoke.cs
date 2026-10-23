@@ -39,6 +39,9 @@ public partial class OBPGame
                 "Metropolis taxi smoke needs all five retail imported taxi hulls");
             var taxis = _rac1MetropolisTaxis!;
             var player = _player!;
+            Require(_rac1TaxiHovers.Count == 5 &&
+                taxis.Stops.All(s => s.NativeHoverPhases.HasValue),
+                "retail taxi hover oscillators and PVar phases not imported");
             Engine.MaxFps = 60;
             await PhysicsFramesAsync(5);
 

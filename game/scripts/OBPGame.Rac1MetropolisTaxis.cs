@@ -14,6 +14,7 @@ public partial class OBPGame
     private Rac1MetropolisTaxiSession? _rac1MetropolisTaxis;
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1TaxiNodes = [];
     private readonly Dictionary<int, StaticBody3D> _rac1TaxiCollisionBodies = [];
+    private readonly Dictionary<int, Rac1TaxiNativeHover> _rac1TaxiHovers = [];
     private RuntimeWorldScene.DynamicObjectNode? _rac1FlyingTaxi;
     private Vector3 _rac1FlyingTaxiOrigin;
     private Vector3 _rac1TaxiBoardingPosition;
@@ -85,6 +86,7 @@ public partial class OBPGame
         _rac1MetropolisTaxis = null;
         ReleaseRac1MetropolisTaxiHulls();
         _rac1TaxiNodes.Clear();
+        _rac1TaxiHovers.Clear();
     }
 
     private void ConfigureRac1MetropolisTaxis(RuntimeWorld world, RuntimeWorldScene.Result result)
@@ -102,9 +104,13 @@ public partial class OBPGame
                 _rac1MetropolisTaxis = null;
                 ReleaseRac1MetropolisTaxiHulls();
                 _rac1TaxiNodes.Clear();
+                _rac1TaxiHovers.Clear();
                 return;
             }
             _rac1TaxiNodes.Add(stop.InstanceIndex, node);
+            if (stop.NativeHoverPhases is { } phases)
+                _rac1TaxiHovers.Add(stop.InstanceIndex,
+                    new Rac1TaxiNativeHover(phases));
             // The scene importer intentionally creates visual-only Mobies. Taxi
             // hulls are walkable in the game, so add collision only for these
             // five Kerwan instances, using the actual authored render surfaces.
@@ -126,6 +132,7 @@ public partial class OBPGame
                 _rac1MetropolisTaxis = null;
                 ReleaseRac1MetropolisTaxiHulls();
                 _rac1TaxiNodes.Clear();
+                _rac1TaxiHovers.Clear();
                 return;
             }
             node.Root.AddChild(body);
@@ -165,6 +172,24 @@ public partial class OBPGame
             root.GlobalRotation.X,
             Mathf.LerpAngle(currentYaw, targetYaw, fraction),
             root.GlobalRotation.Z);
+    }
+
+    // Both Kerwan taxi families call native oscillators every updater tick.
+    // This modifies rendered hulls and rider pose, never authored path
+    // endpoints or collision-based dismount eligibility.
+    private Vector3 PresentRac1Taxi(
+        int instanceIndex, Node3D root, Vector3 authoredPosition, double delta)
+    {
+        OrientRac1Taxi(root, authoredPosition, delta);
+        if (_rac1TaxiHovers.TryGetValue(instanceIndex, out var hover))
+        {
+            authoredPosition.Y += (float)hover.HeightOffset;
+            Vector3 rotation = root.GlobalRotation;
+            root.GlobalRotation = new Vector3(
+                (float)hover.PitchRadians, rotation.Y, (float)hover.RollRadians);
+        }
+        root.GlobalPosition = authoredPosition;
+        return authoredPosition;
     }
 
     private bool TryHandleRac1MetropolisTaxiInput(InputEvent input)
@@ -220,14 +245,27 @@ public partial class OBPGame
             _player is not { } player || !IsInstanceValid(player))
             return;
 
+        foreach (var hover in _rac1TaxiHovers.Values)
+            hover.Advance(delta);
+
+        // The stationary class-816 hull also receives native bob/tilt
+        // updates, despite having no authored passenger path.
+        foreach (var stop in taxis.Stops.Where(s => s.OutboundPath.Count == 0 &&
+            s.NativeHoverPhases.HasValue))
+        {
+            if (_rac1TaxiNodes.TryGetValue(stop.InstanceIndex, out var parked) &&
+                IsInstanceValid(parked.Root))
+                PresentRac1Taxi(stop.InstanceIndex, parked.Root,
+                    FromTaxiPoint(stop.Position), delta);
+        }
+
         foreach (var traffic in taxis.TickTraffic(ToTaxiPoint(player.GlobalPosition), delta))
         {
             if (_rac1TaxiNodes.TryGetValue(traffic.InstanceIndex, out var instance) &&
                 IsInstanceValid(instance.Root))
             {
-                var position = FromTaxiPoint(traffic.Position);
-                OrientRac1Taxi(instance.Root, position, delta);
-                instance.Root.GlobalPosition = position;
+                PresentRac1Taxi(traffic.InstanceIndex, instance.Root,
+                    FromTaxiPoint(traffic.Position), delta);
             }
         }
 
@@ -244,9 +282,8 @@ public partial class OBPGame
             return;
         }
 
-        var taxiPosition = FromTaxiPoint(flight.Position);
-        OrientRac1Taxi(taxi.Root, taxiPosition, delta);
-        taxi.Root.GlobalPosition = taxiPosition;
+        var taxiPosition = PresentRac1Taxi(
+            flight.From.InstanceIndex, taxi.Root, FromTaxiPoint(flight.Position), delta);
         player.GlobalPosition = taxiPosition + _rac1TaxiRiderOffset;
         if (_rac1TaxiCameraWorldOwned && IsInstanceValid(player.Camera))
             player.Camera.GlobalPosition = player.GlobalPosition + _rac1TaxiCameraWorldOffset;
