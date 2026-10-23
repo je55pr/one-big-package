@@ -8,9 +8,8 @@ namespace OneBigPackage;
 /// Dynamic class1021 child presentation for the original Nebula G34 Queen
 /// linked parents. Uses real mounted-disc class1021 mesh/material surfaces;
 /// spawned children never enter the authored World or generic enemy census.
-/// The native global radial-offset and angular acceleration are not recovered:
-/// initial source transforms and state/visibility are hosted, no invented
-/// outward motion or collision is applied.
+/// The per-level native radial offset and angle constants are read from
+/// the original overlay. Collision/camera event producers remain separate.
 /// </summary>
 public partial class OBPGame
 {
@@ -25,7 +24,7 @@ public partial class OBPGame
 
     private void ConfigureRac1QueenLinkedChildren(Node3D sceneRoot)
     {
-        if (_rac1QueenLinkedGate is null) return;
+        if (_rac1QueenLinkedGate is null || _rac1QueenGateNative is null) return;
         foreach (int id in _rac1QueenLinkedGate.OriginalParentIds)
         {
             var donor = _rac1QueenLinkedNodes[id].Root;
@@ -61,6 +60,10 @@ public partial class OBPGame
                 root.GlobalTransform = donor.GlobalTransform;
                 // Godot scene X is mirrored against retail native X.
                 root.RotateObjectLocal(Vector3.Up, -member.RelativeYawRadians);
+                // Native child state1 offsets original position along its
+                // rotation basis row2, normalized to D_L06_00161D48=3.109.
+                root.GlobalPosition += root.GlobalTransform.Basis.Z.Normalized() *
+                    _rac1QueenGateNative.ChildRadialDistance;
                 _rac1QueenLinkedChildVisuals.Add(member.RuntimeId, root);
             }
         }
@@ -69,18 +72,21 @@ public partial class OBPGame
 
     private void TickRac1QueenLinkedChildren()
     {
-        if (_rac1QueenLinkedGate is null) return;
+        if (_rac1QueenLinkedGate is null || _rac1QueenGateNative is null) return;
         foreach (int id in _rac1QueenLinkedGate.OriginalParentIds)
         {
+            var parent = _rac1QueenLinkedGate.Get(id);
+            if (parent.NativeState is 4 or 8)
+                _rac1QueenLinkedGate.StepNative(id, parent.NativePosition, false,
+                    _rac1QueenGateNative);
             foreach (var member in _rac1QueenLinkedGate.Get(id).Children)
             {
-                if (member.NativeState == 1 &&
-                    _rac1QueenLinkedChildVisuals.TryGetValue(member.RuntimeId, out var visual) &&
+                if (_rac1QueenLinkedChildVisuals.TryGetValue(member.RuntimeId, out var visual) &&
                     IsInstanceValid(visual))
-                    _rac1QueenLinkedGate.StepChild(member.RuntimeId, 0);
+                    _rac1QueenLinkedGate.StepChildNative(member.RuntimeId, _rac1QueenGateNative);
             }
         }
-        SynchronizeRac1QueenLinkedChildVisibility();
+        SynchronizeRac1QueenLinkedParents();
     }
 
     private void SynchronizeRac1QueenLinkedChildVisibility()
@@ -94,7 +100,7 @@ public partial class OBPGame
                     visual.Visible = member.Visible;
                     // Shared native updater subtracts the rotating offset
                     // from each child's original yaw, mirrored in scene X.
-                    visual.Quaternion = _rac1QueenLinkedNodes[id].Root.Quaternion *
+                    visual.Quaternion = _rac1QueenLinkedBaseRotations[id] *
                         new Quaternion(Vector3.Up,
                             member.RotationOffset - member.RelativeYawRadians);
                 }

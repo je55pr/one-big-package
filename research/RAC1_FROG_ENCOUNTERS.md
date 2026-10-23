@@ -82,3 +82,19 @@ After rereading `FUN_L06_002f4f00` and the Queen helper `FUN_L06_002f53e8`, the 
 The Nebula G34 Godot world now instantiates **14 separate runtime-only class1021 mesh nodes**, reusing the original class1021 retail geometry/material surfaces of linked authored parents i573 and i578. They retain unique nonauthored runtime IDs, parent owners and original 45-degree yaw offsets, and are cleaned up on level shutdown. Child state1 initialization runs in the regular native-tick host loop after their source mesh exists. Child show/hide and source yaw-offset/rotation-offset state are independent from parent state; their Godot model orientations mirror the original child-axis rotation. The smoke verifies fourteen original-mesh visuals, strict source identities and no authored census inflation, then explicitly steps the still-unrecovered angular recurrence to confirm parent state6 and child state7 both hide, before the Queen helper reveals both parent state8 and child state9. Original Queen damage, animation6 and group22 Frogs still work unchanged.
 
 **Visual limitation:** the source child updater shifts a newly created child along its `rot_row2` by global `D_L06_00161D48` during state1. This native level-global distance is not yet recovered; the current host presents original starting position and inherited angle but does **not** claim final child radial placement, dynamic collision or complete animated rotation. This is a partial source-backed presentation, not a finished camera/cutscene or exact source child transform.
+
+## LEVEL6 overlay constants recovered for class1021 gate motion
+
+Reading `Rac1ExecutableOverlay.Read` from the user's original R&C1 USA disc reveals **native .lit float values at exact source virtual addresses**, removing a former placeholder:
+
+| Virtual address | Native symbol | Original float | Usage in `FUN_L06_002f4f00` |
+| --- | --- | --- | --- |
+| `0x161D38` | `D_L06_00161D38` | `270.0` | Angular approach step coefficient (deg to radians, times frame-time squared) |
+| `0x161D3C` | `D_L06_00161D3C` | `360.0` | Angular braking coefficient (deg to radians, times frame-time squared) |
+| `0x161D40` | `D_L06_00161D40` | `180.0` | Angular speed limit (deg to radians, times frame-time) |
+| `0x161D44` | `D_L06_00161D44` | `0.0` | Proximity admission global's initial value; may be changed by runtime |
+| `0x161D48` | `D_L06_00161D48` | `3.109` | Offset of a newly spawned class1021 child along its original `rot_row2` |
+
+`Rac1AlienQueenGateNative` reads these five source floats from the loaded LEVEL6 overlay rather than duplicating hard-coded values, validates their finite/range semantics, and derives 60-Hz per-frame coefficients. `Rac1AlienQueenLinkedGate.StepNative` and `StepChildNative` use the shared source-derived `Rac1MobySteering` approach/deceleration recurrence (original common `FUN_L00_0025be00`) for state4->6/8->2 parent and state5->7/9->3 child rotation. The source's initial 3.109-unit displacement uses each child model's initial oriented local basis row2 translated through Godot coordinates, not an arbitrary circle radius. The Godot original parent meshes and fourteen source-backed child meshes now update rotation independently at native 60-Hz ticks. The authoritative ISO test checks all five overlay values and a bounded engine-neutral test checks hide and reverse rotation without special timing inputs. The LEVEL6 Godot smoke checks radial distance for all fourteen source child meshes, the 14 separate class1021 lifecycles, Queen attack and native Frog wave.
+
+The overlay's `D_0015ED70` and `D_0015ED6C` timing variables are resident rather than part of its loaded sections. OBP uses its normal 60-Hz native tick for the recovered per-frame coefficients. Exact live-play velocity scaling, runtime changes to `D_L06_00161D44`, and original dynamic collision/camera still need independent original-game evidence; this increment does not claim a complete Queen cutscene.

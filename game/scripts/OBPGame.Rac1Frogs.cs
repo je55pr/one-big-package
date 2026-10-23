@@ -20,7 +20,9 @@ public partial class OBPGame
     private Rac1AlienQueenRecovery? _rac1QueenRecovery;
     private Rac1AlienQueenEntrance? _rac1QueenEntrance;
     private Rac1AlienQueenLinkedGate? _rac1QueenLinkedGate;
+    private Rac1AlienQueenGateNative? _rac1QueenGateNative;
     private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1QueenLinkedNodes = [];
+    private readonly Dictionary<int, Quaternion> _rac1QueenLinkedBaseRotations = [];
     private Rac1MobySequenceClock? _rac1QueenAnimation;
     private RuntimeWorldScene.DynamicObjectNode? _rac1QueenNode;
     private sealed record HostedFrogWave(RuntimeWorldScene.DynamicObjectNode Node,
@@ -50,9 +52,10 @@ public partial class OBPGame
 
     private void ConfigureRac1FrogQueen(RuntimeWorld world, RuntimeWorldScene.Result result,
         IReadOnlyList<int[]> groups, Rac1StaticClasses.MobyClass cls,
-        ReadOnlySpan<byte> classBytes)
+        ReadOnlySpan<byte> classBytes, Rac1AlienQueenGateNative tuning)
     {
         if (world.LevelId != 6) return;
+        _rac1QueenGateNative = tuning;
         var queen = (world.DynamicObjects ?? [])
             .SingleOrDefault(source => source.NativeClassId == Rac1FrogQueenGroup.QueenClassId);
         if (queen is null)
@@ -67,8 +70,10 @@ public partial class OBPGame
             _rac1QueenEntrance.SecondLinkedInstance })
         {
             var parent = (world.DynamicObjects ?? []).Single(m => m.InstanceIndex == id);
-            _rac1QueenLinkedNodes.Add(id, FindPresentedDynamic(result, parent)
-                ?? throw new InvalidDataException($"Original class1021 linked parent i{id} mesh missing."));
+            var node = FindPresentedDynamic(result, parent)
+                ?? throw new InvalidDataException($"Original class1021 linked parent i{id} mesh missing.");
+            _rac1QueenLinkedNodes.Add(id, node);
+            _rac1QueenLinkedBaseRotations.Add(id, node.Root.Quaternion);
         }
         _rac1QueenLinkedGate = new(queen, world.DynamicObjects ?? [],
             _rac1QueenLinkedNodes.ToDictionary(pair => pair.Key,
@@ -88,16 +93,21 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// Source helper FUN_L06_002f53e8 adjusts actual class1021 parent
-    /// visibility. Fourteen procedural class1021 child visuals still need
-    /// an independent source animation/physics host.
+    /// Source helper FUN_L06_002f53e8 adjusts original class1021 parent
+    /// and child visibility. Source rotation constants are read from retail;
+    /// native child collision/contact remains separately unhosted.
     /// </summary>
     private void SynchronizeRac1QueenLinkedParents()
     {
         if (_rac1QueenLinkedGate is null) return;
         foreach (var pair in _rac1QueenLinkedNodes)
-            if (IsInstanceValid(pair.Value.Root))
-                pair.Value.Root.Visible = _rac1QueenLinkedGate.Get(pair.Key).Visible;
+        {
+            if (!IsInstanceValid(pair.Value.Root)) continue;
+            var source = _rac1QueenLinkedGate.Get(pair.Key);
+            pair.Value.Root.Visible = source.Visible;
+            pair.Value.Root.Quaternion = _rac1QueenLinkedBaseRotations[pair.Key] *
+                new Quaternion(Vector3.Up, source.RotationOffset);
+        }
         SynchronizeRac1QueenLinkedChildVisibility();
     }
 

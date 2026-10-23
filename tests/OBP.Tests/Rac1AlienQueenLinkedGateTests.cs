@@ -115,6 +115,63 @@ public sealed class Rac1AlienQueenLinkedGateTests
                 [Original(573, 1021), Original(578, 827)]));
     }
 
+    [Fact]
+    public void RecoveredNativeAngleRecurrenceHidesAndRestoresAllLinkedChildren()
+    {
+        var tuning = new Rac1AlienQueenGateNative(270, 360, 180, 0, 3.109f);
+        var gate = Setup();
+        gate.StepNative(573, Vector3.Zero, false, tuning);
+        foreach (var child in gate.Get(573).Children)
+            gate.ConfirmChildInitialized(child.RuntimeId);
+        Assert.Equal(4, gate.StepNative(573, Vector3.Zero, true, tuning).NativeState);
+        for (int i = 0; i < 250 && gate.Get(573).NativeState != 6; i++)
+        {
+            gate.StepNative(573, Vector3.Zero, false, tuning);
+            foreach (var child in gate.Get(573).Children)
+                gate.StepChildNative(child.RuntimeId, tuning);
+        }
+        Assert.Equal(6, gate.Get(573).NativeState);
+        Assert.False(gate.Get(573).Visible);
+        Assert.All(gate.Get(573).Children, c =>
+        {
+            Assert.Equal(7, c.NativeState);
+            Assert.False(c.Visible);
+            Assert.InRange(c.RotationOffset, 1.047f, 1.048f);
+        });
+        Assert.True(gate.ActivateFromQueen(573));
+        for (int i = 0; i < 250 && gate.Get(573).NativeState != 2; i++)
+        {
+            gate.StepNative(573, Vector3.Zero, false, tuning);
+            foreach (var child in gate.Get(573).Children)
+                gate.StepChildNative(child.RuntimeId, tuning);
+        }
+        Assert.Equal(2, gate.Get(573).NativeState);
+        Assert.All(gate.Get(573).Children, c =>
+        {
+            Assert.Equal(3, c.NativeState);
+            Assert.True(c.Visible);
+            Assert.Equal(0f, c.RotationOffset);
+        });
+    }
+
+    [SkippableFact]
+    public void OriginalLevel6OverlayContainsQueenLinkedGateSdaConstants()
+    {
+        var iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 6);
+        var tuning = Rac1AlienQueenGateNative.Read(Rac1ExecutableOverlay.Read(reader, level));
+        Assert.Equal(270f, tuning.AngularApproachDegrees);
+        Assert.Equal(360f, tuning.AngularBrakeDegrees);
+        Assert.Equal(180f, tuning.AngularMaximumDegrees);
+        Assert.Equal(0f, tuning.InitialProximityGate);
+        Assert.InRange(tuning.ChildRadialDistance, 3.1089f, 3.1091f);
+        Assert.InRange(tuning.PerTickApproach, .00130f, .00132f);
+        Assert.InRange(tuning.PerTickBrake, .00174f, .00175f);
+        Assert.InRange(tuning.PerTickMaximum, .05235f, .05237f);
+    }
+
     [SkippableFact]
     public void RetailQueenLinksExactlyTwoSourceParentsAndFourteenRuntimeChildren()
     {

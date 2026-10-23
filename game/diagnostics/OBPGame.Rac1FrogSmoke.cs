@@ -241,6 +241,16 @@ public partial class OBPGame
                 var linked = _rac1QueenLinkedGate
                     ?? throw new InvalidOperationException("Original class1021 linked gate parents missing.");
                 TickRac1QueenLinkedChildren();
+                var gateTuning = _rac1QueenGateNative
+                    ?? throw new InvalidOperationException("Original class1021 SDA tuning missing.");
+                Require(gateTuning is
+                {
+                    AngularApproachDegrees: 270f,
+                    AngularBrakeDegrees: 360f, AngularMaximumDegrees: 180f,
+                    InitialProximityGate: 0f
+                } &&
+                    Math.Abs(gateTuning.ChildRadialDistance - 3.109f) < .0001f,
+                    "Retail LEVEL6 executable SDA tuning differs.");
                 Require(linked.OriginalParentCount == 2 && linked.RuntimeChildCount == 14 &&
                     _rac1QueenLinkedChildVisuals.Count == 14 &&
                     linked.OriginalParentIds.SequenceEqual(new[] { 573, 578 }),
@@ -253,8 +263,11 @@ public partial class OBPGame
                         linked.Get(parentId).Children.All(child => child.NativeState == 3 &&
                             _rac1QueenLinkedChildVisuals.TryGetValue(child.RuntimeId, out var visual) &&
                             IsInstanceValid(visual) && visual.Visible &&
-                            visual.GetChildren().OfType<MeshInstance3D>().Any(m => m.Mesh is not null)),
-                        "Seven original source-mesh class1021 children were not created and initialized.");
+                            visual.GetChildren().OfType<MeshInstance3D>().Any(m => m.Mesh is not null) &&
+                            Math.Abs(visual.GlobalPosition.DistanceTo(
+                                _rac1QueenLinkedNodes[parentId].Root.GlobalPosition) -
+                                gateTuning.ChildRadialDistance) < .001f),
+                        "Seven original class1021 source-mesh children lack native 3.109-unit offsets.");
                     Require(linked.Step(parentId, nativeParent + NVector3.UnitX * 6, true, 0)
                             .NativeState == 2 &&
                         linked.Step(parentId, nativeParent, false, 0).NativeState == 2,

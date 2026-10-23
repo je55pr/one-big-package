@@ -59,7 +59,8 @@ public partial class OBPGame
         _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null; _rac1Frogs = null; _rac1FrogShuttle = null;
         _rac1FrogWaves = null; _rac1FrogQueen = null; _rac1FrogWaveNodes.Clear();
         _rac1QueenRecovery = null; _rac1QueenEntrance = null; _rac1QueenAnimation = null; _rac1QueenNode = null;
-        _rac1QueenLinkedGate = null; _rac1QueenLinkedNodes.Clear();
+        _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
+        _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
         ResetRac1BirdbotProjectiles();
     }
@@ -212,7 +213,8 @@ public partial class OBPGame
             var groups = Rac1MobyIndexGroups.Read(gameplay, world.DynamicObjects?.Count ?? 0);
             var queenClass = classes.Mobies[Rac1FrogQueenGroup.QueenClassId];
             ConfigureRac1FrogQueen(world, result, groups, queenClass,
-                core.Assets.AsSpan(queenClass.AssetOffset, queenClass.AssetLength));
+                core.Assets.AsSpan(queenClass.AssetOffset, queenClass.AssetLength),
+                Rac1AlienQueenGateNative.Read(Rac1ExecutableOverlay.Read(reader, level)));
             ConfigureRac1FrogWaves(world, result,
                 groups, Rac1ClipVolumes.Read(gameplay), triggerClass,
                 core.Assets.AsSpan(triggerClass.AssetOffset, triggerClass.AssetLength));

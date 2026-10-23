@@ -25,6 +25,7 @@ public sealed class Rac1AlienQueenLinkedGate
         public Vector3 Position { get; } = position;
         public int NativeState { get; set; }
         public float RotationOffset { get; set; }
+        public Rac1MobySteering NativeRotation { get; } = new();
         public bool Visible { get; set; } = true;
         public int[] Children { get; } = new int[ChildrenPerParent];
     }
@@ -36,6 +37,7 @@ public sealed class Rac1AlienQueenLinkedGate
         public int Slot { get; } = slot;
         public int NativeState { get; set; } = 1;
         public float RotationOffset { get; set; }
+        public Rac1MobySteering NativeRotation { get; } = new();
         public bool Visible { get; set; } = true;
     }
 
@@ -78,6 +80,43 @@ public sealed class Rac1AlienQueenLinkedGate
     }
 
     public int OriginalParentCount => _parents.Count;
+
+    /// <summary>Native FUN_L00_0025be00 angular approach with the recovered
+    /// original overlay coefficients; caller owns the sourced state admission.</summary>
+    public Rac1AlienQueenGateFrame StepNative(int parent, Vector3 playerNativePosition,
+        bool globalProximityGateZero, Rac1AlienQueenGateNative tuning,
+        bool nativeCommandZero = true)
+    {
+        ArgumentNullException.ThrowIfNull(tuning);
+        var p = _parents[parent];
+        float step = p.NativeState switch
+        {
+            4 or 5 => p.NativeRotation.Step(HideRotation, tuning.PerTickApproach,
+                tuning.PerTickBrake, tuning.PerTickMaximum) - p.RotationOffset,
+            8 or 9 => p.RotationOffset - p.NativeRotation.Step(0f,
+                tuning.PerTickApproach, tuning.PerTickBrake, tuning.PerTickMaximum),
+            _ => 0f
+        };
+        return Step(parent, playerNativePosition, globalProximityGateZero,
+            MathF.Max(0, step), nativeCommandZero);
+    }
+
+    public Rac1AlienQueenLinkedChildFrame StepChildNative(int runtimeChildId,
+        Rac1AlienQueenGateNative tuning)
+    {
+        ArgumentNullException.ThrowIfNull(tuning);
+        var c = RequireChild(runtimeChildId);
+        float step = c.NativeState switch
+        {
+            5 => c.NativeRotation.Step(HideRotation, tuning.PerTickApproach,
+                tuning.PerTickBrake, tuning.PerTickMaximum) - c.RotationOffset,
+            9 => c.RotationOffset - c.NativeRotation.Step(0f,
+                tuning.PerTickApproach, tuning.PerTickBrake, tuning.PerTickMaximum),
+            _ => 0f
+        };
+        return StepChild(runtimeChildId, MathF.Max(0, step));
+    }
+
     public int RuntimeChildCount => _children.Count;
     public IEnumerable<int> OriginalParentIds => _parents.Keys.Order();
 
@@ -116,6 +155,7 @@ public sealed class Rac1AlienQueenLinkedGate
                     {
                         _children[id].NativeState = 5;
                         _children[id].RotationOffset = 0;
+                        _children[id].NativeRotation.SetValue(0f);
                     }
                 }
                 break;
@@ -166,8 +206,10 @@ public sealed class Rac1AlienQueenLinkedGate
         // and moving every spawned child to state9 with collision enabled.
         p.NativeState = 8;
         p.Visible = true;
+        p.NativeRotation.SetValue(p.RotationOffset);
         foreach (int child in p.Children)
         {
+            _children[child].NativeRotation.SetValue(_children[child].RotationOffset);
             _children[child].NativeState = 9;
             _children[child].Visible = true;
         }
