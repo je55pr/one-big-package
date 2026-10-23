@@ -253,6 +253,60 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void SourceApproachScalarClampsBothSignsAndReachesExactTarget()
+    {
+        Assert.Equal(1.25f, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1, 2, .25f));
+        Assert.Equal(.75f, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1, 0, .25f));
+        Assert.Equal(2, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1.99f, 2, .25f));
+        Assert.Equal(0, Rac1AridiaConstructorbotNative.ApproachNativeScalar(.01f, 0, .25f));
+        Assert.Equal(1, Rac1AridiaConstructorbotNative.ApproachNativeScalar(1, 2, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.ApproachNativeScalar(0, 1, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.ApproachNativeScalar(float.NaN, 1, 1));
+    }
+
+    [Fact]
+    public void StateThreeVerticalPreservesSpeedRampAndOnlyLandsOnActualFloor()
+    {
+        float height = 32;
+        float speed = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            var frame = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+                height, speed, 24.9f, 1f / 60f, 1f / 60f);
+            Assert.InRange(frame.VerticalStep, 0, 10f / 60);
+            Assert.True(frame.Height <= height);
+            Assert.False(frame.ReachedFloor);
+            speed = frame.VerticalStep;
+            height = frame.Height;
+        }
+        Assert.Equal(8f / 60, speed, 5);
+        bool landed = false;
+        for (int i = 0; i < 200; i++)
+        {
+            var frame = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+                height, speed, 24.9f, 1f / 60f, 1f / 60f);
+            height = frame.Height;
+            speed = frame.VerticalStep;
+            if (!frame.ReachedFloor) continue;
+            landed = true;
+            break;
+        }
+        Assert.True(landed);
+        Assert.Equal(24.9f, height);
+        Assert.Equal(10f / 60, speed, 5);
+        var noFloor = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+            height, speed, null, 1f / 60f, 1f / 60f);
+        Assert.Equal(height, noFloor.Height);
+        Assert.False(noFloor.ReachedFloor);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepStateThreeVertical(10, 0, float.NaN, 1f / 60f, .01f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepStateThreeVertical(10, 0, 0, 1f / 60f, -.01f));
+    }
+
+    [Fact]
     public void StateThreeHorizontalClampsTowardSourceWaypointWithoutMovingVerticalCoordinate()
     {
         var current = new Vector3(0, 0, 100);

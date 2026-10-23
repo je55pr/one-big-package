@@ -119,18 +119,19 @@ public partial class OBPGame
                 $"before={originalPlanarDistance:F3} after={movedPlanarDistance:F3} " +
                 $"state={particleNative.State.NativeState} PASS");
 
-            // Isolate state5's source walker without inventing success for the
-            // currently partial state3 floor-height convergence. The player
-            // is staged and the native state is deliberately forced here.
-            // Native state3 has a separate source floor_probe_v + approach_f
-            // vertical path. That recurrence is not ported yet, so this
-            // *explicitly staged* state5 test first settles its real Godot
-            // capsule on an actual level surface. No invented ground height.
-            Require(TryGroundRac1Enemy(particleBot, upwardReach: .5f, downwardReach: 40f),
-                "cannot stage native state5 from real collision floor");
-            particleBot.Node.Root.GlobalPosition = particleBot.Body.GlobalPosition;
-            _rac1MobyRuntime.SetNativeState(particleNative, 5);
-            SelectRac1EnemySequence(particleBot, 6, 1);
+            // This fixture still stages the PLAYER near authored record14,
+            // but no longer forces the Constructorbot to native state5 or
+            // manually moves its body onto terrain. Source state3 must now
+            // descend to real imported collision geometry and state4 must
+            // complete its animation before the walker is admitted.
+            await Rac1SmokeWaitAsync(() => particleNative.State.NativeState == 5,
+                280, "native class612 state3 source descent -> state4 clip5 -> state5");
+            Require(particleBot.Animation.Sequence == 6 ||
+                !particleBot.Animation.SupportsSequence(6),
+                "native state5 did not select source clip6");
+            GD.Print($"[aridia-bot-smoke] real class612 i551 " +
+                $"state3 floor descent ->state4 clip5 ->state5 clip6 " +
+                $"bodyY={particleBot.Body.GlobalPosition.Y:F3} PASS");
             float walkerStart = new Vector2(
                 particleBot.Node.Root.GlobalPosition.X - actualWaypoint.X,
                 particleBot.Node.Root.GlobalPosition.Z - actualWaypoint.Z).Length();
@@ -138,12 +139,17 @@ public partial class OBPGame
             float walkerEnd = new Vector2(
                 particleBot.Node.Root.GlobalPosition.X - actualWaypoint.X,
                 particleBot.Node.Root.GlobalPosition.Z - actualWaypoint.Z).Length();
-            Require(walkerEnd < walkerStart - .025f,
-                $"state5 source walker failed to approach native waypoint: " +
-                $"before={walkerStart:F3} after={walkerEnd:F3}");
-            GD.Print($"[aridia-bot-smoke] staged class612 i551 state5 " +
-                $"walker moved toward record14 before={walkerStart:F3} " +
-                $"after={walkerEnd:F3} state={particleNative.State.NativeState} PASS");
+            if (walkerStart > .1f)
+                Require(walkerEnd < walkerStart - .025f,
+                    $"state5 source walker failed to approach native waypoint: " +
+                    $"before={walkerStart:F3} after={walkerEnd:F3}");
+            else
+                Require(walkerEnd < .25f,
+                    $"state5 source walker drifted off a waypoint already reached " +
+                    $"by native state3: after={walkerEnd:F3}");
+            GD.Print($"[aridia-bot-smoke] class612 i551 natural state5 " +
+                $"walker waypoint before={walkerStart:F3} after={walkerEnd:F3} " +
+                $"state={particleNative.State.NativeState} PASS");
 
             // Negative scene fixture: same real collision body, but suspended
             // well above any terrain. Native walker_probe must return no

@@ -190,6 +190,48 @@ public static class Rac1AridiaConstructorbotNative
     }
 
 
+    public readonly record struct StateThreeVerticalFrame(
+        float Height, float VerticalStep, bool ReachedFloor);
+
+    /// <summary>
+    /// Native LEVEL2:0x2d7aac..0x2d7aec first calls approach_f on PVar+0x48
+    /// toward 10*frameScale by its acceleration argument, then calls it
+    /// on Moby Z toward floor_probe_v(0.5, position, 0), using that PVar
+    /// step. Source approach_f_v at 0x25b868 clamps the distance exactly.
+    /// A missing collision floor holds position and never admits state4.
+    /// </summary>
+    public static StateThreeVerticalFrame StepStateThreeVertical(
+        float currentHeight, float currentVerticalStep, float? floorHeight,
+        float sourceFrameScale, float sourceAcceleration)
+    {
+        if (!float.IsFinite(currentHeight) || !float.IsFinite(currentVerticalStep) ||
+            currentVerticalStep < 0 || !float.IsFinite(sourceFrameScale) ||
+            sourceFrameScale < 0 || sourceFrameScale > 1 ||
+            !float.IsFinite(sourceAcceleration) || sourceAcceleration < 0 ||
+            (floorHeight.HasValue && !float.IsFinite(floorHeight.Value)))
+            throw new ArgumentOutOfRangeException(nameof(sourceAcceleration));
+
+        // approach_f(pvar+0x48, 10*frameScale, sourceAcceleration)
+        float step = ApproachNativeScalar(currentVerticalStep,
+            10f * sourceFrameScale, sourceAcceleration);
+        if (floorHeight is not { } floor)
+            return new(currentHeight, step, false);
+        // approach_f(moby+0x18, floor_probe, pvar+0x48)
+        float height = ApproachNativeScalar(currentHeight, floor, step);
+        return new(height, step, height == floor);
+    }
+
+    public static float ApproachNativeScalar(float value, float target, float step)
+    {
+        if (!float.IsFinite(value) || !float.IsFinite(target) ||
+            !float.IsFinite(step) || step < 0)
+            throw new ArgumentOutOfRangeException(nameof(step));
+        float distance = target - value;
+        if (MathF.Abs(distance) <= step)
+            return target;
+        return value + Math.Clamp(distance, -step, step);
+    }
+
     /// <summary>
     /// LEVEL2:0x2d7a44..0x2d7a98: state 3 subtracts the live Moby position
     /// from the PVar+0x188 record's centre, ZEROES the resulting native Z,

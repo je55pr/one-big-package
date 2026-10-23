@@ -12,6 +12,7 @@ public partial class OBPGame
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
     private readonly Dictionary<int, float> _rac1ConstructorbotWalkerSpeeds = [];
+    private readonly Dictionary<int, float> _rac1ConstructorbotStateThreeVerticalSteps = [];
     // Source table at 0x1600ec is the gameplay +0x60 list already decoded
     // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
     private readonly Dictionary<int, Vector3> _rac1ConstructorbotNativeWaypoints = [];
@@ -21,6 +22,7 @@ public partial class OBPGame
     {
         _rac1ConstructorbotStartups.Clear();
         _rac1ConstructorbotWalkerSpeeds.Clear();
+        _rac1ConstructorbotStateThreeVerticalSteps.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1AridiaClipVolumes = [];
     }
@@ -210,6 +212,49 @@ public partial class OBPGame
     }
 
     /// <summary>
+    /// Host floor-height adapter for native state3 floor_probe_v(.5, moby, 0).
+    /// The retail API's full vertical extent and hit filtering still need
+    /// verification. Search a bounded 40-unit downward ray in real geometry;
+    /// a Godot capsule sweep preserves a usable floor if the imported mesh
+    /// lacks support directly beneath the Moby centre. No inferred height.
+    /// </summary>
+    private float? ProbeRac1ConstructorbotStateThreeFloor(
+        Rac1HostedEnemy enemy, Vector3 position)
+    {
+        const float hostMaximumDescent = 40f;
+        Vector3 from = position + Vector3.Up * .5f;
+        Vector3 to = position - Vector3.Up * hostMaximumDescent;
+        var ray = PhysicsRayQueryParameters3D.Create(from, to);
+        ray.Exclude = [enemy.Body.GetRid(), _player!.GetRid()];
+        var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(ray);
+        if (hit.TryGetValue("position", out var hitPoint) &&
+            hit.TryGetValue("normal", out var normal) &&
+            normal.AsVector3().Y > .65f)
+            return hitPoint.AsVector3().Y;
+
+        var transform = enemy.Body.GlobalTransform;
+        transform.Origin = from;
+        using var parameters = new PhysicsTestMotionParameters3D
+        {
+            From = transform,
+            Motion = to - from,
+            Margin = enemy.Body.SafeMargin,
+            RecoveryAsCollision = true,
+            MaxCollisions = 4,
+            ExcludeBodies = new global::Godot.Collections.Array<Rid>(
+                _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                    .Append(_player.GetRid()))
+        };
+        using var result = new PhysicsTestMotionResult3D();
+        if (!PhysicsServer3D.BodyTestMotion(enemy.Body.GetRid(), parameters, result))
+            return null;
+        for (int i = 0; i < result.GetCollisionCount(); i++)
+            if (result.GetCollisionNormal(i).Y > .65f)
+                return from.Y + result.GetTravel().Y;
+        return null;
+    }
+
+    /// <summary>
     /// Host adapter for the native 0x2583f0 walker_probe vertical segment.
     /// The source uses collision kind 0x22 and hit-record metadata. Godot
     /// supplies a real scene raycast, excluding self and Ratchet. This
@@ -314,6 +359,8 @@ public partial class OBPGame
         Rac1AridiaConstructorbotNative.Frame? nativeBot = null;
         bool sourceParticlePreview = false;
         bool sourceStateThreeMotion = false;
+        bool sourceStateThreeVerticalReached = false;
+        float? sourceStateThreeTargetHeight = null;
         bool sourceWalkerMotion = false;
         Vector3 sourceWalkerGoal = default;
         float sourceWalkerYawError = 0;
@@ -343,7 +390,27 @@ public partial class OBPGame
                         ? forward.Normalized().SignedAngleTo(toTarget.Normalized(), Vector3.Up) : 0;
                     float nextYaw = Rac1AridiaConstructorbotNative.StepStateThreeYaw(
                         node.Root.Rotation.Y, yawError, frameScale);
-                    frame = frame with { Motion = sourceDisplacement, Yaw = nextYaw };
+                    Vector3 horizontal = FromEffectNative(sourceDisplacement);
+                    sourceStateThreeTargetHeight = ProbeRac1ConstructorbotStateThreeFloor(
+                        enemy, origin + horizontal);
+                    // Native step 1: approach the PVar+0x48 vertical-step
+                    // variable toward 10*frameScale. 0x161a84*0x15ed70 is
+                    // not independently decoded; use one host tick as the
+                    // bounded acceleration argument while preserving the
+                    // exact source approach_f recurrence and transition.
+                    var vertical = Rac1AridiaConstructorbotNative.StepStateThreeVertical(
+                        origin.Y,
+                        _rac1ConstructorbotStateThreeVerticalSteps.GetValueOrDefault(instance),
+                        sourceStateThreeTargetHeight,
+                        frameScale, frameScale);
+                    _rac1ConstructorbotStateThreeVerticalSteps[instance] = vertical.VerticalStep;
+                    sourceStateThreeVerticalReached = vertical.ReachedFloor;
+                    frame = frame with
+                    {
+                        Motion = ToEffectNative(horizontal +
+                            Vector3.Up * (vertical.Height - origin.Y)),
+                        Yaw = nextYaw
+                    };
                 }
                 sourceWalkerMotion = sourceFrame.NativeState == 5 &&
                     _rac1MobyRuntime.Require(node.Source).State.NativeState == 5 &&
@@ -432,20 +499,40 @@ public partial class OBPGame
         if (enemy.Animation.SupportsSequence(frame.Sequence))
             SelectRac1EnemySequence(enemy, frame.Sequence, 6);
         node.Root.Rotation = new(0, frame.Yaw, 0);
-        if (frame.Motion.LengthSquared() > 0)
+        if (sourceStateThreeMotion)
+        {
+            // Native L2:0x2d7a88..0x2d7aec DIRECTLY writes the Moby
+            // position before probing its floor. It does not call the
+            // walker collision solver or a generic character-slide here.
+            // Godot's generic contact shape can otherwise trap a falling
+            // constructorbot on Ratchet's head rather than letting source
+            // floor_probe_v find level geometry beneath them.
+            Vector3 destination = position + FromEffectNative(frame.Motion);
+            enemy.Body.GlobalPosition = destination;
+            enemy.Node.Root.GlobalPosition = destination;
+            enemy.Grounded = sourceStateThreeVerticalReached &&
+                sourceStateThreeTargetHeight is { } terrain &&
+                MathF.Abs(destination.Y - terrain) < .035f;
+        }
+        else if (frame.Motion.LengthSquared() > 0)
             MoveRac1EnemyContact(enemy, FromEffectNative(frame.Motion));
         else
             enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
         if (sourceStateThreeMotion)
         {
-            // Source state3 transitions only after its floor-height approach
-            // reaches the probed floor. Godot ground contact is a host
-            // approximation of that signal. A missing floor contact must
-            // NEVER be treated as an implicit success or timeout.
+            // Native state3 waits until its SECOND approach_f has reached
+            // the actual floor probe height; unrelated IsOnFloor alone
+            // must not advance the original state machine.
+            bool reached = sourceStateThreeVerticalReached &&
+                sourceStateThreeTargetHeight is { } floor &&
+                MathF.Abs(enemy.Body.GlobalPosition.Y - floor) < .035f;
             var landing = Rac1AridiaConstructorbotNative.StepStateThreeLanding(
-                enemy.Grounded ? true : null);
+                reached ? true : null);
             if (landing.NativeState == 4)
+            {
                 _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source), 4);
+                _rac1ConstructorbotStateThreeVerticalSteps.Remove(instance);
+            }
         }
         if (sourceWalkerMotion)
         {
