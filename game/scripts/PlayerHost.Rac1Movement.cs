@@ -158,6 +158,7 @@ public partial class PlayerHost : CharacterBody3D
     {
         RecordRac1TetherMotion();
         RecordRac1SurfaceMotion();
+        RecordRac1WaterMotion();
         if (_ordinaryContactRequest is { } request)
         {
             Vector3 displacement = GlobalPosition - _ordinaryContactStart;

@@ -57,7 +57,7 @@ public partial class PlayerHost : CharacterBody3D
     }
     private void RequestPrimaryAction()
     {
-        if (Rac1Hanging || Rac1SwingshotActive)
+        if (Rac1Hanging || Rac1SwingshotActive || Rac1SwimmingActive)
             return;
         if (UseRac1Gameplay && !Rac1GameplayAlive)
             return;

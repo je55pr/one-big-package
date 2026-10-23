@@ -22,7 +22,8 @@ public static class Rac1HudProjection
         Rac1RatchetNanotechSession nanotech,
         Rac1WeaponInventory weapons,
         Rac1BoltWallet? wallet = null,
-        int capturedMobyCount = 0)
+        int capturedMobyCount = 0,
+        Rac1SwimSnapshot? swimming = null, bool ownsOxygenMask = false)
     {
         ArgumentNullException.ThrowIfNull(nanotech);
         ArgumentNullException.ThrowIfNull(weapons);
@@ -63,8 +64,13 @@ public static class Rac1HudProjection
             Health: hudHealth,
             Bolts: wallet is null ? null : new HudCurrency(BoltsResourceKey, wallet.Balance),
             CurrentWeapon: weapon,
-            ContextPrompt: null);
+            ContextPrompt: null,
+            Air: CaptureAir(swimming, ownsOxygenMask));
     }
+
+    public static HudResourceMeter? CaptureAir(Rac1SwimSnapshot? swimming, bool ownsOxygenMask) =>
+        !ownsOxygenMask && swimming is { NativeDomain: 17 or 20 } state
+            ? new("oxygen", state.Oxygen, Rac1TraversalEquipmentWater.MaximumOxygen) : null;
 
     public static HudFeedbackDraft DamageFeedback(
         Rac1RatchetNanotechSnapshot before,

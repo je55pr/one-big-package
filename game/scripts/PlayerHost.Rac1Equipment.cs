@@ -7,13 +7,14 @@ namespace OneBigPackage;
 public partial class PlayerHost
 {
     public bool Rac1EquippedItemHeld => !Scripted && !DevelopmentControls.FlyEnabled &&
-        !Rac1Hanging && !Rac1SwingshotActive && !Rac1DevelopmentSwingshotPreview && _liveInput.TraversalHeld;
+        !Rac1Hanging && !Rac1SwingshotActive && !Rac1SwimmingActive && !Rac1DevelopmentSwingshotPreview && _liveInput.TraversalHeld;
     public Rac1MovementCapabilities Rac1MovementEquipment { get; set; }
     public Rac1TraversalEquipmentId? Rac1ActiveBackpack { get; set; }
     public bool Rac1ClankAvailable { get; set; }
     public int? Rac1DevelopmentPackPreview { get; private set; }
     public bool Rac1DevelopmentSwingshotPreview { get; private set; }
-    public int? Rac1TraversalAction => Rac1SwingshotActive ? Rac1SwingshotNativeAction :
+    public int? Rac1TraversalAction => Rac1SwimmingActive ? _rac1SwimState.NativeAction :
+        Rac1SwingshotActive ? Rac1SwingshotNativeAction :
         Rac1Hanging ? _rac1Ledge.NativeAction : _rac1Movement.TraversalAction;
 
     private int ActiveRac1Pack => Rac1DevelopmentPackPreview ??

@@ -119,11 +119,13 @@ solid terrain from free swimming. At the reported opening puddle (native X/Z
 raw `0x1f` is at 59.55494, only 0.1875 below it. Swimming previously took ownership
 from the ordinary controller and suspended Ratchet above this bottom, freezing
 the unsupported surface-swim pose and preventing ordinary jumps. The host now
-queries the solid bottom and retains ordinary walking/jumping when the standing
-water depth is below its capsule centre. This depth gate is **OBP host policy**;
-it is not the recovered native water-volume admission or action-`0x72` law.
-The Novalis swim smoke covers walking animation, Cross launch and landing at
-this authored puddle as well as the existing deeper-water/dive/oxygen checks.
+queries the solid bottom and uses the recovered water-entry/depth predicates,
+including depth `>.8` on the falling surface-admission path. The former host
+capsule-centre depth gate has been removed. Query-mask membership remains a
+Godot approximation; see [water motion and remaining boundaries](RAC1_TRAVERSAL_EQUIPMENT.md#novalis-water-motion-and-host-boundary).
+The Novalis swim smoke covers walking, Cross and landing at this puddle, deeper
+diving/oxygen/ascend, and the later human-marked pool at native
+`(295.03513,149.39476,82.25)` with surface animations and a water-exit jump.
 
 The ice overspeed test reads `P+0x160`, which the contact tail stores as a
 single at `0x213c38`. The runtime rounds the reconstructed contact length to

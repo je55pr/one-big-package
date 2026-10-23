@@ -198,7 +198,8 @@ public partial class OBPGame
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
         _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet,
-            _rac1AdditionalWeapons?.Cargo.Count ?? 0), feedback);
+            _rac1AdditionalWeapons?.Cargo.Count ?? 0, _player?.Rac1SwimState,
+            _player?.Rac1MovementEquipment.OxygenMask == true), feedback);
     }
 
     private void ArmRac1Gameplay(PlayerHost player)
@@ -212,6 +213,7 @@ public partial class OBPGame
         player.Rac1CrankInput = TryTurnRac1NovalisCrank;
         player.Rac1WaterSurfaceHeight = SampleRac1NovalisWaterHeight;
         player.Rac1NovalisDrowned += OnRac1NovalisDrowned;
+        player.Rac1WaterSoundRequested += sound => PlayRac1PlayerSound(new(0, sound));
         player.Rac1GameplayState = _rac1Nanotech.Probe();
         player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
@@ -224,6 +226,10 @@ public partial class OBPGame
 
         _rac1Nanotech.Actions.Update();
         _player.Rac1GameplayState = _rac1Nanotech.Probe();
+
+        if (_hudState.Current.Air != Rac1HudProjection.CaptureAir(_player.Rac1SwimState,
+                _player.Rac1MovementEquipment.OxygenMask))
+            RefreshRac1HudState();
 
         if (_rac1Nanotech.HasPendingRecoveredEnvironmentalRestart &&
             !TryCompleteRac1EnvironmentalRestart(automatic: true))

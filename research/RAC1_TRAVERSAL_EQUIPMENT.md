@@ -220,13 +220,18 @@ the oxygen consumer and depth transition, not animation appearance. Actions:
 - `0x34`: underwater idle, sequence 60.
 - `0x35`: Hydro-Pack underwater, sequence 61; ownership of item 4 plus held
   crouch-mask `0xa` selects it from the normal underwater family.
-- `0x36`: moving surface swim; `0x37`: surface idle.
-- `0x72`: shallow wade, distinct from both swimming domains.
+- `0x36`: moving surface swim, sequence 101, blend 17; `0x37`: surface idle,
+  sequence 58, blend 22. Both use playback multiplier `.6`.
+- `0x73`: moving wade, sequence 96. The older `0x72` routing label is a
+  locked idle/carry action, not freely controlled shallow-water walking.
 
 Surface swim accepts buffered Cross `0x40` to action `0x12` and Square
 `0x80` to underwater action `0x33`/Hydro-Pack `0x35`; the source includes
-cooldowns and contact guards. Underwater-to-surface requires an unobstructed ray
-about source water height. A floor triangle tagged water is insufficient to
+cooldowns and contact guards. Idle surface Cross requires age >10; moving
+surface Cross does not. Square has a seven-update press history; Cross eight.
+Underwater-to-surface requires leaving dive substate 1, positive final vertical
+contact motion and feet above `water-.4`. A blocked ray from `water+.01` to
+`water+.31` instead forces a dive. A floor triangle tagged water is insufficient to
 reconstruct depth, currents or water height.
 
 `0x227778..0x2278e4` owns oxygen at `P+0x22a0`, maximum 10000. In underwater
@@ -236,6 +241,56 @@ domain, ownership byte 6 suppresses consumption; otherwise integer decrement is
 `0x6a` or water-death `0x76`. Exhaustion is only part of the death predicate:
 source depth, pitch, movement and surface context still matter. `StepOxygen`
 therefore returns a counter and does not manufacture a death event.
+
+### Novalis water motion and host boundary
+
+The original LEVEL1 overlay is pinned in
+`generated/rac1-water-native-witness.json`. `rac1-water-native-trace.py` rebuilds
+private EE RAM from the ISO and executes the original routines using the
+native-port's R5900 interpreter. Its clear contact queries, supplied conditioned
+input/animation facts and suppressed presentation are explicit limits; these
+numeric witnesses are not an ordinary-gameplay test.
+
+`Rac1WaterMovementSession` owns the regular-axis actions and motion recovered
+from Novalis `2378bc` (underwater), `238a24` (surface), `2406b0` (oxygen),
+`2408e8` (entry), `240c78` (waterline bob) and `2435b8..243b64` (input).
+Surface entry measures feet plus `.45`, falling reach `max(.2,abs(vz)+.07)`
+and depth `>.8`. Native wading flags use strict `.25<depth<.85`.
+
+Surface paddling accelerates its scalar towards `3/60` by `4/3600`, brakes
+by `5/3600`, retains a 45-update stroke and samples the 30-float curve at
+`17c440`. Its sampler uses authored animation **advance**, not only phase:
+`frac*curve[i] + (advance-frac)*curve[i-1]`, with wrap selecting entry 29.
+Contact carry decays separately at `4.2/3600`. Waterline height settles around
+`water-.12` through the original bob and height springs.
+
+Underwater Square pitches down, Cross pitches up, and a surface dive retains
+substate 1 for 40 updates. Native pitch/yaw/roll springs steer spherical motion.
+Normal speed targets `3/60` (dive entry `6/60`), while an owned Hydro-Pack
+targets `7/60` under held crouch. Stroke motion follows the authored curve;
+Hydro-Pack motion uses the scalar directly. The host supplies full digital
+button pressure; DS2 pressure variation/non-pressure-pad ramps are not claimed.
+
+Water exit is action `12`, sequence 114/frame 1/blend -1, not an ordinary
+jump. Depth <1.25 selects heights 1.95..1.98 and launch age 15; deeper water
+selects the native impulse script at `17c3e0`, ages 2..36. Air steering is
+clamped to `3.7/60`. The initial dip must not prematurely re-enter swimming.
+Sequence 114 retains its variable retail frame rates.
+
+At zero oxygen, the native escape exception requires feet above `water-2`,
+pitch below `-.87266463` and final vertical contact motion above `1/60`.
+Otherwise action `6a` selects drowning sequence 95. OBP lets that animation
+complete before its existing death/checkpoint host runs. The normal HUD displays
+the source oxygen counter; its plain bar layout is OBP presentation policy.
+
+Remaining boundaries: Godot approximates native mask-2/0x24 membership using
+the authored class-zero footprint plus solid/ceiling rays and retains an upright
+host collision capsule. Exact native swimming body queries, moving water,
+currents, water Moby ownership, submerged camera/fog, splash/wake/bubble particle
+generators, joint bending, global action cooldown producers and water-jump
+animation retiming remain unrecovered here. Shore handoff resumes the ordinary
+ground controller; the complete moving-wade action 73 is not implemented.
+No numerical PS2 bit-exactness or complete water reconstruction is claimed.
 
 ## Remaining contextual ownership
 
