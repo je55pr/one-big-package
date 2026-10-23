@@ -13,7 +13,7 @@ public enum Rac1LevelVisitState : byte
 }
 
 /// <summary>
-/// Result of feeding one recovered retail progression-dispatch value into the
+/// Result of feeding one recovered retail controller-code action into the
 /// destination-discovery path. These values describe discovery only; they do
 /// not imply mission completion, travel, or checkpoint activation.
 /// </summary>
@@ -48,10 +48,10 @@ public sealed class Rac1CampaignState
     /// <summary>Retail gameplay accepts native level/destination ids 0 through 18.</summary>
     public const int NativeDestinationCount = 19;
 
-    /// <summary>First dispatcher value proven to discover a normal destination.</summary>
+    /// <summary>First controller-code action proven to discover a destination.</summary>
     public const int FirstDestinationDiscoveryEvent = 0x25;
 
-    /// <summary>Last dispatcher value proven to discover a normal destination.</summary>
+    /// <summary>Last controller-code action proven to discover a destination.</summary>
     public const int LastDestinationDiscoveryEvent = 0x36;
 
     private const int DestinationDiscoveryEventOffset = 0x24;
@@ -100,7 +100,7 @@ public sealed class Rac1CampaignState
     public IReadOnlyList<Rac1LevelVisitState> LevelStates => _levelStatesView;
 
     /// <summary>
-    /// Resolve the normal retail progression-dispatch range that feeds destination
+    /// Resolve the retail controller-code action range that feeds destination
     /// admission. Values 0x25..0x36 map to destination ids 1..18 by subtracting
     /// 0x24. Other dispatcher values are unrelated to destination discovery.
     /// </summary>
@@ -119,7 +119,7 @@ public sealed class Rac1CampaignState
 
     /// <summary>
     /// Apply only the recovered destination-discovery branch of the retail
-    /// progression dispatcher. This never changes CurrentLevel, per-level
+    /// controller-code router. This legacy diagnostic API never changes CurrentLevel, per-level
     /// completion, or checkpoint state.
     /// </summary>
     public Rac1DestinationDiscoveryResult ApplyProgressionEvent(int progressionEventId)
@@ -172,6 +172,24 @@ public sealed class Rac1CampaignState
         if (_levelStates[destinationId] == Rac1LevelVisitState.Unvisited)
             _levelStates[destinationId] = Rac1LevelVisitState.Visited;
         return true;
+    }
+
+    /// <summary>
+    /// Compiled mission level_exit_to is distinct from choosing an unlocked map
+    /// entry. At the late loader commit the source visit becomes 2 (with the
+    /// native 7/14 gates), then CurrentLevel changes. The following nonzero-level
+    /// initialization calls admission even when the mission target was not known.
+    /// </summary>
+    internal void CommitMissionLevelExit(int destinationId)
+    {
+        ValidateLevelId(destinationId);
+        if ((CurrentLevel != 7 || _visitedPlanets[8] != 0) &&
+            (CurrentLevel != 14 || _visitedPlanets[15] != 0))
+            _levelStates[CurrentLevel] = Rac1LevelVisitState.Completed;
+        CurrentLevel = destinationId;
+        if (_levelStates[destinationId] == Rac1LevelVisitState.Unvisited)
+            _levelStates[destinationId] = Rac1LevelVisitState.Visited;
+        if (destinationId != 0) AdmitDestination(destinationId);
     }
 
     /// <summary>

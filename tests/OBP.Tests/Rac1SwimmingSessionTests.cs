@@ -11,7 +11,7 @@ public sealed class Rac1SwimmingSessionTests
         var surface = session.Step(new(Rac1WaterDomain.Surface, Moving: false));
         Assert.Equal(Rac1TraversalEquipmentWater.SurfaceSwimDomain, surface.NativeDomain);
         Assert.Equal(Rac1TraversalEquipmentWater.SurfaceIdleAction, surface.NativeAction);
-        Assert.Null(surface.NativeSequence);
+        Assert.Equal(58, surface.NativeSequence);
 
         var moving = session.Step(new(Rac1WaterDomain.Surface, Moving: true));
         Assert.Equal(Rac1TraversalEquipmentWater.SurfaceMovingAction, moving.NativeAction);

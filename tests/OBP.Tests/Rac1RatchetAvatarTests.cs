@@ -24,7 +24,7 @@ public sealed class Rac1RatchetAvatarTests
         Assert.Equal(6_856, avatar.Mesh.Indices.Length / 3);
         Assert.Equal(5_583 * 2, avatar.Mesh.Uvs.Length);
         Assert.Equal(111, avatar.Skeleton.Count);
-        Assert.Equal(48, avatar.AnimationClips.Count);
+        Assert.Equal(52, avatar.AnimationClips.Count);
         Assert.Equal(10, avatar.StandingFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
 
@@ -52,6 +52,10 @@ public sealed class Rac1RatchetAvatarTests
         AssertClip(avatar, 59, 15, 15f, variable: false);
         AssertClip(avatar, 60, 15, 7.5f, variable: false);
         AssertClip(avatar, 61, 12, 15f, variable: false);
+        AssertClip(avatar, 58, 15, 7.5f, variable: false);
+        AssertClip(avatar, 101, 15, 15f, variable: false);
+        AssertClip(avatar, 95, 51, 15f, variable: false);
+        AssertClip(avatar, 114, 27, null, variable: true);
         foreach (int sequence in new[] { 51, 56, 57, 62 }) AssertClip(avatar, sequence, 5, 15f, variable: false);
         AssertClip(avatar, 17, 25, null, variable: true);
         AssertClip(avatar, 18, 16, null, variable: true);

@@ -69,6 +69,7 @@ public partial class ControllerSmoke : Node
             Require(Find<FileDialog>() is null && Focus() is Button, $"Circle did not cancel the disc picker and restore focus: visible={Find<FileDialog>()?.Visible}, focus={Focus()?.Name}");
             GD.Print("[controller-smoke] controller source-file dialog and cancel PASS");
             await CheckControllerWidgetsAsync();
+            await CheckMissionSceneAcknowledgementAsync();
 
             if (args.Rac1Iso is not null || args.GcIso is not null || args.UyaIso is not null)
             {
@@ -257,6 +258,19 @@ public partial class ControllerSmoke : Node
         var quick = Find<WeaponQuickSelectUi>();
         Require(quick is not null && quick.Entries.Count == 15, "Triangle did not expose the preview arsenal");
         Require(!GetTree().Paused, "Triangle Quick Select paused the real-time world");
+        await Axis(JoyAxis.LeftX, 1); await Frames(8);
+        Require(player.Rac1AnalogueMagnitude < 0.001d,
+            "Quick Select left stick also reached Ratchet locomotion");
+        await Axis(JoyAxis.LeftX, 0);
+        await Button(JoyButton.X, true); await Frames(4);
+        Require(!player.Rac1WrenchFrame.Active, "Quick Select let Square start a wrench attack");
+        await Button(JoyButton.X, false);
+        Input.ParseInputEvent(new InputEventKey { Keycode = Key.D, PhysicalKeycode = Key.D, Pressed = true });
+        await Frames(4);
+        Require(player.Rac1AnalogueMagnitude < 0.001d,
+            "Quick Select keyboard direction also reached Ratchet locomotion");
+        Input.ParseInputEvent(new InputEventKey { Keycode = Key.D, PhysicalKeycode = Key.D, Pressed = false });
+        await Frames(3);
         await Press(JoyButton.RightShoulder); await Axis(JoyAxis.LeftX, 1); await Axis(JoyAxis.LeftX, 0);
         Require(quick!.SelectedIndex >= 8, "R1 cannot reach the second quick-select page");
         await Capture("quick-select");

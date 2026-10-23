@@ -7,6 +7,16 @@ namespace OBP.Tests;
 public sealed class RuntimeAudioHostTests
 {
     [Fact]
+    public void ShutdownCleanupIsIdempotentForAnAlreadyStoppedAudioHost()
+    {
+        var host = new RuntimeAudioHost();
+        host.StopAll(freeImmediately: true);
+        host.StopAll(freeImmediately: true);
+        host.StopLevelAudio();
+        Assert.Empty(host.Diagnostics);
+    }
+
+    [Fact]
     public void PrepareConvertsMonoPcmToLittleEndianGodotPayload()
     {
         var intent = new RuntimeAudioPlaybackIntent(

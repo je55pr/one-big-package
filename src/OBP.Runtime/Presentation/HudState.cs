@@ -25,6 +25,7 @@ public sealed record HudCurrency(
 public sealed record HudAmmo(
     int Current,
     int? Capacity = null);
+public sealed record HudResourceMeter(string UnitKey, int Current, int Capacity);
 public sealed record HudWeapon(
     string PresentationKey,
     string? NameKey = null,
@@ -53,7 +54,8 @@ public sealed record HudPresentationState(
     HudHealth? Health = null,
     HudCurrency? Bolts = null,
     HudWeapon? CurrentWeapon = null,
-    HudContextPrompt? ContextPrompt = null);
+    HudContextPrompt? ContextPrompt = null,
+    HudResourceMeter? Air = null);
 
 public sealed record HudSnapshot(
     long Epoch,
@@ -62,7 +64,8 @@ public sealed record HudSnapshot(
     HudCurrency? Bolts,
     HudWeapon? CurrentWeapon,
     IReadOnlyList<HudFeedbackEvent> Feedback,
-    HudContextPrompt? ContextPrompt)
+    HudContextPrompt? ContextPrompt,
+    HudResourceMeter? Air = null)
 {
     public static HudSnapshot Empty { get; } = new(
         Epoch: 0,
@@ -133,5 +136,6 @@ public sealed class HudStateAdapter
             Bolts: state.Bolts,
             CurrentWeapon: state.CurrentWeapon,
             Feedback: feedback,
-            ContextPrompt: state.ContextPrompt);
+            ContextPrompt: state.ContextPrompt,
+            Air: state.Air);
 }

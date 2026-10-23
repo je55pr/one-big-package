@@ -60,7 +60,9 @@ public partial class OBPGame : Node3D
     public override void _Ready()
     {
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
+        ApplicationLifecycle.SetQuitPreparation(PrepareForQuitAsync);
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        if (!InitializePlaytest()) return;
         if (_args.ReplayForwardFrames.HasValue && _args.LoadMovementState is null)
         {
             GD.PrintErr("[movement-replay] --replay-forward requires --load-movement-state.");
@@ -122,12 +124,21 @@ public partial class OBPGame : Node3D
         }
     }
 
+    public override void _PhysicsProcess(double delta)
+    {
+        if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
+        StepRac1NovalisMechanisms();
+        StepRac1PlayerAudioPhysics();
+    }
+
     public override void _Process(double delta)
     {
         _frame++;
+        TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
         {
+            if (_playtest is { WaitingForEntry: true }) return;
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
@@ -267,8 +278,52 @@ public partial class OBPGame : Node3D
         }
     }
 
-    public override void _ExitTree() =>
+    private void ReleaseAudioForExit()
+    {
+        // An external exit can bypass normal world teardown. Finish campaign
+        // persistence before shutting down its owning Godot session.
+        FlushRac1CampaignSaves("clean exit");
+        _worldHost.Unload(releaseAudioImmediately: true);
+        ResetRac1PlayerAudio(freeImmediately: true);
+        ResetRac1WeaponAudio(freeImmediately: true);
+    }
+
+    private async Task PrepareForQuitAsync()
+    {
+        // Stop gameplay before releasing its audio, otherwise a final physics
+        // update can start another footstep/voice during shutdown.
+        ProcessMode = ProcessModeEnum.Disabled;
+        ReleaseAudioForExit();
+
+        // Godot 4.7.2 retires stopped playbacks on the mixing thread, then
+        // releases their references in AudioServer's main-thread update. Tree
+        // teardown alone cannot guarantee either has run. Observe two mixes
+        // before the final quit; use wall time even with --fixed-fps.
+        static double LastMixTime() => Time.GetTicksUsec() / 1_000_000d - AudioServer.GetTimeSinceLastMix();
+        double lastMix = LastMixTime();
+        ulong deadline = Time.GetTicksMsec() + 1000;
+        int mixes = 0;
+        while (mixes < 2 && Time.GetTicksMsec() < deadline)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            double mix = LastMixTime();
+            if (mix > lastMix + .001d)
+            {
+                mixes++;
+                lastMix = mix;
+            }
+        }
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        GD.Print($"[lifecycle] audio retired before quit (mixes={mixes})");
+    }
+
+    public override void _ExitTree()
+    {
+        // Also cover external/engine exits which bypass RequestQuit.
+        ReleaseAudioForExit();
+        ApplicationLifecycle.SetQuitPreparation(null);
         ApplicationLifecycle.ReportRootExit(Name);
+    }
 
     /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>
     private static bool HandleOverlayKey(Key keycode, DebugOverlay overlay)
@@ -320,6 +375,7 @@ public partial class OBPGame : Node3D
     /// <summary>Free the current world sub-tree and everything it owns. Safe to call when nothing is loaded.</summary>
     private void TeardownWorld()
     {
+        FlushRac1CampaignSaves("world teardown");
         CloseWeaponQuickSelect();
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();
@@ -387,15 +443,9 @@ public partial class OBPGame : Node3D
             if (token.StartsWith("isolate:", System.StringComparison.OrdinalIgnoreCase))
             {
                 string want = token["isolate:".Length..];
-                while (overlay.IsolatedKind != want)
+                if (!overlay.TryIsolateKind(want))
                 {
-                    string? before = overlay.IsolatedKind;
-                    overlay.IsolateNextKind();
-                    if (overlay.IsolatedKind == before)
-                    {
-                        GD.PrintErr($"[OBPGame] --overlay isolate:{want} — no such asset kind");
-                        break;
-                    }
+                    GD.PrintErr($"[OBPGame] unknown --overlay isolate kind '{want}' (valid: {string.Join(", ", DebugOverlay.IsolationCycle[1..])})");
                 }
             }
             else if (System.Enum.TryParse<DebugOverlay.Layer>(token, ignoreCase: true, out var layer))

@@ -5,6 +5,12 @@ on:
   push:
     branches: [dev]
 
+# A new revision makes prior runs for this PR obsolete. Keep push and
+# pull_request groups separate, and do not cancel trusted dev runs.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
@@ -20,3 +26,29 @@ jobs:
       - run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
       - run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror
       - run: dotnet test OneBigPackage.sln -c Release --no-build --nologo
+
+  godot-smoke:
+    name: godot-smoke
+    needs: native
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install checksum-pinned Godot .NET
+        run: bash tools/bootstrap-godot.sh
+      - name: Build Godot C# host
+        run: dotnet build game/OneBigPackage.csproj -c Debug --nologo -warnaserror
+      - name: Import project resources headlessly
+        run: .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 --headless --path game --editor --import --quit
+      - name: Smoke-test the asset-free Game Sources startup
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/obp-godot-data
+          XDG_CONFIG_HOME: ${{ runner.temp }}/obp-godot-config
+          XDG_CACHE_HOME: ${{ runner.temp }}/obp-godot-cache
+        run: |
+          .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 \
+            --headless --path game --script res://tests/ci_bootstrap_smoke.gd \
+            -- --test-scene picker

@@ -164,9 +164,13 @@ public static class Rac1RatchetAvatar
             (43, 13, 0x3e800000u),
             (44, 27, 0x3e800000u),
             // Original Ratchet LEVEL0 carrier has the recovered Novalis swim clips.
+            (58, 15, 0x3e000000u),
             (59, 15, 0x3e800000u),
             (60, 15, 0x3e000000u),
             (61, 12, 0x3e800000u),
+            (95, 51, 0x3e800000u),
+            (101, 15, 0x3e800000u),
+            (114, 27, null),
             (51, 5, 0x3e800000u),
             (56, 5, 0x3e800000u),
             (57, 5, 0x3e800000u),
