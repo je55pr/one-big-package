@@ -8,6 +8,20 @@ namespace OBP.Tests;
 public sealed class HudStateAdapterTests
 {
     [Fact]
+    public void WaterAirMeterUsesSourceCounterAndHidesOnSurfaceOrWithOxygenMask()
+    {
+        var swim = new Rac1SwimSnapshot(Rac1WaterDomain.Underwater, 17, 51, 59, 7536, false);
+        var meter = Rac1HudProjection.CaptureAir(swim, ownsOxygenMask: false);
+        Assert.Equal(new HudResourceMeter("oxygen", 7536, 10000), meter);
+        var publisher = new HudStateAdapter();
+        Assert.Equal(meter, publisher.BeginSession(new(Air: meter)).Air);
+        Assert.Null(publisher.ResetSession().Air);
+        Assert.Null(Rac1HudProjection.CaptureAir(swim, ownsOxygenMask: true));
+        Assert.Null(Rac1HudProjection.CaptureAir(swim with { NativeDomain = 18 }, false));
+        Assert.Null(Rac1HudProjection.CaptureAir(null, false));
+    }
+
+    [Fact]
     public void Rac1ProjectionTracksAuthoritativeHealthWeaponAndAmmo()
     {
         var nanotech = new Rac1RatchetNanotechSession();

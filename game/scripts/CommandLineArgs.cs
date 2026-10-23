@@ -113,6 +113,7 @@ public sealed record CommandLineArgs
     public bool Rac1EnemySmoke { get; init; }
     public bool Rac1BombGloveSmoke { get; init; }
     public bool Rac1NovalisSwimSmoke { get; init; }
+    public bool Rac1NovalisRouteSmoke { get; init; }
     public bool Rac1NovalisPeckbotSmoke { get; init; }
     public bool Rac1NovalisBirdbotSmoke { get; init; }
     public bool Rac1NovalisMusicSmoke { get; init; }
@@ -123,6 +124,8 @@ public sealed record CommandLineArgs
 
     /// <summary>Run the two-pass evidence-backed R&amp;C1 campaign travel/persistence smoke.</summary>
     public bool Rac1CampaignSmoke { get; init; }
+    /// <summary>Ordinary-input mission actors, discovery, travel and durable reload; no injected unlocks.</summary>
+    public bool Rac1MissionPlaySmoke { get; init; }
 
     /// <summary>Explicitly opt this host session into R&amp;C1 campaign persistence.</summary>
     public bool Rac1CampaignPersist { get; init; }
@@ -209,6 +212,7 @@ public sealed record CommandLineArgs
                 "--rac1-wrench-smoke" => result with { Rac1WrenchSmoke = true },
                 "--rac1-bomb-glove-smoke" => result with { Rac1BombGloveSmoke = true },
                 "--rac1-novalis-swim-smoke" => result with { Rac1NovalisSwimSmoke = true },
+                "--rac1-novalis-route-smoke" => result with { Rac1NovalisRouteSmoke = true },
                 "--rac1-novalis-peckbot-smoke" => result with { Rac1NovalisPeckbotSmoke = true },
                 "--rac1-novalis-birdbot-smoke" => result with { Rac1NovalisBirdbotSmoke = true },
                 "--rac1-novalis-music-smoke" => result with { Rac1NovalisMusicSmoke = true },
@@ -219,6 +223,7 @@ public sealed record CommandLineArgs
                 "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
+                "--rac1-mission-play-smoke" => result with { Rac1MissionPlaySmoke = true },
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },

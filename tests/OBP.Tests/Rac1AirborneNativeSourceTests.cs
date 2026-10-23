@@ -147,24 +147,26 @@ public sealed class Rac1AirborneNativeSourceTests
         Assert.Equal(1000, Word(0x15f6f0));
     }
 
-    internal static Func<int, int, byte[]> ReadOverlay()
+    internal static Func<int, int, byte[]> ReadOverlay(int levelId = 0)
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
-        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 0);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == levelId);
         var outer = level.CoreRanges[0];
         var data = new SubRangeReader(reader, outer.OffsetBytes, outer.SizeBytes, "level data");
         var range = Rac1LevelData.OpenRange(data, Rac1LevelData.ReadDirectory(data), 0);
         byte[] payload = range.Read(0, checked((int)range.Length));
-        Assert.Equal("eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804",
+        Assert.Equal(levelId == 1 ? "81673b8dcf5930c7313a7c83d0f76e5e1948691dc09af63dd8c8f6a04f9a72ae" :
+            "eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804",
             Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant());
         var sections = new List<(int Address, int Offset, int Size)>();
         for (int offset = 0; offset < payload.Length;)
         {
             int address = BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(offset));
             int size = BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(offset + 4));
-            Assert.Equal(0x245c28, BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(offset + 12)));
+            Assert.Equal(levelId == 0 ? 0x245c28 : BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(12)),
+                BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(offset + 12)));
             sections.Add((address, offset + 16, size));
             offset += 16 + size;
         }

@@ -251,6 +251,7 @@ public partial class PlayerHost : CharacterBody3D
     private readonly Rac1RatchetYawController _rac1Yaw = new();
     private readonly Rac1DynamicSupportSession _rac1DynamicSupport = new();
     private Rac1MobyRuntimeKey? _rac1HostSupportKey;
+    private Node3D? _rac1HostSupportRoot;
     private Vector3 _rac1HostSupportLocalAnchor;
     private bool _rac1HostSupportAnchorValid;
     private Rac1SurfaceActionIntent? _rac1SurfaceActionIntent;
@@ -533,7 +534,11 @@ public partial class PlayerHost : CharacterBody3D
     {
         if (VisualRoot is null) return;
         float sceneYaw = PlayerAvatarFacing.NativeZUpYawToGodotSceneYaw(_rac1Yaw.CurrentYaw);
-        VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
+        var basis = new Basis(Vector3.Up, sceneYaw - Rotation.Y);
+        if (_rac1SwimActive)
+            basis = basis * new Basis(Vector3.Back, -_rac1SwimMotion.Pitch) *
+                new Basis(Vector3.Right, _rac1SwimMotion.Roll);
+        VisualRoot.Basis = basis;
     }
 
     /// <summary>
@@ -578,6 +583,7 @@ public partial class PlayerHost : CharacterBody3D
         ResetRac1LedgeTraversal();
         ResetRac1Tether();
         ResetRac1SurfaceMotion();
+        ResetRac1WaterMotion();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         _rac1JumpWasHeld = false;
@@ -601,9 +607,7 @@ public partial class PlayerHost : CharacterBody3D
         ResetRac1LedgeTraversal();
         ResetRac1Tether();
         ResetRac1SurfaceMotion();
-        _rac1SwimActive = false;
-        _rac1SwimDrowningReported = false;
-        _rac1Swimming.Reset();
+        ResetRac1WaterMotion();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         ResetRac1WrenchAttack();

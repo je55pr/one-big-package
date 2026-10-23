@@ -178,7 +178,7 @@ public sealed class Rac1AirborneLandingSession
 
     private static void ValidateAction(int nativeAction)
     {
-        if (nativeAction is not (7 or 9 or 0x0a or 0x0b or 0x0d or 0x0e or 0x0f or 0x10 or 0x11 or 0x1c or 0x69))
+        if (nativeAction is not (7 or 9 or 0x0a or 0x0b or 0x0d or 0x0e or 0x0f or 0x10 or 0x11 or 0x12 or 0x1c or 0x69))
             throw new ArgumentOutOfRangeException(nameof(nativeAction));
     }
 

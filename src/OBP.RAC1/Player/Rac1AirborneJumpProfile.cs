@@ -11,6 +11,7 @@ public enum Rac1AirborneJumpKind
     HeliPackHigh = 0x0f,
     ThrusterPackLong = 0x10,
     WallJump = 0x11,
+    WaterExit = 0x12,
     LedgeJump = 0x1c,
     MudEscape = 0x69,
 }
@@ -72,6 +73,12 @@ public sealed record Rac1AirborneJumpProfile(
             Rac1AirborneJumpKind.ThrusterPackLong => new(kind, 0.4f, 0.9f,
                 fastEntry ? 4 : 1, 1, 8.5f, 38, 0, fastEntry ? 8 : 5, 0),
             Rac1AirborneJumpKind.WallJump => new(kind, 3.3f, 3.35f, 9, 12, 29f, 35, 0, 7, 0),
+            // Novalis 23e7e8: P+22a4 is water depth, not ground clearance.
+            Rac1AirborneJumpKind.WaterExit when environmentDepth < 1.25f =>
+                new(kind, 1.95f, 1.98f, 15, 10, 29.7f, 114, 1, -1, 0,
+                    EnvironmentDepth: environmentDepth),
+            Rac1AirborneJumpKind.WaterExit => new(kind, .1f, .2f, 2, 10, 29.7f,
+                114, 1, -1, 0, 2, 37, environmentDepth),
             Rac1AirborneJumpKind.LedgeJump => new(kind, 2f, 2.05f, 10, 1, 25f, 34, 0, 4, 1),
             Rac1AirborneJumpKind.MudEscape => new(kind, environmentDepth + 1.7f,
                 environmentDepth + 1.75f, 5, 19, 29.7f, 7, 0, 5, 0, EnvironmentDepth: environmentDepth),

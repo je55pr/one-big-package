@@ -14,7 +14,7 @@ public static class Rac1AirbornePlanarMotion
 
     public static float MaximumTargetStep(int nativeAction) => nativeAction switch
     {
-        7 or 9 or 0x0a or 0x0b or 0x1c or 0x69 => 5.7f * (1f / 60f),
+        7 or 9 or 0x0a or 0x0b or 0x12 or 0x1c or 0x69 => 5.7f * (1f / 60f),
         0x0d => 1.9f * (1f / 60f),
         0x0e => 3.5f * (1f / 60f),
         0x0f => 3.3f * (1f / 60f),

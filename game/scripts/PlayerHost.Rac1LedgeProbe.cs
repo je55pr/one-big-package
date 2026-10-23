@@ -11,7 +11,7 @@ public partial class PlayerHost : CharacterBody3D
     /// Godot supplies triangle contacts; RAC1 owns their admission and target.
     /// </summary>
     private Rac1LedgeCandidate? ProbeRac1Ledge(
-        double lastSupportHeight,
+        double solidFloorHeight,
         bool predictMotion = true,
         Rac1NativeVector3? positionOverride = null)
     {
@@ -27,8 +27,8 @@ public partial class PlayerHost : CharacterBody3D
             position,
             predictMotion ? previousMotion : Rac1NativeVector3.Zero,
             _rac1Yaw.CurrentYaw,
-            lastSupportHeight,
-            Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick,
+            solidFloorHeight,
+            _rac1Movement.CurrentAirGravityPerUpdate,
             predictMotion ? 2 : 0);
         return Rac1LedgeProbe.TryFindCandidate(
             input,
@@ -50,29 +50,20 @@ public partial class PlayerHost : CharacterBody3D
 
         var position = (Vector3)hit["position"];
         var normal = (Vector3)hit["normal"];
-        int surfaceClass = -1;
-        bool traversalAllowed = false;
+        var nativePosition = new Rac1NativeVector3(-position.X, position.Z, position.Y);
+        var nativeNormal = new Rac1NativeVector3(-normal.X, normal.Z, normal.Y);
         if (hit.ContainsKey("collider") &&
             hit["collider"].As<Node>() is RuntimeWorldScene.RuntimeCollisionBody3D collisionBody &&
             hit.ContainsKey("face_index") &&
             collisionBody.MaterialIdForFace((int)hit["face_index"]) is int material &&
             material is >= byte.MinValue and <= byte.MaxValue)
         {
-            var face = Rac1CollisionFaceSemantics.Decode(material);
-            if (face.SurfaceClass is int nativeClass)
-            {
-                surfaceClass = nativeClass;
-                traversalAllowed = true;
-            }
+            return Rac1TraversalRayHit.StaticWorld(nativePosition, nativeNormal, material);
         }
         // Native masks2/4 have different world-query membership. Godot's
         // current static mesh shares one collision layer, so both use its ray
         // executor. Unidentified/dynamic tops fail closed above this boundary.
-        return new Rac1TraversalRayHit(
-            new(-position.X, position.Z, position.Y),
-            new(-normal.X, normal.Z, normal.Y),
-            surfaceClass,
-            traversalAllowed);
+        return new Rac1TraversalRayHit(nativePosition, nativeNormal, -1, TraversalAllowed: false);
     }
 
     private bool OverlapsRac1TraversalBody(Rac1TraversalBodyQuery body)

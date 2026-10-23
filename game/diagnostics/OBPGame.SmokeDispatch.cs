@@ -26,7 +26,9 @@ internal static class WorldSmokeHarness
         Func<Task>? NovalisBirdbot = null,
         Func<Task>? NovalisMusic = null,
         Func<Task>? Weapons = null,
-        Func<Task>? PlayerAudio = null);
+        Func<Task>? PlayerAudio = null,
+        Func<Task>? MissionPlay = null,
+        Func<Task>? NovalisRoute = null);
 
     internal static bool IsRequested(CommandLineArgs args) =>
         args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
@@ -36,6 +38,7 @@ internal static class WorldSmokeHarness
         args.Rac1WrenchSmoke ||
         args.Rac1BombGloveSmoke ||
         args.Rac1NovalisSwimSmoke ||
+        args.Rac1NovalisRouteSmoke ||
         args.Rac1NovalisPeckbotSmoke ||
         args.Rac1NovalisBirdbotSmoke ||
         args.Rac1NovalisMusicSmoke ||
@@ -43,7 +46,7 @@ internal static class WorldSmokeHarness
         args.Rac1CrateSmoke ||
         args.Rac1EnemySmoke ||
         args.Rac1PlacedBoltSmoke ||
-        args.Rac1CampaignSmoke ||
+        args.Rac1CampaignSmoke || args.Rac1MissionPlaySmoke ||
         args.MovementSmoke;
 
     internal static void Dispatch(
@@ -70,6 +73,8 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.BombGlove?.Invoke();
             if (args.Rac1NovalisSwimSmoke)
                 _ = entrypoints.NovalisSwim?.Invoke();
+            if (args.Rac1NovalisRouteSmoke)
+                _ = entrypoints.NovalisRoute?.Invoke();
             if (args.Rac1NovalisPeckbotSmoke)
                 _ = entrypoints.NovalisPeckbot?.Invoke();
             if (args.Rac1NovalisBirdbotSmoke)
@@ -90,6 +95,8 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.PlacedBolts?.Invoke();
             if (args.Rac1CampaignSmoke)
                 _ = entrypoints.Campaign();
+            if (args.Rac1MissionPlaySmoke)
+                _ = entrypoints.MissionPlay?.Invoke();
         }
 
         if (args.MovementSmoke)
@@ -129,6 +136,8 @@ public partial class OBPGame
                 RunRac1NovalisBirdbotSmokeAsync,
                 RunRac1NovalisMusicSmokeAsync,
                 RunRac1WeaponsSmokeAsync,
-                RunRac1PlayerAudioSmokeAsync));
+                RunRac1PlayerAudioSmokeAsync,
+                RunRac1MissionPlaySmokeAsync,
+                RunRac1NovalisRouteSmokeAsync));
     }
 }
