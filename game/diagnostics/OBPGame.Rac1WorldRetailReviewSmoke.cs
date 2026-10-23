@@ -5,6 +5,8 @@ namespace OneBigPackage;
 
 public partial class OBPGame
 {
+    private Rac1PauseSmokeInputGuard? _retailReviewInputGuard;
+
     /// <summary>
     /// Final integration gate on live R&C1 scenes. Unlike the isolated GUI
     /// fixture, Start/Cross/Circle and focus travel through a paused world,
@@ -16,25 +18,69 @@ public partial class OBPGame
         if (_player is null || _world is not { Game: "rac1" } ||
             !Rac1RetailUiAssets.IsLoaded)
             throw new InvalidOperationException($"{world} pause review needs a live R&C1 world and native UI assets.");
+        // A --headless Godot root defaults to 64x64. Preserve the normal
+        // 960x720 UI design viewport in *every* host, then restore the
+        // caller's size when this fixture exits.
+        var originalViewportSize = GetTree().Root.Size;
+        GetTree().Root.Size = new Vector2I(960, 720);
+        // InputMap actions are device-0 based in this test host. Keep
+        // their real mapping and admit only exact injected event IDs.
+        // Physical pad/mouse/keyboard events never reach the paused GUI.
+        var physicalInputGuard = new Rac1PauseSmokeInputGuard();
+        GetTree().Root.AddChild(physicalInputGuard);
+        _retailReviewInputGuard = physicalInputGuard;
         Vector3 before = _player.GlobalPosition;
         int heldItem = _rac1Weapons.CurrentItemId;
         int[] slots = _rac1Weapons.QuickSelect.ToArray();
         int[] ammo = _rac1Weapons.Ammo.ToArray();
         var previousMouseMode = Input.MouseMode;
-        if (!TryOpenPauseMenu() || !GetTree().Paused || _pauseMenu is not { RetailEnabled: true } menu)
-            throw new InvalidOperationException($"{world} ordinary gameplay failed to open retail pause.");
         try
         {
+            if (!TryOpenPauseMenu() || !GetTree().Paused || _pauseMenu is not { RetailEnabled: true } menu)
+                throw new InvalidOperationException($"{world} ordinary gameplay failed to open retail pause.");
             await ReviewFrames(10);
             var overlay = menu.GetNodeOrNull<Control>("NativeProjectedRootPanels");
             var root = overlay?.GetChildren().OfType<Rac1RetailMenuButton>().ToArray() ?? [];
+            var visibleSize = GetViewport().GetVisibleRect().Size;
             if (root.Length != 6 || root.Any(button =>
-                !button.Visible || button.GetGlobalRect().Size.X < 200 ||
+                !button.Visible || button.GetGlobalRect().Size.X < visibleSize.X * .25f ||
                 button.GetChildren().OfType<Rac1RetailPanelSurface>().Count() != 1) ||
                 GetViewport().GuiGetFocusOwner() != root[0])
-                throw new InvalidOperationException($"{world} root panels or opening focus invalid.");
-            if (Input.MouseMode != Input.MouseModeEnum.Hidden)
-                throw new InvalidOperationException($"{world} controller-first menu did not hide the pointer.");
+                throw new InvalidOperationException(
+                    $"{world} root panels or opening focus invalid: viewport={visibleSize}, " +
+                    $"panels=[{string.Join(", ", root.Select(button => button.GetGlobalRect().ToString()))}], " +
+                    $"focus={GetViewport().GuiGetFocusOwner()?.Name}, mouse={Input.MouseMode}.");
+            // UiPointerModality must show the cursor after *genuine*
+            // mouse movement. The review fixture blocks external input,
+            // but must not make that legitimate behaviour a failure.
+            // Headless has no OS cursor and may always report Visible.
+            // A rendered host may legitimately show it after fresh mouse
+            // movement; check hidden mode only for controller modality.
+            if (DisplayServer.GetName() != "headless" &&
+                UiPointerModality.ControllerWasLastInput &&
+                Input.MouseMode != Input.MouseModeEnum.Hidden)
+                throw new InvalidOperationException(
+                    $"{world} controller modality lost hidden pointer: viewport={visibleSize}, " +
+                    $"mode={Input.MouseMode}, focus={GetViewport().GuiGetFocusOwner()?.Name}.");
+            // Prove unsolicited action input is actually suppressed by
+            // the guard, rather than merely relying on an idle test PC.
+            using (var unsolicitedPress = new InputEventAction
+            {
+                Action = "ui_down", Pressed = true, Strength = 1f,
+            })
+            {
+                Input.ParseInputEvent(unsolicitedPress); // Not admitted.
+                await ReviewFrames(2);
+            }
+            using (var unsolicitedRelease = new InputEventAction
+            {
+                Action = "ui_down", Pressed = false,
+            })
+                Input.ParseInputEvent(unsolicitedRelease);
+            await ReviewFrames(2);
+            if (GetViewport().GuiGetFocusOwner() != root[0])
+                throw new InvalidOperationException(
+                    $"{world} unsolicited physical-equivalent input escaped the review guard.");
             if (DisplayServer.GetName() != "headless")
             {
                 using var capture = GetViewport().GetTexture().GetImage();
@@ -57,7 +103,12 @@ public partial class OBPGame
             }
             await ReviewTap(JoyButton.DpadDown);
             if (GetViewport().GuiGetFocusOwner() != root[1])
-                throw new InvalidOperationException($"{world} controller Down did not select Gadgets.");
+                throw new InvalidOperationException(
+                    $"{world} controller Down did not select Gadgets: " +
+                    $"focus={GetViewport().GuiGetFocusOwner()?.Name}, " +
+                    $"focusDown={root[0].FocusNeighborBottom}, root1={root[1].Name}, " +
+                    $"view={GetViewport().GetVisibleRect().Size}, " +
+                    $"uiDown={Input.IsActionPressed("ui_down")}.");
             await ReviewTap(JoyButton.DpadUp);
             if (GetViewport().GuiGetFocusOwner() != root[0])
                 throw new InvalidOperationException($"{world} controller Up did not restore Weapons.");
@@ -104,6 +155,12 @@ public partial class OBPGame
         {
             if (PauseMenuOpen)
                 TryClosePauseMenu();
+            // Restore the caller's viewport and input before resuming
+            // ordinary world smoke; no fixture state may leak.
+            _retailReviewInputGuard = null;
+            GetTree().Root.RemoveChild(physicalInputGuard);
+            physicalInputGuard.Free();
+            GetTree().Root.Size = originalViewportSize;
             Input.MouseMode = previousMouseMode;
         }
         await ReviewFrames(3);
@@ -127,10 +184,28 @@ public partial class OBPGame
 
     private async Task ReviewTap(JoyButton button)
     {
-        Input.ParseInputEvent(new InputEventJoypadButton { Device = 0, ButtonIndex = button, Pressed = true });
+        // The separate UI smoke verifies raw joypad mappings. This
+        // live-world fixture injects their resulting ui_* actions so the
+        // viewport can exercise actual focus/press/back handling without
+        // requiring a physical device or competing with attached hardware.
+        string action = button switch
+        {
+            JoyButton.DpadUp => "ui_up",
+            JoyButton.DpadDown => "ui_down",
+            JoyButton.DpadLeft => "ui_left",
+            JoyButton.DpadRight => "ui_right",
+            JoyButton.A => "ui_accept",
+            JoyButton.B => "ui_cancel",
+            _ => throw new ArgumentOutOfRangeException(nameof(button)),
+        };
+        using var press = new InputEventAction { Action = action, Pressed = true, Strength = 1f };
+        _retailReviewInputGuard?.Admit(press);
+        Input.ParseInputEvent(press);
         await ReviewFrames(button is JoyButton.DpadUp or JoyButton.DpadDown or
             JoyButton.DpadLeft or JoyButton.DpadRight ? 1 : 3);
-        Input.ParseInputEvent(new InputEventJoypadButton { Device = 0, ButtonIndex = button, Pressed = false });
+        using var release = new InputEventAction { Action = action, Pressed = false };
+        _retailReviewInputGuard?.Admit(release);
+        Input.ParseInputEvent(release);
         await ReviewFrames(3);
     }
 
