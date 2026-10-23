@@ -171,6 +171,80 @@ public sealed class Rac1AmoeboidFamilySessionTests
             envelope.Source, envelope.Target, 1, envelope.NativeDamageFlags)));
     }
 
+    [Theory]
+    [InlineData(572)]
+    [InlineData(865)]
+    [InlineData(866)]
+    public void ElevatedRatchetCannotReceiveLungeDamageWithClearLineOfSight(int amoeboidClass)
+    {
+        // The host can report an unobstructed ray while Ratchet is 25
+        // native units above a nearby ground-level Amoeboid. Both
+        // actors' foot-aligned capsule spans must overlap as well.
+        const float enemyCapsuleHeight = 1.7f; // Godot ordinary enemy body
+        const float ratchetCapsuleHeight = 1.25f; // RAC1 .8 upper + .45 radius
+        var family = new Rac1AmoeboidFamilySession(new Rac1MobyRuntimeSession());
+        Register(family, 10, amoeboidClass, 6, direct: true);
+        Vector3 source = Vector3.Zero;
+        Vector3 elevated = new(1.2f, 0, 25f);
+        Assert.Equal(2, family.Step(10, source, elevated).NativeState);
+        Assert.Equal(15, family.Step(10, source, elevated).NativeState);
+        Assert.Equal(Rac1AmoeboidFamilySession.LungeState,
+            family.Step(10, source, elevated).NativeState);
+
+        // Visibility is intentionally true; it must not override height.
+        bool hasClearLineOfSight = true;
+        bool contact = hasClearLineOfSight &&
+            Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+                source, enemyCapsuleHeight, elevated, ratchetCapsuleHeight);
+        Assert.False(contact);
+        Assert.False(family.Step(10, source, elevated,
+            targetInContact: contact, animationPosition: 15.6f).Attack);
+        Assert.False(family.Step(10, source, new(1.2f, 0, 2f),
+            targetInContact: Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+                source, enemyCapsuleHeight, new(1.2f, 0, 2f), ratchetCapsuleHeight),
+            animationPosition: 15.7f).Attack);
+
+        // When Ratchet is genuinely within the hosted capsule spans,
+        // the original one-hit-per-lunge lifecycle remains playable.
+        Vector3 nearby = new(1.2f, 0, .35f);
+        contact = hasClearLineOfSight &&
+            Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+                source, enemyCapsuleHeight, nearby, ratchetCapsuleHeight);
+        Assert.True(contact);
+        Assert.True(family.Step(10, source, nearby,
+            targetInContact: contact, animationPosition: 15.8f).Attack);
+        Assert.False(family.Step(10, source, nearby,
+            targetInContact: contact, animationPosition: 15.9f).Attack);
+    }
+
+    [Theory]
+    [InlineData(572)]
+    [InlineData(865)]
+    [InlineData(866)]
+    public void HostMeleeVerticalContactRejectsUpperLowerLedgesAndInvalidCapsules(int amoeboidClass)
+    {
+        const float enemyCapsuleHeight = 1.7f;
+        const float playerCapsuleHeight = 1.25f;
+        Vector3 atFeet = new(0, 0, 0);
+        Assert.False(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, new(1f, 0, 25), playerCapsuleHeight));
+        Assert.False(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, new(1f, 0, -5), playerCapsuleHeight));
+        Assert.False(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, new(1f, 0, 2), playerCapsuleHeight));
+        Assert.True(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, new(1f, 0, .3f), playerCapsuleHeight));
+        Assert.True(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, new(1f, 0, -.3f), playerCapsuleHeight));
+        Assert.False(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, atFeet, 0));
+        Assert.False(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, enemyCapsuleHeight, new(0, 0, float.NaN), playerCapsuleHeight));
+        Assert.False(Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+            atFeet, float.PositiveInfinity, atFeet, playerCapsuleHeight));
+        Assert.True(Rac1AmoeboidAuthored.IsFamily(amoeboidClass));
+    }
+
     [Fact]
     public void InterleavedNonSequentialGroupsExhaustWithoutReusingOrStealingReserves()
     {

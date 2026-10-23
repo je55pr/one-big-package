@@ -190,8 +190,17 @@ public partial class OBPGame
         // the new victim. This is a conservative Godot attribution guard
         // until the native class-623 target pointer/hit receiver is recovered.
         int sourceIndex = node.Source.InstanceIndex;
+        // LOS only tests obstruction; it cannot establish a melee overlap.
+        // Before accepting contact with Ratchet, also require overlap of
+        // the actual foot-aligned Godot player/enemy capsule height spans.
+        // This remains an explicit host substitute for the retail contact solver.
         bool contact = _rac1AmoeboidLungeTargets.AcceptsContact(sourceIndex, selectedTarget) &&
             NVector2.Distance(new(pos.X, pos.Y), new(target.X, target.Y)) < Rac1AmoeboidFamilySession.NativeAttackRange &&
+            (selectedTarget != Rac1GameplayEntityRef.Player ||
+                (enemy.Body.GetChild<CollisionShape3D>(0).Shape is CapsuleShape3D attackerCapsule &&
+                 _player.GetChildren().OfType<CollisionShape3D>().SingleOrDefault()?.Shape is CapsuleShape3D playerCapsule &&
+                 Rac1AmoeboidHostMeleeContact.VerticalCapsulesOverlap(
+                     pos, attackerCapsule.Height, target, playerCapsule.Height))) &&
             BombHasLineOfSight(node.Root.GlobalPosition + Vector3.Up * .6f,
                 FromEffectNative(target) + Vector3.Up * .6f);
         var attackTarget = _rac1AmoeboidLungeTargets.Current(sourceIndex) ?? selectedTarget;

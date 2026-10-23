@@ -509,6 +509,17 @@ damage owner/flag admission, frame-15.5 lunges and source volume gates.
   class-623 damage receiver remain unported, so these targets do not
   yet take damage.
 - The host tests a valid player contact at source lunge frame >=15.5.
+  An unobstructed 3D line-of-sight ray is **not** a contact probe: the
+  original Godot-only planar-range admission could damage Ratchet when
+  he stood on an exposed ledge far above an Amoeboid. The host now
+  additionally requires the *actual foot-aligned enemy and Ratchet
+  capsule height spans* to overlap in native Z, using the existing
+  Godot contact capsules, before it reports `targetInContact` to
+  the family session. This is a conservative **host safety fallback**,
+  not a recovered retail sweep or an extra native combat predicate.
+  Engine-neutral tests cover all three sizes (572/865/866), a clear
+  sightline separated by 25 height units, airborne/upper/lower ledges,
+  and preserved ordinary one-hit-per-lunge behavior.
   Exact `FUN_00214cc8` subframe admission, target filtering,
   audio voice lifetime, and particle/debris tuning remain bounded
   approximations. This implementation must not be described as
