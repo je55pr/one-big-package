@@ -119,11 +119,13 @@ public partial class PlayerHost : CharacterBody3D
                 step.PlanarX,
                 step.PlanarY,
                 step.Vertical);
+        // Support anchors/carry are native Z-up; ordinary host contact motion
+        // is already scene-space. Convert before combining, then convert back.
         var resolvedDelta = contact.ApplySupportAndConveyor(
             new Rac1NativeVector3(
-                preContact.PlanarX,
-                preContact.Vertical,
-                preContact.PlanarY));
+                -preContact.PlanarX,
+                preContact.PlanarY,
+                preContact.Vertical));
         // Native derives P+0x110 before its separate external-transport pass.
         // Godot combines those passes, so admit this feedback only for static
         // ordinary contact with no support/conveyor transfer. The prospective
@@ -144,9 +146,9 @@ public partial class PlayerHost : CharacterBody3D
         }
         const float nativeTicksPerSecond = (float)Rac1RatchetMovementController.UpdateHz;
         Velocity = new Vector3(
-            (float)resolvedDelta.X * nativeTicksPerSecond,
-            (float)resolvedDelta.Y * nativeTicksPerSecond,
-            (float)resolvedDelta.Z * nativeTicksPerSecond);
+            -(float)resolvedDelta.X * nativeTicksPerSecond,
+            (float)resolvedDelta.Z * nativeTicksPerSecond,
+            (float)resolvedDelta.Y * nativeTicksPerSecond);
         if (Scripted && step.Vertical > 0d && !_scriptJumped)
         {
             _scriptJumped = true;
@@ -158,6 +160,7 @@ public partial class PlayerHost : CharacterBody3D
     {
         RecordRac1TetherMotion();
         RecordRac1SurfaceMotion();
+        RecordRac1WaterMotion();
         if (_ordinaryContactRequest is { } request)
         {
             Vector3 displacement = GlobalPosition - _ordinaryContactStart;
@@ -254,9 +257,24 @@ public partial class PlayerHost : CharacterBody3D
         bool hitCeiling)
     {
         Vector3 origin = GlobalPosition;
+        // Test support at the carried position. A rising platform otherwise
+        // moves above the narrow unsupported-foot ray, while a descending one
+        // leaves it below that ray. Both incorrectly turn a standing rider into
+        // a jump/fall. This predicts contact only; the native carry channel
+        // below still applies the actual displacement once.
+        bool carriedSupport = false;
+        if (UseRac1Gameplay && (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall) &&
+            _rac1HostSupportAnchorValid && _rac1HostSupportRoot is { } support && IsInstanceValid(support) &&
+            _rac1DynamicSupport.PreviousAnchorWorldPosition is { } previousAnchor)
+        {
+            Vec3 anchor = ScenePlayerToNative(support.ToGlobal(_rac1HostSupportLocalAnchor));
+            origin += new Vector3(-(float)(anchor.X - previousAnchor.X),
+                (float)(anchor.Z - previousAnchor.Z), (float)(anchor.Y - previousAnchor.Y));
+            carriedSupport = true;
+        }
         float supportMetric = (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit;
-        float probeUp = grounded ? 0.25f : supportMetric;
-        float probeDown = grounded ? 2.0f : supportMetric;
+        float probeUp = grounded || carriedSupport ? 0.25f : supportMetric;
+        float probeDown = grounded || carriedSupport ? 2.0f : supportMetric;
         var query = PhysicsRayQueryParameters3D.Create(
             origin + Vector3.Up * probeUp,
             origin + Vector3.Down * probeDown);
@@ -283,6 +301,15 @@ public partial class PlayerHost : CharacterBody3D
             Vector3 candidatePosition = (Vector3)hit["position"];
             double correctionMetric = Math.Abs(origin.Y - candidatePosition.Y);
             double angle = Math.Acos(Math.Clamp((double)candidateNormal.Dot(Vector3.Up), -1d, 1d));
+            if (carriedSupport && RuntimeWorldScene.FindDynamicObjectOwner(hit["collider"].As<Node>()) is { } owner &&
+                _rac1HostSupportKey == new Rac1MobyRuntimeKey(owner.NativeClassId, owner.InstanceIndex))
+            {
+                // Host contact-order policy: allow this update's support
+                // transform between the anchor and geometry samples, bounded
+                // by that support's displacement, never a wider ground snap.
+                double supportShift = Math.Abs(origin.Y - GlobalPosition.Y);
+                correctionMetric = Math.Max(0, correctionMetric - supportShift);
+            }
             if (!Rac1OrdinaryGroundContactMotion.AdmitsOrdinarySupport(correctionMetric, angle))
             {
                 ClearRac1HostSupportAnchor();
@@ -337,6 +364,7 @@ public partial class PlayerHost : CharacterBody3D
             if (!_rac1HostSupportAnchorValid || _rac1HostSupportKey != contactKey)
             {
                 _rac1HostSupportKey = contactKey;
+                _rac1HostSupportRoot = dynamicRoot;
                 _rac1HostSupportLocalAnchor = dynamicRoot.ToLocal(contactWorld);
                 _rac1HostSupportAnchorValid = true;
             }
@@ -367,6 +395,7 @@ public partial class PlayerHost : CharacterBody3D
     private void ClearRac1HostSupportAnchor()
     {
         _rac1HostSupportKey = null;
+        _rac1HostSupportRoot = null;
         _rac1HostSupportLocalAnchor = Vector3.Zero;
         _rac1HostSupportAnchorValid = false;
     }

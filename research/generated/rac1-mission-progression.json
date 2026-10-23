@@ -1,0 +1,955 @@
+{
+  "schema": 1,
+  "authority": "SCUS-97199 original NTSC-U",
+  "payloadFree": true,
+  "referenceRevision": "3fd14c12e4dff2fd4b6661a6e54187faea3f76c8",
+  "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9",
+  "overlays": [
+    {
+      "level": 0,
+      "sha256": "eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804"
+    },
+    {
+      "level": 1,
+      "sha256": "81673b8dcf5930c7313a7c83d0f76e5e1948691dc09af63dd8c8f6a04f9a72ae"
+    }
+  ],
+  "programs": [
+    {
+      "level": 0,
+      "oClass": 834,
+      "index": 165,
+      "globalTalkerIndex": 1,
+      "records": [
+        {
+          "index": 0,
+          "textId": 0,
+          "scene": 4,
+          "next": 1,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 1,
+          "automatic": true,
+          "chainNextScene": false,
+          "payConditionCost": false
+        },
+        {
+          "index": 1,
+          "textId": 0,
+          "scene": 1,
+          "next": 2,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 2,
+          "whenFalse": 1,
+          "flags": 5,
+          "automatic": true,
+          "chainNextScene": true,
+          "payConditionCost": false
+        },
+        {
+          "index": 2,
+          "textId": 0,
+          "scene": 2,
+          "next": 3,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 5,
+          "automatic": true,
+          "chainNextScene": true,
+          "payConditionCost": false
+        },
+        {
+          "index": 3,
+          "textId": 0,
+          "scene": 16385,
+          "next": 4,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 5,
+          "automatic": true,
+          "chainNextScene": true,
+          "payConditionCost": false
+        },
+        {
+          "index": 4,
+          "textId": 0,
+          "scene": 3,
+          "next": -1,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 0,
+          "automatic": false,
+          "chainNextScene": false,
+          "payConditionCost": false
+        }
+      ],
+      "prices": {}
+    },
+    {
+      "level": 1,
+      "oClass": 774,
+      "index": 901,
+      "globalTalkerIndex": 3,
+      "records": [
+        {
+          "index": 0,
+          "textId": 0,
+          "scene": 0,
+          "next": 1,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 1,
+          "automatic": true,
+          "chainNextScene": false,
+          "payConditionCost": false
+        },
+        {
+          "index": 1,
+          "textId": 1012,
+          "scene": -1,
+          "next": 1,
+          "condition": 1,
+          "argument": 37,
+          "whenTrue": 2,
+          "whenFalse": 1,
+          "flags": 0,
+          "automatic": false,
+          "chainNextScene": false,
+          "payConditionCost": false
+        },
+        {
+          "index": 2,
+          "textId": 1011,
+          "scene": 1,
+          "next": 3,
+          "condition": 1,
+          "argument": 37,
+          "whenTrue": 2,
+          "whenFalse": 1,
+          "flags": 12,
+          "automatic": false,
+          "chainNextScene": true,
+          "payConditionCost": true
+        },
+        {
+          "index": 3,
+          "textId": 0,
+          "scene": 16386,
+          "next": 4,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 4,
+          "automatic": false,
+          "chainNextScene": true,
+          "payConditionCost": false
+        },
+        {
+          "index": 4,
+          "textId": 0,
+          "scene": 2,
+          "next": -1,
+          "condition": 0,
+          "argument": 0,
+          "whenTrue": 0,
+          "whenFalse": 0,
+          "flags": 0,
+          "automatic": false,
+          "chainNextScene": false,
+          "payConditionCost": false
+        }
+      ],
+      "prices": {
+        "37": 500
+      }
+    }
+  ],
+  "infobots": [
+    {
+      "level": 1,
+      "index": 874,
+      "authored": {
+        "initiallyActive": false,
+        "destination": 0,
+        "checkpointCuboid": -1,
+        "beforeScene": -1,
+        "movie": -1,
+        "afterScene": -1,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 3,
+      "index": 908,
+      "authored": {
+        "initiallyActive": true,
+        "destination": 4,
+        "checkpointCuboid": 22,
+        "beforeScene": 10,
+        "movie": 4,
+        "afterScene": 4,
+        "attachmentCuboid": 57,
+        "linkedActorIndex": 4,
+        "escapePath": 104,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 6,
+      "index": 373,
+      "authored": {
+        "initiallyActive": true,
+        "destination": 5,
+        "checkpointCuboid": -1,
+        "beforeScene": -1,
+        "movie": -1,
+        "afterScene": -1,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 6,
+      "index": 374,
+      "authored": {
+        "initiallyActive": false,
+        "destination": 5,
+        "checkpointCuboid": -1,
+        "beforeScene": -1,
+        "movie": 5,
+        "afterScene": 5,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 7,
+      "index": 386,
+      "authored": {
+        "initiallyActive": true,
+        "destination": 8,
+        "checkpointCuboid": -1,
+        "beforeScene": -1,
+        "movie": -1,
+        "afterScene": -1,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 10,
+      "index": 482,
+      "authored": {
+        "initiallyActive": true,
+        "destination": 11,
+        "checkpointCuboid": 38,
+        "beforeScene": 3,
+        "movie": -1,
+        "afterScene": -1,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 10,
+      "index": 483,
+      "authored": {
+        "initiallyActive": true,
+        "destination": 12,
+        "checkpointCuboid": 37,
+        "beforeScene": 10,
+        "movie": 12,
+        "afterScene": 7,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          125,
+          126,
+          127,
+          128,
+          129,
+          130,
+          -1,
+          -1
+        ],
+        "alternateActivation": false
+      }
+    },
+    {
+      "level": 17,
+      "index": 440,
+      "authored": {
+        "initiallyActive": false,
+        "destination": 18,
+        "checkpointCuboid": 54,
+        "beforeScene": 2,
+        "movie": 18,
+        "afterScene": 0,
+        "attachmentCuboid": -1,
+        "linkedActorIndex": -1,
+        "escapePath": -1,
+        "patrolPaths": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "alternateActivation": true
+      }
+    }
+  ],
+  "code": [
+    {
+      "level": 0,
+      "name": "infobotUpdate",
+      "start": "0x002d5de8",
+      "end": "0x002d6bf0",
+      "sha256": "81c4bcec8e269b8ad26f0f048caddba9f1950e64596caec18422338e53b9f63a"
+    },
+    {
+      "level": 0,
+      "name": "infobotDispatch",
+      "start": "0x001e9f60",
+      "end": "0x001e9f90",
+      "sha256": "249e0c935ea3ead907950c49cb0823ef7534f9191b287c7c3a7eb7a332494d56"
+    },
+    {
+      "level": 0,
+      "name": "talkUpdateInitStep",
+      "start": "0x00266448",
+      "end": "0x00266d48",
+      "sha256": "5a6cd9d928de0fb5d441ca421f47b340e3834be8dc6410591ac6971bd356dd8f"
+    },
+    {
+      "level": 0,
+      "name": "VeldinActor",
+      "start": "0x002d9dc8",
+      "end": "0x002d9f78",
+      "sha256": "53e8f73f5f47919a56d478f7584e45d465680e447e09c288a633b581eaf80428"
+    },
+    {
+      "level": 0,
+      "name": "destinationAdmission",
+      "start": "0x002607d0",
+      "end": "0x00260860",
+      "sha256": "c69f3c4ff75cc4e35641d1747833ff2d8b28fb622944c966e6dc73b8a0ba2975"
+    },
+    {
+      "level": 0,
+      "name": "missionExit",
+      "start": "0x0028eeb0",
+      "end": "0x0028eee0",
+      "sha256": "ee0948875346d06e93801d191ac4322b264437875f3e2a67a06ec15aa4058bde"
+    },
+    {
+      "level": 0,
+      "name": "talkerRegistration",
+      "start": "0x00242c14",
+      "end": "0x00242c34",
+      "sha256": "ce6623102efbbb9c7273bc6406ae2c4f53890c6a0923251b27a70b699eb405c3"
+    },
+    {
+      "level": 0,
+      "name": "lateLoaderCommit",
+      "start": "0x002933c4",
+      "end": "0x0029344c",
+      "sha256": "84dc71edec976f56ec54af09862a2a81db82d7fef79767d1b04fe404afe784a8"
+    },
+    {
+      "level": 0,
+      "name": "entryAdmission",
+      "start": "0x0023d160",
+      "end": "0x0023d178",
+      "sha256": "7ff74e558047c309a0013fe4619be67326027f8cf44c02965a09e937510ed6af"
+    },
+    {
+      "level": 1,
+      "name": "PlumberProgression",
+      "start": "0x002ff118",
+      "end": "0x002ff3d0",
+      "sha256": "229a5c40a0d1ae69f07bf52e9b782d49106c3a2abfd386d2d6c1e0aade6c81a7"
+    },
+    {
+      "level": 1,
+      "name": "talkUpdateInitStep",
+      "start": "0x0027b028",
+      "end": "0x0027b930",
+      "sha256": "379fc58734fea81829c0534c7a8ceb8c7191bf1678459f6413ade155bb60d439"
+    },
+    {
+      "level": 1,
+      "name": "destinationAdmission",
+      "start": "0x002756d0",
+      "end": "0x00275760",
+      "sha256": "68cdd0a69a3d1c355581dac8ba7f6c652bea59ee3f53c9a5d8edd80a1f20a900"
+    }
+  ],
+  "trials": [
+    {
+      "name": "Veldin-actor-to-Novalis",
+      "mode": "ship",
+      "level": 0,
+      "nativeClassId": 834,
+      "inputs": [
+        "tick 20 0 0 0 4 0 0 0 0",
+        "tick 20 0 0 0 4 0 0 -1 0",
+        "tick 6.01 0 0 0 4 0 0 -1 0",
+        "tick 5.9 0 0 0 0 0 0 -1 0",
+        "tick 5.9 0 0 0 4 29 0 -1 0",
+        "tick 5.9 0 0 0 4 0 0 -1 0",
+        "complete 5.9 0 0 0 4 0 0 -1 0",
+        "complete 5.9 0 0 0 4 0 0 -1 0",
+        "complete 5.9 0 0 0 4 0 0 -1 0",
+        "complete 5.9 0 0 0 4 0 0 -1 0",
+        "tick 5.9 0 0 0 4 0 0 -1 0",
+        "tick 5.9 0 0 0 4 0 0 -1 0",
+        "entry 5.9 0 0 0 4 0 0 -1 0",
+        "entry 5.9 0 0 0 4 0 0 -1 0"
+      ],
+      "samples": [
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": 0,
+          "sceneId": 1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 2,
+          "lastPlayed": 1,
+          "sceneKind": 0,
+          "sceneId": 2,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 3,
+          "lastPlayed": 2,
+          "sceneKind": 1,
+          "sceneId": 1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 4,
+          "lastPlayed": 3,
+          "sceneKind": 0,
+          "sceneId": 3,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 1,
+          "transitionActive": 1,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 1,
+          "transitionActive": 1,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 1,
+          "transitionActive": 1,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        }
+      ]
+    },
+    {
+      "name": "Infobot-active-pickup-and-admission",
+      "mode": "infobot",
+      "level": 0,
+      "nativeClassId": 750,
+      "inputs": [
+        "tick 2 0 0 0 4 0 0 0 0",
+        "tick 1 0 0 0 4 0 0 -1 0",
+        "tick .999 0 0 0 0 0 0 -1 0",
+        "tick .999 0 0 0 4 0 0 -1 0",
+        "tick .999 0 0 0 4 0 0 -1 0",
+        "tick .999 0 0 0 4 0 0 -1 0",
+        "tick .999 0 0 0 4 0 0 -1 0",
+        "tick .999 0 0 0 4 0 0 -1 0"
+      ],
+      "samples": [
+        {
+          "state": 2,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 8,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 0,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 9,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 10,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 11,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 11,
+          "talkRecord": -1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 1
+        }
+      ]
+    },
+    {
+      "name": "Plumber-price-gate-and-Aridia",
+      "mode": "plumber",
+      "level": 1,
+      "nativeClassId": 774,
+      "inputs": [
+        "tick 20 0 0 3.14159265 4 0 0 499 0",
+        "tick 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "complete 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "tick 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "tick 9.9 0 0 3.14159265 4 0 1 -1 0",
+        "tick 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "tick 9.9 0 0 3.14159265 4 0 1 500 0",
+        "complete 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "complete 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "complete 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "tick 9.9 0 0 3.14159265 4 0 0 -1 0",
+        "tick 9.9 0 0 3.14159265 4 0 0 -1 0"
+      ],
+      "samples": [
+        {
+          "state": 1,
+          "talkRecord": 0,
+          "lastPlayed": -1,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 499,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 0,
+          "lastPlayed": -1,
+          "sceneKind": 0,
+          "sceneId": 0,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 499,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 499,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 0,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 499,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 1,
+          "lastPlayed": 1,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 499,
+          "retireCalls": 0
+        },
+        {
+          "state": 1,
+          "talkRecord": 1,
+          "lastPlayed": 1,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 499,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 2,
+          "lastPlayed": 1,
+          "sceneKind": 0,
+          "sceneId": 1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 3,
+          "lastPlayed": 2,
+          "sceneKind": 1,
+          "sceneId": 2,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": 4,
+          "lastPlayed": 3,
+          "sceneKind": 0,
+          "sceneId": 2,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 2,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 1,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 3,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 2,
+          "bolts": 0,
+          "retireCalls": 0
+        },
+        {
+          "state": 3,
+          "talkRecord": -1,
+          "lastPlayed": 4,
+          "sceneKind": -1,
+          "sceneId": -1,
+          "pendingTarget": 0,
+          "transitionActive": 0,
+          "admittedCount": 2,
+          "bolts": 0,
+          "retireCalls": 1
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Original MIPS actor, talk and admission routines; controlled player facts and post-intro Veldin talker state.",
+    "Scene/movie completion is supplied at the native talk-step callback boundary; streaming, text, draw, checkpoint and file IO are stubbed.",
+    "Infobot trial isolates an active unlinked variant with destination 4 and no scenes; it does not invent a producer for dormant/path-linked actors.",
+    "The entry operation replays the separately pinned late CurrentLevel/init-admission boundary, not the disc loader."
+  ]
+}

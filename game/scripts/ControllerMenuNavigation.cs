@@ -35,7 +35,7 @@ public partial class ControllerMenuNavigation : Node
     public override void _Process(double delta)
     {
         if (!Active) { _held.Clear(); return; }
-        ulong now = Time.GetTicksMsec();
+        ulong now = PlaytestClock.Milliseconds;
         foreach (var direction in Directions)
         {
             if (!Input.IsActionPressed(direction.Pad)) { _held.Remove(direction.Pad); continue; }

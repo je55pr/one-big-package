@@ -25,6 +25,15 @@ admission primitive `0x002607d0` at `0x002d6a20` using that PVar destination.
 The retained semantic boundary is therefore a visible mission/progression Moby,
 strongly corroborated by public tooling as the infobot family. The native behavior,
 not the public name, is the identity anchor.
+
+The subsequent original-code replay and production boundaries are documented in
+[RAC1_CAMPAIGN_TRAVEL.md](RAC1_CAMPAIGN_TRAVEL.md#native-actor-owned-mission-progression).
+The new `generated/rac1-mission-progression.json` records the eight placements'
+activity, destination, checkpoint, scene and path/link selectors. Ordinary
+active pickup/admission is implemented; dormant and path-linked variants cannot
+unlock planets through an invented proximity rule. Class 834's Veldin encounter
+and class 774's 500-bolt Plumber purchase supply source-owned progression.
+
 ## One-off mission/contact actor candidates
 
 | oClass | Native placement | PVar | Model / joints | Registered update | Corroborative label | Evidence grade |

@@ -1,0 +1,2149 @@
+{
+  "schema": 1,
+  "authority": "SCUS-97199 original NTSC-U",
+  "payloadFree": true,
+  "referenceRevision": "3fd14c12e4dff2fd4b6661a6e54187faea3f76c8",
+  "executableSha256": "e050581032e4bb3f20341307da5b69b76f1574910519155380ea771e55c3c0c9",
+  "overlaySha256": "81673b8dcf5930c7313a7c83d0f76e5e1948691dc09af63dd8c8f6a04f9a72ae",
+  "code": [
+    {
+      "name": "approachDoors",
+      "start": 3140968,
+      "end": 3141672,
+      "sha256": "7ee5a0cef3826a7165d83af31339857bfe6e9bd5b0de8cb9a84d27a6ce2b4d3e"
+    },
+    {
+      "name": "pistons",
+      "start": 3118528,
+      "end": 3119120,
+      "sha256": "ff97df79e5b5025e92f146c20d6f37a7a4c14e685a29b3bd3605815167f12697"
+    },
+    {
+      "name": "staircaseRocks",
+      "start": 3117184,
+      "end": 3118528,
+      "sha256": "74f3ea6555b7df2d3a27f09337cc05954a3cf69c7645280a8d5d2761565216b6"
+    }
+  ],
+  "limits": [
+    "Original MIPS; controlled player/camera facts at 60 Hz, not a live retail playthrough.",
+    "Sound, attachment presentation, camera effects and camera-release/hero transitions are stubbed.",
+    "Random unrelated dust suppressed; rock post-fall wait uses the native lower bound. One trial starts with a restored command bit; other trials start clear."
+  ],
+  "trials": [
+    {
+      "nativeClassId": 701,
+      "instance": 711,
+      "restoredFallen": false,
+      "home": [
+        197.46,
+        125.842,
+        85
+      ],
+      "yaw": 1.0559242,
+      "reach": 0,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 45,
+      "trigger": [
+        183.8134,
+        129.41844,
+        63
+      ],
+      "segments": [
+        {
+          "ticks": 2,
+          "player": [
+            183.8134,
+            129.41844,
+            62.99
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            193.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 2
+        },
+        {
+          "ticks": 210,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 45, "sound": 1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 44, "sound": -1 },
+        { "tick": 30, "state": 2, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 19, "sound": -1 },
+        { "tick": 49, "state": 3, "end": 0, "position": [ 197.460007, 125.842003, 85 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 197.460007, 125.842003, 84.4499588 ], "scalar": -0.0916666612, "timer": 0, "sound": -1 },
+        { "tick": 90, "state": 3, "end": 0, "position": [ 197.460007, 125.842003, 77.824852 ], "scalar": -0.34166646, "timer": 0, "sound": -1 },
+        { "tick": 118, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 120, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 150, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 180, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 210, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 213, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 701,
+      "instance": 711,
+      "restoredFallen": true,
+      "home": [
+        197.46,
+        125.842,
+        85
+      ],
+      "yaw": 1.0559242,
+      "reach": 0,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 45,
+      "trigger": [
+        183.8134,
+        129.41844,
+        63
+      ],
+      "segments": [
+        {
+          "ticks": 2,
+          "player": [
+            183.8134,
+            129.41844,
+            62.99
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            193.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 2
+        },
+        {
+          "ticks": 210,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 90, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 120, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 150, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 180, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 210, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 213, "state": 4, "end": 0, "position": [ 197.460007, 125.842003, 65 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 701,
+      "instance": 712,
+      "restoredFallen": false,
+      "home": [
+        200.05649,
+        121.04064,
+        86
+      ],
+      "yaw": 0.42762312,
+      "reach": 0,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 60,
+      "trigger": [
+        183.8134,
+        129.41844,
+        63
+      ],
+      "segments": [
+        {
+          "ticks": 2,
+          "player": [
+            183.8134,
+            129.41844,
+            62.99
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            193.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 2
+        },
+        {
+          "ticks": 210,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 60, "sound": 1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 59, "sound": -1 },
+        { "tick": 30, "state": 2, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 34, "sound": -1 },
+        { "tick": 60, "state": 2, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 4, "sound": -1 },
+        { "tick": 64, "state": 3, "end": 0, "position": [ 200.056488, 121.040642, 86 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 90, "state": 3, "end": 0, "position": [ 200.056488, 121.040642, 83.0749054 ], "scalar": -0.216666579, "timer": 0, "sound": -1 },
+        { "tick": 120, "state": 3, "end": 0, "position": [ 200.056488, 121.040642, 72.6997986 ], "scalar": -0.466666341, "timer": 0, "sound": -1 },
+        { "tick": 133, "state": 4, "end": 0, "position": [ 200.056488, 121.040642, 66 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 150, "state": 4, "end": 0, "position": [ 200.056488, 121.040642, 66 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 180, "state": 4, "end": 0, "position": [ 200.056488, 121.040642, 66 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 210, "state": 4, "end": 0, "position": [ 200.056488, 121.040642, 66 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 213, "state": 4, "end": 0, "position": [ 200.056488, 121.040642, 66 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 701,
+      "instance": 713,
+      "restoredFallen": false,
+      "home": [
+        202.5349,
+        121.256226,
+        87
+      ],
+      "yaw": 0.110188425,
+      "reach": 0,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 73,
+      "trigger": [
+        183.8134,
+        129.41844,
+        63
+      ],
+      "segments": [
+        {
+          "ticks": 2,
+          "player": [
+            183.8134,
+            129.41844,
+            62.99
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            193.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 2
+        },
+        {
+          "ticks": 210,
+          "player": [
+            183.8134,
+            129.41844,
+            63
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 73, "sound": 1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 72, "sound": -1 },
+        { "tick": 30, "state": 2, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 47, "sound": -1 },
+        { "tick": 60, "state": 2, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 17, "sound": -1 },
+        { "tick": 77, "state": 3, "end": 0, "position": [ 202.534897, 121.256226, 87 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 90, "state": 3, "end": 0, "position": [ 202.534897, 121.256226, 86.2416153 ], "scalar": -0.108333327, "timer": 0, "sound": -1 },
+        { "tick": 120, "state": 3, "end": 0, "position": [ 202.534897, 121.256226, 79.1165085 ], "scalar": -0.358333111, "timer": 0, "sound": -1 },
+        { "tick": 146, "state": 4, "end": 0, "position": [ 202.534897, 121.256226, 67 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 150, "state": 4, "end": 0, "position": [ 202.534897, 121.256226, 67 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 180, "state": 4, "end": 0, "position": [ 202.534897, 121.256226, 67 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 210, "state": 4, "end": 0, "position": [ 202.534897, 121.256226, 67 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 213, "state": 4, "end": 0, "position": [ 202.534897, 121.256226, 67 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 703,
+      "instance": 714,
+      "restoredFallen": false,
+      "home": [
+        217.51634,
+        120.75721,
+        75.5
+      ],
+      "yaw": 0,
+      "reach": 0,
+      "initialEnd": 0,
+      "height": 4.5,
+      "seconds": 0.75,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0.100000001, "timer": 45, "sound": 0 },
+        { "tick": 150, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 72.4998169 ], "scalar": 0.100000001, "timer": 15, "sound": -1 },
+        { "tick": 165, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 120, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 105, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 75, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 45, "sound": -1 },
+        { "tick": 270, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 15, "sound": -1 },
+        { "tick": 285, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": -0.100000001, "timer": 45, "sound": 1 },
+        { "tick": 300, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 72.4997025 ], "scalar": -0.100000001, "timer": 30, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": -0.100000001, "timer": 120, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": -0.100000001, "timer": 90, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": -0.100000001, "timer": 60, "sound": -1 },
+        { "tick": 420, "state": 1, "end": 0, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": -0.100000001, "timer": 30, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 75.5 ], "scalar": 0.100000001, "timer": 45, "sound": 0 },
+        { "tick": 480, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 72.4998169 ], "scalar": 0.100000001, "timer": 15, "sound": -1 },
+        { "tick": 495, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 120, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 105, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 75, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 45, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 1, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": 0.100000001, "timer": 15, "sound": -1 },
+        { "tick": 615, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 70.9997253 ], "scalar": -0.100000001, "timer": 45, "sound": 1 },
+        { "tick": 630, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 72.4997025 ], "scalar": -0.100000001, "timer": 30, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 2, "position": [ 217.516342, 120.75721, 74.3996735 ], "scalar": -0.100000001, "timer": 11, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 703,
+      "instance": 715,
+      "restoredFallen": false,
+      "home": [
+        210.59355,
+        121.30694,
+        67
+      ],
+      "yaw": -0.041674692,
+      "reach": 0,
+      "initialEnd": 1,
+      "height": 4,
+      "seconds": 0.75,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 67 ], "scalar": -0.088888891, "timer": 45, "sound": 1 },
+        { "tick": 150, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 69.6664734 ], "scalar": -0.088888891, "timer": 15, "sound": -1 },
+        { "tick": 165, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 120, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 105, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 75, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 45, "sound": -1 },
+        { "tick": 270, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 15, "sound": -1 },
+        { "tick": 285, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": 0.088888891, "timer": 45, "sound": 0 },
+        { "tick": 300, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 69.6663589 ], "scalar": 0.088888891, "timer": 30, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0.088888891, "timer": 120, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0.088888891, "timer": 90, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0.088888891, "timer": 60, "sound": -1 },
+        { "tick": 420, "state": 1, "end": 1, "position": [ 210.593552, 121.306938, 67 ], "scalar": 0.088888891, "timer": 30, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 67 ], "scalar": -0.088888891, "timer": 45, "sound": 1 },
+        { "tick": 480, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 69.6664734 ], "scalar": -0.088888891, "timer": 15, "sound": -1 },
+        { "tick": 495, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 120, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 105, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 75, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 45, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 0, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": -0.088888891, "timer": 15, "sound": -1 },
+        { "tick": 615, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 70.9997101 ], "scalar": 0.088888891, "timer": 45, "sound": 0 },
+        { "tick": 630, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 69.6663589 ], "scalar": 0.088888891, "timer": 30, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 2, "position": [ 210.593552, 121.306938, 67.9774475 ], "scalar": 0.088888891, "timer": 11, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 715,
+      "instance": 727,
+      "restoredFallen": false,
+      "home": [
+        255.85979,
+        143.61598,
+        82.5
+      ],
+      "yaw": 0.87266463,
+      "reach": 0,
+      "initialEnd": 1,
+      "height": 2,
+      "seconds": 0.375,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": -0.0909090936, "timer": 22, "sound": 1 },
+        { "tick": 142, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 150, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 112, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 82, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 52, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 22, "sound": -1 },
+        { "tick": 262, "state": 1, "end": 2, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": 0.0909090936, "timer": 22, "sound": 0 },
+        { "tick": 270, "state": 1, "end": 2, "position": [ 255.859787, 143.615982, 83.7725983 ], "scalar": 0.0909090936, "timer": 14, "sound": -1 },
+        { "tick": 284, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 300, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 104, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 74, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 44, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 14, "sound": -1 },
+        { "tick": 404, "state": 1, "end": 2, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": -0.0909090936, "timer": 22, "sound": 1 },
+        { "tick": 420, "state": 1, "end": 2, "position": [ 255.859787, 143.615982, 83.9544678 ], "scalar": -0.0909090936, "timer": 6, "sound": -1 },
+        { "tick": 426, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 96, "sound": -1 },
+        { "tick": 480, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 66, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 36, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 0, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": -0.0909090936, "timer": 6, "sound": -1 },
+        { "tick": 546, "state": 1, "end": 2, "position": [ 255.859787, 143.615982, 84.4998932 ], "scalar": 0.0909090936, "timer": 22, "sound": 0 },
+        { "tick": 568, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 118, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 88, "sound": -1 },
+        { "tick": 630, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 58, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 1, "position": [ 255.859787, 143.615982, 82.5 ], "scalar": 0.0909090936, "timer": 39, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 715,
+      "instance": 728,
+      "restoredFallen": false,
+      "home": [
+        277.6323,
+        148.63206,
+        86.5
+      ],
+      "yaw": -0.7853982,
+      "reach": 0,
+      "initialEnd": 1,
+      "height": 2,
+      "seconds": 0.375,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": -0.0909090936, "timer": 22, "sound": 1 },
+        { "tick": 142, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 150, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 112, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 82, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 52, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 22, "sound": -1 },
+        { "tick": 262, "state": 1, "end": 2, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": 0.0909090936, "timer": 22, "sound": 0 },
+        { "tick": 270, "state": 1, "end": 2, "position": [ 277.632294, 148.632065, 87.7725983 ], "scalar": 0.0909090936, "timer": 14, "sound": -1 },
+        { "tick": 284, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 300, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 104, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 74, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 44, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 14, "sound": -1 },
+        { "tick": 404, "state": 1, "end": 2, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": -0.0909090936, "timer": 22, "sound": 1 },
+        { "tick": 420, "state": 1, "end": 2, "position": [ 277.632294, 148.632065, 87.9544678 ], "scalar": -0.0909090936, "timer": 6, "sound": -1 },
+        { "tick": 426, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 96, "sound": -1 },
+        { "tick": 480, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 66, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 36, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 0, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": -0.0909090936, "timer": 6, "sound": -1 },
+        { "tick": 546, "state": 1, "end": 2, "position": [ 277.632294, 148.632065, 88.4998932 ], "scalar": 0.0909090936, "timer": 22, "sound": 0 },
+        { "tick": 568, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 118, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 88, "sound": -1 },
+        { "tick": 630, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 58, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 1, "position": [ 277.632294, 148.632065, 86.5 ], "scalar": 0.0909090936, "timer": 39, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 715,
+      "instance": 729,
+      "restoredFallen": false,
+      "home": [
+        284.1186,
+        179.11092,
+        86.5
+      ],
+      "yaw": -0.61086524,
+      "reach": 0,
+      "initialEnd": 1,
+      "height": 4,
+      "seconds": 0.375,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": -0.181818187, "timer": 22, "sound": 1 },
+        { "tick": 142, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 150, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 112, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 82, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 52, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 22, "sound": -1 },
+        { "tick": 262, "state": 1, "end": 2, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": 0.181818187, "timer": 22, "sound": 0 },
+        { "tick": 270, "state": 1, "end": 2, "position": [ 284.118591, 179.110916, 89.0453644 ], "scalar": 0.181818187, "timer": 14, "sound": -1 },
+        { "tick": 284, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 300, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 104, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 74, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 44, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 14, "sound": -1 },
+        { "tick": 404, "state": 1, "end": 2, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": -0.181818187, "timer": 22, "sound": 1 },
+        { "tick": 420, "state": 1, "end": 2, "position": [ 284.118591, 179.110916, 89.4090576 ], "scalar": -0.181818187, "timer": 6, "sound": -1 },
+        { "tick": 426, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 96, "sound": -1 },
+        { "tick": 480, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 66, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 36, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 0, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": -0.181818187, "timer": 6, "sound": -1 },
+        { "tick": 546, "state": 1, "end": 2, "position": [ 284.118591, 179.110916, 90.4999542 ], "scalar": 0.181818187, "timer": 22, "sound": 0 },
+        { "tick": 568, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 118, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 88, "sound": -1 },
+        { "tick": 630, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 58, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 1, "position": [ 284.118591, 179.110916, 86.5 ], "scalar": 0.181818187, "timer": 39, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 715,
+      "instance": 730,
+      "restoredFallen": false,
+      "home": [
+        287.40118,
+        176.81273,
+        94.5
+      ],
+      "yaw": -0.61086524,
+      "reach": 0,
+      "initialEnd": 0,
+      "height": 4,
+      "seconds": 0.375,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0.181818187, "timer": 22, "sound": 0 },
+        { "tick": 142, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 150, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 112, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 82, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 52, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 22, "sound": -1 },
+        { "tick": 262, "state": 1, "end": 2, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": -0.181818187, "timer": 22, "sound": 1 },
+        { "tick": 270, "state": 1, "end": 2, "position": [ 287.401184, 176.812729, 91.9544067 ], "scalar": -0.181818187, "timer": 14, "sound": -1 },
+        { "tick": 284, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 300, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 104, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 74, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 44, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 14, "sound": -1 },
+        { "tick": 404, "state": 1, "end": 2, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": 0.181818187, "timer": 22, "sound": 0 },
+        { "tick": 420, "state": 1, "end": 2, "position": [ 287.401184, 176.812729, 91.5908203 ], "scalar": 0.181818187, "timer": 6, "sound": -1 },
+        { "tick": 426, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 96, "sound": -1 },
+        { "tick": 480, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 66, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 36, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 1, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": 0.181818187, "timer": 6, "sound": -1 },
+        { "tick": 546, "state": 1, "end": 2, "position": [ 287.401184, 176.812729, 90.4998779 ], "scalar": -0.181818187, "timer": 22, "sound": 1 },
+        { "tick": 568, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 120, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 118, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 88, "sound": -1 },
+        { "tick": 630, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 58, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 0, "position": [ 287.401184, 176.812729, 94.5 ], "scalar": -0.181818187, "timer": 39, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 715,
+      "instance": 731,
+      "restoredFallen": false,
+      "home": [
+        287.66864,
+        159.46545,
+        86.5
+      ],
+      "yaw": 0,
+      "reach": 0,
+      "initialEnd": 1,
+      "height": 2,
+      "seconds": 0.375,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 650,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 120, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 119, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 118, "sound": -1 },
+        { "tick": 3, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 117, "sound": -1 },
+        { "tick": 4, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 116, "sound": -1 },
+        { "tick": 5, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 115, "sound": -1 },
+        { "tick": 30, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 90, "sound": -1 },
+        { "tick": 60, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 60, "sound": -1 },
+        { "tick": 90, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0, "timer": 30, "sound": -1 },
+        { "tick": 120, "state": 1, "end": 2, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": -0.0909090936, "timer": 22, "sound": 1 },
+        { "tick": 142, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 150, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 112, "sound": -1 },
+        { "tick": 180, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 82, "sound": -1 },
+        { "tick": 210, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 52, "sound": -1 },
+        { "tick": 240, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 22, "sound": -1 },
+        { "tick": 262, "state": 1, "end": 2, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": 0.0909090936, "timer": 22, "sound": 0 },
+        { "tick": 270, "state": 1, "end": 2, "position": [ 287.66864, 159.465454, 87.7725983 ], "scalar": 0.0909090936, "timer": 14, "sound": -1 },
+        { "tick": 284, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 300, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 104, "sound": -1 },
+        { "tick": 330, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 74, "sound": -1 },
+        { "tick": 360, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 44, "sound": -1 },
+        { "tick": 390, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 14, "sound": -1 },
+        { "tick": 404, "state": 1, "end": 2, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": -0.0909090936, "timer": 22, "sound": 1 },
+        { "tick": 420, "state": 1, "end": 2, "position": [ 287.66864, 159.465454, 87.9544678 ], "scalar": -0.0909090936, "timer": 6, "sound": -1 },
+        { "tick": 426, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 450, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 96, "sound": -1 },
+        { "tick": 480, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 66, "sound": -1 },
+        { "tick": 510, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 36, "sound": -1 },
+        { "tick": 540, "state": 1, "end": 0, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": -0.0909090936, "timer": 6, "sound": -1 },
+        { "tick": 546, "state": 1, "end": 2, "position": [ 287.66864, 159.465454, 88.4998932 ], "scalar": 0.0909090936, "timer": 22, "sound": 0 },
+        { "tick": 568, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 120, "sound": -1 },
+        { "tick": 570, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 118, "sound": -1 },
+        { "tick": 600, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 88, "sound": -1 },
+        { "tick": 630, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 58, "sound": -1 },
+        { "tick": 649, "state": 1, "end": 1, "position": [ 287.66864, 159.465454, 86.5 ], "scalar": 0.0909090936, "timer": 39, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 768,
+      "instance": 893,
+      "restoredFallen": false,
+      "home": [
+        244.47235,
+        125.02233,
+        81.511444
+      ],
+      "yaw": -0.54256785,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            249.47235,
+            125.02233,
+            81.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            244.47235,
+            125.02233,
+            83.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            244.47235,
+            125.02233,
+            81.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            244.47235,
+            125.02233,
+            81.511444
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            244.47235,
+            125.02233,
+            81.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 244.557983, 124.970695, 81.5114441 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 244.643616, 124.91906, 81.5114441 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 246.18512, 123.989655, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 246.18512, 123.989655, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 246.18512, 123.989655, 81.5114441 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 245.84256, 124.19619, 81.5114441 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 246.18512, 123.989655, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 246.18512, 123.989655, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 246.18512, 123.989655, 81.5114441 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 768,
+      "instance": 894,
+      "restoredFallen": false,
+      "home": [
+        264.14798,
+        154.22221,
+        85.35933
+      ],
+      "yaw": -0.61869365,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            269.14798,
+            154.22221,
+            85.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            264.14798,
+            154.22221,
+            87.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            264.14798,
+            154.22221,
+            85.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            264.14798,
+            154.22221,
+            85.35933
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            264.14798,
+            154.22221,
+            85.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 264.229431, 154.164215, 85.3593292 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 264.310883, 154.106216, 85.3593292 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 265.777252, 153.062271, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 265.777252, 153.062271, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 265.777252, 153.062271, 85.3593292 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 265.451385, 153.29425, 85.3593292 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 265.777252, 153.062271, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 265.777252, 153.062271, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 265.777252, 153.062271, 85.3593292 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 768,
+      "instance": 895,
+      "restoredFallen": false,
+      "home": [
+        269.9694,
+        172.14328,
+        95.509674
+      ],
+      "yaw": -2.1955175,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            274.9694,
+            172.14328,
+            95.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            269.9694,
+            172.14328,
+            97.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            269.9694,
+            172.14328,
+            95.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            269.9694,
+            172.14328,
+            95.509674
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            269.9694,
+            172.14328,
+            95.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 269.910889, 172.062164, 95.5096741 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 269.852386, 171.981049, 95.5096741 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 268.799622, 170.521027, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 268.799622, 170.521027, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 268.799622, 170.521027, 95.5096741 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 269.033569, 170.845474, 95.5096741 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 268.799622, 170.521027, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 268.799622, 170.521027, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 268.799622, 170.521027, 95.5096741 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 768,
+      "instance": 896,
+      "restoredFallen": false,
+      "home": [
+        257.8691,
+        180.8202,
+        95.37317
+      ],
+      "yaw": 0.950828,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            262.8691,
+            180.8202,
+            95.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            257.8691,
+            180.8202,
+            97.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            257.8691,
+            180.8202,
+            95.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            257.8691,
+            180.8202,
+            95.37317
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            257.8691,
+            180.8202,
+            95.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": 0 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 257.927185, 180.901581, 95.3731689 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 257.985291, 180.982971, 95.3731689 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 259.031128, 182.447998, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 259.031128, 182.447998, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 259.031128, 182.447998, 95.3731689 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 258.798706, 182.122437, 95.3731689 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 259.031128, 182.447998, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 259.031128, 182.447998, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 259.031128, 182.447998, 95.3731689 ], "scalar": 1, "timer": 0, "sound": 0 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 769,
+      "instance": 897,
+      "restoredFallen": false,
+      "home": [
+        244.47235,
+        125.02233,
+        81.511444
+      ],
+      "yaw": -0.54256785,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            249.47235,
+            125.02233,
+            81.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            244.47235,
+            125.02233,
+            83.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            244.47235,
+            125.02233,
+            81.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            244.47235,
+            125.02233,
+            81.511444
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            244.47235,
+            125.02233,
+            81.511444
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 244.386703, 125.073959, 81.5114441 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 244.301071, 125.125595, 81.5114441 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 242.759567, 126.055, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 242.759567, 126.055, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 242.759567, 126.055, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 243.102127, 125.848465, 81.5114441 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 242.759567, 126.055, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 242.759567, 126.055, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 242.759567, 126.055, 81.5114441 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 244.472351, 125.022331, 81.5114441 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 769,
+      "instance": 898,
+      "restoredFallen": false,
+      "home": [
+        264.14798,
+        154.22221,
+        85.35933
+      ],
+      "yaw": -0.61869365,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            269.14798,
+            154.22221,
+            85.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            264.14798,
+            154.22221,
+            87.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            264.14798,
+            154.22221,
+            85.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            264.14798,
+            154.22221,
+            85.35933
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            264.14798,
+            154.22221,
+            85.35933
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 264.066498, 154.280197, 85.3593292 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 263.985046, 154.338196, 85.3593292 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 262.518677, 155.382156, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 262.518677, 155.382156, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 262.518677, 155.382156, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 262.844543, 155.150162, 85.3593292 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 262.518677, 155.382156, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 262.518677, 155.382156, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 262.518677, 155.382156, 85.3593292 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 264.14798, 154.222214, 85.3593292 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 769,
+      "instance": 899,
+      "restoredFallen": false,
+      "home": [
+        269.9694,
+        172.14328,
+        95.509674
+      ],
+      "yaw": -2.1955175,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            274.9694,
+            172.14328,
+            95.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            269.9694,
+            172.14328,
+            97.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            269.9694,
+            172.14328,
+            95.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            269.9694,
+            172.14328,
+            95.509674
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            269.9694,
+            172.14328,
+            95.509674
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 270.027863, 172.22438, 95.5096741 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 270.086365, 172.305496, 95.5096741 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 271.13913, 173.765518, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 271.13913, 173.765518, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 271.13913, 173.765518, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 270.905182, 173.441071, 95.5096741 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 271.13913, 173.765518, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 271.13913, 173.765518, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 271.13913, 173.765518, 95.5096741 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 269.969391, 172.14328, 95.5096741 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    },
+    {
+      "nativeClassId": 769,
+      "instance": 900,
+      "restoredFallen": false,
+      "home": [
+        257.8691,
+        180.8202,
+        95.37317
+      ],
+      "yaw": 0.950828,
+      "reach": 5,
+      "initialEnd": 0,
+      "height": 0,
+      "seconds": 0,
+      "delay": 0,
+      "trigger": [
+        0,
+        0,
+        0
+      ],
+      "segments": [
+        {
+          "ticks": 1,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            262.8691,
+            180.8202,
+            95.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 1,
+          "player": [
+            257.8691,
+            180.8202,
+            97.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            257.8691,
+            180.8202,
+            95.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 6,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            257.8691,
+            180.8202,
+            95.37317
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 5,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 24,
+          "player": [
+            257.8691,
+            180.8202,
+            95.37317
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        },
+        {
+          "ticks": 25,
+          "player": [
+            0,
+            0,
+            0
+          ],
+          "camera": [
+            0,
+            0,
+            0
+          ],
+          "run": 0
+        }
+      ],
+      "samples": [
+        { "tick": 0, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 1, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 2, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 3, "state": 2, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 4, "state": 2, "end": 0, "position": [ 257.811005, 180.738815, 95.3731689 ], "scalar": 0.0500000007, "timer": 0, "sound": -1 },
+        { "tick": 5, "state": 2, "end": 0, "position": [ 257.752899, 180.657425, 95.3731689 ], "scalar": 0.100000001, "timer": 0, "sound": -1 },
+        { "tick": 24, "state": 3, "end": 0, "position": [ 256.707062, 179.192398, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 30, "state": 3, "end": 0, "position": [ 256.707062, 179.192398, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 33, "state": 4, "end": 0, "position": [ 256.707062, 179.192398, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 38, "state": 2, "end": 0, "position": [ 256.939484, 179.51796, 95.3731689 ], "scalar": 0.799999952, "timer": 0, "sound": -1 },
+        { "tick": 43, "state": 3, "end": 0, "position": [ 256.707062, 179.192398, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 60, "state": 3, "end": 0, "position": [ 256.707062, 179.192398, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 62, "state": 4, "end": 0, "position": [ 256.707062, 179.192398, 95.3731689 ], "scalar": 1, "timer": 0, "sound": -1 },
+        { "tick": 82, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 },
+        { "tick": 86, "state": 1, "end": 0, "position": [ 257.86911, 180.820206, 95.3731689 ], "scalar": 0, "timer": 0, "sound": -1 }
+      ]
+    }
+  ]
+}

@@ -182,10 +182,10 @@ public sealed class RuntimeAudioHost
     public void StopLevelAudio() => StopNodes(_levelPlayers);
 
     /// <summary>Stop and release every player owned by this adapter.</summary>
-    public void StopAll()
+    public void StopAll(bool freeImmediately = false)
     {
-        StopNodes(_levelPlayers);
-        StopNodes(_effectPlayers);
+        StopNodes(_levelPlayers, freeImmediately);
+        StopNodes(_effectPlayers, freeImmediately);
         _diagnostics.Clear();
     }
 
@@ -205,7 +205,9 @@ public sealed class RuntimeAudioHost
         Node? player = null;
         try
         {
-            AudioStreamWav stream = BuildStream(prepared!);
+            // The player retains a native reference; release our temporary
+            // C# wrapper deterministically instead of waiting for finalization.
+            using AudioStreamWav stream = BuildStream(prepared!);
             player = prepared!.ScenePosition is { } position
                 ? BuildSpatialPlayer(stream, prepared.VolumeDb, position)
                 : BuildPlayer(stream, prepared.VolumeDb);
@@ -226,10 +228,7 @@ public sealed class RuntimeAudioHost
             if (player is not null)
             {
                 owner.Remove(player);
-                if (GodotObject.IsInstanceValid(player))
-                {
-                    player.QueueFree();
-                }
+                ReleasePlayer(player);
             }
 
             Report(DiagnosticLevel.Warning,
@@ -290,10 +289,7 @@ public sealed class RuntimeAudioHost
         void Release()
         {
             owner.Remove(player);
-            if (GodotObject.IsInstanceValid(player))
-            {
-                player.QueueFree();
-            }
+            ReleasePlayer(player);
         }
 
         switch (player)
@@ -307,27 +303,38 @@ public sealed class RuntimeAudioHost
         }
     }
 
-    private static void StopNodes(List<Node> nodes)
+    private static void StopNodes(List<Node> nodes, bool freeImmediately = false)
     {
         foreach (var node in nodes.ToArray())
         {
-            if (GodotObject.IsInstanceValid(node))
-            {
-                switch (node)
-                {
-                    case AudioStreamPlayer twoD:
-                        twoD.Stop();
-                        break;
-                    case AudioStreamPlayer3D threeD:
-                        threeD.Stop();
-                        break;
-                }
-
-                node.QueueFree();
-            }
+            ReleasePlayer(node, freeImmediately);
         }
 
         nodes.Clear();
+    }
+
+    private static void ReleasePlayer(Node node, bool freeImmediately = false)
+    {
+        if (!GodotObject.IsInstanceValid(node)) return;
+        // Finished one-shots must relinquish their stream before leaving our
+        // ownership list, just like explicitly stopped players.
+        switch (node)
+        {
+            case AudioStreamPlayer twoD:
+                twoD.Stop();
+                twoD.Stream = null;
+                break;
+            case AudioStreamPlayer3D threeD:
+                threeD.Stop();
+                threeD.Stream = null;
+                break;
+        }
+
+        // The tree cannot process another deferred frame during teardown.
+        if (freeImmediately)
+            node.Free();
+        else
+            node.QueueFree();
     }
 
     private void Report(DiagnosticLevel level, string message)

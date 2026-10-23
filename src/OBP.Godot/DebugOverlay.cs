@@ -72,6 +72,35 @@ public sealed class DebugOverlay
         Apply();
     }
 
+    /// <summary>Resolve a named kind in bounded time; the null "all" entry is not a kind.</summary>
+    public static bool TryGetIsolationIndex(string? requested, out int index)
+    {
+        for (int i = 1; i < IsolationCycle.Length; i++)
+        {
+            if (string.Equals(IsolationCycle[i], requested, System.StringComparison.OrdinalIgnoreCase))
+            {
+                index = i;
+                return true;
+            }
+        }
+
+        index = 0;
+        return false;
+    }
+
+    /// <summary>Select a named kind directly without cycling. Invalid requests leave the overlay unchanged.</summary>
+    public bool TryIsolateKind(string? requested)
+    {
+        if (!TryGetIsolationIndex(requested, out int index))
+        {
+            return false;
+        }
+
+        _isolationCursor = index;
+        Apply();
+        return true;
+    }
+
     /// <summary>Step to the next kind in <see cref="IsolationCycle"/> (wraps back to "all").</summary>
     public void IsolateNextKind()
     {

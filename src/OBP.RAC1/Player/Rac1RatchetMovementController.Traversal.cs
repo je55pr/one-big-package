@@ -74,6 +74,9 @@ public sealed partial class Rac1RatchetMovementController
     public double CurrentAirGravityPerUpdate => _specialAir?.GravityPerUpdate ??
         (Phase == Rac1RatchetMovementPhase.Falling ? FallGravityPerTick : ReleasedRiseGravityPerTick);
 
+    public bool MayReenterWater => _specialAir?.Profile.Kind != Rac1AirborneJumpKind.WaterExit ||
+        _specialAge > Math.Max(_specialAir.Profile.LaunchAge, _specialAir.Profile.ScriptEndAge) && _verticalStep <= 0;
+
     /// <summary>
     /// Extended regular-axis movement. Source profiles and admission predicates
     /// own special jumps and gliding; ordinary jump timing retains its witnessed
@@ -240,6 +243,10 @@ public sealed partial class Rac1RatchetMovementController
     public void BeginLedgeJump(Rac1MovementContext context) =>
         BeginSpecialJump(Rac1AirborneJumpKind.LedgeJump, context, fastEntry: false);
 
+    /// <summary>Water action owner admitted Cross; retain the native depth-specific action 12.</summary>
+    public void BeginWaterExitJump(Rac1MovementContext context, float waterDepth) =>
+        BeginSpecialJump(Rac1AirborneJumpKind.WaterExit, context, false, waterDepth);
+
     /// <summary>
     /// A traversal/contact adapter transfers its completed motion back to the
     /// ordinary controller. This is an OBP ownership seam, not a native entry.
@@ -266,12 +273,13 @@ public sealed partial class Rac1RatchetMovementController
         YawMode = Rac1RatchetYawMode.Air;
     }
 
-    private void BeginSpecialJump(Rac1AirborneJumpKind kind, Rac1MovementContext context, bool fastEntry)
+    private void BeginSpecialJump(Rac1AirborneJumpKind kind, Rac1MovementContext context, bool fastEntry,
+        float environmentDepth = 0)
     {
         if (kind == Rac1AirborneJumpKind.WallJump)
             _wallLaunchNormalYaw = _wallNormalYaw;
         int direction = ExtendedInputDirection(context);
-        var profile = Rac1AirborneJumpProfile.Create(kind, fastEntry, direction);
+        var profile = Rac1AirborneJumpProfile.Create(kind, fastEntry, direction, environmentDepth: environmentDepth);
         _specialAir = new Rac1AirborneMotionSession(profile, (float)(_contactProcessedMotion?.Z ?? _verticalStep));
         _ordinaryAirAnimation = null;
         _postLandingGroundAction = null;
@@ -416,6 +424,11 @@ public sealed partial class Rac1RatchetMovementController
             (float)(direction.X / norm) * target, (float)(direction.Y / norm) * target) : default;
         var next = Rac1AirbornePlanarMotion.Converge(new((float)_planarX, (float)_planarY), desired,
             Rac1AirbornePlanarMotion.OrdinaryBaseAmount(target, nativeWallContact: false));
+        if (action == 0x12 && next.Magnitude > 3.7f / 60f)
+        {
+            float scale = (3.7f / 60f) / next.Magnitude;
+            next = new(next.X * scale, next.Y * scale);
+        }
         _planarX = next.X;
         _planarY = next.Y;
         _planarMagnitude = next.Magnitude;
@@ -456,6 +469,7 @@ public sealed partial class Rac1RatchetMovementController
             return false;
         if (_specialAir is { HasLaunched: false })
             return false;
+        if (!MayReenterWater) return false;
         int age = _specialAir is not null || _airBoost is not null ? _specialAge : _ordinaryAirAge;
         int launchAge = _specialAir?.Profile.LaunchAge ?? (_airBoost is not null ? -1 : 8);
         if (!Rac1AirborneLandingSession.CanBegin(new(action.Value, age, launchAge,
