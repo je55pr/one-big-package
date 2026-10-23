@@ -88,6 +88,12 @@ def main():
         [18, 55, 1, 0, 1, 0, 55.88, 56, 4, 0, 0, 0],
         [20, 106, 1, 0, 0, 0, 53, 56, 4, 0, 0, 0],
     ]
+    # Observe actual query endpoints produced by the native entry/helper code.
+    # The segment executor returns no hit; no collision solver is reconstructed.
+    entry_query = [
+        [4, 0x1c, 0, 0, 10000, 0, 82.07, 82.25, 3.75, 0, 0, 0],
+        [4, 7, 0, 0, 10000, 0, 80.8, 82.25, 3.75, 0, 0, 0],
+    ]
     # See the adapter's explicit 30-column seed schema. These are bounded
     # motion facts, not complete level/player snapshots.
     motion = [
@@ -99,6 +105,7 @@ def main():
     ]
     ranges = [('underwaterMotion', 0x2378bc, 0x23880c), ('surfaceMotion', 0x238a24, 0x238d20),
               ('oxygen', 0x2406b0, 0x2408e8), ('waterEntry', 0x2408e8, 0x240c78),
+              ('entryQueryEndpoints', 0x232cc0, 0x232dc0),
               ('waterline', 0x240c78, 0x240ed8), ('inputDispatch', 0x2435b8, 0x243c08),
               ('exitImpulse', 0x17c3e0, 0x17c440), ('strokeCurve', 0x17c440, 0x17c4b8)]
     report = dict(schema=1, authority='SCUS-97199 original NTSC-U', levelId=1,
@@ -112,9 +119,11 @@ def main():
     for mode, rows in [('entry', entry), ('oxygen', oxygen), ('motion', motion)]:
         report[mode] = [dict(input=row, output=list(map(int, output)) if mode != 'motion' else output)
                         for row, output in zip(rows, run(mode, rows))]
+    report['periodicQuery'] = [dict(input=row, output=output)
+                               for row, output in zip(entry_query, run('entry-query', entry_query))]
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
-    print(f'Original Novalis water: {len(entry)} entry, {len(oxygen)} oxygen, {len(motion)} motion witnesses')
+    print(f'Original Novalis water: {len(entry)} entry, {len(oxygen)} oxygen, {len(motion)} motion, {len(entry_query)} periodic-query witnesses')
 
 
 if __name__ == '__main__':

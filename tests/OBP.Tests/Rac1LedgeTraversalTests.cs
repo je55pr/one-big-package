@@ -56,16 +56,57 @@ public sealed class Rac1LedgeTraversalTests
         Assert.DoesNotContain(world.Rays, ray => ray.Mask == Rac1TraversalRayMask.Support);
     }
 
+    [Theory]
+    [InlineData(0x1f)]
+    [InlineData(0x3f)]
+    [InlineData(0x5f)]
+    [InlineData(0x7f)]
+    public void StaticUnclassifiedFacesAreClimbableWithoutInventingAnOrdinarySurfaceClass(int rawFaceType)
+    {
+        Assert.Null(Rac1CollisionFaceSemantics.Decode(rawFaceType).SurfaceClass);
+        var hit = Rac1TraversalRayHit.StaticWorld(default, new(0, 0, 1), rawFaceType);
+        Assert.Equal(-1, hit.SurfaceClass);
+        Assert.True(hit.TraversalAllowed);
+        Assert.True(Probe(new LedgeFixture { RawFaceType = rawFaceType }, out _));
+    }
+
+    [Fact]
+    public void StaticFaceMappingRetainsNativeExclusionsAndUnsupportedSignedMembership()
+    {
+        foreach (int raw in Enumerable.Range(0, 128))
+        {
+            bool excluded = (raw & 31) is 0 or 9 or 12;
+            Assert.Equal(!excluded, Probe(new LedgeFixture { RawFaceType = raw }, out _));
+        }
+        Assert.False(Probe(new LedgeFixture { RawFaceType = 0xbf }, out _));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Rac1TraversalRayHit.StaticWorld(default, default, 256));
+    }
+
     [Fact]
     public void TopRequiresEnoughDropBelowItAndCannotBeGrabbedThroughCeiling()
     {
         var tooLow = new LedgeFixture();
         Assert.False(Rac1LedgeProbe.TryFindCandidate(
-            Input with { LastSupportHeight = 0d }, tooLow.Raycast, tooLow.Overlaps, out _));
+            Input with { SolidFloorHeight = 0d }, tooLow.Raycast, tooLow.Overlaps, out _));
         var ceiling = new LedgeFixture { CeilingBlocks = true };
         Assert.False(Probe(ceiling, out _));
         var dynamicTop = new LedgeFixture { TraversalAllowed = false };
         Assert.False(Probe(dynamicTop, out _));
+    }
+
+    [Fact]
+    public void SurfaceExitLedgeAdmissionUsesTheSubmergedSolidFloorRatherThanWaterOrPreviousPlatform()
+    {
+        // Translate the reported pool to feet Z=0: water=.12, step=1.4,
+        // bottom=-3.6. Only the solid-floor query is P+2d8 in the native gate.
+        Assert.True(Rac1LedgeProbe.AdmitsOrdinaryRatchetCandidate(0x12, 4, false, 2d / 60d, 0));
+        Assert.False(Rac1LedgeProbe.AdmitsOrdinaryRatchetCandidate(0x37, 18, false, 0, 0));
+        var pool = new LedgeFixture();
+        Assert.True(Rac1LedgeProbe.TryFindCandidate(Input with { SolidFloorHeight = -3.6 },
+            pool.Raycast, pool.Overlaps, out _));
+        foreach (double wrongFloor in new[] { .12, 3.35 })
+            Assert.False(Rac1LedgeProbe.TryFindCandidate(Input with { SolidFloorHeight = wrongFloor },
+                pool.Raycast, pool.Overlaps, out _));
     }
 
     [Fact]
@@ -286,6 +327,7 @@ public sealed class Rac1LedgeTraversalTests
     private sealed class LedgeFixture
     {
         public int SurfaceClass { get; init; } = 1;
+        public int? RawFaceType { get; init; }
         public bool TraversalAllowed { get; init; } = true;
         public bool CeilingBlocks { get; init; }
         public bool BodyBlocked { get; init; }
@@ -298,14 +340,18 @@ public sealed class Rac1LedgeTraversalTests
             Rays.Add(ray);
             if (Math.Abs(ray.From.X - ray.To.X) < 1e-9d &&
                 ray.From.X >= .6d - 1e-6d && ray.From.Z >= 1.4d && ray.To.Z <= 1.4d)
-                return new(new(ray.From.X, ray.From.Y, 1.4d), TopNormal, SurfaceClass, TraversalAllowed);
+                return Hit(new(ray.From.X, ray.From.Y, 1.4d), TopNormal);
             if (Math.Abs(ray.From.Z - ray.To.Z) < 1e-9d &&
                 ray.From.X < .6d && ray.To.X >= .6d && ray.From.Z < 1.4d)
-                return new(new(.6d, ray.From.Y, ray.From.Z), WallNormal, SurfaceClass, TraversalAllowed);
+                return Hit(new(.6d, ray.From.Y, ray.From.Z), WallNormal);
             if (CeilingBlocks && Math.Abs(ray.From.Z - ray.To.Z) < 1e-9d && ray.From.Z > 1.4d)
                 return new(new(.3d, 0d, ray.From.Z), new(-1d, 0d, 0d), 1);
             return null;
         }
+        private Rac1TraversalRayHit Hit(Rac1NativeVector3 position, Rac1NativeVector3 normal) =>
+            RawFaceType is int raw
+                ? Rac1TraversalRayHit.StaticWorld(position, normal, raw)
+                : new(position, normal, SurfaceClass, TraversalAllowed);
         public bool Overlaps(Rac1TraversalBodyQuery body)
         {
             BodyQueries.Add(body);
