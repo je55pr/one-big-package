@@ -4,11 +4,16 @@ using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
+using Xunit.Abstractions;
 
 namespace OBP.Tests;
 
 public sealed class Rac1MetropolisTaxiTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public Rac1MetropolisTaxiTests(ITestOutputHelper output) => _output = output;
+
     private static readonly (int Index, int Class, double X, double Y, double Z, int OutboundPoints)[] Placements =
     [
         (919, 816, 179.77748, 50, 244.59235, 150),
@@ -17,6 +22,84 @@ public sealed class Rac1MetropolisTaxiTests
         (961, 1012, 280.74213, 48.165154, 149.90324, 75),
         (962, 1012, 207.35722, 61.993126, 133.20839, 150),
     ];
+
+    [Fact]
+    public void RetailTaxisLogNormalSpeedPathDurationsAndMeshDirection()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+
+        using var reader = new FileRandomAccessReader(iso);
+        var world = Rac1WorldImport.Build(reader, 3);
+        var session = Rac1MetropolisTaxiSession.TryCreate(world)!;
+        foreach (var stop in session.Stops.Where(s => s.OutboundPath.Count > 1))
+        {
+            var actor = world.DynamicObjects!.Single(o => o.InstanceIndex == stop.InstanceIndex);
+            var m = actor.Transform.Matrix;
+            _output.WriteLine($"i{stop.InstanceIndex} class={stop.NativeClassId} initial Moby basis X=({m[0]:F2},{m[1]:F2},{m[2]:F2}) Y=({m[4]:F2},{m[5]:F2},{m[6]:F2})");
+            if (actor.Meshes.Count > 0)
+            {
+                var verts = actor.Meshes.SelectMany(mesh => mesh.Positions)
+                    .ToArray();
+                _output.WriteLine($"    raw vertex coordinate extents: {verts.Length}");
+                foreach (var mesh in actor.Meshes.Take(1))
+                {
+                    var v = mesh.Positions;
+                    _output.WriteLine($"    local bounds xyz: ({Enumerable.Range(0, v.Length / 3).Min(i => v[i * 3]):F2},{Enumerable.Range(0, v.Length / 3).Max(i => v[i * 3]):F2}) ({Enumerable.Range(0, v.Length / 3).Min(i => v[i * 3 + 1]):F2},{Enumerable.Range(0, v.Length / 3).Max(i => v[i * 3 + 1]):F2}) ({Enumerable.Range(0, v.Length / 3).Min(i => v[i * 3 + 2]):F2},{Enumerable.Range(0, v.Length / 3).Max(i => v[i * 3 + 2]):F2})");
+                }
+            }
+            foreach (var (leg, path) in new[] { ("out", stop.OutboundPath), ("back", stop.ReturnPath) })
+            {
+                if (path is not { Count: > 1 }) continue;
+                var motion = new Rac1TaxiNativeMotion(path);
+                double len = 0;
+                for (int i = 1; i < path.Count; i++)
+                    len += Math.Sqrt(path[i].DistanceSquared(path[i - 1]));
+                int frames = 0;
+                double peak = 0;
+                while (!motion.Arrived && frames < 24000)
+                {
+                    motion.Advance(1d / 60);
+                    frames++;
+                    peak = Math.Max(peak, motion.SpeedPerFrame * 60);
+                }
+                Assert.True(motion.Arrived);
+                double presentationSeconds = frames / 60d /
+                    Rac1TaxiHostPresentationPolicy.RouteClockMultiplier;
+                // Every Kerwan route must remain under the retail 18u/s
+                // maximum even with our explicitly provisional host pacing.
+                Assert.InRange(peak * Rac1TaxiHostPresentationPolicy.RouteClockMultiplier,
+                    0, Rac1TaxiNativeMotion.MaxUnitsPerSecond);
+                Assert.InRange(presentationSeconds, 8d, 35d);
+                _output.WriteLine($"    {leg}: points={path.Count} length={len:F1}u nativeClock={frames / 60d:F1}s hostClock={presentationSeconds:F1}s avg={len / presentationSeconds:F2}u/s peak={peak * Rac1TaxiHostPresentationPolicy.RouteClockMultiplier:F2}u/s");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(-1d, 0d)]
+    [InlineData(1d, 0d)]
+    [InlineData(0d, -1d)]
+    [InlineData(0d, 1d)]
+    [InlineData(2d, 1d)]
+    [InlineData(-2d, -1d)]
+    public void KerwanHostVisualYawRotatesImportedLocalNegativeXIntoTravel(double dx, double dz)
+    {
+        double yaw = Rac1TaxiHostPresentationPolicy.SceneVisualYaw(dx, dz);
+        double length = Math.Sqrt(dx * dx + dz * dz);
+        // Godot yaw rotates imported model front -X to (-cos, sin) in XZ.
+        Assert.Equal(dx / length, -Math.Cos(yaw), 10);
+        Assert.Equal(dz / length, Math.Sin(yaw), 10);
+    }
+
+    [Fact]
+    public void KerwanHostVisualYawRejectsUndefinedTangent()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1TaxiHostPresentationPolicy.SceneVisualYaw(0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1TaxiHostPresentationPolicy.SceneVisualYaw(double.NaN, 1));
+    }
 
     // Fixture includes the source-game payload contract without an ISO.
     private static byte[] TinyNativePath(double x, double y, double z, bool returning = false)

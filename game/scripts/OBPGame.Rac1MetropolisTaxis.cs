@@ -200,7 +200,7 @@ public partial class OBPGame
         motion.Y = 0;
         float distanceSquared = motion.LengthSquared();
         double heading = distanceSquared is >= 0.0001f and <= 100f
-            ? Mathf.Atan2(motion.X, motion.Z)
+            ? Rac1TaxiHostPresentationPolicy.SceneVisualYaw(motion.X, motion.Z)
             : seek.HeadingRadians;
         seek.Advance(heading, delta);
         root.GlobalRotation = new Vector3(
@@ -397,17 +397,21 @@ public partial class OBPGame
                     FromTaxiPoint(stop.Position), delta);
         }
 
-        foreach (var traffic in taxis.TickTraffic(ToTaxiPoint(player.GlobalPosition), delta))
+        // Host-only first-play pacing: native per-waypoint braking produces
+        // a 111s class-1012 round trip, far slower than practical gameplay.
+        // Advance the authored route clock only, never HUD/hover/hero time.
+        double routeDelta = delta * Rac1TaxiHostPresentationPolicy.RouteClockMultiplier;
+        foreach (var traffic in taxis.TickTraffic(ToTaxiPoint(player.GlobalPosition), routeDelta))
         {
             if (_rac1TaxiNodes.TryGetValue(traffic.InstanceIndex, out var instance) &&
                 IsInstanceValid(instance.Root))
             {
                 PresentRac1Taxi(traffic.InstanceIndex, instance.Root,
-                    FromTaxiPoint(traffic.Position), delta);
+                    FromTaxiPoint(traffic.Position), routeDelta);
             }
         }
 
-        Rac1TaxiFlight? flight = taxis.Tick(delta);
+        Rac1TaxiFlight? flight = taxis.Tick(taxis.IsRiding ? routeDelta : delta);
         if (flight is null) return;
         if (_rac1FlyingTaxi is not { } taxi)
         {
@@ -421,7 +425,7 @@ public partial class OBPGame
         }
 
         var taxiPosition = PresentRac1Taxi(
-            flight.From.InstanceIndex, taxi.Root, FromTaxiPoint(flight.Position), delta);
+            flight.From.InstanceIndex, taxi.Root, FromTaxiPoint(flight.Position), routeDelta);
         if (_rac1TaxiRiderFrame is not { } rider)
         {
             AbortRac1MetropolisTaxiRide();

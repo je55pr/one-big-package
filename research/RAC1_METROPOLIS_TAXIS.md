@@ -806,3 +806,46 @@ destination dismount, predictable class-1012 sightseeing-only labelling
 and reliable cleanup. Do not hold this milestone for byte-exact
 animation or 1012 second-end restoration; equally, do not claim
 ordinary boarding is proven by a staged smoke.
+
+## 23 October 2026: issue #229 human ride presentation and time calibration
+
+A normal controller playtest showed a class-1012 complete source-return flight,
+but the taxi visually flew sideways and the route took too long. Native data
+inspection showed all four route actors share a local-X-elongated mesh
+(native mesh x bounds approximately -3.61 to +2.34, y -1.62 to +0.96)
+and source poses with X-forward Moby basis. After world-X reflection,
+its visible longitudinal/front axis in Godot is **local -X**, not +Z.
+The prior `atan2(sceneDx, sceneDz)` visual yaw incorrectly steered
+a +Z-forward model. The bounded host presentation now adds +90 degrees
+so that the imported -X model axis points along the route tangent.
+This visual frame correction carries the child collision shape and
+cab-relative rider attachment with it. Native PVar yaw seeking remains
+the underlying turn recurrence, now targeting the right visual axis.
+
+The native `seek_1d` model still calls per-waypoint velocity braking.
+For original Kerwan path geometry at native **60 Hz**, the computed
+unmodified clock is approximately:
+
+| Actor | Route | Length | Native seek clock | Host v1 clock |
+| --- | --- | ---: | ---: | ---: |
+| i919 | 816 outbound | 438.7 u | 131.8 s | 33.0 s |
+| i920 | 816 outbound | 188.5 u | 66.4 s | 16.6 s |
+| i961 | 1012 out/back | 118.6 / 110.8 u | 40.1 / 42.1 s | 10.0 / 10.5 s |
+| i962 | 1012 out/back | 210.2 / 115.1 u | 72.1 / 39.0 s | 18.0 / 9.8 s |
+
+The original constant values **18 u/s maximum and 4.5 u/s²** and
+60 Hz seek algorithm were not changed. The playable Godot host applies
+an **explicitly provisional 4x route-only playback clock**, producing
+recorded peak host movement below 18 u/s on all retail taxi legs.
+This speed-up is NOT a recovered native constant or a claim of
+original game timing equivalence; actual retail audiovisual pacing
+remains unverified. Crucially, cooldown, player state, HUD and bobbing
+still use their ordinary clock, while traffic/flight yaw use the same
+accelerated route clock as movement. Tests pin real normal-time
+durations and peak speed rather than hiding the issue behind the
+separate 12x diagnostic Engine.TimeScale.
+
+The bounded first milestone still uses a disabled player controller
+and fixed camera offset during flight. Full native passenger animation,
+interactive camera ownership and class-1012 far-end landing are **not**
+addressed by #229; they remain explicitly deferred to #222/#223.

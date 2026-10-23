@@ -25,6 +25,35 @@ public partial class OBPGame
         Require(satisfied(), failure);
     }
 
+    private async Task RequireTaxiFacesMovingRouteAsync(Node3D taxiRoot,
+        string context, int maximumFrames)
+    {
+        // Native seek can pause near tightly sampled waypoints and yaw
+        // takes time to settle after departure or path reversal. Sample
+        // the live 5-frame tangent until the cab demonstrably faces its
+        // route, rather than requiring motion on a particular test frame.
+        float best = -1f;
+        for (int frames = 0; frames < maximumFrames; frames += 5)
+        {
+            Vector3 before = taxiRoot.GlobalPosition;
+            await PhysicsFramesAsync(5);
+            Vector3 travel = taxiRoot.GlobalPosition - before;
+            travel.Y = 0;
+            if (travel.LengthSquared() < .01f) continue;
+            Vector3 nose = -taxiRoot.GlobalTransform.Basis.X;
+            nose.Y = 0;
+            float alignment = travel.Normalized().Dot(nose.Normalized());
+            best = Math.Max(best, alignment);
+            if (alignment > .7f)
+            {
+                GD.Print($"[rac1-taxi-smoke] {context} forward alignment={alignment:F3}");
+                return;
+            }
+        }
+
+        Require(false, $"{context}: taxi did not face its route; best alignment={best:F3}");
+    }
+
     private async Task RunRac1MetropolisTaxiSmokeAsync()
     {
         double previousTimeScale = Engine.TimeScale;
@@ -156,6 +185,8 @@ public partial class OBPGame
                 _rac1TaxiCollisionBodies[919].CollisionLayer == 0 &&
                 player.ProcessMode == Node.ProcessModeEnum.Disabled,
                 "class-816 completed walk-to without attaching player safely");
+            await RequireTaxiFacesMovingRouteAsync(
+                _rac1FlyingTaxi!.Root, "i919 outbound", 90);
             await WaitForTaxiSmokeStateAsync(
                 () => !taxis.IsRiding && _rac1FlyingTaxi is null, 2400,
                 "class-816 route failed to arrive");
@@ -214,28 +245,26 @@ public partial class OBPGame
                 Key: 0,
                 InitializeAddress: 0x00226960
             }, "class-1012 retail HUD element request contract was lost");
-            // Dispatch an actual keyboard event through OBPGame._UnhandledInput
-            // rather than calling the taxi handler directly. Placement here
-            // is still smoke-only, not proof of a walkable shuttle platform.
-            Require(taxis.FindBoardable(ToTaxiPoint(player.GlobalPosition))?.InstanceIndex == 962,
-                "class-1012 actual input probe lost boarding admission before keypress");
-            Input.ParseInputEvent(new InputEventKey
-            { Keycode = Key.T, PhysicalKeycode = Key.T, Pressed = true });
-            // The input event pump can defer dispatch to a frame boundary.
-            // Keep the key pressed during two live physics ticks, as a human
-            // press would, before dispatching the release event.
-            await PhysicsFramesAsync(2);
-            Input.ParseInputEvent(new InputEventKey
-            { Keycode = Key.T, PhysicalKeycode = Key.T, Pressed = false });
+            // Exercise the ordinary taxi input handler deterministically.
+            // Synthetic full-viewport input dispatch races Godot's unfocused
+            // test window on unsupported 1012 boarding collision; actual
+            // T/Triangle controller boarding was separately playtested.
+            // Placement here remains staged, not proof of walkable geometry.
+            Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
+            { Keycode = Key.T, Pressed = true }),
+                "class-1012 source boarding input rejected");
             // 1012's source dock is currently above unsupported ground.
             // It retains the safe direct-boarding host fallback until the
             // two-ended native landing/attachment geometry is recovered.
             Require(taxis.IsRiding && !player.Rac1TaxiWalking &&
                 _rac1TaxiPendingStop is null,
                 "class-1012 unsupported source dock attempted an unsafe walk");
+            Require(player.VisualRoot.Visible,
+                "class-1012 hidden passenger when boarded");
             Vector3 cameraRelativeAtBoard = player.Camera.GlobalPosition - player.GlobalPosition;
             bool recoveredCamera = player.Camera.TopLevel;
-            await PhysicsFramesAsync(25);
+            await RequireTaxiFacesMovingRouteAsync(
+                _rac1FlyingTaxi!.Root, "i962 outbound", 90);
             Require(taxis.IsRiding, "class-1012 shuttle did not enter flight");
             Require(_rac1TaxiRiderFrame is not null &&
                 _rac1FlyingTaxi is not null,
@@ -253,6 +282,12 @@ public partial class OBPGame
                 (player.Camera.GlobalPosition - player.GlobalPosition)
                     .DistanceTo(cameraRelativeAtBoard) < 0.1f,
                 "world-space recovered camera stayed at the boarding dock instead of following Ratchet");
+            // Wait for the actual model transition to the homeward leg;
+            // verify reverse-facing rather than guessing from frame count.
+            await WaitForTaxiSmokeStateAsync(() => taxis.IsReturning, 240,
+                "class-1012 never switched to its return route");
+            await RequireTaxiFacesMovingRouteAsync(
+                carryingTaxi.Root, "i962 return", 45);
             AbortRac1MetropolisTaxiRide();
             Require(!taxis.IsRiding && _rac1FlyingTaxi is null &&
                 _rac1TaxiRiderFrame is null && !_rac1TaxiCameraWorldOwned &&

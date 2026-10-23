@@ -103,6 +103,7 @@ public sealed class Rac1MetropolisTaxiSession
 
     public IReadOnlyList<Rac1MetropolisTaxiStop> Stops => _stops;
     public bool IsRiding => _riding is not null;
+    public bool IsReturning => _riding is not null && _nativeReturning;
     public Rac1MetropolisTaxiStop? Riding => _riding;
 
     /// <summary>
