@@ -217,14 +217,31 @@ public partial class OBPGame
     {
         var shot = _rac1QueenScriptedCamera;
         if (shot is null) return;
-        bool owned = IsInstanceValid(shot) && shot.Current;
-        if (owned && _player is { } player && IsInstanceValid(player) &&
-            IsInstanceValid(player.Camera))
+        bool owned = IsInstanceValid(shot) && GetViewport().GetCamera3D() == shot;
+        if (_player is { } player && IsInstanceValid(player))
         {
-            player.Camera.MakeCurrent();
-            _activeCamera = player.Camera;
-            player.Rac1RemoteControlActive = false;
-            player.CenterCameraBehindPlayer();
+            // Do not reclaim the viewport if another scripted camera has
+            // taken it. Queen input suppression must still be released on
+            // cancellation, even when the Queen no longer owns the viewport.
+            if (owned && IsInstanceValid(player.Camera))
+                player.Camera.MakeCurrent();
+            // Visibomb owns its own remote-control lock if it interrupted us.
+            bool guidedOwnsInput = _rac1MissileCamera is { } guided &&
+                IsInstanceValid(guided) && GetViewport().GetCamera3D() == guided;
+            if (!guidedOwnsInput) player.Rac1RemoteControlActive = false;
+            if (owned) player.CenterCameraBehindPlayer();
+        }
+        if (_activeCamera == shot)
+        {
+            // Never leave world-host camera updates pointing at a freed node.
+            var current = GetViewport().GetCamera3D();
+            if (current is not null && current != shot)
+                _activeCamera = current;
+            else if (_player is { } remainingPlayer && IsInstanceValid(remainingPlayer) &&
+                IsInstanceValid(remainingPlayer.Camera))
+                _activeCamera = remainingPlayer.Camera;
+            else
+                _activeCamera = _camera;
         }
         if (IsInstanceValid(shot)) shot.QueueFree();
         _rac1QueenScriptedCamera = null;

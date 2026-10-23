@@ -353,17 +353,31 @@ public partial class OBPGame
                     _rac1QueenScriptedCamera is { Current: false } &&
                     GetViewport().GetCamera3D() == stolen,
                     "Queen camera falsely accepted a cue when another owner took the viewport.");
-                stolen.QueueFree();
-                _rac1QueenScriptedCamera!.MakeCurrent();
+                // Cancel while another camera STILL owns the viewport. The
+                // Queen must release its input lock and stale _activeCamera
+                // without stealing this unrelated camera's lease.
                 EndRac1QueenScriptedCamera();
                 Require(_rac1QueenScriptedCamera is null &&
-                    !_player!.Rac1RemoteControlActive && _player.Camera.Current &&
-                    GetViewport().GetCamera3D() == _player.Camera,
-                    "Queen camera cancellation failed to restore normal Ratchet camera ownership.");
+                    !_player!.Rac1RemoteControlActive &&
+                    GetViewport().GetCamera3D() == stolen && _activeCamera == stolen &&
+                    _rac1QueenFlight?.NativeState == 2,
+                    "Queen cancellation stole an external camera or left input locked.");
+                stolen.QueueFree();
+                _player.Camera.MakeCurrent();
                 TickRac1QueenFlight();
                 Require(_rac1QueenScriptedCamera is { Current: true } &&
-                    _player!.Rac1RemoteControlActive && _rac1QueenFlight?.NativeState == 2,
-                    "Queen camera could not reacquire the viewport after cancellation.");
+                    _player.Rac1RemoteControlActive && _rac1QueenFlight?.NativeState == 2,
+                    "Queen camera could not reacquire after an external lease ended.");
+                EndRac1QueenScriptedCamera();
+                Require(_rac1QueenScriptedCamera is null &&
+                    !_player.Rac1RemoteControlActive && _player.Camera.Current &&
+                    _activeCamera == _player.Camera &&
+                    GetViewport().GetCamera3D() == _player.Camera,
+                    "Queen owned-camera cancellation failed to restore Ratchet.");
+                TickRac1QueenFlight();
+                Require(_rac1QueenScriptedCamera is { Current: true } &&
+                    _player.Rac1RemoteControlActive && _rac1QueenFlight?.NativeState == 2,
+                    "Queen camera could not reacquire after owned cancellation.");
                 int flightTicks = 1;
                 while (flightTicks++ < 1000 &&
                     !(_rac1QueenFlight?.CameraCompletionCandidate ?? false))
