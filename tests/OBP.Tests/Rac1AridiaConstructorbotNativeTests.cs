@@ -564,6 +564,15 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             6, 0x10, true, playerNearAnchor: true));
         Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 2, true));
         Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(6, 4, true));
+        // On an observed native no-floor probe, 0x22 supplies bit2 and the
+        // heading flag may also be present. Player admission cannot override
+        // a blocked state6 return, nor can unknown solver flags force idle.
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+            6, 0x32, true, playerNearAnchor: true));
+        Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(
+            6, 0x32, false, playerNearAnchor: true));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+            6, 0x14, true, playerNearAnchor: true));
         Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
             6, 6, true, playerNearAnchor: true));
         Assert.Equal(new(6, 6), Rac1AridiaConstructorbotNative.StepWalkerState(6, 0, false));

@@ -22,6 +22,10 @@ public partial class OBPGame
     // as Rac1ClipVolumes: PVar+0x188 selects a record, +0x30 its position.
     private readonly Dictionary<int, Vector3> _rac1ConstructorbotNativeWaypoints = [];
     private readonly Dictionary<int, Vector3> _rac1ConstructorbotRoamingTargets = [];
+    // Captures the source walker bitmask only when state6 exits to idle.
+    // This lets the retail encounter distinguish arrival (bit4) from a
+    // confirmed obstruction (bit2) without reconstructing past contacts.
+    private readonly Dictionary<int, int> _rac1ConstructorbotRoamExitFlags = [];
     private IReadOnlyList<Rac1ClipVolume> _rac1AridiaClipVolumes = [];
 
     private void ResetRac1ConstructorbotStartups()
@@ -35,6 +39,7 @@ public partial class OBPGame
         _rac1ConstructorbotStateThreeVerticalSteps.Clear();
         _rac1ConstructorbotNativeWaypoints.Clear();
         _rac1ConstructorbotRoamingTargets.Clear();
+        _rac1ConstructorbotRoamExitFlags.Clear();
         _rac1AridiaClipVolumes = [];
     }
 
@@ -185,6 +190,7 @@ public partial class OBPGame
                     Rac1EffectRandom.Range(1f, 2f), Rac1EffectRandom.Range(1f, 2f));
                 _rac1ConstructorbotRoamingTargets[instance.InstanceIndex] =
                     FromEffectNative(target);
+                _rac1ConstructorbotRoamExitFlags.Remove(instance.InstanceIndex);
                 _rac1ConstructorbotWalkerSpeeds.Remove(instance.InstanceIndex);
                 _rac1ConstructorbotWalkerYawVelocities.Remove(instance.InstanceIndex);
                 _rac1MobyRuntime.SetNativeState(instance, roam.NativeState);
@@ -803,7 +809,11 @@ public partial class OBPGame
                 _rac1ConstructorbotWalkerSpeeds.Remove(instance);
                 _rac1ConstructorbotWalkerYawVelocities.Remove(instance);
                 if (walkingState == Rac1AridiaConstructorbotNative.RoamingState)
+                {
+                    if (walker.NativeState == Rac1AridiaConstructorbotNative.RestState)
+                        _rac1ConstructorbotRoamExitFlags[instance] = flags;
                     _rac1ConstructorbotRoamingTargets.Remove(instance);
+                }
             }
         }
         // Temporary source-particle-15 visual proxy. The native effect is a

@@ -375,6 +375,76 @@ public partial class OBPGame
             GD.Print("[aridia-bot-smoke] class612 i551 state6->5->7->6 " +
                 "repeat roaming cycle PASS");
 
+            // Let the newly generated random patrol reach a NATIVE solver
+            // completion on real imported ground. Unlike the earlier staged
+            // Ratchet engagement, this leg never sets the enemy's state,
+            // body, or roaming target after state6 admission.
+            float secondLegStart = new Vector2(
+                particleBot.Body.GlobalPosition.X - nextRoam.X,
+                particleBot.Body.GlobalPosition.Z - nextRoam.Z).Length();
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RestState, 540,
+                "native state6 naturally returns to state7 from arrival/obstruction");
+            Require(_rac1ConstructorbotRoamExitFlags.TryGetValue(
+                    particleBotId, out int exitFlags),
+                "natural state6->7 lacked a recorded source walker result");
+            Require((exitFlags & Rac1AridiaConstructorbotNative.WalkerHeadingOrContactMask) != 0,
+                $"state6->7 admitted with unsupported walker flags {exitFlags:X2}");
+            Require(!_rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                "natural state6->7 retained its dynamic destination");
+            float secondLegEnd = new Vector2(
+                particleBot.Body.GlobalPosition.X - nextRoam.X,
+                particleBot.Body.GlobalPosition.Z - nextRoam.Z).Length();
+            if ((exitFlags & Rac1AridiaConstructorbotNative.WalkerNearTargetFlag) != 0)
+                Require(secondLegEnd < Rac1AridiaConstructorbotNative.WalkerStopDistance,
+                    $"state6 natural arrival bit4 did not reach the patrol destination: " +
+                    $"distance={secondLegEnd:F3}");
+            else
+                Require((exitFlags & Rac1AridiaConstructorbotNative.WalkerBlockedFlag) != 0,
+                    "state6 natural departure without arrival was not a collision/ledge block");
+            GD.Print($"[aridia-bot-smoke] class612 i551 natural state6->7 " +
+                $"distance={secondLegStart:F3}->{secondLegEnd:F3} " +
+                $"flags=0x{exitFlags:X2} PASS");
+
+            // Separate real-geometry unsupported-floor branch. Allow state7
+            // to create its next source-random destination, then stage this
+            // same retail body's origin 8 units above the actual ground.
+            // The host must observe a genuine missing-floor probe, which is
+            // walker 0x22 and hence state6->7, not forge proximity arrival.
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RoamingState &&
+                    _rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                260, "next native state7 animation creates blocked-case roaming target");
+            Require(!_rac1ConstructorbotRoamExitFlags.ContainsKey(particleBotId),
+                "new roaming destination did not clear the previous departure flags");
+            Vector3 supportedBody = particleBot.Body.GlobalPosition;
+            Vector3 unsupportedBody = supportedBody + Vector3.Up * 8f;
+            Require(unsupportedBody.DistanceTo(_player.GlobalPosition) <
+                    AridiaHostUpdateRadius - 1f,
+                "blocked roaming fixture would freeze source updates");
+            particleBot.Body.GlobalPosition = unsupportedBody;
+            particleBot.Node.Root.GlobalPosition = unsupportedBody;
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RestState,
+                16, "state6 sees missing imported floor and returns to state7");
+            Require(particleBot.Body.GlobalPosition.DistanceTo(unsupportedBody) < .002f,
+                "blocked state6 moved the real body through unsupported air");
+            Require(_rac1ConstructorbotRoamExitFlags.TryGetValue(
+                    particleBotId, out int blockedFlags) &&
+                    (blockedFlags & Rac1AridiaConstructorbotNative.WalkerBlockedFlag) != 0,
+                "missing-floor state6->7 did not report native walker bit2");
+            Require((blockedFlags & Rac1AridiaConstructorbotNative.WalkerNearTargetFlag) == 0,
+                "unsupported-air branch incorrectly claimed source arrival bit4");
+            Require(!_rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                "missing-floor state6->7 retained its obsolete roaming target");
+            particleBot.Body.GlobalPosition = supportedBody;
+            particleBot.Node.Root.GlobalPosition = supportedBody;
+            GD.Print($"[aridia-bot-smoke] class612 i551 unsupported-floor " +
+                $"state6->7 flags=0x{blockedFlags:X2} target cleanup PASS");
+
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-pass", 0);
         }
         catch (Exception ex)
