@@ -16,8 +16,7 @@ public partial class OBPGame
     private Rac1AmoeboidFamilySession? _rac1Amoeboids;
     private IReadOnlyList<Rac1ClipVolume> _rac1AmoeboidVolumes = [];
     private readonly Dictionary<int, List<RuntimeWorldScene.DynamicObjectNode>> _rac1AmoeboidTargetGroups = [];
-    private readonly Dictionary<int, Rac1Class623InitialTargetState> _rac1AmoeboidClass623InitialStates = [];
-    private readonly Dictionary<int, Rac1Class623ActivationLinks> _rac1AmoeboidClass623Links = [];
+    private readonly Rac1Class623ActivationSession _rac1Class623Activation = new();
     private readonly Rac1AmoeboidLungeTargetLatch _rac1AmoeboidLungeTargets = new();
     private const float Rac1AmoeboidHostActiveRadius = 45f;
 
@@ -26,8 +25,7 @@ public partial class OBPGame
         _rac1Amoeboids = null;
         _rac1AmoeboidVolumes = [];
         _rac1AmoeboidTargetGroups.Clear();
-        _rac1AmoeboidClass623InitialStates.Clear();
-        _rac1AmoeboidClass623Links.Clear();
+        _rac1Class623Activation.Clear();
         _rac1AmoeboidLungeTargets.Clear();
     }
 
@@ -38,8 +36,7 @@ public partial class OBPGame
         _rac1AmoeboidVolumes = Rac1ClipVolumes.Read(gameplay);
         var instances = Rac1Instances.Parse(gameplay).MobyInstances;
         _rac1AmoeboidTargetGroups.Clear();
-        _rac1AmoeboidClass623InitialStates.Clear();
-        _rac1AmoeboidClass623Links.Clear();
+        _rac1Class623Activation.Clear();
         foreach (var candidate in (world.DynamicObjects ?? [])
             .Where(moby => moby.NativeClassId == Rac1AmoeboidTargetSelection.TargetClassId))
         {
@@ -51,16 +48,14 @@ public partial class OBPGame
             // gates; only the independent volume activation is hosted.
             var pvar = placement.PVar ??
                 throw new InvalidDataException("Class-623 target has no PVar.");
-            _rac1AmoeboidClass623InitialStates.Add(candidate.InstanceIndex,
-                Rac1AmoeboidClass623Admission.Read(pvar));
-            var links = Rac1AmoeboidClass623Admission.ReadActivationLinks(pvar);
+            _rac1Class623Activation.Register(candidate.InstanceIndex, placement.OClass, pvar);
+            var links = _rac1Class623Activation.Links(candidate.InstanceIndex);
             if (links.LinkedMobyIndex >= 0 &&
                 (links.LinkedMobyIndex >= instances.Count ||
                  instances[links.LinkedMobyIndex].OClass != 830))
                 throw new InvalidDataException("Class-623 target references a non-controller Moby.");
             if (links.TriggerVolumeIndex >= _rac1AmoeboidVolumes.Count)
                 throw new InvalidDataException("Class-623 target references a missing trigger volume.");
-            _rac1AmoeboidClass623Links.Add(candidate.InstanceIndex, links);
             if (!_rac1AmoeboidTargetGroups.TryGetValue(group, out var members))
                 _rac1AmoeboidTargetGroups.Add(group, members = []);
             members.Add(node);
@@ -112,17 +107,9 @@ public partial class OBPGame
         // State 15 permits a separate, authored player-volume trigger.
         // Its linked class-830 +0xbc signal stays UNKNOWN until that
         // controller's native runtime state is hosted; visibility is not it.
-        foreach (var (index, links) in _rac1AmoeboidClass623Links)
-        {
-            if (links.TriggerVolumeIndex < 0) continue;
-            var current = _rac1AmoeboidClass623InitialStates[index];
-            if (current.NativeState != Rac1AmoeboidClass623Admission.WaitingState) continue;
-            bool inVolume = _rac1AmoeboidVolumes[links.TriggerVolumeIndex].Contains(point);
-            _rac1AmoeboidClass623InitialStates[index] =
-                Rac1AmoeboidClass623Admission.AdvanceWaiting(
-                    current, links, linkedControllerCompletion: null,
-                    playerInsideTriggerVolume: inVolume);
-        }
+        _rac1Class623Activation.Advance(
+            _ => null, // class-830 runtime signal is not yet hosted
+            volume => _rac1AmoeboidVolumes[volume].Contains(point));
         foreach (var frame in _rac1Amoeboids.ActivateGates(point,
                      (volume, probe) => volume >= 0 && volume < _rac1AmoeboidVolumes.Count &&
                          _rac1AmoeboidVolumes[volume].Contains(probe)))
@@ -174,8 +161,8 @@ public partial class OBPGame
                     ToEffectNative(candidate.Root.GlobalPosition),
                     candidate.Root.Visible &&
                         candidate.State.Presentation.Presence == RuntimeEntityPresence.Active &&
-                        _rac1AmoeboidClass623InitialStates[candidate.Source.InstanceIndex].HasTargetableFlag,
-                    _rac1AmoeboidClass623InitialStates[candidate.Source.InstanceIndex].NativeState)));
+                        _rac1Class623Activation.Get(candidate.Source.InstanceIndex).HasTargetableFlag,
+                    _rac1Class623Activation.Get(candidate.Source.InstanceIndex).NativeState)));
             if (nearest is not null)
             {
                 target = nearest.Position;

@@ -142,17 +142,27 @@ bounds. The caller passes source pointer **0x0013f3d0**;
 the Godot host supplies Ratchet's position as an explicit adapter
 rather than claiming a verified byte-for-byte pointer equivalence.
 
-`Rac1AmoeboidClass623Admission` now decodes both PVar links and
+`Rac1AmoeboidClass623Admission` decodes both PVar links and
 reproduces the state-15 transition to state **1** and flag **0x1000**
 only when the **real controller completion byte** is nonzero or the
-separate authorised volume predicate succeeds. Unknown runtime
-signals must remain unknown; an inactive native controller is never
-inferred ready from Godot visibility.
+separate authorised volume predicate succeeds. The per-world
+`Rac1Class623ActivationSession` now owns all class-623 state snapshots,
+resolves source controller IDs, and accepts an externally supplied
+native completion byte only from **class 830 at that exact linked
+instance index**. Unknown bytes, unrelated class-830 controllers,
+incorrect classes and zero bytes never activate waiting targets.
+Reactivations are emitted once, and world reload restores the authored
+state-1/state-15 census. These conditions and a 56-target/25-controller
+retail replay are tested. This is an **admission consumer**, not
+an implementation of the class-830 signal *producer* or class-623
+damage receiver; it must not be fed a Godot visibility heuristic.
 
 The Godot adapter now hosts the **nine volume-gated** candidates
-through source `Rac1ClipVolumes.Contains` on the player's native
-position (Godot clip containment is a bounded geometric stand-in
-for the PS2 floating-point test). The native class-830 update/byte
+through `Rac1Class623ActivationSession` using source
+`Rac1ClipVolumes.Contains` on the player's native position (Godot
+clip containment is a bounded geometric stand-in for the PS2
+floating-point test). It leaves the new controller-snapshot callback
+**unknown** until class-830's actual live Moby+0xbc byte is hosted. The native class-830 update/byte
 owner is not hosted, so **controller-triggered** activation, the
 class-623 damage receiver and full subsequent state/flag lifecycle
 remain unimplemented. Existing initially eligible group-101 targets
