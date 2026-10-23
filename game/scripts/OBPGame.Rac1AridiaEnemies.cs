@@ -12,6 +12,7 @@ public partial class OBPGame
     private Rac1AridiaEnemySession _rac1AridiaEnemies = new();
     private readonly Dictionary<int, Rac1AridiaConstructorbotNative.Frame> _rac1ConstructorbotStartups = [];
     private readonly Dictionary<int, float> _rac1ConstructorbotWalkerSpeeds = [];
+    private readonly Dictionary<int, float> _rac1ConstructorbotWalkerYawVelocities = [];
     private readonly Dictionary<int, int> _rac1ConstructorbotSweepProbeCounts = [];
     private readonly Dictionary<int, int> _rac1ConstructorbotSphereProbeCounts = [];
     private readonly Dictionary<int, int> _rac1ConstructorbotSphereContactCounts = [];
@@ -27,6 +28,7 @@ public partial class OBPGame
     {
         _rac1ConstructorbotStartups.Clear();
         _rac1ConstructorbotWalkerSpeeds.Clear();
+        _rac1ConstructorbotWalkerYawVelocities.Clear();
         _rac1ConstructorbotSweepProbeCounts.Clear();
         _rac1ConstructorbotSphereProbeCounts.Clear();
         _rac1ConstructorbotSphereContactCounts.Clear();
@@ -184,6 +186,7 @@ public partial class OBPGame
                 _rac1ConstructorbotRoamingTargets[instance.InstanceIndex] =
                     FromEffectNative(target);
                 _rac1ConstructorbotWalkerSpeeds.Remove(instance.InstanceIndex);
+                _rac1ConstructorbotWalkerYawVelocities.Remove(instance.InstanceIndex);
                 _rac1MobyRuntime.SetNativeState(instance, roam.NativeState);
             }
             return roam;
@@ -602,12 +605,18 @@ public partial class OBPGame
                         planarDistance > .00001f
                         ? forward.Normalized().SignedAngleTo(worldDelta.Normalized(), Vector3.Up)
                         : 0;
-                    const float frameScale = (float)(1.0 / Rac1NativeTicksPerSecond);
-                    float nextYaw = Rac1AridiaConstructorbotNative.StepStateThreeYaw(
-                        node.Root.Rotation.Y, sourceWalkerYawError, frameScale);
-                    // Full native yaw_turn_damped, timer_tick_i32 and
-                    // walker_move_fx are NOT reconstructed. Keep the source
-                    // speed recurrence but use bounded Godot contact motion.
+                    // L2:0x25b710 uses shared yaw_turn_damped and class612
+                    // record+0x3c/0x40/0x44 (0.03/0.3/0.25). Retain the
+                    // per-actor angular velocity in walker record+0x14.
+                    // The wrapper's timer and collision solver are still
+                    // approximated by bounded host observations.
+                    var turn = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(
+                        node.Root.Rotation.Y,
+                        _rac1ConstructorbotWalkerYawVelocities.GetValueOrDefault(instance),
+                        sourceWalkerYawError);
+                    _rac1ConstructorbotWalkerYawVelocities[instance] = turn.AngularVelocity;
+                    float nextYaw = turn.Yaw;
+                    sourceWalkerYawError = turn.RemainingError;
                     float scaledTurn = MathF.Abs(sourceWalkerYawError);
                     float movementScale = Math.Clamp(
                         (Rac1AridiaConstructorbotNative.WalkerYawTolerance - scaledTurn) /
@@ -768,8 +777,12 @@ public partial class OBPGame
                     enemy.Node.Root.GlobalPosition = position;
                 }
             }
+            // walker_record_step compares XY distance (native X/Y),
+            // not full 3D: authored clip-centres can lie above the floor.
             int flags = Rac1AridiaConstructorbotNative.WalkerFlags(
-                enemy.Body.GlobalPosition.DistanceTo(sourceWalkerGoal),
+                Rac1AridiaConstructorbotNative.WalkerPlanarDistance(
+                    ToEffectNative(enemy.Body.GlobalPosition),
+                    ToEffectNative(sourceWalkerGoal)),
                 sourceWalkerYawError, collisionFlags);
             int walkingState = _rac1MobyRuntime.Require(node.Source).State.NativeState;
             bool returnToHome = walkingState ==
@@ -788,6 +801,7 @@ public partial class OBPGame
                 _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source),
                     walker.NativeState);
                 _rac1ConstructorbotWalkerSpeeds.Remove(instance);
+                _rac1ConstructorbotWalkerYawVelocities.Remove(instance);
                 if (walkingState == Rac1AridiaConstructorbotNative.RoamingState)
                     _rac1ConstructorbotRoamingTargets.Remove(instance);
             }

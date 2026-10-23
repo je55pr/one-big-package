@@ -62,6 +62,13 @@ public static class Rac1AridiaConstructorbotNative
     public const int WalkerLedgeFlag = 0x8;
     public const int WalkerHeadingOrContactMask = 0x6;
     public const float WalkerStopDistance = .1f;
+    // Native L2:0x2d7808 initializes the class612 walker record at PVar+0xd0:
+    // +0x3c angular acceleration 0.03, +0x40 damping 0.3, +0x44 maximum 0.25.
+    // Shared yaw_turn_damped is 0x258278 (called by wrapper L2:0x25b710).
+    public const float WalkerTurnAcceleration = .03f;
+    public const float WalkerTurnDamping = .3f;
+    public const float WalkerTurnMaximum = .25f;
+    public const float WalkerTurnErrorScale = .15707964f; // 0x3e20d97c = PI/20
     // Retail class612 PVar+0x108 (record+0x38) is zero for all 15 bots.
     // This is distinct from the initializer's +0 radius word 0x280.
     public const int WalkerInitialRecordFlags = 0;
@@ -359,6 +366,21 @@ public static class Rac1AridiaConstructorbotNative
     public const float WalkerDrag = .3f;
 
     /// <summary>
+    /// walker_record_step L2:0x258b50 computes its stop radius from
+    /// vec2_length(target - current), not the 3D distance used by its
+    /// enclosing L2:0x25b710 early arrival check. Native state5 can thus
+    /// return when a grounded actor lies directly under an elevated record.
+    /// </summary>
+    public static float WalkerPlanarDistance(
+        System.Numerics.Vector3 currentNative, System.Numerics.Vector3 targetNative)
+    {
+        if (!Finite(currentNative) || !Finite(targetNative))
+            throw new ArgumentOutOfRangeException(nameof(targetNative));
+        return new System.Numerics.Vector2(
+            targetNative.X - currentNative.X, targetNative.Y - currentNative.Y).Length();
+    }
+
+    /// <summary>
     /// Source 0x25b710 + walker_record_step. The collision bits are supplied
     /// by the caller, never inferred from target distance. This flag builder
     /// is deliberately independent of Godot physics.
@@ -516,6 +538,37 @@ public static class Rac1AridiaConstructorbotNative
         if (distance > maximumStep && distance > 0)
             horizontal *= maximumStep / distance;
         return new System.Numerics.Vector3(horizontal.X, horizontal.Y, 0);
+    }
+
+    public readonly record struct WalkerYawFrame(
+        float Yaw, float AngularVelocity, float RemainingError);
+
+    /// <summary>
+    /// Exact shared yaw_turn_damped recurrence (original 0x258278):
+    /// the signed angular error is scaled by PI/20 and clamped to [-1,1].
+    /// The persistent walker angular velocity at record+0x14 is accelerated,
+    /// damped, limited to the record's +0x44 maximum, then bounded to the
+    /// remaining angular error before adding to Moby yaw+0x48.
+    /// Caller supplies the signed target-versus-current heading error in
+    /// Godot coordinates. Angle wrapping is the host mapping of angle_add.
+    /// </summary>
+    public static WalkerYawFrame StepWalkerDampedYaw(
+        float currentYaw, float previousAngularVelocity, float angleErrorRadians)
+    {
+        if (!float.IsFinite(currentYaw) || !float.IsFinite(previousAngularVelocity) ||
+            !float.IsFinite(angleErrorRadians))
+            throw new ArgumentOutOfRangeException(nameof(angleErrorRadians));
+        float error = MathF.Atan2(MathF.Sin(angleErrorRadians), MathF.Cos(angleErrorRadians));
+        float k = Math.Clamp(error / WalkerTurnErrorScale, -1f, 1f);
+        float velocity = previousAngularVelocity +
+            (WalkerTurnAcceleration * k - WalkerTurnDamping * previousAngularVelocity);
+        velocity = Math.Clamp(velocity, -WalkerTurnMaximum, WalkerTurnMaximum);
+        velocity = Math.Clamp(velocity, -MathF.Abs(error), MathF.Abs(error));
+        float yaw = MathF.Atan2(MathF.Sin(currentYaw + velocity),
+            MathF.Cos(currentYaw + velocity));
+        float remaining = MathF.Atan2(MathF.Sin(error - velocity),
+            MathF.Cos(error - velocity));
+        return new(yaw, velocity, remaining);
     }
 
     /// <summary>

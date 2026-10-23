@@ -454,6 +454,67 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void WalkerArrivalUsesNativePlanarDistanceDespiteElevatedWaypoint()
+    {
+        var grounded = new Vector3(10, 20, 24.8906f);
+        var sourceRecord = new Vector3(10.02f, 20.03f, 25.1346f);
+        Assert.True(Vector3.Distance(grounded, sourceRecord) > .2f);
+        float planar = Rac1AridiaConstructorbotNative.WalkerPlanarDistance(
+            grounded, sourceRecord);
+        Assert.InRange(planar, .03f, .04f);
+        Assert.Equal(Rac1AridiaConstructorbotNative.WalkerNearTargetFlag,
+            Rac1AridiaConstructorbotNative.WalkerFlags(planar, 0, 0));
+        Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepWalkerState(
+            5, Rac1AridiaConstructorbotNative.WalkerFlags(planar, 0, 0), true));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.WalkerPlanarDistance(
+                grounded, new Vector3(float.NaN, 20, 25)));
+    }
+
+    [Fact]
+    public void WalkerDampedYawMatchesSourceAccelerationDampingAndLimits()
+    {
+        Assert.Equal(.03f, Rac1AridiaConstructorbotNative.WalkerTurnAcceleration);
+        Assert.Equal(.3f, Rac1AridiaConstructorbotNative.WalkerTurnDamping);
+        Assert.Equal(.25f, Rac1AridiaConstructorbotNative.WalkerTurnMaximum);
+        var first = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, 0, 1);
+        Assert.Equal(.03f, first.AngularVelocity, 5);
+        Assert.Equal(.03f, first.Yaw, 5);
+        Assert.Equal(.97f, first.RemainingError, 5);
+        var second = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(
+            first.Yaw, first.AngularVelocity, first.RemainingError);
+        Assert.Equal(.051f, second.AngularVelocity, 5);
+        Assert.Equal(.081f, second.Yaw, 5);
+        Assert.Equal(.919f, second.RemainingError, 5);
+
+        var negative = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, 0, -1);
+        Assert.Equal(-.03f, negative.AngularVelocity, 5);
+        Assert.Equal(-.03f, negative.Yaw, 5);
+        var limited = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, .5f, 1);
+        Assert.Equal(.25f, limited.AngularVelocity, 5);
+        var snapped = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, .2f, .001f);
+        Assert.Equal(.001f, snapped.AngularVelocity, 5);
+        Assert.Equal(0, snapped.RemainingError, 5);
+        var stopped = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, -.2f, 0);
+        Assert.Equal(0, stopped.AngularVelocity);
+    }
+
+    [Fact]
+    public void WalkerDampedYawWrapsSourceAnglesAndRejectsNonFiniteState()
+    {
+        var wrapped = Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(3.13f, 0, .2f);
+        Assert.InRange(wrapped.Yaw, -3.13f, -3.11f);
+        Assert.Equal(.03f, wrapped.AngularVelocity, 5);
+        Assert.Equal(.17f, wrapped.RemainingError, 5);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(float.NaN, 0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, float.PositiveInfinity, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepWalkerDampedYaw(0, 0, float.NaN));
+    }
+
+    [Fact]
     public void StateSevenOnlySelectsRoamAfterNativeAnimationCompletion()
     {
         Assert.Equal(new(7, 0), Rac1AridiaConstructorbotNative.StepStateSevenRoam(false));

@@ -48,7 +48,7 @@ public partial class OBPGame
             // This is a controlled, near-waypoint input fixture. None of the
             // six Sandmouse-gated class580 actors is explicitly woken.
             _player!.ApplyDevelopmentReset(position + forward * 3 + Vector3.Up * .05f);
-            await Rac1SmokeWaitAsync(() =>
+            await Rac1AridiaSmokeWaitNativeFramesAsync(() =>
                 _rac1MobyRuntime.Require(bot.Node.Source).State.NativeState ==
                 Rac1AridiaConstructorbotNative.JointContactState, 180,
                 "source state7 to joint-contact state11");
@@ -96,7 +96,7 @@ public partial class OBPGame
                 particleNative.PVar.Span, _rac1AridiaClipVolumes.Count) == 14,
                 "retail mode2 Constructorbot does not use native record14");
             _player.StageDevelopmentWaterPosition(FromEffectNative(_rac1AridiaClipVolumes[14].Centre));
-            await Rac1SmokeWaitAsync(() => particleNative.State.NativeState == 2, 80,
+            await Rac1AridiaSmokeWaitNativeFramesAsync(() => particleNative.State.NativeState == 2, 80,
                 "native class612 instance551 state8->2 source distance trigger");
             Require(!particleBot.Animation.SupportsSequence(4) || particleBot.Animation.Sequence == 4,
                 "mode2 bot did not choose source entry clip4");
@@ -107,7 +107,7 @@ public partial class OBPGame
             float originalPlanarDistance = new Vector2(
                 originalMotionPosition.X - actualWaypoint.X,
                 originalMotionPosition.Z - actualWaypoint.Z).Length();
-            await Rac1SmokeWaitAsync(() => particleNative.State.NativeState is >= 3 and <= 5,
+            await Rac1AridiaSmokeWaitNativeFramesAsync(() => particleNative.State.NativeState is >= 3 and <= 5,
                 280, "source state2 clip4 completion and state3 horizontal waypoint motion");
             Vector3 movedPosition = particleBot.Node.Root.GlobalPosition;
             float movedPlanarDistance = new Vector2(
@@ -125,8 +125,9 @@ public partial class OBPGame
             // manually moves its body onto terrain. Source state3 must now
             // descend to real imported collision geometry and state4 must
             // complete its animation before the walker is admitted.
-            await Rac1SmokeWaitAsync(() => particleNative.State.NativeState == 5,
-                280, "native class612 state3 source descent -> state4 clip5 -> state5");
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState == 5, 280,
+                "native class612 state3 descent -> state4 clip5 -> state5");
             Require(particleBot.Animation.Sequence == 6 ||
                 !particleBot.Animation.SupportsSequence(6),
                 "native state5 did not select source clip6");
@@ -247,7 +248,7 @@ public partial class OBPGame
                 "proximity bot was woken before entering its authored radius");
             _player.StageDevelopmentWaterPosition(
                 FromEffectNative(_rac1AridiaClipVolumes[distanceNode].Centre));
-            await Rac1SmokeWaitAsync(() =>
+            await Rac1AridiaSmokeWaitNativeFramesAsync(() =>
                 distanceNative.State.NativeState == 2, 80,
                 "source class612 instance549 waypoint record12 range admission state9->2");
             GD.Print("[aridia-bot-smoke] real class612 i549 native record12 " +
@@ -267,7 +268,7 @@ public partial class OBPGame
             Require(!_rac1AridiaClipVolumes[21].Contains(ToEffectNative(_player.GlobalPosition)),
                 "initial contact fixture accidentally overlapped the volume");
             _player.StageDevelopmentWaterPosition(FromEffectNative(sourceVolume.Centre));
-            await Rac1SmokeWaitAsync(() =>
+            await Rac1AridiaSmokeWaitNativeFramesAsync(() =>
                 _rac1MobyRuntime.Require(volumeBot.Node.Source).State.NativeState == 2, 80,
                 "retail class612 instance558 clip-volume21 activation state9->2");
             Require(!volumeBot.Animation.SupportsSequence(16) || volumeBot.Animation.Sequence == 16,
@@ -299,7 +300,7 @@ public partial class OBPGame
                 Rac1AridiaConstructorbotNative.RestState);
             SelectRac1EnemySequence(particleBot, 0, 1);
             _rac1ConstructorbotRoamingTargets.Remove(particleBotId);
-            await Rac1SmokeWaitAsync(
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
                 () => _rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
                 240, "source state7 completed idle animation selects dynamic state6 target");
             Require(_rac1ConstructorbotRoamingTargets.TryGetValue(particleBotId, out var roam),
@@ -327,6 +328,53 @@ public partial class OBPGame
                 $"distance={roamDistanceBefore:F3}->{roamDistanceAfter:F3} " +
                 $"state={particleNative.State.NativeState} PASS");
 
+            // Return Ratchet to the ORIGINAL record14 engagement range.
+            // A clear state6 walker result must admit state5 rather than
+            // reselect state7, and the old random target must be released.
+            _player.StageDevelopmentWaterPosition(actualWaypoint);
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState == 5, 100,
+                "native state6 engages Ratchet and returns to source state5");
+            Require(!_rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                "state6->5 retained an obsolete dynamic roaming destination");
+            Require(particleBot.Animation.Sequence == 6 ||
+                    !particleBot.Animation.SupportsSequence(6),
+                "source state6->5 transition did not preserve walker clip6");
+            GD.Print("[aridia-bot-smoke] class612 i551 roaming state6->5 " +
+                "player-near-anchor and target cleanup PASS");
+
+            // Move Ratchet back outside the original engagement radius,
+            // still within the 24-unit host update radius. The bot must
+            // finish approaching its actual waypoint and resume idle,
+            // then generate another independent native-style target.
+            _player.StageDevelopmentWaterPosition(
+                actualWaypoint + outward.Normalized() * (roamingEngagementRadius + 2f));
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RestState, 260,
+                "native state5 reaches planar waypoint and returns to state7");
+            float planarReturnDistance = new Vector2(
+                particleBot.Body.GlobalPosition.X - actualWaypoint.X,
+                particleBot.Body.GlobalPosition.Z - actualWaypoint.Z).Length();
+            Require(planarReturnDistance < Rac1AridiaConstructorbotNative.WalkerStopDistance,
+                "native state5 returned before reaching original waypoint in XY");
+            Require(!_rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                "return to state7 retained the previous roaming target");
+            await Rac1AridiaSmokeWaitNativeFramesAsync(
+                () => particleNative.State.NativeState ==
+                    Rac1AridiaConstructorbotNative.RoamingState &&
+                    _rac1ConstructorbotRoamingTargets.ContainsKey(particleBotId),
+                260, "state7 idle completion starts another state6 roaming cycle");
+            Require(_rac1ConstructorbotRoamingTargets.TryGetValue(
+                    particleBotId, out var nextRoam),
+                "restarted roaming cycle has no dynamic target");
+            Require(MathF.Abs(nextRoam.X - actualWaypoint.X) <= 2.001f &&
+                    MathF.Abs(nextRoam.Z - actualWaypoint.Z) <= 2.001f &&
+                    MathF.Abs(nextRoam.Y - actualWaypoint.Y) < .001f,
+                "restarted roaming target was not sourced from the original waypoint");
+            GD.Print("[aridia-bot-smoke] class612 i551 state6->5->7->6 " +
+                "repeat roaming cycle PASS");
+
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-pass", 0);
         }
         catch (Exception ex)
@@ -334,5 +382,22 @@ public partial class OBPGame
             GD.PrintErr($"[aridia-bot-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-fail", 4);
         }
+    }
+
+    // The shared Rac1SmokeWaitAsync waits on ProcessFrame, which can advance
+    // much faster than Godot physics/native enemy ticks in headless tests.
+    // Arrival and animation transitions must consume a bounded PHYSICS
+    // budget; a render-frame timeout is not an actual native stall.
+    private async Task Rac1AridiaSmokeWaitNativeFramesAsync(
+        Func<bool> condition, int maxPhysicsFrames, string label)
+    {
+        for (int frame = 0; frame < maxPhysicsFrames; frame++)
+        {
+            if (condition()) return;
+            await PhysicsFramesAsync(1);
+        }
+        if (condition()) return;
+        throw new TimeoutException(
+            $"Timed out waiting for Aridia native state: {label} after {maxPhysicsFrames} physics frames.");
     }
 }
