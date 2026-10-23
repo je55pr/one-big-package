@@ -221,6 +221,41 @@ public partial class Rac1RetailUiSmoke : Node
             await Keyboard(Key.Escape); await Frames(25);
             Require(sample.RetailPage == Rac1RetailMenuPage.Root, "Keyboard Escape did not navigate back");
             await Open(sample, "Gadgets", Rac1RetailMenuPage.Gadgets);
+            if (Rac1RetailUiAssets.NativeMenuPages is { } gadgetPages)
+            {
+                var source = gadgetPages.NativeGadgetsGrid;
+                var groups = Descendants(sample).OfType<GridContainer>()
+                    .Where(grid => grid.Name.ToString().StartsWith("NativeGadgetGroup_", StringComparison.Ordinal))
+                    .ToArray();
+                Require(groups.Length == 4 &&
+                    groups.Select(group => group.Columns).SequenceEqual(source.Groups.Select(group => group.Columns)) &&
+                    groups.SelectMany(group => group.GetChildren().OfType<Rac1RetailEquipmentCell>())
+                        .Select(cell => cell.Name.ToString())
+                        .SequenceEqual(source.Groups.SelectMany(group => group.Cells)
+                            .Select(cell => $"RetailItem_{cell.NativeId}")),
+                    "Gadgets did not use original four source-linked grid groups");
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_2",
+                    "Original Gadgets page must initially focus the Heli-Pack group");
+                await Press(JoyButton.DpadUp);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_32",
+                    "Gadget Up failed to cross from group 3 to previous group 2 last row");
+                await Press(JoyButton.DpadDown);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_2",
+                    "Gadget Down failed to enter the originally focused group");
+                await Press(JoyButton.DpadRight);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_3",
+                    "Gadget right did not follow source three-column group");
+                await Press(JoyButton.DpadDown);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_5",
+                    "Gadget group 3 to group 9 focus transfer failed");
+                await Press(JoyButton.DpadDown);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_28",
+                    "Gadget group 9 to narrower group 10 focus transfer failed");
+                await Press(JoyButton.DpadUp);
+                Require(GetViewport().GuiGetFocusOwner()?.Name.ToString() == "RetailItem_5",
+                    "Gadget group 10 upward transfer failed");
+                Require(equips == 1, "Inspecting a gadget changed the weapon selection");
+            }
             await Capture("gadgets");
             await Keyboard(Key.Escape); await Frames(25);
             await Open(sample, "Quick Select", Rac1RetailMenuPage.QuickSelect);

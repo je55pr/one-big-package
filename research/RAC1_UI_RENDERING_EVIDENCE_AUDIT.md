@@ -656,3 +656,57 @@ rectangles, native preview 3D Moby/camera, text details and full
 weapons page transition animation. Only original grid structure,
 cells, icons, slot ownership gating and the equipped-frame
 suppression are asserted as source-backed.
+
+## 23 October: original Gadgets submenu linked-grid census and navigation
+
+The ordinary root's second action-3 entry points to
+`MenuPage 0x001B28E8`, back `0x001B2588`, with initial
+focused screen **0x001B2BE8**. The initialized Veldin overlay
+defines four separate `MenuItemGridData` screens:
+
+| Screen slot | Address | Shape | Flags | Authored item IDs |
+| --- | --- | --- | --- | --- |
+| 2 | 0x001B2B80 | 2 rows x 3 columns | 0x20 | 26, 22, 12 / 32, 27, 31 |
+| 3 | 0x001B2BE8 | 1 x 3 | 0x04 | 2, 3, 4 |
+| 9 | 0x001B2C50 | 1 x 3 | 0x08 | 6, 5, 7 |
+| 10 | 0x001B2CB8 | 1 x 2 | 0x10 | 29, 28 |
+
+Every grid uses update `0x002794A0` and draw
+`0x0027B590`, margin fractions `0.1/0.1`,
+`selected_cell = 0`, ten-byte `MenuGridCell` entries of
+kind zero and base frame zero. Its per-item icon animation IDs
+are, in order:
+
+`EA7A EA76 EA6C EA80 EA7B EA7F / EA62 EA63 EA64 /
+EA66 EA65 EA67 / EA7D EA7C`.
+
+The four screens' `up`/`down` fields form the complete ring
+2 ↔ 3 ↔ 9 ↔ 10 ↔ 2. The retail
+`FUN_0021B858` grid updater traverses inside a screen, then
+moves focus to the authored adjacent screen on edge input,
+clamping the column for a narrower destination (3 → 2).
+Initial focus is screen 3 (Heli-Pack / Thruster-Pack / Hydro-Pack
+group), **not** screen 2. The page is not one flat grid.
+
+`Rac1MenuPanelPages.Read` now validates and decodes this
+entire bounded native grid/link/cell census. The Godot Gadgets
+page draws each group separately, retains all fourteen native
+positions and source icon IDs, keeps not-owned icons hidden,
+and wires D-pad navigation to the source ring. UI-only
+inspection does not mutate gameplay equipment. The real
+game state supplies item ownership for *all* fourteen gadget
+IDs, not merely the seven enum-backed traversal abilities.
+Native gadget items are no longer duplicated in the host Items
+list. Known traversal equipment names are preserved; where the
+native localized name mapping hasn't been recovered, the host
+uses explicit `Native item <id>` placeholders, not fabricated
+retail text.
+
+**Explicit limitations:** Native `menu_system.unk134` and
+`unk138` can cause the updater to skip a whole grid when
+flags 8 or 4 are set; the associated gameplay conditions
+still need recovery, so this host does not claim conditional
+focus-transfer parity. Screen sizes, positions, text detail,
+presentation camera and transition animations are still Godot
+adaptations. The original icon textures and authored identity,
+column/row/group data and link topology are confirmed.

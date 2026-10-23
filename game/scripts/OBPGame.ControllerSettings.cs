@@ -54,9 +54,13 @@ public partial class OBPGame
                     _rac1Weapons.Owns(weapon), _rac1Weapons.Equipped == weapon,
                     Rac1WeaponIconCatalog.Ordinary(weapon)?.AnimationId))
                 .ToArray(),
-            Gadgets = Enum.GetValues<Rac1TraversalEquipmentId>()
-                .Select(gadget => new PauseMenuUi.RetailItem((int)gadget,
-                    gadget.ToString() switch
+            Gadgets = (Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                .SelectMany(group => group.Cells).Select(cell => cell.NativeId) ??
+                Enum.GetValues<Rac1TraversalEquipmentId>().Select(gadget => (int)gadget))
+                .Select(id =>
+                {
+                    var gadget = (Rac1TraversalEquipmentId)id;
+                    string name = Enum.IsDefined(gadget) ? gadget.ToString() switch
                     {
                         "HeliPack" => "Heli-Pack",
                         "ThrusterPack" => "Thruster-Pack",
@@ -65,10 +69,10 @@ public partial class OBPGame
                         "Magneboots" => "Magneboots",
                         "Grindboots" => "Grindboots",
                         _ => gadget.ToString(),
-                    },
-                    _rac1Weapons.OwnsNativeItem((int)gadget), false,
-                    (ushort)(0xEA60 + (int)gadget)))
-                .ToArray(),
+                    } : $"Native item {id}";
+                    return new PauseMenuUi.RetailItem(id, name,
+                        _rac1Weapons.OwnsNativeItem(id), false);
+                }).ToArray(),
             QuickSlots = _rac1Weapons.QuickSelect.Select((id, slot) =>
             {
                 Rac1WeaponId weapon = (Rac1WeaponId)id;
@@ -83,7 +87,9 @@ public partial class OBPGame
             Items = Enumerable.Range(0, Rac1NativeInventoryLayout.ItemCount)
                 .Where(id => _rac1Weapons.OwnsNativeItem(id) &&
                     !Enum.IsDefined((Rac1WeaponId)id) &&
-                    !Enum.IsDefined((Rac1TraversalEquipmentId)id))
+                    !Enum.IsDefined((Rac1TraversalEquipmentId)id) &&
+                    !(Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                        .Any(group => group.Cells.Any(cell => cell.NativeId == id)) ?? false))
                 .Select(id => new PauseMenuUi.RetailItem(id, $"Native item {id}", true, false))
                 .ToArray(),
             DebugOutputEnabled = _debugOutputEnabled,

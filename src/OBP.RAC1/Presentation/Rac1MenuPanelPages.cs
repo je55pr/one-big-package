@@ -53,20 +53,27 @@ public sealed class Rac1MenuPanelPages
     public sealed record WeaponCell(int NativeId, ushort Icon, short Frame, short Kind);
     public sealed record WeaponsGrid(int PageAddress, int ScreenAddress, int Rows, int Columns,
         int Flags, float MarginX, float MarginY, IReadOnlyList<WeaponCell> Cells);
+    public sealed record GadgetGroup(int PanelSlot, int ScreenAddress, int Rows, int Columns,
+        int Flags, int Selected, float MarginX, float MarginY, int UpScreen, int DownScreen,
+        IReadOnlyList<WeaponCell> Cells);
+    public sealed record GadgetsGrid(int PageAddress, int InitialFocusScreen,
+        IReadOnlyList<GadgetGroup> Groups);
 
     private readonly IReadOnlyDictionary<Page, Assignment> _pages;
     private Rac1MenuPanelPages(IReadOnlyDictionary<Page, Assignment> pages,
-        IReadOnlyList<RootEntry> rootEntries, WeaponsGrid weaponsGrid)
+        IReadOnlyList<RootEntry> rootEntries, WeaponsGrid weaponsGrid, GadgetsGrid gadgetsGrid)
     {
         _pages = pages;
         NativeRootEntries = rootEntries;
         NativeWeaponsGrid = weaponsGrid;
+        NativeGadgetsGrid = gadgetsGrid;
     }
 
     public IReadOnlyDictionary<Page, Assignment> Pages => _pages;
     public Assignment this[Page page] => _pages[page];
     public IReadOnlyList<RootEntry> NativeRootEntries { get; }
     public WeaponsGrid NativeWeaponsGrid { get; }
+    public GadgetsGrid NativeGadgetsGrid { get; }
 
     public static Rac1MenuPanelPages Read(IRandomAccessReader disc, Rac1DiscIndex.NativeLevel level0)
     {
@@ -197,8 +204,72 @@ public sealed class Rac1MenuPanelPages
                 throw new InvalidDataException($"R&C1 Weapons grid cell {cell} is not a supported retail weapon.");
             cells.Add(new WeaponCell(nativeId, icon, frame, kind));
         }
+        // The root Gadgets choice links to four different MenuItemGridData
+        // screens, not one 5-column list. They form an authored vertical
+        // navigation ring. Keep the per-group flags because native
+        // menu_system.unk134/unk138 can skip conditional sections.
+        uint gadgetRootScreen = ReadSourceWord(rootPage + 0x44u + 4u);
+        uint gadgetItemList = ReadSourceWord(gadgetRootScreen + 0x34u);
+        uint gadgetsPage = ReadSourceWord(gadgetItemList + 4u);
+        uint gadgetFocus = ReadSourceWord(gadgetsPage + 0x40u);
+        if (gadgetsPage != 0x001B28E8 || ReadSourceWord(gadgetsPage + 0x38u) != rootPage)
+            throw new InvalidDataException("R&C1 Gadgets page linkage differs from the retail overlay.");
+        int[] gadgetSlots = [2, 3, 9, 10];
+        int[] expectedRows = [2, 1, 1, 1];
+        int[] expectedColumns = [3, 3, 3, 2];
+        int[] expectedFlags = [0x20, 0x4, 0x8, 0x10];
+        var gadgetGroups = new List<GadgetGroup>(gadgetSlots.Length);
+        for (int groupIndex = 0; groupIndex < gadgetSlots.Length; groupIndex++)
+        {
+            int slot = gadgetSlots[groupIndex];
+            uint screen = ReadSourceWord(gadgetsPage + 0x44u + (uint)(slot * 4));
+            int r = checked((int)ReadSourceWord(screen + 0x40u));
+            int c = checked((int)ReadSourceWord(screen + 0x44u));
+            int f = checked((int)ReadSourceWord(screen + 0x30u));
+            int selected = checked((int)ReadSourceWord(screen + 0x3cu));
+            float mx = BitConverter.Int32BitsToSingle((int)ReadSourceWord(screen + 0x34u));
+            float my = BitConverter.Int32BitsToSingle((int)ReadSourceWord(screen + 0x38u));
+            if (ReadSourceWord(screen) != 0x002794A0 || ReadSourceWord(screen + 4) != 0x0027B590 ||
+                r != expectedRows[groupIndex] || c != expectedColumns[groupIndex] ||
+                f != expectedFlags[groupIndex] || selected < 0 || selected >= r * c ||
+                !float.IsFinite(mx) || !float.IsFinite(my) ||
+                mx is < 0 or >= 1 || my is < 0 or >= 1)
+                throw new InvalidDataException($"R&C1 Gadgets grid screen slot {slot} is not the retail shape.");
+            uint sourceCells = ReadSourceWord(screen + 0x48u);
+            var groupCells = new List<WeaponCell>(r * c);
+            for (int index = 0; index < r * c; index++)
+            {
+                uint at = sourceCells + (uint)(index * 10);
+                uint first = ReadSourceWord(at);
+                uint second = ReadSourceWord(at + 4);
+                int id = (short)(second >> 16);
+                ushort icon = unchecked((ushort)first);
+                short frame = unchecked((short)(first >> 16));
+                short kind = unchecked((short)second);
+                if (id is < 1 or > 36 || icon is < 0xEA60 or > 0xEAC9 || frame != 0 ||
+                    kind != 0 || groupCells.Any(cell => cell.NativeId == id) ||
+                    gadgetGroups.Any(g => g.Cells.Any(cell => cell.NativeId == id)))
+                    throw new InvalidDataException($"R&C1 Gadgets grid cell {slot}:{index} is invalid.");
+                groupCells.Add(new WeaponCell(id, icon, frame, kind));
+            }
+            gadgetGroups.Add(new GadgetGroup(slot, checked((int)screen), r, c, f,
+                selected, mx, my,
+                checked((int)ReadSourceWord(screen + 0x4cu)),
+                checked((int)ReadSourceWord(screen + 0x50u)), groupCells));
+        }
+        if (gadgetFocus != (uint)gadgetGroups[1].ScreenAddress)
+            throw new InvalidDataException("R&C1 Gadgets initial focused grid differs from source.");
+        for (int i = 0; i < gadgetGroups.Count; i++)
+        {
+            var group = gadgetGroups[i];
+            int expectedUp = gadgetGroups[(i + gadgetGroups.Count - 1) % gadgetGroups.Count].ScreenAddress;
+            int expectedDown = gadgetGroups[(i + 1) % gadgetGroups.Count].ScreenAddress;
+            if (group.UpScreen != expectedUp || group.DownScreen != expectedDown)
+                throw new InvalidDataException("R&C1 Gadgets linked grid navigation is not a four-group ring.");
+        }
         return new Rac1MenuPanelPages(pages, entries,
             new WeaponsGrid(checked((int)weaponsPage), checked((int)weaponsScreen),
-                rows, columns, gridFlags, marginX, marginY, cells));
+                rows, columns, gridFlags, marginX, marginY, cells),
+            new GadgetsGrid(checked((int)gadgetsPage), checked((int)gadgetFocus), gadgetGroups));
     }
 }

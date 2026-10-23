@@ -58,6 +58,40 @@ public sealed class Rac1MenuPanelPagesTests
             Assert.Equal(0, cell.Kind);
             Assert.Equal(0, cell.Frame);
         });
+        // Native Gadgets is four linked grid screens, not a flat 5x3
+        // equipment page. The second group is initially focused, even
+        // though the first group appears first in screen display order.
+        var gadgets = pages.NativeGadgetsGrid;
+        Assert.Equal(0x001B28E8, gadgets.PageAddress);
+        Assert.Equal(0x001B2BE8, gadgets.InitialFocusScreen);
+        Assert.Equal([2, 3, 9, 10], gadgets.Groups.Select(group => group.PanelSlot));
+        Assert.Equal([2, 1, 1, 1], gadgets.Groups.Select(group => group.Rows));
+        Assert.Equal([3, 3, 3, 2], gadgets.Groups.Select(group => group.Columns));
+        Assert.Equal([0x20, 4, 8, 0x10], gadgets.Groups.Select(group => group.Flags));
+        Assert.Equal([26, 22, 12, 32, 27, 31, 2, 3, 4, 6, 5, 7, 29, 28],
+            gadgets.Groups.SelectMany(group => group.Cells).Select(cell => cell.NativeId));
+        Assert.Equal([0xEA7A, 0xEA76, 0xEA6C, 0xEA80, 0xEA7B, 0xEA7F,
+            0xEA62, 0xEA63, 0xEA64, 0xEA66, 0xEA65, 0xEA67, 0xEA7D, 0xEA7C],
+            gadgets.Groups.SelectMany(group => group.Cells).Select(cell => (int)cell.Icon));
+        Assert.All(gadgets.Groups, group =>
+        {
+            Assert.Equal(0, group.Selected);
+            Assert.Equal(.1f, group.MarginX, 5);
+            Assert.Equal(.1f, group.MarginY, 5);
+            Assert.All(group.Cells, cell =>
+            {
+                Assert.Equal(0, cell.Kind);
+                Assert.Equal(0, cell.Frame);
+            });
+        });
+        for (int groupIndex = 0; groupIndex < gadgets.Groups.Count; groupIndex++)
+        {
+            var group = gadgets.Groups[groupIndex];
+            Assert.Equal(gadgets.Groups[(groupIndex + gadgets.Groups.Count - 1) %
+                gadgets.Groups.Count].ScreenAddress, group.UpScreen);
+            Assert.Equal(gadgets.Groups[(groupIndex + 1) % gadgets.Groups.Count].ScreenAddress,
+                group.DownScreen);
+        }
         Assert.Equal([0, 1, 16, 17, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13],
             pages[Rac1MenuPanelPages.Page.Opening].Animations.ToArray());
         Assert.Equal([21, 22, 23, 24, 25, 5, 6, 7, 8, 9, 10, 11, 12, 13],

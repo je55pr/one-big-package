@@ -31,6 +31,7 @@ public sealed partial class PauseMenuUi
     private readonly List<Rac1RetailMenuButton> _retailNativeRootButtons = [];
     private double _retailTickFraction;
     private int _retailEquipmentPage;
+    private readonly List<Rac1RetailEquipmentCell[]> _nativeGadgetGroups = [];
     private int _retailDevelopmentPage;
     private const int EquipmentPageSize = 9;
 
@@ -174,6 +175,7 @@ public sealed partial class PauseMenuUi
             nativeOverlay.Visible = false;
         }
         _retailFocusOrder.Clear();
+        _nativeGadgetGroups.Clear();
         _retailHelp = null;
         Rac1RetailMenuPage page = _retailNavigation.Page;
         bool root = page == Rac1RetailMenuPage.Root;
@@ -208,7 +210,9 @@ public sealed partial class PauseMenuUi
         {
             case Rac1RetailMenuPage.Root: BuildRetailRoot(); break;
             case Rac1RetailMenuPage.Weapons: BuildEquipmentPage(Weapons, allowEquip: true); break;
-            case Rac1RetailMenuPage.Gadgets: BuildEquipmentPage(Gadgets, allowEquip: false); break;
+            case Rac1RetailMenuPage.Gadgets:
+                if (!BuildNativeGadgetsPage()) BuildEquipmentPage(Gadgets, allowEquip: false);
+                break;
             case Rac1RetailMenuPage.QuickSelect: BuildEquipmentPage(QuickSlots, allowEquip: false); break;
             case Rac1RetailMenuPage.Items: BuildEquipmentPage(Items, allowEquip: false); break;
             case Rac1RetailMenuPage.Help: BuildHelpPage(); break;
@@ -216,7 +220,9 @@ public sealed partial class PauseMenuUi
             case Rac1RetailMenuPage.Development: BuildDevelopmentPage(); break;
         }
         MenuFocus.WireVertical(_retailFocusOrder);
-        if (page is Rac1RetailMenuPage.Weapons or Rac1RetailMenuPage.Gadgets or
+        if (page == Rac1RetailMenuPage.Gadgets && _nativeGadgetGroups.Count > 0)
+            WireNativeGadgetsFocus();
+        else if (page is Rac1RetailMenuPage.Weapons or Rac1RetailMenuPage.Gadgets or
             Rac1RetailMenuPage.QuickSelect or Rac1RetailMenuPage.Items)
             WireRetailGrid(_retailFocusOrder.OfType<Rac1RetailEquipmentCell>().ToArray());
         RestoreRetailFocus();
