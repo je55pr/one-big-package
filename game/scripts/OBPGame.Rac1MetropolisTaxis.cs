@@ -175,6 +175,17 @@ public partial class OBPGame
     private static Vector3 FromTaxiPoint(Rac1TaxiPoint position) =>
         RuntimeWorldScene.ToScene(position.X, position.Y, position.Z);
 
+    private static Rac1TaxiCabBasis ToTaxiCabBasis(Basis sceneBasis)
+    {
+        // The authored Moby may have model scale. Boarding displacement
+        // follows cab orientation, not mesh scaling.
+        var axes = sceneBasis.Orthonormalized();
+        return new Rac1TaxiCabBasis(
+            new Rac1TaxiPoint(axes.X.X, axes.X.Y, axes.X.Z),
+            new Rac1TaxiPoint(axes.Y.X, axes.Y.Y, axes.Y.Z),
+            new Rac1TaxiPoint(axes.Z.X, axes.Z.Y, axes.Z.Z));
+    }
+
     // Retail taxi path helper 0x002d3918 updates yaw using yaw_seek
     // (0x0025be00): persistent angular velocity with native acceleration,
     // braking and shortest-arc wrap. The Godot scene mirrors world X, so
@@ -296,10 +307,10 @@ public partial class OBPGame
         // The native attach_frame_set call updates a relative transform
         // frame each tick, not the hero state. While proper frame and
         // animation parenting remain unported, keep Ratchet's boarding
-        // offset in the rotating cab frame instead of world-space XYZ.
+        // offset in the cab's full yaw/pitch/roll frame, not world XYZ.
         _rac1TaxiRiderFrame = new Rac1TaxiPassengerFrame(
             new Rac1TaxiPoint(bounded.X, bounded.Y, bounded.Z),
-            _rac1FlyingTaxi.Root.GlobalRotation.Y);
+            ToTaxiCabBasis(_rac1FlyingTaxi.Root.GlobalTransform.Basis));
         // Native hero_cam_target_set enters the scripted walk-to point
         // state 0x65, with braking/settling states 0x66/0x67, not an
         // immediate camera cut. The source-backed state gate is now in
@@ -418,7 +429,7 @@ public partial class OBPGame
         }
         var passenger = rider.PositionAt(
             new Rac1TaxiPoint(taxiPosition.X, taxiPosition.Y, taxiPosition.Z),
-            taxi.Root.GlobalRotation.Y);
+            ToTaxiCabBasis(taxi.Root.GlobalTransform.Basis));
         player.GlobalPosition = new Vector3(
             (float)passenger.X, (float)passenger.Y, (float)passenger.Z);
         if (_rac1TaxiCameraWorldOwned && IsInstanceValid(player.Camera))

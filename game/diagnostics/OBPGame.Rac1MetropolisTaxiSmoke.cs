@@ -166,12 +166,13 @@ public partial class OBPGame
                 "class-1012 lost cab-relative passenger pose during flight");
             var carryingTaxi = _rac1FlyingTaxi!;
             var cabPose = carryingTaxi.Root.GlobalPosition;
+            var cabBasis = ToTaxiCabBasis(carryingTaxi.Root.GlobalTransform.Basis);
+            Require(cabBasis.IsOrthonormal(), "taxi flight lost its rotation basis");
             var expected = _rac1TaxiRiderFrame!.PositionAt(
-                new Rac1TaxiPoint(cabPose.X, cabPose.Y, cabPose.Z),
-                carryingTaxi.Root.GlobalRotation.Y);
+                new Rac1TaxiPoint(cabPose.X, cabPose.Y, cabPose.Z), cabBasis);
             Require(player.GlobalPosition.DistanceTo(new Vector3(
                 (float)expected.X, (float)expected.Y, (float)expected.Z)) < 0.05f,
-                "Ratchet stayed at a world-fixed offset instead of following taxi heading");
+                "Ratchet stopped following the cab's yaw/pitch/roll passenger frame");
             Require(!recoveredCamera ||
                 (player.Camera.GlobalPosition - player.GlobalPosition)
                     .DistanceTo(cameraRelativeAtBoard) < 0.1f,

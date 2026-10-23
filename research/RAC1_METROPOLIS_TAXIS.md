@@ -709,3 +709,44 @@ OBP's established bounded camera-follow, interruption, collision
 and landing fallbacks remain in place. No purported camera lease is
 created by the HUD focus. Further native hero/camera research must
 trace a genuinely camera-owning call before replacing the host view.
+
+## 23 October 2026: full-orientation cab-relative host passenger pose
+
+Following the yaw-only frame correction, the live Godot taxi host now
+captures the cab's **orthonormalized full scene-space basis** when the
+passenger boards. It projects the bounded Ratchet-minus-cab world offset
+into that basis once, and during every flight tick reprojects the same
+local offset using the current full cab basis (yaw, pitch and roll).
+Rac1TaxiCabBasis is engine-neutral; Rac1TaxiPassengerFrame retains
+its yaw-only overload for existing consumers but the Godot taxi host
+passes full orientation. The Moby's authored model scale does **not**
+scale the passenger displacement.
+
+This is a deliberate **3D host presentation correction**, not proof
+that the original game physically parents Ratchet to the cab. Retail
+attach_frame_set at 0x00260738 records a displacement and
+transpose(base_ang) * cab_ang orientation frame, and both Kerwan taxi
+classes continuously supply that information. The new passenger offset
+tracks the recovered native taxi hover/sway pitch and roll as well as
+yaw, instead of letting Ratchet slide through a tilting cab. It does
+not yet reproduce the source's full native camera or hero parenting.
+
+Deterministic tests cover pitch, roll, boarding with an already pitched
+cab, translation, heading continuity, preservation of displacement
+length and invalid/skewed bases. Godot smoke asserts the live passenger
+pose against the actual cab's three-axis orientation. Boarding
+admission, collision hull suppression, interruption, camera-follow
+fallback, return-to-source fallback and supported landing remain
+unchanged.
+
+The native walk_to_input block in hero_transitions.cpp
+(0x00229b70 / state 0x65) performs planar target distance, speed and
+heading gates; it does **not** itself switch the 3D game camera. The
+state-entry routine in hero_state.cpp selects animation sequence
+1 for hero movement mode 3, 2 for mode 1, or mode-specific gait
+(+0x2088 + 3) for mode 0. State 0x66 calls stop_anim and waits for
+animation-ended bit (P+0xa98 & 2) before returning to 0x65. State
+0x67 uses the native idle animation and exits when that bit is set
+(or P+0x1650 is nonzero), unless Ratchet moves back beyond 0.2 units.
+These are additional source facts, **not** a claim that Godot's
+current provisional Idle semantic supplies that native completion bit.
