@@ -215,6 +215,37 @@ public partial class OBPGame
                 Require(queenRecovery.Health == 30f &&
                     _rac1DamageTransport.Sequence == beforeQueenHits,
                     "Queen accepted an attack before native combat admission.");
+                // Source-mapped entrance: two class1021 actors and camera
+                // selector are not hosted yet, so their success is supplied
+                // explicitly. Unlike the old direct state8 override, the
+                // 10-tick timer, linked admission and flight/landing handoff
+                // are independently exercised before combat becomes valid.
+                var entrance = _rac1QueenEntrance
+                    ?? throw new InvalidOperationException("Original Queen entrance not configured.");
+                Require(entrance is
+                {
+                    FirstLinkedInstance: 573,
+                    SecondLinkedInstance: 578, LinkedEventSelector: 25,
+                    CameraSelector: 59, NativePathSelector: 54, NativeState: 1
+                },
+                    "Queen entrance selectors differ from the original LEVEL6 data.");
+                Require(entrance.StepWaiting(false, false, true).NativeState == 1 &&
+                    entrance.StepWaiting(true, true, true).NativeState == 1,
+                    "Queen activated without her native class0 target and mode gate.");
+                entrance.StepWaiting(true, false);
+                for (int tick = 0; tick < Rac1AlienQueenEntrance.StartupDelayTicks; tick++)
+                    entrance.StepWaiting(true, false);
+                Require(entrance.NativeState == 1 && entrance.LinkedActivationRequired &&
+                    !queenRecovery.CanReceiveHostWeaponContact,
+                    "Queen activated before authentic linked actor and camera callbacks.");
+                entrance.StepWaiting(true, false, linkedActorAndCameraCallbacksCommitted: true);
+                Require(entrance.NativeState == 2, "Queen did not enter native airborne state2.");
+                queenRecovery.AdmitNativeState(2, 8);
+                Require(entrance.ObserveLanding(false, false).NativeState == 2 &&
+                    entrance.ObserveLanding(true, true).NativeState == 7 &&
+                    entrance.ObserveLanding(false, true).NativeState == 7 &&
+                    entrance.ObserveLanding(false, false).NativeState == 8,
+                    "Queen native flight/landing and target-mode handoff failed.");
                 queenRecovery.AdmitNativeState(8, 3);
                 _rac1EquipmentGeometryFrame = ulong.MaxValue;
                 Require(EquipmentGeometry.Any(entry => entry.Node == queenNode) &&

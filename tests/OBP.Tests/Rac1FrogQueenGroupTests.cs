@@ -8,11 +8,19 @@ namespace OBP.Tests;
 public sealed class Rac1FrogQueenGroupTests
 {
     private static RuntimeDynamicObject Queen(int selector = 22, int cls = 1051,
-        int size = 0x180)
+        int size = 0x180, bool withEntrance = false)
     {
         var p = new byte[size];
         if (p.Length >= 0xf4)
             BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0xf0), selector);
+        if (withEntrance && p.Length >= 0x108)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0xec), 54);
+            BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0xf8), 59);
+            BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0xfc), 573);
+            BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x100), 578);
+            BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x104), 25);
+        }
         return new("rac1", cls, 626, null, "queen", "queen",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, p)]);
@@ -24,6 +32,69 @@ public sealed class Rac1FrogQueenGroupTests
         for (int i = 0; i < groups.Length; i++) groups[i] = [];
         groups[22] = [.. Enumerable.Range(448, 12)];
         return new(Queen(), groups, Enumerable.Range(448, 12));
+    }
+
+    [Fact]
+    public void NativeQueenEntranceHonoursRatchetTargetCountdownAndOriginalLinkedCallbacks()
+    {
+        var source = Queen(withEntrance: true);
+        var links = new Dictionary<int, int> { [573] = 1021, [578] = 1021 };
+        var entrance = new Rac1AlienQueenEntrance(source, links);
+        Assert.Equal(626, entrance.QueenInstance);
+        Assert.Equal(54, entrance.NativePathSelector);
+        Assert.Equal(59, entrance.CameraSelector);
+        Assert.Equal(25, entrance.LinkedEventSelector);
+        Assert.Equal(573, entrance.FirstLinkedInstance);
+        Assert.Equal(578, entrance.SecondLinkedInstance);
+        Assert.Equal(1, entrance.NativeState);
+        Assert.Equal(1, entrance.StepWaiting(false, false, true).NativeState);
+        Assert.Equal(1, entrance.StepWaiting(true, true, true).NativeState);
+        Assert.Equal(0, entrance.RemainingTicks);
+        var armed = entrance.StepWaiting(true, false);
+        Assert.Equal(10, armed.RemainingTicks);
+        Assert.False(armed.RequiresLinkedActivation);
+        for (int i = 0; i < 9; i++)
+        {
+            var frame = entrance.StepWaiting(true, false);
+            Assert.Equal(9 - i, frame.RemainingTicks);
+            Assert.Equal(1, frame.NativeState);
+        }
+        Assert.Equal(0, entrance.StepWaiting(true, true, true).RemainingTicks);
+        // The shared native helper ticked down to zero despite the target
+        // mode block. It must not activate the links until state1 can run.
+        Assert.Equal(1, entrance.NativeState);
+        var due = entrance.StepWaiting(true, false);
+        Assert.Equal(0, due.RemainingTicks);
+        Assert.True(due.RequiresLinkedActivation);
+        Assert.Equal(1, due.NativeState);
+        Assert.True(entrance.StepWaiting(true, false).RequiresLinkedActivation);
+        var committed = entrance.StepWaiting(true, false, true);
+        Assert.Equal(2, committed.NativeState);
+        Assert.True(committed.LinkedCallbacksCommitted);
+        Assert.Equal(2, entrance.StepWaiting(true, false, true).NativeState);
+        Assert.Equal(2, entrance.ObserveLanding(false, false).NativeState);
+        var landed = entrance.ObserveLanding(true, true);
+        Assert.Equal(7, landed.NativeState);
+        Assert.True(landed.LandingConfirmed);
+        Assert.Equal(7, entrance.ObserveLanding(false, true).NativeState);
+        Assert.Equal(8, entrance.ObserveLanding(false, false).NativeState);
+        Assert.Equal(8, entrance.ObserveLanding(true, true).NativeState);
+    }
+
+    [Fact]
+    public void QueenEntranceRefusesUnrelatedLinkedClassesOrInvalidPvar()
+    {
+        var linked = new Dictionary<int, int> { [573] = 1021, [578] = 1021 };
+        Assert.Throws<ArgumentException>(() =>
+            new Rac1AlienQueenEntrance(Queen(cls: 1021, withEntrance: true), linked));
+        Assert.Throws<InvalidDataException>(() =>
+            new Rac1AlienQueenEntrance(Queen(size: 0xf0, withEntrance: true), linked));
+        Assert.Throws<InvalidDataException>(() =>
+            new Rac1AlienQueenEntrance(Queen(withEntrance: true),
+                new Dictionary<int, int> { [573] = 1021, [578] = 827 }));
+        var malformed = Queen();
+        Assert.Throws<InvalidDataException>(() =>
+            new Rac1AlienQueenEntrance(malformed, linked));
     }
 
     [Fact]

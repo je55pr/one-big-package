@@ -134,7 +134,16 @@ public sealed class Rac1FrogWaveTriggerTests
             triggers.Select(t => waves.Group(t.Index)).Order().ToArray());
         Assert.Equal(12, groups[22].Count(id =>
             BinaryPrimitives.ReadInt16LittleEndian(mobys[id].PVar!.AsSpan(0x240)) == 1));
-        Assert.Equal(22, BinaryPrimitives.ReadInt32LittleEndian(
-            mobys.Single(m => m.OClass == 1051).PVar!.AsSpan(0xf0)));
+        var sourceQueen = mobys.Single(m => m.OClass == 1051);
+        var pvar = sourceQueen.PVar!;
+        Assert.Equal(22, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xf0)));
+        Assert.Equal(54, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xec)));
+        Assert.Equal(59, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xf8)));
+        Assert.Equal(25, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x104)));
+        int first = BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xfc));
+        int second = BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x100));
+        Assert.Equal(573, first);
+        Assert.Equal(578, second);
+        Assert.All(new[] { first, second }, id => Assert.Equal(1021, mobys[id].OClass));
     }
 }
