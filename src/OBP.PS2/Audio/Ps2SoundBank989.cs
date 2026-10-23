@@ -5,13 +5,14 @@ using OBP.PS2.Audio;
 namespace OBP.PS2.Audio;
 
 /// <summary>
-/// Bounded parser for the shared 989snd SFX block stored in R&C1 and R&C2
-/// level sound banks. The admitted retail builds use SBlk version 1.
+/// Bounded parser for 989snd SFX blocks. Original R&C1/GC use SBlk v1;
+/// original UYA global gadget banks use v3's compact grain representation.
 /// </summary>
 public class Ps2SoundBank989
 {
     public const int SoundEntrySize = 0x0c;
     public const int GrainV1Size = 0x28;
+    public const int GrainV3Size = 8;
     public const int ToneSize = 0x18;
 
     public sealed record Tone(
@@ -29,7 +30,11 @@ public class Ps2SoundBank989
         ushort Flags,
         int SampleOffset);
 
-    public sealed record Grain(int Type, int Delay, Tone? Tone, byte[]? Parameters = null);
+    public sealed record Grain(int Type, int Delay, Tone? Tone, byte[]? Parameters = null)
+    {
+        /// <summary>Original v3 opcode, retained separately from normalized parameters.</summary>
+        public uint? PackedOpcode { get; init; }
+    }
 
     public sealed record Sound(
         int Id,
@@ -112,9 +117,9 @@ public class Ps2SoundBank989
         }
 
         int version = I32(meta, 0x04);
-        if (version != 1)
+        if (version is not (1 or 3))
         {
-            throw new NotSupportedException($"989snd SBlk version {version} is not in the recovered v1 slice.");
+            throw new NotSupportedException($"989snd SBlk version {version} is not in the recovered v1/v3 slice.");
         }
 
         uint blockFlags = U32(meta, 0x08);
@@ -126,11 +131,14 @@ public class Ps2SoundBank989
         int firstSound = I32(meta, 0x1c);
         int firstGrain = I32(meta, 0x20);
         int declaredVagBytes = I32(meta, 0x28);
+        int grainStride = version == 1 ? GrainV1Size : GrainV3Size;
+        int grainData = version == 3 ? I32(meta, 0x34) : 0;
 
         if (soundCount < 0 || grainCount < 0 || numVags < 0 ||
             declaredVagBytes != sampleRange.Size ||
             !Fits(meta, firstSound, (long)soundCount * SoundEntrySize) ||
-            !Fits(meta, firstGrain, (long)grainCount * GrainV1Size))
+            !Fits(meta, firstGrain, (long)grainCount * grainStride) ||
+            (version == 3 && (grainData < firstGrain + (long)grainCount * grainStride || grainData > meta.Length)))
         {
             throw new InvalidDataException("989snd SBlk counts/ranges are inconsistent with the containing chunks.");
         }
@@ -147,8 +155,9 @@ public class Ps2SoundBank989
             sbyte instanceLimit = unchecked((sbyte)meta[at + 5]);
             ushort flags = U16(meta, at + 6);
             int firstSoundGrain = I32(meta, at + 8);
-            if (numGrains < 0 || firstSoundGrain < 0 ||
-                !Fits(meta, firstGrain + firstSoundGrain, (long)numGrains * GrainV1Size))
+            if (numGrains < 0 || firstSoundGrain < 0 || firstSoundGrain % grainStride != 0 ||
+                (long)firstSoundGrain + (long)numGrains * grainStride > (long)grainCount * grainStride ||
+                !Fits(meta, firstGrain + (long)firstSoundGrain, (long)numGrains * grainStride))
             {
                 throw new InvalidDataException($"989snd sound {soundId} has an invalid grain range.");
             }
@@ -156,10 +165,14 @@ public class Ps2SoundBank989
             var grains = new List<Grain>(numGrains);
             for (int i = 0; i < numGrains; i++)
             {
-                int grainAt = firstGrain + firstSoundGrain + i * GrainV1Size;
-                int type = I32(meta, grainAt);
+                int grainAt = checked(firstGrain + firstSoundGrain + i * grainStride);
+                uint? packed = version == 3 ? U32(meta, grainAt) : null;
+                int type = packed is uint opcode ? (int)(opcode >> 24) : I32(meta, grainAt);
                 int delay = I32(meta, grainAt + 4);
-                Tone? tone = type is 1 or 9 ? ReadTone(meta, grainAt + 8) : null;
+                byte[] parameters = version == 1
+                    ? meta.AsSpan(grainAt + 8, GrainV1Size - 8).ToArray()
+                    : ReadCompactParameters(meta, packed!.Value, grainData);
+                Tone? tone = type is 1 or 9 ? ReadTone(parameters, 0) : null;
                 if (tone is not null)
                 {
                     if (tone.SampleOffset < 0 || tone.SampleOffset >= samples.Length ||
@@ -171,7 +184,7 @@ public class Ps2SoundBank989
                     sampleOffsets.Add(tone.SampleOffset);
                 }
 
-                grains.Add(new Grain(type, delay, tone, meta.AsSpan(grainAt + 8, GrainV1Size - 8).ToArray()));
+                grains.Add(new Grain(type, delay, tone, parameters) { PackedOpcode = packed });
             }
 
             sounds.Add(new Sound(soundId, volume, group, pan, instanceLimit, flags, grains));
@@ -241,6 +254,33 @@ public class Ps2SoundBank989
             I32(data, at + 0x10));
     }
 
+    private static byte[] ReadCompactParameters(byte[] metadata, uint opcode, int grainData)
+    {
+        int type = (int)(opcode >> 24);
+        int value = (int)(opcode & 0x00ffffff);
+        var parameters = new byte[GrainV1Size - 8];
+        int bodySize = type switch
+        {
+            1 or 9 => ToneSize,
+            4 => 0x10,
+            5 or 6 or 8 or 7 => 0x20,
+            _ => 0,
+        };
+        if (bodySize != 0)
+        {
+            long at = (long)grainData + value;
+            if (at > int.MaxValue || !Fits(metadata, at, bodySize))
+                throw new InvalidDataException("989snd compact grain body lies outside metadata.");
+            metadata.AsSpan((int)at, bodySize).CopyTo(parameters);
+        }
+        else if (type == 26)
+            BinaryPrimitives.WriteInt32LittleEndian(parameters, value + 1);
+        else
+            for (int i = 0; i < 3; i++)
+                BinaryPrimitives.WriteInt16LittleEndian(parameters.AsSpan(i * 2), unchecked((sbyte)(opcode >> (i * 8))));
+        return parameters;
+    }
+
     private readonly record struct Chunk(int Offset, int Size);
 
     private static Chunk ReadChunk(byte[] header, int at, IRandomAccessReader reader, string label)
@@ -255,7 +295,7 @@ public class Ps2SoundBank989
         return new Chunk(offset, size);
     }
 
-    private static bool Fits(byte[] data, int at, long size) =>
+    private static bool Fits(byte[] data, long at, long size) =>
         at >= 0 && size >= 0 && at <= data.Length && size <= data.Length - (long)at;
 
     private static short I16(byte[] data, int at) => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(at, 2));
