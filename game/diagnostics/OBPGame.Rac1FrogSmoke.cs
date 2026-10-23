@@ -238,6 +238,50 @@ public partial class OBPGame
                 Require(entrance.NativeState == 1 && entrance.LinkedActivationRequired &&
                     !queenRecovery.CanReceiveHostWeaponContact,
                     "Queen activated before authentic linked actor and camera callbacks.");
+                var linked = _rac1QueenLinkedGate
+                    ?? throw new InvalidOperationException("Original class1021 linked gate parents missing.");
+                Require(linked.OriginalParentCount == 2 && linked.RuntimeChildCount == 0 &&
+                    linked.OriginalParentIds.SequenceEqual(new[] { 573, 578 }),
+                    "Source Queen linked class1021 parents do not match retail.");
+                foreach (int parentId in linked.OriginalParentIds)
+                {
+                    NVector3 nativeParent = linked.Get(parentId).NativePosition;
+                    Require(linked.Step(parentId, nativeParent, false, 0).NativeState == 2 &&
+                        linked.Get(parentId).Children.Count == 7 &&
+                        linked.Get(parentId).Children.All(child => child.NativeState == 1),
+                        "Native linked class1021 parent did not create exactly seven runtime children.");
+                    Require(linked.Step(parentId, nativeParent, true, 0).NativeState == 2,
+                        "Linked class1021 parent activated before its seven children were ready.");
+                    foreach (var child in linked.Get(parentId).Children)
+                        linked.ConfirmChildInitialized(child.RuntimeId);
+                    Require(linked.Step(parentId, nativeParent + NVector3.UnitX * 6, true, 0)
+                            .NativeState == 2 &&
+                        linked.Step(parentId, nativeParent, false, 0).NativeState == 2,
+                        "Native strict six-unit/globally gated class1021 trigger admitted early.");
+                    Require(linked.Step(parentId, nativeParent, true, 0).NativeState == 4 &&
+                        linked.Get(parentId).Children.All(child => child.NativeState == 5) &&
+                        !linked.ActivateFromQueen(parentId),
+                        "Source class1021 trigger failed parent state4 and child state5.");
+                    for (int j = 0; j < 8 && linked.Get(parentId).NativeState != 6; j++)
+                        linked.Step(parentId, nativeParent, false, .2f);
+                    Require(linked.Get(parentId) is { NativeState: 6, Visible: false },
+                        "Native class1021 parent did not reach hidden state6.");
+                    SynchronizeRac1QueenLinkedParents();
+                    Require(!_rac1QueenLinkedNodes[parentId].Root.Visible,
+                        "Original linked class1021 parent mesh failed to hide.");
+                }
+                Require(linked.RuntimeChildCount == 14,
+                    "Queen linked class1021 child creation changed retail authored source population.");
+                foreach (int parentId in linked.OriginalParentIds)
+                    Require(linked.ActivateFromQueen(parentId) &&
+                        linked.Get(parentId) is { NativeState: 8, Visible: true } &&
+                        linked.Get(parentId).Children.All(child => child.NativeState == 9) &&
+                        !linked.ActivateFromQueen(parentId),
+                        "Queen linked native activation failed source parent6->8 / child5->9.");
+                SynchronizeRac1QueenLinkedParents();
+                Require(linked.OriginalParentIds.All(id => _rac1QueenLinkedNodes[id].Root.Visible),
+                    "Original class1021 parent visibility did not restore on Queen activation.");
+                GD.Print("[frog-smoke] Queen source class1021 i573/i578: 14 runtime children 1->3->5->9, parents 0->2->4->6(hidden)->8(visible) PASS");
                 entrance.StepWaiting(true, false, linkedActorAndCameraCallbacksCommitted: true);
                 Require(entrance.NativeState == 2, "Queen did not enter native airborne state2.");
                 queenRecovery.AdmitNativeState(2, 8);

@@ -19,6 +19,8 @@ public partial class OBPGame
     private Rac1FrogQueenGroup? _rac1FrogQueen;
     private Rac1AlienQueenRecovery? _rac1QueenRecovery;
     private Rac1AlienQueenEntrance? _rac1QueenEntrance;
+    private Rac1AlienQueenLinkedGate? _rac1QueenLinkedGate;
+    private readonly Dictionary<int, RuntimeWorldScene.DynamicObjectNode> _rac1QueenLinkedNodes = [];
     private Rac1MobySequenceClock? _rac1QueenAnimation;
     private RuntimeWorldScene.DynamicObjectNode? _rac1QueenNode;
     private sealed record HostedFrogWave(RuntimeWorldScene.DynamicObjectNode Node,
@@ -61,6 +63,16 @@ public partial class OBPGame
         _rac1QueenRecovery = new(queen);
         _rac1QueenEntrance = new(queen, (world.DynamicObjects ?? [])
             .ToDictionary(m => m.InstanceIndex, m => m.NativeClassId));
+        foreach (int id in new[] { _rac1QueenEntrance.FirstLinkedInstance,
+            _rac1QueenEntrance.SecondLinkedInstance })
+        {
+            var parent = (world.DynamicObjects ?? []).Single(m => m.InstanceIndex == id);
+            _rac1QueenLinkedNodes.Add(id, FindPresentedDynamic(result, parent)
+                ?? throw new InvalidDataException($"Original class1021 linked parent i{id} mesh missing."));
+        }
+        _rac1QueenLinkedGate = new(queen, world.DynamicObjects ?? [],
+            _rac1QueenLinkedNodes.ToDictionary(pair => pair.Key,
+                pair => ToEffectNative(pair.Value.Root.GlobalPosition)));
         _rac1QueenNode = FindPresentedDynamic(result, queen)
             ?? throw new InvalidDataException("Original Alien Queen model is unavailable.");
         var animationAsset = Rac1MobyAnimationAssets.Bake(cls, _rac1QueenNode.Source.Meshes,
@@ -72,6 +84,19 @@ public partial class OBPGame
             animationAsset.Clips.ContainsKey(0) ? 0 : animationAsset.Clips.Keys.Min());
         _rac1QueenNode.ApplyAnimationSample(_rac1QueenAnimation.Sample);
         GD.Print($"[frog-queen] class1051 i{queen.InstanceIndex}, source linked class1021 i{_rac1QueenEntrance.FirstLinkedInstance}/i{_rac1QueenEntrance.SecondLinkedInstance}, native camera{_rac1QueenEntrance.CameraSelector}/path{_rac1QueenEntrance.NativePathSelector}; group{_rac1FrogQueen.GroupIndex} ({_rac1FrogQueen.Members.Count} Frogs), waiting for entrance callback");
+    }
+
+    /// <summary>
+    /// Source helper FUN_L06_002f53e8 adjusts actual class1021 parent
+    /// visibility. Fourteen procedural class1021 child visuals still need
+    /// an independent source animation/physics host.
+    /// </summary>
+    private void SynchronizeRac1QueenLinkedParents()
+    {
+        if (_rac1QueenLinkedGate is null) return;
+        foreach (var pair in _rac1QueenLinkedNodes)
+            if (IsInstanceValid(pair.Value.Root))
+                pair.Value.Root.Visible = _rac1QueenLinkedGate.Get(pair.Key).Visible;
     }
 
     /// <summary>
