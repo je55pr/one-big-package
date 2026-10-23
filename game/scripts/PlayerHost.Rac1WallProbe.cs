@@ -12,7 +12,7 @@ public partial class PlayerHost
     /// </summary>
     private Rac1AirborneWallProbeResult ProbeRac1Wall(Rac1MovementContext context)
     {
-        if (_rac1LastSupportHeight is not double supportHeight || Rac1Hanging || Rac1SwingshotActive)
+        if (_rac1TraversalFloorHeight is not double supportHeight || Rac1Hanging || Rac1SwingshotActive)
             return default;
         int action = _rac1Movement.CurrentNativeMovementAction;
         if (action is not (7 or 9 or 0x11))

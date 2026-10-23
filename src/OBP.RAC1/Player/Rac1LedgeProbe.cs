@@ -49,7 +49,7 @@ public readonly record struct Rac1LedgeProbeInput(
     Rac1NativeVector3 Position,
     Rac1NativeVector3 PreviousMotion,
     double FacingYaw,
-    double LastSupportHeight,
+    double SolidFloorHeight,
     double PredictionGravityPerTick,
     int PredictionTicks = 2);
 
@@ -163,7 +163,7 @@ public static class Rac1LedgeProbe
             Radius,
             0.6f));
 
-        if (top.Position.Z - input.LastSupportHeight < MinimumTopAboveSupport)
+        if (top.Position.Z - input.SolidFloorHeight < MinimumTopAboveSupport)
             return false;
 
         double towardTopYaw = Math.Atan2(
@@ -238,7 +238,7 @@ public static class Rac1LedgeProbe
         if (!double.IsFinite(input.Position.Length) ||
             !double.IsFinite(input.PreviousMotion.Length) ||
             !double.IsFinite(input.FacingYaw) ||
-            !double.IsFinite(input.LastSupportHeight) ||
+            !double.IsFinite(input.SolidFloorHeight) ||
             !double.IsFinite(input.PredictionGravityPerTick) ||
             input.PredictionGravityPerTick < 0d || input.PredictionTicks is < 0 or > 2)
             throw new ArgumentOutOfRangeException(nameof(input));

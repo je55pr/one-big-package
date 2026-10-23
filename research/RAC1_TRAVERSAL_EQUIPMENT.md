@@ -257,6 +257,14 @@ from Novalis `2378bc` (underwater), `238a24` (surface), `2406b0` (oxygen),
 Surface entry measures feet plus `.45`, falling reach `max(.2,abs(vz)+.07)`
 and depth `>.8`. Native wading flags use strict `.25<depth<.85`.
 
+The periodic submerged check's segment runs from feet+4 (feet+16 every
+64 updates) **down to feet+1.3**, not feet-1.3. Original helper `232cc0`
+adds both supplied offsets; the numeric `periodicQuery` witnesses observe
+its actual endpoints while supplying a clear segment executor. Near-surface
+water therefore cannot interrupt a ledge jump during its launch delay.
+The host checks the authored water plane and solid floor against those
+endpoints; actual native query-mask execution remains a host boundary.
+
 Surface paddling accelerates its scalar towards `3/60` by `4/3600`, brakes
 by `5/3600`, retains a 45-update stroke and samples the 30-float curve at
 `17c440`. Its sampler uses authored animation **advance**, not only phase:

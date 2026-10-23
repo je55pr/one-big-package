@@ -87,11 +87,26 @@ public sealed class Rac1LedgeTraversalTests
     {
         var tooLow = new LedgeFixture();
         Assert.False(Rac1LedgeProbe.TryFindCandidate(
-            Input with { LastSupportHeight = 0d }, tooLow.Raycast, tooLow.Overlaps, out _));
+            Input with { SolidFloorHeight = 0d }, tooLow.Raycast, tooLow.Overlaps, out _));
         var ceiling = new LedgeFixture { CeilingBlocks = true };
         Assert.False(Probe(ceiling, out _));
         var dynamicTop = new LedgeFixture { TraversalAllowed = false };
         Assert.False(Probe(dynamicTop, out _));
+    }
+
+    [Fact]
+    public void SurfaceExitLedgeAdmissionUsesTheSubmergedSolidFloorRatherThanWaterOrPreviousPlatform()
+    {
+        // Translate the reported pool to feet Z=0: water=.12, step=1.4,
+        // bottom=-3.6. Only the solid-floor query is P+2d8 in the native gate.
+        Assert.True(Rac1LedgeProbe.AdmitsOrdinaryRatchetCandidate(0x12, 4, false, 2d / 60d, 0));
+        Assert.False(Rac1LedgeProbe.AdmitsOrdinaryRatchetCandidate(0x37, 18, false, 0, 0));
+        var pool = new LedgeFixture();
+        Assert.True(Rac1LedgeProbe.TryFindCandidate(Input with { SolidFloorHeight = -3.6 },
+            pool.Raycast, pool.Overlaps, out _));
+        foreach (double wrongFloor in new[] { .12, 3.35 })
+            Assert.False(Rac1LedgeProbe.TryFindCandidate(Input with { SolidFloorHeight = wrongFloor },
+                pool.Raycast, pool.Overlaps, out _));
     }
 
     [Fact]

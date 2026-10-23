@@ -120,6 +120,53 @@ public partial class OBPGame
             ClearMovementSmokeInput();
             GD.Print($"[novalis-swim-smoke] human pool: surface58, Cross/action12 peak={exitPeak:F3}, re-entry58, paddle101 PASS");
 
+            // Fifth human recording: the middle section has an authored
+            // 83.5-unit step above this 82.25 water plane. Stage only the
+            // approach; Cross, ledge admission and climbing use normal input.
+            const double middleHeading = .943;
+            player.Rac1CurrentYaw = middleHeading;
+            player.StageDevelopmentWaterPosition(new(-294.6f, 82.85f, 148.9f));
+            await PhysicsFramesAsync(90);
+            for (int i = 0; i < 75; i++)
+            {
+                double stickYaw = player.MovementReproControlHeading - middleHeading;
+                SetRac1SmokeConditionedInput(Math.Sin(stickYaw), Math.Cos(stickYaw));
+                await PhysicsFramesAsync(1);
+            }
+            ClearMovementSmokeInput();
+            await PhysicsFramesAsync(90);
+            Require(player.Rac1SwimState is { NativeSequence: 58 },
+                $"Middle-section approach did not settle to surface idle: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
+            Input.ActionPress(RawGamepadInput.Jump);
+            for (int i = 0; i < 90 && !player.Rac1Hanging; i++)
+            {
+                await PhysicsFramesAsync(1);
+            }
+            ClearMovementSmokeInput();
+            Require(player.Rac1Hanging,
+                $"Cross from water did not grab the middle step: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
+            await PhysicsFramesAsync(60);
+            Require(player.Rac1Hanging && player.Rac1TraversalAction == 0x19,
+                $"Middle step did not retain its ledge hang: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
+            Input.ActionPress(RawGamepadInput.Jump);
+            bool landedMiddle = false;
+            for (int i = 0; i < 120; i++)
+            {
+                double stickYaw = player.MovementReproControlHeading - middleHeading;
+                if (i < 18) SetRac1SmokeConditionedInput(Math.Sin(stickYaw), Math.Cos(stickYaw));
+                else SetAnalogueSmokeInput(0, 0);
+                await PhysicsFramesAsync(1);
+                if (!player.Rac1Hanging && player.Rac1RecoveredSupportGrounded && player.GlobalPosition.Y > 83.49f)
+                {
+                    landedMiddle = true;
+                    break;
+                }
+            }
+            ClearMovementSmokeInput();
+            Require(landedMiddle && !player.Rac1SwimmingActive,
+                $"Cross from the hang did not reach the middle section: pos={player.GlobalPosition} action={player.Rac1TraversalAction}");
+            GD.Print($"[novalis-swim-smoke] human middle section: surface, Cross, grab, hang, Cross and solid landing PASS pos={player.GlobalPosition}");
+
             // The reported opening puddle has a 0x60 water face only 0.1875
             // above solid 0x1f terrain. It cannot own surface-swim buoyancy.
             // This stages the authored location; movement/jumping use input.

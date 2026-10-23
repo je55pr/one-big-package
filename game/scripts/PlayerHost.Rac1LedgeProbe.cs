@@ -11,7 +11,7 @@ public partial class PlayerHost : CharacterBody3D
     /// Godot supplies triangle contacts; RAC1 owns their admission and target.
     /// </summary>
     private Rac1LedgeCandidate? ProbeRac1Ledge(
-        double lastSupportHeight,
+        double solidFloorHeight,
         bool predictMotion = true,
         Rac1NativeVector3? positionOverride = null)
     {
@@ -27,8 +27,8 @@ public partial class PlayerHost : CharacterBody3D
             position,
             predictMotion ? previousMotion : Rac1NativeVector3.Zero,
             _rac1Yaw.CurrentYaw,
-            lastSupportHeight,
-            Rac1OrdinaryGroundContactMotion.EdgeFallAccelerationPerTick,
+            solidFloorHeight,
+            _rac1Movement.CurrentAirGravityPerUpdate,
             predictMotion ? 2 : 0);
         return Rac1LedgeProbe.TryFindCandidate(
             input,

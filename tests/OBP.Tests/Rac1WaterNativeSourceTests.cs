@@ -9,6 +9,25 @@ namespace OBP.Tests;
 public sealed class Rac1WaterNativeSourceTests
 {
     [SkippableFact]
+    public void NovalisWaterFloorQueryAndLedgeGateShareCurrentSolidHeight()
+    {
+        var read = Rac1AirborneNativeSourceTests.ReadOverlay(1);
+        foreach (var (start, end, hash) in new[]
+        {
+            (0x232dc0, 0x233338, "3288e92678198c29ac7ad7e3048b15a88019f6f2375ab1bbdae1fa4c172acf5e"),
+            (0x22d090, 0x22d838, "2300c2b3b70fc296badf839d61d521bf890d87cd326e94ebe582a7a37c9acee3"),
+            (0x2151d8, 0x215208, "bcd0054808f70a13edcb79367704eb07f1d31ef9e121459f2f7750e0715cd307"),
+        })
+            Assert.Equal(hash, Convert.ToHexString(SHA256.HashData(read(start, end - start))).ToLowerInvariant());
+        uint Word(int address) => BinaryPrimitives.ReadUInt32LittleEndian(read(address, 4));
+        Assert.Equal(0xae2002d8u, Word(0x232e3c)); // reset floor each query
+        Assert.Equal(0x24060024u, Word(0x232f50)); // solid query below water
+        Assert.Equal(0xe6a002d8u, Word(0x233090)); // write hit height
+        Assert.Equal(0xc62202d8u, Word(0x22d5d8)); // ledge reads that height
+        Assert.Equal(0x2002ffffu, Word(0x215204)); // low class31 returns -1
+    }
+
+    [SkippableFact]
     public void NovalisCodeAndTablesMatchReproducibleOriginalInstructionWitnesses()
     {
         var read = Rac1AirborneNativeSourceTests.ReadOverlay(1);
@@ -50,6 +69,22 @@ public sealed class Rac1WaterNativeSourceTests
                 f[6], new(0, 0, f[10]), f[9], 0, 0, 0,
                 MovementDomain: (int)f[0], MovementAction: (int)f[1], HasApexed: f[2] != 0));
             Assert.Equal(witness.GetProperty("output")[0].GetInt32() == 0x37, result.Active);
+        }
+    }
+
+    [Fact]
+    public void OriginalPeriodicWaterQueryEndsAboveFeetSoItCannotCancelSurfaceLedgeJumps()
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoPaths.Root,
+            "research/generated/rac1-water-native-witness.json")));
+        foreach (var witness in doc.RootElement.GetProperty("periodicQuery").EnumerateArray())
+        {
+            float feet = witness.GetProperty("input")[6].GetSingle();
+            var output = witness.GetProperty("output");
+            Assert.Equal(-1f, output[0].GetSingle()); // segment execution supplied clear
+            Assert.InRange(output[2].GetSingle() - feet, 3.99999f, 4.00001f);
+            Assert.InRange(output[3].GetSingle() - feet, 1.29999f, 1.30001f);
+            Assert.Equal(1f, output[4].GetSingle());
         }
     }
 }

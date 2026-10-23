@@ -195,7 +195,8 @@ public sealed class Rac1WaterMovementSession
 
     /// <summary>
     /// P+12e4/22a4 water entry. The periodic submerged check is admitted only
-    /// when the supplied solid floor lies below its 1.3-unit ray end.
+    /// when the supplied solid floor lies below its ray end, 1.3 units ABOVE
+    /// the feet. The helper adds both offsets; this is not a downward ray.
     /// </summary>
     private int SelectEntry(Rac1WaterMovementInput input)
     {
@@ -213,10 +214,11 @@ public sealed class Rac1WaterMovementSession
             return 0x37;
         // The host supplies static-water membership instead of executing the
         // native mask-2 segment query. No arbitrary depth box is introduced.
+        float submergedRayEnd = MathF.Max(0, input.PositionHeight + 1.3f);
         return input.MovementAction != 0x12 && (_ticks & 15) == 0 &&
-            c.SurfaceHeight >= input.PositionHeight - 1.3f &&
+            c.SurfaceHeight >= submergedRayEnd &&
             c.SurfaceHeight <= input.PositionHeight + ((_ticks & 63) == 0 ? 16 : 4) &&
-            c.SolidFloorHeight < input.PositionHeight - 1.3f ? 0x34 : 0;
+            c.SolidFloorHeight < submergedRayEnd ? 0x34 : 0;
     }
 
     private void Dive(Rac1WaterMovementInput input) =>

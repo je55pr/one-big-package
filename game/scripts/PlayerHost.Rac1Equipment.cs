@@ -53,7 +53,12 @@ public partial class PlayerHost
             GlobalPosition + Vector3.Up * 0.02f, GlobalPosition + Vector3.Down * 64f);
         ground.Exclude = new global::Godot.Collections.Array<Rid> { GetRid() };
         var groundHit = space.IntersectRay(ground);
-        float clearance = groundHit.TryGetValue("position", out var groundPoint)
+        bool hasFloor = groundHit.TryGetValue("position", out var groundPoint);
+        // Native P+2d8 is the current solid-floor query, including while
+        // swimming/airborne (Novalis 232dc0), not the last standing platform.
+        // Restore it before wall/ledge probes after a water-exit handoff.
+        _rac1TraversalFloorHeight = hasFloor ? groundPoint.AsVector3().Y : 0;
+        float clearance = hasFloor
             ? Math.Max(0, GlobalPosition.Y - groundPoint.AsVector3().Y) : 64f;
 
         var facing = GetRac1NativePlanarBasis().Transform(Math.Cos(_rac1Yaw.CurrentYaw), Math.Sin(_rac1Yaw.CurrentYaw));

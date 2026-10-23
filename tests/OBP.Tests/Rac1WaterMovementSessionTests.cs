@@ -46,6 +46,27 @@ public sealed class Rac1WaterMovementSessionTests
         Assert.Equal(60, submerged.Animation!.Value.Sequence);
     }
 
+    [Theory]
+    [InlineData(0x1c)]
+    [InlineData(7)]
+    public void AboveFootPeriodicRayCannotStealAnAirborneLaunchAtTheWaterline(int action)
+    {
+        // Native helper adds +1.3 to the ray end, so water only .18 above
+        // the feet is outside it, independently of the sixteen-frame phase.
+        var session = new Rac1WaterMovementSession();
+        var input = Falling() with
+        {
+            Contact = new(true, 82.25f, 78.5f),
+            PositionHeight = 82.07f,
+            ContactMotion = default,
+            RequestedVerticalStep = 0,
+            MovementDomain = 4,
+            MovementAction = action,
+            HasApexed = false,
+        };
+        for (int i = 0; i < 64; i++) Assert.False(session.Step(input).Active);
+    }
+
     [Fact]
     public void LandingBobAndContactCarryAgreeWithOriginalNovalisInstructionWitness()
     {

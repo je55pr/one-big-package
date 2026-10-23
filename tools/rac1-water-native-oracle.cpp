@@ -46,26 +46,36 @@ int main(int argc, char** argv) {
     };
     std::cout << std::setprecision(10);
     std::string mode(argv[2]);
-    if (mode == "entry" || mode == "oxygen") {
+    if (mode == "entry" || mode == "entry-query" || mode == "oxygen") {
         int domain, action, apex, diving, oxygen, mask; float z, surface, depth, request, contact, pitch;
         // This hook observes the dispatcher request, not its predicate.
         int selected = -1;
+        float queryStart = 0, queryEnd = 0;
+        int queryCount = 0;
         ee.set_hook(0x23cf98, [&](EeCpu& c) { selected = c.s32(4); c.set32(2, 1); });
         ee.set_hook(0x236738, [](EeCpu& c) { c.set32(2, 0); });
         ee.set_hook(0x24ad98, [](EeCpu& c) { c.set32(2, 0); }); // camera request
         // Segment results are explicit external facts: no periodic water ray
         // or ceiling hit in this predicate witness.
-        ee.set_hook(0x211870, [](EeCpu& c) { c.set32(2, 0); });
+        ee.set_hook(0x211870, [&](EeCpu& c) {
+            queryStart = get<float>(c.r32(4) + 8);
+            queryEnd = get<float>(c.r32(5) + 8);
+            ++queryCount;
+            c.set32(2, 0);
+        });
         while (std::cin >> domain >> action >> apex >> diving >> oxygen >> mask >> z >> surface >> depth >> request >> contact >> pitch) {
             selected = -1;
+            queryStart = queryEnd = 0; queryCount = 0;
             put(P+0x208c, domain); put(P+0x2084, action); put<int16_t>(P+0x41e, apex);
             put(P+0x2088, diving); put(P+0x22a0, oxygen); ram[0x13d4c6] = mask;
             put(P+0x88, z); put(P+0x2f0, surface); put(P+0x22a4, depth);
             put(P+0xe8, request); put(P+0x108, contact); put(P+0x94, pitch); ram[P+0x12e4] = 1;
             // Prevent the unrelated periodic segment query in entry mode.
-            put(0x15fa4c, 1);
-            call(mode == "entry" ? 0x2408e8 : 0x2406b0);
-            std::cout << selected << ' ' << get<int>(P+0x22a0) << '\n';
+            put(0x15f5cc, mode == "entry-query" ? 16 : 1);
+            call(mode == "oxygen" ? 0x2406b0 : 0x2408e8);
+            std::cout << selected << ' ' << get<int>(P+0x22a0);
+            if (mode == "entry-query") std::cout << ' ' << queryStart << ' ' << queryEnd << ' ' << queryCount;
+            std::cout << '\n';
         }
         return 0;
     }

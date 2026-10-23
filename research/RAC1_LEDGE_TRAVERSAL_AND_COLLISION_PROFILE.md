@@ -145,7 +145,16 @@ predicted Z + 1.65 and Z + 1.15. Candidate tops exclude source classes
 exceed current player Z + 1.5. Dynamic surfaces additionally require an
 authored traversal flag. A horizontal ray just 0.05 above the top rejects an
 obstructed route to it. A separate radial/axial query annotates body clearance.
-The top must lie at least 1.8 above the last retained support height.
+The top must lie at least 1.8 above the **current queried solid-floor height**
+at `P+0x2d8`, not the last platform on which Ratchet stood. Novalis's
+`0x232dc0` clears this field on each ground query, queries below a water hit
+with mask `0x24` and writes the resulting solid height at `0x233090`.
+The ledge producer loads it at `0x22d5d8`. Keeping only grounded support
+history incorrectly rejects ledges after swimming; using the water plane as
+the floor also incorrectly rejects the 83.5-unit step above Novalis's
+82.25 water plane. The host supplies its current downward solid-ray result
+before ledge/wall queries, including the water-exit frame, and uses the
+selected airborne gravity for prediction.
 
 Up to five horizontal support rays at top Z minus
 `0.7 * (1 - sample / 5)` find the edge wall. Inward wall heading must differ
@@ -173,6 +182,12 @@ is still unsupported and conservatively rejected by this adapter. Both original
 material-getter blocks are pinned by retail tests. The Novalis route fixture
 also jumps toward this actual source edge, waits for hang and uses Cross to
 jump onto it; it does not inject a candidate or traversal state.
+
+The Novalis swimming fixture stages an approach to the middle section from
+the fifth human recording, then uses stick/Cross input to paddle, grab,
+hang, jump and land on its original 83.5-unit solid step. No candidate or
+traversal state is injected. This bounded integration fixture does not
+claim a complete naturally played Novalis mission.
 
 ## Grab, hang, shimmy and ledge jump
 
