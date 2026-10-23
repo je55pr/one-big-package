@@ -288,6 +288,53 @@ public static class Rac1AridiaConstructorbotNative
         return separation;
     }
 
+    /// <summary>
+    /// Original sphere_collide_v L2:0x1f0d60 keeps the nearest observed
+    /// world contact to the queried sphere centre (shrinking r2), rather
+    /// than selecting the largest subsequent centre displacement.
+    /// Godot's pair points approximate those native primitive/triangle
+    /// contacts; this does NOT reconstruct native hit records or filters.
+    /// The bounded correction remains worldPoint - spherePoint.
+    /// </summary>
+    public readonly record struct WalkerSpherePointPair(
+        System.Numerics.Vector3 SpherePoint,
+        System.Numerics.Vector3 WorldPoint);
+
+    public static System.Numerics.Vector3? NearestSpherePairCorrection(
+        System.Numerics.Vector3 sphereCentre,
+        ReadOnlySpan<WalkerSpherePointPair> pairs, float radius)
+    {
+        if (!Finite(sphereCentre) || !float.IsFinite(radius) || radius <= 0)
+            throw new ArgumentOutOfRangeException(nameof(radius));
+        float nearestSquared = float.PositiveInfinity;
+        System.Numerics.Vector3? selected = null;
+        foreach (var pair in pairs)
+        {
+            if (!Finite(pair.SpherePoint) || !Finite(pair.WorldPoint))
+                continue;
+            float separationSquared =
+                System.Numerics.Vector3.DistanceSquared(
+                    pair.WorldPoint, pair.SpherePoint);
+            if (separationSquared < 1e-10f ||
+                separationSquared > (2f * radius + .01f) *
+                    (2f * radius + .01f))
+                continue;
+            float distanceSquared =
+                System.Numerics.Vector3.DistanceSquared(
+                    sphereCentre, pair.WorldPoint);
+            // Native sphere_collide_v rejects triangle/primitive contacts
+            // beyond r2 before shrinking its closest-hit search radius.
+            if (!float.IsFinite(distanceSquared) ||
+                distanceSquared > radius * radius ||
+                distanceSquared >= nearestSquared)
+                continue;
+            nearestSquared = distanceSquared;
+            selected = SpherePairCorrection(
+                pair.SpherePoint, pair.WorldPoint, radius);
+        }
+        return selected;
+    }
+
     public const int WalkerMoveFloorContactFlag = 0x2;
     public const float WalkerCollisionMinimumForwardFraction = .2f;
     public const float WalkerMoveFloorLiftFraction = .3f;

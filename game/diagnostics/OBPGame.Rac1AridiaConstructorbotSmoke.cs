@@ -127,7 +127,17 @@ public partial class OBPGame
             // complete its animation before the walker is admitted.
             await Rac1AridiaSmokeWaitNativeFramesAsync(
                 () => particleNative.State.NativeState == 5, 280,
-                "native class612 state3 descent -> state4 clip5 -> state5");
+                "native class612 state3 descent -> state4 clip5 -> state5",
+                () =>
+                {
+                    Vector3 current = particleBot.Node.Root.GlobalPosition;
+                    return $"native={particleNative.State.NativeState} " +
+                        $"clip={particleBot.Animation.Sequence} " +
+                        $"position={current} waypoint={actualWaypoint} " +
+                        $"floor={ProbeRac1ConstructorbotStateThreeFloor(particleBot, current)} " +
+                        $"verticalStep={_rac1ConstructorbotStateThreeVerticalSteps.GetValueOrDefault(particleBotId)} " +
+                        $"player={_player!.GlobalPosition}";
+                });
             Require(particleBot.Animation.Sequence == 6 ||
                 !particleBot.Animation.SupportsSequence(6),
                 "native state5 did not select source clip6");
@@ -484,7 +494,8 @@ public partial class OBPGame
     // Arrival and animation transitions must consume a bounded PHYSICS
     // budget; a render-frame timeout is not an actual native stall.
     private async Task Rac1AridiaSmokeWaitNativeFramesAsync(
-        Func<bool> condition, int maxPhysicsFrames, string label)
+        Func<bool> condition, int maxPhysicsFrames, string label,
+        Func<string>? timeoutEvidence = null)
     {
         for (int frame = 0; frame < maxPhysicsFrames; frame++)
         {
@@ -493,6 +504,7 @@ public partial class OBPGame
         }
         if (condition()) return;
         throw new TimeoutException(
-            $"Timed out waiting for Aridia native state: {label} after {maxPhysicsFrames} physics frames.");
+            $"Timed out waiting for Aridia native state: {label} after {maxPhysicsFrames} " +
+            $"physics frames. {(timeoutEvidence is null ? "" : timeoutEvidence())}");
     }
 }

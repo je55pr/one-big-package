@@ -319,6 +319,41 @@ public sealed class Rac1AridiaConstructorbotNativeTests
     }
 
     [Fact]
+    public void SourceNearestSphereContactBeatsLargestHostCorrectionAndUsesRaisedCentre()
+    {
+        // Source sphere is one native unit ABOVE the Moby origin. The
+        // closest world contact to that elevated centre wins, even when
+        // another reported Godot pair has a larger penetration correction.
+        Vector3 centre = new(0, 0, 1);
+        Rac1AridiaConstructorbotNative.WalkerSpherePointPair[] contacts =
+        [
+            new(new(-.4f, 0, 1), new(.5f, 0, 1)), // larger push, farther contact
+            new(new(.5f, 0, 1), new(.2f, 0, 1)), // nearest contact
+            new(new(0, 0, 5), new(0, 0, 6)), // out of sphere range
+            new(new(float.NaN, 0, 0), Vector3.Zero), // malformed host pair
+        ];
+        var chosen = Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+            centre, contacts, .625f);
+        Assert.Equal(new Vector3(-.3f, 0, 0), chosen);
+        Assert.Equal(new Vector3(-.3f, 0, 0),
+            Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+                centre, [contacts[1], contacts[0]], .625f));
+
+        // The exact same contact set must not be evaluated relative to
+        // Moby ground level or a distant surface becomes eligible.
+        Assert.Null(Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+            centre, [new(new(0, 0, 4), new(0, 0, 4.1f))], .625f));
+        Assert.Null(Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+            centre, [], .625f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+                new(float.NaN, 0, 0), contacts, .625f));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+                centre, contacts, 0));
+    }
+
+    [Fact]
     public void OriginalWalkerFixedPointCollisionRadiusIsNotBehaviorFlags()
     {
         Assert.Equal(640, Rac1AridiaConstructorbotNative.WalkerCollisionRadiusFixed);

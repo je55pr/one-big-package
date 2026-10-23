@@ -399,25 +399,35 @@ public partial class OBPGame
                     Exclude = excluded
                 };
                 var pairs = enemy.Body.GetWorld3D().DirectSpaceState.CollideShape(query, 8);
-                Vector3 largest = Vector3.Zero;
-                for (int pair = 0; pair + 1 < pairs.Count; pair += 2)
-                {
-                    // Godot point pair 0 is on our sphere; point pair 1
-                    // is on level geometry. Source hit data differs.
-                    if ((pairs[pair + 1] - pairs[pair]).Length() >
-                        Rac1AridiaConstructorbotNative.WalkerCollisionRadius * 2 + .01f)
-                        continue;
-                    var correction = FromEffectNative(
-                        Rac1AridiaConstructorbotNative.SpherePairCorrection(
-                            ToEffectNative(pairs[pair]),
-                            ToEffectNative(pairs[pair + 1]),
-                            Rac1AridiaConstructorbotNative.WalkerCollisionRadius));
-                    if (correction.LengthSquared() > largest.LengthSquared())
-                        largest = correction;
-                }
-                if (largest.LengthSquared() < 1e-10f) return null;
+                // Native sphere_collide_v retains the NEAREST world
+                // surface/primitive contact to its query centre; selecting
+                // Godot's deepest/largest correction instead can wrongly
+                // prefer a farther surface at corners. The observed Godot
+                // pairs are still only a host approximation of the source
+                // primitive records and collision-centre recurrence.
+                // Godot provides at most eight points (four pairs).
+                // Keep this hot-path sample on the stack rather than
+                // allocating a List for each of the six native attempts.
+                Span<Rac1AridiaConstructorbotNative.WalkerSpherePointPair> candidates =
+                    stackalloc Rac1AridiaConstructorbotNative.WalkerSpherePointPair[4];
+                int count = 0;
+                for (int pair = 0; pair + 1 < pairs.Count && count < candidates.Length;
+                    pair += 2)
+                    candidates[count++] = new(
+                        ToEffectNative(pairs[pair]),
+                        ToEffectNative(pairs[pair + 1]));
+                // sphere_collide_v queries at Moby+record+4 up, not at
+                // Moby's foot position. Compare distances from that
+                // raised native centre while retaining foot-relative push.
+                var sourceSphereCentre = sourceCandidate +
+                    System.Numerics.Vector3.UnitZ *
+                    Rac1AridiaConstructorbotNative.WalkerCollisionUp;
+                var nearest = Rac1AridiaConstructorbotNative.NearestSpherePairCorrection(
+                    sourceSphereCentre, candidates[..count],
+                    Rac1AridiaConstructorbotNative.WalkerCollisionRadius);
+                if (nearest is null) return null;
                 observedContacts++;
-                return ToEffectNative(candidate + largest);
+                return sourceCandidate + nearest.Value;
             });
         if (observedContacts > 0)
             _rac1ConstructorbotSphereContactCounts[instance] =
