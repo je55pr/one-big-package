@@ -33,7 +33,22 @@ public partial class OBPGame
                 .All(e => e.Body.CollisionLayer == 0), "Frog dormant forms still collide");
             Require(population.Count(e => frogs.Get(e.Node.Source.InstanceIndex).PathIndex >= 0) == expectedPaths,
                 "Frog source paths were flattened");
-            GD.Print($"[frog-smoke] LEVEL{_world.LevelId} {expected} registered, {frogs.PresentedCount} admitted, {expectedPaths} routed; dormant collider check PASS");
+            int expectedCarriers = _world.LevelId == 6 ? 10 : 0;
+            var carriers = population.Where(e => frogs.Get(e.Node.Source.InstanceIndex).CarrierMode).ToArray();
+            Require(carriers.Length == expectedCarriers && _rac1FrogCarrierChildren.Count == expectedCarriers,
+                "Authored Frog carrier count or source-owned class-500 child population differs");
+            Require(carriers.All(e =>
+            {
+                int id = e.Node.Source.InstanceIndex;
+                return frogs.Get(id) is { NativeState: 1, CarrierChildOwned: true, Presented: false } &&
+                    !e.Node.Root.Visible && e.Body.CollisionLayer == 0 && e.Body.CollisionMask == 0 &&
+                    _rac1FrogCarrierChildren.TryGetValue(id, out var child) && child.Visible &&
+                    child.GetChildren().OfType<MeshInstance3D>().Any();
+            }), "Native carrier child lacks retail visual or hidden-parent protection");
+            GD.Print($"[frog-smoke] LEVEL{_world.LevelId} {expected} registered, {frogs.PresentedCount} admitted, {expectedPaths} routed; {expectedCarriers} retail crate children, dormant collider check PASS");
+            if (_world.LevelId == 6)
+                GD.Print("[frog-smoke] carriers " + string.Join(", ", carriers.Select(c =>
+                    $"i{c.Node.Source.InstanceIndex}(switch={frogs.GetAuthored(c.Node.Source.InstanceIndex).SwitchSelector},target={frogs.GetAuthored(c.Node.Source.InstanceIndex).TargetInstance})")));
             await PhysicsFramesAsync(5);
             if (_world.LevelId == 6 && _rac1FrogShuttle is { } shuttle)
             {
@@ -73,6 +88,39 @@ public partial class OBPGame
                     GD.Print($"[frog-smoke] shuttle stop1 {alternate} admitted, original stop0 restored 108; mesh/contact admission PASS");
                 }
                 finally { _player.GlobalPosition = previousPlayer; }
+            }
+
+            if (_world.LevelId == 6)
+            {
+                // Stage one actual authored carrier's player target within the
+                // retail four-unit threshold, exercising the host child
+                // lifetime, hidden-parent admission and collision handoff.
+                var carrier = carriers[0];
+                int carrierId = carrier.Node.Source.InstanceIndex;
+                int crateCount = _rac1CrateNodes.Count;
+                int pickupCount = _rac1PickupMotion.Count;
+                Vector3 oldPlayer = _player!.GlobalPosition;
+                try
+                {
+                    _player.GlobalPosition = carrier.Node.Root.GlobalPosition +
+                        FromEffectNative(new System.Numerics.Vector3(2, 0, 0));
+                    TickRac1FrogCarrier(carrier);
+                    var released = frogs.Get(carrierId);
+                    Require(released is
+                    {
+                        NativeState: 8, Presented: true, CarrierReleased: true,
+                        CarrierChildOwned: false
+                    }, "Carrier failed native four-unit release");
+                    Require(!_rac1FrogCarrierChildren.ContainsKey(carrierId) &&
+                        carrier.Node.Root.Visible && carrier.Body.CollisionLayer == 1 &&
+                        carrier.Body.CollisionMask == 1, "Carrier release retained child or hidden-parent physics");
+                    Require(_rac1CrateNodes.Count == crateCount &&
+                        _rac1PickupMotion.Count == pickupCount &&
+                        frogs.RegisteredCount == expected,
+                        "Carrier child incorrectly minted world crate, reward or Frog");
+                    GD.Print($"[frog-smoke] carrier i{carrierId} class500 child removed, state1->8, contact on, no crate reward PASS");
+                }
+                finally { _player.GlobalPosition = oldPlayer; }
             }
 
             // Stage one *authored* ordinary frog into an isolated reachable

@@ -1,0 +1,96 @@
+using Godot;
+using OBP.RAC1.Gameplay;
+using OBP.Godot;
+
+namespace OneBigPackage;
+
+/// <summary>Native class-827 carrier-owned class-500 *spawned* visuals.
+/// The copied mesh is from the mounted R&C1 retail disc, not a fabricated box.
+/// These children have no authored placement, crate payout or world-crate UID.</summary>
+public partial class OBPGame
+{
+    private readonly Dictionary<int, Node3D> _rac1FrogCarrierChildren = [];
+
+    private void ResetRac1FrogCarriers()
+    {
+        foreach (var child in _rac1FrogCarrierChildren.Values)
+            if (IsInstanceValid(child)) child.QueueFree();
+        _rac1FrogCarrierChildren.Clear();
+    }
+
+    private void ConfigureRac1FrogCarriers(RuntimeWorldScene.Result result)
+    {
+        if (_rac1Frogs is null) return;
+        var carrierEnemies = _rac1Enemies.Values.Where(e =>
+            e.Node.Source.NativeClassId == Rac1FrogSession.ClassId &&
+            _rac1Frogs.Get(e.Node.Source.InstanceIndex).CarrierMode).ToArray();
+        if (carrierEnemies.Length == 0) return;
+        var donor = _rac1CrateNodes.FirstOrDefault(crate =>
+            crate.Source.NativeClassId == Rac1FrogSession.CarrierChildClassId &&
+            crate.Root.GetChildren().OfType<MeshInstance3D>().Any());
+        if (donor is null)
+        {
+            GD.PrintErr("[frog-carrier] retail class-500 crate mesh missing; keeping carriers dormant");
+            return;
+        }
+
+        foreach (var enemy in carrierEnemies)
+        {
+            int instance = enemy.Node.Source.InstanceIndex;
+            var child = new Node3D { Name = $"FrogCarrier_class500_parent{instance}" };
+            foreach (var mesh in donor.Root.GetChildren().OfType<MeshInstance3D>())
+            {
+                var copy = new MeshInstance3D
+                {
+                    Name = "RetailClass500Surface",
+                    Mesh = mesh.Mesh,
+                    MaterialOverride = mesh.MaterialOverride,
+                    Transform = mesh.Transform
+                };
+                if (mesh.Mesh is { } data)
+                    for (int surface = 0; surface < data.GetSurfaceCount(); surface++)
+                        copy.SetSurfaceOverrideMaterial(surface, mesh.GetSurfaceOverrideMaterial(surface));
+                child.AddChild(copy);
+            }
+            if (child.GetChildCount() == 0) { child.Free(); continue; }
+            result.Root.AddChild(child);
+            child.GlobalPosition = enemy.Node.Root.GlobalPosition;
+            child.Rotation = enemy.Node.Root.Rotation;
+            child.Scale = donor.Root.Scale;
+            _rac1Frogs.BindCarrierChild(instance, Rac1FrogSession.CarrierChildClassId);
+            _rac1FrogCarrierChildren.Add(instance, child);
+        }
+        GD.Print($"[frog-carrier] {_rac1FrogCarrierChildren.Count} source-owned class500 children, no authored crate inflation");
+    }
+
+    private void TickRac1FrogCarrier(Rac1HostedEnemy enemy)
+    {
+        if (_player is null || _rac1Frogs is null) return;
+        int instance = enemy.Node.Source.InstanceIndex;
+        if (!_rac1FrogCarrierChildren.TryGetValue(instance, out var child) ||
+            !IsInstanceValid(child)) return;
+        if (enemy.Node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
+            FrogHostSleepRadius * FrogHostSleepRadius) return;
+        Vector3 target = _player.GlobalPosition;
+        bool eligible = true;
+        var authored = _rac1Frogs.GetAuthored(instance);
+        if (authored.TargetInstance >= 0)
+        {
+            if (!_rac1LinkedTargetNodes.TryGetValue(authored.TargetInstance, out var linked) ||
+                !IsInstanceValid(linked.Root) || !IsRac1GameplayActive(linked))
+                eligible = false;
+            else target = linked.Root.GlobalPosition;
+        }
+        var frame = _rac1Frogs.Step(instance, ToEffectNative(enemy.Node.Root.GlobalPosition),
+            ToEffectNative(target), eligible);
+        if (!frame.CarrierReleased) return;
+        child.QueueFree();
+        _rac1FrogCarrierChildren.Remove(instance);
+        bool active = frame.Presented;
+        enemy.Body.CollisionLayer = active ? 1u : 0u;
+        enemy.Body.CollisionMask = active ? 1u : 0u;
+        enemy.Node.ApplyState(_rac1MobyRuntime.Require(enemy.Node.Source).EntityState);
+        SelectRac1EnemySequence(enemy, frame.Sequence, 5);
+        GD.Print($"[frog-carrier] parent i{instance} released native class500 child at four-unit target gate");
+    }
+}

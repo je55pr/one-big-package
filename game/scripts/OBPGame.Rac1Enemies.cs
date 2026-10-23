@@ -48,6 +48,7 @@ public partial class OBPGame
 
     private void ResetRac1Enemies()
     {
+        ResetRac1FrogCarriers();
         foreach (var enemy in _rac1Enemies.Values)
         {
             if (IsInstanceValid(enemy.Body)) enemy.Body.QueueFree();
@@ -199,6 +200,7 @@ public partial class OBPGame
                 _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
             }
         }
+        ConfigureRac1FrogCarriers(result);
         GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; " +
             $"{_rac1Class1440?.RegisteredCount ?? 0} class1440, {_rac1Peckbots?.RegisteredCount ?? 0} Novalis Peckbots, " +
             $"{_rac1Birdbots?.RegisteredCount ?? 0} Novalis Birdbots, " +
@@ -221,7 +223,11 @@ public partial class OBPGame
             foreach (var enemy in _rac1Enemies.Values.OrderBy(enemy => enemy.Node.Source.InstanceIndex))
             {
                 var node = enemy.Node;
-                if (!IsInstanceValid(node.Root) || !IsRac1GameplayActive(node)) continue;
+                if (!IsInstanceValid(node.Root)) continue;
+                if (node.Source.NativeClassId == Rac1FrogSession.ClassId &&
+                    _rac1FrogCarrierChildren.ContainsKey(node.Source.InstanceIndex))
+                    TickRac1FrogCarrier(enemy);
+                if (!IsRac1GameplayActive(node)) continue;
                 bool aridia = Rac1AridiaEnemies.IsEnemyClass(node.Source.NativeClassId);
                 // Aridia has 137 authored enemies; most are dormant, buried or
                 // beyond Ratchet's encounter range. The legacy loop uploaded

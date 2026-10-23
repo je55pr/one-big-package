@@ -115,6 +115,61 @@ public sealed class Rac1FrogSessionTests
     }
 
     [Fact]
+    public void CarrierOwnedNativeClass500ReleasesOnlyAtFourUnitsWithoutAuthoredCrateOrReward()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var frogs = new Rac1FrogSession(runtime, []);
+        var source = Source(77, carrier: 1);
+        var initial = frogs.Register(source, RuntimeEntityState.FromAuthored(source), Vector3.Zero);
+        Assert.Equal(1, initial.NativeState);
+        Assert.False(initial.Presented);
+        Assert.False(initial.CarrierChildOwned);
+        Assert.Throws<ArgumentException>(() => frogs.BindCarrierChild(77, 501));
+        Assert.Equal(1, frogs.Step(77, Vector3.Zero, Vector3.UnitX, true).NativeState);
+        var child = frogs.BindCarrierChild(77, Rac1FrogSession.CarrierChildClassId);
+        Assert.Equal(500, Rac1FrogSession.CarrierChildClassId);
+        Assert.True(child.CarrierChildOwned);
+        Assert.False(child.CarrierReleased);
+        Assert.Throws<InvalidOperationException>(() => frogs.BindCarrierChild(77, 500));
+        Assert.Equal(1, frogs.Step(77, Vector3.Zero, Vector3.UnitX * 3, false).NativeState);
+        Assert.Equal(1, frogs.Step(77, Vector3.Zero, Vector3.UnitX * 4, true).NativeState);
+        Assert.True(frogs.Get(77).CarrierChildOwned);
+        var released = frogs.Step(77, Vector3.Zero, Vector3.UnitX * 3.9f, true);
+        Assert.Equal(8, released.NativeState);
+        Assert.Equal(4, released.Sequence);
+        Assert.True(released.Presented);
+        Assert.True(released.CarrierReleased);
+        Assert.False(released.CarrierChildOwned);
+        Assert.Equal(1, frogs.RegisteredCount);
+        Assert.Equal(1, runtime.RegisteredCount);
+        Assert.Throws<InvalidOperationException>(() => frogs.BindCarrierChild(77, 500));
+        Assert.True(frogs.Step(77, Vector3.Zero, Vector3.UnitX * 10, false).Presented);
+    }
+
+    [Fact]
+    public void CarrierCannotReleaseAcrossShuttleGateOrWakeWithoutOwnedChild()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var frogs = new Rac1FrogSession(runtime, []);
+        var carrier = Source(80, carrier: 1, hidden: 1, gate: 1);
+        frogs.Register(carrier, RuntimeEntityState.FromAuthored(carrier), Vector3.Zero);
+        Assert.Equal(1, frogs.Step(80, Vector3.Zero, Vector3.UnitX, true).NativeState);
+        frogs.BindCarrierChild(80, 500);
+        Assert.Equal(1, frogs.Step(80, Vector3.Zero, Vector3.UnitX, true).NativeState);
+        Assert.Empty(frogs.ApplyShuttleSwitch(true));
+        var released = frogs.Step(80, Vector3.Zero, Vector3.UnitX, true);
+        Assert.True(released.CarrierReleased);
+        Assert.True(released.Presented);
+        Assert.Equal(8, released.NativeState);
+        frogs.ApplyShuttleSwitch(false);
+        Assert.False(frogs.Get(80).Presented);
+        Assert.False(frogs.Step(80, Vector3.Zero, Vector3.UnitX, true).Presented);
+        frogs.ApplyShuttleSwitch(true);
+        Assert.True(frogs.Get(80).Presented);
+        Assert.Equal(1, frogs.RegisteredCount);
+    }
+
+    [Fact]
     public void FatalHitRemovesOnlyOneFrogWhileLifeModeParksInState15()
     {
         var runtime = new Rac1MobyRuntimeSession();

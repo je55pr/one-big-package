@@ -24,6 +24,8 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public const int RoamMaxTicks = 75;
     public const float RoamMinRadius = .5f;
     public const float RoamMaxRadius = 2f;
+    public const int CarrierChildClassId = Rac1BoltCrate.NativeClassId;
+    public const float CarrierReleaseDistance = 4f;
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly IReadOnlyList<Vector3[]> _paths;
     private readonly Dictionary<int, Entry> _entries = [];
@@ -41,6 +43,8 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         public Vector3 RoamGoal { get; set; } = home;
         public int RoamTicks { get; set; }
         public bool AttackEmitted { get; set; }
+        public bool CarrierChildOwned { get; set; }
+        public bool CarrierReleased { get; set; }
         public uint RandomState { get; set; } = (uint)(native.InstanceIndex + 1) * 747796405u + 2891336453u;
     }
 
@@ -68,7 +72,8 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         {
             var entry = pair.Value;
             bool shouldPresent = !entry.Native.State.IsTerminalized &&
-                entry.Authored.HasCarrier == 0 && entry.Authored.StartsHidden == 0 &&
+                (entry.Authored.HasCarrier == 0 || entry.CarrierReleased) &&
+                (entry.Authored.StartsHidden == 0 || entry.CarrierReleased) &&
                 entry.Native.State.NativeState != 15 &&
                 entry.Authored.UpdateEligible(enabled);
             if (entry.Native.IsActive == shouldPresent) continue;
@@ -103,10 +108,27 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public Rac1FrogFrame Get(int instance) => Snapshot(_entries[instance]);
     public Rac1FrogAuthored GetAuthored(int instance) => _entries[instance].Authored;
 
+    /// <summary>Record successful creation of the native class-500 child at
+    /// the authored Frog. The child is dynamic and belongs to this parent;
+    /// never register it as an authored crate or grant bolts for its release.</summary>
+    public Rac1FrogFrame BindCarrierChild(int instance, int childClassId)
+    {
+        var e = _entries[instance];
+        if (e.Authored.HasCarrier == 0 || e.Native.State.NativeState != 1 ||
+            e.CarrierReleased || e.CarrierChildOwned || e.Native.State.IsTerminalized)
+            throw new InvalidOperationException("Frog has no available native carrier-child slot.");
+        if (childClassId != CarrierChildClassId)
+            throw new ArgumentException("Native Frog carrier child must be R&C1 class 500.", nameof(childClassId));
+        e.CarrierChildOwned = true;
+        return Snapshot(e);
+    }
+
     /// <summary>
     /// Caller supplies native XYZ, an *eligible* native target (not a decoy
     /// substituted for an unresolved authored target), and animation facts.
-    /// This method never automatically unblocks carrier/hidden/switch forms.
+    /// Only a successfully bound class-500 carrier child can enter the
+    /// native state1 release path. Hidden and switch-gated forms are not
+    /// admitted by ordinary target proximity.
     /// </summary>
     public Rac1FrogFrame Step(int instance, Vector3 position, Vector3 target,
         bool targetEligible, bool animationWrapped = false,
@@ -116,6 +138,19 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         if (!Finite(position) || !Finite(target) || !float.IsFinite(animationPosition))
             throw new ArgumentOutOfRangeException(nameof(position));
         var e = _entries[instance];
+        // Native state1 is visually hidden behind a spawned class-500 child.
+        // It must still receive the four-unit release check when the child's
+        // presentation has actually been created and the shuttle gate admits it.
+        if (e.Native.State.NativeState == 1 && e.CarrierChildOwned &&
+            e.Authored.UpdateEligible(ShuttleSwitchEnabled) && targetEligible &&
+            Vector3.Distance(position, target) < CarrierReleaseDistance)
+        {
+            e.CarrierChildOwned = false;
+            e.CarrierReleased = true;
+            SetState(e, 8, 4);
+            _runtime.SetPresence(e.Native, RuntimeEntityPresence.Active);
+            return Snapshot(e);
+        }
         if (!e.Native.IsActive) return Snapshot(e);
         var state = e.Native.State.NativeState;
         Vector3 movement = Vector3.Zero;
@@ -282,7 +317,7 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
         new(e.Native.State.NativeState, e.Sequence, e.Health, e.Lives, e.Yaw,
             displacement, e.Native.IsActive, attack, e.Native.State.IsTerminalized,
             e.Authored.PathIndex, e.Authored.HasCarrier != 0, e.Authored.StartsHidden != 0,
-            e.Authored.SwitchSelector != 0);
+            e.Authored.SwitchSelector != 0, e.CarrierChildOwned, e.CarrierReleased);
 
     private static bool Finite(Vector3 v) =>
         float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
@@ -290,5 +325,6 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
 
 public sealed record Rac1FrogFrame(int NativeState, int Sequence, float Health,
     int Lives, float Yaw, Vector3 Displacement, bool Presented, bool Contact,
-    bool Terminal, int PathIndex, bool CarrierMode, bool StartsHidden, bool SwitchGated);
+    bool Terminal, int PathIndex, bool CarrierMode, bool StartsHidden, bool SwitchGated,
+    bool CarrierChildOwned, bool CarrierReleased);
 public sealed record Rac1FrogDamageResult(Rac1FrogFrame Frame, bool Lethal, bool RespawnParked);
