@@ -300,6 +300,45 @@ public sealed class Rac1MetropolisTaxiTests
         Assert.InRange(frames, 301, 24000);
     }
 
+    [Theory]
+    [InlineData(961, 1, 2, 0x0bce, 0x0bcf)]
+    [InlineData(962, 3, 4, 0x0bcb, 0x0bcd)]
+    public void RetailClass1012HudMessagesFollowAuthoredNextSideSelectors(
+        int instance, int sideZero, int sideOne,
+        int sourceDockMessage, int otherEndMessage)
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(iso) || !File.Exists(iso)) return;
+        using var reader = new FileRandomAccessReader(iso);
+        var world = Rac1WorldImport.Build(reader, 3);
+        var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == instance);
+        var pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+        Assert.Equal(sideZero, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x98, 4)));
+        Assert.Equal(sideOne, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x9c, 4)));
+
+        var stop = Rac1MetropolisTaxiSession.TryCreate(world)!.Stops
+            .Single(s => s.InstanceIndex == instance);
+        Assert.Equal(sideZero, stop.NativeHudSelectors!.Value.SideZeroSelector);
+        Assert.Equal(sideOne, stop.NativeHudSelectors.Value.SideOneSelector);
+        Assert.Equal(sourceDockMessage,
+            stop.NativeHudSelectors.Value.MessageForCurrentSide(1));
+        Assert.Equal(otherEndMessage,
+            stop.NativeHudSelectors.Value.MessageForCurrentSide(0));
+    }
+
+    [Fact]
+    public void InvalidNativeHudSelectorOrSideDoesNotInventRetailMessage()
+    {
+        var selectors = new Rac1TaxiNativeHud(1, 4);
+        Assert.Null(selectors.MessageForCurrentSide(-1));
+        Assert.Null(selectors.MessageForCurrentSide(2));
+        Assert.Equal(0x0bce, selectors.MessageForCurrentSide(1));
+        Assert.Equal(0x0bcd, selectors.MessageForCurrentSide(0));
+        Assert.Null(new Rac1TaxiNativeHud(-1, 9).MessageForCurrentSide(1));
+        Assert.All(Rac1MetropolisTaxiSession.TryCreate(Kerwan())!.Stops,
+            stop => Assert.Null(stop.NativeHudSelectors));
+    }
+
     [Fact]
     public void RetailTaxiAdmissionSelectorsPreserveNativeMinusOneSentinels()
     {

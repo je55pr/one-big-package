@@ -26,7 +26,8 @@ public sealed record Rac1MetropolisTaxiStop(
     Rac1TaxiTriggerVolume? ApproachTrigger = null,
     int NativeInitialSide = -1,
     bool NativeSeekEvidenced = false,
-    Rac1TaxiHoverPhases? NativeHoverPhases = null);
+    Rac1TaxiHoverPhases? NativeHoverPhases = null,
+    Rac1TaxiNativeHud? NativeHudSelectors = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -392,6 +393,20 @@ public sealed class Rac1MetropolisTaxiSession
                 hoverPhases = new Rac1TaxiHoverPhases(height, tilt, spin);
             }
 
+            Rac1TaxiNativeHud? nativeHud = null;
+            if (route.Class == 1012 && pvar is { Length: >= 0xa0 } hudPvar)
+            {
+                // Native updater 0x002dcf34 toggles +0xbc (side) before
+                // selecting +0x98 + 4*side and requesting the HUD message.
+                int zero = BinaryPrimitives.ReadInt32LittleEndian(
+                    hudPvar.AsSpan(0x98, 4));
+                int one = BinaryPrimitives.ReadInt32LittleEndian(
+                    hudPvar.AsSpan(0x9c, 4));
+                if (zero is < 1 or > 4 || one is < 1 or > 4)
+                    return null;
+                nativeHud = new Rac1TaxiNativeHud(zero, one);
+            }
+
             // Real authored PVars prove the original speed/index fields
             // are present. Synthetic regression worlds omit this payload.
             bool nativeSeek = route.OutboundOffset >= 0 &&
@@ -399,7 +414,8 @@ public sealed class Rac1MetropolisTaxiSession
 
             stops.Add(new Rac1MetropolisTaxiStop(
                 route.Index, route.Class, position, outbound, route.Label, returning,
-                approach, departure, trigger, nativeSide, nativeSeek, hoverPhases));
+                approach, departure, trigger, nativeSide, nativeSeek,
+                hoverPhases, nativeHud));
         }
 
         return new Rac1MetropolisTaxiSession(stops);

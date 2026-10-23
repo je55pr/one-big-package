@@ -83,6 +83,10 @@ public partial class OBPGame
             player.ApplyRac1TaxiArrival(new RuntimeSpawn(
                 shuttle.Position.X, shuttle.Position.Y, shuttle.Position.Z,
                 player.Rac1CurrentYaw));
+            Require(shuttle.NativeHudSelectors?.MessageForCurrentSide(1) == 0x0bcb &&
+                GetRac1MetropolisTaxiHudLine() ==
+                    Rac1RetailUiAssets.Text(0x0bcb, "Taxi: T / Triangle to ride"),
+                "class-1012 retail HUD message is not selected from PVar+0x98 at source dock");
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }), "class-1012 boarding rejected");
             Vector3 cameraRelativeAtBoard = player.Camera.GlobalPosition - player.GlobalPosition;

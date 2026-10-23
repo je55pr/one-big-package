@@ -377,12 +377,16 @@ public partial class OBPGame
         var near = taxis.FindBoardable(hero);
         if (near is not null)
         {
-            // Class 816 requests retail HUD message 0xbc9. Class 1012
-            // selects among 0xbcb/0xbcd/0xbce/0xbcf depending on side.
-            // Text is source decoded; input admission remains host policy.
-            int message = near.NativeClassId == 816 ? 0xbc9 :
-                near.NativeInitialSide == 0 ? 0xbce : 0xbcf;
-            return Rac1RetailUiAssets.Text(message, "Taxi: T / Triangle to ride");
+            // Class-816 requests retail 0xbc9. Class-1012 selects
+            // PVar+0x98/+0x9c after flipping route side (native
+            // 0x002dcf34 / 0x002dcbc8), NOT by initial-side parity.
+            // Our provisional source dock is at the start of +0x94,
+            // the native side-1 path, for both retail class-1012 taxis.
+            int? message = near.NativeClassId == 816 ? 0xbc9 :
+                near.NativeHudSelectors?.MessageForCurrentSide(1);
+            return message is { } id
+                ? Rac1RetailUiAssets.Text(id, "Taxi: T / Triangle to ride")
+                : "Taxi: T / Triangle to ride";
         }
         var inbound = taxis.Stops.FirstOrDefault(stop =>
             stop.ApproachTrigger?.Contains(hero) == true &&

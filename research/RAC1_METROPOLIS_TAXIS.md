@@ -270,3 +270,33 @@ pitch/roll axis remapping is host rendering policy pending exact matrix
 verification, not a claim of full native orientation parity.
 Synthetic test fixtures without PVars retain their original unanimated
 presentation.
+
+## 23 October 2026: class-1012 native HUD selector correction
+
+The original class-1012 focus helper at Kerwan 0x002dcb70
+recognizes several eligible Ratchet state/focus-pointer combinations;
+the corresponding HUD helper at 0x002dcbc8 is passed a PVar-backed
+message selector, **not** the initial side flag. After focus admission
+the updater at 0x002dcf34 toggles its active side and passes
+`PVar + 0x98 + 4*(side ^ 1)` to the HUD helper, with this exact mapping:
+selector 1 -> 0x0bce; selector 2 -> 0x0bcf; selector 3 -> 0x0bcb;
+selector 4 -> 0x0bcd. The helper also requests retail camera kind
+0x0c when its PVar+0xa4 camera handle is unallocated. OBP's camera
+request/lifecycle and hero native state 0x65 are not ported.
+
+The four retail PVar selectors were verified directly:
+i961 has side-zero/side-one selectors (1,2), i962 has (3,4).
+The OBP host currently boards at the authored **start of path
+PVar+0x94** (native side one) for both taxis, even though i961's
+initial-side PVar+0x80 is zero. The correct current host source-dock
+prompts are therefore i961 -> 0x0bce and i962 -> 0x0bcb.
+The earlier approximation chose i962's prompt as 0x0bcf,
+incorrectly conflating a route-side selector with the authored
+message selector.
+
+`Rac1TaxiNativeHud` now holds both source PVar message selectors,
+resolves the requested prompt for the next side and returns no retail
+message for unsupported selector/side values. The Godot HUD uses
+these PVars instead of initial-side parity. This recovers the prompt
+mapping, **not** native HUD focus allocation, gameplay state gates,
+two-ended class-1012 boarding or the camera transition.
