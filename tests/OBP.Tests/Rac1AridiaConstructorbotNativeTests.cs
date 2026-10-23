@@ -141,6 +141,59 @@ public sealed class Rac1AridiaConstructorbotNativeTests
             Rac1AridiaConstructorbotNative.StepActivation(7, true));
     }
 
+    [Fact]
+    public void StateThreeHorizontalClampsTowardSourceWaypointWithoutMovingVerticalCoordinate()
+    {
+        var current = new Vector3(0, 0, 100);
+        var waypoint = new Vector3(3, 4, -200);
+        var step = Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+            current, waypoint, 1f / 60f);
+        Assert.InRange(step.Length(), .0999f, .1001f);
+        Assert.Equal(0, step.Z);
+        Assert.InRange(step.X, .0599f, .0601f);
+        Assert.InRange(step.Y, .0799f, .0801f);
+
+        Vector3 location = current;
+        for (int i = 0; i < 50; i++)
+            location += Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+                location, waypoint, 1f / 60f);
+        Assert.InRange(location.X, 2.999f, 3.001f);
+        Assert.InRange(location.Y, 3.999f, 4.001f);
+        Assert.Equal(100, location.Z);
+
+        Assert.Equal(Vector3.Zero, Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+            location, waypoint, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(current, waypoint, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+                current, new(float.NaN, 0, 0), 1f / 60f));
+    }
+
+    [Fact]
+    public void StateThreeYawCapsPerFrameRotationTowardTrackedTarget()
+    {
+        float max = MathF.PI / 120f;
+        Assert.InRange(Rac1AridiaConstructorbotNative.StepStateThreeYaw(
+            0, MathF.PI, 1f / 60f), -max - .00001f, max + .00001f);
+        Assert.Equal(.01f, Rac1AridiaConstructorbotNative.StepStateThreeYaw(0, .01f, 1f / 60f), 4);
+        Assert.InRange(Rac1AridiaConstructorbotNative.StepStateThreeYaw(
+            0, -.5f, 1f / 60f), -max - .00001f, -max + .00001f);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1AridiaConstructorbotNative.StepStateThreeYaw(0, float.NaN, 1f / 60f));
+    }
+
+    [Fact]
+    public void StateThreeLandingAndFourCompletionRequireActualSourceSignals()
+    {
+        for (int i = 0; i < 600; i++)
+            Assert.Equal(new(3, 4), Rac1AridiaConstructorbotNative.StepStateThreeLanding(null));
+        Assert.Equal(new(3, 4), Rac1AridiaConstructorbotNative.StepStateThreeLanding(false));
+        Assert.Equal(new(4, 5), Rac1AridiaConstructorbotNative.StepStateThreeLanding(true));
+        Assert.Equal(new(4, 5), Rac1AridiaConstructorbotNative.StepStateFour(false));
+        Assert.Equal(new(5, 6), Rac1AridiaConstructorbotNative.StepStateFour(true));
+    }
+
     [Theory]
     [InlineData(4)]
     [InlineData(16)]

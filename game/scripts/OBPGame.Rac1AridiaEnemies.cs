@@ -82,9 +82,32 @@ public partial class OBPGame
             activatedStartup.NativeState is Rac1AridiaConstructorbotNative.ParticleModeState or
                 Rac1AridiaConstructorbotNative.ParticleAlternateState)
         {
-            // Native state3 uses the unresolved 0x1600ec movement node.
-            // Preserve its original clip4 while that path work is pending.
-            return new(state, 4);
+            // Original 0x1600ec movement waypoint is now decoded.
+            // Horizontal displacement and host yaw are applied by the
+            // presentation layer, after the engine-neutral state gate.
+            // Source floor-height convergence is checked after physics.
+            return Rac1AridiaConstructorbotNative.StepStateThreeLanding(null);
+        }
+        if (state == 4 &&
+            _rac1ConstructorbotStartups.TryGetValue(instance.InstanceIndex, out var landingStartup) &&
+            landingStartup.NativeState is Rac1AridiaConstructorbotNative.ParticleModeState or
+                Rac1AridiaConstructorbotNative.ParticleAlternateState)
+        {
+            var next = Rac1AridiaConstructorbotNative.StepStateFour(
+                enemy.Animation.Sequence == 5 && enemy.Animation.Wrapped);
+            if (next.NativeState != state)
+                _rac1MobyRuntime.SetNativeState(instance, next.NativeState);
+            return next;
+        }
+        if (state == 5 &&
+            _rac1ConstructorbotStartups.TryGetValue(instance.InstanceIndex, out var movementStartup) &&
+            movementStartup.NativeState is Rac1AridiaConstructorbotNative.ParticleModeState or
+                Rac1AridiaConstructorbotNative.ParticleAlternateState)
+        {
+            // Source state5 uses lv2_25b710, not yet translated.
+            // Preserve native clip6 and NEVER substitute the generic
+            // host melee/flame pulse for this unsolved source state.
+            return new(state, 6);
         }
         if (state == Rac1AridiaConstructorbotNative.RestState)
         {
@@ -219,11 +242,33 @@ public partial class OBPGame
         var frame = _rac1AridiaEnemies.Step(instance, facts);
         Rac1AridiaConstructorbotNative.Frame? nativeBot = null;
         bool sourceParticlePreview = false;
+        bool sourceStateThreeMotion = false;
         if (node.Source.NativeClassId == Rac1AridiaEnemies.Constructorbot)
         {
             nativeBot = StepRac1NativeConstructorbot(enemy);
             if (nativeBot is { } sourceFrame)
             {
+                sourceStateThreeMotion = sourceFrame.NativeState == 3 &&
+                    _rac1MobyRuntime.Require(node.Source).State.NativeState == 3 &&
+                    _rac1ConstructorbotNativeWaypoints.ContainsKey(instance);
+                if (sourceStateThreeMotion)
+                {
+                    const float frameScale = (float)(1.0 / Rac1NativeTicksPerSecond);
+                    Vector3 origin = node.Root.GlobalPosition;
+                    Vector3 destination = _rac1ConstructorbotNativeWaypoints[instance];
+                    var sourceDisplacement = Rac1AridiaConstructorbotNative.StepStateThreeHorizontal(
+                        ToEffectNative(origin), ToEffectNative(destination), frameScale);
+                    Vector3 toTarget = player - origin;
+                    toTarget.Y = 0;
+                    Vector3 forward = EnemyForward(node);
+                    forward.Y = 0;
+                    float yawError = toTarget.LengthSquared() > .00001f &&
+                        forward.LengthSquared() > .00001f
+                        ? forward.Normalized().SignedAngleTo(toTarget.Normalized(), Vector3.Up) : 0;
+                    float nextYaw = Rac1AridiaConstructorbotNative.StepStateThreeYaw(
+                        node.Root.Rotation.Y, yawError, frameScale);
+                    frame = frame with { Motion = sourceDisplacement, Yaw = nextYaw };
+                }
                 // The known state10/11/12 source clips take precedence over
                 // the old timed host flamethrower. Unknown remaining states
                 // continue using the explicitly provisional host adapter.
@@ -262,6 +307,17 @@ public partial class OBPGame
             MoveRac1EnemyContact(enemy, FromEffectNative(frame.Motion));
         else
             enemy.Node.Root.GlobalPosition = enemy.Body.GlobalPosition;
+        if (sourceStateThreeMotion)
+        {
+            // Source state3 transitions only after its floor-height approach
+            // reaches the probed floor. Godot ground contact is a host
+            // approximation of that signal. A missing floor contact must
+            // NEVER be treated as an implicit success or timeout.
+            var landing = Rac1AridiaConstructorbotNative.StepStateThreeLanding(
+                enemy.Grounded ? true : null);
+            if (landing.NativeState == 4)
+                _rac1MobyRuntime.SetNativeState(_rac1MobyRuntime.Require(node.Source), 4);
+        }
         // Temporary source-particle-15 visual proxy. The native effect is a
         // sparse event at semantic joint0, NOT the host's continuous flame.
         SetRac1EnemyFlame(enemy, frame.FlameActive || sourceParticlePreview);

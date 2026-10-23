@@ -101,6 +101,23 @@ public partial class OBPGame
                 "mode2 bot did not choose source entry clip4");
             GD.Print("[aridia-bot-smoke] real class612 i551 native record14 " +
                 "distance admission state8->2 clip4 PASS");
+            Vector3 originalMotionPosition = particleBot.Node.Root.GlobalPosition;
+            Vector3 actualWaypoint = FromEffectNative(_rac1AridiaClipVolumes[14].Centre);
+            float originalPlanarDistance = new Vector2(
+                originalMotionPosition.X - actualWaypoint.X,
+                originalMotionPosition.Z - actualWaypoint.Z).Length();
+            await Rac1SmokeWaitAsync(() => particleNative.State.NativeState is >= 3 and <= 5,
+                280, "source state2 clip4 completion and state3 horizontal waypoint motion");
+            Vector3 movedPosition = particleBot.Node.Root.GlobalPosition;
+            float movedPlanarDistance = new Vector2(
+                movedPosition.X - actualWaypoint.X,
+                movedPosition.Z - actualWaypoint.Z).Length();
+            Require(movedPlanarDistance < originalPlanarDistance - .015f,
+                $"Constructorbot state3 did not move toward native waypoint14: " +
+                $"before={originalPlanarDistance:F3} after={movedPlanarDistance:F3}");
+            GD.Print($"[aridia-bot-smoke] class612 i551 native movement toward record14 " +
+                $"before={originalPlanarDistance:F3} after={movedPlanarDistance:F3} " +
+                $"state={particleNative.State.NativeState} PASS");
 
             // Third fixture: mode3 class612 #549 has PVar+0x18c=-1;
             // native L2:0x2d7fac checks its PVar+0x188 record12's centre

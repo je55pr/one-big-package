@@ -50,6 +50,65 @@ public static class Rac1AridiaConstructorbotNative
     }
 
     public const int ActivationDistancePvarOffset = 0x184;
+
+    /// <summary>
+    /// LEVEL2:0x2d7a44..0x2d7a98: state 3 subtracts the live Moby position
+    /// from the PVar+0x188 record's centre, ZEROES the resulting native Z,
+    /// clamps the horizontal displacement to (source frame scale * 6), then
+    /// adds it to Moby+0x10. Floor projection and vertical approach happen
+    /// separately after this calculation and are host responsibilities.
+    /// Source frame scale (global 0x15ed6c) is supplied, never fabricated
+    /// by this engine-neutral method.
+    /// </summary>
+    public static System.Numerics.Vector3 StepStateThreeHorizontal(
+        System.Numerics.Vector3 currentNative,
+        System.Numerics.Vector3 waypointNative, float sourceFrameScale)
+    {
+        if (!float.IsFinite(currentNative.X) || !float.IsFinite(currentNative.Y) ||
+            !float.IsFinite(currentNative.Z) || !float.IsFinite(waypointNative.X) ||
+            !float.IsFinite(waypointNative.Y) || !float.IsFinite(waypointNative.Z) ||
+            !float.IsFinite(sourceFrameScale) || sourceFrameScale < 0 || sourceFrameScale > 1)
+            throw new ArgumentOutOfRangeException(nameof(sourceFrameScale));
+        var horizontal = new System.Numerics.Vector2(
+            waypointNative.X - currentNative.X, waypointNative.Y - currentNative.Y);
+        float distance = horizontal.Length();
+        float maximumStep = 6f * sourceFrameScale;
+        if (distance > maximumStep && distance > 0)
+            horizontal *= maximumStep / distance;
+        return new System.Numerics.Vector3(horizontal.X, horizontal.Y, 0);
+    }
+
+    /// <summary>
+    /// Bounded host angular adapter for source state3's yaw_turn_damped:
+    /// the source turn target is Ratchet, not the navigation waypoint.
+    /// This uses the native frame-scale * PI/2 cap from L2:0x2d7a04,
+    /// but NOT the complete native damping recurrence.
+    /// angleError is computed against the actual Godot actor heading.
+    /// </summary>
+    public static float StepStateThreeYaw(float currentYaw, float angleErrorRadians, float sourceFrameScale)
+    {
+        if (!float.IsFinite(currentYaw) || !float.IsFinite(angleErrorRadians) ||
+            !float.IsFinite(sourceFrameScale) || sourceFrameScale < 0 || sourceFrameScale > 1)
+            throw new ArgumentOutOfRangeException(nameof(sourceFrameScale));
+        float error = MathF.Atan2(MathF.Sin(angleErrorRadians), MathF.Cos(angleErrorRadians));
+        float cap = sourceFrameScale * MathF.PI / 2f;
+        return currentYaw + Math.Clamp(error, -cap, cap);
+    }
+
+    /// <summary>
+    /// L2:0x2d7aec..0x2d7b2c: after source floor probing, state3 becomes
+    /// state4/clip5 only when Moby Z has reached the probed floor height.
+    /// An unresolved host floor probe must not be treated as success.
+    /// </summary>
+    public static Frame StepStateThreeLanding(bool? sourceFloorHeightReached) =>
+        sourceFloorHeightReached == true ? new(4, 5) : new(3, 4);
+
+    /// <summary>
+    /// L2:0x2d7b34..0x2d7b5c: native state4 waits for source animation
+    /// completion before entering state5/clip6.
+    /// </summary>
+    public static Frame StepStateFour(bool animationCompleted) =>
+        animationCompleted ? new(5, 6) : new(4, 5);
     public const float FollowupEngagementMargin = 1f;
     public const float FollowupHeightTolerance = 3f;
 
