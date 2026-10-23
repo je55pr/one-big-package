@@ -111,6 +111,7 @@ public sealed record CommandLineArgs
     /// <summary>Exercise staged retail crate, fragment, bolt and resource-pickup fixtures.</summary>
     public bool Rac1CrateSmoke { get; init; }
     public bool Rac1EnemySmoke { get; init; }
+    public bool Rac1FrogSmoke { get; init; }
     public bool Rac1BombGloveSmoke { get; init; }
     public bool Rac1NovalisSwimSmoke { get; init; }
     public bool Rac1NovalisRouteSmoke { get; init; }
@@ -221,6 +222,7 @@ public sealed record CommandLineArgs
                 "--rac1-player-audio-smoke" => result with { Rac1PlayerAudioSmoke = true },
                 "--rac1-crate-smoke" => result with { Rac1CrateSmoke = true },
                 "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
+                "--rac1-frog-smoke" => result with { Rac1FrogSmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
                 "--rac1-mission-play-smoke" => result with { Rac1MissionPlaySmoke = true },

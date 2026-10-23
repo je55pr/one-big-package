@@ -134,7 +134,7 @@ public partial class OBPGame
                     nativeClass == Rac1ExplosiveCrateSession.ClassId => TryStrikeRac1Crate(target, result),
                 Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
                     Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot or Rac1AridiaEnemies.Nest or
-                    Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId =>
+                    Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1FrogAuthored.ClassId =>
                     TryStrikeRac1Hostile(target, result),
                 Rac1NovalisBreakableSession.MushroomClass or Rac1NovalisBreakableSession.RockFormationClass =>
                     TryBreakRac1NovalisProp(target, Rac1NovalisBreakableSession.ContactKind.Wrench),

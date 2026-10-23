@@ -54,14 +54,14 @@ public partial class OBPGame
             if (enemy.Flame is { } flame && IsInstanceValid(flame)) flame.QueueFree();
         }
         _rac1Enemies.Clear(); _rac1Class1440 = null;
-        _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null;
+        _rac1Peckbots = null; _rac1Birdbots = null; _rac1Seekers = null; _rac1Frogs = null;
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
         ResetRac1BirdbotProjectiles();
     }
 
     private void ConfigureRac1Enemies(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.LevelId is not (0 or 1 or Rac1AridiaEnemies.LevelId or 9 or 15)) return;
+        if (world.LevelId is not (0 or 1 or Rac1AridiaEnemies.LevelId or 6 or 9 or 10 or 15)) return;
         var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Enemy assets require the active R&C1 source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == world.LevelId);
@@ -114,6 +114,8 @@ public partial class OBPGame
             if (world.LevelId is 9 or 15)
                 _rac1Seekers = new(_rac1MobyRuntime);
         }
+        if (world.LevelId is 6 or 10)
+            ConfigureRac1Frogs(world, result, Rac1Paths.Read(Rac1LevelSettings.ReadGameplay(reader, level)), nodes);
         if (_rac1Peckbots is { } peckbots)
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => item.NativeClassId == Rac1NovalisPeckbotSession.ClassId))
             {
@@ -148,18 +150,19 @@ public partial class OBPGame
             var asset = Rac1MobyAnimationAssets.Bake(cls, group.First().Source.Meshes,
                 core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength),
                 skipUnsupportedTiming: world.LevelId == Rac1AridiaEnemies.LevelId ||
-                    group.Key == Rac1SeekerSession.ClassId);
+                    group.Key is Rac1SeekerSession.ClassId or Rac1FrogAuthored.ClassId);
             foreach (var node in group)
             {
                 if (group.Key == 749) node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
                 // Host contact adapter: upright capsules, independent of skeletal presentation.
                 // The retail common query solver and per-part collision primitives are not reconstructed.
-                float radius = group.Key == 749 ? .5f : group.Key == Rac1AridiaEnemies.Nest ? 1.1f : group.Key == Rac1AridiaEnemies.Sandshark ? .35f : .45f;
-                float height = group.Key == 749 ? 1 : group.Key == Rac1AridiaEnemies.Sandshark ? .7f : group.Key == Rac1NovalisPeckbotSession.ClassId ? 1.3f : 1.7f;
+                float radius = group.Key == 749 ? .5f : group.Key == Rac1AridiaEnemies.Nest ? 1.1f : group.Key is Rac1AridiaEnemies.Sandshark or Rac1FrogAuthored.ClassId ? .35f : .45f;
+                float height = group.Key == 749 ? 1 : group.Key is Rac1AridiaEnemies.Sandshark or Rac1FrogAuthored.ClassId ? .7f : group.Key == Rac1NovalisPeckbotSession.ClassId ? 1.3f : 1.7f;
                 // A buried Sandshark is not a solid collider in the native
                 // encounter. Register its shape but do not put it into broadphase
                 // contacts until it has actually emerged or been released.
-                uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ? 0u : 1u;
+                uint initialContactMask = group.Key == Rac1AridiaEnemies.Sandshark ||
+                    group.Key == Rac1FrogAuthored.ClassId && !_rac1Frogs!.Get(node.Source.InstanceIndex).Presented ? 0u : 1u;
                 var body = new CharacterBody3D
                 {
                     Name = $"EnemyContact_i{node.Source.InstanceIndex}",
@@ -177,6 +180,8 @@ public partial class OBPGame
                         ? _rac1Birdbots!.Get(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1SeekerSession.ClassId
                             ? _rac1Seekers!.Get(node.Source.InstanceIndex).Sequence
+                        : group.Key == Rac1FrogAuthored.ClassId
+                            ? _rac1Frogs!.Get(node.Source.InstanceIndex).Sequence
                         : asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min();
                 var motion = group.Key is 749 or 1440 or Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
                     ? new Rac1EnemyMotion(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X))
@@ -193,7 +198,8 @@ public partial class OBPGame
         GD.Print($"[rac1-enemies] {_rac1Enemies.Count} animated/colliding retail placements; " +
             $"{_rac1Class1440?.RegisteredCount ?? 0} class1440, {_rac1Peckbots?.RegisteredCount ?? 0} Novalis Peckbots, " +
             $"{_rac1Birdbots?.RegisteredCount ?? 0} Novalis Birdbots, " +
-            $"{_rac1Seekers?.RegisteredCount ?? 0} Seekers");
+            $"{_rac1Seekers?.RegisteredCount ?? 0} Seekers, " +
+            $"{_rac1Frogs?.RegisteredCount ?? 0} Frogs ({_rac1Frogs?.PresentedCount ?? 0} admitted)");
     }
 
     private static Vector3 EnemyForward(RuntimeWorldScene.DynamicObjectNode node) =>
@@ -226,6 +232,9 @@ public partial class OBPGame
                 // Distant Novalis actors retain their meshes, authored locations
                 // and animation phase, but need no contact probes, sounds or AI
                 // until Ratchet enters their gameplay neighbourhood.
+                if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId &&
+                    node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
+                        FrogHostSleepRadius * FrogHostSleepRadius) continue;
                 if (node.Source.NativeClassId == Rac1SeekerSession.ClassId &&
                     _rac1Seekers!.Get(node.Source.InstanceIndex).NativeState is not
                         (Rac1SeekerSession.HurtState or Rac1SeekerSession.DeathState or Rac1SeekerSession.ExplosionState) &&
@@ -268,6 +277,7 @@ public partial class OBPGame
                 else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId) TickRac1NovalisPeckbot(enemy);
                 else if (node.Source.NativeClassId == Rac1NovalisBirdbotSession.ClassId) TickRac1NovalisBirdbot(enemy);
                 else if (node.Source.NativeClassId == Rac1SeekerSession.ClassId) TickRac1Seeker(enemy);
+                else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId) TickRac1Frog(enemy);
                 else if (!aridiaStepped) TickRac1AridiaEnemy(enemy);
                 // All known Aridia attacks occur within the native-candidate
                 // host encounter region. Preserve gameplay ticks at 24 units,
@@ -514,6 +524,16 @@ public partial class OBPGame
             var result = _rac1MobyRuntime.DispatchDamage<Rac1SeekerDamageResult>(damage);
             lethal = result.Lethal; sequence = result.Frame.Sequence;
         }
+        else if (node.Source.NativeClassId == Rac1FrogAuthored.ClassId)
+        {
+            var result = _rac1MobyRuntime.DispatchDamage<Rac1FrogDamageResult>(damage);
+            lethal = result.Lethal; sequence = result.Frame.Sequence;
+            if (!result.Frame.Presented)
+            {
+                node.ApplyState(_rac1MobyRuntime.Require(node.Source).EntityState);
+                enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
+            }
+        }
         else if (node.Source.NativeClassId == Rac1NovalisPeckbotSession.ClassId)
         {
             var result = _rac1MobyRuntime.DispatchDamage<Rac1NovalisPeckbotSession.DamageResult>(damage);
@@ -539,7 +559,7 @@ public partial class OBPGame
         else if (damage.Source.Kind == Rac1GameplayEntityKind.Moby && _rac1Enemies.TryGetValue((int)damage.Source.RuntimeId, out var attacker))
             attackerPosition = attacker.Node.Root.GlobalPosition;
         NVector3 direction = ToEffectNative(node.Root.GlobalPosition - attackerPosition);
-        enemy.Reaction = node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
+        enemy.Reaction = node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1FrogAuthored.ClassId
             ? null : new(node.Source.NativeClassId, lethal, MathF.Atan2(direction.Y, direction.X));
         // Native class-193 Seekers own their heading controller; only older
         // generic hostiles have the separate Rac1EnemyMotion adapter.
@@ -551,8 +571,9 @@ public partial class OBPGame
         {
             enemy.RewardEmitted = true;
             enemy.Body.CollisionLayer = 0;
-            SpawnRac1BoltPickups(node.Root.GlobalPosition,
-                _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source))));
+            if (node.Source.NativeClassId != Rac1FrogAuthored.ClassId)
+                SpawnRac1BoltPickups(node.Root.GlobalPosition,
+                    _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source))));
         }
         _rac1CombatStatus = $"enemy i{node.Source.InstanceIndex}: {(lethal ? "lethal reaction" : "hit reaction")}";
         GD.Print($"[rac1-enemies] class{node.Source.NativeClassId} i{node.Source.InstanceIndex}: " +
@@ -568,7 +589,7 @@ public partial class OBPGame
         enemy.Body.CollisionLayer = enemy.Body.CollisionMask = 0;
         SetRac1EnemyFlame(enemy, false);
         if (Rac1AridiaEnemies.IsEnemyClass(enemy.Node.Source.NativeClassId) ||
-            enemy.Node.Source.NativeClassId == Rac1SeekerSession.ClassId) return;
+            enemy.Node.Source.NativeClassId is Rac1SeekerSession.ClassId or Rac1FrogAuthored.ClassId) return;
         if (enemy.Node.Source.NativeClassId == 749) PlayRac1PickupSound(749, 7, enemy.Node.Root.GlobalPosition);
         else if (enemy.Node.Source.NativeClassId != Rac1NovalisBirdbotSession.ClassId)
             SpawnRac1EnemyFragments(enemy);
