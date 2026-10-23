@@ -56,16 +56,33 @@ public partial class OBPGame
                 2400, "class-816 taxi failed to approach the retail docking endpoint");
 
             player.ProcessMode = Node.ProcessModeEnum.Inherit;
+            // Start off-centre on the source taxi to exercise physical
+            // controller-driven approach, not just a scripted yaw turn.
             player.ApplyRac1TaxiArrival(new RuntimeSpawn(
                 incoming.Position.X, incoming.Position.Y, incoming.Position.Z,
                 player.Rac1CurrentYaw));
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }),
                 "class-816 ordinary taxi input handler rejected a docked cab");
-            Require(taxis.IsRiding &&
+            Require(_rac1TaxiPendingStop?.InstanceIndex == 919 &&
+                _rac1TaxiHeroTarget?.NativeState == 0x65 &&
+                player.Rac1TaxiWalking && !taxis.IsRiding,
+                "class-816 boarded immediately instead of beginning native walk-to");
+            AbortRac1MetropolisTaxiRide();
+            Require(_rac1TaxiPendingStop is null && _rac1TaxiHeroTarget is null &&
+                !player.Rac1TaxiWalking && !taxis.IsRiding &&
+                player.ProcessMode != Node.ProcessModeEnum.Disabled,
+                "interrupted walk-to left class-816 controls captured");
+            Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
+            { Keycode = Key.T, Pressed = true }),
+                "class-816 could not re-request a cancelled source walk-to");
+            await WaitForTaxiSmokeStateAsync(
+                () => taxis.IsRiding, 240,
+                "class-816 walk-to did not settle and release before departure");
+            Require(_rac1TaxiPendingStop is null && !player.Rac1TaxiWalking &&
                 _rac1TaxiCollisionBodies[919].CollisionLayer == 0 &&
                 player.ProcessMode == Node.ProcessModeEnum.Disabled,
-                "class-816 boarding did not attach player/disable moving hull collision");
+                "class-816 completed walk-to without attaching player safely");
             await WaitForTaxiSmokeStateAsync(
                 () => !taxis.IsRiding && _rac1FlyingTaxi is null, 2400,
                 "class-816 route failed to arrive");
@@ -89,6 +106,12 @@ public partial class OBPGame
                 "class-1012 retail HUD message is not selected from PVar+0x98 at source dock");
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }), "class-1012 boarding rejected");
+            // 1012's source dock is currently above unsupported ground.
+            // It retains the safe direct-boarding host fallback until the
+            // two-ended native landing/attachment geometry is recovered.
+            Require(taxis.IsRiding && !player.Rac1TaxiWalking &&
+                _rac1TaxiPendingStop is null,
+                "class-1012 unsupported source dock attempted an unsafe walk");
             Vector3 cameraRelativeAtBoard = player.Camera.GlobalPosition - player.GlobalPosition;
             bool recoveredCamera = player.Camera.TopLevel;
             await PhysicsFramesAsync(25);
@@ -110,6 +133,8 @@ public partial class OBPGame
             Require(TryHandleRac1MetropolisTaxiInput(new InputEventKey
             { Keycode = Key.T, Pressed = true }),
                 "class-1012 could not relaunch after flight interruption");
+            Require(taxis.IsRiding && !player.Rac1TaxiWalking,
+                "class-1012 relaunch abandoned the bounded source-dock fallback");
             await WaitForTaxiSmokeStateAsync(
                 () => !taxis.IsRiding && _rac1FlyingTaxi is null, 3200,
                 "class-1012 return route failed to arrive");
@@ -119,8 +144,8 @@ public partial class OBPGame
                 "class-1012 return route failed to disembark or restore camera/physics");
 
             GD.Print("[rac1-metropolis-taxi-smoke] PASS: retail i919 cuboid 10 -> " +
-                "docked boarding -> outbound -> grounded dismount; " +
-                "i962 boarding -> interrupted flight -> reset/reboard -> round trip");
+                "native walk-to -> abort -> retry -> outbound -> grounded dismount; " +
+                "i962 safe direct board -> interrupted flight -> reset/reboard -> round trip");
             ApplicationLifecycle.RequestQuit(this, "rac1-metropolis-taxi-smoke-pass", 0);
         }
         catch (Exception ex)

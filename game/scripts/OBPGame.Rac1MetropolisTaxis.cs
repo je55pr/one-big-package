@@ -1,7 +1,9 @@
 using Godot;
 using OBP.Godot;
+using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -22,6 +24,9 @@ public partial class OBPGame
     private Vector3 _rac1TaxiCameraWorldOffset;
     private bool _rac1TaxiCameraWorldOwned;
     private Node.ProcessModeEnum _rac1TaxiPreviousPlayerMode;
+    private Rac1MetropolisTaxiStop? _rac1TaxiPendingStop;
+    private Rac1TaxiHeroTargetSession? _rac1TaxiHeroTarget;
+    private double _rac1TaxiWalkElapsed;
 
     /// <summary>
     /// Cancel an in-flight ride before normal death/retry/world transition
@@ -31,8 +36,14 @@ public partial class OBPGame
     private void AbortRac1MetropolisTaxiRide()
     {
         var riding = _rac1MetropolisTaxis?.Riding;
-        if (_rac1FlyingTaxi is null && riding is null)
+        if (_rac1FlyingTaxi is null && riding is null &&
+            _rac1TaxiPendingStop is null)
             return;
+        if (_player is { } approaching && IsInstanceValid(approaching))
+            approaching.EndRac1TaxiWalk();
+        _rac1TaxiPendingStop = null;
+        _rac1TaxiHeroTarget = null;
+        _rac1TaxiWalkElapsed = 0;
 
         if (riding is not null &&
             _rac1TaxiCollisionBodies.TryGetValue(riding.InstanceIndex, out var hull) &&
@@ -209,9 +220,53 @@ public partial class OBPGame
             QuickSelectOpen || _args.CaptureFrame is not null)
             return false;
 
-        if (!taxis.TryBoard(ToTaxiPoint(player.GlobalPosition)))
+        if (_rac1TaxiPendingStop is not null || taxis.IsRiding)
+            return false;
+        var stop = taxis.FindBoardable(ToTaxiPoint(player.GlobalPosition));
+        if (stop is null)
             return false;
 
+        // The class-1012 source dock lacks proven walkable collision; its
+        // authored waypoint is airborne above the currently imported floor.
+        // Do not drive Ratchet through a falling 0x65 target walk. Preserve
+        // the previously bounded direct-boarding host fallback until the
+        // two-ended native dock / passenger attachment is recovered.
+        var heroPosition = ToTaxiPoint(player.GlobalPosition);
+        double sourceDx = stop.Position.X - heroPosition.X;
+        double sourceDz = stop.Position.Z - heroPosition.Z;
+        // Even class-816's off-centre source hull lacks imported walkable
+        // collision (the staged 0.65-unit offset falls to a lower floor).
+        // Only attempt 0x65 target alignment from the immediate dock.
+        // Wider approaches retain the safe bounded attachment path.
+        if (stop.NativeClassId == 1012 ||
+            sourceDx * sourceDx + sourceDz * sourceDz > 0.2d * 0.2d)
+        {
+            if (!taxis.TryBoard(heroPosition))
+                return false;
+            AttachRac1MetropolisTaxiPassenger(taxis, player);
+            return true;
+        }
+
+        // Native 0x00233ee8 stores the chosen taxi path point in
+        // Ratchet+0x1640, facing yaw in +0x164c, and enters 0x65.
+        // Path +0xa8 (816) / +0x94 (1012) begins at the source dock.
+        var headingPoint = stop.OutboundPath[1];
+        var startPoint = stop.OutboundPath[0];
+        double heading = Math.Atan2(
+            headingPoint.X - startPoint.X,
+            headingPoint.Z - startPoint.Z);
+        _rac1TaxiHeroTarget = new Rac1TaxiHeroTargetSession(
+            stop.Position, heading);
+        _rac1TaxiPendingStop = stop;
+        _rac1TaxiWalkElapsed = 0;
+        player.BeginRac1TaxiWalk(FromTaxiPoint(stop.Position), heading);
+        GD.Print($"[rac1-taxi] begin native target walk i{stop.InstanceIndex} (0x65)");
+        return true;
+    }
+
+    private void AttachRac1MetropolisTaxiPassenger(
+        Rac1MetropolisTaxiSession taxis, PlayerHost player)
+    {
         var boarding = taxis.Riding!;
         _rac1FlyingTaxi = _rac1TaxiNodes[boarding.InstanceIndex];
         _rac1FlyingTaxiOrigin = _rac1FlyingTaxi.Root.GlobalPosition;
@@ -238,7 +293,51 @@ public partial class OBPGame
         // Ratchet throughout the flight was not retail behavior.
         player.VisualRoot.Visible = true;
         GD.Print($"[rac1-taxi] boarded i{boarding.InstanceIndex} -> {boarding.DestinationLabel}");
-        return true;
+    }
+
+    private void TickRac1TaxiTargetWalk(double delta,
+        Rac1MetropolisTaxiSession taxis, PlayerHost player)
+    {
+        if (_rac1TaxiPendingStop is not { } stop ||
+            _rac1TaxiHeroTarget is not { } target)
+            return;
+        _rac1TaxiWalkElapsed += delta;
+        var hero = ToTaxiPoint(player.GlobalPosition);
+        if (Math.Abs(hero.Y - target.Target.Y) > 2d)
+        {
+            // The source marker may sit above unsupported imported taxi
+            // geometry. Do not hold input while Ratchet falls from the dock.
+            GD.Print($"[rac1-taxi] unsupported target height i{stop.InstanceIndex}; cancelling");
+            AbortRac1MetropolisTaxiRide();
+            return;
+        }
+        // Normal controller velocity is in units/second; native state
+        // 0x65 admits a planar step in units per 60 Hz updater.
+        double speed = new Vector2(player.Velocity.X, player.Velocity.Z).Length() / 60d;
+        target.Observe(hero, player.Rac1CurrentYaw, speed,
+            player.AnimationState == PlayerAnimationState.Idle);
+        if (target.DepartureAdmitted)
+        {
+            player.EndRac1TaxiWalk();
+            _rac1TaxiPendingStop = null;
+            _rac1TaxiHeroTarget = null;
+            _rac1TaxiWalkElapsed = 0;
+            // If another taxi changed the boarding context, do not
+            // attach this player to an unrelated vehicle.
+            if (taxis.FindBoardable(hero)?.InstanceIndex == stop.InstanceIndex &&
+                taxis.TryBoard(hero))
+                AttachRac1MetropolisTaxiPassenger(taxis, player);
+            else
+                GD.Print("[rac1-taxi] source dock unavailable at walk-to completion");
+        }
+        else if (_rac1TaxiWalkElapsed >= 8d ||
+                 !player.Rac1GameplayAlive || _rac1Nanotech.Probe().IsDead)
+        {
+            // The target could be blocked by missing walkable geometry.
+            // Never leave player controls or camera captured indefinitely.
+            GD.Print($"[rac1-taxi] cancelled blocked target walk i{stop.InstanceIndex}");
+            AbortRac1MetropolisTaxiRide();
+        }
     }
 
     private void TickRac1MetropolisTaxis(double delta)
@@ -246,6 +345,8 @@ public partial class OBPGame
         if (_rac1MetropolisTaxis is not { } taxis ||
             _player is not { } player || !IsInstanceValid(player))
             return;
+
+        TickRac1TaxiTargetWalk(delta, taxis, player);
 
         foreach (var hover in _rac1TaxiHovers.Values)
             hover.Advance(delta);
@@ -374,6 +475,7 @@ public partial class OBPGame
         if (_rac1MetropolisTaxis is not { } taxis ||
             _player is not { } player || !IsInstanceValid(player)) return string.Empty;
 
+        if (_rac1TaxiPendingStop is not null) return "Taxi: boarding";
         if (taxis.IsRiding) return "Taxi: in flight";
         var hero = ToTaxiPoint(player.GlobalPosition);
         var near = taxis.FindBoardable(hero);

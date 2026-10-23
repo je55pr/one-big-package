@@ -340,3 +340,77 @@ walk-in, camera request, or native attach-frame presentation is
 implemented solely because the state-gating session now exists. We
 must not manufacture Ratchet's final approach by teleporting through
 unproven walkable geometry.
+
+## 23 October 2026: Godot controller-driven taxi walk-to
+
+The Godot taxi host now queues a pending boarding request rather than
+immediately calling `TryBoard` and disabling Ratchet. It starts the
+source-backed `Rac1TaxiHeroTargetSession` at the *first authored outbound
+waypoint*, which is the retail taxi's dock placement; the facing heading
+comes from the next authored waypoint. While pending, the new
+`PlayerHost.Rac1TaxiWalk` host adapter supplies a camera-relative
+movement intention to the **existing RAC1 movement controller**. Ordinary
+`MoveRac1Contact` continues to resolve geometry, including floor and
+hull collision. Ratchet's actual pose, yaw, velocity and the host
+`PlayerAnimationState.Idle` semantic are fed into the target session
+each tick. Only when its native status is zero may the host attach the
+passenger, disable moving hull collision and start the recovered flight.
+
+The source routine `hero_cam_target_set` actually writes the world
+target and heading and enters native hero state 0x65. The source's
+animation-done signal and 0x65 yaw recurrence do not yet have a
+matching Godot-native clip/time signal, so this host uses the **Idle
+semantic as an animation-complete approximation** and a bounded angular
+correction (0.12 radians per physics update) for target facing. The
+near-target raw stick strength reduction is also host policy. Neither
+should be described as recovered native constants.
+
+Abort, death and level reset release a pending target immediately,
+without toggling the taxi hull or changing Ratchet's physics process.
+An 8-second game-clock limit cancels blocked/unwalkable approaches
+rather than attaching through walls or leaving input captured. Direct
+flight and collision-safe dismount retain the previous safe fallback.
+The staged Godot smoke now checks 0x65 admission, separation of
+walk-to from in-flight mode, interruption during the walk, and
+reboarding, in addition to its existing flight/dismount checks.
+
+### Source-dock collision qualification
+
+A staged Kerwan class-1012 attempt on i962 proved that its currently
+imported source waypoint sits above unsupported ground: during the
+attempted `0x65` walk Ratchet fell more than 13 vertical units and the
+native boarding radius gate could not complete safely. The retained
+class-1012 host therefore **does not enable physical walk-to yet**:
+i961/i962 continue using bounded direct boarding with safe camera,
+flight interruption, and return-to-source fallback. This is explicitly
+provisional, not authentic class-1012 passenger attachment. The original
+class-816 arrival dock is supported, so its pending `0x65` walk-to,
+interruption/retry and native release-to-flight can be exercised
+without giving Ratchet a target in open air.
+
+The earlier generic Godot integration description is conditional on
+the source dock having supported collision; no complete class-1012
+walk-to parity is claimed. The staged smoke now exercises an off-centre
+class-816 start and asserts actual horizontal movement through the
+ordinary controller before flight, as well as preserving class-1012's
+safe original fallback.
+
+### Bounded walk-to admission after collision smoke
+
+Off-centre i919 staging (0.65 world units from the source marker)
+demonstrated the imported taxi surface cannot presently support that
+walk: after 30 normal physics frames Ratchet had moved just 0.002
+units horizontally, fallen 1.46 units vertically, and had no live
+planar step. This is real evidence that an uninterrupted 0x65
+approach from the generic 5.5-unit boarding radius is unsafe.
+
+The Godot host therefore only enters 0x65 for **close source-dock
+alignment** (planar distance at most 0.2 units). Wider admissions
+retain the previously working provisional direct-attach host policy.
+A native target with more than 2 units vertical deviation is cancelled
+without claiming a boarding, with ordinary controls retained. The
+smoke retains native 0x65 entry/abort/retry at the authored dock and
+full ride/dismount checks but **does not prove a walk from off-centre
+ground to taxi**. That requires recovered boarding geometry and
+proper collision support before the 0x65 steering can be admitted
+beyond the immediate dock.
