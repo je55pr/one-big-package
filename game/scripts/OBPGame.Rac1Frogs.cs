@@ -1,4 +1,5 @@
 using Godot;
+using OBP.RAC1.Animation;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
@@ -14,6 +15,10 @@ public partial class OBPGame
 {
     private Rac1FrogSession? _rac1Frogs;
     private Rac1FrogShuttleSwitch? _rac1FrogShuttle;
+    private Rac1FrogWaveTriggers? _rac1FrogWaves;
+    private sealed record HostedFrogWave(RuntimeWorldScene.DynamicObjectNode Node,
+        Rac1MobySequenceClock Animation);
+    private readonly Dictionary<int, HostedFrogWave> _rac1FrogWaveNodes = [];
     private const float FrogHostSleepRadius = 30f;
     private const float FrogHostAggroRadius = 12f; // provisional common-target query
 
@@ -33,6 +38,74 @@ public partial class OBPGame
                 ToEffectNative(node.Root.GlobalPosition), MathF.Atan2(forward.Y, forward.X));
             node.ApplyState(_rac1MobyRuntime.Require(authored).EntityState);
             nodes.Add(node);
+        }
+    }
+
+    private void ConfigureRac1FrogWaves(RuntimeWorld world, RuntimeWorldScene.Result result,
+        IReadOnlyList<int[]> groups, IReadOnlyList<Rac1ClipVolume> volumes,
+        Rac1StaticClasses.MobyClass cls, ReadOnlySpan<byte> classBytes)
+    {
+        if (_rac1Frogs is null) throw new InvalidOperationException("Frogs must be registered before their native producers.");
+        var authored = (world.DynamicObjects ?? [])
+            .Where(m => m.NativeClassId == Rac1FrogWaveTriggers.ClassId).ToArray();
+        _rac1FrogWaves = new(groups,
+            (world.DynamicObjects ?? []).Where(m => m.NativeClassId == Rac1FrogSession.ClassId)
+                .Select(m => m.InstanceIndex));
+        if (authored.Length == 0) return;
+        var first = FindPresentedDynamic(result, authored[0])
+            ?? throw new InvalidDataException("Class1066 original trigger mesh missing.");
+        var asset = Rac1MobyAnimationAssets.Bake(cls, first.Source.Meshes, classBytes,
+            skipUnsupportedTiming: true);
+        if (!Enumerable.Range(0, 3).All(asset.Clips.ContainsKey))
+            throw new InvalidDataException("Class1066 lacks original animation sequences 0, 1 or 2.");
+
+        foreach (var controller in authored)
+        {
+            var node = FindPresentedDynamic(result, controller)
+                ?? throw new InvalidDataException("Class1066 original trigger mesh missing.");
+            _rac1FrogWaves.Register(controller, volumes,
+                ToEffectNative(node.Root.GlobalPosition));
+            node.ConfigureAnimations(asset.Presentation);
+            var clock = new Rac1MobySequenceClock(asset, 0);
+            node.ApplyAnimationSample(clock.Sample);
+            _rac1FrogWaveNodes.Add(controller.InstanceIndex, new(node, clock));
+        }
+        GD.Print($"[frog-wave] {_rac1FrogWaveNodes.Count} original class1066 trigger actors with retail clips 0/1/2 and signed Moby groups");
+    }
+
+    private void TickRac1FrogWaves()
+    {
+        if (_rac1FrogWaves is null || _rac1Frogs is null || _player is null) return;
+        NVector3 player = ToEffectNative(_player.GlobalPosition);
+        foreach (var pair in _rac1FrogWaveNodes.OrderBy(pair => pair.Key))
+        {
+            var view = pair.Value;
+            int prior = _rac1FrogWaves.State(pair.Key);
+            if (prior == 3) continue;
+            // OBP host safety: freeze a still-unreleased native wave while its
+            // Frog group's shuttle switch is inactive. Otherwise the 20-tick
+            // selector could exhaust its list without ever launching its
+            // hidden members, losing an authored wave permanently.
+            if (_rac1FrogWaves.Members(pair.Key).Any(index =>
+                    !_rac1Frogs.GetAuthored(index).UpdateEligible(_rac1Frogs.ShuttleSwitchEnabled)))
+                continue;
+            foreach (int sound in view.Animation.Tick())
+                if (view.Node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40f)
+                    PlayRac1PickupSound(Rac1FrogWaveTriggers.ClassId, sound,
+                        view.Node.Root.GlobalPosition);
+            var tick = _rac1FrogWaves.Step(pair.Key, player, view.Animation.Wrapped,
+                index => _rac1Frogs.Get(index).NativeState == 15 &&
+                    _rac1Frogs.GetAuthored(index).UpdateEligible(_rac1Frogs.ShuttleSwitchEnabled));
+            if (tick.PreviousState != tick.State)
+            {
+                if (tick.State == 1) view.Animation.Select(1, 5);
+                else if (tick.State == 2) view.Animation.Select(2, 5);
+                GD.Print($"[frog-wave] class1066 i{pair.Key} group{_rac1FrogWaves.Group(pair.Key)} state{tick.PreviousState}->{tick.State}");
+            }
+            if (tick.LaunchInstance is int index)
+                LaunchRac1FrogFromNativeProducer(index,
+                    tick.NativeLaunchPosition, Rac1FrogLaunchProducer.IntervalTrigger);
+            view.Node.ApplyAnimationSample(view.Animation.Sample);
         }
     }
 

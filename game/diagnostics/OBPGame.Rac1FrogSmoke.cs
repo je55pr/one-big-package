@@ -69,6 +69,35 @@ public partial class OBPGame
                     });
                     Require(alternate > 0 && frogs.PresentedCount == alternate,
                         "Shuttle native gate selected an incorrect Frog population");
+                    if (_rac1FrogWaves is { } gatedWaves)
+                    {
+                        int gatedController = _rac1FrogWaveNodes.Keys.Single(id =>
+                            gatedWaves.Group(id) == 6);
+                        _player.GlobalPosition = FromEffectNative(gatedWaves.ZoneCentre(gatedController));
+                        for (int tick = 0; tick < 30; tick++)
+                            TickRac1FrogWaves();
+                        Require(gatedWaves.State(gatedController) == 0 &&
+                            gatedWaves.Members(gatedController).All(id =>
+                                frogs.Get(id) is { NativeState: 15, Presented: false }),
+                            "Opposite shuttle group wrongly consumed a native hidden Frog wave.");
+                        int alternateProducer = _rac1FrogWaveNodes.Keys.Single(id =>
+                            gatedWaves.Group(id) == 20);
+                        var alternateMembers = gatedWaves.Members(alternateProducer).ToArray();
+                        Require(alternateMembers.SequenceEqual(new[] { 442, 443, 444 }) &&
+                            gatedWaves.Members(_rac1FrogWaveNodes.Keys.Single(id =>
+                                gatedWaves.Group(id) == 21)).SequenceEqual(new[] { 445, 446, 447 }),
+                            "Wrong native switch-one wave groups.");
+                        _player.GlobalPosition = FromEffectNative(gatedWaves.ZoneCentre(alternateProducer));
+                        for (int tick = 0; tick < 600 && gatedWaves.State(alternateProducer) != 3; tick++)
+                            TickRac1FrogWaves();
+                        Require(gatedWaves.State(alternateProducer) == 3 &&
+                            alternateMembers.All(id =>
+                                frogs.Get(id) is { NativeState: 6, Presented: true }) &&
+                            Enumerable.Range(445, 3).All(id =>
+                                frogs.Get(id) is { NativeState: 6, Presented: true }),
+                            "Source switch-one class1066 wave failed to emit its group20/21 members.");
+                        _player.GlobalPosition = FromEffectNative(shuttle.StopVolumeCentre(2));
+                    }
                     Require(population.All(e =>
                     {
                         bool present = frogs.Get(e.Node.Source.InstanceIndex).Presented;
@@ -89,6 +118,62 @@ public partial class OBPGame
                     GD.Print($"[frog-smoke] shuttle stop1 {alternate} admitted, original stop0 restored 108; mesh/contact admission PASS");
                 }
                 finally { _player.GlobalPosition = previousPlayer; }
+            }
+
+            if (_world.LevelId == 6)
+            {
+                // REAL class1066 animation and clip-volume producer, not a
+                // directly injected call to the child Frog launch handler.
+                var waves = _rac1FrogWaves
+                    ?? throw new InvalidOperationException("LEVEL6 original Frog wave controllers missing.");
+                Require(waves.RegisteredCount == 6 && _rac1FrogWaveNodes.Count == 6,
+                    "Original native zone-trigger population differs from retail.");
+                int producer = _rac1FrogWaveNodes.Keys.Single(id => waves.Group(id) == 6);
+                var originalMembers = waves.Members(producer).ToArray();
+                Require(originalMembers.SequenceEqual(new[] { 383, 385, 435 }) &&
+                    originalMembers.All(id => frogs.Get(id) is { NativeState: 15, Presented: false }),
+                    "Wrong signed Moby-index list selected for native Frog trigger.");
+                Vector3 originalPlayer = _player!.GlobalPosition;
+                try
+                {
+                    _player.GlobalPosition = FromEffectNative(waves.ZoneCentre(producer));
+                    // Drive the same 60-Hz controller and source animation clock
+                    // as normal gameplay, without dispatching unrelated player
+                    // movement while the smoke fixture is teleported.
+                    for (int tick = 0; tick < 600 && waves.State(producer) != 3; tick++)
+                        TickRac1FrogWaves();
+                    Require(waves.State(producer) == 3 &&
+                        originalMembers.All(id =>
+                            frogs.Get(id) is { NativeState: 6, Presented: true } &&
+                            _rac1Enemies[id].Body.CollisionLayer == 1 &&
+                            _rac1Enemies[id].Body.CollisionMask == 1),
+                        "Retail clip-volume/animation trigger failed to launch its exact three Frogs.");
+                    Require(originalMembers.All(id =>
+                        _rac1Enemies[id].Node.Root.GlobalPosition.DistanceTo(
+                            FromEffectNative(waves.NativePosition(producer))) < .001f),
+                        "Retail class1066 trigger launch positions differ from native owner Moby.");
+                    GD.Print($"[frog-smoke] original class1066 i{producer} clip/animation/20-tick wave released exactly [{string.Join(",", originalMembers)}] PASS");
+                    int nextProducer = _rac1FrogWaveNodes.Keys.Single(id => waves.Group(id) == 9);
+                    var nextMembers = waves.Members(nextProducer).ToArray();
+                    Require(nextMembers.SequenceEqual(new[] { 436, 437, 438 }),
+                        "Native Frog group9 membership differs.");
+                    _player.GlobalPosition = FromEffectNative(waves.ZoneCentre(nextProducer));
+                    for (int tick = 0; tick < 600 && waves.State(nextProducer) != 3; tick++)
+                        TickRac1FrogWaves();
+                    Require(waves.State(nextProducer) == 3 &&
+                        nextMembers.All(id => frogs.Get(id) is { NativeState: 6, Presented: true }) &&
+                        Enumerable.Range(439, 3).All(id =>
+                            frogs.Get(id) is { NativeState: 6, Presented: true }),
+                        "Source class1066 group9/10 waves failed to release the original hidden Frogs.");
+                    Require(waves.RegisteredCount == 6 &&
+                        new[] { 638, 639, 640, 641, 642, 643 }.All(id => waves.State(id) == 3),
+                        "Not all six original class1066 zone controllers completed their waves.");
+                    Require(new[] { 387, 388, 389, 390 }.All(id =>
+                        frogs.Get(id) is { NativeState: 15, Presented: false }),
+                        "Uncontrolled hidden group8 was mistakenly admitted.");
+                    GD.Print("[frog-smoke] all six retail class1066 trigger waves completed; group8 remains hidden PASS");
+                }
+                finally { _player.GlobalPosition = originalPlayer; }
             }
 
             if (_world.LevelId == 6)
