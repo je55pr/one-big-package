@@ -92,6 +92,33 @@ public partial class OBPGame
 
             if (_world.LevelId == 6)
             {
+                Require(_rac1PickupAssets is not null &&
+                    Enumerable.Range(357, 3).All(_rac1PickupAssets.Models.ContainsKey),
+                    "Retail carrier debris class357/358/359 missing from LEVEL6 catalogue");
+                // Stage an actual authored child's retail-mesh wrench contact
+                // without moving Ratchet through unmodified level traversal.
+                var disguise = carriers[1];
+                int struckId = disguise.Node.Source.InstanceIndex;
+                var disguiseMesh = _rac1FrogCarrierChildren[struckId]
+                    .GetChildren().OfType<MeshInstance3D>().First();
+                Vector3 contact = (disguiseMesh.GlobalTransform * disguiseMesh.GetAabb()).GetCenter();
+                int beforeDebris = _rac1Debris.Count;
+                int beforeCrates = _rac1CrateNodes.Count;
+                ResolveRac1AnimatedWrenchContacts(contact, contact, contact, contact, .02f, 1);
+                Require(frogs.Get(struckId) is
+                {
+                    Terminal: true, Presented: false,
+                    CarrierReleased: false, CarrierChildOwned: false
+                } &&
+                    !_rac1FrogCarrierChildren.ContainsKey(struckId),
+                    "Wrench contact did not destroy the original carrier child and its parent");
+                Require(_rac1Debris.Count == beforeDebris + Rac1FrogCarrierBurst.TotalCount &&
+                    _rac1CrateNodes.Count == beforeCrates,
+                    "Native child-hit burst or authored crate census is incorrect");
+                GD.Print($"[frog-smoke] carrier i{struckId} native child struck by wrench, parent removed, 12 retail fragments, no bolts PASS");
+            }
+            if (_world.LevelId == 6)
+            {
                 // Stage one actual authored carrier's player target within the
                 // retail four-unit threshold, exercising the host child
                 // lifetime, hidden-parent admission and collision handoff.
@@ -99,6 +126,7 @@ public partial class OBPGame
                 int carrierId = carrier.Node.Source.InstanceIndex;
                 int crateCount = _rac1CrateNodes.Count;
                 int pickupCount = _rac1PickupMotion.Count;
+                int burstCount = _rac1Debris.Count;
                 Vector3 oldPlayer = _player!.GlobalPosition;
                 try
                 {
@@ -116,6 +144,7 @@ public partial class OBPGame
                         carrier.Body.CollisionMask == 1, "Carrier release retained child or hidden-parent physics");
                     Require(_rac1CrateNodes.Count == crateCount &&
                         _rac1PickupMotion.Count == pickupCount &&
+                        _rac1Debris.Count == burstCount + Rac1FrogCarrierBurst.TotalCount &&
                         frogs.RegisteredCount == expected,
                         "Carrier child incorrectly minted world crate, reward or Frog");
                     GD.Print($"[frog-smoke] carrier i{carrierId} class500 child removed, state1->8, contact on, no crate reward PASS");

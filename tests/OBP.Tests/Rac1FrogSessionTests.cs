@@ -170,6 +170,67 @@ public sealed class Rac1FrogSessionTests
     }
 
     [Fact]
+    public void CarrierChildHitRemovesParentWithoutOrdinaryFrogRelease()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var frogs = new Rac1FrogSession(runtime, []);
+        var source = Source(90, carrier: 1);
+        frogs.Register(source, RuntimeEntityState.FromAuthored(source), Vector3.Zero);
+        Assert.False(frogs.HitCarrierChild(90, 71)); // absent native child
+        frogs.BindCarrierChild(90, 500);
+        Assert.False(frogs.HitCarrierChild(90, 0xaf)); // ignored native hit source
+        Assert.True(frogs.Get(90).CarrierChildOwned);
+        Assert.True(frogs.HitCarrierChild(90, 71)); // ordinary player wrench
+        var frame = frogs.Get(90);
+        Assert.True(frame.Terminal);
+        Assert.False(frame.CarrierChildOwned);
+        Assert.False(frame.CarrierReleased);
+        Assert.False(frame.Presented);
+        Assert.Equal(1, frame.NativeState);
+        Assert.False(frogs.HitCarrierChild(90, 71));
+        Assert.Equal(1, frogs.RegisteredCount);
+        Assert.Equal(1, runtime.RegisteredCount);
+        Assert.False(frogs.Step(90, Vector3.Zero, Vector3.UnitX, true).Presented);
+    }
+
+    [Fact]
+    public void CarrierChildHitHonoursNativeShuttleGate()
+    {
+        var frogs = new Rac1FrogSession(new(), []);
+        var source = Source(91, carrier: 1, gate: 1);
+        frogs.Register(source, RuntimeEntityState.FromAuthored(source), Vector3.Zero);
+        frogs.BindCarrierChild(91, 500);
+        Assert.False(frogs.HitCarrierChild(91, 71));
+        frogs.ApplyShuttleSwitch(true);
+        Assert.True(frogs.HitCarrierChild(91, null)); // native also accepts missing hit source
+        Assert.True(frogs.Get(91).Terminal);
+    }
+
+    [Fact]
+    public void NativeCarrierBurstUsesFourPlusEightRetailFragmentsWithinSourceBounds()
+    {
+        var origin = new Vector3(10, 25, 3);
+        var a = Rac1FrogCarrierBurst.Create(origin, Rac1PickupRandom.FromSeed(827));
+        var b = Rac1FrogCarrierBurst.Create(origin, Rac1PickupRandom.FromSeed(827));
+        Assert.Equal(12, a.Count);
+        Assert.Equal(a.Select(p => (p.NativeClassId, p.Position, p.Velocity, p.Scale)),
+            b.Select(p => (p.NativeClassId, p.Position, p.Velocity, p.Scale)));
+        for (int i = 0; i < a.Count; i++)
+        {
+            var part = a[i];
+            if (i < 4) Assert.Equal(357, part.NativeClassId);
+            else Assert.Contains(part.NativeClassId, new[] { 358, 359 });
+            Assert.InRange(part.Position.X - origin.X, -.625f, .625f);
+            Assert.InRange(part.Position.Y - origin.Y, -.625f, .625f);
+            Assert.InRange(part.Position.Z - origin.Z, .5f, 1.75f);
+            Assert.InRange(part.Velocity.Length(), 1f / 60f - .00001f, 4f / 60f);
+            Assert.True(part.Scale > 0);
+        }
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1FrogCarrierBurst.Create(new(float.NaN, 0, 0), Rac1PickupRandom.FromSeed(3)));
+    }
+
+    [Fact]
     public void FatalHitRemovesOnlyOneFrogWhileLifeModeParksInState15()
     {
         var runtime = new Rac1MobyRuntimeSession();

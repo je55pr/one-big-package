@@ -26,6 +26,7 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     public const float RoamMaxRadius = 2f;
     public const int CarrierChildClassId = Rac1BoltCrate.NativeClassId;
     public const float CarrierReleaseDistance = 4f;
+    public const int CarrierIgnoredHitSourceClass = 0xaf;
     private readonly Rac1MobyRuntimeSession _runtime;
     private readonly IReadOnlyList<Vector3[]> _paths;
     private readonly Dictionary<int, Entry> _entries = [];
@@ -107,6 +108,22 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
 
     public Rac1FrogFrame Get(int instance) => Snapshot(_entries[instance]);
     public Rac1FrogAuthored GetAuthored(int instance) => _entries[instance].Authored;
+
+    /// <summary>Native FUN_L06_002e94f0 checks the owned class-500 child's
+    /// hit slot first, ignores class 0xAF, bursts the crate and removes the
+    /// parent Frog completely. This is *not* the proximity release into state8.</summary>
+    public bool HitCarrierChild(int instance, int? hitSourceClass)
+    {
+        var e = _entries[instance];
+        if (!e.CarrierChildOwned || e.Native.State.NativeState != 1 ||
+            e.Native.State.IsTerminalized ||
+            !e.Authored.UpdateEligible(ShuttleSwitchEnabled) ||
+            hitSourceClass == CarrierIgnoredHitSourceClass)
+            return false;
+        e.CarrierChildOwned = false;
+        _runtime.Terminalize(e.Native);
+        return true;
+    }
 
     /// <summary>Record successful creation of the native class-500 child at
     /// the authored Frog. The child is dynamic and belongs to this parent;
