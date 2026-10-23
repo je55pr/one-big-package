@@ -24,6 +24,12 @@ retail parity. Different assemblies require deliberate confirmation; a different
 engine/platform/physics backend is rejected. Replay still needs an authorized
 matching R&C1 source on the receiving developer's machine.
 
+The inbox opens with the report list focused. D-pad/left stick selects reports;
+Cross/Enter or a mouse double-click replays the selected report. Right moves to
+the action buttons, Left/Right follows each visible button row, and Up returns
+from Replay/Export to the same list selection. Mouse clicks select rows and the
+wheel scrolls. Completing an action restores its previous focus.
+
 ## Local files and sharing
 
 The gitignored `captures/bug-reports/` inbox contains:
@@ -64,6 +70,9 @@ the actual offscreen OpenGL UI and saves form/inbox PNGs locally. Neither mode
 injects player transforms, grants, objectives or recorded observations.
 The gate also replays the finalized canonical tape and verifies that an
 interactive replay retains its paused scene at the marker and closes cleanly.
+The asset-free `game/tests/bug_menu_smoke.gd` checks mouse selection/activation,
+controller navigation, focus return, busy/empty lists and scrolling. The ordinary
+CI bootstrap smoke runs it too.
 
 Unit regressions cover prefix integrity, continuing/abandoned writers, atomic
 publication failure, shared tapes, package round trips, bounded export, corrupt

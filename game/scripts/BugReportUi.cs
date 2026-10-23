@@ -20,6 +20,8 @@ public partial class BugReportUi : CanvasLayer
     private ItemList? _list;
     private Button _primary = null!;
     private readonly List<Button> _buttons = [];
+    private readonly List<Button> _reportButtons = [];
+    private Control? _busyReturnFocus;
     private bool _busy;
     internal bool Busy => _busy;
     internal string Status => _status.Text;
@@ -55,10 +57,15 @@ public partial class BugReportUi : CanvasLayer
         if (InboxMode) BuildInbox(column); else BuildForm(column);
         _status = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new(520, 38), MaxLinesVisible = 3 };
         column.AddChild(_status);
-        column.AddChild(new Label { Text = "Cross / Enter  Select     Circle / Esc  Back", Modulate = new(.7f, .76f, .8f) });
+        column.AddChild(new Label
+        {
+            Text = InboxMode ? "Cross / Enter / Double-click  Replay     Circle / Esc  Back" : "Cross / Enter  Select     Circle / Esc  Back",
+            Modulate = new(.7f, .76f, .8f),
+        });
         MenuFocus.WireVertical((_title is null ? Array.Empty<Control>() : new Control[] { _title, _description! })
             .Concat(_list is null ? [] : new Control[] { _list }).Concat(_buttons));
-        Callable.From(() => _primary.GrabFocus()).CallDeferred();
+        if (InboxMode) WireInboxFocus();
+        Callable.From(() => MenuFocus.Restore(_list?.ItemCount > 0 ? _list : _primary, _buttons)).CallDeferred();
     }
 
     private void BuildForm(VBoxContainer column)
@@ -79,21 +86,59 @@ public partial class BugReportUi : CanvasLayer
 
     private void BuildInbox(VBoxContainer column)
     {
-        _list = new ItemList { Name = "ReportList", CustomMinimumSize = new(520, 110), SelectMode = ItemList.SelectModeEnum.Single };
+        _list = new ItemList
+        {
+            Name = "ReportList",
+            CustomMinimumSize = new(520, 110),
+            SelectMode = ItemList.SelectModeEnum.Single,
+            MaxColumns = 1,
+            AutoWidth = false,
+            FixedColumnWidth = 500,
+            TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
+        };
+        _list.Resized += () => _list.FixedColumnWidth = Mathf.Max(1, (int)_list.Size.X - 24);
         _list.ItemSelected += index => SelectionChanged?.Invoke((int)index);
+        _list.ItemActivated += _ => { if (!_busy) ReplayRequested?.Invoke(); };
         column.AddChild(_list);
         _details = new Label { CustomMinimumSize = new(520, 42), AutowrapMode = TextServer.AutowrapMode.WordSmart, MaxLinesVisible = 3 };
         column.AddChild(_details);
         var actions = new HBoxContainer();
         column.AddChild(actions);
         _primary = AddButton(actions, "REPLAY SELECTED", () => ReplayRequested?.Invoke());
-        AddButton(actions, "EXPORT SELECTED ZIP", () => ExportRequested?.Invoke());
+        _reportButtons.Add(_primary);
+        _reportButtons.Add(AddButton(actions, "EXPORT SELECTED ZIP", () => ExportRequested?.Invoke()));
         var row = new HBoxContainer();
         column.AddChild(row);
         AddButton(row, "OPEN FOLDER", () => OpenFolderRequested?.Invoke());
         AddButton(row, "IMPORT ZIP", () => ImportRequested?.Invoke());
-        AddButton(row, "DELETE SESSION…", () => DeleteRequested?.Invoke());
+        _reportButtons.Add(AddButton(row, "DELETE SESSION…", () => DeleteRequested?.Invoke()));
         AddButton(row, "BACK", () => CloseRequested?.Invoke());
+    }
+
+    private void WireInboxFocus()
+    {
+        // ItemList keeps its native row selection/scrolling. Directional focus
+        // beyond the list follows the two visible action rows; Tab/R1 follows
+        // the original sequential focus chain.
+        _list!.FocusNeighborTop = _list.GetPathTo(_buttons[^1]);
+        _list.FocusNeighborRight = _list.FocusNeighborBottom = _list.GetPathTo(_primary);
+        _list.FocusNeighborLeft = _list.GetPathTo(_list);
+        foreach (var row in new[] { _buttons.Take(2).ToArray(), _buttons.Skip(2).ToArray() })
+            for (int i = 0; i < row.Length; i++)
+            {
+                row[i].FocusNeighborLeft = row[i].GetPathTo(row[(i + row.Length - 1) % row.Length]);
+                row[i].FocusNeighborRight = row[i].GetPathTo(row[(i + 1) % row.Length]);
+            }
+        for (int i = 0; i < 2; i++)
+        {
+            _buttons[i].FocusNeighborTop = _buttons[i].GetPathTo(_list);
+            _buttons[i].FocusNeighborBottom = _buttons[i].GetPathTo(_buttons[2 + i * 2]);
+        }
+        for (int i = 2; i < _buttons.Count; i++)
+        {
+            _buttons[i].FocusNeighborTop = _buttons[i].GetPathTo(_buttons[(i - 2) / 2]);
+            _buttons[i].FocusNeighborBottom = _buttons[i].GetPathTo(_list);
+        }
     }
 
     private Button AddButton(Node parent, string text, Action pressed)
@@ -112,22 +157,33 @@ public partial class BugReportUi : CanvasLayer
 
     public void SetBusy(bool busy, string status)
     {
+        if (busy && !_busy) _busyReturnFocus = GetViewport().GuiGetFocusOwner();
         _busy = busy;
-        foreach (var button in _buttons) button.Disabled = busy;
+        UpdateActionAvailability();
         if (_list is not null) _list.ProcessMode = busy ? ProcessModeEnum.Disabled : ProcessModeEnum.Inherit;
         if (_title is not null) _title.Editable = !busy;
         if (_description is not null) _description.Editable = !busy;
         _status.Text = status;
-        if (!busy) _primary.GrabFocus();
+        if (!busy) MenuFocus.Restore(_busyReturnFocus, _buttons);
     }
 
     public void SetStatus(string text) => _status.Text = text;
     public void SetReports(IEnumerable<string> titles)
     {
         _list!.Clear();
-        foreach (string title in titles) _list.AddItem(title);
+        foreach (string title in titles)
+        {
+            int index = _list.AddItem(title);
+            _list.SetItemTooltip(index, title);
+        }
+        UpdateActionAvailability();
         if (_list.ItemCount > 0) { _list.Select(0); SelectionChanged?.Invoke(0); }
         else _details.Text = "No saved reports yet. Press F8 during a recorded game, or Square while paused.";
+    }
+    private void UpdateActionAvailability()
+    {
+        foreach (var button in _buttons)
+            button.Disabled = _busy || _list?.ItemCount == 0 && _reportButtons.Contains(button);
     }
     public void SetDetails(string text) { _details.Text = text; _details.TooltipText = text; }
 

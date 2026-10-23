@@ -136,19 +136,24 @@ public partial class OBPGame
             await BugKey(Key.F7);
             await WaitBugAsync(() => _bugReportUi is { InboxMode: true }, "Report inbox did not open.");
             await CaptureBugUi("report-inbox");
-            await ClickBugButton("EXPORT SELECTED ZIP");
+            Require(GetViewport().GuiGetFocusOwner()?.Name == "ReportList", "Inbox did not start in the report list.");
+            await BugPad(JoyButton.DpadRight);
+            await BugPad(JoyButton.DpadRight);
+            Require(GetViewport().GuiGetFocusOwner() is Button { Text: "EXPORT SELECTED ZIP" }, "Cannot navigate from reports to export.");
+            await BugPad(JoyButton.A);
             await WaitBugAsync(() => _bugReportUi is { Busy: false }, "Portable export did not complete.");
             Require(Directory.GetFiles(Path.Combine(_bugReports.Root, "exports"), "*.zip").Length == 1, "No portable ZIP was saved.");
+            await BugPad(JoyButton.DpadUp);
+            Require(GetViewport().GuiGetFocusOwner()?.Name == "ReportList", "Cannot return from export to the selected report.");
             GD.Print("[bug-report-smoke] paused Square, blank controller submission, multiple reports, inbox and export PASS");
 
             // Both reports replay from their original level entry in separate
             // processes; the second crosses the excluded first reporting form.
             for (int index = 0; index < 2; index++)
             {
-                var list = (ItemList)_bugReportUi!.FindChild("ReportList", true, false);
-                list.GrabFocus();
+                Require(GetViewport().GuiGetFocusOwner()?.Name == "ReportList", "Replay did not restore list focus.");
                 if (index > 0) await BugPad(JoyButton.DpadDown);
-                await ClickBugButton("REPLAY SELECTED");
+                await BugPad(JoyButton.A);
                 // A cold Novalis import can exceed 30s while other builds run.
                 await WaitBugAsync(() => _bugReportUi is { Busy: false }, "Separate replay did not finish.", 90000);
                 Require(_bugReportUi!.Status.Contains("checks matched"), "Separate replay failed: " + _bugReportUi.Status);
