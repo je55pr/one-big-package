@@ -135,5 +135,9 @@ public partial class OBPGame
             GD.PrintErr($"[novalis-route-smoke] FAIL: {ex}");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-route-smoke-fail", 1);
         }
+        finally
+        {
+            ClearMovementSmokeInput();
+        }
     }
 }

@@ -32,6 +32,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/rac1-enemy-smoke.ps1` | Opening toad/robot spawn, path entrances, reactions, attack contacts, rewards, occlusion and retry fixtures. |
 | `./tools/rac1-wrench-smoke.ps1` | Input/combo/throw, body and hand attachment, staged damage contacts and recovery. |
 | `./tools/rac1-player-audio-smoke.ps1` | Retail footsteps/surfaces, jump/flip/combo cues, wrench contacts/flight/catch, pack loops/pause and accepted-hit/combat-death voices. `-Rendered` exercises playback offscreen. |
+| `./tools/audio-shutdown-smoke.ps1` | Oozla startup/world-switch cleanup, plus three fresh-process Novalis route/water repetitions when R&C1 is supplied. Requires fixture completion and rejects post-exit ObjectDB/resource leaks even with exit code 0. Full logs: `captures/audio-shutdown-smoke/`; `-SelfTest` checks the log gate without retail data/Godot. |
 | `./tools/rac1-bomb-glove-smoke.ps1` | Glove/bomb skins, socket/throw, arc, impact/splash/occlusion, ammo/cadence and cleanup. |
 | `./tools/rac1-weapons-smoke.ps1` | Full working arsenal, idle/use poses, audio lifetime, contact, cargo and deployed-agent fixtures. |
 | `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |

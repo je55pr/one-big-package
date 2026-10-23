@@ -228,10 +228,7 @@ public sealed class RuntimeAudioHost
             if (player is not null)
             {
                 owner.Remove(player);
-                if (GodotObject.IsInstanceValid(player))
-                {
-                    player.QueueFree();
-                }
+                ReleasePlayer(player);
             }
 
             Report(DiagnosticLevel.Warning,
@@ -292,10 +289,7 @@ public sealed class RuntimeAudioHost
         void Release()
         {
             owner.Remove(player);
-            if (GodotObject.IsInstanceValid(player))
-            {
-                player.QueueFree();
-            }
+            ReleasePlayer(player);
         }
 
         switch (player)
@@ -313,30 +307,34 @@ public sealed class RuntimeAudioHost
     {
         foreach (var node in nodes.ToArray())
         {
-            if (GodotObject.IsInstanceValid(node))
-            {
-                switch (node)
-                {
-                    case AudioStreamPlayer twoD:
-                        twoD.Stop();
-                        twoD.Stream = null;
-                        break;
-                    case AudioStreamPlayer3D threeD:
-                        threeD.Stop();
-                        threeD.Stream = null;
-                        break;
-                }
-
-                // Deferred freeing is appropriate during normal gameplay, but Godot
-                // will not process another deferred frame while tearing down its tree.
-                if (freeImmediately)
-                    node.Free();
-                else
-                    node.QueueFree();
-            }
+            ReleasePlayer(node, freeImmediately);
         }
 
         nodes.Clear();
+    }
+
+    private static void ReleasePlayer(Node node, bool freeImmediately = false)
+    {
+        if (!GodotObject.IsInstanceValid(node)) return;
+        // Finished one-shots must relinquish their stream before leaving our
+        // ownership list, just like explicitly stopped players.
+        switch (node)
+        {
+            case AudioStreamPlayer twoD:
+                twoD.Stop();
+                twoD.Stream = null;
+                break;
+            case AudioStreamPlayer3D threeD:
+                threeD.Stop();
+                threeD.Stream = null;
+                break;
+        }
+
+        // The tree cannot process another deferred frame during teardown.
+        if (freeImmediately)
+            node.Free();
+        else
+            node.QueueFree();
     }
 
     private void Report(DiagnosticLevel level, string message)
