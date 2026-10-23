@@ -457,6 +457,31 @@ public sealed class Rac1MetropolisTaxiTests
         // comes from PVar+0x90+(side*4), not always the authored Moby origin.
         Assert.Equal(0, session.Stops.Single(s => s.InstanceIndex == 961).NativeInitialSide);
         Assert.Equal(1, session.Stops.Single(s => s.InstanceIndex == 962).NativeInitialSide);
+        foreach (var (index, nativeSide) in new[] { (961, 0), (962, 1) })
+        {
+            var shuttle = session.Stops.Single(s => s.InstanceIndex == index);
+            var obj = world.DynamicObjects!.Single(o => o.InstanceIndex == index);
+            var pvar = obj.NativePayloads!.Single(p => p.Format == "rac1-pvar").Data;
+            // Retail instances have neither the optional cuboid trigger
+            // nor the separate forced-start / exit flags armed.
+            Assert.Equal(-1, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0xa0, 4)));
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x7c, 4)));
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(pvar.AsSpan(0x8c, 4)));
+            var dock = Assert.IsType<Rac1TaxiNativeShuttleDock>(shuttle.NativeShuttleDock);
+            Assert.Equal(nativeSide, dock.InitialSide);
+            Assert.Equal(-1, dock.OptionalCuboidSelector);
+            Assert.Equal(shuttle.ReturnPath![0], dock.SideZeroPath[0]);
+            Assert.Equal(shuttle.OutboundPath[0], dock.SideOnePath[0]);
+            Assert.Equal(nativeSide == 0 ? dock.SideZeroPath[0] : dock.SideOnePath[0],
+                dock.NativeInitialWaypoint);
+            if (index == 961)
+                Assert.True(dock.NativeInitialWaypoint.DistanceSquared(shuttle.Position) > 25);
+            else
+                Assert.True(dock.NativeInitialWaypoint.DistanceSquared(shuttle.Position) < 0.01);
+            Assert.Equal(1, dock.RepositionSide(dock.SideZeroPath[0], dock.SideOnePath[0]));
+            Assert.Equal(0, dock.RepositionSide(dock.SideOnePath[0], dock.SideZeroPath[0]));
+            Assert.Null(dock.RepositionSide(dock.SideOnePath[0], dock.SideOnePath[0]));
+        }
         Assert.All(session.Stops, stop =>
         {
             Assert.True(stop.NativeHoverPhases.HasValue);

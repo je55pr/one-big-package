@@ -29,7 +29,8 @@ public sealed record Rac1MetropolisTaxiStop(
     Rac1TaxiHoverPhases? NativeHoverPhases = null,
     Rac1TaxiNativeHud? NativeHudSelectors = null,
     int? NativeFirstDepartureSelector = null,
-    IReadOnlyList<int>? NativeDepartureSelectors = null);
+    IReadOnlyList<int>? NativeDepartureSelectors = null,
+    Rac1TaxiNativeShuttleDock? NativeShuttleDock = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -374,6 +375,22 @@ public sealed class Rac1MetropolisTaxiSession
                 if (nativeSide is not (0 or 1))
                     return null;
             }
+            // Native class-1012 state 0 chooses an *initial route side*
+            // using PVar+0x80 and the path indices at +0x90/+0x94.
+            // Its state-1 nearest-end/reposition selector is independent
+            // of the current OBP single-source-dock safety policy.
+            Rac1TaxiNativeShuttleDock? nativeDock = null;
+            if (route.Class == 1012 && nativeSide is 0 or 1 &&
+                pvar is { Length: >= 0xa4 } dockPvar &&
+                returning.Length > 1 && outbound.Length > 1)
+            {
+                int cuboid = BinaryPrimitives.ReadInt32LittleEndian(
+                    dockPvar.AsSpan(0xa0, 4));
+                if (cuboid < -1)
+                    return null;
+                nativeDock = new Rac1TaxiNativeShuttleDock(
+                    returning, outbound, nativeSide, cuboid);
+            }
             // The source class-816 bob/tilt helper uses PVar +0xec/0xf0/0xf4.
             // Class-1012 uses +0xac/+0xb0/+0xb4. The originally authored
             // phase values must survive the retail import (synthetic worlds
@@ -439,7 +456,7 @@ public sealed class Rac1MetropolisTaxiSession
                 route.Index, route.Class, position, outbound, route.Label, returning,
                 approach, departure, trigger, nativeSide, nativeSeek,
                 hoverPhases, nativeHud, firstDepartureSelector,
-                allDepartureSelectors));
+                allDepartureSelectors, nativeDock));
         }
 
         return new Rac1MetropolisTaxiSession(stops);

@@ -523,3 +523,53 @@ steering calls in the native path helper, native camera ownership or
 full off-centre boarding geometry. Source-authored waypoint motion,
 existing hover, collision-safe dismount and class-1012 return
 fallback are unchanged.
+
+## 23 October 2026: class-1012 two-ended dock selection
+
+The translated native class-1012 updater **L3:0x002dccc0**
+has a significant original two-ended mode that is not replicated by
+the current OBP auto-return passenger ride. State 0 reads the authored
+PVar **+0x80** initial side (0 or 1) and chooses the first path from
+**+0x90 + 4*side**; it places the actor at that selected path's first
+waypoint. The retail i961 initial side is **0**, so its native startup
+waypoint is the first point of path 65 (the reverse leg), not the
+class-1012 source Moby placement at the start of path 59. Retail i962
+initial side is **1**, selecting path 67 (the source leg).
+
+In state 1, the updater compares 3D distances from **Ratchet** to the
+first waypoints of both routes and separately compares distances from
+the **cab** to those same two waypoints. Its temporary selectors
+s4/s7 become **1 when closer to path +0x90's first waypoint** and 0
+otherwise, with strict tie-breaking to zero. If those selectors
+differ and the explicit interaction branch has not taken control,
+the updater selects s4 as the next route side and enters state 3,
+moving toward the other end. This is an automatic **shuttle
+reposition**, distinct from requesting a passenger ride. The
+additional focus, hero state, button, animation and camera admission
+conditions must still be satisfied separately for a rider.
+
+The retail PVar admission census on both i961/i962 confirms
+**+0x7c=0, +0x8c=0, +0xa0=-1**. The optional cuboid branch at
++0xa0 is therefore *not* armed. Enabling a generic proximity-cuboid
+trigger would manufacture an activation that the source instances
+do not have.
+
+`Rac1TaxiNativeShuttleDock` now retains the exact class-1012
+initial-side path and optional cuboid selector and reproduces the
+two nearest-end comparisons and reposition-side selection as an
+engine-neutral admission-model component. `Rac1MetropolisTaxiStop`
+exposes this retail-backed `NativeShuttleDock` when valid PVar and
+both authored paths exist. Tests verify source startup path,
+both relative-end choices, strict distance ties, nonfinite input
+rejection, and both original PVar variants. Synthetic worlds without
+a native PVar retain their existing behaviour.
+
+**Not enabled in Godot yet:** i961's opposite initial dock and the
+far endpoints of the other paths have not passed collision-safe
+landing tests. The current single-source-dock/direct-board plus
+round-trip return is still explicitly a **host safety policy**, not
+a faithful original native two-ended shuttle journey. The new
+geometry model does not move the live taxi, enable passenger
+attachment in midair, or change established dismount/camera
+fallbacks. Actual source-pinned two-ended traversal and focus/
+camera admission are the next steps.
