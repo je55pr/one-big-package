@@ -47,10 +47,12 @@ public sealed class Rac1MenuPanelCameraTests
         Assert.True(native.Min.Z < native.OppositeCorner.Z);
         var exactFirst = Rac1MenuPanelCamera.ProjectRelative(native.FirstCorner, screen);
         var exactOpposite = Rac1MenuPanelCamera.ProjectRelative(native.OppositeCorner, screen);
-        Assert.Equal(exactFirst.X, rows[0].X, 3);
-        Assert.Equal(exactFirst.Y, rows[0].Y, 3);
-        Assert.Equal(exactOpposite.X - exactFirst.X, rows[0].Width, 3);
-        Assert.Equal(exactOpposite.Y - exactFirst.Y, rows[0].Height, 3);
+        // The native two-corner integer projector truncates each origin
+        // and delta independently, then adds +1 to the screen origin.
+        Assert.Equal(MathF.Truncate(exactFirst.X) + 1, rows[0].X);
+        Assert.Equal(MathF.Truncate(exactFirst.Y) + 1, rows[0].Y);
+        Assert.Equal(MathF.Truncate(exactOpposite.X - exactFirst.X), rows[0].Width);
+        Assert.Equal(MathF.Truncate(exactOpposite.Y - exactFirst.Y), rows[0].Height);
         Assert.All(rows, row =>
         {
             Assert.True(row.HasArea);

@@ -42,6 +42,33 @@ public static class Rac1MenuPanelProjection
     }
 
     /// <summary>
+    /// FUN_00237a78 independently converts projected top-left coordinates
+    /// and corner differences to signed pixel integers using FUN_001fa6d0
+    /// (truncate_float_to_s32). FUN_002196b8 then increments the returned
+    /// x/y before storing and drawing the panel, without changing width or
+    /// height. Quantising opposite endpoints separately would be different.
+    /// </summary>
+    public static Bounds RasterizePanel(Vector2 firstProjected, Vector2 oppositeProjected)
+    {
+        if (!Vector2IsFinite(firstProjected) || !Vector2IsFinite(oppositeProjected))
+            throw new ArgumentOutOfRangeException(nameof(firstProjected),
+                "Non-finite native panel screen coordinates.");
+        float width = oppositeProjected.X - firstProjected.X;
+        float height = oppositeProjected.Y - firstProjected.Y;
+        // The renderer supplies ordinary bounded viewport coordinates; reject
+        // overflow rather than relying on undefined native out-of-range casts.
+        static int ToPixel(float value, bool offsetOrigin)
+        {
+            if (!float.IsFinite(value) || value <= int.MinValue ||
+                value >= (offsetOrigin ? int.MaxValue - 1f : int.MaxValue))
+                throw new InvalidDataException("Native panel screen integer is out of range.");
+            return (int)MathF.Truncate(value) + (offsetOrigin ? 1 : 0);
+        }
+        return new Bounds(ToPixel(firstProjected.X, true), ToPixel(firstProjected.Y, true),
+            ToPixel(width, false), ToPixel(height, false));
+    }
+
+    /// <summary>
     /// Native FUN_002196b8 texture target selection. Destination dimensions
     /// are rounded up to at least 128 and then to a power of two, with the
     /// PS2's 2^18 texel budget reducing target height if necessary.

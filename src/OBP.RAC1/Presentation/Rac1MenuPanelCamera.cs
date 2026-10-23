@@ -45,7 +45,6 @@ public static class Rac1MenuPanelCamera
             throw new InvalidDataException("Class 0x472's native attachment frame no longer lies in a camera-facing plane.");
         Vector2 topLeft = ProjectRelative(pose.FirstCorner, viewportSize);
         Vector2 bottomRight = ProjectRelative(pose.OppositeCorner, viewportSize);
-        return new Rac1MenuPanelProjection.Bounds(topLeft.X, topLeft.Y,
-            bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
+        return Rac1MenuPanelProjection.RasterizePanel(topLeft, bottomRight);
     }
 }

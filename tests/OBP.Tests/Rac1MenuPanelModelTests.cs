@@ -63,6 +63,38 @@ public sealed class Rac1MenuPanelModelTests
         Assert.Equal(80f, bounds.Height, 3);
     }
 
+    [Fact]
+    public void NativePanelRasterizerTruncatesOriginsAndExtentsSeparatelyThenInsetsTheOrigin()
+    {
+        // Projected endpoints must not be rounded first to derive the width:
+        // trunc(15.7 - 10.9) = 4, not trunc(15.7) - trunc(10.9) = 5.
+        var positive = Rac1MenuPanelProjection.RasterizePanel(
+            new Vector2(10.9f, 20.9f), new Vector2(15.7f, 26.7f));
+        Assert.Equal(new Rac1MenuPanelProjection.Bounds(11, 21, 4, 5), positive);
+
+        // The original convert helper truncates toward zero, not floor.
+        var negative = Rac1MenuPanelProjection.RasterizePanel(
+            new Vector2(-10.9f, -20.9f), new Vector2(0.2f, -10.2f));
+        Assert.Equal(new Rac1MenuPanelProjection.Bounds(-9, -19, 11, 10), negative);
+
+        // The source increments screen x/y only. It does not shrink extent
+        // to account for this offset or derive extent from snapped corners.
+        var tiny = Rac1MenuPanelProjection.RasterizePanel(
+            new Vector2(1.25f, 4.25f), new Vector2(1.75f, 4.75f));
+        Assert.Equal(new Rac1MenuPanelProjection.Bounds(2, 5, 0, 0), tiny);
+    }
+
+    [Fact]
+    public void NativePanelRasterizerRejectsNonFiniteAndOverflowingScreenCoordinates()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1MenuPanelProjection.RasterizePanel(new Vector2(float.NaN, 0), Vector2.One));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1MenuPanelProjection.RasterizePanel(Vector2.Zero, new Vector2(float.PositiveInfinity, 0)));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1MenuPanelProjection.RasterizePanel(Vector2.Zero, new Vector2(float.MaxValue, 8)));
+    }
+
     [Theory]
     [InlineData(1, 1, 128, 128)]
     [InlineData(128, 128, 128, 128)]

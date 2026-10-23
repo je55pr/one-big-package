@@ -72,15 +72,22 @@ public partial class Rac1RetailUiSmoke : Node
                 sourceTrack.BeginTransition(Rac1MenuPanelPages.Page.OrdinaryPause, backwards: true);
                 for (int tick = 0; tick < 12; tick++) sourceTrack.Tick();
                 var viewportSize = GetViewport().GetVisibleRect().Size;
-                var projected = Rac1MenuPanelCamera.ProjectPanel(sourceTrack.Pose(0),
-                    new System.Numerics.Vector2(viewportSize.X, viewportSize.Y));
-                // Compare live button positions against the source camera's
-                // recovered projection, not against a host-calibrated rectangle.
-                Require(Mathf.Abs(nativeButtons[0].Position.X - projected.X) < 2 &&
-                    Mathf.Abs(nativeButtons[0].Position.Y - projected.Y) < 2 &&
-                    Mathf.Abs(nativeButtons[0].Size.X - projected.Width) < 2 &&
-                    nativeButtons[0].Position.Y < nativeButtons[1].Position.Y,
-                    "Source camera projection differs from actual Godot panel placement");
+                // Verify all six real Godot controls use the discrete
+                // native x/y+1 and independently truncated width/height.
+                // A 2-pixel tolerance would conceal the original off-by-one.
+                for (int slot = 0; slot < nativeButtons.Length; slot++)
+                {
+                    var projected = Rac1MenuPanelCamera.ProjectPanel(sourceTrack.Pose(slot),
+                        new System.Numerics.Vector2(viewportSize.X, viewportSize.Y));
+                    var button = nativeButtons[slot];
+                    Require(Mathf.Abs(button.Position.X - projected.X) < .01f &&
+                        Mathf.Abs(button.Position.Y - projected.Y) < .01f &&
+                        Mathf.Abs(button.Size.X - projected.Width) < .01f &&
+                        Mathf.Abs(button.Size.Y - projected.Height) < .01f,
+                        $"Native pixel raster bounds differ from Godot panel placement at slot {slot}");
+                }
+                Require(nativeButtons[0].Position.Y < nativeButtons[1].Position.Y,
+                    "Source pause panel positions are out of order");
                 Require(panels.Length == 6, "Native panel compositing must cover all six pause rows");
                 Require(panels.All(panel => panel.Material is ShaderMaterial { Shader: not null }),
                     "Original retail panel shader did not load");

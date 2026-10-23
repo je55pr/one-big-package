@@ -462,6 +462,57 @@ joint mapping, first-frame endpoints, frame census and the gap to mesh
 bounds. The four semantic chains are dynamically read from source class
 payloads; no retail bytes or synthetic point positions are embedded.
 
-Remaining: the precise PS2 float-to-integer conversion in the projection
-packet, native `screen_x++/screen_y++` integer raster offset and
-original output-target scaling still need frame-matched PS2 verification.
+The integer projection and screen-offset gap is addressed in the next
+section. Original output-target scaling still needs frame-matched PS2
+verification.
+
+## 23 October: original integer projection and one-pixel screen origin
+
+The original menu's *integer* projector is `FUN_00237a78`, recovered in
+`rendering/project_graphics_bounds.c`. It invokes `FUN_001FA6D0`
+(`truncate_float_to_s32`) independently on these four expressions:
+
+- `x = trunc(first_projected.x * 0.25 + half_width)`
+- `y = trunc(first_projected.y * 0.25 + half_height)`
+- `width = trunc((opposite.x - first.x) * 0.25)`
+- `height = trunc((opposite.y - first.y) * 0.25)`
+
+After the projection returns, `FUN_002196b8` **increments x and y by
+one pixel**, then stores and draws the panel using those coordinates
+**without reducing width or height**. The dark-blue clear rectangle
+inside that projected panel uses a *second*, independent one-pixel inset
+on every side; that interior clear is already implemented by the shader.
+
+`Rac1MenuPanelProjection.RasterizePanel` now follows independent signed
+truncation of origins and differences and the +1 origin correction,
+with finite/overflow guards outside the ordinary retail projection domain.
+`Rac1MenuPanelCamera.ProjectPanel` feeds its source-derived opposite
+attachment corners into that rasterizer. Synthetic regression tests
+separate truncation from floor, separately rounded endpoints, and even
+subpixel-degenerate bounds. The retail fixture pins the actual projected
+corners and verifies the discrete bounds derived from them.
+
+This is a source-backed projection/coordinate correction, **not** a claim
+of complete GS pixel parity. The native widescreen/display scale policy,
+PS2 framebuffer coordinates and eventual float conversion edge behavior
+still require emulator capture or deeper assembly evidence. The regular
+OBP host viewport adaptation remains explicit, and secondary menus have
+not been force-fit into the ordinary pause root's 3D slots.
+
+### Ordinary root text renderer identified, shadow inheritance not assumed
+
+A separate read of the original NTSC-U Veldin overlay's initialized
+`MenuPage` at **0x001B2588** resolves its `screens[0..6]` at page offsets
+`0x44..0x5C`. Those seven screens point to distinct records
+`0x001B26B8 + slot * 0x50`, each with **update = 0x00278840** and
+**draw = 0x00278E10**. Slots 7..13 are null; slot 6 is subject to the
+original `menu_system.unkD8` admission gate. The active focus pointer
+is `0x001B26B8` and state is 2.
+
+This directly rules out assuming that `FUN_0021A328` (the separate
+configured-label callback with the recovered +2/+2 shadow) draws the
+ordinary root labels. The ordinary root uses its own Veldin-overlay
+`0x00278E10` draw callback. Recover that callback and its text metrics
+before altering the root's font baseline or claiming the generic
+configured-label shadow is used there. This research did not copy raw
+overlay payloads or alter host typography.
