@@ -300,3 +300,43 @@ message for unsupported selector/side values. The Godot HUD uses
 these PVars instead of initial-side parity. This recovers the prompt
 mapping, **not** native HUD focus allocation, gameplay state gates,
 two-ended class-1012 boarding or the camera transition.
+
+## 23 October 2026: Ratchet's scripted taxi walk-to contract
+
+The shared `hero_cam_target_set` routine (0x00233ee8) does **not**
+immediately trigger a taxi camera cut or attach the passenger. It copies a
+target world position into hero +0x1640, target yaw into +0x164c and an
+optional flag into +0x1650. Unless already in 0x65/0x66/0x67 it enters
+hero state **0x65**. The class-816 and class-1012 updaters then use
+`sub_00233f38` (0x00233f38) to wait for those states to finish.
+
+The original hero-state routines are explicit: `walk_to_update`
+(0x00217970), `walk_to_input` (0x00229b70), and the state transition
+handlers in `hero_transitions.cpp`. In 0x65 Ratchet steers toward the
+planar target; inside 0.2 native units, he tries to face the saved yaw.
+If his planar speed is below 2.7/60 units per frame and yaw differs by
+less than two degrees, he enters 0x67. With a nonzero movement mode and
+higher speed, he instead enters 0x66 and brakes until the current
+animation finishes, then resumes 0x65. State 0x67 waits for animation
+completion (or a nonzero target flag) and returns to normal, unless
+Ratchet has moved farther than 0.2 from the target. Only when the
+native 0x65/0x66/0x67 group is left does the taxi updater advance
+toward passenger attachment and flight.
+
+`Rac1TaxiHeroTargetSession` now implements the **source-backed state
+transition contract**, independent of Godot: arbitrary target and
+heading changes, planar radius, speed/facing admission, braking and
+retargeting, 0x67 recovery, 0x00233f38 status and departure eligibility.
+Regression tests exercise target acquisition, wrong orientation, the
+nonzero-movement-mode 0x66 branch, leaving the spot while settled,
+forced flag release, and angle wraparound.
+
+**Integration limitation:** the native hero walking motion itself
+depends on collision, Ratchet's animation completion, movement mode,
+and per-frame velocity from the shared player controller. Until these
+are fed into the source state session by the Godot host, the existing
+bounded source-dock direct flight remains in place. Do not claim the
+walk-in, camera request, or native attach-frame presentation is
+implemented solely because the state-gating session now exists. We
+must not manufacture Ratchet's final approach by teleporting through
+unproven walkable geometry.

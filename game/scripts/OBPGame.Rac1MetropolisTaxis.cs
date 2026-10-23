@@ -221,10 +221,12 @@ public partial class OBPGame
             Mathf.Clamp(relative.X, -1.4f, 1.4f),
             Mathf.Clamp(relative.Y, 0.12f, 0.8f),
             Mathf.Clamp(relative.Z, -1.4f, 1.4f));
-        // The retail helper hero_cam_target_set invokes native player state
-        // 0x65 and tracks a world-space target. The host has not recovered
-        // that camera state yet. Preserve the current camera view relative
-        // to Ratchet instead of stranding a TopLevel camera at the dock.
+        // Native hero_cam_target_set enters the scripted walk-to point
+        // state 0x65, with braking/settling states 0x66/0x67, not an
+        // immediate camera cut. The source-backed state gate is now in
+        // Rac1TaxiHeroTargetSession; host walking/animation and camera
+        // request ownership are not connected yet. Until then, prevent
+        // the recovered TopLevel camera from freezing at the dock.
         _rac1TaxiCameraWorldOwned = player.Camera.TopLevel;
         _rac1TaxiCameraWorldOffset = player.Camera.GlobalPosition - player.GlobalPosition;
         // Once boarded, the player is attached by the taxi host. The moving
