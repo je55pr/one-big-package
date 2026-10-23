@@ -172,6 +172,60 @@ public sealed class Rac1AmoeboidFamilySessionTests
     }
 
     [Fact]
+    public void InterleavedNonSequentialGroupsExhaustWithoutReusingOrStealingReserves()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var family = new Rac1AmoeboidFamilySession(runtime);
+        // Deliberately register out of authored-index order and interleave a
+        // different group and an already-active medium that cannot be reserved.
+        Register(family, 90, 865, 7);
+        Register(family, 2, 865, 8);
+        Register(family, 14, 865, 7);
+        Register(family, 1, 865, 7, direct: true);
+        Register(family, 5, 865, 7);
+        Register(family, 102, 572, 7, direct: true);
+        Register(family, 100, 572, 7, direct: true);
+        Register(family, 101, 572, 7, direct: true);
+
+        var first = runtime.DispatchDamage<Rac1AmoeboidDamageResult>(Wrench(100, 572));
+        var second = runtime.DispatchDamage<Rac1AmoeboidDamageResult>(Wrench(101, 572));
+        var third = runtime.DispatchDamage<Rac1AmoeboidDamageResult>(Wrench(102, 572));
+
+        // Ascending native index is the current explicit ordering assumption,
+        // NOT independent proof of the PS2 linked-list traversal order.
+        Assert.Equal(new[] { 5, 14 }, first.Children.Select(x => x.InstanceIndex));
+        Assert.Equal(new[] { 90 }, second.Children.Select(x => x.InstanceIndex));
+        Assert.Empty(third.Children);
+        Assert.Equal(12, family.Get(2).NativeState);
+        Assert.Equal(1, family.Get(1).NativeState);
+        Assert.Equal(1, family.DormantCount); // only group 8 still dormant
+        Assert.Equal(8, runtime.RegisteredCount);
+        Assert.False(runtime.CanDispatchDamage(Wrench(100, 572)));
+        Assert.False(runtime.CanDispatchDamage(Wrench(101, 572)));
+        Assert.False(runtime.CanDispatchDamage(Wrench(102, 572)));
+        Assert.Equal(4, family.ActiveCount);
+    }
+
+    [Fact]
+    public void DyingDuringLungeCannotEmitLateContactOrReviveAParent()
+    {
+        var runtime = new Rac1MobyRuntimeSession();
+        var family = new Rac1AmoeboidFamilySession(runtime);
+        Register(family, 50, 572, 7, direct: true);
+        var near = new Vector3(1.1f, 0, 0);
+        family.Step(50, Vector3.Zero, near);
+        family.Step(50, Vector3.Zero, near);
+        Assert.Equal(Rac1AmoeboidFamilySession.LungeState,
+            family.Step(50, Vector3.Zero, near).NativeState);
+
+        runtime.DispatchDamage<Rac1AmoeboidDamageResult>(Wrench(50, 572));
+        Assert.False(family.Step(50, Vector3.Zero, near, animationPosition: 16,
+            targetInContact: true, animationFinished: true).Attack);
+        Assert.False(runtime.CanDispatchDamage(Wrench(50, 572)));
+        Assert.Equal(0, family.ActiveCount);
+    }
+
+    [Fact]
     public void ReloadResetsNativeReservePoolAndPreservesAuthoredGroup()
     {
         Rac1AmoeboidFamilySession Fresh()

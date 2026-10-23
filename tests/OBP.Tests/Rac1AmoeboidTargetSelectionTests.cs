@@ -44,6 +44,56 @@ public sealed class Rac1AmoeboidTargetSelectionTests
             new(200, 0, 0), 10, [candidates[0]]));
     }
 
+    [Fact]
+    public void LungeAtClass623PreservesVictimAndOwnerAcrossTargetSwitches()
+    {
+        var latch = new Rac1AmoeboidLungeTargetLatch();
+        var moby = Rac1GameplayEntityRef.Moby(new(623, 984));
+        var ratchet = Rac1GameplayEntityRef.Player;
+
+        Assert.Equal(moby, latch.Observe(931, Rac1AmoeboidFamilySession.LungeState, moby));
+        Assert.True(latch.AcceptsContact(931, moby));
+        Assert.False(latch.AcceptsContact(931, ratchet));
+        Assert.Equal(moby, latch.Observe(931, Rac1AmoeboidFamilySession.LungeState, ratchet));
+
+        var envelope = Rac1AmoeboidAttack.ToTarget(572, 931, moby);
+        Assert.Equal(moby, envelope.Target);
+        Assert.Equal(Rac1GameplayEntityRef.Moby(new(572, 931)), envelope.Source);
+        Assert.Equal(envelope.Source, envelope.Owner?.RuntimeEntity);
+        Assert.True(Rac1AmoeboidAttack.IsNativeAttack(envelope));
+        Assert.False(Rac1AmoeboidAttack.IsNativePlayerAttack(envelope));
+        Assert.Throws<ArgumentException>(() => Rac1AmoeboidAttack.ToTarget(
+            572, 931, Rac1GameplayEntityRef.PlayerWrench));
+
+        Assert.Null(latch.Observe(931, Rac1AmoeboidFamilySession.AnimationExitState, ratchet));
+        Assert.True(latch.AcceptsContact(931, ratchet));
+        Assert.Equal(ratchet, latch.Observe(931, Rac1AmoeboidFamilySession.LungeState, ratchet));
+        Assert.False(latch.AcceptsContact(931, moby));
+        latch.Clear();
+        Assert.Null(latch.Current(931));
+    }
+
+    [SkippableFact]
+    public void RetailClass623StateZeroInitializesNativeTargetEligibilityFlag()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO unavailable");
+        using var reader = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(reader).Levels.Single(x => x.LevelId == 5);
+        var overlay = Rac1ExecutableOverlay.Read(reader, level);
+        static uint Word(Rac1ExecutableOverlay source, int address) =>
+            BinaryPrimitives.ReadUInt32LittleEndian(source.Read(address, 4));
+
+        // Rilgar class-623 updater at 0x301f48 dispatches native Moby
+        // state at +0x20 through the table at 0x2186b0. State 0 adds
+        // flag 0x1000 to native Moby flags at +0x34.
+        Assert.Equal(0x00302080u, Word(overlay, 0x002186b0));
+        Assert.Equal(0x92640020u, Word(overlay, 0x0030204c));
+        Assert.Equal(0x96630034u, Word(overlay, 0x00302080));
+        Assert.Equal(0x34631000u, Word(overlay, 0x0030208c));
+        Assert.Equal(0xa6630034u, Word(overlay, 0x00302090));
+    }
+
     [SkippableFact]
     public void RetailRilgarAmoeboidTargetGroupsContainAuthenticClass623Members()
     {

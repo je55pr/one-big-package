@@ -85,6 +85,15 @@ target if the candidate is inside the current detection range and is
 closer than the current target. This is a distinct relationship from
 Amoeboid split groups at authored record +0x48.
 
+The Rilgar class-623 retail updater is at **0x00301f48**. Its
+state dispatch reads the native state byte at Moby **+0x20** via the
+jump table at **0x002186b0**. The state-0 arm
+(**0x00302080–0x00302090**) ORs native Moby flags at **+0x34** with
+**0x1000**. A retail-ISO test now asserts the dispatch and flag-setting
+instruction words rather than inferring this flag from an authored
+placement. This establishes state-0 eligibility initialization, **not**
+the later flag-clearing, hit receiver, or complete class-623 lifecycle.
+
 On the retail Rilgar disc there are **56 class-623** placed Mobys.
 Exactly **52 Amoeboid** instances reference candidate groups
 **2, 74, 77 and 101**, all containing matching class-623 placements.
@@ -95,10 +104,17 @@ group/range/liveness and stable list-order tie resolution.
 
 Godot only treats **rendered, active** class-623 objects as eligible
 because their native state machine and 0x1000 source flag tracking
-are not yet imported. It prevents attacks targeting such Mobys from
-accidentally damaging Ratchet; **the class-623 damage receiver still
-needs its own native reconstruction** before those hits can damage
-the authored object. This remains an explicit partial integration.
+are not yet imported. An engine-neutral source-owned lunge-envelope
+factory now retains the **class-623 victim ID** separately from the
+Amoeboid attacker/owner, with the recovered 0x10001/1-point contact
+descriptor. A conservative **Godot-only per-lunge target latch** rejects
+contact if the selected victim switches mid-animation. This prevents an
+attack initially aimed at a class-623 Moby from damaging Ratchet, and
+the inverse switch cannot create a hit on Ratchet either. The latch
+is a safety policy, **not** a recovered PS2 target-pointer rule. The
+host still does not dispatch the class-623 envelope: **the native
+class-623 damage receiver and its state/flag eligibility remain
+unrecovered**. This remains an explicit partial integration.
 
 ## Verified population on an authorised retail ISO
 

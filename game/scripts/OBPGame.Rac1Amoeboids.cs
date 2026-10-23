@@ -16,6 +16,7 @@ public partial class OBPGame
     private Rac1AmoeboidFamilySession? _rac1Amoeboids;
     private IReadOnlyList<Rac1ClipVolume> _rac1AmoeboidVolumes = [];
     private readonly Dictionary<int, List<RuntimeWorldScene.DynamicObjectNode>> _rac1AmoeboidTargetGroups = [];
+    private readonly Rac1AmoeboidLungeTargetLatch _rac1AmoeboidLungeTargets = new();
     private const float Rac1AmoeboidHostActiveRadius = 45f;
 
     private void ResetRac1Amoeboids()
@@ -23,6 +24,7 @@ public partial class OBPGame
         _rac1Amoeboids = null;
         _rac1AmoeboidVolumes = [];
         _rac1AmoeboidTargetGroups.Clear();
+        _rac1AmoeboidLungeTargets.Clear();
     }
 
     private void ConfigureRac1Amoeboids(RuntimeWorld world, RuntimeWorldScene.Result result,
@@ -126,7 +128,7 @@ public partial class OBPGame
             StepRac1EnemyReaction(enemy);
         var pos = ToEffectNative(node.Root.GlobalPosition);
         var target = ToEffectNative(ArsenalEnemyGoal(enemy, _player.GlobalPosition));
-        bool targetingNativeMoby = false;
+        Rac1GameplayEntityRef selectedTarget = Rac1GameplayEntityRef.Player;
         int candidateGroup = _rac1Amoeboids.TargetCandidateGroup(node.Source.InstanceIndex);
         if (candidateGroup >= 0 && _rac1AmoeboidTargetGroups.TryGetValue(candidateGroup, out var targets))
         {
@@ -141,14 +143,22 @@ public partial class OBPGame
             if (nearest is not null)
             {
                 target = nearest.Position;
-                targetingNativeMoby = true;
+                selectedTarget = Rac1GameplayEntityRef.Moby(
+                    new(Rac1AmoeboidTargetSelection.TargetClassId, nearest.InstanceIndex));
             }
         }
-        bool contact = NVector2.Distance(new(pos.X, pos.Y), new(target.X, target.Y)) < Rac1AmoeboidFamilySession.NativeAttackRange &&
+        // A target change during an existing lunge is not permission to hit
+        // the new victim. This is a conservative Godot attribution guard
+        // until the native class-623 target pointer/hit receiver is recovered.
+        int sourceIndex = node.Source.InstanceIndex;
+        bool contact = _rac1AmoeboidLungeTargets.AcceptsContact(sourceIndex, selectedTarget) &&
+            NVector2.Distance(new(pos.X, pos.Y), new(target.X, target.Y)) < Rac1AmoeboidFamilySession.NativeAttackRange &&
             BombHasLineOfSight(node.Root.GlobalPosition + Vector3.Up * .6f,
                 FromEffectNative(target) + Vector3.Up * .6f);
-        var next = _rac1Amoeboids.Step(node.Source.InstanceIndex, pos, target,
+        var attackTarget = _rac1AmoeboidLungeTargets.Current(sourceIndex) ?? selectedTarget;
+        var next = _rac1Amoeboids.Step(sourceIndex, pos, target,
             enemy.Animation.Wrapped, enemy.Grounded, contact, enemy.Animation.Position);
+        _rac1AmoeboidLungeTargets.Observe(sourceIndex, next.NativeState, selectedTarget);
         if (before.NativeState == Rac1AmoeboidFamilySession.KnockbackState &&
             next.NativeState == Rac1AmoeboidFamilySession.KnockbackRecoveryState)
             enemy.Reaction = null;
@@ -156,10 +166,10 @@ public partial class OBPGame
         if (enemy.Reaction is null && next.Displacement.LengthSquared() > 0)
             MoveRac1EnemyContact(enemy, FromEffectNative(next.Displacement));
         node.Root.Rotation = new(0, next.Yaw, 0);
-        // A class-623 source candidate displaces the hero target. Do not
-        // incorrectly damage Ratchet when the Amoeboid lunges at that Moby;
-        // class-623's own damage adapter is still a separate subsystem.
-        if (next.Attack && !targetingNativeMoby && !ArsenalEnemyHitsDecoy(enemy))
+        // Only a lunge originally admitted against Ratchet can touch his
+        // Nanotech. The native class-623 receiver is still unimplemented.
+        if (next.Attack && attackTarget == Rac1GameplayEntityRef.Player &&
+            !ArsenalEnemyHitsDecoy(enemy))
             ApplyRac1EnemyPlayerDamage(Rac1AmoeboidAttack.ToPlayer(next.ClassId, next.InstanceIndex));
     }
 
