@@ -20,6 +20,10 @@ public partial class OBPGame
     private readonly Rac1Class830ControllerSession _rac1Class830Controllers = new();
     private readonly Rac1AmoeboidLungeTargetLatch _rac1AmoeboidLungeTargets = new();
     private const float Rac1AmoeboidHostActiveRadius = 45f;
+    // Milestone policy: a live class-623 receiver is NOT wired into Godot.
+    // Avoid sending otherwise playable lunges to an undamageable prop.
+    // Switch this only when that receiver genuinely dispatches the hit.
+    private const bool Rac1Class623HitReceiverAvailable = false;
 
     private void ResetRac1Amoeboids()
     {
@@ -165,7 +169,8 @@ public partial class OBPGame
         int candidateGroup = _rac1Amoeboids.TargetCandidateGroup(node.Source.InstanceIndex);
         if (candidateGroup >= 0 && _rac1AmoeboidTargetGroups.TryGetValue(candidateGroup, out var targets))
         {
-            var nearest = Rac1AmoeboidTargetSelection.Select(candidateGroup, pos, target,
+            var nearest = Rac1AmoeboidTargetSelection.SelectForHostedCombat(
+                Rac1Class623HitReceiverAvailable, candidateGroup, pos, target,
                 _rac1Amoeboids.HostDetectionRange(node.Source.InstanceIndex),
                 targets.Select(candidate => new Rac1AmoeboidTargetSelection.Candidate(
                     candidate.Source.InstanceIndex, candidate.Source.NativeClassId, candidateGroup,

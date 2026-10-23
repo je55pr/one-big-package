@@ -17,6 +17,18 @@ public static class Rac1AmoeboidTargetSelection
         Vector3 Position, bool SourceActive, int NativeState);
 
     /// <summary>
+    /// Milestone host policy: do not redirect an attack away from Ratchet
+    /// towards a class-623 prop until the host can actually receive that hit.
+    /// Keep the original native selection algorithm separately testable.
+    /// </summary>
+    public static Candidate? SelectForHostedCombat(bool class623HitReceiverAvailable,
+        int sourceCandidateGroup, Vector3 origin, Vector3 currentTarget,
+        float searchRadius, IEnumerable<Candidate> candidates) =>
+        class623HitReceiverAvailable
+            ? Select(sourceCandidateGroup, origin, currentTarget, searchRadius, candidates)
+            : null;
+
+    /// <summary>
     /// Return only a native candidate that displaces the nearer current target.
     /// The caller owns whether a candidate has an admitted damage consumer.
     /// </summary>

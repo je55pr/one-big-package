@@ -30,6 +30,25 @@ public sealed class Rac1AmoeboidTargetSelectionTests
     }
 
     [Fact]
+    public void HostedCombatDoesNotRedirectToUndamageableClass623Objects()
+    {
+        Rac1AmoeboidTargetSelection.Candidate[] candidates =
+        [
+            new(1009, 623, 101, new(2, 0, 0), true, 1)
+        ];
+        var origin = Vector3.Zero;
+        var hero = new Vector3(8, 0, 0);
+        Assert.Equal(1009,
+            Rac1AmoeboidTargetSelection.SelectForHostedCombat(
+                true, 101, origin, hero, 35, candidates)?.InstanceIndex);
+        Assert.Null(Rac1AmoeboidTargetSelection.SelectForHostedCombat(
+            false, 101, origin, hero, 35, candidates));
+        Assert.Null(Rac1AmoeboidTargetSelection.SelectForHostedCombat(
+            false, 101, origin, hero, 35,
+            [new(1009, 623, 101, new(1, 0, 0), true, 1)]));
+    }
+
+    [Fact]
     public void SourceSearchLimit120IsStrictAndPreservesNativeListOrderOnTies()
     {
         Rac1AmoeboidTargetSelection.Candidate[] candidates =
