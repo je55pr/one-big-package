@@ -21,7 +21,7 @@ public partial class SourceManagerBootstrap : Node
 
     public override void _Input(InputEvent @event)
     {
-        if (_game is null)
+        if (_game is null || _game.BugReportModalOpen)
         {
             return;
         }
@@ -91,7 +91,8 @@ public partial class SourceManagerBootstrap : Node
 
         if (rac1Path is not null)
         {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path, persist: !args.ControllerSmoke && !args.Rac1PlayerAudioSmoke);
+            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path,
+                persist: !args.ControllerSmoke && !args.Rac1PlayerAudioSmoke && !args.BugReportSmoke && args.ReplayBugReport is null);
         }
         if (gcPath is not null)
         {

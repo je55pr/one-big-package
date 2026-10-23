@@ -10,6 +10,71 @@ public sealed class PlaytestRunTests : IDisposable
     private string RunPath => Path.Combine(_directory, "run.jsonl.gz");
 
     [Fact]
+    public async Task Snapshot_FinalizesExactPrefixesWithoutChangingOrStoppingOriginalInputs()
+    {
+        string first = Path.Combine(_directory, "first.gz"), second = Path.Combine(_directory, "second.gz");
+        using var writer = new PlaytestRunWriter(RunPath, Header());
+        writer.Add(Step(0));
+        writer.Mark(new(0, "report-one"));
+        await writer.ExportSnapshotAsync(first);
+        Assert.False(File.Exists(RunPath));
+        writer.Add(Step(1));
+        writer.Mark(new(1, "report-two"));
+        await writer.ExportSnapshotAsync(second);
+        writer.Add(Step(2));
+        await writer.FinishAsync("closed");
+
+        foreach (var (path, count) in new[] { (first, 1), (second, 2), (RunPath, 3) })
+        {
+            using var reader = new PlaytestRunReader(path);
+            for (int index = 0; index < count; index++)
+                Assert.Equal(JsonSerializer.Serialize(Step(index)), JsonSerializer.Serialize(reader.ReadNextStep()));
+            Assert.Null(reader.ReadNextStep());
+            Assert.Equal(count, reader.End!.Steps);
+            Assert.Contains(new(0, "report-one"), reader.Markers);
+            if (count > 1) Assert.Contains(new(1, "report-two"), reader.Markers);
+        }
+    }
+
+    [Fact]
+    public async Task FailedSnapshot_DoesNotOverwriteExistingFileOrStopLiveRecording()
+    {
+        Directory.CreateDirectory(_directory);
+        string existing = Path.Combine(_directory, "existing.gz");
+        await File.WriteAllTextAsync(existing, "keep");
+        using var writer = new PlaytestRunWriter(RunPath, Header());
+        writer.Add(Step(0));
+        await Assert.ThrowsAsync<IOException>(() => writer.ExportSnapshotAsync(existing));
+        Assert.Equal("keep", await File.ReadAllTextAsync(existing));
+        writer.Add(Step(1));
+        await writer.FinishAsync("saved");
+        using var reader = new PlaytestRunReader(RunPath);
+        Assert.NotNull(reader.ReadNextStep());
+        Assert.NotNull(reader.ReadNextStep());
+        Assert.Null(reader.ReadNextStep());
+    }
+
+    [Fact]
+    public async Task CompletedSnapshot_SurvivesAbandonedLiveSession()
+    {
+        string snapshot = Path.Combine(_directory, "report.gz");
+        using (var writer = new PlaytestRunWriter(RunPath, Header()))
+        {
+            writer.Add(Step(0));
+            await writer.ExportSnapshotAsync(snapshot);
+            writer.Add(Step(1));
+        }
+        Assert.False(File.Exists(RunPath));
+        using var report = new PlaytestRunReader(snapshot);
+        Assert.NotNull(report.ReadNextStep());
+        Assert.Null(report.ReadNextStep());
+        using var unfinished = new PlaytestRunReader(RunPath + ".partial");
+        Assert.NotNull(unfinished.ReadNextStep());
+        Assert.NotNull(unfinished.ReadNextStep());
+        Assert.Throws<InvalidDataException>(() => unfinished.ReadNextStep());
+    }
+
+    [Fact]
     public void BuildIdentity_DetectsReferencedLibraryChangesAndMissingModules()
     {
         var header = Header();

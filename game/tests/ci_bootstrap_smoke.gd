@@ -35,7 +35,10 @@ func _run_smoke() -> void:
         return
 
     print("[godot-ci-smoke] PASS: OBPGame loads and Game Sources opens without retail data")
-    quit(0)
+    game.queue_free()
+    for frame in range(3):
+        await process_frame
+    root.add_child(load("res://diagnostics/BugReportMenuSmoke.cs").new())
 
 
 func _fail(message: String) -> void:

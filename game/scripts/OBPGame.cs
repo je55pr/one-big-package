@@ -62,6 +62,7 @@ public partial class OBPGame : Node3D
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         ApplicationLifecycle.SetQuitPreparation(PrepareForQuitAsync);
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        if (!InitializeBugReporting()) return;
         if (!InitializePlaytest()) return;
         if (_args.ReplayForwardFrames.HasValue && _args.LoadMovementState is null)
         {
@@ -293,6 +294,9 @@ public partial class OBPGame : Node3D
         // Stop gameplay before releasing its audio, otherwise a final physics
         // update can start another footstep/voice during shutdown.
         ProcessMode = ProcessModeEnum.Disabled;
+        _playtest?.SuspendBugCaptureForQuit();
+        if (_bugSaveInFlight is { } save) await save;
+        if (_playtest is { } playtest) await playtest.PrepareBugCaptureQuitAsync();
         ReleaseAudioForExit();
 
         // Godot 4.7.2 retires stopped playbacks on the mixing thread, then

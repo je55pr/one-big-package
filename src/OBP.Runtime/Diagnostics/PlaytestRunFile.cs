@@ -15,7 +15,9 @@ internal static class PlaytestRunLimits
 /// <summary>Bounded background writer. Only a completed, flushed run takes the final filename.</summary>
 public sealed class PlaytestRunWriter : IDisposable
 {
-    private readonly BlockingCollection<PlaytestRunEntry> _queue = new(256);
+    private sealed record WriteRequest(PlaytestRunEntry? Entry = null, string? Snapshot = null,
+        int Steps = 0, TaskCompletionSource? Completion = null);
+    private readonly BlockingCollection<WriteRequest> _queue = new(256);
     private readonly Task _worker;
     private int _steps;
     private bool _finished;
@@ -34,22 +36,88 @@ public sealed class PlaytestRunWriter : IDisposable
             bool completed = false;
             long expanded = 0;
             using (file)
-            using (var gzip = new GZipStream(file, CompressionLevel.Fastest))
-            using (var text = new StreamWriter(gzip, new UTF8Encoding(false), 65536))
-                foreach (var entry in _queue.GetConsumingEnumerable())
+            {
+                var text = OpenText(file);
+                try
                 {
-                    string line = JsonSerializer.Serialize(entry, PlaytestRunEntry.JsonOptions);
-                    expanded += Encoding.UTF8.GetByteCount(line) + Environment.NewLine.Length;
-                    if (line.Length > PlaytestRunLimits.Line || expanded > PlaytestRunLimits.Expanded || file.Position > PlaytestRunLimits.Compressed)
-                        throw new IOException("Recording exceeded its size limit; partial file retained.");
-                    text.WriteLine(line);
-                    completed |= entry.End is not null;
+                    foreach (var request in _queue.GetConsumingEnumerable())
+                    {
+                        if (request.Snapshot is { } snapshot)
+                        {
+                            // Close this gzip member before copying. The live tape
+                            // gets another member; only the exported copy gets an
+                            // end record. No input records are rewritten or lost.
+                            text.Dispose();
+                            try
+                            {
+                                file.Flush(flushToDisk: true);
+                                ExportSnapshot(snapshot, request.Steps);
+                                request.Completion!.SetResult();
+                            }
+                            catch (Exception error) { request.Completion!.SetException(error); }
+                            finally { text = OpenText(file); }
+                            continue;
+                        }
+                        var entry = request.Entry!;
+                        string line = JsonSerializer.Serialize(entry, PlaytestRunEntry.JsonOptions);
+                        expanded += Encoding.UTF8.GetByteCount(line) + Environment.NewLine.Length;
+                        if (line.Length > PlaytestRunLimits.Line || expanded > PlaytestRunLimits.Expanded || file.Position > PlaytestRunLimits.Compressed)
+                            throw new IOException("Recording exceeded its size limit; partial file retained.");
+                        text.WriteLine(line);
+                        completed |= entry.End is not null;
+                    }
                 }
+                finally { text.Dispose(); }
+            }
             if (new FileInfo(PartialPath).Length > PlaytestRunLimits.Compressed)
                 throw new IOException("Recording exceeded its compressed size limit; partial file retained.");
             if (completed) File.Move(PartialPath, Path);
         });
         Enqueue(new(Header: header));
+    }
+
+    private static StreamWriter OpenText(Stream stream) => new(
+        new GZipStream(stream, CompressionLevel.Fastest, leaveOpen: true), new UTF8Encoding(false), 65536);
+
+    /// <summary>
+    /// Export the complete prefix queued so far, without stopping the live writer.
+    /// A failed export does not complete or invalidate the ongoing recording.
+    /// </summary>
+    public async Task ExportSnapshotAsync(string path)
+    {
+        string target = System.IO.Path.GetFullPath(path);
+        if (_steps == 0 || string.Equals(target, Path, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(target, PartialPath, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Choose a separate snapshot filename after recording begins.", nameof(path));
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        EnqueueRequest(new(Snapshot: target, Steps: _steps, Completion: completion));
+        if (await Task.WhenAny(completion.Task, _worker).ConfigureAwait(false) == _worker)
+            await _worker.ConfigureAwait(false);
+        await completion.Task.ConfigureAwait(false);
+    }
+
+    private void ExportSnapshot(string target, int steps)
+    {
+        string partial = target + ".partial";
+        // CreateNew prevents collisions with another report/export operation.
+        bool created = false;
+        try
+        {
+            if (File.Exists(target)) throw new IOException("Snapshot already exists.");
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(target)!);
+            using (var output = new FileStream(partial, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                created = true;
+                using (var input = new FileStream(PartialPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    input.CopyTo(output);
+                using (var footer = OpenText(output))
+                    footer.WriteLine(JsonSerializer.Serialize(new PlaytestRunEntry(End: new(steps, "saved")), PlaytestRunEntry.JsonOptions));
+                output.Flush(flushToDisk: true);
+                if (output.Length > PlaytestRunLimits.Compressed) throw new IOException("Snapshot exceeds its compressed size limit.");
+            }
+            File.Move(partial, target);
+        }
+        finally { if (created && File.Exists(partial)) File.Delete(partial); }
     }
 
     public void Add(PlaytestStep step)
@@ -77,11 +145,13 @@ public sealed class PlaytestRunWriter : IDisposable
         return _worker;
     }
 
-    private void Enqueue(PlaytestRunEntry entry)
+    private void Enqueue(PlaytestRunEntry entry) => EnqueueRequest(new(Entry: entry));
+
+    private void EnqueueRequest(WriteRequest request)
     {
         if (_finished) throw new InvalidOperationException("Recording is already closed.");
         if (_worker.IsFaulted) throw new IOException("Recording writer failed.", _worker.Exception);
-        if (!_queue.TryAdd(entry)) throw new IOException("Recording writer fell behind; the partial file is retained.");
+        if (!_queue.TryAdd(request)) throw new IOException("Recording writer fell behind; the partial file is retained.");
     }
 
     public void Dispose()
