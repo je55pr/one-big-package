@@ -409,3 +409,26 @@ applied to every pause-menu choice:** the exact label draw callback
 associated with the ordinary six-row root needs verification before
 we can claim that all six choices use this shadow path. This evidence
 is ready for the remaining typography/attachment-corner pass.
+
+## 23 October: actual Veldin gameplay pause contrast gate
+
+The ordinary `./tools/rac1-veldin-play-smoke.ps1` now opens and closes
+the exact gameplay `PauseMenuUi` through `OBPGame.TryOpenPauseMenu` while
+standing on Veldin's authored collision. This is distinct from the
+isolated `Rac1RetailUiSmoke` fixture, and does not stage a replacement
+world/background or teleport the player.
+
+`OBPGame.Rac1VeldinRetailPauseSmoke.cs` asserts the attached retail
+source supplied six original class-`0x472` projected panel buttons, each
+with its source-backed shader surface, and the initial Weapons focus.
+The rendered gate reads each panel's interior from the actual composed
+world viewport and rejects washed-out pixels using the same conservative
+contrast bounds as the white-background UI fixture. It verifies the
+player cannot move while paused, closes the UI through the ordinary
+host path, and confirms the tree resumes. The local, ignored capture is
+`captures/rac1-ui-veldin/root.png`.
+
+On JESS-PC the full rendered ordinary Veldin play smoke passed, including
+the added panel checks, native collision/movement, combat and natural
+restart. This establishes *Godot gameplay integration and readability*,
+not pixel-exact PS2 GS output or a frame-matched PCSX2 comparison.
