@@ -23,7 +23,10 @@ The original mechanics and encounters are being recovered first, so they can be 
 
 ## Implementation catalogue
 
-**Status legend:** 🔴 Unassessed · 🟠 Researched / basic placeholder · 🟡 Partially implemented · 🟢 Fully implemented and verified
+<div>🔴 Unassessed</div>
+<div>🟠 Researched / basic implementation</div>
+<div>🟡 Partially implemented</div>
+<div>🟢 Fully implemented and verified</div>
 
 <details>
 <summary>Weapons and upgrade families</summary>
@@ -33,22 +36,22 @@ The original mechanics and encounters are being recovered first, so they can be 
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Weapon / family</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td></td><td nowrap="nowrap">OmniWrench 8000</td><td nowrap="nowrap">🟡</td><td>Ordinary wrench playable; Basic wrench attacks</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9a/Bomb_Glove_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155519" width="72" alt="Bomb Glove"></td><td nowrap="nowrap">Bomb Glove</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cb/Pyrocitor_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155651" width="72" alt="Pyrocitor"></td><td nowrap="nowrap">Pyrocitor</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/3/31/Blaster_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155925" width="72" alt="Blaster"></td><td nowrap="nowrap">Blaster</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cd/Glove_of_Doom_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155903" width="72" alt="Glove of Doom"></td><td nowrap="nowrap">Glove of Doom</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/aa/Suck_Cannon_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155830" width="72" alt="Suck Cannon"></td><td nowrap="nowrap">Suck Cannon</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9d/Taunter_icon.png/revision/latest?cb=20250708155840" width="72" alt="Taunter"></td><td nowrap="nowrap">Taunter</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/60/Mine_Glove_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155851" width="72" alt="Mine Glove"></td><td nowrap="nowrap">Mine Glove</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/1a/R.Y.N.O._from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155709" width="72" alt="R.Y.N.O."></td><td nowrap="nowrap">R.Y.N.O.</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9d/Devastator_icon.png/revision/latest?cb=20250708155820" width="72" alt="Devastator"></td><td nowrap="nowrap">Devastator</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/c0/Walloper_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155809" width="72" alt="Walloper"></td><td nowrap="nowrap">Walloper</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/e/e8/Visibomb_Gun_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155802" width="72" alt="Visibomb Gun"></td><td nowrap="nowrap">Visibomb Gun</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/fa/Decoy_Glove_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155752" width="72" alt="Decoy Glove"></td><td nowrap="nowrap">Decoy Glove</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/96/Drone_Device_icon.png/revision/latest?cb=20250708155740" width="72" alt="Drone Device"></td><td nowrap="nowrap">Drone Device</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cf/Tesla_Claw_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155732" width="72" alt="Tesla Claw"></td><td nowrap="nowrap">Tesla Claw</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a7/Morph-o-Ray_icon.png/revision/latest?cb=20250708155720" width="72" alt="Morph-O-Ray"></td><td nowrap="nowrap">Morph-O-Ray</td><td nowrap="nowrap">🟡</td><td>Ordinary weapon playable; Gold upgrade not yet verified</td></tr>
+<tr><td></td><td nowrap="nowrap">OmniWrench 8000</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9a/Bomb_Glove_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155519" width="72" alt="Bomb Glove"></td><td nowrap="nowrap">Bomb Glove</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cb/Pyrocitor_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155651" width="72" alt="Pyrocitor"></td><td nowrap="nowrap">Pyrocitor</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/3/31/Blaster_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155925" width="72" alt="Blaster"></td><td nowrap="nowrap">Blaster</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cd/Glove_of_Doom_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155903" width="72" alt="Glove of Doom"></td><td nowrap="nowrap">Glove of Doom</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/aa/Suck_Cannon_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155830" width="72" alt="Suck Cannon"></td><td nowrap="nowrap">Suck Cannon</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9d/Taunter_icon.png/revision/latest?cb=20250708155840" width="72" alt="Taunter"></td><td nowrap="nowrap">Taunter</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/60/Mine_Glove_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155851" width="72" alt="Mine Glove"></td><td nowrap="nowrap">Mine Glove</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/1a/R.Y.N.O._from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155709" width="72" alt="R.Y.N.O."></td><td nowrap="nowrap">R.Y.N.O.</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9d/Devastator_icon.png/revision/latest?cb=20250708155820" width="72" alt="Devastator"></td><td nowrap="nowrap">Devastator</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/c0/Walloper_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155809" width="72" alt="Walloper"></td><td nowrap="nowrap">Walloper</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/e/e8/Visibomb_Gun_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155802" width="72" alt="Visibomb Gun"></td><td nowrap="nowrap">Visibomb Gun</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/fa/Decoy_Glove_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155752" width="72" alt="Decoy Glove"></td><td nowrap="nowrap">Decoy Glove</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/96/Drone_Device_icon.png/revision/latest?cb=20250708155740" width="72" alt="Drone Device"></td><td nowrap="nowrap">Drone Device</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cf/Tesla_Claw_from_R%26C_%282002%29_icon.png/revision/latest?cb=20250708155732" width="72" alt="Tesla Claw"></td><td nowrap="nowrap">Tesla Claw</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a7/Morph-o-Ray_icon.png/revision/latest?cb=20250708155720" width="72" alt="Morph-O-Ray"></td><td nowrap="nowrap">Morph-O-Ray</td><td nowrap="nowrap">🟠</td><td></td></tr>
 </tbody></table>
 
 **Going Commando**
@@ -56,31 +59,31 @@ The original mechanics and encounters are being recovered first, so they can be 
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Weapon / family</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td></td><td nowrap="nowrap">OmniWrench 10000 / 12000</td><td nowrap="nowrap">🔴</td><td>Wrench progression</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f2/Lancer_from_GC_icon.png/revision/latest?cb=20260126005435" width="72" alt="Lancer"></td><td nowrap="nowrap">Lancer</td><td nowrap="nowrap">🟡</td><td>Firing in R&amp;C1; Upgrade / variant: Heavy Lancer</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/3/34/Gravity_Bomb_from_GC_icon.png/revision/latest?cb=20260126005256" width="72" alt="Gravity Bomb"></td><td nowrap="nowrap">Gravity Bomb</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Mini-Nuke</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a9/Chopper_icon.png/revision/latest?cb=20260126005028" width="72" alt="Chopper"></td><td nowrap="nowrap">Chopper</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Multi-Star</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a5/Seeker_Gun_icon.png/revision/latest?cb=20260126005832" width="72" alt="Seeker Gun"></td><td nowrap="nowrap">Seeker Gun</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: HK22 Gun</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/0a/Pulse_Rifle_icon.png/revision/latest?cb=20260126005752" width="72" alt="Pulse Rifle"></td><td nowrap="nowrap">Pulse Rifle</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Vaporizer</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/4f/Miniturret_Glove_from_GC_icon.png/revision/latest?cb=20260126005703" width="72" alt="Miniturret Glove"></td><td nowrap="nowrap">Miniturret Glove</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Megaturret Glove</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/45/Blitz_Gun_icon.png/revision/latest?cb=20260126004741" width="72" alt="Blitz Gun"></td><td nowrap="nowrap">Blitz Gun</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Blitz Cannon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/2/2f/Shield_Charger_from_GC_icon.png/revision/latest?cb=20260126005858" width="72" alt="Shield Charger"></td><td nowrap="nowrap">Shield Charger</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Tesla Barrier</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/55/Synthenoids_icon.png/revision/latest?cb=20260126005954" width="72" alt="Synthenoid"></td><td nowrap="nowrap">Synthenoid</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Kilonoid</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/1e/Lava_Gun_from_GC_icon.png/revision/latest?cb=20260126005600" width="72" alt="Lava Gun"></td><td nowrap="nowrap">Lava Gun</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Meteor Gun</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f3/Bouncer_from_GC_icon.png/revision/latest?cb=20260126004825" width="72" alt="Bouncer"></td><td nowrap="nowrap">Bouncer</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Heavy Bouncer</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/fe/Minirocket_Tube_from_GC_icon.png/revision/latest?cb=20260126005446" width="72" alt="Minirocket Tube"></td><td nowrap="nowrap">Minirocket Tube</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Megarocket Cannon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/12/Plasma_Coil_from_GC_icon.png/revision/latest?cb=20260126005817" width="72" alt="Plasma Coil"></td><td nowrap="nowrap">Plasma Coil</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Plasma Storm</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/06/Hoverbomb_Gun_icon.png/revision/latest?cb=20260126005328" width="72" alt="Hoverbomb Gun"></td><td nowrap="nowrap">Hoverbomb Gun</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Tetrabomb Gun</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/70/Spiderbot_Glove_icon.png/revision/latest?cb=20260126005914" width="72" alt="Spiderbot Glove"></td><td nowrap="nowrap">Spiderbot Glove</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Tankbot Glove</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/0f/Sheepinator_from_GC_icon.png/revision/latest?cb=20260126005844" width="72" alt="Sheepinator"></td><td nowrap="nowrap">Sheepinator</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Black Sheepinator</td></tr>
+<tr><td></td><td nowrap="nowrap">OmniWrench 10000 / 12000</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f2/Lancer_from_GC_icon.png/revision/latest?cb=20260126005435" width="72" alt="Lancer"></td><td nowrap="nowrap">Lancer</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/3/34/Gravity_Bomb_from_GC_icon.png/revision/latest?cb=20260126005256" width="72" alt="Gravity Bomb"></td><td nowrap="nowrap">Gravity Bomb</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a9/Chopper_icon.png/revision/latest?cb=20260126005028" width="72" alt="Chopper"></td><td nowrap="nowrap">Chopper</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a5/Seeker_Gun_icon.png/revision/latest?cb=20260126005832" width="72" alt="Seeker Gun"></td><td nowrap="nowrap">Seeker Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/0a/Pulse_Rifle_icon.png/revision/latest?cb=20260126005752" width="72" alt="Pulse Rifle"></td><td nowrap="nowrap">Pulse Rifle</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/4f/Miniturret_Glove_from_GC_icon.png/revision/latest?cb=20260126005703" width="72" alt="Miniturret Glove"></td><td nowrap="nowrap">Miniturret Glove</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/45/Blitz_Gun_icon.png/revision/latest?cb=20260126004741" width="72" alt="Blitz Gun"></td><td nowrap="nowrap">Blitz Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/2/2f/Shield_Charger_from_GC_icon.png/revision/latest?cb=20260126005858" width="72" alt="Shield Charger"></td><td nowrap="nowrap">Shield Charger</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/55/Synthenoids_icon.png/revision/latest?cb=20260126005954" width="72" alt="Synthenoid"></td><td nowrap="nowrap">Synthenoid</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/1e/Lava_Gun_from_GC_icon.png/revision/latest?cb=20260126005600" width="72" alt="Lava Gun"></td><td nowrap="nowrap">Lava Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f3/Bouncer_from_GC_icon.png/revision/latest?cb=20260126004825" width="72" alt="Bouncer"></td><td nowrap="nowrap">Bouncer</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/fe/Minirocket_Tube_from_GC_icon.png/revision/latest?cb=20260126005446" width="72" alt="Minirocket Tube"></td><td nowrap="nowrap">Minirocket Tube</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/12/Plasma_Coil_from_GC_icon.png/revision/latest?cb=20260126005817" width="72" alt="Plasma Coil"></td><td nowrap="nowrap">Plasma Coil</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/06/Hoverbomb_Gun_icon.png/revision/latest?cb=20260126005328" width="72" alt="Hoverbomb Gun"></td><td nowrap="nowrap">Hoverbomb Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/70/Spiderbot_Glove_icon.png/revision/latest?cb=20260126005914" width="72" alt="Spiderbot Glove"></td><td nowrap="nowrap">Spiderbot Glove</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/0f/Sheepinator_from_GC_icon.png/revision/latest?cb=20260126005844" width="72" alt="Sheepinator"></td><td nowrap="nowrap">Sheepinator</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/85/RYNO_II_icon.png/revision/latest?cb=20260126005734" width="72" alt="R.Y.N.O. II"></td><td nowrap="nowrap">R.Y.N.O. II</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/1a/Zodiac_icon.png/revision/latest?cb=20260126010238" width="72" alt="Zodiac"></td><td nowrap="nowrap">Zodiac</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/89/Clank_Zapper_icon.png/revision/latest?cb=20260126005015" width="72" alt="Clank Zapper"></td><td nowrap="nowrap">Clank Zapper</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Clank Shocker</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/67/Tesla_Claw_from_GC_icon.png/revision/latest?cb=20260126005941" width="72" alt="Tesla Claw"></td><td nowrap="nowrap">Tesla Claw</td><td nowrap="nowrap">🔴</td><td>Returning R&amp;C1 weapon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/0b/Bomb_Glove_from_GC_icon.png/revision/latest?cb=20260126004753" width="72" alt="Bomb Glove"></td><td nowrap="nowrap">Bomb Glove</td><td nowrap="nowrap">🔴</td><td>Returning R&amp;C1 weapon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/04/Walloper_from_GC_icon.png/revision/latest?cb=20260126010228" width="72" alt="Walloper"></td><td nowrap="nowrap">Walloper</td><td nowrap="nowrap">🔴</td><td>Returning R&amp;C1 weapon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/3/3c/Visibomb_Gun_from_GC_icon.png/revision/latest?cb=20260126010150" width="72" alt="Visibomb Gun"></td><td nowrap="nowrap">Visibomb Gun</td><td nowrap="nowrap">🔴</td><td>Returning R&amp;C1 weapon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/2/25/Decoy_Glove_from_GC_icon.png/revision/latest?cb=20260126004951" width="72" alt="Decoy Glove"></td><td nowrap="nowrap">Decoy Glove</td><td nowrap="nowrap">🔴</td><td>Returning R&amp;C1 weapon</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/89/Clank_Zapper_icon.png/revision/latest?cb=20260126005015" width="72" alt="Clank Zapper"></td><td nowrap="nowrap">Clank Zapper</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/67/Tesla_Claw_from_GC_icon.png/revision/latest?cb=20260126005941" width="72" alt="Tesla Claw"></td><td nowrap="nowrap">Tesla Claw</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/0b/Bomb_Glove_from_GC_icon.png/revision/latest?cb=20260126004753" width="72" alt="Bomb Glove"></td><td nowrap="nowrap">Bomb Glove</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/04/Walloper_from_GC_icon.png/revision/latest?cb=20260126010228" width="72" alt="Walloper"></td><td nowrap="nowrap">Walloper</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/3/3c/Visibomb_Gun_from_GC_icon.png/revision/latest?cb=20260126010150" width="72" alt="Visibomb Gun"></td><td nowrap="nowrap">Visibomb Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/2/25/Decoy_Glove_from_GC_icon.png/revision/latest?cb=20260126004951" width="72" alt="Decoy Glove"></td><td nowrap="nowrap">Decoy Glove</td><td nowrap="nowrap">🔴</td><td></td></tr>
 </tbody></table>
 
 **Up Your Arsenal**
@@ -88,27 +91,27 @@ The original mechanics and encounters are being recovered first, so they can be 
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Weapon / family</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td></td><td nowrap="nowrap">OmniWrench 12000</td><td nowrap="nowrap">🔴</td><td>Wrench progression</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/7f/Shock_Blaster_icon.png/revision/latest?cb=20260126012534" width="72" alt="Shock Blaster"></td><td nowrap="nowrap">Shock Blaster</td><td nowrap="nowrap">🟡</td><td>Shock Cannon firing in R&amp;C1; Upgrade / variant: Shock Cannon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/55/Nitro_Launcher_icon.png/revision/latest?cb=20260126012211" width="72" alt="Nitro Launcher"></td><td nowrap="nowrap">Nitro Launcher</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Nitro Eruptor</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/44/N60_Storm_icon.png/revision/latest?cb=20260126012254" width="72" alt="N60 Storm"></td><td nowrap="nowrap">N60 Storm</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: N90 Hurricane</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/d/d9/Plasma_Whip_from_UYA_icon.png/revision/latest?cb=20260126012358" width="72" alt="Plasma Whip"></td><td nowrap="nowrap">Plasma Whip</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Quantum Whip</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/73/Infector_icon.png/revision/latest?cb=20260126011951" width="72" alt="Infector"></td><td nowrap="nowrap">Infector</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Infecto-Bomb</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/48/Suck_Cannon_from_UYA_icon.png/revision/latest?cb=20260126012629" width="72" alt="Suck Cannon"></td><td nowrap="nowrap">Suck Cannon</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Vortex Cannon</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/c7/Spitting_Hydra_icon.png/revision/latest?cb=20260126012517" width="72" alt="Spitting Hydra"></td><td nowrap="nowrap">Spitting Hydra</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Tempest</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/89/Agents_of_Doom_from_UYA_icon.png/revision/latest?cb=20260126010905" width="72" alt="Agents of Doom"></td><td nowrap="nowrap">Agents of Doom</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Agents of Dread</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/b/ba/Flux_Rifle_icon.png/revision/latest?cb=20260126011545" width="72" alt="Flux Rifle"></td><td nowrap="nowrap">Flux Rifle</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Splitter Rifle</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9b/Annihilator_icon.png/revision/latest?cb=20260126011116" width="72" alt="Annihilator"></td><td nowrap="nowrap">Annihilator</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Decimator</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/61/Holoshield_Glove_icon.png/revision/latest?cb=20260126011652" width="72" alt="Holoshield Glove"></td><td nowrap="nowrap">Holoshield Glove</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Ultrashield Launcher</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a1/Disc_Blade_Gun_icon.png/revision/latest?cb=20260126011400" width="72" alt="Disc Blade Gun"></td><td nowrap="nowrap">Disc Blade Gun</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Multi-Disc Gun</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/b/ba/Rift_Inducer_icon.png/revision/latest?cb=20260126012456" width="72" alt="Rift Inducer"></td><td nowrap="nowrap">Rift Inducer</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Rift Ripper</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/81/Qwack-O-Ray_icon.png/revision/latest?cb=20260126012418" width="72" alt="Qwack-O-Ray"></td><td nowrap="nowrap">Qwack-O-Ray</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Qwack-O-Blitzer</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9a/Miniturret_Glove_from_UYA_icon.png/revision/latest?cb=20260126012133" width="72" alt="Miniturret Glove"></td><td nowrap="nowrap">Miniturret Glove</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Megaturret Glove</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f4/Lava_Gun_from_UYA_icon.png/revision/latest?cb=20260126012018" width="72" alt="Lava Gun"></td><td nowrap="nowrap">Lava Gun</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Liquid Nitrogen Gun</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/96/Bouncer_from_UYA_icon.png/revision/latest?cb=20260126011310" width="72" alt="Bouncer"></td><td nowrap="nowrap">Bouncer</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Heavy Bouncer</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cc/Plasma_Coil_from_UYA_icon.png/revision/latest?cb=20260126012200" width="72" alt="Plasma Coil"></td><td nowrap="nowrap">Plasma Coil</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Plasma Storm</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/12/Shield_Charger_from_UYA_icon.png/revision/latest?cb=20260126012548" width="72" alt="Shield Charger"></td><td nowrap="nowrap">Shield Charger</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: Tesla Barrier</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/4a/RY3NO_icon.png/revision/latest?cb=20260126012614" width="72" alt="R.Y.3.N.O."></td><td nowrap="nowrap">R.Y.3.N.O.</td><td nowrap="nowrap">🔴</td><td>Upgrade / variant: RYNOCIRATOR</td></tr>
+<tr><td></td><td nowrap="nowrap">OmniWrench 12000</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/7f/Shock_Blaster_icon.png/revision/latest?cb=20260126012534" width="72" alt="Shock Blaster"></td><td nowrap="nowrap">Shock Blaster</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/55/Nitro_Launcher_icon.png/revision/latest?cb=20260126012211" width="72" alt="Nitro Launcher"></td><td nowrap="nowrap">Nitro Launcher</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/44/N60_Storm_icon.png/revision/latest?cb=20260126012254" width="72" alt="N60 Storm"></td><td nowrap="nowrap">N60 Storm</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/d/d9/Plasma_Whip_from_UYA_icon.png/revision/latest?cb=20260126012358" width="72" alt="Plasma Whip"></td><td nowrap="nowrap">Plasma Whip</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/73/Infector_icon.png/revision/latest?cb=20260126011951" width="72" alt="Infector"></td><td nowrap="nowrap">Infector</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/48/Suck_Cannon_from_UYA_icon.png/revision/latest?cb=20260126012629" width="72" alt="Suck Cannon"></td><td nowrap="nowrap">Suck Cannon</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/c7/Spitting_Hydra_icon.png/revision/latest?cb=20260126012517" width="72" alt="Spitting Hydra"></td><td nowrap="nowrap">Spitting Hydra</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/89/Agents_of_Doom_from_UYA_icon.png/revision/latest?cb=20260126010905" width="72" alt="Agents of Doom"></td><td nowrap="nowrap">Agents of Doom</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/b/ba/Flux_Rifle_icon.png/revision/latest?cb=20260126011545" width="72" alt="Flux Rifle"></td><td nowrap="nowrap">Flux Rifle</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9b/Annihilator_icon.png/revision/latest?cb=20260126011116" width="72" alt="Annihilator"></td><td nowrap="nowrap">Annihilator</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/61/Holoshield_Glove_icon.png/revision/latest?cb=20260126011652" width="72" alt="Holoshield Glove"></td><td nowrap="nowrap">Holoshield Glove</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/a/a1/Disc_Blade_Gun_icon.png/revision/latest?cb=20260126011400" width="72" alt="Disc Blade Gun"></td><td nowrap="nowrap">Disc Blade Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/b/ba/Rift_Inducer_icon.png/revision/latest?cb=20260126012456" width="72" alt="Rift Inducer"></td><td nowrap="nowrap">Rift Inducer</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/81/Qwack-O-Ray_icon.png/revision/latest?cb=20260126012418" width="72" alt="Qwack-O-Ray"></td><td nowrap="nowrap">Qwack-O-Ray</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9a/Miniturret_Glove_from_UYA_icon.png/revision/latest?cb=20260126012133" width="72" alt="Miniturret Glove"></td><td nowrap="nowrap">Miniturret Glove</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f4/Lava_Gun_from_UYA_icon.png/revision/latest?cb=20260126012018" width="72" alt="Lava Gun"></td><td nowrap="nowrap">Lava Gun</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/96/Bouncer_from_UYA_icon.png/revision/latest?cb=20260126011310" width="72" alt="Bouncer"></td><td nowrap="nowrap">Bouncer</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cc/Plasma_Coil_from_UYA_icon.png/revision/latest?cb=20260126012200" width="72" alt="Plasma Coil"></td><td nowrap="nowrap">Plasma Coil</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/12/Shield_Charger_from_UYA_icon.png/revision/latest?cb=20260126012548" width="72" alt="Shield Charger"></td><td nowrap="nowrap">Shield Charger</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/4/4a/RY3NO_icon.png/revision/latest?cb=20260126012614" width="72" alt="R.Y.3.N.O."></td><td nowrap="nowrap">R.Y.3.N.O.</td><td nowrap="nowrap">🔴</td><td></td></tr>
 </tbody></table>
 
 Reference: [R&C1 weapons](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank_%282002_game%29), [GC weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Going_Commando/Weapons), [UYA weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Up_Your_Arsenal/Weapons), [R&C1 arsenal evidence](research/RAC1_ARSENAL.md), [cross-game weapon evidence](docs/FUSION_WEAPONS_TESTING.md).
@@ -123,16 +126,16 @@ Reference: [R&C1 weapons](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Cl
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Gadget / equipment</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/8f/Heli-Pack_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170311" width="72" alt="Heli-Pack"></td><td nowrap="nowrap">Heli-Pack</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/e/ee/Thruster-Pack_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170714" width="72" alt="Thruster-Pack"></td><td nowrap="nowrap">Thruster-Pack</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/7b/Hydro-Pack_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170346" width="72" alt="Hydro-Pack"></td><td nowrap="nowrap">Hydro-Pack</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/8f/Heli-Pack_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170311" width="72" alt="Heli-Pack"></td><td nowrap="nowrap">Heli-Pack</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/e/ee/Thruster-Pack_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170714" width="72" alt="Thruster-Pack"></td><td nowrap="nowrap">Thruster-Pack</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/7b/Hydro-Pack_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170346" width="72" alt="Hydro-Pack"></td><td nowrap="nowrap">Hydro-Pack</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/c3/O2_Mask_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170535" width="72" alt="O2 Mask"></td><td nowrap="nowrap">O2 Mask</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cd/Pilot%27s_Helmet_icon.png/revision/latest?cb=20260124170603" width="72" alt="Pilot&#39;s Helmet"></td><td nowrap="nowrap">Pilot&#39;s Helmet</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cc/Swingshot_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170651" width="72" alt="Swingshot"></td><td nowrap="nowrap">Swingshot</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/c/cc/Swingshot_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170651" width="72" alt="Swingshot"></td><td nowrap="nowrap">Swingshot</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/85/Trespasser_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170701" width="72" alt="Trespasser"></td><td nowrap="nowrap">Trespasser</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/75/Grind_Boots_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170250" width="72" alt="Grind Boots"></td><td nowrap="nowrap">Grind Boots</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/fe/Magneboots_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170404" width="72" alt="Magneboots"></td><td nowrap="nowrap">Magneboots</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/73/Metal_Detector_icon.png/revision/latest?cb=20260124170508" width="72" alt="Metal Detector"></td><td nowrap="nowrap">Metal Detector</td><td nowrap="nowrap">🟡</td><td>Digging</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/75/Grind_Boots_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170250" width="72" alt="Grind Boots"></td><td nowrap="nowrap">Grind Boots</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/fe/Magneboots_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170404" width="72" alt="Magneboots"></td><td nowrap="nowrap">Magneboots</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/73/Metal_Detector_icon.png/revision/latest?cb=20260124170508" width="72" alt="Metal Detector"></td><td nowrap="nowrap">Metal Detector</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/60/Hydrodisplacer_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170354" width="72" alt="Hydrodisplacer"></td><td nowrap="nowrap">Hydrodisplacer</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/0/07/Sonic_Summoner_icon.png/revision/latest?cb=20260124170644" width="72" alt="Sonic Summoner"></td><td nowrap="nowrap">Sonic Summoner</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/9d/Hologuise_from_R%26C_%282002%29_icon.png/revision/latest?cb=20260124170318" width="72" alt="Hologuise"></td><td nowrap="nowrap">Hologuise</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -224,7 +227,7 @@ References: [R&C1 equipment](research/RAC1_TRAVERSAL_EQUIPMENT.md), [GC equipmen
 <tr><td></td><td nowrap="nowrap">Extermibot (Rilgar)</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Extermitank</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Homing mine</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td></td><td nowrap="nowrap">Horned toad</td><td nowrap="nowrap">🟡</td><td>Veldin class 749</td></tr>
+<tr><td></td><td nowrap="nowrap">Horned toad</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Machinegun turret</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Mine layer</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Minibomber</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -246,7 +249,7 @@ References: [R&C1 equipment](research/RAC1_TRAVERSAL_EQUIPMENT.md), [GC equipmen
 <tr><td></td><td nowrap="nowrap">Test dummy</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Toxic crab</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Ultra-Mech Unlimited</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td></td><td nowrap="nowrap">Veldin flame robot (class 1440)</td><td nowrap="nowrap">🟡</td><td>Veldin</td></tr>
+<tr><td></td><td nowrap="nowrap">Veldin flame robot (class 1440)</td><td nowrap="nowrap">🟠</td><td></td></tr>
 </tbody></table>
 
 **Going Commando**
@@ -457,7 +460,7 @@ References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Planet / level</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/77/Veldin_from_R%26C_%282002%29.png/revision/latest?cb=20180803035614" width="72" alt="Veldin: Kyzil Plateau (opening)"></td><td nowrap="nowrap">Veldin: Kyzil Plateau (opening)</td><td nowrap="nowrap">🟡</td><td>Playable slice</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/77/Veldin_from_R%26C_%282002%29.png/revision/latest?cb=20180803035614" width="72" alt="Veldin: Kyzil Plateau (opening)"></td><td nowrap="nowrap">Veldin: Kyzil Plateau (opening)</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/73/Novalis_from_R%26C_%282002%29.png/revision/latest?cb=20180803035609" width="72" alt="Novalis: Tobruk Crater"></td><td nowrap="nowrap">Novalis: Tobruk Crater</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Aridia: Outpost X11</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Kerwan: Metropolis</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -484,7 +487,7 @@ References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:
 <thead><tr><th width="84"></th><th width="1">Planet / level</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
 <tr><td></td><td nowrap="nowrap">Aranos: Flying Lab</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/d/dd/Oozla.png/revision/latest?cb=20180807095920" width="72" alt="Oozla: Megacorp Outlet"></td><td nowrap="nowrap">Oozla: Megacorp Outlet</td><td nowrap="nowrap">🟡</td><td>World loading</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/d/dd/Oozla.png/revision/latest?cb=20180807095920" width="72" alt="Oozla: Megacorp Outlet"></td><td nowrap="nowrap">Oozla: Megacorp Outlet</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Wupash Nebula</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Maktar Nebula: Maktar Resort</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Maktar Nebula: Jamming Array</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -516,7 +519,7 @@ References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Planet / level</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/16/Veldin_from_UYA.png/revision/latest?cb=20180808152708" width="72" alt="Veldin: Kyzil Plateau"></td><td nowrap="nowrap">Veldin: Kyzil Plateau</td><td nowrap="nowrap">🟡</td><td>World loading</td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/1/16/Veldin_from_UYA.png/revision/latest?cb=20180808152708" width="72" alt="Veldin: Kyzil Plateau"></td><td nowrap="nowrap">Veldin: Kyzil Plateau</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Florana</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Starship Phoenix</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Marcadia</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -549,7 +552,7 @@ References: [R&C1 level order](https://strategywiki.org/wiki/Ratchet_%26_Clank/T
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Item / collectible type</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td></td><td nowrap="nowrap">Bolts (currency)</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
+<tr><td></td><td nowrap="nowrap">Bolts (currency)</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Gold bolts</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Skill points</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Infobots</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -623,14 +626,14 @@ References: [R&C1 items](https://ratchetandclank.fandom.com/wiki/Category%3AItem
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Crate / pickup</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td></td><td nowrap="nowrap">Wooden bolt crate</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
-<tr><td></td><td nowrap="nowrap">Metal bolt crate</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
-<tr><td></td><td nowrap="nowrap">Explosive crate</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
-<tr><td></td><td nowrap="nowrap">Ammo crate</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
-<tr><td></td><td nowrap="nowrap">Nanotech crate</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
+<tr><td></td><td nowrap="nowrap">Wooden bolt crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Metal bolt crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Explosive crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Ammo crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Nanotech crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Jet Fighter health crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td></td><td nowrap="nowrap">World-placed bolts</td><td nowrap="nowrap">🟡</td><td>R&amp;C1; world bolts collect, but save persistence incomplete</td></tr>
-<tr><td></td><td nowrap="nowrap">Crate-emitted bolts</td><td nowrap="nowrap">🟡</td><td>R&amp;C1</td></tr>
+<tr><td></td><td nowrap="nowrap">World-placed bolts</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Crate-emitted bolts</td><td nowrap="nowrap">🟠</td><td></td></tr>
 </tbody></table>
 
 **Going Commando**
@@ -675,7 +678,7 @@ Mechanism labels describe interactive object families. They are not necessarily 
 <table width="100%">
 <thead><tr><th width="84"></th><th width="1">Object / mechanism</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
-<tr><td></td><td nowrap="nowrap">Bolt crank and linked doors (Novalis)</td><td nowrap="nowrap">🟡</td><td>Novalis</td></tr>
+<tr><td></td><td nowrap="nowrap">Bolt crank and linked doors (Novalis)</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Teleporter pad</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">World button / hit switch</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Floor pressure switch</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -683,15 +686,15 @@ Mechanism labels describe interactive object families. They are not necessarily 
 <tr><td></td><td nowrap="nowrap">Trespasser lock</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Gadgetron weapon / ammo vendor</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Nanotech dispenser</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td></td><td nowrap="nowrap">Swingshot target (pull)</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td></td><td nowrap="nowrap">Swingshot target (swing)</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td></td><td nowrap="nowrap">Grind rail / branch</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td></td><td nowrap="nowrap">Magne-Strip / magnetic surface</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td></td><td nowrap="nowrap">Wall-jump slot</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
-<tr><td></td><td nowrap="nowrap">Zipline</td><td nowrap="nowrap">🟠</td><td>Original behaviour documented; implementation not verified</td></tr>
+<tr><td></td><td nowrap="nowrap">Swingshot target (pull)</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Swingshot target (swing)</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Grind rail / branch</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Magne-Strip / magnetic surface</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Wall-jump slot</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Zipline</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Lift / moving platform</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td></td><td nowrap="nowrap">Infobot / mission trigger</td><td nowrap="nowrap">🟡</td><td>Selected R&amp;C1</td></tr>
-<tr><td></td><td nowrap="nowrap">Ship landing pad</td><td nowrap="nowrap">🟡</td><td>R&amp;C1 travel</td></tr>
+<tr><td></td><td nowrap="nowrap">Infobot / mission trigger</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td></td><td nowrap="nowrap">Ship landing pad</td><td nowrap="nowrap">🟠</td><td></td></tr>
 </tbody></table>
 
 **Going Commando**
