@@ -185,6 +185,22 @@ earlier host guard skipped that path whenever a traversal selection was present,
 leaving the visible gun on an old transform with locked axes. Standing and
 moving jump smoke checks now require both position and basis to follow the hand.
 
+During a body transition the native frame clock's fraction is progress from a
+saved pose to a frozen target, rather than interpolation inside the target clip.
+The equipment path retains the complete evaluated local-joint pose and uses
+that same native progress. An interrupted transition snapshots the current
+blended pose. The composed pose supplies both the skinned character and its hand
+matrix, so arms and the mounted weapon cannot independently select the target
+while the body is still blending. Base-pose metadata follows the existing
+standing, locomotion, stop, crouch and traversal clock handoffs.
+
+Runtime tests cover joint-space midpoint rotation and interrupted blends;
+retail controller tests exercise idle/run, stop/restart and jump/landing
+boundaries for both source profiles. Rendered checks compare the entire skin
+and the gun's position and axes at transition entry, including actual movement
+and jump-to-standing changes. The transition curve remains source-controlled;
+this does not introduce a separate gun-transform smoothing timer.
+
 `PlayerHeldEquipmentSession` owns the hand independently of source-qualified
 selection. R&C1's original Circle draw timing adapts to that shared owner;
 foreign sessions also observe it. Wrench attacks retain the wrench after

@@ -52,6 +52,46 @@ public sealed class PlayerSkeletalAnimationTests
         }));
     }
 
+    [Fact]
+    public void TransitionBlendsJointsBeforeSkinningAndUsesTheSamePoseForTheHand()
+    {
+        var a = Clip(0, [0, 1, 2], new(Quaternion.Identity), new(Quaternion.Identity), new(Quaternion.Identity));
+        var b = Clip(3, [0, 1, 2], new(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2)),
+            new(Quaternion.Identity), new(Quaternion.Identity));
+        var sampler = new PlayerSkeletalSampler(Rig(), new([2, 0, 0], [1, 0, 0], [1, 0, 0]));
+        var transition = new PlayerSkeletalTransition(); var key = new object();
+        sampler.Reset(a, new(0, 0, 0)); transition.Resolve(sampler, null, 1);
+        sampler.Reset(b, new(0, 0, 0)); transition.Resolve(sampler, key, 0);
+        Near([2, 0, 0], sampler.Skin());
+        sampler.Reset(b, new(0, 0, 0)); transition.Resolve(sampler, key, .5f);
+        double unit = Math.Sqrt(.5);
+        Near([2 * unit, -2 * unit, 0], sampler.Skin());
+        var hand = sampler.Attachment(1);
+        Near([unit, -unit, 0], [hand.Origin.X, hand.Origin.Y, hand.Origin.Z]);
+        Assert.InRange(Math.Sqrt(hand.X.X * hand.X.X + hand.X.Y * hand.X.Y), .999999, 1.000001);
+        sampler.Reset(b, new(0, 0, 0)); transition.Resolve(sampler, key, 1);
+        Near([0, -2, 0], sampler.Skin());
+    }
+
+    [Fact]
+    public void InterruptingATransitionFreezesTheCurrentlyEvaluatedPose()
+    {
+        var a = Clip(0, [0, 1, 2], new(Quaternion.Identity), new(Quaternion.Identity), new(Quaternion.Identity));
+        var b = Clip(3, [0, 1, 2], new(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2)),
+            new(Quaternion.Identity), new(Quaternion.Identity));
+        var sampler = new PlayerSkeletalSampler(Rig(), new([2, 0, 0], [1, 0, 0], [1, 0, 0]));
+        var transition = new PlayerSkeletalTransition();
+        sampler.Reset(a, new(0, 0, 0)); transition.Resolve(sampler, null, 1);
+        sampler.Reset(b, new(0, 0, 0)); transition.Resolve(sampler, new object(), .4f);
+        var interrupted = sampler.Skin(); var hand = sampler.Attachment(1);
+        var restart = new object();
+        sampler.Reset(a, new(0, 0, 0)); transition.Resolve(sampler, restart, 0);
+        Near(interrupted, sampler.Skin());
+        Assert.Equal(hand, sampler.Attachment(1));
+        sampler.Reset(a, new(0, 0, 0)); transition.Resolve(sampler, restart, 1);
+        Near([2, 0, 0], sampler.Skin());
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(2)]

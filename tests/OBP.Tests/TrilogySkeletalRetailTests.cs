@@ -97,6 +97,48 @@ public sealed partial class TrilogySkeletalRetailTests
         }
     }
 
+    [SkippableFact]
+    public void EquippedTransitionsRetainTheLastSkinAndHandAtTheNativeBlendBoundary()
+    {
+        using var data = new Sources();
+        var avatar = Rac1PlayerAvatarProvider.Instance.Load(Environment.GetEnvironmentVariable("OBP_RAC1_ISO")!, "ratchet");
+        foreach (var source in new[] { data.Gc, data.Uya })
+        {
+            var controller = (Rac1PlayerAnimationPresentationController)Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar);
+            int tick = 0, boundaries = 0;
+            Step(PlayerAnimationState.Idle, new(false, true, 0));
+            for (int i = 0; i < 25; i++) Step(PlayerAnimationState.Idle, new(false, true, 0));
+            // Idle -> launch -> run -> skid/stop -> idle, including restarting a stop.
+            for (int i = 0; i < 50; i++) Step(PlayerAnimationState.Run, new(true, true, .095f, InputMagnitude: 1));
+            for (int i = 0; i < 8; i++) Step(PlayerAnimationState.Idle, new(false, true, .08f, InputMagnitude: 0));
+            for (int i = 0; i < 30; i++) Step(PlayerAnimationState.Run, new(true, true, .095f, InputMagnitude: 1));
+            for (int i = 0; i < 100; i++) Step(PlayerAnimationState.Idle, new(false, true, 0));
+            // A jump and the native standing preset on landing.
+            var jump = new Rac1MovementAnimationSelection(7, 7, 1, BlendTicks: 5, Loop: false);
+            for (int i = 0; i < 30; i++) Step(PlayerAnimationState.JumpRise, new(false, false, 0, Traversal: jump));
+            Step(PlayerAnimationState.Land, new(false, true, 0, GroundEntry: new(0, 0, 2, BlendTicks: -1)));
+            for (int i = 0; i < 30; i++) Step(PlayerAnimationState.Idle, new(false, true, 0));
+            Assert.True(boundaries >= 5, $"{source.Avatar.Identity.SourceGame}: exercised only {boundaries} transitions.");
+
+            void Step(PlayerAnimationState state, Rac1LocomotionAnimationInput input)
+            {
+                var previous = controller.Current.SampledPose?.LocalPositions;
+                var previousHand = controller.CurrentAttachmentPose(PlayerEquipmentPose.HandAttachmentKey);
+                controller.StepOrdinaryAnimation(state, tick++ / 60d, input);
+                var pose = controller.ApplySourceEquipment(source, state is PlayerAnimationState.Run or PlayerAnimationState.JumpRise, false, false, false);
+                if (!controller.SourceEquipmentIsBlending || controller.SourceEquipmentBlendFraction != 0 || previous is null || previousHand is null) return;
+                boundaries++;
+                Assert.InRange(pose.SampledPose!.LocalPositions.Zip(previous, (a, b) => Math.Abs(a - b)).Max(), 0, .00001);
+                var hand = controller.CurrentAttachmentPose(PlayerEquipmentPose.HandAttachmentKey)!;
+                double Error(PlayerAvatarPoint a, PlayerAvatarPoint b) => Math.Max(Math.Abs(a.X - b.X), Math.Max(Math.Abs(a.Y - b.Y), Math.Abs(a.Z - b.Z)));
+                Assert.InRange(Error(previousHand.Origin, hand.Origin), 0, .000001);
+                Assert.InRange(Error(previousHand.X, hand.X), 0, .000001);
+                Assert.InRange(Error(previousHand.Y, hand.Y), 0, .000001);
+                Assert.InRange(Error(previousHand.Z, hand.Z), 0, .000001);
+            }
+        }
+    }
+
     private sealed class Sources : IDisposable
     {
         private readonly FileRandomAccessReader _rac1 = Open("OBP_RAC1_ISO"), _gc = Open("OBP_GC_ISO"), _uya = Open("OBP_UYA_ISO");

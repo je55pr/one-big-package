@@ -139,8 +139,11 @@ public partial class OBPGame
             await PhysicsFramesAsync(10);
             foreach (int selection in new[] { 1, 2 })
             {
+                _player.ApplyDevelopmentReset(fixture.GlobalPosition + Vector3.Up * .05f);
+                await WaitForGroundedAsync(_player, 120);
                 await SelectFusionByInputAsync(selection);
                 foreach (bool movingJump in new[] { false, true }) await CheckFusionJumpAttachmentAsync(movingJump);
+                await CheckFusionMovementTransitionsAsync();
                 await FusionCheckWrenchPersistenceAsync();
             }
             await SelectFusionByInputAsync(0);
@@ -356,12 +359,16 @@ public partial class OBPGame
         await PhysicsFramesAsync(moving ? 12 : 2);
         var initial = view.Basis;
         bool sawJump = false, rotated = false;
+        int boundaries = 0;
         FusionKey(Key.Space, true);
         for (int tick = 0; tick < 65; tick++)
         {
             if (tick == 16) FusionKey(Key.Space, false);
+            var previous = view.Transform;
+            var previousSkin = _playerAvatarAnimationController!.Current.SampledPose?.LocalPositions;
             await PhysicsFramesAsync(1);
             RequireFusionHandAttachment();
+            RequireFusionTransitionContinuity(previous, previousSkin, ref boundaries);
             if (_playerAvatarAnimationController is OBP.RAC1.Player.Rac1PlayerAnimationPresentationController { TraversalSample.Sequence: 7 or 8 })
             {
                 sawJump = true;
@@ -373,7 +380,44 @@ public partial class OBPGame
         ClearMovementSmokeInput();
         await WaitForGroundedAsync(_player!, 180);
         Require(sawJump && rotated, $"{key} {(moving ? "moving" : "standing")} jump retained locked weapon axes");
+        Require(boundaries >= 1, $"{key} jump did not exercise a pose transition");
         GD.Print($"[fusion-smoke] {key} {(moving ? "moving" : "standing")} jump hand position and axes PASS");
+    }
+
+    private void RequireFusionTransitionContinuity(Transform3D previous, double[]? previousSkin, ref int boundaries)
+    {
+        var controller = (OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)_playerAvatarAnimationController!;
+        if (!controller.SourceEquipmentIsBlending || controller.SourceEquipmentBlendFraction != 0 || previousSkin is null) return;
+        boundaries++;
+        var actual = _fusionHeldViews[_fusion!.Selected].Transform;
+        Require(actual.Origin.DistanceTo(previous.Origin) < .00001f &&
+            actual.Basis.X.DistanceTo(previous.Basis.X) < .00001f && actual.Basis.Y.DistanceTo(previous.Basis.Y) < .00001f &&
+            actual.Basis.Z.DistanceTo(previous.Basis.Z) < .00001f, $"{_fusion.Selected} gun snapped at a transition boundary");
+        var skin = controller.Current.SampledPose!.LocalPositions;
+        Require(skin.Zip(previousSkin, (a, b) => Math.Abs(a - b)).Max() < .00001,
+            $"{_fusion.Selected} arms/body did not retain the rendered source pose");
+    }
+
+    private async Task CheckFusionMovementTransitionsAsync()
+    {
+        int boundaries = 0; var sequences = new HashSet<int>();
+        foreach (var phase in new (bool Move, int Ticks)[] { (false, 20), (true, 45), (false, 90), (true, 45), (false, 6), (true, 30), (false, 90) })
+        {
+            SetAnalogueSmokeInput(0, phase.Move ? 1 : 0);
+            for (int tick = 0; tick < phase.Ticks; tick++)
+            {
+                var previous = _fusionHeldViews[_fusion!.Selected].Transform;
+                var skin = _playerAvatarAnimationController!.Current.SampledPose?.LocalPositions;
+                await PhysicsFramesAsync(1);
+                RequireFusionHandAttachment();
+                RequireFusionTransitionContinuity(previous, skin, ref boundaries);
+                if (CurrentPlayerAvatarSourceSequence() is int sequence) sequences.Add(sequence);
+            }
+        }
+        ClearMovementSmokeInput();
+        Require(boundaries >= 4 && sequences.Contains(0) && sequences.Any(s => s is 3 or 4) && sequences.Any(s => s is 5 or 6 or 20),
+            $"{_fusion!.Selected} transition coverage incomplete: {boundaries} boundaries, sequences {string.Join(',', sequences)}");
+        GD.Print($"[fusion-smoke] {_fusion!.Selected} idle/run/skid/stop and interrupted transitions PASS ({boundaries} boundaries)");
     }
 
     private async Task FusionCheckWrenchPersistenceAsync()
@@ -428,6 +472,7 @@ public partial class OBPGame
             sourceSequence = CurrentPlayerAvatarSourceSequence(),
             sourceUseSequence = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentUseSequence,
             sourceUseWeight = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentUseWeight,
+            sourceBlendFraction = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentBlendFraction,
             forward = new[] { EquipmentForward.X, EquipmentForward.Y, EquipmentForward.Z },
             weapons = _fusionHeldViews.Select(pair => new
             {

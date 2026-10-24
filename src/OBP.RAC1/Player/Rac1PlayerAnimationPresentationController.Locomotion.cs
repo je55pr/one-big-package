@@ -134,6 +134,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     {
         RestoreEquipmentBasePose();
         _equipmentAmount = 0;
+        ClearSourceEquipment();
         _clockSeconds = 0;
         _locomotionClock = null;
         _locomotionBlendSource = null;
@@ -185,6 +186,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         for (int coordinate = 0; coordinate < positions.Length; coordinate++)
             positions[coordinate] = source[coordinate] + (target[coordinate] - source[coordinate]) * sample.Fraction;
         SampleAttachments(positions, source, target, sample.Fraction);
+        RecordBaseSkeletalPose(positions, sample, blendSource);
         return positions;
     }
 

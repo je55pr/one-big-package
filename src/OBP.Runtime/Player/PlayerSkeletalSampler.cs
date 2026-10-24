@@ -65,6 +65,24 @@ public sealed class PlayerSkeletalSampler
         Apply(clip, sample, 1);
     }
 
+    public PlayerSkeletalPose CapturePose() => new((PlayerJointChannels[])_local.Clone());
+
+    /// <summary>Blend resolved local channels before hierarchy evaluation, skinning and socket extraction.</summary>
+    public void BlendFrom(PlayerSkeletalPose source, float fraction)
+    {
+        if (!float.IsFinite(fraction) || fraction is < 0 or > 1) throw new ArgumentOutOfRangeException(nameof(fraction));
+        if (source.Joints.Count != _local.Length) throw new InvalidDataException("Pose does not belong to this skeleton.");
+        for (int j = 0; j < _local.Length; j++)
+        {
+            var from = source.Joints[j]; var to = _local[j];
+            if (!Finite(from.Rotation) || from.Scale is not { } scale || !Finite(scale) ||
+                from.Translation is not { } translation || !Finite(translation))
+                throw new InvalidDataException("Pose contains unresolved or invalid channels.");
+            _local[j] = new(Quaternion.Lerp(from.Rotation, to.Rotation, fraction),
+                Vector3.Lerp(scale, to.Scale!.Value, fraction), Vector3.Lerp(translation, to.Translation!.Value, fraction));
+        }
+    }
+
     public void Apply(PlayerSkeletalClip clip, PlayerSkeletalSample sample, float weight)
     {
         if (!float.IsFinite(weight) || weight is < 0 or > 1 || !float.IsFinite(sample.Fraction) || sample.Fraction is < 0 or > 1 ||

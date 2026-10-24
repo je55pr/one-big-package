@@ -88,12 +88,24 @@ public sealed class Rac1RatchetEquipmentRig
     }
 
     public double[] SampleLayers(Rac1AnimationFrameClock.Sample basis, PlayerSkeleton sourceSkeleton,
-        IReadOnlyList<PlayerSkeletalLayer> layers, double[] baseline, bool fullBody)
+        IReadOnlyList<PlayerSkeletalLayer> layers, PlayerSkeletalTransition transition,
+        object? blendKey, float blendFraction, PlayerSkeletalPose? initialSource)
     {
         _sampler.RequireCompatible(sourceSkeleton);
         _sampler.Reset(Asset.Clips[basis.Sequence], Sample(basis));
         foreach (var layer in layers) _sampler.Apply(layer.Clip, layer.Sample, layer.Weight);
-        return _sampler.Skin(baseline, fullBody ? null : layers.SelectMany(l => l.Clip.JointIndices).Distinct().ToArray());
+        transition.Resolve(_sampler, blendKey, blendFraction, initialSource);
+        // The entire skin and the hand sockets consume the same blended pose.
+        // Leaving the torso on baked vertices would give the arms different ancestors.
+        return _sampler.Skin();
+    }
+
+    public PlayerSkeletalPose BasePose(Rac1AnimationFrameClock.Sample basis, PlayerSkeletalPose? source = null)
+    {
+        var target = basis.IsBlending ? basis with { CurrentFrame = basis.NextFrame, Fraction = 0 } : basis;
+        _sampler.Reset(Asset.Clips[target.Sequence], Sample(target));
+        if (basis.IsBlending && source is not null) _sampler.BlendFrom(source, basis.Fraction);
+        return _sampler.CapturePose();
     }
 
     private static PlayerSkeletalSample Sample(Rac1AnimationFrameClock.Sample sample) => new(sample.CurrentFrame, sample.NextFrame, sample.Fraction);

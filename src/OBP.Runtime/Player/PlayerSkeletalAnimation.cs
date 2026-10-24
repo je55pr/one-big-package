@@ -10,6 +10,8 @@ public sealed record PlayerSkeleton(IReadOnlyList<PlayerSkeletonJoint> Joints,
 
 /// <summary>Absent scale/translation channels preserve the underlying pose, as needed by arm-only clips.</summary>
 public readonly record struct PlayerJointChannels(Quaternion Rotation, Vector3? Scale = null, Vector3? Translation = null);
+/// <summary>A complete, resolved local-joint pose, independent of a mesh or engine transform.</summary>
+public sealed record PlayerSkeletalPose(IReadOnlyList<PlayerJointChannels> Joints);
 public sealed record PlayerSkeletalFrame(IReadOnlyList<PlayerJointChannels> Joints, double DurationSeconds, double TimelinePosition);
 public readonly record struct PlayerSkeletalSample(int Frame, int NextFrame, float Fraction);
 public sealed record PlayerSkeletalClip(string SourceGame, string BuildId, int CarrierId, int SequenceId,
