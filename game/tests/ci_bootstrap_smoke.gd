@@ -8,6 +8,11 @@ func _initialize() -> void:
 
 
 func _run_smoke() -> void:
+    # The CI workflow imports resources before this smoke. That import must not
+    # produce any uncommitted C# UID sidecars or modify checked-in resources.
+    if not _verify_clean_godot_import():
+        return
+
     var scene: PackedScene = load("res://scenes/OBPGame.tscn") as PackedScene
     if scene == null:
         _fail("Main scene does not load as a PackedScene")
@@ -39,6 +44,27 @@ func _run_smoke() -> void:
     for frame in range(3):
         await process_frame
     root.add_child(load("res://diagnostics/BugReportMenuSmoke.cs").new())
+
+
+func _verify_clean_godot_import() -> bool:
+    var repo_root: String = ProjectSettings.globalize_path("res://").trim_suffix("/").get_base_dir()
+    var output: Array = []
+    var exit_code: int = OS.execute(
+        "git",
+        PackedStringArray(["-C", repo_root, "status", "--porcelain", "--untracked-files=all", "--", "game"]),
+        output,
+        true
+    )
+    if exit_code != 0:
+        _fail("Cannot verify clean Godot import (git status exit %d): %s" % [exit_code, str(output)])
+        return false
+    var changes: String = ""
+    for line in output:
+        changes += str(line)
+    if not changes.strip_edges().is_empty():
+        _fail("Godot import modified game/ files. Sync and commit C# UIDs first: " + changes)
+        return false
+    return true
 
 
 func _fail(message: String) -> void:
