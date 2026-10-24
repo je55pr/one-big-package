@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "obp:fusion-lab",
+  "spawn": { "x": 0, "y": 1.4, "z": -16 },
+  "rooms": [
+    { "id": "entrance", "label": "Arrival Gallery", "centerX": 0, "centerZ": -16, "width": 12, "depth": 10, "tint": [0.27, 0.52, 0.70] },
+    { "id": "south-link", "label": "Southern Passage", "centerX": 0, "centerZ": -8.5, "width": 8, "depth": 5, "tint": [0.34, 0.40, 0.55] },
+    { "id": "hub", "label": "Loadout Hub", "centerX": 0, "centerZ": 0, "width": 22, "depth": 12, "tint": [0.40, 0.56, 0.70] },
+    { "id": "north-link", "label": "Testing Corridor", "centerX": 0, "centerZ": 8.5, "width": 8, "depth": 5, "tint": [0.34, 0.40, 0.55] },
+    { "id": "test-room", "label": "Test Chamber Alpha", "centerX": 0, "centerZ": 17, "width": 18, "depth": 12, "tint": [0.62, 0.50, 0.32] }
+  ],
+  "connections": [
+    { "from": "entrance", "to": "south-link", "openingWidth": 6 },
+    { "from": "south-link", "to": "hub", "openingWidth": 6 },
+    { "from": "hub", "to": "north-link", "openingWidth": 6 },
+    { "from": "north-link", "to": "test-room", "openingWidth": 6 }
+  ],
+  "stations": [
+    { "id": "hub-loadouts", "roomId": "hub", "label": "Universal Loadout Terminal [NOT YET AVAILABLE]", "position": { "x": -7, "y": 0.2, "z": 0 }, "resetKey": "loadout-hub" },
+    { "id": "combat-target", "roomId": "test-room", "label": "R&C1 Target Exhibit [NOT YET AVAILABLE]", "position": { "x": -5, "y": 0.2, "z": 17 }, "resetKey": "test-target" },
+    { "id": "gadget-bench", "roomId": "test-room", "label": "Cross-Game Gadget Bench [NOT YET AVAILABLE]", "position": { "x": 5, "y": 0.2, "z": 17 }, "resetKey": "gadget-bench" }
+  ]
+}

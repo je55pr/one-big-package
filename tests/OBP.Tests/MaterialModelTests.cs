@@ -78,6 +78,8 @@ public class MaterialModelTests
 
         Assert.True(MaterialModel.VertexColourAsAlbedo("moby", hasColour: true));
         Assert.True(MaterialModel.VertexColourAsAlbedo("tfrag", hasColour: true));
+        Assert.True(MaterialModel.VertexColourAsAlbedo("fusion-wall", hasColour: true));
+        Assert.False(MaterialModel.VertexColourAsAlbedo("fusion-wall", hasColour: false));
         Assert.False(MaterialModel.VertexColourAsAlbedo("moby", hasColour: false));
         Assert.False(MaterialModel.VertexColourAsAlbedo("tie", hasColour: true));
     }

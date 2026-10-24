@@ -36,6 +36,8 @@ public partial class PlayerHost : CharacterBody3D
         System.Diagnostics.Stopwatch.GetElapsedTime(start, end).TotalMilliseconds;
     internal event Action? DevelopmentPhysicsCompleted;
     internal Func<RawPlayerInputFrame, RawPlayerInputFrame>? PlaytestInputFilter { get; set; }
+    // Optional deterministic fixture input. Never used for ordinary interactive play.
+    internal Func<double, (Vector2 Move, bool Jump)>? ScriptedInputProvider { get; set; }
     // --- host presentation tuning ----------------------------------------------
     // Ordinary movement constants live in OBP.RAC1.Player. Mouse sensitivity is
     // host presentation policy; development-only tuning lives beside this host.
@@ -663,6 +665,9 @@ public partial class PlayerHost : CharacterBody3D
         {
             return (Vector2.Zero, false);
         }
+
+        if (ScriptedInputProvider is { } provider)
+            return provider(_time);
 
         if (UseRac1Gameplay)
         {
