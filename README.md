@@ -25,87 +25,88 @@ The original mechanics and encounters are being recovered first, so they can be 
 
 Named content from the original PS2 trilogy, grouped into collapsible tables. This is an **initial name-level inventory** covering all three games; it is **not** a verified census of every placed instance, enemy subclass, scripted event or upgrade stage. The retail-source audit is still needed to establish exhaustive coverage and accurate implementation status.
 
-**Status:** **Playable** = working within the stated game/scope; **Partial** = implemented with known gaps; **Researched** = source behaviour documented; **Unassessed** = no implementation claim. Unassessed does **not** mean absent. Upgrade names are grouped with their base weapons; a playable base weapon does not imply its upgrades are implemented. Each repeated object placement is counted as a type, not as an individual row.
+**Status legend:** 🔴 **Unassessed** = no implementation/research status verified for this entry; it does not prove the feature is absent. 🟠 **Researched** = original behaviour documented, or only a basic placeholder exists. 🟡 **Partial** = working implementation with remaining gaps, including playable slices. 🟢 **Complete** = fully implemented and verified against its intended scope. No entries are marked complete without evidence. Weapon upgrade variants are grouped with base weapons and are not assumed implemented.
+
 
 <details>
 <summary>Weapons and upgrade families</summary>
 
 **Ratchet & Clank (2002)**
 
-| Weapon / family | Upgrade / variant | OBP status |
+| Weapon / family | Upgrade / variant | Status |
 | --- | --- | --- |
-| OmniWrench 8000 | Basic wrench attacks | Partial (ordinary wrench playable) |
-| Bomb Glove | Gold variant | Partial (ordinary weapon playable) |
-| Pyrocitor | Gold variant | Partial (ordinary weapon playable) |
-| Blaster | Gold variant | Partial (ordinary weapon playable) |
-| Glove of Doom | Gold variant | Partial (ordinary weapon playable) |
-| Suck Cannon | Gold variant | Partial (ordinary weapon playable) |
-| Taunter |  | Partial (ordinary weapon playable) |
-| Mine Glove | Gold variant | Partial (ordinary weapon playable) |
-| R.Y.N.O. |  | Partial (ordinary weapon playable) |
-| Devastator | Gold variant | Partial (ordinary weapon playable) |
-| Walloper | | Partial (ordinary weapon playable) |
-| Visibomb Gun | | Partial (ordinary weapon playable) |
-| Decoy Glove | Gold variant | Partial (ordinary weapon playable) |
-| Drone Device | | Partial (ordinary weapon playable) |
-| Tesla Claw | Gold variant | Partial (ordinary weapon playable) |
-| Morph-O-Ray | Gold variant | Partial (ordinary weapon playable) |
+| OmniWrench 8000 | Basic wrench attacks | 🟡 Partial (ordinary wrench playable) |
+| Bomb Glove | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Pyrocitor | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Blaster | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Glove of Doom | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Suck Cannon | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Taunter |  | 🟡 Partial (ordinary weapon playable) |
+| Mine Glove | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| R.Y.N.O. |  | 🟡 Partial (ordinary weapon playable) |
+| Devastator | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Walloper | | 🟡 Partial (ordinary weapon playable) |
+| Visibomb Gun | | 🟡 Partial (ordinary weapon playable) |
+| Decoy Glove | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Drone Device | | 🟡 Partial (ordinary weapon playable) |
+| Tesla Claw | Gold variant | 🟡 Partial (ordinary weapon playable) |
+| Morph-O-Ray | Gold variant | 🟡 Partial (ordinary weapon playable) |
 
 **Going Commando**
 
-| Weapon / family | Upgrade / variant | OBP status |
+| Weapon / family | Upgrade / variant | Status |
 | --- | --- | --- |
-| OmniWrench 10000 / 12000 | Wrench progression | Unassessed |
-| Lancer | Heavy Lancer | Partial (firing in R&C1) |
-| Gravity Bomb | Mini-Nuke | Unassessed |
-| Chopper | Multi-Star | Unassessed |
-| Seeker Gun | HK22 Gun | Unassessed |
-| Pulse Rifle | Vaporizer | Unassessed |
-| Miniturret Glove | Megaturret Glove | Unassessed |
-| Blitz Gun | Blitz Cannon | Unassessed |
-| Shield Charger | Tesla Barrier | Unassessed |
-| Synthenoid | Kilonoid | Unassessed |
-| Lava Gun | Meteor Gun | Unassessed |
-| Bouncer | Heavy Bouncer | Unassessed |
-| Minirocket Tube | Megarocket Cannon | Unassessed |
-| Plasma Coil | Plasma Storm | Unassessed |
-| Hoverbomb Gun | Tetrabomb Gun | Unassessed |
-| Spiderbot Glove | Tankbot Glove | Unassessed |
-| Sheepinator | Black Sheepinator | Unassessed |
-| R.Y.N.O. II |  | Unassessed |
-| Zodiac |  | Unassessed |
-| Clank Zapper | Clank Shocker | Unassessed |
-| Tesla Claw | Returning R&C1 weapon | Unassessed |
-| Bomb Glove | Returning R&C1 weapon | Unassessed |
-| Walloper | Returning R&C1 weapon | Unassessed |
-| Visibomb Gun | Returning R&C1 weapon | Unassessed |
-| Decoy Glove | Returning R&C1 weapon | Unassessed |
+| OmniWrench 10000 / 12000 | Wrench progression | 🔴 Unassessed |
+| Lancer | Heavy Lancer | 🟡 Partial (firing in R&C1) |
+| Gravity Bomb | Mini-Nuke | 🔴 Unassessed |
+| Chopper | Multi-Star | 🔴 Unassessed |
+| Seeker Gun | HK22 Gun | 🔴 Unassessed |
+| Pulse Rifle | Vaporizer | 🔴 Unassessed |
+| Miniturret Glove | Megaturret Glove | 🔴 Unassessed |
+| Blitz Gun | Blitz Cannon | 🔴 Unassessed |
+| Shield Charger | Tesla Barrier | 🔴 Unassessed |
+| Synthenoid | Kilonoid | 🔴 Unassessed |
+| Lava Gun | Meteor Gun | 🔴 Unassessed |
+| Bouncer | Heavy Bouncer | 🔴 Unassessed |
+| Minirocket Tube | Megarocket Cannon | 🔴 Unassessed |
+| Plasma Coil | Plasma Storm | 🔴 Unassessed |
+| Hoverbomb Gun | Tetrabomb Gun | 🔴 Unassessed |
+| Spiderbot Glove | Tankbot Glove | 🔴 Unassessed |
+| Sheepinator | Black Sheepinator | 🔴 Unassessed |
+| R.Y.N.O. II |  | 🔴 Unassessed |
+| Zodiac |  | 🔴 Unassessed |
+| Clank Zapper | Clank Shocker | 🔴 Unassessed |
+| Tesla Claw | Returning R&C1 weapon | 🔴 Unassessed |
+| Bomb Glove | Returning R&C1 weapon | 🔴 Unassessed |
+| Walloper | Returning R&C1 weapon | 🔴 Unassessed |
+| Visibomb Gun | Returning R&C1 weapon | 🔴 Unassessed |
+| Decoy Glove | Returning R&C1 weapon | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Weapon / family | Upgrade / variant | OBP status |
+| Weapon / family | Upgrade / variant | Status |
 | --- | --- | --- |
-| OmniWrench 12000 | Wrench progression | Unassessed |
-| Shock Blaster | Shock Cannon | Partial (Shock Cannon firing in R&C1) |
-| Nitro Launcher | Nitro Eruptor | Unassessed |
-| N60 Storm | N90 Hurricane | Unassessed |
-| Plasma Whip | Quantum Whip | Unassessed |
-| Infector | Infecto-Bomb | Unassessed |
-| Suck Cannon | Vortex Cannon | Unassessed |
-| Spitting Hydra | Tempest | Unassessed |
-| Agents of Doom | Agents of Dread | Unassessed |
-| Flux Rifle | Splitter Rifle | Unassessed |
-| Annihilator | Decimator | Unassessed |
-| Holoshield Glove | Ultrashield Launcher | Unassessed |
-| Disc Blade Gun | Multi-Disc Gun | Unassessed |
-| Rift Inducer | Rift Ripper | Unassessed |
-| Qwack-O-Ray | Qwack-O-Blitzer | Unassessed |
-| Miniturret Glove | Megaturret Glove | Unassessed |
-| Lava Gun | Liquid Nitrogen Gun | Unassessed |
-| Bouncer | Heavy Bouncer | Unassessed |
-| Plasma Coil | Plasma Storm | Unassessed |
-| Shield Charger | Tesla Barrier | Unassessed |
-| R.Y.3.N.O. | RYNOCIRATOR | Unassessed |
+| OmniWrench 12000 | Wrench progression | 🔴 Unassessed |
+| Shock Blaster | Shock Cannon | 🟡 Partial (Shock Cannon firing in R&C1) |
+| Nitro Launcher | Nitro Eruptor | 🔴 Unassessed |
+| N60 Storm | N90 Hurricane | 🔴 Unassessed |
+| Plasma Whip | Quantum Whip | 🔴 Unassessed |
+| Infector | Infecto-Bomb | 🔴 Unassessed |
+| Suck Cannon | Vortex Cannon | 🔴 Unassessed |
+| Spitting Hydra | Tempest | 🔴 Unassessed |
+| Agents of Doom | Agents of Dread | 🔴 Unassessed |
+| Flux Rifle | Splitter Rifle | 🔴 Unassessed |
+| Annihilator | Decimator | 🔴 Unassessed |
+| Holoshield Glove | Ultrashield Launcher | 🔴 Unassessed |
+| Disc Blade Gun | Multi-Disc Gun | 🔴 Unassessed |
+| Rift Inducer | Rift Ripper | 🔴 Unassessed |
+| Qwack-O-Ray | Qwack-O-Blitzer | 🔴 Unassessed |
+| Miniturret Glove | Megaturret Glove | 🔴 Unassessed |
+| Lava Gun | Liquid Nitrogen Gun | 🔴 Unassessed |
+| Bouncer | Heavy Bouncer | 🔴 Unassessed |
+| Plasma Coil | Plasma Storm | 🔴 Unassessed |
+| Shield Charger | Tesla Barrier | 🔴 Unassessed |
+| R.Y.3.N.O. | RYNOCIRATOR | 🔴 Unassessed |
 
 Reference: [R&C1 weapons](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank_%282002_game%29), [GC weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Going_Commando/Weapons), [UYA weapon upgrades](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Up_Your_Arsenal/Weapons), [R&C1 arsenal evidence](research/RAC1_ARSENAL.md), [cross-game weapon evidence](docs/FUSION_WEAPONS_TESTING.md).
 
@@ -116,59 +117,59 @@ Reference: [R&C1 weapons](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Cl
 
 **Ratchet & Clank (2002)**
 
-| Gadget / equipment | OBP status |
+| Gadget / equipment | Status |
 | --- | --- |
-| Heli-Pack | Researched |
-| Thruster-Pack | Researched |
-| Hydro-Pack | Researched |
-| O2 Mask | Unassessed |
-| Pilot's Helmet | Unassessed |
-| Swingshot | Researched |
-| Trespasser | Unassessed |
-| Grind Boots | Researched |
-| Magneboots | Researched |
-| Metal Detector | Partial (digging) |
-| Hydrodisplacer | Unassessed |
-| Sonic Summoner | Unassessed |
-| Hologuise | Unassessed |
-| Gadgetron PDA | Unassessed |
+| Heli-Pack | 🟠 Researched |
+| Thruster-Pack | 🟠 Researched |
+| Hydro-Pack | 🟠 Researched |
+| O2 Mask | 🔴 Unassessed |
+| Pilot's Helmet | 🔴 Unassessed |
+| Swingshot | 🟠 Researched |
+| Trespasser | 🔴 Unassessed |
+| Grind Boots | 🟠 Researched |
+| Magneboots | 🟠 Researched |
+| Metal Detector | 🟡 Partial (digging) |
+| Hydrodisplacer | 🔴 Unassessed |
+| Sonic Summoner | 🔴 Unassessed |
+| Hologuise | 🔴 Unassessed |
+| Gadgetron PDA | 🔴 Unassessed |
 
 **Going Commando**
 
-| Gadget / equipment | OBP status |
+| Gadget / equipment | Status |
 | --- | --- |
-| Swingshot | Unassessed |
-| Dynamo | Unassessed |
-| Electrolyzer | Unassessed |
-| Hypnomatic | Unassessed |
-| Infiltrator | Unassessed |
-| Thermanator | Unassessed |
-| Tractor Beam | Unassessed |
-| Heli-Pack | Unassessed |
-| Thruster-Pack | Unassessed |
-| Hydro-Pack | Unassessed |
-| Glider | Unassessed |
-| Levitator | Unassessed |
-| Charge Boots | Unassessed |
-| Gravity Boots | Unassessed |
-| Grind Boots | Unassessed |
+| Swingshot | 🔴 Unassessed |
+| Dynamo | 🔴 Unassessed |
+| Electrolyzer | 🔴 Unassessed |
+| Hypnomatic | 🔴 Unassessed |
+| Infiltrator | 🔴 Unassessed |
+| Thermanator | 🔴 Unassessed |
+| Tractor Beam | 🔴 Unassessed |
+| Heli-Pack | 🔴 Unassessed |
+| Thruster-Pack | 🔴 Unassessed |
+| Hydro-Pack | 🔴 Unassessed |
+| Glider | 🔴 Unassessed |
+| Levitator | 🔴 Unassessed |
+| Charge Boots | 🔴 Unassessed |
+| Gravity Boots | 🔴 Unassessed |
+| Grind Boots | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Gadget / equipment | OBP status |
+| Gadget / equipment | Status |
 | --- | --- |
-| Hacker | Unassessed |
-| Hypershot | Unassessed |
-| Refractor | Unassessed |
-| Tyhrraguise | Unassessed |
-| Warp Pad | Unassessed |
-| Gadgetron PDA | Unassessed |
-| Gravity Boots | Unassessed |
-| Charge Boots | Unassessed |
-| Heli-Pack | Unassessed |
-| Thruster-Pack | Unassessed |
-| Hydro-Pack | Unassessed |
-| Banana-Guided Autonomous Monkey Device | Unassessed |
+| Hacker | 🔴 Unassessed |
+| Hypershot | 🔴 Unassessed |
+| Refractor | 🔴 Unassessed |
+| Tyhrraguise | 🔴 Unassessed |
+| Warp Pad | 🔴 Unassessed |
+| Gadgetron PDA | 🔴 Unassessed |
+| Gravity Boots | 🔴 Unassessed |
+| Charge Boots | 🔴 Unassessed |
+| Heli-Pack | 🔴 Unassessed |
+| Thruster-Pack | 🔴 Unassessed |
+| Hydro-Pack | 🔴 Unassessed |
+| Banana-Guided Autonomous Monkey Device | 🔴 Unassessed |
 
 References: [R&C1 equipment](research/RAC1_TRAVERSAL_EQUIPMENT.md), [GC equipment](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank%3A_Going_Commando), [UYA equipment](https://strategywiki.org/wiki/Ratchet_%26_Clank%3A_Up_Your_Arsenal/Gadgets).
 
@@ -179,195 +180,195 @@ References: [R&C1 equipment](research/RAC1_TRAVERSAL_EQUIPMENT.md), [GC equipmen
 
 **Ratchet & Clank (2002)**
 
-| Enemy / actor | OBP status |
+| Enemy / actor | Status |
 | --- | --- |
-| Alien snapper | Unassessed |
-| Alien swarmer | Unassessed |
-| Amoeboid | Unassessed |
-| Anklebiter | Unassessed |
-| Axebot | Unassessed |
-| Big axebot | Unassessed |
-| Birdbot | Unassessed |
-| Blarg armored transport | Unassessed |
-| Blarg bombthrower | Unassessed |
-| Blarg commander | Unassessed |
-| Blarg destroyer | Unassessed |
-| Blarg elite commando | Unassessed |
-| Blarg generator | Unassessed |
-| Blarg gunner | Unassessed |
-| Blarg heavy interceptor | Unassessed |
-| Blarg heli-commander | Unassessed |
-| Blarg paratrooper | Unassessed |
-| Blarg saucer | Unassessed |
-| Blarg space commando | Unassessed |
-| Blarg space fighter | Unassessed |
-| Blarg trooper | Unassessed |
-| Bolt thief | Unassessed |
-| Bomb-o-matic | Unassessed |
-| Cannonball tank | Unassessed |
-| Chomper | Unassessed |
-| Constructo bot | Unassessed |
-| Dark Gadge-Bot | Unassessed |
-| Darter | Unassessed |
-| Electroid | Unassessed |
-| Extermibot (Rilgar) | Unassessed |
-| Extermitank | Unassessed |
-| Homing mine | Unassessed |
-| Horned toad | Partial (Veldin class 749) |
-| Machinegun turret | Unassessed |
-| Mine layer | Unassessed |
-| Minibomber | Unassessed |
-| Peckbot | Unassessed |
-| Plasmabot | Unassessed |
-| Psy-tcopus | Unassessed |
-| Puffoid | Unassessed |
-| Robomutt | Unassessed |
-| Robosquawker | Unassessed |
-| Rocket tank | Unassessed |
-| Sandshark | Unassessed |
-| Sandshark nest | Unassessed |
-| Sawbot | Unassessed |
-| Scoutbot | Unassessed |
-| Screamer | Unassessed |
-| Seeker | Unassessed |
-| Sentry-bot | Unassessed |
-| Sharkigator | Unassessed |
-| Test dummy | Unassessed |
-| Toxic crab | Unassessed |
-| Ultra-Mech Unlimited | Unassessed |
-| Veldin flame robot (class 1440) | Partial (Veldin) |
+| Alien snapper | 🔴 Unassessed |
+| Alien swarmer | 🔴 Unassessed |
+| Amoeboid | 🔴 Unassessed |
+| Anklebiter | 🔴 Unassessed |
+| Axebot | 🔴 Unassessed |
+| Big axebot | 🔴 Unassessed |
+| Birdbot | 🔴 Unassessed |
+| Blarg armored transport | 🔴 Unassessed |
+| Blarg bombthrower | 🔴 Unassessed |
+| Blarg commander | 🔴 Unassessed |
+| Blarg destroyer | 🔴 Unassessed |
+| Blarg elite commando | 🔴 Unassessed |
+| Blarg generator | 🔴 Unassessed |
+| Blarg gunner | 🔴 Unassessed |
+| Blarg heavy interceptor | 🔴 Unassessed |
+| Blarg heli-commander | 🔴 Unassessed |
+| Blarg paratrooper | 🔴 Unassessed |
+| Blarg saucer | 🔴 Unassessed |
+| Blarg space commando | 🔴 Unassessed |
+| Blarg space fighter | 🔴 Unassessed |
+| Blarg trooper | 🔴 Unassessed |
+| Bolt thief | 🔴 Unassessed |
+| Bomb-o-matic | 🔴 Unassessed |
+| Cannonball tank | 🔴 Unassessed |
+| Chomper | 🔴 Unassessed |
+| Constructo bot | 🔴 Unassessed |
+| Dark Gadge-Bot | 🔴 Unassessed |
+| Darter | 🔴 Unassessed |
+| Electroid | 🔴 Unassessed |
+| Extermibot (Rilgar) | 🔴 Unassessed |
+| Extermitank | 🔴 Unassessed |
+| Homing mine | 🔴 Unassessed |
+| Horned toad | 🟡 Partial (Veldin class 749) |
+| Machinegun turret | 🔴 Unassessed |
+| Mine layer | 🔴 Unassessed |
+| Minibomber | 🔴 Unassessed |
+| Peckbot | 🔴 Unassessed |
+| Plasmabot | 🔴 Unassessed |
+| Psy-tcopus | 🔴 Unassessed |
+| Puffoid | 🔴 Unassessed |
+| Robomutt | 🔴 Unassessed |
+| Robosquawker | 🔴 Unassessed |
+| Rocket tank | 🔴 Unassessed |
+| Sandshark | 🔴 Unassessed |
+| Sandshark nest | 🔴 Unassessed |
+| Sawbot | 🔴 Unassessed |
+| Scoutbot | 🔴 Unassessed |
+| Screamer | 🔴 Unassessed |
+| Seeker | 🔴 Unassessed |
+| Sentry-bot | 🔴 Unassessed |
+| Sharkigator | 🔴 Unassessed |
+| Test dummy | 🔴 Unassessed |
+| Toxic crab | 🔴 Unassessed |
+| Ultra-Mech Unlimited | 🔴 Unassessed |
+| Veldin flame robot (class 1440) | 🟡 Partial (Veldin) |
 
 **Going Commando**
 
-| Enemy / actor | OBP status |
+| Enemy / actor | Status |
 | --- | --- |
-| Arctic leviathan | Unassessed |
-| Attack-Copter | Unassessed |
-| Bandit ship | Unassessed |
-| Desert dune monster | Unassessed |
-| Extermibot | Unassessed |
-| Gadgetron Hound of Cuddly Death | Unassessed |
-| Grulch | Unassessed |
-| Machinegun turret | Unassessed |
-| Megacorp Chickenbot | Unassessed |
-| Megacorp Chickenbot Generator | Unassessed |
-| Megacorp gladiator | Unassessed |
-| Megacorp gladiator (Elite) | Unassessed |
-| Megacorp Hover Tank | Unassessed |
-| Megacorp Hover Tank V2.0 | Unassessed |
-| Megacorp Laser Bot | Unassessed |
-| Megacorp Rivet Bot | Unassessed |
-| Megacorp Robot Guard | Unassessed |
-| Megacorp Security Robot I (Chainsaw) | Unassessed |
-| Megacorp Security Robot I v2.0 | Unassessed |
-| Megacorp Security Robot I v3.0 | Unassessed |
-| Megacorp Security Robot II (Flamethrower) | Unassessed |
-| Megacorp Security Robot II v2.0 | Unassessed |
-| Megacorp Security Robot II v3.0 | Unassessed |
-| Megacorp Security Turret | Unassessed |
-| Megacorp Sentinel | Unassessed |
-| Megacorp Sweeper Bot | Unassessed |
-| Megacorp Trooper | Unassessed |
-| Megacorp Trooper v2.0 | Unassessed |
-| Mutant firefly | Unassessed |
-| Mutant muckdweller | Unassessed |
-| Mutant sandfly | Unassessed |
-| Mutant swamp beast | Unassessed |
-| Mutant test-squirrel | Unassessed |
-| Nidbot | Unassessed |
-| Protopet | Unassessed |
-| PX6 BladeBall | Unassessed |
-| PX6 BladeBall v2.0 | Unassessed |
-| Receiver Bot | Unassessed |
-| Receiver Bot v1.0 | Unassessed |
-| Receiver Bot v3.0 | Unassessed |
-| Repair drone | Unassessed |
-| Repair drone (Berserk) | Unassessed |
-| Saboteur | Unassessed |
-| Saur-beast (Barlow) | Unassessed |
-| Saur-beast (Joba) | Unassessed |
-| Sharkigator | Unassessed |
-| Space wasp | Unassessed |
-| Spawner | Unassessed |
-| Spitting dune crawler | Unassessed |
-| Thugs-4-Less attack ship | Unassessed |
-| Thugs-4-Less Brute | Unassessed |
-| Thugs-4-Less Brute Class II | Unassessed |
-| Thugs-4-Less Carrier Ship | Unassessed |
-| Thugs-4-Less Elite Henchman | Unassessed |
-| Thugs-4-Less fighter | Unassessed |
-| Thugs-4-Less Henchman | Unassessed |
-| Tribesman (Joba) | Unassessed |
-| Two-headed Smolgian snapper | Unassessed |
-| Vukovar tribesman | Unassessed |
-| Y.E.T.I. | Unassessed |
+| Arctic leviathan | 🔴 Unassessed |
+| Attack-Copter | 🔴 Unassessed |
+| Bandit ship | 🔴 Unassessed |
+| Desert dune monster | 🔴 Unassessed |
+| Extermibot | 🔴 Unassessed |
+| Gadgetron Hound of Cuddly Death | 🔴 Unassessed |
+| Grulch | 🔴 Unassessed |
+| Machinegun turret | 🔴 Unassessed |
+| Megacorp Chickenbot | 🔴 Unassessed |
+| Megacorp Chickenbot Generator | 🔴 Unassessed |
+| Megacorp gladiator | 🔴 Unassessed |
+| Megacorp gladiator (Elite) | 🔴 Unassessed |
+| Megacorp Hover Tank | 🔴 Unassessed |
+| Megacorp Hover Tank V2.0 | 🔴 Unassessed |
+| Megacorp Laser Bot | 🔴 Unassessed |
+| Megacorp Rivet Bot | 🔴 Unassessed |
+| Megacorp Robot Guard | 🔴 Unassessed |
+| Megacorp Security Robot I (Chainsaw) | 🔴 Unassessed |
+| Megacorp Security Robot I v2.0 | 🔴 Unassessed |
+| Megacorp Security Robot I v3.0 | 🔴 Unassessed |
+| Megacorp Security Robot II (Flamethrower) | 🔴 Unassessed |
+| Megacorp Security Robot II v2.0 | 🔴 Unassessed |
+| Megacorp Security Robot II v3.0 | 🔴 Unassessed |
+| Megacorp Security Turret | 🔴 Unassessed |
+| Megacorp Sentinel | 🔴 Unassessed |
+| Megacorp Sweeper Bot | 🔴 Unassessed |
+| Megacorp Trooper | 🔴 Unassessed |
+| Megacorp Trooper v2.0 | 🔴 Unassessed |
+| Mutant firefly | 🔴 Unassessed |
+| Mutant muckdweller | 🔴 Unassessed |
+| Mutant sandfly | 🔴 Unassessed |
+| Mutant swamp beast | 🔴 Unassessed |
+| Mutant test-squirrel | 🔴 Unassessed |
+| Nidbot | 🔴 Unassessed |
+| Protopet | 🔴 Unassessed |
+| PX6 BladeBall | 🔴 Unassessed |
+| PX6 BladeBall v2.0 | 🔴 Unassessed |
+| Receiver Bot | 🔴 Unassessed |
+| Receiver Bot v1.0 | 🔴 Unassessed |
+| Receiver Bot v3.0 | 🔴 Unassessed |
+| Repair drone | 🔴 Unassessed |
+| Repair drone (Berserk) | 🔴 Unassessed |
+| Saboteur | 🔴 Unassessed |
+| Saur-beast (Barlow) | 🔴 Unassessed |
+| Saur-beast (Joba) | 🔴 Unassessed |
+| Sharkigator | 🔴 Unassessed |
+| Space wasp | 🔴 Unassessed |
+| Spawner | 🔴 Unassessed |
+| Spitting dune crawler | 🔴 Unassessed |
+| Thugs-4-Less attack ship | 🔴 Unassessed |
+| Thugs-4-Less Brute | 🔴 Unassessed |
+| Thugs-4-Less Brute Class II | 🔴 Unassessed |
+| Thugs-4-Less Carrier Ship | 🔴 Unassessed |
+| Thugs-4-Less Elite Henchman | 🔴 Unassessed |
+| Thugs-4-Less fighter | 🔴 Unassessed |
+| Thugs-4-Less Henchman | 🔴 Unassessed |
+| Tribesman (Joba) | 🔴 Unassessed |
+| Two-headed Smolgian snapper | 🔴 Unassessed |
+| Vukovar tribesman | 🔴 Unassessed |
+| Y.E.T.I. | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Enemy / actor | OBP status |
+| Enemy / actor | Status |
 | --- | --- |
-| 'Noid commander | Unassessed |
-| 'Noid missile station | Unassessed |
-| Amoeboid | Unassessed |
-| Attack-Copter | Unassessed |
-| Backup dancer | Unassessed |
-| Bash bot | Unassessed |
-| Blade bot | Unassessed |
-| Drone bot | Unassessed |
-| Elite sharpshooter | Unassessed |
-| Extermibot (Rilgar) | Unassessed |
-| Floranian blood fly | Unassessed |
-| Four-eyed robonoid | Unassessed |
-| Four-eyed robonoid V2 | Unassessed |
-| Four-eyed tyhrranoid | Unassessed |
-| Gatling turret | Unassessed |
-| Giant ninja | Unassessed |
-| Gladiator | Unassessed |
-| Guard bot | Unassessed |
-| Heli-bot | Unassessed |
-| Henchman | Unassessed |
-| Hover bot | Unassessed |
-| Insectoid | Unassessed |
-| Insectoid swarm | Unassessed |
-| King amoeboid | Unassessed |
-| Laser bot | Unassessed |
-| Lawn ninja | Unassessed |
-| Lawn ninja generator | Unassessed |
-| Mecha-tyhrranoid | Unassessed |
-| Mega bot | Unassessed |
-| Megacorp Sentinel | Unassessed |
-| Mini-ninja henchman | Unassessed |
-| Nabla native | Unassessed |
-| Ninja bot | Unassessed |
-| One-eyed robonoid | Unassessed |
-| One-eyed tyhrranoid | Unassessed |
-| One-eyed tyhrranoid V2 | Unassessed |
-| Qwark bot | Unassessed |
-| Robonoid commander | Unassessed |
-| Robonoid saucer | Unassessed |
-| Robotic pirate ghost | Unassessed |
-| Scoutbot | Unassessed |
-| Sentinel bot | Unassessed |
-| Sharkigator | Unassessed |
-| Sharpshooter | Unassessed |
-| Snipe bot | Unassessed |
-| Soldier bot | Unassessed |
-| Space rat | Unassessed |
-| Swamp monster | Unassessed |
-| Tank bot | Unassessed |
-| Test dummy | Unassessed |
-| Three-eyed robonoid | Unassessed |
-| Three-eyed robonoid V2 | Unassessed |
-| Three-eyed tyhrranoid | Unassessed |
-| Three-eyed tyhrranoid V2 | Unassessed |
-| Troop transport | Unassessed |
-| Two-eyed robonoid | Unassessed |
-| Two-eyed tyhrranoid | Unassessed |
-| Tyhrranoid attack ship | Unassessed |
-| Tyhrranoid dropship | Unassessed |
-| Tyhrranoid saucer | Unassessed |
-| Ultra mecha-robonoid | Unassessed |
-| Ultra mecha-tyhrranoid | Unassessed |
+| 'Noid commander | 🔴 Unassessed |
+| 'Noid missile station | 🔴 Unassessed |
+| Amoeboid | 🔴 Unassessed |
+| Attack-Copter | 🔴 Unassessed |
+| Backup dancer | 🔴 Unassessed |
+| Bash bot | 🔴 Unassessed |
+| Blade bot | 🔴 Unassessed |
+| Drone bot | 🔴 Unassessed |
+| Elite sharpshooter | 🔴 Unassessed |
+| Extermibot (Rilgar) | 🔴 Unassessed |
+| Floranian blood fly | 🔴 Unassessed |
+| Four-eyed robonoid | 🔴 Unassessed |
+| Four-eyed robonoid V2 | 🔴 Unassessed |
+| Four-eyed tyhrranoid | 🔴 Unassessed |
+| Gatling turret | 🔴 Unassessed |
+| Giant ninja | 🔴 Unassessed |
+| Gladiator | 🔴 Unassessed |
+| Guard bot | 🔴 Unassessed |
+| Heli-bot | 🔴 Unassessed |
+| Henchman | 🔴 Unassessed |
+| Hover bot | 🔴 Unassessed |
+| Insectoid | 🔴 Unassessed |
+| Insectoid swarm | 🔴 Unassessed |
+| King amoeboid | 🔴 Unassessed |
+| Laser bot | 🔴 Unassessed |
+| Lawn ninja | 🔴 Unassessed |
+| Lawn ninja generator | 🔴 Unassessed |
+| Mecha-tyhrranoid | 🔴 Unassessed |
+| Mega bot | 🔴 Unassessed |
+| Megacorp Sentinel | 🔴 Unassessed |
+| Mini-ninja henchman | 🔴 Unassessed |
+| Nabla native | 🔴 Unassessed |
+| Ninja bot | 🔴 Unassessed |
+| One-eyed robonoid | 🔴 Unassessed |
+| One-eyed tyhrranoid | 🔴 Unassessed |
+| One-eyed tyhrranoid V2 | 🔴 Unassessed |
+| Qwark bot | 🔴 Unassessed |
+| Robonoid commander | 🔴 Unassessed |
+| Robonoid saucer | 🔴 Unassessed |
+| Robotic pirate ghost | 🔴 Unassessed |
+| Scoutbot | 🔴 Unassessed |
+| Sentinel bot | 🔴 Unassessed |
+| Sharkigator | 🔴 Unassessed |
+| Sharpshooter | 🔴 Unassessed |
+| Snipe bot | 🔴 Unassessed |
+| Soldier bot | 🔴 Unassessed |
+| Space rat | 🔴 Unassessed |
+| Swamp monster | 🔴 Unassessed |
+| Tank bot | 🔴 Unassessed |
+| Test dummy | 🔴 Unassessed |
+| Three-eyed robonoid | 🔴 Unassessed |
+| Three-eyed robonoid V2 | 🔴 Unassessed |
+| Three-eyed tyhrranoid | 🔴 Unassessed |
+| Three-eyed tyhrranoid V2 | 🔴 Unassessed |
+| Troop transport | 🔴 Unassessed |
+| Two-eyed robonoid | 🔴 Unassessed |
+| Two-eyed tyhrranoid | 🔴 Unassessed |
+| Tyhrranoid attack ship | 🔴 Unassessed |
+| Tyhrranoid dropship | 🔴 Unassessed |
+| Tyhrranoid saucer | 🔴 Unassessed |
+| Ultra mecha-robonoid | 🔴 Unassessed |
+| Ultra mecha-tyhrranoid | 🔴 Unassessed |
 
 References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:Enemies_in_Ratchet_%26_Clank_%282002_game%29), [GC enemy index](https://ratchetandclank.fandom.com/wiki/Category:Enemies_in_Going_Commando), [UYA enemy index](https://ratchetandclank.fandom.com/wiki/Category:Enemies_in_Up_Your_Arsenal), [OBP Veldin evidence](research/RAC1_VELDIN_ENEMIES.md). Enemy names and variants reflect community indexes; matching to retail actor classes is pending.
 
@@ -378,50 +379,50 @@ References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:
 
 **Ratchet & Clank (2002)**
 
-| Boss / encounter | OBP status |
+| Boss / encounter | Status |
 | --- | --- |
-| Alien Queen | Unassessed |
-| Blargian Snagglebeast | Unassessed |
-| Captain Qwark's starfighter | Unassessed |
-| Chairman Drek (Drek-Mech) | Unassessed |
-| PlanetBuster Maximus | Unassessed |
-| Ultra-Mech Unlimited | Unassessed |
+| Alien Queen | 🔴 Unassessed |
+| Blargian Snagglebeast | 🔴 Unassessed |
+| Captain Qwark's starfighter | 🔴 Unassessed |
+| Chairman Drek (Drek-Mech) | 🔴 Unassessed |
+| PlanetBuster Maximus | 🔴 Unassessed |
+| Ultra-Mech Unlimited | 🔴 Unassessed |
 
 **Going Commando**
 
-| Boss / encounter | OBP status |
+| Boss / encounter | Status |
 | --- | --- |
-| Unknown Thief | Unassessed |
-| Arachnoid | Unassessed |
-| B2 Brawler | Unassessed |
-| Chainblade | Unassessed |
-| Giganto-Mech | Unassessed |
-| Megapede | Unassessed |
-| Mothership | Unassessed |
-| Mutant Protopet | Unassessed |
-| Swamp monster I | Unassessed |
-| Swamp monster II | Unassessed |
-| Thug Leader | Unassessed |
-| Thug Leader's helicopter | Unassessed |
-| Thug Leader's mech | Unassessed |
+| Unknown Thief | 🔴 Unassessed |
+| Arachnoid | 🔴 Unassessed |
+| B2 Brawler | 🔴 Unassessed |
+| Chainblade | 🔴 Unassessed |
+| Giganto-Mech | 🔴 Unassessed |
+| Megapede | 🔴 Unassessed |
+| Mothership | 🔴 Unassessed |
+| Mutant Protopet | 🔴 Unassessed |
+| Swamp monster I | 🔴 Unassessed |
+| Swamp monster II | 🔴 Unassessed |
+| Thug Leader | 🔴 Unassessed |
+| Thug Leader's helicopter | 🔴 Unassessed |
+| Thug Leader's mech | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Boss / encounter | OBP status |
+| Boss / encounter | Status |
 | --- | --- |
-| Biobliterator | Unassessed |
-| Blackstar | Unassessed |
-| Courtney Gears | Unassessed |
-| Dr. Nefarious | Unassessed |
-| Gary and Helen | Unassessed |
-| Giant Klunk | Unassessed |
-| Klunk | Unassessed |
-| Momma Tyhrranoid | Unassessed |
-| Captain Qwark | Unassessed |
-| Robotic space eel | Unassessed |
-| Scorpio | Unassessed |
-| Terror of Talos | Unassessed |
-| Warship | Unassessed |
+| Biobliterator | 🔴 Unassessed |
+| Blackstar | 🔴 Unassessed |
+| Courtney Gears | 🔴 Unassessed |
+| Dr. Nefarious | 🔴 Unassessed |
+| Gary and Helen | 🔴 Unassessed |
+| Giant Klunk | 🔴 Unassessed |
+| Klunk | 🔴 Unassessed |
+| Momma Tyhrranoid | 🔴 Unassessed |
+| Captain Qwark | 🔴 Unassessed |
+| Robotic space eel | 🔴 Unassessed |
+| Scorpio | 🔴 Unassessed |
+| Terror of Talos | 🔴 Unassessed |
+| Warship | 🔴 Unassessed |
 
 References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:Enemies_in_Ratchet_%26_Clank_%282002_game%29), [GC boss index](https://ratchetandclank.fandom.com/wiki/Monsterpedia), [UYA boss index](https://ratchetandclank.fandom.com/wiki/Category%3ABosses_in_Up_Your_Arsenal).
 
@@ -432,82 +433,82 @@ References: [R&C1 enemy index](https://ratchetandclank.fandom.com/wiki/Category:
 
 **Ratchet & Clank (2002)**
 
-| Planet / level | OBP status |
+| Planet / level | Status |
 | --- | --- |
-| Veldin: Kyzil Plateau (opening) | Partial (playable slice) |
-| Novalis: Tobruk Crater | Unassessed |
-| Aridia: Outpost X11 | Unassessed |
-| Kerwan: Metropolis | Unassessed |
-| Eudora: Logging Site | Unassessed |
-| Nebula G34: Blarg Station | Unassessed |
-| Rilgar: Blackwater City | Unassessed |
-| Umbris: Qwark's HQ | Unassessed |
-| Batalia: Fort Krontos | Unassessed |
-| Gaspar: Blarg Depot | Unassessed |
-| Orxon: Kogor Refinery | Unassessed |
-| Pokitaru: Jowai Resort | Unassessed |
-| Hoven: Bomb Factory | Unassessed |
-| Oltanis Orbit: Gemlik Base | Unassessed |
-| Oltanis: Gorda City | Unassessed |
-| Quartu: Robot Factory | Unassessed |
-| Kalebo III: Gadgetron Site | Unassessed |
-| Veldin Orbit: Drek's Fleet | Unassessed |
-| Veldin: Kyzil Plateau (revisit) | Unassessed |
+| Veldin: Kyzil Plateau (opening) | 🟡 Partial (playable slice) |
+| Novalis: Tobruk Crater | 🔴 Unassessed |
+| Aridia: Outpost X11 | 🔴 Unassessed |
+| Kerwan: Metropolis | 🔴 Unassessed |
+| Eudora: Logging Site | 🔴 Unassessed |
+| Nebula G34: Blarg Station | 🔴 Unassessed |
+| Rilgar: Blackwater City | 🔴 Unassessed |
+| Umbris: Qwark's HQ | 🔴 Unassessed |
+| Batalia: Fort Krontos | 🔴 Unassessed |
+| Gaspar: Blarg Depot | 🔴 Unassessed |
+| Orxon: Kogor Refinery | 🔴 Unassessed |
+| Pokitaru: Jowai Resort | 🔴 Unassessed |
+| Hoven: Bomb Factory | 🔴 Unassessed |
+| Oltanis Orbit: Gemlik Base | 🔴 Unassessed |
+| Oltanis: Gorda City | 🔴 Unassessed |
+| Quartu: Robot Factory | 🔴 Unassessed |
+| Kalebo III: Gadgetron Site | 🔴 Unassessed |
+| Veldin Orbit: Drek's Fleet | 🔴 Unassessed |
+| Veldin: Kyzil Plateau (revisit) | 🔴 Unassessed |
 
 **Going Commando**
 
-| Planet / level | OBP status |
+| Planet / level | Status |
 | --- | --- |
-| Aranos: Flying Lab | Unassessed |
-| Oozla: Megacorp Outlet | Partial (world loading) |
-| Wupash Nebula | Unassessed |
-| Maktar Nebula: Maktar Resort | Unassessed |
-| Maktar Nebula: Jamming Array | Unassessed |
-| Barlow: Vukovar Canyon | Unassessed |
-| Endako: Megapolis | Unassessed |
-| Feltzin System: Thug Rendezvous | Unassessed |
-| Notak: Canal City | Unassessed |
-| Slim Cognito's Ship Shack | Unassessed |
-| Siberius: Frozen Base | Unassessed |
-| Tabora: Mining Area | Unassessed |
-| Dobbo: Testing Facility | Unassessed |
-| Dobbo Orbit: Testing Facility Moon | Unassessed |
-| Hrugis Cloud: Deep Space Disposal | Unassessed |
-| Joba: Megacorp Games | Unassessed |
-| Todano: Megacorp Armory | Unassessed |
-| Boldan: Silver City | Unassessed |
-| Aranos (revisit) | Unassessed |
-| Gorn: Thugs-4-Less Fleet | Unassessed |
-| Snivelak: Thug HQ | Unassessed |
-| Smolg: Distribution Facility | Unassessed |
-| Damosel: Allgon City | Unassessed |
-| Damosel Orbit: Allgon Moon | Unassessed |
-| Grelbin: Tundor Wastes | Unassessed |
-| Yeedil: Protopet Factory | Unassessed |
+| Aranos: Flying Lab | 🔴 Unassessed |
+| Oozla: Megacorp Outlet | 🟡 Partial (world loading) |
+| Wupash Nebula | 🔴 Unassessed |
+| Maktar Nebula: Maktar Resort | 🔴 Unassessed |
+| Maktar Nebula: Jamming Array | 🔴 Unassessed |
+| Barlow: Vukovar Canyon | 🔴 Unassessed |
+| Endako: Megapolis | 🔴 Unassessed |
+| Feltzin System: Thug Rendezvous | 🔴 Unassessed |
+| Notak: Canal City | 🔴 Unassessed |
+| Slim Cognito's Ship Shack | 🔴 Unassessed |
+| Siberius: Frozen Base | 🔴 Unassessed |
+| Tabora: Mining Area | 🔴 Unassessed |
+| Dobbo: Testing Facility | 🔴 Unassessed |
+| Dobbo Orbit: Testing Facility Moon | 🔴 Unassessed |
+| Hrugis Cloud: Deep Space Disposal | 🔴 Unassessed |
+| Joba: Megacorp Games | 🔴 Unassessed |
+| Todano: Megacorp Armory | 🔴 Unassessed |
+| Boldan: Silver City | 🔴 Unassessed |
+| Aranos (revisit) | 🔴 Unassessed |
+| Gorn: Thugs-4-Less Fleet | 🔴 Unassessed |
+| Snivelak: Thug HQ | 🔴 Unassessed |
+| Smolg: Distribution Facility | 🔴 Unassessed |
+| Damosel: Allgon City | 🔴 Unassessed |
+| Damosel Orbit: Allgon Moon | 🔴 Unassessed |
+| Grelbin: Tundor Wastes | 🔴 Unassessed |
+| Yeedil: Protopet Factory | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Planet / level | OBP status |
+| Planet / level | Status |
 | --- | --- |
-| Veldin: Kyzil Plateau | Partial (world loading) |
-| Florana | Unassessed |
-| Starship Phoenix | Unassessed |
-| Marcadia | Unassessed |
-| Annihilation Nation | Unassessed |
-| Aquatos | Unassessed |
-| Tyhrranosis | Unassessed |
-| Daxx | Unassessed |
-| Obani Gemini | Unassessed |
-| Obani Draco | Unassessed |
-| Holostar Studios | Unassessed |
-| Rilgar | Unassessed |
-| Zeldrin Starport | Unassessed |
-| Kerwan: Metropolis | Unassessed |
-| Zeldrin crash site | Unassessed |
-| Aridia | Unassessed |
-| Thran Asteroid Belt | Unassessed |
-| Koros | Unassessed |
-| Mylon | Unassessed |
+| Veldin: Kyzil Plateau | 🟡 Partial (world loading) |
+| Florana | 🔴 Unassessed |
+| Starship Phoenix | 🔴 Unassessed |
+| Marcadia | 🔴 Unassessed |
+| Annihilation Nation | 🔴 Unassessed |
+| Aquatos | 🔴 Unassessed |
+| Tyhrranosis | 🔴 Unassessed |
+| Daxx | 🔴 Unassessed |
+| Obani Gemini | 🔴 Unassessed |
+| Obani Draco | 🔴 Unassessed |
+| Holostar Studios | 🔴 Unassessed |
+| Rilgar | 🔴 Unassessed |
+| Zeldrin Starport | 🔴 Unassessed |
+| Kerwan: Metropolis | 🔴 Unassessed |
+| Zeldrin crash site | 🔴 Unassessed |
+| Aridia | 🔴 Unassessed |
+| Thran Asteroid Belt | 🔴 Unassessed |
+| Koros | 🔴 Unassessed |
+| Mylon | 🔴 Unassessed |
 
 References: [R&C1 level order](https://strategywiki.org/wiki/Ratchet_%26_Clank/Table_of_Contents), [GC level catalogue](research/GC_LEVEL_CATALOGUE.md), [UYA locations](https://ratchetclank.neoseeker.com/wiki/Planets). Separate orbit, arena and return visits are listed where they are distinct destinations.
 
@@ -518,64 +519,64 @@ References: [R&C1 level order](https://strategywiki.org/wiki/Ratchet_%26_Clank/T
 
 **Ratchet & Clank (2002)**
 
-| Item / collectible type | OBP status |
+| Item / collectible type | Status |
 | --- | --- |
-| Bolts (currency) | Partial (R&C1) |
-| Gold bolts | Unassessed |
-| Skill points | Unassessed |
-| Infobots | Unassessed |
-| CodeBots | Unassessed |
-| Map-o-Matic | Unassessed |
-| Bolt Grabber | Unassessed |
-| Persuader | Unassessed |
-| Premium Nanotech | Unassessed |
-| Ultra Nanotech | Unassessed |
-| Platinum Zoomerator | Unassessed |
-| Hoverboard | Unassessed |
+| Bolts (currency) | 🟡 Partial (R&C1) |
+| Gold bolts | 🔴 Unassessed |
+| Skill points | 🔴 Unassessed |
+| Infobots | 🔴 Unassessed |
+| CodeBots | 🔴 Unassessed |
+| Map-o-Matic | 🔴 Unassessed |
+| Bolt Grabber | 🔴 Unassessed |
+| Persuader | 🔴 Unassessed |
+| Premium Nanotech | 🔴 Unassessed |
+| Ultra Nanotech | 🔴 Unassessed |
+| Platinum Zoomerator | 🔴 Unassessed |
+| Hoverboard | 🔴 Unassessed |
 
 **Going Commando**
 
-| Item / collectible type | OBP status |
+| Item / collectible type | Status |
 | --- | --- |
-| Bolts (currency) | Unassessed |
-| Platinum bolts | Unassessed |
-| Skill points | Unassessed |
-| Nanotech boosts | Unassessed |
-| Raritanium | Unassessed |
-| Qwark Statuette | Unassessed |
-| Box Breaker | Unassessed |
-| Mapper | Unassessed |
-| Armor Magnetizer | Unassessed |
-| Megacorp Helmet | Unassessed |
-| Commando Suit | Unassessed |
-| Biker Helmet | Unassessed |
-| Tetrafiber Armor | Unassessed |
-| Megacorp weapon modifications (acid) | Unassessed |
-| Megacorp weapon modifications (shock) | Unassessed |
-| Megacorp weapon modifications (lock-on) | Unassessed |
-| Challenge-mode Mega / Ultra weapon upgrades | Unassessed |
-| Ship upgrades and components | Unassessed |
+| Bolts (currency) | 🔴 Unassessed |
+| Platinum bolts | 🔴 Unassessed |
+| Skill points | 🔴 Unassessed |
+| Nanotech boosts | 🔴 Unassessed |
+| Raritanium | 🔴 Unassessed |
+| Qwark Statuette | 🔴 Unassessed |
+| Box Breaker | 🔴 Unassessed |
+| Mapper | 🔴 Unassessed |
+| Armor Magnetizer | 🔴 Unassessed |
+| Megacorp Helmet | 🔴 Unassessed |
+| Commando Suit | 🔴 Unassessed |
+| Biker Helmet | 🔴 Unassessed |
+| Tetrafiber Armor | 🔴 Unassessed |
+| Megacorp weapon modifications (acid) | 🔴 Unassessed |
+| Megacorp weapon modifications (shock) | 🔴 Unassessed |
+| Megacorp weapon modifications (lock-on) | 🔴 Unassessed |
+| Challenge-mode Mega / Ultra weapon upgrades | 🔴 Unassessed |
+| Ship upgrades and components | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Item / collectible type | OBP status |
+| Item / collectible type | Status |
 | --- | --- |
-| Bolts (currency) | Unassessed |
-| Titanium bolts | Unassessed |
-| Skill points | Unassessed |
-| Trophies (Starship Phoenix) | Unassessed |
-| Bolt Grabber V2 | Unassessed |
-| Map-O-Matic | Unassessed |
-| Nano-pak | Unassessed |
-| Master plan | Unassessed |
-| Star map | Unassessed |
-| Megacorp Helmet | Unassessed |
-| Alpha Combat Suit | Unassessed |
-| Adamantine Armor | Unassessed |
-| Aegis Mark V Armor | Unassessed |
-| Infernox Armor | Unassessed |
-| Gadgetron discount | Unassessed |
-| Challenge-mode Mega / Giga / Omega upgrades | Unassessed |
+| Bolts (currency) | 🔴 Unassessed |
+| Titanium bolts | 🔴 Unassessed |
+| Skill points | 🔴 Unassessed |
+| Trophies (Starship Phoenix) | 🔴 Unassessed |
+| Bolt Grabber V2 | 🔴 Unassessed |
+| Map-O-Matic | 🔴 Unassessed |
+| Nano-pak | 🔴 Unassessed |
+| Master plan | 🔴 Unassessed |
+| Star map | 🔴 Unassessed |
+| Megacorp Helmet | 🔴 Unassessed |
+| Alpha Combat Suit | 🔴 Unassessed |
+| Adamantine Armor | 🔴 Unassessed |
+| Aegis Mark V Armor | 🔴 Unassessed |
+| Infernox Armor | 🔴 Unassessed |
+| Gadgetron discount | 🔴 Unassessed |
+| Challenge-mode Mega / Giga / Omega upgrades | 🔴 Unassessed |
 
 References: [R&C1 items](https://ratchetandclank.fandom.com/wiki/Category%3AItems_in_Ratchet_%26_Clank_%282002_game%29), [GC equipment](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank%3A_Going_Commando), [UYA items](https://ratchetandclank.fandom.com/wiki/Category%3AItems_in_Up_Your_Arsenal). Collectible categories are tracked here, not all individual bolt or skill-point locations.
 
@@ -586,40 +587,40 @@ References: [R&C1 items](https://ratchetandclank.fandom.com/wiki/Category%3AItem
 
 **Ratchet & Clank (2002)**
 
-| Crate / pickup | OBP status |
+| Crate / pickup | Status |
 | --- | --- |
-| Wooden bolt crate | Partial (R&C1) |
-| Metal bolt crate | Partial (R&C1) |
-| Explosive crate | Partial (R&C1) |
-| Ammo crate | Partial (R&C1) |
-| Nanotech crate | Partial (R&C1) |
-| Jet Fighter health crate | Unassessed |
-| World-placed bolts | Playable (R&C1) |
-| Crate-emitted bolts | Partial (R&C1) |
+| Wooden bolt crate | 🟡 Partial (R&C1) |
+| Metal bolt crate | 🟡 Partial (R&C1) |
+| Explosive crate | 🟡 Partial (R&C1) |
+| Ammo crate | 🟡 Partial (R&C1) |
+| Nanotech crate | 🟡 Partial (R&C1) |
+| Jet Fighter health crate | 🔴 Unassessed |
+| World-placed bolts | 🟡 Partial (R&C1; world bolts collect, but save persistence incomplete) |
+| Crate-emitted bolts | 🟡 Partial (R&C1) |
 
 **Going Commando**
 
-| Crate / pickup | OBP status |
+| Crate / pickup | Status |
 | --- | --- |
-| Wooden bolt crate | Unassessed |
-| Explosive crate | Unassessed |
-| Megacorp ammo crate | Unassessed |
-| Nanotech crate | Unassessed |
-| Ultra Nanotech crate | Unassessed |
-| Crate / enemy bolts | Unassessed |
+| Wooden bolt crate | 🔴 Unassessed |
+| Explosive crate | 🔴 Unassessed |
+| Megacorp ammo crate | 🔴 Unassessed |
+| Nanotech crate | 🔴 Unassessed |
+| Ultra Nanotech crate | 🔴 Unassessed |
+| Crate / enemy bolts | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Crate / pickup | OBP status |
+| Crate / pickup | Status |
 | --- | --- |
-| Wooden bolt crate | Unassessed |
-| Metal bolt crate | Unassessed |
-| Explosive crate | Unassessed |
-| Gadgetron ammo crate | Unassessed |
-| Nanotech crate | Unassessed |
-| Jackpot crate | Unassessed |
-| Inferno crate | Unassessed |
-| Crate / enemy bolts | Unassessed |
+| Wooden bolt crate | 🔴 Unassessed |
+| Metal bolt crate | 🔴 Unassessed |
+| Explosive crate | 🔴 Unassessed |
+| Gadgetron ammo crate | 🔴 Unassessed |
+| Nanotech crate | 🔴 Unassessed |
+| Jackpot crate | 🔴 Unassessed |
+| Inferno crate | 🔴 Unassessed |
+| Crate / enemy bolts | 🔴 Unassessed |
 
 References: [Crate appearances](https://ratchetandclank.fandom.com/wiki/Crates), [OBP R&C1 crate implementation](research/RAC1_CRATES_PICKUPS.md), [GC crate descriptions](https://www.neoseeker.com/ratchet-clank-commando/faqs/74417-ratchet-and-clank-gc-d.html).
 
@@ -632,72 +633,72 @@ Mechanism labels describe interactive object families. They are not necessarily 
 
 **Ratchet & Clank (2002)**
 
-| Object / mechanism | OBP status |
+| Object / mechanism | Status |
 | --- | --- |
-| Bolt crank and linked doors (Novalis) | Partial (Novalis) |
-| Teleporter pad | Unassessed |
-| World button / hit switch | Unassessed |
-| Floor pressure switch | Unassessed |
-| Locked / timed door | Unassessed |
-| Trespasser lock | Unassessed |
-| Gadgetron weapon / ammo vendor | Unassessed |
-| Nanotech dispenser | Unassessed |
-| Swingshot target (pull) | Researched |
-| Swingshot target (swing) | Researched |
-| Grind rail / branch | Researched |
-| Magne-Strip / magnetic surface | Researched |
-| Wall-jump slot | Researched |
-| Zipline | Researched |
-| Lift / moving platform | Unassessed |
-| Infobot / mission trigger | Partial (selected R&C1) |
-| Ship landing pad | Partial (R&C1 travel) |
+| Bolt crank and linked doors (Novalis) | 🟡 Partial (Novalis) |
+| Teleporter pad | 🔴 Unassessed |
+| World button / hit switch | 🔴 Unassessed |
+| Floor pressure switch | 🔴 Unassessed |
+| Locked / timed door | 🔴 Unassessed |
+| Trespasser lock | 🔴 Unassessed |
+| Gadgetron weapon / ammo vendor | 🔴 Unassessed |
+| Nanotech dispenser | 🔴 Unassessed |
+| Swingshot target (pull) | 🟠 Researched |
+| Swingshot target (swing) | 🟠 Researched |
+| Grind rail / branch | 🟠 Researched |
+| Magne-Strip / magnetic surface | 🟠 Researched |
+| Wall-jump slot | 🟠 Researched |
+| Zipline | 🟠 Researched |
+| Lift / moving platform | 🔴 Unassessed |
+| Infobot / mission trigger | 🟡 Partial (selected R&C1) |
+| Ship landing pad | 🟡 Partial (R&C1 travel) |
 
 **Going Commando**
 
-| Object / mechanism | OBP status |
+| Object / mechanism | Status |
 | --- | --- |
-| Bolt crank (jamming array) | Unassessed |
-| Teleporter pad | Unassessed |
-| Translocator pad (Endako) | Unassessed |
-| World button / hit switch | Unassessed |
-| Door / bridge activation switch | Unassessed |
-| Dynamo target | Unassessed |
-| Electrolyzer circuit terminal | Unassessed |
-| Infiltrator puzzle lock | Unassessed |
-| Tractor Beam target / movable object | Unassessed |
-| Thermanator freeze / thaw water target | Unassessed |
-| Hypnomatic target | Unassessed |
-| Swingshot target | Unassessed |
-| Grind rail / junction | Unassessed |
-| Magnetic Gravity Boots surface | Unassessed |
-| Megacorp weapon / ammo vendor | Unassessed |
-| Megacorp armor vendor | Unassessed |
-| Slim Cognito's ship-upgrade shop | Unassessed |
-| Arena / race challenge activation | Unassessed |
-| Ship landing pad | Unassessed |
+| Bolt crank (jamming array) | 🔴 Unassessed |
+| Teleporter pad | 🔴 Unassessed |
+| Translocator pad (Endako) | 🔴 Unassessed |
+| World button / hit switch | 🔴 Unassessed |
+| Door / bridge activation switch | 🔴 Unassessed |
+| Dynamo target | 🔴 Unassessed |
+| Electrolyzer circuit terminal | 🔴 Unassessed |
+| Infiltrator puzzle lock | 🔴 Unassessed |
+| Tractor Beam target / movable object | 🔴 Unassessed |
+| Thermanator freeze / thaw water target | 🔴 Unassessed |
+| Hypnomatic target | 🔴 Unassessed |
+| Swingshot target | 🔴 Unassessed |
+| Grind rail / junction | 🔴 Unassessed |
+| Magnetic Gravity Boots surface | 🔴 Unassessed |
+| Megacorp weapon / ammo vendor | 🔴 Unassessed |
+| Megacorp armor vendor | 🔴 Unassessed |
+| Slim Cognito's ship-upgrade shop | 🔴 Unassessed |
+| Arena / race challenge activation | 🔴 Unassessed |
+| Ship landing pad | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Object / mechanism | OBP status |
+| Object / mechanism | Status |
 | --- | --- |
-| Bolt crank (Kavu Island) | Unassessed |
-| Capturable Galactic Ranger node | Unassessed |
-| Teleporter pad / return to ship | Unassessed |
-| Museum teleporter (Kerwan / Phoenix) | Unassessed |
-| World button / hit switch | Unassessed |
-| Bridge / objective activation switch | Unassessed |
-| Hacker puzzle terminal | Unassessed |
-| Refractor laser reflector | Unassessed |
-| Hypershot swing target | Unassessed |
-| Hypershot holographic platform activation | Unassessed |
-| Warp Pad anchor point | Unassessed |
-| Gravity Boots magnetic surface | Unassessed |
-| Gadgetron weapon / ammo vendor | Unassessed |
-| Armor vendor | Unassessed |
-| Annihilation Nation arena entry | Unassessed |
-| Galactic Ranger objective / capture point | Unassessed |
-| Hovership boarding pad | Unassessed |
-| Ship landing pad | Unassessed |
+| Bolt crank (Kavu Island) | 🔴 Unassessed |
+| Capturable Galactic Ranger node | 🔴 Unassessed |
+| Teleporter pad / return to ship | 🔴 Unassessed |
+| Museum teleporter (Kerwan / Phoenix) | 🔴 Unassessed |
+| World button / hit switch | 🔴 Unassessed |
+| Bridge / objective activation switch | 🔴 Unassessed |
+| Hacker puzzle terminal | 🔴 Unassessed |
+| Refractor laser reflector | 🔴 Unassessed |
+| Hypershot swing target | 🔴 Unassessed |
+| Hypershot holographic platform activation | 🔴 Unassessed |
+| Warp Pad anchor point | 🔴 Unassessed |
+| Gravity Boots magnetic surface | 🔴 Unassessed |
+| Gadgetron weapon / ammo vendor | 🔴 Unassessed |
+| Armor vendor | 🔴 Unassessed |
+| Annihilation Nation arena entry | 🔴 Unassessed |
+| Galactic Ranger objective / capture point | 🔴 Unassessed |
+| Hovership boarding pad | 🔴 Unassessed |
+| Ship landing pad | 🔴 Unassessed |
 
 References: [OBP Novalis bolt crank](game/scripts/OBPGame.Rac1NovalisCranks.cs), [R&C1 traversal](research/RAC1_TRAVERSAL_EQUIPMENT.md), [Teleporter appearances](https://ratchetandclank.fandom.com/wiki/Teleporter), [GC gameplay instructions](https://ratchetandclank.fandom.com/wiki/Going_Commando_script), [UYA gameplay instructions](https://ratchetandclank.fandom.com/wiki/Up_Your_Arsenal_script), [UYA capture nodes](https://ratchetandclank.fandom.com/wiki/Node).
 
@@ -708,52 +709,52 @@ References: [OBP Novalis bolt crank](game/scripts/OBPGame.Rac1NovalisCranks.cs),
 
 **Ratchet & Clank (2002)**
 
-| Activity / level feature | OBP status |
+| Activity / level feature | Status |
 | --- | --- |
-| Hoverboard race | Unassessed |
-| Hoverboard trick/boost challenges | Unassessed |
-| Clank-only Gadgebot puzzles | Unassessed |
-| Giant Clank sequence | Unassessed |
-| Fighter ship battle | Unassessed |
-| Jet Fighter mission | Unassessed |
-| Trespasser laser puzzle | Unassessed |
-| Grindrail traversal | Unassessed |
-| Nanotech upgrade purchase | Unassessed |
-| Gold weapon vendor | Unassessed |
-| Skill point challenge | Unassessed |
+| Hoverboard race | 🔴 Unassessed |
+| Hoverboard trick/boost challenges | 🔴 Unassessed |
+| Clank-only Gadgebot puzzles | 🔴 Unassessed |
+| Giant Clank sequence | 🔴 Unassessed |
+| Fighter ship battle | 🔴 Unassessed |
+| Jet Fighter mission | 🔴 Unassessed |
+| Trespasser laser puzzle | 🔴 Unassessed |
+| Grindrail traversal | 🔴 Unassessed |
+| Nanotech upgrade purchase | 🔴 Unassessed |
+| Gold weapon vendor | 🔴 Unassessed |
+| Skill point challenge | 🔴 Unassessed |
 
 **Going Commando**
 
-| Activity / level feature | OBP status |
+| Activity / level feature | Status |
 | --- | --- |
-| Hoverbike race | Unassessed |
-| Starship space combat | Unassessed |
-| Giant Clank combat | Unassessed |
-| Glider course | Unassessed |
-| Levitator traversal | Unassessed |
-| Megacorp Arena challenges | Unassessed |
-| Platinum Bolt hunting | Unassessed |
-| Insomniac Museum access | Unassessed |
-| Weapon XP and mods | Unassessed |
-| Nanotech XP and boosts | Unassessed |
-| Ship customization | Unassessed |
+| Hoverbike race | 🔴 Unassessed |
+| Starship space combat | 🔴 Unassessed |
+| Giant Clank combat | 🔴 Unassessed |
+| Glider course | 🔴 Unassessed |
+| Levitator traversal | 🔴 Unassessed |
+| Megacorp Arena challenges | 🔴 Unassessed |
+| Platinum Bolt hunting | 🔴 Unassessed |
+| Insomniac Museum access | 🔴 Unassessed |
+| Weapon XP and mods | 🔴 Unassessed |
+| Nanotech XP and boosts | 🔴 Unassessed |
+| Ship customization | 🔴 Unassessed |
 
 **Up Your Arsenal**
 
-| Activity / level feature | OBP status |
+| Activity / level feature | Status |
 | --- | --- |
-| Annihilation Nation arena | Unassessed |
-| Galactic Ranger battle missions | Unassessed |
-| Qwark Vid-Comic levels | Unassessed |
-| Starship Phoenix VR training | Unassessed |
-| Starship Phoenix trophy room | Unassessed |
-| Hacker puzzle | Unassessed |
-| Tyhrraguise infiltration | Unassessed |
-| Refractor beam puzzle | Unassessed |
-| Ship/space encounters | Unassessed |
-| Multi-level weapon XP | Unassessed |
-| Challenge Mode | Unassessed |
-| Titanium Bolt hunting | Unassessed |
+| Annihilation Nation arena | 🔴 Unassessed |
+| Galactic Ranger battle missions | 🔴 Unassessed |
+| Qwark Vid-Comic levels | 🔴 Unassessed |
+| Starship Phoenix VR training | 🔴 Unassessed |
+| Starship Phoenix trophy room | 🔴 Unassessed |
+| Hacker puzzle | 🔴 Unassessed |
+| Tyhrraguise infiltration | 🔴 Unassessed |
+| Refractor beam puzzle | 🔴 Unassessed |
+| Ship/space encounters | 🔴 Unassessed |
+| Multi-level weapon XP | 🔴 Unassessed |
+| Challenge Mode | 🔴 Unassessed |
+| Titanium Bolt hunting | 🔴 Unassessed |
 
 These are named activities and broad encounter types rather than an exhaustive list of all mission scripts. Reference: [R&C1 overview](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank_%282002_game%29), [GC overview](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank%3A_Going_Commando), [UYA overview](https://ratchetandclank.fandom.com/wiki/Ratchet_%26_Clank%3A_Up_Your_Arsenal).
 
