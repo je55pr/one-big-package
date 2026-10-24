@@ -1,9 +1,29 @@
 using OBP.Fusion;
+using OBP.Godot;
+using OBP.RAC1.Player;
+using OneBigPackage;
 
 namespace OBP.Tests;
 
 public sealed class FusionLabDefinitionTests
 {
+    [Fact]
+    public void AuthoredLabCollisionDoesNotInventNativeWaterOrOtherSurfaceCodes()
+    {
+        var world = FusionLabWorldFactory.Build(Fixture());
+        Assert.NotEmpty(world.CollisionMeshes);
+        foreach (var blob in world.CollisionMeshes)
+        {
+            Assert.True(blob.Triangles > 0);
+            Assert.Empty(blob.TriangleMaterialIds);
+            var material = RuntimeWorldScene.MaterialIdForFace(blob, [0], 0);
+            Assert.Null(material);
+            var contact = Rac1PlayerContactResult.StaticWorld(true, rawFaceType: material);
+            Assert.True(contact.IsGrounded);
+            Assert.Equal(Rac1SurfaceInteractionKind.None, contact.SurfaceInteraction);
+        }
+    }
+
     private static FusionLabDefinition Fixture() =>
         FusionLabDefinition.Parse(File.ReadAllText(
             Path.Combine(RepoPaths.Root, "game", "data", "fusion_lab.json")));

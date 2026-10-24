@@ -43,6 +43,7 @@ public partial class OBPGame
                 Require(_playerRoot.GetChildCount() == 1 && _worldRoot.GetChildCount() == 1, "old scene/player survived teardown");
                 Require(_fusionProjectiles.Count == 0 && _fusionAudioPlayers.Count == 0 && _fusionEffects.Count == 0, "old player effects/audio survived");
                 Require(id != "obp:fusion-lab" || _activeDestination is null && _currentDestinationId == id, "Lab impersonates a retail destination");
+                if (id == "obp:fusion-lab") await CheckPlayerSessionLabControlsAsync();
                 GD.Print($"[player-session-smoke] {id}: same player/profile/selection/health; one player/scene; no old effects");
             }
             var liveWorld = _world;
@@ -83,5 +84,50 @@ public partial class OBPGame
             ApplicationLifecycle.RequestQuit(this, "player-session-smoke-fail", 3);
         }
         finally { CameraSettingsStore.Set(originalOptions, persist: false); }
+    }
+
+    private async Task CheckPlayerSessionLabControlsAsync()
+    {
+        var selected = _fusion!.Selected;
+        var hand = _rac1HeldItem.Hand.Equipment;
+        foreach (var weapon in new[] { new SourceWeaponKey("rac1", 8), new("rac1", 10), FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
+        {
+            SelectWeaponKey(weapon);
+            var loadout = _playerSession!.Capture().Loadout;
+            Require(EnterFusionLab(), "Lab control trial entry failed");
+            Require(_playerSession.Capture().Loadout.SelectedWeapon == weapon &&
+                _playerSession.Capture().Loadout.HandEquipment == loadout.HandEquipment, "Lab control trial reset equipment");
+            await CheckPlayerSessionLabMovementAsync(weapon);
+        }
+        SelectWeaponKey(selected);
+        if (hand is null) _rac1HeldItem.HoldWrench();
+    }
+
+    private async Task CheckPlayerSessionLabMovementAsync(SourceWeaponKey weapon)
+    {
+        var player = _player!;
+        var previous = player.PlaytestInputFilter;
+        try
+        {
+            player.PlaytestInputFilter = _ => default;
+            await PhysicsFramesAsync(30);
+            var start = player.GlobalPosition;
+            player.PlaytestInputFilter = _ => new RawPlayerInputFrame { Move = new(0, -1) };
+            await PhysicsFramesAsync(90);
+            float distance = new Vector2(player.GlobalPosition.X - start.X, player.GlobalPosition.Z - start.Z).Length();
+            Require(distance > 1, "Lab entry left the persistent player unable to move");
+            player.PlaytestInputFilter = _ => default;
+            await PhysicsFramesAsync(20);
+            float floor = player.GlobalPosition.Y, apex = floor;
+            player.PlaytestInputFilter = _ => new RawPlayerInputFrame { JumpHeld = true };
+            for (int i = 0; i < 30; i++)
+            {
+                await PhysicsFramesAsync(1);
+                apex = Math.Max(apex, player.GlobalPosition.Y);
+            }
+            Require(apex > floor + .1f, "Lab entry left the persistent player unable to jump");
+            GD.Print($"[player-session-smoke] Lab controls {weapon}: moved {distance:0.00}, jumped {apex - floor:0.00}");
+        }
+        finally { player.PlaytestInputFilter = previous; }
     }
 }

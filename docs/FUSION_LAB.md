@@ -41,7 +41,9 @@ until adapters, catalogues and mixed encounter work land in follow-ups.
   three authorized source environment variables configured. It checks retained
   avatar/profile, selected foreign weapon, wrench hand ownership, health and
   camera preferences, repeated native/custom re-entry, missing avatar source and
-  failed staged load. It is a lifecycle fixture, not cross-world replay admission.
+  failed staged load. Lab entries also exercise walking and jumping with each of
+  the wrench, Bomb Glove, Lancer and Shock Cannon selected. It is a lifecycle
+  fixture, not cross-world replay admission or weapon-effect validation.
 - Run portable FusionLabDefinitionTests, ArchitectureLayeringTests and build
   game/OneBigPackage.csproj. The authored topology and failure cases are
   deterministic without native assets. The old --compose viewer remains
