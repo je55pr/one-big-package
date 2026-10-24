@@ -629,7 +629,7 @@ References: [R&C1 items](https://ratchetandclank.fandom.com/wiki/Category%3AItem
 <tr><td></td><td nowrap="nowrap">Wooden bolt crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/8/80/Metal_crate_from_R%26C_%282002%29_render.png/revision/latest/scale-to-width-down/144?cb=20181006023001" width="72" alt="Metal bolt crate"></td><td nowrap="nowrap">Metal bolt crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/2/25/Explosive_crate_from_R%26C_%282002%29_render.png/revision/latest/scale-to-width-down/144?cb=20181006022857" width="72" alt="Explosive crate"></td><td nowrap="nowrap">Explosive crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/53/Ammo_crate_from_UYA_render.png/revision/latest/scale-to-width-down/144?cb=20181006225454" width="72" alt="Ammo crate"></td><td nowrap="nowrap">Ammo crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/f/f2/Ammo_crate_from_R%26C_%282002%29_render.png/revision/latest/scale-to-width-down/144?cb=20181006022818" width="72" alt="Ammo crate"></td><td nowrap="nowrap">Ammo crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/7/7b/Nanotech_crate_from_R%26C_%282002%29_screen.png/revision/latest/scale-to-width-down/144?cb=20181006023038" width="72" alt="Nanotech crate"></td><td nowrap="nowrap">Nanotech crate</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Jet Fighter health crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">World-placed bolts</td><td nowrap="nowrap">🟠</td><td></td></tr>
@@ -643,7 +643,7 @@ References: [R&C1 items](https://ratchetandclank.fandom.com/wiki/Category%3AItem
 <tbody>
 <tr><td></td><td nowrap="nowrap">Wooden bolt crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Explosive crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/53/Ammo_crate_from_UYA_render.png/revision/latest/scale-to-width-down/144?cb=20181006225454" width="72" alt="Megacorp ammo crate"></td><td nowrap="nowrap">Megacorp ammo crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/b/ba/Ammo_crate_from_GC_render.png/revision/latest/scale-to-width-down/144?cb=20181006225303" width="72" alt="Megacorp ammo crate"></td><td nowrap="nowrap">Megacorp ammo crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Nanotech crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Ultra Nanotech crate</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Crate / enemy bolts</td><td nowrap="nowrap">🔴</td><td></td></tr>
@@ -679,12 +679,12 @@ Mechanism labels describe interactive object families. They are not necessarily 
 <thead><tr><th width="84"></th><th width="1">Object / mechanism</th><th width="1">Status</th><th>Notes</th></tr></thead>
 <tbody>
 <tr><td></td><td nowrap="nowrap">Bolt crank and linked doors (Novalis)</td><td nowrap="nowrap">🟠</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/d/d2/Teleporter_from_UYA_render.png/revision/latest/scale-to-width-down/144?cb=20191128151636" width="72" alt="Teleporter pad"></td><td nowrap="nowrap">Teleporter pad</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/6/61/Teleporter_from_R%26C_%282002%29_render.png/revision/latest/scale-to-width-down/144?cb=20181108142221" width="72" alt="Teleporter pad"></td><td nowrap="nowrap">Teleporter pad</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">World button / hit switch</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Floor pressure switch</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Locked / timed door</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Trespasser lock</td><td nowrap="nowrap">🔴</td><td></td></tr>
-<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/9/94/Gadgetron_vendor_from_UYA.png/revision/latest/scale-to-width-down/144?cb=20150202190921" width="72" alt="Gadgetron weapon / ammo vendor"></td><td nowrap="nowrap">Gadgetron weapon / ammo vendor</td><td nowrap="nowrap">🔴</td><td></td></tr>
+<tr><td><img src="https://static.wikia.nocookie.net/ratchet/images/5/5c/Gadgetron_vendor_from_R%26C_%282002%29_render.png/revision/latest/scale-to-width-down/144?cb=20150203195216" width="72" alt="Gadgetron weapon / ammo vendor"></td><td nowrap="nowrap">Gadgetron weapon / ammo vendor</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Nanotech dispenser</td><td nowrap="nowrap">🔴</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Swingshot target (pull)</td><td nowrap="nowrap">🟠</td><td></td></tr>
 <tr><td></td><td nowrap="nowrap">Swingshot target (swing)</td><td nowrap="nowrap">🟠</td><td></td></tr>
