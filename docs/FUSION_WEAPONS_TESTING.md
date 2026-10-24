@@ -25,9 +25,13 @@ For a direct fresh entry, append `--fusion-test` to the normal Godot arguments
 after `--`. Its default destination is `rac1:LEVEL0`; other starting destinations,
 compositions and R&C1-only movement-state loads are rejected. Attach sources
 normally or pass `--rac1-iso`, `--gc-iso`, `--uya-iso` with authorised local paths.
-Asset loading verifies each attached disc's full SHA-256 against its original
-authority before admitting its weapons. This runs once per attached-source session
-without blocking the game thread. Recording waits for shared preparation before
+First use verifies each attached disc's full SHA-256 against its original
+authority, then saves a payload-free receipt in local app storage. Later launches
+check file size, write/creation timestamps and 16 distributed 64 KiB samples
+(at most 1 MiB per disc). Matching files reuse that successful verification;
+changed metadata/samples or a missing/corrupt receipt require a full scan. This is
+an explicit OBP trust policy, not a fresh full-file proof on every launch.
+Preparation remains off the game thread. Recording waits for shared preparation before
 level entry so the header identifies all three builds. Missing or modified
 sources leave an actionable status in the selector/HUD and disable that weapon.
 
@@ -38,6 +42,15 @@ the live Quick Select overlay until release. Circle / E uses the selected weapon
 Square / X remains the wrench. Double-tap Triangle / Q swaps the last two source-
 qualified selections. Keyboard `[` / `]` cycling follows the same three entries.
 The HUD shows the original game, actual ammo and current charge/recovery status.
+
+Global weapon skins use their class inverse bind matrices followed by the animated
+forward joints. Their stored model-space vertices must not be transformed by
+animated inverse joints alone, which folds the barrel and handle together.
+The R&C1 avatar holds a gun pose while foreign equipment is selected. Rigid grip
+alignment preserves source dimensions; the Cannon has an explicit OBP quarter-roll
+and palm offset. The source games' Ratchet-to-weapon mounts remain unrecovered.
+Visible barrel endpoints are OBP anchors measured from decoded rest geometry;
+they move with the grip so projectiles and beam feedback follow the held model.
 
 ## Authority and deliberate OBP policies
 

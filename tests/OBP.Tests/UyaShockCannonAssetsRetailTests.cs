@@ -33,8 +33,15 @@ public sealed partial class UyaShockCannonRetailTests
             Assert.Equal(UyaShockCannonAssets.ModelAssetKind, surface.AssetKind);
             Assert.All(surface.Positions, p => Assert.True(double.IsFinite(p)));
             Assert.All(surface.Indices, i => Assert.InRange(i, 0, surface.Positions.Length / 3 - 1));
-            // Pose evaluation unfolds the legacy static reconstruction.
-            Assert.InRange(surface.Positions.Where((_, i) => i % 3 == 2).Min(), -.409, -.407);
+            // The class inverse bind cancels the authored resting joint pose.
+            // Applying animated inverse joints alone crushes this -Y barrel.
+            Assert.InRange(surface.Positions.Where((_, i) => i % 3 == 2).Min(), -1.119, -1.117);
+            for (int v = 0; v < surface.Positions.Length; v += 3)
+            {
+                Assert.InRange(Math.Abs(surface.Positions[v] - source.Mesh.SkinLocalPositions[v]), 0, .00002);
+                Assert.InRange(Math.Abs(surface.Positions[v + 1] - source.Mesh.SkinLocalPositions[v + 2]), 0, .00002);
+                Assert.InRange(Math.Abs(surface.Positions[v + 2] - source.Mesh.SkinLocalPositions[v + 1]), 0, .00002);
+            }
         });
         Assert.Throws<ArgumentOutOfRangeException>(() => UyaShockCannonAssets.Model(source, 3, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => UyaShockCannonAssets.Model(source, 0, 11));

@@ -26,12 +26,14 @@ public sealed class FusionWeaponData
     public UyaGlobalGadget.Source? Cannon { get; private set; }
     public IReadOnlyList<RuntimeObjectMesh> Projectile { get; private set; } = [];
     private readonly Dictionary<string, string> _identities = [];
+    public int ReusedVerifications { get; private set; }
     public PlaytestWeaponConfiguration Configuration(bool isolated) => new(
         isolated ? FusionWeaponSession.LoadoutId : FusionWeaponSession.DefaultLoadoutId, FusionDamagePolicy.Id,
         new SortedDictionary<string, string>(_identities, StringComparer.Ordinal));
 
     public FusionWeaponData(IReadOnlyList<ObpAttachedSource> sources,
-        IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+        IProgress<string>? progress = null, CancellationToken cancellationToken = default,
+        FileVerificationCache? verificationCache = null)
     {
         Load(ObpSourceGame.Rac1, FusionWeaponSession.BombGlove, _ => { });
         Load(ObpSourceGame.Rac2, FusionWeaponSession.Lancer, disc =>
@@ -79,10 +81,14 @@ public sealed class FusionWeaponData
             if (source is null) { Problems[weapon] = $"Attach {title} NTSC-U in Game Sources."; return; }
             try
             {
-                progress?.Report($"Verifying {title} source…");
+                progress?.Report($"Checking {title} source…");
                 using var disc = new FileRandomAccessReader(source.Path);
-                string hash = Hashing.Sha256Hex(disc, progress: new HashProgress(title, progress), cancellationToken: cancellationToken);
-                if (!string.Equals(hash, source.Identity.Sha256, StringComparison.OrdinalIgnoreCase))
+                string expectedHash = source.Identity.Sha256 ?? throw new InvalidDataException("Source has no pinned authority SHA-256.");
+                var hashProgress = new HashProgress(title, progress);
+                var verification = verificationCache?.Verify(source.Path, disc, expectedHash, hashProgress, cancellationToken);
+                string hash = verification?.Sha256 ?? Hashing.Sha256Hex(disc, progress: hashProgress, cancellationToken: cancellationToken);
+                if (verification?.Reused == true) ReusedVerifications++;
+                if (!string.Equals(hash, expectedHash, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("Disc SHA-256 differs from the supported original NTSC-U build.");
                 _identities[weapon.SourceGame] = source.Identity.BuildId + "/sha256:" + hash;
                 progress?.Report($"Preparing {title} weapon…");
@@ -109,8 +115,8 @@ public sealed class FusionWeaponPreparation : IDisposable, IProgress<string>
     public string Status => Volatile.Read(ref _status);
     public Task<FusionWeaponData> Completion { get; }
 
-    public FusionWeaponPreparation(IReadOnlyList<ObpAttachedSource> sources)
-        : this((progress, token) => new FusionWeaponData(sources, progress, token)) { }
+    public FusionWeaponPreparation(IReadOnlyList<ObpAttachedSource> sources, FileVerificationCache? verificationCache = null)
+        : this((progress, token) => new FusionWeaponData(sources, progress, token, verificationCache)) { }
 
     internal FusionWeaponPreparation(Func<IProgress<string>, CancellationToken, FusionWeaponData> prepare)
     {

@@ -62,7 +62,7 @@ public static class UyaShockCannonAssets
 
     /// <summary>
     /// Explicit source sequence/frame, not a fabricated idle selector. The
-    /// legacy static mesh folds the gun incorrectly; use its original joints.
+    /// global gadget vertices need their original inverse bind and animated joints.
     /// </summary>
     public static IReadOnlyList<RuntimeObjectMesh> Model(UyaGlobalGadget.Source source, int sequence, int frame)
     {
@@ -70,7 +70,7 @@ public static class UyaShockCannonAssets
         var clip = source.Sequences.SingleOrDefault(s => s.Index == sequence)
             ?? throw new ArgumentOutOfRangeException(nameof(sequence));
         if ((uint)frame >= clip.Frames.Count) throw new ArgumentOutOfRangeException(nameof(frame));
-        double[] native = GcUyaMobyPose.Pose(source.Mesh, source.Joints, clip.Frames[frame]);
+        double[] native = GcUyaGadgetPose.Pose(source.Mesh, source.Joints, source.InverseBindMatrices, clip.Frames[frame]);
         var positions = new double[native.Length];
         for (int i = 0; i < native.Length; i += 3)
         {

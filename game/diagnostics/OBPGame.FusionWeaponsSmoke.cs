@@ -27,12 +27,16 @@ public partial class OBPGame
             await PhysicsFramesAsync(90);
             await FusionMarkAsync();
             await SelectFusionByInputAsync(1);
+            await PhysicsFramesAsync(30);
+            await CaptureFusionAsync("lancer-idle");
             await FusionFireInputAsync(60);
             Require(_fusion!.LancerSession.Ammo < 40, "recorded Lancer did not fire");
             await CaptureFusionAsync("ordinary-lancer");
             await PhysicsFramesAsync(30);
             await FusionMarkAsync();
             await SelectFusionByInputAsync(2);
+            await PhysicsFramesAsync(30);
+            await CaptureFusionAsync("cannon-idle");
             await FusionFireInputAsync(90);
             Require(_fusion.CannonSession.Ammo <= 9, "recorded Shock Cannon did not spread and charge");
             await CaptureFusionAsync("ordinary-cannon");
@@ -74,6 +78,9 @@ public partial class OBPGame
             string normalInventory = JsonSerializer.Serialize(_fusionOriginalCampaign!.Weapons.CapturePersistentState());
             await WaitForGroundedAsync(_player!, 180);
             await SelectFusionByInputAsync(1);
+            await PhysicsFramesAsync(30);
+            RequireFusionGunAlignment();
+            await CaptureFusionProfileAsync("lancer-profile");
             Require(_fusionHeldViews[FusionWeaponSession.Lancer].GetChildren().OfType<MeshInstance3D>().Any(), "original Lancer mesh absent");
             Require(_rac1WrenchView is { Visible: false }, "Lancer retained the R&C1 wrench model");
             int beforeWrench = _fusion!.LancerSession.Ammo;
@@ -86,6 +93,9 @@ public partial class OBPGame
             Require(_fusion.LancerSession.Ammo == beforeWrench && !_rac1WrenchView.Visible &&
                 _fusionHeldViews[FusionWeaponSession.Lancer].Visible, "Square fired the gun or left two held models");
             await SelectFusionByInputAsync(2);
+            await PhysicsFramesAsync(30);
+            RequireFusionGunAlignment();
+            await CaptureFusionProfileAsync("cannon-profile");
             Require(_fusionHeldViews[FusionWeaponSession.ShockCannon].GetChildren().OfType<MeshInstance3D>().Any(), "original Cannon mesh absent");
             await SelectFusionByInputAsync(0);
             await CaptureFusionAsync("ordinary-selector");
@@ -288,6 +298,36 @@ public partial class OBPGame
 
     private static void FusionKey(Key key, bool pressed) => Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = pressed });
 
+    private void RequireFusionGunAlignment()
+    {
+        var key = _fusion!.Selected;
+        var basis = _fusionHeldViews[key].GlobalBasis;
+        Require((basis * Vector3.Forward).Normalized().Dot(EquipmentForward) > .98f,
+            $"{key} barrel does not face the player's aim");
+        var up = key == FusionWeaponSession.Lancer ? Vector3.Left : Vector3.Up;
+        Require((basis * up).Normalized().Dot(Vector3.Up) > .98f, $"{key} is rolled sideways");
+        Require(MathF.Abs(basis.X.Length() - basis.Y.Length()) < .01f &&
+            MathF.Abs(basis.Y.Length() - basis.Z.Length()) < .01f, $"{key} mount distorts the source proportions");
+    }
+
+    private async Task CaptureFusionProfileAsync(string name)
+    {
+        if (string.IsNullOrWhiteSpace(System.Environment.GetEnvironmentVariable("OBP_FUSION_CAPTURE_DIR")) ||
+            DisplayServer.GetName() == "headless" || _playtest is not null) return;
+        var camera = _activeCamera;
+        var transform = camera.GlobalTransform;
+        bool paused = GetTree().Paused;
+        try
+        {
+            GetTree().Paused = true;
+            Vector3 target = _player!.GlobalPosition + Vector3.Up * .85f + EquipmentForward * .3f;
+            camera.GlobalPosition = target + EquipmentForward.Cross(Vector3.Up) * 2.2f - EquipmentForward * .5f + Vector3.Up * .4f;
+            camera.LookAt(target);
+            await CaptureFusionAsync(name);
+        }
+        finally { camera.GlobalTransform = transform; GetTree().Paused = paused; }
+    }
+
     private async Task CaptureFusionAsync(string name)
     {
         string? directory = System.Environment.GetEnvironmentVariable("OBP_FUSION_CAPTURE_DIR");
@@ -296,5 +336,23 @@ public partial class OBPGame
         await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         using var image = GetViewport().GetTexture().GetImage();
         Require(image.SavePng(Path.Combine(directory, name + ".png")) == Error.Ok, "fusion capture failed");
+        File.WriteAllText(Path.Combine(directory, name + ".pose.json"), JsonSerializer.Serialize(new
+        {
+            selected = _fusion?.Selected.ToString(),
+            gunPoseTicks = _fusionGunPoseTicks,
+            forward = new[] { EquipmentForward.X, EquipmentForward.Y, EquipmentForward.Z },
+            weapons = _fusionHeldViews.Select(pair => new
+            {
+                key = pair.Key.ToString(),
+                pair.Value.Visible,
+                transform = new[] { pair.Value.GlobalBasis.X, pair.Value.GlobalBasis.Y, pair.Value.GlobalBasis.Z, pair.Value.GlobalPosition }
+                    .Select(v => new[] { v.X, v.Y, v.Z }),
+                localBounds = pair.Value.GetChildren().OfType<MeshInstance3D>().Select(m => new
+                {
+                    position = new[] { m.GetAabb().Position.X, m.GetAabb().Position.Y, m.GetAabb().Position.Z },
+                    size = new[] { m.GetAabb().Size.X, m.GetAabb().Size.Y, m.GetAabb().Size.Z }
+                })
+            })
+        }));
     }
 }

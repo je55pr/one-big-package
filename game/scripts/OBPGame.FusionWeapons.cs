@@ -2,6 +2,7 @@ using Godot;
 using OBP.Core;
 using OBP.Godot;
 using OBP.Godot.Player;
+using OBP.IO;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Progression;
@@ -85,7 +86,7 @@ public partial class OBPGame
         if (!force && _fusionSourceSnapshot is not null && snapshot.SequenceEqual(_fusionSourceSnapshot)) return;
         ResetSharedWeaponAssets();
         _fusionSourceSnapshot = snapshot;
-        _fusionPreparation = new(snapshot);
+        _fusionPreparation = new(snapshot, new FileVerificationCache(ProjectSettings.GlobalizePath("user://source-verification")));
         ShowSharedWeaponPreparation(_fusionPreparation.Status);
         GD.Print("[fusion] preparing shared trilogy weapon data in the background");
     }
@@ -145,10 +146,11 @@ public partial class OBPGame
         try
         {
             // Only texture uploads and scene attachment run on the main thread.
-            _fusionAssets = new(preparation.Completion.GetAwaiter().GetResult());
+            var data = preparation.Completion.GetAwaiter().GetResult();
+            _fusionAssets = new(data);
             if (_playerAvatarView is not null) AttachFusionWeaponViews(_playerAvatarView);
             foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
-            GD.Print("[fusion] shared weapon preparation complete; retained for this source session");
+            GD.Print($"[fusion] shared weapon preparation complete; reused {data.ReusedVerifications}/3 saved verifications; retained for this source session");
         }
         catch (Exception error)
         {
@@ -213,6 +215,7 @@ public partial class OBPGame
             _previousSelectedWeapon = previous;
             StopFusionAudio();
             _fusionModelSequence = _fusionModelAge = 0;
+            _fusionGunPoseTicks = _fusionGunPoseAge = 0;
             _rac1BombFireRequested = _rac1AdditionalFireRequested = _rac1EquipmentUsePressed = false;
             _rac1BombThrowActive = false;
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
@@ -288,9 +291,12 @@ public partial class OBPGame
 
     private Vector3 FusionMuzzle()
     {
-        Vector3 hand = _fusion is not null && _fusionHeldViews.TryGetValue(_fusion.Selected, out var view)
-            ? view.GlobalPosition : _player!.GlobalPosition + Vector3.Up * .9f;
-        Vector3 muzzle = hand + EquipmentForward * .5f;
+        Vector3 muzzle = _player!.GlobalPosition + Vector3.Up * .9f + EquipmentForward * .5f;
+        if (_fusion is not null && _fusionHeldViews.TryGetValue(_fusion.Selected, out var view))
+        {
+            var muzzlePoint = FusionWeaponMount.Muzzle(_fusion.Selected);
+            muzzle = view.ToGlobal(new Vector3(muzzlePoint.X, muzzlePoint.Y, muzzlePoint.Z));
+        }
         var ray = PhysicsRayQueryParameters3D.Create(_player!.GlobalPosition + Vector3.Up * .8f, muzzle);
         ray.Exclude = [_player.GetRid()];
         var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
@@ -385,7 +391,11 @@ public partial class OBPGame
             {
                 Vector3 Point(double x, double y, double z) => PlayerAvatarView.ToGodotLocal(hand.Transform(new(x, y, z)), _playerAvatar.Axes, _playerAvatar.BaseHeight, true);
                 Vector3 origin = Point(0, 0, 0);
-                view.Transform = new(new Basis(Point(-1, 0, 0) - origin, Point(0, 0, 1) - origin, Point(0, 1, 0) - origin), origin);
+                var socket = new Basis(Point(-1, 0, 0) - origin, Point(0, 0, 1) - origin, Point(0, 1, 0) - origin);
+                var rotation = FusionWeaponMount.Rotation(key);
+                var mount = socket * new Basis(new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W));
+                var grip = FusionWeaponMount.Grip(key);
+                view.Transform = new(mount, origin - mount * new Vector3(grip.X, grip.Y, grip.Z));
             }
             if (key == FusionWeaponSession.Lancer && _fusionAssets.Lancer is { } lancer)
             {

@@ -31,7 +31,7 @@ public static class GcLancerPresentation
     public static IReadOnlyList<RuntimeObjectMesh> HeldModel(GcLancerAssets.HeldAssets source, int sequence, int frame)
     {
         var clip = source.Model.Sequences.Single(s => s.Index == sequence);
-        double[] native = GcUyaMobyPose.Pose(source.Model.Mesh, source.Model.Joints, clip.Frames[frame]);
+        double[] native = GcUyaGadgetPose.Pose(source.Model.Mesh, source.Model.Joints, source.InverseBindMatrices, clip.Frames[frame]);
         return Project(source.Model, native, HeldAssetKind);
     }
 

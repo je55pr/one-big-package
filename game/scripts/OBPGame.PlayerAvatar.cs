@@ -186,7 +186,7 @@ public partial class OBPGame
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
-        bool fusionPose = _fusion is { Selected.SourceGame: not "rac1" } && _fusionGunPoseTicks > 0 &&
+        bool fusionPose = _fusion is { Selected.SourceGame: not "rac1" } &&
             input.Traversal is null && !_rac1Nanotech.Probe().IsDead && _player?.Rac1WrenchFrame.Active != true;
         // OBP presentation bridge: use this avatar's R&C1 gun pose. Native
         // GC/UYA player-to-weapon attachment is not asserted by the demo.
@@ -195,7 +195,7 @@ public partial class OBPGame
             : OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster).BodySequence;
         if (equipmentPose < 0) equipmentPose = null;
         _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-            walloper ? _rac1WalloperAge / 60d : fusionPose ? _fusionGunPoseAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+            walloper ? _rac1WalloperAge / 60d : fusionPose ? (_fusionGunPoseTicks > 0 ? _fusionGunPoseAge / 60d : 0) : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
         if (_avatarPhysicsPlayer is { } player)
         {
             player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
