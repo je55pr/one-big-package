@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../src/OBP.Core/OBP.Core.csproj" />
+    <ProjectReference Include="../src/OBP.Fusion/OBP.Fusion.csproj" />
     <ProjectReference Include="../src/OBP.IO/OBP.IO.csproj" />
     <ProjectReference Include="../src/OBP.PS2/OBP.PS2.csproj" />
     <ProjectReference Include="../src/OBP.Runtime/OBP.Runtime.csproj" />

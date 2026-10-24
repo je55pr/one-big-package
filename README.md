@@ -845,6 +845,7 @@ Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Player, world and actor ownership](docs/PLAYER_WORLD_CONTRACT.md)
 - [Project vision](docs/PROJECT_VISION.md)
 - [Research index](research/README.md)
 - [Retail testing](docs/RETAIL_TESTING.md)

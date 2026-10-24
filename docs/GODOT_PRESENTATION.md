@@ -163,9 +163,13 @@ UYA both have retained native player state/sequence-selection contracts
 (`GcRatchetSequenceSelection` and `UyaRatchetSequenceSelection`), but neither currently has a
 renderable native player-avatar provider. GC still needs its dedicated Ratchet carrier decoded
 into `PlayerAvatar`; UYA additionally has unresolved special `0xF` player-frame pose bodies.
-Those worlds therefore keep the debug capsule and do not borrow the R&C1 model, clips, controller,
-or sequence semantics. The recovered GC/UYA selectors remain source-owned evidence for their
-future providers rather than being projected through the host's generic movement classifier.
+The current destination-based host still leaves those worlds on the debug capsule;
+that is tracked migration debt, not the ownership contract. Under the
+[player/world contract](PLAYER_WORLD_CONTRACT.md), #268 resolves the session's
+selected genuine avatar provider independently of world origin, initially R&C1
+Ratchet throughout, and fails visibly if its required assets are unavailable.
+This does not label an R&C1 skin as a GC/UYA avatar. The recovered GC/UYA selectors
+remain source-owned evidence for future genuine providers.
 
 Both stop variants, crouch, and the two crouch-turn clips remain exposed as neutral avatar
 data without invented gameplay predicates. In particular, sequences 5 and 6 intentionally
