@@ -38,7 +38,7 @@ public sealed class FusionLabDefinitionTests
         var lab = Fixture();
         Assert.Throws<ArgumentException>(() => (lab with
         {
-            Rooms = [..lab.Rooms, lab.Rooms[0]]
+            Rooms = [.. lab.Rooms, lab.Rooms[0]]
         }).Validate());
         Assert.Throws<ArgumentException>(() => (lab with
         {

@@ -43,12 +43,12 @@ internal static class FusionLabWorldFactory
             double x0 = x - width / 2, x1 = x + width / 2;
             double y0 = y - height / 2, y1 = y + height / 2;
             double z0 = z - depth / 2, z1 = z + depth / 2;
-            Face((x0,y1,z0), (x0,y1,z1), (x1,y1,z1), (x1,y1,z0)); // top
-            Face((x1,y0,z0), (x1,y0,z1), (x0,y0,z1), (x0,y0,z0)); // bottom
-            Face((x1,y1,z0), (x1,y1,z1), (x1,y0,z1), (x1,y0,z0)); // right
-            Face((x0,y0,z0), (x0,y0,z1), (x0,y1,z1), (x0,y1,z0)); // left
-            Face((x0,y0,z1), (x1,y0,z1), (x1,y1,z1), (x0,y1,z1)); // north
-            Face((x0,y1,z0), (x1,y1,z0), (x1,y0,z0), (x0,y0,z0)); // south
+            Face((x0, y1, z0), (x0, y1, z1), (x1, y1, z1), (x1, y1, z0)); // top
+            Face((x1, y0, z0), (x1, y0, z1), (x0, y0, z1), (x0, y0, z0)); // bottom
+            Face((x1, y1, z0), (x1, y1, z1), (x1, y0, z1), (x1, y0, z0)); // right
+            Face((x0, y0, z0), (x0, y0, z1), (x0, y1, z1), (x0, y1, z0)); // left
+            Face((x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1)); // north
+            Face((x0, y1, z0), (x1, y1, z0), (x1, y0, z0), (x0, y0, z0)); // south
 
             int vertexCount = positions.Count / 3;
             var colors = new float[vertexCount * 4];
