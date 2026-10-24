@@ -70,3 +70,4 @@ foreach ($log in Get-ChildItem -LiteralPath $Out -Filter '*.log') {
     if (Select-String -LiteralPath $log.FullName -Pattern 'ObjectDB instances leaked|resources still in use|SCRIPT ERROR:') { throw "Godot lifecycle error in $($log.Name)" }
 }
 Write-Host "[fusion-weapons] PASS. Local captures, recording and reports: $Out" -ForegroundColor Green
+exit 0
