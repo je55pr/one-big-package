@@ -16,7 +16,7 @@ design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISIO
 | `OBP.PS2.Presentation` | Narrow shared PS2-material to neutral-runtime mapping; no game-specific semantics |
 | `OBP.Godot` | Neutral data to Godot meshes, materials, collision, audio and presentation objects |
 | `game/` | Application lifecycle, input, UI, cameras and host coordination |
-| `OBP.Composition` | World composition schema, transforms and anchor solving |
+| `OBP.Fusion` | World composition schema, transforms and anchor solving |
 | `OBP.Cli` / tests | Deterministic imports, probes and contract verification |
 
 `ArchitectureLayeringTests` guards project references/imports. Godot adapters

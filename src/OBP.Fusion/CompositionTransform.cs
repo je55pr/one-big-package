@@ -1,6 +1,6 @@
 using OBP.Core.Math;
 
-namespace OBP.Composition;
+namespace OBP.Fusion;
 
 /// <summary>
 /// A placement transform that sits <em>above</em> a reconstructed

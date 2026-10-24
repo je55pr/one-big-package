@@ -1,5 +1,5 @@
 using Godot;
-using OBP.Composition;
+using OBP.Fusion;
 
 namespace OBP.Godot;
 

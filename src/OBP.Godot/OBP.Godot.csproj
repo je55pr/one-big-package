@@ -14,7 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
     <ProjectReference Include="../OBP.Runtime/OBP.Runtime.csproj" />
-    <ProjectReference Include="../OBP.Composition/OBP.Composition.csproj" />
+    <ProjectReference Include="../OBP.Fusion/OBP.Fusion.csproj" />
   </ItemGroup>
 
 </Project>

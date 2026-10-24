@@ -1,4 +1,4 @@
-namespace OBP.Composition;
+namespace OBP.Fusion;
 
 /// <summary>
 /// One reconstructed world inside a composition. It carries only a

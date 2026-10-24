@@ -1,11 +1,11 @@
-using OBP.Composition;
+using OBP.Fusion;
 using OBP.Core.Math;
 
 namespace OBP.Tests;
 
 /// <summary>
 /// Engine-independent tests for the world-composition transform + alignment
-/// solver + persistence (<c>src/OBP.Composition</c>). No Godot, no retail data.
+/// solver + persistence (<c>src/OBP.Fusion</c>). No Godot, no retail data.
 /// See <c>docs/WORLD_COMPOSITION.md</c>.
 /// </summary>
 public class CompositionTransformTests

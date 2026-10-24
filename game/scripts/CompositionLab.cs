@@ -1,6 +1,6 @@
 using System.Linq;
 using Godot;
-using OBP.Composition;
+using OBP.Fusion;
 using OBP.Core.Math;
 using OBP.Godot;
 using OBP.Runtime;
