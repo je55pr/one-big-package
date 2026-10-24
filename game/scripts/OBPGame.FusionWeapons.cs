@@ -42,6 +42,7 @@ public partial class OBPGame
     private bool _fusionDeathCleared;
     private WeaponDamageIntent? _fusionLastDamage;
     private WeaponStatus? _fusionDisplayedStatus;
+    private SourceWeaponKey? _fusionDisplayedHand;
     private bool FusionTestActive => _fusionOriginalCampaign is not null;
     private PlaytestWeaponConfiguration? FusionConfiguration => _fusion is null ? null : _fusionAssets?.Configuration(FusionTestActive);
     private bool FusionMovementStateBlocked => FusionTestActive || _fusion?.Selected.SourceGame is "rac2" or "rac3" ||
@@ -65,7 +66,7 @@ public partial class OBPGame
         _fusionDisplayedStatus = null;
         if (!_args.FusionTest || world.LevelId != 0)
         {
-            _fusion = new(_args.FixedSeed ?? 1440, _rac1Weapons);
+            _fusion = new(_args.FixedSeed ?? 1440, _rac1Weapons, _rac1HeldItem.Hand);
             return;
         }
         _fusionOriginalCampaign = _rac1CampaignSession;
@@ -76,7 +77,7 @@ public partial class OBPGame
         _rac1CampaignSession.StartLevelCheckpointSession(0, world.PlayerStart!);
         _rac1BoltWallet = new();
         _rac1WeaponPreviewInventory = null;
-        _fusion = new(_args.FixedSeed ?? 1440);
+        _fusion = new(_args.FixedSeed ?? 1440, hand: _rac1HeldItem.Hand);
         GD.Print("[fusion] opt-in Veldin test: Bomb Glove [rac1/10] 10; Lancer [rac2/30] 40; Shock Cannon [rac3/43] 20. Original damage; campaign isolated.");
     }
 
@@ -220,7 +221,7 @@ public partial class OBPGame
             _rac1BombThrowActive = false;
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
         }
-        if (key == FusionWeaponSession.BombGlove) HoldSelectedRac1HandItem();
+        if (key.SourceGame == "rac1") HoldSelectedRac1HandItem();
         RefreshRac1WrenchPresentationVisibility();
         RefreshRac1HudState();
         GD.Print($"[fusion] equipped {key}: {FusionWeaponDetail(key)}");
@@ -234,7 +235,10 @@ public partial class OBPGame
         {
             CurrentWeapon = new(status.Weapon.ToString(),
             $"{FusionWeaponName(status.Weapon)} [{status.Weapon.SourceGame}]", new(status.Ammo, status.Capacity))
-            { Status = FusionWeaponProblem(status.Weapon) ?? $"{(FusionTestActive ? "Fusion test · " : "")}{status.State}" }
+            {
+                Status = FusionWeaponProblem(status.Weapon) ?? (_fusion.Hand.WrenchHeld && _fusion.Selected.SourceGame != "rac1"
+                ? "Wrench held · use to draw" : $"{(FusionTestActive ? "Fusion test · " : "")}{status.State}")
+            }
         };
     }
 
@@ -262,7 +266,7 @@ public partial class OBPGame
         bool admitted = !_player.Scripted && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             !_player.Rac1WaterHandItemHidden && !QuickSelectOpen && _fusionAssets.Available(_fusion.Selected);
         bool wasWindup = _fusion.CannonFrame?.State == UyaShockCannonState.Windup;
-        _fusionPoseTriggerHeld = _player.Rac1EquippedItemHeld && admitted;
+        _fusionPoseTriggerHeld = _player.Rac1EquippedItemHeld && admitted && _fusion.Hand.IsHolding(_fusion.Selected);
         var frame = _fusion.Advance(new(_fusionPoseTriggerHeld, admitted, ToNumerics(origin), ToNumerics(aim)));
         _fusionUseStarted = frame.Effects.Any(e => e.Kind == "shot") ||
             !wasWindup && _fusion.CannonFrame?.State == UyaShockCannonState.Windup;
@@ -287,7 +291,10 @@ public partial class OBPGame
             else _fusionEffects[i] = item;
         }
         var status = _fusion.Status(_fusion.Selected);
-        if (status != _fusionDisplayedStatus) { RefreshRac1HudState(); _fusionDisplayedStatus = status; }
+        if (status != _fusionDisplayedStatus || _fusion.Hand.Equipment != _fusionDisplayedHand)
+        {
+            RefreshRac1HudState(); _fusionDisplayedStatus = status; _fusionDisplayedHand = _fusion.Hand.Equipment;
+        }
     }
 
     private Vector3 FusionMuzzle()
@@ -382,7 +389,7 @@ public partial class OBPGame
         _fusionModelAge++;
         foreach (var (key, view) in _fusionHeldViews)
         {
-            view.Visible = key == _fusion.Selected && _fusionAssets.Available(key) && !_rac1Nanotech.Probe().IsDead &&
+            view.Visible = key == _fusion.Selected && _fusion.Hand.IsHolding(key) && _fusionAssets.Available(key) && !_rac1Nanotech.Probe().IsDead &&
                 _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active && _player?.Rac1WaterHandItemHidden != true;
             if (!view.Visible) continue;
             // Native hand-matrix slot0 (semantic0/joint56), after the source

@@ -180,6 +180,18 @@ frame partitions, OBP preserves cycle phase when sampling source arms. That
 timing adaptation and the bridge from admitted weapon events into presentation
 are OBP policy, not a complete GC/UYA player-controller port.
 
+The equipment attachment is evaluated during jump/traversal clocks too. An
+earlier host guard skipped that path whenever a traversal selection was present,
+leaving the visible gun on an old transform with locked axes. Standing and
+moving jump smoke checks now require both position and basis to follow the hand.
+
+`PlayerHeldEquipmentSession` owns the hand independently of source-qualified
+selection. R&C1's original Circle draw timing adapts to that shared owner;
+foreign sessions also observe it. Wrench attacks retain the wrench after
+recovery, suspend a foreign weapon's use/charge and leave selection/ammo intact.
+An admitted equipment draw or explicit selection takes hand ownership again.
+This shared gameplay rule does not impose R&C1's native draw delay on GC/UYA.
+
 The sampled GC/UYA class 0 carriers contain skeletons and animation without
 geometry: their player skins stream separately. This change uses the current
 R&C1 skin and supplies all three skeletal sources; it does not add every armour

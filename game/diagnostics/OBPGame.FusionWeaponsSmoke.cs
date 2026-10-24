@@ -32,6 +32,7 @@ public partial class OBPGame
             await FusionFireInputAsync(60);
             Require(_fusion!.LancerSession.Ammo < 40, "recorded Lancer did not fire");
             await CaptureFusionAsync("ordinary-lancer");
+            await FusionCheckWrenchPersistenceAsync();
             await PhysicsFramesAsync(30);
             await FusionMarkAsync();
             await SelectFusionByInputAsync(2);
@@ -40,6 +41,7 @@ public partial class OBPGame
             await FusionFireInputAsync(90);
             Require(_fusion.CannonSession.Ammo <= 9, "recorded Shock Cannon did not spread and charge");
             await CaptureFusionAsync("ordinary-cannon");
+            await FusionCheckWrenchPersistenceAsync();
             await PhysicsFramesAsync(45);
             await FusionMarkAsync();
             Vector3 start = _player!.GlobalPosition;
@@ -90,8 +92,15 @@ public partial class OBPGame
             FusionKey(Key.X, false);
             await Rac1SmokeWaitAsync(() => !_player!.Rac1WrenchFrame.Active, 120, "Square recovery");
             await PhysicsFramesAsync(2);
-            Require(_fusion.LancerSession.Ammo == beforeWrench && !_rac1WrenchView.Visible &&
-                _fusionHeldViews[FusionWeaponSession.Lancer].Visible, "Square fired the gun or left two held models");
+            Require(_fusion.LancerSession.Ammo == beforeWrench && _rac1WrenchView.Visible &&
+                !_fusionHeldViews[FusionWeaponSession.Lancer].Visible && _rac1HeldItem.Hand.WrenchHeld,
+                "Square did not leave the wrench equipped after recovery");
+            await PhysicsFramesAsync(30);
+            Require(_rac1WrenchView.Visible && !_fusionHeldViews[FusionWeaponSession.Lancer].Visible,
+                "selected foreign equipment reclaimed the idle hand");
+            await FusionFireInputAsync(1); // Circle explicitly draws the selected equipment again.
+            Require(_fusionHeldViews[FusionWeaponSession.Lancer].Visible && !_rac1WrenchView.Visible,
+                "Circle did not return hand ownership to selected equipment");
             await SelectFusionByInputAsync(2);
             await PhysicsFramesAsync(30);
             RequireFusionGunAlignment();
@@ -125,6 +134,17 @@ public partial class OBPGame
                 (new(-30, 0, -30), new(30, 0, 30), new(-30, 0, 30)));
             await PhysicsFramesAsync(3);
             _player!.ApplyDevelopmentReset(fixture.GlobalPosition + new Vector3(6, .05f, 0));
+            await WaitForGroundedAsync(_player, 120);
+            Rac1SmokePlaceGroundedFacing(_player.GlobalPosition, Vector3.Left);
+            await PhysicsFramesAsync(10);
+            foreach (int selection in new[] { 1, 2 })
+            {
+                await SelectFusionByInputAsync(selection);
+                foreach (bool movingJump in new[] { false, true }) await CheckFusionJumpAttachmentAsync(movingJump);
+                await FusionCheckWrenchPersistenceAsync();
+            }
+            await SelectFusionByInputAsync(0);
+            _player.ApplyDevelopmentReset(fixture.GlobalPosition + new Vector3(6, .05f, 0));
             await WaitForGroundedAsync(_player, 120);
             Rac1SmokePlaceGroundedFacing(_player.GlobalPosition, Vector3.Left);
             await PhysicsFramesAsync(10);
@@ -305,13 +325,74 @@ public partial class OBPGame
         var controller = _playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController;
         Require(controller?.SourceEquipmentUseSequence is null && controller?.SourceEquipmentUseWeight == 0,
             $"{key} retained a firing pose while idle");
-        var hand = controller!.CurrentAttachmentPose(OBP.Runtime.Player.PlayerEquipmentPose.HandAttachmentKey);
-        Require(hand is not null, $"{key} has no evaluated source hand");
-        var origin = OBP.Godot.Player.PlayerAvatarView.ToGodotLocal(hand!.Origin, _playerAvatar!.Axes, _playerAvatar.BaseHeight, true);
-        Require(_fusionHeldViews[key].Position.DistanceTo(origin) < .00001f, $"{key} is detached from the native hand origin");
+        RequireFusionHandAttachment();
         Require(MathF.Abs(basis.X.Length() - 1) < .0001f && MathF.Abs(basis.Y.Length() - 1) < .0001f &&
             MathF.Abs(basis.Z.Length() - 1) < .0001f && MathF.Abs(basis.X.Dot(basis.Y)) < .0001f &&
             MathF.Abs(basis.Y.Dot(basis.Z)) < .0001f, $"{key} mount distorts the source proportions");
+    }
+
+    private void RequireFusionHandAttachment()
+    {
+        var key = _fusion!.Selected;
+        var controller = (OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)_playerAvatarAnimationController!;
+        var hand = controller.CurrentAttachmentPose(OBP.Runtime.Player.PlayerEquipmentPose.HandAttachmentKey);
+        Require(hand is not null, $"{key} has no evaluated source hand");
+        Vector3 Point(double x, double y, double z) => OBP.Godot.Player.PlayerAvatarView.ToGodotLocal(
+            hand!.Transform(new(x, y, z)), _playerAvatar!.Axes, _playerAvatar.BaseHeight, true);
+        var origin = Point(0, 0, 0);
+        Require(_fusionHeldViews[key].Position.DistanceTo(origin) < .00001f, $"{key} is detached from the native hand origin");
+        var expected = new Basis(Point(-1, 0, 0) - origin, Point(0, 0, 1) - origin, Point(0, 1, 0) - origin).Orthonormalized();
+        var actual = _fusionHeldViews[key].Basis;
+        Require(expected.X.DistanceTo(actual.X) < .00001f && expected.Y.DistanceTo(actual.Y) < .00001f &&
+            expected.Z.DistanceTo(actual.Z) < .00001f, $"{key} axes do not follow the animated hand");
+    }
+
+    private async Task CheckFusionJumpAttachmentAsync(bool moving)
+    {
+        var key = _fusion!.Selected;
+        var view = _fusionHeldViews[key];
+        await WaitForGroundedAsync(_player!, 120);
+        SetAnalogueSmokeInput(0, moving ? 1 : 0);
+        await PhysicsFramesAsync(moving ? 12 : 2);
+        var initial = view.Basis;
+        bool sawJump = false, rotated = false;
+        FusionKey(Key.Space, true);
+        for (int tick = 0; tick < 65; tick++)
+        {
+            if (tick == 16) FusionKey(Key.Space, false);
+            await PhysicsFramesAsync(1);
+            RequireFusionHandAttachment();
+            if (_playerAvatarAnimationController is OBP.RAC1.Player.Rac1PlayerAnimationPresentationController { TraversalSample.Sequence: 7 or 8 })
+            {
+                sawJump = true;
+                rotated |= initial.X.DistanceTo(view.Basis.X) > .01f || initial.Z.DistanceTo(view.Basis.Z) > .01f;
+                if (tick == 15) await CaptureFusionAsync($"{key.SourceGame}-{(moving ? "moving" : "standing")}-jump");
+            }
+        }
+        FusionKey(Key.Space, false);
+        ClearMovementSmokeInput();
+        await WaitForGroundedAsync(_player!, 180);
+        Require(sawJump && rotated, $"{key} {(moving ? "moving" : "standing")} jump retained locked weapon axes");
+        GD.Print($"[fusion-smoke] {key} {(moving ? "moving" : "standing")} jump hand position and axes PASS");
+    }
+
+    private async Task FusionCheckWrenchPersistenceAsync()
+    {
+        var key = _fusion!.Selected;
+        int ammo = _fusion.Status(key).Ammo;
+        FusionKey(Key.X, true);
+        await Rac1SmokeWaitAsync(() => _player!.Rac1WrenchFrame.Active, 20, "foreign equipment Square handoff");
+        FusionKey(Key.X, false);
+        await Rac1SmokeWaitAsync(() => !_player!.Rac1WrenchFrame.Active, 120, "foreign equipment Square recovery");
+        await PhysicsFramesAsync(30);
+        Require(_rac1HeldItem.Hand.WrenchHeld && _rac1WrenchView!.Visible && !_fusionHeldViews[key].Visible &&
+            _fusion.Selected == key && _fusion.Status(key).Ammo == ammo, $"{key} did not retain the wrench and selected equipment independently");
+        await CaptureFusionAsync(key.SourceGame + "-wrench-retained");
+        await FusionFireInputAsync(1);
+        await PhysicsFramesAsync(2);
+        Require(_rac1HeldItem.Hand.IsHolding(key) && _fusionHeldViews[key].Visible && !_rac1WrenchView!.Visible,
+            $"{key} was not drawn by Circle");
+        GD.Print($"[fusion-smoke] {key} persistent wrench hand and Circle redraw PASS");
     }
 
     private async Task CaptureFusionProfileAsync(string name)
@@ -343,6 +424,8 @@ public partial class OBPGame
         File.WriteAllText(Path.Combine(directory, name + ".pose.json"), JsonSerializer.Serialize(new
         {
             selected = _fusion?.Selected.ToString(),
+            heldEquipment = _rac1HeldItem.Hand.Equipment?.ToString() ?? "wrench",
+            sourceSequence = CurrentPlayerAvatarSourceSequence(),
             sourceUseSequence = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentUseSequence,
             sourceUseWeight = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentUseWeight,
             forward = new[] { EquipmentForward.X, EquipmentForward.Y, EquipmentForward.Z },

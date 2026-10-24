@@ -17,7 +17,8 @@ public partial class OBPGame
     {
         // Circle uses equipment only. Square has its own wrench input path,
         // including when a legacy repro or keyboard shortcut selects item 8.
-        if (_rac1Nanotech.Probe().IsDead || _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
+        if (_rac1Nanotech.Probe().IsDead ||
+            _fusion?.Selected.SourceGame is not ("rac2" or "rac3") && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
         if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
         _rac1EquipmentUsePressed = true;
     }
@@ -27,10 +28,15 @@ public partial class OBPGame
         bool pressed = _rac1EquipmentUsePressed;
         _rac1EquipmentUsePressed = false;
         if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) == false) return;
-        if (_fusion is { Selected.SourceGame: not "rac1" }) return;
         bool admitted = _player is not null && !_rac1Nanotech.Probe().IsDead &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
-        int previous = _rac1HeldItem.NativeItemId;
+        if (_fusion is { Selected.SourceGame: not "rac1" })
+        {
+            if (pressed && admitted && !QuickSelectOpen && !_player!.Scripted && !_player.Rac1WaterHandItemHidden)
+                _fusion.Hand.HoldEquipment(_fusion.Selected);
+            return;
+        }
+        int? previous = _rac1HeldItem.NativeItemId;
         var frame = _rac1HeldItem.StepCircle(_rac1Weapons, pressed,
             _player?.Rac1EquippedItemHeld == true, admitted);
         if (frame.HandChanged) RefreshRac1HeldItem(previous);

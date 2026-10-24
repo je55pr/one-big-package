@@ -12,6 +12,62 @@ public sealed class FusionWeaponTests
 {
     private static readonly WeaponUseInput Held = new(true, true, Vector3.Zero, Vector3.UnitX);
 
+    [Theory]
+    [InlineData("rac2", 30)]
+    [InlineData("rac3", 43)]
+    public void WrenchKeepsTheSharedHandUntilEquipmentIsDrawnAgain(string game, int item)
+    {
+        var hand = new PlayerHeldEquipmentSession();
+        var nativeHand = new Rac1HeldItemSession(hand);
+        var fusion = new FusionWeaponSession(42, hand: hand);
+        var weapon = new SourceWeaponKey(game, item);
+        Assert.True(fusion.Select(weapon));
+        for (int tick = 0; tick < 85; tick++) Step(fusion, Held);
+        Assert.True(hand.IsHolding(weapon));
+        Assert.Null(nativeHand.NativeItemId); // A source-local id cannot describe foreign gear.
+        int ammo = fusion.Status(weapon).Ammo;
+        int shots = fusion.ShotsFired;
+        nativeHand.HoldWrench();
+        for (int tick = 0; tick < 120; tick++)
+        {
+            var frame = Step(fusion, Held);
+            Assert.DoesNotContain(frame.Queries, q => q.Shot.Weapon == FusionWeaponSession.ShockCannon);
+        }
+        Assert.True(hand.WrenchHeld);
+        Assert.Equal((int)Rac1WeaponId.Wrench, nativeHand.NativeItemId);
+        Assert.Equal(weapon, fusion.Selected);
+        Assert.Equal(ammo, fusion.Status(weapon).Ammo);
+        Assert.Equal(shots, fusion.ShotsFired);
+        Assert.False(fusion.LancerSession.Equipped);
+        Assert.True(fusion.CannonFrame is null or { State: OBP.RAC3.Gameplay.UyaShockCannonState.Unequipped });
+
+        hand.HoldEquipment(weapon); // An admitted equipment draw owns the next handoff.
+        for (int tick = 0; tick < 20; tick++) Step(fusion, Held);
+        Assert.True(hand.IsHolding(weapon));
+        Assert.True(fusion.Status(weapon).Ammo < ammo);
+        Assert.True(fusion.ShotsFired > shots);
+    }
+
+    [Fact]
+    public void ReselectingAndResettingDoNotConfuseHandOwnershipWithSelectedGear()
+    {
+        var hand = new PlayerHeldEquipmentSession(); var nativeHand = new Rac1HeldItemSession(hand);
+        var fusion = new FusionWeaponSession(42, hand: hand);
+        fusion.Select(FusionWeaponSession.Lancer);
+        nativeHand.HoldWrench();
+        fusion.ClearTransientState();
+        Assert.True(hand.WrenchHeld);
+        Assert.False(fusion.LancerSession.Equipped);
+        Assert.True(fusion.Select(FusionWeaponSession.Lancer));
+        Assert.True(hand.IsHolding(FusionWeaponSession.Lancer));
+        Assert.True(fusion.LancerSession.Equipped);
+        fusion.Select(FusionWeaponSession.BombGlove);
+        Assert.Equal((int)Rac1WeaponId.FirstRanged, nativeHand.NativeItemId);
+        nativeHand.HoldWrench();
+        Assert.Equal(FusionWeaponSession.BombGlove, fusion.Selected);
+        Assert.True(hand.WrenchHeld);
+    }
+
     [Fact]
     public void DefaultQuickSelectKeepsOwnedNativeOrderAndAddsBothForeignWeaponsWithoutGrantingNativeItems()
     {

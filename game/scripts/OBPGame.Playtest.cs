@@ -159,7 +159,8 @@ public partial class OBPGame
         Numbers("campaign.levels", campaign.LevelStates.Select(v => (double)v).ToArray());
         Numbers("player.nanotech", _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead ? 1 : 0);
         Numbers("player.bolts", _rac1BoltWallet.Balance);
-        Numbers("player.equipment", _rac1Weapons.CurrentItemId, _rac1HeldItem.NativeItemId);
+        Numbers("player.equipment", _rac1Weapons.CurrentItemId, _rac1HeldItem.NativeItemId ?? -1);
+        Text("player.heldEquipment", _rac1HeldItem.Hand.Equipment?.ToString() ?? "wrench");
         Text("player.inventory", JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()));
         Text("camera.options", JsonSerializer.Serialize(CameraSettingsStore.Current));
         if (_fusion is not null)

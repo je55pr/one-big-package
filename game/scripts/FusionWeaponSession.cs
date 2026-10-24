@@ -23,6 +23,7 @@ public sealed class FusionWeaponSession
     public GcLancerSession LancerSession { get; } = new(initialAmmo: 40);
     public UyaShockCannonSession CannonSession { get; } = new(ammo: 20);
     public SourceWeaponKey Selected { get; private set; } = BombGlove;
+    public PlayerHeldEquipmentSession Hand { get; }
     public UyaShockCannonFrame? CannonFrame { get; private set; }
     public int ShotsFired { get; private set; }
     public int Tick { get; private set; }
@@ -32,11 +33,13 @@ public sealed class FusionWeaponSession
     private readonly List<WeaponAudioIntent> _pendingAudio = [];
     private WeaponFrame? _lastFrame;
     private bool _resolved;
+    private SourceWeaponKey? _activeForeignHand;
 
-    public FusionWeaponSession(int seed, Rac1WeaponInventory? inventory = null)
+    public FusionWeaponSession(int seed, Rac1WeaponInventory? inventory = null, PlayerHeldEquipmentSession? hand = null)
     {
         _spreadRandom = new(seed);
         Rac1Inventory = inventory ?? new(true, Rac1WeaponId.FirstRanged, 10);
+        Hand = hand ?? new();
         Selected = new("rac1", Rac1Inventory.CurrentItemId);
     }
 
@@ -54,13 +57,11 @@ public sealed class FusionWeaponSession
     {
         weapon.Validate();
         if (weapon.SourceGame == "rac1" ? !Rac1Inventory.OwnsNativeItem(weapon.NativeItemId) : weapon != Lancer && weapon != ShockCannon) return false;
-        if (Selected == weapon) return true;
-        LancerSession.Unequip();
-        foreach (var audio in CannonSession.Unequip().Audio) _pendingAudio.Add(CannonAudio(audio));
-        CannonFrame = null;
+        if (weapon.SourceGame == "rac1" && weapon.NativeItemId == (int)Rac1WeaponId.Wrench) Hand.HoldWrench();
+        else Hand.HoldEquipment(weapon);
+        if (Selected == weapon) { SynchronizeHeldWeapon(); return true; }
         Selected = weapon;
-        if (weapon == Lancer) LancerSession.Equip();
-        if (weapon == ShockCannon) CannonSession.Equip();
+        SynchronizeHeldWeapon();
         // Bomb Glove's existing host continues to own throwing and projectiles.
         if (weapon.SourceGame == "rac1") Rac1Inventory.TryEquip((Rac1WeaponId)weapon.NativeItemId);
         _lastFrame = null;
@@ -81,12 +82,14 @@ public sealed class FusionWeaponSession
         if (!float.IsFinite(input.Muzzle.LengthSquared()) || !float.IsFinite(input.Aim.LengthSquared()) || input.Aim.LengthSquared() < 1e-8f)
             throw new ArgumentException("Weapon pose must be finite with a nonzero aim.", nameof(input));
         Tick++;
+        SynchronizeHeldWeapon();
         var queries = new List<WeaponQuery>();
         var audio = new List<WeaponAudioIntent>(_pendingAudio);
         var effects = new List<WeaponEffectIntent>();
         _pendingAudio.Clear(); _sweeps.Clear(); _cannonQueries.Clear();
         Vector3 forward = Vector3.Normalize(input.Aim);
-        var fire = LancerSession.Tick(input.TriggerHeld && input.ActionAdmitted && Selected == Lancer, input.Muzzle, forward);
+        bool held = Hand.IsHolding(Selected);
+        var fire = LancerSession.Tick(input.TriggerHeld && input.ActionAdmitted && held && Selected == Lancer, input.Muzzle, forward);
         if (fire.Shot is { } shot)
         {
             ShotsFired++;
@@ -103,8 +106,8 @@ public sealed class FusionWeaponSession
         }
         if (Selected == ShockCannon)
         {
-            CannonFrame = CannonSession.Advance(new(input.TriggerHeld, ActionAdmitted: input.ActionAdmitted,
-                ChargeAdmitted: input.ActionAdmitted));
+            CannonFrame = CannonSession.Advance(new(input.TriggerHeld && held, ActionAdmitted: input.ActionAdmitted && held,
+                ChargeAdmitted: input.ActionAdmitted && held));
             ShotsFired += CannonFrame.Shots.Count;
             audio.AddRange(CannonFrame.Audio.Select(CannonAudio));
             foreach (var effect in CannonFrame.Effects)
@@ -182,8 +185,20 @@ public sealed class FusionWeaponSession
         CannonSession.Reset(CannonSession.Ammo);
         CannonFrame = null; _lastFrame = null;
         _pendingAudio.Clear(); _sweeps.Clear(); _cannonQueries.Clear();
-        if (Selected == Lancer) LancerSession.Equip();
-        if (Selected == ShockCannon) CannonSession.Equip();
+        _activeForeignHand = null;
+        SynchronizeHeldWeapon();
+    }
+
+    private void SynchronizeHeldWeapon()
+    {
+        SourceWeaponKey? next = Selected.SourceGame != "rac1" && Hand.IsHolding(Selected) ? Selected : null;
+        if (next == _activeForeignHand) return;
+        LancerSession.Unequip();
+        foreach (var audio in CannonSession.Unequip().Audio) _pendingAudio.Add(CannonAudio(audio));
+        CannonFrame = null;
+        _activeForeignHand = next;
+        if (next == Lancer) LancerSession.Equip();
+        if (next == ShockCannon) CannonSession.Equip();
     }
 
     private float Sample(float from, float to) => from == to ? from : from + (to - from) * _spreadRandom.NextSingle();
