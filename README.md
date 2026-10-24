@@ -36,70 +36,54 @@ stay loaded across level changes. The original game sources are required; see
 
 ## Trilogy content catalogue (prototype)
 
-This is a **small preview**, not a full inventory or an audited completion percentage. Expand a category to explore sample content from the original trilogy and its current OBP implementation. The finished catalogue could grow here without making the README long to scroll through.
+A few sample entries from the original trilogy. These tables are not a complete inventory or a full implementation audit. Expand a section to view its contents.
 
-**Status guide:** 🎮 **Playable** = working in the stated scope, not necessarily retail-complete; 🚧 **Partial** = working pieces with known gaps; 📖 **Documented** = source research exists but implementation has not been audited here; ⚪ **Unassessed** = not verified for this preview. A linked tracking issue describes intended work, **not** proof of completion.
+Statuses describe the original feature's implementation in OBP: **Playable** means working in the stated scope, **Partial** means some behaviour works but gaps remain, **Researched** means the original behaviour has been documented, and **Unassessed** means the implementation was not verified for this preview.
 
 <details>
-<summary><strong>🔫 Weapons</strong> (3 examples)</summary>
+<summary>Weapons (3 examples)</summary>
 
-| Weapon | Original game | Original-game reconstruction | Cross-game availability | Evidence |
-| --- | --- | --- | --- | --- |
-| Bomb Glove | R&C1 | 🎮 R&C1 throw, ammo and blast | ⚪ Other worlds unassessed | [Weapon test notes](docs/FUSION_WEAPONS_TESTING.md) |
-| Lancer | Going Commando | 🚧 Native firing subset; upgrades not covered | 🎮 Selectable and fires against supported R&C1 targets | [Fusion test notes](docs/FUSION_WEAPONS_TESTING.md) |
-| Shock Cannon | Up Your Arsenal | 🚧 V5 firing/charge subset; upgrades not covered | 🎮 Selectable and fires against supported R&C1 targets | [Fusion test notes](docs/FUSION_WEAPONS_TESTING.md) |
+| Weapon | Original game | Implementation | Evidence |
+| --- | --- | --- | --- |
+| Bomb Glove | R&C1 | Playable in R&C1: throw, ammo and blast | [Weapon testing](docs/FUSION_WEAPONS_TESTING.md) |
+| Lancer | Going Commando | Partial: native firing subset; upgrades not covered | [Weapon testing](docs/FUSION_WEAPONS_TESTING.md) |
+| Shock Cannon | Up Your Arsenal | Partial: V5 firing and charge subset; upgrades not covered | [Weapon testing](docs/FUSION_WEAPONS_TESTING.md) |
 
 </details>
 
 <details>
-<summary><strong>🧰 Gadgets &amp; traversal</strong> (3 examples)</summary>
+<summary>Gadgets and traversal (3 examples)</summary>
 
-| Gadget | Original game | Original-game reconstruction | Cross-game availability | Evidence |
-| --- | --- | --- | --- | --- |
-| Swingshot | R&C1 | 📖 Native traversal and target families documented | ⚪ Unassessed | [Traversal research](research/RAC1_TRAVERSAL_EQUIPMENT.md) |
-| Gravity Boots | Going Commando | ⚪ Unassessed | ⚪ Unassessed | — |
-| Refractor | Up Your Arsenal | ⚪ Unassessed | ⚪ Unassessed | — |
-
-</details>
-
-<details>
-<summary><strong>👾 Enemies &amp; encounters</strong> (4 examples)</summary>
-
-| Enemy / encounter | Original game | Original-game reconstruction | Cross-game encounters | Evidence |
-| --- | --- | --- | --- | --- |
-| Opening Veldin melee creatures (class 749) | R&C1 | 🚧 Live behaviour and animation, with known gaps | ⚪ Unassessed | [Veldin enemies](research/RAC1_VELDIN_ENEMIES.md) |
-| Opening Veldin flame robots (class 1440) | R&C1 | 🚧 Live behaviour and animation, with known gaps | ⚪ Unassessed | [Veldin enemies](research/RAC1_VELDIN_ENEMIES.md) |
-| Thugs-4-Less enemies | Going Commando | ⚪ Unassessed | ⚪ Unassessed | — |
-| Tyrhrranoids | Up Your Arsenal | ⚪ Unassessed | ⚪ Unassessed | — |
+| Gadget | Original game | Implementation | Evidence |
+| --- | --- | --- | --- |
+| Swingshot | R&C1 | Researched: native traversal and target families documented | [Traversal research](research/RAC1_TRAVERSAL_EQUIPMENT.md) |
+| Gravity Boots | Going Commando | Unassessed | |
+| Refractor | Up Your Arsenal | Unassessed | |
 
 </details>
 
 <details>
-<summary><strong>🪐 Planets &amp; level-specific content</strong> (3 examples)</summary>
+<summary>Enemies and encounters (4 examples)</summary>
 
-| Destination | Original game | Current reconstruction scope | Cross-game gameplay | Evidence |
-| --- | --- | --- | --- | --- |
-| Veldin (opening) | R&C1 | 🚧 World, player and selected enemies active; not complete | ⚪ Unassessed | [Veldin enemies](research/RAC1_VELDIN_ENEMIES.md) |
-| Oozla | Going Commando | 🚧 World loading/presentation; gameplay incomplete | ⚪ Unassessed | [GC world loading](research/GC_LEVEL_LOADING.md) |
-| Veldin | Up Your Arsenal | 🚧 World loading/presentation; gameplay incomplete | ⚪ Unassessed | [UYA world import](research/UYA_PRODUCTION_IMPORTER.md) |
+| Enemy / encounter | Original game | Implementation | Evidence |
+| --- | --- | --- | --- |
+| Opening Veldin melee creatures (class 749) | R&C1 | Partial: live behaviour and animation, with known gaps | [Veldin enemies](research/RAC1_VELDIN_ENEMIES.md) |
+| Opening Veldin flame robots (class 1440) | R&C1 | Partial: live behaviour and animation, with known gaps | [Veldin enemies](research/RAC1_VELDIN_ENEMIES.md) |
+| Thugs-4-Less enemies | Going Commando | Unassessed | |
+| Tyrhrranoids | Up Your Arsenal | Unassessed | |
 
 </details>
 
 <details>
-<summary><strong>🎮 Shared gameplay systems</strong> (5 examples)</summary>
+<summary>Planets and level-specific content (3 examples)</summary>
 
-These are examples of **reconciliation work being tracked**, not completed-feature claims.
-
-| System | Desired scope | Tracking |
-| --- | --- | --- |
-| One player avatar and animation clock | Same Ratchet across every destination | [#268](https://github.com/je55pr/one-big-package/issues/268) |
-| Universal equipment and loadouts | All three games' source-qualified equipment | [#255](https://github.com/je55pr/one-big-package/issues/255) |
-| Unified pause, HUD and Quick Select | Consistent player-facing interface | [#259](https://github.com/je55pr/one-big-package/issues/259) |
-| Mixed-source actors and combat | Enemies and effects from different games coexist | [#256](https://github.com/je55pr/one-big-package/issues/256) |
-| Shared saves and source-owned world state | Persistent OBP progress without conflating source state | [#273](https://github.com/je55pr/one-big-package/issues/273) |
+| Destination | Original game | Implementation | Evidence |
+| --- | --- | --- | --- |
+| Veldin (opening) | R&C1 | Partial: world, player and selected enemies active | [Veldin enemies](research/RAC1_VELDIN_ENEMIES.md) |
+| Oozla | Going Commando | Partial: world loading and presentation; gameplay incomplete | [GC world loading](research/GC_LEVEL_LOADING.md) |
+| Veldin | Up Your Arsenal | Partial: world loading and presentation; gameplay incomplete | [UYA world import](research/UYA_PRODUCTION_IMPORTER.md) |
 
 </details>
-
 ## Getting started
 
 On Windows, with the .NET 8 SDK installed, run from the repository root:
