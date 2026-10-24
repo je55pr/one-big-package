@@ -213,6 +213,7 @@ public partial class OBPGame
         _destinationSelector?.QueueFree();
         _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled };
         _destinationSelector.DestinationChosen += destination => OnDestinationChosen(destination);
+        _destinationSelector.FusionLabRequested += () => EnterFusionLab();
         _destinationSelector.BackRequested += () =>
         {
             _genericNavigationActive = false;

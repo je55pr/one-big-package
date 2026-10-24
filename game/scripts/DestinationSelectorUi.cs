@@ -9,6 +9,7 @@ public partial class DestinationSelectorUi : CanvasLayer
 {
     public bool DebugOutputEnabled { get; init; }
     public event Action<ObpDestination>? DestinationChosen;
+    public event Action? FusionLabRequested;
     public event Action? BackRequested;
 
     private readonly List<Button> _focusOrder = new();
@@ -60,6 +61,19 @@ public partial class DestinationSelectorUi : CanvasLayer
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = UiTheme.TextDim,
         });
+
+        var fusionButton = new Button
+        {
+            Text = "  OBP FUSION LAB   |   PLAYABLE GREYBOX / NO GAME SOURCE REQUIRED",
+            Alignment = HorizontalAlignment.Left,
+            CustomMinimumSize = new Vector2(0, 62),
+            FocusMode = Control.FocusModeEnum.All,
+            TooltipText = "A custom, connected test facility for cross-game mechanics.",
+        };
+        fusionButton.Pressed += () => FusionLabRequested?.Invoke();
+        outer.AddChild(fusionButton);
+        _focusOrder.Add(fusionButton);
+        _firstDestinationButton = fusionButton;
 
         var scroll = new ScrollContainer { VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever, SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
         outer.AddChild(scroll);
