@@ -27,6 +27,7 @@ The original mechanics and encounters are being recovered first, so they can be 
 <div>🟠 Researched / basic implementation</div>
 <div>🟡 Partially implemented</div>
 <div>🟢 Fully implemented and verified</div>
+<br>
 
 <details>
 <summary>Weapons and upgrade families</summary>
