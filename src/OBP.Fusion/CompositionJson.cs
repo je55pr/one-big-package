@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using OBP.Core.Math;
 
-namespace OBP.Composition;
+namespace OBP.Fusion;
 
 /// <summary>
 /// Tiny deterministic text (JSON) persistence for a <see cref="WorldComposition"/>.

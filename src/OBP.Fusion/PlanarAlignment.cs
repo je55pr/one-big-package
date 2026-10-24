@@ -1,6 +1,6 @@
 using OBP.Core.Math;
 
-namespace OBP.Composition;
+namespace OBP.Fusion;
 
 /// <summary>Outcome of a <see cref="PlanarAlignmentSolver"/> run.</summary>
 public sealed record PlanarAlignmentResult(

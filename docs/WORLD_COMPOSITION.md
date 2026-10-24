@@ -38,16 +38,16 @@ CompositionLab                     (game/scripts/CompositionLab.cs — Godot hos
 └── CompositionDebugUi              (HUD)
 ```
 
-The composition itself is **engine-neutral data** in `src/OBP.Composition`
+The composition itself is **engine-neutral data** in `src/OBP.Fusion`
 (`net8.0`, references only `OBP.Core`). Godot consumes it; it is never the
 authoritative format.
 
 | Layer | Project | Role |
 | --- | --- | --- |
-| `WorldComposition` / `WorldPlacement` / `AnchorPair` | `OBP.Composition` | the document: world references + transforms + anchors + comparison state |
-| `CompositionTransform` | `OBP.Composition` | scale → Y-rotation → translation above a world |
-| `PlanarAlignmentSolver` | `OBP.Composition` | closed-form least-squares rigid / uniform-scale planar fit + residual report |
-| `CompositionJson` | `OBP.Composition` | tiny deterministic JSON persistence |
+| `WorldComposition` / `WorldPlacement` / `AnchorPair` | `OBP.Fusion` | the document: world references + transforms + anchors + comparison state |
+| `CompositionTransform` | `OBP.Fusion` | scale → Y-rotation → translation above a world |
+| `PlanarAlignmentSolver` | `OBP.Fusion` | closed-form least-squares rigid / uniform-scale planar fit + residual report |
+| `CompositionJson` | `OBP.Fusion` | tiny deterministic JSON persistence |
 | `CompositionView` | `OBP.Godot` | transform → Godot `Transform3D`; non-destructive visibility / opacity / tint |
 | `CompositionLab` | `game/` | the interactive host + capture path |
 | `CompositionWorldLoader` | `game/` | thin adapter over `ObpWorldProviderRegistry` (`TrilogyWorldProviders`) |
