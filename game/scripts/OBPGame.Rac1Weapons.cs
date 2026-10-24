@@ -91,6 +91,7 @@ public partial class OBPGame
     private void SetRac1WeaponPreview(bool disable)
     {
         if (FusionTestActive) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
+        _playerNative?.SetEquipmentPreview(!disable);
         if (disable)
         {
             _rac1WeaponPreviewInventory = null;
@@ -99,7 +100,7 @@ public partial class OBPGame
         }
         else
         {
-            _rac1WeaponPreviewInventory ??= new(_rac1CampaignSession.Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId);
+            _rac1WeaponPreviewInventory ??= _playerNative?.Inventory ?? new(_rac1CampaignSession.Weapons.CapturePersistentState(), _rac1Weapons.CurrentItemId);
             _rac1Weapons.AcquireNativeItem(Rac1MetalDetectorSession.NativeGadgetItem);
             foreach (var weapon in Rac1WeaponProfiles.Additional.Select(profile => profile.Item).Append(Rac1WeaponId.FirstRanged))
             {
@@ -115,14 +116,19 @@ public partial class OBPGame
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
         SyncFusionNativeSelection();
+        RefreshSourceEquipmentContext();
+        if (_rac1HeldItem.NativeItemId != (int)Rac1WeaponId.Wrench) HoldSelectedRac1HandItem();
+        RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility();
+    }
+
+    private void RefreshSourceEquipmentContext()
+    {
         if (_world is { Game: "rac1" } world)
         {
             _rac1DetectorEquipped = false;
             _rac1DetectorNearest = null;
             ConfigureRac1MetalDetector(world);
         }
-        if (_rac1HeldItem.NativeItemId != (int)Rac1WeaponId.Wrench) HoldSelectedRac1HandItem();
-        RefreshRac1HudState(); RefreshRac1WrenchPresentationVisibility();
     }
     private Rac1WeaponInventory? _rac1AdditionalWeaponsInventory;
 

@@ -10,7 +10,7 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private static readonly PlayerAvatarProviderRegistry PlayerAvatarProviders = new(
-        [Rac1PlayerAvatarProvider.Instance]);
+        [Rac1PlayerAvatarProvider.Instance, DiagnosticAvatarProvider.Instance]);
 
     private PlayerAvatar? _playerAvatar;
     private string? _playerAvatarSourcePath;
@@ -29,112 +29,64 @@ public partial class OBPGame
     private Node3D? _rac1StagedBombView;
 
     /// <summary>
-    /// Resolve player presentation from the active source game. A missing native
-    /// avatar provider is an explicit unsupported boundary: keep the debug capsule
-    /// rather than borrowing another game's model, clips, or animation selector.
-    /// Controller/collision stay on PlayerHost and remain independent from visuals.
+    /// Bind the staged, session-selected presentation independently of destination.
+    /// Missing required assets fail entry; the capsule is an explicit diagnostic.
     /// </summary>
     private void AttachPlayerAvatarVisual(PlayerHost player)
     {
-        if (_activeDestination is not { } destination)
-            return;
-
-        IPlayerAvatarProvider? provider = PlayerAvatarProviders.Get(destination.Game);
-        if (provider is null)
+        if (_playerSession is null) return; // Explicit standalone asset-free fixtures.
+        var selected = SelectedPlayerConfiguration.Avatar;
+        if (selected.SourceGame == ObpSourceGame.Synthetic)
         {
-            GD.Print($"[player-avatar] {destination.Game} has no decoded native player-avatar provider; keeping debug capsule visual");
+            GD.Print("[player-avatar] EXPLICIT DIAGNOSTIC CAPSULE");
             return;
         }
-
-        EnsureSourceLibraryInitialized();
-        var source = _sources.Get(destination.Game);
-        if (source is null)
+        var provider = PlayerAvatarProviders.Get(selected.SourceGame)
+            ?? throw new InvalidOperationException("The selected player avatar provider is unavailable.");
+        var source = _sources.Get(selected.SourceGame)
+            ?? throw new InvalidOperationException("Attach the selected player avatar source.");
+        var avatar = _playerAvatar ?? throw new InvalidOperationException("Selected avatar was not staged before world entry.");
+        var controller = CreatePlayerAnimationController(provider, avatar);
+        controller.SetAnimationState(player.AnimationState);
+        var view = new PlayerAvatarView(avatar, controller.Current, alignGeometricBase: true) { Name = "PlayerAvatar" };
+        ClearPlayerAvatarView();
+        // Optional source-backed equipment visuals must not select or hide the
+        // player. World-specific effect/pickup support remains a #271 adapter.
+        if (selected.SourceGame == ObpSourceGame.Rac1)
         {
-            GD.Print($"[player-avatar] {destination.Game} source is not attached; keeping debug capsule visual");
-            return;
-        }
-
-        try
-        {
-            if (_playerAvatar is null ||
-                _playerAvatarSourceGame != destination.Game ||
-                !string.Equals(_playerAvatarSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
+            _rac1WrenchView = new(_rac1WrenchAsset ?? throw new InvalidOperationException("Selected wrench asset was not staged."), avatar);
+            view.AddChild(_rac1WrenchView);
+            if (_rac1PickupAssets is not null)
             {
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                _playerAvatar = provider.Load(source.Path, provider.DefaultAvatarId);
-                _playerAvatarSourcePath = source.Path;
-                _playerAvatarSourceGame = destination.Game;
-                sw.Stop();
-                GD.Print($"[player-avatar] loaded {_playerAvatar.Identity.ModelId} in {sw.ElapsedMilliseconds} ms");
-            }
-
-            IPlayerAnimationPresentationController animationController =
-                CreatePlayerAnimationController(provider, _playerAvatar);
-            animationController.SetAnimationState(player.AnimationState);
-            var view = new PlayerAvatarView(
-                _playerAvatar,
-                animationController.Current,
-                alignGeometricBase: true)
-            {
-                Name = "PlayerAvatar",
-            };
-            ClearPlayerAvatarView();
-            // A custom Fusion Lab uses the verified R&C1 avatar presentation,
-            // but not world-specific native weapon/effect assets until #255.
-            // Missing optional class-121 effects must not hide the Ratchet avatar.
-            if (destination.Game == ObpSourceGame.Rac1 && _world?.Game != "fusion")
-            {
-                if (_rac1WrenchAsset is null ||
-                    !string.Equals(_rac1WrenchSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
-                {
-                    _rac1WrenchAsset = Rac1WrenchAsset.Load(source.Path);
-                    _rac1WrenchSourcePath = source.Path;
-                }
-
-                _rac1WrenchView = new Rac1WrenchView(_rac1WrenchAsset, _playerAvatar);
-                view.AddChild(_rac1WrenchView);
-                if (_rac1BombGloveAsset is null || !string.Equals(_rac1BombGloveSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
+                if (_rac1BombGloveAsset is null || _rac1BombGloveSourcePath != source.Path)
                 {
                     _rac1BombGloveAsset = OBP.RAC1.Gameplay.Rac1BombGloveAssets.Load(source.Path);
                     _rac1BombGloveSourcePath = source.Path;
                 }
-                _rac1BombGloveView = new Rac1BombGloveView(_rac1BombGloveAsset, _playerAvatar,
+                _rac1BombGloveView = new(_rac1BombGloveAsset, avatar,
                     new WorldMaterialFactory(_world! with { Textures = _rac1BombGloveAsset.Textures }));
                 view.AddChild(_rac1BombGloveView);
                 _rac1StagedBombView = CreateRac1EffectNode(121, "Rac1RetailStagedBomb_Class121");
                 _rac1StagedBombView.Reparent(_rac1BombGloveView, keepGlobalTransform: false);
-                // World effect meshes map native X to -sceneX; avatar-local meshes map it to +X.
                 _rac1StagedBombView.Rotation = new(0, MathF.PI, 0);
                 AttachRac1EquipmentViews(view);
             }
-            player.VisualRoot.ReplaceVisual(view);
-            player.ConfigureAvatarPresentation((float)_playerAvatar.AnimationBounds.Height);
-            _playerAvatarView = view;
-            _playerAvatarAnimationSink = view;
-            _playerAvatarAnimationController = animationController;
-            _playerAvatarClock = 0;
-            if (animationController is Rac1PlayerAnimationPresentationController && Engine.PhysicsTicksPerSecond == 60)
-            {
-                _avatarPhysicsPlayer = player;
-                player.AnimationPhysicsUpdated += StepPlayerAvatarPhysics;
-                player.AnimationPhysicsReset += ResetPlayerAvatarPhysics;
-            }
-            RefreshRac1WrenchPresentationVisibility();
-            HideAuthoredWorldRatchetPresentation();
-            if (_rac1WrenchView is not null)
-            {
-                GD.Print($"[player-avatar] attached retail class-71 Wrench ({Rac1WrenchView.AttachmentProvenance})");
-            }
-            GD.Print($"[player-avatar] attached {_playerAvatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
+            else AttachFusionWeaponViews(view);
         }
-        catch (Exception ex)
+        player.VisualRoot.ReplaceVisual(view);
+        player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
+        _playerAvatarView = view; _playerAvatarAnimationSink = view; _playerAvatarAnimationController = controller;
+        _playerAvatarClock = 0;
+        if (controller is Rac1PlayerAnimationPresentationController && Engine.PhysicsTicksPerSecond == SelectedPlayerConfiguration.NativeTicksPerSecond)
         {
-            ClearPlayerAvatarView();
-            player.VisualRoot.ReplaceVisual(null);
-            GD.PrintErr($"[player-avatar] could not attach native avatar; keeping debug capsule: {ex.Message}");
+            _avatarPhysicsPlayer = player;
+            player.AnimationPhysicsUpdated += StepPlayerAvatarPhysics;
+            player.AnimationPhysicsReset += ResetPlayerAvatarPhysics;
         }
+        RefreshRac1WrenchPresentationVisibility();
+        HideAuthoredWorldRatchetPresentation();
+        GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
     }
-
     private static IPlayerAnimationPresentationController CreatePlayerAnimationController(
         IPlayerAvatarProvider provider,
         PlayerAvatar avatar)
@@ -320,7 +272,6 @@ public partial class OBPGame
         if (_rac1WrenchView is null || !GodotObject.IsInstanceValid(_rac1WrenchView))
             return;
         _rac1WrenchView.Visible =
-            _activeDestination?.Game == ObpSourceGame.Rac1 &&
             _player?.Rac1WaterHandItemHidden != true &&
             (_rac1HeldItem.Hand.WrenchHeld ||
              _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);

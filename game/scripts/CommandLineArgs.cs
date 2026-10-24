@@ -21,6 +21,15 @@ public sealed record CommandLineArgs
     /// <summary>Explicit, ephemeral three-game weapon demo on fresh R&amp;C1 Veldin.</summary>
     public bool FusionTest { get; init; }
     public bool FusionSmoke { get; init; }
+    public bool RetailParity { get; init; }
+    public bool DiagnosticPlayer { get; init; }
+    public bool PlayerSessionSmoke { get; init; }
+    public bool NativeParityRequested => RetailParity || PlaytestRequested || FusionTest || FusionSmoke || DefaultWeaponsSmoke ||
+        Rac1CampaignPersistenceRequested || Rac1VeldinPlaySmoke || Rac1MovementContactSmoke || Rac1StartupVisibilitySmoke ||
+        Rac1CombatContractSmoke || Rac1WrenchSmoke || Rac1CrateSmoke || Rac1EnemySmoke || Rac1FrogSmoke ||
+        Rac1BombGloveSmoke || Rac1NovalisSwimSmoke || Rac1NovalisRouteSmoke || Rac1NovalisPeckbotSmoke ||
+        Rac1NovalisBirdbotSmoke || Rac1NovalisMusicSmoke || Rac1MetropolisTaxiSmoke || Rac1WeaponsSmoke ||
+        Rac1PlacedBoltSmoke || Rac1CampaignSmoke || Rac1MissionPlaySmoke || Rac1PlayerAudioSmoke || MovementStateSmoke;
     public bool DefaultWeaponsSmoke { get; init; }
     public bool BugCapture { get; init; }
     public bool BugReportSmoke { get; init; }
@@ -209,6 +218,9 @@ public sealed record CommandLineArgs
                 "--gc-level" => result with { GcLevel = ParseInt(Next()) ?? result.GcLevel },
                 "--planet" => result with { Planet = Next(), DirectLoad = true },
                 "--destination" => result with { Destination = Next() },
+                "--retail-parity" => result with { RetailParity = true },
+                "--diagnostic-player" => result with { DiagnosticPlayer = true },
+                "--player-session-smoke" => result with { PlayerSessionSmoke = true },
                 "--direct" => result with { DirectLoad = true },
                 "--skip-title" => result with { SkipTitle = true },
                 "--stress-switch" => result with { StressSwitch = Next() },

@@ -59,7 +59,8 @@ public partial class OBPGame
 
     private void ConfigureFusionWeapons(RuntimeWorld world)
     {
-        if (world.Game != "rac1" || _playtest?.Reader is { Header.Weapons: null }) return;
+        if (_playerNative is not null) { _fusion = _playerNative.Weapons; return; }
+        if (_playtest?.Reader is { Header.Weapons: null }) return;
         _fusionAcceptedHits = _fusionAudioStarted = _fusionModelAge = _fusionModelSequence = 0;
         _fusionLastDamage = null; _fusionDeathCleared = false;
         _fusionUseStarted = _fusionPoseTriggerHeld = false;
@@ -194,6 +195,7 @@ public partial class OBPGame
     private void ToggleFusionTest()
     {
         if (_playtest is not null) { ReportMovementState("Choose the fusion loadout before starting an input recording."); return; }
+        if (OrdinaryPlayerSession) { ReportMovementState("Launch with --fusion-test to use the isolated native Veldin fixture loadout."); return; }
         if (_activeDestination is not { DestinationId: "rac1:LEVEL0" } destination) return;
         bool enable = !FusionTestActive;
         FlushRac1CampaignSaves("before fusion test");

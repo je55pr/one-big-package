@@ -5,6 +5,23 @@ namespace OBP.Tests;
 public sealed class CommandLineArgsTests
 {
     [Fact]
+    public void PlayerModesAreExplicitAndIndependentOfDestination()
+    {
+        foreach (var destination in new[] { "rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab" })
+            Assert.False(CommandLineArgs.Parse(["--destination", destination]).NativeParityRequested);
+        Assert.True(CommandLineArgs.Parse(["--retail-parity"]).NativeParityRequested);
+        Assert.True(CommandLineArgs.Parse(["--fusion-smoke"]).NativeParityRequested);
+        Assert.True(CommandLineArgs.Parse(["--rac1-campaign-persist"]).NativeParityRequested);
+        Assert.True(CommandLineArgs.Parse(["--record-playtest", "run.jsonl.gz"]).NativeParityRequested);
+        var diagnostic = CommandLineArgs.Parse(["--diagnostic-player"]);
+        Assert.True(diagnostic.DiagnosticPlayer);
+        Assert.False(diagnostic.NativeParityRequested);
+        var route = CommandLineArgs.Parse(["--player-session-smoke"]);
+        Assert.True(route.PlayerSessionSmoke);
+        Assert.False(route.NativeParityRequested);
+    }
+
+    [Fact]
     public void BugCaptureAndReportReplay_AreExplicitModesWithLocalInboxAndStableReportIdentity()
     {
         Assert.False(CommandLineArgs.Parse([]).BugCapture);

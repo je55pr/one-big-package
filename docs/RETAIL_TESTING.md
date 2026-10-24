@@ -24,6 +24,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 
 | Command | What it checks |
 |---|---|
+| `./tools/player-session-smoke.ps1 -Rendered` | Same genuine R&C1 player/session through Veldin → Oozla → UYA Veldin → Lab → Veldin and repeated re-entry; retained equipment/hand/health/preferences, one player/scene, transient cleanup and failed-stage/missing-source isolation. Requires all three sources. Lifecycle fixture, not a replay or mixed-combat gate. |
 | `./tools/controller-smoke.ps1` | Logical PlayStation button events through real Godot menus, file picker, dropdowns, sliders, repeat, pause, map and weapon selection. Retail sources add world/gameplay checks. |
 | `./tools/playtest-smoke.ps1` | Fresh-process Veldin/Novalis input recording and replay, observations/markers, resize/menu timing, and rejection of invalid/divergent files. Repeatability checks, not retail-parity or level-solving claims. |
 | `./tools/bug-report-smoke.ps1` | F8/paused-Square reporting, text isolation, pause/Quick Select restoration, shared completed tapes, inbox/ZIP and two fresh-process replays to selected markers. `-Rendered` checks the actual offscreen UI. Player workflow: [BUG_REPORTS.md](BUG_REPORTS.md). |

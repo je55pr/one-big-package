@@ -26,6 +26,7 @@ param(
   [switch]$Picker,
   [switch]$Worlds,
   [switch]$Player,
+  [switch]$DiagnosticPlayer,
   [switch]$VerifyHash,
   [switch]$CollisionDebug,
   [switch]$CrateFocus,
@@ -74,6 +75,7 @@ if ($Composition) {
   $sourceArgs += @('--gc-level', "$GcLevel")
 }
 if ($VerifyHash) { $sourceArgs += '--verify-hash' }
+if ($DiagnosticPlayer) { $sourceArgs += '--diagnostic-player' }
 if ($CollisionDebug) { $sourceArgs += '--collision-debug' }
 if ($CrateFocus) { $sourceArgs += '--crate-focus' }
 if ($CrateAutoStrike) { $sourceArgs += '--crate-auto-strike' }

@@ -64,8 +64,9 @@ internal static class FusionLabWorldFactory
             meshes.Add(new RuntimeMesh("fusion-" + part, id, positions.ToArray(),
                 new float[vertexCount * 2], indices.ToArray(), colors,
                 RenderWithoutTexture: true));
-            collision.Add(new RuntimeCollisionBlob(0, positions.ToArray(), indices.ToArray(),
-                new int[indices.Count / 3]));
+            // Authored geometry has no source-native surface codes. In R&C1,
+            // zero describes shallow water and must not be fabricated here.
+            collision.Add(new RuntimeCollisionBlob(0, positions.ToArray(), indices.ToArray(), []));
         }
 
         foreach (var room in definition.Rooms)

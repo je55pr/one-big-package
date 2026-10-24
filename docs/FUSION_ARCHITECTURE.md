@@ -32,10 +32,13 @@ the host composition root supplies their adapters to Fusion. Cross-game admissio
 target routing and player policy belong here, not in scene callbacks or native formulas.
 
 #254's room layout/greybox and #241's weapons are merged. #265 establishes version-1
-contracts and CI guards; it does not complete persistent player/session or ordinary
-host migration. #266/#267 own those foundations before #268/#269/#270 and the
-existing #255 catalog, #256 actor/combat and #259 pause work. See the canonical
-contract's file/member ownership table before editing shared host partials.
+contracts and CI guards. #266/#267 implement `ObpPlayerSession` and
+`WorldEntrySession`, with one host staging/activation path for native worlds and
+the Lab. Source-native state and host preference adapters project into frozen
+snapshots without adding RAC or Godot dependencies to Fusion. Complete profile
+admission, movement/health policy, the equipment catalog, mixed combat and ordinary
+pause UI remain #268/#269/#270, #255, #256 and #259. See the canonical contract's
+file/member ownership table before editing shared host partials.
 The shared FusionSession/FusionExhibit/FusionSourceIdentity are adapter-neutral:
 a descriptor is not proof of usability. The composition root resolves source
 handles and native adapter registrations; source modules validate native context,

@@ -141,8 +141,8 @@ UI. Each world actor keeps its own source-native controller and provenance.
 `OBP.Runtime` supplies neutral facts, `OBP.RAC1/2/3` recover native behaviour,
 `OBP.Fusion` coordinates the shared game, and Godot presents it and supplies contacts.
 The initial ordinary player policy uses the genuine supported R&C1 Ratchet and
-R&C1-derived movement throughout the trilogy; the reconciliation follow-ups wire
-that policy into the host. This does not declare GC/UYA player skins or unfinished
+R&C1-derived movement throughout the trilogy; the shared entry/session foundation
+now wires that policy into the host. This does not declare GC/UYA player skins or unfinished
 gadgets functional. Explicit retail-parity tests remain a separate mode, and future
 campaign/economy decisions remain open.
 

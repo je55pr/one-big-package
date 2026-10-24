@@ -163,11 +163,11 @@ UYA both have retained native player state/sequence-selection contracts
 (`GcRatchetSequenceSelection` and `UyaRatchetSequenceSelection`), but neither currently has a
 renderable native player-avatar provider. GC still needs its dedicated Ratchet carrier decoded
 into `PlayerAvatar`; UYA additionally has unresolved special `0xF` player-frame pose bodies.
-The current destination-based host still leaves those worlds on the debug capsule;
-that is tracked migration debt, not the ownership contract. Under the
-[player/world contract](PLAYER_WORLD_CONTRACT.md), #268 resolves the session's
-selected genuine avatar provider independently of world origin, initially R&C1
-Ratchet throughout, and fails visibly if its required assets are unavailable.
+Under the [player/world contract](PLAYER_WORLD_CONTRACT.md), the shared entry
+path resolves the session's genuine avatar independently of world origin,
+initially R&C1 Ratchet throughout, and fails visibly if its required assets are
+unavailable. Capsule presentation requires explicit `--diagnostic-player` mode.
+#268 retains complete avatar/profile and clock admission work.
 This does not label an R&C1 skin as a GC/UYA avatar. The recovered GC/UYA selectors
 remain source-owned evidence for future genuine providers.
 

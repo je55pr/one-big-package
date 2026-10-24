@@ -815,6 +815,13 @@ These are named activities and broad encounter types rather than an exhaustive l
 
 </details>
 
+Ordinary planets and the Fusion Lab now share one persistent player session and
+world-entry path. R&C1 Ratchet, selected equipment, health and camera preferences
+survive destination changes. The selected avatar's source is required even on
+another game's planet; an asset-free capsule requires `--diagnostic-player`.
+This is the lifecycle foundation; mixed combat, full equipment and unified menus
+remain follow-up work. See the [ownership contract](docs/PLAYER_WORLD_CONTRACT.md).
+
 ## Getting started
 
 On Windows, with the .NET 8 SDK installed, run from the repository root:

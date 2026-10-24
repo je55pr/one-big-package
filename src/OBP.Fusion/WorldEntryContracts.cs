@@ -27,11 +27,20 @@ public sealed record WorldEntryPlan(
 
 /// <summary>
 /// Engine-neutral preparation only. It cannot tear down a live world or choose
-/// player services from world provenance. The Godot lifecycle consumes this port
-/// in #267; current ordinary host paths have not migrated yet.
+/// player services from world provenance. The shared Godot lifecycle consumes it.
 /// </summary>
 public static class WorldEntryPlanning
 {
+    /// <summary>Authored starts win; an unauthored ship point must be within usable world bounds.</summary>
+    public static RuntimeSpawn ResolveEntryPoint(RuntimeWorld world)
+    {
+        if (world.PlayerStart is { } authored) return authored;
+        var bounds = world.Bounds;
+        if (world.Ship is { } ship && ship.X > bounds.Min.X && ship.X < bounds.Max.X &&
+            ship.Z > bounds.Min.Z && ship.Z < bounds.Max.Z && ship.Y > bounds.Min.Y - 4 && ship.Y < bounds.Max.Y + 40) return ship;
+        return new((bounds.Min.X + bounds.Max.X) * .5, bounds.Max.Y + 6, (bounds.Min.Z + bounds.Max.Z) * .5, 0);
+    }
+
     public static WorldEntryPlan Prepare(
         WorldEntryRequest request, IWorldEntrySource source, IObpPlayerSession player,
         PlayerAvatarProviderRegistry avatars)
@@ -60,7 +69,7 @@ public static class WorldEntryPlanning
 }
 
 /// <summary>
-/// #267 supplies the single scene activation/exit implementation. Stage first;
+/// Single scene activation/exit implementation. Stage first;
 /// commit a successful plan at one boundary. Dispose only world-local resources,
 /// subscriptions and actors, never PlayerSession. Activation failure retains it.
 /// </summary>

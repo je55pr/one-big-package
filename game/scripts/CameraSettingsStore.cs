@@ -1,5 +1,6 @@
 using Godot;
 using OBP.RAC1.Camera;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -38,4 +39,34 @@ internal static class CameraSettingsStore
             Enum.IsDefined((Rac1CameraDirection)vertical) ? (Rac1CameraDirection)vertical : Rac1CameraDirection.Normal,
             Enum.IsDefined((Rac1CameraSpeed)speed) ? (Rac1CameraSpeed)speed : Rac1CameraSpeed.Medium);
     }
+}
+
+/// <summary>Player input/UI choices, captured independently from the current scene.</summary>
+internal sealed class PlayerCameraPreferences : IPlayerSessionPreferencesAdapter
+{
+    private const string Horizontal = "camera/horizontal";
+    private const string Vertical = "camera/vertical";
+    private const string Speed = "camera/speed";
+
+    public IReadOnlyDictionary<string, string> Capture()
+    {
+        var options = CameraSettingsStore.Current;
+        return new Dictionary<string, string>
+        {
+            [Horizontal] = options.Horizontal.ToString(),
+            [Vertical] = options.Vertical.ToString(),
+            [Speed] = options.Speed.ToString(),
+        };
+    }
+
+    public void ValidateRestore(IReadOnlyDictionary<string, string> preferences) => _ = Decode(preferences);
+    public void Restore(IReadOnlyDictionary<string, string> preferences) => CameraSettingsStore.Set(Decode(preferences), persist: false);
+
+    private static Rac1CameraOptions Decode(IReadOnlyDictionary<string, string> preferences) => new(
+        Read<Rac1CameraDirection>(preferences, Horizontal), Read<Rac1CameraDirection>(preferences, Vertical),
+        Read<Rac1CameraSpeed>(preferences, Speed));
+
+    private static T Read<T>(IReadOnlyDictionary<string, string> preferences, string key) where T : struct, Enum =>
+        preferences.TryGetValue(key, out var text) && Enum.TryParse<T>(text, out var value) && Enum.IsDefined(value) ? value :
+        throw new ArgumentException($"Missing or invalid player preference: {key}.");
 }

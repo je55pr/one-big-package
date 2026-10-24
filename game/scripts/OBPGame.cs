@@ -41,7 +41,7 @@ public partial class OBPGame : Node3D
     private string _sceneKind = "smoke";
 
     // the live world
-    private readonly WorldHost _worldHost = new();
+    private WorldHost _worldHost = new();
     private readonly HudStateAdapter _hudState = new();
     private RuntimeWorld? _world;
     private RuntimeWorldScene.Result? _sceneResult;
@@ -401,13 +401,14 @@ public partial class OBPGame : Node3D
     private void TeardownWorld()
     {
         FlushRac1CampaignSaves("world teardown");
+        _worldEntries?.Unload();
         ClearFusionLabStatus();
         CloseWeaponQuickSelect();
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();
         ClearPlayerAvatarView();
         ResetRac1LevelGameplay();
-        _hudState.ResetSession();
+        if (!OrdinaryPlayerSession) _hudState.ResetSession();
         _playerHud?.Render(_hudState.Current);
         _player?.QueueFree();
         _player = null;
@@ -555,18 +556,10 @@ public partial class OBPGame : Node3D
     private void SpawnPlayer(RuntimeWorld world)
     {
         var b = world.Bounds;
-        RuntimeSpawn? rac1LevelEntryStart = null;
-        if (world.Game == "rac1")
-        {
-            Rac1LevelCheckpointSession checkpoint = _rac1CampaignSession.LevelCheckpoint
-                ?? throw new InvalidOperationException("R&C1 level entry is missing its checkpoint/progress session.");
-            if (checkpoint.NativeLevelId != world.LevelId)
-                throw new InvalidOperationException("R&C1 checkpoint/progress session does not match the loaded world.");
-            rac1LevelEntryStart = checkpoint.AuthoredClass0;
-        }
+        RuntimeSpawn? stagedStart = _worldPlayerEntry;
 
-        var preferredStart = rac1LevelEntryStart ?? world.PreferredPlayerStart;
-        bool explicitPlayerStart = rac1LevelEntryStart is not null || world.PlayerStart is not null;
+        var preferredStart = stagedStart ?? world.PreferredPlayerStart;
+        bool explicitPlayerStart = stagedStart is not null || world.PlayerStart is not null;
         bool nativeStartUsable = preferredStart is { } s
             && (explicitPlayerStart
                 || (s.X > b.Min.X && s.X < b.Max.X && s.Z > b.Min.Z && s.Z < b.Max.Z
@@ -579,8 +572,8 @@ public partial class OBPGame : Node3D
             RuntimeSpawnScenePose pose = RuntimeSpawnSceneAdapter.ToScenePose(sp);
             spawn = pose.Position;
             yaw = pose.SceneYaw;
-            string source = rac1LevelEntryStart is not null
-                ? "R&C1 checkpoint/progress class-0 entry"
+            string source = stagedStart is not null
+                ? "staged source/authored entry"
                 : explicitPlayerStart ? "explicit player start" : "native ship point";
             GD.Print($"[OBPGame] spawn from {source} ({sp.X:0},{sp.Y:0},{sp.Z:0})");
         }
@@ -636,16 +629,9 @@ public partial class OBPGame : Node3D
             Name = "PlayerHost",
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
-            UseRac1Gameplay = world.Game == "rac1",
-            // Aranos LEVEL0's authored class-0 start (native Z 49.89) sits
-            // beneath valid overhead prison collision around scene Y 58.5.
-            // Keep the generic 8-unit snap everywhere else, but prevent the
-            // Aranos authored start from snapping upward onto that roof.
-            InitialGroundSnapUpwardReach =
-                world.Game == "fusion" ||
-                (world.Game == "rac2" && world.LevelId == 0 && world.PlayerStart is not null)
-                    ? 0.75f
-                    : 8f,
+            UseRac1Gameplay = _playerSession is not null && SelectedPlayerConfiguration.Movement.SourceGame == OBP.Core.ObpSourceGame.Rac1,
+            // Source/authored placement clearance was staged with the world.
+            InitialGroundSnapUpwardReach = _worldEntrySnapReach,
             // OBP deliberately reuses the retail-derived R&C1 controller in
             // all supported trilogy worlds; seed its facing from the authored
             // host spawn heading regardless of source game.

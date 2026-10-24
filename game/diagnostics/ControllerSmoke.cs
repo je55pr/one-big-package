@@ -254,7 +254,7 @@ public partial class ControllerSmoke : Node
         await Press(JoyButton.B); await Frames(20);
         await EnterRetailPageAsync(Rac1RetailMenuPage.Help, "Help");
         await FocusButton("Controls"); await Press(JoyButton.A); await Frames(15);
-        Require(Find<Rac1HelpDeskView>() is { State.Current: Rac1HelpDeskPresentation.Phase.Text },
+        Require(Descendants(Find<PauseMenuUi>()!).OfType<Rac1HelpDeskView>().Single().State.Current == Rac1HelpDeskPresentation.Phase.Text,
             "HelpDesk did not expand to text");
         await Press(JoyButton.B); await Frames(10);
         await Press(JoyButton.B); await Frames(20);
@@ -275,7 +275,10 @@ public partial class ControllerSmoke : Node
             "Enabling testing equipment leaked a development notice with debug output off");
         await Button(JoyButton.Y, true);
         var quick = Find<WeaponQuickSelectUi>();
-        Require(quick is not null && quick.Entries.Count == 15, "Triangle did not expose the preview arsenal");
+        Require(quick is not null && quick.Entries.Count == 17 &&
+            quick.Entries.Any(entry => entry.Weapon == FusionWeaponSession.Lancer) &&
+            quick.Entries.Any(entry => entry.Weapon == FusionWeaponSession.ShockCannon),
+            $"Triangle did not expose the preview arsenal: entries={quick?.Entries.Count}, alive={player.Rac1GameplayAlive}, paused={GetTree().Paused}, remote={player.Rac1RemoteControlActive}");
         Require(!GetTree().Paused, "Triangle Quick Select paused the real-time world");
         await Axis(JoyAxis.LeftX, 1); await Frames(8);
         Require(player.Rac1AnalogueMagnitude < 0.001d,
@@ -414,7 +417,10 @@ public partial class ControllerSmoke : Node
             await EnterRetailPageAsync(Rac1RetailMenuPage.Options, "Options");
         await FocusButton(buttonText, contains: buttonText.StartsWith("OBP ", StringComparison.Ordinal));
         await Press(JoyButton.A);
-        await Frames(20);
+        // Retail transitions advance at 60 native ticks/second. A fixed count
+        // of rendered frames can finish too early on a fast offscreen run.
+        ulong deadline = Time.GetTicksMsec() + 5000;
+        while (menu.RetailPage != page && Time.GetTicksMsec() < deadline) await Frames(1);
         Require(menu.RetailPage == page, $"Retail page {page} failed to open");
     }
 

@@ -11,10 +11,12 @@ public sealed class WorldSmokeArchitectureTests
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
         string loader = File.ReadAllText(Path.Combine(scripts, "OBPGame.Destinations.cs"));
+        string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
         string harness = File.ReadAllText(Path.Combine(
             RepoPaths.Root, "game", "diagnostics", "OBPGame.SmokeDispatch.cs"));
 
-        Assert.Contains("DispatchRequestedWorldSmokes(destination);", loader, StringComparison.Ordinal);
+        Assert.Contains("EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
+        Assert.Contains("DispatchRequestedWorldSmokes(nativeDestination);", entry, StringComparison.Ordinal);
         foreach (string flag in new[]
         {
             "_args.Rac1VeldinPlaySmoke",

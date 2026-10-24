@@ -27,17 +27,20 @@ public partial class OBPGame
     private Rac1MobyPersistenceSession _rac1MobyPersistence = new(levelId: 0);
     private Rac1BoltCrateSession _rac1BoltCrates = new();
     private Rac1BoltPickupSession _rac1BoltPickups = new();
-    private Rac1BoltWallet _rac1BoltWallet = new();
+    private Rac1BoltWallet _parityBoltWallet = new();
+    private Rac1BoltWallet _rac1BoltWallet { get => _playerNative?.Wallet ?? _parityBoltWallet; set => _parityBoltWallet = value; }
     private Rac1MobyRuntimeSession _rac1MobyRuntime = new();
     private Rac1Class749HostileSession _rac1Hostiles = new();
-    private Rac1RatchetNanotechSession _rac1Nanotech = new();
+    private Rac1RatchetNanotechSession _parityNanotech = new();
+    private Rac1RatchetNanotechSession _rac1Nanotech => _playerNative?.Health ?? _parityNanotech;
     private Rac1DamageTransportSession _rac1DamageTransport = new();
     private Rac1CampaignRuntimeSession _rac1CampaignSession = new(
         new Rac1CampaignState(),
         Rac1WeaponInventory.CreateOpeningLoadout());
     private Rac1WeaponInventory? _rac1WeaponPreviewInventory;
-    private Rac1WeaponInventory _rac1Weapons => FusionTestActive ? _fusion!.Rac1Inventory : _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
-    private readonly Rac1HeldItemSession _rac1HeldItem = new();
+    private Rac1WeaponInventory _rac1Weapons => _playerNative?.Inventory ?? (FusionTestActive ? _fusion!.Rac1Inventory : _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons);
+    private readonly Rac1HeldItemSession _parityHeldItem = new();
+    private Rac1HeldItemSession _rac1HeldItem => _playerNative?.Held ?? _parityHeldItem;
     private bool _rac1EquipmentUsePressed;
     private Rac1BombGloveSession? _rac1BombGlove;
     private readonly List<RuntimeWorldScene.DynamicObjectNode> _rac1CrateNodes = [];
@@ -57,8 +60,8 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
-        ResetFusionWeapons();
-        _rac1HeldItem.ResetForLevelEntry();
+        if (_playerNative is null) { ResetFusionWeapons(); _rac1HeldItem.ResetForLevelEntry(); }
+        else { ClearFusionTransients(); ReleaseFusionWeaponViews(); _playerNative.EndWorld(); }
         _rac1EquipmentUsePressed = false;
         _lastQuickSelectTap = 0; _previousSelectedWeapon = null;
         ResetRac1MetropolisTaxis();
@@ -91,7 +94,7 @@ public partial class OBPGame
             _rac1MobyRuntime,
             _rac1MobyPersistence, _rac1BoltPickups);
         _rac1Hostiles = new Rac1Class749HostileSession(_rac1MobyRuntime, Rac1EffectRandom);
-        _rac1Nanotech = new Rac1RatchetNanotechSession();
+        if (_playerNative is null) _parityNanotech = new Rac1RatchetNanotechSession();
         _rac1DamageTransport = new Rac1DamageTransportSession();
         _rac1BombGlove = new Rac1BombGloveSession(_rac1Weapons);
         ResetRac1AdditionalWeapons();
@@ -208,7 +211,8 @@ public partial class OBPGame
 
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
-        if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
+        if (OrdinaryPlayerSession && _playerSession is not null) { PublishPersistentPlayerHud(feedback); return; }
+        if (_rac1CombatStatus == "off") return;
         _hudState.Publish(FusionHud(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet,
             _rac1AdditionalWeapons?.Cargo.Count ?? 0, _player?.Rac1SwimState,
             _player?.Rac1MovementEquipment.OxygenMask == true)), feedback);
@@ -216,19 +220,24 @@ public partial class OBPGame
 
     private void ArmRac1Gameplay(PlayerHost player)
     {
-        if (_world?.Game != "rac1") return;
         player.Rac1PrimaryAttackRequested += OnRac1PrimaryAttackRequested;
         player.Rac1WeaponSelectionRequested += OnRac1WeaponSelectionRequested;
         player.Rac1WeaponCycleRequested += OnRac1WeaponCycleRequested;
         player.Rac1WeaponPreviewRequested += ToggleRac1WeaponPreview;
         player.Rac1WrenchPhysicsUpdated += OnRac1WrenchPhysicsUpdated;
+        player.Rac1GameplayState = _rac1Nanotech.Probe();
+        player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
+        player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
+        BindSourcePlayerContacts(player);
+    }
+
+    private void BindSourcePlayerContacts(PlayerHost player)
+    {
+        if (_world?.Game != "rac1") return;
         player.Rac1CrankInput = TryTurnRac1NovalisCrank;
         player.Rac1WaterSurfaceHeight = SampleRac1NovalisWaterHeight;
         player.Rac1NovalisDrowned += OnRac1NovalisDrowned;
         player.Rac1WaterSoundRequested += sound => PlayRac1PlayerSound(new(0, sound));
-        player.Rac1GameplayState = _rac1Nanotech.Probe();
-        player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
-        player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
         player.ConfigureRac1TraversalTargets(_world.DynamicObjects ?? []);
     }
 

@@ -53,13 +53,13 @@ public sealed class SourceNeutralHostArchitectureTests
     public void ExistingPlayerCouplingCannotGrowUnderItsMigrationException()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.PlayerAvatar.cs");
-        string source = original.GetText().ToString().Replace("IPlayerAvatarProvider? provider =",
-            "var anotherWorldGate = _activeDestination?.Game;\nIPlayerAvatarProvider? provider =", StringComparison.Ordinal);
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/PlayerHost.Animation.cs");
+        string source = original.GetText().ToString().Replace("bool recoveredSupportForPresentation = UseRac1Gameplay",
+            "bool recoveredSupportForPresentation = UseRac1Gameplay && UseRac1Gameplay", StringComparison.Ordinal);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("AttachPlayerAvatarVisual", errors[0]);
+        Assert.Contains("UpdateAnimationState", errors[0]);
         Assert.Contains("migration owner #268", errors[0]);
     }
 
@@ -67,19 +67,19 @@ public sealed class SourceNeutralHostArchitectureTests
     public void WorldEntryAdapterCannotConditionallySpawnThePlayerByOrigin()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Destinations.cs");
-        string source = original.GetText().ToString().Replace("SpawnPlayer(world);",
-            "if (world.Game == \"rac1\") SpawnPlayer(world);", StringComparison.Ordinal);
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
+        string source = original.GetText().ToString().Replace("else SpawnPlayer(world);",
+            "else if (world.Game == \"rac1\") SpawnPlayer(world);", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("AdoptRuntimeWorld", errors[0]);
-        Assert.Contains("source-world adapter selects a player service", errors[0]);
+        Assert.Contains("ActivateWorld", errors[0]);
+        Assert.Contains("unapproved world-origin", errors[0]);
     }
 
     [Theory]
-    [InlineData("game/scripts/OBPGame.PlayerAvatar.cs", "IPlayerAvatarProvider? provider =")]
+    [InlineData("game/scripts/PlayerHost.Animation.cs", "bool recoveredSupportForPresentation = UseRac1Gameplay")]
     [InlineData("game/scripts/OBPGame.Rac1NovalisWater.cs", "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
@@ -89,6 +89,21 @@ public sealed class SourceNeutralHostArchitectureTests
             .Replace(anchor, "/* ownership comment */ " + anchor, StringComparison.Ordinal);
         Assert.Empty(HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy()));
+    }
+
+    [Fact]
+    public void MigratedPlayerSpawnUsesTheSelectedProfileWithoutWorldOriginReads()
+    {
+        var usage = HostOwnershipAudit.Scan(HostOwnershipAudit.Host.Value)
+            .Single(usage => usage.Key.EndsWith("::OBPGame.SpawnPlayer(RuntimeWorld)", StringComparison.Ordinal));
+        Assert.Equal(0, usage.WorldReads);
+        Assert.Equal(1, usage.LegacyReads); // Explicit profile compatibility bridge until #269.
+        var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.PlayerAvatar.cs"));
+        Assert.DoesNotContain("Get(destination.Game)", avatar, StringComparison.Ordinal);
+        var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.FusionLab.cs"));
+        Assert.DoesNotContain("rac1:LEVEL0", lab, StringComparison.Ordinal);
+        Assert.DoesNotContain("_activeDestination =", lab, StringComparison.Ordinal);
+        Assert.Contains("EnterWorld(definition.Id", lab, StringComparison.Ordinal);
     }
 
     [Fact]
