@@ -61,9 +61,10 @@ try {
     finally { $writer.Dispose(); $reader.Dispose() }
     $invalidReport = Join-Path $Out 'wrong-source.report.json'
     & (Join-Path $PSScriptRoot 'replay-playtest.ps1') -Run $wrongSource -Report $invalidReport -Rac1Iso $Rac1Iso -GcIso $GcIso -UyaIso $UyaIso -Rendered:$Rendered -SkipBuild -AllowBuildChange
-    if ($LASTEXITCODE -ne 2) { throw 'Replay accepted an incompatible foreign source identity.' }
+    if ($LASTEXITCODE -ne 2) { throw "Expected source-rejection exit code 2, got $LASTEXITCODE. Inspect $invalidReport" }
     $invalid = Get-Content -LiteralPath $invalidReport -Raw | ConvertFrom-Json
-    if ($invalid.Result -ne 'invalid' -or $invalid.Error -notlike '*cross-game weapon sources*') { throw 'Replay did not identify the exact cross-game source blocker.' }
+    $expectedError = 'Recorded cross-game weapon sources do not match (rac2). Attach the exact original sources used by the recording.'
+    if ($invalid.Result -ne 'invalid' -or $invalid.Error -ne $expectedError) { throw 'Replay did not identify the exact cross-game source blocker.' }
 }
 finally { $env:OBP_FUSION_CAPTURE_DIR = $previousCapture }
 foreach ($log in Get-ChildItem -LiteralPath $Out -Filter '*.log') {
