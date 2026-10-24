@@ -277,8 +277,13 @@ public partial class OBPGame
         const float hostMaximumDescent = 40f;
         Vector3 from = position + Vector3.Up * .5f;
         Vector3 to = position - Vector3.Up * hostMaximumDescent;
+        // Terrain queries must not report another hosted enemy capsule as
+        // floor. Share exclusions with the shape-sweep fallback below.
+        var excludedActors = new global::Godot.Collections.Array<Rid>(
+            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                .Append(_player!.GetRid()));
         var ray = PhysicsRayQueryParameters3D.Create(from, to);
-        ray.Exclude = [enemy.Body.GetRid(), _player!.GetRid()];
+        ray.Exclude = excludedActors;
         var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(ray);
         if (hit.TryGetValue("position", out var hitPoint) &&
             hit.TryGetValue("normal", out var normal) &&
@@ -294,9 +299,7 @@ public partial class OBPGame
             Margin = enemy.Body.SafeMargin,
             RecoveryAsCollision = true,
             MaxCollisions = 4,
-            ExcludeBodies = new global::Godot.Collections.Array<Rid>(
-                _rac1Enemies.Values.Select(other => other.Body.GetRid())
-                    .Append(_player.GetRid()))
+            ExcludeBodies = excludedActors
         };
         using var result = new PhysicsTestMotionResult3D();
         if (!PhysicsServer3D.BodyTestMotion(enemy.Body.GetRid(), parameters, result))
@@ -313,8 +316,8 @@ public partial class OBPGame
     /// <summary>
     /// Host adapter for the native 0x2583f0 walker_probe vertical segment.
     /// The source uses collision kind 0x22 and hit-record metadata. Godot
-    /// supplies a real scene raycast, excluding self and Ratchet. This
-    /// deliberately does not infer a floor from IsOnFloor or elapsed ticks.
+    /// supplies a real scene raycast, excluding all hosted actors and Ratchet.
+    /// This never infers a floor from IsOnFloor or elapsed ticks.
     /// </summary>
     private bool ProbeRac1AridiaWalkerSupport(
         Rac1HostedEnemy enemy, Vector3 candidate, out float floorY,
@@ -328,8 +331,13 @@ public partial class OBPGame
         Vector3 end = candidate with { Y = source.EndZ };
         floorY = normalY = 0;
         if (start.DistanceSquaredTo(end) < 1e-10f) return false;
+        // Match the capsule sweep's actor exclusions. A different enemy
+        // sitting over terrain must not become the source walker floor.
+        var excludedActors = new global::Godot.Collections.Array<Rid>(
+            _rac1Enemies.Values.Select(other => other.Body.GetRid())
+                .Append(_player!.GetRid()));
         var query = PhysicsRayQueryParameters3D.Create(start, end);
-        query.Exclude = [enemy.Body.GetRid(), _player!.GetRid()];
+        query.Exclude = excludedActors;
         var hit = enemy.Body.GetWorld3D().DirectSpaceState.IntersectRay(query);
         if (hit.TryGetValue("position", out var hitPosition) &&
             hit.TryGetValue("normal", out var hitNormal))
@@ -354,9 +362,7 @@ public partial class OBPGame
             Margin = enemy.Body.SafeMargin,
             RecoveryAsCollision = true,
             MaxCollisions = 4,
-            ExcludeBodies = new global::Godot.Collections.Array<Rid>(
-                _rac1Enemies.Values.Select(other => other.Body.GetRid())
-                    .Append(_player.GetRid()))
+            ExcludeBodies = excludedActors
         };
         using var result = new PhysicsTestMotionResult3D();
         if (!PhysicsServer3D.BodyTestMotion(enemy.Body.GetRid(), parameters, result))

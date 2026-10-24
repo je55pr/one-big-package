@@ -582,6 +582,58 @@ public partial class OBPGame
             GD.Print("[aridia-bot-smoke] class612 real Godot capsule " +
                 $"ray-missed edge walker and state3 floor heights " +
                 $"ray={centreFloor:F3} edge={edgeFloor:F3} descent={edgeDescent:F3} PASS");
+
+            // PR #213 review P2: the two primary terrain rays must ignore
+            // other LIVE hostile bodies, just as both fallback sweeps do.
+            // Reposition a second original Constructorbot capsule, not a
+            // decorative Area3D, above this verified real Godot platform.
+            var other = _rac1Enemies[548];
+            Require(!ReferenceEquals(other, bot) &&
+                    other.Body.CollisionLayer != 0,
+                "other-hostile terrain fixture requires a live enemy body");
+            Vector3 originalOtherBody = other.Body.GlobalPosition;
+            Vector3 originalOtherRoot = other.Node.Root.GlobalPosition;
+            try
+            {
+                // The platform top is centre.Y. The other bot's 1.7-unit
+                // capsule top is ~centre.Y+.38, below the walker ray start
+                // +.5 and above the genuine static floor.
+                other.Body.GlobalPosition = centre - Vector3.Up * 1.32f;
+                other.Node.Root.GlobalPosition = other.Body.GlobalPosition;
+                await PhysicsFramesAsync(2);
+                var legacyQuery = PhysicsRayQueryParameters3D.Create(
+                    centre + Vector3.Up * .5f, centre - Vector3.Up * .5f);
+                legacyQuery.Exclude = [bot.Body.GetRid(), _player.GetRid()];
+                var legacyHit = bot.Body.GetWorld3D().DirectSpaceState.IntersectRay(legacyQuery);
+                Vector3 naiveContact = legacyHit.TryGetValue("position", out var rawContact)
+                    ? rawContact.AsVector3() : Vector3.Zero;
+                Require(legacyHit.TryGetValue("collider", out var legacyCollider) &&
+                        ReferenceEquals(legacyCollider.AsGodotObject(), other.Body) &&
+                        naiveContact.Y > centre.Y + .2f,
+                    "other-hostile fixture did not reproduce an elevated enemy-capsule ray hit");
+
+                Require(ProbeRac1AridiaWalkerSupport(bot, centre,
+                        out float actorFilteredFloor, out float actorFilteredNormal) &&
+                        actorFilteredNormal > .65f &&
+                        MathF.Abs(actorFilteredFloor - centre.Y) < .06f,
+                    $"walker terrain ray treated another enemy capsule as ground: " +
+                    $"ground={centre.Y:F3}, observed={actorFilteredFloor:F3}");
+                float? actorFilteredDescent = ProbeRac1ConstructorbotStateThreeFloor(
+                    bot, centre + Vector3.Up * 2f);
+                Require(actorFilteredDescent.HasValue &&
+                        MathF.Abs(actorFilteredDescent.Value - centre.Y) < .06f,
+                    $"state3 terrain ray treated another enemy capsule as ground: " +
+                    $"ground={centre.Y:F3}, observed={actorFilteredDescent}");
+                GD.Print("[aridia-bot-smoke] class612 state3/walker ignore " +
+                    $"other live hostile capsule: naiveY={naiveContact.Y:F3} " +
+                    $"terrainY={actorFilteredFloor:F3} PASS");
+            }
+            finally
+            {
+                other.Body.GlobalPosition = originalOtherBody;
+                other.Node.Root.GlobalPosition = originalOtherRoot;
+                await PhysicsFramesAsync(2);
+            }
         }
         finally
         {
