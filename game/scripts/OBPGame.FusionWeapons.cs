@@ -1,0 +1,379 @@
+using Godot;
+using OBP.Godot;
+using OBP.Godot.Player;
+using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
+using OBP.RAC1.Progression;
+using OBP.RAC2.Gameplay;
+using OBP.RAC3.Gameplay;
+using OBP.Runtime;
+using OBP.Runtime.Audio;
+using OBP.Runtime.Diagnostics;
+using OBP.Runtime.Gameplay;
+using OBP.Runtime.Player;
+using OBP.Runtime.Presentation;
+using NVector3 = System.Numerics.Vector3;
+
+namespace OneBigPackage;
+
+public partial class OBPGame
+{
+    private FusionWeaponSession? _fusion;
+    private FusionWeaponAssets? _fusionAssets;
+    private Rac1CampaignRuntimeSession? _fusionOriginalCampaign;
+    private Rac1BoltWallet? _fusionOriginalWallet;
+    private int[] _fusionOriginalGoldBolts = [];
+    private readonly Dictionary<SourceWeaponKey, FusionMeshView> _fusionHeldViews = [];
+    private readonly Dictionary<WeaponShotKey, FusionMeshView> _fusionProjectiles = [];
+    private readonly List<(int Due, int Owner, FusionWeaponAssets.Voice Voice)> _fusionPendingAudio = [];
+    private readonly List<(int Owner, AudioStreamPlayer Player)> _fusionAudioPlayers = [];
+    private readonly List<(Node3D Node, int Remaining)> _fusionEffects = [];
+    private FusionMeshView? _fusionBeam;
+    private UyaShockCannonBeam.Scroll _fusionBeamScroll;
+    private int _fusionModelAge, _fusionModelSequence, _fusionAcceptedHits, _fusionAudioStarted;
+    private int _fusionGunPoseTicks, _fusionGunPoseAge;
+    private bool _fusionDeathCleared;
+    private WeaponDamageIntent? _fusionLastDamage;
+    private WeaponStatus? _fusionDisplayedStatus;
+
+    private static string FusionWeaponName(SourceWeaponKey key) => key == FusionWeaponSession.BombGlove ? "Bomb Glove" :
+        key == FusionWeaponSession.Lancer ? "Lancer" : "Shock Cannon";
+
+    private string FusionWeaponDetail(SourceWeaponKey key) => _fusionAssets?.Problems.GetValueOrDefault(key) ??
+        (_fusion is { } fusion ? $"{fusion.Status(key).Ammo}/{fusion.Status(key).Capacity} · {fusion.Status(key).State}" : "");
+
+    private void ConfigureFusionWeapons(RuntimeWorld world)
+    {
+        if (!_args.FusionTest || world is not { Game: "rac1", LevelId: 0 }) return;
+        _fusionAssets = new(_sources);
+        _fusionOriginalCampaign = _rac1CampaignSession;
+        _fusionOriginalWallet = _rac1BoltWallet;
+        _fusionOriginalGoldBolts = _rac1CollectedNovalisGoldBolts.ToArray();
+        _rac1CollectedNovalisGoldBolts.Clear();
+        _rac1CampaignSession = new(new Rac1CampaignState(), Rac1WeaponInventory.CreateOpeningLoadout());
+        _rac1CampaignSession.StartLevelCheckpointSession(0, world.PlayerStart!);
+        _rac1BoltWallet = new();
+        _rac1WeaponPreviewInventory = null;
+        _fusion = new(_args.FixedSeed ?? 1440);
+        _fusionAcceptedHits = _fusionAudioStarted = 0; _fusionLastDamage = null; _fusionDeathCleared = false;
+        _fusionGunPoseTicks = _fusionGunPoseAge = 0;
+        _fusionDisplayedStatus = null;
+        GD.Print("[fusion] opt-in Veldin test: Bomb Glove [rac1/10] 10; Lancer [rac2/30] 40; Shock Cannon [rac3/43] 20. Original damage; campaign isolated.");
+        foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
+    }
+
+    private void ToggleFusionTest()
+    {
+        if (_playtest is not null) { ReportMovementState("Choose the fusion loadout before starting an input recording."); return; }
+        if (_activeDestination is not { DestinationId: "rac1:LEVEL0" } destination) return;
+        bool enable = _fusion is null;
+        FlushRac1CampaignSaves("before fusion test");
+        _args = _args with { FusionTest = enable };
+        ClosePauseMenu();
+        OnDestinationChosen(destination);
+    }
+
+    private void SelectWeaponKey(SourceWeaponKey key)
+    {
+        if (_fusion is null)
+        {
+            if (key.SourceGame == "rac1") OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
+            return;
+        }
+        var previous = _fusion.Selected;
+        if (!_fusion.Select(key)) return;
+        if (previous != key)
+        {
+            _previousSelectedWeapon = previous;
+            StopFusionAudio();
+            _fusionModelSequence = _fusionModelAge = 0;
+            _rac1BombFireRequested = _rac1AdditionalFireRequested = _rac1EquipmentUsePressed = false;
+            _rac1BombThrowActive = false;
+            if (_fusionBeam is not null) _fusionBeam.Visible = false;
+        }
+        if (key == FusionWeaponSession.BombGlove) HoldSelectedRac1HandItem();
+        RefreshRac1WrenchPresentationVisibility();
+        RefreshRac1HudState();
+        GD.Print($"[fusion] equipped {key}: {FusionWeaponDetail(key)}");
+    }
+
+    private HudPresentationState FusionHud(HudPresentationState state)
+    {
+        if (_fusion is null) return state;
+        var status = _fusion.Status(_fusion.Selected);
+        return state with
+        {
+            CurrentWeapon = new(status.Weapon.ToString(),
+            $"{FusionWeaponName(status.Weapon)} [{status.Weapon.SourceGame}]", new(status.Ammo, status.Capacity))
+            { Status = _fusionAssets?.Problems.GetValueOrDefault(status.Weapon) ?? $"Fusion test · {status.State}" }
+        };
+    }
+
+    private void AttachFusionWeaponViews(Node3D avatar)
+    {
+        if (_fusion is null || _fusionAssets is null) return;
+        foreach (var key in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
+        {
+            if (!_fusionAssets.Available(key)) continue;
+            var view = new FusionMeshView { Name = key.SourceGame + "_original_weapon", Visible = false };
+            avatar.AddChild(view); _fusionHeldViews.Add(key, view);
+        }
+        _fusionBeam = new() { Name = "rac3_original_beam", Visible = false };
+        _sceneResult!.Root.AddChild(_fusionBeam);
+    }
+
+    private void StepFusionWeapons()
+    {
+        if (_fusion is null || _fusionAssets is null || _player is null || _movementStateLoading) return;
+        bool alive = !_rac1Nanotech.Probe().IsDead;
+        if (!alive) { ClearFusionOnDeath(); return; }
+        _fusionDeathCleared = false;
+        Vector3 origin = FusionMuzzle();
+        Vector3 aim = FusionAim(origin) - origin;
+        bool admitted = !_player.Scripted && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
+            !_player.Rac1WaterHandItemHidden && !QuickSelectOpen && _fusionAssets.Available(_fusion.Selected);
+        var frame = _fusion.Advance(new(_player.Rac1EquippedItemHeld && admitted, admitted, ToNumerics(origin), ToNumerics(aim)));
+        if (_fusionGunPoseTicks > 0) { _fusionGunPoseTicks--; _fusionGunPoseAge++; }
+        if (frame.Effects.Any(e => e.Kind is "shot" or "Muzzle" or "Beam") || _fusion.CannonFrame?.ChargeUpdates > 0)
+        { if (_fusionGunPoseTicks == 0) _fusionGunPoseAge = 0; _fusionGunPoseTicks = 10; }
+        var contacts = new List<WeaponContact>();
+        foreach (var query in frame.Queries) contacts.AddRange(TraceFusionQuery(query, origin));
+        foreach (var intent in _fusion.ResolveContacts(frame, contacts))
+        {
+            var target = EquipmentTargets.FirstOrDefault(n => n.Source.NativeClassId == intent.Target.NativeClassId && n.Source.InstanceIndex == intent.Target.InstanceIndex);
+            if (target is not null && FusionDamagePolicy.Translate(intent) is { } damage && ApplyRac1AdditionalDamage(target, damage))
+            { _fusionAcceptedHits++; _fusionLastDamage = intent; }
+        }
+        foreach (var cue in frame.Audio) QueueFusionAudio(cue);
+        TickFusionAudio();
+        foreach (var effect in frame.Effects.Where(e => e.Kind == "shot"))
+        { _fusionModelSequence = 2; _fusionModelAge = 0; }
+        SynchronizeFusionProjectiles(frame);
+        if (frame.Queries.Any(q => q.Kind == WeaponQueryKind.Ray)) SpawnFusionSpread(frame, contacts);
+        for (int i = _fusionEffects.Count - 1; i >= 0; i--)
+        {
+            var item = _fusionEffects[i];
+            if (--item.Remaining <= 0) { item.Node.QueueFree(); _fusionEffects.RemoveAt(i); }
+            else _fusionEffects[i] = item;
+        }
+        var status = _fusion.Status(_fusion.Selected);
+        if (status != _fusionDisplayedStatus) { RefreshRac1HudState(); _fusionDisplayedStatus = status; }
+    }
+
+    private Vector3 FusionMuzzle()
+    {
+        Vector3 hand = _fusion is not null && _fusionHeldViews.TryGetValue(_fusion.Selected, out var view)
+            ? view.GlobalPosition : _player!.GlobalPosition + Vector3.Up * .9f;
+        Vector3 muzzle = hand + EquipmentForward * .5f;
+        var ray = PhysicsRayQueryParameters3D.Create(_player!.GlobalPosition + Vector3.Up * .8f, muzzle);
+        ray.Exclude = [_player.GetRid()];
+        var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);
+        return hit.TryGetValue("position", out var point) ? point.AsVector3() - EquipmentForward * .03f : muzzle;
+    }
+
+    private Vector3 FusionAim(Vector3 origin)
+    {
+        float range = _fusion!.Selected == FusionWeaponSession.Lancer ? GcLancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
+        var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new("rac1", e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
+            (_fusion.Selected != FusionWeaponSession.Lancer || e.Node.Source.NativeClassId != 749) && IsRac1GameplayActive(e.Node))
+            .Select(e => e.Bounds.GetCenter()).Where(p => p.DistanceSquaredTo(origin) is > .1f &&
+                p.DistanceSquaredTo(origin) < range * range && (p - origin).Normalized().Dot(EquipmentForward) > .9f && BombHasLineOfSight(origin, p))
+            .OrderBy(p => p.DistanceSquaredTo(origin));
+        return candidates.FirstOrDefault(origin + EquipmentForward * range);
+    }
+
+    private IEnumerable<WeaponContact> TraceFusionQuery(WeaponQuery query, Vector3 muzzle)
+    {
+        Vector3 from = ToGodot(query.From), to = ToGodot(query.To);
+        var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new("rac1", e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
+            IsRac1GameplayActive(e.Node) && (!_rac1Enemies.TryGetValue(e.Node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted))
+            .OrderBy(e => e.Node.Source.NativeClassId).ThenBy(e => e.Node.Source.InstanceIndex);
+        if (query.Kind == WeaponQueryKind.Sphere)
+        {
+            foreach (var (node, bounds) in candidates)
+            {
+                Vector3 nearest = new(Mathf.Clamp(from.X, bounds.Position.X, bounds.End.X), Mathf.Clamp(from.Y, bounds.Position.Y, bounds.End.Y), Mathf.Clamp(from.Z, bounds.Position.Z, bounds.End.Z));
+                if (nearest.DistanceSquaredTo(from) > query.Radius * query.Radius || !BombHasLineOfSight(muzzle, nearest)) continue;
+                yield return new(query.Index, new("rac1", node.Source.NativeClassId, node.Source.InstanceIndex), 0, muzzle.DistanceTo(nearest));
+            }
+            yield break;
+        }
+        var ray = PhysicsRayQueryParameters3D.Create(from, to); ray.Exclude = Rac1DamageableRayExclusions(); ray.HitFromInside = true;
+        var hit = _player!.GetWorld3D().DirectSpaceState.IntersectRay(ray);
+        float length = from.DistanceTo(to);
+        float closest = hit.TryGetValue("position", out var point) ? from.DistanceTo(point.AsVector3()) / length : float.PositiveInfinity;
+        WeaponTargetKey? target = null;
+        foreach (var (node, bounds) in candidates)
+        {
+            if (!SegmentBoxFraction(from, to, bounds.Grow(query.Radius), out float fraction) || fraction > closest + .00001f) continue;
+            closest = fraction; target = new("rac1", node.Source.NativeClassId, node.Source.InstanceIndex);
+        }
+        if (float.IsFinite(closest)) yield return new(query.Index, target, Mathf.Clamp(closest, 0, 1), length * closest);
+    }
+
+    private void SynchronizeFusionProjectiles(WeaponFrame frame)
+    {
+        var active = _fusion!.LancerSession.ActiveShots.Select(s => new WeaponShotKey(FusionWeaponSession.Lancer, s.Generation, s.Sequence)).ToHashSet();
+        foreach (var (key, node) in _fusionProjectiles.ToArray())
+            if (!active.Contains(key)) { node.QueueFree(); _fusionProjectiles.Remove(key); }
+        foreach (var query in frame.Queries.Where(q => q.Shot.Weapon == FusionWeaponSession.Lancer && active.Contains(q.Shot)))
+        {
+            if (!_fusionProjectiles.TryGetValue(query.Shot, out var node))
+            {
+                node = new() { Name = "rac2_original_lancer_projectile" };
+                _sceneResult!.Root.AddChild(node); node.Sample(_fusionAssets!.Projectile, _fusionAssets); _fusionProjectiles.Add(query.Shot, node);
+            }
+            node.GlobalPosition = ToGodot(query.To);
+        }
+    }
+
+    private void SpawnFusionSpread(WeaponFrame frame, IReadOnlyList<WeaponContact> contacts)
+    {
+        // Bounded OBP feedback for the not-yet-decoded native spread renderer.
+        // It uses no substituted R&C1 effect texture/model.
+        using var mesh = new ImmediateMesh(); mesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
+        foreach (var query in frame.Queries.Where(q => q.Kind == WeaponQueryKind.Ray))
+        {
+            float fraction = contacts.Where(c => c.QueryIndex == query.Index).Select(c => c.Fraction).DefaultIfEmpty(1).Min();
+            mesh.SurfaceAddVertex(ToGodot(query.From)); mesh.SurfaceAddVertex(ToGodot(NVector3.Lerp(query.From, query.To, fraction)));
+        }
+        mesh.SurfaceEnd();
+        using var material = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new(.35f, .75f, 1) };
+        var node = new MeshInstance3D { Mesh = mesh, MaterialOverride = material };
+        _sceneResult!.Root.AddChild(node); _fusionEffects.Add((node, 5));
+    }
+
+    private void StepFusionWeaponViews(Rac1PlayerAnimationPresentationController controller)
+    {
+        if (_fusion is null || _fusionAssets is null || _playerAvatar is null) return;
+        _fusionModelAge++;
+        foreach (var (key, view) in _fusionHeldViews)
+        {
+            view.Visible = key == _fusion.Selected && _fusionAssets.Available(key) && !_rac1Nanotech.Probe().IsDead &&
+                _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active && _player?.Rac1WaterHandItemHidden != true;
+            if (!view.Visible) continue;
+            // Explicit OBP hand mount. The source weapon's original joints are
+            // posed separately; this is not a recovered GC/UYA Ratchet mount.
+            var hand = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(Rac1WeaponProfiles.Get(Rac1WeaponId.Blaster).HandSemantic));
+            if (hand is not null)
+            {
+                Vector3 Point(double x, double y, double z) => PlayerAvatarView.ToGodotLocal(hand.Transform(new(x, y, z)), _playerAvatar.Axes, _playerAvatar.BaseHeight, true);
+                Vector3 origin = Point(0, 0, 0);
+                view.Transform = new(new Basis(Point(-1, 0, 0) - origin, Point(0, 0, 1) - origin, Point(0, 1, 0) - origin), origin);
+            }
+            if (key == FusionWeaponSession.Lancer && _fusionAssets.Lancer is { } lancer)
+            {
+                var clip = lancer.Model.Sequences.Single(s => s.Index == _fusionModelSequence);
+                int frame = _fusionModelAge / 2;
+                if (frame >= clip.Frames.Count) { _fusionModelSequence = 1; frame = 0; }
+                view.Sample(GcLancerPresentation.HeldModel(lancer, _fusionModelSequence, frame), _fusionAssets);
+            }
+            else if (_fusionAssets.Cannon is { } cannon)
+            {
+                // Source clip selection is bounded test presentation; native
+                // player-to-held animation selection remains unrecovered.
+                int sequence = _fusion.CannonFrame?.ChargeUpdates > 0 ? 2 : 0;
+                int frame = (_fusionModelAge / 2) % cannon.Sequences.Single(s => s.Index == sequence).Frames.Count;
+                view.Sample(UyaShockCannonAssets.Model(cannon, sequence, frame), _fusionAssets);
+            }
+        }
+        if (_fusionBeam is not null)
+        {
+            _fusionBeam.Visible = _fusion.CannonFrame?.Effects.Any(e => e.Kind == UyaShockCannonEffectKind.Beam) == true;
+            if (_fusionBeam.Visible)
+            {
+                _fusionBeamScroll = _fusionBeamScroll.Advance();
+                // Convert host Y-up back through the source Z-up beam projector.
+                Vector3 muzzle = FusionMuzzle();
+                var basis = UyaShockCannonBeam.Basis.FromNativeAim(ToEffectNative(EquipmentForward), ToEffectNative(muzzle));
+                _fusionBeam.Sample(UyaShockCannonBeam.Build(_fusion.CannonFrame!, basis, _fusionBeamScroll).Select(l => l.Mesh).ToArray(), _fusionAssets);
+            }
+        }
+    }
+
+    private void QueueFusionAudio(WeaponAudioIntent cue)
+    {
+        if (cue.Operation == WeaponAudioOperation.StopLoop) { StopFusionAudio(cue.LocalSound); return; }
+        int owner = cue.Operation == WeaponAudioOperation.StartLoop ? cue.LocalSound : -1;
+        foreach (var voice in _fusionAssets!.Audio(cue)) _fusionPendingAudio.Add((_fusion!.Tick + (int)Math.Ceiling(voice.Delay * 60), owner, voice));
+    }
+
+    private void TickFusionAudio()
+    {
+        foreach (var pending in _fusionPendingAudio.Where(p => p.Due <= _fusion!.Tick).ToArray())
+        {
+            _fusionPendingAudio.Remove(pending);
+            var voice = pending.Voice;
+            if (!RuntimeAudioHost.TryPrepare(new(voice.Clip, RuntimeAudioCategory.SoundEffect, voice.Loop, voice.Gain), out var clip, out var problem))
+                throw new InvalidDataException("Fusion audio unavailable: " + problem);
+            using var stream = new AudioStreamWav
+            {
+                Format = AudioStreamWav.FormatEnum.Format16Bits,
+                Data = clip!.Pcm16LittleEndian,
+                MixRate = clip.SampleRateHz,
+                LoopMode = voice.Loop ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled,
+                LoopBegin = clip.LoopStartFrame,
+                LoopEnd = clip.LoopEndFrame ?? 0
+            };
+            var player = new AudioStreamPlayer { Stream = stream, VolumeDb = clip.VolumeDb }; AddChild(player);
+            var owned = (pending.Owner, player); _fusionAudioPlayers.Add(owned);
+            player.Finished += () => { _fusionAudioPlayers.Remove(owned); player.QueueFree(); };
+            player.Play(); _fusionAudioStarted++;
+        }
+    }
+
+    private void StopFusionAudio(int? owner = null, bool freeImmediately = false)
+    {
+        _fusionPendingAudio.RemoveAll(p => owner is null || p.Owner == owner);
+        foreach (var owned in _fusionAudioPlayers.Where(p => owner is null || p.Owner == owner).ToArray())
+        {
+            if (IsInstanceValid(owned.Player)) { owned.Player.Stop(); if (freeImmediately) owned.Player.Free(); else owned.Player.QueueFree(); }
+            _fusionAudioPlayers.Remove(owned);
+        }
+    }
+
+    private void ClearFusionOnDeath()
+    {
+        if (_fusionDeathCleared) return;
+        ClearFusionTransients(); _fusionDeathCleared = true;
+    }
+
+    private void ClearFusionTransients(bool freeImmediately = false)
+    {
+        StopFusionAudio(freeImmediately: freeImmediately);
+        if (_fusion is not null)
+        {
+            foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile);
+            ResetRac1BombPresentation();
+            _rac1BombGlove = new(_rac1Weapons);
+            _rac1BombFireRequested = _rac1EquipmentUsePressed = false;
+        }
+        _fusion?.ClearTransientState();
+        foreach (var node in _fusionProjectiles.Values.Cast<Node3D>().Concat(_fusionEffects.Select(e => e.Node)))
+            if (IsInstanceValid(node)) { if (freeImmediately) node.Free(); else node.QueueFree(); }
+        _fusionProjectiles.Clear(); _fusionEffects.Clear();
+        _fusionGunPoseTicks = _fusionGunPoseAge = 0;
+        if (_fusionBeam is not null && IsInstanceValid(_fusionBeam)) _fusionBeam.Visible = false;
+        _fusionBeamScroll = default;
+    }
+
+    private void ResetFusionWeapons(bool freeImmediately = false)
+    {
+        ClearFusionTransients(freeImmediately);
+        foreach (var view in _fusionHeldViews.Values)
+            if (IsInstanceValid(view)) { if (freeImmediately) view.Free(); else view.QueueFree(); }
+        _fusionHeldViews.Clear();
+        if (_fusionBeam is not null && IsInstanceValid(_fusionBeam)) { if (freeImmediately) _fusionBeam.Free(); else _fusionBeam.QueueFree(); }
+        _fusionBeam = null;
+        _fusionAssets?.Dispose(); _fusionAssets = null; _fusion = null;
+        if (_fusionOriginalCampaign is { } campaign)
+        {
+            _rac1CampaignSession = campaign; _rac1BoltWallet = _fusionOriginalWallet!;
+            _rac1CollectedNovalisGoldBolts.Clear(); _rac1CollectedNovalisGoldBolts.UnionWith(_fusionOriginalGoldBolts);
+        }
+        _fusionOriginalCampaign = null; _fusionOriginalWallet = null; _fusionOriginalGoldBolts = [];
+    }
+
+    private static NVector3 ToNumerics(Vector3 value) => new(value.X, value.Y, value.Z);
+    private static Vector3 ToGodot(NVector3 value) => new(value.X, value.Y, value.Z);
+}

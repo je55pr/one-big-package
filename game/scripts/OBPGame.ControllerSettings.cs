@@ -99,11 +99,15 @@ public partial class OBPGame
             DebugOutputEnabled = _debugOutputEnabled,
             MovementStatesAvailable = _player?.UseRac1Gameplay == true,
             WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
+            FusionTestAvailable = _world is { Game: "rac1", LevelId: 0 },
+            FusionTestEnabled = _fusion is not null,
             EquipmentStatus = _player is { } activePlayer
-                ? $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
+                ? _fusion is not null ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
+                : $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
                 : string.Empty,
         };
         _pauseMenu.EquipRequested += OnRac1WeaponSelectionRequested;
+        _pauseMenu.FusionTestRequested += ToggleFusionTest;
         _pauseMenu.QuickSelectAssignRequested = (slot, nativeId) =>
             _rac1Weapons.TryAssignQuickSelect(slot, nativeId);
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();

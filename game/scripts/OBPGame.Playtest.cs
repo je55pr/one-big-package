@@ -34,6 +34,14 @@ public partial class OBPGame
             if (reader is not null)
             {
                 var header = reader.Header;
+                if (header.Weapons is { } weapons)
+                {
+                    if (weapons.LoadoutId != FusionWeaponSession.LoadoutId || weapons.DamagePolicy != FusionDamagePolicy.Id || header.Destination != "rac1:LEVEL0")
+                        throw new InvalidDataException("Recording requires an unsupported cross-game loadout or damage policy.");
+                    _args = _args with { FusionTest = true };
+                }
+                else if (_args.FusionTest)
+                    throw new InvalidDataException("Recording has no fusion loadout; remove --fusion-test.");
                 ValidatePlaytestDestination(header.Destination);
                 if (header.EngineVersion != Engine.GetVersionInfo()["string"].AsString() ||
                     header.Platform != OS.GetName() || header.PhysicsEngine != PlaytestPhysicsEngine())
@@ -124,6 +132,7 @@ public partial class OBPGame
         JsonSerializer.SerializeToElement(CameraSettingsStore.Current), CapturePlaytestCheckpoint())
     {
         Assemblies = PlaytestAssemblyIds(),
+        Weapons = _fusionAssets?.Configuration,
         ApplicationVersion = typeof(OBPGame).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown",
     };
 
@@ -139,7 +148,8 @@ public partial class OBPGame
         Numbers("world.ui", PauseMenuOpen ? 1 : 0, QuickSelectOpen ? 1 : 0, Rac1PlanetMapOpen ? 1 : 0, ControllerSettingsOpen ? 1 : 0);
         var focus = GetViewport().GuiGetFocusOwner();
         Text("ui.focus", focus is Button button ? button.Text : focus?.GetClass());
-        Numbers("ui.quickSelect", (int?)_quickSelect?.SelectedWeapon ?? -1);
+        Numbers("ui.quickSelect", _quickSelect?.SelectedWeapon?.NativeItemId ?? -1);
+        if (_fusion is not null) Text("ui.quickSelect.source", _quickSelect?.SelectedWeapon?.SourceGame);
         var campaign = _rac1CampaignSession.Campaign;
         Numbers("campaign.current", campaign.CurrentLevel);
         Numbers("campaign.admissions", campaign.VisitedPlanets.Select(v => (double)v).ToArray());
@@ -150,6 +160,22 @@ public partial class OBPGame
         Numbers("player.equipment", _rac1Weapons.CurrentItemId, _rac1HeldItem.NativeItemId);
         Text("player.inventory", JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()));
         Text("camera.options", JsonSerializer.Serialize(CameraSettingsStore.Current));
+        if (_fusion is not null)
+        {
+            Text("fusion.selected", _fusion.Selected.ToString());
+            Text("fusion.sources", JsonSerializer.Serialize(_fusionAssets!.Configuration));
+            foreach (var key in FusionWeaponSession.Weapons) Text("fusion.status." + key, JsonSerializer.Serialize(_fusion.Status(key)));
+            Numbers("fusion.counts", _fusion.Tick, _fusion.ShotsFired, _fusionAcceptedHits, _fusionProjectiles.Count, _fusionEffects.Count);
+            Text("fusion.lastDamage", JsonSerializer.Serialize(_fusionLastDamage));
+            Text("fusion.cannon", JsonSerializer.Serialize(new
+            {
+                _fusion.CannonSession.State,
+                Charge = _fusion.CannonFrame?.ChargeUpdates ?? 0,
+                Beam = _fusion.CannonFrame?.BeamUpdatesRemaining ?? 0
+            }));
+            foreach (var (key, node) in _fusionProjectiles.OrderBy(p => p.Key.Generation).ThenBy(p => p.Key.Sequence))
+                if (IsInstanceValid(node)) Vector($"fusion.projectile.{key.Generation}.{key.Sequence}", node.GlobalPosition);
+        }
         if (_player is { } p && IsInstanceValid(p))
         {
             Vector("player.position", p.GlobalPosition);

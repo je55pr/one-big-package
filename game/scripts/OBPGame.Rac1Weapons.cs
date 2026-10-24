@@ -90,6 +90,7 @@ public partial class OBPGame
 
     private void SetRac1WeaponPreview(bool disable)
     {
+        if (_fusion is not null) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
         if (disable)
         {
             _rac1WeaponPreviewInventory = null;
@@ -126,6 +127,7 @@ public partial class OBPGame
 
     private void AttachRac1EquipmentViews(Node3D avatarView)
     {
+        AttachFusionWeaponViews(avatarView);
         var source = _sources.Get(OBP.Core.ObpSourceGame.Rac1)!;
         if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
         {

@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <Compile Include="../../game/scripts/CommandLineArgs.cs" Link="Game/CommandLineArgs.cs" />
+    <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />
+    <Compile Include="../../game/scripts/FusionDamagePolicy.cs" Link="Game/FusionDamagePolicy.cs" />
     <Compile Include="../../game/scripts/MovementReproState.cs" Link="Game/MovementReproState.cs" />
   </ItemGroup>
 

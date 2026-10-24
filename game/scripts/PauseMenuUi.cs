@@ -15,6 +15,9 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public event Action? RefillPreviewRequested;
     public event Action? PackPreviewRequested;
     public event Action? SwingshotPreviewRequested;
+    public event Action? FusionTestRequested;
+    public bool FusionTestAvailable { get; init; }
+    public bool FusionTestEnabled { get; init; }
     public event Action<bool>? DebugOutputChanged;
     public bool DebugOutputEnabled { get; init; }
     public string EquipmentStatus { get; init; } = string.Empty;
@@ -128,6 +131,12 @@ public sealed partial class PauseMenuUi : CanvasLayer
             swingshot.Pressed += () => SwingshotPreviewRequested?.Invoke();
             column.AddChild(new Label { Text = "TESTING EQUIPMENT", ThemeTypeVariation = "HeaderSmall" });
             column.AddChild(new Label { Text = EquipmentStatus, AutowrapMode = TextServer.AutowrapMode.WordSmart });
+            if (FusionTestAvailable)
+            {
+                var fusion = MakeButton(FusionTestEnabled ? "LEAVE THREE-GAME WEAPON TEST" : "START THREE-GAME WEAPON TEST");
+                fusion.Pressed += () => FusionTestRequested?.Invoke();
+                column.AddChild(fusion); _focusOrder.Add(fusion);
+            }
             foreach (var control in new[] { weapons, refill, pack, swingshot }) { column.AddChild(control); _focusOrder.Add(control); }
             var save = MakeButton("SAVE MOVEMENT STATE  (F12)");
             var load = MakeButton("LOAD MOVEMENT STATE  (SHIFT+F12)");

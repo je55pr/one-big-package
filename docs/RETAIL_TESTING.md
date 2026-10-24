@@ -36,6 +36,7 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/audio-shutdown-smoke.ps1` | Oozla startup/world-switch cleanup, plus three fresh-process Novalis route/water repetitions when R&C1 is supplied. Requires fixture completion and rejects post-exit ObjectDB/resource leaks even with exit code 0. Full logs: `captures/audio-shutdown-smoke/`; `-SelfTest` checks the log gate without retail data/Godot. |
 | `./tools/rac1-bomb-glove-smoke.ps1` | Glove/bomb skins, socket/throw, arc, impact/splash/occlusion, ammo/cadence and cleanup. |
 | `./tools/rac1-weapons-smoke.ps1` | Full working arsenal, idle/use poses, audio lifetime, contact, cargo and deployed-agent fixtures. |
+| `./tools/fusion-weapons-smoke.ps1 -Rendered` | Opt-in Bomb Glove/Lancer/Shock Cannon on Veldin: original assets, staged authored-target reactions/occlusion, isolated campaign cleanup, ordinary input recording and fresh-process replay with all three source identities. See [fusion weapon testing](FUSION_WEAPONS_TESTING.md). |
 | `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |
 | `./tools/rac1-placed-bolt-smoke.ps1` | Authored Veldin/Batalia/Pokitaru bolts, floating height, attraction, removal and exact one/five-bolt credit. |
 | `./tools/rac1-campaign-smoke.ps1` | Source-game travel and campaign-state integration. |

@@ -58,6 +58,7 @@ public partial class OBPGame
         // this naturally through the recovered Veldin gate; level 2 is admitted only
         // when a separately identified checkpoint/death witness has been supplied.
         Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
+        ClearFusionTransients();
         var respawn = _rac1Nanotech.Respawn();
         _player.Rac1GameplayState = respawn;
         _player.ApplyRecoveredRac1Restart(restart.Placement);

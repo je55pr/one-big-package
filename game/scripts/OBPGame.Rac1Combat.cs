@@ -26,6 +26,8 @@ public partial class OBPGame
     {
         bool pressed = _rac1EquipmentUsePressed;
         _rac1EquipmentUsePressed = false;
+        if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) != true) return;
+        if (_fusion is { Selected.SourceGame: not "rac1" }) return;
         bool admitted = _player is not null && !_rac1Nanotech.Probe().IsDead &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
         int previous = _rac1HeldItem.NativeItemId;
@@ -39,13 +41,18 @@ public partial class OBPGame
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
     {
+        if (_fusion is not null)
+        {
+            SelectWeaponKey(new("rac1", (int)weapon));
+            return;
+        }
         int previous = _rac1Weapons.CurrentItemId;
         if (_rac1Weapons.TryEquip(weapon))
         {
             if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
             if (previous != (int)weapon && previous != (int)Rac1WeaponId.Wrench &&
                 Enum.IsDefined(typeof(Rac1WeaponId), previous))
-                _previousSelectedWeapon = (Rac1WeaponId)previous;
+                _previousSelectedWeapon = new("rac1", previous);
             _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
@@ -58,6 +65,12 @@ public partial class OBPGame
 
     private void OnRac1WeaponCycleRequested(int direction)
     {
+        if (_fusion is not null)
+        {
+            int current = FusionWeaponSession.Weapons.ToList().IndexOf(_fusion.Selected);
+            SelectWeaponKey(FusionWeaponSession.Weapons[(current + Math.Sign(direction) + 3) % 3]);
+            return;
+        }
         var weapons = new[] { Rac1WeaponId.FirstRanged }
             .Concat(Rac1WeaponProfiles.Additional.Select(profile => profile.Item)).Where(_rac1Weapons.Owns).ToArray();
         if (weapons.Length == 0) return;

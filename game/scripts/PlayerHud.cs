@@ -28,6 +28,7 @@ public partial class PlayerHud : Control
     private Label _boltsValue = null!;
     private Label _boltsDelta = null!;
     private Label _weaponName = null!;
+    private Label _weaponStatus = null!;
     private Label _ammo = null!;
     private Label _ammoDelta = null!;
     private Label _promptAction = null!;
@@ -204,6 +205,9 @@ public partial class PlayerHud : Control
         box.AddChild(_weaponName);
         box.AddChild(_ammo);
         box.AddChild(_ammoDelta);
+        _weaponStatus = SecondaryLabel();
+        _weaponStatus.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        box.AddChild(_weaponStatus);
         return panel;
     }
 
@@ -288,6 +292,10 @@ public partial class PlayerHud : Control
         }
 
         _weaponName.Text = WeaponName(weapon);
+        _weaponStatus.Text = weapon.Status ?? "";
+        _weaponStatus.Visible = weapon.Status is not null;
+        if (weapon.Status is not null) _weaponName.AddThemeFontSizeOverride("font_size", 22);
+        else _weaponName.RemoveThemeFontSizeOverride("font_size");
         _ammo.Visible = weapon.Ammo is not null;
         if (weapon.Ammo is { } ammo)
         {

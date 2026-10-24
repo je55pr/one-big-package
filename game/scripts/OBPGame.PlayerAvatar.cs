@@ -173,6 +173,7 @@ public partial class OBPGame
         StepRac1EquippedUseInput();
         StepRac1BombWeaponPhysics();
         StepRac1AdditionalWeapons();
+        StepFusionWeapons();
         input = SelectRac1BombThrowAnimation(controller, input);
         _playerAvatarClock += Math.Max(0, delta);
         controller.StepOrdinaryAnimation(state, _playerAvatarClock, input);
@@ -185,9 +186,16 @@ public partial class OBPGame
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
+        bool fusionPose = _fusion is { Selected.SourceGame: not "rac1" } && _fusionGunPoseTicks > 0 &&
+            input.Traversal is null && !_rac1Nanotech.Probe().IsDead && _player?.Rac1WrenchFrame.Active != true;
+        // OBP presentation bridge: use this avatar's R&C1 gun pose. Native
+        // GC/UYA player-to-weapon attachment is not asserted by the demo.
+        if (fusionPose) equipmentPose = moving
+            ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster)
+            : OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster).BodySequence;
         if (equipmentPose < 0) equipmentPose = null;
         _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-            walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+            walloper ? _rac1WalloperAge / 60d : fusionPose ? _fusionGunPoseAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
         if (_avatarPhysicsPlayer is { } player)
         {
             player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
@@ -205,6 +213,7 @@ public partial class OBPGame
                     _rac1StagedBombView.Position = _rac1BombGloveView.BombLocal;
             }
             StepRac1EquipmentViews(controller);
+            StepFusionWeaponViews(controller);
         }
         StepRac1PlayerAudio(controller);
         StepRac1BombProjectilesPhysics();
@@ -216,6 +225,7 @@ public partial class OBPGame
 
     private void ResetPlayerAvatarPhysics()
     {
+        ClearFusionTransients();
         ResetRac1PlayerAudio();
         ResetRac1WrenchHost();
         _rac1BombThrowActive = false;
@@ -286,6 +296,7 @@ public partial class OBPGame
     }
 
     private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
+        _fusion?.Selected.SourceGame is not ("rac2" or "rac3") &&
         _rac1HeldItem.NativeItemId == (int)item &&
         _player?.Rac1WaterHandItemHidden != true &&
         _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
@@ -304,7 +315,8 @@ public partial class OBPGame
         _rac1WrenchView.Visible =
             _activeDestination?.Game == ObpSourceGame.Rac1 &&
             _player?.Rac1WaterHandItemHidden != true &&
-            (_rac1HeldItem.NativeItemId == (int)OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
+            (_fusion?.Selected.SourceGame is not ("rac2" or "rac3") &&
+                _rac1HeldItem.NativeItemId == (int)OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
              _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
     }
 

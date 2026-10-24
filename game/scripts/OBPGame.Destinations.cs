@@ -422,6 +422,7 @@ public partial class OBPGame
 
         DispatchRequestedWorldSmokes(destination);
         _playtest?.WorldEntered();
+        if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
 
         // Exact verification remains game-specific today. Preserve the mature GC
         // opt-in while avoiding an implicit multi-GB hash for other providers.

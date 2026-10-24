@@ -1,3 +1,5 @@
+using OBP.Runtime.Gameplay;
+
 namespace OBP.RAC1.Gameplay;
 
 public enum Rac1GameplayEntityKind
@@ -100,7 +102,8 @@ public sealed record Rac1GameplayDamageEvent
         uint? nativeDamageFlags = null,
         double? nativeMarker = null,
         Rac1NativeDamageHandoffKind? handoffKind = null,
-        Rac1GameplayDamageOwner? owner = null)
+        Rac1GameplayDamageOwner? owner = null,
+        WeaponDamageIntent? hostWeaponIntent = null)
     {
         if (!double.IsFinite(nativeDamage))
             throw new ArgumentOutOfRangeException(nameof(nativeDamage));
@@ -117,6 +120,7 @@ public sealed record Rac1GameplayDamageEvent
         NativeDamageFlags = nativeDamageFlags;
         NativeMarker = nativeMarker;
         HandoffKind = handoffKind;
+        HostWeaponIntent = hostWeaponIntent;
     }
 
     public Rac1GameplayEntityRef Source { get; }
@@ -126,6 +130,11 @@ public sealed record Rac1GameplayDamageEvent
     public uint? NativeDamageFlags { get; }
     public double? NativeMarker { get; }
     public Rac1NativeDamageHandoffKind? HandoffKind { get; }
+    /// <summary>
+    /// Explicit OBP foreign-weapon admission, separate from recovered native
+    /// descriptors. The original source key/amount/flags survive translation.
+    /// </summary>
+    public WeaponDamageIntent? HostWeaponIntent { get; }
 
     public Rac1NativeDamageEnvelope? DamageEnvelope =>
         NativeDamageFlags is uint flags

@@ -33,6 +33,7 @@ public static class Rac1EnemyDamage
 
     public static bool IsPlayerWeapon(Rac1GameplayDamageEvent damage)
     {
+        bool adapted = IsHostAdaptedWeapon(damage);
         bool wrench = (damage.Source == Rac1GameplayEntityRef.Player || damage.Source == Rac1GameplayEntityRef.PlayerWrench) &&
             (damage.Source != Rac1GameplayEntityRef.PlayerWrench || damage.Owner?.RuntimeEntity == Rac1GameplayEntityRef.Player) &&
             damage.NativeDamageFlags == Rac1WrenchAttackProfile.NativeDamageFlags && damage.NativeDamage is 1 or 2;
@@ -54,6 +55,21 @@ public static class Rac1EnemyDamage
             damage.Owner?.NativeClassId == 190 && damage.NativeDamage == 3 && damage.NativeDamageFlags == 0x00810000;
         bool doom = damage.Source.Kind == Rac1GameplayEntityKind.Projectile && damage.Source.NativeClassId == 186 &&
             damage.Owner?.NativeClassId == 229 && damage.NativeDamage == 3 && damage.NativeDamageFlags == 0x00010000;
-        return (wrench || bomb || direct || sucked || mine || doom || Rac1ArsenalRules.AdmitsDamage(damage)) && damage.NativeMarker is null;
+        return (adapted || wrench || bomb || direct || sucked || mine || doom || Rac1ArsenalRules.AdmitsDamage(damage)) && damage.NativeMarker is null;
     }
+
+    /// <summary>
+    /// OBP opt-in foreign-weapon envelope. No foreign class/flags are treated
+    /// as R&C1 native identities. Only the two Veldin enemy consumers are
+    /// admitted; class749's bounded consequence requires a lethal hit.
+    /// </summary>
+    private static bool IsHostAdaptedWeapon(Rac1GameplayDamageEvent damage) =>
+        damage.HostWeaponIntent is { } intent && intent.Shot.Weapon.SourceGame is "rac2" or "rac3" &&
+        intent.Shot.Weapon.NativeItemId >= 0 && intent.Target.SourceGame == "rac1" &&
+        intent.Target.NativeClassId is 749 or 1440 &&
+        (intent.Target.NativeClassId != 749 || intent.SourceDamage >= 1) &&
+        damage.Source == Rac1GameplayEntityRef.Player && damage.Owner?.RuntimeEntity == Rac1GameplayEntityRef.Player &&
+        damage.Target.MatchesMoby(new(intent.Target.NativeClassId, intent.Target.InstanceIndex)) &&
+        float.IsFinite(intent.SourceDamage) && intent.SourceDamage > 0 && damage.NativeDamage == intent.SourceDamage &&
+        damage.NativeDamageFlags == 0x00010000;
 }
