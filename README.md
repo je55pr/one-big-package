@@ -68,6 +68,7 @@ Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL 
 | `src/OBP.IO`, `src/OBP.PS2` | Disc access and PS2 file formats |
 | `src/OBP.RAC1`, `src/OBP.RAC2`, `src/OBP.RAC3` | Game-specific formats and behaviour |
 | `src/OBP.Runtime` | Engine-independent runtime |
+| `src/OBP.Fusion` | Source-qualified gameplay orchestration and player/world contracts |
 | `src/OBP.Godot`, `game/` | Godot integration and application |
 | `research/` | Reverse-engineering notes and evidence |
 | `tests/`, `tools/` | Tests and development scripts |
@@ -75,6 +76,7 @@ Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Player, world and actor ownership](docs/PLAYER_WORLD_CONTRACT.md)
 - [Project vision](docs/PROJECT_VISION.md)
 - [Research index](research/README.md)
 - [Retail testing](docs/RETAIL_TESTING.md)

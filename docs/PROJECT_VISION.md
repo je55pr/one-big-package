@@ -134,6 +134,18 @@ The repository contains code, schemas, tests, research and derived non-infringin
 
 ## Story, campaign and level structure
 
+The runtime follows one [source/player/world/actor ownership contract](PLAYER_WORLD_CONTRACT.md):
+the destination chooses the world, while one persistent OBP player session chooses
+Ratchet's appearance, movement/animation profiles, equipment, health, controls and
+UI. Each world actor keeps its own source-native controller and provenance.
+`OBP.Runtime` supplies neutral facts, `OBP.RAC1/2/3` recover native behaviour,
+`OBP.Fusion` coordinates the shared game, and Godot presents it and supplies contacts.
+The initial ordinary player policy uses the genuine supported R&C1 Ratchet and
+R&C1-derived movement throughout the trilogy; the reconciliation follow-ups wire
+that policy into the host. This does not declare GC/UYA player skins or unfinished
+gadgets functional. Explicit retail-parity tests remain a separate mode, and future
+campaign/economy decisions remain open.
+
 **No final structure is currently prescribed.**
 
 The original story beats, mission chains and level progression are important source material and should be reconstructed accurately enough that we understand how they work. They may also provide useful playable milestones during development.

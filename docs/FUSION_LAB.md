@@ -1,5 +1,12 @@
 # Playable Fusion Lab greybox (#254)
 
+This describes the current greybox implementation. The
+[reconciliation contract](PLAYER_WORLD_CONTRACT.md) supersedes its destination-driven
+player setup: #266/#267/#268 migrate it to the same persistent session and selected
+avatar as ordinary worlds. Capsule fallback is legacy debt; the ordinary contract
+requires a visible failure for missing selected assets and an explicit diagnostic
+choice for a capsule. Those host changes are not part of the stage-0 contract PR.
+
 The Fusion Lab is an original OBP destination under **World Select**. It
 needs no disc source to enter: the unmodified PlayerHost remains controllable,
 with a clearly marked debug capsule when no verified native R&C1 avatar is
