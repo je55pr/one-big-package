@@ -49,6 +49,23 @@ public sealed class Rac1RatchetNanotechSession
 
     public Rac1RatchetNanotechSnapshot Probe() => Snapshot();
 
+    public sealed record State(Rac1RatchetNanotechSnapshot Health, long DeathGeneration, long RestartGeneration);
+    public State CaptureState() => new(Snapshot(), EnvironmentalDeathGeneration, EnvironmentalRestartGeneration);
+    public void RestoreState(State state)
+    {
+        var health = state.Health;
+        if (health.Nanotech < 0 || health.Nanotech > RetailVeldinRespawnNanotech ||
+            health.RespawnNanotech != RetailVeldinRespawnNanotech || !Enum.IsDefined(health.LifeState) ||
+            !Enum.IsDefined(health.DeathCause) || health.EnemyHitProtectionTicks < 0 ||
+            state.DeathGeneration < 0 || state.RestartGeneration < 0 || state.RestartGeneration > state.DeathGeneration ||
+            health.IsDead != (health.Nanotech == 0)) throw new ArgumentException("Invalid R&C1 Nanotech snapshot.");
+        _actions.Restore(health.Action);
+        _nanotech = health.Nanotech; _lifeState = health.LifeState; _deathCause = health.DeathCause;
+        _enemyHitProtection = health.EnemyHitProtectionTicks;
+        EnvironmentalDeathGeneration = state.DeathGeneration;
+        EnvironmentalRestartGeneration = state.RestartGeneration;
+    }
+
     public void UpdateNative()
     {
         if (_enemyHitProtection > 0) _enemyHitProtection--;

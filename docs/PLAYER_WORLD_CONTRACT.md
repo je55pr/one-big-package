@@ -1,8 +1,8 @@
 # Source, player, world and actor contract (#265)
 
 This is the shared contract for the #264 reconciliation gate. It records OBP
-design, not recovered native equivalence. Version 1 defines small executable
-ports and a planning seam before the dependent host refactors.
+design, not recovered native equivalence. Version 1 defines executable ports;
+#266/#267 implement the persistent session and shared native/custom lifecycle.
 
 ## Ownership
 
@@ -102,6 +102,17 @@ of destination selection. Player id stays stable; session generation changes on
 explicit reset/restore policy, independently from each world lease generation.
 No scene object, local path or retail payload belongs in a snapshot.
 
+`ObpPlayerSession` owns that lifetime. The host supplies a native-state adapter
+whose immutable component preserves the admitted inventory, ammo, hand ownership,
+health and wallet controllers. Fusion copies the outer observations and never
+decodes native state. The ordinary player imports initial campaign equipment
+once; its controllers then live independently from the source campaign. The
+camera/input preferences adapter captures current menu choices and applies an
+explicit restore without rewriting device settings. Device calibration remains
+host/device state. Restore/configuration changes invalidate staged generations;
+destination changes never call Restore. These snapshots are in-memory state,
+not the durable source campaign format or the future OBP save format.
+
 Selection is distinct from hand ownership: a selected gun can remain selected
 while the wrench owns the hand after a wrench attack. Quick Select contains
 source-qualified slot assignments, including empty slots. #255 owns the single
@@ -130,16 +141,26 @@ new source/authored entry facts; it does not resurrect old collision or audio.
 3. `IWorldEntrySource.Prepare` stages the native provider or authored generator,
    entry point and actor descriptions. Native campaign/checkpoint adapters own
    source-authored entry semantics; geometry/contact facts remain world-local.
-4. #267 validates assets, scene/contact staging and required adapters before the
-   destructive boundary. A failure leaves the existing player/session available.
+4. Stage selected avatar/wrench assets and world scene/collision before the
+   destructive boundary. Reject missing or changed sources before unloading the
+   live world. This preparation failure leaves its player scene available.
 5. One `IWorldEntryHost.Activate` implementation commits the prepared plan, builds
    the player scene from session configuration, connects world actors/environment
    and presents the common HUD/menu. Dispose the old world lease and subscriptions
    at the controlled boundary; never dispose the persistent player owner.
 
-The planner is a tested contract seam. Actual host lifecycle migration, source
-attachment/asset loading, fixed-rate ticking and atomic scene cleanup are still
-#266/#267/#268 work. Do not claim the current ordinary host already uses these ports.
+`WorldEntrySession` and `OBPGame.WorldEntry` now implement this path for native
+providers and the authored Lab. The lease owns one `WorldHost` and ephemeral
+`PlayerHost`; teardown retires old views, contacts, effects, audio and subscriptions
+while retaining player controllers, selections, resources and preferences.
+The Lab keeps `obp:fusion-lab` and no native `_activeDestination`. Authored starts,
+R&C1 checkpoints/travel and source environment/actor hooks stay narrow adapters.
+An unexpected failure during destructive activation cleans partial scene resources
+and returns to selection with the session retained; it does not promise scene
+rollback after activation begins. #268/#269 still own complete avatar/profile
+admission and decomposition of the remaining legacy player bridge; #256 owns
+mixed actor registration/combat. This foundation does not make every weapon,
+effect, health conversion or UI policy work in every world.
 
 ## CI guard and retained parity flow
 
@@ -177,8 +198,11 @@ reviewed source-world work; they are not permission for player-global behavior.
 
 Existing original-game mission, water, taxi, checkpoint and native fidelity
 fixtures remain operational. They establish original-world/source claims, not
-ordinary fusion behavior. #266/#267 introduce explicit retail-parity session/
-entry configuration; the ordinary path must never select that mode from origin.
+ordinary fusion behavior. `--retail-parity` selects the retained source campaign
+flow. Existing named native smoke, campaign-persistence and R&C1 replay options
+also explicitly request that mode; ordinary entry never derives it from origin.
+`--diagnostic-player` explicitly selects the asset-free capsule. Ordinary entry
+requires the selected genuine R&C1 avatar source on every planet and in the Lab.
 Preserve the retail R&C1 UI, campaign saves and source controllers in that flow.
 #274 migrates current R&C1-only replay admission; #275 keeps both fidelity and
 cross-world integration evidence. Do not weaken native tests to hide fusion drift.
@@ -198,7 +222,6 @@ cross-world integration evidence. Do not weaken native tests to hide fusion drif
 | #256 | Actor adapters, target/contact registry and mixed combat | Consume the one world lease/player owner, never a per-source player |
 | #273 / #274 / #275 | Durable save/profile / cross-world replay and bug capture / final route acceptance | Extend versioned session boundaries after foundations; final gate is Veldin→Oozla→UYA Veldin→Lab→Veldin |
 
-These are bounded PRs after this contract, not permission to start all refactors
-inside #265. Where a listed partial has two owners, extract the agreed seam or
+Later stages remain separate work. Where a listed partial has two owners, extract the agreed seam or
 sequence commits before parallel editing. Keep source-native formulas in RAC;
 the goal is consistent orchestration, not a new generic retail simulation.
