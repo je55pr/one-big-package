@@ -1,9 +1,11 @@
+using OBP.Runtime.Gameplay;
+
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>
-/// The item left in Ratchet's hand, independently of the equipment selected for
-/// Circle. This bounded presentation owner does not replace the native inventory
-/// blocks or claim to reproduce the complete retail equipment-spawn state machine.
+/// R&C1 draw/use timing over shared hand ownership, independently of the
+/// equipment selected for Circle. Native inventory blocks and the complete
+/// retail equipment-spawn state machine remain separate.
 /// </summary>
 public sealed class Rac1HeldItemSession
 {
@@ -21,8 +23,13 @@ public sealed class Rac1HeldItemSession
     private int _pressAge = 1000;
     private bool _awaitingFirstUse;
 
-    public int NativeItemId { get; private set; } = (int)Rac1WeaponId.Wrench;
+    public PlayerHeldEquipmentSession Hand { get; }
+    // A foreign item has no R&C1 item number. Never alias its id to native gear.
+    public int? NativeItemId => Hand.Equipment is { } equipment
+        ? equipment.SourceGame == "rac1" ? equipment.NativeItemId : null : (int)Rac1WeaponId.Wrench;
     public bool Switching => _pendingItem.HasValue;
+
+    public Rac1HeldItemSession(PlayerHeldEquipmentSession? hand = null) => Hand = hand ?? new();
 
     public readonly record struct CircleFrame(bool HandChanged, bool UseRequested);
 
@@ -30,14 +37,14 @@ public sealed class Rac1HeldItemSession
 
     public void HoldWrench()
     {
-        NativeItemId = (int)Rac1WeaponId.Wrench;
+        Hand.HoldWrench();
         ResetUseInput();
     }
 
     public void HoldSelected(Rac1WeaponInventory inventory)
     {
         ArgumentNullException.ThrowIfNull(inventory);
-        NativeItemId = inventory.CurrentItemId;
+        HoldNativeItem(inventory.CurrentItemId);
         ResetUseInput();
     }
 
@@ -57,7 +64,7 @@ public sealed class Rac1HeldItemSession
         if (_pendingItem is { } target)
         {
             if (--_swapTicksRemaining > 0) return default;
-            NativeItemId = target;
+            HoldNativeItem(target);
             _pendingItem = null;
             // hero_slots_update increments +0x10b0 after spawning, while item
             // use runs earlier in the update. No use on the spawn update itself.
@@ -117,7 +124,13 @@ public sealed class Rac1HeldItemSession
         ArgumentNullException.ThrowIfNull(inventory);
         if ((uint)nativeItemId >= Rac1NativeInventoryLayout.ItemCount || !inventory.OwnsNativeItem(nativeItemId))
             throw new ArgumentException("The held item must be an owned R&C1 item.", nameof(nativeItemId));
-        NativeItemId = nativeItemId;
+        HoldNativeItem(nativeItemId);
         ResetUseInput();
+    }
+
+    private void HoldNativeItem(int item)
+    {
+        if (item == (int)Rac1WeaponId.Wrench) Hand.HoldWrench();
+        else Hand.HoldEquipment(new("rac1", item));
     }
 }

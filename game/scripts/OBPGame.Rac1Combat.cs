@@ -17,7 +17,8 @@ public partial class OBPGame
     {
         // Circle uses equipment only. Square has its own wrench input path,
         // including when a legacy repro or keyboard shortcut selects item 8.
-        if (_rac1Nanotech.Probe().IsDead || _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
+        if (_rac1Nanotech.Probe().IsDead ||
+            _fusion?.Selected.SourceGame is not ("rac2" or "rac3") && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
         if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
         _rac1EquipmentUsePressed = true;
     }
@@ -26,9 +27,16 @@ public partial class OBPGame
     {
         bool pressed = _rac1EquipmentUsePressed;
         _rac1EquipmentUsePressed = false;
+        if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) == false) return;
         bool admitted = _player is not null && !_rac1Nanotech.Probe().IsDead &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
-        int previous = _rac1HeldItem.NativeItemId;
+        if (_fusion is { Selected.SourceGame: not "rac1" })
+        {
+            if (pressed && admitted && !QuickSelectOpen && !_player!.Scripted && !_player.Rac1WaterHandItemHidden)
+                _fusion.Hand.HoldEquipment(_fusion.Selected);
+            return;
+        }
+        int? previous = _rac1HeldItem.NativeItemId;
         var frame = _rac1HeldItem.StepCircle(_rac1Weapons, pressed,
             _player?.Rac1EquippedItemHeld == true, admitted);
         if (frame.HandChanged) RefreshRac1HeldItem(previous);
@@ -39,13 +47,21 @@ public partial class OBPGame
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
     {
+        if (FusionTestActive)
+        {
+            SelectWeaponKey(new("rac1", (int)weapon));
+            return;
+        }
+        var previousKey = CurrentWeaponKey;
         int previous = _rac1Weapons.CurrentItemId;
         if (_rac1Weapons.TryEquip(weapon))
         {
+            SyncFusionNativeSelection();
             if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
             if (previous != (int)weapon && previous != (int)Rac1WeaponId.Wrench &&
                 Enum.IsDefined(typeof(Rac1WeaponId), previous))
-                _previousSelectedWeapon = (Rac1WeaponId)previous;
+                _previousSelectedWeapon = new("rac1", previous);
+            if (previousKey.SourceGame != "rac1") _previousSelectedWeapon = previousKey;
             _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
@@ -58,6 +74,13 @@ public partial class OBPGame
 
     private void OnRac1WeaponCycleRequested(int direction)
     {
+        if (_fusion is not null)
+        {
+            var order = FusionTestActive ? FusionWeaponSession.Weapons : FusionWeaponSession.DefaultQuickSelect(_rac1Weapons);
+            int current = order.ToList().IndexOf(CurrentWeaponKey);
+            SelectWeaponKey(order[(current + Math.Sign(direction) + order.Count) % order.Count]);
+            return;
+        }
         var weapons = new[] { Rac1WeaponId.FirstRanged }
             .Concat(Rac1WeaponProfiles.Additional.Select(profile => profile.Item)).Where(_rac1Weapons.Owns).ToArray();
         if (weapons.Length == 0) return;

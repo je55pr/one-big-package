@@ -493,6 +493,8 @@ public sealed partial class PauseMenuUi
                     AutowrapMode = TextServer.AutowrapMode.WordSmart,
                 });
                 AddRetailButton("TOGGLE WEAPON PREVIEW", () => WeaponPreviewRequested?.Invoke());
+                if (FusionTestAvailable)
+                    AddRetailButton(FusionTestEnabled ? "LEAVE THREE-GAME TEST" : "START THREE-GAME TEST", () => FusionTestRequested?.Invoke());
                 AddRetailButton("REFILL PREVIEW AMMO", () => RefillPreviewRequested?.Invoke(), !WeaponPreviewEnabled);
                 AddRetailButton("CYCLE MOVEMENT PACK", () => PackPreviewRequested?.Invoke());
                 AddRetailButton("TOGGLE SWINGSHOT PREVIEW", () => SwingshotPreviewRequested?.Invoke());

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Numerics;
 using OBP.IO;
 using OBP.PS2.Compression;
 using OBP.PS2.Geometry;
@@ -26,7 +27,10 @@ public static class GcLancerAssets
     public sealed record HeldAssets(
         GcUyaMoby.MobyClass Model,
         byte[] TexturePif,
-        GcSoundBank SoundBank);
+        GcSoundBank SoundBank)
+    {
+        public IReadOnlyList<Matrix4x4> InverseBindMatrices { get; init; } = [];
+    }
 
     public static HeldAssets ReadHeld(IRandomAccessReader gadgetWad)
     {
@@ -86,7 +90,8 @@ public static class GcLancerAssets
         var sequences = GcUyaMoby.ReadSequences(model, model[8]);
         var held = new GcUyaMoby.MobyClass(GcLancerProfile.HeldMobyClass,
             mesh, mesh.TriangleMaterialSlots.ToArray(), [0], joints, sequences);
-        return new(held, texture[16..], GcSoundBank.Open(bank));
+        return new(held, texture[16..], GcSoundBank.Open(bank))
+        { InverseBindMatrices = GcUyaGadgetPose.ReadInverseBindMatrices(model) };
     }
 
     private static SubRangeReader Bounded(IRandomAccessReader source, long offset, long size, string name)

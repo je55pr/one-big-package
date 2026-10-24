@@ -78,7 +78,8 @@ public sealed record PlayerAvatar(
     PlayerAvatarPoint Origin,
     double BaseHeight,
     PlayerAvatarAxes Axes,
-    PlayerAvatarSkeleton? Skeleton = null)
+    PlayerAvatarSkeleton? Skeleton = null,
+    PlayerSkeletalAsset? Skeletal = null)
 {
     /// <summary>Compatibility view of the standing clip used by existing presentation callers.</summary>
     public IReadOnlyList<double[]> LocalAnimationFrames =>

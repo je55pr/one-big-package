@@ -56,7 +56,7 @@ public partial class OBPGame
             }
             AttachPlayer();
             if (Game._args.PlaytestSmoke && Reader is null && WaitingForEntry)
-                Callable.From(() => { _ = Game.RunPlaytestRecordingSmokeAsync(); }).CallDeferred();
+                Callable.From(() => { _ = Game._args.FusionTest || Game._args.DefaultWeaponsSmoke ? Game.RunFusionRecordingSmokeAsync() : Game.RunPlaytestRecordingSmokeAsync(); }).CallDeferred();
             if (Game._args.BugReportSmoke && Reader is null && WaitingForEntry)
                 Callable.From(() => { _ = Game.RunBugReporterSmokeAsync(); }).CallDeferred();
         }
@@ -187,6 +187,12 @@ public partial class OBPGame
                     {
                         _header = Reader.Header;
                         if (_header.SourceBuild != Game._world.BuildId) throw new InvalidDataException("Recorded source build does not match this world.");
+                        if (_header.Weapons is { } weapons && (Game.FusionConfiguration is not { } actualWeapons || !weapons.Matches(actualWeapons)))
+                        {
+                            string changed = Game.FusionConfiguration is not { } configuration ? "missing loadout" : string.Join(", ", weapons.Sources.Keys.Where(k =>
+                                !configuration.Sources.TryGetValue(k, out var actual) || actual != weapons.Sources[k]));
+                            throw new InvalidDataException($"Recorded cross-game weapon sources do not match ({changed}). Attach the exact original sources used by the recording.");
+                        }
                         Compare(_header.InitialState, Game.CapturePlaytestCheckpoint(), -1);
                         GD.Print($"[playtest] replay: build={_header.AssemblyId}; seed={_header.Seed}");
                     }

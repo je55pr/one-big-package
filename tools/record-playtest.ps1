@@ -13,6 +13,10 @@ param(
     [string]$CampaignSave,
     [string]$Out,
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
+    [string]$GcIso = $env:OBP_GC_ISO,
+    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [switch]$FusionTest,
+    [switch]$DefaultWeaponsSmoke,
     [int]$Seed = 1440,
     [switch]$SkipBuild,
     [switch]$Smoke,
@@ -21,6 +25,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+if ($FusionTest -and ($Destination -ne 'rac1:LEVEL0' -or $CampaignSave)) { throw 'Fusion recording requires fresh rac1:LEVEL0 without a campaign save.' }
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
 if ($Headless -and -not $Smoke) { throw 'Headless recording needs the input smoke driver; human recordings use a visible window.' }
 if ($Offscreen -and -not $Smoke) { throw 'Offscreen recording is only for the input smoke driver.' }
@@ -45,6 +50,10 @@ elseif ($Offscreen) { $engineArgs += @('--windowed', '--position', '-20000,-2000
 else { $engineArgs += @(Get-ObpWindowArguments); $engineArgs += @('--max-fps', '60') }
 $engineArgs += @('--log-file', ($Out + '.log'), '--', '--destination', $Destination, '--record-playtest', $Out, '--fixed-seed', $Seed)
 if ($Rac1Iso) { $engineArgs += @('--rac1-iso', $Rac1Iso) }
+if ($GcIso) { $engineArgs += @('--gc-iso', $GcIso) }
+if ($UyaIso) { $engineArgs += @('--uya-iso', $UyaIso) }
+if ($FusionTest) { $engineArgs += '--fusion-test' }
+if ($DefaultWeaponsSmoke) { $engineArgs += '--default-weapons-smoke' }
 if ($Smoke) { $engineArgs += '--playtest-smoke' }
 if ($CampaignSave) {
     if (-not (Test-Path -LiteralPath $CampaignSave -PathType Leaf)) { throw 'Starting campaign save not found.' }

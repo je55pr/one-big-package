@@ -176,6 +176,7 @@ public partial class OBPGame
         StepRac1EquippedUseInput();
         StepRac1BombWeaponPhysics();
         StepRac1AdditionalWeapons();
+        StepFusionWeapons();
         input = SelectRac1BombThrowAnimation(controller, input);
         _playerAvatarClock += Math.Max(0, delta);
         controller.StepOrdinaryAnimation(state, _playerAvatarClock, input);
@@ -188,9 +189,20 @@ public partial class OBPGame
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
             holdGun ? (moving ? OBP.RAC1.Gameplay.Rac1ArsenalRules.MovingBodySequence(_rac1Weapons.Equipped) :
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
+        // Jump/traversal clocks still own the body. Evaluate equipment from
+        // that clock too, including the attachment when no arm bank applies.
+        bool fusionPose = _fusion is { Selected.SourceGame: not "rac1" } && _fusion.Hand.IsHolding(_fusion.Selected) &&
+            !_rac1Nanotech.Probe().IsDead && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
         if (equipmentPose < 0) equipmentPose = null;
-        _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
-            walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+        if (fusionPose && _fusionAssets?.AvatarAnimations.TryGetValue(_fusion!.Selected, out var sourceAnimation) == true)
+            _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
+                moving, input.CrouchHeld, _fusionUseStarted, _fusionPoseTriggerHeld));
+        else
+        {
+            controller.ClearSourceEquipment();
+            _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplyEquipmentPose(equipmentPose,
+                walloper ? _rac1WalloperAge / 60d : _rac1EquipmentUseAge / 60d, !walloper, fullBody: walloper || !moving));
+        }
         if (_avatarPhysicsPlayer is { } player)
         {
             player.Rac1TraversalAuthoredAnimationTime = controller.TraversalAuthoredAnimationTime;
@@ -208,6 +220,7 @@ public partial class OBPGame
                     _rac1StagedBombView.Position = _rac1BombGloveView.BombLocal;
             }
             StepRac1EquipmentViews(controller);
+            StepFusionWeaponViews(controller);
         }
         StepRac1PlayerAudio(controller);
         StepRac1BombProjectilesPhysics();
@@ -219,6 +232,7 @@ public partial class OBPGame
 
     private void ResetPlayerAvatarPhysics()
     {
+        ClearFusionTransients();
         ResetRac1PlayerAudio();
         ResetRac1WrenchHost();
         _rac1BombThrowActive = false;
@@ -268,12 +282,12 @@ public partial class OBPGame
 
     private void HoldSelectedRac1HandItem()
     {
-        int previous = _rac1HeldItem.NativeItemId;
+        int? previous = _rac1HeldItem.NativeItemId;
         _rac1HeldItem.HoldSelected(_rac1Weapons);
         RefreshRac1HeldItem(previous);
     }
 
-    private void RefreshRac1HeldItem(int previous)
+    private void RefreshRac1HeldItem(int? previous)
     {
         if (previous != _rac1HeldItem.NativeItemId &&
             _rac1EquipmentViews.TryGetValue(_rac1Weapons.Equipped, out var view) &&
@@ -289,7 +303,8 @@ public partial class OBPGame
     }
 
     private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
-        _rac1HeldItem.NativeItemId == (int)item &&
+        _fusion?.Selected.SourceGame is not ("rac2" or "rac3") &&
+        _rac1HeldItem.Hand.IsHolding(new("rac1", (int)item)) &&
         _player?.Rac1WaterHandItemHidden != true &&
         _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
 
@@ -307,7 +322,7 @@ public partial class OBPGame
         _rac1WrenchView.Visible =
             _activeDestination?.Game == ObpSourceGame.Rac1 &&
             _player?.Rac1WaterHandItemHidden != true &&
-            (_rac1HeldItem.NativeItemId == (int)OBP.RAC1.Gameplay.Rac1WeaponId.Wrench ||
+            (_rac1HeldItem.Hand.WrenchHeld ||
              _player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active);
     }
 

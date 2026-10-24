@@ -12,6 +12,7 @@ public sealed record PlaytestRunHeader(
     public const int CurrentVersion = 1;
     public IReadOnlyDictionary<string, Guid> Assemblies { get; init; } = new Dictionary<string, Guid>();
     public string ApplicationVersion { get; init; } = "";
+    public PlaytestWeaponConfiguration? Weapons { get; init; }
     public void Validate()
     {
         if (Version != CurrentVersion || AssemblyId == Guid.Empty || PhysicsHz != 60 ||
@@ -30,6 +31,7 @@ public sealed record PlaytestRunHeader(
                 a.Key.IndexOfAny(['/', '\\', ':']) >= 0 || a.Value == Guid.Empty))
             throw new InvalidDataException("Recording lacks valid assembly identities.");
         InitialState.Validate();
+        Weapons?.Validate();
     }
 
     public bool MatchesAssemblies(IReadOnlyDictionary<string, Guid> actual) =>

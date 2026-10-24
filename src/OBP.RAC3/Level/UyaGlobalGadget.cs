@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Numerics;
 using OBP.IO;
 using OBP.PS2.Audio;
 using OBP.PS2.Compression;
@@ -35,7 +36,10 @@ public static class UyaGlobalGadget
         IReadOnlyList<GcUyaMoby.MobySequence> Sequences,
         IReadOnlyList<Ps2Texture.Decoded> Textures,
         IReadOnlyList<SoundDefinition> SoundDefinitions,
-        Ps2SoundBank989? SoundBank);
+        Ps2SoundBank989? SoundBank)
+    {
+        public IReadOnlyList<Matrix4x4> InverseBindMatrices { get; init; } = [];
+    }
     public sealed record SoundDefinition(
         float MinimumRange, float MaximumRange,
         int MinimumVolume, int MaximumVolume,
@@ -103,7 +107,8 @@ public static class UyaGlobalGadget
         foreach (SoundDefinition sound in definitions)
             if (sound.BankIndex != 0 || bank is null || sound.SoundIndex < 0 || sound.SoundIndex >= bank.Sounds.Count)
                 throw new NotSupportedException("UYA gadget sound references an unresolved external bank or sound.");
-        return new(entry, classBytes, textureBytes, mesh, joints, sequences, textures, definitions.AsReadOnly(), bank);
+        return new(entry, classBytes, textureBytes, mesh, joints, sequences, textures, definitions.AsReadOnly(), bank)
+        { InverseBindMatrices = GcUyaGadgetPose.ReadInverseBindMatrices(classBytes) };
 
         byte[] Decode(long offset, long size)
         {

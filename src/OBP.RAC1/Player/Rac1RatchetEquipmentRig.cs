@@ -4,124 +4,110 @@ using OBP.Runtime.Player;
 
 namespace OBP.RAC1.Player;
 
-/// <summary>
-/// Local quaternion/scale/translation layers composed before hierarchy evaluation
-/// and skinning. The mask is the class+0x1c animation list, not a vertex torso cut.
-/// Bind work is cached; sampling allocates no per-vertex matrices or collections.
-/// </summary>
+/// <summary>R&C1 source conversion over the shared local-channel skeletal sampler.</summary>
 public sealed class Rac1RatchetEquipmentRig
 {
-    private readonly record struct Channels(Quaternion Rotation, Vector3 Scale, Vector3 Translation);
-    private readonly Dictionary<int, Channels[][]> _clips;
-    private readonly int[] _parents, _bones;
-    private readonly float[] _weights;
-    private readonly Vector3[] _bindLocal;
-    private readonly bool[] _mask, _affectedVertices;
-    private readonly Matrix4x4[] _world;
+    private readonly PlayerSkeletalSampler _sampler;
+    private readonly IReadOnlyDictionary<int, PlayerSkeletalClip> _armClips;
+    public PlayerSkeletalAsset Asset { get; }
     public IReadOnlyList<int> LayerJoints { get; }
 
     public Rac1RatchetEquipmentRig(Rac1RatchetAvatar.Asset asset, IReadOnlyList<int> layerJoints)
     {
         LayerJoints = layerJoints;
+        Asset = Convert(asset);
+        _sampler = new(Asset.Skeleton, Asset.Skin);
+        _armClips = Asset.Clips.ToDictionary(p => p.Key, p => Subset(p.Value, layerJoints));
+    }
+
+    private static PlayerSkeletalAsset Convert(Rac1RatchetAvatar.Asset asset)
+    {
         int count = asset.Skeleton.Count;
-        _mask = new bool[count];
-        foreach (int joint in layerJoints) _mask[joint] = true;
-        _parents = asset.Skeleton.Select(joint => joint.ParentRecordIndex).ToArray();
-        _bones = asset.Mesh.VertexJoints;
-        _weights = asset.Mesh.VertexWeights.Select(weight => (float)weight).ToArray();
-        _world = new Matrix4x4[count];
-        var inverseBind = new Matrix4x4[count];
+        float scale = asset.Mesh.Scale / 1024;
+        var joints = new PlayerSkeletonJoint[count];
         var bindRotation = new Matrix4x4[count];
         var pivot = new Vector3[count];
-        float scale = asset.Mesh.Scale / 1024;
-        for (int joint = 0; joint < count; joint++)
+        for (int j = 0; j < count; j++)
         {
-            var source = asset.Skeleton[joint]; var a = source.NativeAffine;
-            inverseBind[joint] = new((float)a[0], (float)a[1], (float)a[2], 0,
+            var source = asset.Skeleton[j]; var a = source.NativeAffine;
+            var inverse = new Matrix4x4((float)a[0], (float)a[1], (float)a[2], 0,
                 (float)a[4], (float)a[5], (float)a[6], 0, (float)a[8], (float)a[9], (float)a[10], 0, 0, 0, 0, 1);
-            if (!Matrix4x4.Invert(inverseBind[joint], out bindRotation[joint])) throw new InvalidDataException("Singular Ratchet bind.");
+            if (!Matrix4x4.Invert(inverse, out bindRotation[j])) throw new InvalidDataException("Singular Ratchet bind.");
             var common = new Vector3(source.CommonX, source.CommonY, source.CommonZ) * scale;
-            pivot[joint] = joint == 0 ? common : pivot[_parents[joint]] + Vector3.TransformNormal(common, bindRotation[_parents[joint]]);
+            int parent = j == 0 ? -1 : source.ParentRecordIndex;
+            pivot[j] = parent < 0 ? common : pivot[parent] + Vector3.TransformNormal(common, bindRotation[parent]);
+            inverse.Translation = -Vector3.TransformNormal(pivot[j], inverse);
+            joints[j] = new(parent, common, inverse);
         }
-        _bindLocal = new Vector3[_bones.Length];
-        _affectedVertices = new bool[_bones.Length / 3];
-        var affectedBones = (bool[])_mask.Clone();
-        for (int joint = 1; joint < count; joint++) affectedBones[joint] |= affectedBones[_parents[joint]];
-        for (int vertex = 0; vertex < _affectedVertices.Length; vertex++)
+        var skeleton = new PlayerSkeleton(joints, asset.AttachmentChains.Select((chain, id) => (chain, id))
+            .ToDictionary(p => p.id, p => new PlayerSkeletonAttachment(p.chain.Target, p.chain.LayerJoints)));
+        var clips = asset.AnimationClips.ToDictionary(clip => clip.SequenceId, clip =>
         {
-            var rest = new Vector3((float)asset.Mesh.Positions[vertex * 3], (float)asset.Mesh.Positions[vertex * 3 + 1], (float)asset.Mesh.Positions[vertex * 3 + 2]);
-            for (int influence = 0; influence < 3; influence++)
+            if (clip.SourceFrames is null) throw new InvalidDataException("R&C1 skeletal source frames are absent.");
+            var frames = clip.SourceFrames.Select((frame, i) => new PlayerSkeletalFrame(Channels(frame),
+                clip.FrameDurationsSeconds[i], clip.FrameTimelinePositions[i])).ToArray();
+            return new PlayerSkeletalClip("rac1", Rac1Authority.Primary.BuildId, 0, clip.SequenceId,
+                Enumerable.Range(0, count).ToArray(), frames);
+        });
+        return new(new(OBP.Core.ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, "ratchet", "rac1:ratchet:moby-class-0"),
+            skeleton, new(asset.Mesh.Positions, asset.Mesh.VertexJoints, asset.Mesh.VertexWeights), clips);
+
+        PlayerJointChannels[] Channels(Rac1MobyAnimation.Frame frame)
+        {
+            var result = joints.Select((joint, j) =>
             {
-                int at = vertex * 3 + influence, bone = _bones[at];
-                if (_weights[at] <= 0) continue;
-                _bindLocal[at] = Vector3.TransformNormal(rest - pivot[bone], inverseBind[bone]);
-                _affectedVertices[vertex] |= affectedBones[bone];
+                var q = frame.JointRotations[j];
+                return new PlayerJointChannels(new(q.Xf, q.Yf, q.Zf, q.Wf), Vector3.One, joint.Translation);
+            }).ToArray();
+            foreach (ulong word in frame.Thing1)
+            {
+                int j = (int)(word >> 48) & 0x7fff;
+                result[j] = result[j] with { Scale = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) / 4096 };
             }
+            foreach (ulong word in frame.Thing2)
+            {
+                int j = (int)(word >> 48);
+                result[j] = result[j] with { Translation = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) * scale };
+            }
+            return result;
         }
-        _clips = asset.AnimationClips.ToDictionary(clip => clip.SequenceId,
-            clip => clip.SourceFrames!.Select(frame => Decode(frame, asset, scale)).ToArray());
     }
 
-    private static Channels[] Decode(Rac1MobyAnimation.Frame frame, Rac1RatchetAvatar.Asset asset, float scale)
+    private static PlayerSkeletalClip Subset(PlayerSkeletalClip source, IReadOnlyList<int> joints) => source with
     {
-        var result = asset.Skeleton.Select((joint, index) =>
-        {
-            var q = frame.JointRotations[index];
-            var rotation = new Quaternion(q.Xf, q.Yf, q.Zf, q.Wf);
-            return new Channels(rotation.LengthSquared() > 1e-8 ? Quaternion.Normalize(rotation) : Quaternion.Identity,
-                Vector3.One, new Vector3(joint.CommonX, joint.CommonY, joint.CommonZ) * scale);
-        }).ToArray();
-        foreach (ulong word in frame.Thing1)
-        {
-            int joint = (int)(word >> 48) & 0x7fff;
-            result[joint] = result[joint] with { Scale = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) / 4096 };
-        }
-        foreach (ulong word in frame.Thing2)
-        {
-            int joint = (int)(word >> 48);
-            result[joint] = result[joint] with { Translation = new Vector3((short)word, (short)(word >> 16), (short)(word >> 32)) * scale };
-        }
-        return result;
-    }
-
-    private static Channels Blend(Channels a, Channels b, float amount) => new(
-        Quaternion.Lerp(a.Rotation, b.Rotation, amount), Vector3.Lerp(a.Scale, b.Scale, amount), Vector3.Lerp(a.Translation, b.Translation, amount));
+        JointIndices = joints,
+        Frames = source.Frames.Select(f => f with { Joints = joints.Select(j => f.Joints[j]).ToArray() }).ToArray(),
+    };
 
     public double[] Sample(Rac1AnimationFrameClock.Sample basis, Rac1AnimationFrameClock.Sample layer,
         float amount, bool fullBody, double[] baseline)
     {
-        var a = _clips[basis.Sequence]; var b = _clips[layer.Sequence];
-        for (int joint = 0; joint < _parents.Length; joint++)
-        {
-            var native = Blend(a[basis.CurrentFrame][joint], a[basis.NextFrame][joint], basis.Fraction);
-            if (fullBody || _mask[joint]) native = Blend(native,
-                Blend(b[layer.CurrentFrame][joint], b[layer.NextFrame][joint], layer.Fraction), amount);
-            // Native linear blocks use the conjugate of Numerics' row quaternion convention.
-            var local = Matrix4x4.CreateScale(native.Scale) * Matrix4x4.CreateFromQuaternion(Quaternion.Conjugate(native.Rotation));
-            local.Translation = native.Translation;
-            _world[joint] = joint == 0 ? local : local * _world[_parents[joint]];
-        }
-        var output = (double[])baseline.Clone();
-        for (int vertex = 0; vertex < _affectedVertices.Length; vertex++)
-        {
-            if (!fullBody && !_affectedVertices[vertex]) continue;
-            var point = Vector3.Zero; float total = 0;
-            for (int influence = 0; influence < 3; influence++)
-            {
-                int at = vertex * 3 + influence; float weight = _weights[at];
-                if (weight <= 0) continue;
-                point += Vector3.Transform(_bindLocal[at], _world[_bones[at]]) * weight; total += weight;
-            }
-            if (total <= 0) continue;
-            point /= total;
-            output[vertex * 3] = point.X; output[vertex * 3 + 1] = point.Y; output[vertex * 3 + 2] = point.Z;
-        }
-        return output;
+        _sampler.Reset(Asset.Clips[basis.Sequence], Sample(basis));
+        _sampler.Apply((fullBody ? Asset.Clips : _armClips)[layer.Sequence], Sample(layer), amount);
+        return _sampler.Skin(baseline, fullBody ? null : LayerJoints.ToArray());
     }
 
-    public PlayerAvatarAttachmentPose Attachment(int joint)
+    public double[] SampleLayers(Rac1AnimationFrameClock.Sample basis, PlayerSkeleton sourceSkeleton,
+        IReadOnlyList<PlayerSkeletalLayer> layers, PlayerSkeletalTransition transition,
+        object? blendKey, float blendFraction, PlayerSkeletalPose? initialSource)
     {
-        var m = _world[joint];
-        return new(new(m.M41, m.M42, m.M43), new(m.M11, m.M12, m.M13), new(m.M21, m.M22, m.M23), new(m.M31, m.M32, m.M33));
+        _sampler.RequireCompatible(sourceSkeleton);
+        _sampler.Reset(Asset.Clips[basis.Sequence], Sample(basis));
+        foreach (var layer in layers) _sampler.Apply(layer.Clip, layer.Sample, layer.Weight);
+        transition.Resolve(_sampler, blendKey, blendFraction, initialSource);
+        // The entire skin and the hand sockets consume the same blended pose.
+        // Leaving the torso on baked vertices would give the arms different ancestors.
+        return _sampler.Skin();
     }
+
+    public PlayerSkeletalPose BasePose(Rac1AnimationFrameClock.Sample basis, PlayerSkeletalPose? source = null)
+    {
+        var target = basis.IsBlending ? basis with { CurrentFrame = basis.NextFrame, Fraction = 0 } : basis;
+        _sampler.Reset(Asset.Clips[target.Sequence], Sample(target));
+        if (basis.IsBlending && source is not null) _sampler.BlendFrom(source, basis.Fraction);
+        return _sampler.CapturePose();
+    }
+
+    private static PlayerSkeletalSample Sample(Rac1AnimationFrameClock.Sample sample) => new(sample.CurrentFrame, sample.NextFrame, sample.Fraction);
+    public PlayerAvatarAttachmentPose Attachment(int joint) => _sampler.Attachment(joint);
 }

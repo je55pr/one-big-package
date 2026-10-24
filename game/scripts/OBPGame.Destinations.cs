@@ -49,6 +49,28 @@ public partial class OBPGame
         }
 
         _genericNavigationActive = _args.CaptureFrame is null;
+        if ((_args.PlaytestRequested || _args.FusionSmoke) && _fusionPreparation is not null)
+        {
+            _ = EnterWorldAfterSharedPreparationAsync(destination);
+            return;
+        }
+        OnDestinationChosen(destination);
+    }
+
+    private async Task EnterWorldAfterSharedPreparationAsync(ObpDestination destination)
+    {
+        // Capture source identities before the first deterministic simulation step.
+        // Yield frames so disc verification never blocks the application window.
+        long firstFrame = _frame;
+        while (_fusionPreparation is not null)
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        GD.Print($"[fusion] source setup remained responsive for {_frame - firstFrame} frames before fixture/recording entry");
+        if (_fusionAssetFailure is not null)
+        {
+            GD.PrintErr("[playtest] " + _fusionAssetFailure);
+            ApplicationLifecycle.RequestQuit(this, "shared-equipment-preparation-failed", 2);
+            return;
+        }
         OnDestinationChosen(destination);
     }
 
@@ -423,6 +445,7 @@ public partial class OBPGame
 
         DispatchRequestedWorldSmokes(destination);
         _playtest?.WorldEntered();
+        if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
 
         // Exact verification remains game-specific today. Preserve the mature GC
         // opt-in while avoiding an implicit multi-GB hash for other providers.

@@ -12,11 +12,14 @@ param(
     [Parameter(Mandatory = $true)][string]$Run,
     [string]$Report,
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
+    [string]$GcIso = $env:OBP_GC_ISO,
+    [string]$UyaIso = $env:OBP_UYA_ISO,
     [switch]$AllowBuildChange,
     [switch]$Rendered,
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'obp-native-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $Run = [IO.Path]::GetFullPath($Run)
 if (-not (Test-Path -LiteralPath $Run -PathType Leaf)) { throw 'Recording not found.' }
@@ -38,9 +41,15 @@ if ($Rendered) { $engineArgs += @('--windowed', '--position', '-20000,-20000', '
 else { $engineArgs += '--headless' }
 $engineArgs += @('--log-file', ($Report + '.log'), '--', '--replay-playtest', $Run, '--playtest-report', $Report)
 if ($Rac1Iso) { $engineArgs += @('--rac1-iso', $Rac1Iso) }
+if ($GcIso) { $engineArgs += @('--gc-iso', $GcIso) }
+if ($UyaIso) { $engineArgs += @('--uya-iso', $UyaIso) }
 if ($AllowBuildChange) { $engineArgs += '--playtest-allow-build-change' }
-& $godot @engineArgs
-$replayExit = $LASTEXITCODE
+$stdoutPath = $Report + '.stdout.log'
+$stderrPath = $Report + '.stderr.log'
+$replayExit = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $engineArgs -WorkingDirectory $root `
+    -StandardOutputPath $stdoutPath -StandardErrorPath $stderrPath
+Get-Content -LiteralPath $stdoutPath -Encoding UTF8 | ForEach-Object { Write-Host $_ }
+Get-Content -LiteralPath $stderrPath -Encoding UTF8 | ForEach-Object { Write-Host $_ }
 Write-Host "Replay report: $Report"
 if ($replayExit -eq 0) {
     if (-not (Test-Path -LiteralPath $Report -PathType Leaf)) { exit 2 }

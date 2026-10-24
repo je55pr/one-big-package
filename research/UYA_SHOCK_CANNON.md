@@ -145,7 +145,15 @@ texture WADs. They are neither EE pointers nor a level Moby remap.
 
 The admitted model has **2,205 vertices, 1,866 triangles, 10 joints**, and
 three source clips of **11/2/11 frames** at speed `.5`. Pose it through
-`GcUyaMobyPose`; the legacy static reconstruction folds the gun incorrectly.
+`GcUyaGadgetPose`: global gadget vertices are in model bind space. The class's
+0x40-byte joint records supply global bind orientation in the 3x3 block and
+inverse bind translation in row 3. Their last column is local translation and
+the final word is packed flags, not an affine homogeneous coordinate. Apply
+inverse bind then animated forward globals (Numerics row convention). The
+sequence-0 rest pose reproduces stored model-space vertices within 0.00002
+native units; applying animated inverse joints alone folds the parts together.
+This is a retail bind/rest witness, not an EE animation oracle or a recovery of
+the extra per-frame channels. The existing level-Moby path is unchanged.
 The texture bundle has one **128x128 PSMT8/RGBA32 PIF**. The source assets expose
 explicit sequence/frame selection; a recovered weapon-idle selector and Ratchet
 mount are not inferred from the availability of these clips.

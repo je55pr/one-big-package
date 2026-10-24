@@ -107,6 +107,15 @@ public sealed class GcLancerRetailTests
         Assert.Equal(1325, held.Model.Mesh.Indices.Length / 3);
         Assert.Equal(new[] { 0, 1, 2 }, held.Model.Sequences.Select(s => s.Index));
         Assert.Equal(new[] { 11, 1, 5 }, held.Model.Sequences.Select(s => s.Frames.Count));
+        var idleModel = GcLancerPresentation.HeldModel(held, 1, 0);
+        foreach (var surface in idleModel)
+            for (int v = 0; v < surface.Positions.Length; v += 3)
+            {
+                Assert.InRange(Math.Abs(surface.Positions[v] - held.Model.Mesh.SkinLocalPositions[v]), 0, .00002);
+                Assert.InRange(Math.Abs(surface.Positions[v + 1] - held.Model.Mesh.SkinLocalPositions[v + 2]), 0, .00002);
+                Assert.InRange(Math.Abs(surface.Positions[v + 2] - held.Model.Mesh.SkinLocalPositions[v + 1]), 0, .00002);
+            }
+        Assert.InRange(idleModel[0].Positions.Where((_, i) => i % 3 == 2).Min(), -.649, -.647);
         Assert.All(held.Model.TriangleTextureIds, id => Assert.Equal(0, id));
         Assert.Equal(0x50494632, I32(held.TexturePif, 0));
         Assert.Equal(128, I32(held.TexturePif, 8));

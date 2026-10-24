@@ -95,6 +95,7 @@ public partial class OBPGame
 
     private void SaveMovementState()
     {
+        if (FusionMovementStateBlocked) { ReportMovementState("Cross-game weapons use input recordings; use --record-playtest to retain all three sources."); return; }
         try
         {
             MovementReproState state = CaptureMovementState();
@@ -114,6 +115,7 @@ public partial class OBPGame
 
     private async Task<List<MovementReplaySample>?> LoadMovementStateAsync(string path, bool startup = false, int? recordFrames = null)
     {
+        if (FusionMovementStateBlocked) { ReportMovementState("Select an R&C1 weapon and let foreign shots finish before loading an R&C1-only movement state."); return null; }
         if (_playtest?.RejectMovementLoad() == true) return null;
         if (_movementStateLoading) return null;
         PlayerHost? restoringPlayer = null;

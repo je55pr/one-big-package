@@ -21,6 +21,7 @@ public sealed partial class Rac1PlayerAnimationPresentationController : IPlayerA
         _avatar = avatar;
         _equipmentMask = equipmentMask;
         _equipmentRig = equipmentRig;
+        RegisterBaseSkeletalFrames();
         RegisterAttachmentFrames();
         Current = Presentation(
             PlayerAnimationState.Idle,

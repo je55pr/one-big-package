@@ -18,6 +18,10 @@ public sealed record CommandLineArgs
     public string? PlaytestReport { get; init; }
     public bool PlaytestAllowBuildChange { get; init; }
     public bool PlaytestSmoke { get; init; }
+    /// <summary>Explicit, ephemeral three-game weapon demo on fresh R&amp;C1 Veldin.</summary>
+    public bool FusionTest { get; init; }
+    public bool FusionSmoke { get; init; }
+    public bool DefaultWeaponsSmoke { get; init; }
     public bool BugCapture { get; init; }
     public bool BugReportSmoke { get; init; }
     public string? BugReportInbox { get; init; }
@@ -184,6 +188,9 @@ public sealed record CommandLineArgs
                 "--playtest-report" => result with { PlaytestReport = Next() },
                 "--playtest-allow-build-change" => result with { PlaytestAllowBuildChange = true },
                 "--playtest-smoke" => result with { PlaytestSmoke = true },
+                "--fusion-test" => result with { FusionTest = true },
+                "--fusion-smoke" => result with { FusionTest = true, FusionSmoke = true },
+                "--default-weapons-smoke" => result with { DefaultWeaponsSmoke = true },
                 "--bug-capture" => result with { BugCapture = true },
                 "--bug-report-smoke" => result with { BugReportSmoke = true },
                 "--bug-report-inbox" => result with { BugReportInbox = Next() },

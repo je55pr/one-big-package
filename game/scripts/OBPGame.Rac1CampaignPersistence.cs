@@ -137,7 +137,7 @@ public partial class OBPGame
 
     private void TickRac1CampaignSaves(double delta)
     {
-        if (_rac1SaveBatcher is null) return;
+        if (_rac1SaveBatcher is null || FusionTestActive) return;
         _rac1SaveBatcher.Tick(delta, CaptureRac1CampaignSnapshot);
         string? failure = _rac1SaveBatcher.Failure?.Message;
         if (failure is not null && failure != _rac1SaveFailureReported)
@@ -147,7 +147,7 @@ public partial class OBPGame
 
     private void FlushRac1CampaignSaves(string boundary)
     {
-        if (_rac1SaveBatcher is null || _rac1WeaponPreviewInventory is not null) return;
+        if (_rac1SaveBatcher is null || _rac1WeaponPreviewInventory is not null || FusionTestActive) return;
         if (!_rac1SaveBatcher.FlushNow(CaptureRac1CampaignSnapshot, out Exception? error))
             GD.PushWarning($"[rac1-campaign] {boundary} save failed; progress remains unsaved: {error!.Message}");
         else
@@ -158,7 +158,7 @@ public partial class OBPGame
     {
         // Preview equipment and its ammo are session-only. Never export this
         // development loadout through ordinary campaign persistence.
-        if (_rac1WeaponPreviewInventory is not null) return;
+        if (_rac1WeaponPreviewInventory is not null || FusionTestActive) return;
         if (!_rac1CampaignPersistenceInitialized)
             EnsureRac1CampaignPersistenceInitialized();
 

@@ -148,6 +148,17 @@ returns its native PIF2 texture and opens the separate sound bank. It takes
 an `IRandomAccessReader`, not a machine path. Keep that reader alive while
 decoding the sound bank. Retail assets must remain local/rebuildable.
 
+The held mesh's stored vertices are in model bind space. `GcUyaGadgetPose`
+reads the class joint table at header `+0x14` (0x40-byte stride), combines its
+global 3x3 bind orientation and row-3 inverse translation, then applies inverse
+bind followed by animated forward globals. The local translation column and
+packed final word are not part of that inverse-bind affine matrix. The original
+sequence-1 identity-quaternion pose preserves the stored vertex positions within
+0.00002 native units, including the barrel extending to Y=-0.648397. Applying
+animated inverse globals directly collapses those parts around their pivots.
+This binds the rest geometry to retail matrices; extra animation channels and
+an EE pose oracle are not claimed. Existing level-Moby decoding is unchanged.
+
 The recovered fire call uses **class 1490, class-local sound 0** through
 `0x00355828`; dry-fire uses **class-local sound 1** through `0x00355780`.
 Projectile impact uses **class 3070, class-local sound 0**. These are native

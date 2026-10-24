@@ -36,7 +36,7 @@ public partial class OBPGame
         new Rac1CampaignState(),
         Rac1WeaponInventory.CreateOpeningLoadout());
     private Rac1WeaponInventory? _rac1WeaponPreviewInventory;
-    private Rac1WeaponInventory _rac1Weapons => _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
+    private Rac1WeaponInventory _rac1Weapons => FusionTestActive ? _fusion!.Rac1Inventory : _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
     private readonly Rac1HeldItemSession _rac1HeldItem = new();
     private bool _rac1EquipmentUsePressed;
     private Rac1BombGloveSession? _rac1BombGlove;
@@ -57,6 +57,7 @@ public partial class OBPGame
 
     private void ResetRac1LevelGameplay(int levelId = 0)
     {
+        ResetFusionWeapons();
         _rac1HeldItem.ResetForLevelEntry();
         _rac1EquipmentUsePressed = false;
         _lastQuickSelectTap = 0; _previousSelectedWeapon = null;
@@ -113,6 +114,13 @@ public partial class OBPGame
         if (world.Game != "rac1")
         {
             return;
+        }
+
+        ConfigureFusionWeapons(world);
+        if (_fusion is not null)
+        {
+            _rac1BombGlove = new(_rac1Weapons);
+            ResetRac1AdditionalWeapons();
         }
 
         _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet));
@@ -201,9 +209,9 @@ public partial class OBPGame
     private void RefreshRac1HudState(params HudFeedbackDraft[] feedback)
     {
         if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return;
-        _hudState.Publish(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet,
+        _hudState.Publish(FusionHud(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet,
             _rac1AdditionalWeapons?.Cargo.Count ?? 0, _player?.Rac1SwimState,
-            _player?.Rac1MovementEquipment.OxygenMask == true), feedback);
+            _player?.Rac1MovementEquipment.OxygenMask == true)), feedback);
     }
 
     private void ArmRac1Gameplay(PlayerHost player)
@@ -245,6 +253,7 @@ public partial class OBPGame
         TickRac1VeldinEnvironmentalDeath();
         if (_rac1Nanotech.Probe().IsDead)
         {
+            ClearFusionOnDeath();
             AbortRac1MetropolisTaxiRide();
             ResetRac1WrenchHost();
             ShowRac1CombatRetry();

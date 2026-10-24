@@ -1,6 +1,7 @@
 using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
+using OBP.Runtime.Gameplay;
 
 namespace OneBigPackage;
 
@@ -11,11 +12,11 @@ namespace OneBigPackage;
 /// </summary>
 public sealed partial class WeaponQuickSelectUi : CanvasLayer
 {
-    public sealed record Entry(Rac1WeaponId Weapon, string Name, string Ammo);
+    public sealed record Entry(SourceWeaponKey Weapon, string Name, string Ammo);
     public IReadOnlyList<Entry> Entries { get; init; } = [];
-    public Rac1WeaponId CurrentWeapon { get; init; }
-    public event Action<Rac1WeaponId?>? Completed;
-    public Rac1WeaponId? SelectedWeapon =>
+    public SourceWeaponKey CurrentWeapon { get; init; }
+    public event Action<SourceWeaponKey?>? Completed;
+    public SourceWeaponKey? SelectedWeapon =>
         SelectedIndex is { } index && index < Entries.Count ? Entries[index].Weapon : null;
     public int? SelectedIndex { get; private set; }
     public bool NeutralTapCompleted { get; private set; }
@@ -154,7 +155,8 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
                 continue;
 
             var entry = Entries[index];
-            var mappedIcon = Rac1WeaponIconCatalog.Ordinary(entry.Weapon);
+            var mappedIcon = entry.Weapon.SourceGame == "rac1"
+                ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)entry.Weapon.NativeItemId) : null;
             var icon = mappedIcon is { } mapped
                 ? Rac1RetailUiAssets.Sprite(mapped.AnimationId, mapped.Frame)
                 : null;

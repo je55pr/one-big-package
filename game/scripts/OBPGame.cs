@@ -62,8 +62,16 @@ public partial class OBPGame : Node3D
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         ApplicationLifecycle.SetQuitPreparation(PrepareForQuitAsync);
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
         if (!InitializeBugReporting()) return;
         if (!InitializePlaytest()) return;
+        if (_args.FusionTest && (_args.Destination != "rac1:LEVEL0" || _args.Compose || _args.LoadMovementState is not null))
+        {
+            GD.PrintErr("[fusion] Choose fresh --destination rac1:LEVEL0 without a composition or movement-state load.");
+            GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
+            ApplicationLifecycle.RequestQuit(this, "fusion-invalid-start", 2);
+            return;
+        }
         if (_args.ReplayForwardFrames.HasValue && _args.LoadMovementState is null)
         {
             GD.PrintErr("[movement-replay] --replay-forward requires --load-movement-state.");
@@ -144,6 +152,7 @@ public partial class OBPGame : Node3D
     public override void _Process(double delta)
     {
         _frame++;
+        TickFusionPreparation();
         TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
@@ -297,6 +306,8 @@ public partial class OBPGame : Node3D
         _worldHost.Unload(releaseAudioImmediately: true);
         ResetRac1PlayerAudio(freeImmediately: true);
         ResetRac1WeaponAudio(freeImmediately: true);
+        ResetFusionWeapons(freeImmediately: true);
+        ResetSharedWeaponAssets();
     }
 
     private async Task PrepareForQuitAsync()

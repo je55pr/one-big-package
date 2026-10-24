@@ -90,6 +90,7 @@ public partial class OBPGame
 
     private void SetRac1WeaponPreview(bool disable)
     {
+        if (FusionTestActive) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
         if (disable)
         {
             _rac1WeaponPreviewInventory = null;
@@ -113,6 +114,7 @@ public partial class OBPGame
             ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
+        SyncFusionNativeSelection();
         if (_world is { Game: "rac1" } world)
         {
             _rac1DetectorEquipped = false;
@@ -126,6 +128,7 @@ public partial class OBPGame
 
     private void AttachRac1EquipmentViews(Node3D avatarView)
     {
+        AttachFusionWeaponViews(avatarView);
         var source = _sources.Get(OBP.Core.ObpSourceGame.Rac1)!;
         if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
         {

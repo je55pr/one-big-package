@@ -52,7 +52,9 @@ public sealed class Rac1PlayerAvatarProviderTests
         Assert.Equal(10, avatar.LocalAnimationFrames.Count);
         Assert.Equal(7.5f, avatar.FramesPerSecond);
         Assert.Equal(5_583, avatar.VertexCount);
-        Assert.Null(avatar.Skeleton);
+        Assert.Equal(111, avatar.Skeleton!.ParentIndices.Count);
+        Assert.NotNull(avatar.Skeletal);
+        Assert.Equal(56, avatar.Skeletal.Skeleton.Attachments[0].Joint);
 
         Assert.Equal(
             new[]
