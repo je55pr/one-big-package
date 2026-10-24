@@ -134,7 +134,7 @@ public partial class OBPGame
         JsonSerializer.SerializeToElement(CameraSettingsStore.Current), CapturePlaytestCheckpoint())
     {
         Assemblies = PlaytestAssemblyIds(),
-        Weapons = _fusionAssets?.Configuration,
+        Weapons = FusionConfiguration,
         ApplicationVersion = typeof(OBPGame).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown",
     };
 
@@ -165,7 +165,7 @@ public partial class OBPGame
         if (_fusion is not null)
         {
             Text("fusion.selected", _fusion.Selected.ToString());
-            Text("fusion.sources", JsonSerializer.Serialize(_fusionAssets?.Configuration));
+            Text("fusion.sources", JsonSerializer.Serialize(FusionConfiguration));
             foreach (var key in FusionWeaponSession.Weapons) Text("fusion.status." + key, JsonSerializer.Serialize(_fusion.Status(key)));
             Numbers("fusion.counts", _fusion.Tick, _fusion.ShotsFired, _fusionAcceptedHits, _fusionProjectiles.Count, _fusionEffects.Count);
             Text("fusion.lastDamage", JsonSerializer.Serialize(_fusionLastDamage));

@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Core;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
@@ -20,12 +21,17 @@ public partial class OBPGame
 {
     private FusionWeaponSession? _fusion;
     private FusionWeaponAssets? _fusionAssets;
+    private FusionWeaponPreparation? _fusionPreparation;
+    private string? _fusionLoadingStatus, _fusionAssetFailure;
+    private ObpAttachedSource[]? _fusionSourceSnapshot;
+    private CanvasLayer? _fusionPreparationLayer;
+    private Label? _fusionPreparationNotice;
     private Rac1CampaignRuntimeSession? _fusionOriginalCampaign;
     private Rac1BoltWallet? _fusionOriginalWallet;
     private int[] _fusionOriginalGoldBolts = [];
     private readonly Dictionary<SourceWeaponKey, FusionMeshView> _fusionHeldViews = [];
     private readonly Dictionary<WeaponShotKey, FusionMeshView> _fusionProjectiles = [];
-    private readonly List<(int Due, int Owner, FusionWeaponAssets.Voice Voice)> _fusionPendingAudio = [];
+    private readonly List<(int Due, int Owner, FusionWeaponData.Voice Voice)> _fusionPendingAudio = [];
     private readonly List<(int Owner, AudioStreamPlayer Player)> _fusionAudioPlayers = [];
     private readonly List<(Node3D Node, int Remaining)> _fusionEffects = [];
     private FusionMeshView? _fusionBeam;
@@ -36,13 +42,17 @@ public partial class OBPGame
     private WeaponDamageIntent? _fusionLastDamage;
     private WeaponStatus? _fusionDisplayedStatus;
     private bool FusionTestActive => _fusionOriginalCampaign is not null;
+    private PlaytestWeaponConfiguration? FusionConfiguration => _fusion is null ? null : _fusionAssets?.Configuration(FusionTestActive);
     private bool FusionMovementStateBlocked => FusionTestActive || _fusion?.Selected.SourceGame is "rac2" or "rac3" ||
         _fusion?.LancerSession.ActiveShots.Count > 0;
 
     private static string FusionWeaponName(SourceWeaponKey key) => key.SourceGame == "rac1" ? Rac1WeaponProfiles.Name((Rac1WeaponId)key.NativeItemId) :
         key == FusionWeaponSession.Lancer ? "Lancer" : "Shock Cannon";
 
-    private string FusionWeaponDetail(SourceWeaponKey key) => _fusionAssets?.Problems.GetValueOrDefault(key) ??
+    private string? FusionWeaponProblem(SourceWeaponKey key) => _fusionAssets?.Problems.GetValueOrDefault(key) ??
+        (key.SourceGame != "rac1" ? _fusionPreparation?.Status ?? _fusionAssetFailure : null);
+
+    private string FusionWeaponDetail(SourceWeaponKey key) => FusionWeaponProblem(key) ??
         (_fusion is { } fusion ? $"{fusion.Status(key).Ammo}/{fusion.Status(key).Capacity} · {fusion.Status(key).State}" : "");
 
     private void ConfigureFusionWeapons(RuntimeWorld world)
@@ -55,10 +65,8 @@ public partial class OBPGame
         if (!_args.FusionTest || world.LevelId != 0)
         {
             _fusion = new(_args.FixedSeed ?? 1440, _rac1Weapons);
-            if (_args.PlaytestRequested) EnsureFusionAssets();
             return;
         }
-        _fusionAssets = new(_sources);
         _fusionOriginalCampaign = _rac1CampaignSession;
         _fusionOriginalWallet = _rac1BoltWallet;
         _fusionOriginalGoldBolts = _rac1CollectedNovalisGoldBolts.ToArray();
@@ -69,14 +77,101 @@ public partial class OBPGame
         _rac1WeaponPreviewInventory = null;
         _fusion = new(_args.FixedSeed ?? 1440);
         GD.Print("[fusion] opt-in Veldin test: Bomb Glove [rac1/10] 10; Lancer [rac2/30] 40; Shock Cannon [rac3/43] 20. Original damage; campaign isolated.");
-        foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
     }
 
-    private void EnsureFusionAssets()
+    private void PrepareSharedWeaponSources(bool force = false)
     {
-        if (_fusionAssets is not null) return;
-        _fusionAssets = new(_sources, isolated: FusionTestActive);
-        if (_playerAvatarView is not null) AttachFusionWeaponViews(_playerAvatarView);
+        var snapshot = _sources.Attached.Values.OrderBy(s => s.Game).ToArray();
+        if (!force && _fusionSourceSnapshot is not null && snapshot.SequenceEqual(_fusionSourceSnapshot)) return;
+        ResetSharedWeaponAssets();
+        _fusionSourceSnapshot = snapshot;
+        _fusionPreparation = new(snapshot);
+        ShowSharedWeaponPreparation(_fusionPreparation.Status);
+        GD.Print("[fusion] preparing shared trilogy weapon data in the background");
+    }
+
+    private void ShowSharedWeaponPreparation(string? status)
+    {
+        if (_args.CaptureFrame is not null || _args.ShotsPath is not null) return;
+        if (status is null)
+        {
+            if (_fusionPreparationLayer is not null) _fusionPreparationLayer.Visible = false;
+            return;
+        }
+        if (_fusionPreparationNotice is null)
+        {
+            _fusionPreparationLayer = new CanvasLayer { Layer = 190 };
+            var panel = new PanelContainer
+            {
+                AnchorLeft = .5f,
+                AnchorRight = .5f,
+                AnchorTop = 1,
+                AnchorBottom = 1,
+                OffsetLeft = -360,
+                OffsetRight = 360,
+                OffsetTop = -66,
+                OffsetBottom = -14,
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            _fusionPreparationNotice = new Label
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            panel.AddChild(_fusionPreparationNotice);
+            _fusionPreparationLayer.AddChild(panel);
+            AddChild(_fusionPreparationLayer);
+        }
+        _fusionPreparationLayer!.Visible = true;
+        _fusionPreparationNotice.Text = "SHARED EQUIPMENT  ·  " + status;
+    }
+
+    private void TickFusionPreparation()
+    {
+        if (_fusionPreparation is not { } preparation) return;
+        if (!preparation.Completion.IsCompleted)
+        {
+            if (_fusionLoadingStatus != preparation.Status)
+            {
+                _fusionLoadingStatus = preparation.Status;
+                ShowSharedWeaponPreparation(_fusionLoadingStatus);
+                RefreshRac1HudState();
+            }
+            return;
+        }
+        _fusionPreparation = null;
+        try
+        {
+            // Only texture uploads and scene attachment run on the main thread.
+            _fusionAssets = new(preparation.Completion.GetAwaiter().GetResult());
+            if (_playerAvatarView is not null) AttachFusionWeaponViews(_playerAvatarView);
+            foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
+            GD.Print("[fusion] shared weapon preparation complete; retained for this source session");
+        }
+        catch (Exception error)
+        {
+            _fusionAssets?.Dispose(); _fusionAssets = null;
+            _fusionAssetFailure = "Weapon preparation failed. Reattach the source in Game Sources.";
+            GD.PrintErr("[fusion] weapon preparation failed: " + error);
+        }
+        finally { preparation.Dispose(); }
+        _fusionLoadingStatus = null;
+        ShowSharedWeaponPreparation(_fusionAssetFailure);
+        RefreshRac1HudState();
+    }
+
+    private void ResetSharedWeaponAssets()
+    {
+        // Source changes and application exit own this lifetime, not level teardown.
+        ClearFusionTransients();
+        ReleaseFusionWeaponViews();
+        _fusionPreparation?.Dispose(); _fusionPreparation = null;
+        _fusionLoadingStatus = _fusionAssetFailure = null;
+        _fusionSourceSnapshot = null;
+        _fusionAssets?.Dispose(); _fusionAssets = null;
+        ShowSharedWeaponPreparation(null);
     }
 
     private void SyncFusionNativeSelection()
@@ -111,7 +206,6 @@ public partial class OBPGame
             if (key.SourceGame == "rac1") OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
             return;
         }
-        if (key.SourceGame != "rac1") EnsureFusionAssets();
         var previous = _fusion.Selected;
         if (!_fusion.Select(key)) return;
         if (previous != key)
@@ -137,7 +231,7 @@ public partial class OBPGame
         {
             CurrentWeapon = new(status.Weapon.ToString(),
             $"{FusionWeaponName(status.Weapon)} [{status.Weapon.SourceGame}]", new(status.Ammo, status.Capacity))
-            { Status = _fusionAssets?.Problems.GetValueOrDefault(status.Weapon) ?? $"{(FusionTestActive ? "Fusion test · " : "")}{status.State}" }
+            { Status = FusionWeaponProblem(status.Weapon) ?? $"{(FusionTestActive ? "Fusion test · " : "")}{status.State}" }
         };
     }
 
@@ -392,18 +486,23 @@ public partial class OBPGame
     private void ResetFusionWeapons(bool freeImmediately = false)
     {
         ClearFusionTransients(freeImmediately);
-        foreach (var view in _fusionHeldViews.Values)
-            if (IsInstanceValid(view)) { if (freeImmediately) view.Free(); else view.QueueFree(); }
-        _fusionHeldViews.Clear();
-        if (_fusionBeam is not null && IsInstanceValid(_fusionBeam)) { if (freeImmediately) _fusionBeam.Free(); else _fusionBeam.QueueFree(); }
-        _fusionBeam = null;
-        _fusionAssets?.Dispose(); _fusionAssets = null; _fusion = null;
+        ReleaseFusionWeaponViews(freeImmediately);
+        _fusion = null;
         if (_fusionOriginalCampaign is { } campaign)
         {
             _rac1CampaignSession = campaign; _rac1BoltWallet = _fusionOriginalWallet!;
             _rac1CollectedNovalisGoldBolts.Clear(); _rac1CollectedNovalisGoldBolts.UnionWith(_fusionOriginalGoldBolts);
         }
         _fusionOriginalCampaign = null; _fusionOriginalWallet = null; _fusionOriginalGoldBolts = [];
+    }
+
+    private void ReleaseFusionWeaponViews(bool freeImmediately = false)
+    {
+        foreach (var view in _fusionHeldViews.Values)
+            if (IsInstanceValid(view)) { if (freeImmediately) view.Free(); else view.QueueFree(); }
+        _fusionHeldViews.Clear();
+        if (_fusionBeam is not null && IsInstanceValid(_fusionBeam)) { if (freeImmediately) _fusionBeam.Free(); else _fusionBeam.QueueFree(); }
+        _fusionBeam = null;
     }
 
     private static NVector3 ToNumerics(Vector3 value) => new(value.X, value.Y, value.Z);

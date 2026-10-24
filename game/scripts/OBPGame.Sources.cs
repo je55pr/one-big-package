@@ -62,6 +62,7 @@ public partial class OBPGame
         _sourcesInitialized = true;
         RefreshRetailUiSource(null);
         RestoreRememberedSources();
+        PrepareSharedWeaponSources();
     }
 
     private void RestoreRememberedSources()
@@ -132,6 +133,7 @@ public partial class OBPGame
 
             var attached = _sources.Attach(path, reader);
             string? uiWarning = RefreshRetailUiSource(attached, reader);
+            PrepareSharedWeaponSources(force: true);
             if (persist)
             {
                 _sources.SaveConfig(_sourceConfigPath);
@@ -245,6 +247,7 @@ public partial class OBPGame
         }
 
         if (game == ObpSourceGame.Rac1) RefreshRetailUiSource(null);
+        PrepareSharedWeaponSources(force: true);
 
         try
         {

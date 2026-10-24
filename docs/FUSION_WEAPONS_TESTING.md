@@ -5,8 +5,12 @@ Quick Select by default, after the owned R&C1 arsenal. No testing-mode toggle is
 required. This is deliberate OBP equipment availability, not recovered native
 cross-game progression. R&C1 ownership, equipped gear, ammo and campaign saves
 remain source-owned; foreign ammo stays session-only (Lancer 40, Cannon 20 on
-world entry). Their original local assets load when a foreign weapon is first
-equipped. Missing sources produce actionable status and prevent firing.
+world entry). Shared weapon models, textures and audio from all three attached
+games prepare in the background during Game Sources setup, and remain available
+across level changes. A shared status notice shows verification progress; gameplay
+and menus remain responsive, and firing waits until preparation completes. Equipping
+does not start a disc scan or decode. Changing a source cancels outdated work and
+rebuilds the shared resources. Missing sources produce actionable status and prevent firing.
 
 Attach the supported original NTSC-U sources in Game Sources. For an isolated
 fresh Veldin fixture, choose Pause -> Testing Equipment -> Start Three-Game Test. This
@@ -22,8 +26,9 @@ after `--`. Its default destination is `rac1:LEVEL0`; other starting destination
 compositions and R&C1-only movement-state loads are rejected. Attach sources
 normally or pass `--rac1-iso`, `--gc-iso`, `--uya-iso` with authorised local paths.
 Asset loading verifies each attached disc's full SHA-256 against its original
-authority before admitting its weapons. This can take time on first equip. Recording
-prepares these sources at level entry so the header identifies all three builds. Missing or modified
+authority before admitting its weapons. This runs once per attached-source session
+without blocking the game thread. Recording waits for shared preparation before
+level entry so the header identifies all three builds. Missing or modified
 sources leave an actionable status in the selector/HUD and disable that weapon.
 
 Hold Triangle / Q, select a direction and release to equip. On a fresh opening,

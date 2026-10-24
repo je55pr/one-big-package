@@ -143,6 +143,7 @@ public partial class OBPGame : Node3D
     public override void _Process(double delta)
     {
         _frame++;
+        TickFusionPreparation();
         TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
@@ -296,6 +297,7 @@ public partial class OBPGame : Node3D
         ResetRac1PlayerAudio(freeImmediately: true);
         ResetRac1WeaponAudio(freeImmediately: true);
         ResetFusionWeapons(freeImmediately: true);
+        ResetSharedWeaponAssets();
     }
 
     private async Task PrepareForQuitAsync()

@@ -63,8 +63,14 @@ public partial class OBPGame
         Node3D? fixture = null;
         try
         {
+            Engine.MaxFps = 60;
+            long preparationFrame = _frame;
+            bool wasPreparing = _fusionPreparation is not null;
+            await WaitForSharedWeaponsSmokeAsync();
+            Require(!wasPreparing || _frame > preparationFrame, "source preparation blocked application frames");
             Require(_fusion is not null && _fusionAssets?.Problems.Count == 0 && _player is not null, "fusion smoke requires three verified sources on Veldin");
-            Engine.MaxFps = 60; ClearMovementSmokeInput();
+            ClearMovementSmokeInput();
+            GD.Print($"[fusion-smoke] shared source preparation yielded {_frame - preparationFrame} application frames");
             string normalInventory = JsonSerializer.Serialize(_fusionOriginalCampaign!.Weapons.CapturePersistentState());
             await WaitForGroundedAsync(_player!, 180);
             await SelectFusionByInputAsync(1);
@@ -85,7 +91,7 @@ public partial class OBPGame
             await CaptureFusionAsync("ordinary-selector");
             GD.Print("[fusion-smoke] three source-qualified entries, original held assets and ordinary selector input PASS");
             var attachedAssets = _fusionAssets!;
-            using (var missingAssets = new FusionWeaponAssets(new(TrilogySourceDefinitions.All)))
+            using (var missingAssets = new FusionWeaponAssets(new FusionWeaponData([])))
             {
                 _fusionAssets = missingAssets;
                 try
@@ -177,8 +183,9 @@ public partial class OBPGame
             _args = _args with { FusionTest = false };
             Require(OnDestinationChosen(_activeDestination!), "normal Veldin re-entry rejected");
             await PhysicsFramesAsync(5);
-            Require(_fusion is not null && !FusionTestActive && _fusionAssets is null && _fusionHeldViews.Count == 0 && _fusionBeam is null,
-                "world re-entry retained fusion ownership");
+            Require(_fusion is not null && !FusionTestActive && ReferenceEquals(_fusionAssets, attachedAssets) &&
+                _fusionPreparation is null && _fusionHeldViews.Count == 2,
+                "world re-entry discarded shared assets or retained isolated session ownership");
             Require(JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()) == normalInventory, "normal inventory was not restored");
             Require(ReferenceEquals(_fusion!.Rac1Inventory, _rac1CampaignSession.Weapons), "default weapons replaced the campaign inventory");
             FusionKey(Key.Q, true);
@@ -188,8 +195,13 @@ public partial class OBPGame
             FusionKey(Key.Q, false);
             await PhysicsFramesAsync(2);
             await SelectFusionByInputAsync(1);
-            Require(!FusionTestActive && _fusionAssets!.Configuration.LoadoutId == FusionWeaponSession.DefaultLoadoutId,
+            Require(_fusionPreparation is null && ReferenceEquals(_fusionAssets, attachedAssets), "selection restarted source processing");
+            Require(!FusionTestActive && FusionConfiguration!.LoadoutId == FusionWeaponSession.DefaultLoadoutId,
                 "ordinary selection entered the isolated test loadout");
+            await PhysicsFramesAsync(3);
+            Require(_fusionHeldViews[FusionWeaponSession.Lancer].GetChildren().OfType<MeshInstance3D>().Any(),
+                "background preparation did not attach the original Lancer model");
+            GD.Print("[fusion-smoke] default first equip reuses prepared shared models, textures and audio PASS");
             await FusionFireInputAsync(20);
             Require(_fusion.LancerSession.Ammo < 40, "default Lancer did not fire");
             await SelectFusionByInputAsync(2);
@@ -199,6 +211,30 @@ public partial class OBPGame
             Require(JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()) == normalInventory &&
                 ReferenceEquals(_rac1Weapons, _rac1CampaignSession.Weapons), "default weapons replaced or modified native inventory");
             GD.Print("[fusion-smoke] default Quick Select, both foreign weapons and normal native inventory PASS");
+            ShowDestinationSelector();
+            Require(ReferenceEquals(_fusionAssets, attachedAssets), "world exit discarded shared equipment");
+            var originalSources = _sources;
+            try
+            {
+                _sources = new(TrilogySourceDefinitions.All);
+                PrepareSharedWeaponSources(force: true);
+                await WaitForSharedWeaponsSmokeAsync();
+                Require(_fusionAssets?.Problems.Count == 3 && !ReferenceEquals(_fusionAssets, attachedAssets),
+                    "source change retained stale verified assets");
+                _sources = originalSources;
+                PrepareSharedWeaponSources(force: true);
+                var canceledPreparation = _fusionPreparation!;
+                ResetFusionWeapons();
+                Require(ReferenceEquals(_fusionPreparation, canceledPreparation), "level reset canceled shared preparation");
+                _sources = new(TrilogySourceDefinitions.All);
+                PrepareSharedWeaponSources(force: true);
+                await canceledPreparation.Completion.ContinueWith(task => Require(task.IsCanceled,
+                    "replaced source preparation was not canceled"));
+                await WaitForSharedWeaponsSmokeAsync();
+                Require(_fusionAssets?.Problems.Count == 3, "canceled source work replaced current assets");
+                GD.Print("[fusion-smoke] shared lifetime across world exit, source invalidation and canceled-worker isolation PASS");
+            }
+            finally { _sources = originalSources; }
             GD.Print("[fusion-smoke] PASS: source models/audio/beam, ordinary selector, staged three-weapon damage, occlusion, reset and normal re-entry");
             ApplicationLifecycle.RequestQuit(this, "fusion-smoke-pass");
         }
@@ -212,6 +248,14 @@ public partial class OBPGame
             ClearMovementSmokeInput();
             if (fixture is not null && IsInstanceValid(fixture)) fixture.QueueFree();
         }
+    }
+
+    private async Task WaitForSharedWeaponsSmokeAsync()
+    {
+        var timeout = System.Diagnostics.Stopwatch.StartNew();
+        while (_fusionPreparation is not null && timeout.Elapsed < TimeSpan.FromMinutes(4))
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        Require(_fusionAssets is not null, "shared preparation did not finish: " + _fusionAssetFailure);
     }
 
     private async Task SelectFusionByInputAsync(int slot)
