@@ -302,12 +302,16 @@ public partial class OBPGame
     {
         var key = _fusion!.Selected;
         var basis = _fusionHeldViews[key].GlobalBasis;
-        Require((basis * Vector3.Forward).Normalized().Dot(EquipmentForward) > .98f,
-            $"{key} barrel does not face the player's aim");
-        var up = key == FusionWeaponSession.Lancer ? Vector3.Left : Vector3.Up;
-        Require((basis * up).Normalized().Dot(Vector3.Up) > .98f, $"{key} is rolled sideways");
-        Require(MathF.Abs(basis.X.Length() - basis.Y.Length()) < .01f &&
-            MathF.Abs(basis.Y.Length() - basis.Z.Length()) < .01f, $"{key} mount distorts the source proportions");
+        var controller = _playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController;
+        Require(controller?.SourceEquipmentUseSequence is null && controller?.SourceEquipmentUseWeight == 0,
+            $"{key} retained a firing pose while idle");
+        var hand = controller!.CurrentAttachmentPose(OBP.Runtime.Player.PlayerEquipmentPose.HandAttachmentKey);
+        Require(hand is not null, $"{key} has no evaluated source hand");
+        var origin = OBP.Godot.Player.PlayerAvatarView.ToGodotLocal(hand!.Origin, _playerAvatar!.Axes, _playerAvatar.BaseHeight, true);
+        Require(_fusionHeldViews[key].Position.DistanceTo(origin) < .00001f, $"{key} is detached from the native hand origin");
+        Require(MathF.Abs(basis.X.Length() - 1) < .0001f && MathF.Abs(basis.Y.Length() - 1) < .0001f &&
+            MathF.Abs(basis.Z.Length() - 1) < .0001f && MathF.Abs(basis.X.Dot(basis.Y)) < .0001f &&
+            MathF.Abs(basis.Y.Dot(basis.Z)) < .0001f, $"{key} mount distorts the source proportions");
     }
 
     private async Task CaptureFusionProfileAsync(string name)
@@ -339,7 +343,8 @@ public partial class OBPGame
         File.WriteAllText(Path.Combine(directory, name + ".pose.json"), JsonSerializer.Serialize(new
         {
             selected = _fusion?.Selected.ToString(),
-            gunPoseTicks = _fusionGunPoseTicks,
+            sourceUseSequence = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentUseSequence,
+            sourceUseWeight = (_playerAvatarAnimationController as OBP.RAC1.Player.Rac1PlayerAnimationPresentationController)?.SourceEquipmentUseWeight,
             forward = new[] { EquipmentForward.X, EquipmentForward.Y, EquipmentForward.Z },
             weapons = _fusionHeldViews.Select(pair => new
             {

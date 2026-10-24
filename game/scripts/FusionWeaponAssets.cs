@@ -5,6 +5,7 @@ using OBP.Runtime;
 using OBP.Runtime.Diagnostics;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -17,6 +18,7 @@ public sealed class FusionWeaponAssets : IDisposable
     public IReadOnlyDictionary<SourceWeaponKey, string> Problems => _data.Problems;
     public GcLancerAssets.HeldAssets? Lancer => _data.Lancer;
     public UyaGlobalGadget.Source? Cannon => _data.Cannon;
+    public IReadOnlyDictionary<SourceWeaponKey, PlayerEquipmentAnimationSource> AvatarAnimations => _data.AvatarAnimations;
     public IReadOnlyList<RuntimeObjectMesh> Projectile => _data.Projectile;
     public PlaytestWeaponConfiguration Configuration(bool isolated) => _data.Configuration(isolated);
 

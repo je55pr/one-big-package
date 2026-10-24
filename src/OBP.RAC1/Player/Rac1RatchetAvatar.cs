@@ -77,6 +77,7 @@ public static class Rac1RatchetAvatar
         AxisDirection ForwardAxis,
         AxisDirection UpAxis)
     {
+        public IReadOnlyList<OBP.PS2.Geometry.Ps2Skeleton.Chain> AttachmentChains { get; init; } = [];
         public int ClassId => RatchetClassId;
         public int JointCount => Mesh.JointCount;
         public IReadOnlyList<int> TextureIds => Surfaces.Select(surface => surface.TextureId).ToArray();
@@ -222,7 +223,10 @@ public static class Rac1RatchetAvatar
             standingBounds.Min.Z,
             AxisDirection.PositiveX,
             AxisDirection.PositiveY,
-            AxisDirection.PositiveZ);
+            AxisDirection.PositiveZ)
+        {
+            AttachmentChains = OBP.PS2.Geometry.Ps2Skeleton.Read(core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength)).Chains,
+        };
     }
 
     private static AnimationClip DecodeClip(

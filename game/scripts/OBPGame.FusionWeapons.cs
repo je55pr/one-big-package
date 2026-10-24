@@ -38,7 +38,7 @@ public partial class OBPGame
     private FusionMeshView? _fusionBeam;
     private UyaShockCannonBeam.Scroll _fusionBeamScroll;
     private int _fusionModelAge, _fusionModelSequence, _fusionAcceptedHits, _fusionAudioStarted;
-    private int _fusionGunPoseTicks, _fusionGunPoseAge;
+    private bool _fusionUseStarted, _fusionPoseTriggerHeld;
     private bool _fusionDeathCleared;
     private WeaponDamageIntent? _fusionLastDamage;
     private WeaponStatus? _fusionDisplayedStatus;
@@ -61,7 +61,7 @@ public partial class OBPGame
         if (world.Game != "rac1" || _playtest?.Reader is { Header.Weapons: null }) return;
         _fusionAcceptedHits = _fusionAudioStarted = _fusionModelAge = _fusionModelSequence = 0;
         _fusionLastDamage = null; _fusionDeathCleared = false;
-        _fusionGunPoseTicks = _fusionGunPoseAge = 0;
+        _fusionUseStarted = _fusionPoseTriggerHeld = false;
         _fusionDisplayedStatus = null;
         if (!_args.FusionTest || world.LevelId != 0)
         {
@@ -185,7 +185,7 @@ public partial class OBPGame
         if (foreign)
         {
             StopFusionAudio();
-            _fusionGunPoseTicks = 0;
+            _fusionUseStarted = _fusionPoseTriggerHeld = false;
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
         }
     }
@@ -215,7 +215,7 @@ public partial class OBPGame
             _previousSelectedWeapon = previous;
             StopFusionAudio();
             _fusionModelSequence = _fusionModelAge = 0;
-            _fusionGunPoseTicks = _fusionGunPoseAge = 0;
+            _fusionUseStarted = _fusionPoseTriggerHeld = false;
             _rac1BombFireRequested = _rac1AdditionalFireRequested = _rac1EquipmentUsePressed = false;
             _rac1BombThrowActive = false;
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
@@ -261,10 +261,11 @@ public partial class OBPGame
         Vector3 aim = FusionAim(origin) - origin;
         bool admitted = !_player.Scripted && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             !_player.Rac1WaterHandItemHidden && !QuickSelectOpen && _fusionAssets.Available(_fusion.Selected);
-        var frame = _fusion.Advance(new(_player.Rac1EquippedItemHeld && admitted, admitted, ToNumerics(origin), ToNumerics(aim)));
-        if (_fusionGunPoseTicks > 0) { _fusionGunPoseTicks--; _fusionGunPoseAge++; }
-        if (frame.Effects.Any(e => e.Kind is "shot" or "Muzzle" or "Beam") || _fusion.CannonFrame?.ChargeUpdates > 0)
-        { if (_fusionGunPoseTicks == 0) _fusionGunPoseAge = 0; _fusionGunPoseTicks = 10; }
+        bool wasWindup = _fusion.CannonFrame?.State == UyaShockCannonState.Windup;
+        _fusionPoseTriggerHeld = _player.Rac1EquippedItemHeld && admitted;
+        var frame = _fusion.Advance(new(_fusionPoseTriggerHeld, admitted, ToNumerics(origin), ToNumerics(aim)));
+        _fusionUseStarted = frame.Effects.Any(e => e.Kind == "shot") ||
+            !wasWindup && _fusion.CannonFrame?.State == UyaShockCannonState.Windup;
         var contacts = new List<WeaponContact>();
         foreach (var query in frame.Queries) contacts.AddRange(TraceFusionQuery(query, origin));
         foreach (var intent in _fusion.ResolveContacts(frame, contacts))
@@ -384,18 +385,17 @@ public partial class OBPGame
             view.Visible = key == _fusion.Selected && _fusionAssets.Available(key) && !_rac1Nanotech.Probe().IsDead &&
                 _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active && _player?.Rac1WaterHandItemHidden != true;
             if (!view.Visible) continue;
-            // Explicit OBP hand mount. The source weapon's original joints are
-            // posed separately; this is not a recovered GC/UYA Ratchet mount.
-            var hand = controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(Rac1WeaponProfiles.Get(Rac1WeaponId.Blaster).HandSemantic));
+            // Native hand-matrix slot0 (semantic0/joint56), after the source
+            // arm layers. Both retail consumers copy this basis and origin.
+            var hand = controller.CurrentAttachmentPose(PlayerEquipmentPose.HandAttachmentKey);
             if (hand is not null)
             {
                 Vector3 Point(double x, double y, double z) => PlayerAvatarView.ToGodotLocal(hand.Transform(new(x, y, z)), _playerAvatar.Axes, _playerAvatar.BaseHeight, true);
                 Vector3 origin = Point(0, 0, 0);
-                var socket = new Basis(Point(-1, 0, 0) - origin, Point(0, 0, 1) - origin, Point(0, 1, 0) - origin);
-                var rotation = FusionWeaponMount.Rotation(key);
-                var mount = socket * new Basis(new Quaternion(rotation.X, rotation.Y, rotation.Z, rotation.W));
-                var grip = FusionWeaponMount.Grip(key);
-                view.Transform = new(mount, origin - mount * new Vector3(grip.X, grip.Y, grip.Z));
+                // Convert the held mesh's reflected X / swapped YZ axes back
+                // through the avatar's native coordinate frame exactly once.
+                var basis = new Basis(Point(-1, 0, 0) - origin, Point(0, 0, 1) - origin, Point(0, 1, 0) - origin);
+                view.Transform = new(basis.Orthonormalized(), origin);
             }
             if (key == FusionWeaponSession.Lancer && _fusionAssets.Lancer is { } lancer)
             {
@@ -488,7 +488,7 @@ public partial class OBPGame
         foreach (var node in _fusionProjectiles.Values.Cast<Node3D>().Concat(_fusionEffects.Select(e => e.Node)))
             if (IsInstanceValid(node)) { if (freeImmediately) node.Free(); else node.QueueFree(); }
         _fusionProjectiles.Clear(); _fusionEffects.Clear();
-        _fusionGunPoseTicks = _fusionGunPoseAge = 0;
+        _fusionUseStarted = _fusionPoseTriggerHeld = false;
         if (_fusionBeam is not null && IsInstanceValid(_fusionBeam)) _fusionBeam.Visible = false;
         _fusionBeamScroll = default;
     }

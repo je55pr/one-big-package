@@ -12,6 +12,7 @@ using OBP.Runtime.Audio;
 using OBP.Runtime.Diagnostics;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -24,6 +25,7 @@ public sealed class FusionWeaponData
     public Dictionary<(SourceWeaponKey, int), IReadOnlyList<Voice>> Audio { get; } = [];
     public GcLancerAssets.HeldAssets? Lancer { get; private set; }
     public UyaGlobalGadget.Source? Cannon { get; private set; }
+    public Dictionary<SourceWeaponKey, PlayerEquipmentAnimationSource> AvatarAnimations { get; } = [];
     public IReadOnlyList<RuntimeObjectMesh> Projectile { get; private set; } = [];
     private readonly Dictionary<string, string> _identities = [];
     public int ReusedVerifications { get; private set; }
@@ -43,6 +45,7 @@ public sealed class FusionWeaponData
             Textures.Add(GcLancerPresentation.HeldTexture(Lancer));
             var wad = fs.OpenFile("/G/LEVEL1.WAD")!;
             var core = GcLevelCore.Open(GcLevelWad.RequireLump(wad, GcLevelWad.ReadHeader(wad), 0));
+            AvatarAnimations.Add(FusionWeaponSession.Lancer, OBP.RAC2.Player.GcRatchetSkeletalSource.ReadLancer(core));
             var projectile = GcMobyClasses.Read(core)[GcLancerProfile.ProjectileMobyClass];
             Projectile = GcLancerPresentation.ProjectileModel(projectile);
             foreach (var texture in GcLevelTextures.Read(core, GcLevelTextures.Table.Moby).Where(t => projectile.TextureIds.Contains(t.Index)))
@@ -60,8 +63,10 @@ public sealed class FusionWeaponData
         Load(ObpSourceGame.Rac3, FusionWeaponSession.ShockCannon, disc =>
         {
             Cannon = UyaGlobalGadget.Read(disc, UyaShockCannonProfile.HeldMobyClass);
+            var core = UyaLevelCore.Open(disc, 1).Core;
+            AvatarAnimations.Add(FusionWeaponSession.ShockCannon, OBP.RAC3.Player.UyaRatchetSkeletalSource.ReadShockCannon(core));
             foreach (var texture in UyaShockCannonAssets.Textures(Cannon).Concat(
-                UyaFxTextures.Read(UyaLevelCore.Open(disc, 1).Core, new HashSet<int> { 10, 23 }).Values)) Textures.Add(texture);
+                UyaFxTextures.Read(core, new HashSet<int> { 10, 23 }).Values)) Textures.Add(texture);
             for (int cue = 0; cue < 6; cue++)
             {
                 var sound = UyaShockCannonAssets.Audio(Cannon, cue, seed: 0);

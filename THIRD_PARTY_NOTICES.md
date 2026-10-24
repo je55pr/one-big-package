@@ -11,6 +11,9 @@ The optional camera and mission research oracles build its MIT-licensed R5900/VU
 interpreters locally to execute original disc functions. UYA's Shock Cannon
 oracle also uses those interpreters with UYA's own boot VU0 math upload, beam
 draw routines and sound attenuation code from the authorized original disc.
+The trilogy skeleton oracle uses the same interpreters to execute GC/UYA
+packed animation decoding, arm-layer baking and semantic joint queries on
+temporary, locally extracted retail inputs.
 
 Upstream: https://github.com/daino-selvatico/rac1-native-game
 
