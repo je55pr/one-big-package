@@ -21,14 +21,9 @@ The original mechanics and encounters are being recovered first, so they can be 
 
 **OBP is still in development and is not a complete playable trilogy.**
 
-## Trilogy content catalogue
+## Implementation catalogue
 
-Named content from the original PS2 trilogy, grouped into collapsible tables. This is an **initial name-level inventory** covering all three games; it is **not** a verified census of every placed instance, enemy subclass, scripted event or upgrade stage. The retail-source audit is still needed to establish exhaustive coverage and accurate implementation status.
-
-**Status legend:** 🔴 **Unassessed** = no implementation/research status verified for this entry; it does not prove the feature is absent. 🟠 **Researched** = original behaviour documented, or only a basic placeholder exists. 🟡 **Partial** = working implementation with remaining gaps, including playable slices. 🟢 **Complete** = fully implemented and verified against its intended scope. No entries are marked complete without evidence. The status column uses only the circle; explanatory details are in Notes. Weapon variants remain grouped with base weapons.
-
-Where available, images are linked from the Ratchet & Clank Wiki: [R&C1](https://ratchetandclank.fandom.com/wiki/Category:Icons_from_Ratchet_%26_Clank_%282002_game%29), [Going Commando](https://ratchetandclank.fandom.com/wiki/Category:Icons_from_Going_Commando), and [Up Your Arsenal](https://ratchetandclank.fandom.com/wiki/Category:Icons_from_Up_Your_Arsenal). Blank image cells mean no suitable small image was matched. GitHub proxies the images but availability remains dependent on the wiki. Tables use GitHub-supported width hints; mobile layouts may still need horizontal scrolling.
-
+**Status legend:** 🔴 Unassessed · 🟠 Researched / basic placeholder · 🟡 Partially implemented · 🟢 Fully implemented and verified
 
 <details>
 <summary>Weapons and upgrade families</summary>
