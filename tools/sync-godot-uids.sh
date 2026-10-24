@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate missing sidecars using Godot; pass --check for read-only validation.
+# Use the repository's existing .NET SDK and the pinned Godot .NET editor.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-exec node "$root/tools/sync-godot-uids.mjs" "$@"
+exec dotnet run --project "$root/tools/OBP.GodotUidTool/OBP.GodotUidTool.csproj" -- "$@" --root "$root"

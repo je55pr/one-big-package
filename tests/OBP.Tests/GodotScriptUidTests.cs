@@ -25,9 +25,9 @@ public sealed class GodotScriptUidTests
 
             string uid = File.ReadAllText(sidecar).Trim();
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(uid, "^uid://[a-z0-9]+$"),
-                $"Malformed Godot UID in {Path.GetRelativePath(RepoPaths.Root, sidecar)}: '{uid}'. Restore its original value; see tools/sync-godot-uids.mjs --check.");
+                $"Malformed Godot UID in {Path.GetRelativePath(RepoPaths.Root, sidecar)}: '{uid}'. Restore its original value; see tools/sync-godot-uids.ps1 -Check.");
             Assert.True(uids.Add(uid),
-                $"Duplicate Godot script UID {uid}: {Path.GetRelativePath(RepoPaths.Root, sidecar)}. Restore the original sidecar; see tools/sync-godot-uids.mjs --check.");
+                $"Duplicate Godot script UID {uid}: {Path.GetRelativePath(RepoPaths.Root, sidecar)}. Restore the original sidecar; see tools/sync-godot-uids.ps1 -Check.");
         }
 
         foreach (string folder in new[] { "scripts", "diagnostics" })

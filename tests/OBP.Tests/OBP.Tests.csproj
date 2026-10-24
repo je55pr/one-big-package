@@ -23,6 +23,7 @@
     <ProjectReference Include="../../src/OBP.Composition/OBP.Composition.csproj" />
     <ProjectReference Include="../../src/OBP.Core/OBP.Core.csproj" />
     <ProjectReference Include="../../src/OBP.Godot/OBP.Godot.csproj" />
+    <ProjectReference Include="../../tools/OBP.GodotUidTool/OBP.GodotUidTool.csproj" />
     <ProjectReference Include="../../src/OBP.IO/OBP.IO.csproj" />
     <ProjectReference Include="../../src/OBP.PS2/OBP.PS2.csproj" />
     <ProjectReference Include="../../src/OBP.RAC1/OBP.RAC1.csproj" />

@@ -1,13 +1,13 @@
 #Requires -Version 5.1
-# Generate missing .cs.uid sidecars via the pinned Godot .NET editor.
-# Use -Check for a fast read-only CI/contributor validation.
+# Validate or generate C# UID sidecars using only .NET 8 and pinned Godot .NET.
 param(
   [switch]$Check,
   [string]$Godot
 )
 $ErrorActionPreference = 'Stop'
-$scriptPath = Join-Path $PSScriptRoot 'sync-godot-uids.mjs'
-$arguments = @($scriptPath, $(if ($Check) { '--check' } else { '--sync' }))
+$root = Split-Path -Parent $PSScriptRoot
+$project = Join-Path $PSScriptRoot 'OBP.GodotUidTool/OBP.GodotUidTool.csproj'
+$arguments = @('run', '--project', $project, '--', $(if ($Check) { '--check' } else { '--sync' }), '--root', $root)
 if ($Godot) { $arguments += @('--godot', $Godot) }
-& node @arguments
+& dotnet @arguments
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

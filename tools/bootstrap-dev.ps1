@@ -24,7 +24,7 @@ if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
 # Automatically sync script identities during the normal first-time setup.
 # The command skips the extra build/import when every sidecar already exists.
-& node (Join-Path $PSScriptRoot 'sync-godot-uids.mjs') --sync --godot $godot
+& dotnet run --project (Join-Path $PSScriptRoot 'OBP.GodotUidTool/OBP.GodotUidTool.csproj') -- --sync --root $root --godot $godot
 if ($LASTEXITCODE -ne 0) { throw "Godot UID sync failed" }
 & $godot --headless --path (Join-Path $root 'game') --editor --import --quit
 if ($LASTEXITCODE -ne 0) { throw "Godot import failed" }
