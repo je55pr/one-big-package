@@ -114,7 +114,8 @@ Its ordinary locomotion, crouch, stop and landing clocks are documented in
 retain their own selector contracts. The selected avatar's actual source/provider
 must resolve independently of destination origin. The reconciliation contract
 selects genuine R&C1 Ratchet as the initial ordinary profile on every world;
-#268 replaces the current destination-based provider lookup and capsule fallback.
+The shared entry path resolves that selected provider before unloading the world;
+a capsule requires explicit diagnostic mode. #268 owns complete profile admission.
 GC/UYA skins are not admitted just because their skeletons are compatible.
 Missing selected assets must fail visibly. Movement is authoritative
 outside the animation mapping. Neutral skeleton metadata is optional until

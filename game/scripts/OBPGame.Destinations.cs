@@ -49,7 +49,7 @@ public partial class OBPGame
         }
 
         _genericNavigationActive = _args.CaptureFrame is null;
-        if ((_args.PlaytestRequested || _args.FusionSmoke) && _fusionPreparation is not null)
+        if ((_args.PlaytestRequested || _args.FusionSmoke || _args.PlayerSessionSmoke) && _fusionPreparation is not null)
         {
             _ = EnterWorldAfterSharedPreparationAsync(destination);
             return;
@@ -280,72 +280,8 @@ public partial class OBPGame
     /// RuntimeWorld, then the shared Godot builder renders/collides/spawns it.
     /// No source-game catalogue or native level type is consulted here.
     /// </summary>
-    private bool EnterProviderWorld(string sourcePath, ObpDestination destination)
-    {
-        string name = $"World_{destination.Game}_{destination.NativeDestinationId}";
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        bool ready = WorldTransitionStaging.TryPrepare(
-            () => TrilogyWorldProviders.Registry.Load(sourcePath, destination),
-            world =>
-            {
-                // Validate host prerequisites before destroying a playable session.
-                if (world.Game == "rac1" && world.PlayerStart is null)
-                    throw new InvalidDataException("R&C1 world is missing its authored player start.");
-                return WorldHost.PrepareScene(world, name, WorldOptions(world));
-            },
-            out RuntimeWorld? world,
-            out RuntimeWorldScene.Result? preparedScene,
-            out Exception? problem);
-        stopwatch.Stop();
-        if (!ready)
-        {
-            GD.PrintErr($"[destinations] preparing {destination.DestinationId} failed: {problem}");
-            AbandonFailedRac1Travel();
-            if (_args.CaptureFrame is not null)
-                ApplicationLifecycle.RequestQuit(this, "destination-prepare-failed", 1);
-            else if (_world is null && _destinationSelector is null)
-                ShowDestinationSelector();
-            DestinationError($"{destination.DisplayName} could not load: {problem!.Message}");
-            return false;
-        }
-
-        GD.Print($"[destinations] staged {destination.DestinationId} / {destination.DisplayName} in {stopwatch.ElapsedMilliseconds} ms — " +
-                 $"{world!.Meshes.Count} meshes / {world.TotalRenderTriangles:N0} tris / {world.TotalCollisionTriangles:N0} coll tris");
-
-        // Preparation succeeded. This is the only destructive boundary.
-        _currentDestinationId = destination.DestinationId;
-        _activeDestination = destination;
-        _destinationSelector?.QueueFree();
-        _destinationSelector = null;
-        _sourceManager?.QueueFree();
-        _sourceManager = null;
-        TeardownWorld();
-        ClearBootstrapSceneArtifacts();
-
-        string gameSlug = destination.Game.ToString().ToLowerInvariant();
-        string placeSlug = destination.PlanetLabel.ToLowerInvariant().Replace(' ', '-');
-        _sceneKind = $"{gameSlug}-{placeSlug}";
-
-        try
-        {
-            AdoptRuntimeWorld(world!, sourcePath, destination, preparedScene!);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            GD.PrintErr($"[destinations] attaching {destination.DestinationId} failed: {ex}");
-            _worldHost.Unload();
-            if (preparedScene is { } scene && GodotObject.IsInstanceValid(scene.Root))
-                scene.Root.QueueFree();
-            AbandonFailedRac1Travel();
-            ShowDestinationSelector();
-            _destinationSelector?.SetHint($"Could not attach {destination.DisplayName}: {ex.Message}", error: true);
-            if (_args.CaptureFrame is not null)
-                ApplicationLifecycle.RequestQuit(this, "destination-attach-failed", 1);
-            return false;
-        }
-    }
-
+    private bool EnterProviderWorld(string sourcePath, ObpDestination destination) =>
+        EnterWorld(destination.DestinationId, () => TrilogyWorldProviders.Registry.Load(sourcePath, destination), destination, sourcePath);
     private void AbandonFailedRac1Travel()
     {
         if (_rac1CampaignSession.Travel.TransitionActive &&
@@ -376,83 +312,6 @@ public partial class OBPGame
             ShowCollisionDebug = _args.CollisionDebug,
             OnlyAnimatedMobies = _args.AnimSolo,
         };
-    }
-
-    private void AdoptRuntimeWorld(
-        RuntimeWorld world, string sourcePath, ObpDestination destination,
-        RuntimeWorldScene.Result preparedScene)
-    {
-        // Release the previous level's ISO-backed music reader when switching games.
-        ResetRac1NovalisMusic();
-        _world = world;
-        _worldSwitches++;
-
-        bool framedCapture = _args.CaptureFrame is not null
-            && (_args.DirectLoad || _args.Destination is not null)
-            && _args.TestScene != "player"
-            && !_args.AnimSolo
-            && !_args.CrateFocus && !_args.CrateAutoStrike;
-        bool staticCamera = framedCapture || _args.ShotsPath is not null;
-
-        var result = _worldHost.Load(
-            this, _worldRoot, world, $"World_{destination.Game}_{destination.NativeDestinationId}",
-            WorldOptions(world), preparedScene);
-        if (world.Game == "rac1")
-        {
-            RuntimeSpawn authoredClass0 = world.PlayerStart
-                ?? throw new InvalidDataException("R&C1 world is missing its recovered authored class-0 player start.");
-            _rac1CampaignSession.StartLevelCheckpointSession(world.LevelId, authoredClass0);
-        }
-        _sceneResult = result;
-        SetupOverlay(result, world);
-        ConfigureGcGameplayHost();
-        if (!staticCamera)
-        {
-            ConfigureRac1Gameplay(world, result);
-            ConfigureUyaGameplay(world, result);
-        }
-
-        if (_args.AnimSolo)
-        {
-            FrameAnimatedMobies(world);
-        }
-        else if (staticCamera)
-        {
-            FrameShowcaseCamera(world);
-        }
-        else
-        {
-            SpawnPlayer(world);
-        }
-
-        _mode = Mode.World;
-        EnsurePlayerHud();
-        EnsureWorldHud();
-        UpdatePlayerHud();
-        UpdateWorldHud();
-
-        // A campaign travel is durable only after scene and player setup succeeded.
-        if (world.Game == "rac1")
-        {
-            Rac1LevelEntryKind entry = _rac1CampaignSession.CommitLoadedLevel(world.LevelId);
-            _rac1CampaignSession.FinishLoadedLevel(entry);
-            if (entry == Rac1LevelEntryKind.CampaignTravel)
-                PersistRac1CampaignState("completed campaign travel");
-        }
-
-        _loadSummary = $"✓ {destination.DisplayName} · {result.MeshInstances} meshes / {result.Triangles:N0} tris / {result.CollisionBodies} colliders";
-        GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches})");
-
-        DispatchRequestedWorldSmokes(destination);
-        _playtest?.WorldEntered();
-        if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
-
-        // Exact verification remains game-specific today. Preserve the mature GC
-        // opt-in while avoiding an implicit multi-GB hash for other providers.
-        if (_args.VerifyHash && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2)
-        {
-            StartBackgroundVerify(sourcePath);
-        }
     }
 
     private void DestinationError(string message)

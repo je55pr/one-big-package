@@ -67,6 +67,8 @@ public sealed record PlayerSessionSnapshot(
 {
     public const int CurrentVersion = 1;
     public int Version { get; init; } = CurrentVersion;
+    public IReadOnlyList<IPlayerSessionComponentSnapshot> Components { get; init; } = [];
+    public IReadOnlyDictionary<string, string> Preferences { get; init; } = new Dictionary<string, string>();
 
     public void Validate()
     {
@@ -75,11 +77,53 @@ public sealed record PlayerSessionSnapshot(
         Configuration.Validate();
         Loadout.SelectedWeapon?.Validate(); Loadout.HandEquipment?.Validate();
         foreach (var weapon in Loadout.QuickSelect) weapon?.Validate();
+        var components = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var component in Components)
+            if (string.IsNullOrWhiteSpace(component.ComponentId) || component.Version < 1 || !components.Add(component.ComponentId))
+                throw new ArgumentException("Invalid or duplicate source-owned player state component.");
+        if (Preferences.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value is null))
+            throw new ArgumentException("Invalid player preference.");
         if (!double.IsFinite(Health.Current) || !double.IsFinite(Health.Capacity) ||
             Health.Capacity <= 0 || Health.Current < 0 || Health.Current > Health.Capacity ||
             Currencies.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Value < 0))
             throw new ArgumentException("Invalid resolved player resources.");
     }
+}
+
+/// <summary>Immutable, source-owned state; Fusion never decodes its contents.</summary>
+public interface IPlayerSessionComponentSnapshot
+{
+    string ComponentId { get; }
+    int Version { get; }
+}
+
+public sealed record PlayerGameplaySnapshot(PlayerLoadoutSnapshot Loadout, PlayerHealthSnapshot Health,
+    IReadOnlyDictionary<string, long> Currencies, IReadOnlyList<IPlayerSessionComponentSnapshot> Components);
+
+/// <summary>
+/// Persistent native controller owner supplied by the composition root. Native
+/// campaign state is not this player state. World exit retires only transients.
+/// </summary>
+public interface IPlayerSessionStateAdapter
+{
+    PlayerGameplaySnapshot Capture();
+    void ValidateRestore(PlayerGameplaySnapshot snapshot);
+    void Restore(PlayerGameplaySnapshot snapshot);
+    void EndWorld();
+}
+
+/// <summary>Host settings projection. Device calibration stays with the device, outside player state.</summary>
+public interface IPlayerSessionPreferencesAdapter
+{
+    IReadOnlyDictionary<string, string> Capture();
+    void ValidateRestore(IReadOnlyDictionary<string, string> preferences);
+    void Restore(IReadOnlyDictionary<string, string> preferences);
+}
+
+public enum PlayerCapabilityStatus { Available, MissingSource, UnsupportedBuild, Unimplemented, Unowned, ContextBlocked }
+public sealed record PlayerCapabilityAvailability(PlayerCapabilityStatus Status, string? Reason)
+{
+    public bool Usable => Status == PlayerCapabilityStatus.Available;
 }
 
 /// <summary>

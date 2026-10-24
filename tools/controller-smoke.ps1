@@ -27,7 +27,7 @@ if ($UyaIso) { $sourceArgs += @('--uya-iso', $UyaIso) }
 $previousCapture = $env:OBP_CONTROLLER_CAPTURE_DIR
 try {
     if ($CaptureDirectory) { $env:OBP_CONTROLLER_CAPTURE_DIR = [IO.Path]::GetFullPath($CaptureDirectory) }
-    & $godot @windowArgs '--path' (Join-Path $root 'game') '--rendering-method' 'gl_compatibility' 'res://scenes/ControllerSmoke.tscn' '--' '--controller-smoke' @sourceArgs
+    & $godot @windowArgs '--fixed-fps' '60' '--path' (Join-Path $root 'game') '--rendering-method' 'gl_compatibility' 'res://scenes/ControllerSmoke.tscn' '--' '--controller-smoke' @sourceArgs
     $result = $LASTEXITCODE
 }
 finally { $env:OBP_CONTROLLER_CAPTURE_DIR = $previousCapture }

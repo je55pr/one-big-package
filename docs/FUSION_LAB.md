@@ -1,18 +1,12 @@
 # Playable Fusion Lab greybox (#254)
 
-This describes the current greybox implementation. The
-[reconciliation contract](PLAYER_WORLD_CONTRACT.md) supersedes its destination-driven
-player setup: #266/#267/#268 migrate it to the same persistent session and selected
-avatar as ordinary worlds. Capsule fallback is legacy debt; the ordinary contract
-requires a visible failure for missing selected assets and an explicit diagnostic
-choice for a capsule. Those host changes are not part of the stage-0 contract PR.
-
 The Fusion Lab is an original OBP destination under **World Select**. It
-needs no disc source to enter: the unmodified PlayerHost remains controllable,
-with a clearly marked debug capsule when no verified native R&C1 avatar is
-available. With an attached supported R&C1 source, the ordinary avatar
-presentation provider is attempted, and on failure the capsule is retained
-without pretending that a substitute mesh is retail content.
+uses the same persistent player session and staged world lifecycle as original
+planets, with its real `obp:fusion-lab` identity. Ordinary play uses the selected
+genuine R&C1 Ratchet and requires that source. Missing selected assets produce a
+visible entry failure. For asset-free greybox inspection, explicitly pass
+`--diagnostic-player` (capture wrapper: `-DiagnosticPlayer`) to select the capsule.
+See the [ownership contract](PLAYER_WORLD_CONTRACT.md).
 
 ## Contract
 
@@ -32,9 +26,10 @@ until adapters, catalogues and mixed encounter work land in follow-ups.
 ## Smoke/inspection
 
 - Menu: World Select -> OBP FUSION LAB.
-- Developer launch: --test-scene fusion-lab, no source required.
-- First-frame capture: ./tools/capture.ps1 fusion-lab -Frame 120.
-- Automated round trip: ./tools/capture.ps1 fusion-lab -Frame 1500.
+- Developer launch: --test-scene fusion-lab (selected avatar source required).
+- Asset-free launch: --test-scene fusion-lab --diagnostic-player.
+- First-frame capture: ./tools/capture.ps1 fusion-lab -DiagnosticPlayer -Frame 120.
+- Automated traversal: ./tools/capture.ps1 fusion-lab -DiagnosticPlayer -Frame 1500.
   In capture mode only, a scripted input provider drives the ordinary
   PlayerHost from entrance through hub and test chamber, reverses, then
   unloads and re-enters via World Select. Require the log line
@@ -42,6 +37,11 @@ until adapters, catalogues and mixed encounter work land in follow-ups.
 - Interactive check: verify normal controller, collision, pause/resume,
   return to World Select and re-entry. Live manual pause checks are not
   replaced by the automated traversal smoke.
+- Cross-world session check: ./tools/player-session-smoke.ps1 -Rendered, with all
+  three authorized source environment variables configured. It checks retained
+  avatar/profile, selected foreign weapon, wrench hand ownership, health and
+  camera preferences, repeated native/custom re-entry, missing avatar source and
+  failed staged load. It is a lifecycle fixture, not cross-world replay admission.
 - Run portable FusionLabDefinitionTests, ArchitectureLayeringTests and build
   game/OneBigPackage.csproj. The authored topology and failure cases are
   deterministic without native assets. The old --compose viewer remains

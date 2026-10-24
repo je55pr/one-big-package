@@ -12,82 +12,21 @@ public partial class OBPGame
     private Label? _fusionLabStatus;
 
     /// <summary>
-    /// Enter original OBP-authored geometry via the existing RuntimeWorld,
-    /// WorldHost and PlayerHost route, rather than a parallel character engine.
+    /// Enter OBP-authored geometry through the shared staged world lifecycle.
     /// </summary>
     private bool EnterFusionLab()
     {
-        FusionLabDefinition definition;
-        RuntimeWorld world;
-        RuntimeWorldScene.Result preparedScene;
         try
         {
-            string path = ProjectSettings.GlobalizePath("res://data/fusion_lab.json");
-            definition = FusionLabDefinition.Parse(File.ReadAllText(path));
-            world = FusionLabWorldFactory.Build(definition);
-            preparedScene = WorldHost.PrepareScene(world, "FusionLab", WorldOptions(world));
+            var definition = FusionLabDefinition.Parse(File.ReadAllText(ProjectSettings.GlobalizePath("res://data/fusion_lab.json")));
+            return EnterWorld(definition.Id, () => FusionLabWorldFactory.Build(definition), null, null, definition);
         }
-        catch (Exception ex)
+        catch (Exception error)
         {
-            GD.PrintErr($"[fusion-lab] layout preparation failed: {ex}");
-            _destinationSelector?.SetHint($"Fusion Lab unavailable: {ex.Message}", error: true);
-            return false;
-        }
-
-        try
-        {
-            _destinationSelector?.QueueFree();
-            _destinationSelector = null;
-            _sourceManager?.QueueFree();
-            _sourceManager = null;
-            TeardownWorld();
-            ClearBootstrapSceneArtifacts();
-
-            _world = world;
-            _sceneResult = _worldHost.Load(this, _worldRoot, world, "FusionLab",
-                WorldOptions(world), preparedScene);
-
-            // The world is custom, but a verified native R&C1 avatar can be
-            // requested through its actual provider when the source is present.
-            // Without that source, the host's clearly non-native debug capsule
-            // remains controllable. No fake Ratchet asset is substituted.
-            EnsureSourceLibraryInitialized();
-            bool nativeAvatarAvailable = _sources.Get(ObpSourceGame.Rac1) is not null;
-            _activeDestination = nativeAvatarAvailable
-                ? TrilogyWorldProviders.Resolve("rac1:LEVEL0")
-                : null;
-
-            SetupOverlay(_sceneResult, world);
-            SpawnPlayer(world);
-            if (_player is { } player)
-                StartFusionLabTraversalSmoke(player);
-            _mode = Mode.World;
-            _sceneKind = "fusion-lab";
-            _currentDestinationId = definition.Id;
-            _genericNavigationActive = true;
-            _worldSwitches++;
-
-            DecorateFusionLab(definition, nativeAvatarAvailable);
-            EnsurePlayerHud();
-            EnsureWorldHud();
-            UpdatePlayerHud();
-            UpdateWorldHud();
-            _loadSummary = $"Fusion Lab / {definition.Rooms.Count} rooms / {definition.Stations.Count} future stations";
-            GD.Print($"[fusion-lab] {_loadSummary}: one PlayerHost, original collision, no source-world importer");
-            _playtest?.WorldEntered();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            GD.PrintErr($"[fusion-lab] host activation failed: {ex}");
-            if (GodotObject.IsInstanceValid(preparedScene.Root))
-                preparedScene.Root.QueueFree();
-            ShowDestinationSelector();
-            _destinationSelector?.SetHint($"Fusion Lab could not start: {ex.Message}", error: true);
+            DestinationError("Fusion Lab layout is unavailable: " + error.Message);
             return false;
         }
     }
-
     private void DecorateFusionLab(FusionLabDefinition definition, bool nativeAvatarAvailable)
     {
         if (_sceneResult is null) return;

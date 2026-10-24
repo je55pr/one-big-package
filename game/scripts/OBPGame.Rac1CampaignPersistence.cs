@@ -95,8 +95,8 @@ public partial class OBPGame
         EnsureRac1CampaignPersistenceInitialized();
 
         Rac1ItemAcquisitionResult result =
-            _rac1CampaignSession.Weapons.AcquireNativeItem(nativeItemId);
-        if (_player is { UseRac1Gameplay: true } player)
+            (_playerNative?.Inventory ?? _rac1CampaignSession.Weapons).AcquireNativeItem(nativeItemId);
+        if (_player is { } player)
             player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         PersistRac1CampaignState($"item acquisition {nativeItemId}");
 
@@ -119,7 +119,7 @@ public partial class OBPGame
         EnsureRac1CampaignPersistenceInitialized();
 
         Rac1AmmoGrantResult result =
-            _rac1CampaignSession.Weapons.GrantAmmoClamped(nativeItemId, amount);
+            (_playerNative?.Inventory ?? _rac1CampaignSession.Weapons).GrantAmmoClamped(nativeItemId, amount);
         if (result.Changed)
         {
             PersistRac1CampaignState($"ammo grant item {nativeItemId}");

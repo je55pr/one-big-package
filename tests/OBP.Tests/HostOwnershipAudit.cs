@@ -105,7 +105,7 @@ internal static class HostOwnershipAudit
             if (entry.Kind == "migration")
             {
                 if (string.IsNullOrWhiteSpace(entry.Owner) || entry.Hash != usage.Hash)
-                    errors.Add($"OBP001 {entry.Key}: frozen player coupling changed; migration owner {entry.Owner}. Remove the dependency and its baseline, do not extend it.");
+                    errors.Add($"OBP001 {entry.Key}: frozen player coupling changed; migration owner {entry.Owner} (hash {usage.Hash}). Remove the dependency and its baseline, do not extend it.");
             }
             else if (entry.Kind != "adapter" || usage.LegacyReads > 0 || usage.PlayerSelection)
                 errors.Add($"OBP001 {entry.Key}: source-world adapter selects a player service or uses the legacy player-mode flag.");

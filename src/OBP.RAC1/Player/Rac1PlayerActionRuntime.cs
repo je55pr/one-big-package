@@ -180,6 +180,15 @@ public sealed class Rac1PlayerActionRuntimeSession
     }
 
     public Rac1PlayerActionSnapshot Probe() => _current;
+    /// <summary>Restore an already decoded source-owned runtime snapshot, without re-entering an action.</summary>
+    public void Restore(Rac1PlayerActionSnapshot snapshot)
+    {
+        Rac1PlayerActionDomain.Validate(snapshot.CurrentNativeState);
+        if (snapshot.PreviousNativeState is { } previous) Rac1PlayerActionDomain.Validate(previous);
+        if (snapshot.EntryGeneration < 0 || snapshot.UpdateGeneration < 0 || snapshot.NativeSequenceFrame < 0 ||
+            !Enum.IsDefined(snapshot.OrdinaryMovement)) throw new ArgumentException("Invalid R&C1 action snapshot.");
+        _current = snapshot with { Descriptor = Rac1PlayerActionDomain.Describe(snapshot.CurrentNativeState) };
+    }
     public void RegisterHandler(IRac1PlayerActionHandler handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
