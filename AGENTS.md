@@ -20,7 +20,8 @@
 - Pull requests must pass the required GitHub checks and resolve review conversations. All merges are deliberate and manual; do not enable auto-merge.
 - `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer. Keep changes focused and avoid bookkeeping-only commits.
 - Prefer small evidence-backed changes with deterministic tests, but do not create process for process's sake.
-- Run `./tools/test.ps1 -Configuration Release` on Windows or `./tools/test.sh Release` where supported.
+- When creating/moving scripts under `game/scripts` or `game/diagnostics`, move existing `.cs.uid` files alongside renamed scripts (`git mv`), or run `./tools/sync-godot-uids.ps1` (Linux: `bash tools/sync-godot-uids.sh`) to generate missing sidecars with the checksum-pinned Godot .NET editor. Commit the sidecars. The C#/.NET command skips importing and does not build the game when none are missing; `-Check` or `--check` validates without Godot. Do not manually invent UIDs.
+- Run `./tools/test.ps1 -Configuration Release` on Windows or `./tools/test.sh Release` where supported; both check UID coverage before .NET tests, and the six UID-tooling regression tests run in xUnit.
 - Run `dotnet format OneBigPackage.sln --verify-no-changes --no-restore` before integrating code changes.
 - For changes that depend on retail bytes, run `./tools/test-retail.ps1` on an authorized local machine before calling them authority-validated.
 - Keep generated retail evidence payload-free and reproducible.

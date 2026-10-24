@@ -1,6 +1,6 @@
 using OBP.Core.Math;
 
-namespace OBP.Composition;
+namespace OBP.Fusion;
 
 /// <summary>
 /// A neutral, engine-independent world-composition document: two or more

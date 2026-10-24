@@ -95,6 +95,15 @@ public partial class OBPGame : Node3D
 
         BuildSkeleton();
 
+        // Dedicated deterministic fixture through the same playable Lab host
+        // used by the ordinary World Select button (not the --compose viewer).
+        if (_args.TestScene == "fusion-lab")
+        {
+            if (EnterFusionLab() && _args.CaptureFrame is { } fusionCapture)
+                _ = RunCaptureAsync(fusionCapture);
+            return;
+        }
+
         // A --shots run works for any provider and drives the same neutral
         // destination/provider path used by ordinary world entry.
         if (_args.ShotsPath is { } shotList)
@@ -152,6 +161,7 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickPlayerAvatar(delta);
+            TickFusionLabTraversalSmoke();
             TickGcGameplay(delta);
             TickRac1Gameplay(delta);
             TickUyaGameplay(delta);
@@ -391,6 +401,7 @@ public partial class OBPGame : Node3D
     private void TeardownWorld()
     {
         FlushRac1CampaignSaves("world teardown");
+        ClearFusionLabStatus();
         CloseWeaponQuickSelect();
         TearDownInteractiveOverlays();
         TryCloseRac1PlanetMap();
@@ -631,7 +642,8 @@ public partial class OBPGame : Node3D
             // Keep the generic 8-unit snap everywhere else, but prevent the
             // Aranos authored start from snapping upward onto that roof.
             InitialGroundSnapUpwardReach =
-                world.Game == "rac2" && world.LevelId == 0 && world.PlayerStart is not null
+                world.Game == "fusion" ||
+                (world.Game == "rac2" && world.LevelId == 0 && world.PlayerStart is not null)
                     ? 0.75f
                     : 8f,
             // OBP deliberately reuses the retail-derived R&C1 controller in

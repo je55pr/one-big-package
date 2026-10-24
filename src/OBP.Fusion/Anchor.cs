@@ -1,6 +1,6 @@
 using OBP.Core.Math;
 
-namespace OBP.Composition;
+namespace OBP.Fusion;
 
 /// <summary>
 /// One equivalence claim between two worlds: "this point in world A is the same

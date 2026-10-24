@@ -50,7 +50,7 @@ application path has been removed; GC, R&C1 and UYA all reach this point through
 `CompositionLab` now uses **one `WorldHost` per placement** (with
 `ManageEnvironment = false` — the lab keeps a single shared `LabEnvironment`,
 one environment per viewport) under independent transform roots, plus the shared
-`CaptureHarness`. `OBP.Composition` (transforms, `PlanarAlignment`,
+`CaptureHarness`. `OBP.Fusion` (transforms, `PlanarAlignment`,
 `CompositionJson`) stays the engine-neutral authority.
 
 ## `OBP.Runtime.Presentation`

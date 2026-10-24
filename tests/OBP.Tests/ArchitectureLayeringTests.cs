@@ -35,10 +35,20 @@ public sealed class ArchitectureLayeringTests
     }
 
     [Fact]
+    public void FusionIntegrationRemainsEngineNeutral()
+    {
+        Assert.Equal(["OBP.Core"], ProjectReferences("OBP.Fusion"));
+        AssertNoImports("OBP.Fusion",
+            "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
+            "OBP.IO", "OBP.PS2", "OneBigPackage");
+        Assert.False(Directory.Exists(Path.Combine(RepoPaths.Root, "src", "OBP." + "Composition")));
+    }
+
+    [Fact]
     public void GodotAdapterCannotDependOnSourceGameParsers()
     {
         Assert.Equal(
-            ["OBP.Composition", "OBP.Core", "OBP.Runtime"],
+            ["OBP.Core", "OBP.Fusion", "OBP.Runtime"],
             ProjectReferences("OBP.Godot"));
         AssertNoImports("OBP.Godot",
             "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",

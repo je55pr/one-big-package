@@ -117,10 +117,12 @@ public static class MaterialModel
     /// <summary>
     /// Which kinds use their per-vertex colour as albedo: mobies (a decoded
     /// normal shade, no baked colour), tfrags (baked static lighting) and sky
-    /// (cloud-edge alpha). Others ignore any stray colour array.
+    /// (cloud-edge alpha). Explicit OBP-authored fusion- geometry also uses its
+    /// original vertex colour; unknown native asset kinds still ignore stray colour.
     /// </summary>
     public static bool VertexColourAsAlbedo(string assetKind, bool hasColour) =>
-        hasColour && assetKind is "moby" or "tfrag" or "sky";
+        hasColour && (assetKind is "moby" or "tfrag" or "sky" ||
+                      assetKind.StartsWith("fusion-", StringComparison.Ordinal));
 
     /// <summary>
     /// tfrag baked-colour lift: gamma lift, then map to (0.6 .. 1.4) so shadowed

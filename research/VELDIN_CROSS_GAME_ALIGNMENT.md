@@ -9,7 +9,7 @@ This note records a local retail-only archaeology pass investigating whether the
 
 ## Question and boundary
 
-`OBP.Composition.PlanarAlignmentSolver` can exactly solve a rigid planar transform once equivalent landmarks are known. The archaeological problem is therefore not the solver. It is establishing equivalent landmarks without choosing points because they happen to make an attractive fit.
+`OBP.Fusion.PlanarAlignmentSolver` can exactly solve a rigid planar transform once equivalent landmarks are known. The archaeological problem is therefore not the solver. It is establishing equivalent landmarks without choosing points because they happen to make an attractive fit.
 
 No transform from this note is admitted into production runtime or Godot presentation. Candidate object correspondences below remain archaeological hypotheses unless stated otherwise.
 
@@ -81,7 +81,7 @@ The authority data supports **strong local layout resemblance around the Veldin 
 Safe interpretation:
 
 - keep R&C1 level 0 and UYA table 1 as independently reconstructed worlds;
-- use `OBP.Composition` for neutral comparison only;
+- use `OBP.Fusion` for neutral comparison only;
 - do not bake the exploratory 5-degree, -8-degree, -18-degree, or scaled transforms into either importer;
 - require future landmarks to be established independently of the transform they are intended to validate;
 - treat disagreement between local neighborhoods as evidence of level editing/deformation unless stronger native evidence shows otherwise.

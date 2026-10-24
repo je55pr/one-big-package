@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -31,9 +31,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneBigPackage", "game\OneBi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OBP.Cli", "src\OBP.Cli\OBP.Cli.csproj", "{FBDFE4A1-10C7-47D2-88E7-7D21AEADF6E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OBP.Composition", "src\OBP.Composition\OBP.Composition.csproj", "{8CF6BAC0-2EB7-4964-BF6A-E52ACB582791}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OBP.Fusion", "src\OBP.Fusion\OBP.Fusion.csproj", "{8CF6BAC0-2EB7-4964-BF6A-E52ACB582791}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OBP.PS2.Presentation", "src\OBP.PS2.Presentation\OBP.PS2.Presentation.csproj", "{9AC83CC3-2892-4EE7-BB0C-4E98CE000397}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OBP.GodotUidTool", "tools\OBP.GodotUidTool\OBP.GodotUidTool.csproj", "{DA78140F-7B90-45B7-A3BA-41A51CF739B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -201,6 +205,18 @@ Global
 		{9AC83CC3-2892-4EE7-BB0C-4E98CE000397}.Release|x64.Build.0 = Release|Any CPU
 		{9AC83CC3-2892-4EE7-BB0C-4E98CE000397}.Release|x86.ActiveCfg = Release|Any CPU
 		{9AC83CC3-2892-4EE7-BB0C-4E98CE000397}.Release|x86.Build.0 = Release|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Debug|x64.Build.0 = Debug|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Debug|x86.Build.0 = Debug|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Release|x64.ActiveCfg = Release|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Release|x64.Build.0 = Release|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Release|x86.ActiveCfg = Release|Any CPU
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -219,5 +235,6 @@ Global
 		{FBDFE4A1-10C7-47D2-88E7-7D21AEADF6E0} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8CF6BAC0-2EB7-4964-BF6A-E52ACB582791} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9AC83CC3-2892-4EE7-BB0C-4E98CE000397} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{DA78140F-7B90-45B7-A3BA-41A51CF739B8} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

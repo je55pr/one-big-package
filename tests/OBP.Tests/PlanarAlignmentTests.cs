@@ -1,4 +1,4 @@
-using OBP.Composition;
+using OBP.Fusion;
 using OBP.Core.Math;
 
 namespace OBP.Tests;

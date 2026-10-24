@@ -79,7 +79,10 @@ public partial class OBPGame
                 Name = "PlayerAvatar",
             };
             ClearPlayerAvatarView();
-            if (destination.Game == ObpSourceGame.Rac1)
+            // A custom Fusion Lab uses the verified R&C1 avatar presentation,
+            // but not world-specific native weapon/effect assets until #255.
+            // Missing optional class-121 effects must not hide the Ratchet avatar.
+            if (destination.Game == ObpSourceGame.Rac1 && _world?.Game != "fusion")
             {
                 if (_rac1WrenchAsset is null ||
                     !string.Equals(_rac1WrenchSourcePath, source.Path, StringComparison.OrdinalIgnoreCase))
