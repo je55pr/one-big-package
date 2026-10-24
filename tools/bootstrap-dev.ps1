@@ -22,5 +22,10 @@ $godot = & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Sel
 & dotnet build (Join-Path $root 'OneBigPackage.sln') -c Debug --nologo
 if ($LASTEXITCODE -ne 0) { throw "build failed" }
 
-& $godot --headless --path (Join-Path $root 'game') --import
+# Automatically sync script identities during the normal first-time setup.
+# The command skips the extra build/import when every sidecar already exists.
+& dotnet run --project (Join-Path $PSScriptRoot 'OBP.GodotUidTool/OBP.GodotUidTool.csproj') -- --sync --root $root --godot $godot
+if ($LASTEXITCODE -ne 0) { throw "Godot UID sync failed" }
+& $godot --headless --path (Join-Path $root 'game') --editor --import --quit
+if ($LASTEXITCODE -ne 0) { throw "Godot import failed" }
 Write-Host "`nBootstrap complete. Next: ./tools/test.ps1 ; ./tools/capture.ps1 smoke"

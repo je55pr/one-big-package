@@ -38,7 +38,9 @@ On Windows, with the .NET 8 SDK installed, run from the repository root:
 ./tools/play.ps1
 ```
 
-The bootstrap script downloads the project's pinned Godot .NET version and builds the project. If no game source is configured, the app opens the Game Sources screen.
+The bootstrap script downloads the project's pinned Godot .NET version, builds the project and syncs Godot C# script identity sidecars. If no game source is configured, the app opens the Game Sources screen.
+
+When adding a `.cs` file under `game/scripts` or `game/diagnostics`, run `./tools/sync-godot-uids.ps1` (Linux: `bash tools/sync-godot-uids.sh`). This uses the pinned Godot .NET editor to generate any missing `.cs.uid` files. Commit the generated sidecars with your scripts. Run `./tools/sync-godot-uids.ps1 -Check` (Linux: `bash tools/sync-godot-uids.sh --check`) for read-only validation. The small .NET UID tool runs without a Godot import or game build when sidecars already exist. If a script moves, move its `.cs.uid` with it to preserve its identity. Duplicate, malformed or orphaned UIDs require manual correction rather than automatic replacement.
 
 OBP requires your own supported retail game files to load original levels. **No disc images, game assets or executables are included in this repository.**
 
@@ -52,7 +54,7 @@ OBP requires your own supported retail game files to load original levels. **No 
 ./tools/test-retail.ps1
 ```
 
-Pull requests also run .NET tests, CodeQL analysis and an asset-free Godot startup test. Some R&C1 gameplay can be recorded and replayed; see [movement and replay documentation](docs/MOVEMENT_REPRO_STATES.md).
+Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL analysis and an asset-free Godot startup test. The Godot smoke also checks that the preceding pinned headless import left the game working tree unchanged. The six .NET xUnit UID-tooling regressions run with the ordinary test suite. Some R&C1 gameplay can be recorded and replayed; see [movement and replay documentation](docs/MOVEMENT_REPRO_STATES.md).
 
 ## Project layout
 
