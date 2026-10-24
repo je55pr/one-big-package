@@ -118,6 +118,6 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     }
 
     private static State RequiredState(PlayerGameplaySnapshot snapshot) =>
-        snapshot.Components.OfType<State>().SingleOrDefault() is { Version: 1 } state ? state :
+        snapshot.Components.Count == 1 && snapshot.Components[0] is State { Version: 1 } state ? state :
         throw new ArgumentException("The native player state component is missing or unsupported.");
 }

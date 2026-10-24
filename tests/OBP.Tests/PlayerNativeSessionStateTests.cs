@@ -1,6 +1,7 @@
 using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
+using OBP.Runtime.Player;
 using OneBigPackage;
 
 namespace OBP.Tests;
@@ -47,6 +48,7 @@ public sealed class PlayerNativeSessionStateTests
         var before = session.Capture();
         var component = (PlayerSessionNativeState.State)before.Components.Single();
         Assert.Throws<ArgumentOutOfRangeException>(() => session.Restore(before with { Components = [component with { LancerAmmo = -1 }] }));
+        Assert.Throws<ArgumentException>(() => session.Restore(before with { Components = [component, new UnknownComponent()] }));
         Assert.Equal(before.Generation, session.Capture().Generation);
         Assert.Equal(before.Health, session.Capture().Health);
         Assert.Equal(before.Loadout.SelectedWeapon, session.Capture().Loadout.SelectedWeapon);
@@ -73,5 +75,11 @@ public sealed class PlayerNativeSessionStateTests
         Assert.False(native.Inventory.Owns(Rac1WeaponId.Blaster));
         Assert.False(campaign.Owns(Rac1WeaponId.Blaster));
         Assert.Same(native.Inventory, native.Weapons.Rac1Inventory);
+    }
+
+    private sealed record UnknownComponent : IPlayerSessionComponentSnapshot
+    {
+        public string ComponentId => "unregistered-player-state";
+        public int Version => 99;
     }
 }
