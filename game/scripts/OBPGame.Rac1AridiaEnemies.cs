@@ -303,7 +303,10 @@ public partial class OBPGame
             return null;
         for (int i = 0; i < result.GetCollisionCount(); i++)
             if (result.GetCollisionNormal(i).Y > .65f)
-                return from.Y + result.GetTravel().Y;
+                // BodyTestMotion travel is the capsule origin displacement,
+                // not the actual contact surface's elevation. Landing must
+                // follow the imported terrain, including at ray-missed edges.
+                return result.GetCollisionPoint(i).Y;
         return null;
     }
 
@@ -362,7 +365,10 @@ public partial class OBPGame
         {
             Vector3 normal = result.GetCollisionNormal(i);
             if (normal.Y <= .65f) continue;
-            floorY = start.Y + result.GetTravel().Y;
+            // The sweep reports body-origin travel separately from its
+            // terrain contact. Walker's +/-0.5 floor tolerance is measured
+            // against the actual surface, not the capsule's elevated origin.
+            floorY = result.GetCollisionPoint(i).Y;
             normalY = normal.Y;
             return true;
         }

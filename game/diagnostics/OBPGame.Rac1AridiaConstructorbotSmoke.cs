@@ -507,6 +507,7 @@ public partial class OBPGame
             GD.Print($"[aridia-bot-smoke] class612 i551 unsupported-floor " +
                 $"state6->7 flags=0x{blockedFlags:X2} target cleanup PASS");
 
+            await VerifyAridiaConstructorbotEdgeSupportAsync(particleBot);
             VerifyAridiaSharkTwoCycleAuthoredHome();
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-pass", 0);
         }
@@ -514,6 +515,78 @@ public partial class OBPGame
         {
             GD.PrintErr($"[aridia-bot-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
             ApplicationLifecycle.RequestQuit(this, "rac1-aridia-constructorbot-smoke-fail", 4);
+        }
+    }
+
+    /// <summary>
+    /// PR #202/#204 real-Godot regression. A deliberately isolated platform
+    /// tests the imported Constructorbot's actual capsule at a ray-missed
+    /// edge. Compare the normal-ray and BodyTestMotion fallback elevations
+    /// for BOTH walker support and state3 descent. The platform is synthetic;
+    /// it tests Godot contact reporting, not retail terrain equivalence.
+    /// </summary>
+    private async Task VerifyAridiaConstructorbotEdgeSupportAsync(Rac1HostedEnemy bot)
+    {
+        var centre = bot.Body.GlobalPosition + Vector3.Up * 120f;
+        var platform = new StaticBody3D
+        {
+            Name = "AridiaProbeEdgePlatform",
+            CollisionLayer = 1,
+            CollisionMask = 1
+        };
+        platform.AddChild(new CollisionShape3D
+        {
+            Shape = new BoxShape3D { Size = new Vector3(1.2f, .4f, 4f) }
+        });
+        AddChild(platform);
+        platform.GlobalPosition = centre - Vector3.Up * .2f;
+        try
+        {
+            await PhysicsFramesAsync(3);
+            // The centre ray strikes the 1.2-unit platform. Its edge is
+            // x+0.6; the query x+0.68 is beyond it, but the original
+            // Constructorbot's hosted capsule still overlaps the top edge.
+            var edge = centre + Vector3.Right * .68f;
+            var missedRay = PhysicsRayQueryParameters3D.Create(
+                edge + Vector3.Up * .5f, edge - Vector3.Up * .5f);
+            missedRay.Exclude = [bot.Body.GetRid(), _player!.GetRid()];
+            var missedHit = bot.Body.GetWorld3D().DirectSpaceState.IntersectRay(missedRay);
+            Require(!missedHit.ContainsKey("position"),
+                "edge-support fixture centre ray did not miss the platform");
+
+            Require(ProbeRac1AridiaWalkerSupport(bot, centre, out float centreFloor,
+                    out float centreNormal) && centreNormal > .65f,
+                "real Godot centre-ray walker support unavailable");
+            Require(ProbeRac1AridiaWalkerSupport(bot, edge, out float edgeFloor,
+                    out float edgeNormal) && edgeNormal > .65f,
+                "real Godot ray-missed capsule walker support unavailable");
+            Require(MathF.Abs(centreFloor - centre.Y) < .06f &&
+                    MathF.Abs(edgeFloor - centreFloor) < .06f,
+                $"walker sweep reported body travel instead of contact height: " +
+                $"ray={centreFloor:F3}, edge={edgeFloor:F3}, ground={centre.Y:F3}");
+            Require(!Rac1AridiaConstructorbotNative.WalkerFloorHeightRejectsStep(
+                    edge.Y, edgeFloor,
+                    Rac1AridiaConstructorbotNative.WalkerProbeDown,
+                    Rac1AridiaConstructorbotNative.WalkerProbeUp),
+                "walker edge contact produced a false source 0x22 obstruction");
+
+            float? centreDescent = ProbeRac1ConstructorbotStateThreeFloor(
+                bot, centre + Vector3.Up * 2f);
+            float? edgeDescent = ProbeRac1ConstructorbotStateThreeFloor(
+                bot, edge + Vector3.Up * 2f);
+            Require(centreDescent.HasValue && edgeDescent.HasValue &&
+                    MathF.Abs(centreDescent.Value - centre.Y) < .06f &&
+                    MathF.Abs(edgeDescent.Value - centreDescent.Value) < .06f,
+                $"state3 descent sweep reported elevated capsule origin: " +
+                $"ray={centreDescent}, edge={edgeDescent}, ground={centre.Y:F3}");
+            GD.Print("[aridia-bot-smoke] class612 real Godot capsule " +
+                $"ray-missed edge walker and state3 floor heights " +
+                $"ray={centreFloor:F3} edge={edgeFloor:F3} descent={edgeDescent:F3} PASS");
+        }
+        finally
+        {
+            platform.QueueFree();
+            await PhysicsFramesAsync(2);
         }
     }
 
