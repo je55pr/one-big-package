@@ -26,24 +26,29 @@ internal static class WorldSmokeHarness
         Func<Task>? NovalisBirdbot = null,
         Func<Task>? NovalisMusic = null,
         Func<Task>? Weapons = null,
-        Func<Task>? PlayerAudio = null);
+        Func<Task>? PlayerAudio = null,
+        Func<Task>? MetropolisTaxi = null,
+        Func<Task>? MissionPlay = null,
+        Func<Task>? NovalisRoute = null,
+        Func<Task>? Frogs = null);
 
     internal static bool IsRequested(CommandLineArgs args) =>
         args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
-        args.Rac1VeldinPlaySmoke ||
+        args.Rac1MetropolisTaxiSmoke || args.Rac1VeldinPlaySmoke ||
         args.Rac1MovementContactSmoke ||
         args.Rac1CombatContractSmoke ||
         args.Rac1WrenchSmoke ||
         args.Rac1BombGloveSmoke ||
         args.Rac1NovalisSwimSmoke ||
+        args.Rac1NovalisRouteSmoke ||
         args.Rac1NovalisPeckbotSmoke ||
         args.Rac1NovalisBirdbotSmoke ||
         args.Rac1NovalisMusicSmoke ||
         args.Rac1WeaponsSmoke ||
         args.Rac1CrateSmoke ||
-        args.Rac1EnemySmoke ||
+        args.Rac1EnemySmoke || args.Rac1FrogSmoke ||
         args.Rac1PlacedBoltSmoke ||
-        args.Rac1CampaignSmoke ||
+        args.Rac1CampaignSmoke || args.Rac1MissionPlaySmoke ||
         args.MovementSmoke;
 
     internal static void Dispatch(
@@ -70,12 +75,16 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.BombGlove?.Invoke();
             if (args.Rac1NovalisSwimSmoke)
                 _ = entrypoints.NovalisSwim?.Invoke();
+            if (args.Rac1NovalisRouteSmoke)
+                _ = entrypoints.NovalisRoute?.Invoke();
             if (args.Rac1NovalisPeckbotSmoke)
                 _ = entrypoints.NovalisPeckbot?.Invoke();
             if (args.Rac1NovalisBirdbotSmoke)
                 _ = entrypoints.NovalisBirdbot?.Invoke();
             if (args.Rac1NovalisMusicSmoke)
                 _ = entrypoints.NovalisMusic?.Invoke();
+            if (args.Rac1MetropolisTaxiSmoke)
+                _ = entrypoints.MetropolisTaxi?.Invoke();
             if (args.Rac1WeaponsSmoke)
                 _ = entrypoints.Weapons?.Invoke();
             if (args.Rac1PlayerAudioSmoke)
@@ -84,12 +93,16 @@ internal static class WorldSmokeHarness
                 _ = entrypoints.Crates?.Invoke();
             if (args.Rac1EnemySmoke)
                 _ = entrypoints.Enemies?.Invoke();
+            if (args.Rac1FrogSmoke)
+                _ = entrypoints.Frogs?.Invoke();
             if (args.MovementStateSmoke)
                 _ = entrypoints.MovementState?.Invoke();
             if (args.Rac1PlacedBoltSmoke)
                 _ = entrypoints.PlacedBolts?.Invoke();
             if (args.Rac1CampaignSmoke)
                 _ = entrypoints.Campaign();
+            if (args.Rac1MissionPlaySmoke)
+                _ = entrypoints.MissionPlay?.Invoke();
         }
 
         if (args.MovementSmoke)
@@ -129,6 +142,10 @@ public partial class OBPGame
                 RunRac1NovalisBirdbotSmokeAsync,
                 RunRac1NovalisMusicSmokeAsync,
                 RunRac1WeaponsSmokeAsync,
-                RunRac1PlayerAudioSmokeAsync));
+                RunRac1PlayerAudioSmokeAsync,
+                RunRac1MetropolisTaxiSmokeAsync,
+                RunRac1MissionPlaySmokeAsync,
+                RunRac1NovalisRouteSmokeAsync,
+                RunRac1FrogSmokeAsync));
     }
 }

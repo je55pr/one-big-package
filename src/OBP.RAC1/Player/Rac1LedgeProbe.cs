@@ -20,7 +20,21 @@ public readonly record struct Rac1TraversalRayHit(
     Rac1NativeVector3 Position,
     Rac1NativeVector3 Normal,
     int SurfaceClass,
-    bool TraversalAllowed = true);
+    bool TraversalAllowed = true)
+{
+    /// <summary>
+    /// Identified static-world face. Native 0x1f35d8 returns -1 for low class
+    /// 31; that sentinel is not one of the ledge query's excluded classes.
+    /// A static face needs no dynamic-owner traversal flag. Signed/special
+    /// face query membership remains unsupported and conservatively closed.
+    /// </summary>
+    public static Rac1TraversalRayHit StaticWorld(
+        Rac1NativeVector3 position, Rac1NativeVector3 normal, int rawFaceType)
+    {
+        var face = Rac1CollisionFaceSemantics.Decode(rawFaceType);
+        return new(position, normal, face.SurfaceClass ?? -1, !face.IsSpecialHighBitFace);
+    }
+}
 
 /// <summary>
 /// Raw parameters of the native 0x1f19a0 clearance query, whose exact
@@ -35,7 +49,7 @@ public readonly record struct Rac1LedgeProbeInput(
     Rac1NativeVector3 Position,
     Rac1NativeVector3 PreviousMotion,
     double FacingYaw,
-    double LastSupportHeight,
+    double SolidFloorHeight,
     double PredictionGravityPerTick,
     int PredictionTicks = 2);
 
@@ -149,7 +163,7 @@ public static class Rac1LedgeProbe
             Radius,
             0.6f));
 
-        if (top.Position.Z - input.LastSupportHeight < MinimumTopAboveSupport)
+        if (top.Position.Z - input.SolidFloorHeight < MinimumTopAboveSupport)
             return false;
 
         double towardTopYaw = Math.Atan2(
@@ -224,7 +238,7 @@ public static class Rac1LedgeProbe
         if (!double.IsFinite(input.Position.Length) ||
             !double.IsFinite(input.PreviousMotion.Length) ||
             !double.IsFinite(input.FacingYaw) ||
-            !double.IsFinite(input.LastSupportHeight) ||
+            !double.IsFinite(input.SolidFloorHeight) ||
             !double.IsFinite(input.PredictionGravityPerTick) ||
             input.PredictionGravityPerTick < 0d || input.PredictionTicks is < 0 or > 2)
             throw new ArgumentOutOfRangeException(nameof(input));

@@ -103,6 +103,8 @@ internal static class ControllerCalibrationStore
         profile = profile.WithSafeLimits();
         Cache[identity] = profile;
 
+        if (PlaytestClock.Active) return;
+
         var config = new ConfigFile();
         _ = config.Load(ConfigPath);
         string section = SectionName(identity);
@@ -119,6 +121,8 @@ internal static class ControllerCalibrationStore
     {
         string identity = DeviceIdentity(deviceId);
         Cache.Remove(identity);
+
+        if (PlaytestClock.Active) return;
 
         var config = new ConfigFile();
         if (config.Load(ConfigPath) != Error.Ok)

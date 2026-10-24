@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using OBP.Core;
 using OBP.PS2;
 using OBP.Runtime;
@@ -61,7 +61,7 @@ public partial class DestinationSelectorUi : CanvasLayer
             Modulate = UiTheme.TextDim,
         });
 
-        var scroll = new ScrollContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
+        var scroll = new ScrollContainer { VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever, SizeFlagsVertical = Control.SizeFlags.ExpandFill, FollowFocus = true };
         outer.AddChild(scroll);
         var list = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
         list.AddThemeConstantOverride("separation", 12);

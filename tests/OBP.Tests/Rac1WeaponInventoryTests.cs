@@ -23,6 +23,34 @@ public sealed class Rac1WeaponInventoryTests
     }
 
     [Fact]
+    public void NativeEightSlotQuickSelectAssignmentMovesDuplicatesAndRejectsUnownedItems()
+    {
+        var inventory = Rac1WeaponInventory.CreateOpeningLoadout();
+        int held = inventory.CurrentItemId;
+        var before = inventory.CapturePersistentState();
+        Assert.False(inventory.TryAssignQuickSelect(3, 15)); // Blaster unowned.
+        Assert.False(inventory.TryAssignQuickSelect(3, 0)); // Native zero is empty.
+        Assert.Equal(before.QuickSelect, inventory.QuickSelect);
+        Assert.True(inventory.TryAssignQuickSelect(3, 10));
+        Assert.Equal(0, inventory.QuickSelect[0]);
+        Assert.Equal(10, inventory.QuickSelect[3]);
+        Assert.Equal(10, inventory.CapturePersistentState().QuickSelect[3]);
+        Assert.Equal(held, inventory.CurrentItemId); // Assignment is not an equip.
+        Assert.Equal(before.Ammo, inventory.Ammo);
+        Assert.Equal(before.Items, inventory.Items);
+        Assert.Throws<ArgumentOutOfRangeException>(() => inventory.TryAssignQuickSelect(-1, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => inventory.TryAssignQuickSelect(8, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => inventory.TryAssignQuickSelect(4, 37));
+
+        inventory.AcquireNativeItem(15);
+        Assert.True(inventory.TryAssignQuickSelect(7, 15));
+        Assert.True(inventory.TryAssignQuickSelect(0, 15));
+        Assert.Equal(0, inventory.QuickSelect[7]);
+        Assert.Equal(15, inventory.QuickSelect[0]);
+        Assert.Equal(10, inventory.QuickSelect[3]);
+    }
+
+    [Fact]
     public void PromotedWeaponIdsAndNativeLayoutMatchRetailWitnesses()
     {
         Assert.Equal(8, (int)Rac1WeaponId.Wrench);

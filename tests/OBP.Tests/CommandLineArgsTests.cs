@@ -5,6 +5,40 @@ namespace OBP.Tests;
 public sealed class CommandLineArgsTests
 {
     [Fact]
+    public void BugCaptureAndReportReplay_AreExplicitModesWithLocalInboxAndStableReportIdentity()
+    {
+        Assert.False(CommandLineArgs.Parse([]).BugCapture);
+        var capture = CommandLineArgs.Parse(["--bug-capture", "--bug-report-inbox", "reports", "--bug-report-smoke"]);
+        Assert.True(capture.BugCapture);
+        Assert.True(capture.BugReportSmoke);
+        Assert.Equal("reports", capture.BugReportInbox);
+        Assert.Null(capture.ReplayPlaytest);
+        var replay = CommandLineArgs.Parse(["--replay-bug-report", "session.json", "--bug-report-id", "stable-id"]);
+        Assert.Equal("session.json", replay.ReplayBugReport);
+        Assert.Equal("stable-id", replay.BugReportId);
+        Assert.False(replay.BugCapture);
+    }
+    [Fact]
+    public void PlaytestOptionsAreOptInAndDistinctFromMovementBookmarks()
+    {
+        Assert.False(CommandLineArgs.Parse([]).PlaytestRequested);
+        var record = CommandLineArgs.Parse(["--destination", "rac1:LEVEL1", "--record-playtest", "run.jsonl.gz", "--playtest-smoke"]);
+        Assert.True(record.PlaytestRequested);
+        Assert.True(record.PlaytestSmoke);
+        Assert.Equal("run.jsonl.gz", record.RecordPlaytest);
+        Assert.Null(record.LoadMovementState);
+        Assert.Null(record.ReplayPlaytest);
+        var replay = CommandLineArgs.Parse(["--replay-playtest", "run.jsonl.gz", "--playtest-report", "report.json", "--playtest-allow-build-change"]);
+        Assert.True(replay.PlaytestRequested);
+        Assert.True(replay.PlaytestAllowBuildChange);
+        Assert.Equal("run.jsonl.gz", replay.ReplayPlaytest);
+        Assert.Equal("report.json", replay.PlaytestReport);
+        Assert.Null(replay.ReplayForwardFrames);
+        Assert.Equal(string.Empty, CommandLineArgs.Parse(["--record-playtest"]).RecordPlaytest);
+        Assert.Equal(string.Empty, CommandLineArgs.Parse(["--replay-playtest"]).ReplayPlaytest);
+    }
+
+    [Fact]
     public void SmokeSceneIsOnlyExplicitlyRequested()
     {
         CommandLineArgs ordinary = CommandLineArgs.Parse([]);
@@ -14,6 +48,13 @@ public sealed class CommandLineArgsTests
         Assert.False(ordinary.TestSceneExplicit);
         Assert.Equal("smoke", explicitSmoke.TestScene);
         Assert.True(explicitSmoke.TestSceneExplicit);
+    }
+
+    [Fact]
+    public void KerwanTaxiSmokeIsOptIn()
+    {
+        Assert.False(CommandLineArgs.Parse([]).Rac1MetropolisTaxiSmoke);
+        Assert.True(CommandLineArgs.Parse(["--rac1-metropolis-taxi-smoke"]).Rac1MetropolisTaxiSmoke);
     }
 
     [Fact]

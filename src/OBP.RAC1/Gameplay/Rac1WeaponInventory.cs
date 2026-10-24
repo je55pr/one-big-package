@@ -278,6 +278,29 @@ public sealed class Rac1WeaponInventory
             _ammo[nativeItemId]);
     }
 
+    /// <summary>
+    /// The retail Quick Select slot updater (FUN_0021c7a0) assigns an
+    /// available item to one of eight quick-select positions. An existing
+    /// occurrence is cleared before inserting the new item; the UI moves
+    /// the cursor separately to (slot + 1) % 8 on success. This mutates
+    /// only the save-backed quick-select block, never the current weapon.
+    /// </summary>
+    public bool TryAssignQuickSelect(int slot, int nativeItemId)
+    {
+        if ((uint)slot >= Rac1NativeInventoryLayout.QuickSelectCapacity)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        ValidateItemId(nativeItemId);
+        if (nativeItemId == 0 || !OwnsNativeItem(nativeItemId))
+            return false;
+        for (int i = 0; i < _quickSelect.Length; i++)
+        {
+            if (_quickSelect[i] == nativeItemId)
+                _quickSelect[i] = 0;
+        }
+        _quickSelect[slot] = nativeItemId;
+        return true;
+    }
+
     public bool TryEquip(Rac1WeaponId weapon)
     {
         if (!Enum.IsDefined(weapon)) return false;

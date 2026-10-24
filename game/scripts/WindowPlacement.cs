@@ -28,8 +28,8 @@ public partial class WindowPlacement : Node
         // autoloads run. Ordinary interactive launches regain normal focus.
         _window.Unfocusable = WorldSmokeHarness.IsRequested(args) ||
             args.Rac1StartupVisibilitySmoke || args.StressSwitch is not null || args.ComposeReload is not null ||
-            args.CaptureFrame is not null || args.ShotsPath is not null;
-        if (args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.CaptureFrame is not null || args.ShotsPath is not null || args.ReplayForwardFrames.HasValue || args.Rac1BombGloveSmoke || args.Rac1WeaponsSmoke)
+            args.CaptureFrame is not null || args.ShotsPath is not null || args.ReplayPlaytest is not null || args.PlaytestSmoke || args.BugReportSmoke || args.ReplayBugReport is not null && !args.PlaytestInspectMarker;
+        if (args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.CaptureFrame is not null || args.ShotsPath is not null || args.ReplayForwardFrames.HasValue || args.Rac1BombGloveSmoke || args.Rac1WeaponsSmoke || args.ReplayPlaytest is not null || args.PlaytestSmoke || args.BugReportSmoke || args.ReplayBugReport is not null)
         {
             _window = null; // Automated capture/replay placement never replaces personal preferences.
             SetProcess(false);

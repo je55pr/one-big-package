@@ -8,6 +8,10 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     private Rac1MovementAnimationSelection? _traversalSelection;
     private double[]? _traversalBlendSource;
     private bool _traversalCycleCompleted;
+    private float _traversalAuthoredAdvance;
+    public Rac1WaterAnimationFacts WaterAnimationFacts => _traversalClock is null ? default :
+        new(_traversalClock.Current.Sequence, (float)TraversalAuthoredAnimationTime,
+            _traversalAuthoredAdvance, _traversalCycleCompleted, _traversalCycleCompleted);
     public double TraversalAuthoredAnimationTime => _traversalClock is null ? 0 :
         Rac1OrdinaryStopAnimation.EvaluateAnimationTime(_traversalClock.Current,
             CurrentClip.FrameTimelinePositions ?? throw new InvalidDataException("Traversal timeline is absent."));
@@ -17,6 +21,8 @@ public sealed partial class Rac1PlayerAnimationPresentationController
     private bool StepTraversalAnimation(PlayerAnimationState state, Rac1MovementAnimationSelection? selection)
     {
         _traversalCycleCompleted = false;
+        float previousTime = (float)TraversalAuthoredAnimationTime;
+        _traversalAuthoredAdvance = 0;
         if (selection is not { } selected)
         {
             _traversalClock = null;
@@ -77,6 +83,10 @@ public sealed partial class Rac1PlayerAnimationPresentationController
         bool terminal = !selected.Loop && !sample.IsBlending && sample.NextFrame == 0;
         _traversalClock.PlaybackMultiplier = terminal ? 0 : selected.PlaybackMultiplier;
         _currentSequenceId = selected.Sequence;
+        float time = Rac1OrdinaryStopAnimation.EvaluateAnimationTime(sample,
+            LocomotionClip(selected.Sequence).FrameTimelinePositions!);
+        _traversalAuthoredAdvance = entering ? 0 : previousTime <= time ? time - previousTime :
+            _traversalClock.FractionAdvanceThisUpdate;
         var semantic = selected.NativeAction is 0x13 or 0x14 or 0x15 or 0x23 ? PlayerAnimationState.Attack :
             state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.Idle
             ? PlayerAnimationState.Fall : state;

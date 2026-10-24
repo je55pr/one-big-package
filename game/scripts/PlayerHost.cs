@@ -35,6 +35,7 @@ public partial class PlayerHost : CharacterBody3D
     private static double DevelopmentElapsed(long start, long end) => start == 0 ? 0 :
         System.Diagnostics.Stopwatch.GetElapsedTime(start, end).TotalMilliseconds;
     internal event Action? DevelopmentPhysicsCompleted;
+    internal Func<RawPlayerInputFrame, RawPlayerInputFrame>? PlaytestInputFilter { get; set; }
     // --- host presentation tuning ----------------------------------------------
     // Ordinary movement constants live in OBP.RAC1.Player. Mouse sensitivity is
     // host presentation policy; development-only tuning lives beside this host.
@@ -203,6 +204,9 @@ public partial class PlayerHost : CharacterBody3D
     public int MenuHeldButtons => _rawInput.HeldButtons;
     public void SuppressButtonsUntilRelease(int preserveButtons = 0) => _rawInput.SuppressButtonsUntilRelease(preserveButtons);
 
+    /// <summary>Host input ownership for the real-time R&C1 weapon wheel; physics keeps running.</summary>
+    public bool QuickSelectOwnsGameplayInput { get; set; }
+
     /// <summary>Which camera source currently owns ordinary presentation and control heading.</summary>
     public string CameraControllerLabel =>
         HasActiveRecoveredCamera ? "rac1-native-type0" : "host-debug-fallback";
@@ -247,6 +251,7 @@ public partial class PlayerHost : CharacterBody3D
     private readonly Rac1RatchetYawController _rac1Yaw = new();
     private readonly Rac1DynamicSupportSession _rac1DynamicSupport = new();
     private Rac1MobyRuntimeKey? _rac1HostSupportKey;
+    private Node3D? _rac1HostSupportRoot;
     private Vector3 _rac1HostSupportLocalAnchor;
     private bool _rac1HostSupportAnchorValid;
     private Rac1SurfaceActionIntent? _rac1SurfaceActionIntent;
@@ -343,6 +348,9 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         _rawInput.Observe(@event);
+        if (QuickSelectOwnsGameplayInput)
+            return;
+
         if (@event.IsActionPressed(ControllerBindings.CameraCenter))
         {
             CenterCameraBehindPlayer();
@@ -410,6 +418,19 @@ public partial class PlayerHost : CharacterBody3D
         if (!Scripted)
         {
             _liveInput = _rawInput.Read(UseRac1Gameplay);
+            if (PlaytestInputFilter is { } filter) _liveInput = filter(_liveInput);
+            MaskRac1TaxiWalkActions();
+            if (QuickSelectOwnsGameplayInput)
+                _liveInput = _liveInput with
+                {
+                    Move = Vector2.Zero,
+                    JumpHeld = false,
+                    CrouchHeld = false,
+                    ActionJustPressed = false,
+                    ActionHeld = false,
+                    TraversalHeld = false,
+                    EquippedUseJustPressed = false
+                };
             Rac1RemoteSteering = _liveInput.Move + _liveInput.CameraIntent;
             Rac1RemoteDetonate = Rac1RemoteControlActive && (_liveInput.CrouchHeld || _liveInput.ActionJustPressed);
             if (Rac1RemoteControlActive)
@@ -447,7 +468,12 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         var (move, jump) = Scripted ? ScriptedInput() : (_liveInput.Move, _liveInput.JumpHeld);
-        bool crouch = !Scripted && _liveInput.CrouchHeld;
+        if (Rac1TaxiWalking)
+        {
+            move = Rac1TaxiWalkIntent();
+            jump = false;
+        }
+        bool crouch = !Scripted && _liveInput.CrouchHeld && !Rac1TaxiWalking;
         if (Rac1EquipmentActionActive) { move = Vector2.Zero; jump = crouch = false; }
         if (UseRac1Gameplay && !Rac1GameplayAllowsOrdinaryMovement)
         {
@@ -480,6 +506,7 @@ public partial class PlayerHost : CharacterBody3D
                 GetSlideCollisionCount());
         bool isOnFloor = IsOnFloor();
         UpdateAnimationState(isOnFloor);
+        PresentRac1TaxiWalkFacing();
         AnimationPhysicsUpdated?.Invoke(delta, AnimationState, _locomotionAnimationInput);
         if (UseRac1Gameplay)
             Rac1WrenchPhysicsUpdated?.Invoke(Rac1WrenchFrame);
@@ -514,7 +541,11 @@ public partial class PlayerHost : CharacterBody3D
     {
         if (VisualRoot is null) return;
         float sceneYaw = PlayerAvatarFacing.NativeZUpYawToGodotSceneYaw(_rac1Yaw.CurrentYaw);
-        VisualRoot.Rotation = new Vector3(0f, sceneYaw - Rotation.Y, 0f);
+        var basis = new Basis(Vector3.Up, sceneYaw - Rotation.Y);
+        if (_rac1SwimActive)
+            basis = basis * new Basis(Vector3.Back, -_rac1SwimMotion.Pitch) *
+                new Basis(Vector3.Right, _rac1SwimMotion.Roll);
+        VisualRoot.Basis = basis;
     }
 
     /// <summary>
@@ -559,6 +590,7 @@ public partial class PlayerHost : CharacterBody3D
         ResetRac1LedgeTraversal();
         ResetRac1Tether();
         ResetRac1SurfaceMotion();
+        ResetRac1WaterMotion();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         _rac1JumpWasHeld = false;
@@ -582,9 +614,7 @@ public partial class PlayerHost : CharacterBody3D
         ResetRac1LedgeTraversal();
         ResetRac1Tether();
         ResetRac1SurfaceMotion();
-        _rac1SwimActive = false;
-        _rac1SwimDrowningReported = false;
-        _rac1Swimming.Reset();
+        ResetRac1WaterMotion();
         Velocity = Vector3.Zero;
         _rac1Movement.Reset();
         ResetRac1WrenchAttack();

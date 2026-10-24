@@ -14,6 +14,11 @@ public partial class PlayerHud : Control
     private PanelContainer _boltsPanel = null!;
     private PanelContainer _weaponPanel = null!;
     private PanelContainer _promptPanel = null!;
+    // Both source-driven HelpDesk and the newer native air HUD are retained.
+    private Rac1HelpDeskView _retailHelpDesk = null!;
+    private PanelContainer _airPanel = null!;
+    private ProgressBar _airProgress = null!;
+    private Label _airLabel = null!;
 
     private Label _healthKicker = null!;
     private Label _healthValue = null!;
@@ -66,6 +71,7 @@ public partial class PlayerHud : Control
         RenderBolts(snapshot.Bolts);
         RenderWeapon(snapshot.CurrentWeapon);
         RenderPrompt(snapshot.ContextPrompt);
+        RenderAir(snapshot.Air);
         ApplyTransientFeedback();
         UpdateVisibility();
     }
@@ -120,6 +126,8 @@ public partial class PlayerHud : Control
         promptRow.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
         _promptPanel = BuildPromptPanel();
         promptRow.AddChild(_promptPanel);
+        _retailHelpDesk = Passive(new Rac1HelpDeskView { ExpandOnPrompt = true });
+        promptRow.AddChild(_retailHelpDesk);
         promptRow.AddChild(Passive(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill }));
         outer.AddChild(promptRow);
 
@@ -130,6 +138,19 @@ public partial class PlayerHud : Control
         });
         var stats = Passive(new VBoxContainer { Name = "PlayerStats" });
         stats.AddThemeConstantOverride("separation", 8);
+        _airPanel = Card("Air", 250);
+        var airBox = Stack(_airPanel);
+        _airLabel = Kicker("OXYGEN");
+        _airProgress = Passive(new ProgressBar
+        {
+            MinValue = 0,
+            MaxValue = 1,
+            ShowPercentage = false,
+            CustomMinimumSize = new Vector2(0, 12)
+        });
+        airBox.AddChild(_airLabel);
+        airBox.AddChild(_airProgress);
+        stats.AddChild(_airPanel);
         _healthPanel = BuildHealthPanel();
         _boltsPanel = BuildBoltsPanel();
         stats.AddChild(_healthPanel);
@@ -233,6 +254,15 @@ public partial class PlayerHud : Control
             : UiTheme.TextDim;
     }
 
+    private void RenderAir(HudResourceMeter? air)
+    {
+        // Plain OBP layout; the native oxygen-bar renderer is not recovered.
+        _airPanel.Visible = air is not null;
+        if (air is null) return;
+        _airLabel.Text = SemanticLabel(air.UnitKey);
+        _airProgress.Value = air.Capacity > 0 ? Math.Clamp((double)air.Current / air.Capacity, 0, 1) : 0;
+    }
+
     private void RenderBolts(HudCurrency? bolts)
     {
         _hasBolts = bolts is not null;
@@ -270,6 +300,8 @@ public partial class PlayerHud : Control
     private void RenderPrompt(HudContextPrompt? prompt)
     {
         _hasPrompt = prompt is not null;
+        if (Rac1RetailUiAssets.IsLoaded) _retailHelpDesk.Prompt(prompt is null ? null : DisplayText(prompt.MessageKey));
+        else _retailHelpDesk.Dismiss();
         if (prompt is null)
         {
             return;
@@ -344,15 +376,16 @@ public partial class PlayerHud : Control
             0.15d);
         promptTint.A = (float)Math.Clamp(feedback.PromptOpacity, 0d, 1d);
         _promptPanel.Modulate = promptTint;
-        _promptPanel.Visible = feedback.PromptOpacity > 0.001d;
+        _promptPanel.Visible = !Rac1RetailUiAssets.IsLoaded && feedback.PromptOpacity > 0.001d;
     }
 
     private void UpdateVisibility()
     {
-        Visible = _healthPanel.Visible ||
+        Visible = _airPanel.Visible || _healthPanel.Visible ||
                   _boltsPanel.Visible ||
                   _weaponPanel.Visible ||
-                  _promptPanel.Visible;
+                  _promptPanel.Visible ||
+                  _retailHelpDesk.Visible;
     }
 
     private static string SignedDelta(int delta) =>
@@ -432,6 +465,7 @@ public partial class PlayerHud : Control
     private static string SemanticLabel(string key) => key switch
     {
         "nanotech" => "NANOTECH",
+        "oxygen" => "OXYGEN",
         "bolts" => "BOLTS",
         _ => DisplayText(key).ToUpperInvariant(),
     };

@@ -1,5 +1,8 @@
 using Godot;
 using OBP.Godot;
+using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
+using OBP.RAC1.Presentation;
 
 namespace OneBigPackage;
 
@@ -37,11 +40,62 @@ public partial class OBPGame
 
         _prePauseMouseMode = Input.MouseMode;
         _prePauseHeldButtons = _player?.MenuHeldButtons ?? 0;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        UiPointerModality.MenuOpened();
 
         _pauseMenu = new PauseMenuUi
         {
             ProcessMode = ProcessModeEnum.Always,
+            RetailEnabled = _player?.UseRac1Gameplay == true && Rac1RetailUiAssets.IsLoaded,
+            Weapons = Rac1WeaponProfiles.Additional.Select(profile => profile.Item)
+                .Prepend(Rac1WeaponId.FirstRanged)
+                .OrderBy(weapon => (int)weapon)
+                .Select(weapon => new PauseMenuUi.RetailItem(
+                    (int)weapon, Rac1WeaponProfiles.Name(weapon),
+                    _rac1Weapons.Owns(weapon), _rac1Weapons.Equipped == weapon,
+                    Rac1WeaponIconCatalog.Ordinary(weapon)?.AnimationId))
+                .ToArray(),
+            Gadgets = (Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                .SelectMany(group => group.Cells).Select(cell => cell.NativeId) ??
+                Enum.GetValues<Rac1TraversalEquipmentId>().Select(gadget => (int)gadget))
+                .Select(id =>
+                {
+                    var gadget = (Rac1TraversalEquipmentId)id;
+                    string name = Enum.IsDefined(gadget) ? gadget.ToString() switch
+                    {
+                        "HeliPack" => "Heli-Pack",
+                        "ThrusterPack" => "Thruster-Pack",
+                        "HydroPack" => "Hydro-Pack",
+                        "OxygenMask" => "O2 Mask",
+                        "Magneboots" => "Magneboots",
+                        "Grindboots" => "Grindboots",
+                        _ => gadget.ToString(),
+                    } : $"Native item {id}";
+                    return new PauseMenuUi.RetailItem(id, name,
+                        _rac1Weapons.OwnsNativeItem(id), false);
+                }).ToArray(),
+            QuickSlots = _rac1Weapons.QuickSelect.Select((id, slot) =>
+            {
+                Rac1WeaponId weapon = (Rac1WeaponId)id;
+                var icon = Rac1WeaponIconCatalog.Ordinary(weapon);
+                return new PauseMenuUi.RetailItem(id,
+                    id == 0 ? $"Slot {slot + 1}: Empty" :
+                    Enum.IsDefined(weapon) ? Rac1WeaponProfiles.Name(weapon) : $"Native item {id}",
+                    id != 0 && _rac1Weapons.OwnsNativeItem(id),
+                    id != 0 && _rac1Weapons.Equipped == weapon,
+                    icon?.AnimationId);
+            }).ToArray(),
+            // Retail Items kind=0 reads item_available[]. Kind=1 reads
+            // independent alternate_item_available[] progression flags,
+            // which this campaign host does not yet model or invent.
+            NativePrimaryItemAvailability = _rac1Weapons.Items,
+            Items = Enumerable.Range(0, Rac1NativeInventoryLayout.ItemCount)
+                .Where(id => _rac1Weapons.OwnsNativeItem(id) &&
+                    !Enum.IsDefined((Rac1WeaponId)id) &&
+                    !Enum.IsDefined((Rac1TraversalEquipmentId)id) &&
+                    !(Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                        .Any(group => group.Cells.Any(cell => cell.NativeId == id)) ?? false))
+                .Select(id => new PauseMenuUi.RetailItem(id, $"Native item {id}", true, false))
+                .ToArray(),
             DebugOutputEnabled = _debugOutputEnabled,
             MovementStatesAvailable = _player?.UseRac1Gameplay == true,
             WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
@@ -49,6 +103,9 @@ public partial class OBPGame
                 ? $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
                 : string.Empty,
         };
+        _pauseMenu.EquipRequested += OnRac1WeaponSelectionRequested;
+        _pauseMenu.QuickSelectAssignRequested = (slot, nativeId) =>
+            _rac1Weapons.TryAssignQuickSelect(slot, nativeId);
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
         _pauseMenu.DebugOutputChanged += SetDebugOutputEnabled;
@@ -129,7 +186,7 @@ public partial class OBPGame
         };
         _controllerSettings.BackRequested += CloseControllerSettings;
         AddChild(_controllerSettings);
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        UiPointerModality.MenuOpened();
         GD.Print($"[controllers] settings opened from {(fromPause ? "pause" : "menu")}");
     }
 
@@ -184,7 +241,7 @@ public partial class OBPGame
             _pauseOwnsTreePause = false;
         }
 
-        Input.MouseMode = _prePauseMouseMode;
+        UiPointerModality.MenuClosed(_prePauseMouseMode);
         _player?.SuppressButtonsUntilRelease(_prePauseHeldButtons);
         GD.Print("[pause] menu closed");
     }

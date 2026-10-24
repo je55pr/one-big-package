@@ -38,14 +38,12 @@ public partial class OBPGame
         if (_world is not { Game: "rac1", LevelId: 1 } ||
             _player is null || _rac1Nanotech.Probe().IsDead)
             return;
-        // Host-owned drowning admission: oxygen exhaustion plus submerged
-        // placement. Native source action 0x6a was recovered, but the complete
-        // retail drowning predicate and exact presentation remain outstanding.
-        // The existing environmental checkpoint reset is reused as a clearly
-        // marked OBP fallback rather than claiming native Novalis reset parity.
+        // Native oxygen/escape guards and action6a's sequence95 completion
+        // precede this host checkpoint reset. Full retail death/camera/reset
+        // orchestration remains outside the bounded water controller.
         var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset();
         _player.Rac1GameplayState = dead;
-        _rac1CombatStatus = "Novalis drowned (OBP host oxygen/depth admission)";
+        _rac1CombatStatus = "Novalis drowned (native water action completed)";
         RefreshRac1HudState();
         GD.Print($"[rac1-novalis-water] {_rac1CombatStatus}");
     }

@@ -94,6 +94,7 @@ public partial class Rac1PlanetTravelUi : CanvasLayer
         });
         var scroll = new ScrollContainer
         {
+            VerticalScrollMode = ScrollContainer.ScrollMode.ShowNever,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
             FollowFocus = true,
         };

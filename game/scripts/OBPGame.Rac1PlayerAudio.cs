@@ -21,13 +21,13 @@ public partial class OBPGame
         Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
     private readonly List<(Rac1PlayerAudioSession.Cue Cue, bool Loop)> _rac1PlayerSoundTrace = [];
 
-    private void ResetRac1PlayerAudio(bool includeReactions = true)
+    private void ResetRac1PlayerAudio(bool includeReactions = true, bool freeImmediately = false)
     {
-        _rac1PlayerOneShots.StopAll(); _rac1PackAudio.StopAll();
-        _rac1ThrownWrenchAudio.StopAll(); _rac1AnimationAudio.StopAll();
+        _rac1PlayerOneShots.StopAll(freeImmediately); _rac1PackAudio.StopAll(freeImmediately);
+        _rac1ThrownWrenchAudio.StopAll(freeImmediately); _rac1AnimationAudio.StopAll(freeImmediately);
         _rac1PackSound = _rac1ThrownWrenchSound = _rac1AnimationSound = null;
         _rac1PlayerAudio?.Reset();
-        if (includeReactions) { _rac1PlayerReactions?.Reset(); _rac1ReactionAudio.StopAll(); }
+        if (includeReactions) { _rac1PlayerReactions?.Reset(); _rac1ReactionAudio.StopAll(freeImmediately); }
     }
 
     private void StepRac1PlayerAudio(Rac1PlayerAnimationPresentationController controller)
@@ -91,12 +91,11 @@ public partial class OBPGame
             TraceRac1PlayerSound(cue, false);
     }
 
-    public override void _PhysicsProcess(double delta)
+    private void StepRac1PlayerAudioPhysics()
     {
-        if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
         if (_rac1PlayerReactions?.Step() is int sound) PlayRac1PlayerSound(new(0, sound), reaction: true);
         // Avatar updates stop at death; detached source particles still age out.
-        if (!_player.Rac1GameplayAlive) StepRac1BombEffectsPhysics();
+        if (!_player!.Rac1GameplayAlive) StepRac1BombEffectsPhysics();
     }
 
     private void NotifyRac1PlayerDamageAudio(Rac1RatchetNanotechSnapshot before, Rac1RatchetNanotechSnapshot after)

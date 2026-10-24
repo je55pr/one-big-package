@@ -36,7 +36,7 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
         Name = "WeaponQuickSelect";
         Layer = 240;
         ProcessMode = ProcessModeEnum.Always;
-        _openedAt = Time.GetTicksMsec();
+        _openedAt = PlaytestClock.Milliseconds;
 
         _wheel = new WheelFace
         {
@@ -78,7 +78,7 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
     {
         if (@event.IsActionReleased(ControllerBindings.QuickSelect))
         {
-            NeutralTapCompleted = !_directed && Time.GetTicksMsec() - _openedAt < 250;
+            NeutralTapCompleted = !_directed && PlaytestClock.Milliseconds - _openedAt < 250;
             Completed?.Invoke(SelectedWeapon);
         }
         else if (@event.IsActionPressed("ui_cancel") &&
@@ -143,7 +143,7 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
             int index = _page * 8 + slot;
             bool valid = index < Entries.Count;
             bool selected = SelectedIndex == index;
-            float pulse = (float)(0.5f + 0.5f * Math.Sin(Time.GetTicksMsec() / 170.0));
+            float pulse = (float)(0.5f + 0.5f * Math.Sin(PlaytestClock.Milliseconds / 170.0));
             var rect = new Rect2(point - Vector2.One * tile * 0.5f, Vector2.One * tile);
             face.DrawRect(rect, selected
                 ? new Color(0.18f, 0.22f, 0.32f, 0.95f)

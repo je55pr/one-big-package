@@ -15,6 +15,8 @@ public partial class UiBootstrap : Node
         GetTree().Root.GuiEmbedSubwindows = true;
         ControllerBindings.Install();
         AddChild(new ControllerMenuNavigation());
+        AddChild(new UiPointerModality());
+        AddChild(new Rac1RetailMenuAudio());
 
         // The engine appends "(DEBUG)" to the window title for non-exported
         // builds; the showcase launcher is one, so pin a clean title.

@@ -1,12 +1,16 @@
 # Third-party acknowledgements
 
-R&C1 camera, player-audio and weapon reconstruction uses the public `rac1-native-game` source and its
+R&C1 camera, player-audio, weapon and mission reconstruction uses the public `rac1-native-game` source and its
 function/address annotations as a reference, including Blaster contact and
 steering behavior, Taunter queries, player sound/footstep dispatch, weapon/deployment timing,
 particle constructors/updates, weapon explosion recipes and Tesla draw routines.
 The camera reference covers the type-0 follow pipeline, native axis/speed options,
-projection and collision probe sequence. The optional research oracle builds its
-MIT-licensed R5900/VU interpreters locally to execute original disc functions.
+projection and collision probe sequence. Mission references cover compiled talk
+records, Veldin's encounter, the Novalis Plumber and actor-owned level exits.
+The optional camera and mission research oracles build its MIT-licensed R5900/VU
+interpreters locally to execute original disc functions. UYA's Shock Cannon
+oracle also uses those interpreters with UYA's own boot VU0 math upload, beam
+draw routines and sound attenuation code from the authorized original disc.
 
 Upstream: https://github.com/daino-selvatico/rac1-native-game
 
@@ -43,6 +47,8 @@ SOFTWARE.
 The bounded SBlk grain renderer and SPU envelope arithmetic use the 989snd
 reference bundled by rac1-native-game. The original per-file envelope notice is
 Copyright 2021–2024 Ziemas; the bundle license is reproduced below.
+The compact SBlk v3 parameter layout and local-register tone-volume semantics
+were cross-checked against the same ISC-licensed loader/grain implementation.
 
 Copyright (c) 2020-2026 OpenGOAL Team
 

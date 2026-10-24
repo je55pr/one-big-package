@@ -23,7 +23,15 @@ public sealed record Rac1MetropolisTaxiStop(
     IReadOnlyList<Rac1TaxiPoint>? ReturnPath = null,
     IReadOnlyList<Rac1TaxiPoint>? ApproachPath = null,
     IReadOnlyList<Rac1TaxiPoint>? DeparturePath = null,
-    Rac1TaxiTriggerVolume? ApproachTrigger = null);
+    Rac1TaxiTriggerVolume? ApproachTrigger = null,
+    int NativeInitialSide = -1,
+    bool NativeSeekEvidenced = false,
+    Rac1TaxiHoverPhases? NativeHoverPhases = null,
+    Rac1TaxiNativeHud? NativeHudSelectors = null,
+    int? NativeFirstDepartureSelector = null,
+    IReadOnlyList<int>? NativeDepartureSelectors = null,
+    Rac1TaxiNativeShuttleDock? NativeShuttleDock = null,
+    Rac1TaxiNativeHudElementLease? NativeHudElementLease = null);
 
 public readonly record struct Rac1TaxiPoint(double X, double Y, double Z)
 {
@@ -45,9 +53,10 @@ public sealed record Rac1TaxiFlight(
     bool JustArrived);
 
 /// <summary>
-/// A source-backed, engine-neutral Kerwan taxi prototype. Each flight traces
-/// the authored spline; the single-sample-per-tick playback rate, explicit
-/// boarding and player/camera interaction remain provisional host policy.
+/// A source-backed, engine-neutral Kerwan taxi session. PVar-backed retail
+/// paths advance using the original fixed-step seek recurrence; synthetic
+/// fixtures retain provisional linear samples. Explicit boarding, player
+/// attachment, camera and mission admission remain provisional host policy.
 /// </summary>
 public sealed class Rac1MetropolisTaxiSession
 {
@@ -77,6 +86,9 @@ public sealed class Rac1MetropolisTaxiSession
 
     private readonly List<Rac1MetropolisTaxiStop> _stops;
     private readonly Dictionary<int, (TrafficPhase Phase, double Elapsed)> _traffic = [];
+    private readonly Dictionary<int, Rac1TaxiNativeMotion> _nativeTraffic = [];
+    private Rac1TaxiNativeMotion? _nativeFlight;
+    private bool _nativeReturning;
     private Rac1MetropolisTaxiStop? _riding;
     private double _elapsed;
     private bool _arrivalReported;
@@ -91,6 +103,7 @@ public sealed class Rac1MetropolisTaxiSession
 
     public IReadOnlyList<Rac1MetropolisTaxiStop> Stops => _stops;
     public bool IsRiding => _riding is not null;
+    public bool IsReturning => _riding is not null && _nativeReturning;
     public Rac1MetropolisTaxiStop? Riding => _riding;
 
     /// <summary>
@@ -351,9 +364,102 @@ public sealed class Rac1MetropolisTaxiSession
                     new Rac1TaxiPoint(cx, cz, cy), new Rac1TaxiPoint(hx, hz, hy));
             }
 
+            // Class 1012 state 0 reads the authored starting end from
+            // PVar+0x80. Its first selected route is +0x90+(side*4).
+            // Retain the source-dock host placement for now: i961's native
+            // initial end is airborne without a supported landing surface.
+            var pvar = obj.NativePayloads?
+                .SingleOrDefault(p => p.Format == "rac1-pvar")?.Data;
+            int nativeSide = -1;
+            if (route.Class == 1012 && pvar is { Length: > 0x80 })
+            {
+                nativeSide = pvar[0x80];
+                if (nativeSide is not (0 or 1))
+                    return null;
+            }
+            // Native class-1012 state 0 chooses an *initial route side*
+            // using PVar+0x80 and the path indices at +0x90/+0x94.
+            // Its state-1 nearest-end/reposition selector is independent
+            // of the current OBP single-source-dock safety policy.
+            Rac1TaxiNativeShuttleDock? nativeDock = null;
+            if (route.Class == 1012 && nativeSide is 0 or 1 &&
+                pvar is { Length: >= 0xa4 } dockPvar &&
+                returning.Length > 1 && outbound.Length > 1)
+            {
+                int cuboid = BinaryPrimitives.ReadInt32LittleEndian(
+                    dockPvar.AsSpan(0xa0, 4));
+                if (cuboid < -1)
+                    return null;
+                nativeDock = new Rac1TaxiNativeShuttleDock(
+                    returning, outbound, nativeSide, cuboid);
+            }
+            // The source class-816 bob/tilt helper uses PVar +0xec/0xf0/0xf4.
+            // Class-1012 uses +0xac/+0xb0/+0xb4. The originally authored
+            // phase values must survive the retail import (synthetic worlds
+            // lacking PVars intentionally do not animate).
+            int firstPhaseOffset = route.Class == 816 ? 0xec : 0xac;
+            Rac1TaxiHoverPhases? hoverPhases = null;
+            if (pvar is { } sourcePvar &&
+                sourcePvar.Length >= firstPhaseOffset + 12)
+            {
+                double height = BinaryPrimitives.ReadSingleLittleEndian(
+                    sourcePvar.AsSpan(firstPhaseOffset, 4));
+                double tilt = BinaryPrimitives.ReadSingleLittleEndian(
+                    sourcePvar.AsSpan(firstPhaseOffset + 4, 4));
+                double spin = BinaryPrimitives.ReadSingleLittleEndian(
+                    sourcePvar.AsSpan(firstPhaseOffset + 8, 4));
+                if (!double.IsFinite(height) || !double.IsFinite(tilt) ||
+                    !double.IsFinite(spin))
+                    return null;
+                hoverPhases = new Rac1TaxiHoverPhases(height, tilt, spin);
+            }
+
+            Rac1TaxiNativeHud? nativeHud = null;
+            if (route.Class == 1012 && pvar is { Length: >= 0xa0 } hudPvar)
+            {
+                // Native updater 0x002dcf34 toggles +0xbc (side) before
+                // selecting +0x98 + 4*side and requesting the HUD message.
+                int zero = BinaryPrimitives.ReadInt32LittleEndian(
+                    hudPvar.AsSpan(0x98, 4));
+                int one = BinaryPrimitives.ReadInt32LittleEndian(
+                    hudPvar.AsSpan(0x9c, 4));
+                if (zero is < 1 or > 4 || one is < 1 or > 4)
+                    return null;
+                nativeHud = new Rac1TaxiNativeHud(zero, one);
+            }
+
+            // The class-816 state-6 clearance gate reads its currently
+            // selected PVar +0xbc+(slot*4) exit selector, and uses a
+            // distinct 5-unit planar rule for a -1 (pathless) slot.
+            // The host currently admits only authored slot zero.
+            int? firstDepartureSelector = null;
+            IReadOnlyList<int>? allDepartureSelectors = null;
+            if (route.Class == 816 && route.DepartureOffset >= 0 &&
+                pvar is { Length: >= 0xd0 } departurePvar)
+            {
+                int[] selectors = new int[5];
+                for (int slot = 0; slot < selectors.Length; slot++)
+                {
+                    selectors[slot] = BinaryPrimitives.ReadInt32LittleEndian(
+                        departurePvar.AsSpan(route.DepartureOffset + 4 * slot, 4));
+                    if (selectors[slot] < -1)
+                        return null;
+                }
+                firstDepartureSelector = selectors[0];
+                allDepartureSelectors = selectors;
+            }
+
+            // Real authored PVars prove the original speed/index fields
+            // are present. Synthetic regression worlds omit this payload.
+            bool nativeSeek = route.OutboundOffset >= 0 &&
+                pvar is { Length: >= 0xc0 };
+
             stops.Add(new Rac1MetropolisTaxiStop(
                 route.Index, route.Class, position, outbound, route.Label, returning,
-                approach, departure, trigger));
+                approach, departure, trigger, nativeSide, nativeSeek,
+                hoverPhases, nativeHud, firstDepartureSelector,
+                allDepartureSelectors, nativeDock,
+                nativeHud.HasValue ? new Rac1TaxiNativeHudElementLease() : null));
         }
 
         return new Rac1MetropolisTaxiSession(stops);
@@ -384,16 +490,35 @@ public sealed class Rac1MetropolisTaxiSession
                     {
                         phase = TrafficPhase.Approaching;
                         elapsed = 0;
+                        if (stop.NativeSeekEvidenced)
+                            _nativeTraffic[stop.InstanceIndex] =
+                                new Rac1TaxiNativeMotion(stop.ApproachPath!);
                     }
                     break;
                 case TrafficPhase.Approaching:
                     elapsed += delta;
-                    position = SampleTrafficPath(stop.ApproachPath!, elapsed);
-                    if (elapsed >= (stop.ApproachPath!.Count - 1) / ProvisionalPathSamplesPerSecond)
+                    if (stop.NativeSeekEvidenced &&
+                        _nativeTraffic.TryGetValue(stop.InstanceIndex, out var approach))
                     {
-                        phase = TrafficPhase.Docked;
-                        elapsed = 0;
-                        position = stop.Position;
+                        approach.Advance(delta);
+                        position = approach.Position;
+                        if (approach.Arrived)
+                        {
+                            phase = TrafficPhase.Docked;
+                            elapsed = 0;
+                            position = stop.Position;
+                            _nativeTraffic.Remove(stop.InstanceIndex);
+                        }
+                    }
+                    else
+                    {
+                        position = SampleTrafficPath(stop.ApproachPath!, elapsed);
+                        if (elapsed >= (stop.ApproachPath!.Count - 1) / ProvisionalPathSamplesPerSecond)
+                        {
+                            phase = TrafficPhase.Docked;
+                            elapsed = 0;
+                            position = stop.Position;
+                        }
                     }
                     break;
                 case TrafficPhase.Docked:
@@ -405,21 +530,53 @@ public sealed class Rac1MetropolisTaxiSession
                     break;
                 case TrafficPhase.ParkedAtDestination:
                     position = stop.OutboundPath[^1];
-                    // Native state 6 waits until Ratchet is 15 units away.
-                    if (position.DistanceSquared(hero) >= 15d * 15d)
+                    // Native class-816 state 6 checks the current slot:
+                    // departure path: >15 in 3D, pathless -1: >5 in
+                    // the native horizontal plane, then idle directly.
+                    if (Rac1TaxiNativeDepartureClearance.Cleared(
+                        position, hero, stop.NativeFirstDepartureSelector))
                     {
-                        phase = TrafficPhase.Departing;
                         elapsed = 0;
+                        if (stop.NativeFirstDepartureSelector == -1)
+                        {
+                            // State 6 changes its byte to idle state 1
+                            // without moving the Moby this update. State
+                            // 1 restores the idle path on the next tick.
+                            phase = TrafficPhase.WaitingForHero;
+                        }
+                        else
+                        {
+                            phase = TrafficPhase.Departing;
+                            if (stop.NativeSeekEvidenced)
+                                _nativeTraffic[stop.InstanceIndex] =
+                                    new Rac1TaxiNativeMotion(stop.DeparturePath!);
+                        }
                     }
                     break;
                 case TrafficPhase.Departing:
                     elapsed += delta;
-                    position = SampleTrafficPath(stop.DeparturePath!, elapsed);
-                    if (elapsed >= (stop.DeparturePath!.Count - 1) / ProvisionalPathSamplesPerSecond)
+                    if (stop.NativeSeekEvidenced &&
+                        _nativeTraffic.TryGetValue(stop.InstanceIndex, out var departure))
                     {
-                        phase = TrafficPhase.WaitingForHero;
-                        elapsed = 0;
-                        position = stop.ApproachPath![0];
+                        departure.Advance(delta);
+                        position = departure.Position;
+                        if (departure.Arrived)
+                        {
+                            phase = TrafficPhase.WaitingForHero;
+                            elapsed = 0;
+                            position = stop.ApproachPath![0];
+                            _nativeTraffic.Remove(stop.InstanceIndex);
+                        }
+                    }
+                    else
+                    {
+                        position = SampleTrafficPath(stop.DeparturePath!, elapsed);
+                        if (elapsed >= (stop.DeparturePath!.Count - 1) / ProvisionalPathSamplesPerSecond)
+                        {
+                            phase = TrafficPhase.WaitingForHero;
+                            elapsed = 0;
+                            position = stop.ApproachPath![0];
+                        }
                     }
                     break;
             }
@@ -444,7 +601,9 @@ public sealed class Rac1MetropolisTaxiSession
 
     public Rac1MetropolisTaxiStop? FindBoardable(Rac1TaxiPoint player)
     {
-        if (IsRiding || _boardingCooldown > 0) return null;
+        if (IsRiding || _boardingCooldown > 0 ||
+            !double.IsFinite(player.X) || !double.IsFinite(player.Y) ||
+            !double.IsFinite(player.Z)) return null;
         return _stops
             .Where(stop => stop.OutboundPath.Count >= 2 &&
                 (stop.ApproachPath is not { Count: > 1 } ||
@@ -461,19 +620,48 @@ public sealed class Rac1MetropolisTaxiSession
         _riding = boarding;
         _elapsed = 0;
         _arrivalReported = false;
+        _nativeFlight = boarding.NativeSeekEvidenced
+            ? new Rac1TaxiNativeMotion(boarding.OutboundPath) : null;
+        _nativeReturning = false;
         if (_traffic.ContainsKey(boarding.InstanceIndex))
             _traffic[boarding.InstanceIndex] = (TrafficPhase.Carrying, 0);
         return true;
     }
 
-    public void Reset()
+    /// <summary>
+    /// Fail-safe cancellation for host interruption, death or world teardown.
+    /// Native taxi camera/player detachment has not yet been ported, so this
+    /// restores the session to its authored admission state without a cooldown.
+    /// </summary>
+    public void AbortRide()
     {
+        var cancelled = _riding;
         _riding = null;
         _elapsed = 0;
         _arrivalReported = false;
         _boardingCooldown = 0;
-        foreach (var stop in _stops.Where(s => s.ApproachPath is { Count: > 1 }))
-            _traffic[stop.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
+        _nativeFlight = null;
+        _nativeReturning = false;
+        // Do not rewind a different cab while cancelling a passenger ride.
+        if (cancelled is { ApproachPath.Count: > 1 })
+        {
+            _nativeTraffic.Remove(cancelled.InstanceIndex);
+            _traffic[cancelled.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
+        }
+    }
+
+    public void Reset()
+    {
+        AbortRide();
+        _nativeTraffic.Clear();
+        foreach (var stop in _stops)
+        {
+            // Class-1012 native state zero discards PVar +0xa4 even when
+            // a previous HUD element serial was allocated by the retail engine.
+            stop.NativeHudElementLease?.ResetOnStateZero();
+            if (stop.ApproachPath is { Count: > 1 })
+                _traffic[stop.InstanceIndex] = (TrafficPhase.WaitingForHero, 0);
+        }
     }
 
     public Rac1TaxiFlight? Tick(double deltaSeconds)
@@ -486,6 +674,9 @@ public sealed class Rac1MetropolisTaxiSession
             _boardingCooldown = Math.Max(0, _boardingCooldown - deltaSeconds);
             return null;
         }
+
+        if (_nativeFlight is { } native)
+            return TickNativePassengerFlight(taxi, native, deltaSeconds);
 
         var outbound = taxi.OutboundPath;
         var returning = taxi.ReturnPath is { Count: > 1 } ? taxi.ReturnPath : null;
@@ -509,13 +700,44 @@ public sealed class Rac1MetropolisTaxiSession
             _elapsed / duration, justArrived);
     }
 
+    private Rac1TaxiFlight TickNativePassengerFlight(
+        Rac1MetropolisTaxiStop taxi, Rac1TaxiNativeMotion native, double deltaSeconds)
+    {
+        native.Advance(deltaSeconds);
+        var returning = taxi.ReturnPath is { Count: > 1 } ? taxi.ReturnPath : null;
+        if (native.Arrived && returning is not null && !_nativeReturning)
+        {
+            _nativeFlight = new Rac1TaxiNativeMotion(returning);
+            _nativeReturning = true;
+            native = _nativeFlight;
+        }
+
+        bool complete = native.Arrived &&
+            (returning is null || _nativeReturning);
+        bool justArrived = complete && !_arrivalReported;
+        if (justArrived)
+            _arrivalReported = true;
+        double progress = returning is null ? native.Progress :
+            _nativeReturning ? 0.5 + native.Progress * 0.5 :
+            native.Progress * 0.5;
+
+        return new Rac1TaxiFlight(taxi, native.Position,
+            returning is null ? taxi.OutboundPath[^1] : returning[^1],
+            progress, justArrived);
+    }
+
     public void CompleteArrival()
     {
-        if (_riding is { } stop && _traffic.ContainsKey(stop.InstanceIndex))
+        Rac1MetropolisTaxiStop? stop = _riding;
+        if (stop is not null && _traffic.ContainsKey(stop.InstanceIndex))
             _traffic[stop.InstanceIndex] = (TrafficPhase.ParkedAtDestination, 0);
         _riding = null;
         _elapsed = 0;
         _arrivalReported = false;
-        _boardingCooldown = 1.25;
+        _nativeFlight = null;
+        _nativeReturning = false;
+        // Native class-1012 state 3 starts frame_scale_i(15) when a
+        // route ends. Class-816's 1.25-second debouncing is still host policy.
+        _boardingCooldown = stop?.NativeClassId == 1012 ? 15d / 60d : 1.25;
     }
 }

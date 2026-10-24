@@ -13,6 +13,18 @@ public sealed record CommandLineArgs
     public int? CaptureFrame { get; init; }
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
+    public string? RecordPlaytest { get; init; }
+    public string? ReplayPlaytest { get; init; }
+    public string? PlaytestReport { get; init; }
+    public bool PlaytestAllowBuildChange { get; init; }
+    public bool PlaytestSmoke { get; init; }
+    public bool BugCapture { get; init; }
+    public bool BugReportSmoke { get; init; }
+    public string? BugReportInbox { get; init; }
+    public string? ReplayBugReport { get; init; }
+    public string? BugReportId { get; init; }
+    public bool PlaytestInspectMarker { get; init; }
+    public bool PlaytestRequested => RecordPlaytest is not null || ReplayPlaytest is not null;
     public string? MovementStatePath { get; init; }
     public string? LoadMovementState { get; init; }
     public int? ReplayForwardFrames { get; init; }
@@ -105,11 +117,14 @@ public sealed record CommandLineArgs
     /// <summary>Exercise staged retail crate, fragment, bolt and resource-pickup fixtures.</summary>
     public bool Rac1CrateSmoke { get; init; }
     public bool Rac1EnemySmoke { get; init; }
+    public bool Rac1FrogSmoke { get; init; }
     public bool Rac1BombGloveSmoke { get; init; }
     public bool Rac1NovalisSwimSmoke { get; init; }
+    public bool Rac1NovalisRouteSmoke { get; init; }
     public bool Rac1NovalisPeckbotSmoke { get; init; }
     public bool Rac1NovalisBirdbotSmoke { get; init; }
     public bool Rac1NovalisMusicSmoke { get; init; }
+    public bool Rac1MetropolisTaxiSmoke { get; init; }
     public bool Rac1WeaponsSmoke { get; init; }
 
     /// <summary>Exercise authored world bolt resting, attraction and collection fixtures.</summary>
@@ -117,6 +132,8 @@ public sealed record CommandLineArgs
 
     /// <summary>Run the two-pass evidence-backed R&amp;C1 campaign travel/persistence smoke.</summary>
     public bool Rac1CampaignSmoke { get; init; }
+    /// <summary>Ordinary-input mission actors, discovery, travel and durable reload; no injected unlocks.</summary>
+    public bool Rac1MissionPlaySmoke { get; init; }
 
     /// <summary>Explicitly opt this host session into R&amp;C1 campaign persistence.</summary>
     public bool Rac1CampaignPersist { get; init; }
@@ -162,6 +179,17 @@ public sealed record CommandLineArgs
                 "--capture-frame" => result with { CaptureFrame = ParseInt(Next()) },
                 "--capture-out" => result with { CaptureOut = Next() },
                 "--fixed-seed" => result with { FixedSeed = ParseInt(Next()) },
+                "--record-playtest" => result with { RecordPlaytest = Next() ?? string.Empty },
+                "--replay-playtest" => result with { ReplayPlaytest = Next() ?? string.Empty },
+                "--playtest-report" => result with { PlaytestReport = Next() },
+                "--playtest-allow-build-change" => result with { PlaytestAllowBuildChange = true },
+                "--playtest-smoke" => result with { PlaytestSmoke = true },
+                "--bug-capture" => result with { BugCapture = true },
+                "--bug-report-smoke" => result with { BugReportSmoke = true },
+                "--bug-report-inbox" => result with { BugReportInbox = Next() },
+                "--replay-bug-report" => result with { ReplayBugReport = Next() },
+                "--bug-report-id" => result with { BugReportId = Next() },
+                "--playtest-inspect-marker" => result with { PlaytestInspectMarker = true },
                 "--movement-state-file" => result with { MovementStatePath = Next() },
                 "--load-movement-state" => result with { LoadMovementState = Next() },
                 "--replay-forward" => result with { ReplayForwardFrames = ParseInt(Next()) ?? -1 },
@@ -198,16 +226,20 @@ public sealed record CommandLineArgs
                 "--rac1-wrench-smoke" => result with { Rac1WrenchSmoke = true },
                 "--rac1-bomb-glove-smoke" => result with { Rac1BombGloveSmoke = true },
                 "--rac1-novalis-swim-smoke" => result with { Rac1NovalisSwimSmoke = true },
+                "--rac1-novalis-route-smoke" => result with { Rac1NovalisRouteSmoke = true },
                 "--rac1-novalis-peckbot-smoke" => result with { Rac1NovalisPeckbotSmoke = true },
                 "--rac1-novalis-birdbot-smoke" => result with { Rac1NovalisBirdbotSmoke = true },
                 "--rac1-novalis-music-smoke" => result with { Rac1NovalisMusicSmoke = true },
+                "--rac1-metropolis-taxi-smoke" => result with { Rac1MetropolisTaxiSmoke = true },
                 "--rac1-weapons-smoke" => result with { Rac1WeaponsSmoke = true },
                 "--controller-smoke" => result with { ControllerSmoke = true },
                 "--rac1-player-audio-smoke" => result with { Rac1PlayerAudioSmoke = true },
                 "--rac1-crate-smoke" => result with { Rac1CrateSmoke = true },
                 "--rac1-enemy-smoke" => result with { Rac1EnemySmoke = true },
+                "--rac1-frog-smoke" => result with { Rac1FrogSmoke = true },
                 "--rac1-placed-bolt-smoke" => result with { Rac1PlacedBoltSmoke = true },
                 "--rac1-campaign-smoke" => result with { Rac1CampaignSmoke = true },
+                "--rac1-mission-play-smoke" => result with { Rac1MissionPlaySmoke = true },
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },

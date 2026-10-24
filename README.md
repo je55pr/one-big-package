@@ -1,72 +1,79 @@
 <p align="center">
-  <img src="docs/assets/branding/obp-logo.png" alt="Ratchet &amp; Clank: One Big Package" width="900">
+  <img src="docs/assets/branding/obp-logo.png" alt="One Big Package logo" width="520">
 </p>
 
-# Ratchet & Clank: One Big Package
+# One Big Package
 
-**One Big Package (OBP)** is a Godot 4 + C# reconstruction project for the original PS2 **Ratchet & Clank**, **Going Commando**, and **Up Your Arsenal**, with the long-term goal of combining their recovered systems and content into one game.
+One Big Package (OBP) is a Godot 4 and C# project to combine the original PlayStation 2 games *Ratchet & Clank*, *Going Commando* and *Up Your Arsenal* into one game.
 
-Retail game data stays outside the repository and is supplied locally by the user. Recovered native behaviour and OBP-created design choices are kept explicitly separate.
+The first step is reconstructing the original games' levels and systems from user-supplied discs. These are the building blocks for the combined game, rather than three separate campaigns being the final goal.
 
-## Start here
+## Goals
 
-On Windows:
+The long-term aim is to let content and progression cross the boundaries between the three games. For example:
+
+- **One connected galaxy:** Travel between planets from all three games on a shared galaxy map, with one save for equipment, bolts, collectibles and mission progress.
+- **Equipment across games:** Keep weapons from the whole trilogy, use later gadgets or Clank abilities on earlier planets, and work out how upgrades and vendors fit together.
+- **Reasons to revisit planets:** Return to familiar locations with new equipment, routes, characters and missions.
+- **Combined encounters:** Mix enemies from different games, including arena challenges that draw on the full weapon collection and enemy roster.
+
+The original mechanics and encounters are being recovered first, so they can be preserved or deliberately adapted. The final campaign structure, balance and progression have not been decided yet.
+
+**OBP is still in development and is not a complete playable trilogy.**
+
+## Current status
+
+- **Ratchet & Clank (2002):** Most active gameplay work. Player movement, weapons, enemies, pickups, campaign state and other systems are implemented to varying degrees.
+- **Going Commando (2003):** World loading, presentation and some game systems are implemented. Gameplay is incomplete.
+- **Up Your Arsenal (2004):** World loading, presentation and some game systems are implemented. Gameplay is incomplete.
+
+See [issues](https://github.com/je55pr/one-big-package/issues) and [pull requests](https://github.com/je55pr/one-big-package/pulls) for current work.
+
+## Getting started
+
+On Windows, with the .NET 8 SDK installed, run from the repository root:
 
 ```powershell
 ./tools/bootstrap-dev.ps1
-./tools/test.ps1 -Configuration Release
 ./tools/play.ps1
 ```
 
-`dev` is the maintained working and release branch. Work directly on it when nothing else can collide; concurrent work may use temporary isolated branches/worktrees, but completed work is integrated back into `dev` and temporary branches are not release pointers.
+The bootstrap script downloads the project's pinned Godot .NET version and builds the project. If no game source is configured, the app opens the Game Sources screen.
 
-There is no separate browser or TypeScript implementation to maintain.
+OBP requires your own supported retail game files to load original levels. **No disc images, game assets or executables are included in this repository.**
 
-## Architecture
-```text
-user-supplied retail ISO / files
-        |
-        v
-OBP.IO          bounded native random access, splits, hashing
-        |
-        v
-OBP.PS2         ISO-9660, SYSTEM.CNF, ELF32, shared PS2 codecs
-        |
-        v
-OBP.RAC1/2/3    game-specific formats, evidence and native behaviour
-        |
-        v
-OBP.Runtime     engine-independent runtime concepts
-        |
-        v
-OBP.Godot       thin Godot adapter
-        |
-        v
-game/           application, input, UI, cameras and presentation
-```
-
-Godot hosts OBP but does not define native Ratchet formats or gameplay rules. Shared abstractions belong in `OBP.Runtime` only when source evidence justifies them. `OBP.PS2.Presentation` is a narrow bridge from shared recovered PS2 material state to neutral runtime presentation; it depends on `OBP.PS2` and `OBP.Runtime` and owns no game-specific semantics.
-
-## Current baseline
-The native runtime can load all three supported trilogy authorities through one neutral destination/provider path, reconstruct worlds into `RuntimeWorld`, build them in Godot, and repeatedly load/unload them. R&C1 currently has the deepest active gameplay work, including native player movement, live entity state, crates/pickups, Nanotech/death state, weapon inventory, Bomb Glove and wrench-combat slices, campaign state, and representative hostile behaviour.
-
-Useful project orientation:
-
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — runtime/import boundaries and evidence rules.
-- [`docs/PROJECT_VISION.md`](docs/PROJECT_VISION.md) — creative direction and deliberately unresolved design choices.
-- [`research/README.md`](research/README.md) — retail archaeology and generated evidence index.
-- [`AGENTS.md`](AGENTS.md) — the short rules for autonomous/local development.
-
-## Validation
-
-Portable CI is C# only and runs on pushes to `dev`, plus pull requests. Local retail-backed validation is explicit:
+## Testing
 
 ```powershell
+# Build and unit tests
+./tools/test.ps1 -Configuration Release
+
+# Tests that require locally supplied game data
 ./tools/test-retail.ps1
 ```
 
-Run `dotnet format OneBigPackage.sln --verify-no-changes --no-restore` before integrating code changes.
+Pull requests also run .NET tests, CodeQL analysis and an asset-free Godot startup test. Some R&C1 gameplay can be recorded and replayed; see [movement and replay documentation](docs/MOVEMENT_REPRO_STATES.md).
 
-## Source and copyright boundary
+## Project layout
 
-OBP does **not** contain Sony/Insomniac retail assets, executables, disc images, audio, or captures. Source bytes remain local; Git contains code, tests, documentation, non-infringing metadata and rebuildable payload-free evidence.
+| Directory | Contents |
+| --- | --- |
+| `src/OBP.IO`, `src/OBP.PS2` | Disc access and PS2 file formats |
+| `src/OBP.RAC1`, `src/OBP.RAC2`, `src/OBP.RAC3` | Game-specific formats and behaviour |
+| `src/OBP.Runtime` | Engine-independent runtime |
+| `src/OBP.Godot`, `game/` | Godot integration and application |
+| `research/` | Reverse-engineering notes and evidence |
+| `tests/`, `tools/` | Tests and development scripts |
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Project vision](docs/PROJECT_VISION.md)
+- [Research index](research/README.md)
+- [Retail testing](docs/RETAIL_TESTING.md)
+- [Development guidelines](AGENTS.md)
+- [External source policy](research/EXTERNAL_SOURCE_POLICY.md)
+
+Development uses feature branches and pull requests into the protected `dev` branch. Merges are manual.
+
+This is an unofficial fan project and is not affiliated with Sony Interactive Entertainment or Insomniac Games.

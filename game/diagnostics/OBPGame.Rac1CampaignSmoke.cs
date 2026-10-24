@@ -24,18 +24,40 @@ public partial class OBPGame
 
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
-            switch (_rac1CampaignRestoreKind)
+            if (_rac1CampaignRestoreWarning is not null)
             {
-                case Rac1CampaignRestoreKind.DefaultedMissingState:
-                    await RunFreshRac1CampaignSmokeAsync();
-                    break;
-                case Rac1CampaignRestoreKind.RestoredCurrentSchema:
-                    await RunRestoredRac1CampaignSmokeAsync();
-                    break;
-                default:
-                    throw new InvalidOperationException(
-                        $"Campaign smoke does not accept restore kind {_rac1CampaignRestoreKind}.");
+                // A damaged save must remain byte-for-byte intact even when
+                // gameplay triggers a queued progress mutation and the host
+                // advances frames or flushes during exit.
+                string damagedPath = Path.GetFullPath(_args.Rac1CampaignSavePath);
+                byte[] original = File.ReadAllBytes(damagedPath);
+                RequireRac1CampaignSmoke(_rac1SaveBatcher is null,
+                    "Corrupt-save recovery incorrectly installed a live writer.");
+                RequireRac1CampaignSmoke(
+                    ApplyRac1CampaignProgressionEvent(0x25) == Rac1DestinationDiscoveryResult.Discovered,
+                    "Recovery smoke progression mutation was not admitted.");
+                TickRac1CampaignSaves(5);
+                FlushRac1CampaignSaves("corrupt-save smoke");
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                RequireRac1CampaignSmoke(
+                    original.AsSpan().SequenceEqual(File.ReadAllBytes(damagedPath)),
+                    "Queued progress overwrote the damaged save.");
+                RequireRac1CampaignSmoke(!File.Exists(damagedPath + ".tmp"),
+                    "Recovery created a temporary save at the damaged path.");
+                GD.Print("[rac1-campaign-smoke] corrupt-save protection PASS: mutation did not write");
             }
+            else switch (_rac1CampaignRestoreKind)
+                {
+                    case Rac1CampaignRestoreKind.DefaultedMissingState:
+                        await RunFreshRac1CampaignSmokeAsync();
+                        break;
+                    case Rac1CampaignRestoreKind.RestoredCurrentSchema:
+                        await RunRestoredRac1CampaignSmokeAsync();
+                        break;
+                    default:
+                        throw new InvalidOperationException(
+                            $"Campaign smoke does not accept restore kind {_rac1CampaignRestoreKind}.");
+                }
 
             GD.Print("[rac1-campaign-smoke] PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-campaign-smoke-pass", 0);

@@ -38,6 +38,8 @@ public partial class OBPGame
                     "Ordinary Veldin start does not expose the recovered 16-placement class-749 population.");
 
             await RunRac1VeldinPopulationOpeningIdleSmokeAsync();
+            await RunRac1VeldinRetailPauseSmokeAsync();
+            await RunRac1WorldRetailNavigationSmokeAsync("Veldin");
 
             GD.Print(
                 $"[rac1-veldin-play] opening PASS: ephemeral current=0, " +

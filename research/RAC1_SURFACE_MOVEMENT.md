@@ -113,6 +113,20 @@ up-axis physics to a wall or ceiling.
 
 ## Host integration validation boundary
 
+The Novalis adapter also distinguishes a thin water-tagged surface over walkable
+solid terrain from free swimming. At the reported opening puddle (native X/Z
+179.8/129.5), source face class zero/raw `0x60` is at height 59.74244 and solid
+raw `0x1f` is at 59.55494, only 0.1875 below it. Swimming previously took ownership
+from the ordinary controller and suspended Ratchet above this bottom, freezing
+the unsupported surface-swim pose and preventing ordinary jumps. The host now
+queries the solid bottom and uses the recovered water-entry/depth predicates,
+including depth `>.8` on the falling surface-admission path. The former host
+capsule-centre depth gate has been removed. Query-mask membership remains a
+Godot approximation; see [water motion and remaining boundaries](RAC1_TRAVERSAL_EQUIPMENT.md#novalis-water-motion-and-host-boundary).
+The Novalis swim smoke covers walking, Cross and landing at this puddle, deeper
+diving/oxygen/ascend, and the later human-marked pool at native
+`(295.03513,149.39476,82.25)` with surface animations and a water-exit jump.
+
 The ice overspeed test reads `P+0x160`, which the contact tail stores as a
 single at `0x213c38`. The runtime rounds the reconstructed contact length to
 that source cell's precision before comparing with `5.9f * dt`. This avoids

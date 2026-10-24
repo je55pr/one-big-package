@@ -1,0 +1,121 @@
+using System.Numerics;
+using OBP.IO;
+using OBP.RAC1.Presentation;
+
+namespace OBP.Tests;
+
+public sealed class Rac1MenuPanelModelTests
+{
+    [Fact]
+    public void OriginalDiscHasNativeFiveJointPanelModelAndAllAnimationSlots()
+    {
+        string? path = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+        using var disc = new FileRandomAccessReader(path);
+        var model = Rac1UiAssets.Read(disc).NativeMenuPanels;
+        Assert.NotNull(model);
+        Assert.Equal(5, model.JointCount);
+        Assert.Equal(48, model.RestPositions.Count);
+        Assert.Equal(32 * 3, model.TriangleIndices.Count);
+        Assert.Equal(48, model.Uvs.Count);
+        Assert.Equal(32, model.TriangleTextureIds.Count);
+        Assert.All(model.TriangleTextureIds, id => Assert.Equal(91, id));
+        Assert.Equal(216, model.Sequences.Count);
+        // FUN_0023a318 uses native D_00160ED0 semantic point indices
+        // 0,1,2,3. The original class attachment table resolves those
+        // into distinct local joints 2,1,4,3, not mesh vertex indices.
+        Assert.Equal([2, 1, 4, 3], model.AttachmentFrameJoints);
+        var firstFrame = model.Sequences[14].AttachmentFrameCorners[0];
+        Assert.Equal(4, firstFrame.Length);
+        Assert.InRange(Vector3.Distance(new Vector3(6f, 1.5f, 2.32f), firstFrame[0]), 0, .002f);
+        Assert.InRange(Vector3.Distance(new Vector3(6f, -1.5f, 1.82f), firstFrame[3]), 0, .002f);
+        Assert.Single(model.Sequences[0].Frames);
+        Assert.Equal(7, model.Sequences[14].Frames.Count);
+        Assert.Equal(7, model.Sequences[215].Frames.Count);
+        // The native 0x472 panel movement lives in per-joint scale and
+        // translation channels. Rigid-only pose decoding erases all motion.
+        double[] opening = model.Sequences[14].Frames[0];
+        double[] endpoint = model.Sequences[14].Frames[^1];
+        Assert.True(opening.Zip(endpoint, (a, b) => Math.Abs(a - b)).Max() > 5d,
+            "Native menu panel animation was flattened into the bind pose.");
+        Assert.True(model.Max.Y > model.Min.Y);
+        Assert.True(model.Max.Z > model.Min.Z);
+        Assert.All(model.RestPositions, position => Assert.Equal(0f, position.X));
+        Assert.All(model.Sequences.Values, clip =>
+        {
+            Assert.True(clip.Frames.Count is 1 or 7);
+            Assert.All(clip.Frames, vertices => Assert.Equal(48 * 3, vertices.Length));
+            Assert.Equal(clip.Frames.Count, clip.AttachmentFrameCorners.Count);
+            Assert.All(clip.AttachmentFrameCorners, corners => Assert.Equal(4, corners.Length));
+        });
+    }
+
+    [Fact]
+    public void NativeTwoCornerProjectionPreservesPerspectiveAndScreenQuarterScale()
+    {
+        static Vector4 View(Vector4 value) => new(value.X, value.Y, value.Z, value.Z);
+        var bounds = Rac1MenuPanelProjection.ProjectFloat(
+            new Vector3(-1, -1, 5), new Vector3(1, 1, 5), Vector3.Zero,
+            View, new Vector2(800, 800), new Vector2(480, 360));
+        Assert.Equal(440f, bounds.X, 3);
+        Assert.Equal(320f, bounds.Y, 3);
+        Assert.Equal(80f, bounds.Width, 3);
+        Assert.Equal(80f, bounds.Height, 3);
+    }
+
+    [Fact]
+    public void NativePanelRasterizerTruncatesOriginsAndExtentsSeparatelyThenInsetsTheOrigin()
+    {
+        // Projected endpoints must not be rounded first to derive the width:
+        // trunc(15.7 - 10.9) = 4, not trunc(15.7) - trunc(10.9) = 5.
+        var positive = Rac1MenuPanelProjection.RasterizePanel(
+            new Vector2(10.9f, 20.9f), new Vector2(15.7f, 26.7f));
+        Assert.Equal(new Rac1MenuPanelProjection.Bounds(11, 21, 4, 5), positive);
+
+        // The original convert helper truncates toward zero, not floor.
+        var negative = Rac1MenuPanelProjection.RasterizePanel(
+            new Vector2(-10.9f, -20.9f), new Vector2(0.2f, -10.2f));
+        Assert.Equal(new Rac1MenuPanelProjection.Bounds(-9, -19, 11, 10), negative);
+
+        // The source increments screen x/y only. It does not shrink extent
+        // to account for this offset or derive extent from snapped corners.
+        var tiny = Rac1MenuPanelProjection.RasterizePanel(
+            new Vector2(1.25f, 4.25f), new Vector2(1.75f, 4.75f));
+        Assert.Equal(new Rac1MenuPanelProjection.Bounds(2, 5, 0, 0), tiny);
+    }
+
+    [Fact]
+    public void NativePanelRasterizerRejectsNonFiniteAndOverflowingScreenCoordinates()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1MenuPanelProjection.RasterizePanel(new Vector2(float.NaN, 0), Vector2.One));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1MenuPanelProjection.RasterizePanel(Vector2.Zero, new Vector2(float.PositiveInfinity, 0)));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1MenuPanelProjection.RasterizePanel(Vector2.Zero, new Vector2(float.MaxValue, 8)));
+    }
+
+    [Theory]
+    [InlineData(1, 1, 128, 128)]
+    [InlineData(128, 128, 128, 128)]
+    [InlineData(129, 129, 256, 256)]
+    [InlineData(256, 750, 256, 512)]
+    [InlineData(1024, 1024, 1024, 128)]
+    public void NativeOffscreenTextureSelectionMatchesOriginalPacketThresholds(
+        int width, int height, int expectedWidth, int expectedHeight)
+    {
+        var target = Rac1MenuPanelProjection.OffscreenTarget(width, height);
+        Assert.Equal(expectedWidth, target.Width);
+        Assert.Equal(expectedHeight, target.Height);
+    }
+
+    [Fact]
+    public void ProjectorRejectsUnboundedInputAndZeroPerspectiveW()
+    {
+        Assert.Throws<InvalidDataException>(() => Rac1MenuPanelProjection.ProjectFloat(
+            Vector3.Zero, Vector3.One, Vector3.Zero,
+            static _ => Vector4.Zero, Vector2.One, Vector2.Zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Rac1MenuPanelProjection.OffscreenTarget(0, 1));
+    }
+}

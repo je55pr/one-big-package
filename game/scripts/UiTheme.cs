@@ -70,6 +70,15 @@ public static class UiTheme
 
         StyleButtons(theme);
         StylePanels(theme);
+        // Godot's scrollbar widgets are never exposed in OBP presentation.
+        // Legacy scrollable surfaces retain wheel/focus navigation invisibly;
+        // native R&C1 screens use visible previous/next page controls instead.
+        foreach (string scrollbarType in new[] { "VScrollBar", "HScrollBar" })
+        {
+            foreach (string part in new[] { "scroll", "scroll_focus", "grabber",
+                                           "grabber_highlight", "grabber_pressed" })
+                theme.SetStylebox(part, scrollbarType, new StyleBoxEmpty());
+        }
         return theme;
     }
 

@@ -76,7 +76,8 @@ public sealed class Rac1AirborneMotionSession
         }
 
         bool mayGrow = !_ceilingBlocked &&
-            (input.CrossHeld || (_pendingImpulse == 0 && _appliedImpulse == 0));
+            (input.CrossHeld || _profile.Kind == Rac1AirborneJumpKind.WaterExit ||
+                (_pendingImpulse == 0 && _appliedImpulse == 0));
         if (mayGrow && input.NativeActionAge <= 15 && HeightParameter < _profile.MaximumHeight)
         {
             float increment = (_profile.MaximumHeight - _profile.MinimumHeight) / _profile.HeightGrowthTicks;
@@ -140,6 +141,19 @@ public sealed class Rac1AirborneMotionSession
 
     private (float? StartCoefficient, float AccelerationCoefficient, int Ticks) ScriptSegment(int index)
     {
+        if (_profile.Kind == Rac1AirborneJumpKind.WaterExit)
+            return index switch
+            {
+                0 => (-27f, 0f, 9),
+                1 => (40f, 0f, 1),
+                2 => (55f, 0f, 1),
+                3 => (75f, 0f, 1),
+                4 => (90.5f, 0f, 9),
+                5 => (75f, 0f, 4),
+                6 => (40f, 0f, 3),
+                7 => (0f, 0f, 100),
+                _ => throw new InvalidOperationException("Water-exit script escaped its native age range."),
+            };
         if (_profile.Kind == Rac1AirborneJumpKind.HeliPackHigh)
             return (48f, 0f, 1000);
         return index switch
