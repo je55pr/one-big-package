@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../OBP.Core/OBP.Core.csproj" />
+    <ProjectReference Include="../OBP.Runtime/OBP.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

@@ -12,17 +12,26 @@ design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISIO
 | `OBP.IO` | Bounded/random-access file and split reads, streaming hashes, authority verification |
 | `OBP.PS2` | Shared ISO/ELF, compression, texture, packet and collision formats |
 | `OBP.RAC1/2/3` | Source-specific containers, interpretation, recovered behaviour and provenance |
-| `OBP.Runtime` | Evidence-justified engine-neutral world, player, presentation, audio and gameplay concepts |
+| `OBP.Runtime` | Engine-neutral world/player/actor facts, identities, snapshots and ports; no native formulas or orchestration policy |
 | `OBP.PS2.Presentation` | Narrow shared PS2-material to neutral-runtime mapping; no game-specific semantics |
 | `OBP.Godot` | Neutral data to Godot meshes, materials, collision, audio and presentation objects |
-| `game/` | Application lifecycle, input, UI, cameras and host coordination |
-| `OBP.Fusion` | World composition schema, transforms and anchor solving |
+| `game/` | Scene lifecycle, physics contacts, input, UI/camera presentation and composition-root adapter wiring |
+| `OBP.Fusion` | Engine-neutral source-qualified gameplay orchestration and player-session policy, world-entry contracts, composition/placement |
 | `OBP.Cli` / tests | Deterministic imports, probes and contract verification |
 
 `ArchitectureLayeringTests` guards project references/imports. Godot adapters
 do not become native parsers; RAC modules do not depend on Godot; Runtime does
 not acquire source-game numeric state machines. Share low-level codecs only
 where retail evidence supports the common structure. Preserve unknown fields.
+
+The binding source/player/world/actor ownership rules, dependency graph, version-1
+ports and staged migration ownership are in [PLAYER_WORLD_CONTRACT.md](PLAYER_WORLD_CONTRACT.md).
+Destination origin chooses world content, not player-global services. Source-native
+controllers stay in RAC modules; Fusion invokes neutral ports and applies explicitly
+labelled OBP policy. The Godot composition root wires those implementations without
+copying their rules. The contract PR establishes these seams; the linked follow-ups
+replace the current host couplings. Architecture tests freeze that migration debt
+and reject new player gates while allowing narrow world/campaign adapters.
 
 ## Sources and destination providers
 
@@ -73,8 +82,11 @@ separate from an optional native terminal-state byte.
 The host supplies contacts and presentation facts. `Rac1PlayerContactResult`
 retains raw/effective material semantics, support identity, anchor carry and
 conveyor channels. `Rac1MobyPersistenceSession` is a per-level UID boundary,
-not a universal mission VM. Godot gameplay partials coordinate these sessions;
-they do not define native constants or invent shared class semantics.
+not a universal mission VM. Existing Godot partials still wire and coordinate
+these sessions; the reconciliation contract assigns engine-neutral gameplay
+coordination to Fusion and retains scene/contact plumbing in the host. The
+current mixed responsibilities have explicit migration owners. Neither layer
+defines native constants or invents shared class semantics.
 
 ## Player movement, camera and animation
 
@@ -99,8 +111,12 @@ invent source selectors or advance a physics-owned clock during rendering.
 RAC1 exposes a verified Ratchet carrier and source-aware animation controller.
 Its ordinary locomotion, crouch, stop and landing clocks are documented in
 [the animation reference](../research/RAC1_LOCOMOTION_ANIMATION.md). GC/UYA
-retain their own selector contracts; a source without an admitted renderable
-avatar fails closed instead of borrowing RAC1 assets. Movement is authoritative
+retain their own selector contracts. The selected avatar's actual source/provider
+must resolve independently of destination origin. The reconciliation contract
+selects genuine R&C1 Ratchet as the initial ordinary profile on every world;
+#268 replaces the current destination-based provider lookup and capsule fallback.
+GC/UYA skins are not admitted just because their skeletons are compatible.
+Missing selected assets must fail visibly. Movement is authoritative
 outside the animation mapping. Neutral skeleton metadata is optional until
 its transform semantics are independently established.
 

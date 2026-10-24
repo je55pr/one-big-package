@@ -1,4 +1,6 @@
 using System.Xml.Linq;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace OBP.Tests;
 
@@ -19,9 +21,10 @@ public sealed class ArchitectureLayeringTests
             foreach (string other in GameModules.Where(m => m != game))
                 Assert.DoesNotContain(other, references);
             Assert.DoesNotContain("OBP.Godot", references);
+            Assert.DoesNotContain("OBP.Fusion", references);
             Assert.DoesNotContain("OneBigPackage", references);
 
-            AssertNoImports(game, "Godot", "OneBigPackage");
+            AssertNoImports(game, "Godot", "OBP.Fusion", "OneBigPackage");
         }
     }
 
@@ -31,13 +34,13 @@ public sealed class ArchitectureLayeringTests
         Assert.Equal(["OBP.Core"], ProjectReferences("OBP.Runtime"));
         AssertNoImports("OBP.Runtime",
             "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
-            "OBP.IO", "OBP.PS2", "OneBigPackage");
+            "OBP.IO", "OBP.PS2", "OBP.Fusion", "OneBigPackage");
     }
 
     [Fact]
     public void FusionIntegrationRemainsEngineNeutral()
     {
-        Assert.Equal(["OBP.Core"], ProjectReferences("OBP.Fusion"));
+        Assert.Equal(["OBP.Core", "OBP.Runtime"], ProjectReferences("OBP.Fusion"));
         AssertNoImports("OBP.Fusion",
             "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
             "OBP.IO", "OBP.PS2", "OneBigPackage");
@@ -88,6 +91,17 @@ public sealed class ArchitectureLayeringTests
             if (relative.StartsWith("obj/", StringComparison.OrdinalIgnoreCase) ||
                 relative.StartsWith("bin/", StringComparison.OrdinalIgnoreCase))
                 continue;
+
+            // Also reject fully qualified and alias-qualified references; an
+            // import-only guard can be bypassed with global::OBP.RAC1.Type.
+            var syntax = CSharpSyntaxTree.ParseText(File.ReadAllText(path)).GetRoot();
+            foreach (var name in syntax.DescendantNodes().OfType<NameSyntax>())
+                foreach (string forbidden in forbiddenNamespaces)
+                {
+                    string qualified = name.ToString().Replace("global::", "", StringComparison.Ordinal);
+                    Assert.False(qualified == forbidden || qualified.StartsWith(forbidden + ".", StringComparison.Ordinal),
+                        $"{project}: forbidden qualified reference in {relative}: {name}");
+                }
 
             foreach (string line in File.ReadLines(path))
             {

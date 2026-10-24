@@ -1,7 +1,8 @@
-# Fusion ownership and comparison migration (#260)
+# Fusion ownership and comparison migration (#260, #265)
 
-OBP.Fusion is the engine-neutral integration module: source-qualified session and
-exhibit descriptions, provenance, and reusable transform/placement math.
+OBP.Fusion is the engine-neutral integration module: source-qualified gameplay
+orchestration, persistent player-session policy, world-entry contracts, scenario
+and exhibit descriptions, provenance, and reusable transform/placement math.
 It deliberately does not implement native AI or convert source-specific mechanics.
 Native parsers, item behaviours and state machines remain in OBP.RAC1/RAC2/RAC3.
 Shared input/world concepts remain in OBP.Runtime; Godot presentation and UI
@@ -24,12 +25,22 @@ remain in the game host and OBP.Godot.
 
 ## Integration contract
 
-#254 owns authorable room layout, the new playable scene host and the existing
-normal Ratchet pipeline. #255 owns the equipment catalog, #256 live combat
-adapters, #257 reset/sandbox controls, #258 exhibits, #259 pause/loadout UI.
+The [source/player/world/actor contract](PLAYER_WORLD_CONTRACT.md) is the single
+ownership authority. Fusion may reference Core and Runtime, not RAC modules,
+native IO/PS2 parsers or Godot. Native controllers implement neutral ports;
+the host composition root supplies their adapters to Fusion. Cross-game admission,
+target routing and player policy belong here, not in scene callbacks or native formulas.
+
+#254's room layout/greybox and #241's weapons are merged. #265 establishes version-1
+contracts and CI guards; it does not complete persistent player/session or ordinary
+host migration. #266/#267 own those foundations before #268/#269/#270 and the
+existing #255 catalog, #256 actor/combat and #259 pause work. See the canonical
+contract's file/member ownership table before editing shared host partials.
 The shared FusionSession/FusionExhibit/FusionSourceIdentity are adapter-neutral:
-a source-qualified id and explicit adapter may be described, but it is the game
-host's job to resolve and validate actual source availability and behaviours.
+a descriptor is not proof of usability. The composition root resolves source
+handles and native adapter registrations; source modules validate native context,
+and Fusion owns cross-source admission/routing policy. Scene code supplies contacts
+and presentation rather than choosing behaviour from world origin.
 
 Regression: build the solution and run portable OBP.Tests; --compose remains a
 separate optional diagnostic path when local original-game inputs are present.
