@@ -59,12 +59,59 @@ public sealed class Rac1AridiaEnemyTests
         Assert.All(sharks.Where(moby => moby.Index is >= 440 and <= 445), moby =>
             Assert.Equal(756, Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(moby.PVar!)));
         Assert.Equal(Rac1AridiaEnemies.Sandmouse, placements[756].OClass);
+        Assert.Equal(208, placements[756].PVar!.Length);
+        Assert.Equal(526, Rac1AridiaEnemies.ReadSandmouseLinkedController(placements[756].PVar!));
+        Assert.Equal(604, placements[526].OClass);
+        Assert.Equal(43, BinaryPrimitives.ReadInt32LittleEndian(placements[756].PVar!.AsSpan(0x40)));
+        Assert.Equal(43, BinaryPrimitives.ReadInt32LittleEndian(placements[756].PVar!.AsSpan(0x44)));
         // Authored group IDs are the +0x48 placement word copied into live
         // moby +0x21. Validate the admitted 137 placements against retail.
         Assert.All(sharks.Concat(bots).Concat(nests), moby =>
             Assert.InRange(Rac1AridiaEnemies.ReadAuthoredGroup(moby.RawRecord), -1, 254));
         Assert.Contains(nests, nest => Rac1AridiaEnemies.ReadAuthoredGroup(nest.RawRecord) >= 0);
         Assert.Equal([38], bots.Select(Reward).Distinct().Order());
+        // The native 18-slot class612 updater dispatches FOUR authored
+        // startup modes, not a universal flame-loop actor at level load.
+        Assert.Equal(4, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 0));
+        Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 1));
+        Assert.Equal(1, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 2));
+        Assert.Equal(9, bots.Count(bot => Rac1AridiaConstructorbotNative.ReadInitialMode(bot.PVar!) == 3));
+        // All 15 source-authored walker records are zero-initialized.
+        // Behavior flags live at record+0x38 (PVar+0x108), not at +0
+        // where native walker_record_init writes the 0x280 fixed radius.
+        Assert.All(bots, bot =>
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(
+                bot.PVar!.AsSpan(0x108))));
+        Assert.All(bots, bot =>
+            Assert.Equal(0, BinaryPrimitives.ReadInt32LittleEndian(
+                bot.PVar!.AsSpan(0xd0))));
+        Assert.Equal([21], bots.Select(bot => Rac1AridiaConstructorbotNative.ReadActivationVolume(bot.PVar!))
+            .Where(index => index >= 0).ToArray());
+        Assert.Equal(558, Assert.Single(bots, bot =>
+            Rac1AridiaConstructorbotNative.ReadActivationVolume(bot.PVar!) == 21).Index);
+        var volumes = Rac1ClipVolumes.Read(gameplay);
+        Assert.Equal(86, volumes.Count);
+        Assert.All(bots, bot =>
+            Assert.InRange(Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+                bot.PVar!, volumes.Count), 0, volumes.Count - 1));
+        Assert.Equal(22, Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+            placements[548].PVar!, volumes.Count));
+        Assert.Equal(12, Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+            placements[549].PVar!, volumes.Count));
+        var bot548 = placements[548].Position;
+        Assert.InRange(Vector3.Distance(
+            volumes[22].Centre, new Vector3(bot548.X, bot548.Y, bot548.Z)), 0, 1);
+        var bot560 = placements[560].Position;
+        Assert.True(Vector3.Distance(volumes[28].Centre,
+            new Vector3(bot560.X, bot560.Y, bot560.Z)) > 1,
+            "native waypoint is distinct from authored spawn; never substitute spawn");
+        Assert.InRange(21, 0, volumes.Count - 1);
+        Assert.True(volumes[21].Contains(volumes[21].Centre));
+        Assert.All(bots, bot =>
+            Assert.Equal(18f, Rac1AridiaConstructorbotNative.ReadEngagementRadius(bot.PVar!)));
+        Assert.All(bots, bot =>
+            Assert.Contains(Rac1AridiaConstructorbotNative.Initialize(bot.PVar!).NativeState,
+                new[] { 7, 8, 9, 10 }));
         Assert.Equal([0, 60], nests.Select(moby =>
             Rac1AridiaEnemies.ReadNestInitialWaitTicks(moby.PVar!)).Distinct().Order());
         Assert.All(sharks.Concat(bots), moby =>
@@ -72,6 +119,12 @@ public sealed class Rac1AridiaEnemyTests
         // Native LEVEL2 shark + bot lethal branches call moby_drop_bolts
         // with (moby, 0, -1); nests instead spawn explosion/debris.
         var world = Rac1WorldImport.Build(reader, Rac1AridiaEnemies.LevelId);
+        // These are real visible imported actors, not synthetic-only class
+        // controllers. Native registration is separate from hostile collision.
+        Assert.Contains(world.DynamicObjects!, source => source.InstanceIndex == 526 &&
+            source.NativeClassId == Rac1AridiaClass604Session.NativeClassId && source.Meshes.Count > 0);
+        Assert.Contains(world.DynamicObjects!, source => source.InstanceIndex == 756 &&
+            source.NativeClassId == Rac1AridiaEnemies.Sandmouse && source.Meshes.Count > 0);
         foreach (var source in world.DynamicObjects!.Where(source =>
             source.NativeClassId is Rac1AridiaEnemies.Sandshark or Rac1AridiaEnemies.Constructorbot))
             Assert.Equal(Reward(placements[source.InstanceIndex]), Rac1EnemyMotion.RewardCentre(source));
@@ -153,6 +206,25 @@ public sealed class Rac1AridiaEnemyTests
     }
 
     [Fact]
+    public void NativeNestAnimationClockMustReachFrameTenWithoutUsingElapsedTicks()
+    {
+        var nest = new Rac1AridiaEnemySession();
+        nest.Register(9, Rac1AridiaEnemies.Nest, nestInitialWaitTicks: 1);
+        var near = new Rac1AridiaEnemyFacts(Vector3.Zero, Vector3.UnitX, true, true,
+            WaitingSharkCount: 1, NestAnimationTime: 100);
+        // A stale idle animation sample cannot release in the same step that
+        // the native windup sequence is selected.
+        var first = nest.Step(9, near);
+        Assert.Equal(Rac1AridiaEnemyPhase.WindingUp, first.Phase);
+        Assert.False(first.SpawnSandshark);
+        for (int i = 0; i < 40; i++)
+            Assert.False(nest.Step(9, near with { NestAnimationTime = 9.8f }).SpawnSandshark);
+        var release = nest.Step(9, near with { NestAnimationTime = 10.1f });
+        Assert.True(release.SpawnSandshark);
+        Assert.Equal(Rac1AridiaEnemyPhase.Guarding, release.Phase);
+    }
+
+    [Fact]
     public void NativeLinkedSandmouseState29BlocksEvenPointBlankAggroUntilState5()
     {
         var session = new Rac1AridiaEnemySession();
@@ -187,6 +259,19 @@ public sealed class Rac1AridiaEnemyTests
         var session = new Rac1AridiaEnemySession();
         Assert.Throws<ArgumentException>(() =>
             session.Register(3, Rac1AridiaEnemies.Nest, linkedActivationMobyIndex: 756));
+    }
+
+    [Fact]
+    public void SandmouseControllerLinkRejectsMalformedOrMissingNativePvar()
+    {
+        var pvar = new byte[208];
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x48), 526);
+        Assert.Equal(526, Rac1AridiaEnemies.ReadSandmouseLinkedController(pvar));
+        BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x48), -1);
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaEnemies.ReadSandmouseLinkedController(pvar));
+        Assert.Throws<InvalidDataException>(() =>
+            Rac1AridiaEnemies.ReadSandmouseLinkedController(new byte[0x48]));
     }
 
     [Fact]
@@ -250,6 +335,40 @@ public sealed class Rac1AridiaEnemyTests
         BinaryPrimitives.WriteInt32LittleEndian(record.AsSpan(0x48), 256);
         Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadAuthoredGroup(record));
         Assert.Throws<InvalidDataException>(() => Rac1AridiaEnemies.ReadAuthoredGroup(new byte[8]));
+    }
+
+    [Fact]
+    public void RecycledSharkRelaunchesTowardSameAuthoredHomeOnSecondLife()
+    {
+        var session = new Rac1AridiaEnemySession();
+        session.Register(10, Rac1AridiaEnemies.Nest, groupId: 7);
+        session.Register(20, Rac1AridiaEnemies.Sandshark, groupId: 7);
+        var nest = new Vector3(10, 20, 3);
+        var authoredHome = new Vector3(15, 20, 3);
+        var firstDeath = new Vector3(10, 28, 3);
+        var secondDeath = new Vector3(10, 12, 3);
+        // The host must keep authoredHome immutable. Passing either
+        // death location instead would produce a different launch heading.
+        Rac1AridiaEnemyFrame LaunchFromDeath(Vector3 death)
+        {
+            Assert.NotEqual(authoredHome, death);
+            Assert.True(session.Damage(20, 1));
+            Assert.True(session.RetireToNestPool(20));
+            Assert.Equal(20, session.FindWaitingSharkForNest(10));
+            Assert.True(session.ReleaseFromNest(10, 20, nest, authoredHome));
+            return session.Step(20, new(death, death, false, false));
+        }
+
+        var first = LaunchFromDeath(firstDeath);
+        var second = LaunchFromDeath(secondDeath);
+        Assert.Equal(Rac1AridiaEnemyPhase.Launched, first.Phase);
+        Assert.Equal(Rac1AridiaEnemyPhase.Launched, second.Phase);
+        Assert.Equal(Rac1AridiaEnemies.NestReleasedSharkSequence, second.Sequence);
+        Assert.Equal(first.Yaw, second.Yaw, 5);
+        Assert.Equal(first.Motion.X, second.Motion.X, 5);
+        Assert.Equal(first.Motion.Y, second.Motion.Y, 5);
+        Assert.True(second.Motion.X > 0);
+        Assert.Equal(2, session.Count);
     }
 
     [Fact]

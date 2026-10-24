@@ -21,6 +21,9 @@ public partial class OBPGame
     private Rac1NovalisBirdbotSession? _rac1Birdbots;
     private Rac1SeekerSession? _rac1Seekers;
     private double _rac1EnemyTicks;
+    // LEVEL2:0x15f5cc frame-low-bits emission gate. Host 60-Hz counter;
+    // the exact retail global update phase is not yet proven.
+    private uint _rac1AridiaNativeFrameCounter;
     private const float AridiaHostUpdateRadius = 24f;
     private const float AridiaAnimatedPresentationRadius = 18f;
     private IEnumerable<RuntimeWorldScene.DynamicObjectNode> Rac1EnemyNodes => _rac1Enemies.Values
@@ -32,6 +35,10 @@ public partial class OBPGame
         CharacterBody3D body, Rac1EnemyMotion? motion, int sequence)
     {
         public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
+        // Capture the imported placement before any launches, contacts or
+        // deaths can move Root. Native Aridia nest relaunch heading uses
+        // the same shark's authored home across multiple recycle cycles.
+        public Vector3 AuthoredHomePosition { get; } = node.Root.GlobalPosition;
         public CharacterBody3D Body { get; } = body;
         public Rac1EnemyMotion? Motion { get; } = motion;
         public Rac1MobySequenceClock Animation { get; } = new(asset, sequence);
@@ -65,6 +72,9 @@ public partial class OBPGame
         _rac1QueenLinkedGate = null; _rac1QueenGateNative = null;
         _rac1QueenLinkedNodes.Clear(); _rac1QueenLinkedBaseRotations.Clear();
         _rac1AridiaEnemies = new(); _rac1EnemyTicks = 0;
+        _rac1AridiaNativeFrameCounter = 0;
+        ResetRac1AridiaScriptActors();
+        ResetRac1ConstructorbotStartups();
         ResetRac1Amoeboids();
         ResetRac1BirdbotProjectiles();
     }
@@ -95,6 +105,7 @@ public partial class OBPGame
             // the general placement's 0x78-byte instance record.
             var levelGameplay = Rac1LevelSettings.ReadGameplay(reader, level);
             var authoredPlacements = Rac1Instances.Parse(levelGameplay).MobyInstances;
+            _rac1AridiaClipVolumes = Rac1ClipVolumes.Read(levelGameplay);
             _rac1AridiaEnemies.SetAuthoredGroupRoster(Rac1AridiaEnemies.ReadAuthoredGroupRoster(levelGameplay));
             foreach (var authored in (world.DynamicObjects ?? []).Where(item => Rac1AridiaEnemies.IsEnemyClass(item.NativeClassId)))
             {
@@ -103,10 +114,24 @@ public partial class OBPGame
                     ?? throw new InvalidDataException("Aridia enemy placement is missing its native PVar.");
                 int? linkedActivationMobyIndex = authored.NativeClassId == Rac1AridiaEnemies.Sandshark
                     ? Rac1AridiaEnemies.ReadSharkLinkedActivationInstance(pvar) : null;
-                // The Sandshark init routine's +0x258 branch enters native
-                // state 29 and waits for the linked Moby to advance.
+                // Native class-612 initialization branches by PVar +0x194;
+                // the 15 retail bots span four distinct starting states.
+                // Other source-gated native states retain existing semantics.
+                Rac1AridiaConstructorbotNative.Frame? botStartup =
+                    authored.NativeClassId == Rac1AridiaEnemies.Constructorbot
+                        ? Rac1AridiaConstructorbotNative.Initialize(pvar) : null;
+                if (botStartup.HasValue)
+                {
+                    _rac1ConstructorbotStartups.Add(authored.InstanceIndex, botStartup.Value);
+                    int nativeWaypoint = Rac1AridiaConstructorbotNative.ReadWaypointRecordIndex(
+                        pvar, _rac1AridiaClipVolumes.Count);
+                    _rac1ConstructorbotNativeWaypoints.Add(authored.InstanceIndex,
+                        FromEffectNative(_rac1AridiaClipVolumes[nativeWaypoint].Centre));
+                }
+                // The Sandshark init routine's +0x258 branch enters state29.
                 var runtime = _rac1MobyRuntime.Register(authored, node.State,
-                    nativeState: linkedActivationMobyIndex.HasValue ? 29 : 1, pvar: pvar);
+                    nativeState: botStartup?.NativeState ?? (linkedActivationMobyIndex.HasValue ? 29 : 1),
+                    pvar: pvar);
                 node.ApplyState(runtime.EntityState);
                 Vector3 forward = EnemyForward(node);
                 NVector3 native = ToEffectNative(forward);
@@ -116,9 +141,15 @@ public partial class OBPGame
                 _rac1AridiaEnemies.Register(authored.InstanceIndex, authored.NativeClassId,
                     MathF.Atan2(native.Y, native.X), nestWait,
                     linkedActivationMobyIndex: linkedActivationMobyIndex,
-                    groupId: Rac1AridiaEnemies.ReadAuthoredGroup(authoredPlacements[authored.InstanceIndex].RawRecord));
+                    groupId: Rac1AridiaEnemies.ReadAuthoredGroup(authoredPlacements[authored.InstanceIndex].RawRecord),
+                    constructorbotStartupSequence: botStartup?.Sequence ?? 1);
                 nodes.Add(node);
             }
+            GD.Print("[rac1-aridia] Constructorbot native startup " +
+                string.Join(", ", _rac1ConstructorbotStartups.Values
+                    .GroupBy(start => start.NativeState).OrderBy(group => group.Key)
+                    .Select(group => $"state{group.Key}={group.Count()}")));
+            ConfigureRac1AridiaScriptActors(world, result, authoredPlacements);
         }
         else
         {
@@ -205,6 +236,10 @@ public partial class OBPGame
                             ? _rac1Amoeboids!.Get(node.Source.InstanceIndex).Sequence
                         : group.Key == Rac1FrogAuthored.ClassId
                             ? _rac1Frogs!.Get(node.Source.InstanceIndex).Sequence
+                        : group.Key == Rac1AridiaEnemies.Constructorbot &&
+                            _rac1ConstructorbotStartups.TryGetValue(node.Source.InstanceIndex, out var startup) &&
+                            asset.Clips.ContainsKey(startup.Sequence)
+                            ? startup.Sequence
                         : asset.Clips.ContainsKey(1) ? 1 : asset.Clips.Keys.Min();
                 var motion = group.Key is 749 or 1440 or Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId
                     ? new Rac1EnemyMotion(group.Key, MathF.Atan2(nativeForward.Y, nativeForward.X))
@@ -259,6 +294,7 @@ public partial class OBPGame
         while (_rac1EnemyTicks >= 1)
         {
             _rac1EnemyTicks--;
+            _rac1AridiaNativeFrameCounter++;
             _rac1Nanotech.UpdateNative();
             TickRac1AmoeboidGates();
             TickRac1FrogShuttleSwitch();

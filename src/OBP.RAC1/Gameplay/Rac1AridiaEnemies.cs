@@ -34,6 +34,21 @@ public static class Rac1AridiaEnemies
     // Retail level gameplay Moby placement +0x48 is the group index, loaded
     // into live Moby +0x21. 0xff denotes no group (level_load.cpp).
     public const int GroupRecordOffset = 0x48;
+    // Class-1818 Sandmouse at #756 has a fixed-up Moby link at PVar+0x48.
+    // Its native state 2 at L2:0x2f15f0 specifically waits for that linked
+    // Moby to reach native state 5. Retail #756 points at class-604 #526.
+    public const int SandmouseLinkedControllerPvarOffset = 0x48;
+
+    public static int ReadSandmouseLinkedController(ReadOnlySpan<byte> pvar)
+    {
+        if (pvar.Length < SandmouseLinkedControllerPvarOffset + sizeof(int))
+            throw new InvalidDataException("Aridia Sandmouse has no native controller link.");
+        int link = BinaryPrimitives.ReadInt32LittleEndian(
+            pvar.Slice(SandmouseLinkedControllerPvarOffset, sizeof(int)));
+        if (link < 0 || link > 200_000)
+            throw new InvalidDataException("Aridia Sandmouse controller link is invalid.");
+        return link;
+    }
 
     public static bool IsEnemyClass(int nativeClass) =>
         nativeClass is Sandshark or Constructorbot or Nest;
@@ -142,7 +157,8 @@ public enum Rac1AridiaEnemyPhase
 
 public readonly record struct Rac1AridiaEnemyFacts(
     Vector3 Position, Vector3 PlayerPosition, bool PlayerAlive, bool LineOfSight,
-    int WaitingSharkCount = 0, int? LinkedMobyNativeState = null);
+    int WaitingSharkCount = 0, int? LinkedMobyNativeState = null,
+    float? NestAnimationTime = null);
 
 public readonly record struct Rac1AridiaEnemyFrame(
     Rac1AridiaEnemyPhase Phase, Vector3 Motion, float Yaw, int Sequence,
@@ -169,6 +185,7 @@ public sealed class Rac1AridiaEnemySession
         public int Ticks { get; set; }
         public float Yaw { get; set; } = yaw;
         public int NestInitialWaitTicks { get; } = nestInitialWaitTicks;
+        public int ConstructorbotStartupSequence { get; init; } = 1;
         public int SpawnTimer { get; set; }
         public Vector3 LaunchMotion { get; set; }
         public float LaunchFallSpeed { get; set; }
@@ -189,7 +206,8 @@ public sealed class Rac1AridiaEnemySession
     public int Count => _entries.Count;
 
     public void Register(int instanceIndex, int nativeClass, float yaw = 0, int nestInitialWaitTicks = 60,
-        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null, int groupId = -1)
+        bool nativeWaitingState26 = false, int? linkedActivationMobyIndex = null, int groupId = -1,
+        int constructorbotStartupSequence = 1)
     {
         if (!Rac1AridiaEnemies.IsEnemyClass(nativeClass) || nestInitialWaitTicks < 0)
             throw new ArgumentOutOfRangeException(nameof(nativeClass));
@@ -203,7 +221,8 @@ public sealed class Rac1AridiaEnemySession
         if (!_entries.TryAdd(instanceIndex, new(nativeClass, yaw, nestInitialWaitTicks, groupId)
         {
             NativeWaitingState26 = nativeWaitingState26,
-            LinkedActivationMobyIndex = linkedActivationMobyIndex
+            LinkedActivationMobyIndex = linkedActivationMobyIndex,
+            ConstructorbotStartupSequence = constructorbotStartupSequence
         }))
             throw new InvalidOperationException($"Duplicate Aridia enemy instance {instanceIndex}.");
     }
@@ -343,10 +362,12 @@ public sealed class Rac1AridiaEnemySession
             return StepSandshark(entry, delta, distance, seesPlayer);
         if (entry.ClassId == Rac1AridiaEnemies.Constructorbot)
             return StepConstructorbot(entry, delta, distance, seesPlayer);
-        return StepNest(entry, seesPlayer && distance < 12f, facts.WaitingSharkCount);
+        return StepNest(entry, seesPlayer && distance < 12f, facts.WaitingSharkCount,
+            facts.NestAnimationTime);
     }
 
-    private static Rac1AridiaEnemyFrame StepNest(Entry entry, bool playerNearby, int waitingSharks)
+    private static Rac1AridiaEnemyFrame StepNest(Entry entry, bool playerNearby,
+        int waitingSharks, float? animationTime)
     {
         // L2:0x2dcc64 checks a countdown for native-state-26 sharks. The
         // native trigger-volume predicate is not yet ported: conservatively
@@ -368,10 +389,13 @@ public sealed class Rac1AridiaEnemySession
         }
         if (entry.Phase == Rac1AridiaEnemyPhase.WindingUp)
         {
-            // L2:0x2dcce0 checks whether native animation position == 10.
-            // The host still uses a bounded tick approximation until native
-            // per-clip backwards timing is supported by Rac1MobySequenceClock.
-            if (entry.Ticks >= 10)
+            // L2:0x2dcce0 checks moby_anim_time() == 10. Godot samples the
+            // retail clip, so use its clock rather than a ten-tick guess.
+            // The >= comparison is a HOST crossing tolerance for fractional
+            // positions that skip exactly 10. Non-rendering session fixtures
+            // without an animation clock retain the previous tick fallback.
+            if (entry.Ticks > 0 &&
+                (animationTime is float time ? float.IsFinite(time) && time >= 10f : entry.Ticks >= 10))
             {
                 Enter(entry, Rac1AridiaEnemyPhase.Guarding);
                 entry.SpawnTimer = 0;
@@ -453,7 +477,8 @@ public sealed class Rac1AridiaEnemySession
         bool touches = flaming && inRange && distance < 4.8f &&
             MathF.Abs(ShortestAngle(entry.Yaw + sweep, targetAngle)) < .32f;
         return new(entry.Phase, Vector3.Zero, entry.Yaw + sweep,
-            flaming ? 4 : entry.Phase == Rac1AridiaEnemyPhase.WindingUp ? 2 : 1,
+            flaming ? 4 : entry.Phase == Rac1AridiaEnemyPhase.WindingUp ? 2 :
+                entry.Phase == Rac1AridiaEnemyPhase.Guarding ? entry.ConstructorbotStartupSequence : 1,
             DamagePlayer: touches && entry.Ticks % 16 == 0, FlameActive: flaming);
     }
 
