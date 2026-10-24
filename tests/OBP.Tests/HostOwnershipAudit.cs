@@ -109,6 +109,8 @@ internal static class HostOwnershipAudit
             }
             else if (entry.Kind != "adapter" || usage.LegacyReads > 0 || usage.PlayerSelection)
                 errors.Add($"OBP001 {entry.Key}: source-world adapter selects a player service or uses the legacy player-mode flag.");
+            else if (entry.Hash != usage.Hash)
+                errors.Add($"OBP001 {entry.Key}: approved source-world adapter changed (hash {usage.Hash}); review the source-owned change and its regression before updating its fingerprint. Player-global mutations do not belong in this adapter.");
         }
         if (checkStale)
             foreach (var entry in policy.Where(entry => usages.All(usage => usage.Key != entry.Key)))

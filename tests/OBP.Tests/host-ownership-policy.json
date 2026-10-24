@@ -2,17 +2,20 @@
   {
     "Key": "game/scripts/CompositionWorldLoader.cs::CompositionWorldLoader.CanLoad(WorldPlacement)",
     "Kind": "adapter",
-    "Reason": "Comparison-only native world provider availability; no player exists in this viewer."
+    "Reason": "Comparison-only native world provider availability; no player exists in this viewer.",
+    "Hash": "aa1bf4ed60609edcca9039e486ad7553f8eaab67a63b20180313488f2e787c9c"
   },
   {
     "Key": "game/scripts/CompositionWorldLoader.cs::CompositionWorldLoader.Load(WorldPlacement)",
     "Kind": "adapter",
-    "Reason": "Comparison-only source attachment and world importer selection; no player service selection."
+    "Reason": "Comparison-only source attachment and world importer selection; no player service selection.",
+    "Hash": "1ebbdc30a09172cab9ac4fabfb4e131beccf4334e17fde889d038e7017e8e6fa"
   },
   {
     "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
     "Kind": "adapter",
-    "Reason": "Capture the loaded world provenance; player snapshot migration belongs to #274."
+    "Reason": "Capture the loaded world provenance; player snapshot migration belongs to #274.",
+    "Hash": "db683cfebce452bec6536f852f4d189075e6d9ba89b699d200851141e570f1d0"
   },
   {
     "Key": "game/scripts/OBPGame.ControllerSettings.cs::OBPGame.TryOpenPauseMenu()",
@@ -24,42 +27,50 @@
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.AdoptRuntimeWorld(RuntimeWorld,string,ObpDestination,RuntimeWorldScene.Result)",
     "Kind": "adapter",
-    "Reason": "Source checkpoint entry/commit and opt-in source verification; player setup is delegated unconditionally."
+    "Reason": "Source checkpoint entry/commit and opt-in source verification; player setup is delegated unconditionally.",
+    "Hash": "9b4e6ecfed2dd02682f911e0b4b5478ad088f6b2ec2e7e077c44d2cd8f141f9a"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.EnterProviderWorld(string,ObpDestination)",
     "Kind": "adapter",
-    "Reason": "Native world import, authored class-0 prerequisite and world provenance labels; #267 owns lifecycle unification."
+    "Reason": "Native world import, authored class-0 prerequisite and world provenance labels; #267 owns lifecycle unification.",
+    "Hash": "80647a9f79f96aef42393dd3226efdd4a36c662913dabee3d6b43111f7518720"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
     "Kind": "adapter",
-    "Reason": "Resolve the native world provider and its own attached source, not player assets."
+    "Reason": "Resolve the native world provider and its own attached source, not player assets.",
+    "Hash": "0742b5cc4cb30659ffa0f52ac550ad5a5752f139c678b4fecc6ba73d0d2d03d7"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TravelRac1CampaignTo(int)",
     "Kind": "adapter",
-    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy."
+    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy.",
+    "Hash": "9695befae1cf4e5283111fd69f7ee812ca7071c6d5e3837e22dab3f9b37ebe33"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TryOpenRac1PlanetMap()",
     "Kind": "adapter",
-    "Reason": "Explicit R&C1 campaign map and native travel state; not the common pause/loadout interface."
+    "Reason": "Explicit R&C1 campaign map and native travel state; not the common pause/loadout interface.",
+    "Hash": "9b32d9704c0eab054bdf2f459be99defc6e5349724fe3bfe89d1e0e19e7c6fd1"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.WorldOptions(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified."
+    "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified.",
+    "Hash": "75309a7381c72099773f24cb3824c10ebeb3d64923da871197d72a41bedf0284"
   },
   {
     "Key": "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame.CompleteFusionLabTraversalSmoke()",
     "Kind": "adapter",
-    "Reason": "Explicit opt-in Lab traversal smoke validates the loaded custom-world identity."
+    "Reason": "Explicit opt-in Lab traversal smoke validates the loaded custom-world identity.",
+    "Hash": "9b9e6939d3308a53266e82bec828983ad2050d6a043b48d7eea285cfc8914fd3"
   },
   {
     "Key": "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame.TickFusionLabTraversalSmoke()",
     "Kind": "adapter",
-    "Reason": "Explicit opt-in Lab traversal smoke dispatch; not ordinary player capability admission."
+    "Reason": "Explicit opt-in Lab traversal smoke dispatch; not ordinary player capability admission.",
+    "Hash": "43e79d89d100f59de938bafeacc0789c3a0213b29ffdc746a4bd64f3c8f3a8b1"
   },
   {
     "Key": "game/scripts/OBPGame.FusionWeapons.cs::OBPGame.ConfigureFusionWeapons(RuntimeWorld)",
@@ -78,12 +89,14 @@
   {
     "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.GetGcGameplayHudLine()",
     "Kind": "adapter",
-    "Reason": "Optional world debug overlay showing original GC actor/health probes; not the common PlayerHud projection."
+    "Reason": "Optional world debug overlay showing original GC actor/health probes; not the common PlayerHud projection.",
+    "Hash": "32761836783de40ce6b3531e8213d7221f0ac996182681ce3dfb155bd3973695"
   },
   {
     "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.TickGcGameplay(double)",
     "Kind": "adapter",
-    "Reason": "Tick the current original-world GC actor/context adapter; mixed actor registration is #256."
+    "Reason": "Tick the current original-world GC actor/context adapter; mixed actor registration is #256.",
+    "Hash": "8d54262beed927d82d2c798df92ab25dee6453957446281cc0cdc3a4d64b8568"
   },
   {
     "Key": "game/scripts/OBPGame.MovementRepro.cs::OBPGame.LoadMovementStateAsync(string,bool,int?)",
@@ -102,7 +115,8 @@
   {
     "Key": "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
     "Kind": "adapter",
-    "Reason": "Hide duplicate R&C1 authored class-0 world surfaces; does not select the player avatar/provider."
+    "Reason": "Hide duplicate R&C1 authored class-0 world surfaces; does not select the player avatar/provider.",
+    "Hash": "637c9917e01f004025325d024952d7ece8c6ad83fbb62a1b3e13db5d9cdea1c6"
   },
   {
     "Key": "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame.RefreshRac1WrenchPresentationVisibility()",
@@ -114,12 +128,14 @@
   {
     "Key": "game/scripts/OBPGame.Playtest.cs::OBPGame.ValidatePlaytestDestination(string?)",
     "Kind": "adapter",
-    "Reason": "Existing explicit R&C1-only tape schema admission; #274 owns cross-world tapes, not a player-mode default."
+    "Reason": "Existing explicit R&C1-only tape schema admission; #274 owns cross-world tapes, not a player-mode default.",
+    "Hash": "9e1d1913df82b30f48a11b002fba4faadbeb52904ee344e73965c69c7840f58e"
   },
   {
     "Key": "game/scripts/OBPGame.PlaytestDriver.cs::PlaytestDriver.Begin(PlaytestStepKind,double)",
     "Kind": "adapter",
-    "Reason": "Opt-in replay validates the existing R&C1 tape/world contract; #274 migrates this diagnostic format."
+    "Reason": "Opt-in replay validates the existing R&C1 tape/world contract; #274 migrates this diagnostic format.",
+    "Hash": "0c7165c2a3f031110fdb43812b9908e1cb72e930a44a10b4f9ddb492e7e59650"
   },
   {
     "Key": "game/scripts/OBPGame.QuickSelect.cs::OBPGame.TryOpenWeaponQuickSelect(InputEvent)",
@@ -138,12 +154,14 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Checkpoints.cs::OBPGame.TickRac1CheckpointTriggers()",
     "Kind": "adapter",
-    "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter."
+    "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter.",
+    "Hash": "422aab23f4cdfb42743eed7dc40e0979e8521e8128b56c4ea93cf6832bde70a1"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
     "Kind": "adapter",
-    "Reason": "Original-world R&C1 hostile/session admission; each native actor retains its own controller under #256."
+    "Reason": "Original-world R&C1 hostile/session admission; each native actor retains its own controller under #256.",
+    "Hash": "7cd5d6a5a1c7b4bb1a7c0b3ef726a81313df2c38eab3742a2ddb77e29874435d"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.ArmRac1Gameplay(PlayerHost)",
@@ -162,12 +180,14 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.GetRac1GameplayHudLine()",
     "Kind": "adapter",
-    "Reason": "Optional original-source debug probes; this does not choose the ordinary PlayerHud service."
+    "Reason": "Optional original-source debug probes; this does not choose the ordinary PlayerHud service.",
+    "Hash": "56c683e07b33e54a8dcd7b38364af89ede8aabd8babfc850ed7eda820a6f3e2e"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.GetRac1GameplaySnapshot()",
     "Kind": "adapter",
-    "Reason": "Source-native diagnostic snapshot for original-world witnesses, not the persistent OBP player snapshot."
+    "Reason": "Source-native diagnostic snapshot for original-world witnesses, not the persistent OBP player snapshot.",
+    "Hash": "2b70f9947c31b73f2d64f81328124c8007b8045c6a717bfcc93bae649384c765"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.RefreshRac1HudState(HudFeedbackDraft[])",
@@ -186,17 +206,20 @@
   {
     "Key": "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame.TickRac1GoldBolts()",
     "Kind": "adapter",
-    "Reason": "Source-authored collectible/campaign consequence adapter; does not grant a player controller or UI."
+    "Reason": "Source-authored collectible/campaign consequence adapter; does not grant a player controller or UI.",
+    "Hash": "49334a210a17af5b0eba4bd1758934a80156a559b538e18c36d29a4dd36df7c2"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Hostiles.cs::OBPGame.TryGetRac1Hostile(int,RuntimeWorldScene.DynamicObjectNode?,Rac1Class749HostProbe?)",
     "Kind": "adapter",
-    "Reason": "Resolve a native R&C1 actor from the current original-world actor set, never a player identity."
+    "Reason": "Resolve a native R&C1 actor from the current original-world actor set, never a player identity.",
+    "Hash": "a6741e4d029a0737a87312756869bcdd678a08328c6d18d876a27e5b021251f0"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TickRac1VeldinEnvironmentalDeath()",
     "Kind": "adapter",
-    "Reason": "Recovered Veldin death-plane context; #270 adapts its consequence to the selected player health policy."
+    "Reason": "Recovered Veldin death-plane context; #270 adapts its consequence to the selected player health policy.",
+    "Hash": "b9abc4e42119dab7db552b1bc6e1e907f88fcffa35281709f9538bf1cb5b822d"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TryCompleteRac1EnvironmentalRestart(bool)",
@@ -215,27 +238,32 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Missions.cs::OBPGame.ApplyRac1MissionLevelExit(Rac1MissionLevelExit)",
     "Kind": "adapter",
-    "Reason": "Recovered R&C1 mission-driven world travel; source mission gates must not become player feature gates."
+    "Reason": "Recovered R&C1 mission-driven world travel; source mission gates must not become player feature gates.",
+    "Hash": "b98b51df4367c4634ef886ae2773d2fbbd29ff8ff629d09e67b6ab40693b3f1d"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisCranks.cs::OBPGame.TryTurnRac1NovalisCrank(bool,Vector2)",
     "Kind": "adapter",
-    "Reason": "Source-authored Novalis crank/door interaction context; not universal traversal ownership."
+    "Reason": "Source-authored Novalis crank/door interaction context; not universal traversal ownership.",
+    "Hash": "6ba7cbb63463d28a660f11e353811b8b05d448cde3981d5b28bee0c4423f885d"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisMusic.cs::OBPGame.ConfigureRac1NovalisMusic(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Original Novalis level music is world content, distinct from player/equipment audio profile."
+    "Reason": "Original Novalis level music is world content, distinct from player/equipment audio profile.",
+    "Hash": "d0c502ffd68a5bb354f155fb6d9a3c500529af41e932da92e9da7e76e8420005"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisWater.cs::OBPGame.ConfigureRac1NovalisWater(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Decode original Novalis water surfaces from the matching source world."
+    "Reason": "Decode original Novalis water surfaces from the matching source world.",
+    "Hash": "64c1b35af620a137d81587c533f348dcc71c9e4c92f32de77bc1f5dafe6b787e"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisWater.cs::OBPGame.OnRac1NovalisDrowned()",
     "Kind": "adapter",
-    "Reason": "Recovered Novalis water/drowning context adapter; #270 owns player-global damage policy."
+    "Reason": "Recovered Novalis water/drowning context adapter; #270 owns player-global damage policy.",
+    "Hash": "d341cb3aa8da27ea637f868e6ec18e263a949340ca7e65ffea00f56f6e47f7cb"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame.StepRac1PlayerAudio(Rac1PlayerAnimationPresentationController)",
@@ -282,22 +310,26 @@
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.ConfigureUyaGameplay(RuntimeWorld,RuntimeWorldScene.Result)",
     "Kind": "adapter",
-    "Reason": "Register original-world UYA native actors/context; no player-global controller/menu selection."
+    "Reason": "Register original-world UYA native actors/context; no player-global controller/menu selection.",
+    "Hash": "85b624c132ebab944d590b00d71ceb5720092d970d52c2d224d6790841523301"
   },
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.GetUyaGameplayHudLine()",
     "Kind": "adapter",
-    "Reason": "Optional original-world UYA actor diagnostic overlay, not ordinary HUD selection."
+    "Reason": "Optional original-world UYA actor diagnostic overlay, not ordinary HUD selection.",
+    "Hash": "8872a7fe6fb8a71ebf1fdb91dadd858211f9cf0b5ea33d166c673343921453e4"
   },
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.SelectUyaClass500HostContact()",
     "Kind": "adapter",
-    "Reason": "Contact selection against the original-world UYA actor set; native target source is not player origin."
+    "Reason": "Contact selection against the original-world UYA actor set; native target source is not player origin.",
+    "Hash": "87e20209cca01cdb9dc257f4c9eed4953474a258b7c3be3155aba18e0eaa9323"
   },
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.TickUyaGameplay(double)",
     "Kind": "adapter",
-    "Reason": "Original UYA actor/context update adapter; #256 owns reusable mixed actor registration."
+    "Reason": "Original UYA actor/context update adapter; #256 owns reusable mixed actor registration.",
+    "Hash": "e30c2327d83fb653448a1bc6a75ef7e36153753ecf95ce254f60d0aef0cded43"
   },
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.SpawnPlayer(RuntimeWorld)",
@@ -309,7 +341,8 @@
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
-    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate."
+    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate.",
+    "Hash": "81aec48c05af0745591577989f89e04d314488a581d08562488e5d0d1c399780"
   },
   {
     "Key": "game/scripts/PlayerDevelopmentControls.cs::PlayerDevelopmentControls._UnhandledInput(InputEvent)",
@@ -426,6 +459,7 @@
   {
     "Key": "src/OBP.Godot/DebugOverlay.cs::DebugOverlay.BuildEnvGizmos()",
     "Kind": "adapter",
-    "Reason": "Environment gizmo diagnostic reports missing source-world lighting; no player service is selected."
+    "Reason": "Environment gizmo diagnostic reports missing source-world lighting; no player service is selected.",
+    "Hash": "a2e60386132b6e4622b6e6c9a3eead99ecd29a16c3674842183b2a29e99329ce"
   }
 ]

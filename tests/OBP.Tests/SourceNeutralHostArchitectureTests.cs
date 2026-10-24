@@ -1,4 +1,6 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace OBP.Tests;
 
@@ -76,15 +78,70 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.Contains("source-world adapter selects a player service", errors[0]);
     }
 
-    [Fact]
-    public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings()
+    [Theory]
+    [InlineData("game/scripts/OBPGame.PlayerAvatar.cs", "IPlayerAvatarProvider? provider =")]
+    [InlineData("game/scripts/OBPGame.Rac1NovalisWater.cs", "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);")]
+    public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.PlayerAvatar.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == path);
         string source = original.GetText().ToString().Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace("IPlayerAvatarProvider? provider =", "/* presentation comment */ IPlayerAvatarProvider? provider =", StringComparison.Ordinal);
+            .Replace(anchor, "/* ownership comment */ " + anchor, StringComparison.Ordinal);
         Assert.Empty(HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy()));
+    }
+
+    [Fact]
+    public void ApprovedWorldAdapterCannotAcquireTheReportedEquipmentSelectionCall()
+    {
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.Destinations.cs", "WorldOptions", """
+            if (world.Game == "rac1")
+                OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
+            """);
+        var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Single(invocation => invocation.Expression.ToString() == "OnRac1WeaponSelectionRequested");
+        var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
+        Assert.Equal("OBPGame", bound.ContainingType.Name);
+        Assert.NotEmpty(bound.DeclaringSyntaxReferences); // The real host method, not an unresolved or test-only stub.
+
+        var usages = HostOwnershipAudit.Scan(compilation);
+        var adapter = usages.Single(usage => usage.Key.EndsWith("::OBPGame.WorldOptions(RuntimeWorld)", StringComparison.Ordinal));
+        Assert.False(adapter.PlayerSelection); // Fingerprinting closes gaps beyond the known-sink heuristic.
+        var errors = HostOwnershipAudit.Violations(usages, HostOwnershipAudit.Policy());
+        Assert.Single(errors);
+        Assert.Contains("WorldOptions", errors[0]);
+        Assert.Contains("approved source-world adapter changed", errors[0]);
+    }
+
+    [Fact]
+    public void LegitimateWorldAdapterUpdatesRequireAReviewedFingerprint()
+    {
+        var (compilation, _) = InsertAdapterStatement("game/scripts/OBPGame.Rac1NovalisWater.cs", "ConfigureRac1NovalisWater",
+            "Godot.GD.Print(\"Novalis source-water diagnostic\");");
+        var usages = HostOwnershipAudit.Scan(compilation);
+        var adapter = usages.Single(usage => usage.Key.EndsWith("::OBPGame.ConfigureRac1NovalisWater(RuntimeWorld)", StringComparison.Ordinal));
+        Assert.False(adapter.PlayerSelection);
+        var policy = HostOwnershipAudit.Policy();
+        var errors = HostOwnershipAudit.Violations(usages, policy);
+        Assert.Single(errors);
+        Assert.Contains("approved source-world adapter changed", errors[0]);
+
+        // Model the explicit ledger update in a reviewed source-world change;
+        // retain its adapter kind/rationale and all other exception constraints.
+        var reviewed = policy.Select(entry => entry.Key == adapter.Key ? entry with { Hash = adapter.Hash } : entry).ToArray();
+        Assert.Empty(HostOwnershipAudit.Violations(usages, reviewed));
+    }
+
+    private static (CSharpCompilation Compilation, SyntaxTree Tree) InsertAdapterStatement(string path, string methodName, string statement)
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == path);
+        var root = original.GetRoot();
+        var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>().Single(member => member.Identifier.ValueText == methodName);
+        var body = method.Body!;
+        var changed = original.WithRootAndOptions(root.ReplaceNode(method,
+            method.WithBody(body.WithStatements(body.Statements.Insert(0, SyntaxFactory.ParseStatement(statement))))), original.Options);
+        return (compilation.ReplaceSyntaxTree(original, changed), changed);
     }
 
     [Theory]

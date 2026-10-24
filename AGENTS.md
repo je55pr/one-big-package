@@ -22,6 +22,7 @@
 - Qualify content by its own source/build/asset identity. Reuse `SourceWeaponKey`, `WeaponTargetKey` and `PlayerAvatarIdentity`; do not alias equal native numbers across games or invent competing player inventories.
 - World/source adapters may inspect origin for authored starts, missions, water, taxis, native actor context and provenance. Those checks cannot grant player-global capabilities. Explicit retail-parity/diagnostic modes are chosen by the caller, never inferred from world origin.
 - Existing destination-driven player gates are frozen migration debt in `tests/OBP.Tests/host-ownership-policy.json`, with follow-up owners. Remove their entries when migrating; do not expand the baseline or add broad file exemptions. New origin-dependent player selection must fail the focused ownership tests.
+- Narrow world/source `adapter` exceptions are fingerprinted too. A legitimate source-owned change needs a reviewed fingerprint update with a focused regression and retained ownership rationale; an adapter must not acquire player-global mutations.
 - An unavailable source/provider or unrecovered capability needs an explicit failure/status. No silent capsule fallback in ordinary play; no placeholder avatar or gadget advertised as working. Stage-0 contracts do not mean the later host migrations are implemented.
 
 ## Working style

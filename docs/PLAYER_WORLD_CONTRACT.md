@@ -153,7 +153,10 @@ implementations under `game/diagnostics` remain the separate diagnostic boundary
 `tests/OBP.Tests/host-ownership-policy.json` lists individual members with reasons:
 
 - `adapter`: narrow source import, environment, campaign, provenance or diagnostic
-  read. It cannot use the legacy player flag or select a player provider/menu.
+  read with a fixed token fingerprint. It cannot use the legacy player flag or
+  select player services. Any code change fails until its source-owned purpose,
+  focused regression and fingerprint update are reviewed together. Legitimate
+  water/campaign/environment updates remain possible through that explicit update.
 - `migration`: existing player-global coupling, a follow-up owner and a fixed
   hash of C# tokens. Comments/formatting do not affect it. Changing/expanding a
   retained coupling fails; migration removes its dependency and ledger entry.
@@ -163,6 +166,14 @@ fail with `OBP001`; stale entries also fail. Tests inject an erroneous avatar
 lookup into the actual host and verify the focused failure, alongside alias,
 pattern, menu/action and legitimate source-provenance cases. Assembly tests also
 reject qualified native references, not only `using` directives.
+
+Both exception kinds fingerprint the entire member's tokens, ignoring comments,
+formatting and checkout line endings. An approved adapter cannot silently add a
+player mutation through a call outside the known-sink heuristic: the regression
+injects the real `OnRac1WeaponSelectionRequested(Blaster)` call into `WorldOptions`
+and verifies rejection. Migration entries must still be removed with their
+coupling, not rebaselined to expand it. Adapter fingerprint updates document
+reviewed source-world work; they are not permission for player-global behavior.
 
 Existing original-game mission, water, taxi, checkpoint and native fidelity
 fixtures remain operational. They establish original-world/source claims, not
