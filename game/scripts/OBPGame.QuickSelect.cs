@@ -11,7 +11,7 @@ public partial class OBPGame
     private int _preQuickSelectHeldButtons;
     private ulong _lastQuickSelectTap;
     private SourceWeaponKey? _previousSelectedWeapon;
-    private SourceWeaponKey CurrentWeaponKey => _fusion?.Selected ?? new("rac1", _rac1Weapons.CurrentItemId);
+    private SourceWeaponKey CurrentWeaponKey => _fusion is { Selected.SourceGame: "rac2" or "rac3" } ? _fusion.Selected : new("rac1", _rac1Weapons.CurrentItemId);
     private bool QuickSelectOpen => _quickSelect is not null && IsInstanceValid(_quickSelect);
 
     public bool TryOpenWeaponQuickSelect(InputEvent @event)
@@ -26,7 +26,7 @@ public partial class OBPGame
         // remains authoritative; this is not the recovered menu state machine.
         if (_lastQuickSelectTap != 0 && PlaytestClock.Milliseconds - _lastQuickSelectTap < 350 &&
             _previousSelectedWeapon is { } previous && previous != new SourceWeaponKey("rac1", (int)Rac1WeaponId.Wrench) &&
-            (_fusion is not null ? FusionWeaponSession.Weapons.Contains(previous) : previous.SourceGame == "rac1" && _rac1Weapons.Owns((Rac1WeaponId)previous.NativeItemId)))
+            (previous.SourceGame == "rac1" ? _rac1Weapons.Owns((Rac1WeaponId)previous.NativeItemId) : _fusion is not null && FusionWeaponSession.Weapons.Contains(previous)))
         {
             _lastQuickSelectTap = 0;
             SelectWeaponKey(previous);
@@ -42,8 +42,13 @@ public partial class OBPGame
             weapon == Rac1WeaponId.FirstRanged ? "Bomb Glove" : Rac1WeaponProfiles.Get(weapon).Name,
             (int)weapon == 9 ? $"{_rac1AdditionalWeapons?.Cargo.Count ?? 0} captured" :
             Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{_rac1Weapons.GetAmmo((int)weapon)} ammo" : "")).ToArray();
-        if (_fusion is not null) entries = FusionWeaponSession.Weapons.Select(key => new WeaponQuickSelectUi.Entry(key,
-            FusionWeaponName(key) + $" [{key.SourceGame}]", _fusionAssets?.Available(key) == false ? "Source unavailable" : FusionWeaponDetail(key))).ToArray();
+        if (_fusion is not null)
+        {
+            var keys = FusionTestActive ? FusionWeaponSession.Weapons : FusionWeaponSession.DefaultQuickSelect(_rac1Weapons);
+            entries = keys.Select(key => key.SourceGame == "rac1" && !FusionTestActive ? entries.Single(e => e.Weapon == key) :
+                new WeaponQuickSelectUi.Entry(key, FusionWeaponName(key) + $" [{key.SourceGame}]",
+                    _fusionAssets?.Available(key) == false ? "Source unavailable" : FusionWeaponDetail(key))).ToArray();
+        }
         _quickSelect = new WeaponQuickSelectUi { Entries = entries, CurrentWeapon = CurrentWeaponKey };
         _quickSelect.Completed += CloseWeaponQuickSelect;
         _preQuickSelectMouse = Input.MouseMode;

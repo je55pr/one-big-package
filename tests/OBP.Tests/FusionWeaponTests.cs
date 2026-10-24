@@ -13,6 +13,25 @@ public sealed class FusionWeaponTests
     private static readonly WeaponUseInput Held = new(true, true, Vector3.Zero, Vector3.UnitX);
 
     [Fact]
+    public void DefaultQuickSelectKeepsOwnedNativeOrderAndAddsBothForeignWeaponsWithoutGrantingNativeItems()
+    {
+        var inventory = Rac1WeaponInventory.CreateOpeningLoadout();
+        inventory.AcquireNativeItem((int)Rac1WeaponId.Blaster);
+        inventory.TryAssignQuickSelect(0, (int)Rac1WeaponId.Blaster);
+        string before = JsonSerializer.Serialize(inventory.CapturePersistentState());
+        var keys = FusionWeaponSession.DefaultQuickSelect(inventory);
+        Assert.Equal(new SourceWeaponKey("rac1", 15), keys[0]);
+        Assert.Contains(FusionWeaponSession.BombGlove, keys);
+        Assert.Equal(new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon }, keys.TakeLast(2));
+        var fusion = new FusionWeaponSession(0, inventory);
+        fusion.Select(FusionWeaponSession.Lancer);
+        for (int i = 0; i < 20; i++) Step(fusion, Held);
+        Assert.Equal(before, JsonSerializer.Serialize(inventory.CapturePersistentState()));
+        Assert.True(fusion.Select(new("rac1", 15)));
+        Assert.Equal(Rac1WeaponId.Blaster, inventory.Equipped);
+    }
+
+    [Fact]
     public void SameNativeNumberInThreeGamesCannotAliasOrAcquireCampaignGear()
     {
         var keys = new HashSet<SourceWeaponKey> { new("rac1", 30), new("rac2", 30), new("rac3", 30) };

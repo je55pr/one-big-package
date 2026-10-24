@@ -56,7 +56,7 @@ public partial class OBPGame
             }
             AttachPlayer();
             if (Game._args.PlaytestSmoke && Reader is null && WaitingForEntry)
-                Callable.From(() => { _ = Game._args.FusionTest ? Game.RunFusionRecordingSmokeAsync() : Game.RunPlaytestRecordingSmokeAsync(); }).CallDeferred();
+                Callable.From(() => { _ = Game._args.FusionTest || Game._args.DefaultWeaponsSmoke ? Game.RunFusionRecordingSmokeAsync() : Game.RunPlaytestRecordingSmokeAsync(); }).CallDeferred();
             if (Game._args.BugReportSmoke && Reader is null && WaitingForEntry)
                 Callable.From(() => { _ = Game.RunBugReporterSmokeAsync(); }).CallDeferred();
         }

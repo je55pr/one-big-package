@@ -100,9 +100,9 @@ public partial class OBPGame
             MovementStatesAvailable = _player?.UseRac1Gameplay == true,
             WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
             FusionTestAvailable = _world is { Game: "rac1", LevelId: 0 },
-            FusionTestEnabled = _fusion is not null,
+            FusionTestEnabled = FusionTestActive,
             EquipmentStatus = _player is { } activePlayer
-                ? _fusion is not null ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
+                ? FusionTestActive ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
                 : $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
                 : string.Empty,
         };

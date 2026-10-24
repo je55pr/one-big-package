@@ -7,18 +7,19 @@ using OBP.Runtime.Gameplay;
 namespace OneBigPackage;
 
 /// <summary>
-/// OBP's ephemeral Veldin loadout. Native sessions retain ammo/cadence/charge;
+/// OBP's session-only cross-game weapons. Native sessions retain ammo/cadence/charge;
 /// this adapter supplies an explicit common collision and event boundary.
-/// It never receives the campaign inventory or writes source-game saves.
+/// Foreign ammo never enters R&C1's inventory or source-game saves.
 /// </summary>
 public sealed class FusionWeaponSession
 {
     public const string LoadoutId = "veldin-three-v1";
+    public const string DefaultLoadoutId = "rac1-default-cross-game-v1";
     public static readonly SourceWeaponKey BombGlove = new("rac1", (int)Rac1WeaponId.FirstRanged);
     public static readonly SourceWeaponKey Lancer = new("rac2", GcLancerProfile.WeaponIndex);
     public static readonly SourceWeaponKey ShockCannon = new("rac3", UyaShockCannonProfile.Identity.ItemDefinitionIndex);
     public static IReadOnlyList<SourceWeaponKey> Weapons { get; } = Array.AsReadOnly(new[] { BombGlove, Lancer, ShockCannon });
-    public Rac1WeaponInventory Rac1Inventory { get; } = new(true, Rac1WeaponId.FirstRanged, 10);
+    public Rac1WeaponInventory Rac1Inventory { get; private set; }
     public GcLancerSession LancerSession { get; } = new(initialAmmo: 40);
     public UyaShockCannonSession CannonSession { get; } = new(ammo: 20);
     public SourceWeaponKey Selected { get; private set; } = BombGlove;
@@ -32,12 +33,27 @@ public sealed class FusionWeaponSession
     private WeaponFrame? _lastFrame;
     private bool _resolved;
 
-    public FusionWeaponSession(int seed) => _spreadRandom = new(seed);
+    public FusionWeaponSession(int seed, Rac1WeaponInventory? inventory = null)
+    {
+        _spreadRandom = new(seed);
+        Rac1Inventory = inventory ?? new(true, Rac1WeaponId.FirstRanged, 10);
+        Selected = new("rac1", Rac1Inventory.CurrentItemId);
+    }
+
+    public void BindRac1Inventory(Rac1WeaponInventory inventory) => Rac1Inventory = inventory;
+
+    /// <summary>Keep native ring order and owned arsenal, then append the two foreign weapons.</summary>
+    public static IReadOnlyList<SourceWeaponKey> DefaultQuickSelect(Rac1WeaponInventory inventory)
+    {
+        var available = Rac1WeaponProfiles.Additional.Select(p => p.Item).Prepend(Rac1WeaponId.FirstRanged).Where(inventory.Owns).ToArray();
+        return inventory.QuickSelect.Where(id => available.Contains((Rac1WeaponId)id)).Select(id => (Rac1WeaponId)id)
+            .Concat(available).Distinct().Select(id => new SourceWeaponKey("rac1", (int)id)).Concat([Lancer, ShockCannon]).ToArray();
+    }
 
     public bool Select(SourceWeaponKey weapon)
     {
         weapon.Validate();
-        if (!Weapons.Contains(weapon)) return false;
+        if (weapon.SourceGame == "rac1" ? !Rac1Inventory.OwnsNativeItem(weapon.NativeItemId) : weapon != Lancer && weapon != ShockCannon) return false;
         if (Selected == weapon) return true;
         LancerSession.Unequip();
         foreach (var audio in CannonSession.Unequip().Audio) _pendingAudio.Add(CannonAudio(audio));
@@ -46,13 +62,13 @@ public sealed class FusionWeaponSession
         if (weapon == Lancer) LancerSession.Equip();
         if (weapon == ShockCannon) CannonSession.Equip();
         // Bomb Glove's existing host continues to own throwing and projectiles.
-        if (weapon == BombGlove) Rac1Inventory.TryEquip(Rac1WeaponId.FirstRanged);
+        if (weapon.SourceGame == "rac1") Rac1Inventory.TryEquip((Rac1WeaponId)weapon.NativeItemId);
         _lastFrame = null;
         return true;
     }
 
-    public WeaponStatus Status(SourceWeaponKey weapon) => weapon == BombGlove
-        ? new(weapon, Rac1Inventory.FirstRangedAmmo, 40, "ready")
+    public WeaponStatus Status(SourceWeaponKey weapon) => weapon.SourceGame == "rac1"
+        ? new(weapon, Rac1Inventory.GetAmmo(weapon.NativeItemId), Rac1ItemAmmoDescriptors.Get(weapon.NativeItemId).MaxAmmo, "ready")
         : weapon == Lancer ? new(weapon, LancerSession.Ammo, GcLancerProfile.AmmoCapacity,
             LancerSession.CooldownSeconds > 0 ? "equipping / recovering" : "ready")
         : weapon == ShockCannon ? new(weapon, CannonSession.Ammo, UyaShockCannonProfile.AmmoCapacity,

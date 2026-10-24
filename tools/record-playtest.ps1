@@ -16,6 +16,7 @@ param(
     [string]$GcIso = $env:OBP_GC_ISO,
     [string]$UyaIso = $env:OBP_UYA_ISO,
     [switch]$FusionTest,
+    [switch]$DefaultWeaponsSmoke,
     [int]$Seed = 1440,
     [switch]$SkipBuild,
     [switch]$Smoke,
@@ -52,6 +53,7 @@ if ($Rac1Iso) { $engineArgs += @('--rac1-iso', $Rac1Iso) }
 if ($GcIso) { $engineArgs += @('--gc-iso', $GcIso) }
 if ($UyaIso) { $engineArgs += @('--uya-iso', $UyaIso) }
 if ($FusionTest) { $engineArgs += '--fusion-test' }
+if ($DefaultWeaponsSmoke) { $engineArgs += '--default-weapons-smoke' }
 if ($Smoke) { $engineArgs += '--playtest-smoke' }
 if ($CampaignSave) {
     if (-not (Test-Path -LiteralPath $CampaignSave -PathType Leaf)) { throw 'Starting campaign save not found.' }

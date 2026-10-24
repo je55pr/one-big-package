@@ -36,9 +36,11 @@ public partial class OBPGame
                 var header = reader.Header;
                 if (header.Weapons is { } weapons)
                 {
-                    if (weapons.LoadoutId != FusionWeaponSession.LoadoutId || weapons.DamagePolicy != FusionDamagePolicy.Id || header.Destination != "rac1:LEVEL0")
+                    bool isolatedLoadout = weapons.LoadoutId == FusionWeaponSession.LoadoutId;
+                    if ((!isolatedLoadout && weapons.LoadoutId != FusionWeaponSession.DefaultLoadoutId) || weapons.DamagePolicy != FusionDamagePolicy.Id ||
+                        isolatedLoadout && header.Destination != "rac1:LEVEL0")
                         throw new InvalidDataException("Recording requires an unsupported cross-game loadout or damage policy.");
-                    _args = _args with { FusionTest = true };
+                    _args = _args with { FusionTest = isolatedLoadout };
                 }
                 else if (_args.FusionTest)
                     throw new InvalidDataException("Recording has no fusion loadout; remove --fusion-test.");
@@ -163,7 +165,7 @@ public partial class OBPGame
         if (_fusion is not null)
         {
             Text("fusion.selected", _fusion.Selected.ToString());
-            Text("fusion.sources", JsonSerializer.Serialize(_fusionAssets!.Configuration));
+            Text("fusion.sources", JsonSerializer.Serialize(_fusionAssets?.Configuration));
             foreach (var key in FusionWeaponSession.Weapons) Text("fusion.status." + key, JsonSerializer.Serialize(_fusion.Status(key)));
             Numbers("fusion.counts", _fusion.Tick, _fusion.ShotsFired, _fusionAcceptedHits, _fusionProjectiles.Count, _fusionEffects.Count);
             Text("fusion.lastDamage", JsonSerializer.Serialize(_fusionLastDamage));

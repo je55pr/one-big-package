@@ -26,7 +26,7 @@ public partial class OBPGame
     {
         bool pressed = _rac1EquipmentUsePressed;
         _rac1EquipmentUsePressed = false;
-        if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) != true) return;
+        if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) == false) return;
         if (_fusion is { Selected.SourceGame: not "rac1" }) return;
         bool admitted = _player is not null && !_rac1Nanotech.Probe().IsDead &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
@@ -41,18 +41,21 @@ public partial class OBPGame
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
     {
-        if (_fusion is not null)
+        if (FusionTestActive)
         {
             SelectWeaponKey(new("rac1", (int)weapon));
             return;
         }
+        var previousKey = CurrentWeaponKey;
         int previous = _rac1Weapons.CurrentItemId;
         if (_rac1Weapons.TryEquip(weapon))
         {
+            SyncFusionNativeSelection();
             if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
             if (previous != (int)weapon && previous != (int)Rac1WeaponId.Wrench &&
                 Enum.IsDefined(typeof(Rac1WeaponId), previous))
                 _previousSelectedWeapon = new("rac1", previous);
+            if (previousKey.SourceGame != "rac1") _previousSelectedWeapon = previousKey;
             _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
@@ -67,8 +70,9 @@ public partial class OBPGame
     {
         if (_fusion is not null)
         {
-            int current = FusionWeaponSession.Weapons.ToList().IndexOf(_fusion.Selected);
-            SelectWeaponKey(FusionWeaponSession.Weapons[(current + Math.Sign(direction) + 3) % 3]);
+            var order = FusionTestActive ? FusionWeaponSession.Weapons : FusionWeaponSession.DefaultQuickSelect(_rac1Weapons);
+            int current = order.ToList().IndexOf(CurrentWeaponKey);
+            SelectWeaponKey(order[(current + Math.Sign(direction) + order.Count) % order.Count]);
             return;
         }
         var weapons = new[] { Rac1WeaponId.FirstRanged }

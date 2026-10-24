@@ -90,7 +90,7 @@ public partial class OBPGame
 
     private void SetRac1WeaponPreview(bool disable)
     {
-        if (_fusion is not null) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
+        if (FusionTestActive) { ReportMovementState("Leave the fusion test before changing the R&C1 arsenal preview."); return; }
         if (disable)
         {
             _rac1WeaponPreviewInventory = null;
@@ -114,6 +114,7 @@ public partial class OBPGame
             ReportMovementState("Full arsenal preview: hold Triangle to select, Circle to use. Refill or restore campaign equipment from Pause → Testing Equipment.");
         }
         _rac1AdditionalWeaponsInventory = _rac1Weapons;
+        SyncFusionNativeSelection();
         if (_world is { Game: "rac1" } world)
         {
             _rac1DetectorEquipped = false;

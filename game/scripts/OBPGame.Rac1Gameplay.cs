@@ -36,7 +36,7 @@ public partial class OBPGame
         new Rac1CampaignState(),
         Rac1WeaponInventory.CreateOpeningLoadout());
     private Rac1WeaponInventory? _rac1WeaponPreviewInventory;
-    private Rac1WeaponInventory _rac1Weapons => _fusion?.Rac1Inventory ?? _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
+    private Rac1WeaponInventory _rac1Weapons => FusionTestActive ? _fusion!.Rac1Inventory : _rac1WeaponPreviewInventory ?? _rac1CampaignSession.Weapons;
     private readonly Rac1HeldItemSession _rac1HeldItem = new();
     private bool _rac1EquipmentUsePressed;
     private Rac1BombGloveSession? _rac1BombGlove;

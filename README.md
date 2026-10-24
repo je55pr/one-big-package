@@ -29,6 +29,10 @@ The original mechanics and encounters are being recovered first, so they can be 
 
 See [issues](https://github.com/je55pr/one-big-package/issues) and [pull requests](https://github.com/je55pr/one-big-package/pulls) for current work.
 
+R&C1 Quick Select includes the GC Lancer and UYA Shock Cannon by default alongside
+owned R&C1 weapons. Their original game sources are required to use them; see
+[cross-game weapon controls and limits](docs/FUSION_WEAPONS_TESTING.md).
+
 ## Getting started
 
 On Windows, with the .NET 8 SDK installed, run from the repository root:

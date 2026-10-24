@@ -18,11 +18,12 @@ public partial class OBPGame
             Require(_fusion is not null && _fusionAssets?.Problems.Count == 0, "fusion recording requires all three original sources");
             await WaitForGroundedAsync(_player!, 180);
             await PhysicsFramesAsync(20);
-            Require(_rac1Weapons.FirstRangedAmmo == 10, "fresh fusion Bomb Glove ammo");
+            int openingAmmo = FusionTestActive ? 10 : 20;
+            Require(_rac1Weapons.FirstRangedAmmo == openingAmmo, "fresh Bomb Glove ammo");
             await CaptureFusionAsync("ordinary-opening");
             await SelectFusionByInputAsync(0);
             await FusionFireInputAsync(16); // The ordinary entry still draws the glove through the native Circle handoff.
-            Require(_rac1Weapons.FirstRangedAmmo == 9, "recorded Bomb Glove did not consume one round");
+            Require(_rac1Weapons.FirstRangedAmmo == openingAmmo - 1, "recorded Bomb Glove did not consume one round");
             await PhysicsFramesAsync(90);
             await FusionMarkAsync();
             await SelectFusionByInputAsync(1);
@@ -176,9 +177,28 @@ public partial class OBPGame
             _args = _args with { FusionTest = false };
             Require(OnDestinationChosen(_activeDestination!), "normal Veldin re-entry rejected");
             await PhysicsFramesAsync(5);
-            Require(_fusion is null && _fusionAssets is null && _fusionHeldViews.Count == 0 && _fusionBeam is null,
+            Require(_fusion is not null && !FusionTestActive && _fusionAssets is null && _fusionHeldViews.Count == 0 && _fusionBeam is null,
                 "world re-entry retained fusion ownership");
             Require(JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()) == normalInventory, "normal inventory was not restored");
+            Require(ReferenceEquals(_fusion!.Rac1Inventory, _rac1CampaignSession.Weapons), "default weapons replaced the campaign inventory");
+            FusionKey(Key.Q, true);
+            for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            Require(_quickSelect!.Entries.Any(e => e.Weapon == FusionWeaponSession.Lancer) &&
+                _quickSelect.Entries.Any(e => e.Weapon == FusionWeaponSession.ShockCannon), "default Quick Select omitted the two foreign weapons");
+            FusionKey(Key.Q, false);
+            await PhysicsFramesAsync(2);
+            await SelectFusionByInputAsync(1);
+            Require(!FusionTestActive && _fusionAssets!.Configuration.LoadoutId == FusionWeaponSession.DefaultLoadoutId,
+                "ordinary selection entered the isolated test loadout");
+            await FusionFireInputAsync(20);
+            Require(_fusion.LancerSession.Ammo < 40, "default Lancer did not fire");
+            await SelectFusionByInputAsync(2);
+            await FusionFireInputAsync(12);
+            Require(_fusion.CannonSession.Ammo < 20, "default Cannon did not fire");
+            await SelectFusionByInputAsync(0);
+            Require(JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()) == normalInventory &&
+                ReferenceEquals(_rac1Weapons, _rac1CampaignSession.Weapons), "default weapons replaced or modified native inventory");
+            GD.Print("[fusion-smoke] default Quick Select, both foreign weapons and normal native inventory PASS");
             GD.Print("[fusion-smoke] PASS: source models/audio/beam, ordinary selector, staged three-weapon damage, occlusion, reset and normal re-entry");
             ApplicationLifecycle.RequestQuit(this, "fusion-smoke-pass");
         }

@@ -35,8 +35,11 @@ public partial class OBPGame
     private bool _fusionDeathCleared;
     private WeaponDamageIntent? _fusionLastDamage;
     private WeaponStatus? _fusionDisplayedStatus;
+    private bool FusionTestActive => _fusionOriginalCampaign is not null;
+    private bool FusionMovementStateBlocked => FusionTestActive || _fusion?.Selected.SourceGame is "rac2" or "rac3" ||
+        _fusion?.LancerSession.ActiveShots.Count > 0;
 
-    private static string FusionWeaponName(SourceWeaponKey key) => key == FusionWeaponSession.BombGlove ? "Bomb Glove" :
+    private static string FusionWeaponName(SourceWeaponKey key) => key.SourceGame == "rac1" ? Rac1WeaponProfiles.Name((Rac1WeaponId)key.NativeItemId) :
         key == FusionWeaponSession.Lancer ? "Lancer" : "Shock Cannon";
 
     private string FusionWeaponDetail(SourceWeaponKey key) => _fusionAssets?.Problems.GetValueOrDefault(key) ??
@@ -44,7 +47,17 @@ public partial class OBPGame
 
     private void ConfigureFusionWeapons(RuntimeWorld world)
     {
-        if (!_args.FusionTest || world is not { Game: "rac1", LevelId: 0 }) return;
+        if (world.Game != "rac1" || _playtest?.Reader is { Header.Weapons: null }) return;
+        _fusionAcceptedHits = _fusionAudioStarted = _fusionModelAge = _fusionModelSequence = 0;
+        _fusionLastDamage = null; _fusionDeathCleared = false;
+        _fusionGunPoseTicks = _fusionGunPoseAge = 0;
+        _fusionDisplayedStatus = null;
+        if (!_args.FusionTest || world.LevelId != 0)
+        {
+            _fusion = new(_args.FixedSeed ?? 1440, _rac1Weapons);
+            if (_args.PlaytestRequested) EnsureFusionAssets();
+            return;
+        }
         _fusionAssets = new(_sources);
         _fusionOriginalCampaign = _rac1CampaignSession;
         _fusionOriginalWallet = _rac1BoltWallet;
@@ -55,18 +68,36 @@ public partial class OBPGame
         _rac1BoltWallet = new();
         _rac1WeaponPreviewInventory = null;
         _fusion = new(_args.FixedSeed ?? 1440);
-        _fusionAcceptedHits = _fusionAudioStarted = 0; _fusionLastDamage = null; _fusionDeathCleared = false;
-        _fusionGunPoseTicks = _fusionGunPoseAge = 0;
-        _fusionDisplayedStatus = null;
         GD.Print("[fusion] opt-in Veldin test: Bomb Glove [rac1/10] 10; Lancer [rac2/30] 40; Shock Cannon [rac3/43] 20. Original damage; campaign isolated.");
         foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
+    }
+
+    private void EnsureFusionAssets()
+    {
+        if (_fusionAssets is not null) return;
+        _fusionAssets = new(_sources, isolated: FusionTestActive);
+        if (_playerAvatarView is not null) AttachFusionWeaponViews(_playerAvatarView);
+    }
+
+    private void SyncFusionNativeSelection()
+    {
+        if (_fusion is null) return;
+        bool foreign = _fusion.Selected.SourceGame != "rac1";
+        _fusion.BindRac1Inventory(_rac1Weapons);
+        _fusion.Select(new("rac1", _rac1Weapons.CurrentItemId));
+        if (foreign)
+        {
+            StopFusionAudio();
+            _fusionGunPoseTicks = 0;
+            if (_fusionBeam is not null) _fusionBeam.Visible = false;
+        }
     }
 
     private void ToggleFusionTest()
     {
         if (_playtest is not null) { ReportMovementState("Choose the fusion loadout before starting an input recording."); return; }
         if (_activeDestination is not { DestinationId: "rac1:LEVEL0" } destination) return;
-        bool enable = _fusion is null;
+        bool enable = !FusionTestActive;
         FlushRac1CampaignSaves("before fusion test");
         _args = _args with { FusionTest = enable };
         ClosePauseMenu();
@@ -75,11 +106,12 @@ public partial class OBPGame
 
     private void SelectWeaponKey(SourceWeaponKey key)
     {
-        if (_fusion is null)
+        if (_fusion is null || key.SourceGame == "rac1" && !FusionTestActive)
         {
             if (key.SourceGame == "rac1") OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
             return;
         }
+        if (key.SourceGame != "rac1") EnsureFusionAssets();
         var previous = _fusion.Selected;
         if (!_fusion.Select(key)) return;
         if (previous != key)
@@ -99,19 +131,19 @@ public partial class OBPGame
 
     private HudPresentationState FusionHud(HudPresentationState state)
     {
-        if (_fusion is null) return state;
+        if (_fusion is null || !FusionTestActive && _fusion.Selected.SourceGame == "rac1") return state;
         var status = _fusion.Status(_fusion.Selected);
         return state with
         {
             CurrentWeapon = new(status.Weapon.ToString(),
             $"{FusionWeaponName(status.Weapon)} [{status.Weapon.SourceGame}]", new(status.Ammo, status.Capacity))
-            { Status = _fusionAssets?.Problems.GetValueOrDefault(status.Weapon) ?? $"Fusion test · {status.State}" }
+            { Status = _fusionAssets?.Problems.GetValueOrDefault(status.Weapon) ?? $"{(FusionTestActive ? "Fusion test · " : "")}{status.State}" }
         };
     }
 
     private void AttachFusionWeaponViews(Node3D avatar)
     {
-        if (_fusion is null || _fusionAssets is null) return;
+        if (_fusion is null || _fusionAssets is null || _fusionHeldViews.Count != 0) return;
         foreach (var key in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
         {
             if (!_fusionAssets.Available(key)) continue;
@@ -341,7 +373,7 @@ public partial class OBPGame
     private void ClearFusionTransients(bool freeImmediately = false)
     {
         StopFusionAudio(freeImmediately: freeImmediately);
-        if (_fusion is not null)
+        if (_fusionAssets is not null)
         {
             foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile);
             ResetRac1BombPresentation();

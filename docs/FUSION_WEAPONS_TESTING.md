@@ -1,27 +1,34 @@
-# Three-game weapons on Veldin
+# Three-game weapons in Quick Select
 
-This opt-in proof of concept hosts the R&C1 Bomb Glove, GC base Lancer and
-original UYA V5 Shock Cannon in one R&C1 Veldin session. It is an OBP test
-loadout, not recovered cross-game gameplay or a campaign unlock system.
+The GC base Lancer and original UYA V5 Shock Cannon appear in ordinary R&C1
+Quick Select by default, after the owned R&C1 arsenal. No testing-mode toggle is
+required. This is deliberate OBP equipment availability, not recovered native
+cross-game progression. R&C1 ownership, equipped gear, ammo and campaign saves
+remain source-owned; foreign ammo stays session-only (Lancer 40, Cannon 20 on
+world entry). Their original local assets load when a foreign weapon is first
+equipped. Missing sources produce actionable status and prevent firing.
 
-Attach the three supported original NTSC-U sources in Game Sources. Enter
-Veldin and choose Pause -> Testing Equipment -> Start Three-Game Test. This
+Attach the supported original NTSC-U sources in Game Sources. For an isolated
+fresh Veldin fixture, choose Pause -> Testing Equipment -> Start Three-Game Test. This
 reloads the ordinary starting point with a temporary campaign and finite ammo:
 Bomb Glove 10, Lancer 40, Shock Cannon 20. Leave Three-Game Test reloads normal
 Veldin with the prior campaign inventory, bolts and progression restored. Full
 world unload also retires the test state. Normal launches retain the ordinary
-retail opening loadout; nothing is granted to saved inventories.
+retail R&C1 inventory alongside the two session-only foreign weapons; nothing
+is granted to saved inventories.
 
 For a direct fresh entry, append `--fusion-test` to the normal Godot arguments
 after `--`. Its default destination is `rac1:LEVEL0`; other starting destinations,
 compositions and R&C1-only movement-state loads are rejected. Attach sources
 normally or pass `--rac1-iso`, `--gc-iso`, `--uya-iso` with authorised local paths.
-Fusion startup verifies each attached disc's full SHA-256 against its original
-authority before admitting its weapons. This can take time. Missing or modified
+Asset loading verifies each attached disc's full SHA-256 against its original
+authority before admitting its weapons. This can take time on first equip. Recording
+prepares these sources at level entry so the header identifies all three builds. Missing or modified
 sources leave an actionable status in the selector/HUD and disable that weapon.
 
-Hold Triangle / Q, select a direction and release to equip. The three positions
-are up (Bomb Glove), up-right (Lancer), right (Shock Cannon). Movement is owned by
+Hold Triangle / Q, select a direction and release to equip. On a fresh opening,
+the positions are up (Bomb Glove), up-right (Lancer), right (Shock Cannon). Further
+owned R&C1 weapons retain their ring order before the two additions. Movement is owned by
 the live Quick Select overlay until release. Circle / E uses the selected weapon;
 Square / X remains the wrench. Double-tap Triangle / Q swaps the last two source-
 qualified selections. Keyboard `[` / `]` cycling follows the same three entries.
@@ -70,8 +77,9 @@ contacts, effects and owned audio. The test's campaign remains isolated througho
 ## Recording and validation
 
 ```powershell
-# Human input recording from the ordinary starting point; all sources must be attached.
-./tools/record-playtest.ps1 -Destination rac1:LEVEL0 -FusionTest
+# Human input recording with default Quick Select; all sources must be attached.
+./tools/record-playtest.ps1 -Destination rac1:LEVEL0
+# Add -FusionTest for the separate isolated 10/40/20 fixture.
 # F8 marks; F9 saves. Use the resulting local tape path:
 ./tools/replay-playtest.ps1 -Run <local-tape-path>
 
@@ -85,7 +93,7 @@ dotnet format OneBigPackage.sln --verify-no-changes --no-restore
 
 Recordings include the versioned loadout (which fixes starting ammo), original-
 damage policy, all three source build IDs and verified full disc hashes. Playback
-automatically requests that loadout and rejects different/missing sources or
+automatically requests the recorded ordinary or isolated loadout and rejects different/missing sources or
 unsupported configurations even with a build-change override. Checkpoints include
 source-qualified selection, per-weapon ammo/state, charge/beam counters, flying
 projectiles and accepted target damage. No model, executable, disc, texture,

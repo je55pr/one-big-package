@@ -28,11 +28,13 @@ public sealed class FusionWeaponAssets : IDisposable
     public GcLancerAssets.HeldAssets? Lancer { get; private set; }
     public UyaGlobalGadget.Source? Cannon { get; private set; }
     public IReadOnlyList<RuntimeObjectMesh> Projectile { get; private set; } = [];
-    public PlaytestWeaponConfiguration Configuration => new(FusionWeaponSession.LoadoutId, FusionDamagePolicy.Id,
+    private readonly string _loadoutId;
+    public PlaytestWeaponConfiguration Configuration => new(_loadoutId, FusionDamagePolicy.Id,
         new SortedDictionary<string, string>(_identities, StringComparer.Ordinal));
 
-    public FusionWeaponAssets(ObpSourceLibrary sources)
+    public FusionWeaponAssets(ObpSourceLibrary sources, bool isolated = true)
     {
+        _loadoutId = isolated ? FusionWeaponSession.LoadoutId : FusionWeaponSession.DefaultLoadoutId;
         Load(sources.Get(ObpSourceGame.Rac1), FusionWeaponSession.BombGlove, _ => { });
         Load(sources.Get(ObpSourceGame.Rac2), FusionWeaponSession.Lancer, disc =>
         {
