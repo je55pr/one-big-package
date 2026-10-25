@@ -94,6 +94,25 @@ public partial class OBPGame
         _actors.Step(ToNumerics(_player.GlobalPosition), PlayerAlive);
     }
 
+    private void ClearActorSourceCaches()
+    {
+        // Reusable decoded data belongs to attached sources, not a world lease.
+        _actorSourceTasks.Clear(); _actorRac1Animations.Clear(); _actorGcAnimations.Clear();
+    }
+
+    private void PruneActorSourceVersions(string game, string build, string path, long length, long written)
+    {
+        foreach (var key in _actorSourceTasks.Keys.Where(key => key.Game == game &&
+            (key.Build != build || key.Path != path || key.Length != length || key.Written != written)).ToArray())
+            _actorSourceTasks.Remove(key);
+        if (game == "rac1")
+            foreach (var key in _actorRac1Animations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
+                _actorRac1Animations.Remove(key);
+        if (game == "rac2")
+            foreach (var key in _actorGcAnimations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
+                _actorGcAnimations.Remove(key);
+    }
+
     private void PrepareActorSource(ActorPlacement placement)
     {
         placement.Validate();
@@ -105,6 +124,7 @@ public partial class OBPGame
         try { stamp = SourceFileStamp(source.Path)!.Value; }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         { _actorProblems[placement.Id] = "Actor source is unavailable: " + error.Message; return; }
+        PruneActorSourceVersions(placement.Source.Game, placement.Source.Build, source.Path, stamp.Length, stamp.Written);
         var key = (placement.Source.Game, placement.Source.Build, placement.LevelId, source.Path, stamp.Length, stamp.Written);
         _actorPlacementStamps[placement.Id] = (source.Path, stamp.Length, stamp.Written);
         if (_actorSourceTasks.TryGetValue(key, out var cached) && !cached.IsFaulted)

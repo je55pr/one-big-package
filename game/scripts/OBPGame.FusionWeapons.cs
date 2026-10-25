@@ -175,6 +175,7 @@ public partial class OBPGame
     private void ResetSharedWeaponAssets()
     {
         // Source changes and application exit own this lifetime, not level teardown.
+        ClearActorSourceCaches();
         ClearFusionTransients();
         ReleaseFusionWeaponViews();
         _fusionPreparation?.Dispose(); _fusionPreparation = null;
@@ -349,7 +350,8 @@ public partial class OBPGame
     {
         float range = _fusion!.Selected == FusionWeaponSession.Lancer ? GcLancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
         if (OrdinaryPlayerSession)
-            return RegisteredCombatGeometry().Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != "rac1" || target.Key.NativeClassId != 749)
+            return RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
+                .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != "rac1" || target.Key.NativeClassId != 749)
                 .Select(target => target.Bounds.GetCenter()).Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < range * range &&
                     (point - origin).Normalized().Dot(EquipmentForward) > .9f && BombHasLineOfSight(origin, point))
                 .OrderBy(point => point.DistanceSquaredTo(origin)).FirstOrDefault(origin + EquipmentForward * range);

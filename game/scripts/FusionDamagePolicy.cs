@@ -15,6 +15,10 @@ public static class FusionDamagePolicy
     public static bool Admits(WeaponTargetKey target) => target.SourceGame == "rac1" && target.InstanceIndex >= 0 &&
         target.NativeClassId is 500 or 501 or 511 or 749 or 1440;
 
+    /// <summary>Keep foreign queries within the admitted R&C1 families; native victim rules still decide each hit.</summary>
+    public static bool AdmitsQueryTarget(SourceWeaponKey weapon, WeaponTargetKey target) =>
+        weapon.SourceGame == "rac1" || target.SourceGame != "rac1" || Admits(target);
+
     public static Rac1GameplayDamageEvent? Translate(WeaponDamageIntent intent)
     {
         if (!Admits(intent.Target) || !float.IsFinite(intent.SourceDamage) || intent.SourceDamage <= 0 ||

@@ -13,7 +13,9 @@ public static class PauseLoadoutSmoke
                 index % 2 == 0 ? "rac2" : "rac3", "fixture", EquipmentCategory.Weapon,
                 EquipmentImplementation.Implemented, new(index % 2 == 0 ? "rac2" : "rac3", 1000 + index)))).ToArray();
         SourceWeaponKey?[] slots = new SourceWeaponKey?[8];
-        bool sourceAvailable = true; int equips = 0, assignments = 0, resumes = 0, gadgets = 0;
+        bool sourceAvailable = true, failEquip = false; int equips = 0, assignments = 0, resumes = 0, gadgets = 0;
+        var actionErrors = new List<Exception>();
+        var originalWindowSize = owner.GetWindow().Size;
         var menu = new PauseMenuUi
         {
             CatalogReader = () => definitions.Select(definition => new EquipmentCatalogEntry(definition,
@@ -23,7 +25,8 @@ public static class PauseLoadoutSmoke
                 definition.Implementation == EquipmentImplementation.Unimplemented ? "Native capability not recovered." :
                     sourceAvailable ? null : "Attach the source to use this equipment.")).ToArray(),
             SlotReader = () => slots,
-            CatalogEquip = _ => { equips++; return new(true); },
+            CatalogEquip = _ => { if (failEquip) throw new InvalidOperationException("Expected catalogue port failure."); equips++; return new(true); },
+            CatalogErrorReporter = actionErrors.Add,
             CatalogUnequip = () => new(true),
             CatalogAssign = (slot, id) => { assignments++; slots[slot] = id is null ? null : definitions.Single(definition => definition.Id == id).Item; return new(true); },
             CatalogGadget = (_, _) => { gadgets++; return new(true); },
@@ -40,6 +43,13 @@ public static class PauseLoadoutSmoke
             Require(Focus() is Button { Text: "EQUIP" }, "Inspect did not focus the primary action.");
             await Pad(JoyButton.A);
             Require(equips == 1 && owner.GetTree().Paused, "Controller equip doubled or resumed gameplay.");
+            failEquip = true;
+            Buttons().Single(button => button.Text == "EQUIP").GrabFocus(); await Pad(JoyButton.A);
+            Require(actionErrors.Count == 1 && menu.FindChild("ObpCatalogStatus", true, false) is Label { Text: "The change could not be applied." },
+                "Failed catalogue action was not reported.");
+            failEquip = false;
+            Buttons().Single(button => button.Text == "EQUIP").GrabFocus(); await Pad(JoyButton.A);
+            Require(equips == 2, "Failed catalogue action permanently locked subsequent actions.");
             var next = Buttons().Single(button => button.Text == "NEXT");
             next.GrabFocus(); await Pad(JoyButton.A);
             Require(menu.UniversalPage == 1, "Controller could not reach the next catalogue page.");
@@ -82,7 +92,7 @@ public static class PauseLoadoutSmoke
             await Pad(JoyButton.B); Require(resumes == 2, "Back did not resume once.");
             GD.Print("[pause-loadout-smoke] PASS: large mixed catalogue, mouse/gamepad, paging, actions, source loss, unsupported avatars, resize and pause isolation");
         }
-        finally { owner.GetTree().Paused = wasPaused; menu.QueueFree(); owner.GetWindow().Size = new(960, 540); await Frames(); }
+        finally { owner.GetTree().Paused = wasPaused; menu.QueueFree(); owner.GetWindow().Size = originalWindowSize; await Frames(); }
 
         IEnumerable<Button> Buttons() => menu.FindChildren("*", "Button", true, false).OfType<Button>();
         Control? Focus() => owner.GetViewport().GuiGetFocusOwner();

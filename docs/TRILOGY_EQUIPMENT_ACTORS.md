@@ -61,6 +61,10 @@ world lease. Actors have source-qualified target keys and fresh runtime indices;
 retired keys cannot be reused. Update groups execute once per 60 Hz tick in
 ordinal source order, then actors in source/class/instance order.
 
+Decoded actor libraries and animations are retained across world leases. Changed
+source stamps evict obsolete versions, and source reattachment invalidates the
+caches. World teardown retires live actors without repeating the source decoding.
+
 The Lab's three recipes are deliberately narrow:
 
 | Actor | Original context | Relocation policy |

@@ -12,7 +12,7 @@ public partial class OBPGame
     private IEnumerable<WeaponContact> TraceRegisteredWeaponQuery(WeaponQuery query, Vector3 muzzle)
     {
         Vector3 from = ToGodot(query.From), to = ToGodot(query.To);
-        var geometry = RegisteredCombatGeometry().ToArray();
+        var geometry = RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(query.Shot.Weapon, target.Key)).ToArray();
         if (query.Kind == WeaponQueryKind.Sphere)
         {
             foreach (var target in geometry)

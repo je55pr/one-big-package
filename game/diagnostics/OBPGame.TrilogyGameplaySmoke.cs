@@ -128,6 +128,17 @@ public partial class OBPGame
                 Require(_actorContactBodies.Count == 3, "actor reset leaked a collision body");
             }
             GD.Print("[trilogy-gameplay-smoke] native motion/animation, shared player damage, ordinary Lancer/Cannon/Bomb contacts and independent resets PASS");
+            var toadPlacement = _actorPlacements["arena-rac1-toad"];
+            var sourceKey = _actorSourceTasks.Keys.Single(key => key.Game == "rac1");
+            var sourceTask = _actorSourceTasks[sourceKey];
+            var obsoleteSource = sourceKey; obsoleteSource.Written--;
+            _actorSourceTasks.Add(obsoleteSource, sourceTask);
+            var animationKey = _actorRac1Animations.Keys.Single();
+            var obsoleteAnimation = animationKey; obsoleteAnimation.Written--;
+            _actorRac1Animations.Add(obsoleteAnimation, _actorRac1Animations[animationKey]);
+            PrepareActorSource(toadPlacement);
+            Require(!_actorSourceTasks.ContainsKey(obsoleteSource) && !_actorRac1Animations.ContainsKey(obsoleteAnimation) &&
+                ReferenceEquals(sourceTask, _actorSourceTasks[sourceKey]), "source version pruning discarded current data or retained obsolete data");
             var oldActors = _actors; var oldRoots = _actorViews.Values.Select(actor => actor.Node.Root).ToArray();
             var ammoBeforeTransit = _fusion!.Status(FusionWeaponSession.Lancer).Ammo;
             Require(OnDestinationChosen(TrilogyWorldProviders.Resolve("rac2:LEVEL1")!), "cleanup destination entry failed");
@@ -136,6 +147,12 @@ public partial class OBPGame
                 "world transition retained actors or their physics");
             Require(_fusion.Status(FusionWeaponSession.Lancer).Ammo == ammoBeforeTransit && _fusionProjectiles.Count == 0 && _fusionAudioPlayers.Count == 0,
                 "world transition leaked effects/audio or reset native ammunition");
+            Require(ReferenceEquals(sourceTask, _actorSourceTasks[sourceKey]) && _actorRac1Animations.Count == 1 && _actorGcAnimations.Count == 1,
+                "world transition discarded reusable attached-source actor data");
+            ResetSharedWeaponAssets();
+            Require(_actorSourceTasks.Count == 0 && _actorRac1Animations.Count == 0 && _actorGcAnimations.Count == 0,
+                "source invalidation retained decoded actor caches");
+            GD.Print("[trilogy-gameplay-smoke] current source-cache reuse, obsolete version pruning and source invalidation PASS");
             GD.Print("[trilogy-gameplay-smoke] lease cleanup and persistent ammunition PASS");
             ApplicationLifecycle.RequestQuit(this, "trilogy-gameplay-smoke-pass", 0);
 

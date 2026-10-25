@@ -9,6 +9,7 @@ public sealed partial class PauseMenuUi
     public Func<IReadOnlyList<EquipmentCatalogEntry>>? CatalogReader { get; init; }
     public Func<IReadOnlyList<SourceWeaponKey?>>? SlotReader { get; init; }
     public Func<string, EquipmentChangeResult>? CatalogEquip { get; init; }
+    public Action<Exception> CatalogErrorReporter { get; init; } = error => GD.PushError("[pause] catalogue action failed: " + error);
     public Func<EquipmentChangeResult>? CatalogUnequip { get; init; }
     public Func<string, bool, EquipmentChangeResult>? CatalogGadget { get; init; }
     public Func<int, string?, EquipmentChangeResult>? CatalogAssign { get; init; }
@@ -203,7 +204,15 @@ public sealed partial class PauseMenuUi
         {
             if (_catalogActionPending) return;
             _catalogActionPending = true;
-            var result = action() ?? new(false, "This action is unavailable.");
+            EquipmentChangeResult result;
+            try { result = action() ?? new(false, "This action is unavailable."); }
+            catch (Exception error)
+            {
+                _catalogActionPending = false;
+                _catalogStatus.Text = "The change could not be applied.";
+                CatalogErrorReporter(error);
+                return;
+            }
             _catalogStatus.Text = result.Reason ?? (result.Accepted ? "Loadout updated." : "The change could not be applied.");
             Callable.From(() => { if (!IsInsideTree() || IsQueuedForDeletion()) return; _catalogActionPending = false; RebuildUniversalPage(); }).CallDeferred();
         };
