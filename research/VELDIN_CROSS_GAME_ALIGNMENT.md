@@ -88,6 +88,19 @@ Safe interpretation:
 
 A useful next archaeology pass would look for sparse, uniquely placed static landmarks whose semantic equivalence can be established from model structure, instance metadata, executable behavior, or another independent source. Those anchors can then be held out from terrain registration entirely and tested with `PlanarAlignmentSolver`.
 
+## Historical multi-world validation
+
+On 2026-09-09, the diagnostic Composition Lab loaded R&C1 LEVEL0 and UYA TABLE1
+simultaneously via the neutral world providers. R&C1 LEVEL0 produced 315 meshes
+and 894,053 render triangles; UYA TABLE1 produced 336 meshes and 890,426
+render triangles. Four 1280×720 comparison captures succeeded. A three-cycle
+reload/teardown check held at 61.3 MB with 2,914 objects, 12 nodes, no orphan
+nodes and an empty `CompositionRoot` after each teardown.
+
+The old checked-in comparison preset and dedicated capture wrapper have since
+been retired. These figures record a historical local retail validation, not
+a currently runnable standalone capture recipe. The reusable Composition Lab,
+`--compose-worlds` and general capture tooling remain available.
 ## Reproduction boundary
 
 `VeldinAlignmentRetailTests` is the committed, payload-free reproduction hook for the candidate-anchor solver results. It requires both `OBP_RAC1_ISO` and `OBP_UYA_ISO` and therefore runs only under the authorized local retail gate.

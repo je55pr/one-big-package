@@ -181,7 +181,7 @@ geometry is ever written** — only references + placement metadata.
 `categoryVisibility` keys are neutral `RuntimeMesh.AssetKind` values (`tfrag`,
 `tie`, `shrub`, `moby`, `sky`, `moby-marker`) plus `collision`.
 
-Example: [`compositions/example-gc-two-world.json`](../compositions/example-gc-two-world.json).
+The schema can be saved through the lab or supplied as a user-authored JSON file; there are no checked-in example presets.
 
 ---
 
@@ -192,10 +192,10 @@ Composition Lab now has its own Godot entry scene, `res://scenes/CompositionLab.
 ```
 # interactive
 <godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> \
-    --composition compositions/example-gc-two-world.json
+    --compose-worlds "oozla=gc:1,endako=gc:3"
 
-# seed from a spec instead of a file  (id=game:level, comma-separated)
-<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> --compose-worlds "oozla=gc:1,endako=gc:3"
+# or load a user-authored JSON document from disk
+<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> --composition <path-to-your-composition.json>
 
 # deterministic capture
 <godot> --path game --rendering-method gl_compatibility --resolution 1280x720 res://scenes/CompositionLab.tscn -- \
@@ -270,35 +270,5 @@ Enter. World B aligns and the residuals print to the HUD + log.
 
 ---
 
-## Veldin comparison showcase
-
-`compositions/veldin-rac1-uya-comparison.json` pins the two retail authorities used
-by the current archaeology note: R&C1 `rac1:LEVEL0` and UYA `rac3:TABLE1`. The
-saved preset contains identity transforms, no anchors, and no fitted alignment.
-That is deliberate: current retail evidence supports strong local resemblance
-around the start area, but not one rigid full-map transform.
-
-For the deterministic local comparison pack, run:
-
-```powershell
-./tools/capture-veldin-comparison.ps1 -Rac1Iso <RAC1.iso> -UyaIso <UYA.iso>
-```
-
-The workflow builds once, captures `rac1-start`, `uya-start`, `start-overlay`, and
-`start-side-by-side`, then runs a three-cycle simultaneous-load teardown stress
-check by default. Overlay/side-by-side placement is computed only from each
-neutral `RuntimeWorld.Ship` position; the UYA world keeps the preset rotation and
-scale, and the side-by-side offset exists only to separate the two start-area
-views visually. Capture sidecars retain that explanation in `placementNote`.
-
-Retail validation on 2026-09-09 loaded both authorities simultaneously through
-the neutral providers: R&C1 LEVEL0 produced 315 meshes / 894,053 render triangles
-and UYA TABLE1 produced 336 meshes / 890,426 render triangles. All four capture
-views saved successfully at 1280x720. A three-cycle `--compose-reload 3` run was
-flat at 61.3 MB with 2,914 objects, 12 nodes, 0 orphans, and an empty
-`CompositionRoot` after every teardown.
-
-Archaeological interpretation remains in
-[`research/VELDIN_CROSS_GAME_ALIGNMENT.md`](../research/VELDIN_CROSS_GAME_ALIGNMENT.md):
-do not promote exploratory 5°, -8°, -18°, or scaled fits into this preset unless
-independent semantic landmarks later justify them.
+Historical Veldin alignment findings remain in
+[the cross-game archaeology note](../research/VELDIN_CROSS_GAME_ALIGNMENT.md).

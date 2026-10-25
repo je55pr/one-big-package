@@ -12,15 +12,17 @@ remain in the game host and OBP.Godot.
 
 * Retained neutral transforms and placement: CompositionTransform, WorldPlacement,
   WorldComposition and deterministic CompositionJson moved into OBP.Fusion.
-  The existing version 1 compositions/*.json is byte-compatible.
+  Version 1 composition JSON remains compatible with the retained serializer.
 * Retained diagnostic archaeology: AnchorPair and PlanarAlignmentSolver moved
   into OBP.Fusion. The free-fly CompositionLab, CompositionWorldLoader,
   CompositionView, CLI --compose flags, capture script and original research
   stay operational. They are not ordinary Fusion Lab gameplay.
 * Retired: the standalone OBP.Composition assembly, project file and all project
   references. The former code was a viewer, not an ordinary-world dependency.
-* Reproducibility: research/VELDIN_CROSS_GAME_ALIGNMENT.md, payload-free authored
-  comparison JSON and tools/capture-veldin-comparison.ps1 remain available.
+* Reproducibility: Veldin research findings remain in
+  research/VELDIN_CROSS_GAME_ALIGNMENT.md. The root comparison presets and
+  dedicated Veldin capture script were retired; the general CompositionLab
+  and capture tooling remain available.
   Runtime native source data and local ISO paths are never persisted here.
 
 ## Integration contract
