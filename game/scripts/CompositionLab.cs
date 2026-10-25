@@ -166,7 +166,7 @@ public partial class CompositionLab : Node3D
         else
         {
             // Keep a source-light default that needs only the mature GC authority.
-            // Cross-game examples live under compositions/ and can be selected explicitly.
+            // Use --compose-worlds or --composition for custom comparisons.
             _composition = SeedFromSpec("oozla=gc:1,endako=gc:3");
             _composition = _composition with { Name = "GC Oozla vs Endako (default composition-lab smoke case)" };
         }

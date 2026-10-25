@@ -6,11 +6,10 @@ using OBP.Runtime;
 namespace OBP.RAC2;
 
 /// <summary>
-/// The Godot-free "open a Going Commando disc image" façade the native file
-/// picker (and <c>obp test-import</c>) sit on top of: a fast supported-build
-/// check from the boot serial, a one-call identify + level import, and the slow
-/// exact-hash authority verification (streamed, cancellable — run it on a
-/// background thread).
+/// The Godot-free "open a Going Commando disc image" façade used by the native
+/// file picker: a fast supported-build check from the boot serial, a one-call
+/// identify + level import, and the slow exact-hash authority verification
+/// (streamed, cancellable — run it on a background thread).
 /// </summary>
 public static class GcIsoLoad
 {

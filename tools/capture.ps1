@@ -7,7 +7,7 @@
   ./tools/capture.ps1 -Picker -Rac1Iso "D:\isos\RAC1.iso" -GcIso "D:\isos\GC.iso" -UyaIso "D:\isos\UYA.iso"
   ./tools/capture.ps1 -Worlds -GcIso "D:\isos\GC.iso"
   ./tools/capture.ps1 -Destination rac2:LEVEL1 -GcIso "D:\isos\GC.iso" -Frame 120
-  ./tools/capture.ps1 -Composition compositions/example-rac1-gc-two-world.json -Rac1Iso "D:\isos\RAC1.iso" -GcIso "D:\isos\GC.iso"
+  ./tools/capture.ps1 -ComposeWorlds "rac1=rac1:LEVEL0,oozla=gc:1" -Rac1Iso "D:\isos\RAC1.iso" -GcIso "D:\isos\GC.iso"
 #>
 param(
   [Parameter(Position = 0)][string]$Scene = 'smoke',

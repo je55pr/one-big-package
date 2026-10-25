@@ -17,14 +17,17 @@ No PCSX2 session was used. The authorized retail disc was sufficient.
   `Rac1DiscIndex`, `Rac1LevelCore`, `Rac1StaticClasses`,
   `Rac1LevelSettings`, `Rac1Instances`, and `Rac1MobyAnimation` codecs.
 
-Reproduce from an authorized authority ISO with:
+Verify the checked-in outputs against an authorized authority ISO with the
+opt-in retail regression test:
 
-```text
-dotnet run --project src/OBP.Cli/OBP.Cli.csproj -- rac1-authored-moby-census "<RAC1.iso>" research/generated
+```sh
+OBP_RAC1_ISO="/path/to/RAC1.iso" dotnet test tests/OBP.Tests/OBP.Tests.csproj --filter FullyQualifiedName~AuthorizedRetailReproductionMatchesCheckedInOutputsExactly
 ```
 
-The command requires the pinned ISO byte length and `SCUS-97199` boot serial
-before running the census. The repository does not contain the retail ISO.
+The test rebuilds the census in memory and checks exact JSON and CSV equality
+against the checked-in files; it does not regenerate them. It requires the pinned
+ISO byte length and `SCUS-97199` boot serial. The repository does not contain
+the retail ISO.
 
 ## Per-level census
 

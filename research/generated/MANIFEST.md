@@ -20,8 +20,6 @@ A generator path embedded inside an archival or frozen artifact is historical pr
 | `gc-lancer.json` | `GcLancerRetailTests` with `OBP_UPDATE_GC_LANCER_EVIDENCE=1`; checked native identities, descriptor scalars, loaded-code hashes and local-disc asset locations |
 | `rac1-level-overlay-probe.json` | `tools/rac1-level-overlay-probe.py`; verifies Veldin/Hoven overlays and emits payload-free addresses, hashes and derived movement/surface behavior |
 | `rac1-analogue-movement-probe.json` | `tools/rac1-analogue-movement-harness.py` |
-| `rac1-authored-moby-census.csv` | `obp rac1-authored-moby-census` in `OBP.Cli` |
-| `rac1-authored-moby-census.json` | `obp rac1-authored-moby-census` in `OBP.Cli` |
 | `rac1-camera-chase-framing.json` | `tools/rac1-camera-archaeology.py derive-chase` |
 | `rac1-camera-control-heading.json` | `tools/rac1-camera-archaeology.py derive` |
 | `rac1-camera-control-producer.json` | `tools/rac1-camera-archaeology.py probe-producer` |
@@ -58,6 +56,8 @@ These artifacts remain part of the current evidence base. Their exact acquisitio
 | `gc_moby_catalogue.json` | GC semantic Moby catalogue |
 | `rac1-analogue-input-law.json` | dense retail input-law reduction used by movement evidence |
 | `rac1-bolt-crate-reward-loop.json` | crate/bolt reward-loop witness |
+| `rac1-authored-moby-census.csv` | Authored class-table occurrence census; retained as regression evidence, with opt-in retail equality test; standalone CLI generator retired |
+| `rac1-authored-moby-census.json` | Authored class and level census; retained as regression evidence, with opt-in retail equality test; standalone CLI generator retired |
 | `rac1-class-family-census.json` | structural class-family census |
 | `rac1-death-respawn-boundary.json` | death/respawn boundary witness |
 | `rac1-dynamic-moby-runtime-census.json` | deterministic runtime census; exercised by tests |
