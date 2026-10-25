@@ -191,7 +191,7 @@ public partial class OBPGame
                 var actor = CreatePlacedActor(placement, library, source.Path);
                 try { RegisterActorView(actor); _placedActors.Add(placement.Id, actor.Registration.Instance); }
                 catch { actor.Dispose(); throw; }
-                GD.Print($"[actors] {placement.Id}: {actor.Registration.Source.Game} class {placement.NativeClassId} active in current lease");
+                GD.Print($"[actors] {placement.Id}: {SourceIdentityWire.FormatSource(actor.Registration.Source.Game)} class {placement.NativeClassId} active in current lease");
             }
             catch (Exception error)
             {
@@ -318,7 +318,7 @@ public partial class OBPGame
     }
 
     private IReadOnlyDictionary<string, string> ReadPlacedActorStatus() => _actorPlacements.Values.ToDictionary(
-        placement => placement.Id, placement => $"{placement.Source.Game} / class {placement.NativeClassId}: " +
+        placement => placement.Id, placement => $"{SourceIdentityWire.FormatSource(placement.Source.Game)} / class {placement.NativeClassId}: " +
             (_actorProblems.GetValueOrDefault(placement.Id) ??
                 (_placedActors.TryGetValue(placement.Id, out var instance) && _actors?.Find(instance.Target) is { } actor
                     ? (actor.Observe().Alive ? "Active" : "Defeated — reset to replay this encounter") +

@@ -278,7 +278,7 @@ public partial class OBPGame
         foreach (var key in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
         {
             if (!_fusionAssets.Available(key)) continue;
-            var view = new FusionMeshView { Name = key.SourceGame + "_original_weapon", Visible = false };
+            var view = new FusionMeshView { Name = SourceIdentityWire.FormatSource(key.SourceGame) + "_original_weapon", Visible = false };
             avatar.AddChild(view); _fusionHeldViews.Add(key, view);
         }
         _fusionBeam = new() { Name = "rac3_original_beam", Visible = false };

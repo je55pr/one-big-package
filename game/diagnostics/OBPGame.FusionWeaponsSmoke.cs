@@ -433,7 +433,7 @@ public partial class OBPGame
         await PhysicsFramesAsync(30);
         Require(_rac1HeldItem.Hand.WrenchHeld && _rac1WrenchView!.Visible && !_fusionHeldViews[key].Visible &&
             _fusion.Selected == key && _fusion.Status(key).Ammo == ammo, $"{key} did not retain the wrench and selected equipment independently");
-        await CaptureFusionAsync(key.SourceGame + "-wrench-retained");
+        await CaptureFusionAsync(SourceIdentityWire.FormatSource(key.SourceGame) + "-wrench-retained");
         await FusionFireInputAsync(1);
         await PhysicsFramesAsync(2);
         Require(_rac1HeldItem.Hand.IsHolding(key) && _fusionHeldViews[key].Visible && !_rac1WrenchView!.Visible,
