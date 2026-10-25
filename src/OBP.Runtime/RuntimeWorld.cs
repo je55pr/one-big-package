@@ -172,6 +172,8 @@ public sealed record RuntimeDynamicObject(
 /// <summary>One decoded collision blob: OBP Y-up flat-XYZ positions, 3 indices per triangle, plus the native face type per triangle.</summary>
 public sealed record RuntimeCollisionBlob(int Octants, double[] Positions, int[] Indices, int[] TriangleMaterialIds)
 {
+    /// <summary>Authority for material numbers. Null means neutral/unclassified, not a native zero surface.</summary>
+    public OBP.Core.ObpBuildIdentity? MaterialSource { get; init; }
     public int Triangles => Indices.Length / 3;
     public int VertexCount => Positions.Length / 3;
 }

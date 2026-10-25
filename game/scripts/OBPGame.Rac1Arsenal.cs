@@ -145,7 +145,7 @@ public partial class OBPGame
     private void StepRac1ArsenalWorld()
     {
         if (_player is null) return;
-        if (_rac1RynoSalvo.Step(!_rac1Nanotech.Probe().IsDead && _rac1Weapons.Equipped == Rac1WeaponId.Ryno) is { } barrel)
+        if (_rac1RynoSalvo.Step(PlayerAlive && _rac1Weapons.Equipped == Rac1WeaponId.Ryno) is { } barrel)
         {
             var target = FindArsenalTarget(EquipmentMuzzle(Rac1WeaponId.Ryno), 100, .1f, _rac1RynoTargets) ??
                 FindArsenalTarget(EquipmentMuzzle(Rac1WeaponId.Ryno), 100, .1f);
@@ -172,7 +172,7 @@ public partial class OBPGame
             var to = FromEffectNative(missile.Motion.Position);
             var hit = EquipmentContact(from, to, .15f);
             if (hit is not null || ended || guided && (_player.Rac1RemoteDetonate ||
-                _rac1Weapons.Equipped != Rac1WeaponId.VisibombGun || _rac1Nanotech.Probe().IsDead))
+                _rac1Weapons.Equipped != Rac1WeaponId.VisibombGun || !PlayerAlive))
             {
                 var position = hit?.Point ?? to;
                 ApplyArsenalBlast(missile.Weapon, position, guided ? Rac1ArsenalHostPolicy.VisibombBlastRadius : Rac1ArsenalHostPolicy.RocketBlastRadius,
@@ -571,7 +571,7 @@ public partial class OBPGame
         _player.Rac1EquipmentActionActive = false;
         if (_rac1WalloperAge <= 0) return;
         int age = _rac1WalloperAge++;
-        if (age >= Rac1ArsenalRules.WalloperDurationTicks || _rac1Weapons.Equipped != Rac1WeaponId.Walloper || _rac1Nanotech.Probe().IsDead)
+        if (age >= Rac1ArsenalRules.WalloperDurationTicks || _rac1Weapons.Equipped != Rac1WeaponId.Walloper || !PlayerAlive)
         { _rac1WalloperAge = 0; return; }
         if (age == 10) PlayRac1PickupSound(0, 53, _player.GlobalPosition); // Ratchet seq103 cue2.5.
         if (age == 16) PlayRac1PickupSound(0, 30, _player.GlobalPosition); // Ratchet seq103 cue4.

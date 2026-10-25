@@ -25,6 +25,7 @@ public partial class PlayerHost
     public bool Rac1SwingshotEquipped { get; set; }
     public int? Rac1SwingshotTargetIndex => _rac1Tether?.InstanceIndex ?? _rac1SwingTarget?.InstanceIndex;
     public bool Rac1SwingshotActive => _rac1Tether is not null || _rac1SwingTarget is not null;
+    public bool HasRac1SwingshotTargets => _rac1TetherTargets.Length != 0 || _rac1SwingTargets.Length != 0;
     private int Rac1SwingshotNativeAction => _rac1SwingTarget is not null ? 0x2c :
         _rac1Tether?.Target.Mode == Rac1TraversalEquipmentSwingshotMode.Swing ? 0x26 : 0x25;
 

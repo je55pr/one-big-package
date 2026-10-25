@@ -33,7 +33,7 @@ public partial class OBPGame
         int heldItem = _rac1Weapons.CurrentItemId;
         int[] slots = _rac1Weapons.QuickSelect.ToArray();
         int[] ammo = _rac1Weapons.Ammo.ToArray();
-        var previousMouseMode = Input.MouseMode;
+        var previousMouseMode = ApplicationPointer.MouseMode;
         try
         {
             if (!TryOpenPauseMenu() || !GetTree().Paused || _pauseMenu is not { RetailEnabled: true } menu)
@@ -49,7 +49,7 @@ public partial class OBPGame
                 throw new InvalidOperationException(
                     $"{world} root panels or opening focus invalid: viewport={visibleSize}, " +
                     $"panels=[{string.Join(", ", root.Select(button => button.GetGlobalRect().ToString()))}], " +
-                    $"focus={GetViewport().GuiGetFocusOwner()?.Name}, mouse={Input.MouseMode}.");
+                    $"focus={GetViewport().GuiGetFocusOwner()?.Name}, mouse={ApplicationPointer.MouseMode}.");
             // UiPointerModality must show the cursor after *genuine*
             // mouse movement. The review fixture blocks external input,
             // but must not make that legitimate behaviour a failure.
@@ -58,10 +58,10 @@ public partial class OBPGame
             // movement; check hidden mode only for controller modality.
             if (DisplayServer.GetName() != "headless" &&
                 UiPointerModality.ControllerWasLastInput &&
-                Input.MouseMode != Input.MouseModeEnum.Hidden)
+                ApplicationPointer.MouseMode != Input.MouseModeEnum.Hidden)
                 throw new InvalidOperationException(
                     $"{world} controller modality lost hidden pointer: viewport={visibleSize}, " +
-                    $"mode={Input.MouseMode}, focus={GetViewport().GuiGetFocusOwner()?.Name}.");
+                    $"mode={ApplicationPointer.MouseMode}, focus={GetViewport().GuiGetFocusOwner()?.Name}.");
             // Prove unsolicited action input is actually suppressed by
             // the guard, rather than merely relying on an idle test PC.
             using (var unsolicitedPress = new InputEventAction
@@ -144,7 +144,7 @@ public partial class OBPGame
                 throw new InvalidOperationException($"{world} menu navigation mutated paused gameplay.");
             await ReviewTap(JoyButton.B); // Ordinary Circle from root resumes.
             await ReviewFrames(3);
-            if (PauseMenuOpen || GetTree().Paused || Input.MouseMode != previousMouseMode)
+            if (PauseMenuOpen || GetTree().Paused || ApplicationPointer.MouseMode != previousMouseMode)
                 throw new InvalidOperationException($"{world} Circle did not restore gameplay/input mode.");
             if (!TryOpenPauseMenu() || _pauseMenu is not { RetailEnabled: true } reopened)
                 throw new InvalidOperationException($"{world} pause failed to reopen after normal Circle exit.");
@@ -164,7 +164,7 @@ public partial class OBPGame
             GetTree().Root.RemoveChild(physicalInputGuard);
             physicalInputGuard.Free();
             GetTree().Root.Size = originalViewportSize;
-            Input.MouseMode = previousMouseMode;
+            ApplicationPointer.MouseMode = previousMouseMode;
         }
         await ReviewFrames(3);
         // World physics legitimately resumes after Circle. Position is

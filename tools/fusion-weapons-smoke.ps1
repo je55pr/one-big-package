@@ -36,7 +36,7 @@ $previousCapture = $env:OBP_FUSION_CAPTURE_DIR
 try {
     if ($Rendered) { $env:OBP_FUSION_CAPTURE_DIR = $Out }
     $integrationLog = Join-Path $Out 'integration.log'
-    & $godot @windowArgs --path (Join-Path $root 'game') --rendering-method gl_compatibility --log-file $integrationLog -- --fusion-smoke --fixed-seed 1440 --rac1-iso $Rac1Iso --gc-iso $GcIso --uya-iso $UyaIso
+    & $godot @windowArgs --fixed-fps 60 --path (Join-Path $root 'game') --rendering-method gl_compatibility --log-file $integrationLog -- --fusion-smoke --fixed-seed 1440 --rac1-iso $Rac1Iso --gc-iso $GcIso --uya-iso $UyaIso
     if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $integrationLog -SimpleMatch '[fusion-smoke] PASS:')) { throw "Fusion fixtures failed. Inspect $integrationLog" }
     $run = Join-Path $Out 'ordinary.run.jsonl.gz'
     & (Join-Path $PSScriptRoot 'record-playtest.ps1') -Destination rac1:LEVEL0 -FusionTest -Smoke -Out $run -Rac1Iso $Rac1Iso -GcIso $GcIso -UyaIso $UyaIso -Headless:(-not $Rendered) -Offscreen:$Rendered -SkipBuild

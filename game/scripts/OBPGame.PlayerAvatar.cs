@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Core;
+using OBP.Fusion;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.RAC1.Player;
@@ -19,6 +20,7 @@ public partial class OBPGame
     private IPlayerAnimationPresentationSink? _playerAvatarAnimationSink;
     private IPlayerAnimationPresentationController? _playerAvatarAnimationController;
     private double _playerAvatarClock;
+    private PlayerNativeClock? _playerPhysicsClock;
     private PlayerHost? _avatarPhysicsPlayer;
     private Rac1WrenchAsset.Asset? _rac1WrenchAsset;
     private string? _rac1WrenchSourcePath;
@@ -43,8 +45,6 @@ public partial class OBPGame
         }
         var provider = PlayerAvatarProviders.Get(selected.SourceGame)
             ?? throw new InvalidOperationException("The selected player avatar provider is unavailable.");
-        var source = _sources.Get(selected.SourceGame)
-            ?? throw new InvalidOperationException("Attach the selected player avatar source.");
         var avatar = _playerAvatar ?? throw new InvalidOperationException("Selected avatar was not staged before world entry.");
         var controller = CreatePlayerAnimationController(provider, avatar);
         controller.SetAnimationState(player.AnimationState);
@@ -56,33 +56,30 @@ public partial class OBPGame
         {
             _rac1WrenchView = new(_rac1WrenchAsset ?? throw new InvalidOperationException("Selected wrench asset was not staged."), avatar);
             view.AddChild(_rac1WrenchView);
+            // Catalog models are source assets; world effects remain separately admitted.
+            var glove = _rac1BombGloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.");
+            _rac1BombGloveView = new(glove, avatar, new WorldMaterialFactory(_world! with { Textures = glove.Textures }));
+            view.AddChild(_rac1BombGloveView);
             if (_rac1PickupAssets is not null)
             {
-                if (_rac1BombGloveAsset is null || _rac1BombGloveSourcePath != source.Path)
-                {
-                    _rac1BombGloveAsset = OBP.RAC1.Gameplay.Rac1BombGloveAssets.Load(source.Path);
-                    _rac1BombGloveSourcePath = source.Path;
-                }
-                _rac1BombGloveView = new(_rac1BombGloveAsset, avatar,
-                    new WorldMaterialFactory(_world! with { Textures = _rac1BombGloveAsset.Textures }));
-                view.AddChild(_rac1BombGloveView);
                 _rac1StagedBombView = CreateRac1EffectNode(121, "Rac1RetailStagedBomb_Class121");
                 _rac1StagedBombView.Reparent(_rac1BombGloveView, keepGlobalTransform: false);
                 _rac1StagedBombView.Rotation = new(0, MathF.PI, 0);
-                AttachRac1EquipmentViews(view);
             }
-            else AttachFusionWeaponViews(view);
+            AttachRac1EquipmentViews(view);
         }
         player.VisualRoot.ReplaceVisual(view);
         player.ConfigureAvatarPresentation((float)avatar.AnimationBounds.Height);
         _playerAvatarView = view; _playerAvatarAnimationSink = view; _playerAvatarAnimationController = controller;
         _playerAvatarClock = 0;
-        if (controller is Rac1PlayerAnimationPresentationController && Engine.PhysicsTicksPerSecond == SelectedPlayerConfiguration.NativeTicksPerSecond)
+        _playerPhysicsClock = new(_playerAnimationProfile!.NativeTicksPerSecond);
+        if (_playerAnimationProfile.AdapterId == PlayerHostProfiles.Animation && controller is Rac1PlayerAnimationPresentationController)
         {
             _avatarPhysicsPlayer = player;
             player.AnimationPhysicsUpdated += StepPlayerAvatarPhysics;
             player.AnimationPhysicsReset += ResetPlayerAvatarPhysics;
         }
+        else throw new InvalidOperationException("Selected native animation adapter did not produce its admitted physics controller.");
         RefreshRac1WrenchPresentationVisibility();
         HideAuthoredWorldRatchetPresentation();
         GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
@@ -94,30 +91,7 @@ public partial class OBPGame
         if (provider is IPlayerAnimationControllerProvider sourceAware)
             return sourceAware.CreateAnimationController(avatar);
 
-        GD.Print($"[player-avatar] {provider.SourceGame} has no native animation selector; using generic presentation fallback");
-        return new GenericPlayerAnimationPresentationController(avatar);
-    }
-
-    private void TickPlayerAvatar(double delta)
-    {
-        if (_playerAvatarView is null || !GodotObject.IsInstanceValid(_playerAvatarView))
-            return;
-
-        // A bound R&C1 avatar is sampled by movement updates. Render frequency
-        // cannot select a sequence, advance a frame, or change its multiplier.
-        if (_avatarPhysicsPlayer is not null)
-            return;
-
-        _playerAvatarAnimationController?.SetAnimationState(
-            _player?.AnimationState ?? PlayerAnimationState.Idle);
-        _playerAvatarClock += Math.Max(0, delta);
-        if (_playerAvatarAnimationController is not null)
-        {
-            var presentation = _playerAvatarAnimationController.SetClock(_playerAvatarClock);
-            _playerAvatarAnimationSink?.SetAnimationPresentation(presentation);
-        }
-
-        _playerAvatarView.SetClock(_playerAvatarClock);
+        throw new InvalidOperationException($"The selected {provider.SourceGame} provider has no admitted native animation controller.");
     }
 
     private void StepPlayerAvatarPhysics(
@@ -130,12 +104,12 @@ public partial class OBPGame
         StepRac1AdditionalWeapons();
         StepFusionWeapons();
         input = SelectRac1BombThrowAnimation(controller, input);
-        _playerAvatarClock += Math.Max(0, delta);
+        _playerAvatarClock = _playerPhysicsClock!.Step();
         controller.StepOrdinaryAnimation(state, _playerAvatarClock, input);
         bool holdGun = _rac1EquipmentUseTicks > 0 && OBP.RAC1.Gameplay.Rac1WeaponProfiles.IsAdditional(_rac1Weapons.Equipped) &&
             OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence is > 0 and not 44 &&
             IsRac1HandEquipmentVisible(_rac1Weapons.Equipped) && input.Traversal is null &&
-            !_rac1Nanotech.Probe().IsDead;
+            PlayerAlive;
         bool walloper = IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId.Walloper) && _rac1WalloperAge > 0;
         bool moving = input.Active || state is PlayerAnimationState.Walk or PlayerAnimationState.Run or PlayerAnimationState.JumpRise or PlayerAnimationState.Fall;
         int? equipmentPose = walloper ? OBP.RAC1.Gameplay.Rac1ArsenalRules.WalloperSequence :
@@ -144,7 +118,7 @@ public partial class OBPGame
         // Jump/traversal clocks still own the body. Evaluate equipment from
         // that clock too, including the attachment when no arm bank applies.
         bool fusionPose = _fusion is { Selected.SourceGame: not "rac1" } && _fusion.Hand.IsHolding(_fusion.Selected) &&
-            !_rac1Nanotech.Probe().IsDead && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
+            PlayerAlive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
         if (equipmentPose < 0) equipmentPose = null;
         if (fusionPose && _fusionAssets?.AvatarAnimations.TryGetValue(_fusion!.Selected, out var sourceAnimation) == true)
             _playerAvatarAnimationSink?.SetAnimationPresentation(controller.ApplySourceEquipment(sourceAnimation,
@@ -189,6 +163,7 @@ public partial class OBPGame
         ResetRac1WrenchHost();
         _rac1BombThrowActive = false;
         _playerAvatarClock = 0;
+        _playerPhysicsClock?.Reset();
         if (_playerAvatarAnimationController is Rac1PlayerAnimationPresentationController controller)
         {
             controller.ResetPhysicsPresentation();
@@ -230,6 +205,7 @@ public partial class OBPGame
         _rac1StagedBombView = null;
         _rac1EquipmentViews.Clear(); _rac1StagedEquipment.Clear();
         _playerAvatarClock = 0;
+        _playerPhysicsClock = null;
     }
 
     private void HoldSelectedRac1HandItem()

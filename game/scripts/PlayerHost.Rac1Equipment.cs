@@ -22,7 +22,7 @@ public partial class PlayerHost
 
     public void CycleRac1DevelopmentPack()
     {
-        if (!UseRac1Gameplay) return;
+        if (!CanDevelopEquipment) return;
         Rac1DevelopmentPackPreview = Rac1DevelopmentPackPreview switch
         {
             null => 2,
@@ -34,7 +34,7 @@ public partial class PlayerHost
 
     public void ToggleRac1DevelopmentSwingshot()
     {
-        if (!UseRac1Gameplay) return;
+        if (!CanDevelopEquipment) return;
         Rac1DevelopmentSwingshotPreview = !Rac1DevelopmentSwingshotPreview;
         GD.Print($"[player-dev] Swingshot preview {(Rac1DevelopmentSwingshotPreview ? "on" : "off")}");
     }

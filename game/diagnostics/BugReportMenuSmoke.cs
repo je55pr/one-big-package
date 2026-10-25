@@ -107,6 +107,9 @@ public partial class BugReportMenuSmoke : Node
             inbox.SetReports([]);
             Check(replay.Disabled && export.Disabled && Button("DELETE SESSION…").Disabled, "Empty inbox exposes report-only actions.");
             if (_failures.Count > 0) throw new InvalidOperationException(string.Join("\n", _failures));
+            // Included by the existing asset-free CI startup smoke as well as
+            // available through its standalone diagnostic scene.
+            await AutomationDesktopSmoke.VerifyAsync(this);
             GD.Print("[bug-menu-smoke] PASS: mouse, D-pad, activation, focus return, busy/empty states and scrolling");
             GetTree().Quit();
         }

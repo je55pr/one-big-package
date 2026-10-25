@@ -100,7 +100,8 @@ public partial class OBPGame
                 "selected foreign equipment reclaimed the idle hand");
             await FusionFireInputAsync(1); // Circle explicitly draws the selected equipment again.
             Require(_fusionHeldViews[FusionWeaponSession.Lancer].Visible && !_rac1WrenchView.Visible,
-                "Circle did not return hand ownership to selected equipment");
+                $"Circle did not return hand ownership to selected equipment: hand={_fusion.Hand.Equipment}, " +
+                $"wrench={_player!.Rac1WrenchFrame.Active}, hanging={_player.Rac1Hanging}, tether={_player.Rac1SwingshotActive}, alive={PlayerAlive}");
             await SelectFusionByInputAsync(2);
             await PhysicsFramesAsync(30);
             RequireFusionGunAlignment();

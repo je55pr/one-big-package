@@ -56,7 +56,7 @@ public sealed class FusionWeaponSession
     public bool Select(SourceWeaponKey weapon)
     {
         weapon.Validate();
-        if (weapon.SourceGame == "rac1" ? !Rac1Inventory.OwnsNativeItem(weapon.NativeItemId) : weapon != Lancer && weapon != ShockCannon) return false;
+        if (weapon.SourceGame == "rac1" ? !Enum.IsDefined((Rac1WeaponId)weapon.NativeItemId) || !Rac1Inventory.OwnsNativeItem(weapon.NativeItemId) : weapon != Lancer && weapon != ShockCannon) return false;
         if (weapon.SourceGame == "rac1" && weapon.NativeItemId == (int)Rac1WeaponId.Wrench) Hand.HoldWrench();
         else Hand.HoldEquipment(weapon);
         if (Selected == weapon) { SynchronizeHeldWeapon(); return true; }

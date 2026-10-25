@@ -160,8 +160,8 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeapons()
     {
-        if (_movementStateLoading || _world?.Game != "rac1" || _player is null || _rac1AdditionalWeapons is null) return;
-        bool held = !_rac1Nanotech.Probe().IsDead && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
+        if (_movementStateLoading || _rac1PickupAssets is null || _player is null || _rac1AdditionalWeapons is null) return;
+        bool held = PlayerAlive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;
         _rac1ArsenalHeld = held;

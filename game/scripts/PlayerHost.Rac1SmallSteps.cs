@@ -95,8 +95,8 @@ public partial class PlayerHost
             ((Vector3)hit["normal"]).Y < walkableUp)
             return RejectRac1SmallStep("no-walkable-static-top");
 
-        int? material = body.MaterialIdForFace((int)hit["face_index"]);
-        if (material is not (>= byte.MinValue and <= byte.MaxValue) ||
+        int? material = body.MaterialIdForFace((int)hit["face_index"], OBP.RAC1.Rac1Authority.Primary);
+        if (material is >= byte.MinValue and <= byte.MaxValue &&
             Rac1SurfaceActionRouting.Select(Rac1PlayerContactResult.StaticWorld(true, rawFaceType: material)) is not null)
             return RejectRac1SmallStep("special-or-unknown-surface");
 

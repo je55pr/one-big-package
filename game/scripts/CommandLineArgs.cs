@@ -24,6 +24,8 @@ public sealed record CommandLineArgs
     public bool RetailParity { get; init; }
     public bool DiagnosticPlayer { get; init; }
     public bool PlayerSessionSmoke { get; init; }
+    public bool PlayerCapabilitiesSmoke { get; init; }
+    public string? PlayerCapabilitiesOut { get; init; }
     public bool NativeParityRequested => RetailParity || PlaytestRequested || FusionTest || FusionSmoke || DefaultWeaponsSmoke ||
         Rac1CampaignPersistenceRequested || Rac1VeldinPlaySmoke || Rac1MovementContactSmoke || Rac1StartupVisibilitySmoke ||
         Rac1CombatContractSmoke || Rac1WrenchSmoke || Rac1CrateSmoke || Rac1EnemySmoke || Rac1FrogSmoke ||
@@ -221,6 +223,8 @@ public sealed record CommandLineArgs
                 "--retail-parity" => result with { RetailParity = true },
                 "--diagnostic-player" => result with { DiagnosticPlayer = true },
                 "--player-session-smoke" => result with { PlayerSessionSmoke = true },
+                "--player-capabilities-smoke" => result with { PlayerCapabilitiesSmoke = true },
+                "--player-capabilities-out" => result with { PlayerCapabilitiesOut = Next() },
                 "--direct" => result with { DirectLoad = true },
                 "--skip-title" => result with { SkipTitle = true },
                 "--stress-switch" => result with { StressSwitch = Next() },

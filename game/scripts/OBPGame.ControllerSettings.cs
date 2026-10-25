@@ -38,14 +38,14 @@ public partial class OBPGame
         if (PauseMenuOpen)
             return true;
 
-        _prePauseMouseMode = Input.MouseMode;
+        _prePauseMouseMode = ApplicationPointer.MouseMode;
         _prePauseHeldButtons = _player?.MenuHeldButtons ?? 0;
         UiPointerModality.MenuOpened();
 
         _pauseMenu = new PauseMenuUi
         {
             ProcessMode = ProcessModeEnum.Always,
-            RetailEnabled = _player?.UseRac1Gameplay == true && Rac1RetailUiAssets.IsLoaded,
+            RetailEnabled = _player?.HasRetailPresentation == true && Rac1RetailUiAssets.IsLoaded,
             Weapons = Rac1WeaponProfiles.Additional.Select(profile => profile.Item)
                 .Prepend(Rac1WeaponId.FirstRanged)
                 .OrderBy(weapon => (int)weapon)
@@ -73,11 +73,17 @@ public partial class OBPGame
                     return new PauseMenuUi.RetailItem(id, name,
                         _rac1Weapons.OwnsNativeItem(id), false);
                 }).ToArray(),
-            QuickSlots = _rac1Weapons.QuickSelect.Select((id, slot) =>
+            QuickSlots = (_playerNative?.Assignments.Capture().QuickSelect ?? _rac1Weapons.QuickSelect
+                .Select(id => id == 0 ? (OBP.Runtime.Gameplay.SourceWeaponKey?)null : new OBP.Runtime.Gameplay.SourceWeaponKey("rac1", id)).ToArray()).Select((key, slot) =>
             {
+                // The retained native menu only admits native icon/item IDs.
+                // Foreign slots remain real in the OBP read model and wheel;
+                // #259 owns their full pause-menu presentation.
+                int id = key is { SourceGame: "rac1" } native ? native.NativeItemId : 0;
                 Rac1WeaponId weapon = (Rac1WeaponId)id;
                 var icon = Rac1WeaponIconCatalog.Ordinary(weapon);
                 return new PauseMenuUi.RetailItem(id,
+                    key is { SourceGame: not "rac1" } foreign ? $"{FusionWeaponName(foreign)} [{foreign.SourceGame}]" :
                     id == 0 ? $"Slot {slot + 1}: Empty" :
                     Enum.IsDefined(weapon) ? Rac1WeaponProfiles.Name(weapon) : $"Native item {id}",
                     id != 0 && _rac1Weapons.OwnsNativeItem(id),
@@ -97,9 +103,9 @@ public partial class OBPGame
                 .Select(id => new PauseMenuUi.RetailItem(id, $"Native item {id}", true, false))
                 .ToArray(),
             DebugOutputEnabled = _debugOutputEnabled,
-            MovementStatesAvailable = _player?.UseRac1Gameplay == true,
+            MovementStatesAvailable = _player?.CanSaveMovementState == true,
             WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
-            FusionTestAvailable = _world is { Game: "rac1", LevelId: 0 },
+            FusionTestAvailable = CanRunNativeFusionFixture,
             FusionTestEnabled = FusionTestActive,
             EquipmentStatus = _player is { } activePlayer
                 ? FusionTestActive ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
@@ -109,7 +115,7 @@ public partial class OBPGame
         _pauseMenu.EquipRequested += OnRac1WeaponSelectionRequested;
         _pauseMenu.FusionTestRequested += ToggleFusionTest;
         _pauseMenu.QuickSelectAssignRequested = (slot, nativeId) =>
-            _rac1Weapons.TryAssignQuickSelect(slot, nativeId);
+            _playerNative is not null ? AssignPlayerQuickSelect(slot, $"rac1/item/{nativeId}").Accepted : _rac1Weapons.TryAssignQuickSelect(slot, nativeId);
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
         _pauseMenu.DebugOutputChanged += SetDebugOutputEnabled;
@@ -211,7 +217,7 @@ public partial class OBPGame
         }
         else if (!PauseMenuOpen)
         {
-            Input.MouseMode = Input.MouseModeEnum.Visible;
+            ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             if (_sourceManager is not null) { _sourceManager.Visible = true; _sourceManager.RestoreFocus(); }
             if (_destinationSelector is not null) _destinationSelector.Visible = true;
         }

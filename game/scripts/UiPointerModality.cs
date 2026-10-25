@@ -23,14 +23,14 @@ public sealed partial class UiPointerModality : Node
         _controllerLast = true;
         _hiddenForController = true;
         _ignoreMouseUntil = Time.GetTicksMsec() + 260;
-        Input.MouseMode = Input.MouseModeEnum.Hidden;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Hidden;
     }
 
     /// <summary>Restore a gameplay/input mode when the owning menu closes.</summary>
     public static void MenuClosed(Input.MouseModeEnum previous)
     {
         _hiddenForController = false;
-        Input.MouseMode = previous;
+        ApplicationPointer.MouseMode = previous;
     }
 
     public override void _Input(InputEvent @event)
@@ -39,9 +39,9 @@ public sealed partial class UiPointerModality : Node
             @event is InputEventJoypadMotion axis && Math.Abs(axis.AxisValue) >= 0.32f)
         {
             _controllerLast = true;
-            if (Input.MouseMode is Input.MouseModeEnum.Visible or Input.MouseModeEnum.Hidden)
+            if (ApplicationPointer.MouseMode is Input.MouseModeEnum.Visible or Input.MouseModeEnum.Hidden)
             {
-                Input.MouseMode = Input.MouseModeEnum.Hidden;
+                ApplicationPointer.MouseMode = Input.MouseModeEnum.Hidden;
                 _hiddenForController = true;
             }
         }
@@ -50,8 +50,8 @@ public sealed partial class UiPointerModality : Node
                   @event is InputEventMouseButton { Pressed: true }))
         {
             _controllerLast = false;
-            if (_hiddenForController && Input.MouseMode == Input.MouseModeEnum.Hidden)
-                Input.MouseMode = Input.MouseModeEnum.Visible;
+            if (_hiddenForController && ApplicationPointer.MouseMode == Input.MouseModeEnum.Hidden)
+                ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             _hiddenForController = false;
         }
     }

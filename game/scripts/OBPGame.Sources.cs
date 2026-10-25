@@ -192,7 +192,7 @@ public partial class OBPGame
 
         _camera.Current = true;
         _activeCamera = _camera;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _sourceManager?.QueueFree();
         _sourceManager = new SourceManagerUi { DebugOutputEnabled = _debugOutputEnabled };

@@ -53,14 +53,15 @@ public sealed class SourceNeutralHostArchitectureTests
     public void ExistingPlayerCouplingCannotGrowUnderItsMigrationException()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/PlayerHost.Animation.cs");
-        string source = original.GetText().ToString().Replace("bool recoveredSupportForPresentation = UseRac1Gameplay",
-            "bool recoveredSupportForPresentation = UseRac1Gameplay && UseRac1Gameplay", StringComparison.Ordinal);
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1WeaponWorld.cs");
+        string source = original.GetText().ToString().Replace("_world?.Game != \"rac1\"",
+            "(_world?.Game != \"rac1\" || _world?.Game != \"rac1\")", StringComparison.Ordinal);
+        Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("UpdateAnimationState", errors[0]);
-        Assert.Contains("migration owner #268", errors[0]);
+        Assert.Contains("StepRac1AdditionalWeaponWorld", errors[0]);
+        Assert.Contains("migration owner #271", errors[0]);
     }
 
     [Fact]
@@ -79,7 +80,7 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("game/scripts/PlayerHost.Animation.cs", "bool recoveredSupportForPresentation = UseRac1Gameplay")]
+    [InlineData("game/scripts/OBPGame.Rac1WeaponWorld.cs", "_world?.Game != \"rac1\"")]
     [InlineData("game/scripts/OBPGame.Rac1NovalisWater.cs", "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
@@ -94,10 +95,11 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void MigratedPlayerSpawnUsesTheSelectedProfileWithoutWorldOriginReads()
     {
-        var usage = HostOwnershipAudit.Scan(HostOwnershipAudit.Host.Value)
-            .Single(usage => usage.Key.EndsWith("::OBPGame.SpawnPlayer(RuntimeWorld)", StringComparison.Ordinal));
-        Assert.Equal(0, usage.WorldReads);
-        Assert.Equal(1, usage.LegacyReads); // Explicit profile compatibility bridge until #269.
+        var usages = HostOwnershipAudit.Scan(HostOwnershipAudit.Host.Value);
+        Assert.DoesNotContain(usages, usage => usage.Key.EndsWith("::OBPGame.SpawnPlayer(RuntimeWorld)", StringComparison.Ordinal));
+        Assert.DoesNotContain(usages, usage => usage.LegacyReads > 0);
+        foreach (var tree in HostOwnershipAudit.Host.Value.SyntaxTrees.Where(tree => tree.FilePath.StartsWith("game/scripts/", StringComparison.Ordinal)))
+            Assert.DoesNotContain("UseRac1Gameplay", tree.GetText().ToString(), StringComparison.Ordinal);
         var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.PlayerAvatar.cs"));
         Assert.DoesNotContain("Get(destination.Game)", avatar, StringComparison.Ordinal);
         var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.FusionLab.cs"));

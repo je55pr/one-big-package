@@ -38,7 +38,7 @@ public partial class PlayerDevelopmentControls : Node
         }
         else if (key.Keycode == Key.Tab && !GetWindow().Unfocusable)
         {
-            Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
+            ApplicationPointer.MouseMode = ApplicationPointer.MouseMode == Input.MouseModeEnum.Captured
                 ? Input.MouseModeEnum.Visible
                 : Input.MouseModeEnum.Captured;
         }
@@ -66,7 +66,7 @@ public partial class PlayerDevelopmentControls : Node
             _host.ApplyDevelopmentFlyMode(FlyEnabled);
             GD.Print($"[player-dev] fly mode {(FlyEnabled ? "on" : "off")}");
         }
-        else if (key.Keycode == Key.R && !_host.UseRac1Gameplay)
+        else if (key.Keycode == Key.R && !_host.CanSaveMovementState)
         {
             ResetToSpawn();
         }

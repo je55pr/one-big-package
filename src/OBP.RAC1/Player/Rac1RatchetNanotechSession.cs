@@ -111,6 +111,13 @@ public sealed class Rac1RatchetNanotechSession
     /// <summary>Provisional Aridia contact consequence. No retail attack descriptor is claimed.</summary>
     public Rac1RatchetNanotechSnapshot ApplyHostAridiaContactDamage() => ApplyRecoveredEnemyDamage();
 
+    /// <summary>Already-admitted damage in this victim's integer units; source transport/flags are validated by its caller.</summary>
+    public Rac1RatchetNanotechSnapshot ApplyAdmittedDamageUnits(int amount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        return ApplyRecoveredEnemyDamage(amount);
+    }
+
     private Rac1RatchetNanotechSnapshot ApplyRecoveredEnemyDamage(int nanotechDamage = 1)
     {
         if (_lifeState != Rac1RatchetLifeState.Alive)

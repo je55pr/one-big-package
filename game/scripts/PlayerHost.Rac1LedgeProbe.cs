@@ -55,7 +55,7 @@ public partial class PlayerHost : CharacterBody3D
         if (hit.ContainsKey("collider") &&
             hit["collider"].As<Node>() is RuntimeWorldScene.RuntimeCollisionBody3D collisionBody &&
             hit.ContainsKey("face_index") &&
-            collisionBody.MaterialIdForFace((int)hit["face_index"]) is int material &&
+            collisionBody.MaterialIdForFace((int)hit["face_index"], OBP.RAC1.Rac1Authority.Primary) is int material &&
             material is >= byte.MinValue and <= byte.MaxValue)
         {
             return Rac1TraversalRayHit.StaticWorld(nativePosition, nativeNormal, material);

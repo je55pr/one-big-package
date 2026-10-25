@@ -114,19 +114,24 @@ public partial class OBPGame
     private void ConfigureRac1Gameplay(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         ResetRac1LevelGameplay(world.LevelId);
-        if (world.Game != "rac1")
-        {
-            return;
-        }
-
         ConfigureFusionWeapons(world);
         if (_fusion is not null)
         {
             _rac1BombGlove = new(_rac1Weapons);
             ResetRac1AdditionalWeapons();
         }
+        if (!OrdinaryPlayerSession)
+            _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet));
+        ConfigureRac1WorldActors(world, result);
+    }
 
-        _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet));
+    private void ConfigureRac1WorldActors(RuntimeWorld world, RuntimeWorldScene.Result result)
+    {
+        if (world.Game != "rac1")
+        {
+            return;
+        }
+
         ConfigureRac1PickupPresentation(world);
         _rac1CombatStatus = "ready";
         foreach (var source in world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
@@ -228,6 +233,7 @@ public partial class OBPGame
         player.Rac1GameplayState = _rac1Nanotech.Probe();
         player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
+        RefreshPlayerMovementEquipment();
         BindSourcePlayerContacts(player);
     }
 
@@ -244,28 +250,10 @@ public partial class OBPGame
     private void TickRac1Gameplay(double delta)
     {
         if (_movementStateLoading || _world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
-
-        _rac1Nanotech.Actions.Update();
-        _player.Rac1GameplayState = _rac1Nanotech.Probe();
-
-        if (_hudState.Current.Air != Rac1HudProjection.CaptureAir(_player.Rac1SwimState,
-                _player.Rac1MovementEquipment.OxygenMask))
-            RefreshRac1HudState();
-
-        if (_rac1Nanotech.HasPendingRecoveredEnvironmentalRestart &&
-            !TryCompleteRac1EnvironmentalRestart(automatic: true))
+        if (_playerNative is null && !TickParityPlayerLifecycle()) return;
+        if (!PlayerAlive)
         {
-            GD.PrintErr("[rac1-gameplay] automatic environmental restart pending without a valid recovered checkpoint session");
-            return;
-        }
-
-        TickRac1VeldinEnvironmentalDeath();
-        if (_rac1Nanotech.Probe().IsDead)
-        {
-            ClearFusionOnDeath();
             AbortRac1MetropolisTaxiRide();
-            ResetRac1WrenchHost();
-            ShowRac1CombatRetry();
             return;
         }
 
@@ -281,6 +269,24 @@ public partial class OBPGame
         TickRac1Pickups(delta);
         TickRac1GoldBolts();
         TickRac1Missions(delta);
+    }
+
+    private bool TickParityPlayerLifecycle()
+    {
+        _rac1Nanotech.Actions.Update();
+        _player!.Rac1GameplayState = _rac1Nanotech.Probe();
+        if (_rac1Nanotech.HasPendingRecoveredEnvironmentalRestart && !TryCompleteRac1EnvironmentalRestart(automatic: true))
+        {
+            GD.PrintErr("[rac1-gameplay] automatic environmental restart pending without a valid recovered checkpoint session");
+            return false;
+        }
+        TickRac1VeldinEnvironmentalDeath();
+        if (!PlayerAlive)
+        {
+            ClearFusionOnDeath(); ResetRac1WrenchHost(); ShowRac1CombatRetry();
+            return false;
+        }
+        return true;
     }
 
     private string GetRac1GameplayHudLine()

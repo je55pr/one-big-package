@@ -9,7 +9,7 @@ public partial class PlayerHost
     internal double MovementReproControlHeading => GetRac1ControlYaw();
     internal MovementReproPlayer CaptureMovementRepro()
     {
-        if (!UseRac1Gameplay || !Rac1GameplayAllowsOrdinaryMovement || DevelopmentControls.FlyEnabled ||
+        if (!CanSaveMovementState || !Rac1GameplayAllowsOrdinaryMovement || DevelopmentControls.FlyEnabled ||
             (!IsOnFloor() && !Rac1RecoveredSupportGrounded) ||
             Rac1MovementPhase != Rac1RatchetMovementPhase.Grounded || Rac1TraversalAction.HasValue ||
             _rac1WrenchAttack.Active || _liveInput.JumpHeld || _liveInput.CrouchHeld ||

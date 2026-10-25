@@ -17,7 +17,7 @@ public partial class OBPGame
     public bool TryOpenWeaponQuickSelect(InputEvent @event)
     {
         if (QuickSelectOpen) return true;
-        if (_mode != Mode.World || _player is not { UseRac1Gameplay: true, Rac1GameplayAlive: true } player ||
+        if (_mode != Mode.World || _player is not { CanQuickSelect: true, Rac1GameplayAlive: true } player ||
             player.Scripted || player.DevelopmentControls.FlyEnabled || player.Rac1RemoteControlActive || PauseMenuOpen || ControllerSettingsOpen ||
             Rac1PlanetMapOpen || GetTree().Paused) return false;
         if (TryHandleRac1MissionInteraction(@event)) return true;
@@ -42,19 +42,30 @@ public partial class OBPGame
             weapon == Rac1WeaponId.FirstRanged ? "Bomb Glove" : Rac1WeaponProfiles.Get(weapon).Name,
             (int)weapon == 9 ? $"{_rac1AdditionalWeapons?.Cargo.Count ?? 0} captured" :
             Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{_rac1Weapons.GetAmmo((int)weapon)} ammo" : "")).ToArray();
-        if (_fusion is not null)
+        if (_fusion is not null && _playerNative is null)
         {
-            var keys = FusionTestActive ? FusionWeaponSession.Weapons : FusionWeaponSession.DefaultQuickSelect(_rac1Weapons);
+            var keys = PlayerWeaponOrder();
             entries = keys.Select(key => key.SourceGame == "rac1" && !FusionTestActive ? entries.Single(e => e.Weapon == key) :
                 new WeaponQuickSelectUi.Entry(key, FusionWeaponName(key) + $" [{key.SourceGame}]",
                     _fusionAssets?.Available(key) == false ? "Source unavailable" : FusionWeaponDetail(key))).ToArray();
         }
+        if (_playerNative is not null)
+        {
+            var catalog = ReadPlayerEquipment();
+            entries = PlayerQuickSelectOrder().Select(key =>
+            {
+                if (key is null) return new WeaponQuickSelectUi.Entry(null, "Empty", "Unassigned slot");
+                var entry = catalog.Single(entry => entry.Definition.Item == key);
+                return new WeaponQuickSelectUi.Entry(key, entry.Definition.DisplayName + $" [{entry.Definition.SourceGame}]",
+                    entry.Reason ?? (entry.State.Capacity is { } capacity ? $"{entry.State.Ammo}/{capacity}" : ""));
+            }).ToArray();
+        }
         _quickSelect = new WeaponQuickSelectUi { Entries = entries, CurrentWeapon = CurrentWeaponKey };
         _quickSelect.Completed += CloseWeaponQuickSelect;
-        _preQuickSelectMouse = Input.MouseMode;
+        _preQuickSelectMouse = ApplicationPointer.MouseMode;
         _preQuickSelectHeldButtons = player.MenuHeldButtons;
         player.QuickSelectOwnsGameplayInput = true;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
         AddChild(_quickSelect);
         // R&C1 Quick Select is real-time. Do not freeze the world while it is held.
         return true;
@@ -72,6 +83,6 @@ public partial class OBPGame
             player.SuppressButtonsUntilRelease(_preQuickSelectHeldButtons);
         }
         if (weapon is { } selected && selected != CurrentWeaponKey) SelectWeaponKey(selected);
-        Input.MouseMode = _preQuickSelectMouse;
+        ApplicationPointer.MouseMode = _preQuickSelectMouse;
     }
 }

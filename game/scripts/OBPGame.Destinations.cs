@@ -49,7 +49,7 @@ public partial class OBPGame
         }
 
         _genericNavigationActive = _args.CaptureFrame is null;
-        if ((_args.PlaytestRequested || _args.FusionSmoke || _args.PlayerSessionSmoke) && _fusionPreparation is not null)
+        if ((_args.PlaytestRequested || _args.FusionSmoke || _args.PlayerSessionSmoke || _args.PlayerCapabilitiesSmoke) && _fusionPreparation is not null)
         {
             _ = EnterWorldAfterSharedPreparationAsync(destination);
             return;
@@ -155,9 +155,9 @@ public partial class OBPGame
             player.ProcessMode = Node.ProcessModeEnum.Disabled;
         }
 
-        _rac1PlanetMapPreviousMouseMode = Input.MouseMode;
+        _rac1PlanetMapPreviousMouseMode = ApplicationPointer.MouseMode;
         _preMapHeldButtons = _player?.MenuHeldButtons ?? 0;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _rac1PlanetTravelUi = new Rac1PlanetTravelUi { ProcessMode = ProcessModeEnum.Always };
         _rac1PlanetTravelUi.TravelRequested += OnRac1PlanetTravelRequested;
@@ -190,7 +190,7 @@ public partial class OBPGame
 
         _rac1PlanetMapPausedPlayer = null;
         _rac1PlanetMapPreviousPlayerMode = null;
-        Input.MouseMode = _rac1PlanetMapPreviousMouseMode;
+        ApplicationPointer.MouseMode = _rac1PlanetMapPreviousMouseMode;
         _player?.SuppressButtonsUntilRelease(_preMapHeldButtons);
         return true;
     }
@@ -230,7 +230,7 @@ public partial class OBPGame
 
         _camera.Current = true;
         _activeCamera = _camera;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _destinationSelector?.QueueFree();
         _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled };

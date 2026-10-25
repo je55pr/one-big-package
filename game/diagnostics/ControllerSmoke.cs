@@ -79,9 +79,29 @@ public partial class ControllerSmoke : Node
                 var beforeStick = Focus(); await Axis(JoyAxis.LeftY, 1); await Axis(JoyAxis.LeftY, 0);
                 Require(Focus() != beforeStick, "Left stick does not navigate worlds");
                 var visited = new HashSet<Control>();
-                await Button(JoyButton.DpadDown, true);
-                for (int i = 0; i < 100; i++) { if (Focus() is { } control) visited.Add(control); await Frames(1); }
-                await Button(JoyButton.DpadDown, false);
+                // Fixed-FPS headless runs do not wait for wall-clock time.
+                // Drive the existing gesture clock for this repeat fixture so
+                // it needs neither a focused window nor rendering delays.
+                bool previousClockActive = PlaytestClock.Active;
+                ulong previousClockTime = PlaytestClock.RecordedMilliseconds;
+                PlaytestClock.RecordedMilliseconds = PlaytestClock.Milliseconds;
+                PlaytestClock.Active = true;
+                try
+                {
+                    await Button(JoyButton.DpadDown, true);
+                    for (int i = 0; i < 100; i++)
+                    {
+                        if (Focus() is { } control) visited.Add(control);
+                        PlaytestClock.RecordedMilliseconds += 17;
+                        await Frames(1);
+                    }
+                    await Button(JoyButton.DpadDown, false);
+                }
+                finally
+                {
+                    PlaytestClock.Active = previousClockActive;
+                    PlaytestClock.RecordedMilliseconds = previousClockTime;
+                }
                 Require(visited.Count >= 4, "Holding a menu direction has no controlled repeat");
                 for (int i = 0; i < 18; i++) await Press(JoyButton.DpadDown);
                 var scroll = Descendants(selector!).OfType<ScrollContainer>().Single();
@@ -194,31 +214,37 @@ public partial class ControllerSmoke : Node
     {
         _game.ProcessMode = ProcessModeEnum.Disabled;
         // Independent input boundary: no gameplay queries or invented source state.
-        var input = new RawGamepadInput(); input.Read(true);
+        using var input = new RawGamepadInput(); input.Attach(); input.Read(PlayerHostProfiles.Native.Input);
         await Button(JoyButton.A, true);
-        Require(input.Read(true).JumpHeld, "Cross is not Jump");
+        Require(input.Read(PlayerHostProfiles.Native.Input).JumpHeld, "Cross is not Jump");
+        input.ConnectionChanged(0, false);
+        input.ConnectionChanged(0, true);
+        Require(!input.Read(PlayerHostProfiles.Native.Input).JumpHeld, "Controller reconnect leaked a held Cross");
+        await Button(JoyButton.A, false); input.Read(PlayerHostProfiles.Native.Input);
+        await Button(JoyButton.A, true);
+        Require(input.Read(PlayerHostProfiles.Native.Input).JumpHeld, "Cross did not recover after reconnect/release");
         input.SuppressButtonsUntilRelease();
-        Require(!input.Read(true).JumpHeld, "Menu dismissal leaked a held Cross into a jump");
-        await Button(JoyButton.A, false); input.Read(true);
+        Require(!input.Read(PlayerHostProfiles.Native.Input).JumpHeld, "Menu dismissal leaked a held Cross into a jump");
+        await Button(JoyButton.A, false); input.Read(PlayerHostProfiles.Native.Input);
         await Button(JoyButton.RightShoulder, true);
         int preserved = input.HeldButtons;
         await Button(JoyButton.B, true); input.SuppressButtonsUntilRelease(preserved);
-        Require(input.Read(true).CrouchHeld && !input.Read(true).TraversalHeld, "Menu masks lost an existing crouch or leaked Circle");
+        Require(input.Read(PlayerHostProfiles.Native.Input).CrouchHeld && !input.Read(PlayerHostProfiles.Native.Input).TraversalHeld, "Menu masks lost an existing crouch or leaked Circle");
         await Button(JoyButton.A, true);
-        Require(input.Read(true).JumpHeld, "A held menu-dismissal button suppressed an unrelated new jump");
-        await Button(JoyButton.A, false); await Button(JoyButton.B, false); await Button(JoyButton.RightShoulder, false); input.Read(true);
+        Require(input.Read(PlayerHostProfiles.Native.Input).JumpHeld, "A held menu-dismissal button suppressed an unrelated new jump");
+        await Button(JoyButton.A, false); await Button(JoyButton.B, false); await Button(JoyButton.RightShoulder, false); input.Read(PlayerHostProfiles.Native.Input);
         await Button(JoyButton.X, true);
-        Require(input.Read(true).ActionHeld, "Square is not Wrench");
+        Require(input.Read(PlayerHostProfiles.Native.Input).ActionHeld, "Square is not Wrench");
         await Button(JoyButton.X, false); await Button(JoyButton.B, true);
-        Require(input.Read(true).TraversalHeld, "Circle is not equipped item");
+        Require(input.Read(PlayerHostProfiles.Native.Input).TraversalHeld, "Circle is not equipped item");
         await Button(JoyButton.B, false); await Button(JoyButton.RightShoulder, true);
-        Require(input.Read(true).CrouchHeld, "R1 is not Crouch");
+        Require(input.Read(PlayerHostProfiles.Native.Input).CrouchHeld, "R1 is not Crouch");
         await Button(JoyButton.RightShoulder, false); await Axis(JoyAxis.TriggerRight, 1);
-        Require(input.Read(true).CrouchHeld && !input.Read(false).CrouchHeld, "R2 crouch alias is not restricted to R&C1");
+        Require(input.Read(PlayerHostProfiles.Native.Input).CrouchHeld && !input.Read(PlayerHostProfiles.Diagnostic.Input).CrouchHeld, "R2 crouch alias is not restricted to R&C1");
         await Axis(JoyAxis.TriggerRight, 0); await Button(JoyButton.DpadRight, true);
-        Require(input.Read(true).Move.X == 1, "D-pad is not movement outside a menu");
+        Require(input.Read(PlayerHostProfiles.Native.Input).Move.X == 1, "D-pad is not movement outside a menu");
         await Button(JoyButton.DpadRight, false); await Axis(JoyAxis.LeftX, .05f);
-        Require(Math.Abs(input.Read(true).Move.X - .05f) < .00001f, "UI deadzone contaminated raw gameplay axes");
+        Require(Math.Abs(input.Read(PlayerHostProfiles.Native.Input).Move.X - .05f) < .00001f, "UI deadzone contaminated raw gameplay axes");
         await Axis(JoyAxis.LeftX, 0);
         _game.ProcessMode = ProcessModeEnum.Pausable;
         GD.Print("[controller-smoke] gameplay face/shoulder bindings, D-pad movement and raw analogue range PASS");
@@ -244,8 +270,10 @@ public partial class ControllerSmoke : Node
         await EnterRetailPageAsync(Rac1RetailMenuPage.Weapons, "Weapons");
         var weaponCards = Descendants(Find<PauseMenuUi>()!).OfType<Button>()
             .Where(button => button.Name.ToString().StartsWith("RetailItem_", StringComparison.Ordinal)).ToArray();
-        Require(weaponCards.Length == 15 && weaponCards.OfType<Rac1RetailEquipmentCell>().Any(cell => !cell.Owned),
-            "Retail weapons page did not render equipped/unowned source entries");
+        int ownedWeapons = _game.ReadPlayerEquipment().Count(entry => entry.Definition.Category == OBP.Runtime.Gameplay.EquipmentCategory.Weapon &&
+            entry.Definition.Item is { SourceGame: "rac1", NativeItemId: not 8 } && entry.State.Owned);
+        Require(weaponCards.Length == 15 && weaponCards.OfType<Rac1RetailEquipmentCell>().Count(cell => cell.Owned) == ownedWeapons,
+            "Weapons page ownership disagrees with the explicitly selected player loadout policy");
         await KeyPress(Key.Escape); await Frames(20);
         Require(Find<PauseMenuUi>()?.RetailPage == Rac1RetailMenuPage.Root, "Keyboard Escape failed to return to retail root");
         await EnterRetailPageAsync(Rac1RetailMenuPage.Gadgets, "Gadgets");
@@ -507,7 +535,9 @@ public partial class OBPGame
         OnRac1WeaponCycleRequested(1);
         Require(_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged, "weapon cycle did not leave the legacy wrench selection");
         OnRac1WeaponCycleRequested(-1);
-        Require(_rac1Weapons.Equipped == Rac1WeaponId.FirstRanged, "weapon cycle exposed the wrench as Circle equipment");
+        Require(CurrentWeaponKey == PlayerWeaponOrder()[^1] && CurrentWeaponKey != PlayerEquipmentRegistrations.Wrench,
+            "weapon cycle did not follow the development loadout or exposed the wrench as Circle equipment");
+        OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged);
         GD.Print("[controller-smoke] wrench on entry, Circle tap draws, second press fires, continuous switch hold fires after delay, last-used item PASS");
 
         async Task TapAsync(JoyButton button)

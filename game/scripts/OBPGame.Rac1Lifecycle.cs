@@ -33,14 +33,14 @@ public partial class OBPGame
         var retry = new Button { Text = "Retry level" };
         retry.Pressed += () =>
         {
-            Input.MouseMode = GetWindow().Unfocusable ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
+            ApplicationPointer.MouseMode = GetWindow().Unfocusable ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
             OnDestinationChosen(destination);
         };
         rows.AddChild(retry); panel.AddChild(rows);
         _ui.AddChild(panel);
         panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center);
         retry.GrabFocus();
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
         _rac1CombatRetry = panel;
     }
 

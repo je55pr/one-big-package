@@ -160,7 +160,6 @@ public partial class OBPGame : Node3D
             if (_playtest is { WaitingForEntry: true }) return;
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
-            TickPlayerAvatar(delta);
             TickFusionLabTraversalSmoke();
             TickGcGameplay(delta);
             TickRac1Gameplay(delta);
@@ -402,6 +401,7 @@ public partial class OBPGame : Node3D
     {
         FlushRac1CampaignSaves("world teardown");
         _worldEntries?.Unload();
+        _playerNative?.Life.EndWorld(); _playerDamageActors.Clear();
         ClearFusionLabStatus();
         CloseWeaponQuickSelect();
         TearDownInteractiveOverlays();
@@ -410,6 +410,10 @@ public partial class OBPGame : Node3D
         ResetRac1LevelGameplay();
         if (!OrdinaryPlayerSession) _hudState.ResetSession();
         _playerHud?.Render(_hudState.Current);
+        if (_player is not null) _player.PlayerServicesPhysicsUpdated -= StepPlayerServicesPhysics;
+        // Retire the old collision object before a same-frame replacement can
+        // snap its ground ray onto that queued-for-deletion player's capsule.
+        if (_player?.GetParent() is { } parent) parent.RemoveChild(_player);
         _player?.QueueFree();
         _player = null;
 
@@ -629,7 +633,7 @@ public partial class OBPGame : Node3D
             Name = "PlayerHost",
             Scripted = scripted,
             ScriptedStill = _args.CrateFocus && !_args.CrateAutoStrike,
-            UseRac1Gameplay = _playerSession is not null && SelectedPlayerConfiguration.Movement.SourceGame == OBP.Core.ObpSourceGame.Rac1,
+            ControlProfile = _playerControlProfile ?? PlayerHostProfiles.Diagnostic,
             // Source/authored placement clearance was staged with the world.
             InitialGroundSnapUpwardReach = _worldEntrySnapReach,
             // OBP deliberately reuses the retail-derived R&C1 controller in
@@ -644,6 +648,8 @@ public partial class OBPGame : Node3D
         _camera.Current = false;
         _activeCamera = player.Camera;
         _player = player;
+        player.PlayerServicesPhysicsUpdated += StepPlayerServicesPhysics;
+        if (_playerNative is not null) player.PlayerHealth = _playerNative.Life.Capture();
         player.DevelopmentControls.SaveMovementStateRequested += SaveMovementState;
         player.DevelopmentControls.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
         AttachPlayerAvatarVisual(player);

@@ -32,13 +32,13 @@ public partial class PlayerHost : CharacterBody3D
         var p = GlobalPosition;
         float speed = new Vector2(Velocity.X, Velocity.Z).Length();
         string diagnostics = DevelopmentControls.DiagnosticsVisible ? BuildInputDiagnostics() : string.Empty;
-        string developmentControls = DevelopmentControls.ControlSummary(UseRac1Gameplay);
+        string developmentControls = DevelopmentControls.ControlSummary(CanDevelopEquipment);
         _hud.Text =
             $"pos {p.X:0.0} {p.Y:0.0} {p.Z:0.0}    speed {speed:0.0} u/s    {(DevelopmentControls.FlyEnabled ? "FLY" : onFloor ? "ground" : "air")}" +
             $"    anim {AnimationState}\n" +
             $"controller {MovementControllerLabel}    locomotion {_rac1Movement.LocomotionState}    yaw {_rac1Movement.YawMode}\n" +
             $"last jump: {_lastJump}\n" +
-            (UseRac1Gameplay ? $"{Rac1EquipmentLabel} · previews in Pause → Testing Equipment (F10 / F11)\n" : "") +
+            (CanDevelopEquipment ? $"{Rac1EquipmentLabel} · previews in Pause → Testing Equipment (F10 / F11)\n" : "") +
             (Rac1DevelopmentSwingshotPreview ? $"Swingshot preview: hold Circle / E toward a target ({Rac1SwingshotTargetIndex?.ToString() ?? "none"})\n" : "") +
             diagnostics +
             $"Left stick / D-pad move · Cross jump · R1 crouch · Square wrench · Circle equipped item · Triangle quick select · Start pause\n" +

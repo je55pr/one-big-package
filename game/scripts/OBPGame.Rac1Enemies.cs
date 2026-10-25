@@ -295,7 +295,7 @@ public partial class OBPGame
         {
             _rac1EnemyTicks--;
             _rac1AridiaNativeFrameCounter++;
-            _rac1Nanotech.UpdateNative();
+            if (_playerNative is null) _rac1Nanotech.UpdateNative();
             TickRac1AmoeboidGates();
             TickRac1FrogShuttleSwitch();
             TickRac1FrogWaves();
@@ -583,9 +583,24 @@ public partial class OBPGame
 
     private void ApplyRac1EnemyPlayerDamage(Rac1GameplayDamageEvent damage)
     {
-        if (_rac1Nanotech.Probe().IsDead) return;
+        if (!PlayerAlive) return;
         var before = _rac1Nanotech.Probe();
         _rac1DamageTransport.Publish(damage);
+        if (_playerNative is not null)
+        {
+            // Validate the recovered descriptor in its source module before
+            // translating its admitted integer amount to the selected victim.
+            _ = new Rac1RatchetNanotechSession().ApplyDamage(damage);
+            var attacker = (_sceneResult?.DynamicObjectNodes ?? []).Concat(Rac1EnemyNodes).Concat(_rac1CrateNodes).Concat(_rac1HostileNodes.Values)
+                .FirstOrDefault(node => node.Source.SourceGame == "rac1" &&
+                node.Source.NativeClassId == damage.Source.NativeClassId && node.Source.InstanceIndex == damage.Source.RuntimeId);
+            if (attacker is null) { GD.PushWarning("Player damage source has no registered native actor."); return; }
+            var intake = ApplyPlayerSourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
+                PlayerSessionNativeState.Rac1DamageAdapter, PlayerSessionNativeState.Rac1DamageDescriptor,
+                _rac1AridiaNativeFrameCounter, checked((int)damage.NativeDamage), damage.NativeDamageFlags ?? 0);
+            if (intake.Applied) NotifyRac1PlayerDamageAudio(before, _rac1Nanotech.Probe());
+            return;
+        }
         var after = _rac1Nanotech.ApplyDamage(damage);
         _player!.Rac1GameplayState = after;
         if (after.Nanotech == before.Nanotech) return;

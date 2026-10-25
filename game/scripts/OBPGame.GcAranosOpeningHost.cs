@@ -163,7 +163,7 @@ public partial class OBPGame
 
     private void TickGcOpeningMsr1NativeTick()
     {
-        if (_player is null || !IsInstanceValid(_player))
+        if (_player is null || !IsInstanceValid(_player) || !PlayerAlive)
         {
             return;
         }
@@ -315,6 +315,15 @@ public partial class OBPGame
                                 var damage = session.AttackCycle.TryAggregatePlayerContact(probe.Contacts);
                                 if (damage is { } admittedDamage)
                                 {
+                                    if (_playerNative is not null)
+                                    {
+                                        var admitted = new GcRatchetNanotechSession().Apply(admittedDamage);
+                                        if (admitted.Admitted)
+                                            playerDamageCommitted = ApplyPlayerSourceDamage(session.Node, OBP.RAC2.Rac2Authority.Primary.BuildId,
+                                                PlayerSessionNativeState.GcDamageAdapter, PlayerSessionNativeState.GcDamageDescriptor,
+                                                session.AttackCount, admitted.DamageNanotech, admittedDamage.QueryMask).Applied;
+                                        break;
+                                    }
                                     var result = _gcRatchetNanotech.Apply(admittedDamage);
                                     if (result.Admitted)
                                     {
@@ -343,7 +352,7 @@ public partial class OBPGame
                         session.PhaseTicks++;
                         if (session.PhaseTicks >= GcClass2827AttackCycleSession.ObservedRecoveryDurationTicks)
                         {
-                            if (_gcRatchetNanotech.PendingHitResolution)
+                            if (_playerNative is null && _gcRatchetNanotech.PendingHitResolution)
                             {
                                 _gcRatchetNanotech.ResolveHitReaction();
                             }

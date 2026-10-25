@@ -157,12 +157,108 @@ The Lab keeps `obp:fusion-lab` and no native `_activeDestination`. Authored star
 R&C1 checkpoints/travel and source environment/actor hooks stay narrow adapters.
 An unexpected failure during destructive activation cleans partial scene resources
 and returns to selection with the session retained; it does not promise scene
-rollback after activation begins. #268/#269 still own complete avatar/profile
-admission and decomposition of the remaining legacy player bridge; #256 owns
-mixed actor registration/combat. This foundation does not make every weapon,
-effect, health conversion or UI policy work in every world.
+rollback after activation begins. The selected profiles and service registrations
+below complete the #268/#269 bridge; #256 still owns mixed actor registration.
+This does not make every weapon effect, source attack or UI policy available.
+
+## Selected controls, animation, health and equipment
+
+`PlayerProfileRegistry` admits a `PlayerControlProfile`, a measured avatar/animation
+pair, the fixed native clock and a registered service composition before unloading
+the current world. The genuine R&C1 Ratchet is the ordinary default in all four
+destinations. Missing profiles, incompatible poses, unavailable sources and clock
+mismatches fail visibly; no ordinary capsule or generic animation fallback is
+allowed. The explicit diagnostic capsule has its own registration.
+
+Movement, contact, traversal and camera adapter IDs are independent from action
+and interface capabilities. `UseRac1Gameplay` has been removed from production.
+The registered R&C1 collision envelope and native movement/camera laws are reused
+by deliberate OBP choice, not attributed to GC/UYA. Imported collision material
+bytes carry their own source/build identity. Foreign or unclassified bytes remain
+physical geometry without being decoded as R&C1 water, ice or ledge flags.
+Input uses one normalized boundary, including menu masks and controller reconnect
+suppression. Player physics owns animation and health updates; rendering cannot
+advance the selected 60Hz clock. Re-entry retires subscriptions and the old
+collision object before the replacement player's placement ray runs.
+
+`PlayerSessionNativeState.Life` is the persistent `PlayerHealthSession`; its victim
+port wraps the existing R&C1 nanotech controller, not a second health counter.
+Policy `obp/rac1-derived-health/v1` deliberately chooses four capacity/respawn units,
+the recovered 77-native-tick protection, integer 1:1 admitted damage conversion and
+fresh life at the current world's entry while retaining wallet, ammo and loadout.
+Capacity/progression upgrades and a final economy remain future OBP choices.
+The named native parity path retains original R&C1/GC sessions and checkpoint rules.
+
+Incoming source adapters validate their native descriptors before submitting an
+attack qualified by `ActorInstanceKey`, build, adapter, descriptor and sequence.
+The shared victim rejects wrong builds, stale leases, unknown/dead actors, invalid
+amounts, unsupported conversions and duplicate sequences. Actor life comes from
+the native controller, not model visibility. Existing R&C1 descriptors and the
+bounded GC Aranos MSR I attack are admitted; unrecovered UYA attacks are not invented.
+Native R&C1 pickups credit the same persistent wallet/health. GC's source owner
+admits each collected physical class-500 bolt once, then an explicit 1:1 OBP
+conversion credits the shared wallet once per source-qualified pickup receipt.
+Native deferred values stay in their source session. Campaign saves are separate.
+The common HUD projects health/life, currency, selected weapon/ammo, and admitted
+water/context facts everywhere; absent source context intentionally has no meter.
+
+`PlayerEquipmentRegistrations.Catalog` exposes neutral `EquipmentCatalogEntry`
+records. These include stable source/build identity, category/name, ownership,
+implementation, model/icon readiness, selection/actual hand, ammo and a specific
+source/build/model/context failure reason. Existing `SourceWeaponKey` and
+`PlayerAvatarIdentity` remain the item and appearance identities. It registers the
+16 implemented R&C1 weapons including the wrench, GC Lancer, UYA Shock Cannon,
+five supported R&C1 movement gadgets, and the genuine R&C1 avatar. GC/UYA avatars
+and R&C1 boots remain explicitly unimplemented. Metal Detector's bounded source
+digging prototype is listed as unsupported until its genuine handheld/common-action
+adapter exists; the old native diagnostic shortcut is not advertised as that port.
+Gadget model status `NotRequired`
+describes the recovered movement capability, not a reconstructed backpack mesh.
+
+The ordinary `DevelopmentAvailable` policy grants implemented, attached-source
+items only to the independent player inventory, once; re-entry does not refill
+ammo. Explicit `RetailCampaign` policy retains native ownership restrictions.
+`PlayerEquipmentAssignments` owns eight source-qualified Quick Select slots and
+enabled gadgets; one backpack conflict group prevents simultaneous packs. These
+assignments are captured with version 2 of the native player component (the neutral
+session envelope remains version 1). Source loss retains
+the desired weapon/slots, falls back to the wrench and exposes the reason. Restoring
+the source allows the existing action/equip pipeline to draw the desired item.
+The deterministic configuration hash includes registrations, source builds,
+loadout policy, appearance, desired weapon, slots and enabled gadgets, without paths
+or retail payloads; it is an admission identity, not the final replay/save format.
+
+The future #259 UI consumes `ReadPlayerEquipment`, `SelectPlayerEquipment`,
+`AssignPlayerQuickSelect`, `SetPlayerGadgetEnabled` and
+`PlayerEquipmentConfigurationIdentity`. The existing Quick Select consumes this
+read model now; overflow pages follow the eight assigned slots. This ticket does
+not rebuild pause-menu visuals. Native weapon effect/contact adapters still owned
+by #271 report `ContextBlocked` where unavailable; #272 retains audio migration.
+
+`tools/player-capabilities-smoke.ps1 -Rendered` compares 240-tick scripted movement,
+camera, sequences, pose hashes, hand attachments and native elapsed time in
+Veldin, Oozla, UYA Veldin and Fusion Lab, then re-enters Veldin. Its explicit common
+contact deck removes legitimate geometry differences from that comparison. Two
+fresh processes at 30/120 rendering FPS must produce identical payload-free traces.
+It also exercises menu masks, wrench ownership, catalog/source recovery, a live
+source-generated GC attack, shared HUD/death/respawn and continuous resources.
+The existing source-native parity/replay fixtures remain separate authority gates.
 
 ## CI guard and retained parity flow
+
+Automated launches use the desktop isolation in `AutomationRunPolicy` and
+`ApplicationPointer`, independently of gameplay/parity selection. Every
+`--*-smoke` flag (including future flags), diagnostic smoke scene, headless run,
+batch capture and replay stays unfocusable and cannot capture, confine or hide
+the real desktop cursor. Other batch entrypoints can opt in with `--automation`.
+`WindowPlacement` skips personal placement reads/restores/writes in these runs.
+Gameplay and UI use `ApplicationPointer.MouseMode`; automation retains the
+logical mode for synthetic input while the actual desktop mode stays visible.
+Direct desktop-mode writes outside that boundary fail the focused architecture
+test. The asset-free `AutomationDesktopSmoke` exercises capture/confinement and
+menu restoration headlessly through the existing CI startup smoke. Ordinary
+play, human input recording and explicit interactive marker inspection keep
+their normal mouse controls.
 
 `SourceNeutralHostArchitectureTests` binds C# symbols with Roslyn: it follows
 aliases, conditional access and property patterns for `RuntimeWorld.Game` and

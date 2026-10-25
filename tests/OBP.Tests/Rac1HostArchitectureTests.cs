@@ -25,7 +25,7 @@ public sealed class Rac1HostArchitectureTests
         Assert.DoesNotContain("Rac1RespawnRequested", gameplay, StringComparison.Ordinal);
         Assert.DoesNotContain("Key.R", player, StringComparison.Ordinal);
         Assert.Contains(
-            "key.Keycode == Key.R && !_host.UseRac1Gameplay",
+            "key.Keycode == Key.R && !_host.CanSaveMovementState",
             developmentControls,
             StringComparison.Ordinal);
         Assert.Contains(

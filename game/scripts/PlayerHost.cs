@@ -35,6 +35,7 @@ public partial class PlayerHost : CharacterBody3D
     private static double DevelopmentElapsed(long start, long end) => start == 0 ? 0 :
         System.Diagnostics.Stopwatch.GetElapsedTime(start, end).TotalMilliseconds;
     internal event Action? DevelopmentPhysicsCompleted;
+    internal event Action? PlayerServicesPhysicsUpdated;
     internal Func<RawPlayerInputFrame, RawPlayerInputFrame>? PlaytestInputFilter { get; set; }
     // Optional deterministic fixture input. Never used for ordinary interactive play.
     internal Func<double, (Vector2 Move, bool Jump)>? ScriptedInputProvider { get; set; }
@@ -64,13 +65,6 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Keep scripted captures stationary after ground placement.</summary>
     public bool ScriptedStill { get; set; }
-
-    /// <summary>
-    /// Enable R&amp;C1-specific gameplay hooks such as native weapon selection and
-    /// the recovered Veldin respawn session. Movement is retail-derived in every
-    /// supported trilogy world regardless of this flag.
-    /// </summary>
-    public bool UseRac1Gameplay { get; set; }
 
     /// <summary>Deterministic label exposed in capture telemetry.</summary>
     public string MovementControllerLabel => "rac1-retail-derived-common-base";
@@ -136,7 +130,7 @@ public partial class PlayerHost : CharacterBody3D
     /// </summary>
     public void NotifyRac1WrenchAttackAccepted()
     {
-        if (!UseRac1Gameplay || !Rac1GameplayAlive)
+        if (!CanWrenchAttack || !Rac1GameplayAlive)
             return;
 
         _rac1WrenchPressed = true;
@@ -185,9 +179,10 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Current engine-independent R&C1 player gameplay snapshot.</summary>
     public Rac1RatchetNanotechSnapshot? Rac1GameplayState { get; set; }
+    public PlayerHealthSnapshot? PlayerHealth { get; set; }
 
     /// <summary>Compatibility diagnostic derived from the gameplay snapshot, never host-owned state.</summary>
-    public bool Rac1GameplayAlive => Rac1GameplayState is null || !Rac1GameplayState.IsDead;
+    public bool Rac1GameplayAlive => PlayerHealth?.Alive ?? (Rac1GameplayState is null || !Rac1GameplayState.IsDead);
 
     public int Rac1AudioSurfaceEffectMode { get; private set; }
     public int Rac1AudioPackId => ActiveRac1Pack;
@@ -196,7 +191,7 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>Whether the recovered player lifecycle admits ordinary CharacterBody movement.</summary>
     public bool Rac1GameplayAllowsOrdinaryMovement =>
-        Rac1GameplayState is null || Rac1GameplayState.AllowsOrdinaryCharacterMovement;
+        Rac1GameplayAlive && (Rac1GameplayState is null || Rac1GameplayState.AllowsOrdinaryCharacterMovement);
 
     /// <summary>Unconditioned right-stick intent feeding the recovered type-0 producer or debug fallback.</summary>
     public Vector2 RawCameraIntent => _liveInput.CameraIntent;
@@ -215,7 +210,7 @@ public partial class PlayerHost : CharacterBody3D
 
     /// <summary>True when a recovered RAC1 camera snapshot is actively driving Godot.</summary>
     public bool HasActiveRecoveredCamera =>
-        UseRac1Gameplay &&
+        HasNativeCamera &&
         !(DevelopmentControls?.FlyEnabled ?? false) &&
         !(DevelopmentControls?.ForceHostCamera ?? false) &&
         _rac1RuntimeCameraState is not null;
@@ -273,11 +268,13 @@ public partial class PlayerHost : CharacterBody3D
 
     public override void _Ready()
     {
-        float radius = UseRac1Gameplay ? Rac1CollisionProfile.OrdinaryHorizontalRadius : 0.6f;
+        _rawInput.Attach();
+        ControlProfile.Validate();
+        float radius = ControlProfile.Collider.Radius;
         // OBP's foot-aligned capsule encloses the recovered ordinary upper
         // contact height plus radius. Retail uses separate radial/axial and
         // support queries; this adapter is not its complete collision solver.
-        float height = UseRac1Gameplay ? Rac1CollisionProfile.OrdinaryUpperContactHeight + radius : 2.6f;
+        float height = ControlProfile.Collider.Height;
 
         DevelopmentControls = new PlayerDevelopmentControls { Name = "DevelopmentControls" };
         AddChild(DevelopmentControls);
@@ -316,13 +313,11 @@ public partial class PlayerHost : CharacterBody3D
 
         // RAC1 supplies its own recovered 54/3600 downward contact request.
         // Do not stack Godot's arbitrary floor-snap distance on top of it.
-        FloorSnapLength = UseRac1Gameplay ? 0f : 1.5f;
+        FloorSnapLength = ControlProfile.Collider.FloorSnap;
         // R&C1 now constructs the recovered directional-slope tangent itself;
         // do not ask Godot to invent a second constant-speed slope projection.
         FloorConstantSpeed = false;
-        FloorMaxAngle = UseRac1Gameplay
-            ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportMaxAngleRadians
-            : Mathf.DegToRad(60f);
+        FloorMaxAngle = ControlProfile.Collider.MaximumFloorAngle;
         // R&C1 retail neutral release reaches exact zero displacement on an
         // admitted non-flat Veldin face. This Godot flag is the host mechanism
         // for that witnessed no-drift behavior, not a claimed native boolean.
@@ -332,15 +327,15 @@ public partial class PlayerHost : CharacterBody3D
         // not the native collision algorithm, but using the recovered ordinary
         // support contact-correction tolerance removes the old arbitrary 0.1u
         // RAC1 skin while preserving the sequel/debug-host boundary.
-        SafeMargin = UseRac1Gameplay
-            ? (float)Rac1OrdinaryGroundContactMotion.OrdinarySupportContactMetricLimit
-            : 0.1f;
+        SafeMargin = ControlProfile.Collider.SafeMargin;
 
         if (!Scripted && !GetWindow().Unfocusable)
         {
-            Input.MouseMode = Input.MouseModeEnum.Captured;
+            ApplicationPointer.MouseMode = Input.MouseModeEnum.Captured;
         }
     }
+
+    public override void _ExitTree() => _rawInput.Dispose();
 
     public override void _UnhandledInput(InputEvent @event)
     {
@@ -361,7 +356,7 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         if (@event is InputEventMouseMotion motion &&
-            Input.MouseMode == Input.MouseModeEnum.Captured &&
+            ApplicationPointer.MouseMode == Input.MouseModeEnum.Captured &&
             !HasActiveRecoveredCamera)
         {
             _yaw.RotateY(-motion.Relative.X * MouseSensitivity);
@@ -372,15 +367,15 @@ public partial class PlayerHost : CharacterBody3D
         }
         else if (@event is InputEventKey { Pressed: true, Echo: false } key)
         {
-            if (UseRac1Gameplay && key.Keycode == Key.Key1)
+            if (CanUseEquipment && key.Keycode == Key.Key1)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.Wrench);
             }
-            else if (UseRac1Gameplay && key.Keycode == Key.Key2)
+            else if (CanUseEquipment && key.Keycode == Key.Key2)
             {
                 Rac1WeaponSelectionRequested?.Invoke(Rac1WeaponId.FirstRanged);
             }
-            else if (UseRac1Gameplay && key.Keycode is >= Key.Key3 and <= Key.Key9)
+            else if (CanUseEquipment && key.Keycode is >= Key.Key3 and <= Key.Key9)
             {
                 Rac1WeaponId[] choices = key.ShiftPressed
                     ? [Rac1WeaponId.Taunter, Rac1WeaponId.Walloper, Rac1WeaponId.TeslaClaw, Rac1WeaponId.MorphORay,
@@ -389,9 +384,9 @@ public partial class PlayerHost : CharacterBody3D
                         Rac1WeaponId.MineGlove, Rac1WeaponId.SuckCannon, Rac1WeaponId.Devastator, Rac1WeaponId.VisibombGun];
                 Rac1WeaponSelectionRequested?.Invoke(choices[(int)key.Keycode - (int)Key.Key3]);
             }
-            else if (UseRac1Gameplay && key.Keycode is Key.Bracketleft or Key.Bracketright)
+            else if (CanUseEquipment && key.Keycode is Key.Bracketleft or Key.Bracketright)
                 Rac1WeaponCycleRequested?.Invoke(key.Keycode == Key.Bracketleft ? -1 : 1);
-            else if (UseRac1Gameplay && key.Keycode == Key.Key0)
+            else if (CanDevelopEquipment && key.Keycode == Key.Key0)
                 Rac1WeaponPreviewRequested?.Invoke();
         }
     }
@@ -412,14 +407,15 @@ public partial class PlayerHost : CharacterBody3D
             }
         }
 
+        PlayerServicesPhysicsUpdated?.Invoke();
         long profileStart = DevelopmentTimestamp();
         _time += delta;
-        if (UseRac1Gameplay && !DevelopmentControls.FlyEnabled)
+        if (HasNativeCamera && !DevelopmentControls.FlyEnabled)
             EnsureRac1CameraInitialized();
 
         if (!Scripted)
         {
-            _liveInput = _rawInput.Read(UseRac1Gameplay);
+            _liveInput = _rawInput.Read(ControlProfile.Input);
             if (PlaytestInputFilter is { } filter) _liveInput = filter(_liveInput);
             MaskRac1TaxiWalkActions();
             if (QuickSelectOwnsGameplayInput)
@@ -444,18 +440,18 @@ public partial class PlayerHost : CharacterBody3D
                     ActionJustPressed = false,
                     EquippedUseJustPressed = false
                 };
-            _rac1CrankInputActive = UseRac1Gameplay && !DevelopmentControls.FlyEnabled && !Rac1RemoteControlActive &&
+            _rac1CrankInputActive = HasNativeTraversal && !DevelopmentControls.FlyEnabled && !Rac1RemoteControlActive &&
                 (Rac1CrankInput?.Invoke(_liveInput.ActionHeld, _liveInput.Move) ?? false);
             if (!HasActiveRecoveredCamera)
                 ApplyGamepadCamera((float)delta, _liveInput.CameraIntent);
             if (_liveInput.ActionJustPressed && !_rac1CrankInputActive && !Rac1SwimmingActive)
             {
-                if (UseRac1Gameplay && !Rac1Hanging && !Rac1SwingshotActive)
+                if (CanWrenchAttack && !Rac1Hanging && !Rac1SwingshotActive)
                     NotifyRac1WrenchAttackAccepted();
-                else if (!UseRac1Gameplay)
+                else if (!CanWrenchAttack)
                     RequestPrimaryAction();
             }
-            if (UseRac1Gameplay && _liveInput.EquippedUseJustPressed && !DevelopmentControls.FlyEnabled &&
+            if (CanUseEquipment && _liveInput.EquippedUseJustPressed && !DevelopmentControls.FlyEnabled &&
                 !Rac1DevelopmentSwingshotPreview)
                 RequestPrimaryAction();
         }
@@ -477,7 +473,7 @@ public partial class PlayerHost : CharacterBody3D
         }
         bool crouch = !Scripted && _liveInput.CrouchHeld && !Rac1TaxiWalking;
         if (Rac1EquipmentActionActive) { move = Vector2.Zero; jump = crouch = false; }
-        if (UseRac1Gameplay && !Rac1GameplayAllowsOrdinaryMovement)
+        if (!Rac1GameplayAllowsOrdinaryMovement)
         {
             ResetRac1WrenchAttack();
             _attackRequested = false;
@@ -490,7 +486,7 @@ public partial class PlayerHost : CharacterBody3D
 
         StepRetailDerivedMovement(move, jump, crouch);
         long profileController = DevelopmentTimestamp();
-        if (UseRac1Gameplay)
+        if (HasNativeContacts)
         {
             if (Rac1RemoteControlActive) Velocity = new(0, Velocity.Y, 0);
             if (Rac1EquipmentLungeVelocity != Vector3.Zero)
@@ -500,9 +496,9 @@ public partial class PlayerHost : CharacterBody3D
         else
             MoveAndSlide();
         long profileContact = DevelopmentTimestamp();
-        if (UseRac1Gameplay)
+        if (HasNativeContacts)
             RecordRac1OrdinaryContactMotion();
-        if (UseRac1Gameplay)
+        if (HasNativeContacts)
             Rac1MaxObservedSlideCollisions = Math.Max(
                 Rac1MaxObservedSlideCollisions,
                 GetSlideCollisionCount());
@@ -510,7 +506,7 @@ public partial class PlayerHost : CharacterBody3D
         UpdateAnimationState(isOnFloor);
         PresentRac1TaxiWalkFacing();
         AnimationPhysicsUpdated?.Invoke(delta, AnimationState, _locomotionAnimationInput);
-        if (UseRac1Gameplay)
+        if (CanWrenchAttack)
             Rac1WrenchPhysicsUpdated?.Invoke(Rac1WrenchFrame);
         long profilePresentation = DevelopmentTimestamp();
 
@@ -519,7 +515,7 @@ public partial class PlayerHost : CharacterBody3D
             UpdateCameraDistance();
         }
 
-        if (UseRac1Gameplay && !DevelopmentControls.FlyEnabled)
+        if (HasNativeCamera && !DevelopmentControls.FlyEnabled)
             StepRac1Camera(Scripted ? Vector2.Zero : _liveInput.CameraIntent);
 
         TrackJump(isOnFloor);
@@ -669,7 +665,7 @@ public partial class PlayerHost : CharacterBody3D
         if (ScriptedInputProvider is { } provider)
             return provider(_time);
 
-        if (UseRac1Gameplay)
+        if (CanUseEquipment)
         {
             // Veldin's authored start first settles from a higher collision
             // surface. Wait for that contact, then exercise the retail-backed

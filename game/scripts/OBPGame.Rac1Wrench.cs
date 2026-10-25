@@ -29,7 +29,7 @@ public partial class OBPGame
     {
         if (_player is null || _playerAvatarView is null || _rac1WrenchView is null)
             return;
-        if (_rac1Nanotech.Probe().IsDead)
+        if (!PlayerAlive)
         {
             ResetRac1WrenchHost();
             return;
