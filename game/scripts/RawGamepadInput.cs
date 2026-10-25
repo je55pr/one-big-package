@@ -1,5 +1,6 @@
 using Godot;
 using OBP.Godot.Controls;
+using OBP.Runtime.Player;
 
 namespace OneBigPackage;
 
@@ -9,7 +10,7 @@ namespace OneBigPackage;
 /// the resulting vectors are never normalized or curved here. Buttons are consumed
 /// only through named InputMap actions, never vendor-specific physical button ids.
 /// </summary>
-internal sealed class RawGamepadInput
+internal sealed class RawGamepadInput : IDisposable
 {
     public static readonly StringName MoveLeft = "obp_move_left";
     public static readonly StringName MoveRight = "obp_move_right";
@@ -27,6 +28,31 @@ internal sealed class RawGamepadInput
     private int? _activeDevice;
     private int? _announcedDevice;
     private int _suppressedButtons = 15;
+    private bool _listening;
+
+    public void Attach()
+    {
+        if (_listening) return;
+        Input.JoyConnectionChanged += ConnectionChanged;
+        _listening = true;
+    }
+
+    public void Dispose()
+    {
+        if (!_listening) return;
+        Input.JoyConnectionChanged -= ConnectionChanged;
+        _listening = false;
+    }
+
+    internal void ConnectionChanged(long device, bool connected)
+    {
+        if (_activeDevice != device && _activeDevice.HasValue) return;
+        _activeDevice = null;
+        _announcedDevice = null;
+        // Rebind at the next read. Held buttons must pass through release;
+        // connection events cannot synthesize a new attack/jump edge.
+        _suppressedButtons = 15;
+    }
 
     public int HeldButtons => (Input.IsActionPressed(Jump) ? 1 : 0) |
         (Input.IsActionPressed(Crouch) || Input.IsActionPressed(ControllerBindings.CrouchAlternate) ? 2 : 0) |
@@ -39,7 +65,7 @@ internal sealed class RawGamepadInput
             _activeDevice = @event.Device;
     }
 
-    public RawPlayerInputFrame Read(bool rac1Gameplay = false)
+    public RawPlayerInputFrame Read(PlayerInputPolicy? policy = null)
     {
         int? device = ResolveActiveDevice();
         var rawMove = new Vector2(
@@ -62,7 +88,7 @@ internal sealed class RawGamepadInput
         }
 
         bool jump = Input.IsActionPressed(Jump);
-        bool crouch = Input.IsActionPressed(Crouch) || rac1Gameplay && Input.IsActionPressed(ControllerBindings.CrouchAlternate);
+        bool crouch = Input.IsActionPressed(Crouch) || policy?.AlternateCrouch == true && Input.IsActionPressed(ControllerBindings.CrouchAlternate);
         bool action = Input.IsActionPressed(Action);
         bool use = Input.IsActionPressed(Traversal);
         int held = (jump ? 1 : 0) | (crouch ? 2 : 0) | (action ? 4 : 0) | (use ? 8 : 0);

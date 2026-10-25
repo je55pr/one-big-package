@@ -19,6 +19,9 @@ public sealed class CommandLineArgsTests
         var route = CommandLineArgs.Parse(["--player-session-smoke"]);
         Assert.True(route.PlayerSessionSmoke);
         Assert.False(route.NativeParityRequested);
+        var capabilities = CommandLineArgs.Parse(["--player-capabilities-smoke", "--player-capabilities-out", "trace.json"]);
+        Assert.True(capabilities.PlayerCapabilitiesSmoke); Assert.Equal("trace.json", capabilities.PlayerCapabilitiesOut);
+        Assert.False(capabilities.NativeParityRequested);
     }
 
     [Fact]

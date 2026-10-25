@@ -19,6 +19,9 @@
     <Compile Include="../../game/scripts/CommandLineArgs.cs" Link="Game/CommandLineArgs.cs" />
     <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
+    <Compile Include="../../game/scripts/PlayerEquipmentRegistrations.cs" Link="Game/PlayerEquipmentRegistrations.cs" />
+    <Compile Include="../../game/scripts/PlayerHostProfiles.cs" Link="Game/PlayerHostProfiles.cs" />
+    <Compile Include="../../game/scripts/DiagnosticAvatarProvider.cs" Link="Game/DiagnosticAvatarProvider.cs" />
     <Compile Include="../../game/scripts/FusionLabWorldFactory.cs" Link="Game/FusionLabWorldFactory.cs" />
     <Compile Include="../../game/scripts/FusionDamagePolicy.cs" Link="Game/FusionDamagePolicy.cs" />
     <Compile Include="../../game/scripts/FusionWeaponData.cs" Link="Game/FusionWeaponData.cs" />

@@ -35,7 +35,7 @@ public partial class PlayerHost : CharacterBody3D
         _rac1SmallStepEligible = false;
         _rac1TetherRequest = null;
         _rac1SurfaceRequest = null;
-        if (UseRac1Gameplay && TryStepRac1Swimming(move, jump, crouch))
+        if (HasNativeTraversal && TryStepRac1Swimming(move, jump, crouch))
         {
             _rac1JumpWasHeld = jump;
             return;
@@ -48,16 +48,16 @@ public partial class PlayerHost : CharacterBody3D
             grounded,
             IsOnCeiling());
         if (contact.IsGrounded) Rac1AudioSurfaceEffectMode = contact.Face?.EffectMode ?? 0;
-        _rac1SurfaceActionIntent = UseRac1Gameplay
+        _rac1SurfaceActionIntent = HasNativeTraversal
             ? Rac1SurfaceActionRouting.Select(contact)
             : null;
-        var movementContext = UseRac1Gameplay ? ProbeRac1MovementContext(controlYaw) : default;
-        if (UseRac1Gameplay && !_rac1WrenchAttack.Active && TryStepRac1Swingshot(movementContext))
+        var movementContext = HasNativeLocomotion ? ProbeRac1MovementContext(controlYaw) : default;
+        if (HasNativeTraversal && !_rac1WrenchAttack.Active && TryStepRac1Swingshot(movementContext))
         {
             ResetRac1WrenchAttack();
             return;
         }
-        if (UseRac1Gameplay && !_rac1WrenchAttack.Active &&
+        if (HasNativeTraversal && !_rac1WrenchAttack.Active &&
             TryStepRac1Ledge(move, jump, jumpPressed, crouch, contact, movementContext, out var ledgeStep))
         {
             ResetRac1WrenchAttack();
@@ -65,7 +65,7 @@ public partial class PlayerHost : CharacterBody3D
                 (float)ledgeStep.PlanarY) * 60f;
             return;
         }
-        if (UseRac1Gameplay && !_rac1WrenchAttack.Active &&
+        if (HasNativeTraversal && !_rac1WrenchAttack.Active &&
             TryStepRac1Surface(move, jump, jumpPressed, crouch, ref contact, groundNormal, movementContext))
         {
             // These actions retain separate admission until their wrench
@@ -73,10 +73,10 @@ public partial class PlayerHost : CharacterBody3D
             ResetRac1WrenchAttack();
             return;
         }
-        if (UseRac1Gameplay && TryStepRac1Wrench(jumpPressed, crouch,
+        if (CanWrenchAttack && TryStepRac1Wrench(jumpPressed, crouch,
                 contact, groundNormal, movementContext))
             return;
-        if (UseRac1Gameplay && Rac1WrenchFrame.JumpCancelled)
+        if (CanWrenchAttack && Rac1WrenchFrame.JumpCancelled)
             jump = jumpPressed = true;
 
         var intent = new PlayerControlIntent(
@@ -89,7 +89,7 @@ public partial class PlayerHost : CharacterBody3D
             GetRac1NativePlanarBasis());
         Func<Rac1RatchetYawMode, double> resolveFacing =
             mode => _rac1Yaw.Step(move.X, -move.Y, controlYaw, mode).CurrentYaw;
-        var step = UseRac1Gameplay
+        var step = HasNativeLocomotion
             ? _rac1Movement.StepExtended(intent, contact, movementContext, resolveFacing)
             : _rac1Movement.Step(intent, contact.MovementFacts, resolveFacing);
         _rac1PresentationGrounded = contact.MovementFacts.IsGrounded || _rac1Movement.IsOrdinaryEdgeFall;
@@ -97,12 +97,12 @@ public partial class PlayerHost : CharacterBody3D
             _rac1Yaw.Reset(facingTarget);
 
         _locomotionAnimationInput = new Rac1LocomotionAnimationInput(
-            Active: UseRac1Gameplay && _rac1Movement.AnalogueInput.IsActive &&
+            Active: HasNativeLocomotion && _rac1Movement.AnalogueInput.IsActive &&
                 _rac1Movement.LocomotionState == Rac1RatchetLocomotionState.Moving &&
                 (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall),
             HelperAdmitted: contact.MovementFacts.IsGrounded,
             ScalarAtSelection: (float)_rac1Movement.PlanarMagnitude,
-            CrouchHeld: UseRac1Gameplay && crouch &&
+            CrouchHeld: HasNativeLocomotion && crouch &&
                 _rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded,
             InputMagnitude: (float)_rac1Movement.AnalogueInput.Magnitude,
             NativeYawVelocity: (float)_rac1Yaw.YawVelocity,
@@ -113,7 +113,7 @@ public partial class PlayerHost : CharacterBody3D
 
         UpdateRac1FacingPresentation();
 
-        var preContact = UseRac1Gameplay
+        var preContact = HasNativeContacts
             ? ResolveRac1PreContactStep(step, contact, groundNormal)
             : new Rac1OrdinaryGroundContactMotion.PreContactStep(
                 step.PlanarX,
@@ -130,7 +130,7 @@ public partial class PlayerHost : CharacterBody3D
         // Godot combines those passes, so admit this feedback only for static
         // ordinary contact with no support/conveyor transfer. The prospective
         // support-rise envelope is host placement policy, not native request.
-        if (UseRac1Gameplay && contact.PersistentSupportMoby is null &&
+        if (HasNativeContacts && contact.PersistentSupportMoby is null &&
             contact.SupportCarry.TransformDelta.Length == 0 && contact.Conveyor.TangentialTransfer.Length == 0)
         {
             Vector3 normal = groundNormal ?? Vector3.Up;
@@ -237,12 +237,9 @@ public partial class PlayerHost : CharacterBody3D
             return false;
 
         int faceIndex = (int)hit["face_index"];
-        int? materialId = collisionBody.MaterialIdForFace(faceIndex);
-        if (materialId is null || materialId < byte.MinValue || materialId > byte.MaxValue)
-            return false;
-        var candidateContact = Rac1PlayerContactResult.StaticWorld(
-            true,
-            rawFaceType: materialId.Value);
+        int? materialId = collisionBody.MaterialIdForFace(faceIndex, OBP.RAC1.Rac1Authority.Primary);
+        var candidateContact = Rac1PlayerContactResult.StaticWorld(true,
+            rawFaceType: materialId is >= byte.MinValue and <= byte.MaxValue ? materialId : null);
         if (Rac1SurfaceActionRouting.Select(candidateContact) is not null)
             return false;
 
@@ -263,7 +260,7 @@ public partial class PlayerHost : CharacterBody3D
         // a jump/fall. This predicts contact only; the native carry channel
         // below still applies the actual displacement once.
         bool carriedSupport = false;
-        if (UseRac1Gameplay && (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall) &&
+        if (HasNativeContacts && (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall) &&
             _rac1HostSupportAnchorValid && _rac1HostSupportRoot is { } support && IsInstanceValid(support) &&
             _rac1DynamicSupport.PreviousAnchorWorldPosition is { } previousAnchor)
         {
@@ -324,7 +321,7 @@ public partial class PlayerHost : CharacterBody3D
         {
             ClearRac1HostSupportAnchor();
             int faceIndex = (int)hit["face_index"];
-            int? materialId = collisionBody.MaterialIdForFace(faceIndex);
+            int? materialId = collisionBody.MaterialIdForFace(faceIndex, OBP.RAC1.Rac1Authority.Primary);
             int? rawFaceType = materialId is >= byte.MinValue and <= byte.MaxValue
                 ? materialId
                 : null;
@@ -336,7 +333,7 @@ public partial class PlayerHost : CharacterBody3D
                 groundNormal);
         }
 
-        if (UseRac1Gameplay &&
+        if (HasNativeContacts &&
             RuntimeWorldScene.FindDynamicObjectRoot(collider) is
             { Source: { } dynamicOwner } dynamicRoot)
         {

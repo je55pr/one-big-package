@@ -227,7 +227,7 @@ public static partial class GcWorldImport
                 materialIds[t] = tri.MaterialId;
             }
 
-            collision.Add(new RuntimeCollisionBlob(mesh.Octants.Count, positions, indices, materialIds));
+            collision.Add(new RuntimeCollisionBlob(mesh.Octants.Count, positions, indices, materialIds) { MaterialSource = Rac2Authority.Primary });
             Grow(mesh.Bounds.Min.X, mesh.Bounds.Min.Z, mesh.Bounds.Min.Y);
             Grow(mesh.Bounds.Max.X, mesh.Bounds.Max.Z, mesh.Bounds.Max.Y);
             GrowTrusted(mesh.Bounds.Min.X, mesh.Bounds.Min.Z, mesh.Bounds.Min.Y);

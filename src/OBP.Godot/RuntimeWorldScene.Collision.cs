@@ -36,6 +36,9 @@ public static partial class RuntimeWorldScene
             SourceCollision is null
                 ? null
                 : RuntimeWorldScene.MaterialIdForFace(SourceCollision, _sourceTriangles, godotFaceIndex);
+
+        public int? MaterialIdForFace(int godotFaceIndex, OBP.Core.ObpBuildIdentity source) =>
+            SourceCollision is null ? null : RuntimeWorldScene.MaterialIdForFace(SourceCollision, _sourceTriangles, godotFaceIndex, source);
     }
 
     public static int? SourceTriangleIndexForFace(int[] sourceTriangles, int godotFaceIndex)
@@ -58,6 +61,9 @@ public static partial class RuntimeWorldScene
     }
 
     public sealed record CollisionFacePlan(Vector3[] Faces, int[] SourceTriangleIndices);
+
+    public static int? MaterialIdForFace(RuntimeCollisionBlob blob, int[] sourceTriangles, int face, OBP.Core.ObpBuildIdentity source) =>
+        blob.MaterialSource == source ? MaterialIdForFace(blob, sourceTriangles, face) : null;
 
     private readonly record struct CollisionFaceKey(Vector3 A, Vector3 B, Vector3 C, int? Material);
 

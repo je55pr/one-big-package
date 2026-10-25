@@ -1,10 +1,17 @@
 using Godot;
+using OBP.Fusion;
 using OBP.RAC2.Gameplay;
 
 namespace OneBigPackage;
 
 public partial class OBPGame
 {
+    private sealed class PlayerBoltReceipt(ActorInstanceKey actor)
+    {
+        public ActorInstanceKey Actor { get; } = actor;
+        public bool Collected;
+    }
+    private int _playerEmittedRewardIndex;
     /// <summary>
     /// OBP-only placeholder presentation for the retail-backed physical Bolt
     /// denominations. Native pickup model, scatter motion and magnet behaviour
@@ -46,18 +53,30 @@ public partial class OBPGame
 
             _worldRoot.AddChild(area);
             area.GlobalPosition = centre + offset;
-            area.BodyEntered += body => OnCrateBoltPickupEntered(body, area, pickup);
+            PlayerBoltReceipt? receipt = null;
+            if (_playerNative is not null)
+            {
+                int index = checked((_world!.DynamicObjects?.Select(source => source.InstanceIndex).DefaultIfEmpty(0).Max() ?? 0) + ++_playerEmittedRewardIndex);
+                receipt = new(new(_playerDamageWorld!, _playerDamageLease, new("rac2", 500, index)));
+                var owned = receipt;
+                _playerNative.Life.RegisterActor(new(owned.Actor,
+                    new("rac2", OBP.RAC2.Rac2Authority.Primary.BuildId, $"class500:{payout.Uid}:bolt:{pickup.PickupId}"),
+                    "rac2/collected-class500-bolt/v1", $"uid:{payout.Uid}", []), () => !owned.Collected);
+            }
+            area.BodyEntered += body => OnCrateBoltPickupEntered(body, area, pickup, receipt);
         }
     }
 
-    private void OnCrateBoltPickupEntered(Node3D body, Area3D area, GcBoltPickup pickup)
+    private void OnCrateBoltPickupEntered(Node3D body, Area3D area, GcBoltPickup pickup, PlayerBoltReceipt? receipt = null)
     {
-        if (_player is null || body != _player || !IsInstanceValid(area))
+        if (_player is null || body != _player || !IsInstanceValid(area) || !PlayerAlive ||
+            receipt is not null && (receipt.Collected || receipt.Actor.WorldInstanceId != _playerDamageWorld || receipt.Actor.Generation != _playerDamageLease))
         {
             return;
         }
 
         int denomination;
+        if (_playerNative is not null && (long)_playerNative.Wallet.Balance + pickup.Denomination > int.MaxValue) return;
         try
         {
             denomination = _crateBoltSession.CollectPickup(pickup.PickupId);
@@ -67,6 +86,16 @@ public partial class OBPGame
             return;
         }
 
+        if (_playerNative is not null && receipt is not null)
+        {
+            receipt.Collected = true;
+            // Explicit OBP 1:1 conversion of a source-admitted physical pickup.
+            // Deferred native values stay with GcFreshBoltSession, not this wallet.
+            var result = _playerNative.Life.Credit(new(receipt.Actor, OBP.RAC2.Rac2Authority.Primary.BuildId,
+                pickup.PickupId, "obp/bolts", denomination), value => _playerNative.Wallet.Credit(checked((int)value)));
+            if (!result.Applied) throw new InvalidOperationException(result.Reason);
+            RefreshRac1HudState();
+        }
         area.SetDeferred(Area3D.PropertyName.Monitoring, false);
         area.QueueFree();
         PlayRepresentativeAudioOneShot();

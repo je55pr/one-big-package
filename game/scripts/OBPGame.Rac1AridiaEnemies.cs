@@ -946,6 +946,14 @@ public partial class OBPGame
             Rac1GameplayEntityRef.Player, 1);
         var before = _rac1Nanotech.Probe();
         _rac1DamageTransport.Publish(damage);
+        if (_playerNative is not null)
+        {
+            var intake = ApplyPlayerSourceDamage(source, OBP.RAC1.Rac1Authority.Primary.BuildId,
+                PlayerSessionNativeState.AridiaDamageAdapter, PlayerSessionNativeState.AridiaDamageDescriptor,
+                _rac1AridiaNativeFrameCounter, 1, 0);
+            if (intake.Applied) NotifyRac1PlayerDamageAudio(before, _rac1Nanotech.Probe());
+            return;
+        }
         var after = _rac1Nanotech.ApplyHostAridiaContactDamage();
         _player!.Rac1GameplayState = after;
         NotifyRac1PlayerDamageAudio(before, after);

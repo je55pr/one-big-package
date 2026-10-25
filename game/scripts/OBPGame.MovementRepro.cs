@@ -146,7 +146,7 @@ public partial class OBPGame
                 _rac1BoltWallet = new Rac1BoltWallet(savedWorld.Bolts);
             }
             OpenDestinationFromBootstrap(state.Destination);
-            if (_world?.BuildId != state.SourceBuildId || _player is null || !_player.UseRac1Gameplay)
+            if (_world?.BuildId != state.SourceBuildId || _player is null || !_player.CanSaveMovementState)
                 throw new InvalidDataException("The movement state does not match the loaded retail source build.");
             if (state.World is { } world) RestoreMovementWorld(world);
 

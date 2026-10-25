@@ -49,7 +49,7 @@ public partial class OBPGame
         }
 
         _genericNavigationActive = _args.CaptureFrame is null;
-        if ((_args.PlaytestRequested || _args.FusionSmoke || _args.PlayerSessionSmoke) && _fusionPreparation is not null)
+        if ((_args.PlaytestRequested || _args.FusionSmoke || _args.PlayerSessionSmoke || _args.PlayerCapabilitiesSmoke) && _fusionPreparation is not null)
         {
             _ = EnterWorldAfterSharedPreparationAsync(destination);
             return;

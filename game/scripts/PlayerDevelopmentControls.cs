@@ -66,7 +66,7 @@ public partial class PlayerDevelopmentControls : Node
             _host.ApplyDevelopmentFlyMode(FlyEnabled);
             GD.Print($"[player-dev] fly mode {(FlyEnabled ? "on" : "off")}");
         }
-        else if (key.Keycode == Key.R && !_host.UseRac1Gameplay)
+        else if (key.Keycode == Key.R && !_host.CanSaveMovementState)
         {
             ResetToSpawn();
         }

@@ -44,6 +44,8 @@ public partial class OBPGame
     private WeaponStatus? _fusionDisplayedStatus;
     private SourceWeaponKey? _fusionDisplayedHand;
     private bool FusionTestActive => _fusionOriginalCampaign is not null;
+    // An explicit original-world test fixture, never ordinary equipment admission.
+    private bool CanRunNativeFusionFixture => !OrdinaryPlayerSession && _activeDestination?.DestinationId == "rac1:LEVEL0";
     private PlaytestWeaponConfiguration? FusionConfiguration => _fusion is null ? null : _fusionAssets?.Configuration(FusionTestActive);
     private bool FusionMovementStateBlocked => FusionTestActive || _fusion?.Selected.SourceGame is "rac2" or "rac3" ||
         _fusion?.LancerSession.ActiveShots.Count > 0;
@@ -84,6 +86,7 @@ public partial class OBPGame
 
     private void PrepareSharedWeaponSources(bool force = false)
     {
+        RefreshPlayerSourceAvailability();
         var snapshot = _sources.Attached.Values.OrderBy(s => s.Game).ToArray();
         if (!force && _fusionSourceSnapshot is not null && snapshot.SequenceEqual(_fusionSourceSnapshot)) return;
         ResetSharedWeaponAssets();
@@ -163,6 +166,7 @@ public partial class OBPGame
         finally { preparation.Dispose(); }
         _fusionLoadingStatus = null;
         ShowSharedWeaponPreparation(_fusionAssetFailure);
+        RefreshPlayerEquipmentAvailability();
         RefreshRac1HudState();
     }
 
@@ -206,9 +210,15 @@ public partial class OBPGame
 
     private void SelectWeaponKey(SourceWeaponKey key)
     {
+        if (_playerNative is not null)
+        {
+            var entry = ReadPlayerEquipment().SingleOrDefault(entry => entry.Definition.Item == key);
+            if (entry?.Selectable != true) { ReportMovementState(entry?.Reason ?? "No implemented equipment registration."); return; }
+        }
         if (_fusion is null || key.SourceGame == "rac1" && !FusionTestActive)
         {
             if (key.SourceGame == "rac1") OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
+            RefreshPlayerEquipmentAvailability();
             return;
         }
         var previous = _fusion.Selected;
@@ -224,6 +234,7 @@ public partial class OBPGame
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
         }
         if (key.SourceGame == "rac1") HoldSelectedRac1HandItem();
+        RefreshPlayerEquipmentAvailability();
         RefreshRac1WrenchPresentationVisibility();
         RefreshRac1HudState();
         GD.Print($"[fusion] equipped {key}: {FusionWeaponDetail(key)}");
@@ -231,6 +242,19 @@ public partial class OBPGame
 
     private HudPresentationState FusionHud(HudPresentationState state)
     {
+        if (_playerNative is not null)
+        {
+            var entry = ReadPlayerEquipment().Single(entry => entry.Definition.Item == _playerNative.Weapons.Selected);
+            return state with
+            {
+                CurrentWeapon = new(entry.Definition.Item!.Value.ToString(), entry.Definition.DisplayName,
+                    entry.State.Capacity is { } capacity ? new HudAmmo(entry.State.Ammo!.Value, capacity) : null)
+                {
+                    Status = entry.Reason ?? (_playerNative.Held.Hand.WrenchHeld && entry.Definition.Item != PlayerEquipmentRegistrations.Wrench
+                        ? "Wrench held · use to draw" : _playerNative.Weapons.Status(entry.Definition.Item.Value).State),
+                },
+            };
+        }
         if (_fusion is null || !FusionTestActive && _fusion.Selected.SourceGame == "rac1") return state;
         var status = _fusion.Status(_fusion.Selected);
         return state with
@@ -260,7 +284,7 @@ public partial class OBPGame
     private void StepFusionWeapons()
     {
         if (_fusion is null || _fusionAssets is null || _player is null || _movementStateLoading) return;
-        bool alive = !_rac1Nanotech.Probe().IsDead;
+        bool alive = PlayerAlive;
         if (!alive) { ClearFusionOnDeath(); return; }
         _fusionDeathCleared = false;
         Vector3 origin = FusionMuzzle();
@@ -391,7 +415,7 @@ public partial class OBPGame
         _fusionModelAge++;
         foreach (var (key, view) in _fusionHeldViews)
         {
-            view.Visible = key == _fusion.Selected && _fusion.Hand.IsHolding(key) && _fusionAssets.Available(key) && !_rac1Nanotech.Probe().IsDead &&
+            view.Visible = key == _fusion.Selected && _fusion.Hand.IsHolding(key) && _fusionAssets.Available(key) && PlayerAlive &&
                 _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active && _player?.Rac1WaterHandItemHidden != true;
             if (!view.Visible) continue;
             // Native hand-matrix slot0 (semantic0/joint56), after the source

@@ -224,6 +224,6 @@ public static partial class Rac1WorldImport
             materialIds[face] = triangle.MaterialId;
         }
 
-        return new RuntimeCollisionBlob(mesh.Octants.Count, positions, indices, materialIds);
+        return new RuntimeCollisionBlob(mesh.Octants.Count, positions, indices, materialIds) { MaterialSource = Rac1Authority.Primary };
     }
 }

@@ -28,7 +28,7 @@ public partial class PlayerHost : CharacterBody3D
         bool controllerAirborne =
             _rac1Movement.Phase != Rac1RatchetMovementPhase.Grounded &&
             !_rac1Movement.IsOrdinaryEdgeFall;
-        bool recoveredSupportForPresentation = UseRac1Gameplay
+        bool recoveredSupportForPresentation = HasNativeLocomotion
             ? _rac1PresentationGrounded
             : onFloor;
         bool animationGrounded = recoveredSupportForPresentation && !controllerAirborne;
@@ -59,10 +59,10 @@ public partial class PlayerHost : CharacterBody3D
     {
         if (Rac1Hanging || Rac1SwingshotActive || Rac1SwimmingActive)
             return;
-        if (UseRac1Gameplay && !Rac1GameplayAlive)
+        if (!Rac1GameplayAlive)
             return;
 
-        if (UseRac1Gameplay)
+        if (CanUseEquipment)
         {
             // R&C1 presentation is admitted by the equipped weapon path. In
             // particular, a rejected item-10 request must not play wrench seq 23.
@@ -88,7 +88,7 @@ public partial class PlayerHost : CharacterBody3D
     /// <summary>Measure each jump: air time, horizontal distance, apex height, net height change.</summary>
     private void TrackJump(bool onFloor)
     {
-        if (UseRac1Gameplay)
+        if (HasNativeLocomotion)
             onFloor = _rac1PresentationGrounded &&
                 (_rac1Movement.Phase == Rac1RatchetMovementPhase.Grounded || _rac1Movement.IsOrdinaryEdgeFall);
         if (!_airborne && !onFloor && Velocity.Y > 0.1f)

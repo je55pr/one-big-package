@@ -123,7 +123,7 @@ public partial class OBPGame
         // damage. The retail surface predicate excludes ordinary face type0.
         if (_rac1PlayerAudio?.WrenchImpactAdmitted != true || !hit.ContainsKey("collider") ||
             hit["collider"].As<Node>() is not RuntimeWorldScene.RuntimeCollisionBody3D body ||
-            !hit.ContainsKey("face_index") || body.MaterialIdForFace((int)hit["face_index"]) is not int material ||
+            !hit.ContainsKey("face_index") || body.MaterialIdForFace((int)hit["face_index"], OBP.RAC1.Rac1Authority.Primary) is not int material ||
             (material & 0x1f) == 0) return;
         if (_rac1PlayerAudio.WrenchContact(false, world: true) is { } cue) PlayRac1PlayerSound(cue);
     }

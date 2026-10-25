@@ -17,7 +17,7 @@ public partial class OBPGame
     {
         // Circle uses equipment only. Square has its own wrench input path,
         // including when a legacy repro or keyboard shortcut selects item 8.
-        if (_rac1Nanotech.Probe().IsDead ||
+        if (!PlayerAlive ||
             _fusion?.Selected.SourceGame is not ("rac2" or "rac3") && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
         if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
         _rac1EquipmentUsePressed = true;
@@ -27,9 +27,10 @@ public partial class OBPGame
     {
         bool pressed = _rac1EquipmentUsePressed;
         _rac1EquipmentUsePressed = false;
+        if (_playerNative is not null && ReadPlayerEquipment().Single(entry => entry.Definition.Item == _playerNative.Weapons.Selected).Usable == false) return;
         if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) == false) return;
-        bool admitted = _player is not null && !_rac1Nanotech.Probe().IsDead &&
-            !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active;
+        bool admitted = _player is not null && PlayerAlive &&
+            !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active && !_player.Rac1SwingshotActive && !_player.Rac1Hanging;
         if (_fusion is { Selected.SourceGame: not "rac1" })
         {
             if (pressed && admitted && !QuickSelectOpen && !_player!.Scripted && !_player.Rac1WaterHandItemHidden)
@@ -47,6 +48,11 @@ public partial class OBPGame
 
     private void OnRac1WeaponSelectionRequested(Rac1WeaponId weapon)
     {
+        if (_playerNative is not null)
+        {
+            var entry = ReadPlayerEquipment().SingleOrDefault(entry => entry.Definition.Item == new SourceWeaponKey("rac1", (int)weapon));
+            if (entry?.Selectable != true) { ReportMovementState(entry?.Reason ?? "No admitted weapon registration."); return; }
+        }
         if (FusionTestActive)
         {
             SelectWeaponKey(new("rac1", (int)weapon));
@@ -67,6 +73,7 @@ public partial class OBPGame
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
                 view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
             HoldSelectedRac1HandItem();
+            RefreshPlayerEquipmentAvailability();
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
         else ReportMovementState("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
@@ -76,7 +83,7 @@ public partial class OBPGame
     {
         if (_fusion is not null)
         {
-            var order = FusionTestActive ? FusionWeaponSession.Weapons : FusionWeaponSession.DefaultQuickSelect(_rac1Weapons);
+            var order = PlayerWeaponOrder();
             int current = order.ToList().IndexOf(CurrentWeaponKey);
             SelectWeaponKey(order[(current + Math.Sign(direction) + order.Count) % order.Count]);
             return;

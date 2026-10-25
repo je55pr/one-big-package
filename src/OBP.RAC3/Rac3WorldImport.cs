@@ -74,7 +74,7 @@ public static partial class Rac3WorldImport
         for (int i = 0; i < cm.Positions.Length; i += 3) { cp[i] = cm.Positions[i]; cp[i + 1] = cm.Positions[i + 2]; cp[i + 2] = cm.Positions[i + 1]; Grow(cp[i], cp[i + 1], cp[i + 2]); }
         var ci = new int[cm.Triangles.Count * 3]; var ct = new int[cm.Triangles.Count];
         for (int i = 0; i < cm.Triangles.Count; i++) { var f = cm.Triangles[i]; ci[i * 3] = f.A; ci[i * 3 + 1] = f.C; ci[i * 3 + 2] = f.B; ct[i] = f.MaterialId; }
-        collision.Add(new RuntimeCollisionBlob(cm.Octants.Count, cp, ci, ct));
+        collision.Add(new RuntimeCollisionBlob(cm.Octants.Count, cp, ci, ct) { MaterialSource = Rac3Authority.Primary });
 
         int skyShellCount = 0;
         var skyRange = UyaLevelCore.SectionRange(core, core.Header.Sky);

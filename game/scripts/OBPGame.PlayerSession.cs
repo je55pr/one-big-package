@@ -18,6 +18,8 @@ public partial class OBPGame
     private WorldEntrySession? _worldEntries;
     private (long Length, long Written)? _avatarSourceStamp;
     private WorldEntryMode? _playerEntryMode;
+    private PlayerControlProfile? _playerControlProfile;
+    private PlayerAnimationProfile? _playerAnimationProfile;
     private bool OrdinaryPlayerSession => PlayerEntryMode == WorldEntryMode.OrdinaryFusion;
     private WorldEntryMode PlayerEntryMode => _playerEntryMode ?? (_args.DiagnosticPlayer ? WorldEntryMode.Diagnostic :
         _args.NativeParityRequested ? WorldEntryMode.RetailParity : WorldEntryMode.OrdinaryFusion);
@@ -32,9 +34,7 @@ public partial class OBPGame
         var avatar = new PlayerAvatarIdentity(provider.SourceGame, provider.BuildId, provider.DefaultAvatarId,
             diagnostic ? "obp:diagnostic-capsule" : "rac1:ratchet:moby-class-0");
         var profile = new SourceProfileKey(provider.SourceGame, provider.BuildId, diagnostic ? "obp/diagnostic-player/v1" : "rac1/ordinary-player/v1");
-        var configuration = new PlayerSessionConfiguration(avatar, profile, profile,
-            new("obp/input/v1", "obp/equipment-actions/v1", "obp/rac1-derived-health/v1", "obp/player-camera/v1",
-                "obp/player-hud/v1", "obp/pause/v1", "obp/quick-select/v1", "obp/player-audio/v1"), 60);
+        var configuration = new PlayerSessionConfiguration(avatar, profile, profile, PlayerHostProfiles.Services, 60);
         if (OrdinaryPlayerSession)
         {
             // Import source campaign equipment once as a deliberate compatibility
@@ -49,14 +49,22 @@ public partial class OBPGame
         RefreshPlayerSourceAvailability();
     }
 
-    private void RefreshPlayerSourceAvailability() =>
+    private void RefreshPlayerSourceAvailability()
+    {
         _playerSession?.SetAttachedSources(_sources.Attached.Values.Select(source => source.Identity));
+        _playerNative?.RefreshDevelopmentSources(PlayerEquipmentSources);
+        RefreshPlayerEquipmentAvailability();
+    }
 
     private void PrepareSelectedPlayerAssets()
     {
         EnsurePlayerSession();
         RefreshPlayerSourceAvailability();
-        var avatar = _playerSession!.Capture().Configuration.Avatar;
+        var selected = _playerSession!.Capture().Configuration;
+        (_playerControlProfile, _playerAnimationProfile) = PlayerHostProfiles.Registry.Resolve(selected);
+        if (Engine.PhysicsTicksPerSecond != _playerAnimationProfile.NativeTicksPerSecond)
+            throw new InvalidOperationException($"Selected player animation requires {_playerAnimationProfile.NativeTicksPerSecond} physics ticks per second.");
+        var avatar = selected.Avatar;
         if (avatar.SourceGame == ObpSourceGame.Synthetic) return;
         var availability = _playerSession.Availability(avatar.SourceGame, avatar.BuildId, true, true);
         if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
@@ -76,12 +84,26 @@ public partial class OBPGame
             _playerAvatarSourcePath = source.Path; _playerAvatarSourceGame = avatar.SourceGame;
             _avatarSourceStamp = stamp;
             _rac1WrenchAsset = null; _rac1BombGloveAsset = null;
+            _rac1EquipmentAssets = null; _rac1EquipmentSource = null;
         }
         if (_playerAvatar.Identity != avatar) throw new InvalidOperationException("Decoded avatar identity differs from the selected player profile.");
         if (avatar.SourceGame == ObpSourceGame.Rac1 && (_rac1WrenchAsset is null || _rac1WrenchSourcePath != source.Path))
         {
             _rac1WrenchAsset = Rac1WrenchAsset.Load(source.Path);
             _rac1WrenchSourcePath = source.Path;
+        }
+        if (avatar.SourceGame == ObpSourceGame.Rac1)
+        {
+            if (_rac1BombGloveAsset is null || _rac1BombGloveSourcePath != source.Path)
+            {
+                _rac1BombGloveAsset = OBP.RAC1.Gameplay.Rac1BombGloveAssets.Load(source.Path);
+                _rac1BombGloveSourcePath = source.Path;
+            }
+            if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
+            {
+                _rac1EquipmentAssets = OBP.RAC1.Gameplay.Rac1EquipmentAssets.Load(source.Path);
+                _rac1EquipmentSource = source.Path;
+            }
         }
     }
 

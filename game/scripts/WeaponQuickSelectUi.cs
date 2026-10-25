@@ -12,7 +12,7 @@ namespace OneBigPackage;
 /// </summary>
 public sealed partial class WeaponQuickSelectUi : CanvasLayer
 {
-    public sealed record Entry(SourceWeaponKey Weapon, string Name, string Ammo);
+    public sealed record Entry(SourceWeaponKey? Weapon, string Name, string Ammo);
     public IReadOnlyList<Entry> Entries { get; init; } = [];
     public SourceWeaponKey CurrentWeapon { get; init; }
     public event Action<SourceWeaponKey?>? Completed;
@@ -142,7 +142,7 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
             float theta = slot * Mathf.Pi / 4f - Mathf.Pi / 2f;
             Vector2 point = center + new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * radius;
             int index = _page * 8 + slot;
-            bool valid = index < Entries.Count;
+            bool valid = index < Entries.Count && Entries[index].Weapon.HasValue;
             bool selected = SelectedIndex == index;
             float pulse = (float)(0.5f + 0.5f * Math.Sin(PlaytestClock.Milliseconds / 170.0));
             var rect = new Rect2(point - Vector2.One * tile * 0.5f, Vector2.One * tile);
@@ -155,8 +155,8 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
                 continue;
 
             var entry = Entries[index];
-            var mappedIcon = entry.Weapon.SourceGame == "rac1"
-                ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)entry.Weapon.NativeItemId) : null;
+            var mappedIcon = entry.Weapon is { SourceGame: "rac1" } native
+                ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)native.NativeItemId) : null;
             var icon = mappedIcon is { } mapped
                 ? Rac1RetailUiAssets.Sprite(mapped.AnimationId, mapped.Frame)
                 : null;

@@ -26,7 +26,7 @@ public partial class OBPGame
                 player.MovementControllerLabel == "rac1-retail-derived-common-base",
                 "unexpected ordinary movement controller");
 
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.HasNativeLocomotion)
             {
                 Require(
                     player.FloorSnapLength <= 0.000001f,
@@ -55,7 +55,7 @@ public partial class OBPGame
                     _playerAvatarView is null &&
                     _playerAvatarAnimationController is null &&
                     _playerAvatarAnimationSink is null,
-                    $"{destination.Game} unexpectedly attached a borrowed/native player avatar");
+                    "Explicit diagnostic player unexpectedly attached a native player avatar");
             }
 
             if (destination.Game == ObpSourceGame.Rac1)

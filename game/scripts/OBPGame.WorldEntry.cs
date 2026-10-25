@@ -68,6 +68,7 @@ public partial class OBPGame
                 _currentDestinationId = entry.Request.DestinationId;
                 _worldPlayerEntry = entry.Prepared.EntryPoint;
                 _worldEntrySnapReach = SourceEntrySnapReach(entry.Prepared.World);
+                BeginPlayerHealthWorld(entry.Request.WorldInstanceId, entry.Request.Generation);
                 _destinationSelector?.QueueFree(); _destinationSelector = null;
                 _sourceManager?.QueueFree(); _sourceManager = null;
                 ActivateWorld(entry.Prepared.World, staged, nativeDestination, lab);
@@ -82,6 +83,7 @@ public partial class OBPGame
             _playtest?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
             if (_args.PlayerSessionSmoke && _worldSwitches == 1) _ = RunPlayerSessionSmokeAsync();
+            if (_args.PlayerCapabilitiesSmoke && _worldSwitches == 1) _ = RunPlayerCapabilitiesSmokeAsync();
             return true;
         }
         catch (Exception error)
@@ -96,7 +98,7 @@ public partial class OBPGame
                 ShowDestinationSelector();
                 _destinationSelector?.SetHint(error.Message, error: true);
             }
-            if (_args.CaptureFrame is not null || _args.PlayerSessionSmoke && _world is null)
+            if (_args.CaptureFrame is not null || (_args.PlayerSessionSmoke || _args.PlayerCapabilitiesSmoke) && _world is null)
                 ApplicationLifecycle.RequestQuit(this, "world-entry-failed", 2);
             return false;
         }

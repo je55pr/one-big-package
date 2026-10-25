@@ -18,20 +18,6 @@
     "Hash": "db683cfebce452bec6536f852f4d189075e6d9ba89b699d200851141e570f1d0"
   },
   {
-    "Key": "game/scripts/OBPGame.ControllerSettings.cs::OBPGame.TryOpenPauseMenu()",
-    "Kind": "migration",
-    "Reason": "Retail menu, testing capabilities and Quick Select wiring still depend on the legacy player flag.",
-    "Owner": "#259",
-    "Hash": "82ab675933948daeb94d14bb2a4573a5feae15d0eeb2967fbe1be85f5acf89af"
-  },
-  {
-    "Key": "game/scripts/OBPGame.cs::OBPGame.SpawnPlayer(RuntimeWorld)",
-    "Kind": "migration",
-    "Reason": "World-origin reads retired by #266/#267. The existing legacy flag is now derived solely from the selected session movement profile; #269 owns its remaining decomposition.",
-    "Owner": "#269",
-    "Hash": "1addc703235e680518aeeee0cb1b03d6ca7c3f8f59712de4f514f82c11eb610c"
-  },
-  {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
     "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate.",
@@ -93,13 +79,6 @@
     "Hash": "8d54262beed927d82d2c798df92ab25dee6453957446281cc0cdc3a4d64b8568"
   },
   {
-    "Key": "game/scripts/OBPGame.MovementRepro.cs::OBPGame.LoadMovementStateAsync(string,bool,int?)",
-    "Kind": "migration",
-    "Reason": "Existing movement-state restore gates on the legacy player flag; migrate explicit profile/replay admission.",
-    "Owner": "#274",
-    "Hash": "a6f2ab9299796fafc03eee1f9e5da115bb1af3ce941cc1debfc85e37714a319b"
-  },
-  {
     "Key": "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
     "Kind": "adapter",
     "Reason": "Hide duplicate R&C1 authored class-0 world surfaces; does not select the player avatar/provider.",
@@ -118,13 +97,6 @@
     "Hash": "0c7165c2a3f031110fdb43812b9908e1cb72e930a44a10b4f9ddb492e7e59650"
   },
   {
-    "Key": "game/scripts/OBPGame.QuickSelect.cs::OBPGame.TryOpenWeaponQuickSelect(InputEvent)",
-    "Kind": "migration",
-    "Reason": "Legacy player-mode flag currently gates the ordinary wheel; consume the shared session catalog instead.",
-    "Owner": "#259",
-    "Hash": "46db3184b90e390cb347efc51850234426fc38b5d495c338e57362833f479d03"
-  },
-  {
     "Key": "game/scripts/OBPGame.Rac1Checkpoints.cs::OBPGame.TickRac1CheckpointTriggers()",
     "Kind": "adapter",
     "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter.",
@@ -133,8 +105,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
     "Kind": "adapter",
-    "Reason": "Original-world R&C1 hostile/session admission; each native actor retains its own controller under #256.",
-    "Hash": "7cd5d6a5a1c7b4bb1a7c0b3ef726a81313df2c38eab3742a2ddb77e29874435d"
+    "Reason": "Original-world R&C1 actor/session updates; ordinary player protection ticks moved to the persistent fixed-clock health service. Only explicit parity retains native health stepping here.",
+    "Hash": "14bf76cb0236237798e5227070347b4e5e54ef5516d9eb217b3f048817d942dc"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.BindSourcePlayerContacts(PlayerHost)",
@@ -143,11 +115,10 @@
     "Hash": "ee19e090310b804785f832dc0f5e01217cb822dfbf3f97a9b3a75806af47bf2b"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.ConfigureRac1Gameplay(RuntimeWorld,RuntimeWorldScene.Result)",
-    "Kind": "migration",
-    "Reason": "Mixed native actor setup currently resets/chooses player weapons and HUD by world origin; split session ownership.",
-    "Owner": "#266/#270",
-    "Hash": "fbaedd9c318c77ebad55bc6d4c874910f58f94cebb135bb9f3ddd8e120a66d5b"
+    "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.ConfigureRac1WorldActors(RuntimeWorld,RuntimeWorldScene.Result)",
+    "Kind": "adapter",
+    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check.",
+    "Hash": "78a7fa470e2da255025d260c04f8b4f2e4587feddb644bae611db3dbe8e4b49c"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.GetRac1GameplayHudLine()",
@@ -163,10 +134,9 @@
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.TickRac1Gameplay(double)",
-    "Kind": "migration",
-    "Reason": "Mixed native world ticks currently update the player health/action owner; separate session consequences from world actors.",
-    "Owner": "#270",
-    "Hash": "07e954c81e0ed128ba5bb5bcbea699f0f042c11c1a43107497664207958282ae"
+    "Kind": "adapter",
+    "Reason": "Original-world R&C1 actor/environment updates and taxi cancellation. Ordinary player health, hurt/death/retry and HUD clock are bound independently; explicit native parity has its own lifecycle helper.",
+    "Hash": "01c6621183079b4696d1acd04fe131939c1082ccc2e1d79906b9bbfe618dfeb8"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame.TickRac1GoldBolts()",
@@ -238,24 +208,10 @@
     "Hash": "535d7609325124ddae1f352823bf68213ffa0300652929fee2a55c06296a24e9"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Projectiles.cs::OBPGame.StepRac1BombWeaponPhysics()",
-    "Kind": "migration",
-    "Reason": "Selected-player weapon simulation/presentation is currently gated by world origin.",
-    "Owner": "#271",
-    "Hash": "663f6fb7c49620775ed29183c3cb44dc513d3e2d477813949772e54d14a7ba54"
-  },
-  {
     "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame.RefreshSourceEquipmentContext()",
     "Kind": "adapter",
     "Reason": "Refresh only the original R&C1 metal-detector world query after equipment changes; diagnostic loadout ownership is persistent-player state, covered by PlayerNativeSessionStateTests.",
     "Hash": "451744a107c6a8bbe11a0b7a1363cbc0cf10791b6d03760c80c205910a3ca352"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame.StepRac1AdditionalWeapons()",
-    "Kind": "migration",
-    "Reason": "Selected-player native weapon stepping currently depends on world origin; keep native rules behind session routing.",
-    "Owner": "#255/#271",
-    "Hash": "5f99e13128465b0887dfe54bfbba7a175ee7030f4358ce0a174c3397cba3b14e"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame.StepRac1AdditionalWeaponWorld()",
@@ -324,118 +280,6 @@
     "Kind": "adapter",
     "Reason": "Require the recovered R&C1 authored start, then resolve neutral authored/ship/bounds entry facts before teardown. PlayerSessionLifetimeTests covers authored headings and invalid ship fallback.",
     "Hash": "9bce20568f06af3894ccbea568be73d26884092932738a6c76ecb8f9ed83659c"
-  },
-  {
-    "Key": "game/scripts/PlayerDevelopmentControls.cs::PlayerDevelopmentControls._UnhandledInput(InputEvent)",
-    "Kind": "migration",
-    "Reason": "Diagnostic reset availability currently follows the legacy player flag; separate diagnostics from movement capability.",
-    "Owner": "#269",
-    "Hash": "6f855ff7ff4f737bead4f93b6d3862d4d4526229d0ae700c9c6b1803eafb6190"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Animation.cs::PlayerHost.RequestPrimaryAction()",
-    "Kind": "migration",
-    "Reason": "Legacy flag chooses native/player attack route and alternate crate strike behavior.",
-    "Owner": "#269",
-    "Hash": "327dee2d1ca3e26e574124fae844563dd0c51f5724e9f257cd52b174b2a4ce66"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Animation.cs::PlayerHost.TrackJump(bool)",
-    "Kind": "migration",
-    "Reason": "Legacy flag changes jump/animation state tracking; selected movement/animation policy must be explicit.",
-    "Owner": "#268/#269",
-    "Hash": "ad0fbc504543e9d797ccf73c1e46cd05fcfe56bde7bacc14755cc188dc730686"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Animation.cs::PlayerHost.UpdateAnimationState(bool)",
-    "Kind": "migration",
-    "Reason": "Animation inputs/timing still branch on the legacy player-mode flag.",
-    "Owner": "#268",
-    "Hash": "2395c14ba7da780a4b68ee7f0b02b2f634b18e5384d35a7a6335e17ba4713c15"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.cs::PlayerHost._PhysicsProcess(double)",
-    "Kind": "migration",
-    "Reason": "Legacy flag controls normalized input, movement, camera and attack capabilities in the physics host.",
-    "Owner": "#269",
-    "Hash": "e17bdd8b9ef054b1032ee5e2eb6548dc3293c8fdc1749ad87372c1912e7df225"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.cs::PlayerHost._Ready()",
-    "Kind": "migration",
-    "Reason": "Legacy flag selects collider dimensions, floor snap, slope and safety margins.",
-    "Owner": "#269",
-    "Hash": "fe4d1df97fe5c9e1fb4d4d335aefd88cbedfe17fea4edc10bcd0d87bc56a46b2"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.cs::PlayerHost._UnhandledInput(InputEvent)",
-    "Kind": "migration",
-    "Reason": "Legacy flag controls player equipment/input shortcuts instead of explicit capabilities.",
-    "Owner": "#269",
-    "Hash": "129fea684ab86c7937eb035db2c4c476efc8bd428d549e5bb4526f20faaa0035"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.cs::PlayerHost.HasActiveRecoveredCamera",
-    "Kind": "migration",
-    "Reason": "Legacy flag selects native player camera availability.",
-    "Owner": "#269",
-    "Hash": "95e543d40e75b891bc12c9974d8c498ca621f61cbe8877a090085a67d5c503e4"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.cs::PlayerHost.NotifyRac1WrenchAttackAccepted()",
-    "Kind": "migration",
-    "Reason": "Legacy flag selects the player action/animation admission route.",
-    "Owner": "#269",
-    "Hash": "07826ad5006107b59c45c893185c48af2d995d07fa0e4d3b272173f0902172ef"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.cs::PlayerHost.ScriptedInput()",
-    "Kind": "migration",
-    "Reason": "Scripted input follows the same legacy player-mode selection that #269 must replace.",
-    "Owner": "#269",
-    "Hash": "21675b3720b69b431aaafd7c5302ace9ec8f315874c52947c32591a6b7e96951"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Diagnostics.cs::PlayerHost.UpdateHud(bool)",
-    "Kind": "migration",
-    "Reason": "Legacy flag controls available player/testing command labels.",
-    "Owner": "#269",
-    "Hash": "19dd68ee50a6fbb819743e015a636b5b555dbfb75f50fde31b0edc0066541e42"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.MovementRepro.cs::PlayerHost.CaptureMovementRepro()",
-    "Kind": "migration",
-    "Reason": "Existing diagnostic movement snapshot requires the legacy player flag; migrate to selected profile identity.",
-    "Owner": "#274",
-    "Hash": "ba251f1807a0b210eecdcdf19dd5b1006a0208d96521791ecb2cf7fb9ecaad45"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Rac1Equipment.cs::PlayerHost.CycleRac1DevelopmentPack()",
-    "Kind": "migration",
-    "Reason": "Legacy flag currently gates player pack capability; shared catalog/profile must own it.",
-    "Owner": "#255/#269",
-    "Hash": "576839dda98cd0e73239e2d7ac92764d8a8493074d55fae094536352f2d1edda"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Rac1Equipment.cs::PlayerHost.ToggleRac1DevelopmentSwingshot()",
-    "Kind": "migration",
-    "Reason": "Legacy flag currently gates development traversal capability; no world-specific player grants.",
-    "Owner": "#255/#269",
-    "Hash": "b4f7e21ad93e3d75479bf024b553f92015134d36f56a1b4b73f6dc5e39548c03"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Rac1Movement.cs::PlayerHost.ProbeRac1Contact(bool,bool)",
-    "Kind": "migration",
-    "Reason": "Legacy flag changes contact-controller admission; selected movement profile must own this decision.",
-    "Owner": "#269",
-    "Hash": "aebc4ea58be20dffc0ffee1159926e3a8925cbfa772c51c8f803678dce59e1ee"
-  },
-  {
-    "Key": "game/scripts/PlayerHost.Rac1Movement.cs::PlayerHost.StepRetailDerivedMovement(Vector2,bool,bool)",
-    "Kind": "migration",
-    "Reason": "Legacy flag switches movement/traversal/contact controller behavior.",
-    "Owner": "#269",
-    "Hash": "eea2493bf8e789d8fdbfea3bf3ad5619d8daae8cfa8a17a5c3dbe95621f3f238"
   },
   {
     "Key": "src/OBP.Godot/DebugOverlay.cs::DebugOverlay.BuildEnvGizmos()",
