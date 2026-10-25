@@ -47,7 +47,7 @@ foreach ($case in $cases) {
 $log = Join-Path $evidence 'valid-bootstrap.log'
 $errorLog = Join-Path $evidence 'valid-bootstrap.err.log'
 $arguments = @('--headless', '--path', (Join-Path $root 'game'), '--fixed-fps', '60', '--quit-after', '120',
-    '--', '--automation', '--no-profile', '--fixed-seed', '-1')
+    '--', '--automation', '--test-scene', 'picker', '--source-config', (Join-Path $evidence 'empty-sources.json'), '--no-profile', '--fixed-seed', '-1')
 $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $arguments -WorkingDirectory $root -StandardOutputPath $log -StandardErrorPath $errorLog
 if ($code -ne 0 -or -not (Select-String -LiteralPath $log -SimpleMatch '[OBPGame] ready' -Quiet) -or
     (Select-String -LiteralPath $errorLog -SimpleMatch '[cli]' -Quiet)) {

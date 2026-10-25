@@ -7,7 +7,7 @@ public static class AutomationRunPolicy
     {
         // Detect the flag convention, not an ever-growing list of individual
         // tests. New smoke flags must be safe before their dispatcher knows them.
-        if (userArgs.Any(arg => arg == "--automation" || arg == "--smoke" ||
+        if (userArgs.Any(arg => arg == "--automation" || arg == "--smoke" || arg == "--source-setup-check" ||
             arg.StartsWith("--", StringComparison.Ordinal) && arg.EndsWith("-smoke", StringComparison.Ordinal))) return true;
         if (engineArgs.Any(arg => arg is "--headless" or "--quit" or "--quit-after")) return true;
         if (engineArgs.Any(arg => (arg.EndsWith(".tscn", StringComparison.OrdinalIgnoreCase) || arg.EndsWith(".gd", StringComparison.OrdinalIgnoreCase)) &&

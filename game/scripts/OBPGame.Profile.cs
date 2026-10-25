@@ -122,7 +122,7 @@ public partial class OBPGame
 
     private bool SaveSharedProfile(string reason)
     {
-        if (SharedProfilePath is not { } path || _playerSession is null || _profileWriteBlocked || _playtest is not null) return false;
+        if (SharedProfilePath is not { } path || _playerSession is null || _profileWriteBlocked || _setupProfileSuspended || _playtest is not null) return false;
         try
         {
             var profile = CaptureSharedProfile(); byte[] bytes = profile.Encode();
@@ -152,6 +152,7 @@ public partial class OBPGame
 
     public bool TryResumeSharedProfileFromBootstrap()
     {
+        if (!RequireOrdinarySourceSetup("profile resume")) return false;
         EnsurePlayerSession();
         if (_profileWriteBlocked || _profileDocument?.Destination is not { } destination) return false;
         if (destination == "obp:fusion-lab") return EnterFusionLab();

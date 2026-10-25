@@ -8,6 +8,14 @@ namespace OBP.Tests;
 public sealed class AutomationDesktopSafetyTests
 {
     [Fact]
+    public void SourceSetupCheckIsAutomatedWhileRetainingOrdinarySourceRequirements()
+    {
+        string[] arguments = ["--source-setup-check"];
+        Assert.True(AutomationRunPolicy.IsAutomated(arguments, []));
+        Assert.False(SourceSetupPolicy.IsDiagnostic(CommandLineArgs.Parse(arguments), arguments, []));
+    }
+
+    [Fact]
     public void EveryCurrentAndFutureSmokeFlagIsIsolated()
     {
         var flags = typeof(CommandLineArgs).GetProperties().Where(property => property.PropertyType == typeof(bool) && property.Name.EndsWith("Smoke", StringComparison.Ordinal))

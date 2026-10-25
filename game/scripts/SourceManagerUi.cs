@@ -7,6 +7,9 @@ namespace OneBigPackage;
 public partial class SourceManagerUi : CanvasLayer
 {
     public bool DebugOutputEnabled { get; init; }
+    public bool DiagnosticSources { get; init; }
+    public Func<SourceReadiness>? Readiness { get; init; }
+    public Func<bool>? ConfigNeedsRepair { get; init; }
     public event Action<ObpSourceGame>? SelectRequested;
     public event Action<ObpSourceGame>? ForgetRequested;
     public event Action? BrowseWorldsRequested;
@@ -110,6 +113,7 @@ public partial class SourceManagerUi : CanvasLayer
     {
         int attachedCount = 0;
         int playableCount = 0;
+        var readiness = Readiness?.Invoke();
         foreach (var definition in library.Definitions)
         {
             var attached = library.Get(definition.Game);
@@ -118,15 +122,17 @@ public partial class SourceManagerUi : CanvasLayer
             var select = _selectButtons[definition.Game];
             var forget = _forgetButtons[definition.Game];
 
-            if (attached is null)
+            var checkedSource = readiness?.Entries.Single(entry => entry.Game == definition.Game);
+            if (attached is null || checkedSource is { Ready: false })
             {
                 string expected = DebugOutputEnabled
                     ? $"Expected {definition.Authority.Serial}  •  {definition.Authority.BuildId}"
                     : "Select the supported NTSC-U disc image.";
                 status.Text = (hasWorldProvider ? "SOURCE NEEDED  •  WORLDS READY\n" : "SOURCE NEEDED  •  RUNTIME PENDING\n") + expected;
+                if (checkedSource?.Problem is { } problem) status.Text = "SETUP REQUIRED\n" + problem;
                 status.Modulate = UiTheme.TextDim;
                 select.Text = "ATTACH DISC IMAGE";
-                forget.Disabled = true;
+                forget.Disabled = attached is null;
             }
             else
             {
@@ -143,8 +149,9 @@ public partial class SourceManagerUi : CanvasLayer
         }
 
         _summary.Text = $"{attachedCount}/3 SOURCES  •  {playableCount} READY TO PLAY";
-        _browseWorlds.Disabled = playableCount == 0;
-        _browseWorlds.Text = playableCount > 0 ? $"ENTER WORLDS  ›   {playableCount} GAME{(playableCount == 1 ? "" : "S")} READY" : "ENTER WORLDS  •  ATTACH A READY SOURCE FIRST";
+        bool canEnter = DiagnosticSources ? playableCount > 0 : readiness?.Ready == true;
+        _browseWorlds.Disabled = !canEnter;
+        _browseWorlds.Text = !canEnter ? "COMPLETE TRILOGY SETUP TO CONTINUE" : ConfigNeedsRepair?.Invoke() == true ? "REPAIR CONFIGURATION AND CONTINUE" : "CONTINUE TO WORLDS";
         WireFocus();
     }
 

@@ -216,6 +216,7 @@ public partial class OBPGame
     private void ShowDestinationSelector()
     {
         EnsureSourceLibraryInitialized();
+        if (!RequireOrdinarySourceSetup("world selection")) return;
         _mode = Mode.Selector;
         _sceneKind = "destinations";
         _genericNavigationActive = true;
@@ -252,6 +253,7 @@ public partial class OBPGame
 
     private bool OnDestinationChosen(ObpDestination destination)
     {
+        if (!RequireOrdinarySourceSetup("destination entry")) return false;
         var provider = TrilogyWorldProviders.Find(destination.Game);
         var source = _sources.Get(destination.Game);
         if (provider is null)
