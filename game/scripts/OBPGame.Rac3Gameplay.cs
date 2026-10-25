@@ -5,7 +5,7 @@ using OBP.RAC3;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Thin host bridge for the currently recovered UYA TABLE1 gameplay slice.

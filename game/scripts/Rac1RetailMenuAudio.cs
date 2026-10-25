@@ -2,7 +2,7 @@ using Godot;
 using OBP.Godot;
 using OBP.Runtime.Audio;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Disc-derived startup-bank UI cue adapter. Cue pairing is provisional.</summary>
 public sealed partial class Rac1RetailMenuAudio : Node

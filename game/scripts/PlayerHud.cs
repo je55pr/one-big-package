@@ -1,7 +1,7 @@
 using Godot;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Non-interactive Godot renderer for the engine-neutral HUD snapshot.

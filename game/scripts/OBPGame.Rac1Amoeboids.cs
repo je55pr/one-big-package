@@ -9,7 +9,7 @@ using OBP.Runtime.Gameplay;
 using NVector3 = System.Numerics.Vector3;
 using NVector2 = System.Numerics.Vector2;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

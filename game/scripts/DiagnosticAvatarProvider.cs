@@ -1,7 +1,7 @@
 using OBP.Core;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>An explicit asset-free diagnostic, never labeled as a native Ratchet.</summary>
 public sealed class DiagnosticAvatarProvider : IPlayerAvatarProvider

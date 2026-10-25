@@ -30,7 +30,7 @@ if (-not $Godot) {
     }
 }
 if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
+    & (Join-Path $PSScriptRoot 'build.ps1') -Game
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 if (-not $OutputDirectory) {

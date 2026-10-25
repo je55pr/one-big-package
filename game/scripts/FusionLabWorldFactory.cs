@@ -3,7 +3,7 @@ using OBP.Core.Math;
 using OBP.Fusion;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Original OBP greybox, rendered and collided through the same RuntimeWorld

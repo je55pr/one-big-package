@@ -8,7 +8,7 @@ using OBP.RAC1.Camera;
 using OBP.RAC1.Progression;
 using OBP.Runtime.Diagnostics;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

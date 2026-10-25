@@ -14,7 +14,7 @@ using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Verified CPU-side weapon data. No Godot resources or scene access.</summary>
 public sealed class FusionWeaponData

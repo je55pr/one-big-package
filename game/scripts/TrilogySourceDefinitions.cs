@@ -3,7 +3,7 @@ using OBP.RAC1;
 using OBP.RAC2;
 using OBP.RAC3;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Composition-root catalogue of the three primary OBP retail authorities.

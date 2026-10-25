@@ -6,7 +6,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Progression;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

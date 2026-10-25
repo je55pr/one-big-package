@@ -8,7 +8,7 @@ using OBP.RAC3;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Composition registrations, not a replacement inventory or native item table.</summary>
 public static class PlayerEquipmentRegistrations

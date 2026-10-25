@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Stable analogue/D-pad menu repeat without changing gameplay stick response.</summary>
 public partial class ControllerMenuNavigation : Node

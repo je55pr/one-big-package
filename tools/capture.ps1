@@ -89,7 +89,7 @@ $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 if (-not (Test-Path $godot)) { & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null }
 
 if (-not $SkipBuild) {
-  & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
+  & (Join-Path $PSScriptRoot 'build.ps1') -Game
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 if (-not (Test-Path (Join-Path $root 'game/.godot'))) {

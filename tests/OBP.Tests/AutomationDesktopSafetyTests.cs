@@ -1,7 +1,7 @@
 using Godot;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

@@ -5,7 +5,7 @@ using OBP.IO;
 using OBP.RAC1.Camera;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

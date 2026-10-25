@@ -4,7 +4,7 @@ using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
 using NVector3 = System.Numerics.Vector3;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

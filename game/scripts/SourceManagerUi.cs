@@ -2,7 +2,7 @@ using Godot;
 using OBP.Core;
 using OBP.PS2;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class SourceManagerUi : CanvasLayer
 {

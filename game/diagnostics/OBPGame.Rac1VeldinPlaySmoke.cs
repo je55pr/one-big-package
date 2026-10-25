@@ -6,7 +6,7 @@ using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 using OBP.RAC1.Progression;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// End-to-end Veldin gate that starts from the ordinary ephemeral local-dev state

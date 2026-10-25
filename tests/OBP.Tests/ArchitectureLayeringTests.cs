@@ -22,9 +22,9 @@ public sealed class ArchitectureLayeringTests
                 Assert.DoesNotContain(other, references);
             Assert.DoesNotContain("OBP.Godot", references);
             Assert.DoesNotContain("OBP.Fusion", references);
-            Assert.DoesNotContain("OneBigPackage", references);
+            Assert.DoesNotContain("OBP.Game", references);
 
-            AssertNoImports(game, "Godot", "OBP.Fusion", "OneBigPackage");
+            AssertNoImports(game, "Godot", "OBP.Fusion", "OBP.Game");
         }
     }
 
@@ -34,7 +34,7 @@ public sealed class ArchitectureLayeringTests
         Assert.Equal(["OBP.Core"], ProjectReferences("OBP.Runtime"));
         AssertNoImports("OBP.Runtime",
             "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
-            "OBP.IO", "OBP.PS2", "OBP.Fusion", "OneBigPackage");
+            "OBP.IO", "OBP.PS2", "OBP.Fusion", "OBP.Game");
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class ArchitectureLayeringTests
         Assert.Equal(["OBP.Core", "OBP.Runtime"], ProjectReferences("OBP.Fusion"));
         AssertNoImports("OBP.Fusion",
             "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
-            "OBP.IO", "OBP.PS2", "OneBigPackage");
+            "OBP.IO", "OBP.PS2", "OBP.Game");
         Assert.False(Directory.Exists(Path.Combine(RepoPaths.Root, "src", "OBP." + "Composition")));
     }
 
@@ -55,7 +55,7 @@ public sealed class ArchitectureLayeringTests
             ProjectReferences("OBP.Godot"));
         AssertNoImports("OBP.Godot",
             "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
-            "OBP.IO", "OBP.PS2", "OneBigPackage");
+            "OBP.IO", "OBP.PS2", "OBP.Game");
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public sealed class ArchitectureLayeringTests
             "src", "OBP.PS2", "Presentation", "Ps2MaterialPresentation.cs")));
         AssertNoImports("OBP.PS2",
             "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
-            "OBP.Fusion", "OneBigPackage");
+            "OBP.Fusion", "OBP.Game");
 
         string root = Path.Combine(RepoPaths.Root, "src", "OBP.PS2");
         foreach (string path in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))

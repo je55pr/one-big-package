@@ -2,7 +2,7 @@ using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Native class-827 carrier-owned class-500 *spawned* visuals.
 /// The copied mesh is from the mounted R&C1 retail disc, not a fabricated box.

@@ -1,6 +1,6 @@
-﻿using Godot;
+using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Application-wide OBP menu theme. The palette and shapes are original OBP

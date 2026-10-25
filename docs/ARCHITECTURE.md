@@ -91,6 +91,15 @@ Rac2/Rac3 gameplay branch. New cross-source APIs should use neutral names.
 The cleanup programme [#307](https://github.com/je55pr/one-big-package/issues/307)
 uses separate PRs with manual review/merge:
 
+The app project, assembly and C# namespace are `OBP.Game`. Direct builds use
+`dotnet build game/OBP.Game.csproj`; replace the former
+`game/OneBigPackage.csproj` path in local commands. The supported `tools/play`
+and launch wrappers keep their existing entry points. The solution remains
+`OneBigPackage.sln`, the Godot directory remains `game/`, and the game brand,
+scene/script UIDs, resource paths and user-data location are unchanged. Existing
+recordings still parse; the renamed assembly is a different build for replay
+compatibility checks, just as any changed assembly is.
+
 1. [#289](https://github.com/je55pr/one-big-package/issues/289) establishes this policy and guard.
 2. After policy merge, [#290](https://github.com/je55pr/one-big-package/issues/290)
    migrates source identity while retaining wire formats.

@@ -1,7 +1,7 @@
 using OBP.Runtime.Gameplay;
 using System.Numerics;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// OBP feedback endpoints in the held mesh's scene axes. Weapon placement now

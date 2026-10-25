@@ -2,7 +2,7 @@ using Godot;
 using OBP.Core.Math;
 using OBP.RAC1.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class PlayerHost
 {

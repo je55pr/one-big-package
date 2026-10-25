@@ -5,7 +5,7 @@ using OBP.Godot.Player;
 using OBP.RAC1.Progression;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Two-process host smoke for the recovered R&C1 campaign/checkpoint slice. The

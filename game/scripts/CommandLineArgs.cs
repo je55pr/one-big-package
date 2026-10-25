@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// OBP command-line options, taken from the args after Godot's <c>--</c>

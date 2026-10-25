@@ -2,7 +2,7 @@ using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Dynamic class1021 child presentation for the original Nebula G34 Queen

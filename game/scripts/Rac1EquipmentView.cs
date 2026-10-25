@@ -5,7 +5,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Decoded retail skin, either attached to a sampled Ratchet hand or placed in the world.</summary>
 public sealed partial class Rac1EquipmentView : Node3D

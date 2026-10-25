@@ -1,7 +1,7 @@
 using Godot;
 using OBP.Runtime.Diagnostics;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 internal static class PlaytestInputCodec
 {

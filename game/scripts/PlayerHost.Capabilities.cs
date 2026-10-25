@@ -1,6 +1,6 @@
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class PlayerHost
 {

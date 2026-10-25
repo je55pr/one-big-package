@@ -4,7 +4,7 @@ using Godot;
 using OBP.Godot;
 using OBP.Fusion;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

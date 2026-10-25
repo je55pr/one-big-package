@@ -4,7 +4,7 @@ using OBP.Fusion;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

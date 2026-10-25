@@ -1,7 +1,7 @@
 using OBP.Runtime;
 using OBP.Runtime.Audio;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

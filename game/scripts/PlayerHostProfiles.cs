@@ -3,7 +3,7 @@ using OBP.Fusion;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Composition-root registrations for the genuinely implemented controllers.</summary>
 internal static class PlayerHostProfiles

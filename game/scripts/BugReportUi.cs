@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>OBP reporting overlay, independent of source-game pause presentation.</summary>
 public partial class BugReportUi : CanvasLayer

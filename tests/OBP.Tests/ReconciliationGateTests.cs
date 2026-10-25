@@ -2,7 +2,7 @@ using System.Text.Json;
 using OBP.Core;
 using OBP.Fusion;
 using OBP.Runtime.Gameplay;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

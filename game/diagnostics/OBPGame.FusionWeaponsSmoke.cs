@@ -5,7 +5,7 @@ using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

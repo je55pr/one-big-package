@@ -10,18 +10,9 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'obp-native-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
-foreach ($source in @($Rac1Iso, $GcIso, $UyaIso)) {
-    if (-not $source -or -not (Test-Path -LiteralPath $source)) { throw 'All three authorised original sources are required.' }
-}
+$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $GcIso, $UyaIso) -SkipBuild:$SkipBuild
 $Out = [IO.Path]::GetFullPath($Out)
 New-Item -ItemType Directory -Path $Out -Force | Out-Null
-if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
-$manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
-$godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
-if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) { & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null }
 $engineArgs = @('--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--fixed-fps', '60')
 if ($Rendered) { $engineArgs += @('--windowed', '--position', '-20000,-20000', '--resolution', '960x720') }
 else { $engineArgs += '--headless' }

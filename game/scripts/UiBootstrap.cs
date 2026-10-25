@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Autoload that installs the application-wide <see cref="UiTheme"/> on the root

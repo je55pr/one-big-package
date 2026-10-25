@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Logical pointer mode for gameplay/UI. Automated input can exercise the same

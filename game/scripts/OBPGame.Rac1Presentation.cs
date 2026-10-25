@@ -9,7 +9,7 @@ using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

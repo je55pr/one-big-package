@@ -45,7 +45,7 @@ until adapters, catalogues and mixed encounter work land in follow-ups.
   the wrench, Bomb Glove, Lancer and Shock Cannon selected. It is a lifecycle
   fixture, not cross-world replay admission or weapon-effect validation.
 - Run portable FusionLabDefinitionTests, ArchitectureLayeringTests and build
-  game/OneBigPackage.csproj. The authored topology and failure cases are
+  game/OBP.Game.csproj. The authored topology and failure cases are
   deterministic without native assets. The old comparison viewer was retired
   under #295; it is separate from this playable destination.
 

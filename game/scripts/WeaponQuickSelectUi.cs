@@ -4,7 +4,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Eight-direction R&C1 quick-selection presentation. Source-native ring

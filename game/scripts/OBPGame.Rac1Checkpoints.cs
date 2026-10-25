@@ -8,7 +8,7 @@ using OBP.RAC1.Progression;
 using OBP.Runtime;
 using NVector3 = System.Numerics.Vector3;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

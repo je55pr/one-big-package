@@ -3,7 +3,7 @@ using Godot;
 using OBP.Fusion;
 using OBP.RAC2.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

@@ -2,7 +2,7 @@ using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Presentation of source-owned sprite records; no emission or motion rules live here.</summary>
 public sealed partial class Rac1ParticleView : Node3D

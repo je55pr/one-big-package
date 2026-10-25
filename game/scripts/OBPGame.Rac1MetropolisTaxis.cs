@@ -5,7 +5,7 @@ using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Provisional Godot presentation of the native Kerwan taxi placements. The
@@ -494,7 +494,7 @@ public partial class OBPGame
         // inactive cabs whose current meshes overlap a dock probe. However,
         // the authored static class-816 i921 is deliberately a walkable
         // parked platform at the destination and must remain eligible.
-        var exclude = new Godot.Collections.Array<Rid> { player.GetRid() };
+        var exclude = new global::Godot.Collections.Array<Rid> { player.GetRid() };
         foreach (var stop in _rac1MetropolisTaxis?.Stops ?? [])
         {
             if (stop.OutboundPath.Count > 1 &&

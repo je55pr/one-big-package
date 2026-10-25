@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// R&C1 item grid cell. FUN_0021d948 (draw_menu_item_grid) draws an icon

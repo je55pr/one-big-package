@@ -2,7 +2,7 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC2;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Developer world-hop lifecycle stress diagnostics.</summary>
 public partial class OBPGame

@@ -3,7 +3,7 @@ using Godot;
 using OBP.Core;
 using OBP.RAC1.Progression;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

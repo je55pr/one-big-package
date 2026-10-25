@@ -2,7 +2,7 @@ using OBP.Core;
 using OBP.IO;
 using OBP.PS2;
 using OBP.Tests.Helpers;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

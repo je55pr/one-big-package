@@ -5,7 +5,7 @@ using OBP.Fusion;
 using OBP.RAC1.Camera;
 using OBP.Runtime.Diagnostics;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

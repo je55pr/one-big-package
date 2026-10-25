@@ -5,7 +5,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Class192 skinning and its semantic0 staged-bomb socket under Ratchet joint54.</summary>
 public sealed partial class Rac1BombGloveView : Node3D

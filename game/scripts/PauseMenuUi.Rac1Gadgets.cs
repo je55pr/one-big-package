@@ -1,7 +1,7 @@
 using Godot;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public sealed partial class PauseMenuUi
 {

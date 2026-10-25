@@ -3,7 +3,7 @@ using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

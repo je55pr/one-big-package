@@ -7,7 +7,7 @@ using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Main-thread Godot resource ownership for verified cross-game weapons.</summary>
 public sealed class FusionWeaponAssets : IDisposable

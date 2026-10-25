@@ -11,7 +11,7 @@ using OBP.Runtime;
 using OBP.Runtime.Camera;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Godot host for ordinary Ratchet play against reconstructed world collision.

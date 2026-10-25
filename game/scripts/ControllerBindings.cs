@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>SDL logical buttons, labelled for a PlayStation controller. Host UI policy only.</summary>
 internal static class ControllerBindings
