@@ -2,8 +2,8 @@
 [CmdletBinding()]
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release'
 )
@@ -12,8 +12,8 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $authorities = [ordered]@{
     OBP_RAC1_ISO = $Rac1Iso
-    OBP_GC_ISO   = $GcIso
-    OBP_UYA_ISO  = $UyaIso
+    OBP_GC_ISO   = $Rac2Iso
+    OBP_UYA_ISO  = $Rac3Iso
 }
 
 foreach ($entry in $authorities.GetEnumerator()) {

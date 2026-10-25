@@ -1,8 +1,8 @@
 #Requires -Version 5.1
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$Rendered,
     [switch]$SkipBuild,
     [string]$Out = 'captures/player-capabilities-smoke'
@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'obp-native-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
-$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $GcIso, $UyaIso) -SkipBuild:$SkipBuild
+$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $Rac2Iso, $Rac3Iso) -SkipBuild:$SkipBuild
 $Out = [IO.Path]::GetFullPath($Out)
 New-Item -ItemType Directory -Path $Out -Force | Out-Null
 $baseline = $null
@@ -20,7 +20,7 @@ foreach ($fps in @(30, 120)) {
     else { $engineArgs += '--headless' }
     $report = Join-Path $Out "trace-$fps.json"
     $engineArgs += @('--', '--destination', 'rac1:LEVEL0', '--player-capabilities-smoke', '--player-capabilities-out', $report, '--fixed-seed', '1440',
-        '--rac1-iso', $Rac1Iso, '--gc-iso', $GcIso, '--uya-iso', $UyaIso)
+        '--rac1-iso', $Rac1Iso, '--rac2-iso', $Rac2Iso, '--rac3-iso', $Rac3Iso)
     $stdout = Join-Path $Out "stdout-$fps.log"
     $stderr = Join-Path $Out "stderr-$fps.log"
     $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $engineArgs -WorkingDirectory $root -StandardOutputPath $stdout -StandardErrorPath $stderr

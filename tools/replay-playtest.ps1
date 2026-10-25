@@ -12,8 +12,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Run,
     [string]$Report,
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$AllowBuildChange,
     [switch]$Rendered,
     [switch]$SkipBuild
@@ -41,8 +41,8 @@ if ($Rendered) { $engineArgs += @('--windowed', '--position', '-20000,-20000', '
 else { $engineArgs += '--headless' }
 $engineArgs += @('--log-file', ($Report + '.log'), '--', '--replay-playtest', $Run, '--playtest-report', $Report)
 if ($Rac1Iso) { $engineArgs += @('--rac1-iso', $Rac1Iso) }
-if ($GcIso) { $engineArgs += @('--gc-iso', $GcIso) }
-if ($UyaIso) { $engineArgs += @('--uya-iso', $UyaIso) }
+if ($Rac2Iso) { $engineArgs += @('--rac2-iso', $Rac2Iso) }
+if ($Rac3Iso) { $engineArgs += @('--rac3-iso', $Rac3Iso) }
 if ($AllowBuildChange) { $engineArgs += '--playtest-allow-build-change' }
 $stdoutPath = $Report + '.stdout.log'
 $stderrPath = $Report + '.stderr.log'

@@ -14,8 +14,8 @@ param(
     [string]$Profile,
     [string]$Out,
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$FusionTest,
     [switch]$DefaultWeaponsSmoke,
     [int]$Seed = 1440,
@@ -52,8 +52,8 @@ elseif ($Offscreen) { $engineArgs += @('--windowed', '--position', '-20000,-2000
 else { $engineArgs += @(Get-ObpWindowArguments); $engineArgs += @('--max-fps', '60') }
 $engineArgs += @('--log-file', ($Out + '.log'), '--', '--destination', $Destination, '--record-playtest', $Out, '--fixed-seed', $Seed)
 if ($Rac1Iso) { $engineArgs += @('--rac1-iso', $Rac1Iso) }
-if ($GcIso) { $engineArgs += @('--gc-iso', $GcIso) }
-if ($UyaIso) { $engineArgs += @('--uya-iso', $UyaIso) }
+if ($Rac2Iso) { $engineArgs += @('--rac2-iso', $Rac2Iso) }
+if ($Rac3Iso) { $engineArgs += @('--rac3-iso', $Rac3Iso) }
 if ($FusionTest) { $engineArgs += '--fusion-test' }
 if ($DefaultWeaponsSmoke) { $engineArgs += '--default-weapons-smoke' }
 if ($Smoke) { $engineArgs += '--playtest-smoke' }

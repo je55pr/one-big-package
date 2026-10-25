@@ -8,15 +8,15 @@
 #>
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$Rendered,
     [switch]$SkipBuild,
     [string]$Out
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-foreach ($sourcePath in @($Rac1Iso, $GcIso, $UyaIso)) {
+foreach ($sourcePath in @($Rac1Iso, $Rac2Iso, $Rac3Iso)) {
     if (-not $sourcePath -or -not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { throw 'All three authorised NTSC-U sources are required.' }
 }
 if (-not $Out) { $Out = Join-Path $root ('captures/fusion-' + [guid]::NewGuid().ToString('N')) }
@@ -36,13 +36,13 @@ $previousCapture = $env:OBP_FUSION_CAPTURE_DIR
 try {
     if ($Rendered) { $env:OBP_FUSION_CAPTURE_DIR = $Out }
     $integrationLog = Join-Path $Out 'integration.log'
-    & $godot @windowArgs --fixed-fps 60 --path (Join-Path $root 'game') --rendering-method gl_compatibility --log-file $integrationLog -- --fusion-smoke --fixed-seed 1440 --rac1-iso $Rac1Iso --gc-iso $GcIso --uya-iso $UyaIso
+    & $godot @windowArgs --fixed-fps 60 --path (Join-Path $root 'game') --rendering-method gl_compatibility --log-file $integrationLog -- --fusion-smoke --fixed-seed 1440 --rac1-iso $Rac1Iso --rac2-iso $Rac2Iso --rac3-iso $Rac3Iso
     if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath $integrationLog -SimpleMatch '[fusion-smoke] PASS:')) { throw "Fusion fixtures failed. Inspect $integrationLog" }
     $run = Join-Path $Out 'ordinary.run.jsonl.gz'
-    & (Join-Path $PSScriptRoot 'record-playtest.ps1') -Destination rac1:LEVEL0 -FusionTest -Smoke -Out $run -Rac1Iso $Rac1Iso -GcIso $GcIso -UyaIso $UyaIso -Headless:(-not $Rendered) -Offscreen:$Rendered -SkipBuild
+    & (Join-Path $PSScriptRoot 'record-playtest.ps1') -Destination rac1:LEVEL0 -FusionTest -Smoke -Out $run -Rac1Iso $Rac1Iso -Rac2Iso $Rac2Iso -Rac3Iso $Rac3Iso -Headless:(-not $Rendered) -Offscreen:$Rendered -SkipBuild
     if ($LASTEXITCODE -ne 0) { throw 'Ordinary fusion recording failed.' }
     $reportPath = Join-Path $Out 'replay.report.json'
-    & (Join-Path $PSScriptRoot 'replay-playtest.ps1') -Run $run -Report $reportPath -Rac1Iso $Rac1Iso -GcIso $GcIso -UyaIso $UyaIso -Rendered:$Rendered -SkipBuild
+    & (Join-Path $PSScriptRoot 'replay-playtest.ps1') -Run $run -Report $reportPath -Rac1Iso $Rac1Iso -Rac2Iso $Rac2Iso -Rac3Iso $Rac3Iso -Rendered:$Rendered -SkipBuild
     if ($LASTEXITCODE -ne 0) { throw 'Fusion replay failed.' }
     $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
     if ($report.Result -ne 'matched' -or $report.Markers.Count -ne 3 -or $report.CheckpointsCompared -lt 10) { throw 'Fusion replay observations/markers were incomplete.' }
@@ -60,7 +60,7 @@ try {
     }
     finally { $writer.Dispose(); $reader.Dispose() }
     $invalidReport = Join-Path $Out 'wrong-source.report.json'
-    & (Join-Path $PSScriptRoot 'replay-playtest.ps1') -Run $wrongSource -Report $invalidReport -Rac1Iso $Rac1Iso -GcIso $GcIso -UyaIso $UyaIso -Rendered:$Rendered -SkipBuild -AllowBuildChange
+    & (Join-Path $PSScriptRoot 'replay-playtest.ps1') -Run $wrongSource -Report $invalidReport -Rac1Iso $Rac1Iso -Rac2Iso $Rac2Iso -Rac3Iso $Rac3Iso -Rendered:$Rendered -SkipBuild -AllowBuildChange
     if ($LASTEXITCODE -ne 2) { throw "Expected source-rejection exit code 2, got $LASTEXITCODE. Inspect $invalidReport" }
     $invalid = Get-Content -LiteralPath $invalidReport -Raw | ConvertFrom-Json
     $expectedError = 'Recorded cross-game weapon sources do not match (rac2). Attach the exact original sources used by the recording.'

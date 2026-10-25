@@ -4,9 +4,9 @@
   Deterministic Godot capture: build -> launch -> screenshot -> exit.
 .EXAMPLE
   ./tools/capture.ps1 smoke
-  ./tools/capture.ps1 -Picker -Rac1Iso "D:\isos\RAC1.iso" -GcIso "D:\isos\GC.iso" -UyaIso "D:\isos\UYA.iso"
-  ./tools/capture.ps1 -Worlds -GcIso "D:\isos\GC.iso"
-  ./tools/capture.ps1 -Destination rac2:LEVEL1 -GcIso "D:\isos\GC.iso" -Frame 120
+  ./tools/capture.ps1 -Picker -Rac1Iso "D:\isos\RAC1.iso" -Rac2Iso "D:\isos\GC.iso" -Rac3Iso "D:\isos\UYA.iso"
+  ./tools/capture.ps1 -Worlds -Rac2Iso "D:\isos\GC.iso"
+  ./tools/capture.ps1 -Destination rac2:LEVEL1 -Rac2Iso "D:\isos\GC.iso" -Frame 120
 #>
 param(
   [Parameter(Position = 0)][string]$Scene = 'smoke',
@@ -15,8 +15,8 @@ param(
   [string]$RenderingMethod = 'gl_compatibility',
   [string]$Resolution = '1280x720',
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-  [string]$GcIso = $env:OBP_GC_ISO,
-  [string]$UyaIso = $env:OBP_UYA_ISO,
+  [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+  [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
   [int]$GcLevel = 1,
   [string]$Destination = '',
   [switch]$Picker,
@@ -40,8 +40,8 @@ if ($CrateFocus -or $CrateAutoStrike) { $Scene = 'player'; if ($PSBoundParameter
 $sourceArgs = @()
 foreach ($source in @(
   @{ option='--rac1-iso'; path=$Rac1Iso; label='R&C1' },
-  @{ option='--gc-iso'; path=$GcIso; label='GC' },
-  @{ option='--uya-iso'; path=$UyaIso; label='UYA' }
+  @{ option='--rac2-iso'; path=$Rac2Iso; label='GC' },
+  @{ option='--rac3-iso'; path=$Rac3Iso; label='UYA' }
 )) {
   if ($source.path) {
     if (-not (Test-Path -LiteralPath $source.path -PathType Leaf)) {
@@ -54,7 +54,7 @@ foreach ($source in @(
 
 if ($Destination) {
   $sourceArgs += @('--destination', $Destination)
-} elseif ($GcIso) {
+} elseif ($Rac2Iso) {
   # Preserve the established GC capture/player convenience. --gc-level is
   # ignored by picker/worlds screens but resolves through the neutral destination
   # route for direct player/showcase captures.
@@ -73,9 +73,9 @@ if (-not $Out) {
     'worlds'
   } elseif ($Picker) {
     'sources'
-  } elseif ($Player -and $GcIso) {
+  } elseif ($Player -and $Rac2Iso) {
     "gc-player-l$GcLevel"
-  } elseif ($GcIso) {
+  } elseif ($Rac2Iso) {
     "gc-level$GcLevel"
   } else {
     $Scene

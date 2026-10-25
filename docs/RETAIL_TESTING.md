@@ -9,7 +9,7 @@ dotnet format OneBigPackage.sln --verify-no-changes --no-restore
 ```
 
 The retail gate requires `OBP_RAC1_ISO`, `OBP_GC_ISO`, and `OBP_UYA_ISO` pointing
-to authorized local images. Alternatively pass `-Rac1Iso`, `-GcIso`, `-UyaIso`.
+to authorized local images. Alternatively pass `-Rac1Iso`, `-Rac2Iso`, `-Rac3Iso`.
 It checks the paths and restores the caller's environment afterward. Portable
 CI uses synthetic fixtures and payload-free evidence; retail payloads stay local.
 Changes depending on retail bytes need the local retail gate before being called

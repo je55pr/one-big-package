@@ -15,11 +15,11 @@
 
 .EXAMPLE
   ./tools/play.ps1
-  ./tools/play.ps1 -GcIso "D:\isos\Going Commando.iso" -GcLevel 1
+  ./tools/play.ps1 -Rac2Iso "D:\isos\Going Commando.iso" -GcLevel 1
   ./tools/play.ps1 -SkipBuild
 #>
 param(
-  [string]$GcIso = $env:OBP_GC_ISO,
+  [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
   [int]$GcLevel = 1,
   [string]$Planet = '',
   [string]$RenderingMethod = 'gl_compatibility',
@@ -31,27 +31,27 @@ $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
 
 # --- resolve the disc image ---------------------------------------------------
-if (-not $GcIso -or -not (Test-Path $GcIso)) {
+if (-not $Rac2Iso -or -not (Test-Path $Rac2Iso)) {
   $candidates = @(
-    $GcIso,
+    $Rac2Iso,
     'C:\Claude\Inbox\Ratchet & Clank - Going Commando (USA) (v1.01).iso'
   ) | Where-Object { $_ -and (Test-Path $_) }
-  $GcIso = $candidates | Select-Object -First 1
+  $Rac2Iso = $candidates | Select-Object -First 1
 }
 
-if ($GcIso) {
+if ($Rac2Iso) {
   if ($Planet) {
-    Write-Host "OBP: straight to $Planet from $GcIso" -ForegroundColor Cyan
-    $sceneArgs = @('--gc-iso', $GcIso, '--planet', $Planet)
+    Write-Host "OBP: straight to $Planet from $Rac2Iso" -ForegroundColor Cyan
+    $sceneArgs = @('--rac2-iso', $Rac2Iso, '--planet', $Planet)
   } elseif ($PSBoundParameters.ContainsKey('GcLevel')) {
-    Write-Host "OBP: straight to LEVEL$GcLevel from $GcIso" -ForegroundColor Cyan
-    $sceneArgs = @('--gc-iso', $GcIso, '--planet', "$GcLevel")
+    Write-Host "OBP: straight to LEVEL$GcLevel from $Rac2Iso" -ForegroundColor Cyan
+    $sceneArgs = @('--rac2-iso', $Rac2Iso, '--planet', "$GcLevel")
   } else {
-    Write-Host "OBP: Worlds browser from $GcIso" -ForegroundColor Cyan
-    $sceneArgs = @('--gc-iso', $GcIso)
+    Write-Host "OBP: Worlds browser from $Rac2Iso" -ForegroundColor Cyan
+    $sceneArgs = @('--rac2-iso', $Rac2Iso)
   }
 } else {
-  Write-Warning "No Going Commando ISO found (set OBP_GC_ISO or pass -GcIso). Launching Game Sources."
+  Write-Warning "No Going Commando ISO found (set OBP_GC_ISO or pass -Rac2Iso). Launching Game Sources."
   $sceneArgs = @('--test-scene', 'picker')
 }
 

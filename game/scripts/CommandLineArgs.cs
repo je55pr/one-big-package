@@ -5,6 +5,8 @@ namespace OBP.Game;
 /// <summary>
 /// OBP command-line options, taken from the args after Godot's <c>--</c>
 /// separator (<c>OS.GetCmdlineUserArgs()</c>).
+/// Source flags are --rac1-iso/--rac2-iso/--rac3-iso. The legacy --gc-iso and
+/// --uya-iso aliases share their canonical slot and conflict validation here.
 /// </summary>
 public sealed record CommandLineArgs
 {

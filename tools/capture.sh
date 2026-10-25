@@ -8,14 +8,14 @@ root="$(dirname "$script_dir")"
 
 scene="${1:-${SCENE:-smoke}}"
 frame="${FRAME:-30}"
-gc_iso="${GC_ISO:-${OBP_GC_ISO:-}}"
+rac2_iso="${GC_ISO:-${OBP_GC_ISO:-}}"
 gc_level="${GC_LEVEL:-1}"
 [ "${PICKER:-}" = "1" ] && scene=picker
 if [ "${PLAYER:-}" = "1" ]; then scene=player; frame="${FRAME:-260}"; fi
 gc_args=()
-if [ -n "$gc_iso" ]; then
-  [ -f "$gc_iso" ] || { echo "GC ISO not found: $gc_iso" >&2; exit 2; }
-  gc_args=(--gc-iso "$gc_iso" --gc-level "$gc_level")
+if [ -n "$rac2_iso" ]; then
+  [ -f "$rac2_iso" ] || { echo "GC ISO not found: $rac2_iso" >&2; exit 2; }
+  gc_args=(--rac2-iso "$rac2_iso" --gc-level "$gc_level")
   [ "${VERIFY_HASH:-}" = "1" ] && gc_args+=(--verify-hash)
   [ "${COLLISION_DEBUG:-}" = "1" ] && gc_args+=(--collision-debug)
   if [ "${PICKER:-}" = "1" ]; then : "${OUT:=$root/captures/gc-picker.png}"
