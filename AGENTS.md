@@ -15,6 +15,13 @@
 - `OBP.Godot` + `game/`: scenes, physics contacts, input and presentation; the composition root wires registered source adapters.
 - Godot must not become the source of truth for native game formats or gameplay rules.
 
+## C# source names and stable boundaries
+- New source-owned namespaces/types/files use `Rac1`, `Rac2`, or `Rac3`; source projects remain `OBP.RAC1/RAC2/RAC3`. For example, add `Rac2LancerSession`, not a second `GcLancerSession` path. Interfaces use `IRac2...` / `IRac3...` as appropriate. Source-neutral types belong in their actual shared layer; do not rename native-only mechanics to misleading `Universal...` types.
+- New public `Gc*`, `IGc*`, `Uya*`, and `IUya*` names are rejected by `SourceNamingPolicyTests`. Existing names are an exact, shrinking migration census in `tests/OBP.Tests/source-naming-legacy.json`, owned by #291/#292; do not expand it. A genuine retail/ISA exception needs a narrow named rationale and regression, not a directory exemption.
+- Use `ObpSourceGame` for real source identity and a distinct typed authored-world identity where needed. Parse/format established wire strings only at explicit validated boundaries; #290 owns the migration. Preserve human-facing Going Commando / Up Your Arsenal names and historical evidence terminology.
+- `OBP.Game` is the app assembly/namespace target (#293); keep the existing app association until that focused migration. Preserve Godot UIDs and accepted native IDs/build hashes, destination/save/replay wire strings, and documented CLI compatibility. #174 owns strict parsing; #294 adds canonical source flags and retains legacy aliases at that same boundary.
+- Follow the bounded order in [ARCHITECTURE.md](docs/ARCHITECTURE.md#naming-and-migration-order): policy #289, typed contracts #290 / CLI correctness #174, source renames #291/#292, then app/tool naming #293-#295. Do not overlap host-file renames with #308/#309 extraction.
+
 ## Player, world and actor ownership
 - Follow the single [ownership and version-1 contract](docs/PLAYER_WORLD_CONTRACT.md). A destination selects world content, never the player's avatar/provider, animation/movement clock, attack route, health, input, HUD, pause menu, Quick Select or audio profile.
 - One persistent player session owns player-global configuration/state. World leases own scene/physics transients and source-qualified actors; teardown cannot reset the player session. Source campaigns and their native payloads remain separate.
