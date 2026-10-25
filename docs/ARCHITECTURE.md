@@ -51,13 +51,15 @@ authored worlds require a distinct typed world identity, not a guessed retail
 origin. Validated parse/format adapters own external strings. Do not add internal
 aliases to keep two competing source vocabularies alive.
 
-`SourceNamingPolicyTests` checks public top-level types and source projects.
+`SourceNamingPolicyTests` checks public types, using aliases and source projects.
 Nested source records inherit their enclosing type's context, so names such as
 `Rac2LancerSession.State` stay useful. Neutral `RuntimeWorld`, `Moby`, and shared
 PS2/ISA types do not need a game prefix. Existing noncanonical public declarations
 are exact migration entries in `source-naming-legacy.json`; each entry must
 disappear when its declaration is renamed. New legacy aliases or moving one
-into a different file fail the check. A genuine historical/retail exception must
+into a different file fail the check. The census is a reviewed policy artifact;
+changing it to admit new migration debt is prohibited and requires review just
+as changing the check does. A genuine historical/retail exception must
 name its exact declaration and reason, retain its layer ownership, and include
 a focused guard regression; a broad namespace/file exemption is insufficient.
 The existing `GcUyaMoby`, `GcUyaMobyPose`, `GcUyaGadgetPose` shared PS2 geometry

@@ -11,6 +11,11 @@ internal static class SourceNamingAudit
     internal static IEnumerable<Finding> Scan(string path, string source)
     {
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
+        foreach (var alias in root.DescendantNodes().OfType<UsingDirectiveSyntax>().Where(item => item.Alias is not null))
+        {
+            string name = alias.Alias!.Name.Identifier.ValueText;
+            if (LegacyPrefix(name)) yield return new(path + "::using " + name, "C# aliases also use the canonical Rac2/Rac3 vocabulary.");
+        }
         foreach (var declaration in root.DescendantNodes().OfType<MemberDeclarationSyntax>().Where(item => item is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax))
         {
             var ancestors = declaration.Ancestors().OfType<BaseTypeDeclarationSyntax>().ToArray();
@@ -44,7 +49,8 @@ internal static class SourceNamingAudit
     private static bool LegacyPrefix(string name) => name.StartsWith("Gc", StringComparison.Ordinal) || name.StartsWith("IGc", StringComparison.Ordinal) ||
         name.StartsWith("Uya", StringComparison.Ordinal) || name.StartsWith("IUya", StringComparison.Ordinal);
     private static bool LegacyNamespace(string ns) => ns.Equals("OBP.GC", StringComparison.OrdinalIgnoreCase) || ns.StartsWith("OBP.GC.", StringComparison.OrdinalIgnoreCase) ||
-        ns.Equals("OBP.UYA", StringComparison.OrdinalIgnoreCase) || ns.StartsWith("OBP.UYA.", StringComparison.OrdinalIgnoreCase);
+        ns.Equals("OBP.UYA", StringComparison.OrdinalIgnoreCase) || ns.StartsWith("OBP.UYA.", StringComparison.OrdinalIgnoreCase) ||
+        SourceOwner("", ns) is not null && ns.Split('.').Skip(2).Any(LegacyPrefix);
 
     internal static IEnumerable<string> ProjectErrors(string path, string? rootNamespace, string? assemblyName)
     {
@@ -55,7 +61,7 @@ internal static class SourceNamingAudit
         foreach (string number in new[] { "1", "2", "3" })
         {
             string expected = "OBP.RAC" + number;
-            if (!project.Equals(expected, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!project.Equals(expected, StringComparison.OrdinalIgnoreCase) && !path.StartsWith("src/" + expected + "/", StringComparison.Ordinal)) continue;
             if (project != expected || rootNamespace is not null && rootNamespace != expected || assemblyName is not null && assemblyName != expected)
                 yield return path + ": source project/namespace/assembly must be " + expected + ".";
         }

@@ -9,7 +9,7 @@ public sealed class SourceNamingPolicyTests
     private static string PolicyPath => Path.Combine(RepoPaths.Root, "tests", "OBP.Tests", "source-naming-legacy.json");
 
     [Fact]
-    public void PublicSourceNamesCannotGrowBeyondTheExactMigrationCensus()
+    public void PublicSourceNamesMatchTheExactReviewedMigrationCensus()
     {
         var findings = new[] { "src", "game", "tests" }.SelectMany(directory => Directory.EnumerateFiles(Path.Combine(RepoPaths.Root, directory), "*.cs", SearchOption.AllDirectories))
             .Select(path => (Full: path, Relative: Path.GetRelativePath(RepoPaths.Root, path).Replace('\\', '/')))
@@ -47,6 +47,10 @@ public sealed class SourceNamingPolicyTests
     [InlineData("src/OBP.RAC2/Rac2Session.cs", "namespace OBP.RAC2; public class Rac2Session { public class GcNestedAlias {} }")]
     [InlineData("src/OBP.Runtime/Player.cs", "namespace OBP.GC; public class Player {}")]
     [InlineData("src/OBP.RAC2/Rac2Actor.cs", "namespace OneBigPackage; public class Rac2Actor {}")]
+    [InlineData("src/OBP.RAC2/Rac2Actor.cs", "namespace OBP.RAC2.GcGameplay; public class Rac2Actor {}")]
+    [InlineData("src/OBP.RAC3/Rac3Actor.cs", "namespace OBP.RAC3.UyaGameplay; public class Rac3Actor {}")]
+    [InlineData("src/OBP.RAC2/Rac2Aliases.cs", "global using GcSession = OBP.RAC2.Gameplay.Rac2Session;")]
+    [InlineData("game/scripts/Player.cs", "using UyaSession = OBP.RAC3.Gameplay.Rac3Session;")]
     public void NewAliasesMisleadingGenericTypesAndNoncanonicalFilesFail(string path, string source) => Assert.NotEmpty(SourceNamingAudit.Scan(path, source));
 
     [Theory]
@@ -61,6 +65,7 @@ public sealed class SourceNamingPolicyTests
     {
         Assert.NotEmpty(SourceNamingAudit.ProjectErrors("src/OBP.GC/OBP.GC.csproj", "OBP.GC", null));
         Assert.NotEmpty(SourceNamingAudit.ProjectErrors("src/OBP.RAC3/OBP.RAC3.csproj", "OBP.UYA", null));
+        Assert.NotEmpty(SourceNamingAudit.ProjectErrors("src/OBP.RAC3/Other.csproj", "Other", "Other"));
         Assert.Empty(SourceNamingAudit.ProjectErrors("src/OBP.PS2/OBP.PS2.csproj", "OBP.PS2", null));
     }
 }
