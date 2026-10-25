@@ -12,7 +12,7 @@ public partial class OBPGame
     private bool _sourcesInitialized;
     private SourceManagerUi? _sourceManager;
     private string _sourceConfigPath = string.Empty;
-    private readonly List<string> _sourceRestoreWarnings = new();
+    private readonly Dictionary<ObpSourceGame, string> _sourceRestoreWarnings = new();
     private string? _sourceConfigWarning;
 
     /// <summary>Deferred startup hook for the trilogy Game Sources screen.</summary>
@@ -93,7 +93,7 @@ public partial class OBPGame
         {
             if (!File.Exists(entry.Path))
             {
-                _sourceRestoreWarnings.Add($"Remembered {entry.Game} source is missing: {entry.Path}");
+                _sourceRestoreWarnings[entry.Game] = $"Remembered {entry.Game} source is missing: {entry.Path}";
                 continue;
             }
 
@@ -101,12 +101,12 @@ public partial class OBPGame
             {
                 using var reader = new FileRandomAccessReader(entry.Path);
                 var attached = _sources.Restore(entry, reader);
-                if (RefreshRetailUiSource(attached, reader) is { } warning) _sourceRestoreWarnings.Add(warning);
+                if (RefreshRetailUiSource(attached, reader) is { } warning) _sourceRestoreWarnings[entry.Game] = warning;
                 GD.Print($"[sources] restored {attached.Definition.DisplayName}: {attached.DiscSerial} · {attached.Identity.BuildId}");
             }
             catch (Exception ex)
             {
-                _sourceRestoreWarnings.Add($"Could not restore {entry.Game} source '{entry.Path}': {ex.Message}");
+                _sourceRestoreWarnings[entry.Game] = $"Could not restore {entry.Game} source '{entry.Path}': {ex.Message}";
             }
         }
     }
@@ -151,6 +151,8 @@ public partial class OBPGame
                 _sourceConfigWarning = null;
             }
 
+            _sourceRestoreWarnings.Remove(expectedGame);
+            if (uiWarning is not null) _sourceRestoreWarnings[expectedGame] = uiWarning;
             _sourceManager?.Refresh(_sources);
             string ok = $"✓ {attached.Definition.DisplayName} attached — {attached.DiscSerial} · {attached.Identity.BuildId}";
             GD.Print($"[sources] {ok} path={attached.Path}");
@@ -226,7 +228,7 @@ public partial class OBPGame
         if (_profileStatus is not null) notices.Add(_profileStatus);
         if (_rac1CampaignRestoreWarning is not null) notices.Add(_rac1CampaignRestoreWarning);
         if (_sourceConfigWarning is not null) notices.Add("⚠ " + _sourceConfigWarning);
-        if (_sourceRestoreWarnings.Count > 0) notices.Add("⚠ " + string.Join("\n", _sourceRestoreWarnings));
+        if (_sourceRestoreWarnings.Count > 0) notices.Add("⚠ " + string.Join("\n", _sourceRestoreWarnings.Values));
         if (notices.Count > 0)
             _sourceManager.SetStatus(string.Join("\n", notices), error: _profileWriteBlocked || _rac1CampaignRestoreWarning is not null || _sourceConfigWarning is not null || _sourceRestoreWarnings.Count > 0);
 

@@ -43,19 +43,19 @@ foreach ($case in $cases) {
     [IO.File]::WriteAllText($config, $json)
     if ($case.Recovered) { [IO.File]::WriteAllText($config + '.bak', $json); [IO.File]::WriteAllText($config, '{truncated') }
     $primary = [IO.File]::ReadAllText($config)
-    $profile = Join-Path $evidence ($case.Name + '-profile.json')
-    if (-not $case.SourceLoss) { [IO.File]::WriteAllText($profile, '{retained-invalid-profile') }
+    $testProfilePath = Join-Path $evidence ($case.Name + '-profile.json')
+    if (-not $case.SourceLoss) { [IO.File]::WriteAllText($testProfilePath, '{retained-invalid-profile') }
     $log = Join-Path $evidence ($case.Name + '.log')
     $errorLog = Join-Path $evidence ($case.Name + '.err.log')
     $arguments = @('--headless', '--path', (Join-Path $root 'game'), '--max-fps', '120', '--quit-after', '900',
-        '--', '--source-config', $config, '--profile', $profile, '--skip-title')
+        '--', '--source-config', $config, '--profile', $testProfilePath, '--skip-title')
     if ($case.Destination) { $arguments += @('--destination', $case.Destination) }
     if ($case.Diagnostic) { $arguments += '--diagnostic-sources' }
     if ($case.SourceLoss) { $arguments += '--source-setup-check' }
     $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $arguments -WorkingDirectory $root -StandardOutputPath $log -StandardErrorPath $errorLog
     $expected = if ($case.SourceLoss) { '[source-setup-check] PASS' } elseif ($case.Code -eq 2) { 'reason=trilogy-setup-required exitCode=2' } else { '[destinations] world ready' }
     if ($code -ne $case.Code -or -not (Select-String -LiteralPath $log -SimpleMatch $expected -Quiet) -or
-        [IO.File]::ReadAllText($config) -ne $primary -or (-not $case.SourceLoss -and [IO.File]::ReadAllText($profile) -ne '{retained-invalid-profile')) {
+        [IO.File]::ReadAllText($config) -ne $primary -or (-not $case.SourceLoss -and [IO.File]::ReadAllText($testProfilePath) -ne '{retained-invalid-profile')) {
         throw "Trilogy setup case $($case.Name) failed (exit $code). Inspect $evidence."
     }
     Write-Host "Trilogy setup $($case.Name) passed; config/profile retained"
