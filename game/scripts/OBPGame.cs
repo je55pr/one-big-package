@@ -237,6 +237,7 @@ public partial class OBPGame : Node3D
         else if (key.Keycode == Key.I)
         {
             _inspector?.Toggle();
+            if (_inspector?.IsOpen == true) _uyaTargetAudit.Request();
         }
         else if (_overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
         {

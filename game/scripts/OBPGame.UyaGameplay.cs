@@ -36,8 +36,9 @@ public partial class OBPGame
     private int _uyaSecondaryRatchetSeeded;
     private int _uyaPrimaryTargetAuditUnknown;
     private int _uyaSecondaryTargetAuditUnknown;
-    private double _uyaTargetAuditAge;
-    private bool _uyaTargetAuditLogged;
+    private readonly DiagnosticSnapshotGate _uyaTargetAudit = new(0.75d);
+    private int _uyaTargetAuditQueries;
+    private int _uyaTargetAuditSnapshots;
     private string _uyaGameplayStatus = "off";
     private void ResetUyaGameplay()
     {
@@ -55,8 +56,9 @@ public partial class OBPGame
         _uyaSecondaryRatchetSeeded = 0;
         _uyaPrimaryTargetAuditUnknown = 0;
         _uyaSecondaryTargetAuditUnknown = 0;
-        _uyaTargetAuditAge = 0d;
-        _uyaTargetAuditLogged = false;
+        _uyaTargetAudit.Reset();
+        _uyaTargetAuditQueries = 0;
+        _uyaTargetAuditSnapshots = 0;
         _uyaGameplayStatus = "off";
     }
 
@@ -251,12 +253,14 @@ public partial class OBPGame
         if (_world?.Game != "rac3" ||
             _player is null ||
             _uyaGameplayContext is null ||
-            _uyaClass5821AuditSources.Count == 0)
+            _uyaClass5821AuditSources.Count == 0 ||
+            !_uyaTargetAudit.Tick(delta))
         {
             return;
         }
 
-        _uyaTargetAuditAge += delta;
+        // One diagnostic snapshot after entry settles, or on inspector request.
+        // No native actor update or damage/controller clock is gated here.
         UyaNativePoint ratchet = new(
             -_player.GlobalPosition.X,
             _player.GlobalPosition.Z,
@@ -269,6 +273,7 @@ public partial class OBPGame
 
         foreach (UyaClass5821AuditSource audit in _uyaClass5821AuditSources)
         {
+            _uyaTargetAuditQueries += 2;
             if (!TryAuditUyaRatchetSeed(
                     audit,
                     ratchet,
@@ -301,15 +306,13 @@ public partial class OBPGame
         _uyaPrimaryTargetAuditUnknown = primaryUnknown;
         _uyaSecondaryTargetAuditUnknown = secondaryUnknown;
 
-        if (!_uyaTargetAuditLogged && _uyaTargetAuditAge >= 0.75d)
-        {
-            _uyaTargetAuditLogged = true;
-            GD.Print(
+        _uyaTargetAuditSnapshots++;
+        GD.Print(
                 $"[uya-gameplay] class-5821 Ratchet-seed audit: " +
                 $"primary={primarySeeded}/{_uyaClass5821AuditSources.Count}, " +
                 $"secondary={secondarySeeded}/{_uyaClass5821AuditSources.Count}, " +
-                $"unknown={primaryUnknown}/{secondaryUnknown}; live subtype +0x95 not host-owned");
-        }
+                $"unknown={primaryUnknown}/{secondaryUnknown}; snapshots={_uyaTargetAuditSnapshots}, queries={_uyaTargetAuditQueries}; " +
+                "live subtype +0x95 not host-owned");
     }
 
     private bool TryAuditUyaRatchetSeed(
@@ -411,7 +414,7 @@ public partial class OBPGame
             $"class-500 authored {_uyaAuthoredClass500}, admitted {_uyaAdmittedClass500}, " +
             $"presented live {live}, destroyed {_uyaDestroyedClass500}\n" +
             $"class-5821 profiles {_uyaAdmittedClass5821}/{_uyaAuthoredClass5821}; " +
-            $"Ratchet seed audit primary {_uyaPrimaryRatchetSeeded}, secondary {_uyaSecondaryRatchetSeeded}, " +
+            $"Ratchet seed snapshot (entry +0.75s; I refresh) primary {_uyaPrimaryRatchetSeeded}, secondary {_uyaSecondaryRatchetSeeded}, " +
             $"unknown {_uyaPrimaryTargetAuditUnknown}/{_uyaSecondaryTargetAuditUnknown}\n" +
             $"live subtype +0x95 / runtime AI state / player consequence pending   {_uyaGameplayStatus}";
     }

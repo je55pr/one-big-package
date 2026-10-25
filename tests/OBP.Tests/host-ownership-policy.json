@@ -188,8 +188,8 @@
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.GetUyaGameplayHudLine()",
     "Kind": "adapter",
-    "Reason": "Optional original-world UYA actor diagnostic overlay, not ordinary HUD selection.",
-    "Hash": "8872a7fe6fb8a71ebf1fdb91dadd858211f9cf0b5ea33d166c673343921453e4"
+    "Reason": "Optional original-world UYA actor diagnostic overlay, explicitly labelled as a one-shot/refreshed snapshot; not ordinary HUD selection. DiagnosticSnapshotGateTests cover its cadence.",
+    "Hash": "5f29ca7e4605e195cd46e8e998524249b6030ef6366facb24b8d397e3e12c58a"
   },
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.SelectUyaClass500HostContact()",
@@ -200,8 +200,8 @@
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.TickUyaGameplay(double)",
     "Kind": "adapter",
-    "Reason": "Original UYA actor/context update adapter; #256 owns reusable mixed actor registration.",
-    "Hash": "e30c2327d83fb653448a1bc6a75ef7e36153753ecf95ce254f60d0aef0cded43"
+    "Reason": "Original UYA target-selection diagnostics only, once after entry settles or on inspector-open request; no native actor/controller timing is gated. DiagnosticSnapshotGateTests count inactive and requested calls.",
+    "Hash": "2c6749ee9fb97fcb785291caedf5e641777c4f6c9d7109b76adb5b579f6d7b02"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",
