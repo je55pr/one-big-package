@@ -21,14 +21,6 @@ The original mechanics and encounters are being recovered first, so they can be 
 
 **OBP is still in development and is not a complete playable trilogy.**
 
-## Licence
-
-Original One Big Package (OBP) source code and documentation that its contributors are entitled to license are available under the [MIT Licence](LICENSE). This permits commercial and noncommercial use, modification and redistribution, subject to the licence's terms.
-
-**The MIT licence does not grant rights to third-party intellectual property.** Original *Ratchet & Clank* game binaries, characters, names, trademarks, models, textures, audio, artwork and other Sony/Insomniac material are not licensed by OBP. No retail game content is distributed with this repository; users supply their own lawfully obtained game data.
-
-Third-party code and materials, where present, retain their respective terms and attribution; see [Third-party notices](THIRD_PARTY_NOTICES.md) and the [external reverse-engineering source policy](research/EXTERNAL_SOURCE_POLICY.md). Licensing OBP under MIT does not permit copying or incorporating GPL-licensed reference implementations without complying with their terms.
-
 ## Implementation catalogue
 
 <div>🔴 Unassessed</div>
@@ -867,5 +859,13 @@ Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL 
 - [External source policy](research/EXTERNAL_SOURCE_POLICY.md)
 
 Development uses feature branches and pull requests into the protected `dev` branch. Merges are manual.
+
+## Licence
+
+Original One Big Package (OBP) source code and documentation that its contributors are entitled to license are available under the [MIT Licence](LICENSE). This permits commercial and noncommercial use, modification and redistribution, subject to the licence's terms.
+
+**The MIT licence does not grant rights to third-party intellectual property.** Original *Ratchet & Clank* game binaries, characters, names, trademarks, models, textures, audio, artwork and other Sony/Insomniac material are not licensed by OBP. No retail game content is distributed with this repository; users supply their own lawfully obtained game data.
+
+Third-party code and materials, where present, retain their respective terms and attribution; see [Third-party notices](THIRD_PARTY_NOTICES.md) and the [external reverse-engineering source policy](research/EXTERNAL_SOURCE_POLICY.md). Licensing OBP under MIT does not permit copying or incorporating GPL-licensed reference implementations without complying with their terms.
 
 This is an unofficial fan project and is not affiliated with Sony Interactive Entertainment or Insomniac Games.
