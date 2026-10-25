@@ -316,10 +316,12 @@ public static partial class Rac2WorldImport
             ?? throw new InvalidDataException("Aranos class-2755 opening sequence 1 is absent.");
         var open = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 2)
             ?? throw new InvalidDataException("Aranos class-2755 open sequence 2 is absent.");
+#pragma warning disable S1244 // This authority gate requires the exact retail 0.5f value; a tolerance would admit drift.
         if (opening.Frames.Count != Rac2AranosOpeningDoorSession.OpeningSequenceFrames ||
             opening.Frames.Any(frame => frame.Speed != 0.5f) ||
             open.Frames.Count != 1)
             throw new InvalidDataException("Aranos class-2755 door animation no longer matches the retail witness.");
+#pragma warning restore S1244
 
         var posedFrames = opening.Frames.Concat(open.Frames).Select(frame =>
         {

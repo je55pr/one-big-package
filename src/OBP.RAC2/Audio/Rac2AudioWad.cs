@@ -182,6 +182,7 @@ public sealed class Rac2GlobalAudioWad
         Add(Group.HelpSpanish, 0x1000, 256);
         Add(Group.HelpItalian, 0x1400, 256);
 
+#pragma warning disable S4158, S2583 // Add above populates starts through the local function; the analyzer misses those writes.
         starts.Sort((a, b) => a.Sector.CompareTo(b.Sector));
         var entries = new List<Entry>(starts.Count);
         for (int i = 0; i < starts.Count; i++)
@@ -196,6 +197,7 @@ public sealed class Rac2GlobalAudioWad
             entries.Add(new Entry(starts[i].Group, starts[i].Index, starts[i].Sector, checked((int)(end - start))));
         }
 
+#pragma warning restore S4158, S2583
         return new Rac2GlobalAudioWad(reader, entries);
 
         void Add(Group group, int at, int count)
