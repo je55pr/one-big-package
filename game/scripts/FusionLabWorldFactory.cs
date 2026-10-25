@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Core.Math;
 using OBP.Fusion;
 using OBP.Runtime;
@@ -122,7 +123,7 @@ internal static class FusionLabWorldFactory
         double maxZ = definition.Rooms.Max(r => r.CenterZ + r.Depth / 2) + 3;
 
         return new RuntimeWorld(
-            Game: "fusion",
+            Game: WorldContentIdentity.FusionLab,
             BuildId: "obp-custom-fusion-lab-v1",
             LevelId: 0,
             PlanetName: "Fusion Lab",

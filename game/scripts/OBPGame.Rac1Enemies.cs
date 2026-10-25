@@ -334,7 +334,7 @@ public partial class OBPGame
                     node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
                         Rac1NovalisEnemySleepDistance * Rac1NovalisEnemySleepDistance)
                     continue;
-                if (_world is { Game: "rac1", LevelId: 1 } &&
+                if (_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } &&
                     node.Source.NativeClassId is Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId &&
                     node.Root.GlobalPosition.DistanceSquaredTo(_player.GlobalPosition) >
                         Rac1NovalisEnemySleepDistance * Rac1NovalisEnemySleepDistance)
@@ -592,7 +592,7 @@ public partial class OBPGame
             // translating its admitted integer amount to the selected victim.
             _ = new Rac1RatchetNanotechSession().ApplyDamage(damage);
             var attacker = (_sceneResult?.DynamicObjectNodes ?? []).Concat(Rac1EnemyNodes).Concat(_rac1CrateNodes).Concat(_rac1HostileNodes.Values)
-                .FirstOrDefault(node => node.Source.SourceGame == "rac1" &&
+                .FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac1 &&
                 node.Source.NativeClassId == damage.Source.NativeClassId && node.Source.InstanceIndex == damage.Source.RuntimeId);
             if (attacker is null) { GD.PushWarning("Player damage source has no registered native actor."); return; }
             ApplyPlayerSourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,

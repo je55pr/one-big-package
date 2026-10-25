@@ -27,11 +27,11 @@ public sealed class FusionWeaponData
     public UyaGlobalGadget.Source? Cannon { get; private set; }
     public Dictionary<SourceWeaponKey, PlayerEquipmentAnimationSource> AvatarAnimations { get; } = [];
     public IReadOnlyList<RuntimeObjectMesh> Projectile { get; private set; } = [];
-    private readonly Dictionary<string, string> _identities = [];
+    private readonly Dictionary<ObpSourceGame, string> _identities = [];
     public int ReusedVerifications { get; private set; }
     public PlaytestWeaponConfiguration Configuration(bool isolated) => new(
         isolated ? FusionWeaponSession.LoadoutId : FusionWeaponSession.DefaultLoadoutId, FusionDamagePolicy.Id,
-        new SortedDictionary<string, string>(_identities, StringComparer.Ordinal));
+        new SortedDictionary<string, string>(_identities.ToDictionary(pair => SourceIdentityWire.FormatSource(pair.Key), pair => pair.Value), StringComparer.Ordinal));
 
     public FusionWeaponData(IReadOnlyList<ObpAttachedSource> sources,
         IProgress<string>? progress = null, CancellationToken cancellationToken = default,

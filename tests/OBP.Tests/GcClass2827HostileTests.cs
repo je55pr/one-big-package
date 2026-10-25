@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
@@ -155,7 +156,7 @@ public sealed class GcClass2827HostileTests
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x27C, 4), 1);
 
         return new RuntimeDynamicObject(
-            "rac2",
+            ObpSourceGame.Rac2,
             GcClass2827HostileSession.NativeClassId,
             205,
             11,

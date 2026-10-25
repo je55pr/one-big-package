@@ -1,3 +1,5 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using System.Numerics;
 
 namespace OBP.Runtime.Player;
@@ -14,7 +16,7 @@ public readonly record struct PlayerJointChannels(Quaternion Rotation, Vector3? 
 public sealed record PlayerSkeletalPose(IReadOnlyList<PlayerJointChannels> Joints);
 public sealed record PlayerSkeletalFrame(IReadOnlyList<PlayerJointChannels> Joints, double DurationSeconds, double TimelinePosition);
 public readonly record struct PlayerSkeletalSample(int Frame, int NextFrame, float Fraction);
-public sealed record PlayerSkeletalClip(string SourceGame, string BuildId, int CarrierId, int SequenceId,
+public sealed record PlayerSkeletalClip([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, string BuildId, int CarrierId, int SequenceId,
     IReadOnlyList<int> JointIndices, IReadOnlyList<PlayerSkeletalFrame> Frames)
 {
     public double DurationSeconds => Frames.Sum(frame => frame.DurationSeconds);

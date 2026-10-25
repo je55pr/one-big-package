@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -116,7 +117,7 @@ public static class GcClass500Authority
 
     public static GcClass500AuthoredState? Read(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac2" || source.NativeClassId != 500)
+        if (source.SourceGame != ObpSourceGame.Rac2 || source.NativeClassId != 500)
         {
             return null;
         }

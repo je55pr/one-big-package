@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.IO;
@@ -285,7 +286,7 @@ public static partial class GcWorldImport
             }
 
             outp.Add(new RuntimeDynamicObject(
-                SourceGame: "rac2",
+                SourceGame: ObpSourceGame.Rac2,
                 NativeClassId: inst.OClass,
                 InstanceIndex: inst.Index,
                 NativeUid: inst.Uid,

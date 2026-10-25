@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -46,7 +47,7 @@ public partial class OBPGame
 
     private void TickRac1GoldBolts()
     {
-        if (_world is not { Game: "rac1", LevelId: Rac1GoldBoltSession.NovalisLevelId } ||
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1GoldBoltSession.NovalisLevelId } ||
             _player is null || _rac1Nanotech.Probe().IsDead)
             return;
 

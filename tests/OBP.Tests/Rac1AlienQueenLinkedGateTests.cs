@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -20,7 +21,7 @@ public sealed class Rac1AlienQueenLinkedGateTests
         else BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x1c), index);
         var matrix = new double[16];
         matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1;
-        return new("rac1", cls, id, null, "linked", "linked",
+        return new(ObpSourceGame.Rac1, cls, id, null, "linked", "linked",
             new RuntimeObjectTransform(matrix), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, p)]);
     }
@@ -185,7 +186,7 @@ public sealed class Rac1AlienQueenLinkedGateTests
         {
             var instance = authored[id];
             var data = instance.PVar!;
-            return new("rac1", instance.OClass, id, null, "authored", "authored",
+            return new(ObpSourceGame.Rac1, instance.OClass, id, null, "authored", "authored",
                 new RuntimeObjectTransform(new double[16]), [],
                 NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, data)]);
         }

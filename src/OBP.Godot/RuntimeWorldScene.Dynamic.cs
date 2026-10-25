@@ -262,7 +262,7 @@ public static partial class RuntimeWorldScene
 
                 var objRoot = new RuntimeDynamicObjectRoot3D
                 {
-                    Name = $"dyn_{obj.SourceGame}_{obj.NativeClassId}_{obj.InstanceIndex}",
+                    Name = $"dyn_{OBP.Core.SourceIdentityWire.FormatSource(obj.SourceGame)}_{obj.NativeClassId}_{obj.InstanceIndex}",
                     Transform = ToSceneTransform(obj.Transform),
                 };
                 objRoot.Configure(obj);

@@ -77,8 +77,9 @@ internal static class HostOwnershipAudit
         "(" + string.Join(",", parameters.Parameters.Select(parameter => parameter.Type?.WithoutTrivia().ToString())) + ")";
 
     private static bool IsWorldOrigin(IdentifierNameSyntax node, SemanticModel model) =>
-        node.Identifier.ValueText == "Game" && model.GetSymbolInfo(node).Symbol is IPropertySymbol property &&
-        property.ContainingType.ToDisplayString() is "OBP.Runtime.RuntimeWorld" or "OBP.Core.ObpDestination";
+        model.GetSymbolInfo(node).Symbol is IPropertySymbol property &&
+        (node.Identifier.ValueText == "Game" && property.ContainingType.ToDisplayString() is "OBP.Runtime.RuntimeWorld" or "OBP.Core.ObpDestination" ||
+            !property.IsStatic && property.ContainingType.ToDisplayString() == "OBP.Core.WorldContentIdentity");
 
     private static bool HasPlayerSelection(MemberDeclarationSyntax member, SemanticModel model) =>
         member.DescendantNodes().Any(node => node is ObjectCreationExpressionSyntax creation &&

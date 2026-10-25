@@ -1,6 +1,11 @@
 namespace OBP.Runtime.Diagnostics;
 
-/// <summary>Explicit opt-in loadout and locally verified source identities; no paths or payloads.</summary>
+/// <summary>
+/// Wire-only v1/v2 playtest header DTO: source map keys retain their established
+/// canonical JSON strings. Runtime source maps use ObpSourceGame and format keys
+/// through SourceIdentityWire when constructing this compatibility envelope.
+/// No paths or payloads.
+/// </summary>
 public sealed record PlaytestWeaponConfiguration(string LoadoutId, string DamagePolicy,
     IReadOnlyDictionary<string, string> Sources)
 {

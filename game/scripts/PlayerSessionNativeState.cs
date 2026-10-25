@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.Fusion;
 using OBP.RAC1.Player;
@@ -35,7 +36,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
         Wallet = new(bolts);
         Weapons = new(seed, Inventory, Held.Hand);
         LoadoutPolicy = Enum.IsDefined(loadoutPolicy) ? loadoutPolicy : throw new ArgumentOutOfRangeException(nameof(loadoutPolicy));
-        var defaultSlots = FusionWeaponSession.DefaultQuickSelect(Inventory).Where(key => loadoutPolicy == PlayerLoadoutPolicy.DevelopmentAvailable || key.SourceGame == "rac1");
+        var defaultSlots = FusionWeaponSession.DefaultQuickSelect(Inventory).Where(key => loadoutPolicy == PlayerLoadoutPolicy.DevelopmentAvailable || key.SourceGame == ObpSourceGame.Rac1);
         // Desired default slots describe implemented items, not ownership grants.
         // Availability still comes from the attached-source development policy.
         if (loadoutPolicy == PlayerLoadoutPolicy.DevelopmentAvailable)
@@ -46,11 +47,11 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
         var imported = Rac1MovementCapabilities.FromInventory(Inventory);
         foreach (var gadget in new Rac1TraversalEquipmentId?[] { imported.RememberedBackpack(Inventory),
             imported.OxygenMask ? Rac1TraversalEquipmentId.OxygenMask : null, imported.Swingshot ? Rac1TraversalEquipmentId.Swingshot : null }.OfType<Rac1TraversalEquipmentId>())
-            Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey("rac1", (int)gadget))!, true, PlayerEquipmentRegistrations.Catalog);
-        Life = new(new("obp/rac1-derived-health/v1", [new("rac1", OBP.RAC1.Rac1Authority.Primary.BuildId, Rac1DamageAdapter, Rac1DamageDescriptor),
-            new("rac2", OBP.RAC2.Rac2Authority.Primary.BuildId, GcDamageAdapter, GcDamageDescriptor),
-            new("rac1", OBP.RAC1.Rac1Authority.Primary.BuildId, AridiaDamageAdapter, AridiaDamageDescriptor)],
-            [new("rac2", OBP.RAC2.Rac2Authority.Primary.BuildId, "rac2/collected-class500-bolt/v1", "obp/bolts")]), new VictimController(Health));
+            Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, (int)gadget))!, true, PlayerEquipmentRegistrations.Catalog);
+        Life = new(new("obp/rac1-derived-health/v1", [new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, Rac1DamageAdapter, Rac1DamageDescriptor),
+            new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, GcDamageAdapter, GcDamageDescriptor),
+            new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, AridiaDamageAdapter, AridiaDamageDescriptor)],
+            [new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, "rac2/collected-class500-bolt/v1", "obp/bolts")]), new VictimController(Health));
     }
 
     public sealed record State(Rac1WeaponPersistentState Inventory, int CurrentItem,
@@ -66,20 +67,20 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     public sealed record PreviewInventory(Rac1WeaponPersistentState Inventory, int CurrentItem);
 
     /// <summary>OBP development policy, applied only to this independent inventory, never source saves.</summary>
-    public void RefreshDevelopmentSources(IReadOnlyDictionary<string, string> sources)
+    public void RefreshDevelopmentSources(IReadOnlyDictionary<ObpSourceGame, string> sources)
     {
         if (LoadoutPolicy != PlayerLoadoutPolicy.DevelopmentAvailable ||
-            sources.GetValueOrDefault("rac1") != OBP.RAC1.Rac1Authority.Primary.BuildId) return;
+            sources.GetValueOrDefault(ObpSourceGame.Rac1) != OBP.RAC1.Rac1Authority.Primary.BuildId) return;
         bool firstPack = !Inventory.OwnsNativeItem((int)Rac1TraversalEquipmentId.HeliPack);
         foreach (var entry in PlayerEquipmentRegistrations.Catalog.Definitions.Where(entry =>
-            entry.SourceGame == "rac1" && entry.Item.HasValue && entry.Implementation == EquipmentImplementation.Implemented))
+            entry.SourceGame == ObpSourceGame.Rac1 && entry.Item.HasValue && entry.Implementation == EquipmentImplementation.Implemented))
             if (!Inventory.OwnsNativeItem(entry.Item!.Value.NativeItemId)) Inventory.AcquireNativeItem(entry.Item.Value.NativeItemId);
         if (firstPack)
-            foreach (int id in new[] { 2, 6, 12 }) Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey("rac1", id))!, true, PlayerEquipmentRegistrations.Catalog);
+            foreach (int id in new[] { 2, 6, 12 }) Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, id))!, true, PlayerEquipmentRegistrations.Catalog);
     }
 
     public bool GadgetEnabled(Rac1TraversalEquipmentId item) => Inventory.OwnsNativeItem((int)item) &&
-        Assignments.Capture().EnabledGadgets.Contains(new SourceWeaponKey("rac1", (int)item));
+        Assignments.Capture().EnabledGadgets.Contains(new SourceWeaponKey(ObpSourceGame.Rac1, (int)item));
 
     /// <summary>The existing temporary arsenal remains a diagnostic owned by this player.</summary>
     public void SetEquipmentPreview(bool enabled)
@@ -97,9 +98,9 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
             _previewReturn = null;
         }
         Weapons.BindRac1Inventory(Inventory);
-        if (Weapons.Selected.SourceGame == "rac1" && !Inventory.OwnsNativeItem(Weapons.Selected.NativeItemId))
-            Weapons.Select(new("rac1", Inventory.CurrentItemId));
-        if (Held.Hand.Equipment is { SourceGame: "rac1" } hand && !Inventory.OwnsNativeItem(hand.NativeItemId)) Held.HoldWrench();
+        if (Weapons.Selected.SourceGame == ObpSourceGame.Rac1 && !Inventory.OwnsNativeItem(Weapons.Selected.NativeItemId))
+            Weapons.Select(new(ObpSourceGame.Rac1, Inventory.CurrentItemId));
+        if (Held.Hand.Equipment is { SourceGame: ObpSourceGame.Rac1 } hand && !Inventory.OwnsNativeItem(hand.NativeItemId)) Held.HoldWrench();
         Weapons.ClearTransientState();
     }
 
@@ -120,7 +121,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
             throw new ArgumentException("Missing or incompatible loadout/life state.");
         PlayerEquipmentRegistrations.Catalog.ValidateAssignments(state.Assignments);
         var inventory = new Rac1WeaponInventory(state.Inventory, state.CurrentItem);
-        if (state.Assignments.EnabledGadgets.Any(key => key.SourceGame == "rac1" && !inventory.OwnsNativeItem(key.NativeItemId)))
+        if (state.Assignments.EnabledGadgets.Any(key => key.SourceGame == ObpSourceGame.Rac1 && !inventory.OwnsNativeItem(key.NativeItemId)))
             throw new ArgumentException("An enabled gadget must be owned by the persistent player.");
         if (state.PreviewReturn is { } preview) _ = new Rac1WeaponInventory(preview.Inventory, preview.CurrentItem);
         var health = new Rac1RatchetNanotechSession(); health.RestoreState(state.Health);
@@ -134,9 +135,9 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
             !snapshot.Loadout.QuickSelect.SequenceEqual(state.Assignments.QuickSelect))
             throw new ArgumentException("Player projections do not match their source-owned state.");
         state.Hand?.Validate();
-        if (state.Hand is { SourceGame: not "rac1" } foreign && foreign != FusionWeaponSession.Lancer && foreign != FusionWeaponSession.ShockCannon)
+        if (state.Hand is { SourceGame: not ObpSourceGame.Rac1 } foreign && foreign != FusionWeaponSession.Lancer && foreign != FusionWeaponSession.ShockCannon)
             throw new ArgumentException("The held equipment has no admitted native controller.");
-        if (state.Hand is { SourceGame: "rac1" } held) new Rac1HeldItemSession().Restore(held.NativeItemId, inventory);
+        if (state.Hand is { SourceGame: ObpSourceGame.Rac1 } held) new Rac1HeldItemSession().Restore(held.NativeItemId, inventory);
     }
 
     public void Restore(PlayerGameplaySnapshot snapshot)
@@ -172,7 +173,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     private void RestoreHand(SourceWeaponKey? hand)
     {
         if (hand is null) Held.HoldWrench();
-        else if (hand.Value.SourceGame == "rac1") Held.Restore(hand.Value.NativeItemId, Inventory);
+        else if (hand.Value.SourceGame == ObpSourceGame.Rac1) Held.Restore(hand.Value.NativeItemId, Inventory);
         else { Held.HoldWrench(); Held.Hand.HoldEquipment(hand.Value); }
     }
 

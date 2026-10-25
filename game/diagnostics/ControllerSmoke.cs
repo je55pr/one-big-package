@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -294,7 +295,7 @@ public partial class ControllerSmoke : Node
         var weaponCards = Descendants(Find<PauseMenuUi>()!).OfType<Button>()
             .Where(button => button.Name.ToString().StartsWith("RetailItem_", StringComparison.Ordinal)).ToArray();
         int ownedWeapons = _game.ReadPlayerEquipment().Count(entry => entry.Definition.Category == OBP.Runtime.Gameplay.EquipmentCategory.Weapon &&
-            entry.Definition.Item is { SourceGame: "rac1", NativeItemId: not 8 } && entry.State.Owned);
+            entry.Definition.Item is { SourceGame: ObpSourceGame.Rac1, NativeItemId: not 8 } && entry.State.Owned);
         Require(weaponCards.Length == 15 && weaponCards.OfType<Rac1RetailEquipmentCell>().Count(cell => cell.Owned) == ownedWeapons,
             "Weapons page ownership disagrees with the explicitly selected player loadout policy");
         await KeyPress(Key.Escape); await Frames(20);

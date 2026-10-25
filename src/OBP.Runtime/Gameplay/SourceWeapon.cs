@@ -1,21 +1,25 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using System.Numerics;
 
 namespace OBP.Runtime.Gameplay;
 
 /// <summary>Native item numbers only have meaning inside their original game.</summary>
-public readonly record struct SourceWeaponKey(string SourceGame, int NativeItemId)
+[method: JsonConstructor]
+public readonly record struct SourceWeaponKey([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, int NativeItemId)
 {
+    private readonly bool _initialised = true;
     public SourceWeaponKey Validate()
     {
-        if (SourceGame is not ("rac1" or "rac2" or "rac3") || NativeItemId < 0)
+        if (!_initialised || SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || NativeItemId < 0)
             throw new ArgumentException("A weapon requires an original game and a nonnegative native item id.");
         return this;
     }
 
-    public override string ToString() => $"{SourceGame}/item:{NativeItemId}";
+    public override string ToString() => $"{SourceIdentityWire.FormatSource(SourceGame)}/item:{NativeItemId}";
 }
 
-public readonly record struct WeaponTargetKey(string SourceGame, int NativeClassId, int InstanceIndex);
+public readonly record struct WeaponTargetKey([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, int NativeClassId, int InstanceIndex);
 public readonly record struct WeaponShotKey(SourceWeaponKey Weapon, long Generation, long Sequence);
 public readonly record struct WeaponUseInput(bool TriggerHeld, bool ActionAdmitted, Vector3 Muzzle, Vector3 Aim);
 public enum WeaponQueryKind { Segment, Sphere, Ray }

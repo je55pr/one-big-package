@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 
@@ -57,7 +58,7 @@ public partial class OBPGame
 
     private void AssertRac1StartupGameplayReady()
     {
-        if (_mode != Mode.World || _world is not { Game: "rac1", LevelId: 0 })
+        if (_mode != Mode.World || _world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 })
             throw new System.InvalidOperationException("R&C1 Veldin world is not ready");
         if (_sceneResult is null)
             throw new System.InvalidOperationException("R&C1 Veldin scene result is missing");

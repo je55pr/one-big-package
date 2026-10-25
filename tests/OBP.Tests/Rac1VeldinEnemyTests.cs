@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Animation;
@@ -263,7 +264,7 @@ public sealed class Rac1VeldinEnemyTests
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x1b4), region);
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x1b8), path);
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x1bc), linked);
-        return new("rac1", 1440, instance, null, "moby:1440", $"moby:{instance}", new(new double[16]), [],
+        return new(ObpSourceGame.Rac1, 1440, instance, null, "moby:1440", $"moby:{instance}", new(new double[16]), [],
             [new(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }
 }

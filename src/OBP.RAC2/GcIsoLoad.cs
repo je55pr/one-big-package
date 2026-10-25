@@ -66,7 +66,7 @@ public static class GcIsoLoad
 
     /// <summary>The authority manifest for the primary GC build, built from the committed checksums (no file needed).</summary>
     public static AuthorityManifest PrimaryManifest() => new(
-        Game: "rac2",
+        Game: ObpSourceGame.Rac2,
         BuildId: Rac2Authority.Primary.BuildId,
         Region: Rac2Authority.Primary.Region,
         Serial: Rac2Authority.Primary.Serial,

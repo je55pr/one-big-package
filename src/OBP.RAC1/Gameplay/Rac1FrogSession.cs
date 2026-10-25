@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -309,7 +310,7 @@ public sealed class Rac1FrogSession : IRac1MobyDamageConsumer
     }
 
     public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) =>
-        source.SourceGame == "rac1" && source.NativeClassId == ClassId &&
+        source.SourceGame == ObpSourceGame.Rac1 && source.NativeClassId == ClassId &&
         _entries.TryGetValue(source.InstanceIndex, out var e) && e.Native.IsActive && e.Health > 0 &&
         damage.Target.MatchesMoby(e.Native.Key) &&
         (Rac1EnemyDamage.IsPlayerWeapon(damage) ||

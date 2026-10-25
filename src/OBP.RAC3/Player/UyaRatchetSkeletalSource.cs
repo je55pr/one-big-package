@@ -80,7 +80,7 @@ public static class UyaRatchetSkeletalSource
                 foreach (var v in frame.Translations) { int j = Array.IndexOf(map, v.Joint); if (j < 0) throw new InvalidDataException("UYA translation escapes its layer."); channels[j] = channels[j] with { Translation = v.Vector * source.CoordinateScale }; }
                 return new PlayerSkeletalFrame(channels, rate > 0 ? 1d / (rate * 60) : 1d / 60, frame.TimelineUnits / 16d);
             }).ToArray();
-            return new("rac3", Rac3Authority.Primary.BuildId, carrier, clip.Id, map, frames);
+            return new(ObpSourceGame.Rac3, Rac3Authority.Primary.BuildId, carrier, clip.Id, map, frames);
         }
     }
 

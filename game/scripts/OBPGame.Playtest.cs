@@ -157,7 +157,7 @@ public partial class OBPGame
         var focus = GetViewport().GuiGetFocusOwner();
         Text("ui.focus", focus is Button button ? button.Text : focus?.GetClass());
         Numbers("ui.quickSelect", _quickSelect?.SelectedWeapon?.NativeItemId ?? -1);
-        if (_fusion is not null) Text("ui.quickSelect.source", _quickSelect?.SelectedWeapon?.SourceGame);
+        if (_fusion is not null) Text("ui.quickSelect.source", _quickSelect?.SelectedWeapon?.SourceGame is { } selectedSource ? SourceIdentityWire.FormatSource(selectedSource) : null);
         var campaign = _rac1CampaignSession.Campaign;
         Numbers("campaign.current", campaign.CurrentLevel);
         Numbers("campaign.admissions", campaign.VisitedPlanets.Select(v => (double)v).ToArray());

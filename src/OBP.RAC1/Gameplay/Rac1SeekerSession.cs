@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -51,7 +52,7 @@ public sealed class Rac1SeekerSession : IRac1MobyDamageConsumer
     public Rac1SeekerFrame Register(RuntimeDynamicObject source, RuntimeEntityState state,
         float sourceYaw = 0f)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId)
             throw new ArgumentException("Expected native class-193 Seeker.", nameof(source));
         byte[]? pvar = source.NativePayloads?.SingleOrDefault(p =>
             p.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;
@@ -172,7 +173,7 @@ public sealed class Rac1SeekerSession : IRac1MobyDamageConsumer
     }
 
     public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) =>
-        source.SourceGame == "rac1" && source.NativeClassId == ClassId &&
+        source.SourceGame == ObpSourceGame.Rac1 && source.NativeClassId == ClassId &&
         _entries.TryGetValue(source.InstanceIndex, out var entry) && entry.Native.IsActive &&
         entry.Health > 0 && damage.Target.MatchesMoby(entry.Native.Key) &&
         (Rac1EnemyDamage.IsPlayerWeapon(damage) ||

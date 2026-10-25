@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -721,13 +722,13 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        var gcEntry = w.Game == "rac2" ? GcPlanetCatalogue.Find(w.LevelId) : null;
-        string gameLabel = w.Game switch
+        var gcEntry = w.Game == ObpSourceGame.Rac2 ? GcPlanetCatalogue.Find(w.LevelId) : null;
+        string gameLabel = w.Game.SourceGame switch
         {
-            "rac1" => "Ratchet & Clank",
-            "rac2" => "Going Commando",
-            "rac3" => "Up Your Arsenal",
-            _ => w.Game,
+            ObpSourceGame.Rac1 => "Ratchet & Clank",
+            ObpSourceGame.Rac2 => "Going Commando",
+            ObpSourceGame.Rac3 => "Up Your Arsenal",
+            _ => w.Game.ToString(),
         };
         string destinationName = w.PlanetName is { Length: > 0 }
             ? w.DisplayName

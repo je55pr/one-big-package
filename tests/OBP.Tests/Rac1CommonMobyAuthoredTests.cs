@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
@@ -114,7 +115,7 @@ public sealed class Rac1CommonMobyAuthoredTests
     }
 
     private static RuntimeDynamicObject Source(int nativeClass, byte[] pvar) =>
-        new("rac1", nativeClass, 17, null, "native", "native",
+        new(ObpSourceGame.Rac1, nativeClass, 17, null, "native", "native",
             new RuntimeObjectTransform(new double[16]),
             [], NativePayloads: [new RuntimeOpaquePayload("rac1-pvar", pvar)]);
 }

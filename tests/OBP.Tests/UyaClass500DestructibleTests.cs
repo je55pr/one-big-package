@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime;
@@ -120,7 +121,7 @@ public sealed class UyaClass500DestructibleTests
         Assert.Throws<InvalidDataException>(() =>
             UyaClass500Destructible.ReadAuthored(withoutPvar));
         Assert.Throws<ArgumentException>(() =>
-            UyaClass500Destructible.ReadAuthored(source with { SourceGame = "rac2" }));
+            UyaClass500Destructible.ReadAuthored(source with { SourceGame = ObpSourceGame.Rac2 }));
     }
     private static UyaGameplayDamageEvent Damage(
         RuntimeDynamicObject source,
@@ -155,7 +156,7 @@ public sealed class UyaClass500DestructibleTests
         pvar[UyaClass500Destructible.PVarF8Offset] = pvarF8;
 
         return new RuntimeDynamicObject(
-            "rac3",
+            ObpSourceGame.Rac3,
             UyaClass500Destructible.NativeClassId,
             instanceIndex,
             uid,

@@ -34,7 +34,7 @@ public partial class OBPGame
             Checks = _acceptanceChecks,
             Sources = _sources.Attached.Values.Select(source => source.Identity),
             Configuration = _playerSession?.Capture().Configuration,
-            Equipment = ReadPlayerEquipment().Select(entry => new { entry.Definition.Id, entry.Definition.SourceGame, entry.Definition.Implementation, entry.Usability, entry.Reason }),
+            Equipment = ReadPlayerEquipment().Select(entry => new { entry.Definition.Id, SourceGame = OBP.Core.SourceIdentityWire.FormatSource(entry.Definition.SourceGame), entry.Definition.Implementation, entry.Usability, entry.Reason }),
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
 }

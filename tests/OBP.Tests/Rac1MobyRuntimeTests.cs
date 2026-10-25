@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
@@ -523,7 +524,7 @@ public sealed class Rac1MobyRuntimeTests
         transform[14] = home.Z;
         transform[15] = 1d;
         return new RuntimeDynamicObject(
-            "rac1",
+            ObpSourceGame.Rac1,
             Rac1Class749Hostile.NativeClassId,
             instanceIndex,
             null,
@@ -539,7 +540,7 @@ public sealed class Rac1MobyRuntimeTests
         int? nativeUid = null,
         params RuntimeOpaquePayload[] payloads) =>
         new(
-            "rac1",
+            ObpSourceGame.Rac1,
             nativeClassId,
             instanceIndex,
             nativeUid,

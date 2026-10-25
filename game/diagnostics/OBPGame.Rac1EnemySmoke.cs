@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -10,14 +11,14 @@ public partial class OBPGame
     /// <summary>Staged integration checks; synthetic positions are not a retail replay.</summary>
     private async Task RunRac1EnemySmokeAsync()
     {
-        if (_world is { Game: "rac1", LevelId: Rac1AridiaEnemies.LevelId })
+        if (_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1AridiaEnemies.LevelId })
         {
             await RunRac1AridiaConstructorbotSmokeAsync();
             return;
         }
         try
         {
-            Require(_player is not null && _world is { Game: "rac1", LevelId: 0 }, "enemy smoke needs opening Veldin");
+            Require(_player is not null && _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 }, "enemy smoke needs opening Veldin");
             Engine.MaxFps = 60;
             ClearMovementSmokeInput();
             Require(_rac1Enemies.Count == 25 && _rac1Class1440!.RegisteredCount == 9, "enemy census differs from authored population");

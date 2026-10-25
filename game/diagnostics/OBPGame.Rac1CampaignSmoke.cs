@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -117,7 +118,7 @@ public partial class OBPGame
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
 
         RequireRac1CampaignSmoke(
-            _world is { Game: "rac1" } world && world.LevelId == destinationId,
+            _world is { Game.SourceGame: ObpSourceGame.Rac1 } world && world.LevelId == destinationId,
             $"Host world did not settle on R&C1 destination {destinationId}.");
         RequireRac1CampaignSmoke(
             _rac1CampaignSession.Campaign.CurrentLevel == destinationId,
@@ -134,7 +135,7 @@ public partial class OBPGame
     {
         const int levelId = 2;
         RequireRac1CampaignSmoke(
-            _world is { Game: "rac1", LevelId: levelId } && _player is not null,
+            _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: levelId } && _player is not null,
             "Level-2 checkpoint smoke requires the live level-2 player.");
 
         Rac1LevelCheckpointSession checkpoint = _rac1CampaignSession.LevelCheckpoint
@@ -217,7 +218,7 @@ public partial class OBPGame
         int[] expectedUnlocked)
     {
         RequireRac1CampaignSmoke(
-            _world is { Game: "rac1" } world && world.LevelId == expectedCurrent,
+            _world is { Game.SourceGame: ObpSourceGame.Rac1 } world && world.LevelId == expectedCurrent,
             $"Host world is {_world?.Game}:{_world?.LevelId}, expected rac1:{expectedCurrent}.");
 
         Rac1PlanetMapSnapshot map = _rac1CampaignSession.Travel.OpenPlanetMap();

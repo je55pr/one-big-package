@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 
@@ -89,7 +90,7 @@ public sealed class GcAranosOpeningDoorTests
         var matrix = new double[16];
         matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1d;
         return new RuntimeDynamicObject(
-            "rac2",
+            ObpSourceGame.Rac2,
             GcAranosOpeningDoorSession.NativeClassId,
             GcAranosOpeningDoorSession.OpeningInstanceIndex,
             1,

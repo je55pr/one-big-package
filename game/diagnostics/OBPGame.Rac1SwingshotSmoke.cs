@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using Godot;
 using OBP.Runtime;
@@ -151,7 +152,7 @@ public partial class OBPGame
         Float(pvar, 0x20, 30f);
         double[] transform = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0,
             -sceneAnchor.X, sceneAnchor.Y, sceneAnchor.Z, 1];
-        return new("rac1", nativeClass, instance, null, $"synthetic-class:{nativeClass}",
+        return new(ObpSourceGame.Rac1, nativeClass, instance, null, $"synthetic-class:{nativeClass}",
             $"synthetic-instance:{instance}", new RuntimeObjectTransform(transform), [], [new("rac1-pvar", pvar)]);
     }
 }

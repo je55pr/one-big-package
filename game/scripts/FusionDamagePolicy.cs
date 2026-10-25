@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
 
@@ -12,12 +13,12 @@ namespace OneBigPackage;
 public static class FusionDamagePolicy
 {
     public const string Id = "rac1-veldin-original-damage-v1";
-    public static bool Admits(WeaponTargetKey target) => target.SourceGame == "rac1" && target.InstanceIndex >= 0 &&
+    public static bool Admits(WeaponTargetKey target) => target.SourceGame == ObpSourceGame.Rac1 && target.InstanceIndex >= 0 &&
         target.NativeClassId is 500 or 501 or 511 or 749 or 1440;
 
     /// <summary>Keep foreign queries within the admitted R&C1 families; native victim rules still decide each hit.</summary>
     public static bool AdmitsQueryTarget(SourceWeaponKey weapon, WeaponTargetKey target) =>
-        weapon.SourceGame == "rac1" || target.SourceGame != "rac1" || Admits(target);
+        weapon.SourceGame == ObpSourceGame.Rac1 || target.SourceGame != ObpSourceGame.Rac1 || Admits(target);
 
     public static Rac1GameplayDamageEvent? Translate(WeaponDamageIntent intent)
     {

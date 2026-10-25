@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 
 namespace OBP.RAC1.Gameplay;
@@ -21,7 +22,7 @@ public static class Rac1Class749VeldinPopulation
 
     public static bool IsRecoveredPlacement(int levelId, RuntimeDynamicObject source) =>
         levelId == LevelId &&
-        source.SourceGame == "rac1" &&
+        source.SourceGame == ObpSourceGame.Rac1 &&
         source.NativeClassId == Rac1Class749Hostile.NativeClassId &&
         TryGetActivationGroup(source.InstanceIndex, out _);
 

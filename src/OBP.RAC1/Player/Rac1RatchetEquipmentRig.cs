@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Numerics;
 using OBP.RAC1.Animation;
 using OBP.Runtime.Player;
@@ -46,7 +47,7 @@ public sealed class Rac1RatchetEquipmentRig
             if (clip.SourceFrames is null) throw new InvalidDataException("R&C1 skeletal source frames are absent.");
             var frames = clip.SourceFrames.Select((frame, i) => new PlayerSkeletalFrame(Channels(frame),
                 clip.FrameDurationsSeconds[i], clip.FrameTimelinePositions[i])).ToArray();
-            return new PlayerSkeletalClip("rac1", Rac1Authority.Primary.BuildId, 0, clip.SequenceId,
+            return new PlayerSkeletalClip(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, 0, clip.SequenceId,
                 Enumerable.Range(0, count).ToArray(), frames);
         });
         return new(new(OBP.Core.ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, "ratchet", "rac1:ratchet:moby-class-0"),

@@ -15,7 +15,7 @@ public sealed class FusionSessionTests
                 new FusionExhibit
                 {
                     Id = "target-1", Position = Vec3.Zero, AdapterId = "dummy",
-                    Source = new FusionSourceIdentity("RAC1", "retail", "moby:123"),
+                Source = new FusionSourceIdentity(OBP.Core.ObpSourceGame.Rac1, "retail", "moby:123"),
                 },
             ],
         };
@@ -28,7 +28,7 @@ public sealed class FusionSessionTests
         {
             Exhibits = [session.Exhibits[0] with
             {
-                Source = new FusionSourceIdentity("", "", "1"),
+            Source = new FusionSourceIdentity((OBP.Core.ObpSourceGame)(-1), "", "1"),
             }],
         }).Validate());
     }

@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -267,7 +268,7 @@ public sealed class Rac1SeekerSessionTests
     private static RuntimeDynamicObject Source(int id, byte[]? pvar = null)
     {
         pvar ??= new byte[Rac1SeekerSession.PVarSize];
-        return new("rac1", Rac1SeekerSession.ClassId, id, null, "seeker", "seeker",
+        return new(ObpSourceGame.Rac1, Rac1SeekerSession.ClassId, id, null, "seeker", "seeker",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }

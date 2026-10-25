@@ -43,7 +43,7 @@ public partial class OBPGame
     private void TickRac1CheckpointTriggers()
     {
         if (_rac1CheckpointTriggers is null || _player is null ||
-            _world is not { Game: "rac1" } world ||
+            _world is not { Game.SourceGame: ObpSourceGame.Rac1 } world ||
             _rac1CampaignSession.LevelCheckpoint is not { } checkpoint)
             return;
         NVector3 nativePlayer = ToEffectNative(_player.GlobalPosition);

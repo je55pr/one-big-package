@@ -1,3 +1,4 @@
+using OBP.Core;
 namespace OBP.RAC1.Gameplay;
 
 /// <summary>Admitted player-owned descriptors, independent of enemy health/state layout.</summary>
@@ -64,8 +65,8 @@ public static class Rac1EnemyDamage
     /// admitted; class749's bounded consequence requires a lethal hit.
     /// </summary>
     private static bool IsHostAdaptedWeapon(Rac1GameplayDamageEvent damage) =>
-        damage.HostWeaponIntent is { } intent && intent.Shot.Weapon.SourceGame is "rac2" or "rac3" &&
-        intent.Shot.Weapon.NativeItemId >= 0 && intent.Target.SourceGame == "rac1" &&
+        damage.HostWeaponIntent is { } intent && intent.Shot.Weapon.SourceGame is ObpSourceGame.Rac2 or ObpSourceGame.Rac3 &&
+        intent.Shot.Weapon.NativeItemId >= 0 && intent.Target.SourceGame == ObpSourceGame.Rac1 &&
         intent.Target.NativeClassId is 749 or 1440 &&
         (intent.Target.NativeClassId != 749 || intent.SourceDamage >= 1) &&
         damage.Source == Rac1GameplayEntityRef.Player && damage.Owner?.RuntimeEntity == Rac1GameplayEntityRef.Player &&

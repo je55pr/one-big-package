@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Level;
@@ -51,7 +52,7 @@ public sealed class Rac1Class1440Session : IRac1MobyDamageConsumer, IRac1MobyCla
 
     public Probe Register(RuntimeDynamicObject source, RuntimeEntityState state)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId || source.InstanceIndex is < 189 or > 197)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId || source.InstanceIndex is < 189 or > 197)
             throw new ArgumentException("Only opening Veldin's authored class1440 population is admitted.", nameof(source));
         var pvar = Rac1Class1440ContactFamily.RequirePVar(source);
         if (pvar.Length != PVarSize) throw new InvalidDataException("Class1440 requires its exact 0x1e0 PVar.");
@@ -157,7 +158,7 @@ public sealed class Rac1Class1440Session : IRac1MobyDamageConsumer, IRac1MobyCla
     }
 
     public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) =>
-        source.SourceGame == "rac1" && source.NativeClassId == ClassId && damage.Target.MatchesMoby(new(ClassId, source.InstanceIndex)) &&
+        source.SourceGame == ObpSourceGame.Rac1 && source.NativeClassId == ClassId && damage.Target.MatchesMoby(new(ClassId, source.InstanceIndex)) &&
         Rac1EnemyDamage.IsPlayerWeapon(damage) && _entries.TryGetValue(source.InstanceIndex, out var entry) &&
         entry.Instance.IsActive && entry.Instance.State.NativeState != 8 &&
         (entry.Cooldown == 0 || Rac1EnemyDamage.IsBlaster(damage));

@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -42,7 +43,7 @@ public readonly record struct Rac1TraversalEquipmentSwingTarget(
     public static Rac1TraversalEquipmentSwingAuthoredTarget? ReadAuthored(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac1" || source.NativeClassId != NativeMobyClass)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != NativeMobyClass)
             return null;
         var payloads = source.NativePayloads?.Where(p => p.Format == "rac1-pvar").ToArray() ?? [];
         if (payloads.Length != 1 || !TryDecode(source.NativeClassId, payloads[0].Data, out var target))

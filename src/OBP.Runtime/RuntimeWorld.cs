@@ -1,3 +1,5 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using OBP.Core.Math;
 using OBP.Runtime.Audio;
 using OBP.Runtime.Presentation;
@@ -19,7 +21,7 @@ namespace OBP.Runtime;
 /// </para>
 /// </summary>
 public sealed record RuntimeWorld(
-    string Game,
+    [property: JsonRequired] WorldContentIdentity Game,
     string BuildId,
     int LevelId,
     string? PlanetName,
@@ -158,7 +160,7 @@ public sealed record RuntimeOpaquePayload(string Format, byte[] Data);
 /// boundary while gameplay interpretation remains game-specific.
 /// </summary>
 public sealed record RuntimeDynamicObject(
-    string SourceGame,
+    [property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame,
     int NativeClassId,
     int InstanceIndex,
     int? NativeUid,

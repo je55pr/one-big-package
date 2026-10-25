@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -16,7 +17,7 @@ public sealed class Rac1NovalisBirdbotTests
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x20), hp);
         double[] matrix = new double[16];
         matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1;
-        return new("rac1", Rac1NovalisBirdbotSession.ClassId, instance, null, "moby:459",
+        return new(ObpSourceGame.Rac1, Rac1NovalisBirdbotSession.ClassId, instance, null, "moby:459",
             $"birdbot:{instance}", new(matrix), [],
             [new(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }

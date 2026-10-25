@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -63,7 +64,7 @@ public static class Rac1Class749Hostile
 
     public static Rac1Class749AuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != NativeClassId) return null;
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != NativeClassId) return null;
         byte[] pvar = RequirePVar(source);
         return new Rac1Class749AuthoredState(
             new Rac1Class749Key(source.NativeClassId, source.InstanceIndex),

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -63,7 +64,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
         RuntimeDynamicObject source,
         RuntimeEntityState current)
     {
-        if (source.SourceGame != "rac1" ||
+        if (source.SourceGame != ObpSourceGame.Rac1 ||
             !Rac1BoltCrate.IsCrateClass(source.NativeClassId))
             throw new ArgumentException(
                 "Source is not an R&C1 class-500 Bolt Crate.",
@@ -95,7 +96,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(damage);
-        if (source.SourceGame != "rac1" ||
+        if (source.SourceGame != ObpSourceGame.Rac1 ||
             !Rac1BoltCrate.IsCrateClass(source.NativeClassId))
             return false;
 
@@ -178,7 +179,7 @@ public sealed class Rac1BoltCrateSession : IRac1MobyDamageConsumer
         double nativeDamage,
         int selectedTotal)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != Rac1BoltCrate.NativeClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != Rac1BoltCrate.NativeClassId)
             throw new ArgumentException("Source is not an R&C1 class-500 Bolt Crate.", nameof(source));
         current.EnsureMatches(source);
         if (!Rac1BoltCrate.ShouldBreak(nativeDamage))

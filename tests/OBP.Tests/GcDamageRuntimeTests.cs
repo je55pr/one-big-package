@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
@@ -105,7 +106,7 @@ public sealed class GcDamageRuntimeTests
         pvar[0xC8] = pvarC8;
 
         return new RuntimeDynamicObject(
-            "rac2",
+            ObpSourceGame.Rac2,
             500,
             instanceIndex,
             uid,

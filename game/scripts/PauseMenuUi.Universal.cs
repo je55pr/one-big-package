@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Runtime.Gameplay;
 
@@ -100,7 +101,7 @@ public sealed partial class PauseMenuUi
             "Gadgets" => entry.Definition.Category == EquipmentCategory.Gadget,
             "Appearance" => entry.Definition.Category == EquipmentCategory.Appearance,
             _ => entry.Definition.Category == EquipmentCategory.Weapon,
-        }).OrderBy(entry => entry.Definition.SourceGame, StringComparer.Ordinal)
+        }).OrderBy(entry => entry.Definition.SourceGame)
         .ThenBy(entry => entry.Definition.DisplayName, StringComparer.Ordinal).ToArray();
 
     private void RebuildUniversalPage()
@@ -142,7 +143,7 @@ public sealed partial class PauseMenuUi
         RestoreUniversalFocus();
     }
 
-    private static string OriginName(string source) => source switch { "rac1" => "R&C1", "rac2" => "GC", "rac3" => "UYA", _ => source.ToUpperInvariant() };
+    private static string OriginName(ObpSourceGame source) => source switch { ObpSourceGame.Rac1 => "R&C1", ObpSourceGame.Rac2 => "GC", ObpSourceGame.Rac3 => "UYA", _ => SourceIdentityWire.FormatSource(source).ToUpperInvariant() };
 
     private void BuildUniversalSlots()
     {

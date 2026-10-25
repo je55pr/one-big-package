@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 
@@ -71,7 +72,7 @@ public sealed class GcAranosOpeningLiftTests
         matrix[13] = 50.031;
         matrix[14] = 202.939;
         return new RuntimeDynamicObject(
-            "rac2",
+            ObpSourceGame.Rac2,
             GcAranosOpeningLiftSession.NativeClassId,
             GcAranosOpeningLiftSession.OpeningInstanceIndex,
             13,

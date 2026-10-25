@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Fusion;
 using OBP.Godot;
@@ -41,7 +42,7 @@ public partial class OBPGame
 
     private IEnumerable<(WeaponTargetKey Key, RuntimeWorldScene.DynamicObjectNode Node, Aabb Bounds)> RegisteredCombatGeometry()
     {
-        foreach (var (key, actor) in _actorViews.OrderBy(pair => pair.Key.SourceGame, StringComparer.Ordinal)
+        foreach (var (key, actor) in _actorViews.OrderBy(pair => pair.Key.SourceGame)
             .ThenBy(pair => pair.Key.NativeClassId).ThenBy(pair => pair.Key.InstanceIndex))
         {
             if (!actor.Observe().Alive || !IsInstanceValid(actor.Node.Root)) continue;
@@ -64,7 +65,7 @@ public partial class OBPGame
         Vector3 origin, float radius, float damage, uint flags)
     {
         if (_actors is null) return;
-        foreach (var target in RegisteredCombatGeometry().Where(target => target.Key.SourceGame != "rac1"))
+        foreach (var target in RegisteredCombatGeometry().Where(target => target.Key.SourceGame != ObpSourceGame.Rac1))
         {
             Vector3 closest = new(Mathf.Clamp(origin.X, target.Bounds.Position.X, target.Bounds.End.X),
                 Mathf.Clamp(origin.Y, target.Bounds.Position.Y, target.Bounds.End.Y), Mathf.Clamp(origin.Z, target.Bounds.Position.Z, target.Bounds.End.Z));
@@ -76,7 +77,7 @@ public partial class OBPGame
     private void ResolveRegisteredWrenchContacts(Vector3 previousHand, Vector3 previousTip, Vector3 hand, Vector3 tip, float radius, float damage)
     {
         if (_actors is null || _player is null) return;
-        foreach (var target in RegisteredCombatGeometry().Where(target => target.Key.SourceGame != "rac1"))
+        foreach (var target in RegisteredCombatGeometry().Where(target => target.Key.SourceGame != ObpSourceGame.Rac1))
         {
             var bounds = target.Bounds.Grow(radius);
             if (!(WrenchSegmentIntersects(bounds, previousHand, previousTip) || WrenchSegmentIntersects(bounds, hand, tip) ||

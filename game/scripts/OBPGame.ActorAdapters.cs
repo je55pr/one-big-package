@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Fusion;
 using OBP.Godot;
@@ -19,7 +20,7 @@ public partial class OBPGame
 
     private HostedActor CreatePlacedRac1Toad(ActorPlacement placement, RuntimeWorld library, string path)
     {
-        if (placement.Source.Game != "rac1" || placement.NativeClassId != 749 || placement.LevelId != 0 ||
+        if (placement.Source.Game != ObpSourceGame.Rac1 || placement.NativeClassId != 749 || placement.LevelId != 0 ||
             placement.InitialNativeState != Rac1Class749Hostile.TargetSearchNativeState || placement.NativeContextId != "rac1/veldin-target-home/v1")
             throw new NotSupportedException("R&C1 toad requires its recovered LEVEL0 target/home context and state 5.");
         var (scene, node, registration) = CreateActorView(placement, library, source => Rac1Class749Hostile.ReadAuthored(source) is { Health: 1 });
@@ -77,7 +78,7 @@ public partial class OBPGame
 
     private HostedActor CreatePlacedGcHostile(ActorPlacement placement, RuntimeWorld library, string path)
     {
-        if (placement.Source.Game != "rac2" || placement.NativeClassId != 2827 || placement.LevelId != 0 ||
+        if (placement.Source.Game != ObpSourceGame.Rac2 || placement.NativeClassId != 2827 || placement.LevelId != 0 ||
             placement.InitialNativeState != GcClass2827HostileSession.ChaseNativeState || placement.NativeContextId != "gc/aranos-chase-resume/v1")
             throw new NotSupportedException("GC MSR I requires its admitted Aranos chase/attack context and state 12.");
         var (scene, node, registration) = CreateActorView(placement, library, source => GcClass2827HostileSession.ReadAuthored(source) is { AuthoredMode: GcClass2827HostileSession.OpeningRoomAuthoredMode });
@@ -130,7 +131,7 @@ public partial class OBPGame
 
     private HostedActor CreatePlacedUyaProp(ActorPlacement placement, RuntimeWorld library, string path)
     {
-        if (placement.Source.Game != "rac3" || placement.NativeClassId != 500 || placement.LevelId != 1 ||
+        if (placement.Source.Game != ObpSourceGame.Rac3 || placement.NativeClassId != 500 || placement.LevelId != 1 ||
             placement.InitialNativeState != UyaClass500Destructible.ActiveNativeState || placement.NativeContextId != "uya/table1-class500-deactivate/v1")
             throw new NotSupportedException("UYA target requires its recovered TABLE1 class-500 deactivation context.");
         var (scene, node, registration) = CreateActorView(placement, library, source => UyaClass500Destructible.PostBreakRoute(UyaClass500Destructible.ReadAuthored(source)) == UyaClass500PostBreakRoute.Deactivate);
@@ -166,7 +167,7 @@ public partial class OBPGame
 
     private void RegisterOriginalActor(RuntimeWorldScene.DynamicObjectNode node, Func<ActorObservation> observe, Func<WeaponDamageIntent, ActorHitResult> damage)
     {
-        string build = _sources.Attached.Values.Single(source => source.Game.ToString().Equals(node.Source.SourceGame, StringComparison.OrdinalIgnoreCase)).Identity.BuildId;
+        string build = _sources.Attached.Values.Single(source => source.Game == node.Source.SourceGame).Identity.BuildId;
         var registration = new ActorRegistration(new(_actors!.WorldInstanceId, _actors.Generation, ActorTarget(node)),
             new(node.Source.SourceGame, build, node.Source.InteractionId), "source-world/" + node.Source.SourceGame,
             node.Source.InteractionId, [new("damage", CapabilityAdmission.Ready), new("native-update", CapabilityAdmission.Ready)]);

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 
 namespace OBP.RAC1.Player;
@@ -22,7 +23,7 @@ public sealed class Rac1NovalisWaterSurfaces
     public static Rac1NovalisWaterSurfaces FromWorld(RuntimeWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
-        if (world.Game != "rac1" || world.LevelId != 1)
+        if (world.Game != ObpSourceGame.Rac1 || world.LevelId != 1)
             throw new ArgumentException("Novalis water lookup requires the R&C1 LEVEL1 world.", nameof(world));
         var result = new Rac1NovalisWaterSurfaces();
         foreach (var blob in world.CollisionMeshes)

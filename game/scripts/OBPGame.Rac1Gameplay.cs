@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -128,7 +129,7 @@ public partial class OBPGame
 
     private void ConfigureRac1WorldActors(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
-        if (world.Game != "rac1")
+        if (world.Game != ObpSourceGame.Rac1)
         {
             return;
         }
@@ -240,7 +241,7 @@ public partial class OBPGame
 
     private void BindSourcePlayerContacts(PlayerHost player)
     {
-        if (_world?.Game != "rac1") return;
+        if (_world?.Game != ObpSourceGame.Rac1) return;
         player.Rac1CrankInput = TryTurnRac1NovalisCrank;
         player.Rac1WaterSurfaceHeight = SampleRac1NovalisWaterHeight;
         player.Rac1NovalisDrowned += OnRac1NovalisDrowned;
@@ -250,7 +251,7 @@ public partial class OBPGame
 
     private void TickRac1Gameplay(double delta)
     {
-        if (_movementStateLoading || _world?.Game != "rac1" || _player is null || !IsInstanceValid(_player)) return;
+        if (_movementStateLoading || _world?.Game != ObpSourceGame.Rac1 || _player is null || !IsInstanceValid(_player)) return;
         if (_playerNative is null && !TickParityPlayerLifecycle()) return;
         if (!PlayerAlive)
         {
@@ -292,7 +293,7 @@ public partial class OBPGame
 
     private string GetRac1GameplayHudLine()
     {
-        if (_world?.Game != "rac1" || _rac1CombatStatus == "off")
+        if (_world?.Game != ObpSourceGame.Rac1 || _rac1CombatStatus == "off")
         {
             return string.Empty;
         }
@@ -326,7 +327,7 @@ public partial class OBPGame
 
     private Rac1GameplaySnapshot? GetRac1GameplaySnapshot()
     {
-        if (_world?.Game != "rac1" || _rac1CombatStatus == "off") return null;
+        if (_world?.Game != ObpSourceGame.Rac1 || _rac1CombatStatus == "off") return null;
         var hostileProbes = SnapshotRac1HostileProbes();
         int activeHostiles = hostileProbes.Count(probe =>
             probe.EntityState.Presentation.Presence == RuntimeEntityPresence.Active);

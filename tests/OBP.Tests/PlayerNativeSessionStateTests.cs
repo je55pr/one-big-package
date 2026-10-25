@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
@@ -63,7 +64,7 @@ public sealed class PlayerNativeSessionStateTests
         var session = new ObpPlayerSession(PlayerSessionLifetimeTests.Snapshot(), native);
         native.SetEquipmentPreview(true);
         native.Inventory.AcquireNativeItem((int)Rac1WeaponId.Blaster);
-        native.Weapons.Select(new("rac1", (int)Rac1WeaponId.Blaster));
+        native.Weapons.Select(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.Blaster));
         var preview = session.Capture();
         session.EndWorld();
         Assert.True(native.Inventory.Owns(Rac1WeaponId.Blaster));

@@ -112,7 +112,7 @@ public partial class OBPGame
     {
         EnsureSourceLibraryInitialized();
 
-        if (_world is not { Game: "rac1" } current ||
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1 } current ||
             current.LevelId != _rac1CampaignSession.Campaign.CurrentLevel)
             return Rac1PlanetTravelStartResult.DestinationUnavailable;
 
@@ -140,7 +140,7 @@ public partial class OBPGame
         if (Rac1PlanetMapOpen)
             return true;
         if (_mode != Mode.World || PauseMenuOpen || ControllerSettingsOpen || QuickSelectOpen || GetTree().Paused || _args.CaptureFrame is not null ||
-            _world is not { Game: "rac1" } current ||
+            _world is not { Game.SourceGame: ObpSourceGame.Rac1 } current ||
             current.LevelId != _rac1CampaignSession.Campaign.CurrentLevel ||
             _rac1CampaignSession.Travel.TransitionActive)
             return false;
@@ -307,7 +307,7 @@ public partial class OBPGame
             IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
             IncludeSky = !_args.AnimSolo,
             IncludeCollision = true,
-            AdmitCollisionFace = world is { Game: "rac1", LevelId: 1 }
+            AdmitCollisionFace = world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }
                 ? AdmitRac1NovalisCollisionFace
                 : null,
             ShowCollisionDebug = _args.CollisionDebug,

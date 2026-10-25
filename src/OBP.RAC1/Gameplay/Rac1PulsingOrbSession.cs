@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -21,7 +22,7 @@ public sealed class Rac1PulsingOrbSession
 
     public bool Register(int levelId, RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != NativeClassId) return false;
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != NativeClassId) return false;
         if (levelId is not (0 or 2 or 5 or 18))
             throw new InvalidDataException($"R&C1 class-1060 updater is not admitted for level {levelId}.");
         byte[]? raw = source.NativePayloads?.SingleOrDefault(p => p.Format == "rac1-pvar")?.Data;

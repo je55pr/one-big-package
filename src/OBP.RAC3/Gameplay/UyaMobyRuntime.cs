@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -35,7 +36,7 @@ public static class UyaMobyRuntime
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(current);
-        if (source.SourceGame != "rac3")
+        if (source.SourceGame != ObpSourceGame.Rac3)
             throw new ArgumentException("Source is not a UYA Moby.", nameof(source));
         current.EnsureMatches(source);
         return new UyaMobyRuntimeState(
@@ -158,7 +159,7 @@ public sealed class UyaMobyRuntimeSession
     public void RegisterWorld(RuntimeWorld world)
     {
         ArgumentNullException.ThrowIfNull(world);
-        if (world.Game != "rac3")
+        if (world.Game != ObpSourceGame.Rac3)
             throw new ArgumentException("World is not a UYA world.", nameof(world));
         foreach (var source in world.DynamicObjects ?? Array.Empty<RuntimeDynamicObject>())
             Register(source);

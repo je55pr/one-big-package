@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
@@ -260,7 +261,7 @@ public sealed class Rac1BoltCrateTests
         var pvar = new byte[0x100];
 
         return new RuntimeDynamicObject(
-            "rac1", 500, 89, uid, "moby:500", "moby:89",
+            ObpSourceGame.Rac1, 500, 89, uid, "moby:500", "moby:89",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>(),
             [new RuntimeOpaquePayload(Rac1BoltCrate.InstancePayloadFormat, raw),
              new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -18,7 +19,7 @@ public static class GcClass500Lifecycle
         RuntimeDynamicObject source,
         RuntimeEntityState current)
     {
-        if (source.SourceGame != "rac2" || source.NativeClassId != 500)
+        if (source.SourceGame != ObpSourceGame.Rac2 || source.NativeClassId != 500)
             throw new ArgumentException("Source is not a Going Commando class-500 crate.", nameof(source));
         current.EnsureMatches(source);
 

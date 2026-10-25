@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Numerics;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -16,7 +17,7 @@ public sealed record ActorPlacement(string Id, FusionSourceIdentity Source, int 
     {
         if (Source is null) throw new ArgumentException("Actor placement is missing source provenance.");
         Source.Validate();
-        if (Version != CurrentVersion || string.IsNullOrWhiteSpace(Id) || Source.Game is not ("rac1" or "rac2" or "rac3") ||
+        if (Version != CurrentVersion || string.IsNullOrWhiteSpace(Id) || Source.Game is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
             LevelId < 0 || NativeClassId < 0 || SourceInstanceIndex < 0 || InitialNativeState < 0 || string.IsNullOrWhiteSpace(AdapterId) ||
             string.IsNullOrWhiteSpace(NativeContextId) || string.IsNullOrWhiteSpace(ScenarioGroup) ||
             Transform?.Matrix is not { Length: 16 } matrix || matrix.Any(value => !double.IsFinite(value)) ||
@@ -76,13 +77,13 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
     public long Generation { get; } = generation >= 0 ? generation : throw new ArgumentOutOfRangeException(nameof(generation));
     public long TickCount => _tick;
     public int Count => _actors.Count;
-    public IReadOnlyList<IRegisteredActor> Ordered => _actors.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame, StringComparer.Ordinal)
+    public IReadOnlyList<IRegisteredActor> Ordered => _actors.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
         .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex).ToArray();
 
-    public ActorInstanceKey Allocate(string sourceGame, int nativeClass)
+    public ActorInstanceKey Allocate(ObpSourceGame sourceGame, int nativeClass)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        if (sourceGame is not ("rac1" or "rac2" or "rac3") || nativeClass < 0) throw new ArgumentException("Unsupported native actor identity.");
+        if (sourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || nativeClass < 0) throw new ArgumentException("Unsupported native actor identity.");
         return new(WorldInstanceId, Generation, new(sourceGame, nativeClass, checked(_nextInstance++)));
     }
 

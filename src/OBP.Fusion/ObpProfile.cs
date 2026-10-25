@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using OBP.Runtime.Gameplay;
@@ -46,12 +47,12 @@ public sealed record ProfilePayload(string Owner, int Version, JsonElement Data)
 }
 
 /// <summary>Payload-free source provenance. Never records machine paths or disc/asset bytes.</summary>
-public sealed record ProfileSource(string Game, string Build, string Digest)
+public sealed record ProfileSource([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame Game, string Build, string Digest)
 {
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extensions { get; init; }
     public void Validate()
     {
-        if (Game is not ("rac1" or "rac2" or "rac3") || string.IsNullOrWhiteSpace(Build) || Build.Length > 128 ||
+        if (Game is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || string.IsNullOrWhiteSpace(Build) || Build.Length > 128 ||
             Digest is null || Digest.Length != 64 || Digest.Any(character => !Uri.IsHexDigit(character)))
             throw new InvalidDataException("Invalid source dependency.");
     }
@@ -112,7 +113,7 @@ public sealed record ObpProfile(int Version, string Integration, ProfilePlayer P
     {
         if (Version != CurrentVersion) throw new UnsupportedProfileVersionException(Version);
         if (Integration != CurrentIntegration || Player is null || Destination is not null && !IsDestination(Destination) ||
-            Sources is null || Sources.Count > 3 || Sources.Any(source => source is null) || Sources.Select(source => source.Game).Distinct(StringComparer.Ordinal).Count() != Sources.Count ||
+            Sources is null || Sources.Count > 3 || Sources.Any(source => source is null) || Sources.Select(source => source.Game).Distinct().Count() != Sources.Count ||
             Campaigns is null || Campaigns.Count > 64 || Campaigns.Any(payload => payload is null) || Campaigns.Select(payload => payload.Owner).Distinct(StringComparer.Ordinal).Count() != Campaigns.Count)
             throw new InvalidDataException("Invalid shared profile envelope.");
         Player.Validate();
@@ -122,7 +123,7 @@ public sealed record ObpProfile(int Version, string Integration, ProfilePlayer P
 
     public void VerifyAvailableSources(IEnumerable<ProfileSource> attached)
     {
-        var available = attached.ToDictionary(source => source.Game, StringComparer.Ordinal);
+        var available = attached.ToDictionary(source => source.Game);
         foreach (var required in Sources)
             if (available.TryGetValue(required.Game, out var actual) && (required.Build != actual.Build ||
                 !required.Digest.Equals(actual.Digest, StringComparison.OrdinalIgnoreCase)))

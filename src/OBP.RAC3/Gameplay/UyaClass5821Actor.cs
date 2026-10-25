@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -104,7 +105,7 @@ public static class UyaClass5821Actor
     public static UyaClass5821AuthoredState ReadAuthored(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac3" || source.NativeClassId != NativeClassId)
+        if (source.SourceGame != ObpSourceGame.Rac3 || source.NativeClassId != NativeClassId)
             throw new ArgumentException(
                 $"Source is not UYA native class {NativeClassId}.",
                 nameof(source));
@@ -513,7 +514,7 @@ public sealed class UyaClass5821DamageSession : IUyaMobyDamageConsumer
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(damage);
 
-        if (source.SourceGame != "rac3" ||
+        if (source.SourceGame != ObpSourceGame.Rac3 ||
             source.NativeClassId != NativeClassId ||
             !damage.Target.MatchesMoby(
                 new UyaMobyRuntimeKey(source.NativeClassId, source.InstanceIndex)) ||

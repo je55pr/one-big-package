@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -378,7 +379,7 @@ public sealed class Rac1AmoeboidFamilySessionTests
         int group, byte[]? pvar)
     {
         pvar ??= new byte[Rac1AmoeboidAuthored.PVarSize];
-        return new("rac1", cls, index, null, "amoeboid", "amoeboid",
+        return new(ObpSourceGame.Rac1, cls, index, null, "amoeboid", "amoeboid",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }

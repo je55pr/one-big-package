@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -123,7 +124,7 @@ public partial class OBPGame
 
     private void RefreshSourceEquipmentContext()
     {
-        if (_world is { Game: "rac1" } world)
+        if (_world is { Game.SourceGame: ObpSourceGame.Rac1 } world)
         {
             _rac1DetectorEquipped = false;
             _rac1DetectorNearest = null;

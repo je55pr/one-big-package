@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -43,7 +44,7 @@ public sealed class Rac1NativeHitSemanticsTests
     public void HostContactFactsCarryTargetStateWithoutOwningCollisionGeometry()
     {
         var target = new RuntimeDynamicObject(
-            "rac1",
+            ObpSourceGame.Rac1,
             Rac1Class749Hostile.NativeClassId,
             149,
             null,
@@ -68,7 +69,7 @@ public sealed class Rac1NativeHitSemanticsTests
     public void RuntimeContactFactsCarrySharedLifetimeAndPresence()
     {
         var source = new RuntimeDynamicObject(
-            "rac1",
+            ObpSourceGame.Rac1,
             Rac1Class749Hostile.NativeClassId,
             149,
             null,

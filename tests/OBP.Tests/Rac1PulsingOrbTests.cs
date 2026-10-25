@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
@@ -63,7 +64,7 @@ public sealed class Rac1PulsingOrbTests
     {
         var pvar = new byte[16];
         BinaryPrimitives.WriteInt32LittleEndian(pvar, BitConverter.SingleToInt32Bits(phaseDegrees));
-        return new("rac1", Rac1PulsingOrbSession.NativeClassId, id, null, "orb", "orb",
+        return new(ObpSourceGame.Rac1, Rac1PulsingOrbSession.NativeClassId, id, null, "orb", "orb",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload("rac1-pvar", pvar)]);
     }

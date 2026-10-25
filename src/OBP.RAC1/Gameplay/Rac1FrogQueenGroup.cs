@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -23,7 +24,7 @@ public sealed class Rac1FrogQueenGroup
     public Rac1FrogQueenGroup(RuntimeDynamicObject queen,
         IReadOnlyList<int[]> nativeGroups, IEnumerable<int> originalFrogIndices)
     {
-        if (queen.SourceGame != "rac1" || queen.NativeClassId != QueenClassId)
+        if (queen.SourceGame != ObpSourceGame.Rac1 || queen.NativeClassId != QueenClassId)
             throw new ArgumentException("Original R&C1 class1051 Queen required.", nameof(queen));
         var pvar = queen.NativePayloads?.SingleOrDefault(p =>
             p.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;

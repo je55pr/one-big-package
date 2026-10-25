@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Text.Json;
 using OBP.Core;
 
@@ -9,7 +10,7 @@ namespace OBP.IO;
 /// anywhere, only the checksums / sizes / serials.
 /// </summary>
 public sealed record AuthorityManifest(
-    string Game,
+    [property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame Game,
     string BuildId,
     string? Region,
     string? Serial,
@@ -23,7 +24,7 @@ public sealed record AuthorityManifest(
         var r = doc.RootElement;
         var payload = r.GetProperty("payload");
         return new AuthorityManifest(
-            Game: r.GetProperty("game").GetString() ?? throw Missing("game", jsonPath),
+            Game: SourceIdentityWire.ParseSource(r.GetProperty("game").GetString() ?? throw Missing("game", jsonPath)),
             BuildId: r.GetProperty("buildId").GetString() ?? throw Missing("buildId", jsonPath),
             Region: r.TryGetProperty("region", out var region) ? region.GetString() : null,
             Serial: r.TryGetProperty("serial", out var serial) ? serial.GetString() : null,
@@ -32,14 +33,8 @@ public sealed record AuthorityManifest(
             PayloadSha256: (payload.GetProperty("sha256").GetString() ?? throw Missing("payload.sha256", jsonPath)).ToLowerInvariant());
     }
 
-    public ObpSourceGame ResolveGame() => Game switch
-    {
-        "rac1" => ObpSourceGame.Rac1,
-        "rac2" => ObpSourceGame.Rac2,
-        "rac3" => ObpSourceGame.Rac3,
-        "deadlocked" => ObpSourceGame.Deadlocked,
-        _ => throw new InvalidOperationException($"Unsupported native OBP source game '{Game}' in authority manifest."),
-    };
+    public ObpSourceGame ResolveGame() => Enum.IsDefined(Game) && Game != ObpSourceGame.Synthetic ? Game :
+        throw new InvalidOperationException($"Unsupported native OBP source game '{Game}' in authority manifest.");
 
     private static Exception Missing(string field, string path) => new InvalidDataException($"Manifest {path} is missing '{field}'.");
 }

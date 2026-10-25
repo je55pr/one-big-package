@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -25,7 +26,7 @@ public static class Rac1MobyRuntime
         int nativeState,
         RuntimeEntityState current)
     {
-        if (source.SourceGame != "rac1")
+        if (source.SourceGame != ObpSourceGame.Rac1)
             throw new ArgumentException("Source is not an R&C1 Moby.", nameof(source));
         current.EnsureMatches(source);
         ValidateNativeState(nativeState);

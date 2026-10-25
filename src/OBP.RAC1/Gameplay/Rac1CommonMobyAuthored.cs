@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -20,7 +21,7 @@ public static class Rac1CommonMobyAuthored
     /// <summary>Class 605: the 0x20-byte authored buried-resource target.</summary>
     public static Rac1MetalDetectorTargetAuthored? ReadMetalDetectorTarget(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != BuriedMetalDetectorTarget)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != BuriedMetalDetectorTarget)
             return null;
         var bytes = RequirePVar(source, 0x20);
         int path = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(0x10));
@@ -34,7 +35,7 @@ public static class Rac1CommonMobyAuthored
     /// <summary>Class 805: the 0x30-byte authored checkpoint volume and gates.</summary>
     public static Rac1CheckpointMarkerAuthored? ReadCheckpointMarker(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != CheckpointMarker)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != CheckpointMarker)
             return null;
         var bytes = RequirePVar(source, 0x30);
         int volume = BinaryPrimitives.ReadInt32LittleEndian(bytes);

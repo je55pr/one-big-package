@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -63,7 +64,7 @@ public partial class OBPGame
             // than the old 60-waypoints/s host preview. Accelerate only the
             // staged smoke's game clock, not ordinary retail-route gameplay.
             Engine.TimeScale = 12;
-            Require(_world is { Game: "rac1", LevelId: 3 } &&
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 3 } &&
                 _rac1MetropolisTaxis is { } && _player is not null &&
                 _rac1TaxiNodes.Count == 5 && _rac1TaxiCollisionBodies.Count == 5,
                 "Metropolis taxi smoke needs all five retail imported taxi hulls");

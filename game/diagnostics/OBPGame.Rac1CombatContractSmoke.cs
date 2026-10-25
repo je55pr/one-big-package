@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -18,7 +19,7 @@ public partial class OBPGame
     {
         try
         {
-            if (_world is not { Game: "rac1", LevelId: 0 } || _player is null)
+            if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 } || _player is null)
                 throw new InvalidOperationException(
                     "R&C1 combat smoke must begin in authored LEVEL0/Veldin.");
 
@@ -338,7 +339,7 @@ public partial class OBPGame
     {
         OpenDestinationFromBootstrap("rac1:LEVEL18");
         await Rac1SmokeWaitAsync(
-            () => _world is { Game: "rac1", LevelId: 18 } &&
+            () => _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 18 } &&
                 _player is not null &&
                 IsInstanceValid(_player) &&
                 _player.IsOnFloor(),
@@ -362,7 +363,7 @@ public partial class OBPGame
     {
         OpenDestinationFromBootstrap("rac1:LEVEL1");
         await Rac1SmokeWaitAsync(
-            () => _world is { Game: "rac1", LevelId: 1 } &&
+            () => _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } &&
                 _player is not null &&
                 IsInstanceValid(_player) &&
                 _player.IsOnFloor(),
@@ -381,7 +382,7 @@ public partial class OBPGame
 
         OpenDestinationFromBootstrap("rac1:LEVEL0");
         await Rac1SmokeWaitAsync(
-            () => _world is { Game: "rac1", LevelId: 0 } &&
+            () => _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 } &&
                 _player is not null &&
                 IsInstanceValid(_player) &&
                 _player.IsOnFloor(),
@@ -470,7 +471,7 @@ public partial class OBPGame
         int maxFrames)
     {
         if (_player is null ||
-            _world is not { Game: "rac1", LevelId: Rac1Class749VeldinPopulation.LevelId } ||
+            _world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1Class749VeldinPopulation.LevelId } ||
             !Rac1Class749Hostile.IsRecoveredVeldinPlacement(_world.LevelId, hostile.Source))
             throw new InvalidOperationException(
                 "Natural class-749 attack smoke requires a recovered Veldin population placement.");

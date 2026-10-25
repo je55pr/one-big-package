@@ -55,7 +55,7 @@ public sealed class SourceNeutralHostArchitectureTests
         var compilation = HostOwnershipAudit.Host.Value;
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1MetalDetector.cs");
         string source = original.GetText().ToString().Replace("if (OrdinaryPlayerSession)",
-            "if (_world?.Game != \"rac1\") return false;\nif (OrdinaryPlayerSession)", StringComparison.Ordinal);
+            "if (_world?.Game != ObpSourceGame.Rac1) return false;\nif (OrdinaryPlayerSession)", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
@@ -88,7 +88,7 @@ public sealed class SourceNeutralHostArchitectureTests
         var compilation = HostOwnershipAudit.Host.Value;
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.WorldEntry.cs");
         string source = original.GetText().ToString().Replace("else SpawnPlayer(world);",
-            "else if (world.Game == \"rac1\") SpawnPlayer(world);", StringComparison.Ordinal);
+            "else if (world.Game == ObpSourceGame.Rac1) SpawnPlayer(world);", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
@@ -98,7 +98,7 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("game/scripts/OBPGame.Rac1MetalDetector.cs", "_world?.Game != \"rac1\"")]
+    [InlineData("game/scripts/OBPGame.Rac1MetalDetector.cs", "_world?.Game != ObpSourceGame.Rac1")]
     [InlineData("game/scripts/OBPGame.Rac1NovalisWater.cs", "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
@@ -149,7 +149,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void ApprovedWorldAdapterCannotAcquireTheReportedEquipmentSelectionCall()
     {
         var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.Destinations.cs", "WorldOptions", """
-            if (world.Game == "rac1")
+            if (world.Game == ObpSourceGame.Rac1)
                 OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
             """);
         var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
@@ -199,14 +199,16 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("var alias = world; if (alias.Game == \"rac1\") SelectAvatar();")]
-    [InlineData("if (world?.Game == \"rac1\") SelectMenu();")]
-    [InlineData("if (world is { Game: \"rac1\" }) SelectAttackRoute();")]
+    [InlineData("var alias = world; if (alias.Game == ObpSourceGame.Rac1) SelectAvatar();")]
+    [InlineData("if (world?.Game == ObpSourceGame.Rac1) SelectMenu();")]
+    [InlineData("if (world is { Game.SourceGame: ObpSourceGame.Rac1 }) SelectAttackRoute();")]
+    [InlineData("var identity = world.Game; if (identity.SourceGame == ObpSourceGame.Rac1) SelectAvatar();")]
     [InlineData("if (host.UseRac1Gameplay) EnableTraversal();")]
     public void NewPlayerGatesFailIncludingAliasesNullAccessAndPatterns(string body)
     {
         string source = """
             using OBP.Runtime;
+            using OBP.Core;
             class PlayerHost { public bool UseRac1Gameplay { get; set; } }
             class Host {
                 void Choose(RuntimeWorld world, PlayerHost host) { BODY }

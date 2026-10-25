@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Text.Json;
 using Godot;
 using OBP.Godot;
@@ -374,7 +375,7 @@ public partial class OBPGame
             {
                 sawJump = true;
                 rotated |= initial.X.DistanceTo(view.Basis.X) > .01f || initial.Z.DistanceTo(view.Basis.Z) > .01f;
-                if (tick == 15) await CaptureFusionAsync($"{key.SourceGame}-{(moving ? "moving" : "standing")}-jump");
+                if (tick == 15) await CaptureFusionAsync($"{SourceIdentityWire.FormatSource(key.SourceGame)}-{(moving ? "moving" : "standing")}-jump");
             }
         }
         FusionKey(Key.Space, false);

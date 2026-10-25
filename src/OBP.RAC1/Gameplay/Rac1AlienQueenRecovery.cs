@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Numerics;
 using OBP.Runtime;
 
@@ -24,7 +25,7 @@ public sealed class Rac1AlienQueenRecovery
 
     public Rac1AlienQueenRecovery(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != QueenClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != QueenClassId)
             throw new ArgumentException("Original class1051 Alien Queen required.", nameof(source));
         if (source.NativePayloads is null || !source.NativePayloads.Any(p =>
             p.Format == Rac1BoltCrate.PVarPayloadFormat && p.Data.Length >= 0x180))

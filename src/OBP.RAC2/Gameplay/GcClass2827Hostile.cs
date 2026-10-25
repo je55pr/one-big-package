@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -157,7 +158,7 @@ public sealed class GcClass2827HostileSession
     public static GcClass2827AuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac2" || source.NativeClassId != NativeClassId)
+        if (source.SourceGame != ObpSourceGame.Rac2 || source.NativeClassId != NativeClassId)
         {
             return null;
         }

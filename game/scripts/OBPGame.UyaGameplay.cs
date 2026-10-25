@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC3;
@@ -65,7 +66,7 @@ public partial class OBPGame
     private void ConfigureUyaGameplay(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         ResetUyaGameplay();
-        if (world.Game != "rac3")
+        if (world.Game != ObpSourceGame.Rac3)
             return;
 
         if (!Rac3WorldGameplaySidecar.TryGet(
@@ -197,7 +198,7 @@ public partial class OBPGame
 
     private RuntimeWorldScene.DynamicObjectNode? SelectUyaClass500HostContact()
     {
-        if (_player is null || _sceneResult is null || _world?.Game != "rac3")
+        if (_player is null || _sceneResult is null || _world?.Game != ObpSourceGame.Rac3)
             return null;
 
         Vector3 forward = -_player.Camera.GlobalTransform.Basis.Z;
@@ -239,7 +240,7 @@ public partial class OBPGame
 
     private void TickUyaGameplay(double delta)
     {
-        if (_world?.Game != "rac3" ||
+        if (_world?.Game != ObpSourceGame.Rac3 ||
             _player is null ||
             _uyaGameplayContext is null ||
             _uyaClass5821AuditSources.Count == 0 ||
@@ -391,7 +392,7 @@ public partial class OBPGame
 
     private string GetUyaGameplayHudLine()
     {
-        if (_world?.Game != "rac3" || _uyaGameplayStatus == "off")
+        if (_world?.Game != ObpSourceGame.Rac3 || _uyaGameplayStatus == "off")
             return string.Empty;
 
         int live = _uyaClass500Nodes.Count(node =>

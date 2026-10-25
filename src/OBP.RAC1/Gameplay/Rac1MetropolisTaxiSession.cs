@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Level;
 using OBP.Runtime;
@@ -274,7 +275,7 @@ public sealed class Rac1MetropolisTaxiSession
 
     public static Rac1MetropolisTaxiSession? TryCreate(RuntimeWorld world)
     {
-        if (world.Game != "rac1" || world.LevelId != NativeLevelId)
+        if (world.Game != ObpSourceGame.Rac1 || world.LevelId != NativeLevelId)
             return null;
 
         var objects = world.DynamicObjects ?? [];

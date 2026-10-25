@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -24,7 +25,7 @@ public readonly record struct GcGameplayEntityRef(
     public static GcGameplayEntityRef Moby(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac2")
+        if (source.SourceGame != ObpSourceGame.Rac2)
         {
             throw new ArgumentException(
                 "Gameplay entity is not owned by Going Commando.",
@@ -39,7 +40,7 @@ public readonly record struct GcGameplayEntityRef(
 
     public bool Matches(RuntimeDynamicObject source) =>
         Kind == GcGameplayEntityKind.Moby
-        && source.SourceGame == "rac2"
+        && source.SourceGame == ObpSourceGame.Rac2
         && NativeClassId == source.NativeClassId
         && RuntimeId == source.InstanceIndex;
 }

@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -67,7 +68,7 @@ public sealed class Rac1NovalisPeckbotSession : IRac1MobyDamageConsumer, IRac1Mo
 
     public Probe Register(RuntimeDynamicObject source, RuntimeEntityState state)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId)
             throw new ArgumentException("Only retail Novalis Peckbot class-577 instances are admitted.", nameof(source));
         var pvars = source.NativePayloads?.Where(p => p.Format == Rac1BoltCrate.PVarPayloadFormat).ToArray();
         if (pvars is not [{ Data.Length: PVarSize }])

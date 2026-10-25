@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.RAC1.Presentation;
 
@@ -15,7 +16,7 @@ public partial class OBPGame
     /// </summary>
     private async Task RunRac1WorldRetailNavigationSmokeAsync(string world)
     {
-        if (_player is null || _world is not { Game: "rac1" } ||
+        if (_player is null || _world is not { Game.SourceGame: ObpSourceGame.Rac1 } ||
             !Rac1RetailUiAssets.IsLoaded)
             throw new InvalidOperationException($"{world} pause review needs a live R&C1 world and native UI assets.");
         // A --headless Godot root defaults to 64x64. Preserve the normal

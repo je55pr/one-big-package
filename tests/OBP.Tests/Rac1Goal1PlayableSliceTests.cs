@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.RAC1.Animation;
@@ -21,7 +22,7 @@ public sealed class Rac1Goal1PlayableSliceTests
         // converted from native X/Y/Z into OBP X/Y/Z. The remote ship is not Ratchet's spawn.
         var world = CreateRepresentativeVeldinWorld();
         var spawn = Assert.IsType<RuntimeSpawn>(world.PreferredPlayerStart);
-        Assert.Equal("rac1", world.Game);
+        Assert.Equal((WorldContentIdentity)ObpSourceGame.Rac1, world.Game);
         Assert.Equal(0, world.LevelId);
         Assert.Equal(Rac1PlayerStartProvider.RatchetClass, 0);
         Assert.Equal(Rac1PlayerStartProvider.RatchetInstanceIndex, 0);
@@ -310,7 +311,7 @@ public sealed class Rac1Goal1PlayableSliceTests
         var ship = new RuntimeSpawn(20d, 20d, 20d, 0d);
         var playerStart = new RuntimeSpawn(132.09d, 31.43d, 115.48d, 0.6627015d);
         return new RuntimeWorld(
-            Game: "rac1",
+            Game: ObpSourceGame.Rac1,
             BuildId: "rac1-ntscu-original",
             LevelId: 0,
             PlanetName: "Veldin",
@@ -333,7 +334,7 @@ public sealed class Rac1Goal1PlayableSliceTests
 
     private static RuntimeDynamicObject RedPlant(int instanceIndex) =>
         new(
-            "rac1",
+            ObpSourceGame.Rac1,
             Rac1MobyAnimationProvider.RedPlantClassId,
             instanceIndex,
             null,
@@ -351,7 +352,7 @@ public sealed class Rac1Goal1PlayableSliceTests
         var pvar = new byte[0x100];
 
         return new RuntimeDynamicObject(
-            "rac1",
+            ObpSourceGame.Rac1,
             Rac1BoltCrate.NativeClassId,
             89,
             uid,
@@ -373,7 +374,7 @@ public sealed class Rac1Goal1PlayableSliceTests
             BitConverter.SingleToInt32Bits(health));
 
         return new RuntimeDynamicObject(
-            "rac1",
+            ObpSourceGame.Rac1,
             Rac1Class749Hostile.NativeClassId,
             instanceIndex,
             null,

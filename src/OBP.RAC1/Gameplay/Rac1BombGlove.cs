@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 
 namespace OBP.RAC1.Gameplay;
@@ -110,7 +111,7 @@ public static class Rac1BombGlove
 
         return Rac1NativeHitSemantics.IsDistinctContactCandidate(facts) &&
                facts.IsTargetActive &&
-               facts.Target.SourceGame == "rac1" &&
+               facts.Target.SourceGame == ObpSourceGame.Rac1 &&
                 (facts.Target.NativeClassId is Rac1Class749Hostile.NativeClassId or Rac1Class1440Session.ClassId or
                     Rac1NovalisPeckbotSession.ClassId or Rac1NovalisBirdbotSession.ClassId or Rac1FrogAuthored.ClassId ||
                 Rac1AridiaEnemies.IsEnemyClass(facts.Target.NativeClassId) ||

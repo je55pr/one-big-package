@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Gameplay;
@@ -125,7 +126,7 @@ public sealed class Rac1PlacedBoltTests
         BinaryPrimitives.WriteInt16LittleEndian(packed.AsSpan(0xc), 76);
         pvar[0x54] = preserveHeight ? (byte)1 : (byte)0;
         double[] transform = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, nativePosition.X, nativePosition.Z, nativePosition.Y, 1];
-        return new("rac1", nativeClass, 2, null, $"moby:{nativeClass}", "moby:2", new(transform), [],
+        return new(ObpSourceGame.Rac1, nativeClass, 2, null, $"moby:{nativeClass}", "moby:2", new(transform), [],
             [new(Rac1BoltCrate.InstancePayloadFormat, packed), new(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }
 }

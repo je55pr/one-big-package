@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -57,7 +58,7 @@ public partial class OBPGame
             ActorStatusReader = ReadPlacedActorStatus,
             SharedProfileStatusReader = () => _profileStatus,
             ActorReset = ResetPlacedActor,
-            CatalogIcon = entry => entry.Definition.Item is { SourceGame: "rac1" } item &&
+            CatalogIcon = entry => entry.Definition.Item is { SourceGame: ObpSourceGame.Rac1 } item &&
                 Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)item.NativeItemId) is { } icon
                 ? Rac1RetailUiAssets.Sprite(icon.AnimationId, icon.Frame) : null,
             LabAvailable = OrdinaryPlayerSession,
@@ -89,16 +90,16 @@ public partial class OBPGame
                         _rac1Weapons.OwnsNativeItem(id), false);
                 }).ToArray(),
             QuickSlots = (_playerNative?.Assignments.Capture().QuickSelect ?? _rac1Weapons.QuickSelect
-                .Select(id => id == 0 ? (OBP.Runtime.Gameplay.SourceWeaponKey?)null : new OBP.Runtime.Gameplay.SourceWeaponKey("rac1", id)).ToArray()).Select((key, slot) =>
+                .Select(id => id == 0 ? (OBP.Runtime.Gameplay.SourceWeaponKey?)null : new OBP.Runtime.Gameplay.SourceWeaponKey(ObpSourceGame.Rac1, id)).ToArray()).Select((key, slot) =>
             {
                 // The retained native menu only admits native icon/item IDs.
                 // Foreign slots remain real in the OBP read model and wheel;
                 // #259 owns their full pause-menu presentation.
-                int id = key is { SourceGame: "rac1" } native ? native.NativeItemId : 0;
+                int id = key is { SourceGame: ObpSourceGame.Rac1 } native ? native.NativeItemId : 0;
                 Rac1WeaponId weapon = (Rac1WeaponId)id;
                 var icon = Rac1WeaponIconCatalog.Ordinary(weapon);
                 return new PauseMenuUi.RetailItem(id,
-                    key is { SourceGame: not "rac1" } foreign ? $"{FusionWeaponName(foreign)} [{foreign.SourceGame}]" :
+                    key is { SourceGame: not ObpSourceGame.Rac1 } foreign ? $"{FusionWeaponName(foreign)} [{SourceIdentityWire.FormatSource(foreign.SourceGame)}]" :
                     id == 0 ? $"Slot {slot + 1}: Empty" :
                     Enum.IsDefined(weapon) ? Rac1WeaponProfiles.Name(weapon) : $"Native item {id}",
                     id != 0 && _rac1Weapons.OwnsNativeItem(id),

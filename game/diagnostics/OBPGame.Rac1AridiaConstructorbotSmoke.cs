@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -17,7 +18,7 @@ public partial class OBPGame
     {
         try
         {
-            Require(_world is { Game: "rac1", LevelId: Rac1AridiaEnemies.LevelId } &&
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1AridiaEnemies.LevelId } &&
                 _player is not null, "Aridia Constructorbot smoke requires retail level 2");
             Engine.MaxFps = 60;
             Vector3 originalPlayerSpawn = _player!.GlobalPosition;

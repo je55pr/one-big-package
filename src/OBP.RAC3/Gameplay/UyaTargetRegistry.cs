@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 
 namespace OBP.RAC3.Gameplay;
@@ -55,7 +56,7 @@ public static class UyaTargetRegistry
         RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac3")
+        if (source.SourceGame != ObpSourceGame.Rac3)
             throw new ArgumentException("Source is not a UYA Moby.", nameof(source));
 
         byte[] pvar = source.NativePayloads?

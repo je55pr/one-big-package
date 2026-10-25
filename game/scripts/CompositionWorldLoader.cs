@@ -26,13 +26,7 @@ public sealed class CompositionWorldLoader
     public void RegisterSource(ObpSourceGame game, string path) => _sourceByGame[game] = path;
 
     /// <summary>Register from a loose token ("gc" / "rc1" / "uya" / "rac2" …).</summary>
-    public void RegisterSource(string gameTag, string path)
-    {
-        if (TryParseGame(gameTag, out var game))
-        {
-            _sourceByGame[game] = path;
-        }
-    }
+    public void RegisterSource(string gameTag, string path) => RegisterSource(SourceIdentityWire.ParseSource(gameTag), path);
 
     public bool CanLoad(WorldPlacement placement) =>
         ResolveDestination(placement) is { } d
@@ -81,37 +75,12 @@ public sealed class CompositionWorldLoader
             return byId;
         }
 
-        if (placement.LevelId is { } level && TryParseGame(placement.SourceGame ?? "gc", out var game))
+        if (placement.LevelId is { } level && (placement.SourceGame ?? ObpSourceGame.Rac2).SourceGame is { } game)
         {
-            string prefix = game switch
-            {
-                ObpSourceGame.Rac1 => "rac1",
-                ObpSourceGame.Rac2 => "rac2",
-                ObpSourceGame.Rac3 => "rac3",
-                _ => "rac2",
-            };
-            return TrilogyWorldProviders.Resolve($"{prefix}:LEVEL{level}");
+            return TrilogyWorldProviders.Resolve($"{SourceIdentityWire.FormatSource(game)}:LEVEL{level}");
         }
 
         return null;
     }
 
-    public static bool TryParseGame(string tag, out ObpSourceGame game)
-    {
-        switch (tag.Trim().ToLowerInvariant())
-        {
-            case "gc" or "rac2" or "going commando" or "r&c2" or "rc2":
-                game = ObpSourceGame.Rac2;
-                return true;
-            case "rc1" or "rac1" or "r&c1" or "ratchet & clank":
-                game = ObpSourceGame.Rac1;
-                return true;
-            case "uya" or "rac3" or "up your arsenal" or "r&c3" or "rc3":
-                game = ObpSourceGame.Rac3;
-                return true;
-            default:
-                game = default;
-                return false;
-        }
-    }
 }

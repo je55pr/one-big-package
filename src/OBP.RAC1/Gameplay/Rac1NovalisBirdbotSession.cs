@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -52,7 +53,7 @@ public sealed class Rac1NovalisBirdbotSession : IRac1MobyClassController, IRac1M
     public Probe Register(RuntimeDynamicObject source, RuntimeEntityState state)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId)
             throw new ArgumentException("Birdbot requires R&C1 class459.", nameof(source));
         byte[][] pvars = source.NativePayloads?
             .Where(payload => payload.Format == Rac1BoltCrate.PVarPayloadFormat)

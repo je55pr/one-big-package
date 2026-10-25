@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 
 namespace OBP.RAC2.Gameplay;
@@ -32,7 +33,7 @@ public sealed class GcAranosOpeningLiftSession
     public GcAranosOpeningLiftSession(RuntimeDynamicObject source)
     {
         Source = source ?? throw new ArgumentNullException(nameof(source));
-        if (source.SourceGame != "rac2" ||
+        if (source.SourceGame != ObpSourceGame.Rac2 ||
             source.NativeClassId != NativeClassId ||
             source.InstanceIndex != OpeningInstanceIndex)
         {

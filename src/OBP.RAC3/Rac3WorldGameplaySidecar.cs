@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Runtime.CompilerServices;
 using OBP.RAC3.Level;
 using OBP.Runtime;
@@ -20,7 +21,7 @@ public static class Rac3WorldGameplaySidecar
         ArgumentNullException.ThrowIfNull(world);
         ArgumentNullException.ThrowIfNull(context);
 
-        if (world.Game != "rac3")
+        if (world.Game != ObpSourceGame.Rac3)
             throw new ArgumentException("World is not RAC3/UYA.", nameof(world));
         if (world.LevelId != context.TableIndex)
         {

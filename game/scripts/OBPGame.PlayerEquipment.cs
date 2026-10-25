@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Fusion;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
@@ -9,8 +10,8 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     public IReadOnlyList<SourceWeaponKey?> ReadPlayerQuickSlots() => _playerNative?.Assignments.Capture().QuickSelect ?? [];
-    private IReadOnlyDictionary<string, string> PlayerEquipmentSources => _sources.Attached.Values
-        .ToDictionary(source => source.Game.ToString().ToLowerInvariant(), source => source.Identity.BuildId);
+    private IReadOnlyDictionary<ObpSourceGame, string> PlayerEquipmentSources => _sources.Attached.Values
+        .ToDictionary(source => source.Game, source => source.Identity.BuildId);
 
     /// <summary>Read model for the future all-trilogy loadout UI; no native IDs or layouts are needed by that UI.</summary>
     public IReadOnlyList<EquipmentCatalogEntry> ReadPlayerEquipment() => PlayerEquipmentRegistrations.Catalog.Read(PlayerEquipmentSources, ObservePlayerEquipment);
@@ -19,7 +20,7 @@ public partial class OBPGame
     {
         var key = definition.Item;
         bool owned = definition.Category == EquipmentCategory.Appearance || key is { } item &&
-            (item.SourceGame == "rac1" ? _rac1Weapons.OwnsNativeItem(item.NativeItemId) :
+            (item.SourceGame == ObpSourceGame.Rac1 ? _rac1Weapons.OwnsNativeItem(item.NativeItemId) :
                 _playerNative?.LoadoutPolicy == PlayerLoadoutPolicy.DevelopmentAvailable || _playerNative is null && _fusion is not null);
         if (definition.Category == EquipmentCategory.Appearance)
             return new(owned, _playerSession?.Capture().Configuration.Avatar == definition.Appearance, _playerAvatar?.Identity == definition.Appearance,
@@ -37,10 +38,10 @@ public partial class OBPGame
         }
         var binding = _equipmentPresentationBindings.GetValueOrDefault(key!.Value);
         bool model = PlayerEquipmentModelAvailable(key.Value) && binding?.Ready == true;
-        string? context = binding is { Ready: false } ? binding.Reason : key.Value.SourceGame == "rac1" && key != PlayerEquipmentRegistrations.Wrench && PlayerPresentationAssets is null
+        string? context = binding is { Ready: false } ? binding.Reason : key.Value.SourceGame == ObpSourceGame.Rac1 && key != PlayerEquipmentRegistrations.Wrench && PlayerPresentationAssets is null
             ? "The selected source-native equipment effect bank is not prepared." : null;
         var status = _fusion?.Status(key.Value);
-        var icon = key.Value.SourceGame == "rac1" ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)key.Value.NativeItemId) : null;
+        var icon = key.Value.SourceGame == ObpSourceGame.Rac1 ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)key.Value.NativeItemId) : null;
         bool iconReady = icon is { } nativeIcon && Rac1RetailUiAssets.Sprite(nativeIcon.AnimationId, nativeIcon.Frame) is not null;
         return new(owned, CurrentWeaponKey == key, key == PlayerEquipmentRegistrations.Wrench ? _rac1HeldItem.Hand.WrenchHeld : _rac1HeldItem.Hand.IsHolding(key.Value),
             model ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable,
@@ -128,7 +129,7 @@ public partial class OBPGame
     {
         if (_playerNative is null || _player is not { } player) return;
         bool Enabled(Rac1TraversalEquipmentId id) => _playerNative.GadgetEnabled(id) &&
-            PlayerEquipmentSources.GetValueOrDefault("rac1") == OBP.RAC1.Rac1Authority.Primary.BuildId;
+            PlayerEquipmentSources.GetValueOrDefault(ObpSourceGame.Rac1) == OBP.RAC1.Rac1Authority.Primary.BuildId;
         player.Rac1MovementEquipment = new(Enabled(Rac1TraversalEquipmentId.HeliPack), Enabled(Rac1TraversalEquipmentId.ThrusterPack),
             Enabled(Rac1TraversalEquipmentId.HydroPack), Enabled(Rac1TraversalEquipmentId.OxygenMask), Enabled(Rac1TraversalEquipmentId.Swingshot), false, false);
         player.Rac1ActiveBackpack = new[] { Rac1TraversalEquipmentId.HeliPack, Rac1TraversalEquipmentId.ThrusterPack, Rac1TraversalEquipmentId.HydroPack }

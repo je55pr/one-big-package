@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using OBP.Core.Math;
@@ -174,7 +175,7 @@ public static class CompositionJson
 
         [JsonPropertyOrder(1)] public string? DestinationId { get; set; }
 
-        [JsonPropertyOrder(2)] public string? SourceGame { get; set; }
+        [JsonPropertyOrder(2)] public WorldContentIdentity? SourceGame { get; set; }
 
         [JsonPropertyOrder(3)] public string? BuildId { get; set; }
 

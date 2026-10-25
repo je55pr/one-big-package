@@ -16,7 +16,7 @@ public class CompositionJsonTests
             {
                 Id = "rc1-veldin",
                 DestinationId = "rac1:veldin",
-                SourceGame = "R&C1",
+                SourceGame = OBP.Core.ObpSourceGame.Rac1,
                 BuildId = "rac1-ntscu",
                 LevelId = 3,
                 Label = "R&C1 Veldin",
@@ -25,7 +25,7 @@ public class CompositionJsonTests
             {
                 Id = "uya-veldin",
                 DestinationId = "rac3:veldin",
-                SourceGame = "Up Your Arsenal",
+                SourceGame = OBP.Core.ObpSourceGame.Rac3,
                 BuildId = "rac3-ntscu",
                 LevelId = 42,
                 Label = "UYA Veldin",

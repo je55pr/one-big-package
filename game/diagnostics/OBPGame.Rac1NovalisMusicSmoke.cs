@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -15,7 +16,7 @@ public partial class OBPGame
     {
         try
         {
-            Require(_world is { Game: "rac1", LevelId: 1 } &&
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } &&
                 _rac1Music is { Tracks.Count: Rac1NovalisMusic.TrackCount },
                 "Novalis music smoke requires all nine original VAGp entries");
             await PhysicsFramesAsync(6);

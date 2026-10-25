@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Fusion;
 using OBP.Godot;
@@ -102,7 +103,7 @@ public partial class OBPGame
             }
             string digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", nativeTrace))));
             GD.Print("[trilogy-gameplay-smoke] native encounter trace " + digest);
-            foreach (var actor in _actorViews.Values.Where(actor => actor.Node.Source.SourceGame != "rac3"))
+            foreach (var actor in _actorViews.Values.Where(actor => actor.Node.Source.SourceGame != ObpSourceGame.Rac3))
                 Require(System.Numerics.Vector3.Distance(starts[actor.Registration.Instance.Target], actor.Observe().Position) > .1f,
                     "hostile has no live native motion: " + actor.Node.Source.SourceGame);
             Require(_playerNative.Life.Capture().Current < healthBeforeContact,
@@ -129,7 +130,7 @@ public partial class OBPGame
             }
             GD.Print("[trilogy-gameplay-smoke] native motion/animation, shared player damage, ordinary Lancer/Cannon/Bomb contacts and independent resets PASS");
             var toadPlacement = _actorPlacements["arena-rac1-toad"];
-            var sourceKey = _actorSourceTasks.Keys.Single(key => key.Game == "rac1");
+            var sourceKey = _actorSourceTasks.Keys.Single(key => key.Game == ObpSourceGame.Rac1);
             var sourceTask = _actorSourceTasks[sourceKey];
             var obsoleteSource = sourceKey; obsoleteSource.Written--;
             _actorSourceTasks.Add(obsoleteSource, sourceTask);

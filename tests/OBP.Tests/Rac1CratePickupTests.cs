@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Gameplay;
@@ -157,7 +158,7 @@ public sealed class Rac1CratePickupTests
         byte[] raw = new byte[0x78];
         BinaryPrimitives.WriteUInt16LittleEndian(raw.AsSpan(0xc), 100);
         BinaryPrimitives.WriteInt32LittleEndian(raw.AsSpan(0x10), reward);
-        return new("rac1", nativeClass, 17, null, $"moby:{nativeClass}", "moby:17", new(new double[16]), [],
+        return new(ObpSourceGame.Rac1, nativeClass, 17, null, $"moby:{nativeClass}", "moby:17", new(new double[16]), [],
             [new(Rac1BoltCrate.InstancePayloadFormat, raw), new(Rac1BoltCrate.PVarPayloadFormat, new byte[0x100])]);
     }
 

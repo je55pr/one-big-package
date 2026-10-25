@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -96,7 +97,7 @@ public partial class OBPGame
     /// </summary>
     private bool TryTurnRac1NovalisCrank(bool actionHeld, Vector2 stick)
     {
-        if (!actionHeld || _world is not { Game: "rac1", LevelId: 1 } ||
+        if (!actionHeld || _world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } ||
             _player is null || _rac1Nanotech.Probe().IsDead)
             return false;
 

@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
@@ -261,7 +262,7 @@ public sealed class Rac1Class1440ContactFamilyTests
         int instanceIndex,
         params RuntimeOpaquePayload[] payloads) =>
         new(
-            "rac1",
+            ObpSourceGame.Rac1,
             nativeClassId,
             instanceIndex,
             null,

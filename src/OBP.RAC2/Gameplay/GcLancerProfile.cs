@@ -1,3 +1,4 @@
+using OBP.Core;
 namespace OBP.RAC2.Gameplay;
 
 /// <summary>
@@ -7,7 +8,7 @@ namespace OBP.RAC2.Gameplay;
 /// </summary>
 public static class GcLancerProfile
 {
-    public const string SourceGame = "rac2";
+    public const ObpSourceGame SourceGame = ObpSourceGame.Rac2;
     public const int WeaponIndex = 30;
     public const int NameTextId = 2677;
     public const int HeldMobyClass = 1490;

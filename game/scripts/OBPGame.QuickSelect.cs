@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
@@ -11,7 +12,7 @@ public partial class OBPGame
     private int _preQuickSelectHeldButtons;
     private ulong _lastQuickSelectTap;
     private SourceWeaponKey? _previousSelectedWeapon;
-    private SourceWeaponKey CurrentWeaponKey => _fusion is { Selected.SourceGame: "rac2" or "rac3" } ? _fusion.Selected : new("rac1", _rac1Weapons.CurrentItemId);
+    private SourceWeaponKey CurrentWeaponKey => _fusion is { Selected.SourceGame: ObpSourceGame.Rac2 or ObpSourceGame.Rac3 } ? _fusion.Selected : new(ObpSourceGame.Rac1, _rac1Weapons.CurrentItemId);
     private bool QuickSelectOpen => _quickSelect is not null && IsInstanceValid(_quickSelect);
 
     public bool TryOpenWeaponQuickSelect(InputEvent @event)
@@ -25,8 +26,8 @@ public partial class OBPGame
         // Host input gesture timing. Native inventory ownership/equip admission
         // remains authoritative; this is not the recovered menu state machine.
         if (_lastQuickSelectTap != 0 && PlaytestClock.Milliseconds - _lastQuickSelectTap < 350 &&
-            _previousSelectedWeapon is { } previous && previous != new SourceWeaponKey("rac1", (int)Rac1WeaponId.Wrench) &&
-            (previous.SourceGame == "rac1" ? _rac1Weapons.Owns((Rac1WeaponId)previous.NativeItemId) : _fusion is not null && FusionWeaponSession.Weapons.Contains(previous)))
+            _previousSelectedWeapon is { } previous && previous != new SourceWeaponKey(ObpSourceGame.Rac1, (int)Rac1WeaponId.Wrench) &&
+            (previous.SourceGame == ObpSourceGame.Rac1 ? _rac1Weapons.Owns((Rac1WeaponId)previous.NativeItemId) : _fusion is not null && FusionWeaponSession.Weapons.Contains(previous)))
         {
             _lastQuickSelectTap = 0;
             SelectWeaponKey(previous);
@@ -38,15 +39,15 @@ public partial class OBPGame
         // inserted by the incomplete acquisition adapter. Extra pages are OBP UI.
         var order = _rac1Weapons.QuickSelect.Where(id => available.Contains((Rac1WeaponId)id))
             .Select(id => (Rac1WeaponId)id).Concat(available).Distinct().ToArray();
-        var entries = order.Select(weapon => new WeaponQuickSelectUi.Entry(new("rac1", (int)weapon),
+        var entries = order.Select(weapon => new WeaponQuickSelectUi.Entry(new(ObpSourceGame.Rac1, (int)weapon),
             weapon == Rac1WeaponId.FirstRanged ? "Bomb Glove" : Rac1WeaponProfiles.Get(weapon).Name,
             (int)weapon == 9 ? $"{_rac1AdditionalWeapons?.Cargo.Count ?? 0} captured" :
             Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{_rac1Weapons.GetAmmo((int)weapon)} ammo" : "")).ToArray();
         if (_fusion is not null && _playerNative is null)
         {
             var keys = PlayerWeaponOrder();
-            entries = keys.Select(key => key.SourceGame == "rac1" && !FusionTestActive ? entries.Single(e => e.Weapon == key) :
-                new WeaponQuickSelectUi.Entry(key, FusionWeaponName(key) + $" [{key.SourceGame}]",
+            entries = keys.Select(key => key.SourceGame == ObpSourceGame.Rac1 && !FusionTestActive ? entries.Single(e => e.Weapon == key) :
+                new WeaponQuickSelectUi.Entry(key, FusionWeaponName(key) + $" [{SourceIdentityWire.FormatSource(key.SourceGame)}]",
                     _fusionAssets?.Available(key) == false ? "Source unavailable" : FusionWeaponDetail(key))).ToArray();
         }
         if (_playerNative is not null)
@@ -56,7 +57,7 @@ public partial class OBPGame
             {
                 if (key is null) return new WeaponQuickSelectUi.Entry(null, "Empty", "Unassigned slot");
                 var entry = catalog.Single(entry => entry.Definition.Item == key);
-                return new WeaponQuickSelectUi.Entry(key, entry.Definition.DisplayName + $" [{entry.Definition.SourceGame}]",
+                return new WeaponQuickSelectUi.Entry(key, entry.Definition.DisplayName + $" [{SourceIdentityWire.FormatSource(entry.Definition.SourceGame)}]",
                     entry.Reason ?? (entry.State.Capacity is { } capacity ? $"{entry.State.Ammo}/{capacity}" : ""));
             }).ToArray();
         }

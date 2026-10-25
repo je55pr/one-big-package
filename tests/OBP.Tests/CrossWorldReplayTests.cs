@@ -19,7 +19,7 @@ public sealed class CrossWorldReplayTests : IDisposable
         Sources = new[] { ObpSourceGame.Rac1, ObpSourceGame.Rac2, ObpSourceGame.Rac3 }.Select(game => new ObpBuildIdentity(game, "fixture", Sha256: new string((char)('A' + (int)game), 64))).ToArray(),
         Adapters = [new("obp/shared-player/v1", 1, 60)],
     };
-    private static PlaytestGameplayFact Shot(string source, long sequence) => new("shot", sequence,
+    private static PlaytestGameplayFact Shot(ObpSourceGame source, long sequence) => new("shot", sequence,
         JsonSerializer.SerializeToElement(new { Shot = new WeaponShotKey(new(source, 30), 1, sequence) }));
 
     [Theory]
@@ -31,14 +31,14 @@ public sealed class CrossWorldReplayTests : IDisposable
     {
         string path = Path.Combine(_directory, "run.jsonl.gz"), prefix = Path.Combine(_directory, "prefix.run.jsonl.gz");
         var header = Header(destination);
-        PlaytestGameplayFact[] facts = [Shot("rac2", 1), Shot("rac3", 1), Shot("rac2", 2)];
+        PlaytestGameplayFact[] facts = [Shot(ObpSourceGame.Rac2, 1), Shot(ObpSourceGame.Rac3, 1), Shot(ObpSourceGame.Rac2, 2)];
         var step = new PlaytestStep(0, PlaytestStepKind.Physics, 0, 1d / 60, [], new Dictionary<string, float>(), [])
         { Commands = [new("destination", destination), new("equip", "rac2/item/30"), new("quick-slot", "rac3/item/43", 7)], Gameplay = facts };
         using (var writer = new PlaytestRunWriter(path, header))
         {
             writer.Add(step); writer.Mark(new(0, "fixture-marker"));
             await writer.ExportSnapshotAsync(prefix);
-            writer.Add(step with { Index = 1, Milliseconds = 16, Gameplay = [Shot("rac3", 2)] });
+            writer.Add(step with { Index = 1, Milliseconds = 16, Gameplay = [Shot(ObpSourceGame.Rac3, 2)] });
             await writer.FinishAsync("saved");
         }
         using var reader = new PlaytestRunReader(prefix);

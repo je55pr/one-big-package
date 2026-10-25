@@ -130,14 +130,14 @@ public partial class OBPGame
 
     private static RuntimeSpawn ValidateSourceEntry(RuntimeWorld world)
     {
-        if (world.Game == "rac1" && world.PlayerStart is null)
+        if (world.Game == ObpSourceGame.Rac1 && world.PlayerStart is null)
             throw new InvalidDataException("R&C1 world is missing its authored player start.");
         return WorldEntryPlanning.ResolveEntryPoint(world);
     }
 
     // World-local authored placement clearance, not a player capability/profile.
     private static float SourceEntrySnapReach(RuntimeWorld world) =>
-        world.Game == "fusion" || (world.Game == "rac2" && world.LevelId == 0 && world.PlayerStart is not null) ? .75f : 8f;
+        world.Game == WorldContentIdentity.FusionLab || (world.Game == ObpSourceGame.Rac2 && world.LevelId == 0 && world.PlayerStart is not null) ? .75f : 8f;
 
     private void ActivateWorld(RuntimeWorld world, RuntimeWorldScene.Result prepared,
         ObpDestination? destination, FusionLabDefinition? lab)
@@ -178,14 +178,14 @@ public partial class OBPGame
 
     private void BeginSourceWorldEntry(RuntimeWorld world)
     {
-        if (world.Game != "rac1") return;
+        if (world.Game != ObpSourceGame.Rac1) return;
         _rac1CampaignSession.StartLevelCheckpointSession(world.LevelId, world.PlayerStart!);
         _worldPlayerEntry = _rac1CampaignSession.LevelCheckpoint!.AuthoredClass0;
     }
 
     private void CommitSourceWorldEntry(RuntimeWorld world)
     {
-        if (world.Game != "rac1") return;
+        if (world.Game != ObpSourceGame.Rac1) return;
         var entry = _rac1CampaignSession.CommitLoadedLevel(world.LevelId);
         _rac1CampaignSession.FinishLoadedLevel(entry);
         if (entry == Rac1LevelEntryKind.CampaignTravel) PersistRac1CampaignState("completed campaign travel");

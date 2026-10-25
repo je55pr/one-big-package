@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -25,7 +26,7 @@ public sealed class Rac1AlienQueenEntrance
     {
         ArgumentNullException.ThrowIfNull(queen);
         ArgumentNullException.ThrowIfNull(authoredClasses);
-        if (queen.SourceGame != "rac1" || queen.NativeClassId != ClassId)
+        if (queen.SourceGame != ObpSourceGame.Rac1 || queen.NativeClassId != ClassId)
             throw new ArgumentException("Requires retail class1051 Queen.", nameof(queen));
         var pvar = queen.NativePayloads?.SingleOrDefault(p =>
             p.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;

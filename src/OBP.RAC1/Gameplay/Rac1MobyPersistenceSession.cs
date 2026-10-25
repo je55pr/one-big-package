@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 
 namespace OBP.RAC1.Gameplay;
@@ -49,7 +50,7 @@ public sealed class Rac1MobyPersistenceSession
     public Rac1MobyPersistenceKey RequireKey(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac1")
+        if (source.SourceGame != ObpSourceGame.Rac1)
             throw new ArgumentException("Source is not an R&C1 Moby.", nameof(source));
         if (source.NativeUid is not int uid)
             throw new InvalidOperationException(

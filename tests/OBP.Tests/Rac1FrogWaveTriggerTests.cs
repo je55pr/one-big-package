@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -14,7 +15,7 @@ public sealed class Rac1FrogWaveTriggerTests
         var p = new byte[32];
         BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0), group);
         BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(4), volume);
-        return new("rac1", Rac1FrogWaveTriggers.ClassId, index, null, "trigger", "trigger",
+        return new(ObpSourceGame.Rac1, Rac1FrogWaveTriggers.ClassId, index, null, "trigger", "trigger",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, p)]);
     }

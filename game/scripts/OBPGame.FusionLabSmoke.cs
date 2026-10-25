@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 
 namespace OneBigPackage;
@@ -53,7 +54,7 @@ public partial class OBPGame
     private void TickFusionLabTraversalSmoke()
     {
         if (_args.TestScene != "fusion-lab" || _args.CaptureFrame is null ||
-            _fusionSmokeReloaded || _world?.Game != "fusion" || _player is null)
+            _fusionSmokeReloaded || _world?.Game != WorldContentIdentity.FusionLab || _player is null)
             return;
         if (_frame % 120 != 0) return;
 
@@ -66,7 +67,7 @@ public partial class OBPGame
         if (_fusionSmokeReloaded || _fusionSmokeStage != 3) return;
         _fusionSmokeReloaded = true;
         ShowDestinationSelector();
-        if (EnterFusionLab() && _world is { Game: "fusion" } && _player is not null)
+        if (EnterFusionLab() && _world?.Game == WorldContentIdentity.FusionLab && _player is not null)
             GD.Print("[fusion-smoke] PASS: entrance -> hub -> chamber -> entrance, unload and reload via normal world host");
         else
             GD.PrintErr("[fusion-smoke] FAIL: traversal succeeded, but re-entry after teardown failed");

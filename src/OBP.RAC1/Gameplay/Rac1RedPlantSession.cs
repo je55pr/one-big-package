@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Animation;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -22,7 +23,7 @@ public sealed class Rac1RedPlantSession
 
     public bool Register(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != Rac1MobyAnimationProvider.RedPlantClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != Rac1MobyAnimationProvider.RedPlantClassId)
             return false;
         if (source.Animations?.Find(RuntimeObjectAnimationRole.Reaction) is not { } clip ||
             clip.FrameCount != ReactionFrameCount ||

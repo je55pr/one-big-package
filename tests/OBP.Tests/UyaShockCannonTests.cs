@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC3.Gameplay;
 
 namespace OBP.Tests;
@@ -88,7 +89,7 @@ public sealed class UyaShockCannonTests
             Assert.Equal(UyaShockCannonQueryKind.BeamSphere, q.Kind);
             Assert.Equal(1.5f, q.Radius);
             Assert.Equal(shot.Id, q.Shot);
-            Assert.Equal("rac3", q.Weapon.SourceGame);
+            Assert.Equal(ObpSourceGame.Rac3, q.Weapon.SourceGame);
         });
         Assert.Equal(2, charged.Queries[0].ForwardOffset);
         Assert.Equal(40, charged.Queries[^1].ForwardOffset);
@@ -264,10 +265,10 @@ public sealed class UyaShockCannonTests
     {
         var session = Equipped();
         UyaShockCannonFrame frame = Run(session, 79, held: true)[^1];
-        var target = new UyaShockCannonTarget("rac1", 500, 7);
+        var target = new UyaShockCannonTarget(ObpSourceGame.Rac1, 500, 7);
         var intent = Assert.Single(session.ResolveContacts(frame, [new(0, target, 5, true, 0x4000)]));
-        Assert.Equal("rac3", intent.Weapon.SourceGame);
-        Assert.Equal("rac1", intent.Target.SourceGame);
+        Assert.Equal(ObpSourceGame.Rac3, intent.Weapon.SourceGame);
+        Assert.Equal(ObpSourceGame.Rac1, intent.Target.SourceGame);
         Assert.Throws<InvalidOperationException>(() => intent.ToUyaDamageEvent(5));
     }
 
@@ -345,5 +346,5 @@ public sealed class UyaShockCannonTests
     private static UyaShockCannonFrame[] Run(UyaShockCannonSession session, int updates, bool held) =>
         Enumerable.Range(0, updates).Select(_ => session.Advance(new(held))).ToArray();
 
-    private static UyaShockCannonTarget Target(long runtimeId = 1) => new("rac3", 500, runtimeId);
+    private static UyaShockCannonTarget Target(long runtimeId = 1) => new(ObpSourceGame.Rac3, 500, runtimeId);
 }

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -248,7 +249,7 @@ public sealed class Rac1Class749HostileSession :
             source.NativeClassId,
             source.InstanceIndex);
 
-        return source.SourceGame == "rac1" &&
+        return source.SourceGame == ObpSourceGame.Rac1 &&
                source.NativeClassId == Rac1Class749Hostile.NativeClassId &&
                damage.Target.MatchesMoby(target) &&
                (Rac1EnemyDamage.IsPlayerWeapon(damage) || Rac1EnemyDamage.IsClass1440Contact(damage)) &&
@@ -470,7 +471,7 @@ public sealed class Rac1Class749HostileSession :
 
     private (Rac1Class749Key Key, Entry Entry) RequireEntry(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != Rac1Class749Hostile.NativeClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != Rac1Class749Hostile.NativeClassId)
             throw new ArgumentException("Source is not an R&C1 class-749 hostile.", nameof(source));
         var key = new Rac1Class749Key(source.NativeClassId, source.InstanceIndex);
         if (!_entries.TryGetValue(key, out var entry))
