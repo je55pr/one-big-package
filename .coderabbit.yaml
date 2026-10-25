@@ -1,20 +1,25 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Keep this review policy focused on actionable gameplay and architecture defects.
+# Prefer maximum review coverage: flag even low-severity or stylistic findings.
 # The repository's AGENTS.md and architecture contract remain authoritative.
 inheritance: true
 enable_free_tier: true
 language: en-GB
 
 tone_instructions: >-
-  Prioritise reproducible correctness, regression, resource-lifetime and
-  architecture issues. Cite changed code and explain impact. Avoid style
-  nits already checked by dotnet format or speculative native parity claims.
+  Report all credible findings, including minor code quality, naming, style,
+  documentation, duplication, performance, maintainability, testing, security,
+  resource lifetime, architecture, and correctness concerns. Do not suppress an
+  issue merely because dotnet format or another tool covers similar territory.
+  Clearly distinguish verified defects from uncertain risks, cite affected code,
+  and explain impact and suggestions. Do not invent claims about original retail
+  behaviour without evidence. Findings are advisory: developers decide what to fix.
 
 reviews:
-  profile: chill
+  profile: assertive
   high_level_summary: true
+  review_status: true
   poem: false
-  # A slow/rate-limited third-party reviewer must not block manual merges.
+  # Report everything, but do not make review comments mandatory merge blockers.
   request_changes_workflow: false
   commit_status: false
   fail_commit_status: false
@@ -22,10 +27,13 @@ reviews:
     enabled: true
     auto_incremental_review: true
     auto_pause_after_reviewed_commits: 0
-    drafts: false
-    ignore_title_keywords:
-      - WIP
-      - DO NOT MERGE
+    drafts: true
+    # Do not skip draft/WIP work just because it is unfinished.
+    ignore_title_keywords: []
+  # Review all tracked source, tests, docs and automation; no broad exclusions.
+  path_filters:
+    - '*'
+    - '**/*'
   path_instructions:
     - path: "src/OBP.RAC*/**/*.cs"
       instructions: |
