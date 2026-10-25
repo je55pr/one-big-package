@@ -228,7 +228,8 @@ different paths for the same source fails. Composition/viewer flags remain
 supported pending the separate viewer decision. Run `tools/test-cli.ps1` for
 headless startup and rejection checks.
 
-Remembered source paths use bounded atomic `sources.json` writes with a valid
+Remembered source paths use bounded atomic `sources.json` writes. The first save
+creates the primary; a later save that replaces a valid primary creates its
 `.bak` copy. Startup can recover that backup and shows a warning while retaining
 the unreadable primary. If both copies are invalid, setup reports repair rather
 than replacing them during loading. `--source-config <path>` isolates this
