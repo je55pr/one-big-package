@@ -13,7 +13,7 @@ public static class PauseLoadoutSmoke
         string text = node switch { Label label => label.Text, Button button => button.Text, RichTextLabel rich => rich.Text, Label3D sign => sign.Text, _ => "" };
         if (node is Control control) text += "\n" + control.TooltipText;
         Require(!System.Text.RegularExpressions.Regex.IsMatch(text, @"game sources|source (needed|ready|connected|unavailable)|attach|\.iso\b|rac[123]-ntsc|shared profile|provider|adapter|build id|native destination",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant), "Setup/provenance leaked into ordinary UI: " + text);
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)), "Setup/provenance leaked into ordinary UI: " + text);
         foreach (var child in node.GetChildren()) VerifyOrdinarySurface(child);
     }
 
