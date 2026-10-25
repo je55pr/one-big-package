@@ -87,9 +87,15 @@ public sealed class SourceIdentityWireTests
     [Fact]
     public void ProfilesAndCompositionsKeepTheirExistingSourceWireShapes()
     {
-        var profile = ObpProfileTests.Profile();
+        var profile = ObpProfileTests.Profile() with
+        {
+            Sources = new[] { ObpSourceGame.Rac1, ObpSourceGame.Rac2, ObpSourceGame.Rac3 }
+                .Select(source => new ProfileSource(source, "fixture-build", new string('a', 64))).ToArray(),
+        };
         using var encoded = JsonDocument.Parse(profile.Encode());
-        Assert.All(encoded.RootElement.GetProperty("Sources").EnumerateArray(), source => Assert.Equal(JsonValueKind.String, source.GetProperty("Game").ValueKind));
+        var sources = encoded.RootElement.GetProperty("Sources").EnumerateArray().ToArray();
+        Assert.Equal(3, sources.Length);
+        Assert.Equal(new[] { "rac1", "rac2", "rac3" }, sources.Select(source => source.GetProperty("Game").GetString()));
         Assert.Equal(JsonValueKind.Number, encoded.RootElement.GetProperty("Player").GetProperty("Configuration").GetProperty("Avatar").GetProperty("SourceGame").ValueKind);
         var world = new RuntimeWorld(ObpSourceGame.Rac3, "build", 1, null, null, [], [], 0, [], new ObpBounds(Vec3.Zero, Vec3.Zero), null, null);
         Assert.Equal("rac3", JsonSerializer.SerializeToElement(world).GetProperty("Game").GetString());
