@@ -23,7 +23,7 @@ public partial class OBPGame
         {
             if (_args.RecordPlaytest is not null && _args.ReplayPlaytest is not null ||
                 _args.RecordPlaytest == string.Empty || _args.ReplayPlaytest == string.Empty ||
-                _args.LoadMovementState is not null || _args.Compose || _args.CaptureFrame is not null ||
+                _args.LoadMovementState is not null || _args.CaptureFrame is not null ||
                 _args.ShotsPath is not null || _args.ReplayForwardFrames.HasValue || _args.StressSwitch is not null ||
                 WorldSmokeHarness.IsRequested(_args))
                 throw new InvalidDataException("Choose one playtest mode, starting from an ordinary level entry.");

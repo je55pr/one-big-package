@@ -26,8 +26,8 @@ $cases = @(
     @{ Name = 'aliases'; Options = @('--rac3-iso', 'a.iso', '--uya-iso', 'b.iso'); Expected = '--rac3-iso/--uya-iso specify conflicting source paths' },
     @{ Name = 'modes'; Options = @('--record-playtest', 'a', '--replay-playtest', 'b'); Expected = '--record-playtest cannot be combined' },
     @{ Name = 'engine-after-boundary'; Options = @('--headless'); Expected = 'Unknown OBP argument: --headless' },
-    @{ Name = 'composition-scene'; Scene = 'res://scenes/CompositionLab.tscn'; Options = @('--composition'); Expected = '--composition requires a value' },
-    @{ Name = 'unknown-composition-source'; Options = @('--compose', '--compose-worlds', 'a=unknown:1'); Prefix = '[CompositionLab] Invalid source/composition: '; Reason = 'composition-invalid'; Expected = 'Unknown source game' }
+    @{ Name = 'retired-viewer'; Options = @('--compose'); Expected = 'Unknown OBP argument: --compose' },
+    @{ Name = 'retired-viewer-document'; Options = @('--composition', 'old.json'); Expected = 'Unknown OBP argument: --composition' }
 )
 foreach ($case in $cases) {
     $log = Join-Path $evidence ($case.Name + '.log')

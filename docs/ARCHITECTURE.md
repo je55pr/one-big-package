@@ -106,8 +106,8 @@ uses separate PRs with manual review/merge:
    are removed. These are later migrations, not exceptions for new source APIs.
 
 Do not overlap these host-file renames with #308/#309 ownership/actor extraction.
-`OBP.Fusion` means cross-game integration, while the legacy `CompositionLab`
-comparison viewer remains separately tracked until #295. Naming-only changes
+`OBP.Fusion` means cross-game integration. The legacy comparison viewer and its
+CLI/document path were retired under #295. Naming-only changes
 must leave native gameplay and all existing external contracts unchanged.
 
 ## Sources and destination providers

@@ -72,16 +72,9 @@ public sealed class WorldSmokeArchitectureTests
     }
 
     [Fact]
-    public void CompositionLabRetainsAnIndependentGodotScene()
+    public void RetiredComparisonViewerIsNotShipped()
     {
-        string scene = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "scenes", "CompositionLab.tscn"));
-        string lab = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "scripts", "CompositionLab.cs"));
-        Assert.Contains("res://scripts/CompositionLab.cs", scene, StringComparison.Ordinal);
-        Assert.DoesNotContain("OBPGame.cs", scene, StringComparison.Ordinal);
-        Assert.Contains("StartupArgs ?? CommandLineArgs.Parse(OS.GetCmdlineUserArgs())", lab, StringComparison.Ordinal);
-        Assert.Contains("public override void _ExitTree() => TeardownWorlds();", lab, StringComparison.Ordinal);
-        Assert.Contains("w.Host.Unload();", lab, StringComparison.Ordinal);
+        foreach (string path in new[] { "game/scenes/CompositionLab.tscn", "game/scripts/CompositionLab.cs", "game/scripts/CompositionWorldLoader.cs", "src/OBP.Godot/CompositionView.cs", "src/OBP.Fusion/WorldComposition.cs", "src/OBP.Fusion/CompositionJson.cs" })
+            Assert.False(File.Exists(Path.Combine(RepoPaths.Root, path)), "Retired comparison viewer returned: " + path);
     }
 }

@@ -1,274 +1,37 @@
-# World Composition / Fusion Lab
+# Retired world comparison viewer
 
-A neutral developer tool for loading two or more independently reconstructed OBP
-worlds into one Godot process, placing them under independent transforms,
-defining equivalent landmarks, solving a reproducible alignment, and capturing
-deterministic comparison images — **without modifying either source
-reconstruction**.
+The legacy CompositionLab alignment/comparison viewer was removed under #295.
+The playable [Fusion Lab](FUSION_LAB.md) remains an ordinary OBP destination;
+it uses the same player session and world-entry lifecycle as native worlds.
 
-First real target: R&C1 Veldin vs UYA Veldin, to find out quantitatively whether
-the two versions share a coordinate basis and can be combined into one larger OBP
-Veldin. The first **cross-game** composition proof is part of the production
-baseline: R&C1 native level 0 and GC Oozla load simultaneously through their
-independent `IObpWorldProvider`s. All three games now have native C# providers,
-so a UYA world can join any composition through the same
-`CompositionWorldLoader` path (`rac3:TABLE{n}`).
+The viewer scene, host, world loader, comparison renderer, world-placement
+documents and their JSON serializer are no longer shipped. Saved comparison
+documents are no longer read by the application. This retirement does not change
+game profiles, native campaign payloads, replay schemas or destination IDs.
 
-Each world is built by its own **`OBP.Godot.WorldHost`** (geometry / collision /
-the per-frame animation tick) with `ManageEnvironment = false` — one viewport
-holds one environment, so the lab keeps a single neutral `LabEnvironment` for
-side-by-side comparison. Teardown is `WorldHost.Unload` per world; capture is the
-shared `CaptureHarness`.
+These discontinued options now fail explicitly as unknown OBP arguments:
 
-This is an engineering / debugging tool, not campaign gameplay.
+- `--compose`
+- `--composition`
+- `--composition-view`
+- `--compose-worlds`
+- `--compose-solve`
+- `--compose-solve-scale`
+- `--compose-reload`
 
----
+The former composition parameters of `tools/capture.ps1` were removed too.
+Normal destination capture, movement/replay tooling and the playable Lab remain
+supported through their existing entry points.
 
-## Architecture
+## Retained original-game research
 
-```
-CompositionLab                     (game/scripts/CompositionLab.cs — Godot host)
-├── CompositionRoot
-│   ├── <worldId-A>                 WorldTransformRoot: Transform3D = placement transform
-│   │   └── WorldHost_A             RuntimeWorldScene build (no env) + animation tick
-│   ├── <worldId-B>
-│   │   └── WorldHost_B
-│   └── …
-├── AnchorMarkers
-└── CompositionDebugUi              (HUD)
-```
+[Veldin cross-game alignment](../research/VELDIN_CROSS_GAME_ALIGNMENT.md) records
+the original quantitative retail study. Its findings and retail witness are
+retained; the historical viewer instructions are not a supported launch path.
 
-The composition itself is **engine-neutral data** in `src/OBP.Fusion`
-(`net8.0`, references only `OBP.Core`). Godot consumes it; it is never the
-authoritative format.
-
-| Layer | Project | Role |
-| --- | --- | --- |
-| `WorldComposition` / `WorldPlacement` / `AnchorPair` | `OBP.Fusion` | the document: world references + transforms + anchors + comparison state |
-| `CompositionTransform` | `OBP.Fusion` | scale → Y-rotation → translation above a world |
-| `PlanarAlignmentSolver` | `OBP.Fusion` | closed-form least-squares rigid / uniform-scale planar fit + residual report |
-| `CompositionJson` | `OBP.Fusion` | tiny deterministic JSON persistence |
-| `CompositionView` | `OBP.Godot` | transform → Godot `Transform3D`; non-destructive visibility / opacity / tint |
-| `CompositionLab` | `game/` | the interactive host + capture path |
-| `CompositionWorldLoader` | `game/` | thin adapter over `ObpWorldProviderRegistry` (`TrilogyWorldProviders`) |
-
-### World loading
-
-`CompositionWorldLoader` holds no game knowledge. A `WorldPlacement` names a
-canonical destination id (`rac1:LEVEL0`, `rac2:LEVEL1`, `rac3:TABLE1`), or the
-`sourceGame` + `levelId` shorthand the loader synthesises one from. It calls
-through the same `ObpWorldProviderRegistry` the main `OBPGame` destination path
-uses. R&C1, Going Commando, and UYA all enter the lab through this exact neutral
-provider path; composition adds placement/presentation only, never decode rules.
-
-Retail sources are registered per game from `--gc-iso` / `--rac1-iso` /
-`--uya-iso`.
-
-### Runtime design principles
-
-1. Game-specific archaeology stays upstream — the lab only ever sees `RuntimeWorld`.
-2. `RuntimeWorld` is the neutral world boundary; the lab never touches decoded data.
-3. Composition is non-destructive: transforms and display state live **above** the generated scene.
-4. Each imported world stays individually inspectable (solo, focus, per-kind toggles).
-5. Alignment is metadata, never baked geometry.
-6. Provenance is preserved (`sourceGame` / `buildId` / `destinationId` / `levelId` on every placement).
-7. Mismatches are reported, never hidden with an arbitrary correction.
-8. Deterministic developer workflows (headless capture, byte-stable persistence).
-9. Works for RC1 / GC / UYA equally — no per-game Godot conditionals.
-10. No assumption that there are only ever two worlds.
-
----
-
-## Transform conventions
-
-`CompositionTransform` maps a **world-local** point (OBP space, Y-up) into shared
-composition space:
-
-```
-p_composition = translation + R_y(rotationYDegrees) · (scale · p_local)
-```
-
-- Applied in the order **scale → Y-rotation → translation**.
-- `R_y` is the single shared convention (`CompositionTransform.RotateY`):
-  `x' = x·cosθ + z·sinθ ; z' = −x·sinθ + z·cosθ`.
-- **Scale defaults to 1 and is archaeological evidence, not a fitting knob.** A
-  non-unit scale means the two source worlds genuinely differ in proportion.
-  Rigid (scale-locked) alignment is the default comparison.
-- Godot side: the generic world builder X-negates geometry to undo the PS2 → OBP
-  reflection, so `CompositionView.ToGodotTransform` conjugates the placement
-  transform: translation X negates, the Y rotation reverses sign, uniform scale
-  is unchanged.
-
----
-
-## Anchor-solving mathematics
-
-An `AnchorPair` is two world-local points asserted to be the same real place
-(`LocalA` in world A, `LocalB` in world B). The solver
-(`PlanarAlignmentSolver.Solve`) finds the `CompositionTransform` carrying B's
-points onto A's that minimises `Σ |T(b_i) − a_i|²`:
-
-- **Planar (XZ)** fit is the 2-D Procrustes / Umeyama closed form:
-  - centroids `ā`, `b̄`; centred points `a'_i`, `b'_i`
-  - `sDot = Σ(b'x·a'x + b'z·a'z)`, `sCross = Σ(b'x·a'z − b'z·a'x)`
-  - optimal angle `φ = atan2(sCross, sDot)`; because `R_y(θ) = R_std(−θ)`, the
-    solved `rotationYDegrees = −φ`
-  - uniform scale (opt-in): `s = √(sDot² + sCross²) / Σ|b'_i|²`
-  - translation: `t_xz = ā_xz − s·R_y(θ)·b̄_xz`
-- **Y** is a pure mean offset `t_y = mean(a_iy − s·b_iy)` — this is a *planar*
-  alignment (is it the same map, moved and turned?), not a height-field relation.
-- **Degrees of freedom:**
-  - 1 pair → translation only (`TranslationOnly`)
-  - 2 pairs → exactly-determined translation + Y rotation
-  - 3+ pairs → best-fit, with per-anchor residuals
-- **Degenerate arrangements are flagged, never silently deformed:**
-  - coincident anchor points on XZ → translation-only fallback, `Degenerate`
-  - 3+ near-collinear points → solved but `Degenerate` with a note that Y
-    rotation (and any scale estimate) is weakly constrained
-
-### Reported output
-
-`PlanarAlignmentResult` carries: the solved `CompositionTransform`, `AnchorCount`,
-`MeanError`, `MaxError`, `RmsError`, `PerAnchorResiduals`, `ScaleWasFitted`,
-`FittedScale`, `Quality` (`Empty` / `TranslationOnly` / `Degenerate` / `Solved`)
-and a human `Note`.
-
-`WorldComposition.SolveAlignment(worldAId, worldBId, allowScale)` returns a copy
-with world B's transform replaced (world A untouched) plus the result.
-
----
-
-## Composition schema (`*.json`)
-
-Tiny, deterministic, camelCase, LF newlines, trailing newline. Canonicalised on
-serialize (worlds sorted by id, numbers rounded to 6 dp) so the same logical
-composition is byte-identical regardless of edit order. **No reconstructed
-geometry is ever written** — only references + placement metadata.
-
-```json
-{
-  "version": 1,
-  "name": "R&C1 Veldin vs UYA Veldin",
-  "notes": "…",
-  "comparison": { "activeWorldId": "uya-veldin", "soloWorldId": null, "fitScale": false, "overlayMode": "both" },
-  "worlds": [
-    {
-      "id": "rc1-veldin",
-      "destinationId": "rac1:…",           // canonical neutral id when the provider registry exists
-      "sourceGame": "R&C1",
-      "buildId": "rac1-ntscu",
-      "levelId": 3,                          // current GcWorldImport-style load path
-      "label": "R&C1 Veldin",
-      "transform": { "translation": [0, 0, 0], "rotationYDegrees": 0, "scale": 1 },
-      "visible": true,
-      "opacity": 1,
-      "debugTint": [1, 0.2, 0.2],
-      "categoryVisibility": { "collision": false }
-    },
-    {
-      "id": "uya-veldin",
-      "sourceGame": "Up Your Arsenal", "levelId": 42,
-      "transform": { "translation": [123.4, 0, -77.2], "rotationYDegrees": 42.1, "scale": 1 }
-    }
-  ],
-  "anchors": [
-    { "worldA": "rc1-veldin", "worldB": "uya-veldin", "label": "Ratchet garage doorway",
-      "localA": [10, 1, 20], "localB": [-5, 2, 8], "enabled": true }
-  ]
-}
-```
-
-`categoryVisibility` keys are neutral `RuntimeMesh.AssetKind` values (`tfrag`,
-`tie`, `shrub`, `moby`, `sky`, `moby-marker`) plus `collision`.
-
-The schema can be saved through the lab or supplied as a user-authored JSON file; there are no checked-in example presets.
-
----
-
-## CLI usage
-
-Composition Lab now has its own Godot entry scene, `res://scenes/CompositionLab.tscn`, independent of the ordinary `OBPGame` navigation/player host. Pass composition flags after `--` as usual; this entry does not need `--compose`. The older `--path game -- --compose ...` invocation is retained for compatibility. Run windowed for captures (headless can't render them), after a one-off `--headless --path game --import`.
-
-```
-# interactive
-<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> \
-    --compose-worlds "oozla=gc:1,endako=gc:3"
-
-# or load a user-authored JSON document from disk
-<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> --composition <path-to-your-composition.json>
-
-# deterministic capture
-<godot> --path game --rendering-method gl_compatibility --resolution 1280x720 res://scenes/CompositionLab.tscn -- \
-    --gc-iso <GC.iso> --composition <path> \
-    --composition-view overview --capture-frame 30 --capture-out captures/x.png
-
-# solve the anchors on load, then capture the aligned result
-<godot> --path game res://scenes/CompositionLab.tscn -- --gc-iso <GC.iso> --composition <path> --compose-solve --composition-view overlay …
-```
-
-| Flag | Meaning |
-| --- | --- |
-| `--compose` | legacy: boot the lab through the ordinary `OBPGame` scene |
-| `--gc-iso` / `--rac1-iso` / `--uya-iso` `<path>` | register a retail source per game |
-| `--composition <path>` | load a saved composition JSON |
-| `--compose-worlds <spec>` | seed worlds from `id=game:level,…` |
-| `--compose-solve` / `--compose-solve-scale` | run the rigid / uniform-scale solve on load and apply to world B |
-| `--composition-view <v>` | capture view: `overview` (default) · `top` · `a-only` · `b-only` · `overlay` · `a-start` · `b-start` · `start-overlay` · `start-side-by-side` |
-| `--capture-frame N` / `--capture-out <path>` | deterministic capture (writes `.png` + `.json` sidecar) |
-
-The `*-start` views are comparison helpers, not archaeology claims. `a-start` and
-`b-start` frame each authority around its own neutral `RuntimeWorld.Ship` point.
-`start-overlay` translates B so the two ship/start points coincide while
-preserving the preset rotation and scale. `start-side-by-side` uses the same
-translation-only anchor, then adds a fixed presentation-only +520 X offset to B.
-No semantic landmark, fitted rotation, fitted scale, or whole-map transform is
-introduced by these views.
-
-`captures/composition-*.json` sidecars record every world's effective capture
-transform, the anchor count, the last solve result, and a `placementNote` that
-states the capture-only placement contract.
-
----
-
-## Controls (interactive)
-
-| Key | Action |
-| --- | --- |
-| RMB (hold) + mouse | free-fly look |
-| WASD / Q E | move · **Shift** = faster |
-| Tab | cycle the active world |
-| `[` / `]` | rotate active world −/+ 1° about Y |
-| arrows / PgUp / PgDn | translate active world on X / Z / Y (**Shift** = ×10 step) |
-| V | toggle active world visibility |
-| O | solo the active world / show all |
-| C | cycle + toggle an asset category on the active world |
-| F | focus camera on the active world |
-| 1 / 2 | capture an anchor point (A / B side) under the crosshair |
-| 0 | clear pending anchors |
-| Enter | solve alignment (world B → world A) and print residuals |
-| Ctrl+S | save the composition |
-| Esc | quit |
-
-Minimal anchor workflow: aim the crosshair at a landmark in world A, press `1`;
-aim at the same landmark in world B, press `2`; repeat for more pairs; press
-Enter. World B aligns and the residuals print to the HUD + log.
-
----
-
-## Known limitations
-
-- Start-point comparison views intentionally use only neutral `RuntimeWorld.Ship`
-  positions. They do not infer heading, semantic landmark identity, or a global
-  alignment from visual resemblance.
-- Anchor capture needs collision geometry under the crosshair; toggle collision
-  back on for a world before picking anchors on it.
-- The Y alignment is a mean offset only — no height-field fitting.
-- Collinearity is judged from the source (world B) anchor spread only.
-- Sky shells are disabled in the lab (they follow a single camera).
-- Nested composition roots (`CompositionTransform.Then`) exist for completeness
-  but the lab keeps every world one level under `CompositionRoot`.
-
----
-
-Historical Veldin alignment findings remain in
-[the cross-game archaeology note](../research/VELDIN_CROSS_GAME_ALIGNMENT.md).
+`VeldinAlignmentRetailTests` still checks the real retail landmark comparison.
+`CompositionTransform`, `AnchorPair` and `PlanarAlignmentSolver` remain as the
+small, engine-neutral numerical helpers used by that research and its synthetic
+invariant tests. They do not load worlds, own gameplay state or expose a viewer.
+Run `tools/test-retail.ps1` with authorised trilogy inputs to reproduce the
+retail witness. No disc bytes or machine-specific paths are stored here.

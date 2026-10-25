@@ -64,10 +64,10 @@ public sealed record CommandLineArgs
     public string? GcIso { get; init; }
     public int GcLevel { get; init; } = 1;
 
-    /// <summary>Path to an R&amp;C1 retail ISO (composition lab source).</summary>
+    /// <summary>Path to the supported R&amp;C1 retail ISO.</summary>
     public string? Rac1Iso { get; init; }
 
-    /// <summary>Path to an Up Your Arsenal retail ISO (composition lab source).</summary>
+    /// <summary>Path to the supported Up Your Arsenal retail ISO.</summary>
     public string? UyaIso { get; init; }
 
     /// <summary>Historical GC planet/level alias resolved to a canonical <c>rac2:LEVEL*</c> destination.</summary>
@@ -172,24 +172,6 @@ public sealed record CommandLineArgs
 
     /// <summary>Run the cross-game Godot analogue/input smoke against the selected destination and quit.</summary>
     public bool MovementSmoke { get; init; }
-
-    /// <summary>Boot the multi-world composition / fusion lab. Optional value = a saved composition JSON to load on start.</summary>
-    public bool Compose { get; init; }
-
-    /// <summary>Path to a saved composition document (implies <see cref="Compose"/>).</summary>
-    public string? CompositionPath { get; init; }
-
-    /// <summary>Composition capture view: "overview" | "top" | "a-only" | "b-only" | "overlay". Headless composition capture.</summary>
-    public string? CompositionView { get; init; }
-
-    /// <summary>Comma-separated <c>id=game:level</c> world specs to seed a composition when no <see cref="CompositionPath"/> is given (e.g. "a=gc:1,b=gc:3").</summary>
-    public string? ComposeWorlds { get; init; }
-
-    /// <summary>Run the anchor alignment solve on load (before any capture) and apply it to world B. "rigid" (default) or "scale".</summary>
-    public string? ComposeSolve { get; init; }
-
-    /// <summary>Composition lifecycle stress: build + tear down every world N times, logging node / orphan / memory counts, then quit.</summary>
-    public int? ComposeReload { get; init; }
 
     public static CommandLineArgs Parse(string[] args)
     {
@@ -309,13 +291,6 @@ public sealed record CommandLineArgs
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },
-                "--compose" => result with { Compose = true },
-                "--composition" => result with { Compose = true, CompositionPath = Next() },
-                "--composition-view" => result with { CompositionView = Next() },
-                "--compose-worlds" => result with { ComposeWorlds = Next() },
-                "--compose-solve" => result with { ComposeSolve = "rigid" },
-                "--compose-solve-scale" => result with { ComposeSolve = "scale" },
-                "--compose-reload" => result with { ComposeReload = NextInt(1) },
                 // Existing diagnostic scenes also consume these automation markers.
                 "--automation" or "--smoke" => result,
                 _ => throw new ArgumentException("Unknown OBP argument: " + a + ". OBP options follow Godot's -- separator."),
@@ -328,9 +303,9 @@ public sealed record CommandLineArgs
             throw new ArgumentException("--bug-capture cannot be combined with --record-playtest, --replay-playtest or --replay-bug-report.");
         if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)
             throw new ArgumentException("--replay-forward requires --load-movement-state.");
-        if (result.PlaytestRequested && (result.LoadMovementState is not null || result.Compose || result.CaptureFrame.HasValue ||
+        if (result.PlaytestRequested && (result.LoadMovementState is not null || result.CaptureFrame.HasValue ||
             result.ShotsPath is not null || result.ReplayForwardFrames.HasValue || result.StressSwitch is not null))
-            throw new ArgumentException("--record-playtest/--replay-playtest require ordinary entry without --load-movement-state, --compose/--composition, --capture-frame, --shots, --replay-forward or --stress-switch.");
+            throw new ArgumentException("--record-playtest/--replay-playtest require ordinary entry without --load-movement-state, --capture-frame, --shots, --replay-forward or --stress-switch.");
         return result;
     }
 }

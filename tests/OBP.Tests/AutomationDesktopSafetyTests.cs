@@ -31,7 +31,6 @@ public sealed class AutomationDesktopSafetyTests
     [InlineData("--capture-frame", "120")]
     [InlineData("--shots", "shots.json")]
     [InlineData("--stress-switch", "1,3")]
-    [InlineData("--compose-reload", "2")]
     [InlineData("--replay-forward", "120")]
     [InlineData("--replay-playtest", "run.jsonl.gz")]
     [InlineData("--replay-bug-report", "report.json")]
