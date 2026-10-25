@@ -160,6 +160,7 @@ public static class Rac3Class5821Actor
     /// Exact TABLE1 profile under which the recovered common damage consumer has
     /// been traced. Other class-5821 variants remain fail-closed.
     /// </summary>
+#pragma warning disable S1244 // Exact authored-profile witnesses must reject any retail-data drift.
     public static bool HasRecoveredTable1DamageProfile(
         Rac3Class5821AuthoredState authored) =>
         authored.LifetimeRelativePointer == RuntimeLifetimeOffset &&
@@ -170,12 +171,14 @@ public static class Rac3Class5821Actor
         authored.DamageConfigByte49 == 0 &&
         authored.DamageConfigSameClassMultiplier == 0f &&
         authored.DamageConfigOptionalMultiplier == 1f;
+#pragma warning restore S1244
 
     public static bool HasRecoveredTable1OrdinaryAttackProfile(
         Rac3Class5821AuthoredState authored) =>
         authored.NativeOrdinaryAttackDamageByte == 1 &&
         authored.NativeOrdinaryAttackFlagSelector == 0;
 
+#pragma warning disable S1244 // These radii identify the evidenced native profile, rather than approximate geometry.
     public static bool HasRecoveredTable1TargetSelectionProfile(
         Rac3Class5821AuthoredState authored) =>
         authored.TargetBlockRelativePointer == RuntimeTargetBlockOffset &&
@@ -185,6 +188,7 @@ public static class Rac3Class5821Actor
         authored.SecondaryTargetSelectorRadius == 32f &&
         authored.InitialTargetSelectorMode is 0 or 1 &&
         authored.InitialTargetSelectorAux == 0;
+#pragma warning restore S1244
 
     /// <summary>
     /// Builds the ordinary TABLE1 request passed into shared selector 0x004539A8

@@ -96,6 +96,7 @@ public static class Rac3Class5821TargetSelector
                        (yNegative ? 2 : 0) |
                        (xNegative ? 4 : 0);
 
+#pragma warning disable S2583 // Spell out all eight native quadrants; the int switch still needs a defensive fallback.
         (float scale, float offset) = quadrant switch
         {
             0 => (1f, 0f),
@@ -109,6 +110,7 @@ public static class Rac3Class5821TargetSelector
             _ => throw new InvalidOperationException(),
         };
 
+#pragma warning restore S2583
         return baseAngle * scale + offset;
     }
 
@@ -274,6 +276,7 @@ public static class Rac3Class5821TargetSelector
     private static void ValidateOrdinaryScoreRequest(
         Rac3Class5821TargetSelectionRequest request)
     {
+#pragma warning disable S1244 // Admit only the exact recovered native request constants, without tolerance.
         if (request.NativeCandidateTag is not
             Rac3Class5821Actor.NativeTargetSelectorCandidateTagOne and not
             Rac3Class5821Actor.NativeTargetSelectorCandidateTagTwo ||
@@ -284,6 +287,7 @@ public static class Rac3Class5821TargetSelector
             throw new NotSupportedException(
                 "UYA class-5821 score request is not the recovered authored-zero TABLE1 profile.");
         }
+#pragma warning restore S1244
     }
 
     private static void ValidateFinite(float value, string paramName)
