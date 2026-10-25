@@ -246,6 +246,20 @@ The existing source-native parity/replay fixtures remain separate authority gate
 
 ## CI guard and retained parity flow
 
+Automated launches use the desktop isolation in `AutomationRunPolicy` and
+`ApplicationPointer`, independently of gameplay/parity selection. Every
+`--*-smoke` flag (including future flags), diagnostic smoke scene, headless run,
+batch capture and replay stays unfocusable and cannot capture, confine or hide
+the real desktop cursor. Other batch entrypoints can opt in with `--automation`.
+`WindowPlacement` skips personal placement reads/restores/writes in these runs.
+Gameplay and UI use `ApplicationPointer.MouseMode`; automation retains the
+logical mode for synthetic input while the actual desktop mode stays visible.
+Direct desktop-mode writes outside that boundary fail the focused architecture
+test. The asset-free `AutomationDesktopSmoke` exercises capture/confinement and
+menu restoration headlessly through the existing CI startup smoke. Ordinary
+play, human input recording and explicit interactive marker inspection keep
+their normal mouse controls.
+
 `SourceNeutralHostArchitectureTests` binds C# symbols with Roslyn: it follows
 aliases, conditional access and property patterns for `RuntimeWorld.Game` and
 `ObpDestination.Game`, and detects the legacy `UseRac1Gameplay` gate. Asset/actor

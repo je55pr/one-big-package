@@ -38,7 +38,7 @@ public partial class PlayerDevelopmentControls : Node
         }
         else if (key.Keycode == Key.Tab && !GetWindow().Unfocusable)
         {
-            Input.MouseMode = Input.MouseMode == Input.MouseModeEnum.Captured
+            ApplicationPointer.MouseMode = ApplicationPointer.MouseMode == Input.MouseModeEnum.Captured
                 ? Input.MouseModeEnum.Visible
                 : Input.MouseModeEnum.Captured;
         }

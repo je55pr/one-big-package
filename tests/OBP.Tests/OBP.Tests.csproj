@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <Compile Include="../../game/scripts/CommandLineArgs.cs" Link="Game/CommandLineArgs.cs" />
+    <Compile Include="../../game/scripts/AutomationRunPolicy.cs" Link="Game/AutomationRunPolicy.cs" />
+    <Compile Include="../../game/scripts/ApplicationPointer.cs" Link="Game/ApplicationPointer.cs" />
     <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
     <Compile Include="../../game/scripts/PlayerEquipmentRegistrations.cs" Link="Game/PlayerEquipmentRegistrations.cs" />

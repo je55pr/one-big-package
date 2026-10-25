@@ -331,7 +331,7 @@ public partial class PlayerHost : CharacterBody3D
 
         if (!Scripted && !GetWindow().Unfocusable)
         {
-            Input.MouseMode = Input.MouseModeEnum.Captured;
+            ApplicationPointer.MouseMode = Input.MouseModeEnum.Captured;
         }
     }
 
@@ -356,7 +356,7 @@ public partial class PlayerHost : CharacterBody3D
         }
 
         if (@event is InputEventMouseMotion motion &&
-            Input.MouseMode == Input.MouseModeEnum.Captured &&
+            ApplicationPointer.MouseMode == Input.MouseModeEnum.Captured &&
             !HasActiveRecoveredCamera)
         {
             _yaw.RotateY(-motion.Relative.X * MouseSensitivity);

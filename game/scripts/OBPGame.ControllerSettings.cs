@@ -38,7 +38,7 @@ public partial class OBPGame
         if (PauseMenuOpen)
             return true;
 
-        _prePauseMouseMode = Input.MouseMode;
+        _prePauseMouseMode = ApplicationPointer.MouseMode;
         _prePauseHeldButtons = _player?.MenuHeldButtons ?? 0;
         UiPointerModality.MenuOpened();
 
@@ -217,7 +217,7 @@ public partial class OBPGame
         }
         else if (!PauseMenuOpen)
         {
-            Input.MouseMode = Input.MouseModeEnum.Visible;
+            ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             if (_sourceManager is not null) { _sourceManager.Visible = true; _sourceManager.RestoreFocus(); }
             if (_destinationSelector is not null) _destinationSelector.Visible = true;
         }

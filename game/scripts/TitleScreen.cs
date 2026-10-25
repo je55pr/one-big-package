@@ -24,7 +24,7 @@ public sealed partial class TitleScreen : CanvasLayer
     {
         Layer = 100;
         Name = "TitleScreen";
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _root = new Control { AnchorRight = 1, AnchorBottom = 1, MouseFilter = Control.MouseFilterEnum.Ignore };
         AddChild(_root);

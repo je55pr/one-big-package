@@ -74,7 +74,7 @@ public partial class OBPGame
         retry.Pressed += () => RespawnPlayer();
         rows.AddChild(retry); panel.AddChild(rows); _ui.AddChild(panel);
         panel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center); retry.GrabFocus();
-        Input.MouseMode = Input.MouseModeEnum.Visible; _rac1CombatRetry = panel;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible; _rac1CombatRetry = panel;
     }
 
     private bool RespawnPlayer()

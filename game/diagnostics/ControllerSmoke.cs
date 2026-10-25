@@ -79,9 +79,29 @@ public partial class ControllerSmoke : Node
                 var beforeStick = Focus(); await Axis(JoyAxis.LeftY, 1); await Axis(JoyAxis.LeftY, 0);
                 Require(Focus() != beforeStick, "Left stick does not navigate worlds");
                 var visited = new HashSet<Control>();
-                await Button(JoyButton.DpadDown, true);
-                for (int i = 0; i < 100; i++) { if (Focus() is { } control) visited.Add(control); await Frames(1); }
-                await Button(JoyButton.DpadDown, false);
+                // Fixed-FPS headless runs do not wait for wall-clock time.
+                // Drive the existing gesture clock for this repeat fixture so
+                // it needs neither a focused window nor rendering delays.
+                bool previousClockActive = PlaytestClock.Active;
+                ulong previousClockTime = PlaytestClock.RecordedMilliseconds;
+                PlaytestClock.RecordedMilliseconds = PlaytestClock.Milliseconds;
+                PlaytestClock.Active = true;
+                try
+                {
+                    await Button(JoyButton.DpadDown, true);
+                    for (int i = 0; i < 100; i++)
+                    {
+                        if (Focus() is { } control) visited.Add(control);
+                        PlaytestClock.RecordedMilliseconds += 17;
+                        await Frames(1);
+                    }
+                    await Button(JoyButton.DpadDown, false);
+                }
+                finally
+                {
+                    PlaytestClock.Active = previousClockActive;
+                    PlaytestClock.RecordedMilliseconds = previousClockTime;
+                }
                 Require(visited.Count >= 4, "Holding a menu direction has no controlled repeat");
                 for (int i = 0; i < 18; i++) await Press(JoyButton.DpadDown);
                 var scroll = Descendants(selector!).OfType<ScrollContainer>().Single();

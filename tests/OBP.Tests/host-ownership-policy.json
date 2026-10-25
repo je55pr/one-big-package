@@ -38,8 +38,8 @@
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TryOpenRac1PlanetMap()",
     "Kind": "adapter",
-    "Reason": "Explicit R&C1 campaign map and native travel state; not the common pause/loadout interface.",
-    "Hash": "9b32d9704c0eab054bdf2f459be99defc6e5349724fe3bfe89d1e0e19e7c6fd1"
+    "Reason": "Explicit R&C1 campaign map and native travel state; not the common pause/loadout interface. Mouse requests use the shared ApplicationPointer boundary so opening/restoring this source UI cannot capture automated desktop input (AutomationDesktopSafetyTests, AutomationDesktopSmoke).",
+    "Hash": "00eda07f2a83d26ae36ccfa57408bc399e55bddd30ac9db90da378b6de990cb0"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.WorldOptions(RuntimeWorld)",

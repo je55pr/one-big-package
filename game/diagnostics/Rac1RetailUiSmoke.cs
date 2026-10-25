@@ -159,11 +159,11 @@ public partial class Rac1RetailUiSmoke : Node
                 await Frames(3);
             }
             Require(!Descendants(sample).OfType<ScrollContainer>().Any(), "Root retained forbidden ScrollContainer");
-            Input.MouseMode = Input.MouseModeEnum.Visible;
+            ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             await Press(JoyButton.DpadDown);
             Require(UiPointerModality.ControllerWasLastInput, "Controller input was not recorded");
             if (DisplayServer.GetName() != "headless")
-                Require(Input.MouseMode == Input.MouseModeEnum.Hidden, "Controller input failed to hide cursor");
+                Require(ApplicationPointer.MouseMode == Input.MouseModeEnum.Hidden, "Controller input failed to hide cursor");
             await Frames(30); // Allow pause-open warp suppression to expire.
             Input.ParseInputEvent(new InputEventMouseMotion
             {
@@ -173,7 +173,7 @@ public partial class Rac1RetailUiSmoke : Node
             await Frames(2);
             Require(!UiPointerModality.ControllerWasLastInput, "Mouse movement did not restore pointer modality");
             if (DisplayServer.GetName() != "headless")
-                Require(Input.MouseMode == Input.MouseModeEnum.Visible, "Physical mouse movement failed to show cursor");
+                Require(ApplicationPointer.MouseMode == Input.MouseModeEnum.Visible, "Physical mouse movement failed to show cursor");
             Require(GetViewport().GuiGetFocusOwner() is Button { Text: "Gadgets" },
                 "D-pad navigation did not move from Weapons to Gadgets");
             await Press(JoyButton.DpadUp);

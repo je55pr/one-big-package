@@ -87,7 +87,7 @@ public sealed partial class WorldInspectorPanel : CanvasLayer
         }
 
         if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } click
-            && Input.MouseMode == Input.MouseModeEnum.Visible)
+            && ApplicationPointer.MouseMode == Input.MouseModeEnum.Visible)
         {
             PickAt(click.Position);
             GetViewport().SetInputAsHandled();

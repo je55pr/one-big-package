@@ -62,10 +62,10 @@ public partial class OBPGame
         }
         _quickSelect = new WeaponQuickSelectUi { Entries = entries, CurrentWeapon = CurrentWeaponKey };
         _quickSelect.Completed += CloseWeaponQuickSelect;
-        _preQuickSelectMouse = Input.MouseMode;
+        _preQuickSelectMouse = ApplicationPointer.MouseMode;
         _preQuickSelectHeldButtons = player.MenuHeldButtons;
         player.QuickSelectOwnsGameplayInput = true;
-        Input.MouseMode = Input.MouseModeEnum.Visible;
+        ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
         AddChild(_quickSelect);
         // R&C1 Quick Select is real-time. Do not freeze the world while it is held.
         return true;
@@ -83,6 +83,6 @@ public partial class OBPGame
             player.SuppressButtonsUntilRelease(_preQuickSelectHeldButtons);
         }
         if (weapon is { } selected && selected != CurrentWeaponKey) SelectWeaponKey(selected);
-        Input.MouseMode = _preQuickSelectMouse;
+        ApplicationPointer.MouseMode = _preQuickSelectMouse;
     }
 }

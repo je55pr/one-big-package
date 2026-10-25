@@ -60,7 +60,7 @@ public partial class OBPGame
             _bugSuspended = true;
             _bugSuspendStart = Time.GetTicksMsec();
             _bugPreviousPause = GetTree().Paused;
-            _bugPreviousMouse = Input.MouseMode;
+            _bugPreviousMouse = ApplicationPointer.MouseMode;
             _bugReturnFocus = GetViewport().GuiGetFocusOwner();
             _bugPausedNodes.Clear();
             // Pause affects ordinary nodes, but source menus explicitly process
@@ -79,7 +79,7 @@ public partial class OBPGame
                 pause.Visible = false;
             }
             GetTree().Paused = true;
-            Input.MouseMode = Input.MouseModeEnum.Visible;
+            ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             PlaytestClock.Active = false;
             if (draft is not null) Game.OpenBugReportForm(draft); else Game.OpenBugReportInbox();
         }
@@ -107,7 +107,7 @@ public partial class OBPGame
             }
             if (MenuFocus.Available(_bugReturnFocus)) _bugReturnFocus!.GrabFocus();
             GetTree().Paused = _bugPreviousPause;
-            Input.MouseMode = _bugPreviousMouse;
+            ApplicationPointer.MouseMode = _bugPreviousMouse;
             _bugResumePending = _bugSuspended = false;
             PlaytestClock.RecordedMilliseconds = RecordingMilliseconds;
             PlaytestClock.Active = true;

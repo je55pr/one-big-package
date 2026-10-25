@@ -406,7 +406,7 @@ public partial class CompositionLab : Node3D
         if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Right } rmb)
         {
             _mouseCaptured = rmb.Pressed;
-            Input.MouseMode = _mouseCaptured ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
+            ApplicationPointer.MouseMode = _mouseCaptured ? Input.MouseModeEnum.Captured : Input.MouseModeEnum.Visible;
         }
         else if (@event is InputEventMouseMotion mm && _mouseCaptured)
         {
