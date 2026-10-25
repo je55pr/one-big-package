@@ -36,7 +36,7 @@ and reject new player gates while allowing narrow world/campaign adapters.
 
 Source-owned C# types, filenames and namespace segments use `Rac1`, `Rac2`,
 `Rac3`; the source assembly roots remain `OBP.RAC1`, `OBP.RAC2`, `OBP.RAC3`.
-For example, `Rac2LancerSession` / `Rac2LancerSession.cs` becomes
+For example, `GcLancerSession` / `GcLancerSession.cs` becomes
 `Rac2LancerSession` / `Rac2LancerSession.cs`; `IUyaMobyDamageConsumer` becomes
 `IRac3MobyDamageConsumer`. Use source-neutral names only for genuinely shared
 contracts in the owning Core/Runtime/Fusion/PS2 layer. `Rac1RatchetNanotechSession`
