@@ -9,7 +9,7 @@ namespace OBP.Tests;
 
 public sealed class MovementReproStateTests
 {
-    private static MovementReproState Sample()
+    internal static MovementReproState Sample()
     {
         var camera = new Rac1OrdinaryCameraController();
         camera.Reset(new Vec3(130, 112, 31), -1.23456789);
@@ -62,7 +62,7 @@ public sealed class MovementReproStateTests
         {
             HeldItemId = heldItemId,
         };
-        MovementReproState saved = Sample() with { Version = MovementReproState.CurrentVersion, World = world };
+        MovementReproState saved = Sample() with { Version = 2, World = world }; // Frozen legacy native bookmark schema.
         string path = Path.Combine(Path.GetTempPath(), $"obp-world-repro-{Guid.NewGuid():N}.json");
         try
         {

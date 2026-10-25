@@ -62,6 +62,7 @@ public partial class OBPGame : Node3D
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         ApplicationLifecycle.SetQuitPreparation(PrepareForQuitAsync);
         _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        if (!InitializeReplayBookmark()) return;
         if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
         if (!InitializeBugReporting()) return;
         if (!InitializePlaytest()) return;
@@ -155,11 +156,12 @@ public partial class OBPGame : Node3D
         _frame++;
         TickFusionPreparation();
         TickActorPreparation();
+        TickSharedProfile(delta);
         TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
         {
-            if (_playtest is { WaitingForEntry: true }) return;
+            if (_playtest is { WaitingForEntry: true } or { PreparingWorld: true }) return;
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickFusionLabTraversalSmoke();
@@ -301,6 +303,7 @@ public partial class OBPGame : Node3D
 
     private void ReleaseAudioForExit()
     {
+        SaveSharedProfile("clean exit");
         // An external exit can bypass normal world teardown. Finish campaign
         // persistence before shutting down its owning Godot session.
         FlushRac1CampaignSaves("clean exit");

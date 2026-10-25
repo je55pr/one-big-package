@@ -14,7 +14,7 @@
   {
     "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
     "Kind": "adapter",
-    "Reason": "Capture the loaded world provenance; player snapshot migration belongs to #274.",
+    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header.",
     "Hash": "db683cfebce452bec6536f852f4d189075e6d9ba89b699d200851141e570f1d0"
   },
   {
@@ -78,18 +78,6 @@
     "Hash": "637c9917e01f004025325d024952d7ece8c6ad83fbb62a1b3e13db5d9cdea1c6"
   },
   {
-    "Key": "game/scripts/OBPGame.Playtest.cs::OBPGame.ValidatePlaytestDestination(string?)",
-    "Kind": "adapter",
-    "Reason": "Existing explicit R&C1-only tape schema admission; #274 owns cross-world tapes, not a player-mode default.",
-    "Hash": "9e1d1913df82b30f48a11b002fba4faadbeb52904ee344e73965c69c7840f58e"
-  },
-  {
-    "Key": "game/scripts/OBPGame.PlaytestDriver.cs::PlaytestDriver.Begin(PlaytestStepKind,double)",
-    "Kind": "adapter",
-    "Reason": "Opt-in replay validates the existing R&C1 tape/world contract; #274 migrates this diagnostic format.",
-    "Hash": "0c7165c2a3f031110fdb43812b9908e1cb72e930a44a10b4f9ddb492e7e59650"
-  },
-  {
     "Key": "game/scripts/OBPGame.Rac1Checkpoints.cs::OBPGame.TickRac1CheckpointTriggers()",
     "Kind": "adapter",
     "Reason": "Recovered source-world checkpoint trigger admission; checkpoint identity belongs to the R&C1 campaign adapter.",
@@ -150,18 +138,10 @@
     "Hash": "b9abc4e42119dab7db552b1bc6e1e907f88fcffa35281709f9538bf1cb5b822d"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.TryCompleteRac1EnvironmentalRestart(bool)",
-    "Kind": "migration",
-    "Reason": "Recovered source checkpoint restart currently resets shared player health/equipment directly; preserve native adapter with explicit player policy.",
-    "Owner": "#266/#270",
-    "Hash": "7381b369a9579592c5d033a50c4dffcfb3b1b6efb5f89221e7a3aa4e227da65f"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac1MetalDetector.cs::OBPGame.TryToggleRac1MetalDetector()",
-    "Kind": "migration",
-    "Reason": "A player gadget shortcut is currently enabled by world origin rather than catalog/context capability.",
-    "Owner": "#255",
-    "Hash": "f1a1fe8d3718ac16fbbfebf1fb95b0a50b75830cfaff806579a3a701c7ab9bf9"
+    "Key": "game/scripts/OBPGame.Rac1Lifecycle.cs::OBPGame.ResolveRac1EnvironmentalRestart()",
+    "Kind": "adapter",
+    "Reason": "Read-only native source checkpoint/death admission. Returns a source placement; explicit parity policy applies it, while ordinary life uses the persistent player health session.",
+    "Hash": "f930355e58f92ad1fdff68180d4509342a1e16731453d03023c7b006c54a337b"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Missions.cs::OBPGame.ApplyRac1MissionLevelExit(Rac1MissionLevelExit)",

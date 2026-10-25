@@ -1,0 +1,15 @@
+{
+  "Version": 1,
+  "Route": ["rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab", "rac1:LEVEL0"],
+  "NativeHz": 60,
+  "Avatar": "rac1:ratchet:moby-class-0",
+  "Movement": "rac1/ordinary-player/v1",
+  "ImplementedWeapons": ["rac1/item/10", "rac1/item/16", "rac2/item/30", "rac3/item/43"],
+  "UnavailableEquipment": ["rac2/appearance/ratchet", "rac1/item/28"],
+  "ActorAdapters": ["rac1/class749/v1", "rac2/class2827/v1", "rac3/class500/v1"],
+  "UnknownNativeAi": "unrecordable",
+  "OrdinaryProfile": "obp/shared-player/v1",
+  "NativeCampaigns": "separate tagged opaque contributors",
+  "UniversalBookmarks": "completed replay prefix; no fabricated native AI snapshots",
+  "HumanVisualReview": "required separately; automation remains headless"
+}

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Godot;
 using OBP.Core;
 using OBP.Godot;
+using OBP.Fusion;
 using OBP.RAC1.Camera;
 using OBP.RAC1.Progression;
 using OBP.Runtime.Diagnostics;
@@ -12,6 +13,8 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private PlaytestDriver? _playtest;
+    private ObpProfile? _captureStartingProfile;
+    private bool _captureControllersInitialized;
 
     private bool InitializePlaytest()
     {
@@ -45,19 +48,19 @@ public partial class OBPGame
                 else if (_args.FusionTest)
                     throw new InvalidDataException("Recording has no fusion loadout; remove --fusion-test.");
                 ValidatePlaytestDestination(header.Destination);
-                if (header.EngineVersion != Engine.GetVersionInfo()["string"].AsString() ||
-                    header.Platform != OS.GetName() || header.PhysicsEngine != PlaytestPhysicsEngine())
-                    throw new InvalidDataException("Recording requires the same Godot version, platform and physics backend.");
+                header.VerifyEnvironment(Engine.GetVersionInfo()["string"].AsString(), OS.GetName(), PlaytestPhysicsEngine(), Engine.PhysicsTicksPerSecond);
                 if (!PlaytestBuildMatches(header) && !_args.PlaytestAllowBuildChange)
                     throw new InvalidDataException("Recording was made with a different build; explicitly allow build changes to investigate it.");
-                var envelope = header.Campaign.Deserialize<Rac1CampaignSaveEnvelope>()
-                    ?? throw new InvalidDataException("Recording has no starting campaign.");
-                _ = Rac1CampaignSavePolicy.RestoreOrDefault(envelope);
-                string isolated = Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"),
-                    "../captures/repros/replay-" + Guid.NewGuid().ToString("N"), "campaign.json"));
-                Directory.CreateDirectory(Path.GetDirectoryName(isolated)!);
-                File.WriteAllText(isolated, header.Campaign.GetRawText());
-                _args = _args with { Destination = header.Destination, FixedSeed = header.Seed, Rac1CampaignSavePath = isolated };
+                if (header.Version == PlaytestRunHeader.LegacyVersion)
+                {
+                    var envelope = header.Campaign.Deserialize<Rac1CampaignSaveEnvelope>() ?? throw new InvalidDataException("Recording has no starting campaign.");
+                    _ = Rac1CampaignSavePolicy.RestoreOrDefault(envelope);
+                    string isolated = Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"), "../captures/repros/replay-" + Guid.NewGuid().ToString("N"), "campaign.json"));
+                    Directory.CreateDirectory(Path.GetDirectoryName(isolated)!); File.WriteAllText(isolated, header.Campaign.GetRawText());
+                    _args = _args with { RetailParity = true, Rac1CampaignSavePath = isolated };
+                }
+                else _captureStartingProfile = ObpProfile.Decode(System.Text.Encoding.UTF8.GetBytes(header.PlayerProfile!.Value.GetRawText()));
+                _args = _args with { Destination = header.Destination, FixedSeed = header.Seed, NoProfile = true };
                 _playtest.OriginalCameraOptions = CameraSettingsStore.Current;
                 CameraSettingsStore.Set(header.CameraOptions.Deserialize<Rac1CameraOptions>()!.Validate(), persist: false);
             }
@@ -101,8 +104,8 @@ public partial class OBPGame
 
     private static void ValidatePlaytestDestination(string? destination)
     {
-        if (destination is null || TrilogyWorldProviders.Resolve(destination)?.Game != ObpSourceGame.Rac1)
-            throw new InvalidDataException("Playtest currently supports an ordinary R&C1 level entry.");
+        if (destination != "obp:fusion-lab" && (destination is null || TrilogyWorldProviders.Resolve(destination) is null))
+            throw new InvalidDataException("Recording requires a registered source-qualified world.");
     }
 
     private static string PlaytestPhysicsEngine() => ProjectSettings.GetSetting("physics/3d/physics_engine", "DEFAULT").AsString();
@@ -125,16 +128,19 @@ public partial class OBPGame
         header.AssemblyId == typeof(OBPGame).Module.ModuleVersionId && header.MatchesAssemblies(PlaytestAssemblyIds());
 
     private PlaytestRunHeader CapturePlaytestHeader() => new(
-        PlaytestRunHeader.CurrentVersion, _activeDestination!.DestinationId, _world!.BuildId,
+        OrdinaryPlayerSession ? PlaytestRunHeader.CurrentVersion : PlaytestRunHeader.LegacyVersion, _currentDestinationId!, _world!.BuildId,
         typeof(OBPGame).Module.ModuleVersionId, Engine.GetVersionInfo()["string"].AsString(), OS.GetName(),
         PlaytestPhysicsEngine(), Engine.PhysicsTicksPerSecond, _args.FixedSeed!.Value,
         GetWindow().Size.X, GetWindow().Size.Y, DateTimeOffset.UtcNow,
-        JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1CampaignSession.Campaign,
+        OrdinaryPlayerSession ? JsonSerializer.SerializeToElement(new { }) : JsonSerializer.SerializeToElement(Rac1CampaignSavePolicy.Capture(_rac1CampaignSession.Campaign,
             _rac1CampaignSession.Weapons, _rac1BoltWallet, _rac1CollectedNovalisGoldBolts, _rac1CampaignSession.BuriedBolts)),
         JsonSerializer.SerializeToElement(CameraSettingsStore.Current), CapturePlaytestCheckpoint())
     {
         Assemblies = PlaytestAssemblyIds(),
         Weapons = FusionConfiguration,
+        PlayerProfile = OrdinaryPlayerSession ? JsonSerializer.Deserialize<JsonElement>(CaptureSharedProfile().Encode()) : null,
+        Sources = OrdinaryPlayerSession ? _sources.Attached.Values.Select(source => source.Identity).OrderBy(source => source.Game).ToArray() : [],
+        Adapters = OrdinaryPlayerSession ? CaptureReplayAdapters() : [],
         ApplicationVersion = typeof(OBPGame).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown",
     };
 
@@ -144,7 +150,7 @@ public partial class OBPGame
         void Text(string key, string? value) => values.Add(key, new(Text: value ?? ""));
         void Numbers(string key, params double[] data) => values.Add(key, new(data));
         void Vector(string key, Vector3 value) => values.Add(key, new([value.X, value.Y, value.Z], Tolerance: .002));
-        Text("world.destination", _activeDestination?.DestinationId);
+        Text("world.destination", _currentDestinationId);
         Numbers("world.paused", GetTree().Paused ? 1 : 0);
         Numbers("world.viewport", GetWindow().Size.X, GetWindow().Size.Y);
         Numbers("world.ui", PauseMenuOpen ? 1 : 0, QuickSelectOpen ? 1 : 0, Rac1PlanetMapOpen ? 1 : 0, ControllerSettingsOpen ? 1 : 0);
@@ -239,6 +245,7 @@ public partial class OBPGame
         foreach (var (id, node) in _rac1PickupNodes.OrderBy(p => p.Key))
             if (IsInstanceValid(node)) Vector($"pickup.{id}.position", node.GlobalPosition);
         foreach (var crank in _rac1NovalisCrankNodes.Keys.Order()) Numbers($"crank.{crank}.progress", _rac1NovalisCranks.Progress(crank));
+        CaptureSharedCheckpoint(values);
         return new(values);
     }
 }

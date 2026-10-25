@@ -169,6 +169,7 @@ public sealed class PlaytestRunWriter : IDisposable
 /// <summary>Streaming reader with explicit limits on decompressed data and individual records.</summary>
 public sealed class PlaytestRunReader : IDisposable
 {
+    public const long MaximumCompressedBytes = PlaytestRunLimits.Compressed;
     private readonly StreamReader _reader;
     private long _expanded;
     private int _steps;

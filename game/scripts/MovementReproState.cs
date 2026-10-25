@@ -4,6 +4,7 @@ using OBP.RAC1.Camera;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Camera;
+using OBP.Fusion;
 
 namespace OneBigPackage;
 
@@ -21,11 +22,25 @@ public sealed record MovementReproState(
     MovementReproPlayer Player,
     MovementReproWorld? World = null)
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
+    public JsonElement? Profile { get; init; }
+    public MovementReplayReference? Replay { get; init; }
 
     public MovementReproState Validate()
     {
-        if (Version is not (1 or CurrentVersion) || Version == CurrentVersion && World is null ||
+        if (Version == CurrentVersion)
+        {
+            if (!ObpProfile.IsDestination(Destination) || string.IsNullOrWhiteSpace(SourceBuildId) || HostAssemblyId == Guid.Empty ||
+                Profile is not { ValueKind: JsonValueKind.Object } profile || Replay is null || World is not null)
+                throw new InvalidDataException("Universal bookmarks require their shared profile and completed replay prefix.");
+            if (Player is null) throw new InvalidDataException("Universal bookmark lacks its selected player's pose observation.");
+            Player.Validate();
+            var shared = ObpProfile.Decode(System.Text.Encoding.UTF8.GetBytes(profile.GetRawText()));
+            if (shared.Destination != Destination) throw new InvalidDataException("Bookmark profile and destination differ.");
+            Replay.Validate();
+            return this;
+        }
+        if (Version is not (1 or 2) || Version == 2 && World is null ||
             string.IsNullOrWhiteSpace(SourceBuildId) || string.IsNullOrWhiteSpace(Destination) ||
             !Destination.StartsWith("rac1:LEVEL", StringComparison.Ordinal) ||
             !int.TryParse(Destination.AsSpan("rac1:LEVEL".Length), out int level) || level is < 0 or > 255 ||
@@ -34,6 +49,18 @@ public sealed record MovementReproState(
         Player.Validate();
         World?.Validate();
         return this;
+    }
+}
+
+/// <summary>Local sibling recording; bounded, payload-free and safe to move with its bookmark.</summary>
+public sealed record MovementReplayReference(string FileName, string Sha256, int Step)
+{
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(FileName) || FileName.Length > 160 || FileName.IndexOfAny(['/', '\\', ':']) >= 0 ||
+            !FileName.EndsWith(".run.jsonl.gz", StringComparison.Ordinal) || FileName.Contains("..", StringComparison.Ordinal) ||
+            Sha256 is not { Length: 64 } || Sha256.Any(character => !Uri.IsHexDigit(character)) || Step is < 0 or >= 1_000_000)
+            throw new InvalidDataException("Invalid bookmark recording reference.");
     }
 }
 
@@ -112,8 +139,42 @@ public sealed record MovementReproPlayer(
 
 public static class MovementReproStateFile
 {
-    private const long MaximumBytes = 1024 * 1024;
+    private const long MaximumBytes = 4 * 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
+
+    public static void RetireSupersededPrefix(string bookmarkPath, MovementReplayReference previous)
+    {
+        try
+        {
+            previous.Validate();
+            // Only our generated siblings are owned by this cleanup operation.
+            string name = previous.FileName;
+            if (name.Length != 54 || !name.StartsWith("bookmark-", StringComparison.Ordinal) || !Guid.TryParseExact(name.AsSpan(9, 32), "N", out _)) return;
+            string directory = Path.GetDirectoryName(Path.GetFullPath(bookmarkPath))!;
+            string prefix = Path.Combine(directory, name);
+            if (!File.Exists(prefix) || (File.GetAttributes(prefix) & FileAttributes.ReparsePoint) != 0) return;
+            int inspected = 0;
+            foreach (string candidate in Directory.EnumerateFiles(directory, "*.json"))
+            {
+                if (++inspected > 256) return; // Unknown ownership: retain rather than delete.
+                try
+                {
+                    using var file = File.OpenRead(candidate);
+                    if (file.Length > MaximumBytes) return;
+                    using var document = JsonDocument.Parse(file);
+                    if (document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty("Replay", out var replay) &&
+                        replay.ValueKind == JsonValueKind.Object && replay.TryGetProperty("FileName", out var reference) &&
+                        reference.ValueKind == JsonValueKind.String && string.Equals(reference.GetString(), name, StringComparison.OrdinalIgnoreCase)) return;
+                }
+                catch (Exception error) when (error is InvalidDataException or JsonException) { /* Not a valid bookmark. */ }
+            }
+            using (var stream = File.OpenRead(prefix))
+                if (stream.Length > OBP.Runtime.Diagnostics.PlaytestRunReader.MaximumCompressedBytes ||
+                    !Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream)).Equals(previous.Sha256, StringComparison.OrdinalIgnoreCase)) return;
+            File.Delete(prefix);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException or ArgumentException) { /* A retained/in-use prefix is safe. */ }
+    }
 
     public static MovementReproState Load(string path)
     {
@@ -127,6 +188,8 @@ public static class MovementReproStateFile
     public static void Save(string path, MovementReproState state)
     {
         state.Validate();
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(state, Options);
+        if (bytes.Length > MaximumBytes) throw new InvalidDataException("Movement state is too large.");
         string fullPath = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         string temporary = fullPath + ".tmp";
@@ -134,7 +197,7 @@ public static class MovementReproStateFile
         {
             using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                JsonSerializer.Serialize(stream, state, Options);
+                stream.Write(bytes);
                 stream.Flush(flushToDisk: true);
             }
             File.Move(temporary, fullPath, overwrite: true);

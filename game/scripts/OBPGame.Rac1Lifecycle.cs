@@ -46,18 +46,11 @@ public partial class OBPGame
 
     private bool TryCompleteRac1EnvironmentalRestart(bool automatic)
     {
-        var death = _rac1Nanotech.Probe();
-        if (_world is not { Game: "rac1" } world || _player is null ||
-            _rac1CampaignSession.LevelCheckpoint is not { } checkpoint ||
-            checkpoint.NativeLevelId != world.LevelId ||
-            !death.HasRecoveredEnvironmentalRespawn)
+        if (OrdinaryPlayerSession || _player is null || ResolveRac1EnvironmentalRestart() is not { } restart)
             return false;
 
-        // The recovered restart boundary resets Nanotech, placement, heading and
-        // player motion. Godot does not infer a checkpoint trigger: level 0 reaches
-        // this naturally through the recovered Veldin gate; level 2 is admitted only
-        // when a separately identified checkpoint/death witness has been supplied.
-        Rac1RestartPlacement restart = checkpoint.ResolveEnvironmentalRestart();
+        // Explicit native parity policy; ordinary life/respawn belongs to the
+        // persistent player's health session on every destination.
         ClearFusionTransients();
         var respawn = _rac1Nanotech.Respawn();
         _player.Rac1GameplayState = respawn;
@@ -66,10 +59,26 @@ public partial class OBPGame
         RefreshRac1WrenchPresentationVisibility();
         string source = automatic ? "automatic" : "development manual";
         _rac1CombatStatus =
-            $"{source} environmental respawn L{world.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";
+            $"{source} environmental respawn L{_world!.LevelId} ({restart.Kind}): Nanotech {respawn.Nanotech}";
         RefreshRac1HudState();
         GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         return true;
+    }
+
+    private Rac1RestartPlacement? ResolveRac1EnvironmentalRestart()
+    {
+        var death = _rac1Nanotech.Probe();
+        if (_world is not { Game: "rac1" } world ||
+            _rac1CampaignSession.LevelCheckpoint is not { } checkpoint ||
+            checkpoint.NativeLevelId != world.LevelId ||
+            !death.HasRecoveredEnvironmentalRespawn)
+            return null;
+
+        // The recovered restart boundary resets Nanotech, placement, heading and
+        // player motion. Godot does not infer a checkpoint trigger: level 0 reaches
+        // this naturally through the recovered Veldin gate; level 2 is admitted only
+        // when a separately identified checkpoint/death witness has been supplied.
+        return checkpoint.ResolveEnvironmentalRestart();
     }
 
     private void TickRac1VeldinEnvironmentalDeath()

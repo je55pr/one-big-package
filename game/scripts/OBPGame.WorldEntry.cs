@@ -43,6 +43,11 @@ public partial class OBPGame
         {
             var worldSourceStamp = SourceFileStamp(sourcePath);
             PrepareSelectedPlayerAssets();
+            if (_playtest is { WaitingForEntry: true } && OrdinaryPlayerSession && !_captureControllersInitialized)
+            {
+                _playerNative!.ResetReplayControllers(); _fusion = _playerNative.Weapons;
+                _captureControllersInitialized = true;
+            }
             var request = _worldEntries!.Request(destinationId, PlayerEntryMode);
             var source = new WorldSource(entry =>
             {
@@ -75,16 +80,20 @@ public partial class OBPGame
                 return new SceneLease(_worldHost, _player);
             }));
             preparedScene = null;
+            _lastCommittedProfileDestination = destinationId;
             if (nativeDestination is not null)
             {
                 DispatchRequestedWorldSmokes(nativeDestination);
                 StartRequestedSourceVerification(nativeDestination, sourcePath!);
             }
+            SaveSharedProfile("world transition");
+            if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
             _playtest?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
             if (_args.PlayerSessionSmoke && _worldSwitches == 1) _ = RunPlayerSessionSmokeAsync();
             if (_args.PlayerCapabilitiesSmoke && _worldSwitches == 1) _ = RunPlayerCapabilitiesSmokeAsync();
             if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) _ = RunTrilogyGameplaySmokeAsync();
+            if (_args.ProfileSmoke is not null && _worldSwitches == 1) _ = RunSharedProfileSmokeAsync();
             return true;
         }
         catch (Exception error)

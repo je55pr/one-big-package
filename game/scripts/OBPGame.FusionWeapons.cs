@@ -306,7 +306,9 @@ public partial class OBPGame
         {
             if (OrdinaryPlayerSession)
             {
-                if (ApplyRegisteredWeaponContact(intent)) { _fusionAcceptedHits++; _fusionLastDamage = intent; }
+                bool accepted = ApplyRegisteredWeaponContact(intent);
+                RecordGameplayFact("damage", new { Intent = intent, Accepted = accepted });
+                if (accepted) { _fusionAcceptedHits++; _fusionLastDamage = intent; }
                 continue;
             }
             var target = EquipmentTargets.FirstOrDefault(n => n.Source.SourceGame == intent.Target.SourceGame && n.Source.NativeClassId == intent.Target.NativeClassId && n.Source.InstanceIndex == intent.Target.InstanceIndex);
@@ -316,7 +318,7 @@ public partial class OBPGame
         foreach (var cue in frame.Audio) QueueFusionAudio(cue);
         TickFusionAudio();
         foreach (var effect in frame.Effects.Where(e => e.Kind == "shot"))
-        { _fusionModelSequence = 2; _fusionModelAge = 0; }
+        { RecordGameplayFact("shot", new { effect.Shot }); _fusionModelSequence = 2; _fusionModelAge = 0; }
         SynchronizeFusionProjectiles(frame);
         if (frame.Queries.Any(q => q.Kind == WeaponQueryKind.Ray)) SpawnFusionSpread(frame, contacts);
         for (int i = _fusionEffects.Count - 1; i >= 0; i--)

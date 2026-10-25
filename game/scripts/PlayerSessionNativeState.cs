@@ -18,7 +18,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     public Rac1RatchetNanotechSession Health { get; } = new();
     public Rac1BoltWallet Wallet { get; private set; }
     public Rac1HeldItemSession Held { get; } = new();
-    public FusionWeaponSession Weapons { get; }
+    public FusionWeaponSession Weapons { get; private set; }
     public PlayerHealthSession Life { get; }
     public PlayerEquipmentAssignments Assignments { get; }
     public PlayerLoadoutPolicy LoadoutPolicy { get; }
@@ -116,7 +116,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     public void ValidateRestore(PlayerGameplaySnapshot snapshot)
     {
         var state = RequiredState(snapshot);
-        if (state.LoadoutPolicy != LoadoutPolicy || state.LifeGeneration < 0 || state.Assignments is null)
+        if (state.LoadoutPolicy != LoadoutPolicy || state.LifeGeneration < 0 || state.Assignments is null || state.Inventory is null || state.Health?.Health is null)
             throw new ArgumentException("Missing or incompatible loadout/life state.");
         PlayerEquipmentRegistrations.Catalog.ValidateAssignments(state.Assignments);
         var inventory = new Rac1WeaponInventory(state.Inventory, state.CurrentItem);
@@ -160,6 +160,13 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
         var hand = Held.Hand.Equipment;
         Held.ResetForLevelEntry(); RestoreHand(hand);
         Weapons.ClearTransientState();
+    }
+
+    public void ResetReplayControllers()
+    {
+        var state = Capture();
+        Weapons = new(_seed, Inventory, Held.Hand);
+        Restore(state);
     }
 
     private void RestoreHand(SourceWeaponKey? hand)

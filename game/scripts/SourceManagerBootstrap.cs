@@ -141,6 +141,8 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
+        if (!args.TestSceneExplicit && _game.TryResumeSharedProfileFromBootstrap()) return;
+
         if (testScene == "worlds")
         {
             _game.ShowDestinationSelectorFromBootstrap();
