@@ -6,18 +6,15 @@ enable_free_tier: true
 language: en-GB
 
 tone_instructions: >-
-  Report all credible findings, including minor code quality, naming, style,
-  documentation, duplication, performance, maintainability, testing, security,
-  resource lifetime, architecture, and correctness concerns. Do not suppress an
-  issue merely because dotnet format or another tool covers similar territory.
-  Clearly distinguish verified defects from uncertain risks, cite affected code,
-  and explain impact and suggestions. Do not invent claims about original retail
-  behaviour without evidence. Findings are advisory: developers decide what to fix.
+  Report every credible finding, including minor style, quality, tests,
+  security, performance and architecture. Cite lines and impact. Separate
+  verified defects from risks; never invent retail parity claims.
 
 reviews:
   profile: assertive
   high_level_summary: true
   review_status: true
+  review_details: true
   poem: false
   # Report everything, but do not make review comments mandatory merge blockers.
   request_changes_workflow: false
