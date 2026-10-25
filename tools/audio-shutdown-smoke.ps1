@@ -2,7 +2,7 @@
 # Retail-backed Godot exit regression. Godot often exits code 0 even when ObjectDB leaks.
 # No ISO, decoded audio or local paths are written to the repository.
 param(
-    [string]$GcIso = $env:OBP_GC_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
     [string]$GodotPath,
     [ValidateRange(1, 20)][int]$NovalisRepeats = 3,
@@ -53,11 +53,11 @@ if (-not $SkipBuild) {
 }
 
 $sourceArgs = @()
-if ($GcIso) {
-    if (-not (Test-Path -LiteralPath $GcIso -PathType Leaf)) {
+if ($Rac2Iso) {
+    if (-not (Test-Path -LiteralPath $Rac2Iso -PathType Leaf)) {
         throw 'The selected R&C2 ISO is not accessible.'
     }
-    $sourceArgs += @('--gc-iso', $GcIso)
+    $sourceArgs += @('--rac2-iso', $Rac2Iso)
 }
 $logDirectory = Join-Path $root 'captures/audio-shutdown-smoke'
 New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null

@@ -48,7 +48,7 @@ public partial class OBPGame
             int levelId = token is null ? _args.Rac2Level : Rac2PlanetCatalogue.Resolve(token) ?? _args.Rac2Level;
             if (_args.Rac2Iso is null)
             {
-                GD.PrintErr("[shots] a GC planet token needs --gc-iso");
+                GD.PrintErr("[shots] a GC planet token needs --rac2-iso");
                 ApplicationLifecycle.RequestQuit(this, "shots-missing-gc-source", 2);
                 return;
             }

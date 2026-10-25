@@ -220,8 +220,14 @@ OBP options are parsed only after Godot's `--` separator, through
 integers and established incompatible modes print an option-specific `[cli]`
 error and quit with exit code 2 before loading sources. Omitted options retain
 their defaults. `--replay-forward` accepts 1–3600 updates. Canonical source flags are `--rac1-iso`,
-`--rac2-iso` and `--rac3-iso`; `--gc-iso` and `--uya-iso` remain aliases. Supplying
-different paths for the same source fails. The retired `--compose*` and
+`--rac2-iso` and `--rac3-iso`. Use these names in new commands. The compatibility
+aliases `--gc-iso` and `--uya-iso` remain accepted at the same parser boundary;
+supplying different paths for the same source fails in either order. Matching
+canonical/alias pairs are accepted. PowerShell wrappers use `-Rac1Iso`,
+`-Rac2Iso` and `-Rac3Iso` where applicable, retaining `-GcIso`/`-UyaIso` as
+parameter aliases. The existing `OBP_RAC1_ISO`, `OBP_GC_ISO` and `OBP_UYA_ISO`
+environment variables keep working. Diagnostic options such as `--gc-level`
+retain their existing meaning. The retired `--compose*` and
 `--composition*` viewer options now fail as unknown arguments. Run `tools/test-cli.ps1` for
 headless startup and rejection checks.
 

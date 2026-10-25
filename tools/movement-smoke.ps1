@@ -16,12 +16,12 @@
   that either sequel used the same native movement law.
 
 .EXAMPLE
-  ./tools/movement-smoke.ps1 -Rac1Iso D:\isos\RAC1.iso -GcIso D:\isos\GC.iso -UyaIso D:\isos\UYA.iso
+  ./tools/movement-smoke.ps1 -Rac1Iso D:\isos\RAC1.iso -Rac2Iso D:\isos\GC.iso -Rac3Iso D:\isos\UYA.iso
 #>
 param(
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-  [string]$GcIso = $env:OBP_GC_ISO,
-  [string]$UyaIso = $env:OBP_UYA_ISO,
+  [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+  [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
   [string]$RenderingMethod = 'gl_compatibility',
   [switch]$SkipBuild
 )
@@ -32,8 +32,8 @@ $root = Split-Path -Parent $PSScriptRoot
 
 foreach ($source in @(
   @{ label='R&C1'; path=$Rac1Iso },
-  @{ label='GC'; path=$GcIso },
-  @{ label='UYA'; path=$UyaIso }
+  @{ label='GC'; path=$Rac2Iso },
+  @{ label='UYA'; path=$Rac3Iso }
 )) {
   if (-not $source.path -or -not (Test-Path -LiteralPath $source.path -PathType Leaf)) {
     Write-Error "$($source.label) ISO is required for trilogy movement smoke."
@@ -57,8 +57,8 @@ $commonArgs = @(
   '--rendering-method', $RenderingMethod,
   '--',
   '--rac1-iso', $Rac1Iso,
-  '--gc-iso', $GcIso,
-  '--uya-iso', $UyaIso,
+  '--rac2-iso', $Rac2Iso,
+  '--rac3-iso', $Rac3Iso,
   '--movement-smoke'
 )
 

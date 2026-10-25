@@ -11,7 +11,7 @@
   ./tools/capture-planets.ps1 -Planets oozla,endako,grelbin -Player
 #>
 param(
-  [string]$GcIso = $env:OBP_GC_ISO,
+  [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
   [string[]]$Planets = @('oozla', 'endako', 'tabora', 'siberius', 'damosel'),
   [int]$Frame = 210,
   [string]$RenderingMethod = 'gl_compatibility',
@@ -24,10 +24,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
-if (-not $GcIso -or -not (Test-Path $GcIso)) {
-  $GcIso = 'C:\Claude\Inbox\Ratchet & Clank - Going Commando (USA) (v1.01).iso'
+if (-not $Rac2Iso -or -not (Test-Path $Rac2Iso)) {
+  $Rac2Iso = 'C:\Claude\Inbox\Ratchet & Clank - Going Commando (USA) (v1.01).iso'
 }
-if (-not (Test-Path $GcIso)) { Write-Error "GC ISO not found: $GcIso"; exit 2 }
+if (-not (Test-Path $Rac2Iso)) { Write-Error "GC ISO not found: $Rac2Iso"; exit 2 }
 
 $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
 $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
@@ -48,7 +48,7 @@ $fail = 0
 foreach ($p in $Planets) {
   $out = Join-Path $capDir "gc-showcase-$p.png"
   Write-Host "`n=== $p ===" -ForegroundColor Cyan
-  $sceneArgs = @('--gc-iso', $GcIso, '--planet', $p, '--direct',
+  $sceneArgs = @('--rac2-iso', $Rac2Iso, '--planet', $p, '--direct',
                  '--capture-frame', "$Frame", '--capture-out', $out)
   if (-not $Framed) { $sceneArgs = @('--test-scene', 'player') + $sceneArgs }
 

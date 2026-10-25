@@ -7,12 +7,12 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$script_dir")"
 
-gc_iso="${1:-${OBP_GC_ISO:-}}"
+rac2_iso="${1:-${OBP_GC_ISO:-}}"
 gc_level="${2:-1}"
 
-if [ -n "$gc_iso" ] && [ -f "$gc_iso" ]; then
-  scene_args=(--test-scene player --gc-iso "$gc_iso" --gc-level "$gc_level")
-  echo "OBP: player mode - LEVEL$gc_level from $gc_iso"
+if [ -n "$rac2_iso" ] && [ -f "$rac2_iso" ]; then
+  scene_args=(--test-scene player --rac2-iso "$rac2_iso" --gc-level "$gc_level")
+  echo "OBP: player mode - LEVEL$gc_level from $rac2_iso"
 else
   scene_args=(--test-scene picker)
   echo "No Going Commando ISO found (set OBP_GC_ISO); launching Game Sources." >&2

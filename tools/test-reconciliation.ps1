@@ -11,15 +11,15 @@
 [CmdletBinding()]
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [string]$Out,
     [switch]$SkipTests,
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-foreach ($source in @($Rac1Iso, $GcIso, $UyaIso)) {
+foreach ($source in @($Rac1Iso, $Rac2Iso, $Rac3Iso)) {
     if ([string]::IsNullOrWhiteSpace($source) -or -not (Test-Path -LiteralPath $source -PathType Leaf)) {
         throw 'Set OBP_RAC1_ISO, OBP_GC_ISO and OBP_UYA_ISO to authorised supported NTSC-U sources.'
     }
@@ -36,7 +36,7 @@ $results = New-Object System.Collections.Generic.List[object]
 function Invoke-GateGame {
     param([string]$Name, [string[]]$Options, [string]$Expected, [int]$ExpectedExitCode = 0)
     $arguments = @('--headless', '--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--fixed-fps', '60',
-        '--', '--rac1-iso', $Rac1Iso, '--gc-iso', $GcIso, '--uya-iso', $UyaIso, '--fixed-seed', '1440') + $Options
+        '--', '--rac1-iso', $Rac1Iso, '--rac2-iso', $Rac2Iso, '--rac3-iso', $Rac3Iso, '--fixed-seed', '1440') + $Options
     $log = Join-Path $Out ($Name + '.log')
     $errorLog = Join-Path $Out ($Name + '.err.log')
     $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $arguments -StandardOutputPath $log -StandardErrorPath $errorLog -WorkingDirectory $root
@@ -47,7 +47,7 @@ function Invoke-GateGame {
 }
 try {
     if (-not $SkipTests) {
-        & (Join-Path $PSScriptRoot 'test-retail.ps1') -Rac1Iso $Rac1Iso -GcIso $GcIso -UyaIso $UyaIso -Configuration Release *> (Join-Path $Out 'dotnet-tests.log')
+        & (Join-Path $PSScriptRoot 'test-retail.ps1') -Rac1Iso $Rac1Iso -Rac2Iso $Rac2Iso -Rac3Iso $Rac3Iso -Configuration Release *> (Join-Path $Out 'dotnet-tests.log')
         if ($LASTEXITCODE -ne 0) { throw 'Retail and portable .NET tests failed.' }
         & dotnet format (Join-Path $root 'OneBigPackage.sln') --verify-no-changes --no-restore *> (Join-Path $Out 'format.log')
         if ($LASTEXITCODE -ne 0) { throw 'Formatting verification failed.' }

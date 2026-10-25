@@ -15,7 +15,7 @@ ID30 and is the Insomniac Museum. Source names come from the retail string-bank 
 ```
 
 The launcher uses `OBP_GC_ISO` or an explicitly supplied source. Godot arguments
-include `--gc-iso PATH`, `--planet NAME_OR_ID`, `--direct`, `--capture-frame N`,
+include `--rac2-iso PATH`, `--planet NAME_OR_ID`, `--direct`, `--capture-frame N`,
 `--capture-out PATH`, `--collision-debug`, `--verify-hash` and `--overlay LAYERS`.
 Check `tools/play.ps1` and `CommandLineArgs` for the actual supported options.
 

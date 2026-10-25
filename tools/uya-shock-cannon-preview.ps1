@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 # Isolated source-asset preview; does not modify OBPGame or the user's saves.
 param(
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$Smoke,
     [switch]$Rendered,
     [switch]$Capture
@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($Capture -and $Smoke -and -not $Rendered) { throw 'Use -Rendered when capturing a smoke run.' }
 $root = Split-Path -Parent $PSScriptRoot
-if (-not $UyaIso -or -not (Test-Path -LiteralPath $UyaIso -PathType Leaf)) { throw 'An authorized original NTSC-U UYA ISO is required.' }
+if (-not $Rac3Iso -or -not (Test-Path -LiteralPath $Rac3Iso -PathType Leaf)) { throw 'An authorized original NTSC-U UYA ISO is required.' }
 $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
 $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) {
@@ -52,7 +52,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $previousIso = $env:OBP_UYA_ISO
 $previousCapture = $env:OBP_UYA_PREVIEW_CAPTURE
 try {
-    $env:OBP_UYA_ISO = (Resolve-Path -LiteralPath $UyaIso).Path
+    $env:OBP_UYA_ISO = (Resolve-Path -LiteralPath $Rac3Iso).Path
     if ($Capture) { $env:OBP_UYA_PREVIEW_CAPTURE = Join-Path $project 'preview.png' }
     [string[]]$windowArgs = if ($Smoke -and -not $Rendered) { @('--headless') }
         elseif ($Smoke) { @('--windowed', '--position', '-20000,-20000') }

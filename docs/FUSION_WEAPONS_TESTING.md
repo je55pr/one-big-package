@@ -24,7 +24,7 @@ is granted to saved inventories.
 For a direct fresh entry, append `--fusion-test` to the normal Godot arguments
 after `--`. Its default destination is `rac1:LEVEL0`; other starting destinations,
 compositions and R&C1-only movement-state loads are rejected. Attach sources
-normally or pass `--rac1-iso`, `--gc-iso`, `--uya-iso` with authorised local paths.
+normally or pass `--rac1-iso`, `--rac2-iso`, `--rac3-iso` with authorised local paths.
 First use verifies each attached disc's full SHA-256 against its original
 authority, then saves a payload-free receipt in local app storage. Later launches
 check file size, write/creation timestamps and 16 distributed 64 KiB samples

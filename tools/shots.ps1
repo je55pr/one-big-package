@@ -21,8 +21,8 @@ param(
   [string]$List = '',
   [string[]]$Worlds = @(),
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-  [string]$GcIso = $env:OBP_GC_ISO,
-  [string]$Rac3Iso = $env:OBP_UYA_ISO,
+  [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+  [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
   [string]$RenderingMethod = 'gl_compatibility',
   [string]$Resolution = '1280x720',
   [switch]$Check,
@@ -37,13 +37,13 @@ if (-not (Test-Path $listPath)) { Write-Error "shot list not found: $listPath"; 
 
 $inbox = 'C:\Claude\Inbox'
 if (-not $Rac1Iso) { $Rac1Iso = Join-Path $inbox 'Ratchet & Clank (USA) (En,Fr,De,Es,It).iso' }
-if (-not $GcIso)   { $GcIso   = Join-Path $inbox 'Ratchet & Clank - Going Commando (USA) (v1.01).iso' }
+if (-not $Rac2Iso)   { $Rac2Iso   = Join-Path $inbox 'Ratchet & Clank - Going Commando (USA) (v1.01).iso' }
 if (-not $Rac3Iso) { $Rac3Iso = Join-Path $inbox 'Ratchet & Clank - Up Your Arsenal (USA) (En,Fr,Es).iso' }
 
 $isoArgs = @()
 if (Test-Path $Rac1Iso) { $isoArgs += @('--rac1-iso', $Rac1Iso) }
-if (Test-Path $GcIso)   { $isoArgs += @('--gc-iso', $GcIso) }
-if (Test-Path $Rac3Iso) { $isoArgs += @('--uya-iso', $Rac3Iso) }
+if (Test-Path $Rac2Iso)   { $isoArgs += @('--rac2-iso', $Rac2Iso) }
+if (Test-Path $Rac3Iso) { $isoArgs += @('--rac3-iso', $Rac3Iso) }
 if (-not $isoArgs) { Write-Error "no retail ISOs found (set OBP_RAC1_ISO / OBP_GC_ISO / OBP_UYA_ISO)"; exit 2 }
 
 $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json

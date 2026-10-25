@@ -2,8 +2,8 @@
 # Sends logical joypad events to real Godot UI, without desktop input or user-setting writes.
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$Rendered,
     [string]$CaptureDirectory,
     [switch]$SkipBuild
@@ -21,8 +21,8 @@ if (-not $SkipBuild) {
 }
 $sourceArgs = @()
 if ($Rac1Iso) { $sourceArgs += @('--rac1-iso', $Rac1Iso) }
-if ($GcIso) { $sourceArgs += @('--gc-iso', $GcIso) }
-if ($UyaIso) { $sourceArgs += @('--uya-iso', $UyaIso) }
+if ($Rac2Iso) { $sourceArgs += @('--rac2-iso', $Rac2Iso) }
+if ($Rac3Iso) { $sourceArgs += @('--rac3-iso', $Rac3Iso) }
 [string[]]$windowArgs = if ($Rendered) { @('--windowed', '--position', '-20000,-20000', '--resolution', '960x720') } else { @('--headless') }
 $previousCapture = $env:OBP_CONTROLLER_CAPTURE_DIR
 try {

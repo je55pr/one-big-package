@@ -58,8 +58,8 @@ public partial class OBPGame
         if (DisplayServer.GetName() == "headless" || AutomationRunPolicy.IsAutomated(OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs())) arguments.Add("--headless");
         arguments.AddRange(["--", "--load-movement-state", Path.GetFullPath(path)]);
         if (_args.Rac1Iso is { } rac1) arguments.AddRange(["--rac1-iso", rac1]);
-        if (_args.Rac2Iso is { } rac2) arguments.AddRange(["--gc-iso", rac2]);
-        if (_args.Rac3Iso is { } rac3) arguments.AddRange(["--uya-iso", rac3]);
+        if (_args.Rac2Iso is { } rac2) arguments.AddRange(["--rac2-iso", rac2]);
+        if (_args.Rac3Iso is { } rac3) arguments.AddRange(["--rac3-iso", rac3]);
         if (OS.CreateProcess(OS.GetExecutablePath(), arguments.ToArray()) < 0) throw new IOException("Could not open the bookmark replay process.");
         ReportMovementState("Opened the universal bookmark in a separate reproduction process; ordinary profile writes remain isolated.");
     }

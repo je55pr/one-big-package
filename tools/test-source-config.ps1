@@ -5,21 +5,21 @@
 #>
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
-    [string]$GcIso = $env:OBP_GC_ISO,
-    [string]$UyaIso = $env:OBP_UYA_ISO,
+    [Alias('GcIso')][string]$Rac2Iso = $env:OBP_GC_ISO,
+    [Alias('UyaIso')][string]$Rac3Iso = $env:OBP_UYA_ISO,
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-native-process.ps1')
-$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $GcIso, $UyaIso) -SkipBuild:$SkipBuild
+$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $Rac2Iso, $Rac3Iso) -SkipBuild:$SkipBuild
 $evidence = Join-Path $root ('captures/source-config/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $evidence | Out-Null
 $config = Join-Path $evidence 'sources.json'
 $valid = [ordered]@{ Version = 1; Sources = @(
     @{ Game = 'Rac1'; BuildId = 'rac1-ntscu-original'; Path = $Rac1Iso },
-    @{ Game = 'Rac2'; BuildId = 'rac2-ntscu-v1.01'; Path = $GcIso },
-    @{ Game = 'Rac3'; BuildId = 'rac3-ntscu-original'; Path = $UyaIso }
+    @{ Game = 'Rac2'; BuildId = 'rac2-ntscu-v1.01'; Path = $Rac2Iso },
+    @{ Game = 'Rac3'; BuildId = 'rac3-ntscu-original'; Path = $Rac3Iso }
 ) } | ConvertTo-Json -Depth 6
 foreach ($case in @(
     @{ Name = 'backup'; Backup = $valid; Expected = '3/3 sources attached'; Warning = 'Recovered the last valid backup' },

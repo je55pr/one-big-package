@@ -271,8 +271,8 @@ public partial class OBPGame
                 "--bug-report-id", selected.Report.Id.ToString(), "--playtest-report", result]);
             if (!automatedReplay) arguments.Add("--playtest-inspect-marker");
             if (_args.Rac1Iso is { } iso) arguments.AddRange(["--rac1-iso", iso]);
-            if (_args.Rac2Iso is { } rac2Iso) arguments.AddRange(["--gc-iso", rac2Iso]);
-            if (_args.Rac3Iso is { } rac3Iso) arguments.AddRange(["--uya-iso", rac3Iso]);
+            if (_args.Rac2Iso is { } rac2Iso) arguments.AddRange(["--rac2-iso", rac2Iso]);
+            if (_args.Rac3Iso is { } rac3Iso) arguments.AddRange(["--rac3-iso", rac3Iso]);
             if (changed) arguments.Add("--playtest-allow-build-change");
             ui.SetBusy(true, "Replaying in a separate game process…");
             int process = OS.CreateProcess(OS.GetExecutablePath(), arguments.ToArray());
