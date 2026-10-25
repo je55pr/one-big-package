@@ -50,7 +50,8 @@ public sealed class Rac1Class749HostileSession :
 
     public Rac1Class749HostProbe Register(
         RuntimeDynamicObject source,
-        RuntimeEntityState current)
+        RuntimeEntityState current,
+        Rac1Class749WorldPoint? home = null)
     {
         var authored = Rac1Class749Hostile.ReadAuthored(source)
             ?? throw new ArgumentException("Source is not an R&C1 class-749 hostile.", nameof(source));
@@ -58,7 +59,7 @@ public sealed class Rac1Class749HostileSession :
 
         byte[] pvar = Rac1Class749Hostile.RequirePVar(source);
         Rac1Class749Hostile.WriteHomePosition(
-            pvar, Rac1Class749Hostile.ReadAuthoredPosition(source));
+            pvar, home ?? Rac1Class749Hostile.ReadAuthoredPosition(source));
 
         return RegisterCore(
             source,
@@ -132,6 +133,13 @@ public sealed class Rac1Class749HostileSession :
     {
         var (key, entry) = RequireEntry(source);
         return Snapshot(key, entry);
+    }
+
+    public void Unregister(RuntimeDynamicObject source)
+    {
+        var (key, _) = RequireEntry(source);
+        _entries.Remove(key);
+        _runtime.Unregister(new(source.NativeClassId, source.InstanceIndex));
     }
 
     public Rac1Class749HostProbe Step(

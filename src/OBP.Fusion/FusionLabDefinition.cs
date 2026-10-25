@@ -12,6 +12,7 @@ public sealed record FusionLabDefinition
     public required IReadOnlyList<FusionLabRoom> Rooms { get; init; }
     public required IReadOnlyList<FusionLabConnection> Connections { get; init; }
     public IReadOnlyList<FusionLabStation> Stations { get; init; } = Array.Empty<FusionLabStation>();
+    public IReadOnlyList<ActorPlacement> Actors { get; init; } = Array.Empty<ActorPlacement>();
 
     public static FusionLabDefinition Parse(string json)
     {
@@ -27,7 +28,7 @@ public sealed record FusionLabDefinition
     {
         if (Version != CurrentVersion || string.IsNullOrWhiteSpace(Id))
             throw new ArgumentException("Unsupported Fusion Lab schema or missing lab id.");
-        if (Rooms is null || Rooms.Count < 2 || Connections is null || Stations is null)
+        if (Rooms is null || Rooms.Count < 2 || Connections is null || Stations is null || Actors is null)
             throw new ArgumentException("Fusion Lab needs connected rooms and station lists.");
 
         var rooms = new Dictionary<string, FusionLabRoom>(StringComparer.Ordinal);
@@ -95,6 +96,14 @@ public sealed record FusionLabDefinition
             station.Source?.Validate();
             if (station.Source is not null && string.IsNullOrWhiteSpace(station.AdapterId))
                 throw new ArgumentException($"Source station '{station.Id}' needs an explicit adapter.");
+        }
+        var actorIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var actor in Actors)
+        {
+            actor.Validate();
+            var matrix = actor.Transform.Matrix;
+            if (!actorIds.Add(actor.Id) || !PointWithinAnyRoom(new(matrix[12], matrix[13], matrix[14]), Rooms))
+                throw new ArgumentException($"Actor '{actor.Id}' is duplicated or outside the authored rooms.");
         }
     }
 

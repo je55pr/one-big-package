@@ -96,7 +96,7 @@ public partial class OBPGame
 
     private void ArmGcGameplayHost(PlayerHost player)
     {
-        if (_world?.Game != "rac2")
+        if (OrdinaryPlayerSession || _sceneResult?.DynamicObjectNodes?.Any(node => node.Source.SourceGame == "rac2") != true)
         {
             return;
         }
@@ -295,6 +295,7 @@ public partial class OBPGame
             TickGcOpeningLiftNativeTick();
             TickGcOpeningDoorNativeTick();
 
+            if (OrdinaryPlayerSession) continue; // Registered source actor clock owns these updates.
             foreach (var hostile in _gcClass2827Hostiles.Values)
             {
                 hostile.TickCooldown();

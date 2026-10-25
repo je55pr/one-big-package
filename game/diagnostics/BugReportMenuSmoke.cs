@@ -110,6 +110,8 @@ public partial class BugReportMenuSmoke : Node
             // Included by the existing asset-free CI startup smoke as well as
             // available through its standalone diagnostic scene.
             await AutomationDesktopSmoke.VerifyAsync(this);
+            inbox.QueueFree(); await Frames();
+            await PauseLoadoutSmoke.VerifyAsync(this);
             GD.Print("[bug-menu-smoke] PASS: mouse, D-pad, activation, focus return, busy/empty states and scrolling");
             GetTree().Quit();
         }

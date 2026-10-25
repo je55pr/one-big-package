@@ -16,8 +16,13 @@
     { "from": "north-link", "to": "test-room", "openingWidth": 6 }
   ],
   "stations": [
-    { "id": "hub-loadouts", "roomId": "hub", "label": "Universal Loadout Terminal [NOT YET AVAILABLE]", "position": { "x": -7, "y": 0.2, "z": 0 }, "resetKey": "loadout-hub" },
-    { "id": "combat-target", "roomId": "test-room", "label": "R&C1 Target Exhibit [NOT YET AVAILABLE]", "position": { "x": -5, "y": 0.2, "z": 17 }, "resetKey": "test-target" },
+    { "id": "hub-loadouts", "roomId": "hub", "label": "Universal Loadout", "position": { "x": -7, "y": 0.2, "z": 0 }, "adapterId": "obp/universal-loadout/v1", "resetKey": "loadout-hub" },
+    { "id": "combat-target", "roomId": "test-room", "label": "Mixed native encounter: R&C1 / GC / UYA", "position": { "x": -5, "y": 0.2, "z": 17 }, "adapterId": "obp/mixed-encounter/v1", "resetKey": "test-target" },
     { "id": "gadget-bench", "roomId": "test-room", "label": "Cross-Game Gadget Bench [NOT YET AVAILABLE]", "position": { "x": 5, "y": 0.2, "z": 17 }, "resetKey": "gadget-bench" }
+  ],
+  "actors": [
+    {"NativeClassId":749,"Id":"arena-rac1-toad","Transform":{"Matrix":[1,0,0,0,0,1,0,0,0,0,1,0,-3,0.3,17,1]},"LevelId":0,"ScenarioGroup":"arena-01","NativeContextId":"rac1/veldin-target-home/v1","InitialNativeState":5,"Source":{"NativeId":"LEVEL0/class749","Game":"rac1","Build":"rac1-ntscu-original"},"AdapterId":"rac1/class749/v1"},
+    {"SourceInstanceIndex":205,"NativeClassId":2827,"Id":"arena-gc-msr1","Transform":{"Matrix":[1,0,0,0,0,1,0,0,0,0,1,0,3,0.3,17,1]},"LevelId":0,"ScenarioGroup":"arena-01","NativeContextId":"gc/aranos-chase-resume/v1","InitialNativeState":12,"Source":{"NativeId":"LEVEL0/class2827","Game":"rac2","Build":"rac2-ntscu-v1.01"},"AdapterId":"rac2/class2827/v1"},
+    {"NativeClassId":500,"Id":"arena-uya-target","Transform":{"Matrix":[1,0,0,0,0,1,0,0,0,0,1,0,0,0.3,20,1]},"LevelId":1,"ScenarioGroup":"arena-01","NativeContextId":"uya/table1-class500-deactivate/v1","InitialNativeState":1,"Source":{"NativeId":"TABLE1/class500","Game":"rac3","Build":"rac3-ntscu-original"},"AdapterId":"rac3/class500/v1"}
   ]
 }

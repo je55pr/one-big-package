@@ -159,7 +159,7 @@ public partial class OBPGame
 
     private void ArmUyaGameplay(PlayerHost player)
     {
-        if (_world?.Game != "rac3")
+        if (OrdinaryPlayerSession || _uyaClass500Nodes.Count == 0)
             return;
 
         // This is the existing non-R&C1 primary-action host seam. It provides

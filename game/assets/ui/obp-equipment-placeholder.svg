@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Original OBP UI placeholder, not retail equipment artwork. -->
+  <rect x="3" y="3" width="42" height="42" rx="7" fill="#233347" stroke="#99bbcc" stroke-width="2"/>
+  <path d="M13 16h22M13 24h16M13 32h10" stroke="#99bbcc" stroke-width="3" stroke-linecap="round"/>
+</svg>

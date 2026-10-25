@@ -85,6 +85,7 @@ public partial class OBPGame
             _avatarSourceStamp = stamp;
             _rac1WrenchAsset = null; _rac1BombGloveAsset = null;
             _rac1EquipmentAssets = null; _rac1EquipmentSource = null;
+            _selectedRac1PresentationAssets = null;
         }
         if (_playerAvatar.Identity != avatar) throw new InvalidOperationException("Decoded avatar identity differs from the selected player profile.");
         if (avatar.SourceGame == ObpSourceGame.Rac1 && (_rac1WrenchAsset is null || _rac1WrenchSourcePath != source.Path))
@@ -104,6 +105,8 @@ public partial class OBPGame
                 _rac1EquipmentAssets = OBP.RAC1.Gameplay.Rac1EquipmentAssets.Load(source.Path);
                 _rac1EquipmentSource = source.Path;
             }
+            if (OrdinaryPlayerSession && _selectedRac1PresentationAssets is null)
+                _selectedRac1PresentationAssets = OBP.RAC1.Gameplay.Rac1PickupAssets.Load(source.Path, 0);
         }
     }
 

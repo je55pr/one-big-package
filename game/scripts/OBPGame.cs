@@ -147,12 +147,14 @@ public partial class OBPGame : Node3D
         if (_mode != Mode.World || _movementStateLoading || _player is null || _player.DevelopmentControls.FlyEnabled) return;
         StepRac1NovalisMechanisms();
         StepRac1PlayerAudioPhysics();
+        StepRegisteredActorsPhysics();
     }
 
     public override void _Process(double delta)
     {
         _frame++;
         TickFusionPreparation();
+        TickActorPreparation();
         TickRac1CampaignSaves(delta);
 
         if (_mode == Mode.World)
@@ -302,6 +304,7 @@ public partial class OBPGame : Node3D
         // An external exit can bypass normal world teardown. Finish campaign
         // persistence before shutting down its owning Godot session.
         FlushRac1CampaignSaves("clean exit");
+        ResetRegisteredActors();
         _worldHost.Unload(releaseAudioImmediately: true);
         ResetRac1PlayerAudio(freeImmediately: true);
         ResetRac1WeaponAudio(freeImmediately: true);
@@ -400,6 +403,7 @@ public partial class OBPGame : Node3D
     private void TeardownWorld()
     {
         FlushRac1CampaignSaves("world teardown");
+        ResetRegisteredActors();
         _worldEntries?.Unload();
         _playerNative?.Life.EndWorld(); _playerDamageActors.Clear();
         ClearFusionLabStatus();

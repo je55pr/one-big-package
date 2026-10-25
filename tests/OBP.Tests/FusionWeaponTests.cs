@@ -166,6 +166,22 @@ public sealed class FusionWeaponTests
     }
 
     [Fact]
+    public void ForeignQueryAdmissionSkipsUnsupportedRac1ActorsWithoutAliasingOtherSources()
+    {
+        var unsupported = new WeaponTargetKey("rac1", 612, 1);
+        var supportedBehindIt = new WeaponTargetKey("rac1", 1440, 2);
+        WeaponTargetKey[] orderedContacts = [unsupported, supportedBehindIt];
+        foreach (var weapon in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
+        {
+            Assert.Equal(supportedBehindIt, orderedContacts.First(target => FusionDamagePolicy.AdmitsQueryTarget(weapon, target)));
+            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = "rac2" }));
+            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = "rac3" }));
+            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { NativeClassId = 749 }));
+        }
+        Assert.True(FusionDamagePolicy.AdmitsQueryTarget(FusionWeaponSession.BombGlove, unsupported));
+    }
+
+    [Fact]
     public void ForeignDamageUsesExplicitTargetAdmissionWithoutAliasingNativeClasses()
     {
         var target = new WeaponTargetKey("rac1", 1440, 189);

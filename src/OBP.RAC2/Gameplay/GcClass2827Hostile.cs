@@ -20,6 +20,9 @@ public sealed class GcClass2827HostileSession
     public const int AttackNativeState = 13;
     public const int DeathNativeState = 15;
     public const int DeathTransitionMode = 5;
+    // Opening-pair retail witness run-000024 (research/GC_ARANOS_OPENING.md).
+    public const int ChaseSequence = 11;
+    public const int RecoverySequence = 17;
     public const int AttackSequence16 = 0x10;
     public const int AttackSequence27 = 0x1B;
     public const float AttackContactFrameStart = 19f;

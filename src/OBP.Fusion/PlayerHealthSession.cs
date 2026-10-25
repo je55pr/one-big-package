@@ -72,6 +72,13 @@ public sealed class PlayerHealthSession
             throw new ArgumentException("Damage actor belongs to another lease or is already registered.");
     }
 
+    public void RetireActor(ActorInstanceKey actor)
+    {
+        _actors.Remove(actor);
+        _damage.RemoveWhere(receipt => receipt.Actor == actor);
+        _rewards.Remove(actor);
+    }
+
     public PlayerIntakeResult Apply(PlayerAttackIntent attack)
     {
         if (!Current(attack.Attacker)) return Result(PlayerIntakeStatus.StaleLease, "Attack belongs to a retired world lease.");

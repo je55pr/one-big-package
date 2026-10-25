@@ -123,6 +123,7 @@ public partial class OBPGame
         if (!OrdinaryPlayerSession)
             _hudState.BeginSession(Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet));
         ConfigureRac1WorldActors(world, result);
+        ConfigurePlayerEquipmentPresentation(world);
     }
 
     private void ConfigureRac1WorldActors(RuntimeWorld world, RuntimeWorldScene.Result result)
@@ -260,7 +261,7 @@ public partial class OBPGame
         TickRac1MetropolisTaxis(delta);
         TickRac1NovalisMusic(delta);
         TickRac1Swing(delta);
-        TickRac1Hostiles(delta);
+        if (!OrdinaryPlayerSession) TickRac1Hostiles(delta);
         TickRac1RedPlants(delta);
         TickRac1PulsingOrbs(delta);
         TickRac1ExplosiveCrates(delta);

@@ -53,15 +53,15 @@ public sealed class SourceNeutralHostArchitectureTests
     public void ExistingPlayerCouplingCannotGrowUnderItsMigrationException()
     {
         var compilation = HostOwnershipAudit.Host.Value;
-        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1WeaponWorld.cs");
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1MetalDetector.cs");
         string source = original.GetText().ToString().Replace("_world?.Game != \"rac1\"",
             "(_world?.Game != \"rac1\" || _world?.Game != \"rac1\")", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("StepRac1AdditionalWeaponWorld", errors[0]);
-        Assert.Contains("migration owner #271", errors[0]);
+        Assert.Contains("TryToggleRac1MetalDetector", errors[0]);
+        Assert.Contains("migration owner #255", errors[0]);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Theory]
-    [InlineData("game/scripts/OBPGame.Rac1WeaponWorld.cs", "_world?.Game != \"rac1\"")]
+    [InlineData("game/scripts/OBPGame.Rac1MetalDetector.cs", "_world?.Game != \"rac1\"")]
     [InlineData("game/scripts/OBPGame.Rac1NovalisWater.cs", "_rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);")]
     public void FrozenBaselinesIgnoreCommentsAndCheckoutLineEndings(string path, string anchor)
     {
@@ -106,6 +106,25 @@ public sealed class SourceNeutralHostArchitectureTests
         Assert.DoesNotContain("rac1:LEVEL0", lab, StringComparison.Ordinal);
         Assert.DoesNotContain("_activeDestination =", lab, StringComparison.Ordinal);
         Assert.Contains("EnterWorld(definition.Id", lab, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EquipmentAndPlayerAudioNoLongerUseDestinationGates()
+    {
+        var usages = HostOwnershipAudit.Scan(HostOwnershipAudit.Host.Value);
+        foreach (string member in new[] { "StepRac1PlayerAudio(", "StepRac1AdditionalWeaponWorld(", "ArmGcGameplayHost(", "ArmUyaGameplay(" })
+            Assert.DoesNotContain(usages, usage => usage.Key.Contains("::OBPGame." + member, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ActorAssetProvenanceAdapterCannotSelectPlayerEquipment()
+    {
+        var (compilation, _) = InsertAdapterStatement("game/scripts/OBPGame.Actors.cs", "CreateActorView",
+            "OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);");
+        var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation), HostOwnershipAudit.Policy());
+        Assert.Single(errors);
+        Assert.Contains("CreateActorView", errors[0]);
+        Assert.Contains("approved source-world adapter changed", errors[0]);
     }
 
     [Fact]

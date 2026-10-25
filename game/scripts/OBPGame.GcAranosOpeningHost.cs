@@ -180,6 +180,9 @@ public partial class OBPGame
             }
 
             Vector3 position = session.Node.Root.GlobalPosition;
+            if (_actorContactBodies.ContainsKey(ActorTarget(session.Node)) &&
+                (Math.Abs(position.Y - playerPosition.Y) > 3 || position.DistanceTo(playerPosition) > GcOpeningMsr1WitnessActivationDistance))
+                continue; // Explicit grounded-arena target context for relocated actors.
             switch (session.Phase)
             {
                 case GcOpeningMsr1Phase.Dormant:
@@ -278,11 +281,19 @@ public partial class OBPGame
                         position.X = (float)step.X;
                         position.Z = (float)step.Z;
                         ApplyGcClass2827Position(session, position);
+                        position = session.Node.Root.GlobalPosition;
 
                         float distance = new Vector2(
                             playerPosition.X - position.X,
                             playerPosition.Z - position.Z).Length();
-                        if (session.Hostile.TryEnterAttack(distance, facingError: 0d))
+                        double facingError = 0;
+                        if (_actorContactBodies.ContainsKey(ActorTarget(session.Node)))
+                        {
+                            Vector3 toward = playerPosition - position; toward.Y = 0;
+                            if (toward.LengthSquared() > 1e-8f)
+                                facingError = EnemyForward(session.Node).SignedAngleTo(toward.Normalized(), Vector3.Up);
+                        }
+                        if (session.Hostile.TryEnterAttack(distance, facingError))
                         {
                             session.AttackSequence =
                                 session.AttackCount == 0 && session.Hostile.InstanceIndex == 205
@@ -381,7 +392,7 @@ public partial class OBPGame
         session.PhaseTicks = ticks;
     }
 
-    private static void SettleGcOpeningMsr1Vertical(
+    private void SettleGcOpeningMsr1Vertical(
         GcOpeningMsr1HostSession session,
         float targetY,
         int futureTicks)
@@ -392,11 +403,32 @@ public partial class OBPGame
         ApplyGcClass2827Position(session, position);
     }
 
-    private static void ApplyGcClass2827Position(
+    private void ApplyGcClass2827Position(
         GcOpeningMsr1HostSession session,
         Vector3 position)
     {
+        if (_actorContactBodies.TryGetValue(ActorTarget(session.Node), out var body))
+        {
+            var contact = body.MoveAndCollide(position - body.GlobalPosition);
+            if (contact is not null)
+            {
+                Vector3 remainder = contact.GetRemainder().Slide(contact.GetNormal());
+                if (remainder.LengthSquared() > 1e-8f) body.MoveAndCollide(remainder);
+            }
+            position = body.GlobalPosition;
+        }
         Transform3D sceneTransform = session.Node.Root.Transform;
+        if (_actorContactBodies.ContainsKey(ActorTarget(session.Node)) && _player is not null)
+        {
+            Vector3 toward = _player.GlobalPosition - position; toward.Y = 0;
+            if (toward.LengthSquared() > 1e-8f)
+            {
+                // OBP facing projection for the bounded planar context. A full
+                // native GC steering controller is not asserted by this adapter.
+                float angle = EnemyForward(session.Node).SignedAngleTo(toward.Normalized(), Vector3.Up);
+                sceneTransform.Basis = new Basis(Vector3.Up, angle) * sceneTransform.Basis;
+            }
+        }
         sceneTransform.Origin = position;
         var runtimeTransform = RuntimeWorldScene.ToRuntimeTransform(sceneTransform);
         var state = session.Hostile.ApplyPresentationTransform(runtimeTransform);

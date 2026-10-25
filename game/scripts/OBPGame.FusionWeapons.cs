@@ -32,8 +32,9 @@ public partial class OBPGame
     private int[] _fusionOriginalGoldBolts = [];
     private readonly Dictionary<SourceWeaponKey, FusionMeshView> _fusionHeldViews = [];
     private readonly Dictionary<WeaponShotKey, FusionMeshView> _fusionProjectiles = [];
-    private readonly List<(int Due, int Owner, FusionWeaponData.Voice Voice)> _fusionPendingAudio = [];
-    private readonly List<(int Owner, AudioStreamPlayer Player)> _fusionAudioPlayers = [];
+    private readonly record struct EquipmentAudioOwner(SourceWeaponKey Weapon, int? LoopSound);
+    private readonly List<(int Due, EquipmentAudioOwner Owner, FusionWeaponData.Voice Voice)> _fusionPendingAudio = [];
+    private readonly List<(EquipmentAudioOwner Owner, AudioStreamPlayer Player)> _fusionAudioPlayers = [];
     private readonly List<(Node3D Node, int Remaining)> _fusionEffects = [];
     private FusionMeshView? _fusionBeam;
     private UyaShockCannonBeam.Scroll _fusionBeamScroll;
@@ -154,6 +155,7 @@ public partial class OBPGame
             var data = preparation.Completion.GetAwaiter().GetResult();
             _fusionAssets = new(data);
             if (_playerAvatarView is not null) AttachFusionWeaponViews(_playerAvatarView);
+            BindPlayerEquipmentPresentation();
             foreach (var problem in _fusionAssets.Problems.Values) GD.Print("[fusion] " + problem);
             GD.Print($"[fusion] shared weapon preparation complete; reused {data.ReusedVerifications}/3 saved verifications; retained for this source session");
         }
@@ -173,6 +175,7 @@ public partial class OBPGame
     private void ResetSharedWeaponAssets()
     {
         // Source changes and application exit own this lifetime, not level teardown.
+        ClearActorSourceCaches();
         ClearFusionTransients();
         ReleaseFusionWeaponViews();
         _fusionPreparation?.Dispose(); _fusionPreparation = null;
@@ -226,6 +229,7 @@ public partial class OBPGame
         if (previous != key)
         {
             _previousSelectedWeapon = previous;
+            ResetRac1WeaponAudio();
             StopFusionAudio();
             _fusionModelSequence = _fusionModelAge = 0;
             _fusionUseStarted = _fusionPoseTriggerHeld = false;
@@ -300,7 +304,12 @@ public partial class OBPGame
         foreach (var query in frame.Queries) contacts.AddRange(TraceFusionQuery(query, origin));
         foreach (var intent in _fusion.ResolveContacts(frame, contacts))
         {
-            var target = EquipmentTargets.FirstOrDefault(n => n.Source.NativeClassId == intent.Target.NativeClassId && n.Source.InstanceIndex == intent.Target.InstanceIndex);
+            if (OrdinaryPlayerSession)
+            {
+                if (ApplyRegisteredWeaponContact(intent)) { _fusionAcceptedHits++; _fusionLastDamage = intent; }
+                continue;
+            }
+            var target = EquipmentTargets.FirstOrDefault(n => n.Source.SourceGame == intent.Target.SourceGame && n.Source.NativeClassId == intent.Target.NativeClassId && n.Source.InstanceIndex == intent.Target.InstanceIndex);
             if (target is not null && FusionDamagePolicy.Translate(intent) is { } damage && ApplyRac1AdditionalDamage(target, damage))
             { _fusionAcceptedHits++; _fusionLastDamage = intent; }
         }
@@ -340,6 +349,12 @@ public partial class OBPGame
     private Vector3 FusionAim(Vector3 origin)
     {
         float range = _fusion!.Selected == FusionWeaponSession.Lancer ? GcLancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
+        if (OrdinaryPlayerSession)
+            return RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
+                .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != "rac1" || target.Key.NativeClassId != 749)
+                .Select(target => target.Bounds.GetCenter()).Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < range * range &&
+                    (point - origin).Normalized().Dot(EquipmentForward) > .9f && BombHasLineOfSight(origin, point))
+                .OrderBy(point => point.DistanceSquaredTo(origin)).FirstOrDefault(origin + EquipmentForward * range);
         var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new("rac1", e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
             (_fusion.Selected != FusionWeaponSession.Lancer || e.Node.Source.NativeClassId != 749) && IsRac1GameplayActive(e.Node))
             .Select(e => e.Bounds.GetCenter()).Where(p => p.DistanceSquaredTo(origin) is > .1f &&
@@ -351,6 +366,11 @@ public partial class OBPGame
     private IEnumerable<WeaponContact> TraceFusionQuery(WeaponQuery query, Vector3 muzzle)
     {
         Vector3 from = ToGodot(query.From), to = ToGodot(query.To);
+        if (OrdinaryPlayerSession)
+        {
+            foreach (var contact in TraceRegisteredWeaponQuery(query, muzzle)) yield return contact;
+            yield break;
+        }
         var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new("rac1", e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
             IsRac1GameplayActive(e.Node) && (!_rac1Enemies.TryGetValue(e.Node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted))
             .OrderBy(e => e.Node.Source.NativeClassId).ThenBy(e => e.Node.Source.InstanceIndex);
@@ -462,8 +482,10 @@ public partial class OBPGame
 
     private void QueueFusionAudio(WeaponAudioIntent cue)
     {
-        if (cue.Operation == WeaponAudioOperation.StopLoop) { StopFusionAudio(cue.LocalSound); return; }
-        int owner = cue.Operation == WeaponAudioOperation.StartLoop ? cue.LocalSound : -1;
+        if (cue.Operation == WeaponAudioOperation.StopLoop) { StopFusionAudio(new(cue.Weapon, cue.LocalSound)); return; }
+        var owner = new EquipmentAudioOwner(cue.Weapon, cue.Operation == WeaponAudioOperation.StartLoop ? cue.LocalSound : null);
+        if (owner.LoopSound.HasValue && (_fusionPendingAudio.Any(pending => pending.Owner == owner) ||
+            _fusionAudioPlayers.Any(playing => playing.Owner == owner))) return;
         foreach (var voice in _fusionAssets!.Audio(cue)) _fusionPendingAudio.Add((_fusion!.Tick + (int)Math.Ceiling(voice.Delay * 60), owner, voice));
     }
 
@@ -491,7 +513,7 @@ public partial class OBPGame
         }
     }
 
-    private void StopFusionAudio(int? owner = null, bool freeImmediately = false)
+    private void StopFusionAudio(EquipmentAudioOwner? owner = null, bool freeImmediately = false)
     {
         _fusionPendingAudio.RemoveAll(p => owner is null || p.Owner == owner);
         foreach (var owned in _fusionAudioPlayers.Where(p => owner is null || p.Owner == owner).ToArray())

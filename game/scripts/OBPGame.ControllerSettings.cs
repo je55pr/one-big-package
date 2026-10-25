@@ -41,11 +41,25 @@ public partial class OBPGame
         _prePauseMouseMode = ApplicationPointer.MouseMode;
         _prePauseHeldButtons = _player?.MenuHeldButtons ?? 0;
         UiPointerModality.MenuOpened();
+        SetPlayerAudioPaused(true);
 
         _pauseMenu = new PauseMenuUi
         {
             ProcessMode = ProcessModeEnum.Always,
-            RetailEnabled = _player?.HasRetailPresentation == true && Rac1RetailUiAssets.IsLoaded,
+            RetailEnabled = !OrdinaryPlayerSession && _player?.HasRetailPresentation == true && Rac1RetailUiAssets.IsLoaded,
+            CatalogReader = OrdinaryPlayerSession ? ReadPlayerEquipment : null,
+            SlotReader = OrdinaryPlayerSession ? () => _playerNative!.Assignments.Capture().QuickSelect : null,
+            CatalogEquip = SelectPlayerEquipment,
+            CatalogUnequip = UnequipPlayerEquipment,
+            CatalogGadget = SetPlayerGadgetEnabled,
+            CatalogAssign = AssignPlayerQuickSelect,
+            CatalogPreview = CreateEquipmentAppearancePreview,
+            ActorStatusReader = ReadPlacedActorStatus,
+            ActorReset = ResetPlacedActor,
+            CatalogIcon = entry => entry.Definition.Item is { SourceGame: "rac1" } item &&
+                Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)item.NativeItemId) is { } icon
+                ? Rac1RetailUiAssets.Sprite(icon.AnimationId, icon.Frame) : null,
+            LabAvailable = OrdinaryPlayerSession,
             Weapons = Rac1WeaponProfiles.Additional.Select(profile => profile.Item)
                 .Prepend(Rac1WeaponId.FirstRanged)
                 .OrderBy(weapon => (int)weapon)
@@ -114,6 +128,7 @@ public partial class OBPGame
         };
         _pauseMenu.EquipRequested += OnRac1WeaponSelectionRequested;
         _pauseMenu.FusionTestRequested += ToggleFusionTest;
+        _pauseMenu.LabRequested += () => { ClosePauseMenu(); EnterFusionLab(); };
         _pauseMenu.QuickSelectAssignRequested = (slot, nativeId) =>
             _playerNative is not null ? AssignPlayerQuickSelect(slot, $"rac1/item/{nativeId}").Accepted : _rac1Weapons.TryAssignQuickSelect(slot, nativeId);
         _pauseMenu.ResumeRequested += () => ClosePauseMenu();
@@ -252,6 +267,7 @@ public partial class OBPGame
         }
 
         UiPointerModality.MenuClosed(_prePauseMouseMode);
+        SetPlayerAudioPaused(false);
         _player?.SuppressButtonsUntilRelease(_prePauseHeldButtons);
         GD.Print("[pause] menu closed");
     }

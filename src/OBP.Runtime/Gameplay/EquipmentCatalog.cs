@@ -4,13 +4,15 @@ namespace OBP.Runtime.Gameplay;
 
 public enum EquipmentCategory { Weapon, Gadget, Appearance }
 public enum EquipmentImplementation { Unimplemented, Implemented }
+public enum EquipmentUsage { Handheld, Backpack, Passive, ContextAction }
 public enum EquipmentResourceStatus { Unavailable, Available, NotRequired }
 public enum EquipmentUsability { Ready, Unimplemented, MissingSource, UnsupportedBuild, MissingModel, Unowned, ContextBlocked }
 
 /// <summary>Source-owned registration facts. Item keys reuse the existing weapon/item identity.</summary>
 public sealed record EquipmentDefinition(string Id, string DisplayName, string SourceGame, string BuildId,
     EquipmentCategory Category, EquipmentImplementation Implementation, SourceWeaponKey? Item = null,
-    PlayerAvatarIdentity? Appearance = null, string? ConflictGroup = null, string? UnsupportedReason = null);
+    PlayerAvatarIdentity? Appearance = null, string? ConflictGroup = null, string? UnsupportedReason = null,
+    EquipmentUsage Usage = EquipmentUsage.Handheld);
 
 public sealed record EquipmentLiveState(bool Owned, bool Selected, bool Equipped,
     EquipmentResourceStatus Model, EquipmentResourceStatus Icon, int? Ammo = null, int? Capacity = null,

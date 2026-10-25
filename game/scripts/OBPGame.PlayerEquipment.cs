@@ -8,6 +8,7 @@ namespace OneBigPackage;
 
 public partial class OBPGame
 {
+    public IReadOnlyList<SourceWeaponKey?> ReadPlayerQuickSlots() => _playerNative?.Assignments.Capture().QuickSelect ?? [];
     private IReadOnlyDictionary<string, string> PlayerEquipmentSources => _sources.Attached.Values
         .ToDictionary(source => source.Game.ToString().ToLowerInvariant(), source => source.Identity.BuildId);
 
@@ -34,16 +35,14 @@ public partial class OBPGame
             return new(owned, enabled, enabled && reason is null, EquipmentResourceStatus.NotRequired,
                 EquipmentResourceStatus.Unavailable, ContextAllowed: reason is null, ContextReason: reason);
         }
-        bool model = key == PlayerEquipmentRegistrations.Wrench ? _rac1WrenchAsset is not null :
-            key == FusionWeaponSession.BombGlove ? _rac1BombGloveAsset is not null : key!.Value.SourceGame == "rac1"
-                ? _rac1EquipmentAssets?.Models.ContainsKey(Rac1WeaponProfiles.Get((Rac1WeaponId)key.Value.NativeItemId).ModelClass) == true
-                : _fusionAssets?.Available(key.Value) == true;
-        string? context = key!.Value.SourceGame == "rac1" && key != PlayerEquipmentRegistrations.Wrench && _rac1PickupAssets is null
-            ? "Weapon effects and contacts are not supported in this context yet." : null;
+        var binding = _equipmentPresentationBindings.GetValueOrDefault(key!.Value);
+        bool model = PlayerEquipmentModelAvailable(key.Value) && binding?.Ready == true;
+        string? context = binding is { Ready: false } ? binding.Reason : key.Value.SourceGame == "rac1" && key != PlayerEquipmentRegistrations.Wrench && PlayerPresentationAssets is null
+            ? "The selected source-native equipment effect bank is not prepared." : null;
         var status = _fusion?.Status(key.Value);
         var icon = key.Value.SourceGame == "rac1" ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)key.Value.NativeItemId) : null;
         bool iconReady = icon is { } nativeIcon && Rac1RetailUiAssets.Sprite(nativeIcon.AnimationId, nativeIcon.Frame) is not null;
-        return new(owned, CurrentWeaponKey == key, _rac1HeldItem.Hand.IsHolding(key.Value),
+        return new(owned, CurrentWeaponKey == key, key == PlayerEquipmentRegistrations.Wrench ? _rac1HeldItem.Hand.WrenchHeld : _rac1HeldItem.Hand.IsHolding(key.Value),
             model ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable,
             iconReady ? EquipmentResourceStatus.Available : EquipmentResourceStatus.Unavailable, status?.Capacity > 0 ? status.Ammo : null, status?.Capacity > 0 ? status.Capacity : null,
             ContextAllowed: context is null, ContextReason: context);
@@ -73,6 +72,18 @@ public partial class OBPGame
             return new(false, entry?.Reason ?? "Quick Select requires an implemented weapon.");
         _playerNative.Assignments.Assign(slot, entry?.Definition.Item);
         return new(true);
+    }
+
+    public EquipmentChangeResult UnequipPlayerEquipment()
+    {
+        if (_playerNative is null) return new(false, "This session has no OBP loadout.");
+        _playerNative.Held.HoldWrench();
+        _rac1EquipmentUseTicks = 0; _rac1ArsenalHeld = _rac1PyroEmitting = false;
+        _fusionPoseTriggerHeld = false;
+        ResetRac1WeaponAudio(); StopFusionAudio();
+        RefreshRac1WrenchPresentationVisibility();
+        RefreshRac1HudState();
+        return new(true, "Wrench held. Your selected weapon and ammunition are retained.");
     }
 
     public EquipmentChangeResult SetPlayerGadgetEnabled(string catalogId, bool enabled)

@@ -119,7 +119,7 @@ public sealed class Rac1ParticleTests
     }
 
     [Fact]
-    public void NativeFlameBoundsAreExplicitlyDisabledOnlyForSyntheticFixtures()
+    public void NativeFlameBoundsRemainDefaultAndSharedWorldCallerCanDisableThem()
     {
         var session = new Rac1ParticleSession(SyntheticAssets(), new(() => 0));
         session.Flame(new(2000), Vector3.Zero, 12, false);

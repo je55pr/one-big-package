@@ -21,7 +21,7 @@ public sealed class GcClass2827OpeningEncounterTests
     }
 
     [Fact]
-    public void ApproachStopsAtRecoveredAttackEntryDistance()
+    public void ApproachCrossesTheStrictRecoveredAttackEntryDistance()
     {
         var approach = new GcClass2827ApproachSession();
         double target = 20d;
@@ -29,10 +29,10 @@ public sealed class GcClass2827OpeningEncounterTests
         var result = approach.Advance(0, 0, target, 0, ticks: 500);
         double remaining = target - result.X;
 
-        Assert.Equal(
-            GcClass2827HostileSession.AttackEntryDistanceExclusive,
-            remaining,
-            precision: 5);
+        Assert.True(remaining < GcClass2827HostileSession.AttackEntryDistanceExclusive);
+        Assert.InRange(remaining, GcClass2827HostileSession.AttackEntryDistanceExclusive - GcClass2827ApproachSession.PlanarMaxStepPerTick,
+            GcClass2827HostileSession.AttackEntryDistanceExclusive);
+        Assert.True(GcClass2827HostileSession.ShouldEnterAttack((float)remaining, 0));
     }
 
     [Fact]

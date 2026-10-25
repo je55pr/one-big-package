@@ -58,9 +58,14 @@ public partial class OBPGame
                     (source.SourceGame == "rac1" ? _rac1MobyRuntime.TryGet(new(source.NativeClassId, source.InstanceIndex), out var native) && native!.IsActive :
                         _gcOpeningMsr1.TryGetValue(source.InstanceIndex, out var gc) && !gc.Hostile.IsTerminal));
         }
-        var result = _playerNative!.Life.Apply(new(key, build, adapter, descriptor, sequence, amount, flags));
+        var before = _playerNative!.Health.Probe();
+        var result = _playerNative.Life.Apply(new(key, build, adapter, descriptor, sequence, amount, flags));
         if (_player is { } player) { player.PlayerHealth = result.Health; player.Rac1GameplayState = _playerNative.Health.Probe(); }
-        if (result.Applied) RefreshRac1HudState();
+        if (result.Applied)
+        {
+            NotifyRac1PlayerDamageAudio(before, _playerNative.Health.Probe());
+            RefreshRac1HudState();
+        }
         return result;
     }
 
