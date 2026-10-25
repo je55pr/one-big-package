@@ -130,7 +130,7 @@ public sealed class SourceNeutralHostArchitectureTests
     public void EquipmentAndPlayerAudioNoLongerUseDestinationGates()
     {
         var usages = HostOwnershipAudit.Scan(HostOwnershipAudit.Host.Value);
-        foreach (string member in new[] { "StepRac1PlayerAudio(", "StepRac1AdditionalWeaponWorld(", "ArmGcGameplayHost(", "ArmUyaGameplay(" })
+        foreach (string member in new[] { "StepRac1PlayerAudio(", "StepRac1AdditionalWeaponWorld(", "ArmRac2GameplayHost(", "ArmUyaGameplay(" })
             Assert.DoesNotContain(usages, usage => usage.Key.Contains("::OBPGame." + member, StringComparison.Ordinal));
     }
 

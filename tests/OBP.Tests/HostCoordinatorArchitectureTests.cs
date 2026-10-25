@@ -42,9 +42,9 @@ public class HostCoordinatorArchitectureTests
         Assert.Contains("private CrateDebugSnapshot? GetCrateDebugSnapshot(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac2CrateDebugHarness.cs")), StringComparison.Ordinal);
 
-        Assert.Contains("private void ResetGcGameplayHost(", core, StringComparison.Ordinal);
-        Assert.Contains("private void ConfigureGcGameplayHost(", core, StringComparison.Ordinal);
-        Assert.Contains("private void ArmGcGameplayHost(", core, StringComparison.Ordinal);
+        Assert.Contains("private void ResetRac2GameplayHost(", core, StringComparison.Ordinal);
+        Assert.Contains("private void ConfigureRac2GameplayHost(", core, StringComparison.Ordinal);
+        Assert.Contains("private void ArmRac2GameplayHost(", core, StringComparison.Ordinal);
         Assert.DoesNotContain("CrateDebugHarness", core, StringComparison.Ordinal);
     }
 }
