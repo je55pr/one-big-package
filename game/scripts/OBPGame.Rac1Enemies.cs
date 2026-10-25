@@ -11,7 +11,7 @@ using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using NVector3 = System.Numerics.Vector3;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

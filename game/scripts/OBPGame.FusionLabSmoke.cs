@@ -1,7 +1,7 @@
 using OBP.Core;
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

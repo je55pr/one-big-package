@@ -7,7 +7,7 @@ using OBP.Runtime;
 using OBP.Runtime.Audio;
 using NVector3 = System.Numerics.Vector3;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

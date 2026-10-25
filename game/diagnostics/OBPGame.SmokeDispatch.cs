@@ -1,6 +1,6 @@
 using OBP.Core;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Diagnostic-only dispatcher: ordinary destination loading has one callback,

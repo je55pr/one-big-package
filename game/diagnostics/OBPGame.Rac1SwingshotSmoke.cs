@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using Godot;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

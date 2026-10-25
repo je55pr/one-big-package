@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Explicit developer-only controls attached beside <see cref="PlayerHost"/>.

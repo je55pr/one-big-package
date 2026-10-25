@@ -11,7 +11,7 @@ using OBP.RAC3.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

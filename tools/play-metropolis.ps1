@@ -29,7 +29,7 @@ if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) {
     & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null
 }
 if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo -v quiet
+    & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo -v quiet
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 $argsForGame = @(Get-ObpWindowArguments) + @(

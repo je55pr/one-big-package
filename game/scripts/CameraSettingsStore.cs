@@ -2,7 +2,7 @@ using Godot;
 using OBP.RAC1.Camera;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>OBP persistence for the recovered camera options; independent of device calibration.</summary>
 internal static class CameraSettingsStore

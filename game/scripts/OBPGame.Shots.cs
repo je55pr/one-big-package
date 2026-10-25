@@ -5,7 +5,7 @@ using OBP.RAC2;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// <c>--shots &lt;file&gt;</c>: load one world, then run every named

@@ -4,7 +4,7 @@ using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 using OBP.RAC1.Progression;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// OBP host persistence glue for recovered R&C1 campaign fields. File format and

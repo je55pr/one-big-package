@@ -2,7 +2,7 @@ using OBP.Core;
 using Godot;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Common OBP catalogue UI. Source IDs, inventory and native actions stay behind the host ports.</summary>
 public sealed partial class PauseMenuUi

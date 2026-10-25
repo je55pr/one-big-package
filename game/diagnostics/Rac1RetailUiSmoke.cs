@@ -3,7 +3,7 @@ using OBP.IO;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Isolated actual-Godot GUI regression: no game world or campaign changes.

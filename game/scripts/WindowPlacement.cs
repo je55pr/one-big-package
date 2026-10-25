@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Application window preferences, shared by interactive and smoke launches.</summary>
 public partial class WindowPlacement : Node

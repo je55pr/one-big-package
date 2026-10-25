@@ -16,7 +16,7 @@ if (-not $State) { $State = Join-Path $root 'captures/repros/quick-state.json' }
 if (-not (Test-Path -LiteralPath $State -PathType Leaf)) { throw "Movement state not found: $State" }
 if (-not $Out) { $Out = Join-Path $root 'captures/repros/forward-replay.json' }
 if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
+    & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 $manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json

@@ -3,7 +3,7 @@ using Godot;
 using OBP.Godot;
 using OBP.RAC1.Progression;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Interactive integration gate. Observes an ordinary playthrough without

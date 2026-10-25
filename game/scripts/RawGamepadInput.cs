@@ -2,7 +2,7 @@ using Godot;
 using OBP.Godot.Controls;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Godot/SDL input boundary for ordinary player controls.

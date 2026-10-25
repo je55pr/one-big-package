@@ -56,7 +56,7 @@ try {
         $results.Add([pscustomobject]@{ Phase = 'dotnet-retail-format-uids'; Passed = $true })
     }
     if (-not $SkipBuild) {
-        & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --no-restore -warnaserror *> (Join-Path $Out 'game-build.log')
+        & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --no-restore -warnaserror *> (Join-Path $Out 'game-build.log')
         if ($LASTEXITCODE -ne 0) { throw 'Godot C# build failed.' }
     }
     $invalidProfilePath = Join-Path $Out 'invalid-profile.json'

@@ -84,7 +84,7 @@ public static class GodotUidCommand
         try
         {
             // Godot needs a compiled C# host for the project autoload scripts.
-            GodotUidScanner.RunInteractive("dotnet", ["build", "game/OneBigPackage.csproj", "-c", "Debug", "--nologo"], root);
+            GodotUidScanner.RunInteractive("dotnet", ["build", "game/OBP.Game.csproj", "-c", "Debug", "--nologo"], root);
             GodotUidScanner.RunInteractive(godot, ["--headless", "--path", "game", "--editor", "--import", "--quit"], root);
         }
         finally

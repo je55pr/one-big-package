@@ -6,7 +6,7 @@ using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Lower-level synthetic Godot host-contract gate for the bounded R&C1 Goal 1 loop.

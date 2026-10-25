@@ -1,7 +1,7 @@
 using Godot;
 using OBP.RAC1.Progression;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Godot-only presentation for the recovered R&C1 planet-map state.

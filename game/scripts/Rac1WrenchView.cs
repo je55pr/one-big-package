@@ -5,7 +5,7 @@ using OBP.RAC1.Gameplay;
 using OBP.Runtime.Player;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Godot presentation of the recovered retail class-71 Wrench mesh.

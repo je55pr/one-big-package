@@ -2,7 +2,7 @@ using Godot;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 internal readonly record struct StickCalibration(
     float NegativeX,

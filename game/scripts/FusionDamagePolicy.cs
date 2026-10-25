@@ -2,7 +2,7 @@ using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Deliberate OBP adapter, never native cross-game behavior. Original damage

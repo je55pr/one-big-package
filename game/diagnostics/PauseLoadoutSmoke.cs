@@ -2,7 +2,7 @@ using OBP.Core;
 using Godot;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Asset-free real GUI events over catalogue ports, with no desktop input.</summary>
 public static class PauseLoadoutSmoke

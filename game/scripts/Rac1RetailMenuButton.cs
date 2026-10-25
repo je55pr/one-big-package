@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Focus/accept behaviour for the R&C1 pause panel. The dark surface and

@@ -3,7 +3,7 @@ using OBP.Godot;
 using OBP.IO;
 using OBP.RAC2;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Capture telemetry and optional retail authority verification diagnostics.</summary>
 public partial class OBPGame

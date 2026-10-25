@@ -7,7 +7,7 @@ using OBP.Runtime;
 using System.Collections.Generic;
 using NVector3 = System.Numerics.Vector3;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Level 6/10 class-827 host adapters only. Native selectors, combat
 /// transitions and damage ownership belong to Rac1FrogSession.</summary>

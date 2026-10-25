@@ -4,7 +4,7 @@ using OBP.RAC2;
 using OBP.RAC3;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Application composition root for production trilogy world providers. Every

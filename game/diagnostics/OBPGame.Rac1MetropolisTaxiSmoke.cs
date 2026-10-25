@@ -5,7 +5,7 @@ using OBP.Godot.Player;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Staged Metropolis host gate: retail imported routes and rendered hulls, the

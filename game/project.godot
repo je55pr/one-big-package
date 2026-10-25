@@ -24,7 +24,7 @@ window/size/no_focus=true
 
 [dotnet]
 
-project/assembly_name="OneBigPackage"
+project/assembly_name="OBP.Game"
 
 [gui]
 

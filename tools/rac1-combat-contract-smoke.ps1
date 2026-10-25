@@ -33,7 +33,7 @@ if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) {
 }
 
 if (-not $SkipBuild) {
-  & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
+  & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 

@@ -2,7 +2,7 @@ using Godot;
 using OBP.Godot;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Owned, reusable meshes for original fusion assets and the source beam.</summary>
 public sealed partial class FusionMeshView : Node3D

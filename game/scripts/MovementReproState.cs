@@ -6,7 +6,7 @@ using OBP.RAC1.Player;
 using OBP.Runtime.Camera;
 using OBP.Fusion;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// OBP development movement bookmark. Stores no retail payload or source paths.

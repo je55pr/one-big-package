@@ -6,7 +6,7 @@ using OBP.RAC2.Gameplay;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

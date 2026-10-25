@@ -1,4 +1,4 @@
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Desktop isolation for automated runs; independent of gameplay/parity mode.</summary>
 public static class AutomationRunPolicy

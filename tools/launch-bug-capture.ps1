@@ -29,7 +29,7 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Could not prepare Godot.' }
     }
     if (-not $SkipBuild) {
-        & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo *> $launchLog
+        & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo *> $launchLog
         if ($LASTEXITCODE -ne 0) { throw 'The game build failed.' }
     }
     & $console --headless --editor --import --path (Join-Path $root 'game') --quit *>> $launchLog

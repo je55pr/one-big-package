@@ -1,7 +1,7 @@
 using Godot;
 using OBP.RAC1.Progression;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// OBP scene-completion adapter. Native talk records select the scene/movie;

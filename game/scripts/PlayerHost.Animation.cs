@@ -11,7 +11,7 @@ using OBP.Runtime;
 using OBP.Runtime.Camera;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class PlayerHost : CharacterBody3D
 {

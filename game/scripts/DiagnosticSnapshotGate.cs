@@ -1,4 +1,4 @@
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>OBP diagnostic scheduling only; never a native gameplay clock.</summary>
 public sealed class DiagnosticSnapshotGate

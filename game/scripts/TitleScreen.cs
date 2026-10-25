@@ -1,7 +1,7 @@
 using Godot;
 using OBP.Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// The gamey front door shown on a plain interactive launch (no <c>--test-scene</c>,

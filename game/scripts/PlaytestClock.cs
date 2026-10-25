@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Recorded host gesture time. Ordinary sessions still use the live monotonic clock.</summary>
 internal static class PlaytestClock

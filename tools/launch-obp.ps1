@@ -44,7 +44,7 @@ if (-not $SkipBuild) {
   Write-Host '  Building...' -ForegroundColor DarkGray
   # An unexported Godot C# project loads .godot/mono/temp/bin/Debug.
   # Building Release here can appear to work only when a stale Debug cache already exists.
-  & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo -v quiet
+  & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo -v quiet
   if ($LASTEXITCODE -ne 0) {
     Write-Host ''
     Write-Warning 'Build failed - see the errors above.'

@@ -5,7 +5,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

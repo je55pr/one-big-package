@@ -21,7 +21,7 @@ $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 if (-not (Test-Path -LiteralPath $godot -PathType Leaf)) { throw 'Prepare the pinned Godot toolchain first.' }
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) { throw 'Supply an authorized R&C1 ISO.' }
 if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --nologo
+    & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     & $godot --headless --editor --import --path (Join-Path $root 'game') --quit
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

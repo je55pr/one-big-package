@@ -10,7 +10,7 @@ using OBP.Runtime.Audio;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

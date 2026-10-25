@@ -2,7 +2,7 @@ using System.Text;
 using Godot;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// A source glyph-quad painter for the original ordinary pause root.

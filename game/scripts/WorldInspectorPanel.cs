@@ -3,7 +3,7 @@ using OBP.Godot;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// The interactive world inspector: a toggle-able panel that shows the neutral

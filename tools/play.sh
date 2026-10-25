@@ -23,7 +23,7 @@ exe_rel="$(node -e "console.log(require('$manifest').godot.artifacts.linux_x86_6
 godot="$root/.tools/godot/$exe_rel"
 [ -x "$godot" ] || "$script_dir/bootstrap-godot.sh" linux_x86_64 >/dev/null
 
-[ "${SKIP_BUILD:-}" = "1" ] || dotnet build "$root/game/OneBigPackage.csproj" -c Debug --nologo
+[ "${SKIP_BUILD:-}" = "1" ] || dotnet build "$root/game/OBP.Game.csproj" -c Debug --nologo
 [ -d "$root/game/.godot" ] || "$godot" --headless --path "$root/game" --import
 
 echo "Controls: WASD move - mouse look - Space jump - F fly/noclip - Tab cursor - Esc quit"

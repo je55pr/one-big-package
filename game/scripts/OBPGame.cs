@@ -8,7 +8,7 @@ using OBP.RAC2;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Application root for the trilogy runtime host.
@@ -771,11 +771,11 @@ public partial class OBPGame : Node3D
         AddChild(new WorldEnvironment
         {
             Name = "PlainEnvironment",
-            Environment = new Godot.Environment
+            Environment = new global::Godot.Environment
             {
-                BackgroundMode = Godot.Environment.BGMode.Color,
+                BackgroundMode = global::Godot.Environment.BGMode.Color,
                 BackgroundColor = new Color(0.04f, 0.05f, 0.08f),
-                AmbientLightSource = Godot.Environment.AmbientSource.Color,
+                AmbientLightSource = global::Godot.Environment.AmbientSource.Color,
                 AmbientLightColor = new Color(1, 1, 1),
                 AmbientLightEnergy = 1.0f,
             },

@@ -5,7 +5,7 @@ using OBP.RAC1.Player;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Source-controller composition adapter owned for the player's lifetime. No

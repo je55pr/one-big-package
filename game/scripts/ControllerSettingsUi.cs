@@ -2,7 +2,7 @@ using Godot;
 using OBP.Godot.Controls;
 using OBP.RAC1.Camera;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public sealed partial class ControllerSettingsUi : CanvasLayer
 {

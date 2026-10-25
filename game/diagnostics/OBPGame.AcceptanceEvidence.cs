@@ -2,7 +2,7 @@ using System.Text.Json;
 using Godot;
 using OBP.Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

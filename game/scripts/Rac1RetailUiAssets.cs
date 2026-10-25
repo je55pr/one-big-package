@@ -2,7 +2,7 @@ using Godot;
 using OBP.IO;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Godot resources generated in memory when the player's R&C1 ISO is attached.
@@ -112,7 +112,7 @@ public static class Rac1RetailUiAssets
             Antialiasing = TextServer.FontAntialiasing.None,
             GenerateMipmaps = false,
             ModulateColorGlyphs = true,
-            Fallbacks = new Godot.Collections.Array<Godot.Font> { ThemeDB.FallbackFont },
+            Fallbacks = new global::Godot.Collections.Array<global::Godot.Font> { ThemeDB.FallbackFont },
         };
         // Host baseline/line spacing, retaining the former BMFont adapter's
         // 16px cells, native top offsets and character advances.

@@ -1,7 +1,7 @@
 using Godot;
 using OBP.Core;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Scene-level startup/input adapter for the neutral trilogy navigation stack.

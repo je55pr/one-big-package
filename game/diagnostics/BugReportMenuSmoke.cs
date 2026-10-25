@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Asset-free mixed-input regression for the real reporting inbox.</summary>
 public partial class BugReportMenuSmoke : Node

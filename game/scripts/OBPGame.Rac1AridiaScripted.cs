@@ -4,7 +4,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Level;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

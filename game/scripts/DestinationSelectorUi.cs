@@ -3,7 +3,7 @@ using OBP.Core;
 using OBP.PS2;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class DestinationSelectorUi : CanvasLayer
 {

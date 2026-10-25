@@ -3,7 +3,7 @@ using OBP.Core.Math;
 using OBP.Godot;
 using OBP.RAC1.Camera;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class PlayerHost
 {

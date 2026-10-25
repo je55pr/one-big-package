@@ -1,6 +1,6 @@
 using Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Controller navigation for the desktop file dialog's embedded control scene.</summary>
 public partial class ControllerPopupInput : Node

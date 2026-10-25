@@ -3,7 +3,7 @@ using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime.Audio;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 public partial class OBPGame
 {

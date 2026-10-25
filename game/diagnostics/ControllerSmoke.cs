@@ -5,7 +5,7 @@ using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
 using OBP.RAC1.Camera;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Real Godot GUI/input regression. Sends logical joypad events, never desktop input.</summary>
 public partial class ControllerSmoke : Node

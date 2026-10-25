@@ -1,7 +1,7 @@
 using Godot;
 using OBP.Godot;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Asset-free desktop-isolation regression; run headlessly during development.</summary>
 public partial class AutomationDesktopSmoke : Node

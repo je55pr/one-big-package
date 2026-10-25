@@ -1,7 +1,7 @@
 using Godot;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Draws the menu panel in one CanvasItem shader pass. Unlike overlapping

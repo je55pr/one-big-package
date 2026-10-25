@@ -40,7 +40,7 @@ jobs:
       - name: Install checksum-pinned Godot .NET
         run: bash tools/bootstrap-godot.sh
       - name: Build Godot C# host
-        run: dotnet build game/OneBigPackage.csproj -c Debug --nologo -warnaserror
+        run: dotnet build game/OBP.Game.csproj -c Debug --nologo -warnaserror
       - name: Import project resources headlessly
         run: .tools/godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64 --headless --path game --editor --import --quit
       - name: Smoke-test the asset-free Game Sources startup

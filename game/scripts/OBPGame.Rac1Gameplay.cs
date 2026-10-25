@@ -10,7 +10,7 @@ using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Thin live host for the admitted R&C1 Goal 1 gameplay slice. Godot supplies

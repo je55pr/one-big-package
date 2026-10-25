@@ -4,7 +4,7 @@ using OBP.Godot;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// GC class-500 host integration. Ordinary primary attack input resolves an

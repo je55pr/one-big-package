@@ -1,4 +1,4 @@
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>Explicit diagnostic source access; independent of player provider/parity and desktop isolation.</summary>
 public static class SourceSetupPolicy

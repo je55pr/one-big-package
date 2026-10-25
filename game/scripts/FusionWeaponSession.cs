@@ -5,7 +5,7 @@ using OBP.RAC2.Gameplay;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime.Gameplay;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// OBP's session-only cross-game weapons. Native sessions retain ammo/cadence/charge;

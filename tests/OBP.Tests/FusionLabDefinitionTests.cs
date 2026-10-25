@@ -2,7 +2,7 @@ using OBP.Core;
 using OBP.Fusion;
 using OBP.Godot;
 using OBP.RAC1.Player;
-using OneBigPackage;
+using OBP.Game;
 
 namespace OBP.Tests;
 

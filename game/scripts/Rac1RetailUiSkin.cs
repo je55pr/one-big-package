@@ -1,7 +1,7 @@
 using Godot;
 using OBP.RAC1.Presentation;
 
-namespace OneBigPackage;
+namespace OBP.Game;
 
 /// <summary>
 /// Common retail-sourced art/font presentation; rectangle tinting and scaling
