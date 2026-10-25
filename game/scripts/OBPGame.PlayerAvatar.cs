@@ -118,7 +118,7 @@ public partial class OBPGame
                 OBP.RAC1.Gameplay.Rac1WeaponProfiles.Get(_rac1Weapons.Equipped).BodySequence) : null;
         // Jump/traversal clocks still own the body. Evaluate equipment from
         // that clock too, including the attachment when no arm bank applies.
-        bool fusionPose = _fusion is { Selected.SourceGame: not "rac1" } && _fusion.Hand.IsHolding(_fusion.Selected) &&
+        bool fusionPose = _fusion is { Selected.SourceGame: not ObpSourceGame.Rac1 } && _fusion.Hand.IsHolding(_fusion.Selected) &&
             PlayerAlive && _player?.Rac1WrenchFrame.Active != true && _player?.Rac1WaterHandItemHidden != true;
         if (equipmentPose < 0) equipmentPose = null;
         if (fusionPose && _fusionAssets?.AvatarAnimations.TryGetValue(_fusion!.Selected, out var sourceAnimation) == true)
@@ -233,8 +233,8 @@ public partial class OBPGame
     }
 
     private bool IsRac1HandEquipmentVisible(OBP.RAC1.Gameplay.Rac1WeaponId item) =>
-        _fusion?.Selected.SourceGame is not ("rac2" or "rac3") &&
-        _rac1HeldItem.Hand.IsHolding(new("rac1", (int)item)) &&
+        _fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) &&
+        _rac1HeldItem.Hand.IsHolding(new(ObpSourceGame.Rac1, (int)item)) &&
         _player?.Rac1WaterHandItemHidden != true &&
         _player?.Rac1WrenchFrame.Active != true && !_rac1WrenchThrow.Active;
 

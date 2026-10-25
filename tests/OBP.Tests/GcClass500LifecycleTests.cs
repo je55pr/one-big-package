@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
@@ -41,7 +42,7 @@ public sealed class GcClass500LifecycleTests
     public void LifecycleRejectsWrongSourceOrMismatchedLiveIdentity()
     {
         var source = Class500(pvarC8: 0);
-        var wrongGame = source with { SourceGame = "rac3" };
+        var wrongGame = source with { SourceGame = ObpSourceGame.Rac3 };
         Assert.Throws<ArgumentException>(() =>
             GcClass500Lifecycle.ApplyRecoveredBreak(wrongGame, RuntimeEntityState.FromAuthored(wrongGame)));
 
@@ -54,7 +55,7 @@ public sealed class GcClass500LifecycleTests
     public void MissingNativePayloadDoesNotInventLifecycleRoute()
     {
         var source = new RuntimeDynamicObject(
-            "rac2", 500, 31, 73, "moby:500", "level:1:moby:31",
+            ObpSourceGame.Rac2, 500, 31, 73, "moby:500", "level:1:moby:31",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>());
 
         Assert.Throws<InvalidDataException>(() =>
@@ -70,7 +71,7 @@ public sealed class GcClass500LifecycleTests
         pvar[0xC8] = pvarC8;
 
         return new RuntimeDynamicObject(
-            "rac2", 500, 31, 73, "moby:500", "level:1:moby:31",
+            ObpSourceGame.Rac2, 500, 31, 73, "moby:500", "level:1:moby:31",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>(),
             [new RuntimeOpaquePayload("rac2-moby-instance-0x88", raw),
              new RuntimeOpaquePayload("rac2-pvar", pvar)]);

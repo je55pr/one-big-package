@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -50,7 +51,7 @@ public sealed class Rac1AlienQueenLinkedGate
     {
         ArgumentNullException.ThrowIfNull(queen);
         ArgumentNullException.ThrowIfNull(authoredObjects);
-        if (queen.SourceGame != "rac1" || queen.NativeClassId != Rac1AlienQueenEntrance.ClassId)
+        if (queen.SourceGame != ObpSourceGame.Rac1 || queen.NativeClassId != Rac1AlienQueenEntrance.ClassId)
             throw new ArgumentException("Requires original Queen class1051.", nameof(queen));
         var p = queen.NativePayloads?.SingleOrDefault(x => x.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;
         if (p is not { Length: >= 0x104 })
@@ -59,7 +60,7 @@ public sealed class Rac1AlienQueenLinkedGate
         for (int i = 0; i < 2; i++)
         {
             int id = BinaryPrimitives.ReadInt32LittleEndian(p.AsSpan(0xfc + i * 4));
-            if (!authored.TryGetValue(id, out var source) || source.SourceGame != "rac1" ||
+            if (!authored.TryGetValue(id, out var source) || source.SourceGame != ObpSourceGame.Rac1 ||
                 source.NativeClassId != ClassId)
                 throw new InvalidDataException($"Queen linked Moby {id} is not original class1021.");
             var sourcePvar = source.NativePayloads?.SingleOrDefault(x =>

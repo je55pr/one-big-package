@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Fusion;
 using OBP.Godot;
@@ -55,7 +56,7 @@ public partial class OBPGame
                 new(source.SourceGame, build, $"moby:{source.NativeClassId}"), adapter,
                 source.InteractionId, [new(descriptor, CapabilityAdmission.Ready)]),
                 () => IsInstanceValid(node.Root) &&
-                    (source.SourceGame == "rac1" ? _rac1MobyRuntime.TryGet(new(source.NativeClassId, source.InstanceIndex), out var native) && native!.IsActive :
+                    (source.SourceGame == ObpSourceGame.Rac1 ? _rac1MobyRuntime.TryGet(new(source.NativeClassId, source.InstanceIndex), out var native) && native!.IsActive :
                         _gcOpeningMsr1.TryGetValue(source.InstanceIndex, out var gc) && !gc.Hostile.IsTerminal));
         }
         var before = _playerNative!.Health.Probe();

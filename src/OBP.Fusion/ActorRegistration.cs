@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.Fusion;
@@ -30,7 +31,7 @@ public sealed record ActorRegistration(
         Source.Validate();
         var target = Instance.Target;
         if (Version != CurrentVersion || string.IsNullOrWhiteSpace(Instance.WorldInstanceId) ||
-            Instance.Generation < 0 || target.SourceGame is not ("rac1" or "rac2" or "rac3") ||
+            Instance.Generation < 0 || target.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
             Source.Game != target.SourceGame || target.NativeClassId < 0 || target.InstanceIndex < 0 ||
             string.IsNullOrWhiteSpace(AdapterId))
             throw new ArgumentException("Invalid source-qualified actor registration.");

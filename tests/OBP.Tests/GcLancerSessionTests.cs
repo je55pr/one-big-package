@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Numerics;
 using OBP.RAC2.Gameplay;
 
@@ -19,9 +20,9 @@ public sealed class GcLancerSessionTests
             if (result.Shot is { } shot)
             {
                 firedAt.Add(tick);
-                Assert.Equal("rac2", result.SourceGame);
+                Assert.Equal(ObpSourceGame.Rac2, result.SourceGame);
                 Assert.Equal(30, result.WeaponIndex);
-                Assert.Equal("rac2", shot.SourceGame);
+                Assert.Equal(ObpSourceGame.Rac2, shot.SourceGame);
                 Assert.Equal(3070, shot.NativeClassId);
             }
         }
@@ -117,14 +118,14 @@ public sealed class GcLancerSessionTests
         var session = new GcLancerSession(1);
         var shot = FirstShot(session);
         var sweep = session.BeginProjectileTick(shot)!;
-        var target = new GcLancerTarget("rac1", 500, 123);
+        var target = new GcLancerTarget(ObpSourceGame.Rac1, 500, 123);
         Assert.True(session.TryCompleteProjectileTick(sweep, new(0.25f, target), out var impact));
         Assert.NotNull(impact);
         Assert.Equal(new Vector3(1.25f, 2, 3), impact.Position);
-        Assert.Equal("rac2", impact.SourceGame);
+        Assert.Equal(ObpSourceGame.Rac2, impact.SourceGame);
         Assert.NotNull(impact.Damage);
         Assert.Equal(target, impact.Damage.Target);
-        Assert.Equal("rac2", impact.Damage.SourceGame);
+        Assert.Equal(ObpSourceGame.Rac2, impact.Damage.SourceGame);
         Assert.Equal(30, impact.Damage.WeaponIndex);
         Assert.Equal(new GcCollisionDamage(0x10000, 1, 1, 3070, 0.5f, 1), impact.Damage.Damage);
         Assert.False(session.TryCompleteProjectileTick(sweep, new(0.25f, target), out var duplicate));
@@ -152,7 +153,7 @@ public sealed class GcLancerSessionTests
             Assert.True(session.TryCompleteProjectileTick(session.BeginProjectileTick(shot)!, null, out _));
 
         var final = session.BeginProjectileTick(shot)!;
-        Assert.True(session.TryCompleteProjectileTick(final, new(1, new("rac3", 99, 1)), out var impact));
+        Assert.True(session.TryCompleteProjectileTick(final, new(1, new(ObpSourceGame.Rac3, 99, 1)), out var impact));
         Assert.NotNull(impact!.Damage);
         Assert.Equal(new Vector3(21, 2, 3), impact.Position);
     }
@@ -197,7 +198,7 @@ public sealed class GcLancerSessionTests
         Assert.Throws<InvalidOperationException>(() => session.BeginProjectileTick(shot));
         Assert.Throws<ArgumentOutOfRangeException>(() => session.TryCompleteProjectileTick(sweep, new(float.NaN), out _));
         Assert.Throws<ArgumentOutOfRangeException>(() => session.TryCompleteProjectileTick(sweep, new(1.01f), out _));
-        Assert.Throws<ArgumentException>(() => session.TryCompleteProjectileTick(sweep, new(0, new("", 0, 0)), out _));
+        Assert.Throws<ArgumentException>(() => session.TryCompleteProjectileTick(sweep, new(0, new((ObpSourceGame)(-1), 0, 0)), out _));
         Assert.True(session.TryCompleteProjectileTick(sweep, null, out _));
         Assert.False(session.TryCompleteProjectileTick(sweep, new(0), out _));
         Assert.Equal(2, session.BeginProjectileTick(shot)!.Tick);
@@ -218,7 +219,7 @@ public sealed class GcLancerSessionTests
                 foreach (var shot in session.ActiveShots)
                 {
                     var sweep = session.BeginProjectileTick(shot)!;
-                    var contact = sweep.Tick == 4 ? new GcLancerContact(0.5f, new("rac1", 500, 1)) : null;
+                    var contact = sweep.Tick == 4 ? new GcLancerContact(0.5f, new(ObpSourceGame.Rac1, 500, 1)) : null;
                     Assert.True(session.TryCompleteProjectileTick(sweep, contact, out var impact));
                     trace.Add($"{shot.Generation}:{shot.Sequence}:{sweep.Tick}:{sweep.To}:{impact?.Damage?.Damage}");
                 }

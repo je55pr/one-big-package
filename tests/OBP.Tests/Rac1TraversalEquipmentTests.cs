@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Player;
 using OBP.Runtime;
@@ -10,14 +11,14 @@ public sealed class Rac1TraversalEquipmentTests
     public void AuthoredRuntimeAdapterOwnsPvarParsingAndRestoresNativeAxisOrder()
     {
         double[] matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 12, 30, 20, 1];
-        var source = new RuntimeDynamicObject("rac1", 758, 5, 8, "moby:758", "moby:5",
+        var source = new RuntimeDynamicObject(ObpSourceGame.Rac1, 758, 5, 8, "moby:758", "moby:5",
             new RuntimeObjectTransform(matrix), [], [new("rac1-pvar", TargetPvar(1, 10, 0))]);
         var authored = Rac1TraversalEquipmentSwingshotTarget.ReadAuthored(source);
         Assert.NotNull(authored);
         Assert.Equal(new Rac1NativeVector3(12, 20, 30), authored.Value.NativeAnchor);
         Assert.Equal(5, authored.Value.InstanceIndex);
         Assert.True(authored.Value.Target.HasUnrestrictedRegion);
-        Assert.Null(Rac1TraversalEquipmentSwingshotTarget.ReadAuthored(source with { SourceGame = "rac2" }));
+        Assert.Null(Rac1TraversalEquipmentSwingshotTarget.ReadAuthored(source with { SourceGame = ObpSourceGame.Rac2 }));
         Assert.Null(Rac1TraversalEquipmentSwingshotTarget.ReadAuthored(source with { NativePayloads = [] }));
     }
 

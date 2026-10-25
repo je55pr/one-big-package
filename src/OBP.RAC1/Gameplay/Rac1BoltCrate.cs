@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Level;
 using OBP.Runtime;
@@ -33,7 +34,7 @@ public static class Rac1BoltCrate
 
     public static Rac1BoltCrateAuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || !IsCrateClass(source.NativeClassId)) return null;
+        if (source.SourceGame != ObpSourceGame.Rac1 || !IsCrateClass(source.NativeClassId)) return null;
         byte[]? raw = source.NativePayloads?.FirstOrDefault(p => p.Format == InstancePayloadFormat)?.Data;
         if (raw is null || raw.Length < Rac1Instances.MobyRecordSize) return null;
 

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -12,7 +13,7 @@ public partial class OBPGame
         Node3D? attachmentFixture = null;
         try
         {
-            Require(_player is not null && _world is { Game: "rac1", LevelId: 0 }, "wrench smoke needs Veldin");
+            Require(_player is not null && _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 }, "wrench smoke needs Veldin");
             var player = _player!;
             Engine.MaxFps = 60;
             ClearMovementSmokeInput();

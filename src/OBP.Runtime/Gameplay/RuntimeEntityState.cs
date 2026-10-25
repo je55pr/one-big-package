@@ -1,3 +1,5 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 namespace OBP.Runtime.Gameplay;
 
 /// <summary>
@@ -15,7 +17,7 @@ public enum RuntimeEntityPresence
 /// immutable <see cref="RuntimeDynamicObject"/> definition and never mutates.
 /// </summary>
 public sealed record RuntimeEntityIdentity(
-    string SourceGame,
+    [property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame,
     string InteractionId,
     int NativeClassId,
     int InstanceIndex,

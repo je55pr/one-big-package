@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Level;
@@ -48,7 +49,7 @@ public sealed class Rac1FrogWaveTriggers
         Vector3 nativePosition)
     {
         if (!Finite(nativePosition)) throw new ArgumentOutOfRangeException(nameof(nativePosition));
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId)
             throw new ArgumentException("Requires authored class1066 trigger.", nameof(source));
         var pvar = source.NativePayloads?.SingleOrDefault(p => p.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;
         if (pvar is not { Length: 32 })

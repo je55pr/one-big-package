@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Level;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -60,7 +61,7 @@ public static class Rac1MobyAnimationProvider
         RuntimeDynamicObject source, RuntimeEntityState current,
         double playerDistance, double playerMotionPerTick, byte nativeAnimationFlags)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != RedPlantClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != RedPlantClassId)
             throw new ArgumentException("Source is not an admitted R&C1 red plant.", nameof(source));
         current.EnsureMatches(source);
         var role = SelectRedPlantRole(new RedPlantSelectorObservation(

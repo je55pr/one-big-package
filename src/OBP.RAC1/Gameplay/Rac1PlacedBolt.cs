@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -19,7 +20,7 @@ public static class Rac1PlacedBolt
 
     public static Authored? ReadAuthored(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || !IsBoltClass(source.NativeClassId)) return null;
+        if (source.SourceGame != ObpSourceGame.Rac1 || !IsBoltClass(source.NativeClassId)) return null;
         byte[]? raw = source.NativePayloads?.SingleOrDefault(payload => payload.Format == Rac1BoltCrate.InstancePayloadFormat)?.Data;
         byte[]? pvar = source.NativePayloads?.SingleOrDefault(payload => payload.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;
         if (raw is not { Length: 0x78 } || pvar is null || pvar.Length < MinimumPVarSize)

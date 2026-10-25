@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Level;
@@ -16,7 +17,7 @@ public sealed class Rac1LevelTests_World
 
         var world = Rac1WorldImport.Build(reader, 0);
 
-        Assert.Equal("rac1", world.Game);
+        Assert.Equal((WorldContentIdentity)ObpSourceGame.Rac1, world.Game);
         Assert.Equal(Rac1Authority.Primary.BuildId, world.BuildId);
         Assert.Equal(0, world.LevelId);
         Assert.Equal("Veldin", world.DisplayName);
@@ -127,7 +128,7 @@ public sealed class Rac1LevelTests_World
 
         var class500 = dynamicObjects.Where(o => o.NativeClassId == 500).ToArray();
         Assert.Equal(103, class500.Length);
-        Assert.All(class500, o => { Assert.Equal("rac1", o.SourceGame); Assert.Equal("moby:500", o.ModelRef); Assert.Equal(108, o.Meshes.Sum(m => m.TriangleCount)); });
+        Assert.All(class500, o => { Assert.Equal(ObpSourceGame.Rac1, o.SourceGame); Assert.Equal("moby:500", o.ModelRef); Assert.Equal(108, o.Meshes.Sum(m => m.TriangleCount)); });
         var specimen = class500[0];
         Assert.Equal(new[] { 53 }, specimen.Meshes.Select(m => m.TextureId).Distinct().ToArray());
         Assert.Equal(16, specimen.Transform.Matrix.Length);

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Animation;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -37,7 +38,7 @@ public sealed class Rac1MobyAnimationProviderTests
     public void RedPlantSelectorProjectsOnlyNeutralAnimationState()
     {
         var source = new RuntimeDynamicObject(
-            "rac1", Rac1MobyAnimationProvider.RedPlantClassId, 226, null,
+            ObpSourceGame.Rac1, Rac1MobyAnimationProvider.RedPlantClassId, 226, null,
             $"moby:{Rac1MobyAnimationProvider.RedPlantClassId}", "moby:226",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>());
         var state = RuntimeEntityState.FromAuthored(source);

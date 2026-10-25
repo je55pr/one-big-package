@@ -12,7 +12,7 @@ public sealed class PlayerSkeletalAnimationTests
         new Dictionary<int, PlayerSkeletonAttachment> { [0] = new(1, [1]), [1] = new(2, [2]) });
 
     private static PlayerSkeletalClip Clip(int sequence, int[] map, params PlayerJointChannels[] channels) => new(
-        "test", "synthetic", 0, sequence, map, [new(channels, 1, 0)]);
+        ObpSourceGame.Synthetic, "synthetic", 0, sequence, map, [new(channels, 1, 0)]);
 
     [Fact]
     public void JointAnimationTransfersBetweenDifferentVertexStreamsAndKeepsEachBind()

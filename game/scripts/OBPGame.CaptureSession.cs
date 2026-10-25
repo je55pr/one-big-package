@@ -1,4 +1,5 @@
 using System.Text.Json;
+using OBP.Core;
 using OBP.Fusion;
 using OBP.Runtime.Diagnostics;
 using OBP.Runtime.Gameplay;
@@ -70,11 +71,11 @@ public partial class OBPGame
         values.Add("obp.player", new(Text: Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(player))));
         values.Add("obp.adapters", new(Text: Digest(CaptureReplayAdapters())));
         values.Add("obp.sources", new(Text: Digest(CaptureProfileSources())));
-        foreach (var actor in _actorViews.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame, StringComparer.Ordinal)
+        foreach (var actor in _actorViews.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
             .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex))
         {
             var key = actor.Registration.Instance.Target; var state = actor.Observe();
-            values.Add($"actor.{key.SourceGame}.{key.NativeClassId}.{key.InstanceIndex}", new([state.Position.X, state.Position.Y, state.Position.Z,
+            values.Add($"actor.{SourceIdentityWire.FormatSource(key.SourceGame)}.{key.NativeClassId}.{key.InstanceIndex}", new([state.Position.X, state.Position.Y, state.Position.Z,
                 state.Alive ? 1 : 0, state.Retired ? 1 : 0, state.Health ?? -1, state.NativeState, state.NativeSequence ?? -1], Tolerance: .0001));
         }
         values.Add("obp.actor-clock", new([_actors?.TickCount ?? 0]));

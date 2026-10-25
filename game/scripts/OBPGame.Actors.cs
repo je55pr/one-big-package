@@ -21,7 +21,7 @@ public partial class OBPGame
     private readonly Dictionary<WeaponTargetKey, HashSet<int>> _actorRewardPickups = [];
     private readonly Dictionary<WeaponTargetKey, RuntimeAudioHost> _actorAudio = [];
     private OBP.RAC1.Gameplay.Rac1PickupRandom? _actorPlaybackRandom;
-    private readonly Dictionary<(string Game, string Build, int Level, string Path, long Length, long Written), Task<RuntimeWorld>> _actorSourceTasks = [];
+    private readonly Dictionary<(ObpSourceGame Game, string Build, int Level, string Path, long Length, long Written), Task<RuntimeWorld>> _actorSourceTasks = [];
     private readonly Dictionary<string, string> _actorProblems = [];
     private FusionLabDefinition? _actorLab;
 
@@ -100,15 +100,15 @@ public partial class OBPGame
         _actorSourceTasks.Clear(); _actorRac1Animations.Clear(); _actorGcAnimations.Clear();
     }
 
-    private void PruneActorSourceVersions(string game, string build, string path, long length, long written)
+    private void PruneActorSourceVersions(ObpSourceGame game, string build, string path, long length, long written)
     {
         foreach (var key in _actorSourceTasks.Keys.Where(key => key.Game == game &&
             (key.Build != build || key.Path != path || key.Length != length || key.Written != written)).ToArray())
             _actorSourceTasks.Remove(key);
-        if (game == "rac1")
+        if (game == ObpSourceGame.Rac1)
             foreach (var key in _actorRac1Animations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
                 _actorRac1Animations.Remove(key);
-        if (game == "rac2")
+        if (game == ObpSourceGame.Rac2)
             foreach (var key in _actorGcAnimations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
                 _actorGcAnimations.Remove(key);
     }
@@ -116,7 +116,7 @@ public partial class OBPGame
     private void PrepareActorSource(ActorPlacement placement)
     {
         placement.Validate();
-        var game = Enum.Parse<ObpSourceGame>(placement.Source.Game, ignoreCase: true);
+        var game = placement.Source.Game;
         var source = _sources.Get(game);
         if (source is null || source.Identity.BuildId != placement.Source.Build)
         { _actorProblems[placement.Id] = "Missing or unsupported " + placement.Source.Game + " source."; return; }
@@ -169,7 +169,7 @@ public partial class OBPGame
     {
         if (_actors is null || _actorLab is null) return;
         bool preparing = _actorPlacementTasks.Values.Any(task => !task.IsCompleted);
-        foreach (var placement in _actorPlacements.Values.OrderBy(placement => placement.Source.Game, StringComparer.Ordinal)
+        foreach (var placement in _actorPlacements.Values.OrderBy(placement => placement.Source.Game)
             .ThenBy(placement => placement.NativeClassId).ThenBy(placement => placement.Id, StringComparer.Ordinal))
         {
             // Prepare in parallel, activate the admitted set together in stable
@@ -177,7 +177,7 @@ public partial class OBPGame
             // identities or give one enemy extra native ticks before the others.
             if (preparing) break;
             if (_placedActors.ContainsKey(placement.Id) || _actorProblems.ContainsKey(placement.Id)) continue;
-            var source = _sources.Attached.Values.SingleOrDefault(source => source.Game.ToString().Equals(placement.Source.Game, StringComparison.OrdinalIgnoreCase));
+            var source = _sources.Attached.Values.SingleOrDefault(source => source.Game == placement.Source.Game);
             if (source is null) { _actorProblems[placement.Id] = "Source was detached before actor activation."; continue; }
             var task = _actorPlacementTasks.GetValueOrDefault(placement.Id);
             if (task is null || !task.IsCompleted) continue;
@@ -191,7 +191,7 @@ public partial class OBPGame
                 var actor = CreatePlacedActor(placement, library, source.Path);
                 try { RegisterActorView(actor); _placedActors.Add(placement.Id, actor.Registration.Instance); }
                 catch { actor.Dispose(); throw; }
-                GD.Print($"[actors] {placement.Id}: {actor.Registration.Source.Game} class {placement.NativeClassId} active in current lease");
+                GD.Print($"[actors] {placement.Id}: {SourceIdentityWire.FormatSource(actor.Registration.Source.Game)} class {placement.NativeClassId} active in current lease");
             }
             catch (Exception error)
             {
@@ -318,7 +318,7 @@ public partial class OBPGame
     }
 
     private IReadOnlyDictionary<string, string> ReadPlacedActorStatus() => _actorPlacements.Values.ToDictionary(
-        placement => placement.Id, placement => $"{placement.Source.Game} / class {placement.NativeClassId}: " +
+        placement => placement.Id, placement => $"{SourceIdentityWire.FormatSource(placement.Source.Game)} / class {placement.NativeClassId}: " +
             (_actorProblems.GetValueOrDefault(placement.Id) ??
                 (_placedActors.TryGetValue(placement.Id, out var instance) && _actors?.Find(instance.Target) is { } actor
                     ? (actor.Observe().Alive ? "Active" : "Defeated — reset to replay this encounter") +

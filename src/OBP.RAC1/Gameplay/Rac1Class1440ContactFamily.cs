@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -28,7 +29,7 @@ public static class Rac1Class1440ContactFamily
 
     public static Rac1Class1440AuthoredState? ReadAuthored(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != NativeClassId) return null;
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != NativeClassId) return null;
         byte[] pvar = RequirePVar(source);
         return new Rac1Class1440AuthoredState(
             new Rac1Class1440Key(source.NativeClassId, source.InstanceIndex),

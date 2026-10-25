@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Security.Cryptography;
 using System.Text;
 using OBP.Runtime.Gameplay;
@@ -23,10 +24,10 @@ public sealed class PlayerEquipmentCatalog
             item.Item?.Validate();
             if (string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(item.DisplayName) || string.IsNullOrWhiteSpace(item.BuildId) ||
                 !Enum.IsDefined(item.Category) || !Enum.IsDefined(item.Implementation) || !Enum.IsDefined(item.Usage) ||
-                item.SourceGame is not ("rac1" or "rac2" or "rac3") || item.Item is { } key && key.SourceGame != item.SourceGame ||
+                item.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || item.Item is { } key && key.SourceGame != item.SourceGame ||
                 item.Category == EquipmentCategory.Appearance && (item.Appearance is null || item.Item is not null) ||
                 item.Category != EquipmentCategory.Appearance && (item.Item is null || item.Appearance is not null) ||
-                item.Appearance is { } appearance && (appearance.SourceGame.ToString().ToLowerInvariant() != item.SourceGame ||
+                item.Appearance is { } appearance && (appearance.SourceGame != item.SourceGame ||
                     appearance.BuildId != item.BuildId || string.IsNullOrWhiteSpace(appearance.AvatarId) || string.IsNullOrWhiteSpace(appearance.ModelId)) ||
                 item.Implementation == EquipmentImplementation.Unimplemented && string.IsNullOrWhiteSpace(item.UnsupportedReason))
                 throw new ArgumentException("Invalid or misleading source-qualified equipment registration.");
@@ -40,7 +41,7 @@ public sealed class PlayerEquipmentCatalog
     public EquipmentDefinition? Find(string id) => _byId.GetValueOrDefault(id);
     public EquipmentDefinition? Find(SourceWeaponKey item) => _definitions.SingleOrDefault(entry => entry.Item == item);
 
-    public IReadOnlyList<EquipmentCatalogEntry> Read(IReadOnlyDictionary<string, string> sources,
+    public IReadOnlyList<EquipmentCatalogEntry> Read(IReadOnlyDictionary<ObpSourceGame, string> sources,
         Func<EquipmentDefinition, EquipmentLiveState> observe)
     {
         return Array.AsReadOnly(_definitions.Select(item =>
@@ -57,7 +58,7 @@ public sealed class PlayerEquipmentCatalog
             string? reason = status switch
             {
                 EquipmentUsability.Unimplemented => item.UnsupportedReason,
-                EquipmentUsability.MissingSource => $"Attach the {item.SourceGame} source for {item.DisplayName}.",
+                EquipmentUsability.MissingSource => $"Attach the {SourceIdentityWire.FormatSource(item.SourceGame)} source for {item.DisplayName}.",
                 EquipmentUsability.UnsupportedBuild => $"{item.DisplayName} requires {item.BuildId}.",
                 EquipmentUsability.MissingModel => state.ContextReason ?? $"The genuine {item.DisplayName} model is unavailable.",
                 EquipmentUsability.Unowned => "This loadout does not own the item.",
@@ -69,7 +70,7 @@ public sealed class PlayerEquipmentCatalog
     }
 
     /// <summary>Payload/path-free deterministic identity for configuration/replay admission.</summary>
-    public string ConfigurationIdentity(PlayerLoadoutPolicy policy, IReadOnlyDictionary<string, string> sources,
+    public string ConfigurationIdentity(PlayerLoadoutPolicy policy, IReadOnlyDictionary<ObpSourceGame, string> sources,
         PlayerEquipmentAssignmentsSnapshot assignments, SourceWeaponKey? selectedWeapon = null, PlayerAvatarIdentity? appearance = null)
     {
         if (!Enum.IsDefined(policy)) throw new ArgumentOutOfRangeException(nameof(policy));
@@ -83,7 +84,8 @@ public sealed class PlayerEquipmentCatalog
             Version = 1,
             Policy = policy,
             Definitions = _definitions.OrderBy(item => item.Id, StringComparer.Ordinal),
-            Sources = sources.OrderBy(item => item.Key, StringComparer.Ordinal),
+            Sources = sources.OrderBy(item => SourceIdentityWire.FormatSource(item.Key), StringComparer.Ordinal)
+                .Select(item => new KeyValuePair<string, string>(SourceIdentityWire.FormatSource(item.Key), item.Value)),
             assignments.QuickSelect,
             SelectedWeapon = selectedWeapon,
             Appearance = appearance,

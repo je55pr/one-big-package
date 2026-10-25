@@ -48,14 +48,14 @@ public partial class OBPGame
     // An explicit original-world test fixture, never ordinary equipment admission.
     private bool CanRunNativeFusionFixture => !OrdinaryPlayerSession && _activeDestination?.DestinationId == "rac1:LEVEL0";
     private PlaytestWeaponConfiguration? FusionConfiguration => _fusion is null ? null : _fusionAssets?.Configuration(FusionTestActive);
-    private bool FusionMovementStateBlocked => FusionTestActive || _fusion?.Selected.SourceGame is "rac2" or "rac3" ||
+    private bool FusionMovementStateBlocked => FusionTestActive || _fusion?.Selected.SourceGame is ObpSourceGame.Rac2 or ObpSourceGame.Rac3 ||
         _fusion?.LancerSession.ActiveShots.Count > 0;
 
-    private static string FusionWeaponName(SourceWeaponKey key) => key.SourceGame == "rac1" ? Rac1WeaponProfiles.Name((Rac1WeaponId)key.NativeItemId) :
+    private static string FusionWeaponName(SourceWeaponKey key) => key.SourceGame == ObpSourceGame.Rac1 ? Rac1WeaponProfiles.Name((Rac1WeaponId)key.NativeItemId) :
         key == FusionWeaponSession.Lancer ? "Lancer" : "Shock Cannon";
 
     private string? FusionWeaponProblem(SourceWeaponKey key) => _fusionAssets?.Problems.GetValueOrDefault(key) ??
-        (key.SourceGame != "rac1" ? _fusionPreparation?.Status ?? _fusionAssetFailure : null);
+        (key.SourceGame != ObpSourceGame.Rac1 ? _fusionPreparation?.Status ?? _fusionAssetFailure : null);
 
     private string FusionWeaponDetail(SourceWeaponKey key) => FusionWeaponProblem(key) ??
         (_fusion is { } fusion ? $"{fusion.Status(key).Ammo}/{fusion.Status(key).Capacity} · {fusion.Status(key).State}" : "");
@@ -188,9 +188,9 @@ public partial class OBPGame
     private void SyncFusionNativeSelection()
     {
         if (_fusion is null) return;
-        bool foreign = _fusion.Selected.SourceGame != "rac1";
+        bool foreign = _fusion.Selected.SourceGame != ObpSourceGame.Rac1;
         _fusion.BindRac1Inventory(_rac1Weapons);
-        _fusion.Select(new("rac1", _rac1Weapons.CurrentItemId));
+        _fusion.Select(new(ObpSourceGame.Rac1, _rac1Weapons.CurrentItemId));
         if (foreign)
         {
             StopFusionAudio();
@@ -218,9 +218,9 @@ public partial class OBPGame
             var entry = ReadPlayerEquipment().SingleOrDefault(entry => entry.Definition.Item == key);
             if (entry?.Selectable != true) { ReportMovementState(entry?.Reason ?? "No implemented equipment registration."); return; }
         }
-        if (_fusion is null || key.SourceGame == "rac1" && !FusionTestActive)
+        if (_fusion is null || key.SourceGame == ObpSourceGame.Rac1 && !FusionTestActive)
         {
-            if (key.SourceGame == "rac1") OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
+            if (key.SourceGame == ObpSourceGame.Rac1) OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
             RefreshPlayerEquipmentAvailability();
             return;
         }
@@ -237,7 +237,7 @@ public partial class OBPGame
             _rac1BombThrowActive = false;
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
         }
-        if (key.SourceGame == "rac1") HoldSelectedRac1HandItem();
+        if (key.SourceGame == ObpSourceGame.Rac1) HoldSelectedRac1HandItem();
         RefreshPlayerEquipmentAvailability();
         RefreshRac1WrenchPresentationVisibility();
         RefreshRac1HudState();
@@ -259,14 +259,14 @@ public partial class OBPGame
                 },
             };
         }
-        if (_fusion is null || !FusionTestActive && _fusion.Selected.SourceGame == "rac1") return state;
+        if (_fusion is null || !FusionTestActive && _fusion.Selected.SourceGame == ObpSourceGame.Rac1) return state;
         var status = _fusion.Status(_fusion.Selected);
         return state with
         {
             CurrentWeapon = new(status.Weapon.ToString(),
-            $"{FusionWeaponName(status.Weapon)} [{status.Weapon.SourceGame}]", new(status.Ammo, status.Capacity))
+            $"{FusionWeaponName(status.Weapon)} [{SourceIdentityWire.FormatSource(status.Weapon.SourceGame)}]", new(status.Ammo, status.Capacity))
             {
-                Status = FusionWeaponProblem(status.Weapon) ?? (_fusion.Hand.WrenchHeld && _fusion.Selected.SourceGame != "rac1"
+                Status = FusionWeaponProblem(status.Weapon) ?? (_fusion.Hand.WrenchHeld && _fusion.Selected.SourceGame != ObpSourceGame.Rac1
                 ? "Wrench held · use to draw" : $"{(FusionTestActive ? "Fusion test · " : "")}{status.State}")
             }
         };
@@ -278,7 +278,7 @@ public partial class OBPGame
         foreach (var key in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
         {
             if (!_fusionAssets.Available(key)) continue;
-            var view = new FusionMeshView { Name = key.SourceGame + "_original_weapon", Visible = false };
+            var view = new FusionMeshView { Name = SourceIdentityWire.FormatSource(key.SourceGame) + "_original_weapon", Visible = false };
             avatar.AddChild(view); _fusionHeldViews.Add(key, view);
         }
         _fusionBeam = new() { Name = "rac3_original_beam", Visible = false };
@@ -353,11 +353,11 @@ public partial class OBPGame
         float range = _fusion!.Selected == FusionWeaponSession.Lancer ? GcLancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
         if (OrdinaryPlayerSession)
             return RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
-                .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != "rac1" || target.Key.NativeClassId != 749)
+                .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != ObpSourceGame.Rac1 || target.Key.NativeClassId != 749)
                 .Select(target => target.Bounds.GetCenter()).Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < range * range &&
                     (point - origin).Normalized().Dot(EquipmentForward) > .9f && BombHasLineOfSight(origin, point))
                 .OrderBy(point => point.DistanceSquaredTo(origin)).FirstOrDefault(origin + EquipmentForward * range);
-        var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new("rac1", e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
+        var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new(ObpSourceGame.Rac1, e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
             (_fusion.Selected != FusionWeaponSession.Lancer || e.Node.Source.NativeClassId != 749) && IsRac1GameplayActive(e.Node))
             .Select(e => e.Bounds.GetCenter()).Where(p => p.DistanceSquaredTo(origin) is > .1f &&
                 p.DistanceSquaredTo(origin) < range * range && (p - origin).Normalized().Dot(EquipmentForward) > .9f && BombHasLineOfSight(origin, p))
@@ -373,7 +373,7 @@ public partial class OBPGame
             foreach (var contact in TraceRegisteredWeaponQuery(query, muzzle)) yield return contact;
             yield break;
         }
-        var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new("rac1", e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
+        var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new(ObpSourceGame.Rac1, e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&
             IsRac1GameplayActive(e.Node) && (!_rac1Enemies.TryGetValue(e.Node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted))
             .OrderBy(e => e.Node.Source.NativeClassId).ThenBy(e => e.Node.Source.InstanceIndex);
         if (query.Kind == WeaponQueryKind.Sphere)
@@ -382,7 +382,7 @@ public partial class OBPGame
             {
                 Vector3 nearest = new(Mathf.Clamp(from.X, bounds.Position.X, bounds.End.X), Mathf.Clamp(from.Y, bounds.Position.Y, bounds.End.Y), Mathf.Clamp(from.Z, bounds.Position.Z, bounds.End.Z));
                 if (nearest.DistanceSquaredTo(from) > query.Radius * query.Radius || !BombHasLineOfSight(muzzle, nearest)) continue;
-                yield return new(query.Index, new("rac1", node.Source.NativeClassId, node.Source.InstanceIndex), 0, muzzle.DistanceTo(nearest));
+                yield return new(query.Index, new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex), 0, muzzle.DistanceTo(nearest));
             }
             yield break;
         }
@@ -394,7 +394,7 @@ public partial class OBPGame
         foreach (var (node, bounds) in candidates)
         {
             if (!SegmentBoxFraction(from, to, bounds.Grow(query.Radius), out float fraction) || fraction > closest + .00001f) continue;
-            closest = fraction; target = new("rac1", node.Source.NativeClassId, node.Source.InstanceIndex);
+            closest = fraction; target = new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex);
         }
         if (float.IsFinite(closest)) yield return new(query.Index, target, Mathf.Clamp(closest, 0, 1), length * closest);
     }

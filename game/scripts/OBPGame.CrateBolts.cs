@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Fusion;
 using OBP.RAC2.Gameplay;
@@ -57,10 +58,10 @@ public partial class OBPGame
             if (_playerNative is not null)
             {
                 int index = checked((_world!.DynamicObjects?.Select(source => source.InstanceIndex).DefaultIfEmpty(0).Max() ?? 0) + ++_playerEmittedRewardIndex);
-                receipt = new(new(_playerDamageWorld!, _playerDamageLease, new("rac2", 500, index)));
+                receipt = new(new(_playerDamageWorld!, _playerDamageLease, new(ObpSourceGame.Rac2, 500, index)));
                 var owned = receipt;
                 _playerNative.Life.RegisterActor(new(owned.Actor,
-                    new("rac2", OBP.RAC2.Rac2Authority.Primary.BuildId, $"class500:{payout.Uid}:bolt:{pickup.PickupId}"),
+                    new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, $"class500:{payout.Uid}:bolt:{pickup.PickupId}"),
                     "rac2/collected-class500-bolt/v1", $"uid:{payout.Uid}", []), () => !owned.Collected);
             }
             area.BodyEntered += body => OnCrateBoltPickupEntered(body, area, pickup, receipt);

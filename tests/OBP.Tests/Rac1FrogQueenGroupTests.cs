@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Gameplay;
@@ -21,7 +22,7 @@ public sealed class Rac1FrogQueenGroupTests
             BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x100), 578);
             BinaryPrimitives.WriteInt32LittleEndian(p.AsSpan(0x104), 25);
         }
-        return new("rac1", cls, 626, null, "queen", "queen",
+        return new(ObpSourceGame.Rac1, cls, 626, null, "queen", "queen",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, p)]);
     }

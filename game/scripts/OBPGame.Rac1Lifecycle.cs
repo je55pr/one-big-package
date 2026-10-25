@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -68,7 +69,7 @@ public partial class OBPGame
     private Rac1RestartPlacement? ResolveRac1EnvironmentalRestart()
     {
         var death = _rac1Nanotech.Probe();
-        if (_world is not { Game: "rac1" } world ||
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1 } world ||
             _rac1CampaignSession.LevelCheckpoint is not { } checkpoint ||
             checkpoint.NativeLevelId != world.LevelId ||
             !death.HasRecoveredEnvironmentalRespawn)
@@ -83,7 +84,7 @@ public partial class OBPGame
 
     private void TickRac1VeldinEnvironmentalDeath()
     {
-        if (_world is not { Game: "rac1", LevelId: 0, Environment: { } environment } ||
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0, Environment: { } environment } ||
             _player is null || _rac1Nanotech.Probe().IsDead)
             return;
 

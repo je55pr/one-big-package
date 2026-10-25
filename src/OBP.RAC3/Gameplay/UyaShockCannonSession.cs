@@ -1,3 +1,4 @@
+using OBP.Core;
 namespace OBP.RAC3.Gameplay;
 
 /// <summary>
@@ -181,7 +182,7 @@ public sealed class UyaShockCannonSession
             ArgumentNullException.ThrowIfNull(contact);
             ArgumentNullException.ThrowIfNull(contact.Target);
             if ((uint)contact.QueryIndex >= frame.Queries.Count || !float.IsFinite(contact.Distance) || contact.Distance < 0 ||
-                string.IsNullOrWhiteSpace(contact.Target.SourceGame) || contact.Target.NativeClassId < 0 || contact.Target.RuntimeId < 0)
+                !Enum.IsDefined(contact.Target.SourceGame) || contact.Target.NativeClassId < 0 || contact.Target.RuntimeId < 0)
                 throw new ArgumentException("Invalid Shock Cannon contact identity, query index or native distance.", nameof(contacts));
         }
 
@@ -203,7 +204,7 @@ public sealed class UyaShockCannonSession
             result[contact.Target] = intent;
         }
         _contactsResolved = true;
-        return Array.AsReadOnly(result.Values.OrderBy(r => r.Target.SourceGame, StringComparer.Ordinal)
+        return Array.AsReadOnly(result.Values.OrderBy(r => r.Target.SourceGame)
             .ThenBy(r => r.Target.NativeClassId).ThenBy(r => r.Target.RuntimeId).ToArray());
     }
 

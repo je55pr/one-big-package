@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -17,7 +18,7 @@ public static class UyaMobyPlacement
     public static UyaMobyPlacementFacts ReadAuthored(RuntimeDynamicObject source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        if (source.SourceGame != "rac3")
+        if (source.SourceGame != ObpSourceGame.Rac3)
             throw new ArgumentException("Source is not a UYA Moby.", nameof(source));
 
         byte[] bytes = source.NativePayloads?

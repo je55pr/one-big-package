@@ -1,3 +1,4 @@
+using OBP.Core;
 namespace OBP.Fusion;
 
 /// <summary>
@@ -19,8 +20,8 @@ public sealed record WorldPlacement
     /// </summary>
     public string? DestinationId { get; init; }
 
-    /// <summary>Source game tag mirroring <c>RuntimeWorld.Game</c> ("Going Commando", "R&amp;C1", "Up Your Arsenal").</summary>
-    public string? SourceGame { get; init; }
+    /// <summary>Typed native source or authored-world identity, mirroring <c>RuntimeWorld.Game</c>. Legacy labels are decoded only by the wire boundary.</summary>
+    public WorldContentIdentity? SourceGame { get; init; }
 
     /// <summary>Build id mirroring <c>RuntimeWorld.BuildId</c> — provenance for the reconstruction this placement was solved against.</summary>
     public string? BuildId { get; init; }

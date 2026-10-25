@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.IO;
@@ -599,7 +600,7 @@ public class GcLevelTests
         Assert.Equal(190, dynamicCrates.Length);
         Assert.All(dynamicCrates, o =>
         {
-            Assert.Equal("rac2", o.SourceGame);
+            Assert.Equal(ObpSourceGame.Rac2, o.SourceGame);
             Assert.Equal($"moby:{o.NativeClassId}", o.ModelRef);
             Assert.StartsWith("level:1:moby:", o.InteractionId);
             Assert.Equal(16, o.Transform.Matrix.Length);

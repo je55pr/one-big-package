@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Runtime;
 
@@ -14,7 +15,7 @@ public sealed record Rac1FrogAuthored(
 
     public static Rac1FrogAuthored Read(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId)
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId)
             throw new ArgumentException("Expected native class-827 Frog.", nameof(source));
         var payloads = source.NativePayloads?.Where(p => p.Format == Rac1BoltCrate.PVarPayloadFormat).ToArray();
         if (payloads is not [{ Data.Length: PVarSize }])

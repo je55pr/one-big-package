@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -28,7 +29,7 @@ public partial class OBPGame
 
     private bool PlayerEquipmentModelAvailable(SourceWeaponKey key) =>
         key == PlayerEquipmentRegistrations.Wrench ? _rac1WrenchAsset is not null :
-        key == FusionWeaponSession.BombGlove ? _rac1BombGloveAsset is not null : key.SourceGame == "rac1"
+        key == FusionWeaponSession.BombGlove ? _rac1BombGloveAsset is not null : key.SourceGame == ObpSourceGame.Rac1
             ? _rac1EquipmentAssets?.Models.ContainsKey(Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass) == true
             : _fusionAssets?.Available(key) == true;
 
@@ -40,7 +41,7 @@ public partial class OBPGame
         foreach (var item in PlayerEquipmentRegistrations.Catalog.Definitions.Where(definition => definition.Category == EquipmentCategory.Weapon))
         {
             var key = item.Item!.Value;
-            bool foreign = key.SourceGame != "rac1";
+            bool foreign = key.SourceGame != ObpSourceGame.Rac1;
             string socket = foreign ? PlayerEquipmentPose.HandAttachmentKey : key == PlayerEquipmentRegistrations.Wrench ? Rac1WrenchAttachment.SocketKey :
                 key == FusionWeaponSession.BombGlove ? Rac1BombProjectileSession.GloveSocketKey : Rac1WeaponProfiles.HandSocket(Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).HandSemantic);
             bool compatible = avatar.Skeletal is not null;
@@ -54,7 +55,7 @@ public partial class OBPGame
                 }
             }
             string model = key == PlayerEquipmentRegistrations.Wrench ? "moby:71" : key == FusionWeaponSession.BombGlove ? "bomb-glove/held" :
-                key.SourceGame == "rac1" ? "moby:" + Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass :
+                key.SourceGame == ObpSourceGame.Rac1 ? "moby:" + Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass :
                 key == FusionWeaponSession.Lancer ? "moby:" + OBP.RAC2.Gameplay.GcLancerProfile.HeldMobyClass : "moby:" + OBP.RAC3.Gameplay.UyaShockCannonProfile.HeldMobyClass;
             _equipmentPresentationBindings[key] = EquipmentPresentationBinding.Resolve(item, avatar.Identity, model, socket,
                 PlayerEquipmentSources, sockets, PlayerEquipmentModelAvailable(key), compatible);

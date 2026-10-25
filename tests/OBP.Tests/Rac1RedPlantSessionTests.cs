@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Animation;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
@@ -84,7 +85,7 @@ public sealed class Rac1RedPlantSessionTests
                 Enumerable.Range(0, 20).Select(_ => new double[3]).ToArray())],
             Enumerable.Repeat(1d / 30, 20).ToArray());
         return new RuntimeDynamicObject(
-            "rac1", Rac1MobyAnimationProvider.RedPlantClassId, index, null,
+            ObpSourceGame.Rac1, Rac1MobyAnimationProvider.RedPlantClassId, index, null,
             "plant", "plant", new RuntimeObjectTransform(new double[16]),
             [], Animations: new RuntimeObjectAnimationSet([clip]));
     }

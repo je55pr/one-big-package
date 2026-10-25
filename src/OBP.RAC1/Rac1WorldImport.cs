@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Core.Math;
 using OBP.IO;
 using OBP.PS2.Collision;
@@ -111,7 +112,7 @@ public static partial class Rac1WorldImport
             ?? throw new InvalidDataException($"R&C1 level {levelId} has no canonical destination metadata.");
 
         return new RuntimeWorld(
-            Game: "rac1",
+            Game: ObpSourceGame.Rac1,
             BuildId: Rac1Authority.Primary.BuildId,
             LevelId: levelId,
             PlanetName: destination.PlanetLabel,

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -18,7 +19,7 @@ public partial class OBPGame
     {
         try
         {
-            if (_world is not { Game: "rac1", LevelId: 0 } || _player is null)
+            if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 } || _player is null)
                 throw new InvalidOperationException(
                     "Veldin play smoke must begin in ordinary rac1:LEVEL0.");
 
@@ -90,7 +91,7 @@ public partial class OBPGame
     {
         try
         {
-            if (_world is not { Game: "rac1", LevelId: 0 } || _player is null)
+            if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 } || _player is null)
                 throw new InvalidOperationException(
                     "R&C1 movement/contact smoke must begin in ordinary rac1:LEVEL0.");
 

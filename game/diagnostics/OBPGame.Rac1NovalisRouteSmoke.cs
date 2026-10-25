@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -11,7 +12,7 @@ public partial class OBPGame
     {
         try
         {
-            Require(_world is { Game: "rac1", LevelId: 1 } && _player is not null, "Novalis route smoke needs LEVEL1");
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } && _player is not null, "Novalis route smoke needs LEVEL1");
             Require(_rac1NovalisMechanisms.Count == 18, "Missing authored Novalis mechanisms");
             ClearMovementSmokeInput();
             await WaitForGroundedAsync(_player!, 360);

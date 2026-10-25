@@ -43,7 +43,7 @@ public partial class OBPGame
             _fusion = _playerNative.Weapons;
         }
         var initial = new PlayerSessionSnapshot("obp-player", 0, configuration,
-            new(new SourceWeaponKey("rac1", 10), null, []), new(4, 4, true), new Dictionary<string, long>());
+            new(new SourceWeaponKey(ObpSourceGame.Rac1, 10), null, []), new(4, 4, true), new Dictionary<string, long>());
         _playerSession = new(initial, _playerNative, new PlayerCameraPreferences());
         _worldEntries = new(_playerSession);
         RefreshPlayerSourceAvailability();

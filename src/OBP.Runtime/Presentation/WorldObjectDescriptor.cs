@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Core.Math;
 
 namespace OBP.Runtime.Presentation;
@@ -40,7 +41,7 @@ public sealed record WorldObjectDescriptor(
     int? TriangleCount,
     System.Collections.Generic.IReadOnlyList<PayloadReadout> Payloads,
     AnimationReadout? Animation,
-    string Game,
+    [property: System.Text.Json.Serialization.JsonRequired] WorldContentIdentity Game,
     string BuildId,
     int LevelId,
     string WorldName);

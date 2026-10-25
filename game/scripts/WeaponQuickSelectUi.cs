@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
@@ -155,7 +156,7 @@ public sealed partial class WeaponQuickSelectUi : CanvasLayer
                 continue;
 
             var entry = Entries[index];
-            var mappedIcon = entry.Weapon is { SourceGame: "rac1" } native
+            var mappedIcon = entry.Weapon is { SourceGame: ObpSourceGame.Rac1 } native
                 ? Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)native.NativeItemId) : null;
             var icon = mappedIcon is { } mapped
                 ? Rac1RetailUiAssets.Sprite(mapped.AnimationId, mapped.Frame)

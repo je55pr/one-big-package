@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Level;
@@ -34,7 +35,7 @@ public sealed class Rac1FrogShuttleSwitch
     public static Rac1FrogShuttleSwitch? FromRetail(
         IEnumerable<RuntimeDynamicObject> placements, IReadOnlyList<Rac1ClipVolume> volumes)
     {
-        var shuttles = placements.Where(p => p.SourceGame == "rac1" &&
+        var shuttles = placements.Where(p => p.SourceGame == ObpSourceGame.Rac1 &&
             p.NativeClassId == ShuttleClassId).ToArray();
         if (shuttles.Length == 0) return null;
         if (shuttles.Length != 1)

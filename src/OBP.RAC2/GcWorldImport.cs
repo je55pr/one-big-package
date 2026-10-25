@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.IO;
@@ -457,7 +458,7 @@ public static partial class GcWorldImport
 
         var entry = GcPlanetCatalogue.Find(level);
         return new RuntimeWorld(
-            Game: "rac2",
+            Game: ObpSourceGame.Rac2,
             BuildId: Rac2Authority.Primary.BuildId,
             LevelId: level,
             PlanetName: entry?.Planet,

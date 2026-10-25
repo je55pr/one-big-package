@@ -1,3 +1,5 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using OBP.Runtime.Player;
 
 namespace OBP.Runtime.Gameplay;
@@ -9,7 +11,7 @@ public enum EquipmentResourceStatus { Unavailable, Available, NotRequired }
 public enum EquipmentUsability { Ready, Unimplemented, MissingSource, UnsupportedBuild, MissingModel, Unowned, ContextBlocked }
 
 /// <summary>Source-owned registration facts. Item keys reuse the existing weapon/item identity.</summary>
-public sealed record EquipmentDefinition(string Id, string DisplayName, string SourceGame, string BuildId,
+public sealed record EquipmentDefinition(string Id, string DisplayName, [property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, string BuildId,
     EquipmentCategory Category, EquipmentImplementation Implementation, SourceWeaponKey? Item = null,
     PlayerAvatarIdentity? Appearance = null, string? ConflictGroup = null, string? UnsupportedReason = null,
     EquipmentUsage Usage = EquipmentUsage.Handheld);

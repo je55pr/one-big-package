@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
@@ -651,7 +652,7 @@ public sealed class Rac1Class749HostileTests
         transform[14] = home.Z;
         transform[15] = 1d;
         return new RuntimeDynamicObject(
-            "rac1", Rac1Class749Hostile.NativeClassId, instanceIndex, null,
+            ObpSourceGame.Rac1, Rac1Class749Hostile.NativeClassId, instanceIndex, null,
             $"moby:{Rac1Class749Hostile.NativeClassId}", $"moby:{instanceIndex}",
             new RuntimeObjectTransform(transform), Array.Empty<RuntimeObjectMesh>(),
             [new RuntimeOpaquePayload(Rac1Class749Hostile.PVarPayloadFormat, pvar)]);

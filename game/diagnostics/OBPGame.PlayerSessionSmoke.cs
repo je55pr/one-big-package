@@ -90,7 +90,7 @@ public partial class OBPGame
     {
         var selected = _fusion!.Selected;
         var hand = _rac1HeldItem.Hand.Equipment;
-        foreach (var weapon in new[] { new SourceWeaponKey("rac1", 8), new("rac1", 10), FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
+        foreach (var weapon in new[] { new SourceWeaponKey(ObpSourceGame.Rac1, 8), new(ObpSourceGame.Rac1, 10), FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
         {
             SelectWeaponKey(weapon);
             var loadout = _playerSession!.Capture().Loadout;

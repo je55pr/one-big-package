@@ -51,6 +51,27 @@ authored worlds require a distinct typed world identity, not a guessed retail
 origin. Validated parse/format adapters own external strings. Do not add internal
 aliases to keep two competing source vocabularies alive.
 
+Source-facing C# contracts now use `ObpSourceGame`, including actor/weapon keys,
+equipment, native targets, authored entity metadata and shared profile sources.
+`RuntimeWorld.Game` and composition placements use `WorldContentIdentity`, which
+contains either that source enum or an explicit authored `obp:<id>`. The Fusion
+Lab is authored `obp:fusion-lab`, with no native source game. Its established
+world wire tag remains `fusion`; destination IDs remain `obp:fusion-lab`.
+
+`SourceIdentityWire` is the validated parse/format boundary. Canonical source
+strings remain `rac1`/`rac2`/`rac3`; existing comparison-viewer labels such as
+`gc`, `R&C1` and `Up Your Arsenal` are accepted on input and written canonically.
+Unknown labels fail rather than becoming `Synthetic`. Migrated string JSON
+properties opt into their string converter individually; already enum-backed
+archive/avatar/replay properties keep their existing numeric JSON encoding.
+The v1/v2 `PlaytestWeaponConfiguration` source map is an explicit wire-only
+compatibility DTO; its keys stay strings and are formatted from typed runtime
+maps. This migration breaks the old free-string C# construction API deliberately,
+without changing profile/replay versions, native IDs, builds, destinations or
+Godot resources. `SourceIdentityArchitectureTests` prevent new string identity
+contracts and raw source routing; the ownership guard also recognises identities
+passed separately from their world.
+
 `SourceNamingPolicyTests` checks public types, using aliases and source projects.
 Nested source records inherit their enclosing type's context, so names such as
 `Rac2LancerSession.State` stay useful. Neutral `RuntimeWorld`, `Moby`, and shared

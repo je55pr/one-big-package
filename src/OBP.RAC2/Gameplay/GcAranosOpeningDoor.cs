@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -27,7 +28,7 @@ public sealed class GcAranosOpeningDoorSession
         RuntimeEntityState? initialState = null)
     {
         Source = source ?? throw new ArgumentNullException(nameof(source));
-        if (source.SourceGame != "rac2" ||
+        if (source.SourceGame != ObpSourceGame.Rac2 ||
             source.NativeClassId != NativeClassId ||
             source.InstanceIndex != OpeningInstanceIndex)
         {

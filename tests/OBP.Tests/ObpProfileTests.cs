@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -40,7 +41,7 @@ public sealed class ObpProfileTests
         Assert.Equal("obp:fusion-lab", decoded.Destination);
         Assert.Equal("untouched", decoded.Campaigns[0].Data.GetProperty("Mission").GetString());
         Assert.Equal(30, decoded.Campaigns[0].Data.GetProperty("SameNativeId").GetInt32());
-        Assert.False(new SourceWeaponKey("rac1", 30) == session.Capture().Loadout.SelectedWeapon);
+        Assert.False(new SourceWeaponKey(ObpSourceGame.Rac1, 30) == session.Capture().Loadout.SelectedWeapon);
     }
 
     [Fact]
@@ -49,7 +50,7 @@ public sealed class ObpProfileTests
         var profile = Profile() with
         {
             Extensions = new() { ["futureField"] = JsonSerializer.SerializeToElement(new { Revision = 15 }) },
-            Sources = [new("rac1", "fixture", new string('A', 64)) { Extensions = new() { ["futureVerification"] = JsonSerializer.SerializeToElement(7) } }]
+            Sources = [new(ObpSourceGame.Rac1, "fixture", new string('A', 64)) { Extensions = new() { ["futureVerification"] = JsonSerializer.SerializeToElement(7) } }]
         };
         var twice = ObpProfile.Decode(ObpProfile.Decode(profile.Encode()).Encode());
         Assert.Equal(15, twice.Extensions!["futureField"].GetProperty("Revision").GetInt32());
@@ -57,8 +58,8 @@ public sealed class ObpProfileTests
         Assert.Equal(7, twice.Sources.Single().Extensions!["futureVerification"].GetInt32());
         twice.VerifyAvailableSources([]); // Missing sources remain remembered, without pretending they are available.
         twice.VerifyAvailableSources([twice.Sources.Single()]);
-        Assert.Throws<InvalidDataException>(() => twice.VerifyAvailableSources([new("rac1", "another-build", new string('A', 64))]));
-        Assert.Throws<InvalidDataException>(() => twice.VerifyAvailableSources([new("rac1", "fixture", new string('B', 64))]));
+        Assert.Throws<InvalidDataException>(() => twice.VerifyAvailableSources([new(ObpSourceGame.Rac1, "another-build", new string('A', 64))]));
+        Assert.Throws<InvalidDataException>(() => twice.VerifyAvailableSources([new(ObpSourceGame.Rac1, "fixture", new string('B', 64))]));
         Assert.Throws<UnsupportedProfileVersionException>(() => ObpProfile.Decode(Encoding.UTF8.GetBytes(Encoding.UTF8.GetString(profile.Encode()).Replace("\"Version\": 1,", "\"Version\": 99,", StringComparison.Ordinal))));
     }
 

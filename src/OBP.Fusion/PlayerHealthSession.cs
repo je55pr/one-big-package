@@ -1,9 +1,11 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using OBP.Runtime.Player;
 
 namespace OBP.Fusion;
 
-public sealed record PlayerDamageConversion(string SourceGame, string BuildId, string AdapterId, string DescriptorId);
-public sealed record PlayerRewardConversion(string SourceGame, string BuildId, string AdapterId, string CurrencyId);
+public sealed record PlayerDamageConversion([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, string BuildId, string AdapterId, string DescriptorId);
+public sealed record PlayerRewardConversion([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, string BuildId, string AdapterId, string CurrencyId);
 
 /// <summary>OBP choice: admitted integer source damage maps 1:1 to the selected victim's units.</summary>
 public sealed record PlayerHealthPolicy(string Id, IReadOnlyList<PlayerDamageConversion> DamageConversions,
@@ -38,9 +40,9 @@ public sealed class PlayerHealthSession
         ArgumentNullException.ThrowIfNull(policy); ArgumentNullException.ThrowIfNull(controller);
         if (string.IsNullOrWhiteSpace(policy.Id) || string.IsNullOrWhiteSpace(policy.HurtPolicyId) ||
             string.IsNullOrWhiteSpace(policy.CurrencyId) || policy.Capacity <= 0 || policy.RespawnHealth <= 0 || policy.RespawnHealth > policy.Capacity ||
-            policy.DamageConversions.Any(item => item.SourceGame is not ("rac1" or "rac2" or "rac3") ||
+            policy.DamageConversions.Any(item => item.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
                 string.IsNullOrWhiteSpace(item.BuildId) || string.IsNullOrWhiteSpace(item.AdapterId) || string.IsNullOrWhiteSpace(item.DescriptorId)) ||
-            policy.RewardConversions?.Any(item => item.SourceGame is not ("rac1" or "rac2" or "rac3") ||
+            policy.RewardConversions?.Any(item => item.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) ||
                 string.IsNullOrWhiteSpace(item.BuildId) || string.IsNullOrWhiteSpace(item.AdapterId) || item.CurrencyId != policy.CurrencyId) == true)
             throw new ArgumentException("Invalid player health/conversion policy.");
         Policy = policy with

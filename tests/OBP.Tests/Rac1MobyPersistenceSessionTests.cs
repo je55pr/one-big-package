@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.Runtime;
 
@@ -68,7 +69,7 @@ public sealed class Rac1MobyPersistenceSessionTests
             session.QueryUid(Dynamic(500, 89, nativeUid: null)));
         Assert.Throws<ArgumentException>(() =>
             session.QueryUid(new RuntimeDynamicObject(
-                "rac2",
+                ObpSourceGame.Rac2,
                 500,
                 89,
                 121,
@@ -83,7 +84,7 @@ public sealed class Rac1MobyPersistenceSessionTests
         int instanceIndex,
         int? nativeUid) =>
         new(
-            "rac1",
+            ObpSourceGame.Rac1,
             nativeClassId,
             instanceIndex,
             nativeUid,

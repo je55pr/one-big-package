@@ -26,7 +26,8 @@ $cases = @(
     @{ Name = 'aliases'; Options = @('--rac3-iso', 'a.iso', '--uya-iso', 'b.iso'); Expected = '--rac3-iso/--uya-iso specify conflicting source paths' },
     @{ Name = 'modes'; Options = @('--record-playtest', 'a', '--replay-playtest', 'b'); Expected = '--record-playtest cannot be combined' },
     @{ Name = 'engine-after-boundary'; Options = @('--headless'); Expected = 'Unknown OBP argument: --headless' },
-    @{ Name = 'composition-scene'; Scene = 'res://scenes/CompositionLab.tscn'; Options = @('--composition'); Expected = '--composition requires a value' }
+    @{ Name = 'composition-scene'; Scene = 'res://scenes/CompositionLab.tscn'; Options = @('--composition'); Expected = '--composition requires a value' },
+    @{ Name = 'unknown-composition-source'; Options = @('--compose', '--compose-worlds', 'a=unknown:1'); Prefix = '[CompositionLab] Invalid source/composition: '; Reason = 'composition-invalid'; Expected = 'Unknown source game' }
 )
 foreach ($case in $cases) {
     $log = Join-Path $evidence ($case.Name + '.log')
@@ -35,8 +36,10 @@ foreach ($case in $cases) {
     if ($case.Scene) { $arguments += $case.Scene }
     $arguments += @('--') + $case.Options
     $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $arguments -WorkingDirectory $root -StandardOutputPath $log -StandardErrorPath $errorLog
-    if ($code -ne 2 -or -not (Select-String -LiteralPath $errorLog -SimpleMatch ('[cli] ' + $case.Expected) -Quiet) -or
-        -not (Select-String -LiteralPath $log -SimpleMatch 'reason=cli-invalid exitCode=2' -Quiet)) {
+    $prefix = if ($case.Prefix) { $case.Prefix } else { '[cli] ' }
+    $reason = if ($case.Reason) { $case.Reason } else { 'cli-invalid' }
+    if ($code -ne 2 -or -not (Select-String -LiteralPath $errorLog -SimpleMatch ($prefix + $case.Expected) -Quiet) -or
+        -not (Select-String -LiteralPath $log -SimpleMatch ("reason=$reason exitCode=2") -Quiet)) {
         throw "CLI case $($case.Name) failed (exit $code). Inspect $evidence."
     }
     Write-Host "CLI rejection $($case.Name) passed"

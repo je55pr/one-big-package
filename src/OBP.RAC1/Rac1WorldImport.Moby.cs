@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Animation;
 using OBP.RAC1.Level;
 using OBP.Runtime;
@@ -217,7 +218,7 @@ public static partial class Rac1WorldImport
             if (instance.PVar is not null) nativePayloads.Add(new("rac1-pvar", instance.PVar));
 
             output.Add(new RuntimeDynamicObject(
-                "rac1", instance.OClass, instance.Index, instance.Uid, $"moby:{instance.OClass}",
+                ObpSourceGame.Rac1, instance.OClass, instance.Index, instance.Uid, $"moby:{instance.OClass}",
                 $"moby:{instance.Index}", new RuntimeObjectTransform(Rac1Instances.MobyTransform(instance)), objectMeshes,
                 nativePayloads, animationSets.GetValueOrDefault(instance.OClass)));
         }

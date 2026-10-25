@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -136,7 +137,7 @@ public sealed class Rac1Class1440ContactFamilySession :
             source.NativeClassId,
             source.InstanceIndex);
 
-        return source.SourceGame == "rac1" &&
+        return source.SourceGame == ObpSourceGame.Rac1 &&
                source.NativeClassId == Rac1Class1440ContactFamily.NativeClassId &&
                damage.Target.MatchesMoby(target) &&
                damage.DamageEnvelope is { NativeDamage: > 0d };
@@ -190,7 +191,7 @@ public sealed class Rac1Class1440ContactFamilySession :
 
     private (Rac1Class1440Key Key, Entry Entry) RequireEntry(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" ||
+        if (source.SourceGame != ObpSourceGame.Rac1 ||
             source.NativeClassId != Rac1Class1440ContactFamily.NativeClassId)
             throw new ArgumentException("Source is not an R&C1 class-1440 Moby.", nameof(source));
 

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Runtime.Gameplay;
 
@@ -10,8 +11,8 @@ public static class PauseLoadoutSmoke
     {
         var definitions = PlayerEquipmentRegistrations.Catalog.Definitions.Concat(Enumerable.Range(0, 48).Select(index =>
             new EquipmentDefinition("fixture/weapon/" + index, "Future catalogue weapon " + index,
-                index % 2 == 0 ? "rac2" : "rac3", "fixture", EquipmentCategory.Weapon,
-                EquipmentImplementation.Implemented, new(index % 2 == 0 ? "rac2" : "rac3", 1000 + index)))).ToArray();
+                index % 2 == 0 ? ObpSourceGame.Rac2 : ObpSourceGame.Rac3, "fixture", EquipmentCategory.Weapon,
+                EquipmentImplementation.Implemented, new(index % 2 == 0 ? ObpSourceGame.Rac2 : ObpSourceGame.Rac3, 1000 + index)))).ToArray();
         SourceWeaponKey?[] slots = new SourceWeaponKey?[8];
         bool sourceAvailable = true, failEquip = false; int equips = 0, assignments = 0, resumes = 0, gadgets = 0;
         var actionErrors = new List<Exception>();

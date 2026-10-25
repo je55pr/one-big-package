@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.RAC1.Gameplay;
@@ -148,7 +149,7 @@ public sealed class Rac1ExplosiveCrateTests
     }
 
     private static RuntimeDynamicObject Source(int id, byte[] record, byte[] pvar) =>
-        new("rac1", Rac1ExplosiveCrateSession.ClassId, id, null, "explosive", "explosive",
+        new(ObpSourceGame.Rac1, Rac1ExplosiveCrateSession.ClassId, id, null, "explosive", "explosive",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads:
             [

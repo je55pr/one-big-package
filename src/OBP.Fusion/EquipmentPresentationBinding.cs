@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime.Gameplay;
 using OBP.Runtime.Player;
 
@@ -10,7 +11,7 @@ public sealed record EquipmentPresentationBinding(SourceWeaponKey Item, FusionSo
     public bool Ready => Admission == CapabilityAdmission.Ready;
 
     public static EquipmentPresentationBinding Resolve(EquipmentDefinition item, PlayerAvatarIdentity avatar,
-        string modelId, string socket, IReadOnlyDictionary<string, string> sources,
+        string modelId, string socket, IReadOnlyDictionary<OBP.Core.ObpSourceGame, string> sources,
         IReadOnlySet<string> measuredSockets, bool modelAvailable, bool compatiblePose)
     {
         if (item.Item is not { } key || string.IsNullOrWhiteSpace(modelId) || string.IsNullOrWhiteSpace(socket))

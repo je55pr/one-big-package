@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
@@ -100,7 +101,7 @@ public sealed partial class UyaShockCannonRetailTests
         weapon.Equip();
         UyaShockCannonFrame? frame = null;
         for (int i = 0; i < 79; i++) frame = weapon.Advance(new(true));
-        var target = new UyaShockCannonTarget("rac3", source.NativeClassId, source.InstanceIndex);
+        var target = new UyaShockCannonTarget(ObpSourceGame.Rac3, source.NativeClassId, source.InstanceIndex);
         var intent = Assert.Single(weapon.ResolveContacts(frame!, [new(0, target, 2, true, 0x4000)]));
         UyaClass500BreakResult result = runtime.DispatchDamage<UyaClass500BreakResult>(intent.ToUyaDamageEvent(0));
         Assert.Equal(UyaClass500Destructible.BreakTransitionNativeState, result.NativeBreakTransitionState);

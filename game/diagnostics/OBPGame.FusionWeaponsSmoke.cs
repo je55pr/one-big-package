@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Text.Json;
 using Godot;
 using OBP.Godot;
@@ -374,7 +375,7 @@ public partial class OBPGame
             {
                 sawJump = true;
                 rotated |= initial.X.DistanceTo(view.Basis.X) > .01f || initial.Z.DistanceTo(view.Basis.Z) > .01f;
-                if (tick == 15) await CaptureFusionAsync($"{key.SourceGame}-{(moving ? "moving" : "standing")}-jump");
+                if (tick == 15) await CaptureFusionAsync($"{SourceIdentityWire.FormatSource(key.SourceGame)}-{(moving ? "moving" : "standing")}-jump");
             }
         }
         FusionKey(Key.Space, false);
@@ -432,7 +433,7 @@ public partial class OBPGame
         await PhysicsFramesAsync(30);
         Require(_rac1HeldItem.Hand.WrenchHeld && _rac1WrenchView!.Visible && !_fusionHeldViews[key].Visible &&
             _fusion.Selected == key && _fusion.Status(key).Ammo == ammo, $"{key} did not retain the wrench and selected equipment independently");
-        await CaptureFusionAsync(key.SourceGame + "-wrench-retained");
+        await CaptureFusionAsync(SourceIdentityWire.FormatSource(key.SourceGame) + "-wrench-retained");
         await FusionFireInputAsync(1);
         await PhysicsFramesAsync(2);
         Require(_rac1HeldItem.Hand.IsHolding(key) && _fusionHeldViews[key].Visible && !_rac1WrenchView!.Visible,

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -18,7 +19,7 @@ public partial class OBPGame
         out RuntimeWorldScene.DynamicObjectNode? node,
         out Rac1Class749HostProbe? probe)
     {
-        if (_world is { Game: "rac1", LevelId: Rac1Class749VeldinPopulation.LevelId } &&
+        if (_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: Rac1Class749VeldinPopulation.LevelId } &&
             _rac1HostileNodes.TryGetValue(instanceIndex, out node))
         {
             probe = _rac1Hostiles.Probe(node.Source);

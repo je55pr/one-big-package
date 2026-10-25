@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.Core.Math;
 using OBP.IO;
@@ -117,7 +118,7 @@ public sealed class Rac1MetropolisTaxiTests
     }
 
     private static RuntimeWorld Kerwan(bool wrongClass = false, bool missingPath = false) => new(
-        Game: "rac1",
+        Game: ObpSourceGame.Rac1,
         BuildId: "rac1-ntscu-original",
         LevelId: 3,
         PlanetName: "Kerwan",
@@ -130,7 +131,7 @@ public sealed class Rac1MetropolisTaxiTests
         Environment: null,
         Ship: new RuntimeSpawn(248.46194, 55.5, 98.921234, 0),
         DynamicObjects: Placements.Select(p => new RuntimeDynamicObject(
-            "rac1", wrongClass && p.Index == 961 ? 999 : p.Class, p.Index, null,
+            ObpSourceGame.Rac1, wrongClass && p.Index == 961 ? 999 : p.Class, p.Index, null,
             $"moby_{p.Class}", $"moby_i{p.Index}",
             new RuntimeObjectTransform(
             [

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -13,7 +14,7 @@ public partial class OBPGame
         Node3D? fixture = null;
         try
         {
-            Require(_player is not null && _world is { Game: "rac1", LevelId: 0 }, "weapons smoke needs opening Veldin");
+            Require(_player is not null && _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 }, "weapons smoke needs opening Veldin");
             Engine.MaxFps = 60; ClearMovementSmokeInput();
             fixture = new Node3D { Name = "SyntheticEquipmentFixture", Position = new(-2000, 64, 2600) }; AddChild(fixture);
             AddSyntheticTraversalMesh(fixture, "EquipmentFloor", 11,

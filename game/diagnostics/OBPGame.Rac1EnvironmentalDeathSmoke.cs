@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
@@ -8,7 +9,7 @@ public partial class OBPGame
 {
     private async Task RunRac1NaturalVeldinFallRespawnSmokeAsync(Vector3 authoredRespawnPosition)
     {
-        if (_world is not { Game: "rac1", LevelId: 0, Environment: { } environment } || _player is null)
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0, Environment: { } environment } || _player is null)
             throw new InvalidOperationException("Natural Veldin fall smoke requires a live LEVEL0 player.");
 
         if (Math.Abs(environment.DeathHeight - 27f) > 0.0001f)

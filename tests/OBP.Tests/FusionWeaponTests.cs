@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Numerics;
 using System.Text.Json;
 using OneBigPackage;
@@ -13,9 +14,9 @@ public sealed class FusionWeaponTests
     private static readonly WeaponUseInput Held = new(true, true, Vector3.Zero, Vector3.UnitX);
 
     [Theory]
-    [InlineData("rac2", 30)]
-    [InlineData("rac3", 43)]
-    public void WrenchKeepsTheSharedHandUntilEquipmentIsDrawnAgain(string game, int item)
+    [InlineData(ObpSourceGame.Rac2, 30)]
+    [InlineData(ObpSourceGame.Rac3, 43)]
+    public void WrenchKeepsTheSharedHandUntilEquipmentIsDrawnAgain(ObpSourceGame game, int item)
     {
         var hand = new PlayerHeldEquipmentSession();
         var nativeHand = new Rac1HeldItemSession(hand);
@@ -76,25 +77,25 @@ public sealed class FusionWeaponTests
         inventory.TryAssignQuickSelect(0, (int)Rac1WeaponId.Blaster);
         string before = JsonSerializer.Serialize(inventory.CapturePersistentState());
         var keys = FusionWeaponSession.DefaultQuickSelect(inventory);
-        Assert.Equal(new SourceWeaponKey("rac1", 15), keys[0]);
+        Assert.Equal(new SourceWeaponKey(ObpSourceGame.Rac1, 15), keys[0]);
         Assert.Contains(FusionWeaponSession.BombGlove, keys);
         Assert.Equal(new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon }, keys.TakeLast(2));
         var fusion = new FusionWeaponSession(0, inventory);
         fusion.Select(FusionWeaponSession.Lancer);
         for (int i = 0; i < 20; i++) Step(fusion, Held);
         Assert.Equal(before, JsonSerializer.Serialize(inventory.CapturePersistentState()));
-        Assert.True(fusion.Select(new("rac1", 15)));
+        Assert.True(fusion.Select(new(ObpSourceGame.Rac1, 15)));
         Assert.Equal(Rac1WeaponId.Blaster, inventory.Equipped);
     }
 
     [Fact]
     public void SameNativeNumberInThreeGamesCannotAliasOrAcquireCampaignGear()
     {
-        var keys = new HashSet<SourceWeaponKey> { new("rac1", 30), new("rac2", 30), new("rac3", 30) };
+        var keys = new HashSet<SourceWeaponKey> { new(ObpSourceGame.Rac1, 30), new(ObpSourceGame.Rac2, 30), new(ObpSourceGame.Rac3, 30) };
         Assert.Equal(3, keys.Count);
         foreach (var key in keys) Assert.Equal(key, JsonSerializer.Deserialize<SourceWeaponKey>(JsonSerializer.Serialize(key)));
         Assert.Throws<ArgumentException>(() => default(SourceWeaponKey).Validate());
-        Assert.Throws<ArgumentException>(() => new SourceWeaponKey("gc", 30).Validate());
+        Assert.Throws<ArgumentException>(() => new SourceWeaponKey((ObpSourceGame)(-1), 30).Validate());
         var campaign = Rac1WeaponInventory.CreateOpeningLoadout();
         string before = JsonSerializer.Serialize(campaign.CapturePersistentState());
         var fusion = new FusionWeaponSession(42);
@@ -105,8 +106,8 @@ public sealed class FusionWeaponTests
         Assert.True(fusion.Rac1Inventory.TryConsumeAmmo(10, 1));
         Assert.Equal(before, JsonSerializer.Serialize(campaign.CapturePersistentState()));
         Assert.Equal(new[] { 10 }, Enumerable.Range(0, 37).Where(id => fusion.Rac1Inventory.Items[id] != 0));
-        Assert.False(fusion.Select(new("rac1", 30)));
-        Assert.False(fusion.Select(new("rac3", 30)));
+        Assert.False(fusion.Select(new(ObpSourceGame.Rac1, 30)));
+        Assert.False(fusion.Select(new(ObpSourceGame.Rac3, 30)));
     }
 
     [Fact]
@@ -115,7 +116,7 @@ public sealed class FusionWeaponTests
         var fusion = new FusionWeaponSession(0); fusion.Select(FusionWeaponSession.Lancer);
         WeaponFrame frame;
         do { frame = fusion.Advance(Held); if (frame.Queries.Count == 0) fusion.ResolveContacts(frame, []); } while (frame.Queries.Count == 0);
-        var key = new WeaponTargetKey("rac1", 1440, 189);
+        var key = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 189);
         var intents = fusion.ResolveContacts(frame, [new(0, key, .7f, .7f), new(0, key, .2f, .2f)]);
         var intent = Assert.Single(intents);
         Assert.Equal(.5f, intent.SourceDamage);
@@ -132,7 +133,7 @@ public sealed class FusionWeaponTests
     public void ShockQueriesCoalesceAndPreserveOriginalSpreadAndChargedDamage()
     {
         var fusion = new FusionWeaponSession(123); fusion.Select(FusionWeaponSession.ShockCannon);
-        var target = new WeaponTargetKey("rac1", 1440, 189);
+        var target = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 189);
         var intents = new List<WeaponDamageIntent>();
         for (int i = 0; i < 85; i++)
         {
@@ -168,14 +169,14 @@ public sealed class FusionWeaponTests
     [Fact]
     public void ForeignQueryAdmissionSkipsUnsupportedRac1ActorsWithoutAliasingOtherSources()
     {
-        var unsupported = new WeaponTargetKey("rac1", 612, 1);
-        var supportedBehindIt = new WeaponTargetKey("rac1", 1440, 2);
+        var unsupported = new WeaponTargetKey(ObpSourceGame.Rac1, 612, 1);
+        var supportedBehindIt = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 2);
         WeaponTargetKey[] orderedContacts = [unsupported, supportedBehindIt];
         foreach (var weapon in new[] { FusionWeaponSession.Lancer, FusionWeaponSession.ShockCannon })
         {
             Assert.Equal(supportedBehindIt, orderedContacts.First(target => FusionDamagePolicy.AdmitsQueryTarget(weapon, target)));
-            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = "rac2" }));
-            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = "rac3" }));
+            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = ObpSourceGame.Rac2 }));
+            Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { SourceGame = ObpSourceGame.Rac3 }));
             Assert.True(FusionDamagePolicy.AdmitsQueryTarget(weapon, unsupported with { NativeClassId = 749 }));
         }
         Assert.True(FusionDamagePolicy.AdmitsQueryTarget(FusionWeaponSession.BombGlove, unsupported));
@@ -184,7 +185,7 @@ public sealed class FusionWeaponTests
     [Fact]
     public void ForeignDamageUsesExplicitTargetAdmissionWithoutAliasingNativeClasses()
     {
-        var target = new WeaponTargetKey("rac1", 1440, 189);
+        var target = new WeaponTargetKey(ObpSourceGame.Rac1, 1440, 189);
         var intent = new WeaponDamageIntent(new(FusionWeaponSession.Lancer, 1, 1), target, .5f, 0x10000, "projectile");
         var damage = Assert.IsType<Rac1GameplayDamageEvent>(FusionDamagePolicy.Translate(intent));
         Assert.Equal(.5, damage.NativeDamage);
@@ -193,7 +194,7 @@ public sealed class FusionWeaponTests
         Assert.False(Rac1EnemyDamage.IsBlaster(damage));
         Assert.Equal(.5f, Rac1EnemyDamage.ResolveNativeDamage(damage, []));
         Assert.Equal(Rac1GameplayEntityRef.Player, damage.Source);
-        Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { SourceGame = "rac2" } }));
+        Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { SourceGame = ObpSourceGame.Rac2 } }));
         Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { NativeClassId = 502 } }));
         Assert.Null(FusionDamagePolicy.Translate(intent with { Target = target with { NativeClassId = 749 } }));
         Assert.False(Rac1EnemyDamage.IsPlayerWeapon(new(damage.Source, damage.Target, .5, 0x10000)));

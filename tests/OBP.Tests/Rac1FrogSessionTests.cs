@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -495,7 +496,7 @@ public sealed class Rac1FrogSessionTests
             BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x20), 1);
             BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x1e4), 4);
         }
-        return new("rac1", Rac1FrogAuthored.ClassId, id, null, "frog", "frog",
+        return new(ObpSourceGame.Rac1, Rac1FrogAuthored.ClassId, id, null, "frog", "frog",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }

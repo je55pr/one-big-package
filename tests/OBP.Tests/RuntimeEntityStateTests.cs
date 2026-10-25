@@ -11,7 +11,7 @@ public sealed class RuntimeEntityStateTests
         var transform = new RuntimeObjectTransform(Enumerable.Range(0, 16).Select(i => (double)i).ToArray());
         var payload = new RuntimeOpaquePayload("native", [1, 2, 3]);
         var source = new RuntimeDynamicObject(
-            "racx", 77, 5, 900, "moby:77", "level:2:moby:5",
+            OBP.Core.ObpSourceGame.Synthetic, 77, 5, 900, "moby:77", "level:2:moby:5",
             transform, Array.Empty<RuntimeObjectMesh>(), [payload]);
 
         var state = RuntimeEntityState.FromAuthored(source);
@@ -31,7 +31,7 @@ public sealed class RuntimeEntityStateTests
         var animations = new RuntimeObjectAnimationSet(
             Array.Empty<RuntimeObjectAnimationClip>(), RuntimeObjectAnimationRole.Reaction);
         var source = new RuntimeDynamicObject(
-            "racx", 77, 5, null, "moby:77", "level:2:moby:5",
+            OBP.Core.ObpSourceGame.Synthetic, 77, 5, null, "moby:77", "level:2:moby:5",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>(),
             Animations: animations);
 
@@ -43,7 +43,7 @@ public sealed class RuntimeEntityStateTests
     public void StateCannotBeAppliedToDifferentAuthoredIdentity()
     {
         RuntimeDynamicObject Source(int index) => new(
-            "racx", 77, index, null, "moby:77", $"level:2:moby:{index}",
+            OBP.Core.ObpSourceGame.Synthetic, 77, index, null, "moby:77", $"level:2:moby:{index}",
             new RuntimeObjectTransform(new double[16]), Array.Empty<RuntimeObjectMesh>());
 
         var first = Source(1);

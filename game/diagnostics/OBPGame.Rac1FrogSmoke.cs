@@ -14,7 +14,7 @@ public partial class OBPGame
     {
         try
         {
-            Require(_world is { Game: "rac1", LevelId: 6 or 10 } && _player is not null &&
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 6 or 10 } && _player is not null &&
                 _rac1Frogs is not null,
                 "Frog smoke requires retail LEVEL6 or LEVEL10");
             int expected = _world!.LevelId == 6 ? 169 : 24;

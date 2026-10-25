@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using OBP.IO;
@@ -29,13 +30,13 @@ public sealed class Rac1TraversalEquipmentSwingTests
     public void RuntimeAdapterRetainsAuthoredIdentityAndNativeAnchor()
     {
         double[] matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 71, 53, 280.07758, 1];
-        var source = new RuntimeDynamicObject("rac1", 803, 701, null, "moby:803", "moby:701",
+        var source = new RuntimeDynamicObject(ObpSourceGame.Rac1, 803, 701, null, "moby:803", "moby:701",
             new RuntimeObjectTransform(matrix), [], [new("rac1-pvar", Pvar())]);
         var actual = Rac1TraversalEquipmentSwingTarget.ReadAuthored(source);
         Assert.NotNull(actual);
         Assert.Equal(701, actual.Value.InstanceIndex);
         Assert.Equal(new Rac1NativeVector3(71, 280.07758, 53), actual.Value.NativeAnchor);
-        Assert.Null(Rac1TraversalEquipmentSwingTarget.ReadAuthored(source with { SourceGame = "rac2" }));
+        Assert.Null(Rac1TraversalEquipmentSwingTarget.ReadAuthored(source with { SourceGame = ObpSourceGame.Rac2 }));
     }
 
     [Fact]

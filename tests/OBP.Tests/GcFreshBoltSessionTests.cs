@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC2.Gameplay;
 using OBP.Runtime;
@@ -94,7 +95,7 @@ public class GcFreshBoltSessionTests
         pvar[0xC8] = 7;
 
         var source = new RuntimeDynamicObject(
-            "rac2", 500, 3, 1234, "moby:500", "level:1:moby:3",
+            ObpSourceGame.Rac2, 500, 3, 1234, "moby:500", "level:1:moby:3",
             new RuntimeObjectTransform(new double[16]),
             Array.Empty<RuntimeObjectMesh>(),
             [new RuntimeOpaquePayload("rac2-moby-instance-0x88", raw),

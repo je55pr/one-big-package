@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.RAC3;
@@ -21,7 +22,7 @@ public sealed class UyaMobyPlacementTests
         Write(raw, UyaMobyPlacement.NativeRotationOffset + 0x08, 0.3f);
 
         RuntimeDynamicObject source = new(
-            "rac3",
+            ObpSourceGame.Rac3,
             5821,
             430,
             null,

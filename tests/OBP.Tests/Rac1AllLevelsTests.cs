@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Text.Json;
 using OBP.IO;
 using OBP.RAC1;
@@ -51,7 +52,7 @@ public sealed class Rac1AllLevelsTests
         Assert.Equal(animationCapableInstances, dynamicObjects.Count(o => o.Animations is not null));
         Assert.Equal(animationCapableInstances, dynamicObjects.Count(o => o.Animations is not null));
 
-        Assert.Equal("rac1", world.Game);
+        Assert.Equal((WorldContentIdentity)ObpSourceGame.Rac1, world.Game);
         Assert.Equal(levelId, world.LevelId);
         Assert.NotEmpty(world.Meshes);
         Assert.NotEmpty(world.Textures);
@@ -98,7 +99,7 @@ public sealed class Rac1AllLevelsTests
         Assert.Contains(world.DynamicObjects!, obj => obj.Meshes.Count > 0);
         Assert.All(world.DynamicObjects!, obj =>
         {
-            Assert.Equal("rac1", obj.SourceGame);
+            Assert.Equal(ObpSourceGame.Rac1, obj.SourceGame);
             Assert.Equal(16, obj.Transform.Matrix.Length);
             Assert.All(obj.Transform.Matrix, value => Assert.True(double.IsFinite(value)));
             Assert.All(obj.Meshes, mesh =>

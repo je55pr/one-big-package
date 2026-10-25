@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.RAC1.Gameplay;
@@ -14,7 +15,7 @@ public sealed class Rac1NovalisPeckbotTests
         BinaryPrimitives.WriteInt16LittleEndian(pvar.AsSpan(0x20a), startsStanding ? (short)1 : (short)0);
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x21c), -1);
         var matrix = new double[16]; matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1;
-        return new("rac1", 577, instance, null, "moby:577", $"peckbot:{instance}",
+        return new(ObpSourceGame.Rac1, 577, instance, null, "moby:577", $"peckbot:{instance}",
             new(matrix), [], [new(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }
 

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.RAC1.Player;
 using OBP.Runtime;
@@ -10,7 +11,7 @@ public partial class OBPGame
 
     private void ConfigureRac1NovalisWater(RuntimeWorld world)
     {
-        if (world.Game != "rac1" || world.LevelId != 1) return;
+        if (world.Game != ObpSourceGame.Rac1 || world.LevelId != 1) return;
         _rac1NovalisWater = Rac1NovalisWaterSurfaces.FromWorld(world);
         GD.Print($"[rac1-novalis-water] {_rac1NovalisWater.SurfaceTriangleCount} horizontal water-tagged source faces indexed");
     }
@@ -35,7 +36,7 @@ public partial class OBPGame
 
     private void OnRac1NovalisDrowned()
     {
-        if (_world is not { Game: "rac1", LevelId: 1 } ||
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } ||
             _player is null || _rac1Nanotech.Probe().IsDead)
             return;
         // Native oxygen/escape guards and action6a's sequence95 completion

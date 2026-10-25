@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
@@ -80,14 +81,14 @@ public sealed class Rac1WrenchCombatTests
     }
 
     [Theory]
-    [InlineData("rac1", Rac1BoltCrate.NativeClassId, true)]
-    [InlineData("rac1", Rac1Class749Hostile.NativeClassId, true)]
-    [InlineData("rac1", Rac1Class1440Session.ClassId, true)]
-    [InlineData("rac1", 1781, false)]
-    [InlineData("rac2", Rac1BoltCrate.NativeClassId, false)]
-    [InlineData("rac3", Rac1Class749Hostile.NativeClassId, false)]
+    [InlineData(ObpSourceGame.Rac1, Rac1BoltCrate.NativeClassId, true)]
+    [InlineData(ObpSourceGame.Rac1, Rac1Class749Hostile.NativeClassId, true)]
+    [InlineData(ObpSourceGame.Rac1, Rac1Class1440Session.ClassId, true)]
+    [InlineData(ObpSourceGame.Rac1, 1781, false)]
+    [InlineData(ObpSourceGame.Rac2, Rac1BoltCrate.NativeClassId, false)]
+    [InlineData(ObpSourceGame.Rac3, Rac1Class749Hostile.NativeClassId, false)]
     public void Goal1LiveTargetAdmissionIsIntegrationScoped(
-        string sourceGame,
+        ObpSourceGame sourceGame,
         int nativeClassId,
         bool expected)
     {
@@ -290,7 +291,7 @@ public sealed class Rac1WrenchCombatTests
 
     private static RuntimeDynamicObject Target(int nativeClassId, int instanceIndex) =>
         new(
-            "rac1",
+            ObpSourceGame.Rac1,
             nativeClassId,
             instanceIndex,
             null,
@@ -314,7 +315,7 @@ public sealed class Rac1WrenchCombatTests
         var pvar = new byte[0x100];
 
         return new RuntimeDynamicObject(
-            "rac1",
+            ObpSourceGame.Rac1,
             500,
             89,
             uid,

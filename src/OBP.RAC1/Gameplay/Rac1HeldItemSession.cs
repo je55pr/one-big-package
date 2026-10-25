@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime.Gameplay;
 
 namespace OBP.RAC1.Gameplay;
@@ -26,7 +27,7 @@ public sealed class Rac1HeldItemSession
     public PlayerHeldEquipmentSession Hand { get; }
     // A foreign item has no R&C1 item number. Never alias its id to native gear.
     public int? NativeItemId => Hand.Equipment is { } equipment
-        ? equipment.SourceGame == "rac1" ? equipment.NativeItemId : null : (int)Rac1WeaponId.Wrench;
+        ? equipment.SourceGame == ObpSourceGame.Rac1 ? equipment.NativeItemId : null : (int)Rac1WeaponId.Wrench;
     public bool Switching => _pendingItem.HasValue;
 
     public Rac1HeldItemSession(PlayerHeldEquipmentSession? hand = null) => Hand = hand ?? new();
@@ -131,6 +132,6 @@ public sealed class Rac1HeldItemSession
     private void HoldNativeItem(int item)
     {
         if (item == (int)Rac1WeaponId.Wrench) Hand.HoldWrench();
-        else Hand.HoldEquipment(new("rac1", item));
+        else Hand.HoldEquipment(new(ObpSourceGame.Rac1, item));
     }
 }

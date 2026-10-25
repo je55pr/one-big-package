@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -14,7 +15,7 @@ public partial class OBPGame
         Node3D? fixture = null;
         try
         {
-            Require(_player is not null && _world is { Game: "rac1" }, "crate smoke needs R&C1");
+            Require(_player is not null && _world is { Game.SourceGame: ObpSourceGame.Rac1 }, "crate smoke needs R&C1");
             var player = _player!;
             Engine.MaxFps = 60;
             ClearMovementSmokeInput();

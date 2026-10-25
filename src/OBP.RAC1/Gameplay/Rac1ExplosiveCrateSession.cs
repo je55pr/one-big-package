@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.RAC1.Level;
 using OBP.Runtime;
@@ -44,7 +45,7 @@ public sealed class Rac1ExplosiveCrateSession : IRac1MobyDamageConsumer
 
     public static Rac1ExplosiveCrateAuthored? ReadAuthored(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId) return null;
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId) return null;
         byte[]? raw = source.NativePayloads?.FirstOrDefault(p => p.Format == Rac1BoltCrate.InstancePayloadFormat)?.Data;
         byte[]? pvar = source.NativePayloads?.FirstOrDefault(p => p.Format == Rac1BoltCrate.PVarPayloadFormat)?.Data;
         if (raw is not { Length: >= Rac1Instances.MobyRecordSize } || pvar is not { Length: 0x100 })
@@ -79,7 +80,7 @@ public sealed class Rac1ExplosiveCrateSession : IRac1MobyDamageConsumer
 
     public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != ClassId ||
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != ClassId ||
             !_entries.TryGetValue(source.InstanceIndex, out var entry)) return false;
         return entry.Native.IsActive && entry.Native.State.NativeState == ActiveState &&
             damage.Target.MatchesMoby(entry.Native.Key) && damage.NativeDamage > 0;

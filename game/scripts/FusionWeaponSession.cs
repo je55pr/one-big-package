@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Numerics;
 using OBP.RAC1.Gameplay;
 using OBP.RAC2.Gameplay;
@@ -15,9 +16,9 @@ public sealed class FusionWeaponSession
 {
     public const string LoadoutId = "veldin-three-v1";
     public const string DefaultLoadoutId = "rac1-default-cross-game-v1";
-    public static readonly SourceWeaponKey BombGlove = new("rac1", (int)Rac1WeaponId.FirstRanged);
-    public static readonly SourceWeaponKey Lancer = new("rac2", GcLancerProfile.WeaponIndex);
-    public static readonly SourceWeaponKey ShockCannon = new("rac3", UyaShockCannonProfile.Identity.ItemDefinitionIndex);
+    public static readonly SourceWeaponKey BombGlove = new(ObpSourceGame.Rac1, (int)Rac1WeaponId.FirstRanged);
+    public static readonly SourceWeaponKey Lancer = new(ObpSourceGame.Rac2, GcLancerProfile.WeaponIndex);
+    public static readonly SourceWeaponKey ShockCannon = new(ObpSourceGame.Rac3, UyaShockCannonProfile.Identity.ItemDefinitionIndex);
     public static IReadOnlyList<SourceWeaponKey> Weapons { get; } = Array.AsReadOnly(new[] { BombGlove, Lancer, ShockCannon });
     public Rac1WeaponInventory Rac1Inventory { get; private set; }
     public GcLancerSession LancerSession { get; } = new(initialAmmo: 40);
@@ -40,7 +41,7 @@ public sealed class FusionWeaponSession
         _spreadRandom = new(seed);
         Rac1Inventory = inventory ?? new(true, Rac1WeaponId.FirstRanged, 10);
         Hand = hand ?? new();
-        Selected = new("rac1", Rac1Inventory.CurrentItemId);
+        Selected = new(ObpSourceGame.Rac1, Rac1Inventory.CurrentItemId);
     }
 
     public void BindRac1Inventory(Rac1WeaponInventory inventory) => Rac1Inventory = inventory;
@@ -50,25 +51,25 @@ public sealed class FusionWeaponSession
     {
         var available = Rac1WeaponProfiles.Additional.Select(p => p.Item).Prepend(Rac1WeaponId.FirstRanged).Where(inventory.Owns).ToArray();
         return inventory.QuickSelect.Where(id => available.Contains((Rac1WeaponId)id)).Select(id => (Rac1WeaponId)id)
-            .Concat(available).Distinct().Select(id => new SourceWeaponKey("rac1", (int)id)).Concat([Lancer, ShockCannon]).ToArray();
+            .Concat(available).Distinct().Select(id => new SourceWeaponKey(ObpSourceGame.Rac1, (int)id)).Concat([Lancer, ShockCannon]).ToArray();
     }
 
     public bool Select(SourceWeaponKey weapon)
     {
         weapon.Validate();
-        if (weapon.SourceGame == "rac1" ? !Enum.IsDefined((Rac1WeaponId)weapon.NativeItemId) || !Rac1Inventory.OwnsNativeItem(weapon.NativeItemId) : weapon != Lancer && weapon != ShockCannon) return false;
-        if (weapon.SourceGame == "rac1" && weapon.NativeItemId == (int)Rac1WeaponId.Wrench) Hand.HoldWrench();
+        if (weapon.SourceGame == ObpSourceGame.Rac1 ? !Enum.IsDefined((Rac1WeaponId)weapon.NativeItemId) || !Rac1Inventory.OwnsNativeItem(weapon.NativeItemId) : weapon != Lancer && weapon != ShockCannon) return false;
+        if (weapon.SourceGame == ObpSourceGame.Rac1 && weapon.NativeItemId == (int)Rac1WeaponId.Wrench) Hand.HoldWrench();
         else Hand.HoldEquipment(weapon);
         if (Selected == weapon) { SynchronizeHeldWeapon(); return true; }
         Selected = weapon;
         SynchronizeHeldWeapon();
         // Bomb Glove's existing host continues to own throwing and projectiles.
-        if (weapon.SourceGame == "rac1") Rac1Inventory.TryEquip((Rac1WeaponId)weapon.NativeItemId);
+        if (weapon.SourceGame == ObpSourceGame.Rac1) Rac1Inventory.TryEquip((Rac1WeaponId)weapon.NativeItemId);
         _lastFrame = null;
         return true;
     }
 
-    public WeaponStatus Status(SourceWeaponKey weapon) => weapon.SourceGame == "rac1"
+    public WeaponStatus Status(SourceWeaponKey weapon) => weapon.SourceGame == ObpSourceGame.Rac1
         ? new(weapon, Rac1Inventory.GetAmmo(weapon.NativeItemId), Rac1ItemAmmoDescriptors.Get(weapon.NativeItemId).MaxAmmo, "ready")
         : weapon == Lancer ? new(weapon, LancerSession.Ammo, GcLancerProfile.AmmoCapacity,
             LancerSession.CooldownSeconds > 0 ? "equipping / recovering" : "ready")
@@ -150,7 +151,7 @@ public sealed class FusionWeaponSession
         foreach (var contact in contacts)
             if ((uint)contact.QueryIndex >= frame.Queries.Count || !float.IsFinite(contact.Fraction) || contact.Fraction is < 0 or > 1 ||
                 !float.IsFinite(contact.Distance) || contact.Distance < 0 || contact.Target is { } target &&
-                (target.SourceGame is not ("rac1" or "rac2" or "rac3") || target.NativeClassId < 0 || target.InstanceIndex < 0))
+                (target.SourceGame is not (ObpSourceGame.Rac1 or ObpSourceGame.Rac2 or ObpSourceGame.Rac3) || target.NativeClassId < 0 || target.InstanceIndex < 0))
                 throw new ArgumentException("Invalid fusion contact.", nameof(contacts));
         var damage = new List<WeaponDamageIntent>();
         foreach (var (index, sweep) in _sweeps)
@@ -191,7 +192,7 @@ public sealed class FusionWeaponSession
 
     private void SynchronizeHeldWeapon()
     {
-        SourceWeaponKey? next = Selected.SourceGame != "rac1" && Hand.IsHolding(Selected) ? Selected : null;
+        SourceWeaponKey? next = Selected.SourceGame != ObpSourceGame.Rac1 && Hand.IsHolding(Selected) ? Selected : null;
         if (next == _activeForeignHand) return;
         LancerSession.Unequip();
         foreach (var audio in CannonSession.Unequip().Audio) _pendingAudio.Add(CannonAudio(audio));

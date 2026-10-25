@@ -157,7 +157,7 @@ public partial class OBPGame
 
     private void ApplyRac1MissionLevelExit(Rac1MissionLevelExit exit)
     {
-        if (_world is not { Game: "rac1" } world || world.LevelId != exit.Owner.LevelId) return;
+        if (_world is not { Game.SourceGame: ObpSourceGame.Rac1 } world || world.LevelId != exit.Owner.LevelId) return;
         var destination = TrilogyWorldProviders.Resolve($"rac1:LEVEL{exit.Destination}")
             ?? throw new InvalidOperationException("Native mission requested an unavailable source destination.");
         if (_rac1CampaignSession.BeginMissionLevelExit(exit) != Rac1PlanetTravelStartResult.Started) return;

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Core.Math;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
@@ -16,7 +17,7 @@ public class WorldObjectDescriptorTests
         System.Collections.Generic.IReadOnlyList<RuntimeDynamicObject>? dynamics = null,
         System.Collections.Generic.IReadOnlyList<RuntimeAnimatedMesh>? animated = null) =>
         new(
-            Game: "rac2",
+            Game: ObpSourceGame.Rac2,
             BuildId: "rac2-ntscu-v1.01",
             LevelId: 1,
             PlanetName: "Oozla",
@@ -70,7 +71,7 @@ public class WorldObjectDescriptorTests
     {
         var pvar = new byte[220];
         var obj = new RuntimeDynamicObject(
-            SourceGame: "rac2",
+            SourceGame: ObpSourceGame.Rac2,
             NativeClassId: 500,
             InstanceIndex: 12,
             NativeUid: 0x41A,
@@ -151,7 +152,7 @@ public class WorldObjectDescriptorTests
     [Fact]
     public void Rac1WeldedOnlyWorld_HasNoDynamicObjectFields()
     {
-        var world = World() with { Game = "rac1", DynamicObjects = null, PlanetName = "Novalis", LocationName = null };
+        var world = World() with { Game = ObpSourceGame.Rac1, DynamicObjects = null, PlanetName = "Novalis", LocationName = null };
         var d = WorldObjectDescriptorBuilder.Build(world, new WorldHit("tie", 2));
 
         Assert.Equal("welded tie", d.Category);

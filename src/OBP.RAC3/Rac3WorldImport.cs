@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Core.Math;
 using OBP.IO;
 using OBP.PS2.Collision;
@@ -111,7 +112,7 @@ public static partial class Rac3WorldImport
                 : mobyModels.TryGetValue(m.OClass, out var modelMeshes)
                     ? modelMeshes
                     : Array.Empty<RuntimeObjectMesh>();
-            return new RuntimeDynamicObject("rac3", m.OClass, m.Index, m.UidCompatibility, $"moby:{m.OClass}",
+            return new RuntimeDynamicObject(ObpSourceGame.Rac3, m.OClass, m.Index, m.UidCompatibility, $"moby:{m.OClass}",
                 $"table:{tableIndex}:moby:{m.Index}", new RuntimeObjectTransform(UyaGameplay.MobyTransform(m)), objectMeshes, payloads);
         }).ToArray();
 
@@ -145,7 +146,7 @@ public static partial class Rac3WorldImport
             : new RuntimeSpawn(settings.ShipPosition.X, settings.ShipPosition.Z, settings.ShipPosition.Y, settings.ShipRotationZ);
         var destination = Rac3DestinationCatalogue.Instance.FindByTableIndex(tableIndex)
             ?? throw new InvalidDataException($"UYA table {tableIndex} has no canonical destination metadata.");
-        var world = new RuntimeWorld("rac3", Rac3Authority.Primary.BuildId, tableIndex, destination.PlanetLabel, destination.LocationLabel, meshes, textures, materialCount, collision, bounds, environment, ship,
+        var world = new RuntimeWorld(ObpSourceGame.Rac3, Rac3Authority.Primary.BuildId, tableIndex, destination.PlanetLabel, destination.LocationLabel, meshes, textures, materialCount, collision, bounds, environment, ship,
             Lighting: null, AnimatedMeshes: animatedMeshes, DynamicObjects: dynamicObjects, AmbientAnimations: ambientAnimations);
         return new ImportResult(
             world,

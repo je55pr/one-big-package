@@ -31,11 +31,11 @@ public partial class OBPGame
     }
 
     private IReadOnlyList<ProfileSource> CaptureProfileSources() => (_profileDocument?.Sources ?? [])
-        .Where(saved => !_sources.Attached.Values.Any(source => source.Game.ToString().Equals(saved.Game, StringComparison.OrdinalIgnoreCase)))
-        .Concat(_sources.Attached.Values.Select(source => new ProfileSource(source.Game.ToString().ToLowerInvariant(),
+        .Where(saved => !_sources.Attached.Values.Any(source => source.Game == saved.Game))
+        .Concat(_sources.Attached.Values.Select(source => new ProfileSource(source.Game,
             source.Identity.BuildId, source.Identity.Sha256 ?? throw new InvalidDataException("Source has no authority digest."))
-        { Extensions = _profileDocument?.Sources.SingleOrDefault(saved => saved.Game.Equals(source.Game.ToString(), StringComparison.OrdinalIgnoreCase))?.Extensions }))
-        .OrderBy(source => source.Game, StringComparer.Ordinal).ToArray();
+        { Extensions = _profileDocument?.Sources.SingleOrDefault(saved => saved.Game == source.Game)?.Extensions }))
+        .OrderBy(source => source.Game).ToArray();
 
     private ObpProfile CaptureSharedProfile()
     {
@@ -87,7 +87,7 @@ public partial class OBPGame
     private void ApplySharedProfile(ObpProfile profile)
     {
         profile.Validate();
-        profile.VerifyAvailableSources(_sources.Attached.Values.Select(source => new ProfileSource(source.Game.ToString().ToLowerInvariant(),
+        profile.VerifyAvailableSources(_sources.Attached.Values.Select(source => new ProfileSource(source.Game,
             source.Identity.BuildId, source.Identity.Sha256 ?? "")));
         var snapshot = profile.Player.Restore(DecodeProfileComponent);
         _playerNative!.ValidateRestore(new(snapshot.Loadout, snapshot.Health, snapshot.Currencies, snapshot.Components));

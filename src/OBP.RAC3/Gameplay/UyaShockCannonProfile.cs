@@ -1,13 +1,14 @@
+using OBP.Core;
 namespace OBP.RAC3.Gameplay;
 
 /// <summary>Source-qualified identity; 43 alone is not a portable weapon ID.</summary>
 public sealed record UyaShockCannonIdentity
 {
-    public string SourceGame => "rac3";
+    [System.Text.Json.Serialization.JsonConverter(typeof(SourceGameWireJsonConverter))] public ObpSourceGame SourceGame => ObpSourceGame.Rac3;
     public string SourceBuild => "rac3-ntscu-original";
     public int ResourceSlot => 39;
     public int ItemDefinitionIndex => 43;
-    public string Key => $"{SourceGame}/{SourceBuild}/item:{ItemDefinitionIndex}";
+    public string Key => $"{SourceIdentityWire.FormatSource(SourceGame)}/{SourceBuild}/item:{ItemDefinitionIndex}";
 }
 
 public sealed record UyaShockCannonUpgrade(

@@ -37,7 +37,7 @@ public sealed class Rac3WorldTests
         using var reader = new FileRandomAccessReader(iso!);
         var result = Rac3WorldImport.BuildObserved(reader, table);
         var world = result.World;
-        Assert.Equal("rac3", world.Game);
+        Assert.Equal((WorldContentIdentity)ObpSourceGame.Rac3, world.Game);
         Assert.Equal(Rac3Authority.Primary.BuildId, world.BuildId);
         Assert.Equal(table, world.LevelId);
         Assert.Equal(Rac3DestinationCatalogue.Instance.FindByTableIndex(table)!.DisplayName, world.DisplayName);

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Fusion;
 using OBP.Godot;
 using OBP.RAC1.Player;
@@ -79,7 +80,7 @@ public sealed class FusionLabDefinitionTests
         {
             Stations = [station with
             {
-                Source = new FusionSourceIdentity("rac1", "", "moby:123"),
+                Source = new FusionSourceIdentity(ObpSourceGame.Rac1, "", "moby:123"),
                 AdapterId = "native-rac1",
             }]
         }).Validate());
@@ -87,7 +88,7 @@ public sealed class FusionLabDefinitionTests
         {
             Stations = [station with
             {
-                Source = new FusionSourceIdentity("rac1", "ntscu", "moby:123"),
+                Source = new FusionSourceIdentity(ObpSourceGame.Rac1, "ntscu", "moby:123"),
                 AdapterId = null,
             }]
         }).Validate());

@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime;
@@ -283,7 +284,7 @@ public sealed class Rac1BombGloveTests
         int instanceIndex,
         RuntimeOpaquePayload[]? payloads = null) =>
         new(
-            "rac1",
+            ObpSourceGame.Rac1,
             nativeClassId,
             instanceIndex,
             null,

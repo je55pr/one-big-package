@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 
@@ -24,7 +25,7 @@ public partial class OBPGame
         }
         try
         {
-            Require(_world is { Game: "rac1", LevelId: 1 } && _player is not null &&
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } && _player is not null &&
                 _rac1NovalisWater is not null,
                 "Novalis swimming smoke requires decoded LEVEL1");
             Engine.MaxFps = 60;

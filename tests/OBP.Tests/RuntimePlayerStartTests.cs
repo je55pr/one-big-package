@@ -37,7 +37,7 @@ public sealed class RuntimePlayerStartTests
 
     private static RuntimeWorld CreateWorld(RuntimeSpawn? ship, RuntimeSpawn? playerStart) =>
         new(
-            Game: "test",
+            Game: OBP.Core.ObpSourceGame.Synthetic,
             BuildId: "test-build",
             LevelId: 0,
             PlanetName: null,

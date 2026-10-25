@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.Godot.Player;
@@ -18,7 +19,7 @@ public partial class OBPGame
         // Circle uses equipment only. Square has its own wrench input path,
         // including when a legacy repro or keyboard shortcut selects item 8.
         if (!PlayerAlive ||
-            _fusion?.Selected.SourceGame is not ("rac2" or "rac3") && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
+            _fusion?.Selected.SourceGame is not (ObpSourceGame.Rac2 or ObpSourceGame.Rac3) && _rac1Weapons.Equipped == Rac1WeaponId.Wrench) return;
         if (_player?.Rac1WrenchFrame.Active == true || _rac1WrenchThrow.Active) return;
         _rac1EquipmentUsePressed = true;
     }
@@ -31,7 +32,7 @@ public partial class OBPGame
         if (_fusion is not null && _fusionAssets?.Available(_fusion.Selected) == false) return;
         bool admitted = _player is not null && PlayerAlive &&
             !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active && !_player.Rac1SwingshotActive && !_player.Rac1Hanging;
-        if (_fusion is { Selected.SourceGame: not "rac1" })
+        if (_fusion is { Selected.SourceGame: not ObpSourceGame.Rac1 })
         {
             if (pressed && admitted && !QuickSelectOpen && !_player!.Scripted && !_player.Rac1WaterHandItemHidden)
                 _fusion.Hand.HoldEquipment(_fusion.Selected);
@@ -50,25 +51,25 @@ public partial class OBPGame
     {
         if (_playerNative is not null)
         {
-            var entry = ReadPlayerEquipment().SingleOrDefault(entry => entry.Definition.Item == new SourceWeaponKey("rac1", (int)weapon));
+            var entry = ReadPlayerEquipment().SingleOrDefault(entry => entry.Definition.Item == new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapon));
             if (entry?.Selectable != true) { ReportMovementState(entry?.Reason ?? "No admitted weapon registration."); return; }
         }
         if (FusionTestActive)
         {
-            SelectWeaponKey(new("rac1", (int)weapon));
+            SelectWeaponKey(new(ObpSourceGame.Rac1, (int)weapon));
             return;
         }
         var previousKey = CurrentWeaponKey;
         int previous = _rac1Weapons.CurrentItemId;
         if (_rac1Weapons.TryEquip(weapon))
         {
-            if (previousKey != new SourceWeaponKey("rac1", (int)weapon)) ResetRac1WeaponAudio();
+            if (previousKey != new SourceWeaponKey(ObpSourceGame.Rac1, (int)weapon)) ResetRac1WeaponAudio();
             SyncFusionNativeSelection();
             if (_player?.Rac1DevelopmentSwingshotPreview == true) _player.ToggleRac1DevelopmentSwingshot();
             if (previous != (int)weapon && previous != (int)Rac1WeaponId.Wrench &&
                 Enum.IsDefined(typeof(Rac1WeaponId), previous))
-                _previousSelectedWeapon = new("rac1", previous);
-            if (previousKey.SourceGame != "rac1") _previousSelectedWeapon = previousKey;
+                _previousSelectedWeapon = new(ObpSourceGame.Rac1, previous);
+            if (previousKey.SourceGame != ObpSourceGame.Rac1) _previousSelectedWeapon = previousKey;
             _rac1CombatStatus = $"equipped {Rac1WeaponProfiles.Name(weapon)}";
             RefreshRac1HudState();
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))

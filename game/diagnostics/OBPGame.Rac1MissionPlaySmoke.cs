@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Progression;
@@ -59,7 +60,7 @@ public partial class OBPGame
             if (campaign.CanSelectDestination(1) &&
                 (_rac1Nanotech.Probe().IsDead || _rac1Nanotech.EnvironmentalDeathGeneration > 0)) sawDeath = true;
             if (sawDeath && !_rac1Nanotech.Probe().IsDead && _player?.Rac1GameplayAlive == true) sawRestart = true;
-            if (_rac1CampaignSession.Travel.TransitionActive || _world?.Game != "rac1") continue;
+            if (_rac1CampaignSession.Travel.TransitionActive || _world?.Game != ObpSourceGame.Rac1) continue;
             if (_world.LevelId != campaign.CurrentLevel)
                 throw new InvalidOperationException("External world travel invalidates the ordinary-input check.");
             if (!enteredNovalis && campaign.CurrentLevel == 1)

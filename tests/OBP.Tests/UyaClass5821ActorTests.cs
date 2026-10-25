@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using OBP.IO;
 using OBP.RAC3;
@@ -731,7 +732,7 @@ public sealed class UyaClass5821ActorTests
             0);
 
         return new RuntimeDynamicObject(
-            "rac3",
+            ObpSourceGame.Rac3,
             UyaClass5821Actor.NativeClassId,
             instanceIndex,
             null,

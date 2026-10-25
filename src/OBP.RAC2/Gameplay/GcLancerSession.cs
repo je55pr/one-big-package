@@ -1,3 +1,5 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using System.Numerics;
 
 namespace OBP.RAC2.Gameplay;
@@ -14,7 +16,7 @@ public enum GcLancerFireStatus
 
 public sealed record GcLancerFireResult(GcLancerFireStatus Status, GcLancerShot? Shot)
 {
-    public string SourceGame => GcLancerProfile.SourceGame;
+    [JsonConverter(typeof(SourceGameWireJsonConverter))] public ObpSourceGame SourceGame => GcLancerProfile.SourceGame;
     public int WeaponIndex => GcLancerProfile.WeaponIndex;
 }
 
@@ -33,7 +35,7 @@ public sealed class GcLancerShot
         Direction = direction;
     }
 
-    public string SourceGame => GcLancerProfile.SourceGame;
+    [JsonConverter(typeof(SourceGameWireJsonConverter))] public ObpSourceGame SourceGame => GcLancerProfile.SourceGame;
     public int WeaponIndex => GcLancerProfile.WeaponIndex;
     public int NativeClassId => GcLancerProfile.ProjectileMobyClass;
     public long Generation { get; }
@@ -65,7 +67,7 @@ public sealed class GcLancerSweep
 /// A host-owned target can belong to another game. Damage provenance remains
 /// rac2 regardless of the destination world's own class/id conventions.
 /// </summary>
-public sealed record GcLancerTarget(string SourceGame, int NativeClassId, int RuntimeId);
+public sealed record GcLancerTarget([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, int NativeClassId, int RuntimeId);
 
 /// <summary>First blocking contact along a sweep; a null target denotes world geometry.</summary>
 public sealed record GcLancerContact(float Fraction, GcLancerTarget? Target = null);
@@ -75,7 +77,7 @@ public sealed record GcLancerDamageIntent(
     GcLancerTarget Target,
     Vector3 Position)
 {
-    public string SourceGame => Shot.SourceGame;
+    [JsonConverter(typeof(SourceGameWireJsonConverter))] public ObpSourceGame SourceGame => Shot.SourceGame;
     public int WeaponIndex => Shot.WeaponIndex;
     public GcCollisionDamage Damage => Shot.Damage;
 }
@@ -85,7 +87,7 @@ public sealed record GcLancerImpact(
     Vector3 Position,
     GcLancerDamageIntent? Damage)
 {
-    public string SourceGame => Shot.SourceGame;
+    [JsonConverter(typeof(SourceGameWireJsonConverter))] public ObpSourceGame SourceGame => Shot.SourceGame;
 }
 
 /// <summary>
@@ -211,7 +213,7 @@ public sealed class GcLancerSession
         {
             if (!float.IsFinite(contact.Fraction) || contact.Fraction < 0 || contact.Fraction > 1)
                 throw new ArgumentOutOfRangeException(nameof(contact));
-            if (contact.Target is { } target && string.IsNullOrWhiteSpace(target.SourceGame))
+            if (contact.Target is { } target && !Enum.IsDefined(target.SourceGame))
                 throw new ArgumentException("Contact target must retain its source game.", nameof(contact));
 
             Vector3 position = Vector3.Lerp(sweep.From, sweep.To, contact.Fraction);

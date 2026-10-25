@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC2.Gameplay;
@@ -40,7 +41,7 @@ public partial class OBPGame
         }
 
         var openingLiftNode = nodes.FirstOrDefault(n =>
-            n.Source.SourceGame == "rac2" &&
+            n.Source.SourceGame == ObpSourceGame.Rac2 &&
             n.Source.NativeClassId == GcAranosOpeningLiftSession.NativeClassId &&
             n.Source.InstanceIndex == GcAranosOpeningLiftSession.OpeningInstanceIndex);
         if (openingLiftNode is not null)
@@ -51,7 +52,7 @@ public partial class OBPGame
         }
 
         var openingDoorNode = nodes.FirstOrDefault(n =>
-            n.Source.SourceGame == "rac2" &&
+            n.Source.SourceGame == ObpSourceGame.Rac2 &&
             n.Source.NativeClassId == GcAranosOpeningDoorSession.NativeClassId &&
             n.Source.InstanceIndex == GcAranosOpeningDoorSession.OpeningInstanceIndex);
         if (openingDoorNode is not null)
@@ -62,7 +63,7 @@ public partial class OBPGame
         }
 
         foreach (var node in nodes.Where(n =>
-                     n.Source.SourceGame == "rac2" &&
+                     n.Source.SourceGame == ObpSourceGame.Rac2 &&
                      n.Source.NativeClassId == GcClass2827HostileSession.NativeClassId))
         {
             var hostile = new GcClass2827HostileSession(node.Source, node.State);
@@ -80,7 +81,7 @@ public partial class OBPGame
         }
 
         _crateDebugTarget = nodes
-            .Where(n => n.Source.SourceGame == "rac2" && n.Source.NativeClassId == 500)
+            .Where(n => n.Source.SourceGame == ObpSourceGame.Rac2 && n.Source.NativeClassId == 500)
             .OrderBy(n => n.Source.InstanceIndex)
             .FirstOrDefault();
 
@@ -96,7 +97,7 @@ public partial class OBPGame
 
     private void ArmGcGameplayHost(PlayerHost player)
     {
-        if (OrdinaryPlayerSession || _sceneResult?.DynamicObjectNodes?.Any(node => node.Source.SourceGame == "rac2") != true)
+        if (OrdinaryPlayerSession || _sceneResult?.DynamicObjectNodes?.Any(node => node.Source.SourceGame == ObpSourceGame.Rac2) != true)
         {
             return;
         }
@@ -147,7 +148,7 @@ public partial class OBPGame
         {
             bool gameplayTarget = node.Source.NativeClassId == 500 ||
                 node.Source.NativeClassId == GcClass2827HostileSession.NativeClassId;
-            if (node.Source.SourceGame != "rac2" || !gameplayTarget
+            if (node.Source.SourceGame != ObpSourceGame.Rac2 || !gameplayTarget
                 || !IsInstanceValid(node.Root) || !node.Root.Visible)
             {
                 continue;
@@ -276,7 +277,7 @@ public partial class OBPGame
 
     private void TickGcGameplay(double delta)
     {
-        if (_world?.Game != "rac2" || _player is null ||
+        if (_world?.Game != ObpSourceGame.Rac2 || _player is null ||
             (_gcClass2827Hostiles.Count == 0 && _gcOpeningLift is null && _gcOpeningDoor is null))
         {
             return;
@@ -307,7 +308,7 @@ public partial class OBPGame
 
     private string GetGcGameplayHudLine()
     {
-        if (_world?.Game != "rac2" || _gcOpeningMsr1.Count == 0)
+        if (_world?.Game != ObpSourceGame.Rac2 || _gcOpeningMsr1.Count == 0)
         {
             return string.Empty;
         }

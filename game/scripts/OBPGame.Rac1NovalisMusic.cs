@@ -32,7 +32,7 @@ public partial class OBPGame
 
     private void ConfigureRac1NovalisMusic(RuntimeWorld world)
     {
-        if (world is not { Game: "rac1", LevelId: 1 }) return;
+        if (world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }) return;
         var source = _sources.Get(ObpSourceGame.Rac1)
             ?? throw new InvalidOperationException("Novalis music needs the original disc source.");
         _rac1MusicReader = new FileRandomAccessReader(source.Path);

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -12,7 +13,7 @@ public partial class OBPGame
         Node3D? fixture = null;
         try
         {
-            Require(_player is not null && _world is { Game: "rac1", LevelId: 0 }, "Bomb Glove smoke needs Veldin");
+            Require(_player is not null && _world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 }, "Bomb Glove smoke needs Veldin");
             Engine.MaxFps = 60;
             ClearMovementSmokeInput();
             string? savedRepro = System.Environment.GetEnvironmentVariable("OBP_BOMB_REPRO_STATE");

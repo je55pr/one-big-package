@@ -1,3 +1,5 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 namespace OBP.RAC3.Gameplay;
 
 public enum UyaShockCannonState
@@ -87,7 +89,7 @@ public sealed record UyaShockCannonFrame(
     IReadOnlyList<UyaShockCannonEffect> Effects);
 
 /// <summary>Targets remain source-qualified even in an OBP cross-game world.</summary>
-public sealed record UyaShockCannonTarget(string SourceGame, int NativeClassId, long RuntimeId);
+public sealed record UyaShockCannonTarget([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame SourceGame, int NativeClassId, long RuntimeId);
 
 /// <summary>
 /// An actual host result for one query. CollisionAdmitted means the host applied
@@ -118,7 +120,7 @@ public sealed record UyaShockCannonDamageIntent(
 {
     public UyaGameplayDamageEvent ToUyaDamageEvent(int heldMobyInstanceIndex)
     {
-        if (Target.SourceGame != "rac3")
+        if (Target.SourceGame != ObpSourceGame.Rac3)
             throw new InvalidOperationException("Cross-game damage requires the neutral host's explicit target adapter.");
         if (heldMobyInstanceIndex < 0)
             throw new ArgumentOutOfRangeException(nameof(heldMobyInstanceIndex));

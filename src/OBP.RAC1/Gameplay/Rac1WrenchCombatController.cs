@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
 
@@ -81,7 +82,7 @@ public sealed class Rac1WrenchCombatController
     /// </summary>
     public Rac1WrenchContactTarget? AdmitGoal1RuntimeTarget(RuntimeDynamicObject source)
     {
-        if (source.SourceGame != "rac1") return null;
+        if (source.SourceGame != ObpSourceGame.Rac1) return null;
         if (!Rac1BoltCrate.IsCrateClass(source.NativeClassId) &&
             source.NativeClassId != Rac1ExplosiveCrateSession.ClassId &&
             source.NativeClassId != Rac1SeekerSession.ClassId &&

@@ -1,13 +1,15 @@
+using OBP.Core;
+using System.Text.Json.Serialization;
 using OBP.Core.Math;
 
 namespace OBP.Fusion;
 
 /// <summary>Source-qualified native identity; never a cross-game behavioural claim.</summary>
-public sealed record FusionSourceIdentity(string Game, string Build, string NativeId, string? Variant = null)
+public sealed record FusionSourceIdentity([property: JsonConverter(typeof(SourceGameWireJsonConverter)), JsonRequired] ObpSourceGame Game, string Build, string NativeId, string? Variant = null)
 {
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(Game) || string.IsNullOrWhiteSpace(Build) ||
+        if (!Enum.IsDefined(Game) || string.IsNullOrWhiteSpace(Build) ||
             string.IsNullOrWhiteSpace(NativeId))
             throw new ArgumentException("Fusion identities require game, build and native id.");
     }

@@ -19,7 +19,8 @@ public sealed class WorldEntryContractTests
             .Select(game => new TestAvatarProvider(game)));
         foreach (var destination in ReconciliationGateTests.Matrix.GetProperty("Route").EnumerateArray())
         {
-            string id = destination.GetString()!, game = id.Split(':')[0];
+            string id = destination.GetString()!;
+            var game = SourceIdentityWire.ParseWorld(id.StartsWith("obp:", StringComparison.Ordinal) ? id : id.Split(':')[0]);
             var plan = WorldEntryPlanning.Prepare(Request(id), new TestWorldSource(game), session, providers);
             Assert.Equal(game, plan.Prepared.World.Game);
             Assert.Same(session, plan.PlayerSession);
@@ -29,7 +30,7 @@ public sealed class WorldEntryContractTests
             Assert.Equal(session.State.Configuration.Movement, plan.Player.Configuration.Movement);
             Assert.Equal(session.State.Configuration.Animation, plan.Player.Configuration.Animation);
             Assert.Equal(session.State.Configuration.Services, plan.Player.Configuration.Services);
-            Assert.Equal(new SourceWeaponKey("rac2", 30), plan.Player.Loadout.SelectedWeapon);
+            Assert.Equal(new SourceWeaponKey(ObpSourceGame.Rac2, 30), plan.Player.Loadout.SelectedWeapon);
             Assert.Null(plan.Player.Loadout.HandEquipment); // Wrench ownership survives a selected gun.
             Assert.Equal(WorldEntryMode.OrdinaryFusion, plan.Request.Mode);
         }
@@ -40,7 +41,7 @@ public sealed class WorldEntryContractTests
     public void MissingAvatarCannotSelectAnotherSourceProviderOrAHiddenCapsule()
     {
         var session = new TestSession(Snapshot());
-        var source = new TestWorldSource("rac2");
+        var source = new TestWorldSource(ObpSourceGame.Rac2);
         var providers = new PlayerAvatarProviderRegistry([new TestAvatarProvider(ObpSourceGame.Rac2)]);
         var error = Assert.Throws<InvalidOperationException>(() => WorldEntryPlanning.Prepare(Request(), source, session, providers));
         Assert.Contains("Selected avatar Rac1", error.Message);
@@ -53,7 +54,7 @@ public sealed class WorldEntryContractTests
     {
         var session = new TestSession(Snapshot());
         var before = session.Capture();
-        var source = new TestWorldSource("fusion") { Fail = true };
+        var source = new TestWorldSource(WorldContentIdentity.FusionLab) { Fail = true };
         Assert.Throws<InvalidDataException>(() => WorldEntryPlanning.Prepare(Request(), source, session, Providers()));
         Assert.Same(before, session.Capture());
         Assert.Equal(0, session.Restores);
@@ -62,8 +63,8 @@ public sealed class WorldEntryContractTests
     [Fact]
     public void ActorKeysRetainSourceAndWorldGenerationWithoutInventingCapabilities()
     {
-        ActorRegistration a = Actor("rac1"), b = Actor("rac3"); // Same local class and instance, different source.
-        var source = new TestWorldSource("fusion") { Actors = [a, b] };
+        ActorRegistration a = Actor(ObpSourceGame.Rac1), b = Actor(ObpSourceGame.Rac3); // Same local class and instance, different source.
+        var source = new TestWorldSource(WorldContentIdentity.FusionLab) { Actors = [a, b] };
         var plan = WorldEntryPlanning.Prepare(Request(), source, new TestSession(Snapshot()), Providers());
         Assert.Equal(2, plan.Prepared.Actors.Count);
         Assert.NotEqual(a.Instance, b.Instance);
@@ -81,18 +82,18 @@ public sealed class WorldEntryContractTests
     public void SnapshotAndEntryVersionsFailClosedAndParityIsExplicit()
     {
         var session = new TestSession(Snapshot() with { Version = 99 });
-        Assert.Throws<ArgumentException>(() => WorldEntryPlanning.Prepare(Request(), new TestWorldSource("rac1"), session, Providers()));
+        Assert.Throws<ArgumentException>(() => WorldEntryPlanning.Prepare(Request(), new TestWorldSource(ObpSourceGame.Rac1), session, Providers()));
         session.State = Snapshot();
-        Assert.Throws<ArgumentException>(() => WorldEntryPlanning.Prepare(Request() with { Version = 99 }, new TestWorldSource("rac1"), session, Providers()));
+        Assert.Throws<ArgumentException>(() => WorldEntryPlanning.Prepare(Request() with { Version = 99 }, new TestWorldSource(ObpSourceGame.Rac1), session, Providers()));
         var request = Request() with { Mode = WorldEntryMode.RetailParity };
-        var plan = WorldEntryPlanning.Prepare(request, new TestWorldSource("rac1"), session, Providers());
+        var plan = WorldEntryPlanning.Prepare(request, new TestWorldSource(ObpSourceGame.Rac1), session, Providers());
         Assert.Equal(WorldEntryMode.RetailParity, plan.Request.Mode);
         Assert.Equal(session.State.Configuration, plan.Player.Configuration);
     }
 
     private static WorldEntryRequest Request(string destination = "obp:fixture") => new(destination, "world-test", 0, WorldEntryMode.OrdinaryFusion);
     private static PlayerAvatarProviderRegistry Providers() => new([new TestAvatarProvider(ObpSourceGame.Rac1)]);
-    private static ActorRegistration Actor(string game) => new(new("world-test", 0, new(game, 500, 0)),
+    private static ActorRegistration Actor(ObpSourceGame game) => new(new("world-test", 0, new(game, 500, 0)),
         new(game, "synthetic-v1", "authored-placement:0"), "test/actor-adapter/v1", null,
         [new("roam", CapabilityAdmission.Unimplemented, "Synthetic registration only; no native roaming controller.")]);
 
@@ -103,7 +104,7 @@ public sealed class WorldEntryContractTests
             new(ObpSourceGame.Rac1, "synthetic-v1", "test-animation"),
             new("test/input/v1", "test/attack/v1", "test/health/v1", "test/camera/v1",
                 "test/hud/v1", "test/pause/v1", "test/quick-select/v1", "test/audio/v1"), 60),
-        new(new("rac2", 30), null, [new("rac1", 10), new("rac2", 30), new("rac3", 43)]),
+        new(new(ObpSourceGame.Rac2, 30), null, [new(ObpSourceGame.Rac1, 10), new(ObpSourceGame.Rac2, 30), new(ObpSourceGame.Rac3, 43)]),
         new(4, 4, true), new Dictionary<string, long> { ["test/bolts"] = 12 });
 
     private sealed class TestSession(PlayerSessionSnapshot snapshot) : IObpPlayerSession
@@ -114,7 +115,7 @@ public sealed class WorldEntryContractTests
         public void Restore(PlayerSessionSnapshot state) { State = state; Restores++; }
     }
 
-    private sealed class TestWorldSource(string game) : IWorldEntrySource
+    private sealed class TestWorldSource(WorldContentIdentity game) : IWorldEntrySource
     {
         internal bool Fail;
         internal int Preparations;

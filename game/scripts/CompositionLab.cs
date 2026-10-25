@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Linq;
 using Godot;
 using OBP.Fusion;
@@ -105,8 +106,13 @@ public partial class CompositionLab : Node3D
         _hud.AddThemeColorOverride("font_color", new Color(0.85f, 0.95f, 1f));
         _ui.AddChild(_hud);
 
-        RegisterSources();
-        LoadComposition();
+        try { RegisterSources(); LoadComposition(); }
+        catch (Exception error) when (error is IOException or System.Text.Json.JsonException or ArgumentException)
+        {
+            GD.PrintErr("[CompositionLab] Invalid source/composition: " + error.Message);
+            ApplicationLifecycle.RequestQuit(this, "composition-invalid", 2);
+            return;
+        }
 
         if (_args.ComposeReload is { } reloads and > 0)
         {
@@ -203,7 +209,7 @@ public partial class CompositionLab : Node3D
             string[] parts = rhs.Split(':', 2);
             string game = parts.Length == 2 ? parts[0] : "gc";
             int level = int.TryParse(parts[^1], out int l) ? l : 1;
-            worlds.Add(new WorldPlacement { Id = id, SourceGame = game, LevelId = level, Label = $"{game}:{level}" });
+            worlds.Add(new WorldPlacement { Id = id, SourceGame = SourceIdentityWire.ParseWorld(game), LevelId = level, Label = $"{game}:{level}" });
         }
 
         return new WorldComposition { Worlds = worlds };

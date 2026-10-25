@@ -16,11 +16,11 @@ namespace OBP.Tests;
 
 public sealed class PlayerCapabilitiesTests
 {
-    private static readonly IReadOnlyDictionary<string, string> Sources = new Dictionary<string, string>
+    private static readonly IReadOnlyDictionary<ObpSourceGame, string> Sources = new Dictionary<ObpSourceGame, string>
     {
-        ["rac1"] = Rac1Authority.Primary.BuildId,
-        ["rac2"] = Rac2Authority.Primary.BuildId,
-        ["rac3"] = Rac3Authority.Primary.BuildId,
+        [ObpSourceGame.Rac1] = Rac1Authority.Primary.BuildId,
+        [ObpSourceGame.Rac2] = Rac2Authority.Primary.BuildId,
+        [ObpSourceGame.Rac3] = Rac3Authority.Primary.BuildId,
     };
     private static PlayerSessionNativeState Native() => new(Rac1WeaponInventory.CreateOpeningLoadout(), 42, 1440);
     private static PlayerEquipmentCatalog Catalog => PlayerEquipmentRegistrations.Catalog;
@@ -30,14 +30,14 @@ public sealed class PlayerCapabilitiesTests
     public void OwningAGadgetDoesNotCreateAnUnimplementedWeaponController()
     {
         var native = Native(); native.Inventory.AcquireNativeItem((int)Rac1TraversalEquipmentId.Swingshot);
-        Assert.False(native.Weapons.Select(new("rac1", (int)Rac1TraversalEquipmentId.Swingshot)));
+        Assert.False(native.Weapons.Select(new(ObpSourceGame.Rac1, (int)Rac1TraversalEquipmentId.Swingshot)));
         Assert.Equal(FusionWeaponSession.BombGlove, native.Weapons.Selected);
     }
 
     [Fact]
     public void PlayerRestoreKeepsCurrentWorldAttackReceiptsAndLifeGeneration()
     {
-        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor("rac2"); Register(native, actor);
+        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor(ObpSourceGame.Rac2); Register(native, actor);
         var before = native.Capture(); native.Life.Apply(Attack(actor)); native.Life.Respawn();
         native.Restore(before);
         Assert.Equal(0, native.Life.LifeGeneration); Assert.Equal(4, native.Life.Capture().Current);
@@ -62,13 +62,13 @@ public sealed class PlayerCapabilitiesTests
     [Fact]
     public void EqualNativeItemNumbersAcrossGamesNeverAlias()
     {
-        var entries = new[] { "rac1", "rac2", "rac3" }.Select(game => new EquipmentDefinition(game + "/item/10", game, game, Sources[game],
+        var entries = new[] { ObpSourceGame.Rac1, ObpSourceGame.Rac2, ObpSourceGame.Rac3 }.Select(game => new EquipmentDefinition(SourceIdentityWire.FormatSource(game) + "/item/10", game.ToString(), game, Sources[game],
             EquipmentCategory.Weapon, EquipmentImplementation.Implemented, new(game, 10))).ToArray();
         var catalog = new PlayerEquipmentCatalog(entries);
         Assert.Equal(3, catalog.Read(Sources, Ready).Count);
-        Assert.Equal("rac2/item/10", catalog.Find(new SourceWeaponKey("rac2", 10))!.Id);
+        Assert.Equal("rac2/item/10", catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac2, 10))!.Id);
         Assert.Throws<ArgumentException>(() => new PlayerEquipmentCatalog(entries.Append(entries[0] with { Id = "alias" })));
-        Assert.Throws<ArgumentException>(() => new PlayerEquipmentCatalog([entries[0] with { Item = new("rac2", 10) }]));
+        Assert.Throws<ArgumentException>(() => new PlayerEquipmentCatalog([entries[0] with { Item = new(ObpSourceGame.Rac2, 10) }]));
     }
 
     [Theory]
@@ -80,8 +80,8 @@ public sealed class PlayerCapabilitiesTests
     public void CatalogKeepsSourceOwnershipResourcesAndContextSeparate(EquipmentUsability expected)
     {
         var sources = Sources.ToDictionary();
-        if (expected == EquipmentUsability.MissingSource) sources.Remove("rac2");
-        if (expected == EquipmentUsability.UnsupportedBuild) sources["rac2"] = "unsupported";
+        if (expected == EquipmentUsability.MissingSource) sources.Remove(ObpSourceGame.Rac2);
+        if (expected == EquipmentUsability.UnsupportedBuild) sources[ObpSourceGame.Rac2] = "unsupported";
         var entry = Catalog.Read(sources, definition => Ready(definition) with
         {
             Owned = expected != EquipmentUsability.Unowned,
@@ -107,7 +107,7 @@ public sealed class PlayerCapabilitiesTests
         Assert.False(native.Inventory.OwnsNativeItem(28)); Assert.False(native.Inventory.OwnsNativeItem(29));
         var parity = new PlayerSessionNativeState(campaign, 42, 1440, PlayerLoadoutPolicy.RetailCampaign);
         parity.RefreshDevelopmentSources(Sources); Assert.False(parity.Inventory.Owns(Rac1WeaponId.Blaster));
-        var missing = Native(); missing.RefreshDevelopmentSources(new Dictionary<string, string>()); Assert.False(missing.Inventory.Owns(Rac1WeaponId.Blaster));
+        var missing = Native(); missing.RefreshDevelopmentSources(new Dictionary<ObpSourceGame, string>()); Assert.False(missing.Inventory.Owns(Rac1WeaponId.Blaster));
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public sealed class PlayerCapabilitiesTests
         var wheel = native.Assignments.WithOverflow(Catalog.Definitions.Where(entry => entry.Category == EquipmentCategory.Weapon).Select(entry => entry.Item!.Value));
         Assert.Null(wheel[1]); Assert.Equal(FusionWeaponSession.Lancer, wheel[7]);
         Assert.Equal(1, wheel.Count(item => item == FusionWeaponSession.Lancer));
-        native.Assignments.Enable(Catalog.Find(new SourceWeaponKey("rac1", 3))!, true, Catalog);
+        native.Assignments.Enable(Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, 3))!, true, Catalog);
         Assert.False(native.GadgetEnabled(Rac1TraversalEquipmentId.HeliPack)); Assert.True(native.GadgetEnabled(Rac1TraversalEquipmentId.ThrusterPack));
         native.Held.HoldWrench();
         var before = native.Capture();
@@ -129,43 +129,43 @@ public sealed class PlayerCapabilitiesTests
         Assert.Equal(FusionWeaponSession.Lancer, native.Weapons.Selected); Assert.True(native.Held.Hand.WrenchHeld);
         Assert.Equal(before.Loadout.QuickSelect, native.Capture().Loadout.QuickSelect); Assert.Equal(42, native.Wallet.Balance);
         Assert.Same(native.Inventory, native.Weapons.Rac1Inventory);
-        var invalid = native.Assignments.Capture() with { EnabledGadgets = [new("rac1", 2), new("rac1", 3)] };
+        var invalid = native.Assignments.Capture() with { EnabledGadgets = [new(ObpSourceGame.Rac1, 2), new(ObpSourceGame.Rac1, 3)] };
         Assert.Throws<ArgumentException>(() => native.Assignments.Restore(invalid, Catalog));
-        Assert.Throws<ArgumentException>(() => native.Assignments.Enable(Catalog.Find(new SourceWeaponKey("rac1", 28))!, true, Catalog));
+        Assert.Throws<ArgumentException>(() => native.Assignments.Enable(Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, 28))!, true, Catalog));
     }
 
     [Fact]
     public void ConfigurationIdentityIsOrderedPathFreeAndChangesForSlotsPolicyAndSourceBuild()
     {
         var native = Native(); var slots = native.Assignments.Capture();
-        string Identity(PlayerLoadoutPolicy policy, IReadOnlyDictionary<string, string> sources, PlayerEquipmentAssignmentsSnapshot assignments) => Catalog.ConfigurationIdentity(policy, sources, assignments);
+        string Identity(PlayerLoadoutPolicy policy, IReadOnlyDictionary<ObpSourceGame, string> sources, PlayerEquipmentAssignmentsSnapshot assignments) => Catalog.ConfigurationIdentity(policy, sources, assignments);
         string before = Identity(native.LoadoutPolicy, Sources, slots);
         Assert.Equal(before, new PlayerEquipmentCatalog(Catalog.Definitions.Reverse()).ConfigurationIdentity(native.LoadoutPolicy, Sources.Reverse().ToDictionary(), slots));
         native.Assignments.Assign(6, FusionWeaponSession.Lancer);
         Assert.NotEqual(before, Identity(native.LoadoutPolicy, Sources, native.Assignments.Capture()));
         Assert.NotEqual(before, Identity(PlayerLoadoutPolicy.RetailCampaign, Sources, slots));
-        Assert.NotEqual(before, Identity(native.LoadoutPolicy, Sources.Append(new("extra", "build")).ToDictionary(), slots));
+        Assert.NotEqual(before, Identity(native.LoadoutPolicy, Sources.Append(new(ObpSourceGame.Deadlocked, "build")).ToDictionary(), slots));
         Assert.Equal(64, before.Length);
         Assert.NotEqual(before, Catalog.ConfigurationIdentity(native.LoadoutPolicy, Sources, slots, FusionWeaponSession.Lancer));
     }
 
-    private static ActorInstanceKey Actor(string game, int index = 1, long lease = 1) => new("world", lease, new(game, 749, index));
+    private static ActorInstanceKey Actor(ObpSourceGame game, int index = 1, long lease = 1) => new("world", lease, new(game, 749, index));
     private static void Register(PlayerSessionNativeState native, ActorInstanceKey actor, Func<bool>? alive = null)
     {
-        string adapter = actor.Target.SourceGame == "rac1" ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.GcDamageAdapter;
-        string descriptor = actor.Target.SourceGame == "rac1" ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.GcDamageDescriptor;
+        string adapter = actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.GcDamageAdapter;
+        string descriptor = actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.GcDamageDescriptor;
         native.Life.RegisterActor(new(actor, new(actor.Target.SourceGame, Sources[actor.Target.SourceGame], "moby:749"), adapter, null,
             [new(descriptor, CapabilityAdmission.Ready)]), alive ?? (() => true));
     }
     private static PlayerAttackIntent Attack(ActorInstanceKey actor, long sequence = 1, double amount = 1) => new(actor, Sources[actor.Target.SourceGame],
-        actor.Target.SourceGame == "rac1" ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.GcDamageAdapter,
-        actor.Target.SourceGame == "rac1" ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.GcDamageDescriptor, sequence, amount, 1);
+        actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.GcDamageAdapter,
+        actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.GcDamageDescriptor, sequence, amount, 1);
 
     [Fact]
     public void SameNumberedAttackersUseOneVictimAndNativeProtectionThenTrueDeathAndRespawn()
     {
         var native = Native(); native.Weapons.Select(FusionWeaponSession.Lancer);
-        native.Life.BeginWorld("world", 1); var rac1 = Actor("rac1"); var gc = Actor("rac2"); Register(native, rac1); Register(native, gc);
+        native.Life.BeginWorld("world", 1); var rac1 = Actor(ObpSourceGame.Rac1); var gc = Actor(ObpSourceGame.Rac2); Register(native, rac1); Register(native, gc);
         Assert.True(native.Life.Apply(Attack(rac1)).Applied); Assert.Equal(3, native.Life.Capture().Current);
         Assert.Equal(PlayerIntakeStatus.Duplicate, native.Life.Apply(Attack(rac1)).Status);
         Assert.Equal(PlayerIntakeStatus.Protected, native.Life.Apply(Attack(gc)).Status);
@@ -187,7 +187,7 @@ public sealed class PlayerCapabilitiesTests
     [InlineData(2147483648d)]
     public void SharedVictimRejectsInvalidDamageWithoutChangingHealth(double value)
     {
-        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor("rac2"); Register(native, actor);
+        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor(ObpSourceGame.Rac2); Register(native, actor);
         Assert.Equal(PlayerIntakeStatus.Invalid, native.Life.Apply(Attack(actor, amount: value)).Status);
         Assert.Equal(4, native.Life.Capture().Current);
     }
@@ -196,11 +196,11 @@ public sealed class PlayerCapabilitiesTests
     public void RetiredActorCannotAttackOrRetainItsOldDamageReceipt()
     {
         var native = Native(); native.Life.BeginWorld("world", 1);
-        var old = Actor("rac2"); Register(native, old);
+        var old = Actor(ObpSourceGame.Rac2); Register(native, old);
         Assert.True(native.Life.Apply(Attack(old)).Applied);
         native.Life.RetireActor(old);
         Assert.Equal(PlayerIntakeStatus.UnregisteredActor, native.Life.Apply(Attack(old, 2)).Status);
-        var replacement = Actor("rac2", index: 2); Register(native, replacement);
+        var replacement = Actor(ObpSourceGame.Rac2, index: 2); Register(native, replacement);
         for (int tick = 0; tick < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; tick++) native.Life.TickNative();
         Assert.True(native.Life.Apply(Attack(replacement)).Applied);
         Assert.Equal(2, native.Life.Capture().Current);
@@ -209,8 +209,8 @@ public sealed class PlayerCapabilitiesTests
     [Fact]
     public void DeadUnknownWrongBuildAndUnregisteredConversionsCannotDamageThePlayer()
     {
-        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor("rac2"); bool alive = true; Register(native, actor, () => alive);
-        Assert.Equal(PlayerIntakeStatus.UnregisteredActor, native.Life.Apply(Attack(Actor("rac2", 2))).Status);
+        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor(ObpSourceGame.Rac2); bool alive = true; Register(native, actor, () => alive);
+        Assert.Equal(PlayerIntakeStatus.UnregisteredActor, native.Life.Apply(Attack(Actor(ObpSourceGame.Rac2, 2))).Status);
         Assert.Equal(PlayerIntakeStatus.UnregisteredActor, native.Life.Apply(Attack(actor) with { SourceBuildId = "wrong" }).Status);
         Assert.Equal(PlayerIntakeStatus.Unsupported, native.Life.Apply(Attack(actor) with { DescriptorId = "invented" }).Status);
         alive = false; Assert.Equal(PlayerIntakeStatus.DeadActor, native.Life.Apply(Attack(actor)).Status);
@@ -222,7 +222,7 @@ public sealed class PlayerCapabilitiesTests
     {
         Assert.Equal(0, GcRatchetNanotechSession.RoundDamageHpLikeRetail(.5f));
         Assert.Equal(2, GcRatchetNanotechSession.RoundDamageHpLikeRetail(1.5f));
-        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor("rac2"); Register(native, actor);
+        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor(ObpSourceGame.Rac2); Register(native, actor);
         Assert.True(native.Life.Apply(Attack(actor, amount: GcRatchetNanotechSession.RoundDamageHpLikeRetail(1.5f))).Applied);
         Assert.Equal(2, native.Life.Capture().Current);
     }
@@ -230,9 +230,9 @@ public sealed class PlayerCapabilitiesTests
     [Fact]
     public void SourceAdmittedPickupCreditsOnceEvenIfAnotherSequenceIsSentAndStaleRewardsFail()
     {
-        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor("rac2"); bool collected = false;
-        native.Life.RegisterActor(new(actor, new("rac2", Sources["rac2"], "class500:17:bolt:1"), "rac2/collected-class500-bolt/v1", "uid:17", []), () => !collected);
-        var reward = new PlayerRewardIntent(actor, Sources["rac2"], 1, "obp/bolts", 5);
+        var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor(ObpSourceGame.Rac2); bool collected = false;
+        native.Life.RegisterActor(new(actor, new(ObpSourceGame.Rac2, Sources[ObpSourceGame.Rac2], "class500:17:bolt:1"), "rac2/collected-class500-bolt/v1", "uid:17", []), () => !collected);
+        var reward = new PlayerRewardIntent(actor, Sources[ObpSourceGame.Rac2], 1, "obp/bolts", 5);
         void Credit(long value) => native.Wallet.Credit(checked((int)value));
         Assert.Equal(PlayerIntakeStatus.LiveRewardActor, native.Life.Credit(reward, Credit).Status);
         collected = true;

@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.IO;
@@ -98,7 +99,7 @@ public sealed class Rac1FrogShuttleSwitchTests
         var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);
         var volumes = Rac1ClipVolumes.Read(gameplay);
         var sources = Rac1Instances.Parse(gameplay).MobyInstances.Where(m => m.OClass == 1109)
-            .Select(m => new RuntimeDynamicObject("rac1", 1109, m.Index, null, "shuttle", "shuttle",
+            .Select(m => new RuntimeDynamicObject(ObpSourceGame.Rac1, 1109, m.Index, null, "shuttle", "shuttle",
                 new RuntimeObjectTransform(new double[16]), [],
                 NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, m.PVar!)]))
             .ToArray();
@@ -118,7 +119,7 @@ public sealed class Rac1FrogShuttleSwitchTests
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x100), a);
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x104), b);
         BinaryPrimitives.WriteInt32LittleEndian(pvar.AsSpan(0x108), c);
-        return new("rac1", 1109, 55, null, "shuttle", "shuttle",
+        return new(ObpSourceGame.Rac1, 1109, 55, null, "shuttle", "shuttle",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }
@@ -134,7 +135,7 @@ public sealed class Rac1FrogShuttleSwitchTests
         BinaryPrimitives.WriteInt16LittleEndian(pvar.AsSpan(0x240), lives);
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x20), 1);
         BinaryPrimitives.WriteSingleLittleEndian(pvar.AsSpan(0x1e4), 4);
-        return new("rac1", Rac1FrogAuthored.ClassId, id, null, "frog", "frog",
+        return new(ObpSourceGame.Rac1, Rac1FrogAuthored.ClassId, id, null, "frog", "frog",
             new RuntimeObjectTransform(new double[16]), [],
             NativePayloads: [new RuntimeOpaquePayload(Rac1BoltCrate.PVarPayloadFormat, pvar)]);
     }

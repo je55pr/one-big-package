@@ -1,3 +1,4 @@
+using OBP.Core;
 using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Runtime;
@@ -61,7 +62,7 @@ public sealed class Rac1AmoeboidFamilySession
     public Rac1AmoeboidFrame Register(RuntimeDynamicObject source, RuntimeEntityState state,
         Rac1AmoeboidSpawnFacts facts, int group, Vector3 nativePosition, float nativeYaw)
     {
-        if (source.SourceGame != "rac1" || source.NativeClassId != facts.ClassId ||
+        if (source.SourceGame != ObpSourceGame.Rac1 || source.NativeClassId != facts.ClassId ||
             !Rac1AmoeboidAuthored.IsFamily(facts.ClassId))
             throw new ArgumentException("Amoeboid source/facts mismatch.", nameof(source));
         if (group is < 0 or > 255) throw new ArgumentOutOfRangeException(nameof(group));
@@ -189,7 +190,7 @@ public sealed class Rac1AmoeboidFamilySession
     }
 
     public bool CanApplyDamage(RuntimeDynamicObject source, Rac1GameplayDamageEvent damage) =>
-        source.SourceGame == "rac1" && _actors.TryGetValue(source.InstanceIndex, out var actor) &&
+        source.SourceGame == ObpSourceGame.Rac1 && _actors.TryGetValue(source.InstanceIndex, out var actor) &&
         actor.Native.NativeClassId == source.NativeClassId && actor.Native.IsActive &&
         actor.Health > 0 && damage.Target.MatchesMoby(actor.Native.Key) &&
         (Rac1EnemyDamage.IsPlayerWeapon(damage) ||

@@ -1,3 +1,4 @@
+using OBP.Core;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -10,7 +11,7 @@ public partial class OBPGame
     {
         try
         {
-            Require(_world is { Game: "rac1", LevelId: 1 } &&
+            Require(_world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 } &&
                 _player is not null && _rac1Birdbots is { RegisteredCount: 25 },
                 "Original Novalis Birdbot smoke needs 25 authored class459 actors");
             Engine.MaxFps = 60;

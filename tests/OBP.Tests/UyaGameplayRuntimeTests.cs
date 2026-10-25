@@ -1,3 +1,4 @@
+using OBP.Core;
 using OBP.RAC3.Gameplay;
 using OBP.Runtime;
 using OBP.Runtime.Gameplay;
@@ -48,7 +49,7 @@ public sealed class UyaGameplayRuntimeTests
         session.Register(source);
 
         Assert.Throws<InvalidOperationException>(() => session.Register(source));
-        var wrongGame = source with { SourceGame = "rac2" };
+        var wrongGame = source with { SourceGame = ObpSourceGame.Rac2 };
         Assert.Throws<ArgumentException>(() => session.Register(wrongGame));
     }
 
@@ -139,7 +140,7 @@ public sealed class UyaGameplayRuntimeTests
         int? nativeUid,
         params RuntimeOpaquePayload[] payloads) =>
         new(
-            "rac3",
+            ObpSourceGame.Rac3,
             nativeClassId,
             instanceIndex,
             nativeUid,
