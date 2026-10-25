@@ -55,13 +55,13 @@ public sealed class MaterialRetailEvidenceTests
     }
 
     [SkippableFact]
-    public void UyaRow1_TieMaterialCensusIsPayloadFreeAndPinned()
+    public void Rac3Row1_TieMaterialCensusIsPayloadFreeAndPinned()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
-        var core = UyaLevelCore.Open(reader, 1).Core;
-        var classes = UyaAssets.ReadTieClasses(core);
+        var core = Rac3LevelCore.Open(reader, 1).Core;
+        var classes = Rac3Assets.ReadTieClasses(core);
 
         string summary = Summarize(classes.Values.SelectMany(c => c.Materials));
 

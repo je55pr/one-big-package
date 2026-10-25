@@ -58,7 +58,7 @@ they move with the grip so projectiles and beam feedback follow the held model.
 |---|---|---|
 | Bomb Glove (`rac1/item:10`) | Existing R&C1 throw, projectile, blast and ammo session | Existing R&C1 target controllers |
 | Lancer (`rac2/item:30`) | `Rac2LancerSession`: equip delay, 60-Hz cadence, one ammo, straight projectile sweep/lifetime, 0.5 damage | Ordinary bolt/ammo/health crates; Veldin class1440 robots retain fractional health and their own hit cooldown |
-| Shock Cannon (`rac3/item:43`) | `UyaShockCannonSession`: V5 spread, charge, windup/recovery, query coalescing, 5 maximum spread damage with native falloff, charged beam 50 | The same crates/robots; lethal class749 toad contacts |
+| Shock Cannon (`rac3/item:43`) | `Rac3ShockCannonSession`: V5 spread, charge, windup/recovery, query coalescing, 5 maximum spread damage with native falloff, charged beam 50 | The same crates/robots; lethal class749 toad contacts |
 
 Original damage amounts pass through without scaling. Foreign flags/classes are
 retained on the neutral intent and explicitly translated to an ordinary R&C1

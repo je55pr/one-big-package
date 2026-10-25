@@ -24,7 +24,7 @@ public sealed class FusionWeaponData
     public List<RuntimeTexture> Textures { get; } = [];
     public Dictionary<(SourceWeaponKey, int), IReadOnlyList<Voice>> Audio { get; } = [];
     public Rac2LancerAssets.HeldAssets? Lancer { get; private set; }
-    public UyaGlobalGadget.Source? Cannon { get; private set; }
+    public Rac3GlobalGadget.Source? Cannon { get; private set; }
     public Dictionary<SourceWeaponKey, PlayerEquipmentAnimationSource> AvatarAnimations { get; } = [];
     public IReadOnlyList<RuntimeObjectMesh> Projectile { get; private set; } = [];
     private readonly Dictionary<ObpSourceGame, string> _identities = [];
@@ -62,18 +62,18 @@ public sealed class FusionWeaponData
         });
         Load(ObpSourceGame.Rac3, FusionWeaponSession.ShockCannon, disc =>
         {
-            Cannon = UyaGlobalGadget.Read(disc, UyaShockCannonProfile.HeldMobyClass);
-            var core = UyaLevelCore.Open(disc, 1).Core;
-            AvatarAnimations.Add(FusionWeaponSession.ShockCannon, OBP.RAC3.Player.UyaRatchetSkeletalSource.ReadShockCannon(core));
-            foreach (var texture in UyaShockCannonAssets.Textures(Cannon).Concat(
-                UyaFxTextures.Read(core, new HashSet<int> { 10, 23 }).Values)) Textures.Add(texture);
+            Cannon = Rac3GlobalGadget.Read(disc, Rac3ShockCannonProfile.HeldMobyClass);
+            var core = Rac3LevelCore.Open(disc, 1).Core;
+            AvatarAnimations.Add(FusionWeaponSession.ShockCannon, OBP.RAC3.Player.Rac3RatchetSkeletalSource.ReadShockCannon(core));
+            foreach (var texture in Rac3ShockCannonAssets.Textures(Cannon).Concat(
+                Rac3FxTextures.Read(core, new HashSet<int> { 10, 23 }).Values)) Textures.Add(texture);
             for (int cue = 0; cue < 6; cue++)
             {
-                var sound = UyaShockCannonAssets.Audio(Cannon, cue, seed: 0);
+                var sound = Rac3ShockCannonAssets.Audio(Cannon, cue, seed: 0);
                 Audio.Add((FusionWeaponSession.ShockCannon, cue), sound.Voices.Select(v => new Voice(
                     v.StartSeconds, v.Loop, v.Clip, sound.HostGain(0))).ToArray());
             }
-            _ = UyaShockCannonAssets.Model(Cannon, 0, 0);
+            _ = Rac3ShockCannonAssets.Model(Cannon, 0, 0);
         });
         cancellationToken.ThrowIfCancellationRequested();
 

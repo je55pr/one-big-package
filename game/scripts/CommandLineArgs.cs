@@ -68,7 +68,7 @@ public sealed record CommandLineArgs
     public string? Rac1Iso { get; init; }
 
     /// <summary>Path to the supported Up Your Arsenal retail ISO.</summary>
-    public string? UyaIso { get; init; }
+    public string? Rac3Iso { get; init; }
 
     /// <summary>Historical GC planet/level alias resolved to a canonical <c>rac2:LEVEL*</c> destination.</summary>
     public string? Planet { get; init; }
@@ -231,7 +231,7 @@ public sealed record CommandLineArgs
                 "--movement-state-smoke" => result with { MovementStateSmoke = true },
                 "--rac2-iso" or "--gc-iso" => result with { Rac2Iso = SourceIso(result.Rac2Iso, "--rac2-iso/--gc-iso") },
                 "--rac1-iso" => result with { Rac1Iso = SourceIso(result.Rac1Iso, "--rac1-iso") },
-                "--rac3-iso" or "--uya-iso" => result with { UyaIso = SourceIso(result.UyaIso, "--rac3-iso/--uya-iso") },
+                "--rac3-iso" or "--uya-iso" => result with { Rac3Iso = SourceIso(result.Rac3Iso, "--rac3-iso/--uya-iso") },
                 "--gc-level" => result with { Rac2Level = NextInt() },
                 "--planet" => result with { Planet = Next(), DirectLoad = true },
                 "--destination" => result with { Destination = Next() },

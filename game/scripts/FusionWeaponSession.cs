@@ -18,14 +18,14 @@ public sealed class FusionWeaponSession
     public const string DefaultLoadoutId = "rac1-default-cross-game-v1";
     public static readonly SourceWeaponKey BombGlove = new(ObpSourceGame.Rac1, (int)Rac1WeaponId.FirstRanged);
     public static readonly SourceWeaponKey Lancer = new(ObpSourceGame.Rac2, Rac2LancerProfile.WeaponIndex);
-    public static readonly SourceWeaponKey ShockCannon = new(ObpSourceGame.Rac3, UyaShockCannonProfile.Identity.ItemDefinitionIndex);
+    public static readonly SourceWeaponKey ShockCannon = new(ObpSourceGame.Rac3, Rac3ShockCannonProfile.Identity.ItemDefinitionIndex);
     public static IReadOnlyList<SourceWeaponKey> Weapons { get; } = Array.AsReadOnly(new[] { BombGlove, Lancer, ShockCannon });
     public Rac1WeaponInventory Rac1Inventory { get; private set; }
     public Rac2LancerSession LancerSession { get; } = new(initialAmmo: 40);
-    public UyaShockCannonSession CannonSession { get; } = new(ammo: 20);
+    public Rac3ShockCannonSession CannonSession { get; } = new(ammo: 20);
     public SourceWeaponKey Selected { get; private set; } = BombGlove;
     public PlayerHeldEquipmentSession Hand { get; }
-    public UyaShockCannonFrame? CannonFrame { get; private set; }
+    public Rac3ShockCannonFrame? CannonFrame { get; private set; }
     public int ShotsFired { get; private set; }
     public int Tick { get; private set; }
     private readonly Random _spreadRandom;
@@ -73,8 +73,8 @@ public sealed class FusionWeaponSession
         ? new(weapon, Rac1Inventory.GetAmmo(weapon.NativeItemId), Rac1ItemAmmoDescriptors.Get(weapon.NativeItemId).MaxAmmo, "ready")
         : weapon == Lancer ? new(weapon, LancerSession.Ammo, Rac2LancerProfile.AmmoCapacity,
             LancerSession.CooldownSeconds > 0 ? "equipping / recovering" : "ready")
-        : weapon == ShockCannon ? new(weapon, CannonSession.Ammo, UyaShockCannonProfile.AmmoCapacity,
-            CannonFrame?.ChargeUpdates > 0 ? $"charging {CannonFrame.ChargeUpdates}/{UyaShockCannonProfile.ChargeUpdates}" : CannonSession.State.ToString())
+        : weapon == ShockCannon ? new(weapon, CannonSession.Ammo, Rac3ShockCannonProfile.AmmoCapacity,
+            CannonFrame?.ChargeUpdates > 0 ? $"charging {CannonFrame.ChargeUpdates}/{Rac3ShockCannonProfile.ChargeUpdates}" : CannonSession.State.ToString())
         : throw new ArgumentException("Weapon is outside the fusion loadout.", nameof(weapon));
 
     public WeaponFrame Advance(WeaponUseInput input)
@@ -121,12 +121,12 @@ public sealed class FusionWeaponSession
                 // OBP collision projection: native polar intervals form a cone
                 // around the host aim. This does not synthesize native RNG or
                 // claim the unresolved native Euler/muzzle basis is recovered.
-                bool sphere = query.Kind is UyaShockCannonQueryKind.CloseSphere or UyaShockCannonQueryKind.BeamSphere;
+                bool sphere = query.Kind is Rac3ShockCannonQueryKind.CloseSphere or Rac3ShockCannonQueryKind.BeamSphere;
                 Vector3 origin = input.Muzzle;
                 Vector3 end = origin;
                 if (sphere)
                 {
-                    float offset = query.Kind == UyaShockCannonQueryKind.CloseSphere ? -query.ForwardOffset : query.ForwardOffset;
+                    float offset = query.Kind == Rac3ShockCannonQueryKind.CloseSphere ? -query.ForwardOffset : query.ForwardOffset;
                     origin += forward * offset + right * query.LateralOffset;
                     end = origin;
                 }
@@ -166,15 +166,15 @@ public sealed class FusionWeaponSession
         if (Selected == ShockCannon && CannonFrame is { } cannon)
         {
             var nativeContacts = contacts.Where(c => _cannonQueries.ContainsKey(c.QueryIndex) && c.Target.HasValue)
-                .Select(c => new UyaShockCannonContact(_cannonQueries[c.QueryIndex],
+                .Select(c => new Rac3ShockCannonContact(_cannonQueries[c.QueryIndex],
                     new(c.Target!.Value.SourceGame, c.Target.Value.NativeClassId, c.Target.Value.InstanceIndex), c.Distance, true,
                     // Explicit OBP admission for eligible foreign targets. This
                     // mask is not read from, or attributed to, an R&C1 Moby.
-                    NativeMobyModeBits: UyaShockCannonProfile.BeamTargetModeMask)).ToArray();
+                    NativeMobyModeBits: Rac3ShockCannonProfile.BeamTargetModeMask)).ToArray();
             damage.AddRange(CannonSession.ResolveContacts(cannon, nativeContacts).Select(intent => new WeaponDamageIntent(
                 new(ShockCannon, intent.Shot.Generation, intent.Shot.Sequence),
                 new(intent.Target.SourceGame, intent.Target.NativeClassId, checked((int)intent.Target.RuntimeId)),
-                intent.NativeDamage, intent.NativeFlags, (intent.NativeFlags & UyaShockCannonProfile.BeamDamageFlags) == UyaShockCannonProfile.BeamDamageFlags ? "beam" : "spread")));
+                intent.NativeDamage, intent.NativeFlags, (intent.NativeFlags & Rac3ShockCannonProfile.BeamDamageFlags) == Rac3ShockCannonProfile.BeamDamageFlags ? "beam" : "spread")));
         }
         _resolved = true;
         return damage.AsReadOnly();
@@ -203,11 +203,11 @@ public sealed class FusionWeaponSession
     }
 
     private float Sample(float from, float to) => from == to ? from : from + (to - from) * _spreadRandom.NextSingle();
-    private static WeaponAudioIntent CannonAudio(UyaShockCannonAudio audio) => new(ShockCannon, audio.LocalSoundIndex,
+    private static WeaponAudioIntent CannonAudio(Rac3ShockCannonAudio audio) => new(ShockCannon, audio.LocalSoundIndex,
         audio.Operation switch
         {
-            UyaShockCannonAudioOperation.StartLoop => WeaponAudioOperation.StartLoop,
-            UyaShockCannonAudioOperation.StopLoop => WeaponAudioOperation.StopLoop,
+            Rac3ShockCannonAudioOperation.StartLoop => WeaponAudioOperation.StartLoop,
+            Rac3ShockCannonAudioOperation.StopLoop => WeaponAudioOperation.StopLoop,
             _ => WeaponAudioOperation.Play
         });
 }

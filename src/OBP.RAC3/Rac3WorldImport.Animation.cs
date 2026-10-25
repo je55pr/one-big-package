@@ -26,8 +26,8 @@ public static partial class Rac3WorldImport
     /// </summary>
     private static List<RuntimeAnimatedMesh> BuildAnimationPreview(
         int tableIndex,
-        IReadOnlyList<UyaGameplay.MobyInstance> instances,
-        IReadOnlyDictionary<int, UyaAssets.MobyVisualClass> classes,
+        IReadOnlyList<Rac3Gameplay.MobyInstance> instances,
+        IReadOnlyDictionary<int, Rac3Assets.MobyVisualClass> classes,
         out HashSet<int> animatedInstances)
     {
         animatedInstances = [];
@@ -53,7 +53,7 @@ public static partial class Rac3WorldImport
                 if (instance is null) continue;
 
                 animatedInstances.Add(instance.Index);
-                double[] transform = UyaGameplay.MobyTransform(instance);
+                double[] transform = Rac3Gameplay.MobyTransform(instance);
                 var worldFrames = classFrames.Select(frame => PlaceFrame(frame, transform)).ToArray();
 
                 foreach (var surface in surfaces)
@@ -70,7 +70,7 @@ public static partial class Rac3WorldImport
 
     private sealed record AnimationSurface(int TextureId, int[] Indices, RuntimeMaterialPresentation? MaterialPresentation);
 
-    private static AnimationSurface[] BuildAnimationSurfaces(UyaAssets.MobyVisualClass cls)
+    private static AnimationSurface[] BuildAnimationSurfaces(Rac3Assets.MobyVisualClass cls)
     {
         var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), List<int>>();
         for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
@@ -99,7 +99,7 @@ public static partial class Rac3WorldImport
     }
 
     private static double[][]? PoseAndValidateClassFrames(
-        UyaAssets.MobyVisualClass cls,
+        Rac3Assets.MobyVisualClass cls,
         GcUyaMoby.MobySequence sequence)
     {
         var sphere = sequence.BoundingSphere!.Value;

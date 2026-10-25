@@ -76,7 +76,7 @@ public sealed class SourceIdentityWireTests
         Assert.Equal("rac2/item:30", key.ToString());
         Assert.Equal("rac2", JsonSerializer.SerializeToElement(key).GetProperty("SourceGame").GetString());
         Assert.Equal("rac2", JsonSerializer.SerializeToElement(new Rac2LancerTarget(ObpSourceGame.Rac2, 500, 1)).GetProperty("SourceGame").GetString());
-        Assert.Equal("rac3", JsonSerializer.SerializeToElement(new UyaShockCannonTarget(ObpSourceGame.Rac3, 500, 1)).GetProperty("SourceGame").GetString());
+        Assert.Equal("rac3", JsonSerializer.SerializeToElement(new Rac3ShockCannonTarget(ObpSourceGame.Rac3, 500, 1)).GetProperty("SourceGame").GetString());
         Assert.Equal("rac1", JsonSerializer.SerializeToElement(new FusionSourceIdentity(ObpSourceGame.Rac1, "build", "moby:0")).GetProperty("Game").GetString());
         Assert.Equal(0, JsonSerializer.SerializeToElement(new ObpBuildIdentity(ObpSourceGame.Rac1, "build")).GetProperty("Game").GetInt32());
         Assert.Equal(1, JsonSerializer.SerializeToElement(new ObpSourceRef(ObpSourceGame.Rac2, "build")).GetProperty("Game").GetInt32());

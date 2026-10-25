@@ -15,16 +15,16 @@ using Environment = System.Environment;
 // policy; it does not claim a recovered Ratchet attachment or normal gameplay.
 public partial class Preview : Node
 {
-    private readonly UyaShockCannonSession _session = new();
-    private readonly List<(double Due, int Owner, UyaShockCannonAssets.Voice Voice, double Gain)> _pending = [];
+    private readonly Rac3ShockCannonSession _session = new();
+    private readonly List<(double Due, int Owner, Rac3ShockCannonAssets.Voice Voice, double Gain)> _pending = [];
     private readonly List<(int Owner, AudioStreamPlayer Player)> _players = [];
     private FileRandomAccessReader _disc = null!;
-    private UyaGlobalGadget.Source _source = null!;
+    private Rac3GlobalGadget.Source _source = null!;
     private Dictionary<(string, int), ImageTexture> _textures = [];
     private Node3D _gun = null!, _beam = null!;
     private Label _status = null!;
-    private UyaShockCannonFrame _frame = null!;
-    private UyaShockCannonBeam.Scroll _scroll;
+    private Rac3ShockCannonFrame _frame = null!;
+    private Rac3ShockCannonBeam.Scroll _scroll;
     private int _tick, _shotCount, _beamFrames, _audioStarted, _sequence, _seed;
     private bool _smoke, _captured, _capturePending;
     private double TimeSeconds => _tick / 60d;
@@ -40,9 +40,9 @@ public partial class Preview : Node
                 !Convert.ToHexString(SHA256.HashData(_disc.Read(1463L * 2048, 771008))).Equals(
                     "200068cb4186715521cdc1c20bc6c5a88054d0da54aa336ffdb2022633351c7d", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Preview requires the supported original NTSC-U UYA source.");
-            _source = UyaGlobalGadget.Read(_disc, UyaShockCannonProfile.HeldMobyClass);
-            var fx = UyaFxTextures.Read(UyaLevelCore.Open(_disc, 1).Core, new HashSet<int> { 10, 23 });
-            foreach (var texture in UyaShockCannonAssets.Textures(_source).Concat(fx.Values))
+            _source = Rac3GlobalGadget.Read(_disc, Rac3ShockCannonProfile.HeldMobyClass);
+            var fx = Rac3FxTextures.Read(Rac3LevelCore.Open(_disc, 1).Core, new HashSet<int> { 10, 23 });
+            foreach (var texture in Rac3ShockCannonAssets.Textures(_source).Concat(fx.Values))
             {
                 using var image = Image.CreateFromData(texture.Width, texture.Height, false, Image.Format.Rgba8, texture.Rgba);
                 _textures.Add((texture.AssetKind, texture.TextureId), ImageTexture.CreateFromImage(image));
@@ -50,7 +50,7 @@ public partial class Preview : Node
             var layout = new HBoxContainer(); layout.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect); AddChild(layout);
             _gun = View(layout, new(1.5f, 1, 1.5f), new(-.25f, 0, 0), 2.9f, 1);
             _beam = View(layout, new(-13, 8, 23), new(-13, 0, 0), 30, 2);
-            Render(_gun, UyaShockCannonAssets.Model(_source, 0, 0));
+            Render(_gun, Rac3ShockCannonAssets.Model(_source, 0, 0));
             var overlay = new CanvasLayer(); AddChild(overlay);
             _status = new Label { Position = new(20, 20), Text = "UYA Shock Cannon — original gadget / beam assets\nSpace / Circle: hold to charge • 1/2/3: source model clip • Esc: quit\nPreview mount and cameras; Ratchet attachment remains unrecovered." };
             overlay.AddChild(_status);
@@ -58,7 +58,7 @@ public partial class Preview : Node
             _frame = _session.Advance(new(false));
             // Exercise all six decoders, including the normally rare empty cue.
             for (int cue = 0; cue < 6; cue++)
-                foreach (var voice in UyaShockCannonAssets.Audio(_source, cue, 0).Voices)
+                foreach (var voice in Rac3ShockCannonAssets.Audio(_source, cue, 0).Voices)
                     if (!RuntimeAudioHost.TryPrepare(new(voice.Clip, RuntimeAudioCategory.SoundEffect, voice.Loop), out _, out var problem))
                         throw new InvalidOperationException(problem);
         }
@@ -92,7 +92,7 @@ public partial class Preview : Node
             bool held = Input.IsKeyPressed(Key.Space) || Input.GetConnectedJoypads().Any(device => Input.IsJoyButtonPressed(device, JoyButton.B));
             _frame = _session.Advance(new(held));
             _shotCount += _frame.Shots.Count;
-            if (_frame.Effects.Any(e => e.Kind == UyaShockCannonEffectKind.Beam)) _beamFrames++;
+            if (_frame.Effects.Any(e => e.Kind == Rac3ShockCannonEffectKind.Beam)) _beamFrames++;
             foreach (var cue in _frame.Audio) Audio(cue);
             foreach (var pending in _pending.Where(p => p.Due <= TimeSeconds).ToArray())
             {
@@ -119,11 +119,11 @@ public partial class Preview : Node
         try
         {
             int frame = (int)(TimeSeconds * 30) % _source.Sequences[_sequence].Frames.Count;
-            Render(_gun, UyaShockCannonAssets.Model(_source, _sequence, frame));
-            if (_frame.Effects.Any(e => e.Kind == UyaShockCannonEffectKind.Beam))
+            Render(_gun, Rac3ShockCannonAssets.Model(_source, _sequence, frame));
+            if (_frame.Effects.Any(e => e.Kind == Rac3ShockCannonEffectKind.Beam))
             {
                 _scroll = _scroll.Advance();
-                Render(_beam, UyaShockCannonBeam.Build(_frame, UyaShockCannonBeam.Basis.FromNativeAim(V3.UnitX, V3.Zero), _scroll).Select(l => l.Mesh));
+                Render(_beam, Rac3ShockCannonBeam.Build(_frame, Rac3ShockCannonBeam.Basis.FromNativeAim(V3.UnitX, V3.Zero), _scroll).Select(l => l.Mesh));
                 if (_tick >= 84 && !_captured && !_capturePending && Environment.GetEnvironmentVariable("OBP_UYA_PREVIEW_CAPTURE") is { } path)
                     Capture(path);
             }
@@ -168,9 +168,9 @@ public partial class Preview : Node
         }
     }
 
-    private void Audio(UyaShockCannonAudio cue)
+    private void Audio(Rac3ShockCannonAudio cue)
     {
-        if (cue.Operation == UyaShockCannonAudioOperation.StopLoop)
+        if (cue.Operation == Rac3ShockCannonAudioOperation.StopLoop)
         {
             _pending.RemoveAll(p => p.Owner == cue.LocalSoundIndex);
             foreach (var owned in _players.Where(p => p.Owner == cue.LocalSoundIndex).ToArray())
@@ -180,12 +180,12 @@ public partial class Preview : Node
             }
             return;
         }
-        var sound = UyaShockCannonAssets.Audio(_source, cue.LocalSoundIndex, _seed++);
-        int owner = cue.Operation == UyaShockCannonAudioOperation.StartLoop ? cue.LocalSoundIndex : -1;
+        var sound = Rac3ShockCannonAssets.Audio(_source, cue.LocalSoundIndex, _seed++);
+        int owner = cue.Operation == Rac3ShockCannonAudioOperation.StartLoop ? cue.LocalSoundIndex : -1;
         foreach (var voice in sound.Voices) _pending.Add((TimeSeconds + voice.StartSeconds, owner, voice, sound.HostGain(0)));
     }
 
-    private void StartVoice(int owner, UyaShockCannonAssets.Voice voice, double gain)
+    private void StartVoice(int owner, Rac3ShockCannonAssets.Voice voice, double gain)
     {
         if (!RuntimeAudioHost.TryPrepare(new(voice.Clip, RuntimeAudioCategory.SoundEffect, voice.Loop, gain), out var clip, out var problem))
             throw new InvalidOperationException(problem);

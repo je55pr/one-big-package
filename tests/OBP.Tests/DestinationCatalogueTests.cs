@@ -112,7 +112,7 @@ public sealed class DestinationCatalogueTests
     }
 
     [Fact]
-    public void UyaProjectionExposesAllObservedNamesWithoutChangingTableIdentity()
+    public void Rac3ProjectionExposesAllObservedNamesWithoutChangingTableIdentity()
     {
         string[] expectedNames =
         [

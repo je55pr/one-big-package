@@ -89,24 +89,24 @@ public sealed class Rac3WorldTests
     }
 
     [SkippableFact]
-    public void RetailVeldinAuthoredPopulationFeedsUyaRuntimeWithoutClassGuessing()
+    public void RetailVeldinAuthoredPopulationFeedsRac3RuntimeWithoutClassGuessing()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
-        var runtime = new UyaMobyRuntimeSession();
+        var runtime = new Rac3MobyRuntimeSession();
 
         runtime.RegisterWorld(world);
 
         Assert.Equal(735, runtime.RegisteredCount);
-        var class0 = Assert.Single(runtime.Instances, item => item.Key == new UyaMobyRuntimeKey(0, 0));
+        var class0 = Assert.Single(runtime.Instances, item => item.Key == new Rac3MobyRuntimeKey(0, 0));
         Assert.Equal(0, class0.PVar.Length);
         Assert.InRange(class0.Source.Transform.Matrix[12], 365.31, 365.33);
         Assert.InRange(class0.Source.Transform.Matrix[13], 78.67, 78.69);
         Assert.InRange(class0.Source.Transform.Matrix[14], 103.49, 103.51);
 
-        var nearby500 = Assert.Single(runtime.Instances, item => item.Key == new UyaMobyRuntimeKey(500, 311));
+        var nearby500 = Assert.Single(runtime.Instances, item => item.Key == new Rac3MobyRuntimeKey(500, 311));
         Assert.Equal(352, nearby500.Identity.NativeUid);
         Assert.Equal(320, nearby500.PVar.Length);
         Assert.InRange(nearby500.Source.Transform.Matrix[12], 346.93, 346.95);
@@ -123,13 +123,13 @@ public sealed class Rac3WorldTests
         using var reader = new FileRandomAccessReader(iso!);
         RuntimeWorld world = Rac3WorldImport.Build(reader, 1);
         var sources = world.DynamicObjects!
-            .Where(o => o.NativeClassId == UyaClass500Destructible.NativeClassId)
+            .Where(o => o.NativeClassId == Rac3Class500Destructible.NativeClassId)
             .OrderBy(o => o.InstanceIndex)
             .ToArray();
 
         Assert.Equal(131, sources.Length);
         var authored = sources
-            .Select(UyaClass500Destructible.ReadAuthored)
+            .Select(Rac3Class500Destructible.ReadAuthored)
             .ToArray();
         Assert.All(authored, item =>
         {
@@ -138,8 +138,8 @@ public sealed class Rac3WorldTests
             Assert.Equal(0, item.PVarF8);
             Assert.Equal(0, item.PVarFb);
             Assert.Equal(
-                UyaClass500PostBreakRoute.Deactivate,
-                UyaClass500Destructible.PostBreakRoute(item));
+                Rac3Class500PostBreakRoute.Deactivate,
+                Rac3Class500Destructible.PostBreakRoute(item));
         });
         Assert.Equal(
             new[] { (11, 14), (44, 110), (61, 7) },
@@ -151,8 +151,8 @@ public sealed class Rac3WorldTests
         RuntimeDynamicObject instance311 = Assert.Single(
             sources,
             source => source.InstanceIndex == 311);
-        UyaClass500AuthoredState witness =
-            UyaClass500Destructible.ReadAuthored(instance311);
+        Rac3Class500AuthoredState witness =
+            Rac3Class500Destructible.ReadAuthored(instance311);
         Assert.Equal(352, witness.Uid);
         Assert.Equal(44, witness.AuthoredValue);
     }
@@ -237,8 +237,8 @@ public sealed class Rac3WorldTests
         string? iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_UYA_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
-        var opened = UyaLevelCore.Open(reader, 1);
-        var range = UyaLevelCore.SectionRange(opened.Core, opened.Core.Header.Sky);
+        var opened = Rac3LevelCore.Open(reader, 1);
+        var range = Rac3LevelCore.SectionRange(opened.Core, opened.Core.Header.Sky);
         Assert.NotNull(range);
         Assert.Equal(2_731_712, range!.Value.Offset);
         Assert.Equal(485_248, range.Value.Size);
@@ -247,7 +247,7 @@ public sealed class Rac3WorldTests
             "825afb60c18db867575bbaaa2ebe4bc911f242ad815e65c74d4d64cc29b98fb0",
             Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant());
 
-        var sky = UyaSky.Read(bytes);
+        var sky = Rac3Sky.Read(bytes);
         Assert.Equal(10, sky.Textures.Count);
         Assert.Equal(8, sky.Shells.Count);
         Assert.Equal(181, sky.Shells.Sum(shell => shell.ClusterCount));

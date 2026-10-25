@@ -29,10 +29,10 @@ public sealed partial class TrilogySkeletalRetailTests
     public void ThreeRetailCarriersShareTheRigAndKeepNativeEquipmentSelection()
     {
         using var data = new Sources();
-        var r1 = data.Rac1(); var rac2 = data.Rac2; var uya = data.Uya;
+        var r1 = data.Rac1(); var rac2 = data.Rac2; var rac3 = data.Rac3;
         var sampler = new PlayerSkeletalSampler(r1.Asset.Skeleton, r1.Asset.Skin);
-        sampler.RequireCompatible(rac2.Skeleton); sampler.RequireCompatible(uya.Skeleton);
-        foreach (var source in new[] { r1.Asset.Skeleton, rac2.Skeleton, uya.Skeleton })
+        sampler.RequireCompatible(rac2.Skeleton); sampler.RequireCompatible(rac3.Skeleton);
+        foreach (var source in new[] { r1.Asset.Skeleton, rac2.Skeleton, rac3.Skeleton })
         {
             Assert.Equal(111, source.Joints.Count);
             Assert.Equal("16460b6fab59e95ab095a580d1db58bfab2d1145b538486d385afe76396cac20",
@@ -43,20 +43,20 @@ public sealed partial class TrilogySkeletalRetailTests
             Assert.Equal(Enumerable.Range(72, 20), source.Attachments[13].LayerJoints);
         }
         Assert.Equal((102, 2408), (rac2.Body.Count, rac2.Body.Values.Sum(c => c.Frames.Count)));
-        Assert.Equal((127, 2968), (uya.Body.Count, uya.Body.Values.Sum(c => c.Frames.Count)));
+        Assert.Equal((127, 2968), (rac3.Body.Count, rac3.Body.Values.Sum(c => c.Frames.Count)));
         Assert.Equal((1, 56, -1, 62, true, 5), (rac2.ArmCount, rac2.StandingUseSequence, rac2.MovingUseSequence,
             rac2.CrouchingUseSequence, rac2.SustainUse, rac2.UseBlendTicks));
-        Assert.Equal((2, 49, -1, 65, false, 2), (uya.ArmCount, uya.StandingUseSequence, uya.MovingUseSequence,
-            uya.CrouchingUseSequence, uya.SustainUse, uya.UseBlendTicks));
+        Assert.Equal((2, 49, -1, 65, false, 2), (rac3.ArmCount, rac3.StandingUseSequence, rac3.MovingUseSequence,
+            rac3.CrouchingUseSequence, rac3.SustainUse, rac3.UseBlendTicks));
         // These level carriers contain animation, not the separately streamed skins.
-        Assert.Null(rac2.Avatar.Skin); Assert.Null(uya.Avatar.Skin);
+        Assert.Null(rac2.Avatar.Skin); Assert.Null(rac3.Avatar.Skin);
         for (int side = 0; side < 2; side++)
         {
             Assert.Equal(24, rac2.Arms[side].Count);
-            Assert.Equal(24, uya.Arms[side].Count);
+            Assert.Equal(24, rac3.Arms[side].Count);
             foreach (int id in rac2.Arms[side].Keys)
             {
-                var a = rac2.Arms[side][id]; var b = uya.Arms[side][id];
+                var a = rac2.Arms[side][id]; var b = rac3.Arms[side][id];
                 Assert.Equal(a.JointIndices, b.JointIndices);
                 Assert.Equal(a.Frames.Count, b.Frames.Count);
                 // The left-arm sequence20 was revised in UYA. Preserve that
@@ -81,7 +81,7 @@ public sealed partial class TrilogySkeletalRetailTests
             var positions = sampler.Skin(); var expected = original.Clip(id).LocalFrames[f];
             Assert.InRange(positions.Zip(expected, (a, b) => Math.Abs(a - b)).Max(), 0, .00001);
         }
-        foreach (var source in new[] { data.Rac2, data.Uya })
+        foreach (var source in new[] { data.Rac2, data.Rac3 })
         {
             var player = new PlayerEquipmentAnimationPlayer();
             foreach (var clip in rig.Asset.Clips.Values.Where(c => c.SequenceId < 23))
@@ -102,7 +102,7 @@ public sealed partial class TrilogySkeletalRetailTests
     {
         using var data = new Sources();
         var avatar = Rac1PlayerAvatarProvider.Instance.Load(Environment.GetEnvironmentVariable("OBP_RAC1_ISO")!, "ratchet");
-        foreach (var source in new[] { data.Rac2, data.Uya })
+        foreach (var source in new[] { data.Rac2, data.Rac3 })
         {
             var controller = (Rac1PlayerAnimationPresentationController)Rac1PlayerAvatarProvider.Instance.CreateAnimationController(avatar);
             int tick = 0, boundaries = 0;
@@ -144,10 +144,10 @@ public sealed partial class TrilogySkeletalRetailTests
         private readonly FileRandomAccessReader _rac1 = Open("OBP_RAC1_ISO"), _gc = Open("OBP_GC_ISO"), _uya = Open("OBP_UYA_ISO");
         public Rac1LevelCore.Core Rac1Core { get; }
         public Rac2LevelCore.Core Rac2Core { get; }
-        public UyaLevelCore.Core UyaCore { get; }
+        public Rac3LevelCore.Core Rac3Core { get; }
         public PlayerEquipmentAnimationSource Rac2 { get; }
-        public PlayerEquipmentAnimationSource Uya { get; }
-        private readonly IRandomAccessReader _rac2Wad, _uyaPrimary;
+        public PlayerEquipmentAnimationSource Rac3 { get; }
+        private readonly IRandomAccessReader _rac2Wad, _rac3Primary;
         private readonly Iso9660Filesystem _rac2Fs;
 
         public Sources()
@@ -156,8 +156,8 @@ public sealed partial class TrilogySkeletalRetailTests
             _rac2Fs = Iso9660Filesystem.Open(_gc);
             _rac2Wad = _rac2Fs.OpenFile("/G/LEVEL1.WAD")!;
             Rac2Core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(_rac2Wad, Rac2LevelWad.ReadHeader(_rac2Wad), 0));
-            var opened = UyaLevelCore.Open(_uya, 1); UyaCore = opened.Core; _uyaPrimary = opened.PrimaryReader;
-            Rac2 = Rac2RatchetSkeletalSource.ReadLancer(Rac2Core); Uya = UyaRatchetSkeletalSource.ReadShockCannon(UyaCore);
+            var opened = Rac3LevelCore.Open(_uya, 1); Rac3Core = opened.Core; _rac3Primary = opened.PrimaryReader;
+            Rac2 = Rac2RatchetSkeletalSource.ReadLancer(Rac2Core); Rac3 = Rac3RatchetSkeletalSource.ReadShockCannon(Rac3Core);
         }
 
         public Rac1RatchetEquipmentRig Rac1() => new(Rac1RatchetAvatar.Decode(Rac1Core), Enumerable.Range(52, 40).ToArray());
@@ -167,9 +167,9 @@ public sealed partial class TrilogySkeletalRetailTests
             if (game == "gc") return (Rac2Core.Index, Rac2Core.Assets, Rac2Core.Header.RatchetSeqsOffset,
                 Enumerable.Range(0, 3).Select(id => Class(Rac2Core.Index, Rac2Core.Assets, Rac2Core.Header.MobyClasses.Offset,
                     Rac2Core.Header.MobyClasses.Count, Rac2Core.SectionBoundaries, id)).ToArray());
-            return (UyaCore.Index, UyaCore.Assets, UyaCore.Header.RatchetSeqsOffset,
-                Enumerable.Range(0, 3).Select(id => Class(UyaCore.Index, UyaCore.Assets, UyaCore.Header.MobyClasses.Offset,
-                    UyaCore.Header.MobyClasses.Count, UyaCore.SectionBoundaries, id)).ToArray());
+            return (Rac3Core.Index, Rac3Core.Assets, Rac3Core.Header.RatchetSeqsOffset,
+                Enumerable.Range(0, 3).Select(id => Class(Rac3Core.Index, Rac3Core.Assets, Rac3Core.Header.MobyClasses.Offset,
+                    Rac3Core.Header.MobyClasses.Count, Rac3Core.SectionBoundaries, id)).ToArray());
         }
 
         public void WriteOracleInputs(string directory, string game)
@@ -192,7 +192,7 @@ public sealed partial class TrilogySkeletalRetailTests
                     if (kind is 1 or 8) boot.AsSpan(at, size).CopyTo(ram.AsSpan(dest));
                     at += size;
                 }
-                Overlay(Rac2LevelOverlay.Parse(_uyaPrimary.Read(UyaCore.Data.Overlay.Offset, UyaCore.Data.Overlay.Size)));
+                Overlay(Rac2LevelOverlay.Parse(_rac3Primary.Read(Rac3Core.Data.Overlay.Offset, Rac3Core.Data.Overlay.Size)));
             }
             File.WriteAllBytes(Path.Combine(directory, game + "-ram.bin"), ram);
             File.WriteAllBytes(Path.Combine(directory, game + "-assets.bin"), assets);

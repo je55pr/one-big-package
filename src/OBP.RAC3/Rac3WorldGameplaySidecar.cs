@@ -56,4 +56,4 @@ public static class Rac3WorldGameplaySidecar
 
 public sealed record Rac3WorldGameplayContext(
     int TableIndex,
-    UyaGameplay.Gameplay Gameplay);
+    Rac3Gameplay.Gameplay Gameplay);

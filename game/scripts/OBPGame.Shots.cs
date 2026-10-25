@@ -116,9 +116,9 @@ public partial class OBPGame
             RememberCommandLineSource(ObpSourceGame.Rac2, rac2);
         }
 
-        if (_args.UyaIso is { } uya)
+        if (_args.Rac3Iso is { } rac3)
         {
-            RememberCommandLineSource(ObpSourceGame.Rac3, uya);
+            RememberCommandLineSource(ObpSourceGame.Rac3, rac3);
         }
     }
 

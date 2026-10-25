@@ -91,7 +91,7 @@ public sealed class CommandLineArgsTests
 
         Assert.Equal("rac1.iso", args.Rac1Iso);
         Assert.Equal("gc.iso", args.Rac2Iso);
-        Assert.Equal("uya.iso", args.UyaIso);
+        Assert.Equal("uya.iso", args.Rac3Iso);
         Assert.Equal("rac3:TABLE1", args.Destination);
         Assert.True(args.SkipTitle);
         Assert.False(args.TestSceneExplicit);
@@ -193,7 +193,7 @@ public sealed class CommandLineArgsTests
         foreach (var order in new[] { new[] { canonical, alias }, new[] { alias, canonical } })
         {
             var parsed = CommandLineArgs.Parse([order[0], "source.iso", order[1], "source.iso"]);
-            Assert.Equal("source.iso", canonical == "--rac2-iso" ? parsed.Rac2Iso : parsed.UyaIso);
+            Assert.Equal("source.iso", canonical == "--rac2-iso" ? parsed.Rac2Iso : parsed.Rac3Iso);
             string message = Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse([order[0], "a.iso", order[1], "b.iso"])).Message;
             Assert.Contains(canonical, message); Assert.Contains(alias, message);
         }

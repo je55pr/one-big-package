@@ -17,7 +17,7 @@ public sealed class FusionWeaponAssets : IDisposable
     private readonly FusionWeaponData _data;
     public IReadOnlyDictionary<SourceWeaponKey, string> Problems => _data.Problems;
     public Rac2LancerAssets.HeldAssets? Lancer => _data.Lancer;
-    public UyaGlobalGadget.Source? Cannon => _data.Cannon;
+    public Rac3GlobalGadget.Source? Cannon => _data.Cannon;
     public IReadOnlyDictionary<SourceWeaponKey, PlayerEquipmentAnimationSource> AvatarAnimations => _data.AvatarAnimations;
     public IReadOnlyList<RuntimeObjectMesh> Projectile => _data.Projectile;
     public PlaytestWeaponConfiguration Configuration(bool isolated) => _data.Configuration(isolated);
