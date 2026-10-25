@@ -19,6 +19,9 @@ public sealed class SourceReadinessEvaluator
         {
             var file = new FileInfo(path);
             if (!file.Exists) throw new FileNotFoundException("The configured disc image is missing or inaccessible.");
+            // Reopening must remain possible even when size/timestamps are
+            // unchanged (for example, an exclusive lock or permission change).
+            using var access = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             return new(file.Length, file.LastWriteTimeUtc.Ticks, file.CreationTimeUtc.Ticks);
         }
         public IRandomAccessReader Open(string path) => new FileRandomAccessReader(path);

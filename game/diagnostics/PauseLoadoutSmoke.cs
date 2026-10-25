@@ -7,6 +7,16 @@ namespace OneBigPackage;
 /// <summary>Asset-free real GUI events over catalogue ports, with no desktop input.</summary>
 public static class PauseLoadoutSmoke
 {
+    public static void VerifyOrdinarySurface(Node node)
+    {
+        if (node.IsQueuedForDeletion() || node is CanvasItem item && !item.IsVisibleInTree() || node is CanvasLayer layer && !layer.Visible || node is Node3D spatial && !spatial.IsVisibleInTree()) return;
+        string text = node switch { Label label => label.Text, Button button => button.Text, RichTextLabel rich => rich.Text, Label3D sign => sign.Text, _ => "" };
+        if (node is Control control) text += "\n" + control.TooltipText;
+        Require(!System.Text.RegularExpressions.Regex.IsMatch(text, @"game sources|source (needed|ready|connected|unavailable)|attach|\.iso\b|rac[123]-ntsc|shared profile|provider|adapter|build id|native destination",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)), "Setup/provenance leaked into ordinary UI: " + text);
+        foreach (var child in node.GetChildren()) VerifyOrdinarySurface(child);
+    }
+
     public static async Task VerifyAsync(Node owner)
     {
         var definitions = PlayerEquipmentRegistrations.Catalog.Definitions.Concat(Enumerable.Range(0, 48).Select(index =>
@@ -31,6 +41,7 @@ public static class PauseLoadoutSmoke
             CatalogUnequip = () => new(true),
             CatalogAssign = (slot, id) => { assignments++; slots[slot] = id is null ? null : definitions.Single(definition => definition.Id == id).Item; return new(true); },
             CatalogGadget = (_, _) => { gadgets++; return new(true); },
+            SharedProfileStatusReader = () => "Shared profile saved; unavailable source contributors retained: rac2.",
         };
         bool wasPaused = owner.GetTree().Paused;
         try
@@ -38,6 +49,7 @@ public static class PauseLoadoutSmoke
             menu.ResumeRequested += () => resumes++;
             owner.AddChild(menu); owner.GetTree().Paused = true;
             await Frames();
+            VerifyOrdinarySurface(menu);
             Require(menu.UniversalEnabled && Buttons().Count(button => button.Name.ToString().StartsWith("ObpItem_")) == 6, "Catalogue did not paginate.");
             var card = Buttons().First(button => button.Name.ToString().StartsWith("ObpItem_"));
             card.GrabFocus(); await Pad(JoyButton.A);
@@ -82,7 +94,7 @@ public static class PauseLoadoutSmoke
             sourceAvailable = false;
             menu.ShowUniversalSection("Weapons"); await Frames();
             Require(Buttons().Single(button => button.Text == "EQUIP").Disabled &&
-                menu.FindChild("ObpCatalogDetails", true, false) is Label { Text: var detail } && detail.Contains("Attach the source"),
+                menu.FindChild("ObpCatalogDetails", true, false) is Label { Text: var detail } && detail.Contains("temporarily unavailable"),
                 "Lost source did not disable equip with a reason.");
             owner.GetWindow().Size = new(640, 360); await Frames(5);
             var scroll = (ScrollContainer)menu.FindChild("ObpCatalogScroll", true, false);

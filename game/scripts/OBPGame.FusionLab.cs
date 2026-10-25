@@ -67,7 +67,7 @@ public partial class OBPGame
                 {
                     "obp/universal-loadout/v1" => "PAUSE: weapons, gadgets, appearance and Quick Select",
                     "obp/mixed-encounter/v1" => "PAUSE > DEVELOPER: actor status and independent resets",
-                    _ => "UNAVAILABLE: adapter/content not yet implemented",
+                    _ => "UNAVAILABLE: feature not yet implemented",
                 }),
                 Position = RuntimeWorldScene.ToScene(
                     station.Position.X, 2.0 + station.Position.Y, station.Position.Z),
@@ -81,9 +81,8 @@ public partial class OBPGame
         _fusionLabStatus = new Label
         {
             Name = "FusionLabStatus",
-            Text = "OBP FUSION LAB  |  GREYBOX PLAYTEST  |  " +
-                (nativeAvatarAvailable ? "R&C1 avatar source connected" :
-                "AVATAR SOURCE UNAVAILABLE: DEBUG CAPSULE") +
+            Text = "OBP FUSION LAB  |  PLAYTEST" +
+                (_diagnosticSourceAccess ? (nativeAvatarAvailable ? "  |  Avatar available" : "  |  Diagnostic capsule") : "") +
                 "\nRooms: Entrance > Hub > Test Chamber > Return   |   ESC: pause/back",
             Position = new Vector2(28, 16),
             Modulate = new Color(0.88f, 0.93f, 1f),

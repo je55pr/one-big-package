@@ -24,7 +24,7 @@ namespace OneBigPackage;
 /// </summary>
 public partial class OBPGame : Node3D
 {
-    private enum Mode { Smoke, Picker, Selector, World }
+    private enum Mode { Smoke, Picker, Selector, World, Title }
 
     private Node3D _worldRoot = null!;
     private Node3D _playerRoot = null!;
@@ -104,6 +104,7 @@ public partial class OBPGame : Node3D
 
         BuildSkeleton();
         if (!InitializeStartupSources()) return;
+        if (_args.OrdinaryUiSmoke) _ = RunOrdinaryUiSmokeAsync();
 
         // Dedicated deterministic fixture through the same playable Lab host
         // used by the ordinary World Select button (not the --compose viewer).
@@ -292,9 +293,9 @@ public partial class OBPGame : Node3D
             return true;
         }
 
-        if (TryReturnSelectorToSources())
+        if (TryReturnSelectorToMenu())
         {
-            ApplicationLifecycle.ReportNavigation("selector-to-sources");
+            ApplicationLifecycle.ReportNavigation("selector-to-menu");
             return true;
         }
 

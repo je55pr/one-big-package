@@ -44,7 +44,7 @@ public partial class SourceManagerUi : CanvasLayer
         outer.AddChild(new Label { Text = "ONE BIG PACKAGE  //  SOURCE BAY", ThemeTypeVariation = "HeaderSmall" });
 
         var heading = new HBoxContainer();
-        heading.AddChild(new Label { Text = "GAME SOURCES", ThemeTypeVariation = "HeaderLarge" });
+        heading.AddChild(new Label { Text = DiagnosticSources ? "GAME SOURCES" : "SET UP THE TRILOGY", ThemeTypeVariation = "HeaderLarge" });
         heading.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
         _summary = new Label { VerticalAlignment = VerticalAlignment.Center, Modulate = UiTheme.TextDim };
         heading.AddChild(_summary);
@@ -52,7 +52,7 @@ public partial class SourceManagerUi : CanvasLayer
 
         outer.AddChild(new Label
         {
-            Text = "Connect the trilogy you own, then jump straight into any world OBP can currently run. Retail data stays on this machine.",
+            Text = "Select the three games you own to get started. Your original game files stay on this computer.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = UiTheme.TextDim,
         });
