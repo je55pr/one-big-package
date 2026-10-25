@@ -21,7 +21,7 @@ $result = Join-Path (Split-Path -Parent $Session) ('replay-' + [guid]::NewGuid()
 $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
 $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug --nologo
+    & (Join-Path $PSScriptRoot 'build.ps1') -Game
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 $engineArgs = @('--path', (Join-Path $root 'game'), '--fixed-fps', '60')

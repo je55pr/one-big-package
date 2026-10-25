@@ -7,16 +7,7 @@ param([string]$Rac1Iso = $env:OBP_RAC1_ISO, [string]$GcIso = $env:OBP_GC_ISO, [s
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'obp-native-process.ps1')
-foreach ($source in @($Rac1Iso, $GcIso, $UyaIso)) {
-    if (-not $source -or -not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'Authorised trilogy sources are required.' }
-}
-$manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
-$godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
-if (-not (Test-Path -LiteralPath $godot)) { & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null }
-if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OBP.Game.csproj') -c Debug -warnaserror
-    if ($LASTEXITCODE -ne 0) { throw 'Godot build failed.' }
-}
+$godot = & (Join-Path $PSScriptRoot 'prepare-trilogy-smoke.ps1') -Sources @($Rac1Iso, $GcIso, $UyaIso) -SkipBuild:$SkipBuild
 $evidence = Join-Path $root ('captures/ordinary-ui/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $evidence | Out-Null
 $config = Join-Path $evidence 'sources.json'
