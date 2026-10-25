@@ -60,7 +60,7 @@ public partial class OBPGame
                 "profile-real-avatar", "selected animated Ratchet and native control profile");
             AcceptanceAssert(_fusion!.Selected == FusionWeaponSession.Lancer && _fusion.LancerSession.Ammo == 17 && _fusion.CannonSession.Ammo == 9 &&
                 player.Loadout.QuickSelect[7] == FusionWeaponSession.ShockCannon && _rac1HeldItem.Hand.WrenchHeld, "profile-ammo-slots-hand", "17/9 native ammo, qualified slot 7 and wrench hand survived");
-            AcceptanceAssert(player.Health.Current == 3 && player.Currencies["obp/bolts"] == 42, "profile-health-wallet", "shared health and wallet survived world changes/restart");
+            AcceptanceAssert(_playerNative!.Health.Probe().Nanotech == 3 && player.Currencies["obp/bolts"] == 42, "profile-health-wallet", "shared health and wallet survived world changes/restart");
         }
     }
 }

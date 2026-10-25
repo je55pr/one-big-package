@@ -191,11 +191,6 @@ public partial class OBPGame
                 }
                 if (PreparingWorld)
                 {
-                    if (Reader is not null)
-                    {
-                        _bufferedStep ??= Reader.ReadNextStep();
-                        if (_bufferedStep is null) { CompleteReplay(); return; }
-                    }
                     if (!Game.CaptureWorldReady() || kind != (_bufferedStep?.Kind ?? PlaytestStepKind.Physics)) return;
                     PreparingWorld = false; Game.SetPhysicsProcess(true); Game._player?.SetPhysicsProcess(true);
                 }
