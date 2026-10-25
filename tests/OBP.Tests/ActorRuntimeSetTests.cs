@@ -108,6 +108,10 @@ public sealed class ActorRuntimeSetTests
         Assert.Throws<ArgumentException>(() => (placement with { Version = 2 }).Validate());
         Assert.Throws<ArgumentException>(() => (placement with { NativeContextId = "" }).Validate());
         Assert.Throws<ArgumentException>(() => (placement with { Source = placement.Source with { Game = "fusion" } }).Validate());
+        double[] roundTrip = (double[])Identity.Matrix.Clone(); roundTrip[3] = 1e-10; roundTrip[15] += 1e-10;
+        (placement with { Transform = new(roundTrip) }).Validate();
+        roundTrip[3] = .01;
+        Assert.Throws<ArgumentException>(() => (placement with { Transform = new(roundTrip) }).Validate());
         double[] scale = (double[])Identity.Matrix.Clone(); scale[0] = 2;
         Assert.Throws<ArgumentException>(() => (placement with { Transform = new(scale) }).Validate());
         scale[0] = double.NaN;

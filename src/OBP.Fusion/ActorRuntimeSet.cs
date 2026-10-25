@@ -20,7 +20,7 @@ public sealed record ActorPlacement(string Id, FusionSourceIdentity Source, int 
             LevelId < 0 || NativeClassId < 0 || SourceInstanceIndex < 0 || InitialNativeState < 0 || string.IsNullOrWhiteSpace(AdapterId) ||
             string.IsNullOrWhiteSpace(NativeContextId) || string.IsNullOrWhiteSpace(ScenarioGroup) ||
             Transform?.Matrix is not { Length: 16 } matrix || matrix.Any(value => !double.IsFinite(value)) ||
-            matrix[3] != 0 || matrix[7] != 0 || matrix[11] != 0 || matrix[15] != 1)
+            Math.Abs(matrix[3]) > 1e-8 || Math.Abs(matrix[7]) > 1e-8 || Math.Abs(matrix[11]) > 1e-8 || Math.Abs(matrix[15] - 1) > 1e-8)
             throw new ArgumentException("Invalid source-qualified actor placement, context or affine transform.");
         var m = matrix;
         double determinant = m[0] * (m[5] * m[10] - m[9] * m[6]) - m[4] * (m[1] * m[10] - m[9] * m[2]) + m[8] * (m[1] * m[6] - m[5] * m[2]);
