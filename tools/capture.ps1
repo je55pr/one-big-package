@@ -7,7 +7,6 @@
   ./tools/capture.ps1 -Picker -Rac1Iso "D:\isos\RAC1.iso" -GcIso "D:\isos\GC.iso" -UyaIso "D:\isos\UYA.iso"
   ./tools/capture.ps1 -Worlds -GcIso "D:\isos\GC.iso"
   ./tools/capture.ps1 -Destination rac2:LEVEL1 -GcIso "D:\isos\GC.iso" -Frame 120
-  ./tools/capture.ps1 -ComposeWorlds "rac1=rac1:LEVEL0,oozla=gc:1" -Rac1Iso "D:\isos\RAC1.iso" -GcIso "D:\isos\GC.iso"
 #>
 param(
   [Parameter(Position = 0)][string]$Scene = 'smoke',
@@ -20,9 +19,6 @@ param(
   [string]$UyaIso = $env:OBP_UYA_ISO,
   [int]$GcLevel = 1,
   [string]$Destination = '',
-  [string]$Composition = '',
-  [string]$CompositionView = 'overview',
-  [string]$ComposeWorlds = '',
   [switch]$Picker,
   [switch]$Worlds,
   [switch]$Player,
@@ -56,17 +52,7 @@ foreach ($source in @(
   }
 }
 
-$isComposition = [bool]($Composition -or $ComposeWorlds)
-if ($Composition) {
-  if (-not (Test-Path -LiteralPath $Composition -PathType Leaf)) {
-    Write-Error "Composition JSON not found: $Composition"
-    exit 2
-  }
-  $Composition = (Resolve-Path -LiteralPath $Composition).Path
-  $sourceArgs += @('--compose', '--composition', $Composition, '--composition-view', $CompositionView)
-} elseif ($ComposeWorlds) {
-  $sourceArgs += @('--compose', '--compose-worlds', $ComposeWorlds, '--composition-view', $CompositionView)
-} elseif ($Destination) {
+if ($Destination) {
   $sourceArgs += @('--destination', $Destination)
 } elseif ($GcIso) {
   # Preserve the established GC capture/player convenience. --gc-level is
@@ -81,10 +67,7 @@ if ($CrateFocus) { $sourceArgs += '--crate-focus' }
 if ($CrateAutoStrike) { $sourceArgs += '--crate-auto-strike' }
 
 if (-not $Out) {
-  $name = if ($isComposition) {
-    $stem = if ($Composition) { [System.IO.Path]::GetFileNameWithoutExtension($Composition) } else { 'inline' }
-    'composition-' + ($stem -replace '[^A-Za-z0-9_-]', '-') + '-' + ($CompositionView -replace '[^A-Za-z0-9_-]', '-')
-  } elseif ($Destination) {
+  $name = if ($Destination) {
     'destination-' + ($Destination -replace '[^A-Za-z0-9_-]', '-')
   } elseif ($Worlds) {
     'worlds'

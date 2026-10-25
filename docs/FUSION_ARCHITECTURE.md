@@ -1,51 +1,42 @@
-# Fusion ownership and comparison migration (#260, #265)
+# Fusion ownership and retained research
 
-OBP.Fusion is the engine-neutral integration module: source-qualified gameplay
-orchestration, persistent player-session policy, world-entry contracts, scenario
-and exhibit descriptions, provenance, and reusable transform/placement math.
-It deliberately does not implement native AI or convert source-specific mechanics.
-Native parsers, item behaviours and state machines remain in OBP.RAC1/RAC2/RAC3.
-Shared input/world concepts remain in OBP.Runtime; Godot presentation and UI
-remain in the game host and OBP.Godot.
+`OBP.Fusion` is the engine-neutral integration module: source-qualified gameplay
+orchestration, persistent player-session policy, staged world entry, actor
+registration, equipment bindings and provenance. Native parsers, item behaviour
+and state machines remain in `OBP.RAC1/RAC2/RAC3`; Godot owns scenes, contacts,
+input and presentation.
 
-## Legacy census and disposition
+The [player/world/actor contract](PLAYER_WORLD_CONTRACT.md) is the ownership
+authority. Fusion may reference Core and Runtime, not RAC modules, native
+IO/PS2 decoders or Godot. Source adapters project native facts through neutral
+ports; the host composition root registers those adapters. A destination never
+selects the player's provider or grants player-global capabilities.
 
-* Retained neutral transforms and placement: CompositionTransform, WorldPlacement,
-  WorldComposition and deterministic CompositionJson moved into OBP.Fusion.
-  Version 1 composition JSON remains compatible with the retained serializer.
-* Retained diagnostic archaeology: AnchorPair and PlanarAlignmentSolver moved
-  into OBP.Fusion. The free-fly CompositionLab, CompositionWorldLoader,
-  CompositionView, CLI --compose flags, capture script and original research
-  stay operational. They are not ordinary Fusion Lab gameplay.
-* Retired: the standalone OBP.Composition assembly, project file and all project
-  references. The former code was a viewer, not an ordinary-world dependency.
-* Reproducibility: Veldin research findings remain in
-  research/VELDIN_CROSS_GAME_ALIGNMENT.md. The root comparison presets and
-  dedicated Veldin capture script were retired; the general CompositionLab
-  and capture tooling remain available.
-  Runtime native source data and local ISO paths are never persisted here.
+## Comparison viewer retirement (#295)
 
-## Integration contract
+The free-fly comparison viewer, Godot scene/renderer, source loader, startup and
+capture modes, placement/document models and JSON persistence have been removed.
+The unused `FusionSession`/`FusionExhibit` planning descriptors were also retired;
+the live `FusionSourceIdentity` remains for actors, Lab definitions and equipment
+presentation bindings. Their source-qualified identity and JSON shape are intact.
 
-The [source/player/world/actor contract](PLAYER_WORLD_CONTRACT.md) is the single
-ownership authority. Fusion may reference Core and Runtime, not RAC modules,
-native IO/PS2 parsers or Godot. Native controllers implement neutral ports;
-the host composition root supplies their adapters to Fusion. Cross-game admission,
-target routing and player policy belong here, not in scene callbacks or native formulas.
+The numerical `CompositionTransform`, `AnchorPair` and `PlanarAlignmentSolver`
+remain because the original retail Veldin comparison and synthetic numerical
+regressions independently consume them. They have no viewer or gameplay host.
+See [the retirement/research note](WORLD_COMPOSITION.md) and the historical
+[Veldin study](../research/VELDIN_CROSS_GAME_ALIGNMENT.md).
 
-#254's room layout/greybox and #241's weapons are merged. #265 establishes version-1
-contracts and CI guards. #266/#267 implement `ObpPlayerSession` and
-`WorldEntrySession`, with one host staging/activation path for native worlds and
-the Lab. Source-native state and host preference adapters project into frozen
-snapshots without adding RAC or Godot dependencies to Fusion. Complete profile
-admission, movement/health policy, the equipment catalog, mixed combat and ordinary
-pause UI remain #268/#269/#270, #255, #256 and #259. See the canonical contract's
-file/member ownership table before editing shared host partials.
-The shared FusionSession/FusionExhibit/FusionSourceIdentity are adapter-neutral:
-a descriptor is not proof of usability. The composition root resolves source
-handles and native adapter registrations; source modules validate native context,
-and Fusion owns cross-source admission/routing policy. Scene code supplies contacts
-and presentation rather than choosing behaviour from world origin.
+## Playable integration
 
-Regression: build the solution and run portable OBP.Tests; --compose remains a
-separate optional diagnostic path when local original-game inputs are present.
+The authored Fusion Lab uses the same `ObpPlayerSession` and `WorldEntrySession`
+as native destinations. World leases own transient scenes, contacts and actors;
+player configuration, health, loadout and progress persist independently.
+Actor registrations and equipment presentation bindings use `FusionSourceIdentity`
+and existing source-qualified keys. A descriptor is never proof of usability:
+source modules still validate their native context, and unavailable capabilities
+produce explicit results.
+
+The former `OBP.Composition` assembly remains retired. No duplicate project,
+comparison command router or compatibility viewer is maintained. Run the normal
+portable/retail suites, source-free Godot bootstrap and reconciliation gate for
+the retained player/world flow.

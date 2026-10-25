@@ -75,7 +75,7 @@ public partial class SourceManagerBootstrap : Node
         }
 
         CommandLineArgs args = _game.StartupArgs;
-        if (args.Compose || args.ShotsPath is not null)
+        if (args.ShotsPath is not null)
         {
             // These modes own their own navigation/lifecycle and do not use the
             // trilogy source-manager stack.

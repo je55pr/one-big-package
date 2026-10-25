@@ -47,11 +47,9 @@ single neutral `AdoptRuntimeWorld` path. The former GC-only `EnterWorld(int)`
 application path has been removed; GC, R&C1 and UYA all reach this point through
 `ObpDestination` + `IObpWorldProvider`.
 
-`CompositionLab` now uses **one `WorldHost` per placement** (with
-`ManageEnvironment = false` — the lab keeps a single shared `LabEnvironment`,
-one environment per viewport) under independent transform roots, plus the shared
-`CaptureHarness`. `OBP.Fusion` (transforms, `PlanarAlignment`,
-`CompositionJson`) stays the engine-neutral authority.
+The playable Fusion Lab uses the same single-world lifecycle as native worlds.
+The former multi-world comparison viewer and its document loader were retired
+under #295; see [the retirement and research note](WORLD_COMPOSITION.md).
 
 ## `OBP.Runtime.Presentation`
 
@@ -221,11 +219,10 @@ OBP options are parsed only after Godot's `--` separator, through
 `--fixed-fps 60` go before it. Unknown OBP arguments, missing values, malformed
 integers and established incompatible modes print an option-specific `[cli]`
 error and quit with exit code 2 before loading sources. Omitted options retain
-their defaults. `--replay-forward` accepts 1–3600 updates and `--compose-reload`
-requires a positive iteration count. Canonical source flags are `--rac1-iso`,
+their defaults. `--replay-forward` accepts 1–3600 updates. Canonical source flags are `--rac1-iso`,
 `--rac2-iso` and `--rac3-iso`; `--gc-iso` and `--uya-iso` remain aliases. Supplying
-different paths for the same source fails. Composition/viewer flags remain
-supported pending the separate viewer decision. Run `tools/test-cli.ps1` for
+different paths for the same source fails. The retired `--compose*` and
+`--composition*` viewer options now fail as unknown arguments. Run `tools/test-cli.ps1` for
 headless startup and rejection checks.
 
 Remembered source paths use bounded atomic `sources.json` writes. The first save

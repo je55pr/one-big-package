@@ -1,5 +1,10 @@
 # R&C1 / UYA Veldin cross-game alignment
 
+Historical tooling note: the comparison viewer and its launch options were
+retired under #295. The original findings below are retained; the supported
+numerical reproduction remains `VeldinAlignmentRetailTests`. See
+[the retirement note](../docs/WORLD_COMPOSITION.md).
+
 Authority:
 
 - R&C1 NTSC-U `SCUS-97199`, native level 0.

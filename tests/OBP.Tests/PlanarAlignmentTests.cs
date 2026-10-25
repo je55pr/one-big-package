@@ -165,25 +165,4 @@ public class PlanarAlignmentTests
         Assert.True(r.MaxError < 1e-6);
     }
 
-    [Fact]
-    public void SolveAlignment_UpdatesOnlyWorldB()
-    {
-        var truth = new CompositionTransform(100, 0, -50, RotationYDegrees: 30);
-        var comp = new WorldComposition
-        {
-            Worlds = new[]
-            {
-                new WorldPlacement { Id = "a" },
-                new WorldPlacement { Id = "b" },
-            },
-            Anchors = SyntheticPairs(truth, new Vec3(0, 0, 0), new Vec3(20, 0, 5), new Vec3(-9, 0, 12))
-                .Select(p => p with { WorldAId = "a", WorldBId = "b" }).ToList(),
-        };
-
-        var (updated, result) = comp.SolveAlignment("a", "b");
-        Assert.True(updated.World("a")!.Transform.IsIdentity);
-        Assert.Equal(30, updated.World("b")!.Transform.RotationYDegrees, 4);
-        Assert.Equal(100, updated.World("b")!.Transform.TranslationX, 3);
-        Assert.True(result.MaxError < 1e-4);
-    }
 }

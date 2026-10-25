@@ -46,8 +46,8 @@ until adapters, catalogues and mixed encounter work land in follow-ups.
   fixture, not cross-world replay admission or weapon-effect validation.
 - Run portable FusionLabDefinitionTests, ArchitectureLayeringTests and build
   game/OneBigPackage.csproj. The authored topology and failure cases are
-  deterministic without native assets. The old --compose viewer remains
-  a separate research tool.
+  deterministic without native assets. The old comparison viewer was retired
+  under #295; it is separate from this playable destination.
 
 ## Future integrations
 

@@ -74,9 +74,9 @@ public partial class OBPGame : Node3D
         if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
         if (!InitializeBugReporting()) return;
         if (!InitializePlaytest()) return;
-        if (_args.FusionTest && (_args.Destination != "rac1:LEVEL0" || _args.Compose || _args.LoadMovementState is not null))
+        if (_args.FusionTest && (_args.Destination != "rac1:LEVEL0" || _args.LoadMovementState is not null))
         {
-            GD.PrintErr("[fusion] Choose fresh --destination rac1:LEVEL0 without a composition or movement-state load.");
+            GD.PrintErr("[fusion] Choose fresh --destination rac1:LEVEL0 without a movement-state load.");
             GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
             ApplicationLifecycle.RequestQuit(this, "fusion-invalid-start", 2);
             return;
@@ -92,22 +92,12 @@ public partial class OBPGame : Node3D
             GD.Seed((ulong)seed);
         }
 
-        // Composition / fusion lab — a separate host that holds several
-        // RuntimeWorld scenes at once under independent neutral transform roots.
-        // It does not touch the single-world planet-hopping path below.
-        if (_args.Compose)
-        {
-            AddChild(new CompositionLab { Name = "CompositionLab", StartupArgs = _args });
-            GD.Print("[OBPGame] booting composition lab");
-            return;
-        }
-
         BuildSkeleton();
         if (!InitializeStartupSources()) return;
         if (_args.OrdinaryUiSmoke) _ = RunOrdinaryUiSmokeAsync();
 
         // Dedicated deterministic fixture through the same playable Lab host
-        // used by the ordinary World Select button (not the --compose viewer).
+        // used by the ordinary World Select button.
         if (_args.TestScene == "fusion-lab")
         {
             if (EnterFusionLab() && _args.CaptureFrame is { } fusionCapture)
@@ -308,7 +298,7 @@ public partial class OBPGame : Node3D
         {
             bool automated = WorldSmokeHarness.IsRequested(_args) ||
                 _args.Rac1StartupVisibilitySmoke || _args.CaptureFrame is not null ||
-                _args.ShotsPath is not null || _args.StressSwitch is not null || _args.ComposeReload is not null;
+                _args.ShotsPath is not null || _args.StressSwitch is not null;
             ApplicationLifecycle.RequestQuit(this, "desktop-window-close", automated ? 1 : 0);
         }
     }

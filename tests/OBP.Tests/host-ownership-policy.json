@@ -1,23 +1,5 @@
 [
   {
-    "Key": "game/scripts/CompositionWorldLoader.cs::CompositionWorldLoader.ResolveDestination(WorldPlacement)",
-    "Kind": "adapter",
-    "Reason": "Resolve typed native source or authored-world placement references in the comparison-only viewer. No player session or player service exists here; SourceIdentityWireTests retain legacy composition decoding and explicit unknown rejection.",
-    "Hash": "179916503d0898cffb9cc4471470af485be305ef9d5c38e66dbdffaa0d0e2e4e"
-  },
-  {
-    "Key": "game/scripts/CompositionWorldLoader.cs::CompositionWorldLoader.CanLoad(WorldPlacement)",
-    "Kind": "adapter",
-    "Reason": "Comparison-only native world provider availability; no player exists in this viewer.",
-    "Hash": "aa1bf4ed60609edcca9039e486ad7553f8eaab67a63b20180313488f2e787c9c"
-  },
-  {
-    "Key": "game/scripts/CompositionWorldLoader.cs::CompositionWorldLoader.Load(WorldPlacement)",
-    "Kind": "adapter",
-    "Reason": "Comparison-only source attachment and world importer selection; no player service selection.",
-    "Hash": "1ebbdc30a09172cab9ac4fabfb4e131beccf4334e17fde889d038e7017e8e6fa"
-  },
-  {
     "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
     "Kind": "adapter",
     "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header.",

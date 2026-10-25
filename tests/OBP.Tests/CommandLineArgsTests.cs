@@ -147,7 +147,7 @@ public sealed class CommandLineArgsTests
         "--load-movement-state", "--replay-forward", "--replay-out", "--rac1-iso", "--rac2-iso", "--rac3-iso",
         "--gc-iso", "--uya-iso", "--gc-level", "--planet", "--destination", "--profile-smoke", "--acceptance-out",
         "--profile", "--source-config", "--ordinary-ui-smoke", "--player-capabilities-out", "--stress-switch", "--overlay", "--shots", "--shots-world",
-        "--shots-out", "--rac1-campaign-save", "--composition", "--composition-view", "--compose-worlds", "--compose-reload",
+        "--shots-out", "--rac1-campaign-save",
     }.Select(option => new object[] { option });
 
     [Theory]
@@ -170,7 +170,6 @@ public sealed class CommandLineArgsTests
     [InlineData("--capture-frame")]
     [InlineData("--fixed-seed")]
     [InlineData("--gc-level")]
-    [InlineData("--compose-reload")]
     [InlineData("--replay-forward")]
     public void NumericOptionsRejectMalformedAndOverflowingIntegers(string option)
     {
@@ -206,7 +205,6 @@ public sealed class CommandLineArgsTests
     [InlineData("--bug-capture --replay-playtest a", "--bug-capture")]
     [InlineData("--bug-capture --replay-bug-report a", "--bug-capture")]
     [InlineData("--replay-forward 1", "--load-movement-state")]
-    [InlineData("--record-playtest a --composition b", "--composition")]
     [InlineData("--replay-playtest a --capture-frame 30", "--capture-frame")]
     public void EstablishedIncompatibleModesFailBeforeStartup(string command, string diagnostic) =>
         Assert.Contains(diagnostic, Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse(command.Split(' '))).Message);
@@ -216,15 +214,24 @@ public sealed class CommandLineArgsTests
     {
         var defaults = CommandLineArgs.Parse([]);
         Assert.Equal(1, defaults.GcLevel);
-        Assert.Null(defaults.CaptureFrame); Assert.Null(defaults.FixedSeed); Assert.Null(defaults.ComposeReload);
+        Assert.Null(defaults.CaptureFrame); Assert.Null(defaults.FixedSeed);
         var parsed = CommandLineArgs.Parse(["--fixed-seed", "-2147483648", "--capture-frame", "0", "--gc-level", "17",
             "--destination", "extension:custom-world", "--rac2-iso", "a path with spaces.iso", "--overlay", "custom-layer",
-            "--compose-worlds", "world=extension:opaque", "--compose-solve-scale", "--composition-view", "start-overlay",
             "--automation", "--smoke"]);
         Assert.Equal(int.MinValue, parsed.FixedSeed); Assert.Equal(0, parsed.CaptureFrame); Assert.Equal(17, parsed.GcLevel);
         Assert.Equal("extension:custom-world", parsed.Destination); Assert.Equal("a path with spaces.iso", parsed.GcIso);
-        Assert.Equal("custom-layer", parsed.Overlay); Assert.Equal("world=extension:opaque", parsed.ComposeWorlds);
-        Assert.Equal("scale", parsed.ComposeSolve); Assert.Equal("start-overlay", parsed.CompositionView);
+        Assert.Equal("custom-layer", parsed.Overlay);
         Assert.Equal(3600, CommandLineArgs.Parse(["--load-movement-state", "state.json", "--replay-forward", "3600"]).ReplayForwardFrames);
     }
+
+    [Theory]
+    [InlineData("--compose")]
+    [InlineData("--composition")]
+    [InlineData("--composition-view")]
+    [InlineData("--compose-worlds")]
+    [InlineData("--compose-solve")]
+    [InlineData("--compose-solve-scale")]
+    [InlineData("--compose-reload")]
+    public void RetiredComparisonOptionsFailExplicitly(string option) =>
+        Assert.Contains("Unknown OBP argument: " + option, Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse([option])).Message);
 }

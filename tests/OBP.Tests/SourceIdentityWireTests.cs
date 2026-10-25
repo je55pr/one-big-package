@@ -85,7 +85,7 @@ public sealed class SourceIdentityWireTests
     }
 
     [Fact]
-    public void ProfilesAndCompositionsKeepTheirExistingSourceWireShapes()
+    public void ProfilesAndWorldsKeepTheirExistingSourceWireShapes()
     {
         var profile = ObpProfileTests.Profile() with
         {
@@ -99,12 +99,5 @@ public sealed class SourceIdentityWireTests
         Assert.Equal(JsonValueKind.Number, encoded.RootElement.GetProperty("Player").GetProperty("Configuration").GetProperty("Avatar").GetProperty("SourceGame").ValueKind);
         var world = new RuntimeWorld(ObpSourceGame.Rac3, "build", 1, null, null, [], [], 0, [], new ObpBounds(Vec3.Zero, Vec3.Zero), null, null);
         Assert.Equal("rac3", JsonSerializer.SerializeToElement(world).GetProperty("Game").GetString());
-        var composition = CompositionJson.Deserialize("{\"version\":1,\"worlds\":[{\"id\":\"old\",\"sourceGame\":\"Going Commando\",\"levelId\":1},{\"id\":\"lab\",\"sourceGame\":\"fusion\"}]}");
-        Assert.Equal((WorldContentIdentity)ObpSourceGame.Rac2, composition.World("old")!.SourceGame);
-        Assert.Equal(WorldContentIdentity.FusionLab, composition.World("lab")!.SourceGame);
-        var saved = CompositionJson.Serialize(composition);
-        Assert.Contains("\"sourceGame\": \"rac2\"", saved);
-        Assert.Contains("\"sourceGame\": \"fusion\"", saved);
-        Assert.Throws<JsonException>(() => CompositionJson.Deserialize("{\"version\":1,\"worlds\":[{\"id\":\"bad\",\"sourceGame\":\"typo\"}]}"));
     }
 }
