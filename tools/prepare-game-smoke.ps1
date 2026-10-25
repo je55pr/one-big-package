@@ -1,18 +1,19 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Resolve the pinned engine and build the app for a trilogy-backed smoke.
+  Resolve the pinned engine and build the app for a source-backed smoke.
   Returns only the engine path; the caller owns its mode, input and assertions.
 #>
 param(
     [Parameter(Mandatory = $true)][string[]]$Sources,
+    [ValidateSet(1, 3)][int]$SourceCount = 3,
     [switch]$SkipBuild
 )
 $ErrorActionPreference = 'Stop'
-if ($Sources.Count -ne 3) { throw 'Supply the three authorised trilogy source paths.' }
+if ($Sources.Count -ne $SourceCount) { throw 'Supply every source path required by this smoke.' }
 foreach ($source in $Sources) {
     if (-not $source -or -not (Test-Path -LiteralPath $source -PathType Leaf)) {
-        throw 'All three authorised original source files are required.'
+        throw 'All required authorised original source files must be available.'
     }
 }
 $repoRoot = Split-Path -Parent $PSScriptRoot

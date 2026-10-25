@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'obp-native-process.ps1')
 $root = Split-Path -Parent $PSScriptRoot
-$godot = & (Join-Path $PSScriptRoot 'prepare-trilogy-smoke.ps1') -Sources @($Rac1Iso, $GcIso, $UyaIso) -SkipBuild:$SkipBuild
+$godot = & (Join-Path $PSScriptRoot 'prepare-game-smoke.ps1') -Sources @($Rac1Iso, $GcIso, $UyaIso) -SkipBuild:$SkipBuild
 $Out = [IO.Path]::GetFullPath($Out)
 New-Item -ItemType Directory -Path $Out -Force | Out-Null
 $engineArgs = @('--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--fixed-fps', '60')
