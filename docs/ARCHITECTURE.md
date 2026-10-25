@@ -17,7 +17,7 @@ design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISIO
 | `OBP.Godot` | Neutral data to Godot meshes, materials, collision, audio and presentation objects |
 | `game/` | Scene lifecycle, physics contacts, input, UI/camera presentation and composition-root adapter wiring |
 | `OBP.Fusion` | Engine-neutral source-qualified gameplay orchestration and player-session policy, world-entry contracts, composition/placement |
-| `OBP.Cli` / tests | Deterministic imports, probes and contract verification |
+| `tests/` and `tools/` | Deterministic imports, probes and contract verification |
 
 `ArchitectureLayeringTests` guards project references/imports. Godot adapters
 do not become native parsers; RAC modules do not depend on Godot; Runtime does
