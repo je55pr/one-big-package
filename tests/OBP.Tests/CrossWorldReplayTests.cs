@@ -139,11 +139,33 @@ public sealed class CrossWorldReplayTests : IDisposable
         string name = "bookmark-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz", prefix = Path.Combine(_directory, name);
         File.WriteAllText(prefix, "synthetically authored prefix");
         var previous = new MovementReplayReference(name, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(prefix))), 0);
-        state = state with { Profile = Header(profile.Destination!).PlayerProfile, Replay = previous };
+        state = state with
+        {
+            Profile = Header(profile.Destination!).PlayerProfile,
+            Replay = previous with { FileName = "bookmark-" + name.Substring(9, 32).ToUpperInvariant() + ".run.jsonl.gz" }
+        };
         string other = Path.Combine(_directory, "other.json"); MovementReproStateFile.Save(other, state);
         MovementReproStateFile.RetireSupersededPrefix(path, previous); Assert.True(File.Exists(prefix));
         File.Delete(other);
         MovementReproStateFile.RetireSupersededPrefix(path, previous); Assert.False(File.Exists(prefix));
+    }
+
+    [Fact]
+    public void PrefixRetirementPreservesUnownedAndChangedFilesAndIgnoresMalformedSiblings()
+    {
+        Directory.CreateDirectory(_directory);
+        string bookmark = Path.Combine(_directory, "state.json"), ordinary = Path.Combine(_directory, "ordinary.run.jsonl.gz");
+        File.WriteAllText(ordinary, "synthetically authored prefix");
+        string digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(ordinary)));
+        MovementReproStateFile.RetireSupersededPrefix(bookmark, new(Path.GetFileName(ordinary), digest, 0));
+        Assert.True(File.Exists(ordinary));
+        string generated = "bookmark-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz", path = Path.Combine(_directory, generated);
+        File.Copy(ordinary, path);
+        MovementReproStateFile.RetireSupersededPrefix(bookmark, new(generated, new string('0', 64), 0));
+        Assert.True(File.Exists(path));
+        File.WriteAllText(Path.Combine(_directory, "unrelated.json"), "{ malformed");
+        MovementReproStateFile.RetireSupersededPrefix(bookmark, new(generated, digest, 0));
+        Assert.False(File.Exists(path)); Assert.True(File.Exists(ordinary));
     }
 
     public void Dispose() { if (Directory.Exists(_directory)) Directory.Delete(_directory, recursive: true); }

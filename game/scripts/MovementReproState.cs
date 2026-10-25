@@ -164,7 +164,7 @@ public static class MovementReproStateFile
                     using var document = JsonDocument.Parse(file);
                     if (document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty("Replay", out var replay) &&
                         replay.ValueKind == JsonValueKind.Object && replay.TryGetProperty("FileName", out var reference) &&
-                        reference.ValueKind == JsonValueKind.String && reference.GetString() == name) return;
+                        reference.ValueKind == JsonValueKind.String && string.Equals(reference.GetString(), name, StringComparison.OrdinalIgnoreCase)) return;
                 }
                 catch (Exception error) when (error is InvalidDataException or JsonException) { /* Not a valid bookmark. */ }
             }

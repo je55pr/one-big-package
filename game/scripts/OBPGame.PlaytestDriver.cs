@@ -395,7 +395,8 @@ public partial class OBPGame
                 _recordingError = error.Message;
                 SetNotice("Recording could not be saved: " + error.Message);
                 GD.PrintErr("[playtest] save failed: " + error.Message);
-                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
+                if (Game._args.ReconciliationSmoke) Game.FinishAcceptanceFailure("capture-route", error, "playtest-save-failed");
+                else if (Game._args.PlaytestSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
             }
         }
 
