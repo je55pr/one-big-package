@@ -44,16 +44,22 @@ public partial class OBPGame
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 Require(_playerPhysicsClock.Tick == before && _fusion.ShotsFired == shots, "pause advanced weapon/player clock");
                 TryClosePauseMenu();
-                foreach (string catalogId in new[] { "rac1/item/10", "rac2/item/30", "rac3/item/43" })
+                foreach (string catalogId in new[] { "rac1/item/10", "rac1/item/16", "rac2/item/30", "rac3/item/43" })
                 {
                     var entry = ReadPlayerEquipment().Single(entry => entry.Definition.Id == catalogId);
                     Require(entry.Selectable && SelectPlayerEquipment(catalogId).Accepted, "weapon unavailable in " + destination + ": " + entry.Reason);
                     int ammo = _fusion.Status(entry.Definition.Item!.Value).Ammo;
                     player.PlaytestInputFilter = _ => new RawPlayerInputFrame { TraversalHeld = true };
                     await PhysicsFramesAsync(catalogId == "rac3/item/43" ? 90 : 18);
+                    if (catalogId == "rac1/item/16")
+                        Require(_rac1PyroEmitting && _rac1Particles?.Live.Any(particle => particle.Type == 12) == true &&
+                            _rac1ParticleView is { RenderedCount: > 0 }, "Pyrocitor has no renderable flame in " + destination);
                     player.PlaytestInputFilter = _ => default;
                     await PhysicsFramesAsync(65);
                     Require(_fusion.Status(entry.Definition.Item.Value).Ammo < ammo, "weapon did not consume native ammo in " + destination + ": " + catalogId);
+                    if (catalogId == "rac1/item/16")
+                        Require(!_rac1PyroEmitting && _rac1Particles?.Live.All(particle => particle.Type != 12) == true,
+                            "Pyrocitor flame survived release in " + destination);
                 }
                 Require(_selectedPlayerAudioTrace.Count > 0, "selected Ratchet/equipment went silent in " + destination);
                 Require(_selectedPlayerAudioTrace.All(cue => cue.Source == "rac1" && cue.Build == OBP.RAC1.Rac1Authority.Primary.BuildId && cue.Level == 0), "player voice/surface bank followed destination");

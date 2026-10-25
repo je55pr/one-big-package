@@ -20,6 +20,11 @@ identities. Foreign/unclassified contact surfaces use LEVEL0 dry footsteps as an
 explicit **OBP fallback**; this does not claim a recovered GC/UYA material map.
 World ambience and music keep their destination-owned lifetimes.
 
+The native Pyrocitor coordinate-cube cull is retained in explicit retail parity.
+Ordinary shared worlds use their terrain contacts to limit flame reach and the
+original particle lifetimes to retire flames; R&C1's coordinate range cannot
+discard an equipped weapon's effect merely because the Lab uses different coordinates.
+
 Player audio traces identify source, build, bank level, class, local sound,
 level-table versus class-table lookup, looping and native player tick. Playback
 variation uses a separate random stream from native simulation. Foreign loop
@@ -94,7 +99,8 @@ still bounded by the original adapters; this change does not fabricate them.
 
 `--trilogy-gameplay-smoke` is an ordinary-session headless diagnostic over
 Veldin, Oozla, UYA Veldin and the Lab. A common contact deck checks identical
-physics-clock movement/jump/wrench audio intents, menus, all three weapon uses
+physics-clock movement/jump/wrench audio intents, menus, the three main weapon uses,
+Pyrocitor flame rendering and release cleanup,
 and native ammunition. The Lab then checks simultaneous native motion/animation,
 shared player damage, real Cannon/Lancer/Bomb contacts, rejected native contexts,
 independent resets, pickup/audio ownership and complete lease cleanup.

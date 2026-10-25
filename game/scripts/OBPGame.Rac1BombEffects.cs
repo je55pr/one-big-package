@@ -128,7 +128,10 @@ public partial class OBPGame
         if (_rac1Particles is { } particles && _rac1EquipmentAssets?.Effects is { } effects && _sceneResult is not null)
         {
             Vector3 camera = GetViewport().GetCamera3D()?.GlobalPosition ?? _player?.GlobalPosition ?? Vector3.Zero;
-            particles.Step(ToEffectNative(camera), enforceLevelBounds: !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke);
+            // OBP worlds use shared coordinates, including negative axes and
+            // floor heights below the retail particle cube. Terrain contacts
+            // limit flame reach; the original coordinate cull is parity-only.
+            particles.Step(ToEffectNative(camera), enforceLevelBounds: !OrdinaryPlayerSession && !_args.Rac1WeaponsSmoke && !_args.Rac1BombGloveSmoke);
             if (_rac1ParticleView is null)
             {
                 _rac1ParticleView = new Rac1ParticleView { Name = "Rac1RetailParticlePool" };
