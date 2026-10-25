@@ -11,7 +11,7 @@ $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | 
 $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 if (-not (Test-Path -LiteralPath $godot)) { & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null }
 if (-not $SkipBuild) {
-    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --no-restore -warnaserror
+    & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug -warnaserror
     if ($LASTEXITCODE -ne 0) { throw 'Godot C# build failed.' }
 }
 $evidence = Join-Path $root ('captures/cli/' + [guid]::NewGuid().ToString('N'))
