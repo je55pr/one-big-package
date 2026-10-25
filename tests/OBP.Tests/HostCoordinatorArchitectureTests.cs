@@ -29,18 +29,18 @@ public class HostCoordinatorArchitectureTests
     public void Rac2GameplayCoordinatorKeepsAranosAndDebugHarnessSeparate()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string corePath = Path.Combine(scripts, "OBPGame.GcGameplay.cs");
+        string corePath = Path.Combine(scripts, "OBPGame.Rac2Gameplay.cs");
         string core = File.ReadAllText(corePath);
 
         Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Crates.cs")));
         Assert.True(File.ReadLines(corePath).Count() < 400);
-        Assert.DoesNotContain("private void TickGcOpeningMsr1NativeTick(", core, StringComparison.Ordinal);
+        Assert.DoesNotContain("private void TickRac2OpeningMsr1NativeTick(", core, StringComparison.Ordinal);
         Assert.DoesNotContain("private CrateDebugSnapshot? GetCrateDebugSnapshot(", core, StringComparison.Ordinal);
 
-        Assert.Contains("private void TickGcOpeningMsr1NativeTick(",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.GcAranosOpeningHost.cs")), StringComparison.Ordinal);
+        Assert.Contains("private void TickRac2OpeningMsr1NativeTick(",
+            File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac2AranosOpeningHost.cs")), StringComparison.Ordinal);
         Assert.Contains("private CrateDebugSnapshot? GetCrateDebugSnapshot(",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.GcCrateDebugHarness.cs")), StringComparison.Ordinal);
+            File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac2CrateDebugHarness.cs")), StringComparison.Ordinal);
 
         Assert.Contains("private void ResetGcGameplayHost(", core, StringComparison.Ordinal);
         Assert.Contains("private void ConfigureGcGameplayHost(", core, StringComparison.Ordinal);
