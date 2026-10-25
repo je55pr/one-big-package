@@ -80,6 +80,7 @@ public partial class OBPGame
                 return new SceneLease(_worldHost, _player);
             }));
             preparedScene = null;
+            _lastCommittedProfileDestination = destinationId;
             if (nativeDestination is not null)
             {
                 DispatchRequestedWorldSmokes(nativeDestination);

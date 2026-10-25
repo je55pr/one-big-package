@@ -54,8 +54,9 @@ public partial class OBPGame
                     if (destination is null && !_args.NoProfile && (File.Exists(profilePath) || File.Exists(profilePath + ".bak")))
                     {
                         var saved = AtomicDocumentFile.Load(profilePath, ObpProfile.MaximumBytes, ObpProfile.Decode,
-                            error => error is IOException or UnauthorizedAccessException or JsonException or ArgumentException);
-                        destination = saved.Value?.Destination ?? throw new InvalidDataException("The shared profile cannot be recovered; original files retained.");
+                            error => error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException);
+                        if (saved.Value is not { } savedProfile) throw new InvalidDataException("The shared profile cannot be recovered; original files retained.");
+                        destination = savedProfile.Destination;
                     }
                     _args = _args with { RecordPlaytest = Path.Combine(live, "session.run.jsonl.gz"), Destination = destination ?? "rac1:LEVEL0" };
                     return true;
@@ -79,7 +80,7 @@ public partial class OBPGame
             }
             return true;
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or UnsupportedProfileVersionException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException or UnsupportedProfileVersionException)
         {
             GD.PrintErr("[bug-report] startup failed: " + error.Message);
             if (_args.BugCapture && !_args.BugReportSmoke && DisplayServer.GetName() != "headless")

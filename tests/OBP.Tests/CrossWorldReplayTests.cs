@@ -103,6 +103,47 @@ public sealed class CrossWorldReplayTests : IDisposable
         Assert.Throws<InvalidDataException>(() => (state with { Replay = null }).Validate());
         Assert.Throws<InvalidDataException>(() => (state with { Replay = state.Replay with { FileName = "../other.run.jsonl.gz" } }).Validate());
         Assert.Throws<InvalidDataException>(() => (state with { Profile = null }).Validate());
+        Assert.Throws<InvalidDataException>(() => (state with { Destination = "rac1:LEVEL0" }).Validate());
+        foreach (string name in new[] { "other\\prefix.run.jsonl.gz", "other:prefix.run.jsonl.gz", "inside..prefix.run.jsonl.gz", "prefix.json", new string('a', 149) + ".run.jsonl.gz" })
+            Assert.Throws<InvalidDataException>(() => (state with { Replay = state.Replay with { FileName = name } }).Validate());
+        foreach (string digest in new[] { new string('A', 63), new string('A', 65), new string('G', 64) })
+            Assert.Throws<InvalidDataException>(() => (state with { Replay = state.Replay with { Sha256 = digest } }).Validate());
+        foreach (int step in new[] { -1, 1_000_000 }) Assert.Throws<InvalidDataException>(() => (state with { Replay = state.Replay with { Step = step } }).Validate());
+    }
+
+    [Fact]
+    public void LegacyNativeHeaderRetainsItsOriginalEmptyUniversalFields()
+    {
+        var legacy = Header("rac1:LEVEL0") with { Version = 1, Sources = [], Adapters = [], PlayerProfile = null };
+        legacy.Validate(); legacy.VerifySessionSources([], []);
+        Assert.Throws<InvalidDataException>(() => PlaytestRunHeader.ValidateProvenance(2, Header("rac1:LEVEL0").Sources, [new("same", 1, 60), new("same", 1, 60)]));
+    }
+
+    [Fact]
+    public void UniversalBookmarkCannotSaveAnUnreadablyLargeFileOrDeleteASharedPrefix()
+    {
+        Directory.CreateDirectory(_directory);
+        var profile = ObpProfileTests.Profile();
+        profile = profile with { Extensions = new() { ["padding"] = JsonSerializer.SerializeToElement(new string('x', ObpProfile.MaximumBytes - profile.Encode().Length - 128)) } };
+        var state = MovementReproStateTests.Sample() with
+        {
+            Version = 3,
+            Destination = profile.Destination!,
+            Profile = JsonSerializer.Deserialize<JsonElement>(profile.Encode()),
+            Replay = new("prefix.run.jsonl.gz", new string('A', 64), 0)
+        };
+        string path = Path.Combine(_directory, "state.json");
+        Assert.Throws<InvalidDataException>(() => MovementReproStateFile.Save(path, state));
+        Assert.False(File.Exists(path)); Assert.False(File.Exists(path + ".tmp"));
+
+        string name = "bookmark-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz", prefix = Path.Combine(_directory, name);
+        File.WriteAllText(prefix, "synthetically authored prefix");
+        var previous = new MovementReplayReference(name, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(prefix))), 0);
+        state = state with { Profile = Header(profile.Destination!).PlayerProfile, Replay = previous };
+        string other = Path.Combine(_directory, "other.json"); MovementReproStateFile.Save(other, state);
+        MovementReproStateFile.RetireSupersededPrefix(path, previous); Assert.True(File.Exists(prefix));
+        File.Delete(other);
+        MovementReproStateFile.RetireSupersededPrefix(path, previous); Assert.False(File.Exists(prefix));
     }
 
     public void Dispose() { if (Directory.Exists(_directory)) Directory.Delete(_directory, recursive: true); }

@@ -68,8 +68,8 @@ public partial class OBPGame
         if (!OrdinaryPlayerSession) return;
         byte[] player = JsonSerializer.SerializeToUtf8Bytes(ProfilePlayer.Capture(_playerSession!.Capture()) with { Generation = 0 }, ObpProfile.Options);
         values.Add("obp.player", new(Text: Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(player))));
-        values.Add("obp.adapters", new(Text: JsonSerializer.Serialize(CaptureReplayAdapters())));
-        values.Add("obp.sources", new(Text: JsonSerializer.Serialize(CaptureProfileSources())));
+        values.Add("obp.adapters", new(Text: Digest(CaptureReplayAdapters())));
+        values.Add("obp.sources", new(Text: Digest(CaptureProfileSources())));
         foreach (var actor in _actorViews.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame, StringComparer.Ordinal)
             .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex))
         {
@@ -78,5 +78,6 @@ public partial class OBPGame
                 state.Alive ? 1 : 0, state.Retired ? 1 : 0, state.Health ?? -1, state.NativeState, state.NativeSequence ?? -1], Tolerance: .0001));
         }
         values.Add("obp.actor-clock", new([_actors?.TickCount ?? 0]));
+        static string Digest(object value) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));
     }
 }

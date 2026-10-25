@@ -48,9 +48,7 @@ public partial class OBPGame
         }
         catch (Exception error)
         {
-            WriteAcceptanceEvidence("profile-" + _args.ProfileSmoke, error);
-            GD.PrintErr("[shared-profile-smoke] FAIL: " + error);
-            ApplicationLifecycle.RequestQuit(this, "shared-profile-smoke-fail", 2);
+            FinishAcceptanceFailure("profile-" + _args.ProfileSmoke, error, "shared-profile-smoke-fail");
         }
 
         void AssertSavedPlayer()

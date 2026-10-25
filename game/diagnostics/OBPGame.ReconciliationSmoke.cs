@@ -13,6 +13,7 @@ public partial class OBPGame
         {
             while (_playtest!.WaitingForEntry) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             var configuration = _playerSession!.Capture().Configuration;
+            int visit = 0;
             foreach (string destination in new[] { "rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab", "rac1:LEVEL0" })
             {
                 if (_currentDestinationId != destination)
@@ -43,7 +44,7 @@ public partial class OBPGame
                 Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = false });
                 await PhysicsFramesAsync(2);
                 string bookmarkDirectory = Path.GetFullPath(_args.RecordPlaytest!) + ".bookmarks";
-                string bookmark = Path.Combine(bookmarkDirectory, destination.Replace(':', '-') + ".bookmark.json");
+                string bookmark = Path.Combine(bookmarkDirectory, $"{visit++:D2}-" + destination.Replace(':', '-') + ".bookmark.json");
                 _playtest.RequestBookmark(bookmark);
                 for (int frame = 0; !File.Exists(bookmark) && frame < 600; frame++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
                 AcceptanceAssert(File.Exists(bookmark) && MovementReproStateFile.Load(bookmark).Destination == destination, "universal-bookmark", "completed prefix and shared profile at " + destination);
@@ -54,9 +55,17 @@ public partial class OBPGame
         }
         catch (Exception error)
         {
-            WriteAcceptanceEvidence("capture-route", error);
-            GD.PrintErr("[reconciliation-capture] FAIL: " + error);
-            ApplicationLifecycle.RequestQuit(this, "reconciliation-capture-fail", 2);
+            FinishAcceptanceFailure("capture-route", error, "reconciliation-capture-fail");
         }
+    }
+
+    private async Task VerifyFinishedCaptureContinuationAsync()
+    {
+        AcceptanceAssert(OnDestinationChosen(TrilogyWorldProviders.Resolve("rac2:LEVEL1")!), "finished-capture-entry", "world can change after F9 finishes the tape");
+        var player = _player!; long before = _playerPhysicsClock!.Tick;
+        await PhysicsFramesAsync(3);
+        AcceptanceAssert(_playtest is { Finished: true, PreparingWorld: false } && ReferenceEquals(player, _player) && _playerPhysicsClock.Tick > before,
+            "finished-capture-continues", "finished recorder leaves the player and world clocks running");
+        WriteAcceptanceEvidence("capture-route");
     }
 }

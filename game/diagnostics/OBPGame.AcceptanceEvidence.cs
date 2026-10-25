@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Godot;
+using OBP.Godot;
 
 namespace OneBigPackage;
 
@@ -7,6 +8,12 @@ public partial class OBPGame
 {
     private sealed record AcceptanceCheck(string Id, string? Destination, bool Passed, string Detail);
     private readonly List<AcceptanceCheck> _acceptanceChecks = [];
+    private void FinishAcceptanceFailure(string phase, Exception error, string reason)
+    {
+        try { WriteAcceptanceEvidence(phase, error); }
+        catch (Exception writeError) { GD.PrintErr("[acceptance] evidence unavailable: " + writeError.Message); }
+        finally { GD.PrintErr("[acceptance] FAIL: " + error); ApplicationLifecycle.RequestQuit(this, reason, 2); }
+    }
     private void AcceptanceAssert(bool passed, string id, string detail)
     {
         _acceptanceChecks.Add(new(id, _currentDestinationId, passed, detail));

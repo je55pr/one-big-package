@@ -135,7 +135,7 @@ public sealed class ObpProfileTests
         Directory.CreateDirectory(directory);
         string path = Path.Combine(directory, "profile.json");
         bool Valid(byte[] bytes) { try { _ = ObpProfile.Decode(bytes); return true; } catch (JsonException) { return false; } }
-        bool Recoverable(Exception error) => error is IOException or JsonException or ArgumentException;
+        bool Recoverable(Exception error) => error is IOException or JsonException or ArgumentException or InvalidDataException;
         try
         {
             var first = Profile(); AtomicDocumentFile.Save(path, first.Encode(), ObpProfile.MaximumBytes, Valid);
@@ -143,6 +143,8 @@ public sealed class ObpProfileTests
             File.WriteAllText(path, "{ interrupted");
             var backup = AtomicDocumentFile.Load(path, ObpProfile.MaximumBytes, ObpProfile.Decode, Recoverable);
             Assert.Equal(DocumentReadKind.Backup, backup.Kind); Assert.Equal(first.Destination, backup.Value!.Destination);
+            File.WriteAllText(path, "{\"Version\":1,\"Player\":null}");
+            Assert.Equal(DocumentReadKind.Backup, AtomicDocumentFile.Load(path, ObpProfile.MaximumBytes, ObpProfile.Decode, Recoverable).Kind);
             AtomicDocumentFile.Save(path, second.Encode(), ObpProfile.MaximumBytes, Valid);
             Assert.Single(Directory.GetFiles(directory, "*.rejected-*"));
             Assert.Equal("rac3:TABLE1", ObpProfile.Decode(File.ReadAllBytes(path)).Destination);

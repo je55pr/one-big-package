@@ -83,6 +83,7 @@ public partial class OBPGame
 
         internal void WorldEntered()
         {
+            if (_finished) return;
             if (!_entered)
             {
                 _epoch = Time.GetTicksMsec();
@@ -386,6 +387,7 @@ public partial class OBPGame
                 await _flush;
                 SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
                 GD.Print($"[playtest] SAVED {_writer.Path}; steps={_nextStep}; markers={_marks}");
+                if (Game._args.ReconciliationSmoke) await Game.VerifyFinishedCaptureContinuationAsync();
                 if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
             }
             catch (Exception error)

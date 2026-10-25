@@ -99,7 +99,7 @@ public sealed class BugReportInbox
         {
             if (!Guid.TryParseExact(Path.GetFileName(directory), "N", out var id)) continue;
             try { result.Add((id, Read(id), null)); }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException)
             { result.Add((id, null, error.Message)); }
         }
         return result;
@@ -253,13 +253,7 @@ public sealed class BugReportInbox
     private static void Validate(BugReportSession session)
     {
         var recording = session.Recording;
-        if (recording is { } provenance && (provenance.CaptureVersion is not (PlaytestRunHeader.LegacyVersion or PlaytestRunHeader.CurrentVersion) ||
-            provenance.Sources is null || provenance.Sources.Count > 3 || provenance.Sources.Any(source => source is null ||
-                !Enum.IsDefined(source.Game) || source.Game == ObpSourceGame.Synthetic || string.IsNullOrWhiteSpace(source.BuildId) || source.BuildId.Length > 128 ||
-                source.Sha256 is not { Length: 64 } digest || digest.Any(character => !Uri.IsHexDigit(character))) ||
-            provenance.Adapters is null || provenance.Adapters.Count > 256 || provenance.Adapters.Any(adapter => adapter is null || string.IsNullOrWhiteSpace(adapter.Id) || adapter.Version != 1 || adapter.NativeHz != 60) ||
-            provenance.CaptureVersion == PlaytestRunHeader.CurrentVersion && (provenance.Sources.Count == 0 || provenance.Adapters.Count == 0)))
-            throw new InvalidDataException("Report lacks supported source/adapter prerequisites.");
+        if (recording is { } provenance) PlaytestRunHeader.ValidateProvenance(provenance.CaptureVersion, provenance.Sources, provenance.Adapters);
         if (session.Version != 1 || session.Id == Guid.Empty || recording is null || !ValidRunName(recording.FileName) ||
             recording.Bytes is <= 0 or > PlaytestRunLimits.Compressed || recording.Steps <= 0 ||
             recording.Sha256 is not { Length: 64 } || !recording.Sha256.All(Uri.IsHexDigit) ||

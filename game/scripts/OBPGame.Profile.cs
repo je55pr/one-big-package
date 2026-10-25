@@ -17,6 +17,7 @@ public partial class OBPGame
     private byte[]? _profileLastSaved;
     private readonly HashSet<string> _opaqueCampaignOwners = [];
     private int _profileRetainedFieldCount;
+    private string? _lastCommittedProfileDestination;
     private string? SharedProfilePath => _args.NoProfile || !OrdinaryPlayerSession ? null :
         _args.ProfilePath is { } path ? Path.GetFullPath(path) : DisplayServer.GetName() == "headless" || AutomationRunPolicy.IsAutomated(OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()) ? null : ProjectSettings.GlobalizePath("user://obp-profile.json");
 
@@ -50,7 +51,7 @@ public partial class OBPGame
             Components = player.Components.Select(payload => payload.RetainUnknownFields(previous.Components.SingleOrDefault(saved => saved.Owner == payload.Owner))).ToArray(),
         };
         return new(ObpProfile.CurrentVersion, ObpProfile.CurrentIntegration, player,
-            _currentDestinationId ?? _profileDocument?.Destination, CaptureProfileSources(), campaigns)
+            _lastCommittedProfileDestination ?? _profileDocument?.Destination, CaptureProfileSources(), campaigns)
         { Extensions = _profileDocument?.Extensions, RetainedPlayerFields = _profileDocument?.RetainedPlayerFields };
     }
 
@@ -62,7 +63,7 @@ public partial class OBPGame
         try
         {
             var loaded = AtomicDocumentFile.Load(path, ObpProfile.MaximumBytes, ObpProfile.Decode,
-                error => error is IOException or UnauthorizedAccessException or JsonException or ArgumentException);
+                error => error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException);
             _profileStatus = loaded.Problem;
             if (loaded.Kind == DocumentReadKind.Missing && File.Exists(ProjectSettings.GlobalizePath("user://rac1-campaign.json")))
                 _profileStatus = "Native R&C1 campaign kept separate. Ordinary play uses the shared profile; --rac1-campaign-save opens the original native parity mode.";
@@ -137,7 +138,7 @@ public partial class OBPGame
             GD.Print("[profile] saved " + reason);
             return true;
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or UnsupportedProfileVersionException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException or UnsupportedProfileVersionException)
         { _profileStatus = "Profile was not saved: " + error.Message; GD.Print("[profile] " + _profileStatus); return false; }
     }
 

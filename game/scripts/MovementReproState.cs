@@ -35,7 +35,8 @@ public sealed record MovementReproState(
                 throw new InvalidDataException("Universal bookmarks require their shared profile and completed replay prefix.");
             if (Player is null) throw new InvalidDataException("Universal bookmark lacks its selected player's pose observation.");
             Player.Validate();
-            _ = ObpProfile.Decode(System.Text.Encoding.UTF8.GetBytes(profile.GetRawText()));
+            var shared = ObpProfile.Decode(System.Text.Encoding.UTF8.GetBytes(profile.GetRawText()));
+            if (shared.Destination != Destination) throw new InvalidDataException("Bookmark profile and destination differ.");
             Replay.Validate();
             return this;
         }
@@ -141,6 +142,40 @@ public static class MovementReproStateFile
     private const long MaximumBytes = 4 * 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
+    public static void RetireSupersededPrefix(string bookmarkPath, MovementReplayReference previous)
+    {
+        try
+        {
+            previous.Validate();
+            // Only our generated siblings are owned by this cleanup operation.
+            string name = previous.FileName;
+            if (name.Length != 54 || !name.StartsWith("bookmark-", StringComparison.Ordinal) || !Guid.TryParseExact(name.AsSpan(9, 32), "N", out _)) return;
+            string directory = Path.GetDirectoryName(Path.GetFullPath(bookmarkPath))!;
+            string prefix = Path.Combine(directory, name);
+            if (!File.Exists(prefix) || (File.GetAttributes(prefix) & FileAttributes.ReparsePoint) != 0) return;
+            int inspected = 0;
+            foreach (string candidate in Directory.EnumerateFiles(directory, "*.json"))
+            {
+                if (++inspected > 256) return; // Unknown ownership: retain rather than delete.
+                try
+                {
+                    using var file = File.OpenRead(candidate);
+                    if (file.Length > MaximumBytes) return;
+                    using var document = JsonDocument.Parse(file);
+                    if (document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty("Replay", out var replay) &&
+                        replay.ValueKind == JsonValueKind.Object && replay.TryGetProperty("FileName", out var reference) &&
+                        reference.ValueKind == JsonValueKind.String && reference.GetString() == name) return;
+                }
+                catch (Exception error) when (error is InvalidDataException or JsonException) { /* Not a valid bookmark. */ }
+            }
+            using (var stream = File.OpenRead(prefix))
+                if (stream.Length > OBP.Runtime.Diagnostics.PlaytestRunReader.MaximumCompressedBytes ||
+                    !Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream)).Equals(previous.Sha256, StringComparison.OrdinalIgnoreCase)) return;
+            File.Delete(prefix);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException or ArgumentException) { /* A retained/in-use prefix is safe. */ }
+    }
+
     public static MovementReproState Load(string path)
     {
         using var stream = File.OpenRead(path);
@@ -153,6 +188,8 @@ public static class MovementReproStateFile
     public static void Save(string path, MovementReproState state)
     {
         state.Validate();
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(state, Options);
+        if (bytes.Length > MaximumBytes) throw new InvalidDataException("Movement state is too large.");
         string fullPath = Path.GetFullPath(path);
         Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
         string temporary = fullPath + ".tmp";
@@ -160,7 +197,7 @@ public static class MovementReproStateFile
         {
             using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                JsonSerializer.Serialize(stream, state, Options);
+                stream.Write(bytes);
                 stream.Flush(flushToDisk: true);
             }
             File.Move(temporary, fullPath, overwrite: true);

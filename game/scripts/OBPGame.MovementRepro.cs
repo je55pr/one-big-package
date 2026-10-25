@@ -111,7 +111,7 @@ public partial class OBPGame
                 $"facing={state.Player.FacingYaw:R}; control={state.Player.CameraController.ControlHeading:R}; " +
                 $"assembly={state.HostAssemblyId}");
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException or InvalidOperationException)
         {
             ReportMovementState($"Movement state not saved: {ex.Message}");
         }
@@ -132,6 +132,7 @@ public partial class OBPGame
                 OpenReplayBookmark(path, state);
                 return null;
             }
+            if (OrdinaryPlayerSession) throw new InvalidOperationException("Legacy native R&C1 bookmarks require an explicit parity session. Open them with --load-movement-state at launch.");
             if (FusionMovementStateBlocked) throw new InvalidOperationException("Legacy R&C1 bookmarks require an R&C1 weapon with no active foreign shots.");
             if (_args.ReplayForwardFrames is { } frames && (frames < 1 || frames > 3600))
                 throw new InvalidDataException("Forward replay must contain 1 through 3600 physics updates.");

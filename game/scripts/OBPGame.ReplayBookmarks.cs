@@ -87,17 +87,26 @@ public partial class OBPGame
                 { Profile = JsonSerializer.Deserialize<JsonElement>(Game.CaptureSharedProfile().Encode()) };
                 string directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
                 Directory.CreateDirectory(directory);
+                MovementReplayReference? previous = null;
+                try { if (File.Exists(path)) previous = MovementReproStateFile.Load(path).Replay; }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException or JsonException) { /* Preserve an unreadable predecessor. */ }
                 recording = Path.Combine(directory, "bookmark-" + Guid.NewGuid().ToString("N") + ".run.jsonl.gz");
                 await _writer!.ExportSnapshotAsync(recording);
                 using (var stream = File.OpenRead(recording))
                     state = state with { Replay = new(Path.GetFileName(recording), Convert.ToHexString(SHA256.HashData(stream)), step) };
                 MovementReproStateFile.Save(path, state);
                 recording = null;
+                if (previous is not null) await Task.Run(() => MovementReproStateFile.RetireSupersededPrefix(path, previous));
                 Game.ReportMovementState("Universal bookmark saved with a completed replay prefix. Move both sibling files together.");
                 GD.Print("[movement-state] universal bookmark saved at step " + step);
             }
             catch (Exception error) { Game.ReportMovementState("Bookmark not saved: " + error.Message); }
-            finally { _bookmarkSaving = false; if (recording is not null) File.Delete(recording); }
+            finally
+            {
+                _bookmarkSaving = false;
+                try { if (recording is not null) File.Delete(recording); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { /* Incomplete prefix remains inspectable. */ }
+            }
         }
     }
 }

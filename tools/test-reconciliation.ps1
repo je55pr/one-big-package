@@ -71,8 +71,10 @@ try {
     $recording = Join-Path $Out 'route.run.jsonl.gz'
     Invoke-GateGame 'record-route' @('--destination', 'rac1:LEVEL0', '--record-playtest', $recording, '--reconciliation-smoke', '--acceptance-out', (Join-Path $Out 'capabilities-observed.json')) '[playtest] SAVED'
     Invoke-GateGame 'replay-route' @('--replay-playtest', $recording, '--playtest-report', (Join-Path $Out 'replay-route.json')) '[playtest] PASS'
+    $bookmarkVisit = 1
     foreach ($world in @('rac2-LEVEL1', 'rac3-TABLE1', 'obp-fusion-lab')) {
-        Invoke-GateGame ("bookmark-" + $world) @('--load-movement-state', (Join-Path ($recording + '.bookmarks') ($world + '.bookmark.json')), '--playtest-report', (Join-Path $Out ($world + '.replay.json'))) '[playtest] PASS'
+        $bookmarkName = '{0:D2}-{1}.bookmark.json' -f $bookmarkVisit++, $world
+        Invoke-GateGame ("bookmark-" + $world) @('--load-movement-state', (Join-Path ($recording + '.bookmarks') $bookmarkName), '--playtest-report', (Join-Path $Out ($world + '.replay.json'))) '[playtest] PASS'
         Invoke-GateGame ("bug-" + $world) @('--destination', ($world -replace '^(rac[23]|obp)-', '$1:'), '--bug-capture', '--bug-report-smoke', '--no-profile',
             '--bug-report-inbox', (Join-Path $Out ("inbox-" + $world))) '[bug-report-smoke] two fresh-process same-build replays through saved report markers PASS'
     }

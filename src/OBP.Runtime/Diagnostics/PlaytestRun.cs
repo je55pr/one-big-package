@@ -40,12 +40,20 @@ public sealed record PlaytestRunHeader(
         if (Version == LegacyVersion && (!Destination.StartsWith("rac1:LEVEL", StringComparison.Ordinal) ||
             !int.TryParse(Destination.AsSpan("rac1:LEVEL".Length), out int legacyLevel) || legacyLevel is < 0 or > 18))
             throw new InvalidDataException("Legacy capture version 1 describes only native R&C1 world entries.");
-        if (Version == CurrentVersion && (PlayerProfile is not { ValueKind: JsonValueKind.Object } profile || profile.GetRawText().Length > 4 * 1024 * 1024 ||
-            Sources is null || Sources.Count is < 1 or > 3 || Sources.Any(source => source is null) || Sources.Select(source => source.Game).Distinct().Count() != Sources.Count ||
-            Sources.Any(source => !Enum.IsDefined(source.Game) || source.Game == ObpSourceGame.Synthetic || string.IsNullOrWhiteSpace(source.BuildId) ||
+        if (Version == CurrentVersion && (PlayerProfile is not { ValueKind: JsonValueKind.Object } profile || profile.GetRawText().Length > 4 * 1024 * 1024))
+            throw new InvalidDataException("Recording lacks its source-qualified player profile.");
+        ValidateProvenance(Version, Sources, Adapters);
+    }
+
+    public static void ValidateProvenance(int version, IReadOnlyList<ObpBuildIdentity> sources, IReadOnlyList<PlaytestAdapter> adapters)
+    {
+        if (version is not (LegacyVersion or CurrentVersion) || sources is null || sources.Count > 3 || sources.Any(source => source is null) ||
+            sources.Select(source => source.Game).Distinct().Count() != sources.Count ||
+            sources.Any(source => !Enum.IsDefined(source.Game) || source.Game == ObpSourceGame.Synthetic || string.IsNullOrWhiteSpace(source.BuildId) || source.BuildId.Length > 128 ||
                 source.Sha256 is not { Length: 64 } hash || hash.Any(character => !Uri.IsHexDigit(character))) ||
-            Adapters is null || Adapters.Count is < 1 or > 256 || Adapters.Any(adapter => adapter is null) || Adapters.Select(adapter => adapter.Id).Distinct(StringComparer.Ordinal).Count() != Adapters.Count ||
-            Adapters.Any(adapter => string.IsNullOrWhiteSpace(adapter.Id) || adapter.Version != 1 || adapter.NativeHz != 60)))
+            adapters is null || adapters.Count > 256 || adapters.Any(adapter => adapter is null) || adapters.Select(adapter => adapter.Id).Distinct(StringComparer.Ordinal).Count() != adapters.Count ||
+            adapters.Any(adapter => string.IsNullOrWhiteSpace(adapter.Id) || adapter.Id.Length > 160 || adapter.Version != 1 || adapter.NativeHz != 60) ||
+            version == CurrentVersion && (sources.Count == 0 || adapters.Count == 0))
             throw new InvalidDataException("Recording lacks supported source-qualified player/session adapters.");
     }
 
