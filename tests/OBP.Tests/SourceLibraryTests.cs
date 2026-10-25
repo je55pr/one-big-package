@@ -1,4 +1,5 @@
 using OBP.Core;
+using OBP.IO;
 using OBP.PS2;
 using OBP.RAC1;
 using OBP.RAC2;
@@ -112,6 +113,90 @@ public sealed class SourceLibraryTests
             library.Restore(stale, new InMemoryReader(stale.Path, rac2Fixture.Bytes)));
         Assert.Contains("expected Rac1/rac1-test", ex.Message);
         Assert.Empty(library.Attached);
+    }
+
+    [Fact]
+    public void ConfigBackupRecoversTheValidatedTrilogyWithoutRewritingEitherCopy()
+    {
+        using var fixture = new ConfigFixture();
+        fixture.Library.SaveConfig(fixture.Path);
+        fixture.Library.Remove(ObpSourceGame.Rac3);
+        fixture.Library.SaveConfig(fixture.Path);
+        Assert.Equal(2, ObpSourceLibrary.LoadConfig(fixture.Path).Count);
+        string backup = File.ReadAllText(fixture.Path + ".bak");
+        File.WriteAllText(fixture.Path, "{truncated");
+        var read = ObpSourceLibrary.ReadConfig(fixture.Path);
+        Assert.Equal(DocumentReadKind.Backup, read.Kind);
+        Assert.NotNull(read.Problem);
+        Assert.Equal(3, read.Value!.Length);
+        Assert.Equal("{truncated", File.ReadAllText(fixture.Path));
+        Assert.Equal(backup, File.ReadAllText(fixture.Path + ".bak"));
+        var restored = new ObpSourceLibrary(fixture.Library.Definitions);
+        foreach (var entry in read.Value)
+            restored.Restore(entry, new InMemoryReader(entry.Path, fixture.Discs[entry.Game].Bytes));
+        Assert.Equal(Games.Select(game => game.Game), restored.Attached.Keys.Order());
+    }
+
+    [Fact]
+    public void BothBadCopiesReportRepairAndExplicitSaveRetainsTheOriginalDocuments()
+    {
+        using var fixture = new ConfigFixture();
+        File.WriteAllText(fixture.Path, "broken primary");
+        File.WriteAllText(fixture.Path + ".bak", "broken backup");
+        var read = ObpSourceLibrary.ReadConfig(fixture.Path);
+        Assert.Equal(DocumentReadKind.Rejected, read.Kind);
+        Assert.Null(read.Value); Assert.NotNull(read.Problem);
+        Assert.Throws<InvalidDataException>(() => ObpSourceLibrary.LoadConfig(fixture.Path));
+        Assert.Equal("broken primary", File.ReadAllText(fixture.Path));
+        fixture.Library.SaveConfig(fixture.Path); // An explicit repair, not a side effect of reading.
+        Assert.Equal(3, ObpSourceLibrary.LoadConfig(fixture.Path).Count);
+        Assert.Equal("broken backup", File.ReadAllText(fixture.Path + ".bak"));
+        Assert.Equal("broken primary", File.ReadAllText(Assert.Single(Directory.GetFiles(fixture.Directory, "sources.json.rejected-*"))));
+    }
+
+    [Fact]
+    public void InterruptedTemporaryWriteAndOversizedReplacementLeaveTheGoodConfigIntact()
+    {
+        using var fixture = new ConfigFixture();
+        fixture.Library.SaveConfig(fixture.Path);
+        byte[] before = File.ReadAllBytes(fixture.Path);
+        File.WriteAllText(fixture.Path + ".tmp-interrupted", "{");
+        Assert.Equal(DocumentReadKind.Primary, ObpSourceLibrary.ReadConfig(fixture.Path).Kind);
+        fixture.Library.Attach(new string('x', ObpSourceLibrary.MaximumConfigBytes),
+            new InMemoryReader("oversized-path.iso", fixture.Discs[ObpSourceGame.Rac1].Bytes));
+        Assert.Throws<InvalidDataException>(() => fixture.Library.SaveConfig(fixture.Path));
+        Assert.Equal(before, File.ReadAllBytes(fixture.Path));
+        Assert.Equal("{", File.ReadAllText(fixture.Path + ".tmp-interrupted"));
+    }
+
+    [Theory]
+    [InlineData("{\"Version\":1,\"Sources\":null}")]
+    [InlineData("{\"Version\":1,\"Sources\":[null]}")]
+    [InlineData("{\"Version\":1,\"Sources\":[{\"Game\":99,\"BuildId\":\"x\",\"Path\":\"fixture.iso\"}]}")]
+    [InlineData("{\"Version\":99,\"Sources\":[]}")]
+    public void MalformedConfigSchemasAreRejectedWithoutReplacingBytes(string json)
+    {
+        using var fixture = new ConfigFixture();
+        Assert.Equal(DocumentReadKind.Missing, ObpSourceLibrary.ReadConfig(fixture.Path).Kind);
+        File.WriteAllText(fixture.Path, json);
+        Assert.Equal(DocumentReadKind.Rejected, ObpSourceLibrary.ReadConfig(fixture.Path).Kind);
+        Assert.Equal(json, File.ReadAllText(fixture.Path));
+    }
+
+    private sealed class ConfigFixture : IDisposable
+    {
+        internal readonly string Directory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "obp-source-config-" + Guid.NewGuid().ToString("N"));
+        internal string Path => System.IO.Path.Combine(Directory, "sources.json");
+        internal readonly Dictionary<ObpSourceGame, SyntheticPs2.Fixture> Discs;
+        internal readonly ObpSourceLibrary Library;
+        internal ConfigFixture()
+        {
+            System.IO.Directory.CreateDirectory(Directory);
+            Discs = Games.ToDictionary(game => game.Game, game => SyntheticPs2.Build(game.SerialExe));
+            Library = new(Games.Select(game => Definition(game, Discs[game.Game].Bytes.Length)));
+            foreach (var game in Games) Library.Attach(game.Game + ".iso", new InMemoryReader("fixture.iso", Discs[game.Game].Bytes));
+        }
+        public void Dispose() => System.IO.Directory.Delete(Directory, recursive: true);
     }
 
     /// <summary>

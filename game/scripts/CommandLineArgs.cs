@@ -30,6 +30,7 @@ public sealed record CommandLineArgs
     public string? ProfileSmoke { get; init; }
     public string? AcceptanceOut { get; init; }
     public string? ProfilePath { get; init; }
+    public string? SourceConfigPath { get; init; }
     public bool NoProfile { get; init; }
     public string? PlayerCapabilitiesOut { get; init; }
     public bool NativeParityRequested => RetailParity || PlaytestSmoke || FusionTest || FusionSmoke || DefaultWeaponsSmoke ||
@@ -257,6 +258,7 @@ public sealed record CommandLineArgs
                 "--profile-smoke" => result with { ProfileSmoke = Next() },
                 "--acceptance-out" => result with { AcceptanceOut = Next() },
                 "--profile" => result with { ProfilePath = Next() },
+                "--source-config" => result with { SourceConfigPath = Next() },
                 "--no-profile" => result with { NoProfile = true },
                 "--player-capabilities-out" => result with { PlayerCapabilitiesOut = Next() },
                 "--direct" => result with { DirectLoad = true },

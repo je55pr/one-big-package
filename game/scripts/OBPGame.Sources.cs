@@ -57,7 +57,7 @@ public partial class OBPGame
         }
 
         _sources = new ObpSourceLibrary(TrilogySourceDefinitions.All);
-        _sourceConfigPath = ProjectSettings.GlobalizePath("user://sources.json");
+        _sourceConfigPath = _args.SourceConfigPath ?? ProjectSettings.GlobalizePath("user://sources.json");
         EnsureRac1CampaignPersistenceInitialized();
         _sourcesInitialized = true;
         RefreshRetailUiSource(null);
@@ -71,7 +71,13 @@ public partial class OBPGame
         IReadOnlyList<ObpSavedSource> saved;
         try
         {
-            saved = ObpSourceLibrary.LoadConfig(_sourceConfigPath);
+            var read = ObpSourceLibrary.ReadConfig(_sourceConfigPath);
+            saved = read.Value ?? [];
+            if (read.Problem is not null)
+            {
+                _sourceRestoreWarnings.Add("Remembered game sources: " + read.Problem);
+                GD.PrintErr("[sources] " + read.Problem);
+            }
         }
         catch (Exception ex)
         {
@@ -204,14 +210,12 @@ public partial class OBPGame
         AddChild(_sourceManager);
         _sourceManager.Populate(_sources, TrilogyWorldProviders.Games);
 
-        if (_profileStatus is not null)
-            _sourceManager.SetStatus(_profileStatus, error: _profileWriteBlocked);
-        else if (_rac1CampaignRestoreWarning is not null)
-            _sourceManager.SetStatus(_rac1CampaignRestoreWarning, error: true);
-        else if (_sourceRestoreWarnings.Count > 0)
-        {
-            _sourceManager.SetStatus("⚠ " + string.Join("\n", _sourceRestoreWarnings), error: true);
-        }
+        var notices = new List<string>();
+        if (_profileStatus is not null) notices.Add(_profileStatus);
+        if (_rac1CampaignRestoreWarning is not null) notices.Add(_rac1CampaignRestoreWarning);
+        if (_sourceRestoreWarnings.Count > 0) notices.Add("⚠ " + string.Join("\n", _sourceRestoreWarnings));
+        if (notices.Count > 0)
+            _sourceManager.SetStatus(string.Join("\n", notices), error: _profileWriteBlocked || _rac1CampaignRestoreWarning is not null || _sourceRestoreWarnings.Count > 0);
 
         GD.Print($"[sources] source manager shown — {_sources.Attached.Count}/3 sources attached");
     }

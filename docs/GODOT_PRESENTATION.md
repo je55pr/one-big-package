@@ -228,6 +228,12 @@ different paths for the same source fails. Composition/viewer flags remain
 supported pending the separate viewer decision. Run `tools/test-cli.ps1` for
 headless startup and rejection checks.
 
+Remembered source paths use bounded atomic `sources.json` writes with a valid
+`.bak` copy. Startup can recover that backup and shows a warning while retaining
+the unreadable primary. If both copies are invalid, setup reports repair rather
+than replacing them during loading. `--source-config <path>` isolates this
+document for diagnostics; it does not change source/build validation.
+
 `OBP.Godot.CaptureHarness` is the primitive: settle N frames → one
 `FramePostDraw` → grab the viewport → write a PNG + a JSON sidecar of the
 caller's metadata, with a watchdog. Both capture paths use it.
