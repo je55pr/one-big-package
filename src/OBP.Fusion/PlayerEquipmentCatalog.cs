@@ -22,7 +22,7 @@ public sealed class PlayerEquipmentCatalog
         {
             item.Item?.Validate();
             if (string.IsNullOrWhiteSpace(item.Id) || string.IsNullOrWhiteSpace(item.DisplayName) || string.IsNullOrWhiteSpace(item.BuildId) ||
-                !Enum.IsDefined(item.Category) || !Enum.IsDefined(item.Implementation) ||
+                !Enum.IsDefined(item.Category) || !Enum.IsDefined(item.Implementation) || !Enum.IsDefined(item.Usage) ||
                 item.SourceGame is not ("rac1" or "rac2" or "rac3") || item.Item is { } key && key.SourceGame != item.SourceGame ||
                 item.Category == EquipmentCategory.Appearance && (item.Appearance is null || item.Item is not null) ||
                 item.Category != EquipmentCategory.Appearance && (item.Item is null || item.Appearance is not null) ||
@@ -59,7 +59,7 @@ public sealed class PlayerEquipmentCatalog
                 EquipmentUsability.Unimplemented => item.UnsupportedReason,
                 EquipmentUsability.MissingSource => $"Attach the {item.SourceGame} source for {item.DisplayName}.",
                 EquipmentUsability.UnsupportedBuild => $"{item.DisplayName} requires {item.BuildId}.",
-                EquipmentUsability.MissingModel => $"The genuine {item.DisplayName} model is unavailable.",
+                EquipmentUsability.MissingModel => state.ContextReason ?? $"The genuine {item.DisplayName} model is unavailable.",
                 EquipmentUsability.Unowned => "This loadout does not own the item.",
                 EquipmentUsability.ContextBlocked => state.ContextReason ?? "The required runtime context is unavailable.",
                 _ => null,

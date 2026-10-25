@@ -30,7 +30,7 @@ public sealed class GcClass2827ApproachSession
             double dx = targetX - x;
             double dz = targetZ - z;
             double distance = Math.Sqrt((dx * dx) + (dz * dz));
-            if (!double.IsFinite(distance) || distance <= GcClass2827HostileSession.AttackEntryDistanceExclusive)
+            if (!double.IsFinite(distance) || distance < GcClass2827HostileSession.AttackEntryDistanceExclusive)
             {
                 break;
             }
@@ -39,8 +39,10 @@ public sealed class GcClass2827ApproachSession
                 PlanarMaxStepPerTick,
                 _planarStep + PlanarAccelerationPerTick);
 
-            double remaining = distance - GcClass2827HostileSession.AttackEntryDistanceExclusive;
-            double step = Math.Min(_planarStep, remaining);
+            // The attack gate is strict. Clamping to exactly its boundary can
+            // leave the source state permanently chasing after float projection.
+            // Preserve the witnessed tick step until it crosses that gate.
+            double step = Math.Min(_planarStep, distance);
             if (step <= 0d)
             {
                 break;

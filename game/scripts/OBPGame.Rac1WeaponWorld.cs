@@ -32,7 +32,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeaponWorld()
     {
-        if (_movementStateLoading || _world?.Game != "rac1" || _player is null) return;
+        if (_movementStateLoading || PlayerPresentationAssets is null || _player is null) return;
         _rac1WeaponWorldTick++;
         StepRac1ArsenalWorld();
         if (_rac1PyroEmitting && EnsureRac1Particles() is { } particles)
@@ -80,7 +80,7 @@ public partial class OBPGame
                             shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterDamage : Rac1WeaponReconstructionPolicy.SuckDamage,
                             shot.Weapon == Rac1WeaponId.Blaster ? Rac1WeaponProfiles.BlasterFlags : Rac1WeaponReconstructionPolicy.SuckDamageFlags));
                     SpawnEquipmentFlash(hit.Point, 27, new(.7f, .8f, 1, 1), .6f, 10);
-                    PlayRac1PickupSound(849, 0, hit.Point); RetireEquipmentShot(shot); continue;
+                    PlayPlayerEquipmentSound(849, 0, hit.Point); RetireEquipmentShot(shot); continue;
                 }
                 shot.Position = next; shot.Node.GlobalPosition = next;
                 if (shot.Weapon == Rac1WeaponId.SuckCannon) shot.Node.RotateY(.25f);
@@ -90,7 +90,7 @@ public partial class OBPGame
             {
                 if (shot.Weapon == Rac1WeaponId.GloveOfDoom)
                     skin.Scale = Vector3.One * Math.Min(Rac1ArsenalRules.DoomCanisterThrownScale, skin.Scale.X + Rac1ArsenalRules.DoomCanisterGrowth);
-                foreach (int sound in skin.Step()) PlayRac1PickupSound(shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230, sound, shot.Position);
+                foreach (int sound in skin.Step()) PlayPlayerEquipmentSound(shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230, sound, shot.Position);
                 if (shot.Grounded)
                 { shot.Position = new(shot.Position.X, shot.GroundHeight + skin.FootOffset * skin.Scale.Y, shot.Position.Z); shot.Node.GlobalPosition = shot.Position; }
             }
@@ -108,7 +108,7 @@ public partial class OBPGame
                     shot.Grounded = true; shot.Step = Vector3.Zero;
                     if (shot.Node is Rac1EquipmentView mine && shot.Weapon == Rac1WeaponId.MineGlove)
                         mine.Play(1, false, shot.Id, 2);
-                    PlayRac1PickupSound(shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230, 0, hit.Point);
+                    PlayPlayerEquipmentSound(shot.Weapon == Rac1WeaponId.MineGlove ? 74 : 230, 0, hit.Point);
                 }
                 else { shot.Position = next; shot.Node.RotateY(.15f); }
                 shot.Node.GlobalPosition = shot.Position;
@@ -244,7 +244,7 @@ public partial class OBPGame
             {
                 ResolveEquipmentBlast(Rac1WeaponId.GloveOfDoom, bot.Id, 186, origin + Vector3.Up * .3f, 1, 3, Rac1WeaponProfiles.DoomFlags);
                 SpawnRac1WeaponExplosion(Rac1WeaponId.GloveOfDoom, origin + Vector3.Up * .2f);
-                PlayRac1PickupSound(186, 4, origin);
+                PlayPlayerEquipmentSound(186, 4, origin);
                 bot.Body.QueueFree(); _rac1DoomAgents.Remove(bot); continue;
             }
             // Host ground/obstruction queries prevent the native model from
@@ -258,7 +258,7 @@ public partial class OBPGame
             // Class186 selects sequence7 while chasing and sequence6 near its
             // owner (0x2c0b90/0x2c0cc0). Sequence1 is a leap, not a run loop.
             bot.View.Play(bot.Motion.SourceSequence(direction.LengthSquared() > .01f));
-            foreach (int sound in bot.View.Step()) PlayRac1PickupSound(186, sound, origin);
+            foreach (int sound in bot.View.Step()) PlayPlayerEquipmentSound(186, sound, origin);
             if (target is null)
                 for (int collision = 0; collision < bot.Body.GetSlideCollisionCount(); collision++)
                     if (bot.Body.GetSlideCollision(collision).GetNormal().Y < .7f)
@@ -271,7 +271,7 @@ public partial class OBPGame
         ResolveEquipmentBlast(shot.Weapon, shot.Id, childClass, shot.Position, radius, damage, flags);
         // The native ground/air visual recipe is separate from blast admission.
         SpawnRac1WeaponExplosion(shot.Weapon, shot.Position);
-        PlayRac1PickupSound(childClass, shot.Weapon == Rac1WeaponId.MineGlove ? 2 : 4, shot.Position);
+        PlayPlayerEquipmentSound(childClass, shot.Weapon == Rac1WeaponId.MineGlove ? 2 : 4, shot.Position);
         RetireEquipmentShot(shot);
     }
 

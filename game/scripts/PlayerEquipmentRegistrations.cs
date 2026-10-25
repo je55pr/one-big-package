@@ -38,7 +38,9 @@ public static class PlayerEquipmentRegistrations
             yield return new($"rac1/item/{(int)item}", name, "rac1", Rac1Authority.Primary.BuildId, EquipmentCategory.Gadget,
                 implemented ? EquipmentImplementation.Implemented : EquipmentImplementation.Unimplemented, new("rac1", (int)item),
                 ConflictGroup: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack or Rac1TraversalEquipmentId.HydroPack ? "backpack" : null,
-                UnsupportedReason: implemented ? null : "The source-owned traversal controller is not implemented.");
+                UnsupportedReason: implemented ? null : "The source-owned traversal controller is not implemented.",
+                Usage: item is Rac1TraversalEquipmentId.HeliPack or Rac1TraversalEquipmentId.ThrusterPack or Rac1TraversalEquipmentId.HydroPack
+                    ? EquipmentUsage.Backpack : item == Rac1TraversalEquipmentId.Swingshot ? EquipmentUsage.ContextAction : EquipmentUsage.Passive);
         yield return Appearance("rac1", ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, Rac1PlayerAvatarProvider.Instance.DefaultAvatarId,
             "rac1:ratchet:moby-class-0", true);
         yield return Appearance("rac2", ObpSourceGame.Rac2, Rac2Authority.Primary.BuildId, "ratchet", "rac2:ratchet", false);

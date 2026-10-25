@@ -363,7 +363,7 @@ public partial class OBPGame
                     aridiaStepped = true;
                 }
                 foreach (int sound in enemy.Animation.Tick())
-                    if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40)
+                    if (node.Root.GlobalPosition.DistanceTo(_player.GlobalPosition) < 40 && !PlayRegisteredRac1ActorSound(node, sound))
                         PlayRac1PickupSound(node.Source.NativeClassId, sound, node.Root.GlobalPosition);
                 if (node.Source.NativeClassId == 749) TickRac1Class749(enemy);
                 else if (node.Source.NativeClassId == 1440) TickRac1Class1440(enemy);
@@ -595,10 +595,9 @@ public partial class OBPGame
                 .FirstOrDefault(node => node.Source.SourceGame == "rac1" &&
                 node.Source.NativeClassId == damage.Source.NativeClassId && node.Source.InstanceIndex == damage.Source.RuntimeId);
             if (attacker is null) { GD.PushWarning("Player damage source has no registered native actor."); return; }
-            var intake = ApplyPlayerSourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
+            ApplyPlayerSourceDamage(attacker, OBP.RAC1.Rac1Authority.Primary.BuildId,
                 PlayerSessionNativeState.Rac1DamageAdapter, PlayerSessionNativeState.Rac1DamageDescriptor,
                 _rac1AridiaNativeFrameCounter, checked((int)damage.NativeDamage), damage.NativeDamageFlags ?? 0);
-            if (intake.Applied) NotifyRac1PlayerDamageAudio(before, _rac1Nanotech.Probe());
             return;
         }
         var after = _rac1Nanotech.ApplyDamage(damage);
@@ -683,8 +682,11 @@ public partial class OBPGame
             enemy.RewardEmitted = true;
             enemy.Body.CollisionLayer = 0;
             if (node.Source.NativeClassId != Rac1FrogAuthored.ClassId)
-                SpawnRac1BoltPickups(node.Root.GlobalPosition,
-                    _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source))));
+            {
+                var pickups = _rac1BoltPickups.Emit(SelectRac1CrateReward(Rac1EnemyMotion.RewardCentre(node.Source)));
+                SpawnRac1BoltPickups(node.Root.GlobalPosition, pickups);
+                TrackRegisteredActorPickups(node, pickups.Select(pickup => pickup.PickupId));
+            }
         }
         _rac1CombatStatus = $"enemy i{node.Source.InstanceIndex}: {(lethal ? "lethal reaction" : "hit reaction")}";
         GD.Print($"[rac1-enemies] class{node.Source.NativeClassId} i{node.Source.InstanceIndex}: " +

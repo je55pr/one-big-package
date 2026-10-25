@@ -41,7 +41,7 @@ public sealed partial class PauseMenuUi
 
     public override void _ExitTree() => RestoreQuickSelectShoulderBindings();
 
-    public override void _Input(InputEvent @event)
+    private void HandleRetailQuickSelectInput(InputEvent @event)
     {
         if (!RetailEnabled || _retailNavigation.Page != Rac1RetailMenuPage.QuickSelect ||
             _retailNavigation.IsTransitioning ||

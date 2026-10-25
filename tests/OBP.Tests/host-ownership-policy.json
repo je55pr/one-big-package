@@ -60,13 +60,6 @@
     "Hash": "43e79d89d100f59de938bafeacc0789c3a0213b29ffdc746a4bd64f3c8f3a8b1"
   },
   {
-    "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.ArmGcGameplayHost(PlayerHost)",
-    "Kind": "migration",
-    "Reason": "World origin currently chooses a primary-attack subscription; source actors must register independently.",
-    "Owner": "#256",
-    "Hash": "bcd6d1248f4fd7db487e462bec61754e76481bb632665628721af36c430b4235"
-  },
-  {
     "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.GetGcGameplayHudLine()",
     "Kind": "adapter",
     "Reason": "Optional world debug overlay showing original GC actor/health probes; not the common PlayerHud projection.",
@@ -75,8 +68,8 @@
   {
     "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.TickGcGameplay(double)",
     "Kind": "adapter",
-    "Reason": "Tick the current original-world GC actor/context adapter; mixed actor registration is #256.",
-    "Hash": "8d54262beed927d82d2c798df92ab25dee6453957446281cc0cdc3a4d64b8568"
+    "Reason": "Original GC world lift/door context remains here; ordinary class-2827 cooldown/chase/attack ticks moved to the source-registered 60-Hz actor group. ActorRuntimeSetTests and TrilogyGameplaySmoke cover clock ownership and mixed contexts.",
+    "Hash": "174562083c863feefc28398ce1345940b2bbcecaea548a86850707645f53646d"
   },
   {
     "Key": "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",
@@ -105,8 +98,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Enemies.cs::OBPGame.TickRac1Hostiles(double)",
     "Kind": "adapter",
-    "Reason": "Original-world R&C1 actor/session updates; ordinary player protection ticks moved to the persistent fixed-clock health service. Only explicit parity retains native health stepping here.",
-    "Hash": "14bf76cb0236237798e5227070347b4e5e54ef5516d9eb217b3f048817d942dc"
+    "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected.",
+    "Hash": "09093db7fafe31130af17306d51863b6fd020041dd9123baada7dcbacf281ae5"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.BindSourcePlayerContacts(PlayerHost)",
@@ -135,8 +128,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac1Gameplay.cs::OBPGame.TickRac1Gameplay(double)",
     "Kind": "adapter",
-    "Reason": "Original-world R&C1 actor/environment updates and taxi cancellation. Ordinary player health, hurt/death/retry and HUD clock are bound independently; explicit native parity has its own lifecycle helper.",
-    "Hash": "01c6621183079b4696d1acd04fe131939c1082ccc2e1d79906b9bbfe618dfeb8"
+    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes.",
+    "Hash": "0475f2c239c62298c4581188b2dfce8d8ad25d787c4445ac34461ba8c9e93a10"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame.TickRac1GoldBolts()",
@@ -201,31 +194,10 @@
     "Hash": "d341cb3aa8da27ea637f868e6ec18e263a949340ca7e65ffea00f56f6e47f7cb"
   },
   {
-    "Key": "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame.StepRac1PlayerAudio(Rac1PlayerAnimationPresentationController)",
-    "Kind": "migration",
-    "Reason": "Player sound admission currently depends on world origin instead of selected avatar/animation source.",
-    "Owner": "#272",
-    "Hash": "535d7609325124ddae1f352823bf68213ffa0300652929fee2a55c06296a24e9"
-  },
-  {
     "Key": "game/scripts/OBPGame.Rac1Weapons.cs::OBPGame.RefreshSourceEquipmentContext()",
     "Kind": "adapter",
     "Reason": "Refresh only the original R&C1 metal-detector world query after equipment changes; diagnostic loadout ownership is persistent-player state, covered by PlayerNativeSessionStateTests.",
     "Hash": "451744a107c6a8bbe11a0b7a1363cbc0cf10791b6d03760c80c205910a3ca352"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Rac1WeaponWorld.cs::OBPGame.StepRac1AdditionalWeaponWorld()",
-    "Kind": "migration",
-    "Reason": "Player equipment/projectile world presentation is currently limited by destination source.",
-    "Owner": "#271",
-    "Hash": "28907126064d13f28ba61d2a250fb1f3ff59633522c00145a77a766b2125cb5a"
-  },
-  {
-    "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.ArmUyaGameplay(PlayerHost)",
-    "Kind": "migration",
-    "Reason": "World source currently selects the player attack callback; native actor target routing must be registered independently.",
-    "Owner": "#256",
-    "Hash": "5c5a328ca44558a50600e4f6cac569f2962d2d6168f69a08ffd7bd5e8b84fa1a"
   },
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.ConfigureUyaGameplay(RuntimeWorld,RuntimeWorldScene.Result)",
@@ -286,5 +258,11 @@
     "Kind": "adapter",
     "Reason": "Environment gizmo diagnostic reports missing source-world lighting; no player service is selected.",
     "Hash": "a2e60386132b6e4622b6e6c9a3eead99ecd29a16c3674842183b2a29e99329ce"
+  },
+  {
+    "Key": "game/scripts/OBPGame.Actors.cs::OBPGame.CreateActorView(ActorPlacement,RuntimeWorld,Func<RuntimeDynamicObject, bool>)",
+    "Kind": "adapter",
+    "Reason": "Validate the source actor asset library build/level against its placement, then construct only that actor using its own textures and authored model scale. This never selects player services; ActorRuntimeSetTests and TrilogyGameplaySmoke verify source identity, mixed native actors and independent resets.",
+    "Hash": "b7b6340df06bea1f25ee214f5ce5fbded14a6b4d2cdb218bf998f55f7f0cba4a"
   }
 ]

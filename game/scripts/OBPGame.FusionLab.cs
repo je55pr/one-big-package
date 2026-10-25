@@ -63,7 +63,12 @@ public partial class OBPGame
             var sign = new Label3D
             {
                 Name = "Station_" + station.Id,
-                Text = station.Label + "\nUNAVAILABLE: adapter/content not yet implemented",
+                Text = station.Label + "\n" + (station.AdapterId switch
+                {
+                    "obp/universal-loadout/v1" => "PAUSE: weapons, gadgets, appearance and Quick Select",
+                    "obp/mixed-encounter/v1" => "PAUSE > DEVELOPER: actor status and independent resets",
+                    _ => "UNAVAILABLE: adapter/content not yet implemented",
+                }),
                 Position = RuntimeWorldScene.ToScene(
                     station.Position.X, 2.0 + station.Position.Y, station.Position.Z),
                 FontSize = 31,

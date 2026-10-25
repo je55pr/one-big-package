@@ -32,10 +32,10 @@ public partial class OBPGame
 
     private void StepRac1PlayerAudio(Rac1PlayerAnimationPresentationController controller)
     {
-        if (_rac1PlayerAudio is null || _player is null || _world?.Game != "rac1") return;
+        if (_rac1PlayerAudio is null || _player is null) return;
         if (_movementStateLoading || !_player.Rac1GameplayAlive || _player.DevelopmentControls.FlyEnabled)
         { ResetRac1PlayerAudio(includeReactions: _player.Rac1GameplayAlive); return; }
-        var frame = _rac1PlayerAudio.Step(_world.LevelId, new(controller.AnimationSoundSample,
+        var frame = _rac1PlayerAudio.Step(_playerAudioBankLevel, new(controller.AnimationSoundSample,
             controller.Current.ClipStartedAtSeconds, controller.AudioNativeAction, controller.AudioActionAge,
             _player.Rac1AudioSurfaceEffectMode, _player.Rac1AudioPackId, _player.Rac1AudioGrounded,
             MovementAction: _player.Rac1AudioMovementAction,
@@ -64,7 +64,7 @@ public partial class OBPGame
         if (playing == wanted) return;
         host.StopAll(); playing = null;
         if (wanted is not int local || _player is null ||
-            _rac1PickupAssets?.Sounds?.TryGetValue((0, local), out var sound) != true) return;
+            PlayerPresentationAssets?.Sounds?.TryGetValue((0, local), out var sound) != true) return;
         var clip = sound!.SelectPitch(PlayerAudioRandom);
         if (clip.FrameCount == 0) return;
         if (host.PlayEffect(_player, new(clip, RuntimeAudioCategory.SoundEffect, loop: sound.Loop, gain: sound.Gain)))
@@ -78,9 +78,9 @@ public partial class OBPGame
     {
         if (_player is null) return;
         Rac1CrateAudio.Sound? sound = null;
-        if (cue.LevelSound) _rac1PickupAssets?.PlayerAudio?.Footsteps.TryGetValue(cue.Sound, out sound);
-        else _rac1PickupAssets?.Sounds?.TryGetValue((cue.Class, cue.Sound), out sound);
-        if (sound is null) return;
+        if (cue.LevelSound) PlayerPresentationAssets?.PlayerAudio?.Footsteps.TryGetValue(cue.Sound, out sound);
+        else PlayerPresentationAssets?.Sounds?.TryGetValue((cue.Class, cue.Sound), out sound);
+        if (sound is null) { ReportPlayerAudioMissing(cue.Class, cue.Sound); return; }
         var clip = sound.SelectPitch(PlayerAudioRandom);
         if (clip.FrameCount == 0) return; // Native probability programs may select silence.
         // Listener-relative self audio is host presentation policy. Native
@@ -113,6 +113,7 @@ public partial class OBPGame
 
     private void TraceRac1PlayerSound(Rac1PlayerAudioSession.Cue cue, bool loop)
     {
+        TraceSelectedPlayerAudio(cue.Class, cue.Sound, loop, cue.LevelSound);
         if (!_args.Rac1WrenchSmoke && !_args.Rac1WeaponsSmoke && !_args.Rac1PlayerAudioSmoke) return;
         _rac1PlayerSoundTrace.Add((cue, loop));
     }

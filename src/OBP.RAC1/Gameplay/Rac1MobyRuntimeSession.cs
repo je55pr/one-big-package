@@ -128,6 +128,9 @@ public sealed class Rac1MobyRuntimeSession
     public bool TryGet(Rac1MobyRuntimeKey key, out Rac1MobyRuntimeInstance? instance) =>
         _instances.TryGetValue(key, out instance);
 
+    /// <summary>Explicit host despawn; never reuses a retired native instance.</summary>
+    public bool Unregister(Rac1MobyRuntimeKey key) => _instances.Remove(key);
+
     public Rac1MobyRuntimeState SetNativeState(
         Rac1MobyRuntimeInstance instance,
         int nativeState)

@@ -1,0 +1,116 @@
+using System.Numerics;
+using OBP.Fusion;
+using OBP.Runtime;
+using OBP.Runtime.Gameplay;
+
+namespace OBP.Tests;
+
+public sealed class ActorRuntimeSetTests
+{
+    private static readonly SourceWeaponKey Lancer = new("rac2", 30);
+    private static readonly SourceWeaponKey Cannon = new("rac3", 43);
+    private static RuntimeObjectTransform Identity => new([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+    private static ActorRuntimeSet Create()
+    {
+        var set = new ActorRuntimeSet("arena", 7);
+        set.RegisterWeapon(Lancer, "gc-build", () => true); set.RegisterWeapon(Cannon, "uya-build", () => true);
+        return set;
+    }
+
+    private sealed class Actor(ActorInstanceKey key, List<string>? order = null) : IRegisteredActor
+    {
+        public ActorRegistration Registration { get; } = new(key, new(key.Target.SourceGame, "build", "original-asset"), "native-adapter", "native-context", [new("damage", CapabilityAdmission.Ready)]);
+        public double Health { get; private set; } = 3;
+        public int Hits { get; private set; }
+        public bool Disposed { get; private set; }
+        public ActorObservation Observe() => new(Vector3.Zero, Health > 0 && !Disposed, Disposed, Health, 12, null);
+        public void Tick(ActorTickFacts facts) => order?.Add(key.Target.SourceGame + "/" + key.Target.InstanceIndex + "/" + facts.Tick);
+        public ActorHitResult Apply(WeaponDamageIntent damage)
+        { Hits++; Health -= damage.SourceDamage; return new(true, Health <= 0); }
+        public void Dispose() => Disposed = true;
+    }
+
+    [Fact]
+    public void EqualNativeNumbersRemainSeparateAcrossSourcesAndDuplicateRegistrationsFail()
+    {
+        using var set = Create();
+        var gc = new Actor(new("arena", 7, new("rac2", 500, 1)));
+        var uya = new Actor(new("arena", 7, new("rac3", 500, 1)));
+        set.Register(gc); set.Register(uya);
+        Assert.Throws<ArgumentException>(() => set.Register(gc));
+        Assert.Equal(2, set.Count);
+        Assert.Same(gc, set.Find(gc.Registration.Instance.Target));
+        Assert.Same(uya, set.Find(uya.Registration.Instance.Target));
+    }
+
+    [Fact]
+    public void NativeTickOrderIsStableAndASharedSourceGroupRunsOnce()
+    {
+        using var set = Create(); var order = new List<string>(); int groups = 0;
+        set.RegisterUpdateGroup("rac1/native", _ => groups++);
+        set.Register(new Actor(new("arena", 7, new("rac3", 500, 2)), order));
+        set.Register(new Actor(new("arena", 7, new("rac1", 749, 1)), order));
+        set.Register(new Actor(new("arena", 7, new("rac2", 2827, 3)), order));
+        set.Step(Vector3.Zero, true); set.Step(Vector3.Zero, false);
+        Assert.Equal(2, groups);
+        Assert.Equal(new[] { "rac1/1/1", "rac2/3/1", "rac3/2/1", "rac1/1/2", "rac2/3/2", "rac3/2/2" }, order);
+        var group = new ActorUpdateGroup(_ => groups++); group.Step(new(10, Vector3.Zero, true)); group.Step(new(10, Vector3.Zero, true));
+        Assert.Equal(3, groups);
+        Assert.Throws<InvalidOperationException>(() => group.Step(new(9, Vector3.Zero, true)));
+    }
+
+    [Fact]
+    public void NativeAmountsPassThroughAndContactDeduplicationDoesNotAliasWeapons()
+    {
+        using var set = Create(); var actor = new Actor(set.Allocate("rac1", 749)); set.Register(actor);
+        var key = actor.Registration.Instance;
+        var shot = new WeaponDamageIntent(new(Lancer, 1, 1), key.Target, .5f, 0x1234, "projectile");
+        Assert.True(set.Apply(key, shot).Applied); Assert.Equal(2.5, actor.Health);
+        Assert.False(set.Apply(key, shot).Applied); Assert.Equal(1, actor.Hits);
+        Assert.True(set.Apply(key, shot with { Shot = new(Cannon, 1, 1) }).Applied);
+        Assert.Equal(2, actor.Health);
+        Assert.False(set.Apply(key, shot with { SourceDamage = float.NaN }).Applied);
+    }
+
+    [Fact]
+    public void RetiredLeaseAndActorCannotReceiveLateHitsAndResetAllocatesANewTarget()
+    {
+        var set = Create(); var first = new Actor(set.Allocate("rac3", 500)); set.Register(first);
+        var key = first.Registration.Instance;
+        var damage = new WeaponDamageIntent(new(Lancer, 1, 1), key.Target, .5f, 1, "hit");
+        Assert.False(set.Apply(key with { Generation = 6 }, damage).Applied);
+        Assert.False(set.Apply(key with { WorldInstanceId = "previous" }, damage).Applied);
+        set.Retire(key); Assert.True(first.Disposed); Assert.Null(set.Find(key.Target));
+        Assert.Throws<ArgumentException>(() => set.Register(new Actor(key)));
+        var second = new Actor(set.Allocate("rac3", 500)); set.Register(second);
+        Assert.NotEqual(key, second.Registration.Instance);
+        Assert.False(set.Apply(key, damage).Applied); Assert.Equal(0, second.Hits);
+        set.Dispose(); Assert.True(second.Disposed);
+        Assert.False(set.Apply(second.Registration.Instance, damage with { Target = second.Registration.Instance.Target }).Applied);
+    }
+
+    [Fact]
+    public void MissingUnregisteredWeaponsAndWrongLeaseRegistrationFailExplicitly()
+    {
+        using var set = Create(); var actor = new Actor(set.Allocate("rac2", 2827)); set.Register(actor);
+        var key = actor.Registration.Instance;
+        Assert.False(set.Apply(key, new(new(new("rac2", 999), 1, 1), key.Target, 1, 0, "hit")).Applied);
+        set.RegisterWeapon(new("rac1", 10), "r1-build", () => false);
+        Assert.False(set.Apply(key, new(new(new("rac1", 10), 1, 1), key.Target, 1, 0, "hit")).Applied);
+        Assert.Throws<ArgumentException>(() => set.Register(new Actor(key with { Generation = 8 })));
+    }
+
+    [Fact]
+    public void PlacementRequiresVersionSourceContextAndRigidFiniteTransform()
+    {
+        var placement = new ActorPlacement("toad", new("rac1", "build", "LEVEL0/moby749"), 0, 749, null, Identity, "native-adapter", "source-context", 5, "arena");
+        placement.Validate();
+        Assert.Throws<ArgumentException>(() => (placement with { Version = 2 }).Validate());
+        Assert.Throws<ArgumentException>(() => (placement with { NativeContextId = "" }).Validate());
+        Assert.Throws<ArgumentException>(() => (placement with { Source = placement.Source with { Game = "fusion" } }).Validate());
+        double[] scale = (double[])Identity.Matrix.Clone(); scale[0] = 2;
+        Assert.Throws<ArgumentException>(() => (placement with { Transform = new(scale) }).Validate());
+        scale[0] = double.NaN;
+        Assert.Throws<ArgumentException>(() => (placement with { Transform = new(scale) }).Validate());
+    }
+}

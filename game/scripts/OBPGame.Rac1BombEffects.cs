@@ -39,7 +39,7 @@ public partial class OBPGame
         var push = ToEffectNative(reflectedPush ?? Vector3.Up * (2f / 60));
         SpawnRac1ExplosionFragments(Rac1BombExplosion.Fragments(ToEffectNative(origin), Rac1EffectRandom,
             ToEffectNative(impactNormal ?? Vector3.Up), push, ToEffectNative(camera)));
-        if (playSound) PlayRac1PickupSound(121, 0, origin);
+        if (playSound) PlayPlayerEquipmentSound(121, 0, origin);
         EnsureRac1Particles()?.Bomb(ToEffectNative(origin), ToEffectNative(camera), push);
     }
 
@@ -61,7 +61,7 @@ public partial class OBPGame
     {
         foreach (var motion in bursts)
         {
-            var node = CreateRac1EffectNode(Rac1BombExplosion.BurstClass, "Rac1RetailBombBurst_Class1192");
+            var node = CreatePlayerEquipmentEffectNode(Rac1BombExplosion.BurstClass, "Rac1RetailBombBurst_Class1192");
             node.GlobalPosition = origin;
             node.Rotation = new(Rac1EffectRandom.Angle(), Rac1EffectRandom.Angle(), Rac1EffectRandom.Angle());
             node.Scale = Vector3.One * .001f;
@@ -84,7 +84,7 @@ public partial class OBPGame
     {
         foreach (var motion in fragments)
         {
-            var node = CreateRac1EffectNode(122, "Rac1RetailBombFragment_Class122");
+            var node = CreatePlayerEquipmentEffectNode(122, "Rac1RetailBombFragment_Class122");
             node.GlobalPosition = FromEffectNative(motion.Position);
             node.Scale = Vector3.One * motion.Scale;
             SetBombOrientation(node, motion.Angles);

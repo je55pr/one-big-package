@@ -38,11 +38,11 @@ public partial class OBPGame
         if (loop != _rac1WeaponLoop)
         {
             _rac1WeaponLoopAudio.StopAll(); _rac1WeaponLoop = null;
-            if (loop is { } cue && _rac1PickupAssets?.Sounds?.TryGetValue(cue, out var sound) == true)
+            if (loop is { } cue && PlayerPresentationAssets?.Sounds?.TryGetValue(cue, out var sound) == true)
             {
                 // Position is local to the player, so a sustained sound follows
                 // its owner instead of remaining at the first shot's world point.
-                if (_rac1WeaponLoopAudio.PlayEffect(_player!, new(sound.SelectPitch(Rac1EffectRandom), RuntimeAudioCategory.SoundEffect,
+                if (_rac1WeaponLoopAudio.PlayEffect(_player!, new(sound.SelectPitch(PlayerAudioRandom), RuntimeAudioCategory.SoundEffect,
                     loop: true, gain: sound.Gain, position: new(0, .7, 0))))
                 {
                     _rac1WeaponLoop = cue;
@@ -53,10 +53,10 @@ public partial class OBPGame
         if (admitted && weapon == Rac1WeaponId.Taunter && _rac1ArsenalHeld)
         {
             if (_rac1TaunterSoundTicks > 0) _rac1TaunterSoundTicks--;
-            else if (_rac1PickupAssets?.Sounds?.TryGetValue((175, _rac1TaunterSoundStep), out var sound) == true)
+            else if (PlayerPresentationAssets?.Sounds?.TryGetValue((175, _rac1TaunterSoundStep), out var sound) == true)
             {
                 _rac1TaunterAudio.StopAll();
-                if (_rac1TaunterAudio.PlayEffect(_player!, new(sound.SelectPitch(Rac1EffectRandom), RuntimeAudioCategory.SoundEffect,
+                if (_rac1TaunterAudio.PlayEffect(_player!, new(sound.SelectPitch(PlayerAudioRandom), RuntimeAudioCategory.SoundEffect,
                     gain: sound.Gain, position: new(0, .7, 0)))) RecordRac1WeaponSound(175, _rac1TaunterSoundStep);
                 _rac1TaunterSoundTicks = Math.Max(17, (int)Math.Ceiling(sound.Clip.DurationSeconds * 60));
                 _rac1TaunterSoundStep = (_rac1TaunterSoundStep + 1) % 6;

@@ -193,6 +193,20 @@ public sealed class PlayerCapabilitiesTests
     }
 
     [Fact]
+    public void RetiredActorCannotAttackOrRetainItsOldDamageReceipt()
+    {
+        var native = Native(); native.Life.BeginWorld("world", 1);
+        var old = Actor("rac2"); Register(native, old);
+        Assert.True(native.Life.Apply(Attack(old)).Applied);
+        native.Life.RetireActor(old);
+        Assert.Equal(PlayerIntakeStatus.UnregisteredActor, native.Life.Apply(Attack(old, 2)).Status);
+        var replacement = Actor("rac2", index: 2); Register(native, replacement);
+        for (int tick = 0; tick < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; tick++) native.Life.TickNative();
+        Assert.True(native.Life.Apply(Attack(replacement)).Applied);
+        Assert.Equal(2, native.Life.Capture().Current);
+    }
+
+    [Fact]
     public void DeadUnknownWrongBuildAndUnregisteredConversionsCannotDamageThePlayer()
     {
         var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor("rac2"); bool alive = true; Register(native, actor, () => alive);

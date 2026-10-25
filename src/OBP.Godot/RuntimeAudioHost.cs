@@ -181,6 +181,17 @@ public sealed class RuntimeAudioHost
     /// <summary>Stop and release all level music and ambience players.</summary>
     public void StopLevelAudio() => StopNodes(_levelPlayers);
 
+    /// <summary>Pause existing voices without restarting native programs or changing their owner.</summary>
+    public void SetPaused(bool paused)
+    {
+        foreach (var player in _levelPlayers.Concat(_effectPlayers))
+        {
+            if (!GodotObject.IsInstanceValid(player)) continue;
+            if (player is AudioStreamPlayer flat) flat.StreamPaused = paused;
+            else if (player is AudioStreamPlayer3D spatial) spatial.StreamPaused = paused;
+        }
+    }
+
     /// <summary>Stop and release every player owned by this adapter.</summary>
     public void StopAll(bool freeImmediately = false)
     {

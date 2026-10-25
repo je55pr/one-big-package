@@ -160,7 +160,7 @@ public partial class OBPGame
 
     private void StepRac1AdditionalWeapons()
     {
-        if (_movementStateLoading || _rac1PickupAssets is null || _player is null || _rac1AdditionalWeapons is null) return;
+        if (_movementStateLoading || PlayerPresentationAssets is null || _player is null || _rac1AdditionalWeapons is null) return;
         bool held = PlayerAlive && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             _rac1AdditionalFireRequested && !_rac1DetectorEquipped;
         _rac1AdditionalFireRequested = false;
@@ -236,8 +236,8 @@ public partial class OBPGame
                     view.Play(_rac1AdditionalWeapons?.Cargo.Count > 0 ? 6 : 1);
             }
             foreach (int sound in view.Step(controller.CurrentAttachmentPose(Rac1WeaponProfiles.HandSocket(profile.HandSemantic))))
-                if (_rac1PickupAssets?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
-                    PlayRac1PickupSound(profile.ModelClass, sound, _player!.GlobalPosition);
+                if (PlayerPresentationAssets?.Sounds?.TryGetValue((profile.ModelClass, sound), out var voice) != true || voice?.Loop != true)
+                    PlayPlayerEquipmentSound(profile.ModelClass, sound, _player!.GlobalPosition);
             if (_rac1StagedEquipment.TryGetValue(profile.Item, out var staged))
             {
                 staged.Position = view.MuzzleLocal; staged.Step();
@@ -382,7 +382,7 @@ public partial class OBPGame
 
     private void SpawnRac1ThrownEquipment(Rac1AdditionalWeaponSession.Shot shot)
     {
-        PlayRac1PickupSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
+        PlayPlayerEquipmentSound(0, 26, _player!.GlobalPosition); // hero_sound_start(0x1a,0), shared glove throw.
         float yaw = (float)_player!.Rac1CurrentYaw;
         NVector3 body = ToEffectNative(_player.GlobalPosition) + new NVector3(0, 0, (float)-(_playerAvatar?.BaseHeight ?? -.7));
         var origin = Rac1BombProjectileSession.LaunchOrigin(body, yaw);

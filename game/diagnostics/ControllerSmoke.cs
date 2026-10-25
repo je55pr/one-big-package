@@ -10,7 +10,21 @@ namespace OneBigPackage;
 public partial class ControllerSmoke : Node
 {
     private OBPGame _game = null!;
-    public override void _Ready() => _ = RunAsync();
+    private ulong _wallDeadline;
+    private bool _finished;
+    public override void _Ready()
+    {
+        ProcessMode = ProcessModeEnum.Always;
+        _wallDeadline = Time.GetTicksMsec() + 90_000;
+        _ = RunAsync();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_finished || Time.GetTicksMsec() < _wallDeadline) return;
+        _finished = true;
+        ApplicationLifecycle.RequestQuit(this, "controller-smoke-timeout", 1);
+    }
 
     private async Task RunAsync()
     {
@@ -19,7 +33,6 @@ public partial class ControllerSmoke : Node
             Engine.MaxFps = 120;
             Input.SetIgnoreJoypadOnUnfocusedApplication(false);
             GetTree().Root.Size = new Vector2I(960, 720);
-            GetTree().CreateTimer(90).Timeout += () => ApplicationLifecycle.RequestQuit(this, "controller-smoke-timeout", 1);
             var args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
             Rac1RetailUiAssets.Clear();
             Require(Rac1RetailUiAssets.Font() is null && Rac1RetailUiAssets.Sprite(0x7544) is null,
@@ -114,12 +127,15 @@ public partial class ControllerSmoke : Node
             }
 
             await CheckRawGameplayAsync();
+            await PauseLoadoutSmoke.VerifyAsync(this);
             if (args.Rac1Iso is not null) await CheckWorldAsync();
+            _finished = true;
             GD.Print("[controller-smoke] PASS");
             ApplicationLifecycle.RequestQuit(this, "controller-smoke-pass");
         }
         catch (Exception ex)
         {
+            _finished = true;
             GD.PrintErr($"[controller-smoke] FAIL: {ex}");
             GetTree().Paused = false;
             ApplicationLifecycle.RequestQuit(this, "controller-smoke-fail", 1);
@@ -260,6 +276,13 @@ public partial class ControllerSmoke : Node
         Require(Math.Abs(player!.Camera.Fov - Rac1CameraProjection.VerticalFieldOfViewRadians * 180d / Math.PI) < .001d,
             "Ordinary R&C1 still uses Godot's default lens");
         await _game.CheckControllerWeaponInputAsync();
+        await Press(JoyButton.Start);
+        if (Find<PauseMenuUi>() is { UniversalEnabled: true })
+        {
+            await CheckUniversalWorldAsync(player);
+            return;
+        }
+        await Press(JoyButton.Start);
         await CheckDebugOutputAsync(player!);
         await Press(JoyButton.Start);
         Require(GetTree().Paused && Find<PauseMenuUi>() is not null, "Start did not pause gameplay");

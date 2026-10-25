@@ -115,9 +115,9 @@ public partial class OBPGame
                     var view = CreateEquipmentWorldView(479); view.Play(0);
                     view.GlobalPosition = EquipmentMuzzle(shot.Weapon); _rac1Drones.Add(new(view, slot));
                 }
-                PlayRac1PickupSound(483, 0, _player!.GlobalPosition); break;
+                PlayPlayerEquipmentSound(483, 0, _player!.GlobalPosition); break;
             case Rac1WeaponId.DecoyGlove:
-                PlayRac1PickupSound(0, 26, _player!.GlobalPosition);
+                PlayPlayerEquipmentSound(0, 26, _player!.GlobalPosition);
                 var decoy = CreateEquipmentWorldView(203); decoy.Play(0); decoy.Scale = Vector3.One * Rac1ArsenalRules.DecoyInitialScale;
                 decoy.GlobalPosition = EquipmentMuzzle(shot.Weapon);
                 _rac1Decoys.Add(new(decoy) { Velocity = EquipmentForward * 5 + Vector3.Up * 3 }); break;
@@ -138,7 +138,7 @@ public partial class OBPGame
             weapon switch { Rac1WeaponId.VisibombGun => Rac1ArsenalRules.VisibombLifetime, Rac1WeaponId.Ryno => Rac1ArsenalRules.RynoRocketLifetime, _ => Rac1ArsenalRules.RocketLifetime });
         _rac1ArsenalMissiles.Add(new(weapon, ++_rac1ArsenalId, view, motion, target));
         SpawnEquipmentFlash(origin, 27, new(1, .7f, .25f), .55f, 6);
-        PlayRac1PickupSound(weapon == Rac1WeaponId.Ryno ? 457 : Rac1WeaponProfiles.Get(weapon).ModelClass,
+        PlayPlayerEquipmentSound(weapon == Rac1WeaponId.Ryno ? 457 : Rac1WeaponProfiles.Get(weapon).ModelClass,
             weapon == Rac1WeaponId.Ryno ? 1 : 0, origin);
     }
 
@@ -178,7 +178,7 @@ public partial class OBPGame
                 ApplyArsenalBlast(missile.Weapon, position, guided ? Rac1ArsenalHostPolicy.VisibombBlastRadius : Rac1ArsenalHostPolicy.RocketBlastRadius,
                     guided ? 6 : 3, 0x830000);
                 SpawnRac1WeaponExplosion(missile.Weapon, position);
-                PlayRac1PickupSound(guided ? 172 : missile.Weapon == Rac1WeaponId.Ryno ? 457 : 153, 0, position);
+                PlayPlayerEquipmentSound(guided ? 172 : missile.Weapon == Rac1WeaponId.Ryno ? 457 : 153, 0, position);
                 missile.View.QueueFree(); _rac1ArsenalMissiles.Remove(missile);
                 if (guided) EndRac1GuidedCamera();
                 continue;
@@ -258,7 +258,7 @@ public partial class OBPGame
                 }
                 else decoy.View.GlobalPosition = next;
             }
-            foreach (int sound in decoy.View.Step()) PlayRac1PickupSound(203, sound, decoy.View.GlobalPosition);
+            foreach (int sound in decoy.View.Step()) PlayPlayerEquipmentSound(203, sound, decoy.View.GlobalPosition);
             if (decoy.Grounded)
             {
                 decoy.GroundTicks++;
@@ -289,7 +289,7 @@ public partial class OBPGame
                 {
                     ApplyArsenalBlast(Rac1WeaponId.DroneDevice, hit?.Point ?? next, 1.5f, Rac1ArsenalRules.DroneDamage, 0x10000);
                     SpawnRac1WeaponExplosion(Rac1WeaponId.DroneDevice, hit?.Point ?? next);
-                    PlayRac1PickupSound(479, 1, hit?.Point ?? next);
+                    PlayPlayerEquipmentSound(479, 1, hit?.Point ?? next);
                     drone.View.QueueFree(); _rac1Drones.Remove(drone); continue;
                 }
                 drone.View.GlobalPosition = next; OrientArsenalView(drone.View, next - from);
@@ -343,7 +343,7 @@ public partial class OBPGame
         if (attacker != decoy.LastAttacker || _rac1WeaponWorldTick - decoy.LastHitTick >= 30)
         {
             decoy.LastAttacker = attacker; decoy.LastHitTick = _rac1WeaponWorldTick;
-            decoy.Hits++; PlayRac1PickupSound(203, 0, decoy.View.GlobalPosition);
+            decoy.Hits++; PlayPlayerEquipmentSound(203, 0, decoy.View.GlobalPosition);
         }
         return true;
     }
@@ -409,7 +409,7 @@ public partial class OBPGame
             if (second is not null) targets.Add(second);
             _rac1TeslaSoundTargets.RemoveWhere(id => targets.All(target => target.Source.InstanceIndex != id));
             foreach (var target in targets)
-                if (_rac1TeslaSoundTargets.Add(target.Source.InstanceIndex)) PlayRac1PickupSound(177, 1, from); // 0x2b9870 lock acquisition.
+                if (_rac1TeslaSoundTargets.Add(target.Source.InstanceIndex)) PlayPlayerEquipmentSound(177, 1, from); // 0x2b9870 lock acquisition.
         }
         for (int i = 0; i < targets.Count; i++)
         {
@@ -573,8 +573,8 @@ public partial class OBPGame
         int age = _rac1WalloperAge++;
         if (age >= Rac1ArsenalRules.WalloperDurationTicks || _rac1Weapons.Equipped != Rac1WeaponId.Walloper || !PlayerAlive)
         { _rac1WalloperAge = 0; return; }
-        if (age == 10) PlayRac1PickupSound(0, 53, _player.GlobalPosition); // Ratchet seq103 cue2.5.
-        if (age == 16) PlayRac1PickupSound(0, 30, _player.GlobalPosition); // Ratchet seq103 cue4.
+        if (age == 10) PlayPlayerEquipmentSound(0, 53, _player.GlobalPosition); // Ratchet seq103 cue2.5.
+        if (age == 16) PlayPlayerEquipmentSound(0, 30, _player.GlobalPosition); // Ratchet seq103 cue4.
         _player.Rac1EquipmentActionActive = true;
         if (age > Rac1ArsenalRules.WalloperLungeFrom && age < Rac1ArsenalRules.WalloperLungeTo)
             _player.Rac1EquipmentLungeVelocity = EquipmentForward * Rac1ArsenalRules.WalloperLungeSpeed;

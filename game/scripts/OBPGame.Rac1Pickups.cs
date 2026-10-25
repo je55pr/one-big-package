@@ -37,6 +37,7 @@ public partial class OBPGame
         _rac1PickupMotion.Clear();
         _rac1Debris.Clear();
         _rac1EffectMeshes.Clear();
+        _playerEquipmentEffectMeshes.Clear(); _playerEquipmentEffectMaterials = null;
         _rac1CrateBodies.Clear();
         _rac1FallingCrates.Clear();
         _rac1PickupTickAccumulator = 0;
@@ -50,20 +51,21 @@ public partial class OBPGame
     {
         var source = _sources.Get(OBP.Core.ObpSourceGame.Rac1);
         if (source is null) throw new InvalidOperationException("R&C1 pickup presentation requires the active source.");
-        _rac1PickupAssets = Rac1PickupAssets.Load(source.Path, world.LevelId);
-        _rac1PlayerAudio = new Rac1PlayerAudioSession(_rac1PickupAssets.PlayerAudio!.Animations);
-        _rac1PlayerReactions = new Rac1PlayerReactionAudioSession(_rac1PickupAssets.PlayerAudio.Animations);
-        _rac1PlayerSoundTrace.Clear();
+        _rac1PickupAssets = world.LevelId == 0 && _selectedRac1PresentationAssets is not null
+            ? _selectedRac1PresentationAssets : Rac1PickupAssets.Load(source.Path, world.LevelId);
         _rac1PickupMaterials = new WorldMaterialFactory(world with { Textures = _rac1PickupAssets.Textures });
         GD.Print($"[rac1-pickups] loaded {_rac1PickupAssets.Models.Count} retail bolt/debris models");
     }
 
-    private Node3D CreateRac1EffectNode(int nativeClass, string name)
+    private Node3D CreateRac1EffectNode(int nativeClass, string name, bool playerEquipment = false)
     {
-        if (_sceneResult is null || _rac1PickupMaterials is null || _rac1PickupAssets is null ||
-            !_rac1PickupAssets.Models.TryGetValue(nativeClass, out var model))
+        var assets = playerEquipment ? PlayerPresentationAssets : _rac1PickupAssets;
+        var materials = playerEquipment ? _playerEquipmentEffectMaterials : _rac1PickupMaterials;
+        var cache = playerEquipment ? _playerEquipmentEffectMeshes : _rac1EffectMeshes;
+        if (_sceneResult is null || materials is null || assets is null ||
+            !assets.Models.TryGetValue(nativeClass, out var model))
             throw new InvalidDataException($"Retail R&C1 effect class {nativeClass} is unavailable.");
-        if (!_rac1EffectMeshes.TryGetValue(nativeClass, out var surfaces))
+        if (!cache.TryGetValue(nativeClass, out var surfaces))
         {
             surfaces = [];
             foreach (var surface in model.Surfaces)
@@ -82,10 +84,10 @@ public partial class OBPGame
                 arrays[(int)Mesh.ArrayType.Index] = indices;
                 var mesh = new ArrayMesh();
                 mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-                var material = _rac1PickupMaterials.Instanced("moby", surface.TextureId, false, surface.MaterialPresentation);
+                var material = materials.Instanced("moby", surface.TextureId, false, surface.MaterialPresentation);
                 surfaces.Add((mesh, material));
             }
-            _rac1EffectMeshes.Add(nativeClass, surfaces);
+            cache.Add(nativeClass, surfaces);
         }
         var node = new Node3D { Name = name };
         foreach (var surface in surfaces)

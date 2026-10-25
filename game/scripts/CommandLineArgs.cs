@@ -25,6 +25,7 @@ public sealed record CommandLineArgs
     public bool DiagnosticPlayer { get; init; }
     public bool PlayerSessionSmoke { get; init; }
     public bool PlayerCapabilitiesSmoke { get; init; }
+    public bool TrilogyGameplaySmoke { get; init; }
     public string? PlayerCapabilitiesOut { get; init; }
     public bool NativeParityRequested => RetailParity || PlaytestRequested || FusionTest || FusionSmoke || DefaultWeaponsSmoke ||
         Rac1CampaignPersistenceRequested || Rac1VeldinPlaySmoke || Rac1MovementContactSmoke || Rac1StartupVisibilitySmoke ||
@@ -224,6 +225,7 @@ public sealed record CommandLineArgs
                 "--diagnostic-player" => result with { DiagnosticPlayer = true },
                 "--player-session-smoke" => result with { PlayerSessionSmoke = true },
                 "--player-capabilities-smoke" => result with { PlayerCapabilitiesSmoke = true },
+                "--trilogy-gameplay-smoke" => result with { TrilogyGameplaySmoke = true },
                 "--player-capabilities-out" => result with { PlayerCapabilitiesOut = Next() },
                 "--direct" => result with { DirectLoad = true },
                 "--skip-title" => result with { SkipTitle = true },

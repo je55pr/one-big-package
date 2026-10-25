@@ -60,9 +60,9 @@ public partial class OBPGame
             var glove = _rac1BombGloveAsset ?? throw new InvalidOperationException("Selected glove asset was not staged.");
             _rac1BombGloveView = new(glove, avatar, new WorldMaterialFactory(_world! with { Textures = glove.Textures }));
             view.AddChild(_rac1BombGloveView);
-            if (_rac1PickupAssets is not null)
+            if (PlayerPresentationAssets is not null)
             {
-                _rac1StagedBombView = CreateRac1EffectNode(121, "Rac1RetailStagedBomb_Class121");
+                _rac1StagedBombView = CreatePlayerEquipmentEffectNode(121, "Rac1RetailStagedBomb_Class121");
                 _rac1StagedBombView.Reparent(_rac1BombGloveView, keepGlobalTransform: false);
                 _rac1StagedBombView.Rotation = new(0, MathF.PI, 0);
             }
@@ -80,6 +80,7 @@ public partial class OBPGame
             player.AnimationPhysicsReset += ResetPlayerAvatarPhysics;
         }
         else throw new InvalidOperationException("Selected native animation adapter did not produce its admitted physics controller.");
+        BindPlayerEquipmentPresentation();
         RefreshRac1WrenchPresentationVisibility();
         HideAuthoredWorldRatchetPresentation();
         GD.Print($"[player-avatar] attached selected {avatar.Identity.ModelId}: {view.FrameCount} frames @ {view.FramesPerSecond:0.###} FPS");
@@ -206,6 +207,7 @@ public partial class OBPGame
         _rac1EquipmentViews.Clear(); _rac1StagedEquipment.Clear();
         _playerAvatarClock = 0;
         _playerPhysicsClock = null;
+        _equipmentPresentationBindings.Clear();
     }
 
     private void HoldSelectedRac1HandItem()

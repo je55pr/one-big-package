@@ -84,6 +84,7 @@ public partial class OBPGame
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
             if (_args.PlayerSessionSmoke && _worldSwitches == 1) _ = RunPlayerSessionSmokeAsync();
             if (_args.PlayerCapabilitiesSmoke && _worldSwitches == 1) _ = RunPlayerCapabilitiesSmokeAsync();
+            if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) _ = RunTrilogyGameplaySmokeAsync();
             return true;
         }
         catch (Exception error)
@@ -157,6 +158,7 @@ public partial class OBPGame
             DecorateFusionLab(lab, _playerAvatarView is not null);
             if (_player is { } player) StartFusionLabTraversalSmoke(player);
         }
+        ConfigureRegisteredActors(lab);
         EnsurePlayerHud(); EnsureWorldHud();
         if (OrdinaryPlayerSession) PublishPersistentPlayerHud();
         UpdatePlayerHud(); UpdateWorldHud();

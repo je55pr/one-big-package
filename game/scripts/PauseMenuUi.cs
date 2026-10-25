@@ -19,7 +19,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
     public bool FusionTestAvailable { get; init; }
     public bool FusionTestEnabled { get; init; }
     public event Action<bool>? DebugOutputChanged;
-    public bool DebugOutputEnabled { get; init; }
+    public bool DebugOutputEnabled { get; set; }
     public string EquipmentStatus { get; init; } = string.Empty;
     public bool WeaponPreviewEnabled { get; init; }
     public bool MovementStatesAvailable { get; init; }
@@ -29,6 +29,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
 
     public void RestoreFocus()
     {
+        if (UniversalEnabled) { RestoreUniversalFocus(); return; }
         if (RetailEnabled) { RestoreRetailFocus(); return; }
         MenuFocus.Restore(_resume, _focusOrder);
     }
@@ -43,6 +44,7 @@ public sealed partial class PauseMenuUi : CanvasLayer
         Name = "PauseMenu";
         Layer = 250;
         ProcessMode = ProcessModeEnum.Always;
+        if (UniversalEnabled) { BuildUniversal(); return; }
         if (RetailEnabled) { BuildRetail(); return; }
 
         AddChild(new ColorRect
@@ -176,8 +178,15 @@ public sealed partial class PauseMenuUi : CanvasLayer
         RestoreFocus();
     }
 
+    public override void _Input(InputEvent input)
+    {
+        if (UniversalEnabled) HandleUniversalPreGuiInput(input);
+        else HandleRetailQuickSelectInput(input);
+    }
+
     public override void _UnhandledInput(InputEvent @event)
     {
+        if (UniversalEnabled) { HandleUniversalInput(@event); return; }
         if (RetailEnabled) { HandleRetailInput(@event); return; }
         if (MovementStatesAvailable && @event is InputEventKey { Keycode: Key.F12, Pressed: true, Echo: false } key)
         {
