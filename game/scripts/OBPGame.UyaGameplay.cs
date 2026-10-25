@@ -119,30 +119,19 @@ public partial class OBPGame
             .Where(source => source.NativeClassId == UyaClass5821Actor.NativeClassId))
         {
             _uyaAuthoredClass5821++;
-            try
-            {
-                UyaClass5821AuthoredState authored =
-                    UyaClass5821Actor.ReadAuthored(source);
-                if (!UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored) ||
-                    !UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored) ||
-                    !UyaClass5821Actor.HasRecoveredTable1TargetSelectionProfile(authored))
-                {
-                    rejected5821++;
-                    continue;
-                }
-            }
-            catch (Exception ex) when (ex is ArgumentException or InvalidDataException)
+            if (!Rac3Class5821Admission.TryRead(source, out var admission, out string? rejection))
             {
                 rejected5821++;
+                GD.Print($"[uya-gameplay] class-5821 instance {source.InstanceIndex} rejected: {rejection}");
                 continue;
             }
 
-            _uyaAdmittedClass5821++;
             _uyaClass5821AuditSources.Add(
                 new UyaClass5821AuditSource(
                     source,
-                    UyaClass5821Actor.ReadAuthored(source),
-                    UyaMobyPlacement.ReadAuthored(source)));
+                    admission.Authored,
+                    admission.Placement));
+            _uyaAdmittedClass5821++;
         }
 
         _uyaGameplayStatus =

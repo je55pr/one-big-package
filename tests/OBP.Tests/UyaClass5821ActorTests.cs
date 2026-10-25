@@ -9,6 +9,53 @@ namespace OBP.Tests;
 public sealed class UyaClass5821ActorTests
 {
     [Fact]
+    public void AdmissionParsesEachPayloadOnceAndRetainsTheTypedResults()
+    {
+        var source = Class5821(430, 1);
+        var payloads = new CountingPayloads([.. source.NativePayloads!, new(UyaMobyRuntimeSession.InstancePayloadFormat, new byte[UyaMobyPlacement.NativeRecordBytes])]);
+        source = source with { NativePayloads = payloads };
+        Assert.True(Rac3Class5821Admission.TryRead(source, out var admission, out var rejection), rejection);
+        Assert.Same(source, admission!.Source);
+        Assert.Equal(1f, admission.Authored.InitialLifetime);
+        Assert.Equal(0f, admission.Placement.NativeX);
+        Assert.Equal(2, payloads.Enumerations); // One state read and one placement read.
+        Assert.Null(rejection);
+    }
+
+    [Theory]
+    [InlineData("state-size")]
+    [InlineData("placement-missing")]
+    [InlineData("placement-size")]
+    [InlineData("placement-nonfinite")]
+    [InlineData("state-duplicate")]
+    [InlineData("placement-duplicate")]
+    [InlineData("unsupported-profile")]
+    public void AdmissionRejectsMalformedStateOrPlacementWithoutPublishingAnEntry(string fault)
+    {
+        var source = Class5821(430, fault == "unsupported-profile" ? (short)0 : (short)1);
+        var payloads = source.NativePayloads!.ToList();
+        var placement = new RuntimeOpaquePayload(UyaMobyRuntimeSession.InstancePayloadFormat, new byte[UyaMobyPlacement.NativeRecordBytes]);
+        if (fault != "placement-missing") payloads.Add(placement);
+        if (fault == "state-size") payloads[0] = new(payloads[0].Format, new byte[8]);
+        if (fault == "placement-size") payloads[1] = new(placement.Format, new byte[8]);
+        if (fault == "placement-nonfinite") BinaryPrimitives.WriteSingleLittleEndian(placement.Data.AsSpan(UyaMobyPlacement.NativePositionOffset), float.NaN);
+        if (fault == "state-duplicate") payloads.Add(payloads[0]);
+        if (fault == "placement-duplicate") payloads.Add(placement);
+        Assert.False(Rac3Class5821Admission.TryRead(source with { NativePayloads = payloads }, out var admission, out var rejection));
+        Assert.Null(admission);
+        Assert.False(string.IsNullOrEmpty(rejection));
+    }
+
+    private sealed class CountingPayloads(RuntimeOpaquePayload[] items) : IReadOnlyList<RuntimeOpaquePayload>
+    {
+        public int Enumerations { get; private set; }
+        public int Count => items.Length;
+        public RuntimeOpaquePayload this[int index] => items[index];
+        public IEnumerator<RuntimeOpaquePayload> GetEnumerator() { Enumerations++; return ((IEnumerable<RuntimeOpaquePayload>)items).GetEnumerator(); }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Fact]
     public void AuthoredReaderPreservesRecoveredDamageProfile()
     {
         var source = Class5821(instanceIndex: 430, authoredLifetime: 1);
@@ -547,6 +594,14 @@ public sealed class UyaClass5821ActorTests
             .ToArray();
 
         Assert.Equal(62, sources.Length);
+        var admitted = sources.Select(source =>
+        {
+            Assert.True(Rac3Class5821Admission.TryRead(source, out var admission, out var rejection), rejection);
+            Assert.Null(rejection);
+            return admission!;
+        }).ToArray();
+        Assert.Equal(62, admitted.Length);
+        Assert.All(admitted, entry => Assert.Equal(UyaMobyPlacement.ReadAuthored(entry.Source), entry.Placement));
         UyaClass5821AuthoredState[] authoredStates = sources
             .Select(UyaClass5821Actor.ReadAuthored)
             .ToArray();
