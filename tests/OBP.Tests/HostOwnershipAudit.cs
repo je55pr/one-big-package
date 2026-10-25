@@ -29,7 +29,7 @@ internal static class HostOwnershipAudit
     private static readonly MetadataReference[] References = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!)
         .Split(Path.PathSeparator)
         .Concat(new[] { "OBP.Core", "OBP.Runtime", "OBP.Fusion", "OBP.Godot", "OBP.IO", "OBP.PS2",
-            "OBP.PS2.Presentation", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3", "GodotSharp" }
+            "OBP.RAC1", "OBP.RAC2", "OBP.RAC3", "GodotSharp" }
             .Select(name => Assembly.Load(name).Location))
         .Distinct(StringComparer.OrdinalIgnoreCase).Select(path => MetadataReference.CreateFromFile(path)).ToArray();
 

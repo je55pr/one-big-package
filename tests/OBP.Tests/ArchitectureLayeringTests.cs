@@ -59,12 +59,35 @@ public sealed class ArchitectureLayeringTests
     }
 
     [Fact]
-    public void Ps2PresentationIsTheOnlyExplicitSharedPs2ToRuntimeBridge()
+    public void Ps2RuntimeMappingRemainsIsolatedToPresentationFolder()
     {
         Assert.Equal(
-            ["OBP.PS2", "OBP.Runtime"],
-            ProjectReferences("OBP.PS2.Presentation"));
-        Assert.DoesNotContain("OBP.Godot", ProjectReferences("OBP.PS2.Presentation"));
+            ["OBP.Core", "OBP.IO", "OBP.Runtime"],
+            ProjectReferences("OBP.PS2"));
+        Assert.True(File.Exists(Path.Combine(RepoPaths.Root,
+            "src", "OBP.PS2", "Presentation", "Ps2MaterialPresentation.cs")));
+        AssertNoImports("OBP.PS2",
+            "Godot", "OBP.Godot", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3",
+            "OBP.Fusion", "OneBigPackage");
+
+        string root = Path.Combine(RepoPaths.Root, "src", "OBP.PS2");
+        foreach (string path in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
+        {
+            string relative = Path.GetRelativePath(root, path).Replace('\\', '/');
+            if (relative.StartsWith("Presentation/", StringComparison.Ordinal)
+                || relative.StartsWith("obj/", StringComparison.OrdinalIgnoreCase)
+                || relative.StartsWith("bin/", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var syntax = CSharpSyntaxTree.ParseText(File.ReadAllText(path)).GetRoot();
+            foreach (var name in syntax.DescendantNodes().OfType<NameSyntax>())
+            {
+                string qualified = name.ToString().Replace("global::", "", StringComparison.Ordinal);
+                Assert.False(qualified == "OBP.Runtime"
+                    || qualified.StartsWith("OBP.Runtime.", StringComparison.Ordinal),
+                    $"OBP.PS2: Runtime reference outside Presentation/ in {relative}: {name}");
+            }
+        }
     }
 
     private static string[] ProjectReferences(string project)

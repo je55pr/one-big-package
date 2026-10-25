@@ -10,10 +10,9 @@ design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISIO
 |---|---|
 | `OBP.Core` | Shared provenance, identity and math |
 | `OBP.IO` | Bounded/random-access file and split reads, streaming hashes, authority verification |
-| `OBP.PS2` | Shared ISO/ELF, compression, texture, packet and collision formats |
+| `OBP.PS2` | Shared ISO/ELF, compression, texture, packet and collision formats, plus a `Presentation/` adapter for neutral runtime materials |
 | `OBP.RAC1/2/3` | Source-specific containers, interpretation, recovered behaviour and provenance |
 | `OBP.Runtime` | Engine-neutral world/player/actor facts, identities, snapshots and ports; no native formulas or orchestration policy |
-| `OBP.PS2.Presentation` | Narrow shared PS2-material to neutral-runtime mapping; no game-specific semantics |
 | `OBP.Godot` | Neutral data to Godot meshes, materials, collision, audio and presentation objects |
 | `game/` | Scene lifecycle, physics contacts, input, UI/camera presentation and composition-root adapter wiring |
 | `OBP.Fusion` | Engine-neutral source-qualified gameplay orchestration and player-session policy, world-entry contracts, composition/placement |
