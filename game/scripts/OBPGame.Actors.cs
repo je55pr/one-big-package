@@ -219,7 +219,7 @@ public partial class OBPGame
         {
             ["rac1/class749/v1"] = CreatePlacedRac1Toad,
             ["rac2/class2827/v1"] = CreatePlacedRac2Hostile,
-            ["rac3/class500/v1"] = CreatePlacedUyaProp,
+            ["rac3/class500/v1"] = CreatePlacedRac3Prop,
         };
 
     private (RuntimeWorldScene.Result Scene, RuntimeWorldScene.DynamicObjectNode Node, ActorRegistration Registration) CreateActorView(

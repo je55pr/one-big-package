@@ -36,12 +36,12 @@ public sealed class ActorRuntimeSetTests
     {
         using var set = Create();
         var rac2 = new Actor(new("arena", 7, new(ObpSourceGame.Rac2, 500, 1)));
-        var uya = new Actor(new("arena", 7, new(ObpSourceGame.Rac3, 500, 1)));
-        set.Register(rac2); set.Register(uya);
+        var rac3 = new Actor(new("arena", 7, new(ObpSourceGame.Rac3, 500, 1)));
+        set.Register(rac2); set.Register(rac3);
         Assert.Throws<ArgumentException>(() => set.Register(rac2));
         Assert.Equal(2, set.Count);
         Assert.Same(rac2, set.Find(rac2.Registration.Instance.Target));
-        Assert.Same(uya, set.Find(uya.Registration.Instance.Target));
+        Assert.Same(rac3, set.Find(rac3.Registration.Instance.Target));
     }
 
     [Fact]

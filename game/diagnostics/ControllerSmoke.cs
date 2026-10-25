@@ -85,7 +85,7 @@ public partial class ControllerSmoke : Node
             await CheckControllerWidgetsAsync();
             await CheckMissionSceneAcknowledgementAsync();
 
-            if (args.Rac1Iso is not null || args.Rac2Iso is not null || args.UyaIso is not null)
+            if (args.Rac1Iso is not null || args.Rac2Iso is not null || args.Rac3Iso is not null)
             {
                 await FocusButton("ENTER WORLDS", contains: true); await Press(JoyButton.A);
                 var selector = Find<DestinationSelectorUi>();

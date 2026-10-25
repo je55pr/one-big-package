@@ -161,7 +161,7 @@ public partial class OBPGame
         if (!staticCamera)
         {
             ConfigureRac1Gameplay(world, _sceneResult);
-            ConfigureUyaGameplay(world, _sceneResult);
+            ConfigureRac3Gameplay(world, _sceneResult);
         }
         if (_args.AnimSolo) FrameAnimatedMobies(world);
         else if (staticCamera) FrameShowcaseCamera(world);

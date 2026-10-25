@@ -40,7 +40,7 @@ public sealed class FusionWeaponTests
         Assert.Equal(ammo, fusion.Status(weapon).Ammo);
         Assert.Equal(shots, fusion.ShotsFired);
         Assert.False(fusion.LancerSession.Equipped);
-        Assert.True(fusion.CannonFrame is null or { State: OBP.RAC3.Gameplay.UyaShockCannonState.Unequipped });
+        Assert.True(fusion.CannonFrame is null or { State: OBP.RAC3.Gameplay.Rac3ShockCannonState.Unequipped });
 
         hand.HoldEquipment(weapon); // An admitted equipment draw owns the next handoff.
         for (int tick = 0; tick < 20; tick++) Step(fusion, Held);

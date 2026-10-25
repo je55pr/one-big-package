@@ -9,7 +9,7 @@
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
     "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate.",
-    "Hash": "70cc0d9ce6ac2278848dc22834ab80136f3a7d6729a4668ec97a45844f31fc7a"
+    "Hash": "0109f205ffaa1fc82c9c968af179860f73fc1e638726f4915c838f8371c813b4"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
@@ -168,28 +168,28 @@
     "Hash": "122dd921da2ba59e460032c0685849e8301154db74bc60af8dd9bd469b25041f"
   },
   {
-    "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.ConfigureUyaGameplay(RuntimeWorld,RuntimeWorldScene.Result)",
+    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.ConfigureRac3Gameplay(RuntimeWorld,RuntimeWorldScene.Result)",
     "Kind": "adapter",
     "Reason": "Register original-world UYA native actors/context; state and placement admission is atomic, covered by UyaClass5821ActorTests. No player-global controller/menu selection.",
-    "Hash": "dad7e3b36cec72c37a1aa98409270e2fa93653a493aec9adbe8a5193712e2cd9"
+    "Hash": "60a0364506324c3d8254d97dfa28efec1c7fe2c112f2f9994453c37a9cf940e5"
   },
   {
-    "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.GetUyaGameplayHudLine()",
+    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.GetRac3GameplayHudLine()",
     "Kind": "adapter",
     "Reason": "Optional original-world UYA actor diagnostic overlay, explicitly labelled as a one-shot/refreshed snapshot; not ordinary HUD selection. DiagnosticSnapshotGateTests cover its cadence.",
-    "Hash": "47c2b89fcc969783b60b6465c523bb012e2aa5271970c88274f2a2f6fee6870f"
+    "Hash": "5f1d157d2d888ae5219bbc9fd3eeca57c1b71525e5487d66c45cba5d08c5dc35"
   },
   {
-    "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.SelectUyaClass500HostContact()",
+    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.SelectRac3Class500HostContact()",
     "Kind": "adapter",
     "Reason": "Contact selection against the original-world UYA actor set; native target source is not player origin.",
-    "Hash": "a2697973bd1dc2399964097842f46ab362e912615bf1ab44d9dd69884473845a"
+    "Hash": "8454623701d1c61d5074e9c2f00ab0b9c41ec01c4da2dc200241e25459ad1015"
   },
   {
-    "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.TickUyaGameplay(double)",
+    "Key": "game/scripts/OBPGame.Rac3Gameplay.cs::OBPGame.TickRac3Gameplay(double)",
     "Kind": "adapter",
     "Reason": "Original UYA target-selection diagnostics only, once after entry settles or on inspector-open request; no native actor/controller timing is gated. DiagnosticSnapshotGateTests count inactive and requested calls.",
-    "Hash": "c8372592e035d5521dcd4f2303c4919b2b4ebee74ba773165f0ef4cb013a9e30"
+    "Hash": "a29952235b3befc1b3373d500cec31d6014753e3be61bfd463cfc64458c7ad5c"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",

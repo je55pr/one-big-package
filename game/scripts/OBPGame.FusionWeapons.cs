@@ -37,7 +37,7 @@ public partial class OBPGame
     private readonly List<(EquipmentAudioOwner Owner, AudioStreamPlayer Player)> _fusionAudioPlayers = [];
     private readonly List<(Node3D Node, int Remaining)> _fusionEffects = [];
     private FusionMeshView? _fusionBeam;
-    private UyaShockCannonBeam.Scroll _fusionBeamScroll;
+    private Rac3ShockCannonBeam.Scroll _fusionBeamScroll;
     private int _fusionModelAge, _fusionModelSequence, _fusionAcceptedHits, _fusionAudioStarted;
     private bool _fusionUseStarted, _fusionPoseTriggerHeld;
     private bool _fusionDeathCleared;
@@ -295,11 +295,11 @@ public partial class OBPGame
         Vector3 aim = FusionAim(origin) - origin;
         bool admitted = !_player.Scripted && !_player.Rac1WrenchFrame.Active && !_rac1WrenchThrow.Active &&
             !_player.Rac1WaterHandItemHidden && !QuickSelectOpen && _fusionAssets.Available(_fusion.Selected);
-        bool wasWindup = _fusion.CannonFrame?.State == UyaShockCannonState.Windup;
+        bool wasWindup = _fusion.CannonFrame?.State == Rac3ShockCannonState.Windup;
         _fusionPoseTriggerHeld = _player.Rac1EquippedItemHeld && admitted && _fusion.Hand.IsHolding(_fusion.Selected);
         var frame = _fusion.Advance(new(_fusionPoseTriggerHeld, admitted, ToNumerics(origin), ToNumerics(aim)));
         _fusionUseStarted = frame.Effects.Any(e => e.Kind == "shot") ||
-            !wasWindup && _fusion.CannonFrame?.State == UyaShockCannonState.Windup;
+            !wasWindup && _fusion.CannonFrame?.State == Rac3ShockCannonState.Windup;
         var contacts = new List<WeaponContact>();
         foreach (var query in frame.Queries) contacts.AddRange(TraceFusionQuery(query, origin));
         foreach (var intent in _fusion.ResolveContacts(frame, contacts))
@@ -350,7 +350,7 @@ public partial class OBPGame
 
     private Vector3 FusionAim(Vector3 origin)
     {
-        float range = _fusion!.Selected == FusionWeaponSession.Lancer ? Rac2LancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
+        float range = _fusion!.Selected == FusionWeaponSession.Lancer ? Rac2LancerProfile.ProjectileRange : Rac3ShockCannonProfile.RayLength;
         if (OrdinaryPlayerSession)
             return RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
                 .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != ObpSourceGame.Rac1 || target.Key.NativeClassId != 749)
@@ -465,19 +465,19 @@ public partial class OBPGame
                 // player-to-held animation selection remains unrecovered.
                 int sequence = _fusion.CannonFrame?.ChargeUpdates > 0 ? 2 : 0;
                 int frame = (_fusionModelAge / 2) % cannon.Sequences.Single(s => s.Index == sequence).Frames.Count;
-                view.Sample(UyaShockCannonAssets.Model(cannon, sequence, frame), _fusionAssets);
+                view.Sample(Rac3ShockCannonAssets.Model(cannon, sequence, frame), _fusionAssets);
             }
         }
         if (_fusionBeam is not null)
         {
-            _fusionBeam.Visible = _fusion.CannonFrame?.Effects.Any(e => e.Kind == UyaShockCannonEffectKind.Beam) == true;
+            _fusionBeam.Visible = _fusion.CannonFrame?.Effects.Any(e => e.Kind == Rac3ShockCannonEffectKind.Beam) == true;
             if (_fusionBeam.Visible)
             {
                 _fusionBeamScroll = _fusionBeamScroll.Advance();
                 // Convert host Y-up back through the source Z-up beam projector.
                 Vector3 muzzle = FusionMuzzle();
-                var basis = UyaShockCannonBeam.Basis.FromNativeAim(ToEffectNative(EquipmentForward), ToEffectNative(muzzle));
-                _fusionBeam.Sample(UyaShockCannonBeam.Build(_fusion.CannonFrame!, basis, _fusionBeamScroll).Select(l => l.Mesh).ToArray(), _fusionAssets);
+                var basis = Rac3ShockCannonBeam.Basis.FromNativeAim(ToEffectNative(EquipmentForward), ToEffectNative(muzzle));
+                _fusionBeam.Sample(Rac3ShockCannonBeam.Build(_fusion.CannonFrame!, basis, _fusionBeamScroll).Select(l => l.Mesh).ToArray(), _fusionAssets);
             }
         }
     }

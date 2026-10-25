@@ -22,7 +22,7 @@ public static partial class Rac3WorldImport
 {
     public sealed record ImportResult(
         RuntimeWorld World,
-        UyaGameplay.Gameplay Gameplay,
+        Rac3Gameplay.Gameplay Gameplay,
         int TfragCount,
         int TieInstanceCount,
         int ShrubInstanceCount,
@@ -34,10 +34,10 @@ public static partial class Rac3WorldImport
 
     public static ImportResult BuildObserved(IRandomAccessReader disc, int tableIndex)
     {
-        var opened = UyaLevelCore.Open(disc, tableIndex);
+        var opened = Rac3LevelCore.Open(disc, tableIndex);
         var core = opened.Core;
-        var gameplay = UyaGameplay.Read(opened.GameplayReader);
-        var settings = UyaLevelSettings.Parse(gameplay.RawDecoded);
+        var gameplay = Rac3Gameplay.Read(opened.GameplayReader);
+        var settings = Rac3LevelSettings.Parse(gameplay.RawDecoded);
         var meshes = new List<RuntimeMesh>();
         var textures = new List<RuntimeTexture>();
         var collision = new List<RuntimeCollisionBlob>();
@@ -48,27 +48,27 @@ public static partial class Rac3WorldImport
 
         var texByKind = new Dictionary<string, IReadOnlyList<OBP.PS2.Textures.RcLevelTextureTable.Texture>>
         {
-            ["tfrag"] = UyaAssets.ReadTextures(core, UyaAssets.TextureTable.Tfrag),
-            ["moby"] = UyaAssets.ReadTextures(core, UyaAssets.TextureTable.Moby),
-            ["tie"] = UyaAssets.ReadTextures(core, UyaAssets.TextureTable.Tie),
-            ["shrub"] = UyaAssets.ReadTextures(core, UyaAssets.TextureTable.Shrub),
+            ["tfrag"] = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Tfrag),
+            ["moby"] = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Moby),
+            ["tie"] = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Tie),
+            ["shrub"] = Rac3Assets.ReadTextures(core, Rac3Assets.TextureTable.Shrub),
         };
         foreach (var (kind, list) in texByKind)
             textures.AddRange(list.Select(t => new RuntimeTexture(kind, t.Index, t.Width, t.Height, t.Rgba)));
 
-        var tfragRange = UyaLevelCore.SectionRange(core, core.Header.Tfrags, allowZero: true)
+        var tfragRange = Rac3LevelCore.SectionRange(core, core.Header.Tfrags, allowZero: true)
             ?? throw new InvalidDataException("UYA core has no bounded tfrag section.");
         var tfrag = RcTfrag.Read(core.Assets.AsSpan(tfragRange.Offset, tfragRange.Size).ToArray());
         ValidateTextureIds("tfrag", tfrag.TriangleTextureIds, texByKind["tfrag"].Count);
         meshes.AddRange(GroupTfrags(tfrag));
         Grow(tfrag.BoundsMin.X, tfrag.BoundsMin.Y, tfrag.BoundsMin.Z); Grow(tfrag.BoundsMax.X, tfrag.BoundsMax.Y, tfrag.BoundsMax.Z);
 
-        var ties = UyaAssets.ReadTieClasses(core);
-        var shrubs = UyaAssets.ReadShrubClasses(core);
+        var ties = Rac3Assets.ReadTieClasses(core);
+        var shrubs = Rac3Assets.ReadShrubClasses(core);
         PlaceStatics("tie", gameplay.TieInstances, ties, texByKind["tie"].Count, meshes, Grow);
         PlaceStatics("shrub", gameplay.ShrubInstances, shrubs, texByKind["shrub"].Count, meshes, Grow);
 
-        var collisionRange = UyaLevelCore.SectionRange(core, core.Header.Collision)
+        var collisionRange = Rac3LevelCore.SectionRange(core, core.Header.Collision)
             ?? throw new InvalidDataException("UYA core has no bounded collision section.");
         var cm = RcCollision.Read(core.Assets.AsSpan(collisionRange.Offset, collisionRange.Size).ToArray());
         var cp = new double[cm.Positions.Length];
@@ -78,10 +78,10 @@ public static partial class Rac3WorldImport
         collision.Add(new RuntimeCollisionBlob(cm.Octants.Count, cp, ci, ct) { MaterialSource = Rac3Authority.Primary });
 
         int skyShellCount = 0;
-        var skyRange = UyaLevelCore.SectionRange(core, core.Header.Sky);
+        var skyRange = Rac3LevelCore.SectionRange(core, core.Header.Sky);
         if (skyRange is { } sr && sr.Size > 0)
         {
-            var sky = UyaSky.Read(core.Assets.AsSpan(sr.Offset, sr.Size).ToArray());
+            var sky = Rac3Sky.Read(core.Assets.AsSpan(sr.Offset, sr.Size).ToArray());
             skyShellCount = sky.Shells.Count;
             textures.AddRange(sky.Textures.Select(t => new RuntimeTexture("sky", t.Index, t.Width, t.Height, t.Rgba)));
             var fallbackSkyColour = settings.BackgroundColour
@@ -90,7 +90,7 @@ public static partial class Rac3WorldImport
             AddSkyMeshes(sky, meshes, ambientAnimations, minX, minY, minZ, maxX, maxY, maxZ, fallbackSkyColour);
         }
 
-        var mobyClasses = UyaAssets.ReadMobyClasses(core, texByKind["moby"].Count);
+        var mobyClasses = Rac3Assets.ReadMobyClasses(core, texByKind["moby"].Count);
         var referencedMobyClasses = gameplay.MobyInstances.Select(m => m.OClass).ToHashSet();
         foreach (int oClass in referencedMobyClasses)
         {
@@ -103,17 +103,17 @@ public static partial class Rac3WorldImport
         {
             var payloads = new List<RuntimeOpaquePayload>
             {
-                new(UyaMobyRuntimeSession.InstancePayloadFormat, m.RawInstance),
+                new(Rac3MobyRuntimeSession.InstancePayloadFormat, m.RawInstance),
             };
             if (m.PvarData is { } pv)
-                payloads.Add(new(UyaMobyRuntimeSession.PVarPayloadFormat, pv));
+                payloads.Add(new(Rac3MobyRuntimeSession.PVarPayloadFormat, pv));
             IReadOnlyList<RuntimeObjectMesh> objectMeshes = animatedInstances.Contains(m.Index)
                 ? Array.Empty<RuntimeObjectMesh>()
                 : mobyModels.TryGetValue(m.OClass, out var modelMeshes)
                     ? modelMeshes
                     : Array.Empty<RuntimeObjectMesh>();
             return new RuntimeDynamicObject(ObpSourceGame.Rac3, m.OClass, m.Index, m.UidCompatibility, $"moby:{m.OClass}",
-                $"table:{tableIndex}:moby:{m.Index}", new RuntimeObjectTransform(UyaGameplay.MobyTransform(m)), objectMeshes, payloads);
+                $"table:{tableIndex}:moby:{m.Index}", new RuntimeObjectTransform(Rac3Gameplay.MobyTransform(m)), objectMeshes, payloads);
         }).ToArray();
 
         if (double.IsPositiveInfinity(minX)) { minX = minY = minZ = -1; maxX = maxY = maxZ = 1; }
@@ -186,7 +186,7 @@ public static partial class Rac3WorldImport
     }
 
     private static IReadOnlyDictionary<int, IReadOnlyList<RuntimeObjectMesh>> BuildMobyModels(
-        IReadOnlyDictionary<int, UyaAssets.MobyVisualClass> classes,
+        IReadOnlyDictionary<int, Rac3Assets.MobyVisualClass> classes,
         IReadOnlySet<int> referencedClasses)
     {
         var models = new Dictionary<int, IReadOnlyList<RuntimeObjectMesh>>();
@@ -269,7 +269,7 @@ public static partial class Rac3WorldImport
         }
     }
 
-    private static void PlaceStatics(string kind, IReadOnlyList<UyaGameplay.MatrixInstance> instances, IReadOnlyDictionary<int, UyaAssets.StaticClass> classes,
+    private static void PlaceStatics(string kind, IReadOnlyList<Rac3Gameplay.MatrixInstance> instances, IReadOnlyDictionary<int, Rac3Assets.StaticClass> classes,
         int textureCount, List<RuntimeMesh> meshes, Action<double, double, double> grow)
     {
         var groups = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (List<double> P, List<float> U, List<int> I)>();
@@ -311,7 +311,7 @@ public static partial class Rac3WorldImport
                 MaterialPresentation: surface.Presentation));
     }
 
-    private static void AddSkyMeshes(UyaSky.Sky sky, List<RuntimeMesh> meshes, List<RuntimeAmbientAnimation> ambientAnimations,
+    private static void AddSkyMeshes(Rac3Sky.Sky sky, List<RuntimeMesh> meshes, List<RuntimeAmbientAnimation> ambientAnimations,
         double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
         (double R, double G, double B) fallbackColour)
     {
@@ -324,7 +324,7 @@ public static partial class Rac3WorldImport
         for (int shellIndex = 0; shellIndex < sky.Shells.Count; shellIndex++)
         {
             var shell = sky.Shells[shellIndex];
-            string groupName = UyaSkyPresentation.GroupName(shellIndex);
+            string groupName = Rac3SkyPresentation.GroupName(shellIndex);
             foreach (var group in Enumerable.Range(0, shell.TriangleTextureIds.Length).GroupBy(f => shell.TriangleTextureIds[f]).OrderBy(g => g.Key))
             {
                 var remap = new Dictionary<int, int>(); var p = new List<double>(); var u = new List<float>(); var c = new List<float>(); var ind = new List<int>();
@@ -353,7 +353,7 @@ public static partial class Rac3WorldImport
                     PresentationGroup: groupName));
             }
 
-            if (UyaSkyPresentation.SpinFor(shell, shellIndex) is { } spin)
+            if (Rac3SkyPresentation.SpinFor(shell, shellIndex) is { } spin)
             {
                 ambientAnimations.Add(spin);
             }

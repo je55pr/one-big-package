@@ -13,26 +13,26 @@ public sealed class VeldinAlignmentRetailTests
     public void CandidateCorrespondencesDoNotEstablishSingleRigidFit()
     {
         string? rac1Iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
-        string? uyaIso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
+        string? rac3Iso = Environment.GetEnvironmentVariable("OBP_UYA_ISO");
         Skip.If(string.IsNullOrEmpty(rac1Iso), "OBP_RAC1_ISO not set");
-        Skip.If(string.IsNullOrEmpty(uyaIso), "OBP_UYA_ISO not set");
+        Skip.If(string.IsNullOrEmpty(rac3Iso), "OBP_UYA_ISO not set");
 
         using var rac1Reader = new FileRandomAccessReader(rac1Iso!);
         var rac1Row = Rac1DiscIndex.Read(rac1Reader).Levels.Single(x => x.LevelId == 0);
         var rac1 = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(rac1Reader, rac1Row));
 
-        using var uyaReader = new FileRandomAccessReader(uyaIso!);
-        var uya = UyaGameplay.Read(UyaLevelCore.Open(uyaReader, 1).GameplayReader);
+        using var rac3Reader = new FileRandomAccessReader(rac3Iso!);
+        var rac3 = Rac3Gameplay.Read(Rac3LevelCore.Open(rac3Reader, 1).GameplayReader);
 
         Vec3 ratchet1 = Moby(Assert.Single(rac1.MobyInstances, x => x.OClass == 0).Position);
-        Vec3 ratchet3 = Moby(Assert.Single(uya.MobyInstances, x => x.OClass == 0).Position);
+        Vec3 ratchet3 = Moby(Assert.Single(rac3.MobyInstances, x => x.OClass == 0).Position);
 
         Vec3 s14 = Static(Assert.Single(rac1.ShrubInstances, x => x.OClass == 467 && x.Index == 14).Matrix);
-        Vec3 t254 = Static(Assert.Single(uya.ShrubInstances, x => x.OClass == 3364 && x.Index == 254).Matrix);
+        Vec3 t254 = Static(Assert.Single(rac3.ShrubInstances, x => x.OClass == 3364 && x.Index == 254).Matrix);
         Vec3 s17 = Static(Assert.Single(rac1.ShrubInstances, x => x.OClass == 467 && x.Index == 17).Matrix);
-        Vec3 t253 = Static(Assert.Single(uya.ShrubInstances, x => x.OClass == 3364 && x.Index == 253).Matrix);
+        Vec3 t253 = Static(Assert.Single(rac3.ShrubInstances, x => x.OClass == 3364 && x.Index == 253).Matrix);
         Vec3 s13 = Static(Assert.Single(rac1.ShrubInstances, x => x.OClass == 467 && x.Index == 13).Matrix);
-        Vec3 t245 = Static(Assert.Single(uya.ShrubInstances, x => x.OClass == 3364 && x.Index == 245).Matrix);
+        Vec3 t245 = Static(Assert.Single(rac3.ShrubInstances, x => x.OClass == 3364 && x.Index == 245).Matrix);
 
         // These are exploratory candidate correspondences, not admitted semantic landmarks.
         var local = PlanarAlignmentSolver.Solve(new[] { (ratchet3, ratchet1), (t254, s14) });

@@ -17,7 +17,7 @@ public partial class OBPGame
         if (_startupSourcesResolved) return true;
         _diagnosticSourceAccess = SourceSetupPolicy.IsDiagnostic(_args, OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs());
         EnsureSourceLibraryInitialized();
-        foreach (var (game, path) in new[] { (ObpSourceGame.Rac1, _args.Rac1Iso), (ObpSourceGame.Rac2, _args.Rac2Iso), (ObpSourceGame.Rac3, _args.UyaIso) })
+        foreach (var (game, path) in new[] { (ObpSourceGame.Rac1, _args.Rac1Iso), (ObpSourceGame.Rac2, _args.Rac2Iso), (ObpSourceGame.Rac3, _args.Rac3Iso) })
         {
             if (path is null) continue;
             bool persist = !_args.ControllerSmoke && !_args.Rac1PlayerAudioSmoke && !_args.BugReportSmoke && _args.ReplayBugReport is null;

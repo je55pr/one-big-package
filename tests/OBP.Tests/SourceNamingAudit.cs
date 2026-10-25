@@ -10,8 +10,8 @@ internal static class SourceNamingAudit
 
     internal static IEnumerable<Finding> Scan(string path, string source)
     {
-        if (path.StartsWith("game/", StringComparison.Ordinal) && Path.GetFileName(path).StartsWith("OBPGame.Gc", StringComparison.Ordinal))
-            yield return new(path + "::file", "Rac2 host partial filenames use OBPGame.Rac2, not the retired Gc prefix.");
+        if (path.StartsWith("game/", StringComparison.Ordinal) && (Path.GetFileName(path).StartsWith("OBPGame.Gc", StringComparison.Ordinal) || Path.GetFileName(path).StartsWith("OBPGame.Uya", StringComparison.Ordinal)))
+            yield return new(path + "::file", "Source host partial filenames use OBPGame.Rac2/Rac3, not retired Gc/Uya prefixes.");
         var root = CSharpSyntaxTree.ParseText(source).GetRoot();
         foreach (var alias in root.DescendantNodes().OfType<UsingDirectiveSyntax>().Where(item => item.Alias is not null))
         {

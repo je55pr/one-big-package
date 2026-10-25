@@ -129,15 +129,15 @@ public partial class OBPGame
         }
     }
 
-    private HostedActor CreatePlacedUyaProp(ActorPlacement placement, RuntimeWorld library, string path)
+    private HostedActor CreatePlacedRac3Prop(ActorPlacement placement, RuntimeWorld library, string path)
     {
         if (placement.Source.Game != ObpSourceGame.Rac3 || placement.NativeClassId != 500 || placement.LevelId != 1 ||
-            placement.InitialNativeState != UyaClass500Destructible.ActiveNativeState || placement.NativeContextId != "uya/table1-class500-deactivate/v1")
+            placement.InitialNativeState != Rac3Class500Destructible.ActiveNativeState || placement.NativeContextId != "uya/table1-class500-deactivate/v1")
             throw new NotSupportedException("UYA target requires its recovered TABLE1 class-500 deactivation context.");
-        var (scene, node, registration) = CreateActorView(placement, library, source => UyaClass500Destructible.PostBreakRoute(UyaClass500Destructible.ReadAuthored(source)) == UyaClass500PostBreakRoute.Deactivate);
+        var (scene, node, registration) = CreateActorView(placement, library, source => Rac3Class500Destructible.PostBreakRoute(Rac3Class500Destructible.ReadAuthored(source)) == Rac3Class500PostBreakRoute.Deactivate);
         try
         {
-            var runtime = new UyaMobyRuntimeSession(); runtime.Register(node.Source); _ = new UyaClass500DestructibleSession(runtime);
+            var runtime = new Rac3MobyRuntimeSession(); runtime.Register(node.Source); _ = new Rac3Class500DestructibleSession(runtime);
             var body = AddRegisteredActorBody(node, scene.Root);
             registration = registration with
             {
@@ -146,7 +146,7 @@ public partial class OBPGame
                 new ActorCapabilityRegistration("break-presentation", CapabilityAdmission.Unimplemented, "The recovered UYA consumer deactivates the target; original break SFX/scatter presentation is not yet recovered."),
             }).ToArray()
             };
-            return new(registration, node, () => ObserveUyaActor(node, runtime), intent => ApplyRegisteredUyaDamage(node, runtime, intent), retire: () =>
+            return new(registration, node, () => ObserveRac3Actor(node, runtime), intent => ApplyRegisteredRac3Damage(node, runtime, intent), retire: () =>
             { _actorContactBodies.Remove(ActorTarget(node)); body.CollisionLayer = body.CollisionMask = 0; scene.Root.QueueFree(); });
         }
         catch { _actorContactBodies.Remove(ActorTarget(node)); scene.Root.QueueFree(); throw; }
@@ -161,8 +161,8 @@ public partial class OBPGame
             var node = _rac2OpeningMsr1.GetValueOrDefault(hostile.InstanceIndex)?.Node;
             if (node is not null) RegisterOriginalActor(node, () => ObserveRac2Actor(node, hostile), intent => ApplyRegisteredRac2Damage(node, hostile, intent));
         }
-        foreach (var node in _uyaClass500Nodes)
-            RegisterOriginalActor(node, () => ObserveUyaActor(node, _uyaMobyRuntime), intent => ApplyRegisteredUyaDamage(node, _uyaMobyRuntime, intent));
+        foreach (var node in _rac3Class500Nodes)
+            RegisterOriginalActor(node, () => ObserveRac3Actor(node, _rac3MobyRuntime), intent => ApplyRegisteredRac3Damage(node, _rac3MobyRuntime, intent));
     }
 
     private void RegisterOriginalActor(RuntimeWorldScene.DynamicObjectNode node, Func<ActorObservation> observe, Func<WeaponDamageIntent, ActorHitResult> damage)
@@ -186,9 +186,9 @@ public partial class OBPGame
     private static ActorObservation ObserveRac2Actor(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native) =>
         new(ToNumerics(node.Root.GlobalPosition), !native.IsTerminal, native.IsTerminal, native.Health, native.NativeState?.CurrentState ?? 0, null);
 
-    private static ActorObservation ObserveUyaActor(RuntimeWorldScene.DynamicObjectNode node, UyaMobyRuntimeSession native) =>
+    private static ActorObservation ObserveRac3Actor(RuntimeWorldScene.DynamicObjectNode node, Rac3MobyRuntimeSession native) =>
         new(ToNumerics(node.Root.GlobalPosition), native.Require(node.Source).IsActive, !native.Require(node.Source).IsActive, null,
-            native.Require(node.Source).IsActive ? UyaClass500Destructible.ActiveNativeState : UyaClass500Destructible.BreakTransitionNativeState, null);
+            native.Require(node.Source).IsActive ? Rac3Class500Destructible.ActiveNativeState : Rac3Class500Destructible.BreakTransitionNativeState, null);
 
     private ActorHitResult ApplyRegisteredRac1Damage(RuntimeWorldScene.DynamicObjectNode node, WeaponDamageIntent intent)
     {
@@ -209,11 +209,11 @@ public partial class OBPGame
         return new(result.Admitted, result.Terminal, result.Admitted ? null : "Native GC damage cooldown or terminal state.");
     }
 
-    private ActorHitResult ApplyRegisteredUyaDamage(RuntimeWorldScene.DynamicObjectNode node, UyaMobyRuntimeSession native, WeaponDamageIntent intent)
+    private ActorHitResult ApplyRegisteredRac3Damage(RuntimeWorldScene.DynamicObjectNode node, Rac3MobyRuntimeSession native, WeaponDamageIntent intent)
     {
-        var damage = new UyaGameplayDamageEvent(UyaGameplayEntityRef.Player,
-            UyaGameplayEntityRef.Moby(new(node.Source.NativeClassId, node.Source.InstanceIndex)), intent.SourceDamage, 1);
-        if (!native.TryDispatchDamage<UyaClass500BreakResult>(damage, out var result) || result is null) return new(false, false, "Native UYA class-500 receiver rejected this contact.");
+        var damage = new Rac3GameplayDamageEvent(Rac3GameplayEntityRef.Player,
+            Rac3GameplayEntityRef.Moby(new(node.Source.NativeClassId, node.Source.InstanceIndex)), intent.SourceDamage, 1);
+        if (!native.TryDispatchDamage<Rac3Class500BreakResult>(damage, out var result) || result is null) return new(false, false, "Native UYA class-500 receiver rejected this contact.");
         node.ApplyState(result.EntityState);
         if (_actorContactBodies.TryGetValue(ActorTarget(node), out var body)) body.CollisionLayer = body.CollisionMask = 0;
         return new(true, true);

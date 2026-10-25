@@ -168,7 +168,7 @@ public partial class OBPGame : Node3D
             TickFusionLabTraversalSmoke();
             TickRac2Gameplay(delta);
             TickRac1Gameplay(delta);
-            TickUyaGameplay(delta);
+            TickRac3Gameplay(delta);
             UpdatePlayerHud();
             UpdateWorldHud();
         }
@@ -238,7 +238,7 @@ public partial class OBPGame : Node3D
         else if (key.Keycode == Key.I)
         {
             _inspector?.Toggle();
-            if (_inspector?.IsOpen == true) _uyaTargetAudit.Request();
+            if (_inspector?.IsOpen == true) _rac3TargetAudit.Request();
         }
         else if (_overlay is { } overlay && HandleOverlayKey(key.Keycode, overlay))
         {
@@ -434,7 +434,7 @@ public partial class OBPGame : Node3D
         _inspector = null;
         _world = null;
         ResetRac2GameplayHost();
-        ResetUyaGameplay();
+        ResetRac3Gameplay();
     }
 
     /// <summary>
@@ -664,7 +664,7 @@ public partial class OBPGame : Node3D
         AttachPlayerAvatarVisual(player);
         ArmRac2GameplayHost(player);
         ArmRac1Gameplay(player);
-        ArmUyaGameplay(player);
+        ArmRac3Gameplay(player);
     }
 
     // --- HUD ---------------------------------------------------------------
@@ -739,7 +739,7 @@ public partial class OBPGame : Node3D
         string crateDebug = GetCrateDebugHudLine();
         string rac2Gameplay = GetRac2GameplayHudLine();
         string rac1Gameplay = GetRac1GameplayHudLine();
-        string uyaGameplay = GetUyaGameplayHudLine();
+        string rac3Gameplay = GetRac3GameplayHudLine();
 
         _worldHud.Text =
             $"Game: {gameLabel}   Build: {w.BuildId}\n" +
@@ -756,7 +756,7 @@ public partial class OBPGame : Node3D
             (string.IsNullOrEmpty(rac2Gameplay) ? "" : $"\n{rac2Gameplay}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}") +
             (GetRac1MetropolisTaxiHudLine() is { Length: > 0 } taxiHint ? $"\n{taxiHint}" : "") +
-            (string.IsNullOrEmpty(uyaGameplay) ? "" : $"\n{uyaGameplay}");
+            (string.IsNullOrEmpty(rac3Gameplay) ? "" : $"\n{rac3Gameplay}");
     }
 
     // --- smoke / plain scenes -------------------------------------------

@@ -10,10 +10,10 @@ namespace OBP.RAC3.Gameplay;
 public sealed record Rac3Class5821Admission
 {
     public RuntimeDynamicObject Source { get; }
-    public UyaClass5821AuthoredState Authored { get; }
-    public UyaMobyPlacementFacts Placement { get; }
+    public Rac3Class5821AuthoredState Authored { get; }
+    public Rac3MobyPlacementFacts Placement { get; }
 
-    private Rac3Class5821Admission(RuntimeDynamicObject source, UyaClass5821AuthoredState authored, UyaMobyPlacementFacts placement) =>
+    private Rac3Class5821Admission(RuntimeDynamicObject source, Rac3Class5821AuthoredState authored, Rac3MobyPlacementFacts placement) =>
         (Source, Authored, Placement) = (source, authored, placement);
 
     public static bool TryRead(RuntimeDynamicObject source, [NotNullWhen(true)] out Rac3Class5821Admission? admission, out string? rejection)
@@ -21,11 +21,11 @@ public sealed record Rac3Class5821Admission
         admission = null;
         try
         {
-            var authored = UyaClass5821Actor.ReadAuthored(source);
-            var placement = UyaMobyPlacement.ReadAuthored(source);
-            if (!UyaClass5821Actor.HasRecoveredTable1DamageProfile(authored) ||
-                !UyaClass5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored) ||
-                !UyaClass5821Actor.HasRecoveredTable1TargetSelectionProfile(authored))
+            var authored = Rac3Class5821Actor.ReadAuthored(source);
+            var placement = Rac3MobyPlacement.ReadAuthored(source);
+            if (!Rac3Class5821Actor.HasRecoveredTable1DamageProfile(authored) ||
+                !Rac3Class5821Actor.HasRecoveredTable1OrdinaryAttackProfile(authored) ||
+                !Rac3Class5821Actor.HasRecoveredTable1TargetSelectionProfile(authored))
             {
                 rejection = "Unsupported class-5821 TABLE1 profile.";
                 return false;
