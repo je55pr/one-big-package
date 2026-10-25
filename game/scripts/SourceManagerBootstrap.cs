@@ -127,7 +127,7 @@ public partial class SourceManagerBootstrap : Node
         }
 
         if (!args.TestSceneExplicit && _game.TryResumeSharedProfileFromBootstrap()) return;
-        if (_game.ProfileRecoveryRequired) { _game.ShowSourceManagerFromBootstrap(); return; }
+        if (_game.ProfileRecoveryRequired) { _game.ShowTitleFromBootstrap(); return; }
 
         if (testScene == "worlds")
         {
@@ -161,9 +161,7 @@ public partial class SourceManagerBootstrap : Node
                 return;
             }
 
-            var title = new TitleScreen();
-            title.Dismissed += () => _game?.ShowDestinationSelectorFromBootstrap();
-            _game.AddChild(title);
+            _game.ShowTitleFromBootstrap();
         }
     }
 

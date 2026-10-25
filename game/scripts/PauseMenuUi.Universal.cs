@@ -18,6 +18,7 @@ public sealed partial class PauseMenuUi
     public Func<EquipmentCatalogEntry, Texture2D?>? CatalogIcon { get; init; }
     public Func<IReadOnlyDictionary<string, string>>? ActorStatusReader { get; init; }
     public Func<string?>? SharedProfileStatusReader { get; init; }
+    public Func<string?>? SaveNoticeReader { get; init; }
     public Func<string, EquipmentChangeResult>? ActorReset { get; init; }
     public bool LabAvailable { get; init; }
     public event Action? LabRequested;
@@ -51,7 +52,7 @@ public sealed partial class PauseMenuUi
         header.AddChild(new Label { Text = "ONE BIG PACKAGE  /  PAUSED", ThemeTypeVariation = "HeaderSmall", AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
         _resume = MakeButton("RESUME"); _resume.Pressed += () => ResumeRequested?.Invoke(); header.AddChild(_resume);
         var tabs = new HFlowContainer(); column.AddChild(tabs);
-        if (SharedProfileStatusReader?.Invoke() is { } status)
+        if (SaveNoticeReader?.Invoke() is { } status)
             column.AddChild(new Label { Name = "SharedProfileStatus", Text = status, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = UiTheme.TextDim });
         foreach (string section in UniversalSections)
         {
@@ -121,15 +122,15 @@ public sealed partial class PauseMenuUi
         var visible = entries.Skip(_universalPage * UniversalPageSize).Take(UniversalPageSize).ToArray();
         foreach (var entry in visible)
         {
-            string state = entry.State.Equipped ? "HELD" : entry.State.Selected ? "SELECTED" : entry.Usable ? "AVAILABLE" : entry.Usability.ToString().ToUpperInvariant();
+            string state = entry.State.Equipped ? "HELD" : entry.State.Selected ? "SELECTED" : entry.Usable ? "AVAILABLE" : "UNAVAILABLE";
             var card = MakeButton($"{entry.Definition.DisplayName}   [{OriginName(entry.Definition.SourceGame)}]\n{state}" +
                 (entry.State.Ammo is { } ammo ? $"   {ammo}/{entry.State.Capacity}" : ""));
             card.Name = "ObpItem_" + entry.Definition.Id.Replace('/', '_');
             card.Icon = CatalogIcon?.Invoke(entry) ?? GD.Load<Texture2D>("res://assets/ui/obp-equipment-placeholder.svg");
             card.ExpandIcon = true; card.AddThemeConstantOverride("icon_max_width", 36);
             card.Alignment = HorizontalAlignment.Left; card.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-            card.TooltipText = (entry.Reason ?? "Inspect equipment and choose an action.") +
-                (entry.State.Icon == EquipmentResourceStatus.Available ? "" : "\nOBP placeholder icon; the original equipment icon is unavailable.");
+            card.TooltipText = (EquipmentNotice(entry) ?? "Inspect equipment and choose an action.") +
+                (entry.State.Icon == EquipmentResourceStatus.Available ? "" : "\nIcon unavailable.");
             card.CustomMinimumSize = new(0, 64);
             card.Pressed += () => InspectUniversalItem(entry.Definition.Id);
             _universalBody.AddChild(card); _universalFocus.Add(card);
@@ -144,6 +145,17 @@ public sealed partial class PauseMenuUi
     }
 
     private static string OriginName(ObpSourceGame source) => source switch { ObpSourceGame.Rac1 => "R&C1", ObpSourceGame.Rac2 => "GC", ObpSourceGame.Rac3 => "UYA", _ => SourceIdentityWire.FormatSource(source).ToUpperInvariant() };
+
+    private string? EquipmentNotice(EquipmentCatalogEntry entry) => DebugOutputEnabled ? entry.Reason : entry.Usability switch
+    {
+        EquipmentUsability.Unimplemented => "This equipment is not implemented yet.",
+        EquipmentUsability.MissingSource => "This equipment is temporarily unavailable.",
+        EquipmentUsability.UnsupportedBuild => "This equipment is not supported in this build.",
+        EquipmentUsability.MissingModel => "This appearance is not available yet.",
+        EquipmentUsability.Unowned => "This equipment is not in your loadout.",
+        EquipmentUsability.ContextBlocked => "This equipment cannot be used here.",
+        _ => null,
+    };
 
     private void BuildUniversalSlots()
     {
@@ -171,7 +183,7 @@ public sealed partial class PauseMenuUi
         ClearUniversalChildren(_catalogActions);
         // The source/build provenance is useful when two games use the same name.
         _catalogDetails.Text = $"{entry.Definition.DisplayName}  ·  {OriginName(entry.Definition.SourceGame)}\n" +
-            (entry.Reason ?? (entry.State.Equipped ? "Currently held." : entry.State.Selected ? "Selected in this player loadout." : "Available in this player loadout."));
+            (EquipmentNotice(entry) ?? (entry.State.Equipped ? "Currently held." : entry.State.Selected ? "Selected in this player loadout." : "Available in this player loadout."));
         if (entry.Definition.Category == EquipmentCategory.Gadget) _catalogDetails.Text += "\n" + entry.Definition.Usage switch
         { EquipmentUsage.Backpack => "Movement pack", EquipmentUsage.Passive => "Passive equipment", EquipmentUsage.ContextAction => "Requires a supported world interaction", _ => "Held gadget" };
         var oldPreview = _universalBody.GetNodeOrNull<Control>("EquipmentPreview");
@@ -192,7 +204,7 @@ public sealed partial class PauseMenuUi
             if (entry.Definition.Category == EquipmentCategory.Weapon)
                 AddUniversalAction("HOLD WRENCH", true, () => CatalogUnequip?.Invoke());
         }
-        if (_catalogDetails.Text.Length > 0) _catalogDetails.TooltipText = entry.Definition.BuildId;
+        if (_catalogDetails.Text.Length > 0) _catalogDetails.TooltipText = DebugOutputEnabled ? entry.Definition.BuildId : "";
         WireUniversalFocus();
         if (restoreFocus)
         {
@@ -217,7 +229,7 @@ public sealed partial class PauseMenuUi
                 CatalogErrorReporter(error);
                 return;
             }
-            _catalogStatus.Text = result.Reason ?? (result.Accepted ? "Loadout updated." : "The change could not be applied.");
+            _catalogStatus.Text = (DebugOutputEnabled ? result.Reason : null) ?? (result.Accepted ? "Loadout updated." : "The change could not be applied.");
             Callable.From(() => { if (!IsInsideTree() || IsQueuedForDeletion()) return; _catalogActionPending = false; RebuildUniversalPage(); }).CallDeferred();
         };
         _catalogActions.AddChild(button); _universalFocus.Add(button);
@@ -239,6 +251,8 @@ public sealed partial class PauseMenuUi
         }
         else
         {
+            if (SharedProfileStatusReader?.Invoke() is { } profileStatus)
+                _universalBody.AddChild(new Label { Name = "ProfileDiagnostics", Text = profileStatus, AutowrapMode = TextServer.AutowrapMode.WordSmart });
             var debug = new CheckButton { Text = "SHOW DEBUG OUTPUT", ButtonPressed = DebugOutputEnabled, CustomMinimumSize = new(0, 48) };
             debug.Toggled += enabled => { DebugOutputEnabled = enabled; DebugOutputChanged?.Invoke(enabled); }; _universalBody.AddChild(debug); _universalFocus.Add(debug);
             if (MovementStatesAvailable)

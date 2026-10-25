@@ -73,7 +73,7 @@ public partial class OBPGame
 
     private void TickSourceSetup(double delta)
     {
-        if (_diagnosticSourceAccess || !_startupSourcesResolved || _mode is not (Mode.World or Mode.Selector)) return;
+        if (_diagnosticSourceAccess || !_startupSourcesResolved || _mode is not (Mode.World or Mode.Selector or Mode.Title)) return;
         _sourceCheckElapsed += delta;
         if (_sourceCheckElapsed < 1) return;
         _sourceCheckElapsed = 0;

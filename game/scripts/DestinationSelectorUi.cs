@@ -8,6 +8,7 @@ namespace OneBigPackage;
 public partial class DestinationSelectorUi : CanvasLayer
 {
     public bool DebugOutputEnabled { get; init; }
+    public bool DiagnosticSources { get; init; }
     public event Action<ObpDestination>? DestinationChosen;
     public event Action? FusionLabRequested;
     public event Action? BackRequested;
@@ -49,7 +50,7 @@ public partial class DestinationSelectorUi : CanvasLayer
         var titleRow = new HBoxContainer();
         titleRow.AddThemeConstantOverride("separation", 14);
         outer.AddChild(titleRow);
-        _back = new Button { Text = "<  GAME SOURCES", CustomMinimumSize = new Vector2(170, 48), FocusMode = Control.FocusModeEnum.All };
+        _back = new Button { Text = DiagnosticSources ? "<  GAME SOURCES" : "<  TITLE", CustomMinimumSize = new Vector2(170, 48), FocusMode = Control.FocusModeEnum.All };
         _back.Pressed += () => BackRequested?.Invoke();
         titleRow.AddChild(_back);
         _focusOrder.Add(_back);
@@ -57,18 +58,19 @@ public partial class DestinationSelectorUi : CanvasLayer
 
         outer.AddChild(new Label
         {
-            Text = "Choose a world from any connected game.",
+            Text = "Choose a world from the trilogy.",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             Modulate = UiTheme.TextDim,
         });
 
         var fusionButton = new Button
         {
-            Text = "  OBP FUSION LAB   |   PLAYABLE GREYBOX / SHARED TRILOGY SESSION",
+            Name = "FusionLab",
+            Text = "  OBP FUSION LAB   |   PLAYTEST",
             Alignment = HorizontalAlignment.Left,
             CustomMinimumSize = new Vector2(0, 62),
             FocusMode = Control.FocusModeEnum.All,
-            TooltipText = "A custom, connected test facility for cross-game mechanics.",
+            TooltipText = "Explore the test facility with your weapons and gadgets.",
         };
         fusionButton.Pressed += () => FusionLabRequested?.Invoke();
         outer.AddChild(fusionButton);
@@ -138,7 +140,7 @@ public partial class DestinationSelectorUi : CanvasLayer
         header.AddChild(new Label { Text = definition.DisplayName.ToUpperInvariant(), ThemeTypeVariation = "HeaderMedium" });
         header.AddChild(new Control { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
 
-        string readiness = source is null
+        string readiness = !DiagnosticSources ? (provider is null ? "NOT YET IMPLEMENTED" : $"{availableCount} WORLDS") : source is null
             ? "SOURCE NEEDED"
             : provider is null
                 ? "SOURCE READY  |  WORLDS PENDING"
@@ -150,18 +152,19 @@ public partial class DestinationSelectorUi : CanvasLayer
             Modulate = source is not null && provider is not null ? UiTheme.Ready : UiTheme.TextDim,
         });
 
-        if (source is null)
+        if (DiagnosticSources && source is null)
         {
             content.AddChild(Status("Connect this game on Game Sources to unlock its destinations."));
             return;
         }
         if (provider is null)
         {
-            content.AddChild(Status("Source connected. Its production world provider is not available yet."));
+            content.AddChild(Status("Gameplay for this game is not implemented yet."));
             return;
         }
 
         foreach (var destination in provider.Catalogue.Destinations
+                     .Where(destination => DebugOutputEnabled || destination.Kind != ObpDestinationKind.Unresolved)
                      .OrderBy(d => SortKind(d.Kind)))
         {
             bool current = destination.DestinationId == currentDestinationId;
@@ -175,7 +178,7 @@ public partial class DestinationSelectorUi : CanvasLayer
                 CustomMinimumSize = new Vector2(0, 50),
                 FocusMode = Control.FocusModeEnum.All,
                 Disabled = !provider.CanLoad(destination),
-                TooltipText = DebugOutputEnabled ? TechnicalTooltip(destination) : destination.DisplayName,
+                TooltipText = DebugOutputEnabled ? TechnicalTooltip(destination) : provider.CanLoad(destination) ? destination.DisplayName : "This world is not implemented yet.",
             };
             if (current) button.Modulate = UiTheme.Accent;
 
@@ -191,6 +194,8 @@ public partial class DestinationSelectorUi : CanvasLayer
             if (!button.Disabled && _firstDestinationButton is null) _firstDestinationButton = button;
             if (!button.Disabled && current) _currentDestinationButton = button;
         }
+        if (!DebugOutputEnabled && provider.Catalogue.Destinations.Any(destination => destination.Kind == ObpDestinationKind.Unresolved))
+            content.AddChild(Status("Additional destinations are not yet implemented."));
     }
 
     private static Label Status(string text) => new()

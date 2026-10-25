@@ -81,6 +81,27 @@ public sealed class SourceReadinessTests
         Assert.Equal(SourceReadinessKind.Missing, fixture.Check.Evaluate().Entries[2].Kind);
     }
 
+    [SkippableFact]
+    public void AReadLockCannotReuseAReadyResultWithUnchangedFileMetadata()
+    {
+        Skip.IfNot(OperatingSystem.IsWindows(), "Windows exclusive file-sharing semantics.");
+        var fixture = SyntheticPs2.Build("SCUS_971.99");
+        string path = Path.Combine(Path.GetTempPath(), "obp-source-readiness-" + Guid.NewGuid().ToString("N") + ".iso");
+        try
+        {
+            File.WriteAllBytes(path, fixture.Bytes);
+            var definition = new ObpSourceDefinition("Fixture", new(ObpSourceGame.Rac1, "fixture", Serial: "SCUS-97199"), fixture.Bytes.Length);
+            var library = new ObpSourceLibrary([definition]);
+            using (var reader = new FileRandomAccessReader(path)) library.Attach(path, reader);
+            var readiness = new SourceReadinessEvaluator(library, [definition]);
+            Assert.True(readiness.Evaluate().Ready);
+            using (var locked = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None))
+                Assert.Equal(SourceReadinessKind.Unavailable, readiness.Evaluate().Entries[0].Kind);
+            Assert.True(readiness.Evaluate().Ready);
+        }
+        finally { File.Delete(path); }
+    }
+
     [Theory]
     [InlineData("", false)]
     [InlineData("--skip-title", false)]
@@ -89,6 +110,7 @@ public sealed class SourceReadinessTests
     [InlineData("--record-playtest run.gz", false)]
     [InlineData("--reconciliation-smoke", false)]
     [InlineData("--source-setup-check", false)]
+    [InlineData("--ordinary-ui-smoke", false)]
     [InlineData("--diagnostic-sources", true)]
     [InlineData("--retail-parity", true)]
     [InlineData("--test-scene picker", true)]

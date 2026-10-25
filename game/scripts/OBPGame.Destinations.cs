@@ -217,6 +217,7 @@ public partial class OBPGame
     {
         EnsureSourceLibraryInitialized();
         if (!RequireOrdinarySourceSetup("world selection")) return;
+        ClearTitleScreen();
         _mode = Mode.Selector;
         _sceneKind = "destinations";
         _genericNavigationActive = true;
@@ -235,16 +236,10 @@ public partial class OBPGame
         ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _destinationSelector?.QueueFree();
-        _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled };
+        _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled, DiagnosticSources = _diagnosticSourceAccess };
         _destinationSelector.DestinationChosen += destination => OnDestinationChosen(destination);
         _destinationSelector.FusionLabRequested += () => EnterFusionLab();
-        _destinationSelector.BackRequested += () =>
-        {
-            _genericNavigationActive = false;
-            _destinationSelector?.QueueFree();
-            _destinationSelector = null;
-            BuildSourceManagerScreen();
-        };
+        _destinationSelector.BackRequested += () => TryReturnSelectorToMenu();
         AddChild(_destinationSelector);
         _destinationSelector.Populate(_sources, TrilogySourceDefinitions.All, TrilogyWorldProviders.All, _currentDestinationId);
 
@@ -322,7 +317,7 @@ public partial class OBPGame
         GD.PrintErr($"[destinations] {message}");
         if (_destinationSelector is not null)
         {
-            _destinationSelector.SetHint(message, error: true);
+            _destinationSelector.SetHint(_debugOutputEnabled ? message : "That world could not be opened. Please choose another world.", error: true);
         }
         else if (_sourceManager is not null)
         {

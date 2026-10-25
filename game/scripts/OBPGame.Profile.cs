@@ -11,8 +11,11 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private ObpProfile? _profileDocument;
-    private bool _profileInitialized, _profileWriteBlocked;
+    private bool _profileInitialized, _profileWriteBlocked, _profileSaveFailed;
     private string? _profileStatus;
+    private string? PlayerSaveNotice => _profileWriteBlocked
+        ? "Your saved game could not be opened. Continue without saving; your existing progress will be kept."
+        : _profileSaveFailed ? "Progress could not be saved. Your previous save has been kept." : null;
     private double _profileSaveElapsed;
     private byte[]? _profileLastSaved;
     private readonly HashSet<string> _opaqueCampaignOwners = [];
@@ -126,20 +129,20 @@ public partial class OBPGame
         try
         {
             var profile = CaptureSharedProfile(); byte[] bytes = profile.Encode();
-            if (_profileLastSaved is { } saved && saved.AsSpan().SequenceEqual(bytes)) return true;
+            if (_profileLastSaved is { } saved && saved.AsSpan().SequenceEqual(bytes)) { _profileSaveFailed = false; return true; }
             AtomicDocumentFile.Save(path, bytes, ObpProfile.MaximumBytes, existing =>
             {
                 try { _ = ObpProfile.Decode(existing); return true; }
                 catch (Exception error) when (error is JsonException or InvalidDataException or ArgumentException) { return false; }
             });
-            _profileDocument = profile; _profileLastSaved = bytes;
+            _profileDocument = profile; _profileLastSaved = bytes; _profileSaveFailed = false;
             _profileStatus = _opaqueCampaignOwners.Count == 0 ? "Shared profile saved." : "Shared profile saved; unavailable campaign contributors retained: " + string.Join(", ", _opaqueCampaignOwners);
             if (_profileRetainedFieldCount > 0) _profileStatus += $" Retained {_profileRetainedFieldCount} unknown fields.";
             GD.Print("[profile] saved " + reason);
             return true;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException or UnsupportedProfileVersionException)
-        { _profileStatus = "Profile was not saved: " + error.Message; GD.Print("[profile] " + _profileStatus); return false; }
+        { _profileSaveFailed = true; _profileStatus = "Profile was not saved: " + error.Message; GD.Print("[profile] " + _profileStatus); return false; }
     }
 
     private void TickSharedProfile(double delta)

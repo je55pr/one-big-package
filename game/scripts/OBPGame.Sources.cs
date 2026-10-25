@@ -19,6 +19,11 @@ public partial class OBPGame
     public void ShowSourceManagerFromBootstrap()
     {
         EnsureSourceLibraryInitialized();
+        if (!_diagnosticSourceAccess && !_sourceConfigNeedsRepair && _sourceReadiness.Evaluate().Ready)
+        {
+            ShowTitleScreen();
+            return;
+        }
         BuildSourceManagerScreen();
     }
 
@@ -33,10 +38,10 @@ public partial class OBPGame
     }
 
     /// <summary>
-    /// Esc on the neutral Worlds browser returns to Game Sources before world
+    /// Esc on the neutral Worlds browser returns to its menu before world
     /// input handlers see the key.
     /// </summary>
-    public bool TryReturnSelectorToSources()
+    public bool TryReturnSelectorToMenu()
     {
         if (_mode != Mode.Selector || _args.CaptureFrame is not null)
         {
@@ -46,7 +51,8 @@ public partial class OBPGame
         _genericNavigationActive = false;
         _destinationSelector?.QueueFree();
         _destinationSelector = null;
-        BuildSourceManagerScreen();
+        if (_diagnosticSourceAccess) BuildSourceManagerScreen();
+        else ShowTitleScreen();
         return true;
     }
 
@@ -178,6 +184,7 @@ public partial class OBPGame
     private void BuildSourceManagerScreen()
     {
         EnsureSourceLibraryInitialized();
+        ClearTitleScreen();
         _mode = Mode.Picker;
         _sceneKind = "sources";
         TeardownWorld();

@@ -57,6 +57,7 @@ public partial class OBPGame
             CatalogPreview = CreateEquipmentAppearancePreview,
             ActorStatusReader = ReadPlacedActorStatus,
             SharedProfileStatusReader = () => _profileStatus,
+            SaveNoticeReader = () => PlayerSaveNotice,
             ActorReset = ResetPlacedActor,
             CatalogIcon = entry => entry.Definition.Item is { SourceGame: ObpSourceGame.Rac1 } item &&
                 Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)item.NativeItemId) is { } icon

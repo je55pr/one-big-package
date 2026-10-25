@@ -243,7 +243,7 @@ explicit repair action before ordinary play. Fully ready startup can resume the
 shared profile or continue through title/world selection. Source loss retires
 the world and suspends profile writes while preserving player-global state.
 
-Readiness uses cheap existence/stamp checks and bounded re-identification when a
+Readiness uses cheap existence/stamp/read-access checks and bounded re-identification when a
 file changes; it never adds an unconditional full-ISO hash. Explicit test scenes,
 source/parity harnesses and `--diagnostic-sources` can use partial sources without
 changing the selected player provider. Headless/automation alone grants no
@@ -253,6 +253,15 @@ exemption and a blocked automated entry exits 2. The ordinary reconciliation and
 diagnostic access and live detachment with profile preservation, always headless.
 Its source-loss check also verifies that repair cancels an uncommitted campaign
 transfer without advancing the campaign's current level.
+
+Once setup is complete, ordinary navigation contains no attachment counters,
+disc metadata or setup links. World Select Back returns to the title; the Lab
+and ordinary pause pages describe gameplay availability. Detailed saved-profile
+and equipment provenance remains in explicit developer diagnostics. An invalid
+save shows a separate, player-facing read-only notice and retains the save; it
+does not send a valid trilogy back to setup. `tools/test-ordinary-ui.ps1` checks
+fresh startup, saved-game resume, invalid-save recovery, controller focus,
+title/World Select Back, Lab/pause and genuine source-loss repair headlessly.
 
 `OBP.Godot.CaptureHarness` is the primitive: settle N frames → one
 `FramePostDraw` → grab the viewport → write a PNG + a JSON sidecar of the
@@ -295,7 +304,7 @@ desktop shortcut points at:
 
 A plain launch (no `--test-scene`, no `--*-iso`) now shows **`TitleScreen`** — the
 logo (`game/assets/branding/obp-logo.png`) over a graded backdrop with a
-"press any key" prompt — which fades into the existing **Game Sources** screen.
+"press any key" prompt — which fades into **World Select** after trilogy setup.
 `--skip-title` bypasses it. `--test-scene picker` and every deterministic
 harness path are unaffected (they never construct it — see
 `SourceManagerBootstrap`).

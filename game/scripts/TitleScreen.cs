@@ -7,11 +7,12 @@ namespace OneBigPackage;
 /// The gamey front door shown on a plain interactive launch (no <c>--test-scene</c>,
 /// no source args): the OBP logo over a dark graded backdrop with a "press any
 /// key" prompt. Any key / click / gamepad button fades it out and calls
-/// <see cref="Dismissed"/>, which hands off to the normal Game Sources screen.
+/// <see cref="Dismissed"/>, which hands off to World Select.
 /// Deterministic harnesses never construct this — see <see cref="SourceManagerBootstrap"/>.
 /// </summary>
 public sealed partial class TitleScreen : CanvasLayer
 {
+    public string? Notice { get; init; }
     /// <summary>Raised once, after the fade-out, when the player dismisses the title.</summary>
     public event System.Action? Dismissed;
 
@@ -77,8 +78,18 @@ public sealed partial class TitleScreen : CanvasLayer
         _prompt.AddThemeColorOverride("font_color", UiTheme.Accent);
         column.AddChild(_prompt);
 
-        AddFooter("One Big Package  ·  production showcase build", left: true);
-        AddFooter("Ratchet & Clank™ trilogy  ·  reconstructed runtime", left: false);
+        if (Notice is not null)
+            column.AddChild(new Label
+            {
+                Name = "SaveNotice",
+                Text = Notice,
+                AutowrapMode = TextServer.AutowrapMode.WordSmart,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Modulate = UiTheme.TextDim
+            });
+
+        AddFooter("One Big Package", left: true);
+        AddFooter("Ratchet & Clank™ trilogy", left: false);
 
         PlayIntro();
     }
