@@ -9,6 +9,7 @@ validation live in code/tests and Git, not completed-task reports.
 - [Input provenance](INPUT_PROVENANCE.md), [build confidence](BUILD_PROBING.md), [disc layouts](RETAIL_TRILOGY_DISC_LAYOUT.md).
 - [External-source policy](EXTERNAL_SOURCE_POLICY.md), [public comparisons and packet boundaries](PUBLIC_FORMAT_ARCHAEOLOGY.md).
 - [Material semantics](MATERIAL_SEMANTICS.md), [atmosphere](WORLD_ATMOSPHERE.md), [world effects](WORLD_EFFECTS.md).
+- [Native effects source audit and licence ledger](EFFECT_SYSTEMS_AUDIT.md), [acceptance fixtures and reproduction](EFFECT_SYSTEMS_FIXTURES.md).
 - [Entity lifetime](TRILOGY_ENTITY_LIFECYCLE.md), [common movement authority](RATCHET_MOVEMENT_BASE.md).
 - [Ratchet rig compatibility, carried-over weapons and animation boundaries](TRILOGY_RATCHET_RIG_COMPATIBILITY.md).
 - [Generated evidence manifest](generated/MANIFEST.md): current producers, frozen witnesses and authority inventories. Generated evidence is not disposable.

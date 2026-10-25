@@ -5,6 +5,10 @@ records; it does not supply replacement particle emission or motion curves.
 The coverage below is bounded, not a claim that the trilogy's effect engines
 have all been implemented.
 
+The [effects reference audit](EFFECT_SYSTEMS_AUDIT.md) and its
+[bounded fixture plan](EFFECT_SYSTEMS_FIXTURES.md) map the reusable native
+generators, upstream licences and remaining recovery work for #280/#281.
+
 ## R&C1 particles and weapon explosions
 
 `Rac1ParticleSession` runs float32 records at 60 Hz in native Z-up coordinates.
@@ -64,8 +68,10 @@ colour components use the PS2 unity value128. Native angle bytes and near/far
 depth fading are retained. Fx rows differ from Part rows: palette, pixels, width,
 height are read from the independent bank at core`+0x68` (`0x23f768`).
 
-The 2048-record limit is an OBP allocation budget, not a recovered retail pool
-size. Native hardware-load shedding is not reproduced. Stable record identities
+The configurable 2048-record default remains an OBP allocation budget. The #281
+Novalis retail witness independently confirms a native 2048 x 0x40-byte pool;
+OBP's managed allocator does not reproduce its stale second-half record bytes.
+Native hardware-load shedding is not reproduced. Stable record identities
 prevent a recycled particle slot from becoming an old flame's damage volume.
 Source random distributions are used with a separate host seed; global retail
 random ordering is not replayed. Godot texture batches do not reproduce the GS's
