@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Keep this review policy focused on actionable gameplay and architecture defects.
+# The repository's AGENTS.md and architecture contract remain authoritative.
+inheritance: true
+enable_free_tier: true
+language: en-GB
+
+tone_instructions: >-
+  Prioritise reproducible correctness, regression, resource-lifetime and
+  architecture issues. Cite changed code and explain impact. Avoid style
+  nits already checked by dotnet format or speculative native parity claims.
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  poem: false
+  # A slow/rate-limited third-party reviewer must not block manual merges.
+  request_changes_workflow: false
+  commit_status: false
+  fail_commit_status: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+    drafts: false
+    ignore_title_keywords:
+      - WIP
+      - DO NOT MERGE
+  path_instructions:
+    - path: "src/OBP.RAC*/**/*.cs"
+      instructions: |
+        Preserve source-specific mechanics, formats, IDs and recovered timing.
+        Flag bounds, provenance, damage/lifetime and native-state regressions.
+        Do not demand identical behaviour across original games without retail evidence.
+        New native claims need tests and evidence; do not invent missing mechanics.
+    - path: "src/OBP.Runtime/**/*.cs"
+      instructions: |
+        This is an engine-neutral layer. Flag use of Godot types, source-native
+        formulas, gameplay orchestration policy or unqualified cross-game IDs.
+        Check validation, ownership, disposal contracts and immutable snapshots.
+    - path: "src/OBP.Fusion/**/*.cs"
+      instructions: |
+        Fusion orchestrates source-qualified actors and equipment, but must not
+        implement native controller rules or depend on Godot presentation.
+        Destination origin must not determine player identity, movement,
+        loadout or UI. Check session lifetime and source capability admission.
+    - path: "game/**/*.cs"
+      instructions: |
+        Review the real Godot C# gameplay host for scene/audio/projectile
+        cleanup, single owner of player state, input focus and fixed-tick
+        animation correctness. World source selects environment, never avatar,
+        weapons, health, pause UI or input profile. Report silent capsule
+        fallbacks and source-inconsistent player presentation.
+    - path: "src/OBP.Godot/**/*.cs"
+      instructions: |
+        Check Godot resource ownership, failed-load rollback and frame-loop
+        allocations. Keep native formats and gameplay decisions in their
+        source modules. Verify teardown works on re-entry and shutdown.
+    - path: ".github/workflows/**"
+      instructions: |
+        Verify bounded GitHub Actions checks, required native/Godot C# builds,
+        no retail payloads or secret exposure, and no unnecessary toolchains.
+        PR reviews stay advisory; builds/tests remain the hard merge checks.
+    - path: "tests/**/*.cs"
+      instructions: |
+        Prefer deterministic portable regressions with explicit source IDs,
+        and retail-backed claims only when real authorised sources were used.
+        Cross-game integration cases must not replace native parity tests.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "docs/ARCHITECTURE.md"
+      - "docs/PLAYER_WORLD_CONTRACT.md"
