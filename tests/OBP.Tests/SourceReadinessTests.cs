@@ -81,8 +81,10 @@ public sealed class SourceReadinessTests
         Assert.Equal(SourceReadinessKind.Missing, fixture.Check.Evaluate().Entries[2].Kind);
     }
 
-    [SkippableFact]
-    public void AReadLockCannotReuseAReadyResultWithUnchangedFileMetadata()
+    [SkippableTheory]
+    [InlineData(FileAccess.Read, FileShare.None)]
+    [InlineData(FileAccess.ReadWrite, FileShare.ReadWrite)]
+    public void AConflictingHandleCannotReuseAReadyResultWithUnchangedFileMetadata(FileAccess access, FileShare sharing)
     {
         Skip.IfNot(OperatingSystem.IsWindows(), "Windows exclusive file-sharing semantics.");
         var fixture = SyntheticPs2.Build("SCUS_971.99");
@@ -95,7 +97,7 @@ public sealed class SourceReadinessTests
             using (var reader = new FileRandomAccessReader(path)) library.Attach(path, reader);
             var readiness = new SourceReadinessEvaluator(library, [definition]);
             Assert.True(readiness.Evaluate().Ready);
-            using (var locked = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            using (var locked = File.Open(path, FileMode.Open, access, sharing))
                 Assert.Equal(SourceReadinessKind.Unavailable, readiness.Evaluate().Entries[0].Kind);
             Assert.True(readiness.Evaluate().Ready);
         }
@@ -110,7 +112,7 @@ public sealed class SourceReadinessTests
     [InlineData("--record-playtest run.gz", false)]
     [InlineData("--reconciliation-smoke", false)]
     [InlineData("--source-setup-check", false)]
-    [InlineData("--ordinary-ui-smoke", false)]
+    [InlineData("--ordinary-ui-smoke fresh", false)]
     [InlineData("--diagnostic-sources", true)]
     [InlineData("--retail-parity", true)]
     [InlineData("--test-scene picker", true)]

@@ -34,7 +34,7 @@ foreach ($case in @('fresh', 'resume', 'invalid-save')) {
     $log = Join-Path $evidence ($case + '.log')
     $errorLog = Join-Path $evidence ($case + '.err.log')
     $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList @('--headless', '--path', (Join-Path $root 'game'),
-        '--max-fps', '120', '--quit-after', '5400', '--', '--ordinary-ui-smoke', '--source-config', $config, '--profile', $testSavePath) `
+        '--max-fps', '120', '--quit-after', '5400', '--', '--ordinary-ui-smoke', $case, '--source-config', $config, '--profile', $testSavePath) `
         -WorkingDirectory $root -StandardOutputPath $log -StandardErrorPath $errorLog
     if ($code -ne 2 -or -not (Select-String -LiteralPath $log -SimpleMatch '[ordinary-ui-smoke] PASS' -Quiet)) { throw "Ordinary UI case $case failed (exit $code). Inspect $evidence." }
     if ([IO.File]::ReadAllText($config) -ne $configText -or [IO.File]::ReadAllText($rejectedSavePath) -ne '{retained-invalid-save') { throw 'Navigation/repair rewrote an input document.' }
