@@ -61,8 +61,8 @@ public sealed record CommandLineArgs
     public bool Rac1PlayerAudioSmoke { get; init; }
 
     /// <summary>Path to a Going Commando retail ISO.</summary>
-    public string? GcIso { get; init; }
-    public int GcLevel { get; init; } = 1;
+    public string? Rac2Iso { get; init; }
+    public int Rac2Level { get; init; } = 1;
 
     /// <summary>Path to the supported R&amp;C1 retail ISO.</summary>
     public string? Rac1Iso { get; init; }
@@ -79,7 +79,7 @@ public sealed record CommandLineArgs
     /// </summary>
     public string? Destination { get; init; }
 
-    /// <summary>Enter the GC destination selected by <see cref="Planet"/> / <see cref="GcLevel"/> directly.</summary>
+    /// <summary>Enter the GC destination selected by <see cref="Planet"/> / <see cref="Rac2Level"/> directly.</summary>
     public bool DirectLoad { get; init; }
 
     /// <summary>Skip the interactive title screen on an ordinary application launch.</summary>
@@ -229,10 +229,10 @@ public sealed record CommandLineArgs
                 "--replay-out" => result with { ReplayOut = Next() },
                 "--replay-profile" => result with { ReplayProfile = true },
                 "--movement-state-smoke" => result with { MovementStateSmoke = true },
-                "--rac2-iso" or "--gc-iso" => result with { GcIso = SourceIso(result.GcIso, "--rac2-iso/--gc-iso") },
+                "--rac2-iso" or "--gc-iso" => result with { Rac2Iso = SourceIso(result.Rac2Iso, "--rac2-iso/--gc-iso") },
                 "--rac1-iso" => result with { Rac1Iso = SourceIso(result.Rac1Iso, "--rac1-iso") },
                 "--rac3-iso" or "--uya-iso" => result with { UyaIso = SourceIso(result.UyaIso, "--rac3-iso/--uya-iso") },
-                "--gc-level" => result with { GcLevel = NextInt() },
+                "--gc-level" => result with { Rac2Level = NextInt() },
                 "--planet" => result with { Planet = Next(), DirectLoad = true },
                 "--destination" => result with { Destination = Next() },
                 "--retail-parity" => result with { RetailParity = true },

@@ -90,7 +90,7 @@ public sealed class CommandLineArgsTests
         ]);
 
         Assert.Equal("rac1.iso", args.Rac1Iso);
-        Assert.Equal("gc.iso", args.GcIso);
+        Assert.Equal("gc.iso", args.Rac2Iso);
         Assert.Equal("uya.iso", args.UyaIso);
         Assert.Equal("rac3:TABLE1", args.Destination);
         Assert.True(args.SkipTitle);
@@ -193,7 +193,7 @@ public sealed class CommandLineArgsTests
         foreach (var order in new[] { new[] { canonical, alias }, new[] { alias, canonical } })
         {
             var parsed = CommandLineArgs.Parse([order[0], "source.iso", order[1], "source.iso"]);
-            Assert.Equal("source.iso", canonical == "--rac2-iso" ? parsed.GcIso : parsed.UyaIso);
+            Assert.Equal("source.iso", canonical == "--rac2-iso" ? parsed.Rac2Iso : parsed.UyaIso);
             string message = Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse([order[0], "a.iso", order[1], "b.iso"])).Message;
             Assert.Contains(canonical, message); Assert.Contains(alias, message);
         }
@@ -213,13 +213,13 @@ public sealed class CommandLineArgsTests
     public void OmittedDefaultsAndOpaqueValuesRemainCompatible()
     {
         var defaults = CommandLineArgs.Parse([]);
-        Assert.Equal(1, defaults.GcLevel);
+        Assert.Equal(1, defaults.Rac2Level);
         Assert.Null(defaults.CaptureFrame); Assert.Null(defaults.FixedSeed);
         var parsed = CommandLineArgs.Parse(["--fixed-seed", "-2147483648", "--capture-frame", "0", "--gc-level", "17",
             "--destination", "extension:custom-world", "--rac2-iso", "a path with spaces.iso", "--overlay", "custom-layer",
             "--automation", "--smoke"]);
-        Assert.Equal(int.MinValue, parsed.FixedSeed); Assert.Equal(0, parsed.CaptureFrame); Assert.Equal(17, parsed.GcLevel);
-        Assert.Equal("extension:custom-world", parsed.Destination); Assert.Equal("a path with spaces.iso", parsed.GcIso);
+        Assert.Equal(int.MinValue, parsed.FixedSeed); Assert.Equal(0, parsed.CaptureFrame); Assert.Equal(17, parsed.Rac2Level);
+        Assert.Equal("extension:custom-world", parsed.Destination); Assert.Equal("a path with spaces.iso", parsed.Rac2Iso);
         Assert.Equal("custom-layer", parsed.Overlay);
         Assert.Equal(3600, CommandLineArgs.Parse(["--load-movement-state", "state.json", "--replay-forward", "3600"]).ReplayForwardFrames);
     }

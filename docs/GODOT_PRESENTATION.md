@@ -158,7 +158,7 @@ exists only for an avatar provider that explicitly lacks a native selector.
 
 Provider composition is now keyed by `ObpSourceGame`, not by a hard-coded R&C1 lookup. GC and
 UYA both have retained native player state/sequence-selection contracts
-(`GcRatchetSequenceSelection` and `UyaRatchetSequenceSelection`), but neither currently has a
+(`Rac2RatchetSequenceSelection` and `UyaRatchetSequenceSelection`), but neither currently has a
 renderable native player-avatar provider. GC still needs its dedicated Ratchet carrier decoded
 into `PlayerAvatar`; UYA additionally has unresolved special `0xF` player-frame pose bodies.
 Under the [player/world contract](PLAYER_WORLD_CONTRACT.md), the shared entry
@@ -181,7 +181,7 @@ for the retail admission boundary.
 **Dormant skeleton hook:** `RuntimeAnimatedMesh.Skeleton` (`RuntimeSkeleton` —
 joints + parents + per-frame local rotations) is optional and **defaulted null**.
 `DebugOverlay` layer **J** draws bone lines when it's populated; until a decoder
-chain wires `MobyAnimation` / `Rac1MobyPose` output into it, J prints
+chain wires `Rac2MobyAnimation` / `Rac1MobyPose` output into it, J prints
 "no RuntimeSkeleton data".
 
 ## Debug overlays — `OBP.Godot.DebugOverlay`

@@ -56,7 +56,7 @@ public partial class OBPGame
             }
             string model = key == PlayerEquipmentRegistrations.Wrench ? "moby:71" : key == FusionWeaponSession.BombGlove ? "bomb-glove/held" :
                 key.SourceGame == ObpSourceGame.Rac1 ? "moby:" + Rac1WeaponProfiles.Get((Rac1WeaponId)key.NativeItemId).ModelClass :
-                key == FusionWeaponSession.Lancer ? "moby:" + OBP.RAC2.Gameplay.GcLancerProfile.HeldMobyClass : "moby:" + OBP.RAC3.Gameplay.UyaShockCannonProfile.HeldMobyClass;
+                key == FusionWeaponSession.Lancer ? "moby:" + OBP.RAC2.Gameplay.Rac2LancerProfile.HeldMobyClass : "moby:" + OBP.RAC3.Gameplay.UyaShockCannonProfile.HeldMobyClass;
             _equipmentPresentationBindings[key] = EquipmentPresentationBinding.Resolve(item, avatar.Identity, model, socket,
                 PlayerEquipmentSources, sockets, PlayerEquipmentModelAvailable(key), compatible);
         }

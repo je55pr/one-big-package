@@ -83,7 +83,7 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        string? gcPath = args.GcIso;
+        string? rac2Path = args.Rac2Iso;
         string? destinationId = args.Destination;
         string? testScene = args.TestSceneExplicit ? args.TestScene : null;
 
@@ -116,13 +116,13 @@ public partial class SourceManagerBootstrap : Node
 
         if (args.StressSwitch is { } stressSequence)
         {
-            _game.RunGcStressSwitchFromBootstrap(stressSequence);
+            _game.RunRac2StressSwitchFromBootstrap(stressSequence);
             return;
         }
 
-        if (gcPath is not null && (args.DirectLoad || testScene == "player"))
+        if (rac2Path is not null && (args.DirectLoad || testScene == "player"))
         {
-            _game.OpenLegacyGcDestinationFromBootstrap();
+            _game.OpenLegacyRac2DestinationFromBootstrap();
             return;
         }
 
@@ -143,7 +143,7 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        if (testScene is null && gcPath is not null)
+        if (testScene is null && rac2Path is not null)
         {
             // Historical --gc-iso startup used to land on the GC-only planet
             // selector. Preserve the convenience through the neutral Worlds UI.

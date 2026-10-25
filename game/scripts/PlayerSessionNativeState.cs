@@ -24,7 +24,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
     public PlayerEquipmentAssignments Assignments { get; }
     public PlayerLoadoutPolicy LoadoutPolicy { get; }
     public const string Rac1DamageAdapter = "rac1/player-contact/v1", Rac1DamageDescriptor = "rac1/recovered-player-damage/v1",
-        GcDamageAdapter = "rac2/msr1-player-contact/v1", GcDamageDescriptor = "rac2/admitted-integer-nanotech/v1",
+        Rac2DamageAdapter = "rac2/msr1-player-contact/v1", Rac2DamageDescriptor = "rac2/admitted-integer-nanotech/v1",
         AridiaDamageAdapter = "obp/aridia-provisional-contact/v1", AridiaDamageDescriptor = "obp/provisional-damage-one/v1";
 
     public PlayerSessionNativeState(Rac1WeaponInventory initial, int bolts, int seed,
@@ -49,7 +49,7 @@ public sealed class PlayerSessionNativeState : IPlayerSessionStateAdapter
             imported.OxygenMask ? Rac1TraversalEquipmentId.OxygenMask : null, imported.Swingshot ? Rac1TraversalEquipmentId.Swingshot : null }.OfType<Rac1TraversalEquipmentId>())
             Assignments.Enable(PlayerEquipmentRegistrations.Catalog.Find(new SourceWeaponKey(ObpSourceGame.Rac1, (int)gadget))!, true, PlayerEquipmentRegistrations.Catalog);
         Life = new(new("obp/rac1-derived-health/v1", [new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, Rac1DamageAdapter, Rac1DamageDescriptor),
-            new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, GcDamageAdapter, GcDamageDescriptor),
+            new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, Rac2DamageAdapter, Rac2DamageDescriptor),
             new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, AridiaDamageAdapter, AridiaDamageDescriptor)],
             [new(ObpSourceGame.Rac2, OBP.RAC2.Rac2Authority.Primary.BuildId, "rac2/collected-class500-bolt/v1", "obp/bolts")]), new VictimController(Health));
     }

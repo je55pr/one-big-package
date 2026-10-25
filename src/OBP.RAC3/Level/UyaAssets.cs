@@ -108,7 +108,7 @@ public static class UyaAssets
         => ReadClasses(core, core.Header.TieClasses, RcTie.ClassEntrySize, 0x80,
             bytes =>
             {
-                var m = RcTie.ReadClass(bytes, RcTie.GcLayout);
+                var m = RcTie.ReadClass(bytes, RcTie.Rac2Layout);
                 return (
                     m.Positions, m.Uvs, m.Indices, m.TriangleMaterialSlots,
                     m.Materials, m.TriangleMaterialSlots, new bool?[m.TriangleMaterialSlots.Length]);

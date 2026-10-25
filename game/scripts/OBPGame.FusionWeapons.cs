@@ -350,7 +350,7 @@ public partial class OBPGame
 
     private Vector3 FusionAim(Vector3 origin)
     {
-        float range = _fusion!.Selected == FusionWeaponSession.Lancer ? GcLancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
+        float range = _fusion!.Selected == FusionWeaponSession.Lancer ? Rac2LancerProfile.ProjectileRange : UyaShockCannonProfile.RayLength;
         if (OrdinaryPlayerSession)
             return RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
                 .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != ObpSourceGame.Rac1 || target.Key.NativeClassId != 749)
@@ -457,7 +457,7 @@ public partial class OBPGame
                 var clip = lancer.Model.Sequences.Single(s => s.Index == _fusionModelSequence);
                 int frame = _fusionModelAge / 2;
                 if (frame >= clip.Frames.Count) { _fusionModelSequence = 1; frame = 0; }
-                view.Sample(GcLancerPresentation.HeldModel(lancer, _fusionModelSequence, frame), _fusionAssets);
+                view.Sample(Rac2LancerPresentation.HeldModel(lancer, _fusionModelSequence, frame), _fusionAssets);
             }
             else if (_fusionAssets.Cannon is { } cannon)
             {

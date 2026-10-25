@@ -1,0 +1,102 @@
+using OBP.Core;
+using OBP.RAC2.Gameplay;
+using OBP.Runtime;
+
+namespace OBP.Tests;
+
+public sealed class Rac2AranosOpeningDoorTests
+{
+    [Fact]
+    public void DoorStaysClosedAtRetailBoundaryAndOpensStrictlyInsideSix()
+    {
+        var door = new Rac2AranosOpeningDoorSession(Source());
+
+        Assert.False(door.ObservePlayerDistance(Rac2AranosOpeningDoorSession.OpenTriggerDistance));
+        Assert.Equal(Rac2AranosOpeningDoorPhase.Closed, door.Phase);
+        Assert.Equal(0, door.NativeState);
+
+        Assert.True(door.ObservePlayerDistance(
+            Rac2AranosOpeningDoorSession.OpenTriggerDistance - 0.001));
+        Assert.Equal(Rac2AranosOpeningDoorPhase.Opening, door.Phase);
+        Assert.Equal(1, door.NativeState);
+        Assert.Equal(RuntimeObjectAnimationRole.Reaction, door.EntityState.Presentation.AnimationRole);
+    }
+
+    [Fact]
+    public void OpeningSequenceLatchesToNativeStateTwoAfterSixtyTicks()
+    {
+        var door = new Rac2AranosOpeningDoorSession(Source());
+        Assert.True(door.ObservePlayerDistance(5.5));
+
+        for (int tick = 0; tick < Rac2AranosOpeningDoorSession.OpeningNativeTicks - 1; tick++)
+        {
+            Assert.Equal(Rac2AranosOpeningDoorPhase.Opening, door.AdvanceNativeTick());
+        }
+
+        Assert.Equal(Rac2AranosOpeningDoorSession.OpeningNativeTicks - 1, door.OpeningTicks);
+        Assert.Equal(Rac2AranosOpeningDoorPhase.Open, door.AdvanceNativeTick());
+        Assert.Equal(Rac2AranosOpeningDoorSession.OpeningNativeTicks, door.OpeningTicks);
+        Assert.Equal(2, door.NativeState);
+        Assert.Equal(Rac2AranosOpeningDoorPhase.Open, door.AdvanceNativeTick());
+    }
+
+    [Fact]
+    public void OpeningTriggerIsOneShot()
+    {
+        var door = new Rac2AranosOpeningDoorSession(Source());
+
+        Assert.True(door.ObservePlayerDistance(1));
+        Assert.False(door.ObservePlayerDistance(1));
+        Assert.Equal(Rac2AranosOpeningDoorPhase.Opening, door.Phase);
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(-0.01)]
+    public void InvalidPlayerDistanceIsRejected(double distance)
+    {
+        var door = new Rac2AranosOpeningDoorSession(Source());
+        Assert.Throws<ArgumentOutOfRangeException>(() => door.ObservePlayerDistance(distance));
+    }
+
+    [Fact]
+    public void RejectsOtherNativeObjects()
+    {
+        var wrong = Source() with { InstanceIndex = Rac2AranosOpeningDoorSession.OpeningInstanceIndex - 1 };
+        Assert.Throws<InvalidDataException>(() => new Rac2AranosOpeningDoorSession(wrong));
+    }
+
+    [Fact]
+    public void OneShotAnimationFrameSelectionClampsToFinalPose()
+    {
+        var frames = Enumerable.Range(0, 31)
+            .Select(_ => Array.Empty<double>())
+            .ToArray();
+        var clip = new RuntimeObjectAnimationClip(
+            "opening",
+            RuntimeObjectAnimationRole.Reaction,
+            [new RuntimeObjectAnimationSurface(0, frames)],
+            Enumerable.Repeat(1d / 30d, frames.Length).ToArray());
+
+        Assert.Equal(0, clip.FrameIndexAt(0));
+        Assert.Equal(29, clip.FrameIndexAt(0.999));
+        Assert.Equal(30, clip.FrameIndexAt(1.0));
+        Assert.Equal(30, clip.FrameIndexAt(10.0));
+    }
+
+    private static RuntimeDynamicObject Source()
+    {
+        var matrix = new double[16];
+        matrix[0] = matrix[5] = matrix[10] = matrix[15] = 1d;
+        return new RuntimeDynamicObject(
+            ObpSourceGame.Rac2,
+            Rac2AranosOpeningDoorSession.NativeClassId,
+            Rac2AranosOpeningDoorSession.OpeningInstanceIndex,
+            1,
+            "moby-class-2755",
+            "gc:0:166",
+            new RuntimeObjectTransform(matrix),
+            Array.Empty<RuntimeObjectMesh>());
+    }
+}

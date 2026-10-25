@@ -38,16 +38,16 @@ public sealed class MaterialRetailEvidenceTests
     }
 
     [SkippableFact]
-    public void GcLevel1_TieMaterialCensusIsPayloadFreeAndPinned()
+    public void Rac2Level1_TieMaterialCensusIsPayloadFreeAndPinned()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var fs = Iso9660Filesystem.Open(reader);
         var wad = fs.OpenFile("/G/LEVEL1.WAD") ?? throw new FileNotFoundException("/G/LEVEL1.WAD");
-        var header = GcLevelWad.ReadHeader(wad);
-        var core = GcLevelCore.Open(GcLevelWad.RequireLump(wad, header, 0));
-        var classes = GcTie.ReadClasses(core);
+        var header = Rac2LevelWad.ReadHeader(wad);
+        var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
+        var classes = Rac2Tie.ReadClasses(core);
 
         string summary = Summarize(classes.Values.SelectMany(c => c.Mesh.Materials));
 

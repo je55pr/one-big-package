@@ -9,7 +9,7 @@
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
     "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate.",
-    "Hash": "1fc0b9f5c5ad7cb20c1d8942440d4d548030a765ca78973ac0beda9b5025c0b5"
+    "Hash": "70cc0d9ce6ac2278848dc22834ab80136f3a7d6729a4668ec97a45844f31fc7a"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
@@ -48,16 +48,16 @@
     "Hash": "fe80407ba30b0cd562c561d2ce1e1e58322f657f3c96a0142ea9ca932ff1bae7"
   },
   {
-    "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.GetGcGameplayHudLine()",
+    "Key": "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame.GetRac2GameplayHudLine()",
     "Kind": "adapter",
     "Reason": "Optional world debug overlay showing original GC actor/health probes; not the common PlayerHud projection.",
-    "Hash": "00ccbbbf98f96b373638b382faf69c0da3187e56da7d2a4ecf5eda7eb9928270"
+    "Hash": "573bfaf9b9bf0f42bb030b3bbf648a2a5e889a0e3feb90551536103ab264cffe"
   },
   {
-    "Key": "game/scripts/OBPGame.GcGameplay.cs::OBPGame.TickGcGameplay(double)",
+    "Key": "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame.TickRac2Gameplay(double)",
     "Kind": "adapter",
     "Reason": "Original GC world lift/door context remains here; ordinary class-2827 cooldown/chase/attack ticks moved to the source-registered 60-Hz actor group. ActorRuntimeSetTests and TrilogyGameplaySmoke cover clock ownership and mixed contexts.",
-    "Hash": "3160c96062685759d1466671330c36f0b5ea3640c6ff1df4ee15f0ce703ddfeb"
+    "Hash": "79a3f08772f4c7673590ea187a33cfa099b666db233029dc58c6314198a8fe92"
   },
   {
     "Key": "game/scripts/OBPGame.PlayerAvatar.cs::OBPGame.HideAuthoredWorldRatchetPresentation()",

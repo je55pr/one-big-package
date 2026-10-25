@@ -152,30 +152,30 @@ public sealed class PlayerCapabilitiesTests
     private static ActorInstanceKey Actor(ObpSourceGame game, int index = 1, long lease = 1) => new("world", lease, new(game, 749, index));
     private static void Register(PlayerSessionNativeState native, ActorInstanceKey actor, Func<bool>? alive = null)
     {
-        string adapter = actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.GcDamageAdapter;
-        string descriptor = actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.GcDamageDescriptor;
+        string adapter = actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.Rac2DamageAdapter;
+        string descriptor = actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.Rac2DamageDescriptor;
         native.Life.RegisterActor(new(actor, new(actor.Target.SourceGame, Sources[actor.Target.SourceGame], "moby:749"), adapter, null,
             [new(descriptor, CapabilityAdmission.Ready)]), alive ?? (() => true));
     }
     private static PlayerAttackIntent Attack(ActorInstanceKey actor, long sequence = 1, double amount = 1) => new(actor, Sources[actor.Target.SourceGame],
-        actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.GcDamageAdapter,
-        actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.GcDamageDescriptor, sequence, amount, 1);
+        actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageAdapter : PlayerSessionNativeState.Rac2DamageAdapter,
+        actor.Target.SourceGame == ObpSourceGame.Rac1 ? PlayerSessionNativeState.Rac1DamageDescriptor : PlayerSessionNativeState.Rac2DamageDescriptor, sequence, amount, 1);
 
     [Fact]
     public void SameNumberedAttackersUseOneVictimAndNativeProtectionThenTrueDeathAndRespawn()
     {
         var native = Native(); native.Weapons.Select(FusionWeaponSession.Lancer);
-        native.Life.BeginWorld("world", 1); var rac1 = Actor(ObpSourceGame.Rac1); var gc = Actor(ObpSourceGame.Rac2); Register(native, rac1); Register(native, gc);
+        native.Life.BeginWorld("world", 1); var rac1 = Actor(ObpSourceGame.Rac1); var rac2 = Actor(ObpSourceGame.Rac2); Register(native, rac1); Register(native, rac2);
         Assert.True(native.Life.Apply(Attack(rac1)).Applied); Assert.Equal(3, native.Life.Capture().Current);
         Assert.Equal(PlayerIntakeStatus.Duplicate, native.Life.Apply(Attack(rac1)).Status);
-        Assert.Equal(PlayerIntakeStatus.Protected, native.Life.Apply(Attack(gc)).Status);
+        Assert.Equal(PlayerIntakeStatus.Protected, native.Life.Apply(Attack(rac2)).Status);
         for (int i = 0; i < Rac1RatchetNanotechSession.EnemyHitProtectionTicks; i++) native.Life.TickNative();
-        Assert.True(native.Life.Apply(Attack(gc, 2, 3)).Applied); Assert.False(native.Life.Alive); Assert.Equal(0, native.Life.Capture().Current);
+        Assert.True(native.Life.Apply(Attack(rac2, 2, 3)).Applied); Assert.False(native.Life.Alive); Assert.Equal(0, native.Life.Capture().Current);
         Assert.Equal(PlayerIntakeStatus.DeadPlayer, native.Life.Apply(Attack(rac1, 2)).Status);
         native.Life.Heal(1); Assert.False(native.Life.Alive);
         native.Life.Respawn(); Assert.True(native.Life.Alive); Assert.Equal(4, native.Life.Capture().Current); Assert.Equal(1, native.Life.LifeGeneration);
         Assert.Equal(42, native.Wallet.Balance); Assert.Equal(FusionWeaponSession.Lancer, native.Weapons.Selected);
-        native.Life.BeginWorld("next", 2); Assert.Equal(PlayerIntakeStatus.StaleLease, native.Life.Apply(Attack(gc, 3)).Status);
+        native.Life.BeginWorld("next", 2); Assert.Equal(PlayerIntakeStatus.StaleLease, native.Life.Apply(Attack(rac2, 3)).Status);
     }
 
     [Theory]
@@ -218,12 +218,12 @@ public sealed class PlayerCapabilitiesTests
     }
 
     [Fact]
-    public void NativeGcDamageRoundingHappensInTheSourceBeforeSharedAdmission()
+    public void NativeRac2DamageRoundingHappensInTheSourceBeforeSharedAdmission()
     {
-        Assert.Equal(0, GcRatchetNanotechSession.RoundDamageHpLikeRetail(.5f));
-        Assert.Equal(2, GcRatchetNanotechSession.RoundDamageHpLikeRetail(1.5f));
+        Assert.Equal(0, Rac2RatchetNanotechSession.RoundDamageHpLikeRetail(.5f));
+        Assert.Equal(2, Rac2RatchetNanotechSession.RoundDamageHpLikeRetail(1.5f));
         var native = Native(); native.Life.BeginWorld("world", 1); var actor = Actor(ObpSourceGame.Rac2); Register(native, actor);
-        Assert.True(native.Life.Apply(Attack(actor, amount: GcRatchetNanotechSession.RoundDamageHpLikeRetail(1.5f))).Applied);
+        Assert.True(native.Life.Apply(Attack(actor, amount: Rac2RatchetNanotechSession.RoundDamageHpLikeRetail(1.5f))).Applied);
         Assert.Equal(2, native.Life.Capture().Current);
     }
 

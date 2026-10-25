@@ -61,7 +61,7 @@ public class VerificationTests
     }
 
     [Fact]
-    public void ManifestLoader_ReadsTheCanonicalGcManifest()
+    public void ManifestLoader_ReadsTheCanonicalRac2Manifest()
     {
         var m = AuthorityManifest.Load(Path.Combine(RepoPaths.Manifests, "rac2-ntscu-v1.01.json"));
         Assert.Equal("rac2-ntscu-v1.01", m.BuildId);

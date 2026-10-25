@@ -43,6 +43,7 @@ public sealed class SourceNamingPolicyTests
     [InlineData("src/OBP.RAC2/Gameplay/Health.cs", "namespace OBP.RAC2.Gameplay; public class UniversalHealth {}")]
     [InlineData("src/OBP.RAC3/UyaFile.cs", "namespace OBP.RAC3; public class Rac3Actor {}")]
     [InlineData("game/scripts/GcNewController.cs", "namespace OneBigPackage; public class GcNewController {}")]
+    [InlineData("game/scripts/OBPGame.GcNewPartial.cs", "namespace OneBigPackage; public partial class OBPGame {}")]
     [InlineData("src/OBP.RAC2/Rac2Delegates.cs", "namespace OBP.RAC2; public delegate void GcNewHandler();")]
     [InlineData("src/OBP.RAC2/Rac2Session.cs", "namespace OBP.RAC2; public class Rac2Session { public class GcNestedAlias {} }")]
     [InlineData("src/OBP.Runtime/Player.cs", "namespace OBP.GC; public class Player {}")]

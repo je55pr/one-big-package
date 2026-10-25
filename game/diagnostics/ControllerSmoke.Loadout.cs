@@ -14,8 +14,8 @@ public partial class ControllerSmoke
         for (int page = 0; page < 2; page++) { await FocusButton("NEXT"); await Press(JoyButton.A); }
         Require(menu.UniversalPage == 2, "Mixed weapon catalogue has no controller-accessible third page.");
         var args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
-        string id = args.GcIso is null ? "rac1/item/10" : "rac2/item/30";
-        if (args.GcIso is not null)
+        string id = args.Rac2Iso is null ? "rac1/item/10" : "rac2/item/30";
+        if (args.Rac2Iso is not null)
         {
             ulong deadline = Time.GetTicksMsec() + 60_000;
             while (!_game.ReadPlayerEquipment().Single(entry => entry.Definition.Id == id).Selectable && Time.GetTicksMsec() < deadline)

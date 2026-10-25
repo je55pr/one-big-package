@@ -45,7 +45,7 @@ public partial class OBPGame
             }
 
             int? lvl = tok.StartsWith("rac", System.StringComparison.OrdinalIgnoreCase)
-                ? null : GcPlanetCatalogue.Resolve(tok);
+                ? null : Rac2PlanetCatalogue.Resolve(tok);
             string? destinationId = tok.StartsWith("rac", System.StringComparison.OrdinalIgnoreCase)
                 ? tok : lvl is null ? null : $"rac2:LEVEL{lvl.Value}";
             if (destinationId is null)

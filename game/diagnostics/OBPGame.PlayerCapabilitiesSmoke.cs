@@ -183,12 +183,12 @@ public partial class OBPGame
         Require(OnDestinationChosen(TrilogyWorldProviders.Resolve("rac2:LEVEL0")!), "Aranos source combat entry failed");
         await PhysicsFramesAsync(3);
         var native = _playerNative!;
-        Require(_gcOpeningMsr1.Count > 0, "no admitted GC attack controller");
-        var hostile = _gcOpeningMsr1.Values.OrderBy(session => session.Hostile.InstanceIndex).First();
+        Require(_rac2OpeningMsr1.Count > 0, "no admitted GC attack controller");
+        var hostile = _rac2OpeningMsr1.Values.OrderBy(session => session.Hostile.InstanceIndex).First();
         _player!.PlaytestInputFilter = _ => default;
         _player.ApplyDevelopmentReset(hostile.Node.Root.GlobalPosition + new Vector3(1, 0, 0));
         for (int i = 0; i < 600 && native.Life.Capture().Current == 4; i++) await PhysicsFramesAsync(1);
-        Require(native.Life.Capture().Current < 4 && _gcRatchetNanotech.Current == 4, "native GC hostile did not damage the selected shared victim");
+        Require(native.Life.Capture().Current < 4 && _rac2RatchetNanotech.Current == 4, "native GC hostile did not damage the selected shared victim");
         Require(_hudState.Current.Health?.Current == native.Life.Capture().Current, "GC hit did not project into the shared HUD");
         GD.Print("[player-capabilities-smoke] source GC MSR I attack reached the shared R&C1-derived victim/HUD");
         Require(EnterFusionLab(), "health lifecycle Lab entry failed");

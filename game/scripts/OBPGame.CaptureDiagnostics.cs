@@ -21,7 +21,7 @@ public partial class OBPGame
             try
             {
                 using var reader = new FileRandomAccessReader(isoPath);
-                var verified = GcIsoLoad.Verify(reader, progress);
+                var verified = Rac2IsoLoad.Verify(reader, progress);
                 _verifyOutcome = $"✓ authority build verified — {verified.Serial} {verified.Revision}";
             }
             catch (System.Exception ex)
