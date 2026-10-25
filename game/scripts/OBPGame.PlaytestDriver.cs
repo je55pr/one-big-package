@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Godot;
 using OBP.Godot;
+using OBP.Fusion;
 using OBP.RAC1.Camera;
 using OBP.Runtime.Diagnostics;
 
@@ -19,6 +20,7 @@ public partial class OBPGame
         private readonly List<PlaytestCommand> _pendingCommands = [], _commands = [], _observedCommands = [];
         private readonly List<PlaytestCommand> _stagedCommands = [];
         private bool _stagingCommands;
+        private readonly ReplayWorldTransitionStage _worldTransitionStage = new();
         private int _matchedCommands;
 
         internal void RecordSessionCommand(PlaytestCommand command)
@@ -180,15 +182,15 @@ public partial class OBPGame
                 {
                     _bufferedStep ??= Reader.ReadNextStep();
                     if (_bufferedStep is null) { CompleteReplay(); return; }
-                    // An external world-browser command can retire the world
-                    // between Physics and Process. Stage that operation before
-                    // waiting for its next recorded phase, including any IO gap.
-                    if (!PreparingWorld && _bufferedStep.Kind != kind && _bufferedStep.Commands.Any(command => !command.After && command.Kind == "destination"))
+                    // Stage before readiness even on a matching callback. Yield
+                    // once so the new world's nodes/physics can register while
+                    // its player and simulation clocks remain stopped.
+                    _stagingCommands = true;
+                    try
                     {
-                        _stagingCommands = true;
-                        try { foreach (var command in _bufferedStep.Commands.Where(command => !command.After)) Game.ApplyCaptureCommand(command); }
-                        finally { _stagingCommands = false; }
+                        if (_worldTransitionStage.Stage(_bufferedStep, Game.ApplyCaptureCommand)) return;
                     }
+                    finally { _stagingCommands = false; }
                 }
                 if (PreparingWorld)
                 {

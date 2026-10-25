@@ -34,13 +34,13 @@ $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 if (-not (Test-Path -LiteralPath $godot)) { & (Join-Path $PSScriptRoot 'bootstrap-godot.ps1') -Platform win64 | Out-Null }
 $results = New-Object System.Collections.Generic.List[object]
 function Invoke-GateGame {
-    param([string]$Name, [string[]]$Options, [string]$Expected)
+    param([string]$Name, [string[]]$Options, [string]$Expected, [int]$ExpectedExitCode = 0)
     $arguments = @('--headless', '--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--fixed-fps', '60',
         '--', '--rac1-iso', $Rac1Iso, '--gc-iso', $GcIso, '--uya-iso', $UyaIso, '--fixed-seed', '1440') + $Options
     $log = Join-Path $Out ($Name + '.log')
     $errorLog = Join-Path $Out ($Name + '.err.log')
     $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $arguments -StandardOutputPath $log -StandardErrorPath $errorLog -WorkingDirectory $root
-    $passed = $code -eq 0 -and (Select-String -LiteralPath $log -SimpleMatch $Expected -Quiet)
+    $passed = $code -eq $ExpectedExitCode -and (Select-String -LiteralPath $log -SimpleMatch $Expected -Quiet)
     $results.Add([pscustomobject]@{ Phase = $Name; Passed = $passed; ExitCode = $code; Log = ($Name + '.log') })
     if (-not $passed) { throw "Reconciliation phase $Name failed (exit $code). Inspect its local logs." }
     Write-Host "$Name passed"
@@ -59,6 +59,12 @@ try {
         & dotnet build (Join-Path $root 'game/OneBigPackage.csproj') -c Debug --no-restore -warnaserror *> (Join-Path $Out 'game-build.log')
         if ($LASTEXITCODE -ne 0) { throw 'Godot C# build failed.' }
     }
+    $invalidProfilePath = Join-Path $Out 'invalid-profile.json'
+    $invalidProfileText = '{"Version":1,"Player":null}'
+    [IO.File]::WriteAllText($invalidProfilePath, $invalidProfileText)
+    Invoke-GateGame 'invalid-profile-unwritable-report' @('--profile', $invalidProfilePath, '--bug-capture', '--bug-report-smoke',
+        '--bug-report-inbox', (Join-Path $Out 'invalid-inbox'), '--playtest-report', $Out) 'reason=bug-report-invalid exitCode=2' 2
+    if ([IO.File]::ReadAllText($invalidProfilePath) -ne $invalidProfileText) { throw 'Invalid profile was overwritten during startup rejection.' }
     Invoke-GateGame 'native-rac1' @('--destination', 'rac1:LEVEL0', '--rac1-veldin-play-smoke') 'reason=rac1-veldin-play-smoke-pass'
     $legacy = Join-Path $Out 'legacy.run.jsonl.gz'
     Invoke-GateGame 'legacy-record' @('--destination', 'rac1:LEVEL0', '--record-playtest', $legacy, '--playtest-smoke') '[playtest] SAVED'

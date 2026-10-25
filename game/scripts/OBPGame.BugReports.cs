@@ -86,12 +86,17 @@ public partial class OBPGame
             if (_args.BugCapture && !_args.BugReportSmoke && DisplayServer.GetName() != "headless")
                 OS.Alert(error.Message, "OBP Bug Capture could not start");
             GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
-            if (_args.PlaytestReport is { } output)
+            try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
-                File.WriteAllText(output, JsonSerializer.Serialize(new { Result = "invalid", Error = error.Message }));
+                if (_args.PlaytestReport is { } output)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
+                    File.WriteAllText(output, JsonSerializer.Serialize(new { Result = "invalid", Error = error.Message }));
+                }
             }
-            ApplicationLifecycle.RequestQuit(this, "bug-report-invalid", 2);
+            catch (Exception reportError) when (reportError is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
+            { GD.PrintErr("[bug-report] startup report unavailable: " + reportError.Message); }
+            finally { ApplicationLifecycle.RequestQuit(this, "bug-report-invalid", 2); }
             return false;
         }
     }
