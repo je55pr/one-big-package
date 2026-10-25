@@ -182,8 +182,8 @@
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.ConfigureUyaGameplay(RuntimeWorld,RuntimeWorldScene.Result)",
     "Kind": "adapter",
-    "Reason": "Register original-world UYA native actors/context; no player-global controller/menu selection.",
-    "Hash": "85b624c132ebab944d590b00d71ceb5720092d970d52c2d224d6790841523301"
+    "Reason": "Register original-world UYA native actors/context; state and placement admission is atomic, covered by UyaClass5821ActorTests. No player-global controller/menu selection.",
+    "Hash": "08a42c85a744f02f9db669a346eac70c5da03bab7c65bcb5807f80dcabf207ce"
   },
   {
     "Key": "game/scripts/OBPGame.UyaGameplay.cs::OBPGame.GetUyaGameplayHudLine()",
