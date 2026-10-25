@@ -5,7 +5,7 @@ namespace OBP.RAC3.Gameplay;
 
 /// <summary>
 /// Atomic admission of the recovered TABLE1 profile and its native placement.
-/// Parsing and source-native predicates complete before a host can register it.
+/// Parsing and source-native predicates complete before a host can publish an audit entry.
 /// </summary>
 public sealed record Rac3Class5821Admission
 {
