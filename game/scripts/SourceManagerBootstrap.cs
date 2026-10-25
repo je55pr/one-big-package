@@ -5,7 +5,7 @@ namespace OneBigPackage;
 
 /// <summary>
 /// Scene-level startup/input adapter for the neutral trilogy navigation stack.
-/// It attaches explicit source arguments, selects the requested startup surface,
+/// It checks resolved source readiness, selects the requested startup surface,
 /// and intercepts navigation input before player/world handlers consume it.
 /// </summary>
 public partial class SourceManagerBootstrap : Node
@@ -83,27 +83,12 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        string? rac1Path = args.Rac1Iso;
         string? gcPath = args.GcIso;
-        string? uyaPath = args.UyaIso;
         string? destinationId = args.Destination;
         string? testScene = args.TestSceneExplicit ? args.TestScene : null;
 
-        if (rac1Path is not null)
-        {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac1, rac1Path,
-                persist: !args.ControllerSmoke && !args.Rac1PlayerAudioSmoke && !args.BugReportSmoke && args.ReplayBugReport is null);
-        }
-        if (gcPath is not null)
-        {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac2, gcPath, persist: !args.ControllerSmoke);
-        }
-        if (uyaPath is not null)
-        {
-            _game.RememberCommandLineSource(ObpSourceGame.Rac3, uyaPath, persist: !args.ControllerSmoke);
-        }
-
         if (args.ControllerSmoke) return;
+        if (!_game.RequireStartupSetup()) return;
 
         if (args.LoadMovementState is not null)
         {
@@ -142,6 +127,7 @@ public partial class SourceManagerBootstrap : Node
         }
 
         if (!args.TestSceneExplicit && _game.TryResumeSharedProfileFromBootstrap()) return;
+        if (_game.ProfileRecoveryRequired) { _game.ShowSourceManagerFromBootstrap(); return; }
 
         if (testScene == "worlds")
         {
@@ -149,10 +135,8 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
-        // Interactive executable/editor launch with no explicit test scene now
-        // lands on the trilogy source manager. Deterministic harnesses always
-        // pass --test-scene and therefore retain their existing smoke/player
-        // behaviour. --test-scene picker is the deterministic source-screen path.
+        // Explicit test scenes retain their diagnostic startup surfaces.
+        // --test-scene picker is the deterministic source-screen path.
         if (testScene == "picker")
         {
             _game.ShowSourceManagerFromBootstrap();
@@ -170,15 +154,15 @@ public partial class SourceManagerBootstrap : Node
         if (testScene is null)
         {
             // A plain double-click / "obp" launch: show the gamey title first,
-            // then fall through to Game Sources. --skip-title bypasses it.
+            // then continue to World Select. --skip-title bypasses it.
             if (args.SkipTitle)
             {
-                _game.ShowSourceManagerFromBootstrap();
+                _game.ShowDestinationSelectorFromBootstrap();
                 return;
             }
 
             var title = new TitleScreen();
-            title.Dismissed += () => _game?.ShowSourceManagerFromBootstrap();
+            title.Dismissed += () => _game?.ShowDestinationSelectorFromBootstrap();
             _game.AddChild(title);
         }
     }

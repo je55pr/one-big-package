@@ -103,6 +103,7 @@ public partial class OBPGame : Node3D
         }
 
         BuildSkeleton();
+        if (!InitializeStartupSources()) return;
 
         // Dedicated deterministic fixture through the same playable Lab host
         // used by the ordinary World Select button (not the --compose viewer).
@@ -162,6 +163,7 @@ public partial class OBPGame : Node3D
     public override void _Process(double delta)
     {
         _frame++;
+        TickSourceSetup(delta);
         TickFusionPreparation();
         TickActorPreparation();
         TickSharedProfile(delta);

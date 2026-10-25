@@ -235,6 +235,25 @@ the unreadable primary. If both copies are invalid, setup reports repair rather
 than replacing them during loading. `--source-config <path>` isolates this
 document for diagnostics; it does not change source/build validation.
 
+Ordinary startup and every world-entry route require the exact supported R&C1,
+GC and UYA authorities together. Partial, missing or replaced sources route to
+repair-only setup; the playable Lab uses the same prerequisite. `--skip-title`
+does not bypass it. A recovered but unreadable primary config requires an
+explicit repair action before ordinary play. Fully ready startup can resume the
+shared profile or continue through title/world selection. Source loss retires
+the world and suspends profile writes while preserving player-global state.
+
+Readiness uses cheap existence/stamp checks and bounded re-identification when a
+file changes; it never adds an unconditional full-ISO hash. Explicit test scenes,
+source/parity harnesses and `--diagnostic-sources` can use partial sources without
+changing the selected player provider. Headless/automation alone grants no
+exemption and a blocked automated entry exits 2. The ordinary reconciliation and
+`--source-setup-check` harnesses retain the full trilogy requirement.
+`tools/test-trilogy-setup.ps1` covers partial/complete setup, config repair,
+diagnostic access and live detachment with profile preservation, always headless.
+Its source-loss check also verifies that repair cancels an uncommitted campaign
+transfer without advancing the campaign's current level.
+
 `OBP.Godot.CaptureHarness` is the primitive: settle N frames → one
 `FramePostDraw` → grab the viewport → write a PNG + a JSON sidecar of the
 caller's metadata, with a watchdog. Both capture paths use it.

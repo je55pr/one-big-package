@@ -58,6 +58,7 @@ public partial class OBPGame
         }
 
         _sources = new ObpSourceLibrary(TrilogySourceDefinitions.All);
+        _sourceReadiness = new(_sources, TrilogySourceDefinitions.All);
         _sourceConfigPath = _args.SourceConfigPath ?? ProjectSettings.GlobalizePath("user://sources.json");
         EnsureRac1CampaignPersistenceInitialized();
         _sourcesInitialized = true;
@@ -74,6 +75,7 @@ public partial class OBPGame
         try
         {
             var read = ObpSourceLibrary.ReadConfig(_sourceConfigPath);
+            _sourceConfigNeedsRepair = read.Kind is DocumentReadKind.Backup or DocumentReadKind.Rejected;
             saved = read.Value ?? [];
             if (read.Problem is not null)
             {
@@ -145,6 +147,7 @@ public partial class OBPGame
             if (persist)
             {
                 _sources.SaveConfig(_sourceConfigPath);
+                _sourceConfigNeedsRepair = false;
                 _sourceConfigWarning = null;
             }
 
@@ -204,10 +207,16 @@ public partial class OBPGame
         ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _sourceManager?.QueueFree();
-        _sourceManager = new SourceManagerUi { DebugOutputEnabled = _debugOutputEnabled };
+        _sourceManager = new SourceManagerUi
+        {
+            DebugOutputEnabled = _debugOutputEnabled,
+            Readiness = () => _sourceReadiness.Evaluate(),
+            DiagnosticSources = _diagnosticSourceAccess,
+            ConfigNeedsRepair = () => _sourceConfigNeedsRepair,
+        };
         _sourceManager.SelectRequested += OpenSourcePicker;
         _sourceManager.ForgetRequested += ForgetSource;
-        _sourceManager.BrowseWorldsRequested += BrowseWorlds;
+        _sourceManager.BrowseWorldsRequested += CompleteSourceSetup;
         _sourceManager.ControllerSettingsRequested += ShowControllerSettingsFromMenu;
         _sourceManager.QuitRequested += () => ApplicationLifecycle.RequestQuit(this, "source-menu-quit");
         AddChild(_sourceManager);
@@ -262,6 +271,7 @@ public partial class OBPGame
         try
         {
             _sources.SaveConfig(_sourceConfigPath);
+            _sourceConfigNeedsRepair = false;
             _sourceConfigWarning = null;
             _sourceManager?.Refresh(_sources);
             _sourceManager?.SetStatus($"Forgot {TrilogySourceDefinitions.All.First(d => d.Game == game).DisplayName}. The retail file itself was not changed.");

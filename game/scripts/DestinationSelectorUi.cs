@@ -64,7 +64,7 @@ public partial class DestinationSelectorUi : CanvasLayer
 
         var fusionButton = new Button
         {
-            Text = "  OBP FUSION LAB   |   PLAYABLE GREYBOX / NO GAME SOURCE REQUIRED",
+            Text = "  OBP FUSION LAB   |   PLAYABLE GREYBOX / SHARED TRILOGY SESSION",
             Alignment = HorizontalAlignment.Left,
             CustomMinimumSize = new Vector2(0, 62),
             FocusMode = Control.FocusModeEnum.All,

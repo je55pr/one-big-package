@@ -37,6 +37,7 @@ public partial class OBPGame
     private bool EnterWorld(string destinationId, Func<RuntimeWorld> load, ObpDestination? nativeDestination,
         string? sourcePath, FusionLabDefinition? lab = null)
     {
+        if (!RequireOrdinarySourceSetup("world entry")) return false;
         RuntimeWorldScene.Result? preparedScene = null;
         bool activating = false;
         try
@@ -62,6 +63,11 @@ public partial class OBPGame
             PrepareSelectedPlayerAssets();
             if (SourceFileStamp(sourcePath) != worldSourceStamp)
                 throw new InvalidDataException("The world source changed during preparation. Reattach it in Game Sources.");
+            if (!RequireOrdinarySourceSetup("world activation"))
+            {
+                preparedScene.Root.Free();
+                return false;
+            }
             var staged = preparedScene;
             _worldEntries.Commit(plan, new EntryHost(entry =>
             {
@@ -87,6 +93,7 @@ public partial class OBPGame
                 StartRequestedSourceVerification(nativeDestination, sourcePath!);
             }
             SaveSharedProfile("world transition");
+            if (_args.SourceSetupCheck && _worldSwitches == 1) _ = RunSourceSetupCheckAsync();
             if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
             _playtest?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();

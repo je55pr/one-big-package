@@ -33,7 +33,7 @@
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
     "Kind": "adapter",
     "Reason": "Resolve the native world provider and its own attached source, not player assets.",
-    "Hash": "0742b5cc4cb30659ffa0f52ac550ad5a5752f139c678b4fecc6ba73d0d2d03d7"
+    "Hash": "2c36c42bcee5a1d74254e1617eab181e3581fc4ded15d87111b0945e42e2d593"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TravelRac1CampaignTo(int)",

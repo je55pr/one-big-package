@@ -23,6 +23,8 @@ public sealed record CommandLineArgs
     public bool FusionSmoke { get; init; }
     public bool RetailParity { get; init; }
     public bool DiagnosticPlayer { get; init; }
+    public bool DiagnosticSources { get; init; }
+    public bool SourceSetupCheck { get; init; }
     public bool PlayerSessionSmoke { get; init; }
     public bool PlayerCapabilitiesSmoke { get; init; }
     public bool TrilogyGameplaySmoke { get; init; }
@@ -251,6 +253,8 @@ public sealed record CommandLineArgs
                 "--destination" => result with { Destination = Next() },
                 "--retail-parity" => result with { RetailParity = true },
                 "--diagnostic-player" => result with { DiagnosticPlayer = true },
+                "--diagnostic-sources" => result with { DiagnosticSources = true },
+                "--source-setup-check" => result with { SourceSetupCheck = true },
                 "--player-session-smoke" => result with { PlayerSessionSmoke = true },
                 "--player-capabilities-smoke" => result with { PlayerCapabilitiesSmoke = true },
                 "--trilogy-gameplay-smoke" => result with { TrilogyGameplaySmoke = true },
