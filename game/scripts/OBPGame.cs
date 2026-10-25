@@ -61,7 +61,14 @@ public partial class OBPGame : Node3D
     {
         ApplicationLifecycle.InstallWindowCloseInterception(GetTree());
         ApplicationLifecycle.SetQuitPreparation(PrepareForQuitAsync);
-        _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        try { _args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs()); }
+        catch (ArgumentException error)
+        {
+            GD.PrintErr("[cli] " + error.Message);
+            GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
+            ApplicationLifecycle.RequestQuit(this, "cli-invalid", 2);
+            return;
+        }
         if (!InitializeReplayBookmark()) return;
         if (_args.FusionTest && _args.Destination is null) _args = _args with { Destination = "rac1:LEVEL0" };
         if (!InitializeBugReporting()) return;

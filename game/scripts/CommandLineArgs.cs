@@ -188,20 +188,42 @@ public sealed record CommandLineArgs
 
     public static CommandLineArgs Parse(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
         var result = new CommandLineArgs();
         for (int i = 0; i < args.Length; i++)
         {
             string a = args[i];
-            string? Next() => i + 1 < args.Length ? args[++i] : null;
+            string Next()
+            {
+                if (i + 1 >= args.Length || string.IsNullOrEmpty(args[i + 1]) || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+                    throw new ArgumentException(a + " requires a value.");
+                return args[++i];
+            }
+            int NextInt(int minimum = int.MinValue, int maximum = int.MaxValue)
+            {
+                string value = Next();
+                if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number))
+                    throw new ArgumentException(a + " requires a 32-bit integer.");
+                if (number < minimum || number > maximum)
+                    throw new ArgumentException($"{a} requires a value from {minimum} through {maximum}.");
+                return number;
+            }
+            string SourceIso(string? existing, string flags)
+            {
+                string value = Next();
+                if (existing is not null && existing != value)
+                    throw new ArgumentException(flags + " specify conflicting source paths.");
+                return value;
+            }
 
             result = a switch
             {
-                "--test-scene" => result with { TestScene = Next() ?? result.TestScene, TestSceneExplicit = true },
-                "--capture-frame" => result with { CaptureFrame = ParseInt(Next()) },
+                "--test-scene" => result with { TestScene = Next(), TestSceneExplicit = true },
+                "--capture-frame" => result with { CaptureFrame = NextInt() },
                 "--capture-out" => result with { CaptureOut = Next() },
-                "--fixed-seed" => result with { FixedSeed = ParseInt(Next()) },
-                "--record-playtest" => result with { RecordPlaytest = Next() ?? string.Empty },
-                "--replay-playtest" => result with { ReplayPlaytest = Next() ?? string.Empty },
+                "--fixed-seed" => result with { FixedSeed = NextInt() },
+                "--record-playtest" => result with { RecordPlaytest = Next() },
+                "--replay-playtest" => result with { ReplayPlaytest = Next() },
                 "--playtest-report" => result with { PlaytestReport = Next() },
                 "--playtest-allow-build-change" => result with { PlaytestAllowBuildChange = true },
                 "--playtest-smoke" => result with { PlaytestSmoke = true },
@@ -216,14 +238,14 @@ public sealed record CommandLineArgs
                 "--playtest-inspect-marker" => result with { PlaytestInspectMarker = true },
                 "--movement-state-file" => result with { MovementStatePath = Next() },
                 "--load-movement-state" => result with { LoadMovementState = Next() },
-                "--replay-forward" => result with { ReplayForwardFrames = ParseInt(Next()) ?? -1 },
+                "--replay-forward" => result with { ReplayForwardFrames = NextInt(1, 3600) },
                 "--replay-out" => result with { ReplayOut = Next() },
                 "--replay-profile" => result with { ReplayProfile = true },
                 "--movement-state-smoke" => result with { MovementStateSmoke = true },
-                "--gc-iso" => result with { GcIso = Next() },
-                "--rac1-iso" => result with { Rac1Iso = Next() },
-                "--uya-iso" => result with { UyaIso = Next() },
-                "--gc-level" => result with { GcLevel = ParseInt(Next()) ?? result.GcLevel },
+                "--rac2-iso" or "--gc-iso" => result with { GcIso = SourceIso(result.GcIso, "--rac2-iso/--gc-iso") },
+                "--rac1-iso" => result with { Rac1Iso = SourceIso(result.Rac1Iso, "--rac1-iso") },
+                "--rac3-iso" or "--uya-iso" => result with { UyaIso = SourceIso(result.UyaIso, "--rac3-iso/--uya-iso") },
+                "--gc-level" => result with { GcLevel = NextInt() },
                 "--planet" => result with { Planet = Next(), DirectLoad = true },
                 "--destination" => result with { Destination = Next() },
                 "--retail-parity" => result with { RetailParity = true },
@@ -284,14 +306,22 @@ public sealed record CommandLineArgs
                 "--compose-worlds" => result with { ComposeWorlds = Next() },
                 "--compose-solve" => result with { ComposeSolve = "rigid" },
                 "--compose-solve-scale" => result with { ComposeSolve = "scale" },
-                "--compose-reload" => result with { ComposeReload = ParseInt(Next()) },
-                _ => result,
+                "--compose-reload" => result with { ComposeReload = NextInt(1) },
+                // Existing diagnostic scenes also consume these automation markers.
+                "--automation" or "--smoke" => result,
+                _ => throw new ArgumentException("Unknown OBP argument: " + a + ". OBP options follow Godot's -- separator."),
             };
         }
 
+        if (result.RecordPlaytest is not null && result.ReplayPlaytest is not null)
+            throw new ArgumentException("--record-playtest cannot be combined with --replay-playtest.");
+        if (result.BugCapture && (result.PlaytestRequested || result.ReplayBugReport is not null))
+            throw new ArgumentException("--bug-capture cannot be combined with --record-playtest, --replay-playtest or --replay-bug-report.");
+        if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)
+            throw new ArgumentException("--replay-forward requires --load-movement-state.");
+        if (result.PlaytestRequested && (result.LoadMovementState is not null || result.Compose || result.CaptureFrame.HasValue ||
+            result.ShotsPath is not null || result.ReplayForwardFrames.HasValue || result.StressSwitch is not null))
+            throw new ArgumentException("--record-playtest/--replay-playtest require ordinary entry without --load-movement-state, --compose/--composition, --capture-frame, --shots, --replay-forward or --stress-switch.");
         return result;
     }
-
-    private static int? ParseInt(string? s) =>
-        int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out int v) ? v : null;
 }

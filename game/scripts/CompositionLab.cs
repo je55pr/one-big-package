@@ -69,7 +69,13 @@ public partial class CompositionLab : Node3D
 
     public override void _Ready()
     {
-        _args = StartupArgs ?? CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
+        try { _args = StartupArgs ?? CommandLineArgs.Parse(OS.GetCmdlineUserArgs()); }
+        catch (ArgumentException error)
+        {
+            GD.PrintErr("[cli] " + error.Message);
+            ApplicationLifecycle.RequestQuit(this, "cli-invalid", 2);
+            return;
+        }
 
         _compositionRoot = new Node3D { Name = "CompositionRoot" };
         AddChild(_compositionRoot);

@@ -216,6 +216,18 @@ load for a deterministic capture.
 
 ## Deterministic capture
 
+OBP options are parsed only after Godot's `--` separator, through
+`OS.GetCmdlineUserArgs()`. Engine options such as `--headless`, `--path`, and
+`--fixed-fps 60` go before it. Unknown OBP arguments, missing values, malformed
+integers and established incompatible modes print an option-specific `[cli]`
+error and quit with exit code 2 before loading sources. Omitted options retain
+their defaults. `--replay-forward` accepts 1–3600 updates and `--compose-reload`
+requires a positive iteration count. Canonical source flags are `--rac1-iso`,
+`--rac2-iso` and `--rac3-iso`; `--gc-iso` and `--uya-iso` remain aliases. Supplying
+different paths for the same source fails. Composition/viewer flags remain
+supported pending the separate viewer decision. Run `tools/test-cli.ps1` for
+headless startup and rejection checks.
+
 `OBP.Godot.CaptureHarness` is the primitive: settle N frames → one
 `FramePostDraw` → grab the viewport → write a PNG + a JSON sidecar of the
 caller's metadata, with a watchdog. Both capture paths use it.
