@@ -39,7 +39,7 @@ public sealed class SourceLibraryTests
     public void ProbeRejectsUnknownSerialAndKnownSerialWrongSize()
     {
         var fixture = SyntheticPs2.Build("SCUS_972.68");
-        var gc = Games[1];
+        var rac2 = Games[1];
 
         var unknownLibrary = new ObpSourceLibrary(new[]
         {
@@ -50,7 +50,7 @@ public sealed class SourceLibraryTests
         Assert.False(unknown.Supported);
         Assert.Contains("SCUS-97268", unknown.Problem);
 
-        var wrongSizeLibrary = new ObpSourceLibrary(new[] { Definition(gc, fixture.Bytes.Length + 1) });
+        var wrongSizeLibrary = new ObpSourceLibrary(new[] { Definition(rac2, fixture.Bytes.Length + 1) });
         var wrongSize = wrongSizeLibrary.Probe(new InMemoryReader("wrong-size.iso", fixture.Bytes));
         Assert.True(wrongSize.Recognized);
         Assert.False(wrongSize.Supported);

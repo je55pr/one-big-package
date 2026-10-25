@@ -16,7 +16,7 @@ namespace OneBigPackage;
 public partial class OBPGame
 {
     private readonly Dictionary<(string Path, long Length, long Written, int Level, int Class), Rac1MobyAnimationAssets.Asset> _actorRac1Animations = [];
-    private readonly Dictionary<(string Path, long Length, long Written), OBP.RAC2.Animation.GcClass2827Presentation.Asset> _actorGcAnimations = [];
+    private readonly Dictionary<(string Path, long Length, long Written), OBP.RAC2.Animation.Rac2Class2827Presentation.Asset> _actorRac2Animations = [];
 
     private HostedActor CreatePlacedRac1Toad(ActorPlacement placement, RuntimeWorld library, string path)
     {
@@ -76,17 +76,17 @@ public partial class OBPGame
         _actors!.RegisterUpdateGroup("rac1/actor-pickups", _ => TickRac1Pickups(1d / 60));
     }
 
-    private HostedActor CreatePlacedGcHostile(ActorPlacement placement, RuntimeWorld library, string path)
+    private HostedActor CreatePlacedRac2Hostile(ActorPlacement placement, RuntimeWorld library, string path)
     {
         if (placement.Source.Game != ObpSourceGame.Rac2 || placement.NativeClassId != 2827 || placement.LevelId != 0 ||
-            placement.InitialNativeState != GcClass2827HostileSession.ChaseNativeState || placement.NativeContextId != "gc/aranos-chase-resume/v1")
+            placement.InitialNativeState != Rac2Class2827HostileSession.ChaseNativeState || placement.NativeContextId != "gc/aranos-chase-resume/v1")
             throw new NotSupportedException("GC MSR I requires its admitted Aranos chase/attack context and state 12.");
-        var (scene, node, registration) = CreateActorView(placement, library, source => GcClass2827HostileSession.ReadAuthored(source) is { AuthoredMode: GcClass2827HostileSession.OpeningRoomAuthoredMode });
+        var (scene, node, registration) = CreateActorView(placement, library, source => Rac2Class2827HostileSession.ReadAuthored(source) is { AuthoredMode: Rac2Class2827HostileSession.OpeningRoomAuthoredMode });
         try
         {
-            var native = new GcClass2827HostileSession(node.Source, node.State);
-            native.NativeState!.Transition(GcClass2827HostileSession.ChaseNativeState, 4);
-            var hosted = new GcOpeningMsr1HostSession(node, native) { Phase = GcOpeningMsr1Phase.Chase, AttackCount = 1 };
+            var native = new Rac2Class2827HostileSession(node.Source, node.State);
+            native.NativeState!.Transition(Rac2Class2827HostileSession.ChaseNativeState, 4);
+            var hosted = new Rac2OpeningMsr1HostSession(node, native) { Phase = Rac2OpeningMsr1Phase.Chase, AttackCount = 1 };
             registration = registration with
             {
                 Capabilities = registration.Capabilities.Concat(new[]
@@ -95,36 +95,36 @@ public partial class OBPGame
                 new ActorCapabilityRegistration("reward-presentation", CapabilityAdmission.Unimplemented, "Authored GC bolts are retained as source facts; native death scatter/pickup presentation is not recovered."),
             }).ToArray()
             };
-            _gcClass2827Hostiles.Add(node.Source.InstanceIndex, native); _gcOpeningMsr1.Add(node.Source.InstanceIndex, hosted);
+            _rac2Class2827Hostiles.Add(node.Source.InstanceIndex, native); _rac2OpeningMsr1.Add(node.Source.InstanceIndex, hosted);
             var body = AddRegisteredActorBody(node, scene.Root);
             var stamp = SourceFileStamp(path)!.Value;
             var animationKey = (path, stamp.Length, stamp.Written);
-            if (!_actorGcAnimations.TryGetValue(animationKey, out var animation))
-            { animation = OBP.RAC2.Animation.GcClass2827Presentation.Load(path, node.Source.Meshes); _actorGcAnimations.Add(animationKey, animation); }
+            if (!_actorRac2Animations.TryGetValue(animationKey, out var animation))
+            { animation = OBP.RAC2.Animation.Rac2Class2827Presentation.Load(path, node.Source.Meshes); _actorRac2Animations.Add(animationKey, animation); }
             node.ConfigureAnimations(animation.Presentation);
             // OBP starts at the recovered resumed chase, not the source level's
             // lift/door intro predicates. The source approach and attack cycle
             // are exactly those used by the original Aranos adapter.
             return new(registration, node,
-                () => ObserveGcActor(node, native), intent => ApplyRegisteredGcDamage(node, native, intent), tick: _ =>
+                () => ObserveRac2Actor(node, native), intent => ApplyRegisteredRac2Damage(node, native, intent), tick: _ =>
             {
                 int sequence = hosted.Phase switch
                 {
-                    GcOpeningMsr1Phase.Chase => GcClass2827HostileSession.ChaseSequence,
-                    GcOpeningMsr1Phase.Attack => hosted.AttackSequence,
-                    GcOpeningMsr1Phase.Recovery => GcClass2827HostileSession.RecoverySequence,
+                    Rac2OpeningMsr1Phase.Chase => Rac2Class2827HostileSession.ChaseSequence,
+                    Rac2OpeningMsr1Phase.Attack => hosted.AttackSequence,
+                    Rac2OpeningMsr1Phase.Recovery => Rac2Class2827HostileSession.RecoverySequence,
                     _ => throw new InvalidOperationException("Unregistered GC encounter phase."),
                 };
-                node.ApplyAnimationSample(OBP.RAC2.Animation.GcClass2827Presentation.Sample(animation, sequence, native.NativeState!.StateTicks));
+                node.ApplyAnimationSample(OBP.RAC2.Animation.Rac2Class2827Presentation.Sample(animation, sequence, native.NativeState!.StateTicks));
             }, retire: () =>
             {
-                _gcClass2827Hostiles.Remove(node.Source.InstanceIndex); _gcOpeningMsr1.Remove(node.Source.InstanceIndex);
+                _rac2Class2827Hostiles.Remove(node.Source.InstanceIndex); _rac2OpeningMsr1.Remove(node.Source.InstanceIndex);
                 _actorContactBodies.Remove(ActorTarget(node)); body.CollisionLayer = body.CollisionMask = 0; scene.Root.QueueFree();
             });
         }
         catch
         {
-            _gcClass2827Hostiles.Remove(node.Source.InstanceIndex); _gcOpeningMsr1.Remove(node.Source.InstanceIndex);
+            _rac2Class2827Hostiles.Remove(node.Source.InstanceIndex); _rac2OpeningMsr1.Remove(node.Source.InstanceIndex);
             _actorContactBodies.Remove(ActorTarget(node)); scene.Root.QueueFree(); throw;
         }
     }
@@ -156,10 +156,10 @@ public partial class OBPGame
     {
         foreach (var node in Rac1EnemyNodes.Concat(_rac1CrateNodes).DistinctBy(ActorTarget))
             RegisterOriginalActor(node, () => ObserveRac1Actor(node), intent => ApplyRegisteredRac1Damage(node, intent));
-        foreach (var hostile in _gcClass2827Hostiles.Values)
+        foreach (var hostile in _rac2Class2827Hostiles.Values)
         {
-            var node = _gcOpeningMsr1.GetValueOrDefault(hostile.InstanceIndex)?.Node;
-            if (node is not null) RegisterOriginalActor(node, () => ObserveGcActor(node, hostile), intent => ApplyRegisteredGcDamage(node, hostile, intent));
+            var node = _rac2OpeningMsr1.GetValueOrDefault(hostile.InstanceIndex)?.Node;
+            if (node is not null) RegisterOriginalActor(node, () => ObserveRac2Actor(node, hostile), intent => ApplyRegisteredRac2Damage(node, hostile, intent));
         }
         foreach (var node in _uyaClass500Nodes)
             RegisterOriginalActor(node, () => ObserveUyaActor(node, _uyaMobyRuntime), intent => ApplyRegisteredUyaDamage(node, _uyaMobyRuntime, intent));
@@ -183,7 +183,7 @@ public partial class OBPGame
             health, native.State.NativeState, node.Source.NativeClassId == 749 ? _rac1Hostiles.Probe(node.Source).NativeSequence : null);
     }
 
-    private static ActorObservation ObserveGcActor(RuntimeWorldScene.DynamicObjectNode node, GcClass2827HostileSession native) =>
+    private static ActorObservation ObserveRac2Actor(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native) =>
         new(ToNumerics(node.Root.GlobalPosition), !native.IsTerminal, native.IsTerminal, native.Health, native.NativeState?.CurrentState ?? 0, null);
 
     private static ActorObservation ObserveUyaActor(RuntimeWorldScene.DynamicObjectNode node, UyaMobyRuntimeSession native) =>
@@ -198,12 +198,12 @@ public partial class OBPGame
         return new(applied, !ObserveRac1Actor(node).Alive, applied ? null : "Native R&C1 immunity or reaction gate.");
     }
 
-    private ActorHitResult ApplyRegisteredGcDamage(RuntimeWorldScene.DynamicObjectNode node, GcClass2827HostileSession native, WeaponDamageIntent intent)
+    private ActorHitResult ApplyRegisteredRac2Damage(RuntimeWorldScene.DynamicObjectNode node, Rac2Class2827HostileSession native, WeaponDamageIntent intent)
     {
         // OBP adapter: retain the source amount; create a GC-owned mask/record.
         // Foreign flag bits and class numbers never become native GC payloads.
-        var result = native.Apply(new(GcGameplayEntityRef.Player, GcGameplayEntityRef.Moby(node.Source),
-            new(GcClass2827HostileSession.DamageQueryMask, 0, 0, 0, intent.SourceDamage, 0)));
+        var result = native.Apply(new(Rac2GameplayEntityRef.Player, Rac2GameplayEntityRef.Moby(node.Source),
+            new(Rac2Class2827HostileSession.DamageQueryMask, 0, 0, 0, intent.SourceDamage, 0)));
         node.ApplyState(result.EntityState);
         if (result.Terminal && _actorContactBodies.TryGetValue(ActorTarget(node), out var body)) body.CollisionLayer = body.CollisionMask = 0;
         return new(result.Admitted, result.Terminal, result.Admitted ? null : "Native GC damage cooldown or terminal state.");

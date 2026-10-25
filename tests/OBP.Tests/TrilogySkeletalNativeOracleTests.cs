@@ -54,7 +54,7 @@ public sealed partial class TrilogySkeletalRetailTests
                     Assert.Equal(channel.JointTag, BinaryPrimitives.ReadUInt16LittleEndian(native.AsSpan(cursor + 6))); cursor += 8;
                 }
             }
-            var source = game == "gc" ? data.Gc : data.Uya;
+            var source = game == "gc" ? data.Rac2 : data.Uya;
             _output.WriteLine($"{game}: {frames.Count} frames; XYZ and auxiliary vectors exact; W differs by at most one fixed-point unit.");
             foreach (float weight in new[] { 0f, .25f, .5f, 1f })
             {

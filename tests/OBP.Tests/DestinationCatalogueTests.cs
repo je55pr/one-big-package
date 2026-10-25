@@ -9,9 +9,9 @@ namespace OBP.Tests;
 public sealed class DestinationCatalogueTests
 {
     [Fact]
-    public void GcProjectionPreservesAllNativeDestinationsWithoutCollapsingPlanets()
+    public void Rac2ProjectionPreservesAllNativeDestinationsWithoutCollapsingPlanets()
     {
-        IObpDestinationCatalogue catalogue = GcDestinationCatalogue.Instance;
+        IObpDestinationCatalogue catalogue = Rac2DestinationCatalogue.Instance;
 
         Assert.Equal(ObpSourceGame.Rac2, catalogue.Game);
         Assert.Equal(Rac2Authority.Primary.BuildId, catalogue.BuildId);
@@ -39,18 +39,18 @@ public sealed class DestinationCatalogueTests
             "Starfield", "Gorn — Space Arena",
         ];
 
-        Assert.Equal(expectedNames, GcDestinationCatalogue.Instance.Destinations.Select(destination => destination.DisplayName));
+        Assert.Equal(expectedNames, Rac2DestinationCatalogue.Instance.Destinations.Select(destination => destination.DisplayName));
         Assert.Equal(Enumerable.Range(0, expectedNames.Length).Select(level => $"rac2:LEVEL{level}"),
-            GcDestinationCatalogue.Instance.Destinations.Select(destination => destination.DestinationId));
-        Assert.DoesNotContain(GcDestinationCatalogue.Instance.Destinations,
+            Rac2DestinationCatalogue.Instance.Destinations.Select(destination => destination.DestinationId));
+        Assert.DoesNotContain(Rac2DestinationCatalogue.Instance.Destinations,
             destination => destination.DisplayName.Contains("unresolved", StringComparison.OrdinalIgnoreCase)
                 || destination.DisplayName.Contains("stub", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void GcProjectionKeepsFileLevelAndEngineLevelIdentitySeparate()
+    public void Rac2ProjectionKeepsFileLevelAndEngineLevelIdentitySeparate()
     {
-        var level21 = GcDestinationCatalogue.Instance.FindByNativeLevel(21)!;
+        var level21 = Rac2DestinationCatalogue.Instance.FindByNativeLevel(21)!;
 
         Assert.Equal("rac2:LEVEL21", level21.DestinationId);
         Assert.Equal("LEVEL21", level21.NativeDestinationId);
@@ -61,9 +61,9 @@ public sealed class DestinationCatalogueTests
     }
 
     [Fact]
-    public void GcProjectionMapsNativeKindsWithoutChangingTheirMeaning()
+    public void Rac2ProjectionMapsNativeKindsWithoutChangingTheirMeaning()
     {
-        var entries = GcDestinationCatalogue.Instance.Destinations;
+        var entries = Rac2DestinationCatalogue.Instance.Destinations;
 
         Assert.Equal(ObpDestinationKind.Planet, entries.Single(d => d.DestinationId == "rac2:LEVEL1").Kind);
         Assert.Equal(ObpDestinationKind.SpaceCombat, entries.Single(d => d.DestinationId == "rac2:LEVEL5").Kind);
@@ -73,40 +73,40 @@ public sealed class DestinationCatalogueTests
     }
 
     [Fact]
-    public void GcWorldProviderRoutesByNativeFileIdentityNotEngineId()
+    public void Rac2WorldProviderRoutesByNativeFileIdentityNotEngineId()
     {
-        IObpWorldProvider provider = GcWorldProvider.Instance;
-        var level21 = GcDestinationCatalogue.Instance.FindByNativeLevel(21)!;
+        IObpWorldProvider provider = Rac2WorldProvider.Instance;
+        var level21 = Rac2DestinationCatalogue.Instance.FindByNativeLevel(21)!;
 
         Assert.Equal(ObpSourceGame.Rac2, provider.Game);
-        Assert.Same(GcDestinationCatalogue.Instance, provider.Catalogue);
+        Assert.Same(Rac2DestinationCatalogue.Instance, provider.Catalogue);
         Assert.True(provider.CanLoad(level21));
-        Assert.Equal(21, GcWorldProvider.Instance.ResolveNativeLevel(level21));
+        Assert.Equal(21, Rac2WorldProvider.Instance.ResolveNativeLevel(level21));
         Assert.Equal("30", level21.NativeEngineId);
     }
 
     [Fact]
-    public void GcWorldProviderRejectsForeignOrInventedDestinations()
+    public void Rac2WorldProviderRejectsForeignOrInventedDestinations()
     {
-        var gc = GcWorldProvider.Instance;
-        var oozla = GcDestinationCatalogue.Instance.FindByNativeLevel(1)!;
-        Assert.True(gc.CanLoad(oozla));
+        var rac2 = Rac2WorldProvider.Instance;
+        var oozla = Rac2DestinationCatalogue.Instance.FindByNativeLevel(1)!;
+        Assert.True(rac2.CanLoad(oozla));
 
         var foreign = oozla with { Game = ObpSourceGame.Rac1, DestinationId = "rac1:LEVEL1" };
-        Assert.False(gc.CanLoad(foreign));
+        Assert.False(rac2.CanLoad(foreign));
 
         var invented = oozla with { DestinationId = "rac2:LEVEL999", NativeDestinationId = "LEVEL999" };
-        Assert.False(gc.CanLoad(invented));
+        Assert.False(rac2.CanLoad(invented));
     }
 
     [Fact]
     public void ProviderRegistryResolvesGlobalDestinationIdsCaseInsensitively()
     {
-        var registry = new ObpWorldProviderRegistry([GcWorldProvider.Instance]);
+        var registry = new ObpWorldProviderRegistry([Rac2WorldProvider.Instance]);
 
         Assert.Single(registry.Providers);
         Assert.Contains(ObpSourceGame.Rac2, registry.Games);
-        Assert.Same(GcWorldProvider.Instance, registry.Find(ObpSourceGame.Rac2));
+        Assert.Same(Rac2WorldProvider.Instance, registry.Find(ObpSourceGame.Rac2));
         Assert.Equal("rac2:LEVEL21", registry.Resolve("RAC2:level21")!.DestinationId);
         Assert.Null(registry.Resolve("rac1:LEVEL1"));
     }

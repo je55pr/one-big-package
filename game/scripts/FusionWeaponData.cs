@@ -23,7 +23,7 @@ public sealed class FusionWeaponData
     public Dictionary<SourceWeaponKey, string> Problems { get; } = [];
     public List<RuntimeTexture> Textures { get; } = [];
     public Dictionary<(SourceWeaponKey, int), IReadOnlyList<Voice>> Audio { get; } = [];
-    public GcLancerAssets.HeldAssets? Lancer { get; private set; }
+    public Rac2LancerAssets.HeldAssets? Lancer { get; private set; }
     public UyaGlobalGadget.Source? Cannon { get; private set; }
     public Dictionary<SourceWeaponKey, PlayerEquipmentAnimationSource> AvatarAnimations { get; } = [];
     public IReadOnlyList<RuntimeObjectMesh> Projectile { get; private set; } = [];
@@ -41,15 +41,15 @@ public sealed class FusionWeaponData
         Load(ObpSourceGame.Rac2, FusionWeaponSession.Lancer, disc =>
         {
             var fs = Iso9660Filesystem.Open(disc);
-            Lancer = GcLancerAssets.ReadHeld(fs.OpenFile(GcLancerAssets.GadgetIsoPath)!);
-            Textures.Add(GcLancerPresentation.HeldTexture(Lancer));
+            Lancer = Rac2LancerAssets.ReadHeld(fs.OpenFile(Rac2LancerAssets.GadgetIsoPath)!);
+            Textures.Add(Rac2LancerPresentation.HeldTexture(Lancer));
             var wad = fs.OpenFile("/G/LEVEL1.WAD")!;
-            var core = GcLevelCore.Open(GcLevelWad.RequireLump(wad, GcLevelWad.ReadHeader(wad), 0));
-            AvatarAnimations.Add(FusionWeaponSession.Lancer, OBP.RAC2.Player.GcRatchetSkeletalSource.ReadLancer(core));
-            var projectile = GcMobyClasses.Read(core)[GcLancerProfile.ProjectileMobyClass];
-            Projectile = GcLancerPresentation.ProjectileModel(projectile);
-            foreach (var texture in GcLevelTextures.Read(core, GcLevelTextures.Table.Moby).Where(t => projectile.TextureIds.Contains(t.Index)))
-                Textures.Add(new(GcLancerPresentation.ProjectileAssetKind, texture.Index, texture.Width, texture.Height, texture.Rgba));
+            var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, Rac2LevelWad.ReadHeader(wad), 0));
+            AvatarAnimations.Add(FusionWeaponSession.Lancer, OBP.RAC2.Player.Rac2RatchetSkeletalSource.ReadLancer(core));
+            var projectile = Rac2MobyClasses.Read(core)[Rac2LancerProfile.ProjectileMobyClass];
+            Projectile = Rac2LancerPresentation.ProjectileModel(projectile);
+            foreach (var texture in Rac2LevelTextures.Read(core, Rac2LevelTextures.Table.Moby).Where(t => projectile.TextureIds.Contains(t.Index)))
+                Textures.Add(new(Rac2LancerPresentation.ProjectileAssetKind, texture.Index, texture.Width, texture.Height, texture.Rgba));
             for (int cue = 0; cue <= 1; cue++)
             {
                 var voices = Ps2SoundRenderer989.TryRenderVoices(Lancer.SoundBank.Sounds[cue], Lancer.SoundBank.DecodeTone, seed: 0)
@@ -58,7 +58,7 @@ public sealed class FusionWeaponData
                     v.StartFrame / (double)Ps2SoundRenderer989.SampleRate, v.Loop,
                     new(Ps2SoundRenderer989.SampleRate, 1, v.Audio.Samples, v.Audio.LoopStartFrame, v.Audio.LoopEndFrame), .7)).ToArray());
             }
-            _ = GcLancerPresentation.HeldModel(Lancer, GcLancerProfile.HeldIdleSequence, 0);
+            _ = Rac2LancerPresentation.HeldModel(Lancer, Rac2LancerProfile.HeldIdleSequence, 0);
         });
         Load(ObpSourceGame.Rac3, FusionWeaponSession.ShockCannon, disc =>
         {

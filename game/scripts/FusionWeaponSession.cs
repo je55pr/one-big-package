@@ -17,11 +17,11 @@ public sealed class FusionWeaponSession
     public const string LoadoutId = "veldin-three-v1";
     public const string DefaultLoadoutId = "rac1-default-cross-game-v1";
     public static readonly SourceWeaponKey BombGlove = new(ObpSourceGame.Rac1, (int)Rac1WeaponId.FirstRanged);
-    public static readonly SourceWeaponKey Lancer = new(ObpSourceGame.Rac2, GcLancerProfile.WeaponIndex);
+    public static readonly SourceWeaponKey Lancer = new(ObpSourceGame.Rac2, Rac2LancerProfile.WeaponIndex);
     public static readonly SourceWeaponKey ShockCannon = new(ObpSourceGame.Rac3, UyaShockCannonProfile.Identity.ItemDefinitionIndex);
     public static IReadOnlyList<SourceWeaponKey> Weapons { get; } = Array.AsReadOnly(new[] { BombGlove, Lancer, ShockCannon });
     public Rac1WeaponInventory Rac1Inventory { get; private set; }
-    public GcLancerSession LancerSession { get; } = new(initialAmmo: 40);
+    public Rac2LancerSession LancerSession { get; } = new(initialAmmo: 40);
     public UyaShockCannonSession CannonSession { get; } = new(ammo: 20);
     public SourceWeaponKey Selected { get; private set; } = BombGlove;
     public PlayerHeldEquipmentSession Hand { get; }
@@ -29,7 +29,7 @@ public sealed class FusionWeaponSession
     public int ShotsFired { get; private set; }
     public int Tick { get; private set; }
     private readonly Random _spreadRandom;
-    private readonly Dictionary<int, GcLancerSweep> _sweeps = [];
+    private readonly Dictionary<int, Rac2LancerSweep> _sweeps = [];
     private readonly Dictionary<int, int> _cannonQueries = [];
     private readonly List<WeaponAudioIntent> _pendingAudio = [];
     private WeaponFrame? _lastFrame;
@@ -71,7 +71,7 @@ public sealed class FusionWeaponSession
 
     public WeaponStatus Status(SourceWeaponKey weapon) => weapon.SourceGame == ObpSourceGame.Rac1
         ? new(weapon, Rac1Inventory.GetAmmo(weapon.NativeItemId), Rac1ItemAmmoDescriptors.Get(weapon.NativeItemId).MaxAmmo, "ready")
-        : weapon == Lancer ? new(weapon, LancerSession.Ammo, GcLancerProfile.AmmoCapacity,
+        : weapon == Lancer ? new(weapon, LancerSession.Ammo, Rac2LancerProfile.AmmoCapacity,
             LancerSession.CooldownSeconds > 0 ? "equipping / recovering" : "ready")
         : weapon == ShockCannon ? new(weapon, CannonSession.Ammo, UyaShockCannonProfile.AmmoCapacity,
             CannonFrame?.ChargeUpdates > 0 ? $"charging {CannonFrame.ChargeUpdates}/{UyaShockCannonProfile.ChargeUpdates}" : CannonSession.State.ToString())
@@ -94,11 +94,11 @@ public sealed class FusionWeaponSession
         if (fire.Shot is { } shot)
         {
             ShotsFired++;
-            audio.Add(new(Lancer, GcLancerProfile.FireSound, WeaponAudioOperation.Play));
+            audio.Add(new(Lancer, Rac2LancerProfile.FireSound, WeaponAudioOperation.Play));
             effects.Add(new(new(Lancer, shot.Generation, shot.Sequence), "shot"));
         }
-        else if (fire.Status == GcLancerFireStatus.NoAmmo)
-            audio.Add(new(Lancer, GcLancerProfile.EmptySound, WeaponAudioOperation.Play));
+        else if (fire.Status == Rac2LancerFireStatus.NoAmmo)
+            audio.Add(new(Lancer, Rac2LancerProfile.EmptySound, WeaponAudioOperation.Play));
         foreach (var flight in LancerSession.ActiveShots)
         {
             var sweep = LancerSession.BeginProjectileTick(flight)!;
@@ -157,7 +157,7 @@ public sealed class FusionWeaponSession
         foreach (var (index, sweep) in _sweeps)
         {
             var hit = contacts.Where(c => c.QueryIndex == index).OrderBy(c => c.Fraction).FirstOrDefault();
-            GcLancerContact? native = hit is null ? null : new(hit.Fraction, hit.Target is { } target
+            Rac2LancerContact? native = hit is null ? null : new(hit.Fraction, hit.Target is { } target
                 ? new(target.SourceGame, target.NativeClassId, target.InstanceIndex) : null);
             if (LancerSession.TryCompleteProjectileTick(sweep, native, out var impact) && impact?.Damage is { } intent)
                 damage.Add(new(frame.Queries[index].Shot, new(intent.Target.SourceGame, intent.Target.NativeClassId, intent.Target.RuntimeId),

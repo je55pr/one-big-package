@@ -18,7 +18,7 @@ public partial class OBPGame
     /// denominations. Native pickup model, scatter motion and magnet behaviour
     /// are not reconstructed yet, so these are deliberately simple gold orbs.
     /// </summary>
-    private void SpawnCrateBoltPickups(Vector3 centre, GcClass500Payout payout)
+    private void SpawnCrateBoltPickups(Vector3 centre, Rac2Class500Payout payout)
     {
         int count = payout.PhysicalPickups.Count;
         for (int i = 0; i < count; i++)
@@ -68,7 +68,7 @@ public partial class OBPGame
         }
     }
 
-    private void OnCrateBoltPickupEntered(Node3D body, Area3D area, GcBoltPickup pickup, PlayerBoltReceipt? receipt = null)
+    private void OnCrateBoltPickupEntered(Node3D body, Area3D area, Rac2BoltPickup pickup, PlayerBoltReceipt? receipt = null)
     {
         if (_player is null || body != _player || !IsInstanceValid(area) || !PlayerAlive ||
             receipt is not null && (receipt.Collected || receipt.Actor.WorldInstanceId != _playerDamageWorld || receipt.Actor.Generation != _playerDamageLease))

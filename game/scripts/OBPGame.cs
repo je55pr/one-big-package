@@ -115,7 +115,7 @@ public partial class OBPGame : Node3D
 
         bool bootstrapOwnsScene =
             _args.Destination is not null ||
-            _args.GcIso is not null ||
+            _args.Rac2Iso is not null ||
             _args.TestScene is "picker" or "worlds";
 
         if (_args.TestSceneExplicit && !bootstrapOwnsScene)
@@ -166,7 +166,7 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             TickFusionLabTraversalSmoke();
-            TickGcGameplay(delta);
+            TickRac2Gameplay(delta);
             TickRac1Gameplay(delta);
             TickUyaGameplay(delta);
             UpdatePlayerHud();
@@ -433,7 +433,7 @@ public partial class OBPGame : Node3D
         _inspector?.QueueFree();
         _inspector = null;
         _world = null;
-        ResetGcGameplayHost();
+        ResetRac2GameplayHost();
         ResetUyaGameplay();
     }
 
@@ -662,7 +662,7 @@ public partial class OBPGame : Node3D
         player.DevelopmentControls.SaveMovementStateRequested += SaveMovementState;
         player.DevelopmentControls.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
         AttachPlayerAvatarVisual(player);
-        ArmGcGameplayHost(player);
+        ArmRac2GameplayHost(player);
         ArmRac1Gameplay(player);
         ArmUyaGameplay(player);
     }
@@ -715,7 +715,7 @@ public partial class OBPGame : Node3D
             return;
         }
 
-        var gcEntry = w.Game == ObpSourceGame.Rac2 ? GcPlanetCatalogue.Find(w.LevelId) : null;
+        var rac2Entry = w.Game == ObpSourceGame.Rac2 ? Rac2PlanetCatalogue.Find(w.LevelId) : null;
         string gameLabel = w.Game.SourceGame switch
         {
             ObpSourceGame.Rac1 => "Ratchet & Clank",
@@ -726,7 +726,7 @@ public partial class OBPGame : Node3D
         string destinationName = w.PlanetName is { Length: > 0 }
             ? w.DisplayName
             : _activeDestination?.DisplayName ?? "Unknown destination";
-        string container = _activeDestination?.NativeContainer ?? gcEntry?.ContainerFile ?? "(native container unresolved)";
+        string container = _activeDestination?.NativeContainer ?? rac2Entry?.ContainerFile ?? "(native container unresolved)";
         string pos = "-";
         string ground = "-";
         if (_player is { } p && IsInstanceValid(p))
@@ -737,7 +737,7 @@ public partial class OBPGame : Node3D
         }
 
         string crateDebug = GetCrateDebugHudLine();
-        string gcGameplay = GetGcGameplayHudLine();
+        string rac2Gameplay = GetRac2GameplayHudLine();
         string rac1Gameplay = GetRac1GameplayHudLine();
         string uyaGameplay = GetUyaGameplayHudLine();
 
@@ -753,7 +753,7 @@ public partial class OBPGame : Node3D
             $"\n{_overlay?.StatusLine() ?? "overlays: off"}   (F1 isolate · F2 tint · F3 collision · F4 bounds · F5 lights · F6 sky · F7 clear)" +
             (_worldHost.AudioDiagnostics.Count > 0 ? $"\n{_worldHost.AudioStatusLine}" : "") +
             (string.IsNullOrEmpty(crateDebug) ? "" : $"\n{crateDebug}") +
-            (string.IsNullOrEmpty(gcGameplay) ? "" : $"\n{gcGameplay}") +
+            (string.IsNullOrEmpty(rac2Gameplay) ? "" : $"\n{rac2Gameplay}") +
             (string.IsNullOrEmpty(rac1Gameplay) ? "" : $"\n{rac1Gameplay}") +
             (GetRac1MetropolisTaxiHudLine() is { Length: > 0 } taxiHint ? $"\n{taxiHint}" : "") +
             (string.IsNullOrEmpty(uyaGameplay) ? "" : $"\n{uyaGameplay}");

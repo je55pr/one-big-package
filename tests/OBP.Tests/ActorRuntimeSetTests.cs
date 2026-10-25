@@ -35,12 +35,12 @@ public sealed class ActorRuntimeSetTests
     public void EqualNativeNumbersRemainSeparateAcrossSourcesAndDuplicateRegistrationsFail()
     {
         using var set = Create();
-        var gc = new Actor(new("arena", 7, new(ObpSourceGame.Rac2, 500, 1)));
+        var rac2 = new Actor(new("arena", 7, new(ObpSourceGame.Rac2, 500, 1)));
         var uya = new Actor(new("arena", 7, new(ObpSourceGame.Rac3, 500, 1)));
-        set.Register(gc); set.Register(uya);
-        Assert.Throws<ArgumentException>(() => set.Register(gc));
+        set.Register(rac2); set.Register(uya);
+        Assert.Throws<ArgumentException>(() => set.Register(rac2));
         Assert.Equal(2, set.Count);
-        Assert.Same(gc, set.Find(gc.Registration.Instance.Target));
+        Assert.Same(rac2, set.Find(rac2.Registration.Instance.Target));
         Assert.Same(uya, set.Find(uya.Registration.Instance.Target));
     }
 

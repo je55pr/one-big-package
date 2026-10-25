@@ -45,8 +45,8 @@ public partial class OBPGame
         }
         else
         {
-            int levelId = token is null ? _args.GcLevel : GcPlanetCatalogue.Resolve(token) ?? _args.GcLevel;
-            if (_args.GcIso is null)
+            int levelId = token is null ? _args.Rac2Level : Rac2PlanetCatalogue.Resolve(token) ?? _args.Rac2Level;
+            if (_args.Rac2Iso is null)
             {
                 GD.PrintErr("[shots] a GC planet token needs --gc-iso");
                 ApplicationLifecycle.RequestQuit(this, "shots-missing-gc-source", 2);
@@ -54,7 +54,7 @@ public partial class OBPGame
             }
 
             OpenDestinationFromBootstrap($"rac2:LEVEL{levelId}");
-            slug = (GcPlanetCatalogue.Find(levelId)?.Planet ?? $"level{levelId}").ToLowerInvariant().Replace(' ', '-');
+            slug = (Rac2PlanetCatalogue.Find(levelId)?.Planet ?? $"level{levelId}").ToLowerInvariant().Replace(' ', '-');
         }
 
         if (_mode != Mode.World || _world is not { } world)
@@ -111,9 +111,9 @@ public partial class OBPGame
             RememberCommandLineSource(ObpSourceGame.Rac1, rc1);
         }
 
-        if (_args.GcIso is { } gc)
+        if (_args.Rac2Iso is { } rac2)
         {
-            RememberCommandLineSource(ObpSourceGame.Rac2, gc);
+            RememberCommandLineSource(ObpSourceGame.Rac2, rac2);
         }
 
         if (_args.UyaIso is { } uya)

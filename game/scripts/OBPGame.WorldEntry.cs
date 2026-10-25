@@ -154,7 +154,7 @@ public partial class OBPGame
         BeginSourceWorldEntry(world);
         _sceneResult = _worldHost.Load(this, _worldRoot, world, _currentDestinationId!, WorldOptions(world), prepared);
         SetupOverlay(_sceneResult, world);
-        ConfigureGcGameplayHost();
+        ConfigureRac2GameplayHost();
         bool staticCamera = _args.ShotsPath is not null || _args.CaptureFrame is not null &&
             (_args.DirectLoad || _args.Destination is not null) && _args.TestScene != "player" &&
             !_args.AnimSolo && !_args.CrateFocus && !_args.CrateAutoStrike;

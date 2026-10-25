@@ -57,7 +57,7 @@ public partial class OBPGame
                 source.InteractionId, [new(descriptor, CapabilityAdmission.Ready)]),
                 () => IsInstanceValid(node.Root) &&
                     (source.SourceGame == ObpSourceGame.Rac1 ? _rac1MobyRuntime.TryGet(new(source.NativeClassId, source.InstanceIndex), out var native) && native!.IsActive :
-                        _gcOpeningMsr1.TryGetValue(source.InstanceIndex, out var gc) && !gc.Hostile.IsTerminal));
+                        _rac2OpeningMsr1.TryGetValue(source.InstanceIndex, out var rac2) && !rac2.Hostile.IsTerminal));
         }
         var before = _playerNative!.Health.Probe();
         var result = _playerNative.Life.Apply(new(key, build, adapter, descriptor, sequence, amount, flags));

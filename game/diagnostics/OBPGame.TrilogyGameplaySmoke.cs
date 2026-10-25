@@ -109,7 +109,7 @@ public partial class OBPGame
             Require(_playerNative.Life.Capture().Current < healthBeforeContact,
                 $"native actors did not damage the shared player: before={healthBeforeContact}, after={_playerNative.Life.Capture().Current}, player={_player.GlobalPosition}; " +
                 string.Join("; ", _actorViews.Values.Select(actor => $"{actor.Node.Source.SourceGame}: {actor.Observe()}")));
-            Require(_gcOpeningMsr1.Values.Single().Node.AnimationSample is not null, "GC native animation was not presented");
+            Require(_rac2OpeningMsr1.Values.Single().Node.AnimationSample is not null, "GC native animation was not presented");
             await FireAtActor("arena-rac1-toad", "rac3/item/43", 100);
             Require(!Actor("arena-rac1-toad").Observe().Alive, "ordinary charged Cannon did not defeat the native toad");
             Require(ResetPlacedActor("arena-gc-msr1").Accepted, "GC combat reset failed");
@@ -148,10 +148,10 @@ public partial class OBPGame
                 "world transition retained actors or their physics");
             Require(_fusion.Status(FusionWeaponSession.Lancer).Ammo == ammoBeforeTransit && _fusionProjectiles.Count == 0 && _fusionAudioPlayers.Count == 0,
                 "world transition leaked effects/audio or reset native ammunition");
-            Require(ReferenceEquals(sourceTask, _actorSourceTasks[sourceKey]) && _actorRac1Animations.Count == 1 && _actorGcAnimations.Count == 1,
+            Require(ReferenceEquals(sourceTask, _actorSourceTasks[sourceKey]) && _actorRac1Animations.Count == 1 && _actorRac2Animations.Count == 1,
                 "world transition discarded reusable attached-source actor data");
             ResetSharedWeaponAssets();
-            Require(_actorSourceTasks.Count == 0 && _actorRac1Animations.Count == 0 && _actorGcAnimations.Count == 0,
+            Require(_actorSourceTasks.Count == 0 && _actorRac1Animations.Count == 0 && _actorRac2Animations.Count == 0,
                 "source invalidation retained decoded actor caches");
             GD.Print("[trilogy-gameplay-smoke] current source-cache reuse, obsolete version pruning and source invalidation PASS");
             GD.Print("[trilogy-gameplay-smoke] lease cleanup and persistent ammunition PASS");

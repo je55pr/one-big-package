@@ -13,7 +13,7 @@ namespace OneBigPackage;
 public static class TrilogyWorldProviders
 {
     public static readonly ObpWorldProviderRegistry Registry = new(
-        [Rac1WorldProvider.Instance, GcWorldProvider.Instance, Rac3WorldProvider.Instance]);
+        [Rac1WorldProvider.Instance, Rac2WorldProvider.Instance, Rac3WorldProvider.Instance]);
 
     public static IReadOnlyList<IObpWorldProvider> All => Registry.Providers;
     public static IReadOnlySet<ObpSourceGame> Games => Registry.Games;

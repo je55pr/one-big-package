@@ -13,7 +13,7 @@ namespace OBP.PS2.Geometry;
 public static class RcTie
 {
     public const int Rac1ClassHeaderSize = 0x70;
-    public const int GcClassHeaderSize = 0x80;
+    public const int Rac2ClassHeaderSize = 0x80;
     public const int ClassEntrySize = 0x20;
 
     public sealed record Mesh(
@@ -43,7 +43,7 @@ public static class RcTie
         int AdGifOffsetOffset);
 
     public static readonly Layout Rac1Layout = new("rac1", Rac1ClassHeaderSize, 0x20, 0x40, 0x23, 0x2c);
-    public static readonly Layout GcLayout = new("gc-uya-dl", GcClassHeaderSize, 0x0c, 0x40, 0x0f, 0x1c);
+    public static readonly Layout Rac2Layout = new("gc-uya-dl", Rac2ClassHeaderSize, 0x0c, 0x40, 0x0f, 0x1c);
 
     public static Mesh ReadClass(ReadOnlySpan<byte> buf, Layout layout)
     {

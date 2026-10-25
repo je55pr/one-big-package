@@ -62,8 +62,8 @@ public partial class OBPGame
         _actors.RegisterUpdateGroup("rac1/native-enemies", _ => { if (_rac1Enemies.Count > 0) TickRac1Hostiles(1d / 60); });
         _actors.RegisterUpdateGroup("rac2/native-class2827", _ =>
         {
-            foreach (var hostile in _gcClass2827Hostiles.Values) hostile.TickCooldown();
-            TickGcOpeningMsr1NativeTick();
+            foreach (var hostile in _rac2Class2827Hostiles.Values) hostile.TickCooldown();
+            TickRac2OpeningMsr1NativeTick();
         });
         RegisterExistingNativeTargets();
         _actorLab = lab;
@@ -97,7 +97,7 @@ public partial class OBPGame
     private void ClearActorSourceCaches()
     {
         // Reusable decoded data belongs to attached sources, not a world lease.
-        _actorSourceTasks.Clear(); _actorRac1Animations.Clear(); _actorGcAnimations.Clear();
+        _actorSourceTasks.Clear(); _actorRac1Animations.Clear(); _actorRac2Animations.Clear();
     }
 
     private void PruneActorSourceVersions(ObpSourceGame game, string build, string path, long length, long written)
@@ -109,8 +109,8 @@ public partial class OBPGame
             foreach (var key in _actorRac1Animations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
                 _actorRac1Animations.Remove(key);
         if (game == ObpSourceGame.Rac2)
-            foreach (var key in _actorGcAnimations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
-                _actorGcAnimations.Remove(key);
+            foreach (var key in _actorRac2Animations.Keys.Where(key => key.Path != path || key.Length != length || key.Written != written).ToArray())
+                _actorRac2Animations.Remove(key);
     }
 
     private void PrepareActorSource(ActorPlacement placement)
@@ -135,7 +135,7 @@ public partial class OBPGame
             var imported = source.Game switch
             {
                 ObpSourceGame.Rac1 => OBP.RAC1.Rac1WorldImport.Build(reader, placement.LevelId),
-                ObpSourceGame.Rac2 => OBP.RAC2.GcWorldImport.Build(reader, placement.LevelId),
+                ObpSourceGame.Rac2 => OBP.RAC2.Rac2WorldImport.Build(reader, placement.LevelId),
                 ObpSourceGame.Rac3 => OBP.RAC3.Rac3WorldImport.Build(reader, placement.LevelId),
                 _ => throw new NotSupportedException("Unregistered actor source provider."),
             };
@@ -218,7 +218,7 @@ public partial class OBPGame
         new Dictionary<string, Func<ActorPlacement, RuntimeWorld, string, HostedActor>>(StringComparer.Ordinal)
         {
             ["rac1/class749/v1"] = CreatePlacedRac1Toad,
-            ["rac2/class2827/v1"] = CreatePlacedGcHostile,
+            ["rac2/class2827/v1"] = CreatePlacedRac2Hostile,
             ["rac3/class500/v1"] = CreatePlacedUyaProp,
         };
 

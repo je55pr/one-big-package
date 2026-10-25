@@ -80,15 +80,15 @@ public partial class OBPGame
     /// into the canonical destination model. No separate GC world lifecycle is
     /// retained for these aliases.
     /// </summary>
-    public void OpenLegacyGcDestinationFromBootstrap()
+    public void OpenLegacyRac2DestinationFromBootstrap()
     {
         int levelId = _args.Planet is { } token
-            ? OBP.RAC2.GcPlanetCatalogue.Resolve(token) ?? _args.GcLevel
-            : _args.GcLevel;
+            ? OBP.RAC2.Rac2PlanetCatalogue.Resolve(token) ?? _args.Rac2Level
+            : _args.Rac2Level;
         OpenDestinationFromBootstrap($"rac2:LEVEL{levelId}");
     }
 
-    public void RunGcStressSwitchFromBootstrap(string sequence) =>
+    public void RunRac2StressSwitchFromBootstrap(string sequence) =>
         _ = RunStressSwitchAsync(sequence);
 
     /// <summary>

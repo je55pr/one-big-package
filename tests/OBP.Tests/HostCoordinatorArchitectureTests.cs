@@ -26,7 +26,7 @@ public class HostCoordinatorArchitectureTests
     }
 
     [Fact]
-    public void GcGameplayCoordinatorKeepsAranosAndDebugHarnessSeparate()
+    public void Rac2GameplayCoordinatorKeepsAranosAndDebugHarnessSeparate()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
         string corePath = Path.Combine(scripts, "OBPGame.GcGameplay.cs");

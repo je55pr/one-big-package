@@ -9,7 +9,7 @@ namespace OBP.Tests;
 
 /// <summary>
 /// Retail-backed validation of Going Commando <see cref="GcUyaMoby.MobySequence"/>
-/// decode + engine-independent <see cref="MobyAnimation"/> pose evaluation.
+/// decode + engine-independent <see cref="Rac2MobyAnimation"/> pose evaluation.
 /// Retail-gated on <c>OBP_GC_ISO</c>. See <c>research/GC_MOBY.md</c>.
 /// </summary>
 public class MobyAnimationTests
@@ -21,8 +21,8 @@ public class MobyAnimationTests
         using var reader = new FileRandomAccessReader(iso!);
         var fs = Iso9660Filesystem.Open(reader);
         var wad = fs.OpenFile($"/G/LEVEL{level}.WAD")!;
-        var header = GcLevelWad.ReadHeader(wad);
-        return GcMobyClasses.Read(GcLevelCore.Open(GcLevelWad.RequireLump(wad, header, 0)));
+        var header = Rac2LevelWad.ReadHeader(wad);
+        return Rac2MobyClasses.Read(Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0)));
     }
 
     [SkippableFact]
@@ -66,7 +66,7 @@ public class MobyAnimationTests
             }
 
             var identity = new GcUyaMoby.MobyFrame(0f, [Quaternion.Identity]);
-            var posed = MobyAnimation.Pose(cl.Mesh, cl.Joints, identity);
+            var posed = Rac2MobyAnimation.Pose(cl.Mesh, cl.Joints, identity);
 
             Assert.Equal(cl.Mesh.Positions.Length, posed.Length);
             double maxDev = 0;
@@ -92,8 +92,8 @@ public class MobyAnimationTests
 
         for (int f = 0; f < seq.Frames.Count; f++)
         {
-            var a = MobyAnimation.Pose(cl.Mesh, cl.Joints, seq.Frames[f]);
-            var b = MobyAnimation.Pose(cl.Mesh, cl.Joints, seq.Frames[f]);
+            var a = Rac2MobyAnimation.Pose(cl.Mesh, cl.Joints, seq.Frames[f]);
+            var b = Rac2MobyAnimation.Pose(cl.Mesh, cl.Joints, seq.Frames[f]);
             Assert.Equal(a, b); // deterministic
 
             foreach (double c in a)
@@ -113,7 +113,7 @@ public class MobyAnimationTests
         // its linear part must be orthonormal.
         var cl = Classes(1)[1134];
         var mid = cl.Sequences[1].Frames[85];
-        var skin = MobyAnimation.SkinMatrices(cl.Joints, mid, cl.Mesh.Scale / 1024f);
+        var skin = Rac2MobyAnimation.SkinMatrices(cl.Joints, mid, cl.Mesh.Scale / 1024f);
 
         foreach (var m in skin)
         {
