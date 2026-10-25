@@ -13,6 +13,7 @@ public partial class OBPGame
     private SourceManagerUi? _sourceManager;
     private string _sourceConfigPath = string.Empty;
     private readonly List<string> _sourceRestoreWarnings = new();
+    private string? _sourceConfigWarning;
 
     /// <summary>Deferred startup hook for the trilogy Game Sources screen.</summary>
     public void ShowSourceManagerFromBootstrap()
@@ -57,7 +58,7 @@ public partial class OBPGame
         }
 
         _sources = new ObpSourceLibrary(TrilogySourceDefinitions.All);
-        _sourceConfigPath = ProjectSettings.GlobalizePath("user://sources.json");
+        _sourceConfigPath = _args.SourceConfigPath ?? ProjectSettings.GlobalizePath("user://sources.json");
         EnsureRac1CampaignPersistenceInitialized();
         _sourcesInitialized = true;
         RefreshRetailUiSource(null);
@@ -68,14 +69,21 @@ public partial class OBPGame
     private void RestoreRememberedSources()
     {
         _sourceRestoreWarnings.Clear();
+        _sourceConfigWarning = null;
         IReadOnlyList<ObpSavedSource> saved;
         try
         {
-            saved = ObpSourceLibrary.LoadConfig(_sourceConfigPath);
+            var read = ObpSourceLibrary.ReadConfig(_sourceConfigPath);
+            saved = read.Value ?? [];
+            if (read.Problem is not null)
+            {
+                _sourceConfigWarning = "Remembered game sources: " + read.Problem;
+                GD.PrintErr("[sources] " + read.Problem);
+            }
         }
         catch (Exception ex)
         {
-            _sourceRestoreWarnings.Add($"Could not read remembered game sources: {ex.Message}");
+            _sourceConfigWarning = $"Could not read remembered game sources: {ex.Message}";
             return;
         }
 
@@ -137,6 +145,7 @@ public partial class OBPGame
             if (persist)
             {
                 _sources.SaveConfig(_sourceConfigPath);
+                _sourceConfigWarning = null;
             }
 
             _sourceManager?.Refresh(_sources);
@@ -204,14 +213,13 @@ public partial class OBPGame
         AddChild(_sourceManager);
         _sourceManager.Populate(_sources, TrilogyWorldProviders.Games);
 
-        if (_profileStatus is not null)
-            _sourceManager.SetStatus(_profileStatus, error: _profileWriteBlocked);
-        else if (_rac1CampaignRestoreWarning is not null)
-            _sourceManager.SetStatus(_rac1CampaignRestoreWarning, error: true);
-        else if (_sourceRestoreWarnings.Count > 0)
-        {
-            _sourceManager.SetStatus("⚠ " + string.Join("\n", _sourceRestoreWarnings), error: true);
-        }
+        var notices = new List<string>();
+        if (_profileStatus is not null) notices.Add(_profileStatus);
+        if (_rac1CampaignRestoreWarning is not null) notices.Add(_rac1CampaignRestoreWarning);
+        if (_sourceConfigWarning is not null) notices.Add("⚠ " + _sourceConfigWarning);
+        if (_sourceRestoreWarnings.Count > 0) notices.Add("⚠ " + string.Join("\n", _sourceRestoreWarnings));
+        if (notices.Count > 0)
+            _sourceManager.SetStatus(string.Join("\n", notices), error: _profileWriteBlocked || _rac1CampaignRestoreWarning is not null || _sourceConfigWarning is not null || _sourceRestoreWarnings.Count > 0);
 
         GD.Print($"[sources] source manager shown — {_sources.Attached.Count}/3 sources attached");
     }
@@ -254,6 +262,7 @@ public partial class OBPGame
         try
         {
             _sources.SaveConfig(_sourceConfigPath);
+            _sourceConfigWarning = null;
             _sourceManager?.Refresh(_sources);
             _sourceManager?.SetStatus($"Forgot {TrilogySourceDefinitions.All.First(d => d.Game == game).DisplayName}. The retail file itself was not changed.");
         }

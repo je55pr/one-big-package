@@ -17,6 +17,7 @@ namespace OBP.PS2;
 public sealed class ObpSourceLibrary
 {
     private const int ConfigVersion = 1;
+    public const int MaximumConfigBytes = 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -166,35 +167,50 @@ public sealed class ObpSourceLibrary
 
     public void SaveConfig(string path)
     {
-        string? parent = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(parent))
-        {
-            Directory.CreateDirectory(parent);
-        }
-
         var config = new ConfigFile(
             ConfigVersion,
             _attached.Values
                 .OrderBy(s => s.Game)
                 .Select(s => new ObpSavedSource(s.Game, s.Identity.BuildId, s.Path))
                 .ToArray());
-        File.WriteAllText(path, JsonSerializer.Serialize(config, JsonOptions));
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(config, JsonOptions);
+        if (bytes.Length > MaximumConfigBytes) throw new InvalidDataException("Source-library config exceeds its size limit.");
+        _ = DecodeConfig(bytes);
+        AtomicDocumentFile.Save(path, bytes, MaximumConfigBytes, existing =>
+        {
+            try { _ = DecodeConfig(existing); return true; }
+            catch (Exception error) when (RecoverableConfigError(error)) { return false; }
+        });
     }
 
+    /// <summary>Load with explicit backup/rejection status; neither reading nor recovery rewrites either copy.</summary>
+    public static DocumentRead<ObpSavedSource[]> ReadConfig(string path) =>
+        AtomicDocumentFile.Load(path, MaximumConfigBytes, DecodeConfig, RecoverableConfigError);
+
+    /// <summary>Compatibility projection. Hosts use ReadConfig to display recovery/repair warnings.</summary>
     public static IReadOnlyList<ObpSavedSource> LoadConfig(string path)
     {
-        if (!File.Exists(path))
-        {
-            return Array.Empty<ObpSavedSource>();
-        }
+        var read = ReadConfig(path);
+        if (read.Kind == DocumentReadKind.Rejected) throw new InvalidDataException(read.Problem);
+        return read.Value ?? Array.Empty<ObpSavedSource>();
+    }
 
-        var config = JsonSerializer.Deserialize<ConfigFile>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidDataException($"Source-library config {path} is empty or invalid.");
+    private static bool RecoverableConfigError(Exception error) => error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidDataException;
+
+    private static ObpSavedSource[] DecodeConfig(byte[] bytes)
+    {
+        var config = JsonSerializer.Deserialize<ConfigFile>(bytes, JsonOptions)
+            ?? throw new InvalidDataException("Source-library config is empty or invalid.");
         if (config.Version != ConfigVersion)
         {
             throw new InvalidDataException(
                 $"Unsupported source-library config version {config.Version}; expected {ConfigVersion}.");
         }
+
+        if (config.Sources is null || config.Sources.Length > Enum.GetValues<ObpSourceGame>().Length ||
+            config.Sources.Any(source => source is null || !Enum.IsDefined(source.Game) ||
+                string.IsNullOrWhiteSpace(source.BuildId) || string.IsNullOrWhiteSpace(source.Path)))
+            throw new InvalidDataException("Source-library config contains invalid source entries.");
 
         var duplicate = config.Sources.GroupBy(s => s.Game).FirstOrDefault(g => g.Count() > 1);
         if (duplicate is not null)

@@ -146,7 +146,7 @@ public sealed class CommandLineArgsTests
         "--playtest-report", "--bug-report-inbox", "--replay-bug-report", "--bug-report-id", "--movement-state-file",
         "--load-movement-state", "--replay-forward", "--replay-out", "--rac1-iso", "--rac2-iso", "--rac3-iso",
         "--gc-iso", "--uya-iso", "--gc-level", "--planet", "--destination", "--profile-smoke", "--acceptance-out",
-        "--profile", "--player-capabilities-out", "--stress-switch", "--overlay", "--shots", "--shots-world",
+        "--profile", "--source-config", "--player-capabilities-out", "--stress-switch", "--overlay", "--shots", "--shots-world",
         "--shots-out", "--rac1-campaign-save", "--composition", "--composition-view", "--compose-worlds", "--compose-reload",
     }.Select(option => new object[] { option });
 
