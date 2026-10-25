@@ -23,7 +23,7 @@ public partial class OBPGame
     {
         if (_world is null || _player is null || _activeDestination is null || _movementStateLoading)
             throw new InvalidOperationException("Enter an R&C1 world before saving a movement state.");
-        return new MovementReproState(MovementReproState.CurrentVersion, _activeDestination.DestinationId,
+        return new MovementReproState(2, _activeDestination.DestinationId,
             _world.BuildId, DateTimeOffset.UtcNow, typeof(OBPGame).Module.ModuleVersionId,
             _player.CaptureMovementRepro(), CaptureMovementWorld()).Validate();
     }
@@ -95,6 +95,12 @@ public partial class OBPGame
 
     private void SaveMovementState()
     {
+        if (OrdinaryPlayerSession)
+        {
+            if (_playtest is { } capture) capture.RequestBookmark(MovementStatePath);
+            else ReportMovementState("Universal bookmarks need an input history. Start Bug Capture or --record-playtest, then press F12; the completed prefix preserves native actors too.");
+            return;
+        }
         if (FusionMovementStateBlocked) { ReportMovementState("Cross-game weapons use input recordings; use --record-playtest to retain all three sources."); return; }
         try
         {
@@ -115,13 +121,18 @@ public partial class OBPGame
 
     private async Task<List<MovementReplaySample>?> LoadMovementStateAsync(string path, bool startup = false, int? recordFrames = null)
     {
-        if (FusionMovementStateBlocked) { ReportMovementState("Select an R&C1 weapon and let foreign shots finish before loading an R&C1-only movement state."); return null; }
         if (_playtest?.RejectMovementLoad() == true) return null;
         if (_movementStateLoading) return null;
         PlayerHost? restoringPlayer = null;
         try
         {
             MovementReproState state = MovementReproStateFile.Load(path);
+            if (state.Version == MovementReproState.CurrentVersion)
+            {
+                OpenReplayBookmark(path, state);
+                return null;
+            }
+            if (FusionMovementStateBlocked) throw new InvalidOperationException("Legacy R&C1 bookmarks require an R&C1 weapon with no active foreign shots.");
             if (_args.ReplayForwardFrames is { } frames && (frames < 1 || frames > 3600))
                 throw new InvalidDataException("Forward replay must contain 1 through 3600 physics updates.");
             var destination = TrilogyWorldProviders.Resolve(state.Destination)

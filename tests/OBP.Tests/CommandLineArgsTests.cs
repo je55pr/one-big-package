@@ -12,7 +12,8 @@ public sealed class CommandLineArgsTests
         Assert.True(CommandLineArgs.Parse(["--retail-parity"]).NativeParityRequested);
         Assert.True(CommandLineArgs.Parse(["--fusion-smoke"]).NativeParityRequested);
         Assert.True(CommandLineArgs.Parse(["--rac1-campaign-persist"]).NativeParityRequested);
-        Assert.True(CommandLineArgs.Parse(["--record-playtest", "run.jsonl.gz"]).NativeParityRequested);
+        Assert.False(CommandLineArgs.Parse(["--record-playtest", "run.jsonl.gz"]).NativeParityRequested);
+        Assert.True(CommandLineArgs.Parse(["--record-playtest", "run.jsonl.gz", "--playtest-smoke"]).NativeParityRequested);
         var diagnostic = CommandLineArgs.Parse(["--diagnostic-player"]);
         Assert.True(diagnostic.DiagnosticPlayer);
         Assert.False(diagnostic.NativeParityRequested);

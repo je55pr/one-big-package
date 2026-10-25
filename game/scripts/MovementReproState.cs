@@ -4,6 +4,7 @@ using OBP.RAC1.Camera;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.Runtime.Camera;
+using OBP.Fusion;
 
 namespace OneBigPackage;
 
@@ -21,11 +22,24 @@ public sealed record MovementReproState(
     MovementReproPlayer Player,
     MovementReproWorld? World = null)
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 3;
+    public JsonElement? Profile { get; init; }
+    public MovementReplayReference? Replay { get; init; }
 
     public MovementReproState Validate()
     {
-        if (Version is not (1 or CurrentVersion) || Version == CurrentVersion && World is null ||
+        if (Version == CurrentVersion)
+        {
+            if (!ObpProfile.IsDestination(Destination) || string.IsNullOrWhiteSpace(SourceBuildId) || HostAssemblyId == Guid.Empty ||
+                Profile is not { ValueKind: JsonValueKind.Object } profile || Replay is null || World is not null)
+                throw new InvalidDataException("Universal bookmarks require their shared profile and completed replay prefix.");
+            if (Player is null) throw new InvalidDataException("Universal bookmark lacks its selected player's pose observation.");
+            Player.Validate();
+            _ = ObpProfile.Decode(System.Text.Encoding.UTF8.GetBytes(profile.GetRawText()));
+            Replay.Validate();
+            return this;
+        }
+        if (Version is not (1 or 2) || Version == 2 && World is null ||
             string.IsNullOrWhiteSpace(SourceBuildId) || string.IsNullOrWhiteSpace(Destination) ||
             !Destination.StartsWith("rac1:LEVEL", StringComparison.Ordinal) ||
             !int.TryParse(Destination.AsSpan("rac1:LEVEL".Length), out int level) || level is < 0 or > 255 ||
@@ -34,6 +48,18 @@ public sealed record MovementReproState(
         Player.Validate();
         World?.Validate();
         return this;
+    }
+}
+
+/// <summary>Local sibling recording; bounded, payload-free and safe to move with its bookmark.</summary>
+public sealed record MovementReplayReference(string FileName, string Sha256, int Step)
+{
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(FileName) || FileName.Length > 160 || FileName.IndexOfAny(['/', '\\', ':']) >= 0 ||
+            !FileName.EndsWith(".run.jsonl.gz", StringComparison.Ordinal) || FileName.Contains("..", StringComparison.Ordinal) ||
+            Sha256 is not { Length: 64 } || Sha256.Any(character => !Uri.IsHexDigit(character)) || Step is < 0 or >= 1_000_000)
+            throw new InvalidDataException("Invalid bookmark recording reference.");
     }
 }
 
@@ -112,7 +138,7 @@ public sealed record MovementReproPlayer(
 
 public static class MovementReproStateFile
 {
-    private const long MaximumBytes = 1024 * 1024;
+    private const long MaximumBytes = 4 * 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
     public static MovementReproState Load(string path)

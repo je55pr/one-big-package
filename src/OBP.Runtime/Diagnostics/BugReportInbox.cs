@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
+using OBP.Core;
 
 namespace OBP.Runtime.Diagnostics;
 
@@ -9,7 +10,12 @@ public sealed record BugReportEntry(Guid Id, DateTimeOffset CreatedUtc, int Step
 
 public sealed record BugReportRecording(string FileName, long Bytes, string Sha256, int Steps,
     string Destination, string SourceBuild, Guid AssemblyId, IReadOnlyDictionary<string, Guid> Assemblies,
-    string EngineVersion, string Platform, string PhysicsEngine, string ApplicationVersion = "");
+    string EngineVersion, string Platform, string PhysicsEngine, string ApplicationVersion = "")
+{
+    public int CaptureVersion { get; init; } = PlaytestRunHeader.LegacyVersion;
+    public IReadOnlyList<ObpBuildIdentity> Sources { get; init; } = [];
+    public IReadOnlyList<PlaytestAdapter> Adapters { get; init; } = [];
+}
 
 /// <summary>One atomic index and one shared, completed recording per reporting session.</summary>
 public sealed record BugReportSession(int Version, Guid Id, DateTimeOffset StartedUtc,
@@ -60,7 +66,8 @@ public sealed class BugReportInbox
                 throw new InvalidDataException("A report marker is missing from its recording.");
             var recording = new BugReportRecording(Path.GetFileName(snapshot), new FileInfo(snapshot).Length,
                 Hash(snapshot), steps, header.Destination, header.SourceBuild, header.AssemblyId,
-                header.Assemblies, header.EngineVersion, header.Platform, header.PhysicsEngine, header.ApplicationVersion);
+                header.Assemblies, header.EngineVersion, header.Platform, header.PhysicsEngine, header.ApplicationVersion)
+            { CaptureVersion = header.Version, Sources = header.Sources, Adapters = header.Adapters };
             var session = new BugReportSession(1, sessionId, header.StartedUtc, recording, reports);
             Validate(session);
             WriteAtomic(Path.Combine(directory, "session.json"), session);
@@ -226,7 +233,8 @@ public sealed class BugReportInbox
         if (steps != info.Steps || header.AssemblyId != info.AssemblyId || header.SourceBuild != info.SourceBuild ||
             header.Destination != info.Destination || header.EngineVersion != info.EngineVersion ||
             header.Platform != info.Platform || header.PhysicsEngine != info.PhysicsEngine || header.ApplicationVersion != info.ApplicationVersion ||
-            !header.MatchesAssemblies(info.Assemblies) ||
+            !header.MatchesAssemblies(info.Assemblies) || info.CaptureVersion != header.Version ||
+            !info.Sources.SequenceEqual(header.Sources) || !info.Adapters.SequenceEqual(header.Adapters) ||
             session.Reports.Any(r => !markers.Contains(new(r.Step, r.Marker))))
             throw new InvalidDataException("Recording identity or marker does not match its report.");
     }
@@ -245,6 +253,13 @@ public sealed class BugReportInbox
     private static void Validate(BugReportSession session)
     {
         var recording = session.Recording;
+        if (recording is { } provenance && (provenance.CaptureVersion is not (PlaytestRunHeader.LegacyVersion or PlaytestRunHeader.CurrentVersion) ||
+            provenance.Sources is null || provenance.Sources.Count > 3 || provenance.Sources.Any(source => source is null ||
+                !Enum.IsDefined(source.Game) || source.Game == ObpSourceGame.Synthetic || string.IsNullOrWhiteSpace(source.BuildId) || source.BuildId.Length > 128 ||
+                source.Sha256 is not { Length: 64 } digest || digest.Any(character => !Uri.IsHexDigit(character))) ||
+            provenance.Adapters is null || provenance.Adapters.Count > 256 || provenance.Adapters.Any(adapter => adapter is null || string.IsNullOrWhiteSpace(adapter.Id) || adapter.Version != 1 || adapter.NativeHz != 60) ||
+            provenance.CaptureVersion == PlaytestRunHeader.CurrentVersion && (provenance.Sources.Count == 0 || provenance.Adapters.Count == 0)))
+            throw new InvalidDataException("Report lacks supported source/adapter prerequisites.");
         if (session.Version != 1 || session.Id == Guid.Empty || recording is null || !ValidRunName(recording.FileName) ||
             recording.Bytes is <= 0 or > PlaytestRunLimits.Compressed || recording.Steps <= 0 ||
             recording.Sha256 is not { Length: 64 } || !recording.Sha256.All(Uri.IsHexDigit) ||

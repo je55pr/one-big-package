@@ -17,9 +17,10 @@ public sealed class WorldEntryContractTests
         var session = new TestSession(Snapshot(selectedAvatar));
         var providers = new PlayerAvatarProviderRegistry(Enum.GetValues<ObpSourceGame>()
             .Select(game => new TestAvatarProvider(game)));
-        foreach (string game in new[] { "rac1", "rac2", "rac3", "fusion", "rac1" })
+        foreach (var destination in ReconciliationGateTests.Matrix.GetProperty("Route").EnumerateArray())
         {
-            var plan = WorldEntryPlanning.Prepare(Request(game + ":fixture"), new TestWorldSource(game), session, providers);
+            string id = destination.GetString()!, game = id.Split(':')[0];
+            var plan = WorldEntryPlanning.Prepare(Request(id), new TestWorldSource(game), session, providers);
             Assert.Equal(game, plan.Prepared.World.Game);
             Assert.Same(session, plan.PlayerSession);
             Assert.Equal(session.State, plan.Player);

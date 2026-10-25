@@ -1,4 +1,6 @@
 using System.Text.Json;
+using OBP.Fusion;
+using OBP.IO;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Progression;
@@ -45,6 +47,19 @@ public partial class OBPGame
                 _bugSessionId = Guid.NewGuid();
                 string live = Path.Combine(_bugReports.Root, "live", _bugSessionId.ToString("N"));
                 Directory.CreateDirectory(live);
+                if (!_args.NativeParityRequested)
+                {
+                    string? destination = _args.Destination;
+                    string profilePath = _args.ProfilePath ?? ProjectSettings.GlobalizePath("user://obp-profile.json");
+                    if (destination is null && !_args.NoProfile && (File.Exists(profilePath) || File.Exists(profilePath + ".bak")))
+                    {
+                        var saved = AtomicDocumentFile.Load(profilePath, ObpProfile.MaximumBytes, ObpProfile.Decode,
+                            error => error is IOException or UnauthorizedAccessException or JsonException or ArgumentException);
+                        destination = saved.Value?.Destination ?? throw new InvalidDataException("The shared profile cannot be recovered; original files retained.");
+                    }
+                    _args = _args with { RecordPlaytest = Path.Combine(live, "session.run.jsonl.gz"), Destination = destination ?? "rac1:LEVEL0" };
+                    return true;
+                }
                 string sourceSave = _args.Rac1CampaignSavePath ?? ProjectSettings.GlobalizePath("user://rac1-campaign.json");
                 int current = 0;
                 string isolated = Path.Combine(live, "campaign.json");
@@ -64,7 +79,7 @@ public partial class OBPGame
             }
             return true;
         }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or ArgumentException or UnsupportedProfileVersionException)
         {
             GD.PrintErr("[bug-report] startup failed: " + error.Message);
             if (_args.BugCapture && !_args.BugReportSmoke && DisplayServer.GetName() != "headless")
@@ -119,7 +134,9 @@ public partial class OBPGame
             {
                 var report = _bugRows[index].Report;
                 string planet = TrilogyWorldProviders.Resolve(report.Destination)?.DisplayName ?? report.Destination;
-                _bugReportUi.SetDetails($"{planet} · {report.CreatedUtc.LocalDateTime:g}\n{report.Description}");
+                var prerequisites = _bugReports!.Read(_bugRows[index].Session).Recording;
+                string sources = string.Join(", ", prerequisites.Sources.Select(source => $"{source.Game}/{source.BuildId}/{source.Sha256?[..12]}"));
+                _bugReportUi.SetDetails($"{planet} · {report.CreatedUtc.LocalDateTime:g}\n{report.Description}\nRequired sources: {sources}\n{prerequisites.Adapters.Count} native/session adapters; exact physics/backend and build required.");
             }
         };
         _bugReportUi.OpenFolderRequested += () =>
@@ -242,11 +259,14 @@ public partial class OBPGame
             Directory.CreateDirectory(results);
             string result = Path.Combine(results, Guid.NewGuid().ToString("N") + ".json");
             var arguments = new List<string> { "--path", ProjectSettings.GlobalizePath("res://"), "--fixed-fps", "60" };
-            if (_args.BugReportSmoke) arguments.Add("--headless");
+            bool automatedReplay = _args.BugReportSmoke || DisplayServer.GetName() == "headless";
+            if (automatedReplay) arguments.Add("--headless");
             arguments.AddRange(["--", "--replay-bug-report", Path.Combine(inbox.SessionDirectory(selected.Session), "session.json"),
                 "--bug-report-id", selected.Report.Id.ToString(), "--playtest-report", result]);
-            if (!_args.BugReportSmoke) arguments.Add("--playtest-inspect-marker");
+            if (!automatedReplay) arguments.Add("--playtest-inspect-marker");
             if (_args.Rac1Iso is { } iso) arguments.AddRange(["--rac1-iso", iso]);
+            if (_args.GcIso is { } gcIso) arguments.AddRange(["--gc-iso", gcIso]);
+            if (_args.UyaIso is { } uyaIso) arguments.AddRange(["--uya-iso", uyaIso]);
             if (changed) arguments.Add("--playtest-allow-build-change");
             ui.SetBusy(true, "Replaying in a separate game process…");
             int process = OS.CreateProcess(OS.GetExecutablePath(), arguments.ToArray());

@@ -204,7 +204,9 @@ public partial class OBPGame
         AddChild(_sourceManager);
         _sourceManager.Populate(_sources, TrilogyWorldProviders.Games);
 
-        if (_rac1CampaignRestoreWarning is not null)
+        if (_profileStatus is not null)
+            _sourceManager.SetStatus(_profileStatus, error: _profileWriteBlocked);
+        else if (_rac1CampaignRestoreWarning is not null)
             _sourceManager.SetStatus(_rac1CampaignRestoreWarning, error: true);
         else if (_sourceRestoreWarnings.Count > 0)
         {

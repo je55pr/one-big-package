@@ -39,6 +39,7 @@ public partial class OBPGame
     public void OpenDestinationFromBootstrap(string destinationId)
     {
         EnsureSourceLibraryInitialized();
+        if (destinationId == "obp:fusion-lab") { EnterFusionLab(); return; }
         var destination = TrilogyWorldProviders.Resolve(destinationId);
         if (destination is null)
         {

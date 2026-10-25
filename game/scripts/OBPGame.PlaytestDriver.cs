@@ -14,11 +14,46 @@ public partial class OBPGame
         internal PlaytestRunReader? Reader { get; init; }
         internal Rac1CameraOptions OriginalCameraOptions { get; set; } = null!;
         internal bool WaitingForEntry { get; private set; } = true;
+        internal bool PreparingWorld { get; private set; }
+        internal bool HasEntered => _entered;
+        private readonly List<PlaytestCommand> _pendingCommands = [], _commands = [], _observedCommands = [];
+        private readonly List<PlaytestCommand> _stagedCommands = [];
+        private bool _stagingCommands;
+        private int _matchedCommands;
+
+        internal void RecordSessionCommand(PlaytestCommand command)
+        {
+            if (!_entered || _finished) return;
+            command.Validate();
+            if (Reader is not null) (_stagingCommands ? _stagedCommands : _observedCommands).Add(command);
+            else if (_step is null) _pendingCommands.Add(command with { After = false });
+            else _commands.Add(command with { After = true });
+        }
+
+        private void ReconcileCommands(bool after)
+        {
+            foreach (var command in _step!.Commands.Where(command => command.After == after))
+            {
+                if (_observedCommands.Count <= _matchedCommands) Game.ApplyCaptureCommand(command);
+                if (_observedCommands.Count <= _matchedCommands ||
+                    (_observedCommands[_matchedCommands] with { After = false }) != (command with { After = false }))
+                    throw new InvalidDataException("Player-session command order or outcome differs from the recording.");
+                _matchedCommands++;
+            }
+            if (after && _matchedCommands != _observedCommands.Count)
+                throw new InvalidDataException("Replay emitted an unrecorded player-session operation.");
+        }
         internal bool Finished => _finished;
         private PlaytestRunWriter? _writer;
         private readonly List<PlaytestInputEvent> _pending = [];
         private readonly List<PlaytestPlayerInput> _players = [];
         private PlaytestStep? _step;
+        private PlaytestStep? _bufferedStep;
+        private readonly List<PlaytestGameplayFact> _gameplay = [];
+        internal void RecordGameplayFact(PlaytestGameplayFact fact)
+        {
+            if (!_finished && _step is not null) { fact.Validate(); _gameplay.Add(fact); }
+        }
         private IReadOnlyDictionary<string, float> _previousActions = new Dictionary<string, float>();
         private PlaytestRunHeader? _header;
         private PlayerHost? _attachedPlayer;
@@ -55,16 +90,23 @@ public partial class OBPGame
                 if (Reader is { } reader) Game.GetWindow().Size = new(reader.Header.Width, reader.Header.Height);
             }
             AttachPlayer();
+            if (Game.OrdinaryPlayerSession)
+            {
+                PreparingWorld = true;
+                Game.SetPhysicsProcess(false); Game._player?.SetPhysicsProcess(false);
+            }
             if (Game._args.PlaytestSmoke && Reader is null && WaitingForEntry)
                 Callable.From(() => { _ = Game._args.FusionTest || Game._args.DefaultWeaponsSmoke ? Game.RunFusionRecordingSmokeAsync() : Game.RunPlaytestRecordingSmokeAsync(); }).CallDeferred();
             if (Game._args.BugReportSmoke && Reader is null && WaitingForEntry)
                 Callable.From(() => { _ = Game.RunBugReporterSmokeAsync(); }).CallDeferred();
+            if (Game._args.ReconciliationSmoke && Reader is null && WaitingForEntry)
+                Callable.From(() => { _ = Game.RunReconciliationRecordingSmokeAsync(); }).CallDeferred();
         }
 
         public override void _PhysicsProcess(double delta) => Begin(PlaytestStepKind.Physics, delta);
         public override void _Process(double delta)
         {
-            if (_bugSuspended || _finished && Game._args.PlaytestInspectMarker) PaceHumanRecording();
+            if (_bugSuspended || _finished && (Reader is null || Game._args.PlaytestInspectMarker || Game._bookmarkReplayStep.HasValue)) PaceHumanRecording();
             Begin(PlaytestStepKind.Process, delta);
         }
 
@@ -130,12 +172,41 @@ public partial class OBPGame
             if (!_entered || _finished || !ResumeBugCaptureAtBoundary(kind)) return;
             try
             {
-                if (Game._world?.Game != "rac1" || Game._movementStateLoading)
-                    throw new InvalidOperationException("A playtest currently supports R&C1 levels and ordinary travel, without movement-state loads.");
+                if (Game._movementStateLoading) throw new InvalidOperationException("Movement-state loads cannot be mixed into an input tape.");
+                if (Game._bookmarkReplayStep is { } bookmarkStep && _nextStep > bookmarkStep) { CompleteReplay(atBookmark: true); return; }
+                if (Game._bugReplayReport is { } report && _nextStep > report.Step) { CompleteReplay(atReportMarker: true); return; }
+                if (Reader is not null)
+                {
+                    _bufferedStep ??= Reader.ReadNextStep();
+                    if (_bufferedStep is null) { CompleteReplay(); return; }
+                    // An external world-browser command can retire the world
+                    // between Physics and Process. Stage that operation before
+                    // waiting for its next recorded phase, including any IO gap.
+                    if (!PreparingWorld && _bufferedStep.Kind != kind && _bufferedStep.Commands.Any(command => !command.After && command.Kind == "destination"))
+                    {
+                        _stagingCommands = true;
+                        try { foreach (var command in _bufferedStep.Commands.Where(command => !command.After)) Game.ApplyCaptureCommand(command); }
+                        finally { _stagingCommands = false; }
+                    }
+                }
+                if (PreparingWorld)
+                {
+                    if (Reader is not null)
+                    {
+                        _bufferedStep ??= Reader.ReadNextStep();
+                        if (_bufferedStep is null) { CompleteReplay(); return; }
+                    }
+                    if (!Game.CaptureWorldReady() || kind != (_bufferedStep?.Kind ?? PlaytestStepKind.Physics)) return;
+                    PreparingWorld = false; Game.SetPhysicsProcess(true); Game._player?.SetPhysicsProcess(true);
+                }
                 if (Math.Abs(delta - 1d / 60) > .00001)
                     throw new InvalidOperationException("Simulation timing changed; playtest requires fixed 60-Hz updates.");
                 AttachPlayer();
                 _players.Clear(); _playerReads = 0;
+                _gameplay.Clear();
+                _observedCommands.Clear();
+                _observedCommands.AddRange(_stagedCommands); _stagedCommands.Clear();
+                _matchedCommands = 0;
                 PlaytestClock.Active = true;
                 if (Reader is null)
                 {
@@ -154,15 +225,12 @@ public partial class OBPGame
                         Height = Game.GetWindow().Size.Y,
                     };
                     _pending.Clear();
+                    _commands.Clear(); _commands.AddRange(_pendingCommands); _pendingCommands.Clear();
                 }
                 else
                 {
-                    if (Game._bugReplayReport is { } target && _nextStep > target.Step)
-                    {
-                        CompleteReplay(atReportMarker: true);
-                        return;
-                    }
-                    _step = Reader.ReadNextStep();
+                    _step = _bufferedStep ?? Reader.ReadNextStep();
+                    _bufferedStep = null;
                     if (_step is null) { CompleteReplay(); return; }
                     if (_step.Kind != kind) throw new InvalidOperationException($"Step {_nextStep}: expected {_step.Kind}, engine called {kind}.");
                     var size = new Vector2I(_step.Width, _step.Height);
@@ -180,13 +248,15 @@ public partial class OBPGame
                         }
                     }
                     finally { _injecting = false; }
+                    ReconcileCommands(after: false);
                     RestoreActions(_step.Actions);
                     _previousActions = _step.Actions;
                     PlaytestClock.RecordedMilliseconds = _step.Milliseconds;
                     if (WaitingForEntry)
                     {
                         _header = Reader.Header;
-                        if (_header.SourceBuild != Game._world.BuildId) throw new InvalidDataException("Recorded source build does not match this world.");
+                        Game.ValidateCaptureProvenance(_header);
+                        if (_header.SourceBuild != Game._world!.BuildId) throw new InvalidDataException("Recorded source build does not match this world.");
                         if (_header.Weapons is { } weapons && (Game.FusionConfiguration is not { } actualWeapons || !weapons.Matches(actualWeapons)))
                         {
                             string changed = Game.FusionConfiguration is not { } configuration ? "missing loadout" : string.Join(", ", weapons.Sources.Keys.Where(k =>
@@ -211,6 +281,7 @@ public partial class OBPGame
                 if (_finished) return input;
                 try
                 {
+                    if (PreparingWorld || WaitingForEntry && _step is null) return default;
                     if (_step?.Kind != PlaytestStepKind.Physics) throw new InvalidOperationException("Player input escaped its recorded physics step.");
                     if (Reader is null)
                     {
@@ -239,9 +310,9 @@ public partial class OBPGame
                 if (kind == PlaytestStepKind.Process) _processSteps++;
                 if (Reader is null)
                 {
-                    bool observe = kind == PlaytestStepKind.Process && (_processSteps % 60 == 0 || _markRequested || _stopRequested || _bugOverlayRequested);
+                    bool observe = !PreparingWorld && kind == PlaytestStepKind.Process && (_processSteps % 60 == 0 || _markRequested || _stopRequested || _bugOverlayRequested || _bookmarkPath is not null);
                     _lastObserved = observe ? Game.CapturePlaytestCheckpoint() : null;
-                    _writer!.Add(_step with { Players = _players.ToArray(), Checkpoint = _lastObserved });
+                    _writer!.Add(_step with { Players = _players.ToArray(), Checkpoint = _lastObserved, Commands = _commands.ToArray(), Gameplay = _gameplay.ToArray() });
                     if (observe && _markRequested)
                     {
                         _writer.Mark(new(_step.Index, "Bug " + ++_marks));
@@ -251,6 +322,9 @@ public partial class OBPGame
                 }
                 else
                 {
+                    ReconcileCommands(after: true);
+                    if (Reader.Header.Version == PlaytestRunHeader.CurrentVersion && !PlaytestGameplayFact.Matches(_step.Gameplay, _gameplay))
+                        throw new InvalidDataException($"Step {_nextStep}: source-qualified shot/damage order or adapter clock changed.");
                     if (_playerReads != _step.Players.Count) throw new InvalidOperationException("Replay consumed fewer player updates than recorded.");
                     if (_step.Checkpoint is { } expected) Compare(expected, Game.CapturePlaytestCheckpoint(), _step.Index);
                 }
@@ -263,6 +337,7 @@ public partial class OBPGame
                         ? $"BUG CAPTURE · {_processSteps / 60}s\nF8: Report · F7: Inbox · Paused: Square Report / Select Inbox\n{(_processSteps < _bugNoticeUntil ? _bugNotice : "")}"
                         : $"RECORDING  ·  {_processSteps / 60}s  ·  {_marks} bug markers\nF8: Mark bug   F9: Save run\nPaused: Square marks · Select saves{focus}");
                     if (_bugOverlayRequested) EnterBugOverlay(_nextStep - 1);
+                    if (_bookmarkPath is { } bookmark && !PreparingWorld) { _bookmarkPath = null; _ = SaveBookmarkAsync(bookmark, _nextStep - 1); }
                     if (_stopRequested || _nextStep >= 999_990) _ = SaveAsync();
                     PaceHumanRecording();
                 }
@@ -272,7 +347,7 @@ public partial class OBPGame
 
         private void PaceHumanRecording()
         {
-            if (Game._args.PlaytestSmoke || Game._args.BugReportSmoke) return;
+            if (Game._args.PlaytestSmoke || Game._args.BugReportSmoke || Game._args.ReconciliationSmoke) return;
             // --fixed-fps disables Godot's real-time synchronization. Explicitly
             // pace the visible recorder; --max-fps alone does not cap this mode.
             // Replays and input smokes still run as fast as their host allows.
@@ -316,25 +391,35 @@ public partial class OBPGame
                 await _flush;
                 SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
                 GD.Print($"[playtest] SAVED {_writer.Path}; steps={_nextStep}; markers={_marks}");
-                if (Game._args.PlaytestSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
+                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
             }
             catch (Exception error)
             {
                 _recordingError = error.Message;
                 SetNotice("Recording could not be saved: " + error.Message);
                 GD.PrintErr("[playtest] save failed: " + error.Message);
-                if (Game._args.PlaytestSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
+                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
             }
         }
 
-        private void CompleteReplay(bool atReportMarker = false)
+        private void CompleteReplay(bool atReportMarker = false, bool atBookmark = false)
         {
-            if (!atReportMarker && Reader!.End?.Reason is not ("saved" or "closed"))
+            if (!atBookmark && Game._bookmarkReplayStep is { } targetStep && _nextStep <= targetStep)
+                throw new InvalidDataException("Bookmark recording ended before its saved step.");
+            if (!atReportMarker && !atBookmark && Reader!.End?.Reason is not ("saved" or "closed"))
                 throw new InvalidDataException("The recording ended with an error; it cannot establish a matched run.");
             bool matched = _firstDifference is null;
             WriteReport(matched ? "matched" : "diverged", null);
             _finished = true;
+            PlaytestClock.Active = false;
             GD.Print($"[playtest] {(matched ? "PASS" : "DIVERGED")}; steps={_nextStep}; checkpoints={_checks}; markers={Reader!.Markers.Count}");
+            if (atBookmark && matched && DisplayServer.GetName() != "headless" && !AutomationRunPolicy.IsAutomated(OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()))
+            {
+                RestoreActions(new Dictionary<string, float>());
+                GetTree().Paused = false;
+                SetNotice("Universal bookmark restored. Native encounter history and shared player matched; play can continue.\nThis reproduction session does not write your ordinary profile.");
+                return;
+            }
             if (atReportMarker && Game._args.PlaytestInspectMarker)
             {
                 GetTree().Paused = true;
@@ -371,6 +456,10 @@ public partial class OBPGame
             if (_finished) return;
             GD.PrintErr("[playtest] FAIL: " + error.Message);
             WaitingForEntry = false;
+            if (PreparingWorld)
+            {
+                PreparingWorld = false; Game.SetPhysicsProcess(true); Game._player?.SetPhysicsProcess(true);
+            }
             _recordingError = error.Message;
             _finished = true;
             if (Reader is not null)
@@ -383,7 +472,7 @@ public partial class OBPGame
             {
                 SetNotice("Recording stopped: " + error.Message);
                 if (Game._args.BugCapture && _bugReportButton is { } reportButton) reportButton.Disabled = true;
-                if (Game._args.PlaytestSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-failed", 2);
+                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke || Game._args.BugReportSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-failed", 2);
             }
             PlaytestClock.Active = false;
         }

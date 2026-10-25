@@ -16,6 +16,7 @@ public sealed partial class PauseMenuUi
     public Func<EquipmentCatalogEntry, Control?>? CatalogPreview { get; init; }
     public Func<EquipmentCatalogEntry, Texture2D?>? CatalogIcon { get; init; }
     public Func<IReadOnlyDictionary<string, string>>? ActorStatusReader { get; init; }
+    public Func<string?>? SharedProfileStatusReader { get; init; }
     public Func<string, EquipmentChangeResult>? ActorReset { get; init; }
     public bool LabAvailable { get; init; }
     public event Action? LabRequested;
@@ -49,6 +50,8 @@ public sealed partial class PauseMenuUi
         header.AddChild(new Label { Text = "ONE BIG PACKAGE  /  PAUSED", ThemeTypeVariation = "HeaderSmall", AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = Control.SizeFlags.ExpandFill });
         _resume = MakeButton("RESUME"); _resume.Pressed += () => ResumeRequested?.Invoke(); header.AddChild(_resume);
         var tabs = new HFlowContainer(); column.AddChild(tabs);
+        if (SharedProfileStatusReader?.Invoke() is { } status)
+            column.AddChild(new Label { Name = "SharedProfileStatus", Text = status, AutowrapMode = TextServer.AutowrapMode.WordSmart, Modulate = UiTheme.TextDim });
         foreach (string section in UniversalSections)
         {
             var tab = MakeButton(section.ToUpperInvariant()); tab.Name = "ObpTab_" + section.Replace(" ", "");

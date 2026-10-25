@@ -53,7 +53,7 @@ public partial class OBPGame
             {
                 Guid id = Guid.NewGuid();
                 draft = new(id, DateTimeOffset.UtcNow, completedStep, "report-" + id.ToString("N"),
-                    Game._activeDestination!.DestinationId, "Bug on " + Game._activeDestination.DisplayName, "");
+                    Game._currentDestinationId!, "Bug on " + (Game._activeDestination?.DisplayName ?? "Fusion Lab"), "");
                 _writer!.Mark(new(completedStep, draft.Marker));
                 _marks++;
             }

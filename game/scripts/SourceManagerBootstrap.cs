@@ -129,6 +129,8 @@ public partial class SourceManagerBootstrap : Node
             return;
         }
 
+        if (!args.TestSceneExplicit && _game.TryResumeSharedProfileFromBootstrap()) return;
+
         if (args.StressSwitch is { } stressSequence)
         {
             _game.RunGcStressSwitchFromBootstrap(stressSequence);

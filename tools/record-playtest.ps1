@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Start an input/state recording from a fresh R&C1 level entry.
+  Start a source-qualified shared-player recording from a registered world entry.
 .DESCRIPTION
   Play normally. F8 marks a bug; F9 saves the run and stops recording.
   With a controller, pause with Start, then Square marks and Select saves.
@@ -9,8 +9,9 @@
   logical controls and state observations, with no ISO/assets or local source path.
 #>
 param(
-    [ValidatePattern('^rac1:LEVEL([0-9]|1[0-8])$')][string]$Destination = 'rac1:LEVEL1',
+    [ValidatePattern('^(rac[123]:(LEVEL|TABLE)[0-9]+|obp:fusion-lab)$')][string]$Destination = 'rac1:LEVEL1',
     [string]$CampaignSave,
+    [string]$Profile,
     [string]$Out,
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
     [string]$GcIso = $env:OBP_GC_ISO,
@@ -20,6 +21,7 @@ param(
     [int]$Seed = 1440,
     [switch]$SkipBuild,
     [switch]$Smoke,
+    [switch]$ReconciliationSmoke,
     [switch]$Headless,
     [switch]$Offscreen
 )
@@ -27,7 +29,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if ($FusionTest -and ($Destination -ne 'rac1:LEVEL0' -or $CampaignSave)) { throw 'Fusion recording requires fresh rac1:LEVEL0 without a campaign save.' }
 . (Join-Path $PSScriptRoot 'obp-window.ps1')
-if ($Headless -and -not $Smoke) { throw 'Headless recording needs the input smoke driver; human recordings use a visible window.' }
+if ($Headless -and -not ($Smoke -or $ReconciliationSmoke)) { throw 'Headless recording needs an input smoke driver; human recordings use a visible window.' }
 if ($Offscreen -and -not $Smoke) { throw 'Offscreen recording is only for the input smoke driver.' }
 if (-not $Out) {
     $Out = Join-Path $root ('captures/repros/' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8) + '.run.jsonl.gz')
@@ -55,6 +57,8 @@ if ($UyaIso) { $engineArgs += @('--uya-iso', $UyaIso) }
 if ($FusionTest) { $engineArgs += '--fusion-test' }
 if ($DefaultWeaponsSmoke) { $engineArgs += '--default-weapons-smoke' }
 if ($Smoke) { $engineArgs += '--playtest-smoke' }
+if ($ReconciliationSmoke) { $engineArgs += '--reconciliation-smoke' }
+if ($Profile) { $engineArgs += @('--profile', [IO.Path]::GetFullPath($Profile)) }
 if ($CampaignSave) {
     if (-not (Test-Path -LiteralPath $CampaignSave -PathType Leaf)) { throw 'Starting campaign save not found.' }
     $isolatedCampaign = $Out + '.campaign.json'

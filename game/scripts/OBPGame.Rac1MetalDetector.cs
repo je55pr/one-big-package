@@ -58,7 +58,13 @@ public partial class OBPGame
     /// </summary>
     private bool TryToggleRac1MetalDetector()
     {
-        if (_world?.Game != "rac1" || _rac1MetalDetector is null) return false;
+        if (OrdinaryPlayerSession)
+        {
+            var entry = ReadPlayerEquipment().Single(entry => entry.Definition.Id == "rac1/item/27");
+            ReportMovementState(entry.Reason ?? "The common Metal Detector action is unavailable.");
+            return true;
+        }
+        if (_rac1MetalDetector is null) return false;
         if (!_rac1Weapons.OwnsNativeItem(Rac1MetalDetectorSession.NativeGadgetItem))
         {
             ReportMovementState("Metal Detector not owned (native inventory item 27).");

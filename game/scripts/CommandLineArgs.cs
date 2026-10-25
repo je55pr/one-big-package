@@ -26,8 +26,13 @@ public sealed record CommandLineArgs
     public bool PlayerSessionSmoke { get; init; }
     public bool PlayerCapabilitiesSmoke { get; init; }
     public bool TrilogyGameplaySmoke { get; init; }
+    public bool ReconciliationSmoke { get; init; }
+    public string? ProfileSmoke { get; init; }
+    public string? AcceptanceOut { get; init; }
+    public string? ProfilePath { get; init; }
+    public bool NoProfile { get; init; }
     public string? PlayerCapabilitiesOut { get; init; }
-    public bool NativeParityRequested => RetailParity || PlaytestRequested || FusionTest || FusionSmoke || DefaultWeaponsSmoke ||
+    public bool NativeParityRequested => RetailParity || PlaytestSmoke || FusionTest || FusionSmoke || DefaultWeaponsSmoke ||
         Rac1CampaignPersistenceRequested || Rac1VeldinPlaySmoke || Rac1MovementContactSmoke || Rac1StartupVisibilitySmoke ||
         Rac1CombatContractSmoke || Rac1WrenchSmoke || Rac1CrateSmoke || Rac1EnemySmoke || Rac1FrogSmoke ||
         Rac1BombGloveSmoke || Rac1NovalisSwimSmoke || Rac1NovalisRouteSmoke || Rac1NovalisPeckbotSmoke ||
@@ -226,6 +231,11 @@ public sealed record CommandLineArgs
                 "--player-session-smoke" => result with { PlayerSessionSmoke = true },
                 "--player-capabilities-smoke" => result with { PlayerCapabilitiesSmoke = true },
                 "--trilogy-gameplay-smoke" => result with { TrilogyGameplaySmoke = true },
+                "--reconciliation-smoke" => result with { ReconciliationSmoke = true },
+                "--profile-smoke" => result with { ProfileSmoke = Next() },
+                "--acceptance-out" => result with { AcceptanceOut = Next() },
+                "--profile" => result with { ProfilePath = Next() },
+                "--no-profile" => result with { NoProfile = true },
                 "--player-capabilities-out" => result with { PlayerCapabilitiesOut = Next() },
                 "--direct" => result with { DirectLoad = true },
                 "--skip-title" => result with { SkipTitle = true },

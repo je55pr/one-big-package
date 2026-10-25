@@ -47,6 +47,12 @@ public partial class OBPGame
         _playerSession = new(initial, _playerNative, new PlayerCameraPreferences());
         _worldEntries = new(_playerSession);
         RefreshPlayerSourceAvailability();
+        InitializeSharedProfile();
+        if (_captureStartingProfile is { } capture)
+        {
+            ApplySharedProfile(capture);
+            _captureStartingProfile = null;
+        }
     }
 
     private void RefreshPlayerSourceAvailability()

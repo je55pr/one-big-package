@@ -58,9 +58,11 @@ public partial class OBPGame
         {
             if (_playerSession?.Capture().Configuration.Avatar != avatar)
                 return new(false, "This appearance requires an admitted controller/pose profile before it can be selected.");
+            RecordCaptureCommand(new("equip", catalogId));
             return new(true);
         }
         SelectWeaponKey(entry.Definition.Item!.Value);
+        if (CurrentWeaponKey == entry.Definition.Item) RecordCaptureCommand(new("equip", catalogId));
         return new(CurrentWeaponKey == entry.Definition.Item, entry.Reason);
     }
 
@@ -71,6 +73,7 @@ public partial class OBPGame
         if (catalogId is not null && (entry is null || entry.Definition.Category != EquipmentCategory.Weapon || !entry.Selectable))
             return new(false, entry?.Reason ?? "Quick Select requires an implemented weapon.");
         _playerNative.Assignments.Assign(slot, entry?.Definition.Item);
+        RecordCaptureCommand(new("quick-slot", catalogId ?? "", slot));
         return new(true);
     }
 
@@ -83,6 +86,7 @@ public partial class OBPGame
         ResetRac1WeaponAudio(); StopFusionAudio();
         RefreshRac1WrenchPresentationVisibility();
         RefreshRac1HudState();
+        RecordCaptureCommand(new("unequip", ""));
         return new(true, "Wrench held. Your selected weapon and ammunition are retained.");
     }
 
@@ -94,6 +98,7 @@ public partial class OBPGame
             return new(false, entry?.Reason ?? "No supported gadget in this player loadout.");
         _playerNative.Assignments.Enable(entry.Definition, enabled, PlayerEquipmentRegistrations.Catalog);
         RefreshPlayerMovementEquipment();
+        RecordCaptureCommand(new("gadget", catalogId, Enabled: enabled));
         return new(true, enabled ? entry.Reason : null);
     }
 

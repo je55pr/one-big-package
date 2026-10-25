@@ -50,18 +50,36 @@ public sealed class SourceNeutralHostArchitectureTests
     }
 
     [Fact]
-    public void ExistingPlayerCouplingCannotGrowUnderItsMigrationException()
+    public void RemovedGadgetOriginGateCannotBeReintroduced()
     {
         var compilation = HostOwnershipAudit.Host.Value;
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1MetalDetector.cs");
-        string source = original.GetText().ToString().Replace("_world?.Game != \"rac1\"",
-            "(_world?.Game != \"rac1\" || _world?.Game != \"rac1\")", StringComparison.Ordinal);
+        string source = original.GetText().ToString().Replace("if (OrdinaryPlayerSession)",
+            "if (_world?.Game != \"rac1\") return false;\nif (OrdinaryPlayerSession)", StringComparison.Ordinal);
         Assert.NotEqual(original.GetText().ToString(), source);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
             CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
         Assert.Single(errors);
         Assert.Contains("TryToggleRac1MetalDetector", errors[0]);
-        Assert.Contains("migration owner #255", errors[0]);
+        Assert.Contains("unapproved world-origin", errors[0]);
+    }
+
+    [Fact]
+    public void CheckpointSourceAdmissionCannotAcquirePlayerSelection()
+    {
+        var compilation = HostOwnershipAudit.Host.Value;
+        var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.Rac1Lifecycle.cs");
+        var method = original.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.Text == "ResolveRac1EnvironmentalRestart");
+        Assert.Empty(method.DescendantNodes().OfType<AssignmentExpressionSyntax>());
+        Assert.All(method.DescendantNodes().OfType<InvocationExpressionSyntax>(), call =>
+            Assert.Contains(call.Expression.ToString(), new[] { "_rac1Nanotech.Probe", "checkpoint.ResolveEnvironmentalRestart" }));
+        string source = original.GetText().ToString().Replace("return checkpoint.ResolveEnvironmentalRestart();",
+            "var wrongProvider = PlayerAvatarProviders.Get(OBP.Core.ObpSourceGame.Rac1);\nreturn checkpoint.ResolveEnvironmentalRestart();", StringComparison.Ordinal);
+        Assert.NotEqual(original.GetText().ToString(), source);
+        var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation.ReplaceSyntaxTree(original,
+            CSharpSyntaxTree.ParseText(source, path: original.FilePath))), HostOwnershipAudit.Policy());
+        Assert.Single(errors);
+        Assert.Contains("source-world adapter selects a player service", errors[0]);
     }
 
     [Fact]
