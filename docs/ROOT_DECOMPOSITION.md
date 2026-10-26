@@ -41,7 +41,8 @@ It evaluates the actual game's MSBuild `DefineConstants` (including implicit
 .NET framework constants) for Debug/Release on Windows/LinuxBSD, the supported
 desktop targets. All four compilations contribute to the permission check;
 an inactive conditional branch in one build is not a retirement. Reports retain
-per-configuration symbols/census and the union of member/reference keys.
+per-configuration symbols/census; headline totals and member/reference keys
+cover the distinct union of all four builds. File lines are counted once.
 Escaped identifiers are decoded, and external consumer identities include
 their namespace/containing type/generic arity rather than only a short name.
 
@@ -50,7 +51,7 @@ The guard rejects:
 - New root partials, including empty declarations under unrelated filenames.
 - New root members, including readonly collections, properties, native
   `Tick`/`Configure`/formula methods and nested privileged diagnostic types.
-- Changes to declaration signatures, inheritance or primary constructors that
+- Changes to declaration signatures, attributes, inheritance or primary constructors that
   would hide new state/access behind an existing name.
 - New external typed root references, subclasses, aliases or member accesses.
 - Undocumented/stale composition exceptions and unrecorded member retirements.

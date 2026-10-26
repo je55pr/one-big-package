@@ -146,6 +146,33 @@ public sealed class RootBoundaryArchitectureTests
         Assert.Empty(RootBoundaryAudit.BoundaryViolations(changed, FixturePolicy(original)));
     }
 
+    [Theory]
+    [InlineData("private int _old;", "[Godot.Export] private int _old;")]
+    [InlineData("public partial class OBPGame", "[Godot.Tool] public partial class OBPGame")]
+    [InlineData("public int Read()", "[System.Obsolete] public int Read()")]
+    public void AttributesCannotChangeExistingExposureOrLifecycle(string before, string after)
+    {
+        var original = Compile((PathName, Fixture));
+        var changed = Compile((PathName, Fixture.Replace(before, after, StringComparison.Ordinal)));
+        Assert.Contains(RootBoundaryAudit.BoundaryViolations(changed, FixturePolicy(original)),
+            error => error.Contains("New privileged root member", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void HeadlineCensusIncludesFilesAndMembersFromEveryBuild()
+    {
+        const string conditional = "namespace OBP.Game; public partial class OBPGame {\n#if GODOT_LINUXBSD\nprivate int _linux;\n#else\nprivate int _windows;\n#endif\n}";
+        const string releaseOnly = "#if RELEASE\nnamespace OBP.Game; public partial class OBPGame { private void ReleaseOnly() {} }\n#endif";
+        var windows = RootBoundaryAudit.Compile([CSharpSyntaxTree.ParseText(conditional, CSharpParseOptions.Default.WithPreprocessorSymbols("GODOT_WINDOWS"), PathName),
+            CSharpSyntaxTree.ParseText(releaseOnly, CSharpParseOptions.Default.WithPreprocessorSymbols("DEBUG"), "game/scripts/Release.cs")]);
+        var linux = RootBoundaryAudit.Compile([CSharpSyntaxTree.ParseText(conditional, CSharpParseOptions.Default.WithPreprocessorSymbols("GODOT_LINUXBSD"), PathName),
+            CSharpSyntaxTree.ParseText(releaseOnly, CSharpParseOptions.Default.WithPreprocessorSymbols("RELEASE"), "game/scripts/Release.cs")]);
+        Assert.Equal(1, RootBoundaryAudit.Census(windows).Files);
+        var census = RootBoundaryAudit.Census(new[] { windows, linux });
+        Assert.Equal(2, census.Files); Assert.Equal(2, census.Fields); Assert.Equal(1, census.Methods);
+        Assert.Equal(conditional.Count(character => character == '\n') + 1, census.ByFile.Single(file => file.Path == PathName).Lines);
+    }
+
     [Fact]
     public void AnExistingReadOnlyObservationCannotAcquireASetter()
     {

@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -62,7 +63,9 @@ public static class RootBoundaryAudit
             foreach (string platform in new[] { "windows", "linuxbsd" })
             {
                 // Evaluate the real SDK/project symbols without compiling or emitting app code.
-                var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                string host = Path.GetFullPath(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet"));
+                if (!File.Exists(host)) throw new IOException("Cannot locate the running .NET SDK host.");
+                var start = new ProcessStartInfo(host) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
                 foreach (string argument in new[] { "msbuild", Path.Combine(root, "game", "OBP.Game.csproj"), "-nologo",
                     "-target:AddImplicitDefineConstants", "-getProperty:DefineConstants", "-p:Configuration=" + configuration, "-p:GodotTargetPlatform=" + platform })
                     start.ArgumentList.Add(argument);
@@ -91,6 +94,7 @@ public static class RootBoundaryAudit
         .OfType<BaseTypeDeclarationSyntax>().Reverse().Select(item => item.Identifier.ValueText));
 
     private static string Tokens(SyntaxNode node) => string.Join(" ", node.DescendantTokens().Select(token => token.Text.Replace("\r\n", "\n", StringComparison.Ordinal)));
+    private static string Attributes(SyntaxList<AttributeListSyntax> lists) => lists.Count == 0 ? "" : ":attributes:" + string.Join(" ", lists.Select(Tokens));
     private static string Hash(SyntaxNode node) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Tokens(node)))).ToLowerInvariant();
 
     public static RootMember[] Members(CSharpCompilation compilation) => [.. MemberCache.GetValue(compilation, ComputeMembers)];
@@ -106,7 +110,7 @@ public static class RootBoundaryAudit
                 string header = type.Kind() + ":" + string.Join(",", type.Modifiers.Select(token => token.Text)) + ":" +
                     (type.BaseList is { } bases ? Tokens(bases) : "") + ":" +
                     (type is TypeDeclarationSyntax { TypeParameterList: { } parameters } ? Tokens(parameters) : "") + ":" +
-                    (type is TypeDeclarationSyntax { ParameterList: { } constructor } ? Tokens(constructor) : "");
+                    (type is TypeDeclarationSyntax { ParameterList: { } constructor } ? Tokens(constructor) : "") + Attributes(type.AttributeLists);
                 result.Add(new(tree.FilePath + "::" + scope + "::declaration:" + header, tree.FilePath, scope, "type", false, false, false, Hash(type)));
                 IEnumerable<MemberDeclarationSyntax> declared = type switch
                 {
@@ -116,7 +120,7 @@ public static class RootBoundaryAudit
                 };
                 foreach (var member in declared.Where(member => member is not BaseTypeDeclarationSyntax))
                 {
-                    string modifiers = string.Join(",", member.Modifiers.Select(token => token.ValueText).Order(StringComparer.Ordinal));
+                    string modifiers = string.Join(",", member.Modifiers.Select(token => token.ValueText).Order(StringComparer.Ordinal)) + Attributes(member.AttributeLists);
                     bool exposed = member.Modifiers.Any(SyntaxKind.PublicKeyword) || member.Modifiers.Any(SyntaxKind.InternalKeyword) || member.Modifiers.Any(SyntaxKind.ProtectedKeyword);
                     string[] signatures = member switch
                     {
@@ -124,7 +128,7 @@ public static class RootBoundaryAudit
                         EventFieldDeclarationSyntax field => field.Declaration.Variables.Select(variable => "event:" + variable.Identifier.ValueText + ":" + Tokens(field.Declaration.Type)).ToArray(),
                         MethodDeclarationSyntax method => ["method:" + method.Identifier.ValueText + (method.TypeParameterList is { } generic ? Tokens(generic) : "") + "(" + string.Join(",", method.ParameterList.Parameters.Select(Parameter)) + "):" + Tokens(method.ReturnType)],
                         PropertyDeclarationSyntax property => ["property:" + property.Identifier.ValueText + ":" + Tokens(property.Type) + ":" +
-                            (property.AccessorList is { } accessors ? string.Join(",", accessors.Accessors.Select(accessor => accessor.Keyword.Text + "/" + string.Join("/", accessor.Modifiers.Select(token => token.Text)))) : "get/")],
+                            (property.AccessorList is { } accessors ? string.Join(",", accessors.Accessors.Select(accessor => accessor.Keyword.Text + "/" + string.Join("/", accessor.Modifiers.Select(token => token.Text)) + Attributes(accessor.AttributeLists))) : "get/")],
                         ConstructorDeclarationSyntax ctor => ["constructor:(" + string.Join(",", ctor.ParameterList.Parameters.Select(Parameter)) + ")"],
                         IndexerDeclarationSyntax indexer => ["indexer:(" + string.Join(",", indexer.ParameterList.Parameters.Select(Parameter)) + "):" + Tokens(indexer.Type)],
                         _ => [member.Kind() + ":" + Tokens(member)],
@@ -144,7 +148,7 @@ public static class RootBoundaryAudit
             return group.First() with { Hash = hashes.Length == 1 ? hashes[0] : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("\n", hashes)))).ToLowerInvariant() };
         }).OrderBy(member => member.Key, StringComparer.Ordinal).ToArray();
 
-    private static string Parameter(ParameterSyntax parameter) => string.Join(" ", parameter.Modifiers.Select(token => token.Text)) + ":" + (parameter.Type is { } type ? Tokens(type) : "");
+    private static string Parameter(ParameterSyntax parameter) => string.Join(" ", parameter.Modifiers.Select(token => token.Text)) + ":" + (parameter.Type is { } type ? Tokens(type) : "") + Attributes(parameter.AttributeLists);
 
     public static RootReference[] References(CSharpCompilation compilation) => [.. ReferenceCache.GetValue(compilation, ComputeReferences)];
 
@@ -177,10 +181,14 @@ public static class RootBoundaryAudit
     public static RootReference[] References(IEnumerable<CSharpCompilation> compilations) => compilations.SelectMany(References)
         .GroupBy(reference => reference.Key, StringComparer.Ordinal).Select(group => group.First()).OrderBy(reference => reference.Key, StringComparer.Ordinal).ToArray();
 
-    public static RootCensus Census(CSharpCompilation compilation)
+    public static RootCensus Census(CSharpCompilation compilation) => Census([compilation]);
+
+    public static RootCensus Census(IEnumerable<CSharpCompilation> compilations)
     {
-        var members = Members(compilation);
-        var files = compilation.SyntaxTrees.Where(tree => RootScopes(tree).Any(IsRoot)).Select(tree =>
+        var builds = compilations.ToArray();
+        var members = Members(builds);
+        var files = builds.SelectMany(build => build.SyntaxTrees).Where(tree => RootScopes(tree).Any(IsRoot))
+            .DistinctBy(tree => tree.FilePath, StringComparer.Ordinal).Select(tree =>
         {
             var direct = members.Where(member => member.Path == tree.FilePath && member.Direct).ToArray();
             string text = tree.GetText().ToString();
@@ -189,7 +197,7 @@ public static class RootBoundaryAudit
                 direct.Count(item => item.Mutable), direct.Count(item => item.Exposed));
         }).OrderBy(item => item.Path, StringComparer.Ordinal).ToArray();
         return new(files.Length, files.Sum(item => item.Lines), files.Sum(item => item.Methods), files.Sum(item => item.Fields),
-            files.Sum(item => item.MutableFields), files.Sum(item => item.ExposedMembers), files, References(compilation));
+            files.Sum(item => item.MutableFields), files.Sum(item => item.ExposedMembers), files, References(builds));
     }
 
     public static string[] Violations(CSharpCompilation compilation, RootBoundaryPolicy policy) => Violations([compilation], policy);

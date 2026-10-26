@@ -15,7 +15,7 @@ try
     {
         Console.WriteLine(JsonSerializer.Serialize(new
         {
-            Census = RootBoundaryAudit.Census(compilations[0]),
+            Census = RootBoundaryAudit.Census(compilations),
             Configurations = builds.Select(build => new { build.Name, build.Symbols, Census = RootBoundaryAudit.Census(build.Compilation) }),
             Members = RootBoundaryAudit.Members(compilations),
             References = RootBoundaryAudit.References(compilations)
