@@ -14,13 +14,16 @@ internal static class WorldSmokeHarness
         Func<Task>? Enemies = null, Func<CancellationToken, Task>? MovementState = null,
         Func<Task>? BombGlove = null, Func<Task>? NovalisSwim = null, Func<Task>? NovalisPeckbot = null,
         Func<Task>? NovalisBirdbot = null, Func<Task>? NovalisMusic = null, Func<Task>? Weapons = null,
-        Func<Task>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<Task>? MissionPlay = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<Task>? MissionPlay = null,
         Func<Task>? NovalisRoute = null, Func<Task>? Frogs = null);
 
-    private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?> Invoke);
+    private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
+        Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario>? Create = null);
     private static Entry Case(string id, Func<CommandLineArgs, bool> requested,
         Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?> invoke, ObpSourceGame? source = ObpSourceGame.Rac1) =>
         new(new(id, ["--" + id], requested, source), invoke);
+    private static Entry TypedCase(string id, Func<CommandLineArgs, bool> requested, Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario> create) =>
+        new(new(id, ["--" + id], requested, ObpSourceGame.Rac1), null, create);
 
     // Original independent flag order. Only explicit first-world registrations are selected.
     private static readonly Entry[] Entries =
@@ -37,7 +40,8 @@ internal static class WorldSmokeHarness
         Case("rac1-novalis-music-smoke", a => a.Rac1NovalisMusicSmoke, (e, _, _) => e.NovalisMusic?.Invoke()),
         Case("rac1-metropolis-taxi-smoke", a => a.Rac1MetropolisTaxiSmoke, (e, _, _) => e.MetropolisTaxi?.Invoke()),
         Case("rac1-weapons-smoke", a => a.Rac1WeaponsSmoke, (e, _, _) => e.Weapons?.Invoke()),
-        Case("rac1-player-audio-smoke", a => a.Rac1PlayerAudioSmoke, (e, _, _) => e.PlayerAudio?.Invoke()),
+        TypedCase("rac1-player-audio-smoke", a => a.Rac1PlayerAudioSmoke, (e, definition) => e.PlayerAudio?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No player audio diagnostic is bound."))),
         Case("rac1-crate-smoke", a => a.Rac1CrateSmoke, (e, _, _) => e.Crates?.Invoke()),
         Case("rac1-enemy-smoke", a => a.Rac1EnemySmoke, (e, _, _) => e.Enemies?.Invoke()),
         Case("rac1-frog-smoke", a => a.Rac1FrogSmoke, (e, _, _) => e.Frogs?.Invoke()),
@@ -53,15 +57,18 @@ internal static class WorldSmokeHarness
     internal static bool IsRequested(CommandLineArgs args) => args.ControllerSmoke || args.ReplayForwardFrames.HasValue ||
         Registry.Registrations.Any(registration => registration.Requested(args));
 
-    internal static LegacyDiagnosticScenario[] Create(CommandLineArgs args, ObpDestination destination, int worldSwitches,
+    internal static IDiagnosticScenario[] Create(CommandLineArgs args, ObpDestination destination, int worldSwitches,
         Entrypoints entrypoints, bool ordinarySourceAccess, IReadOnlyList<ObpSourceDefinition> authorities)
     {
         var selected = Registry.Select(args, destination.Game, worldSwitches).Select(registration => registration.Id).ToHashSet(StringComparer.Ordinal);
         var sources = authorities.Where(authority => ordinarySourceAccess || authority.Game == destination.Game)
             .Select(authority => new DiagnosticSourceRequirement(authority.Game, authority.Authority.BuildId)).ToImmutableArray();
-        return Entries.Where(entry => selected.Contains(entry.Registration.Id)).Select(entry => new LegacyDiagnosticScenario(
-            new(entry.Registration.Id + "/v1", ordinarySourceAccess ? DiagnosticSourceAccess.OrdinaryPlay : DiagnosticSourceAccess.ExplicitSourceDiagnostic,
-                DiagnosticSetup.ExistingWorld, sources, TimeSpan.FromMinutes(30), 108_000, destination.DestinationId, FailureExitCode: 3),
-            run => entry.Invoke(entrypoints, destination, run) ?? throw new DiagnosticUnavailableException("No diagnostic entry point is bound: " + entry.Registration.Id))).ToArray();
+        return Entries.Where(entry => selected.Contains(entry.Registration.Id)).Select(entry =>
+        {
+            var definition = new DiagnosticScenarioDefinition(entry.Registration.Id + "/v1", ordinarySourceAccess ? DiagnosticSourceAccess.OrdinaryPlay : DiagnosticSourceAccess.ExplicitSourceDiagnostic,
+                DiagnosticSetup.ExistingWorld, sources, TimeSpan.FromMinutes(30), 108_000, destination.DestinationId, FailureExitCode: 3);
+            return entry.Create?.Invoke(entrypoints, definition) ?? new LegacyDiagnosticScenario(definition,
+                run => entry.Invoke?.Invoke(entrypoints, destination, run) ?? throw new DiagnosticUnavailableException("No diagnostic entry point is bound: " + entry.Registration.Id));
+        }).ToArray();
     }
 }

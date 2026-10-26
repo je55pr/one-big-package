@@ -55,6 +55,17 @@ ports and delegate the retained bootstrap/nested callers; their removal owners
 are #340/#343 and #346/#348. All UI assertions and scenario control flow live
 outside the root. The frozen origin ledger is unchanged.
 
+The #338 player/profile/audio extraction retires four diagnostic fragments,
+their 19 historical declaration/member permissions and the old unbounded audio
+trace field permission. The root has 111 files, 733 direct methods, 456 fields
+(311 mutable) and 44 exposed members. One fixture-composition method and one
+bounded collector field are exact temporary #338 entries, removed with the
+player/world adapter wiring by #359 and the audio owner by #354. The independently
+owned capability sampler is supervised; its remaining trilogy caller delegates
+until #344. Synthetic R&C1 collision construction is external too, behind its
+retained #339 delegation. These dependencies do not mean the later partials
+have already been retired.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

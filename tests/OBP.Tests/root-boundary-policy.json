@@ -2615,6 +2615,20 @@
       "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
       "ExpiresWith": "#343",
       "Hash": "857a7a6c6ce1df3d402d1648493fa9411c186cb95403f37eff90b4bec95a7225"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerAudioDiagnosticEvents:DiagnosticPlayerAudioCollector:private,readonly",
+      "Owner": "#338",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
+      "ExpiresWith": "#354",
+      "Hash": "bf1b82ae06e6a7b56ab1c8651f209decb06e2ffad4cfa13e8449983e0ea50abd"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
+      "Owner": "#338",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
+      "ExpiresWith": "#359",
+      "Hash": "c1e818eefe78381694faf4895d16c6a06e26ca41a8f9774332ae0ef31a3ac489"
     }
   ],
   "RetiredMembers": [
@@ -2644,7 +2658,27 @@
     "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewTap(:JoyButton):Task:async,private",
     "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:RunRac1WorldRetailNavigationSmokeAsync(:string):Task:async,private",
     "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::method:RunSourceSetupCheckAsync():Task:async,private"
+    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::method:RunSourceSetupCheckAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame+CapabilitySample::declaration:RecordDeclaration:private,sealed:::( int Tick , string ? Sequence , int ? Frame , string Pose , string Attachment , double Facing , double [  ] Position , double [  ] Camera , double Clock )",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CaptureCapabilityTrialAsync(:PlayerHost):Task < CapabilitySample [  ] >:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilityHealthAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilityMenuMaskAsync(:PlayerHost):Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:CheckCapabilitySourceRecoveryAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:Coordinates(:Vector3):double [  ]:private,static",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:PoseDigest(:double [  ]):string:private,static",
+    "game/diagnostics/OBPGame.PlayerCapabilitiesSmoke.cs::OBPGame::method:RunPlayerCapabilitiesSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckDeferredWorldEntryOwnershipAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckHostOperationCancellationAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckPlayerSessionLabControlsAsync():Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:CheckPlayerSessionLabMovementAsync(:SourceWeaponKey):Task:async,private",
+    "game/diagnostics/OBPGame.PlayerSessionSmoke.cs::OBPGame::method:RunPlayerSessionSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::method:RunRac1PlayerAudioSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::method:RunSharedProfileSmokeAsync():Task:async,private",
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerSoundTrace:List < ( Rac1PlayerAudioSession . Cue Cue , bool Loop ) >:private,readonly"
   ],
   "RetiredAccess": []
 }

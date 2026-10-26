@@ -31,7 +31,7 @@ public partial class OBPGame
                 player.RestoreMovementRepro(canonical);
                 _rac1PlayerAudioRandom = OBP.RAC1.Gameplay.Rac1PickupRandom.FromSeed(1440);
                 _selectedPlayerAudioTrace.Clear();
-                await CaptureCapabilityTrialAsync(player);
+                await CreatePlayerDiagnosticHarness().CaptureTrialAsync(_hostOperations.Token);
                 var cues = _selectedPlayerAudioTrace.Select(cue => $"{cue.Source}/{cue.Build}/{cue.Level}/{cue.Class}/{cue.Sound}/{cue.LevelSound}/{cue.Loop}@{cue.Tick}").ToArray();
                 Require(_selectedPlayerAudioTrace.Any(cue => cue.Class == 0) && cues.Length > 0, "movement/jump/wrench audio is silent in " + destination);
                 Require(_rac1HeldItem.Hand.WrenchHeld, "wrench attack did not retain hand ownership in " + destination);
@@ -201,6 +201,8 @@ public partial class OBPGame
                 GD.Print($"[trilogy-gameplay-smoke] ordinary {weapon} -> {id}: alive={target.Observe().Alive}, health={target.Observe().Health}, player={_playerNative.Life.Capture().Current}, yaw={player.Rac1CurrentYaw}, hits={_fusionAcceptedHits}");
             }
         }
+        catch (OperationCanceledException error) when (_hostOperations.Stopping && error.CancellationToken == _hostOperations.Token)
+        { /* The migrated native trial drained under the host's existing quit. */ }
         catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
         {
             throw;

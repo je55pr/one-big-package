@@ -62,7 +62,7 @@ public partial class OBPGame
                         RunRac1CrateSmokeAsync, RunRac1PlacedBoltSmokeAsync, RunRac1WrenchSmokeAsync,
                         RunRac1EnemySmokeAsync, RunMovementStateSmokeAsync, RunRac1BombGloveSmokeAsync,
                         RunRac1NovalisSwimSmokeAsync, RunRac1NovalisPeckbotSmokeAsync, RunRac1NovalisBirdbotSmokeAsync,
-                        RunRac1NovalisMusicSmokeAsync, RunRac1WeaponsSmokeAsync, RunRac1PlayerAudioSmokeAsync,
+                        RunRac1NovalisMusicSmokeAsync, RunRac1WeaponsSmokeAsync, definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         RunRac1MetropolisTaxiSmokeAsync, RunRac1MissionPlaySmokeAsync, RunRac1NovalisRouteSmokeAsync,
                         RunRac1FrogSmokeAsync), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
@@ -79,10 +79,8 @@ public partial class OBPGame
             if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
             _playtest?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
-            if (_args.PlayerSessionSmoke && _worldSwitches == 1) _ = RunPlayerSessionSmokeAsync();
-            if (_args.PlayerCapabilitiesSmoke && _worldSwitches == 1) _ = RunPlayerCapabilitiesSmokeAsync();
+            if (_worldSwitches == 1 && PlayerSessionDiagnosticHarness.IsRequested(_args)) CreatePlayerDiagnosticHarness().StartRequested();
             if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) _ = RunTrilogyGameplaySmokeAsync();
-            if (_args.ProfileSmoke is not null && _worldSwitches == 1) _ = RunSharedProfileSmokeAsync();
             return true;
         }
         catch (Exception error)

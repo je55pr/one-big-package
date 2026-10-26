@@ -43,6 +43,7 @@ public partial class OBPGame : Node3D
     private string _sceneKind = "smoke";
     private readonly HostOperationScope _hostOperations = new();
     private readonly AcceptanceEvidence _acceptanceEvidence = new();
+    private readonly DiagnosticPlayerAudioCollector _playerAudioDiagnosticEvents = new();
 
     // the live world
     private readonly WorldHost _idleWorldHost = new();
@@ -840,6 +841,52 @@ public partial class OBPGame : Node3D
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this)), _hostOperations,
             (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
+    }
+
+    private PlayerSessionDiagnosticHarness CreatePlayerDiagnosticHarness()
+    {
+        var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
+        var player = new GodotPersistentPlayerFixture(new(() => OrdinaryPlayerSession, () => _playerSession, () => _playerNative,
+            () => _fusion, () => _player, () => _playerAvatarView, () => _playerAvatar?.Identity, _playerRoot, _worldRoot,
+            () => (_fusionProjectiles.Count, _fusionAudioPlayers.Count, _fusionEffects.Count), () => _activeDestination is not null, () => _currentDestinationId),
+            worlds, SelectWeaponKey, SetRac1WeaponPreview);
+        var sources = new DiagnosticSourceAttachmentFixture(_sources, RefreshPlayerSourceAvailability);
+        var navigation = new DiagnosticNavigationActions(destination => destination == "obp:fusion-lab" ? EnterFusionLab() :
+            TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native));
+        var menus = CreateUiDiagnosticHarness().Menus;
+        var equipment = new DiagnosticPlayerEquipmentFixture(ReadPlayerEquipment, SelectPlayerEquipment, AssignPlayerQuickSelect,
+            UnequipPlayerEquipment, SetPlayerGadgetEnabled, () => _playerNative?.GadgetEnabled(OBP.RAC1.Player.Rac1TraversalEquipmentId.HeliPack) == true);
+        var ui = new DiagnosticPlayerInterfaceFixture(() => new(_playerHud?.Visible == true, _hudState.Current.Health, _hudState.Current.Bolts,
+            _quickSelect is null ? [] : [.. _quickSelect.Entries.Select(entry => entry.Weapon)], _rac1DetectorEquipped),
+            () => { using var press = new InputEventAction { Action = ControllerBindings.QuickSelect, Pressed = true }; return TryOpenWeaponQuickSelect(press); },
+            () => CloseWeaponQuickSelect(), TryToggleRac1MetalDetector);
+        var profile = new DiagnosticSharedProfileFixture(() => new(OrdinaryPlayerSession, SharedProfilePath is not null, _profileWriteBlocked,
+            _fusionPreparation is not null, _profileDocument?.Destination, _currentDestinationId, _profileDocument?.Sources.Count ?? 0), () => _playerNative);
+        var samples = new GodotCapabilitySamples(new(() => _player, () => _playerPhysicsClock, () => _playerServiceTick,
+            () => _playerAvatarAnimationController, () => _fusion?.ShotsFired ?? 0));
+        var health = new GodotCapabilityHealthFixture(new(() => _playerNative, () => _player, () => _rac2RatchetNanotech.Current,
+            () => _hudState.Current.Health, () => [.. _rac2OpeningMsr1.Values.Select(session => (session.Hostile.InstanceIndex, session.Node.Root))], RespawnPlayer));
+        var audio = new GodotPlayerAudioFixture(this, new(() => _player,
+            () => new(_rac1PlayerAudio is not null, _world?.LevelId, _rac1PackSound, _rac1ThrownWrenchSound, _rac1WeaponLoop is not null,
+                _rac1WrenchThrow.Active, _rac1BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
+            ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,
+            OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. _rac1CrateNodes], IsRac1GameplayActive, StageRac1CrateForSmoke, ApplyRac1EnemyPlayerDamage));
+        var ports = new PlayerSessionDiagnosticPorts(player,
+            new GodotPlayerObservations(() => _player, () => _playerAvatar?.Identity,
+                () => _playerPhysicsClock?.Tick ?? throw new DiagnosticUnavailableException("The native player clock is unavailable."), () => _playerNative?.Life.Capture().Current),
+            new GodotPlayerInputFixture(() => _player), navigation, menus, sources,
+            new GodotWorldLifecycleFixture(this, WorldScenes, EnterFusionLab,
+                () => EnterWorld(DiagnosticWorldFailures.Destination, DiagnosticWorldFailures.Load, null, null)),
+            new GodotSessionOperationChecks(this, RunMovementStateSmokeAsync, () => _hostOperations.Stopping, message => GD.Print(message)),
+            equipment, ui, profile, new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),
+            new DiagnosticAcceptanceReporter(AcceptanceAssert, phase => WriteAcceptanceEvidence(phase), FinishAcceptanceFailure), samples,
+            new GodotCommonContactFixture(() => _sceneResult?.Root, () => _player),
+            new DiagnosticRetiredActorProbe(() => [.. _rac1HostileNodes.Values], ApplyPlayerSourceDamage), health,
+            () => PlayerEquipmentConfigurationIdentity, audio, _playerAudioDiagnosticEvents);
+        return new(_args, [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], ports,
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+                new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),
+            message => GD.Print(message), message => GD.PrintErr(message));
     }
 
     public void RunRac1StartupVisibilitySmokeFromBootstrap() => CreateUiDiagnosticHarness().Start("rac1-startup-visibility-smoke");

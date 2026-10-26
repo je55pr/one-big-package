@@ -137,6 +137,53 @@ three bootstrap/nested-call delegations. The #340/#343 callers and the
 contains a diagnostic assertion. All five audited root partials and their
 historical member permissions are retired.
 
+## Player, profile and source audio (#338)
+
+`PlayerSessionDiagnosticHarness` registers persistent-player, capability and
+profile/restart runs. The world registry retains the R&C1 audio alias, ordering
+and source/first-world gates, binding a typed scenario instead of a root callback.
+All four audited player diagnostic partials are retired. Scenarios receive copied
+immutable state/identity/pose/audio facts and focused session, menu, equipment,
+source-attachment and health fixture actions. They never receive a native
+controller, source library, mutable actor map, Godot node or root reference.
+
+Application-scoped player tests survive their own travel, failed preparation and
+temporary source removal. Detachment leases restore attachments in cleanup.
+Restore points keep native component payloads private. Camera options, input
+filters, physics subscriptions, artificial decks, the audio floor, bus mute,
+FPS/joypad settings and owned pause state have explicit cleanup. Profile commands
+retain the caller's explicit isolated test profile and version-1 acceptance
+reporter. Automated runs do not select the ordinary default profile; the scripts
+create their test profiles under ignored capture directories and verify restart.
+
+`PlayerCapabilityTrial` keeps the original 240 native ticks, input sequence,
+every-sixth-tick sample, field order and pose digest. Sampling stays in
+`DevelopmentPhysicsCompleted` and completes inline. Its retained trilogy caller
+uses a bounded supervised invocation until #344 migrates that suite. Deferred
+navigation and sampling cancel/drain before releasing input or scene resources.
+
+The bounded audio collector stamps the actual source, build, level and native
+tick; overflow invalidates evidence. Played cues remain distinct from
+source-selected silence. The old synthetic audio floor had R&C1 material numbers
+without their authority, making the current contact adapter correctly reject
+them and the old command fail its surface-category check on clean dev. Its
+authored geometry now declares the R&C1 material authority. Neutral or other-game
+materials cannot be interpreted as R&C1. The shared surface helper remains behind
+the traversal delegation until #339 retires that partial. Audio resets retain
+three settled native-ground updates sampled after physics, then 30 physics frames.
+
+Retail voice program 54, referenced by sequence 25, has four audible and four
+silent alternatives. The third-swing assertion requires a native program outcome,
+including its admitted silent branch, which never counts as playback. Other cue
+counts, PCM, looping, pause, catch, protected-hit and death checks remain. A retail
+regression verifies the original alternatives. Native sound decoding,
+probability and gameplay stay with their existing source owners.
+
+Two exact temporary root entries compose these fixtures and the collector.
+Player/UI/equipment/audio owners and #359's actor bridge remove the factory;
+#354 removes the collector binding. Reporter bridges still expire with #344.
+Frozen-origin permissions never expand.
+
 ## Exact frame phases
 
 `Process` and `Physics` await the corresponding SceneTree frame-start signal,

@@ -209,6 +209,23 @@ public sealed class Rac1PlayerAudioTests
         }
     }
 
+    [SkippableFact]
+    public void OriginalThirdSwingVoiceProgramAdmitsFourAudibleAndFourSilentAlternatives()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(iso!);
+        var level = Rac1DiscIndex.Read(disc).Levels.Single(level => level.LevelId == 0);
+        var core = Rac1LevelCore.Open(disc, level);
+        var audio = Rac1PlayerAudioAssets.Decode(disc, level, core);
+        Assert.Contains(audio.Animations[25].Cues, cue => cue.SoundId == 54);
+        var voice = Rac1CrateAudio.Decode(disc, level, core, new HashSet<int> { 0 })[(0, 54)];
+        Assert.False(voice.Loop); Assert.NotNull(voice.Alternatives);
+        Assert.Equal(8, voice.Alternatives!.Count);
+        Assert.Equal(4, voice.Alternatives.Count(clip => clip.FrameCount == 0));
+        Assert.Equal(4, voice.Alternatives.Count(clip => clip.FrameCount > 0));
+    }
+
     [Fact]
     public void AcceptedHitUsesFrame3AndFatalHitFollowsItsOwnDeathTimeline()
     {

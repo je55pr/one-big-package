@@ -41,6 +41,19 @@
     <Compile Include="../../game/diagnostics/Rac1RetailNavigationScenario.cs" Link="Diagnostics/Rac1RetailNavigationScenario.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticProcessScenario.cs" Link="Diagnostics/DiagnosticProcessScenario.cs" />
     <Compile Include="../../game/diagnostics/UiDiagnosticHarness.cs" Link="Diagnostics/UiDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/PlayerDiagnosticPorts.cs" Link="Diagnostics/PlayerDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/PersistentPlayerScenario.cs" Link="Diagnostics/PersistentPlayerScenario.cs" />
+    <Compile Include="../../game/diagnostics/PlayerProfileDiagnosticPorts.cs" Link="Diagnostics/PlayerProfileDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/SharedProfileScenario.cs" Link="Diagnostics/SharedProfileScenario.cs" />
+    <Compile Include="../../game/diagnostics/PlayerAudioDiagnosticPorts.cs" Link="Diagnostics/PlayerAudioDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1PlayerAudioScenario.cs" Link="Diagnostics/Rac1PlayerAudioScenario.cs" />
+    <Compile Include="../../game/diagnostics/DiagnosticPlayerAudioCollector.cs" Link="Diagnostics/DiagnosticPlayerAudioCollector.cs" />
+    <Compile Include="../../game/diagnostics/PlayerCapabilityDiagnosticPorts.cs" Link="Diagnostics/PlayerCapabilityDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/PlayerCapabilitiesScenario.cs" Link="Diagnostics/PlayerCapabilitiesScenario.cs" />
+    <Compile Include="../../game/diagnostics/PlayerCapabilityTrial.cs" Link="Diagnostics/PlayerCapabilityTrial.cs" />
+    <Compile Include="../../game/diagnostics/PlayerSessionDiagnosticHarness.cs" Link="Diagnostics/PlayerSessionDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/PlayerProfileDiagnosticFixtures.cs" Link="Diagnostics/PlayerProfileDiagnosticFixtures.cs" />
+    <Compile Include="../../game/diagnostics/Rac1DiagnosticCollision.cs" Link="Diagnostics/Rac1DiagnosticCollision.cs" />
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />
