@@ -228,9 +228,9 @@
     "Hash": "a2e60386132b6e4622b6e6c9a3eead99ecd29a16c3674842183b2a29e99329ce"
   },
   {
-    "Key": "game/scripts/OBPGame.Actors.cs::OBPGame.CreateActorView(ActorPlacement,RuntimeWorld,Func<RuntimeDynamicObject, bool>)",
+    "Key": "game/scripts/ActorSceneFactory.cs::ActorSceneFactory.Create(ActorPlacement,RuntimeWorld,Func<RuntimeDynamicObject, bool>)",
     "Kind": "adapter",
     "Reason": "Validate the source actor asset library build/level against its placement, then construct only that actor using its own textures and authored model scale. This never selects player services; ActorRuntimeSetTests and TrilogyGameplaySmoke verify source identity, mixed native actors and independent resets.",
-    "Hash": "b7b6340df06bea1f25ee214f5ce5fbded14a6b4d2cdb218bf998f55f7f0cba4a"
+    "Hash": "c147df3f346c7c8df8a485d4517b3a238496a26390e13bc99f09ed9430ccaa5f"
   }
 ]

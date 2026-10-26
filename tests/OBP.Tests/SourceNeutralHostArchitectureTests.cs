@@ -137,11 +137,15 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void ActorAssetProvenanceAdapterCannotSelectPlayerEquipment()
     {
-        var (compilation, _) = InsertAdapterStatement("game/scripts/OBPGame.Actors.cs", "CreateActorView",
-            "OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);");
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/ActorSceneFactory.cs", "Create",
+            "((OBP.Game.OBPGame)parent.GetTree().Root.GetChild(0)).SelectPlayerEquipment(\"rac1/item/12\");");
+        var call = tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Single(invocation => invocation.Expression.ToString().EndsWith(".SelectPlayerEquipment", StringComparison.Ordinal));
+        var bound = Assert.IsAssignableFrom<IMethodSymbol>(compilation.GetSemanticModel(tree).GetSymbolInfo(call).Symbol);
+        Assert.Equal("OBPGame", bound.ContainingType.Name);
         var errors = HostOwnershipAudit.Violations(HostOwnershipAudit.Scan(compilation), HostOwnershipAudit.Policy());
         Assert.Single(errors);
-        Assert.Contains("CreateActorView", errors[0]);
+        Assert.Contains("ActorSceneFactory.Create", errors[0]);
         Assert.Contains("approved source-world adapter changed", errors[0]);
     }
 
@@ -191,7 +195,8 @@ public sealed class SourceNeutralHostArchitectureTests
         var compilation = HostOwnershipAudit.Host.Value;
         var original = compilation.SyntaxTrees.Single(tree => tree.FilePath == path);
         var root = original.GetRoot();
-        var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>().Single(member => member.Identifier.ValueText == methodName);
+        var method = root.DescendantNodes().OfType<MethodDeclarationSyntax>()
+            .Single(member => member.Identifier.ValueText == methodName && member.Body is not null);
         var body = method.Body!;
         var changed = original.WithRootAndOptions(root.ReplaceNode(method,
             method.WithBody(body.WithStatements(body.Statements.Insert(0, SyntaxFactory.ParseStatement(statement))))), original.Options);

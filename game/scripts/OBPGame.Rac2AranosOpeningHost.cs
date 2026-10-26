@@ -14,32 +14,6 @@ public partial class OBPGame
     private const int Rac2OpeningMsr1State4Ticks = 22;
     private const int Rac2OpeningMsr1State8Ticks = 16;
 
-    private enum Rac2OpeningMsr1Phase
-    {
-        Dormant,
-        State3Delay,
-        State5,
-        State4,
-        State8,
-        Chase,
-        Attack,
-        Recovery,
-    }
-
-    private sealed class Rac2OpeningMsr1HostSession(
-        RuntimeWorldScene.DynamicObjectNode node,
-        Rac2Class2827HostileSession hostile)
-    {
-        public RuntimeWorldScene.DynamicObjectNode Node { get; } = node;
-        public Rac2Class2827HostileSession Hostile { get; } = hostile;
-        public Rac2Class2827ApproachSession Approach { get; } = new();
-        public Rac2Class2827AttackCycleSession AttackCycle { get; } = new();
-        public Rac2OpeningMsr1Phase Phase { get; set; }
-        public int PhaseTicks { get; set; }
-        public int AttackSequence { get; set; }
-        public int AttackCount { get; set; }
-    }
-
     private sealed class Rac2OpeningLiftHostSession(
         RuntimeWorldScene.DynamicObjectNode node,
         Rac2AranosOpeningLiftSession lift)
@@ -180,7 +154,7 @@ public partial class OBPGame
             }
 
             Vector3 position = session.Node.Root.GlobalPosition;
-            if (_actorContactBodies.ContainsKey(ActorTarget(session.Node)) &&
+            if (_actorWorld.Bodies.ContainsKey(ActorTarget(session.Node)) &&
                 (Math.Abs(position.Y - playerPosition.Y) > 3 || position.DistanceTo(playerPosition) > Rac2OpeningMsr1WitnessActivationDistance))
                 continue; // Explicit grounded-arena target context for relocated actors.
             switch (session.Phase)
@@ -287,7 +261,7 @@ public partial class OBPGame
                             playerPosition.X - position.X,
                             playerPosition.Z - position.Z).Length();
                         double facingError = 0;
-                        if (_actorContactBodies.ContainsKey(ActorTarget(session.Node)))
+                        if (_actorWorld.Bodies.ContainsKey(ActorTarget(session.Node)))
                         {
                             Vector3 toward = playerPosition - position; toward.Y = 0;
                             if (toward.LengthSquared() > 1e-8f)
@@ -407,7 +381,7 @@ public partial class OBPGame
         Rac2OpeningMsr1HostSession session,
         Vector3 position)
     {
-        if (_actorContactBodies.TryGetValue(ActorTarget(session.Node), out var body))
+        if (_actorWorld.Bodies.TryGetValue(ActorTarget(session.Node), out var body))
         {
             var contact = body.MoveAndCollide(position - body.GlobalPosition);
             if (contact is not null)
@@ -418,7 +392,7 @@ public partial class OBPGame
             position = body.GlobalPosition;
         }
         Transform3D sceneTransform = session.Node.Root.Transform;
-        if (_actorContactBodies.ContainsKey(ActorTarget(session.Node)) && _player is not null)
+        if (_actorWorld.Bodies.ContainsKey(ActorTarget(session.Node)) && _player is not null)
         {
             Vector3 toward = _player.GlobalPosition - position; toward.Y = 0;
             if (toward.LengthSquared() > 1e-8f)

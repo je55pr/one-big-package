@@ -77,6 +77,8 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
     public long Generation { get; } = generation >= 0 ? generation : throw new ArgumentOutOfRangeException(nameof(generation));
     public long TickCount => _tick;
     public int Count => _actors.Count;
+    /// <summary>Cleanup continues after adapter failures; the host reports these after releasing the lease.</summary>
+    public IReadOnlyList<Exception> RetirementFailures { get; private set; } = Array.Empty<Exception>();
     public IReadOnlyList<IRegisteredActor> Ordered => _actors.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
         .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex).ToArray();
 
@@ -95,6 +97,16 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
         var key = actor.Registration.Instance;
         if (key.WorldInstanceId != WorldInstanceId || key.Generation != Generation || _retiredTargets.Contains(key.Target) || !_actors.TryAdd(key.Target, actor))
             throw new ArgumentException("Actor belongs to a different/retired lease or duplicates a target identity.");
+    }
+
+    /// <summary>Transfer a constructed adapter to this lease, or release it if admission fails.</summary>
+    public T CreateAndRegister<T>(Func<T> construct) where T : IRegisteredActor
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(construct);
+        var actor = construct();
+        try { Register(actor); return actor; }
+        catch { actor?.Dispose(); throw; }
     }
 
     public IRegisteredActor? Find(WeaponTargetKey key) => _disposed ? null : _actors.GetValueOrDefault(key);
@@ -146,15 +158,34 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
     public void Retire(ActorInstanceKey key)
     {
         if (key.WorldInstanceId != WorldInstanceId || key.Generation != Generation) return;
-        if (_actors.Remove(key.Target, out var actor)) { _retiredTargets.Add(key.Target); actor.Dispose(); }
         _receipts.RemoveWhere(receipt => receipt.Target == key.Target);
+        if (_actors.Remove(key.Target, out var actor)) { _retiredTargets.Add(key.Target); actor.Dispose(); }
+    }
+
+    /// <summary>Invalidate an attachment's actors without letting one failed callback retain the others.</summary>
+    public IReadOnlyList<Exception> RetireActors(IEnumerable<ActorInstanceKey> instances)
+    {
+        ArgumentNullException.ThrowIfNull(instances);
+        List<Exception>? failures = null;
+        foreach (var instance in instances)
+        {
+            try { Retire(instance); }
+            catch (Exception error) { (failures ??= []).Add(error); }
+        }
+        return failures is null ? Array.Empty<Exception>() : failures.AsReadOnly();
     }
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        foreach (var actor in Ordered) actor.Dispose();
+        List<Exception>? failures = null;
+        foreach (var actor in Ordered)
+        {
+            try { actor.Dispose(); }
+            catch (Exception error) { (failures ??= []).Add(error); }
+        }
         _actors.Clear(); _receipts.Clear(); _groups.Clear(); _weapons.Clear(); _retiredTargets.Clear();
+        RetirementFailures = failures is null ? Array.Empty<Exception>() : failures.AsReadOnly();
     }
 }

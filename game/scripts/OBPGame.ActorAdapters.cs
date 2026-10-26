@@ -15,57 +15,21 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private readonly Dictionary<(string Path, long Length, long Written, int Level, int Class), Rac1MobyAnimationAssets.Asset> _actorRac1Animations = [];
-    private readonly Dictionary<(string Path, long Length, long Written), OBP.RAC2.Animation.Rac2Class2827Presentation.Asset> _actorRac2Animations = [];
-
-    private HostedActor CreatePlacedRac1Toad(ActorPlacement placement, RuntimeWorld library, string path)
+    private void ConfigureActorFactories()
     {
-        if (placement.Source.Game != ObpSourceGame.Rac1 || placement.NativeClassId != 749 || placement.LevelId != 0 ||
-            placement.InitialNativeState != Rac1Class749Hostile.TargetSearchNativeState || placement.NativeContextId != "rac1/veldin-target-home/v1")
-            throw new NotSupportedException("R&C1 toad requires its recovered LEVEL0 target/home context and state 5.");
-        var (scene, node, registration) = CreateActorView(placement, library, source => Rac1Class749Hostile.ReadAuthored(source) is { Health: 1 });
-        bool registered = false;
-        try
+        var scenes = new ActorSceneFactory(_actors!, _sceneResult!.Root, _actorWorld.Bodies);
+        var rac1 = new Rac1ActorBindings(_rac1Hostiles, _rac1HostileNodes, _rac1Enemies, ObserveRac1Actor,
+            ApplyRegisteredRac1Damage, ClearRegisteredActorTransients,
+            index => _rac1Captures.RemoveAll(capture => capture.Key == new Rac1MobyRuntimeKey(749, index)), EnsureRac1ActorPickupBank,
+            _ => { if (_rac1Enemies.Count > 0) TickRac1Hostiles(1d / 60); });
+        var rac2 = new Rac2ActorBindings(_rac2Class2827Hostiles, _rac2OpeningMsr1, ObserveRac2Actor, ApplyRegisteredRac2Damage, _ =>
         {
-            var position = node.Root.GlobalPosition;
-            var probe = _rac1Hostiles.Register(node.Source, node.State, new(-position.X, position.Y, position.Z));
-            registered = true;
-            _rac1HostileNodes.Add(node.Source.InstanceIndex, node);
-            var stamp = SourceFileStamp(path)!.Value;
-            var assetKey = (path, stamp.Length, stamp.Written, placement.LevelId, placement.NativeClassId);
-            if (!_actorRac1Animations.TryGetValue(assetKey, out var asset))
-            {
-                using var reader = new FileRandomAccessReader(path);
-                var level = Rac1DiscIndex.Read(reader).Levels.Single(level => level.LevelId == placement.LevelId);
-                var core = Rac1LevelCore.Open(reader, level);
-                var cls = Rac1StaticClasses.Read(core).Mobies[placement.NativeClassId];
-                asset = Rac1MobyAnimationAssets.Bake(cls, node.Source.Meshes, core.Assets.AsSpan(cls.AssetOffset, cls.AssetLength));
-                _actorRac1Animations.Add(assetKey, asset);
-            }
-            node.Root.Scale *= Rac1EnemyMotion.Class749Scale;
-            var body = AddRegisteredActorBody(node, scene.Root);
-            var forward = ToEffectNative(EnemyForward(node));
-            var enemy = new Rac1HostedEnemy(node, asset, body, new Rac1EnemyMotion(749, MathF.Atan2(forward.Y, forward.X)), probe.NativeSequence ?? 1);
-            node.ConfigureAnimations(asset.Presentation); node.ApplyAnimationSample(enemy.Animation.Sample);
-            _rac1Enemies.Add(node.Source.InstanceIndex, enemy);
-            // OBP relocation supplies a new home and ordinary target search;
-            // native steering, animation gates, damage and death remain reused.
-            EnsureRac1ActorPickupBank(library);
-            return new(registration, node, () => ObserveRac1Actor(node), intent => ApplyRegisteredRac1Damage(node, intent), retire: () =>
-            {
-                ClearRegisteredActorTransients(ActorTarget(node));
-                _rac1Enemies.Remove(node.Source.InstanceIndex); _rac1HostileNodes.Remove(node.Source.InstanceIndex);
-                _rac1Hostiles.Unregister(node.Source); _actorContactBodies.Remove(ActorTarget(node));
-                _rac1Captures.RemoveAll(capture => capture.Key == new Rac1MobyRuntimeKey(749, node.Source.InstanceIndex));
-                body.CollisionLayer = body.CollisionMask = 0; scene.Root.QueueFree();
-            });
-        }
-        catch
-        {
-            _rac1HostileNodes.Remove(node.Source.InstanceIndex); _rac1Enemies.Remove(node.Source.InstanceIndex);
-            if (registered) _rac1Hostiles.Unregister(node.Source);
-            _actorContactBodies.Remove(ActorTarget(node)); scene.Root.QueueFree(); throw;
-        }
+            foreach (var hostile in _rac2Class2827Hostiles.Values) hostile.TickCooldown();
+            TickRac2OpeningMsr1NativeTick();
+        });
+        _actorWorld.Factories = ActorFactoryRegistrations.Create(_actors!,
+            new Rac1ToadActorFactory(scenes, ActorSources, rac1), new Rac2Msr1ActorFactory(scenes, ActorSources, rac2),
+            new Rac3PropActorFactory(scenes));
     }
 
     private void EnsureRac1ActorPickupBank(RuntimeWorld library)
@@ -74,82 +38,6 @@ public partial class OBPGame
         _rac1PickupAssets = _selectedRac1PresentationAssets ?? throw new InvalidDataException("R&C1 actor's original sound/pickup bank is unavailable.");
         _rac1PickupMaterials = new(library with { Textures = _rac1PickupAssets.Textures });
         _actors!.RegisterUpdateGroup("rac1/actor-pickups", _ => TickRac1Pickups(1d / 60));
-    }
-
-    private HostedActor CreatePlacedRac2Hostile(ActorPlacement placement, RuntimeWorld library, string path)
-    {
-        if (placement.Source.Game != ObpSourceGame.Rac2 || placement.NativeClassId != 2827 || placement.LevelId != 0 ||
-            placement.InitialNativeState != Rac2Class2827HostileSession.ChaseNativeState || placement.NativeContextId != "gc/aranos-chase-resume/v1")
-            throw new NotSupportedException("GC MSR I requires its admitted Aranos chase/attack context and state 12.");
-        var (scene, node, registration) = CreateActorView(placement, library, source => Rac2Class2827HostileSession.ReadAuthored(source) is { AuthoredMode: Rac2Class2827HostileSession.OpeningRoomAuthoredMode });
-        try
-        {
-            var native = new Rac2Class2827HostileSession(node.Source, node.State);
-            native.NativeState!.Transition(Rac2Class2827HostileSession.ChaseNativeState, 4);
-            var hosted = new Rac2OpeningMsr1HostSession(node, native) { Phase = Rac2OpeningMsr1Phase.Chase, AttackCount = 1 };
-            registration = registration with
-            {
-                Capabilities = registration.Capabilities.Concat(new[]
-            {
-                new ActorCapabilityRegistration("enemy-audio", CapabilityAdmission.Unimplemented, "Original GC enemy sound dispatch is not recovered by the bounded Aranos adapter."),
-                new ActorCapabilityRegistration("reward-presentation", CapabilityAdmission.Unimplemented, "Authored GC bolts are retained as source facts; native death scatter/pickup presentation is not recovered."),
-            }).ToArray()
-            };
-            _rac2Class2827Hostiles.Add(node.Source.InstanceIndex, native); _rac2OpeningMsr1.Add(node.Source.InstanceIndex, hosted);
-            var body = AddRegisteredActorBody(node, scene.Root);
-            var stamp = SourceFileStamp(path)!.Value;
-            var animationKey = (path, stamp.Length, stamp.Written);
-            if (!_actorRac2Animations.TryGetValue(animationKey, out var animation))
-            { animation = OBP.RAC2.Animation.Rac2Class2827Presentation.Load(path, node.Source.Meshes); _actorRac2Animations.Add(animationKey, animation); }
-            node.ConfigureAnimations(animation.Presentation);
-            // OBP starts at the recovered resumed chase, not the source level's
-            // lift/door intro predicates. The source approach and attack cycle
-            // are exactly those used by the original Aranos adapter.
-            return new(registration, node,
-                () => ObserveRac2Actor(node, native), intent => ApplyRegisteredRac2Damage(node, native, intent), tick: _ =>
-            {
-                int sequence = hosted.Phase switch
-                {
-                    Rac2OpeningMsr1Phase.Chase => Rac2Class2827HostileSession.ChaseSequence,
-                    Rac2OpeningMsr1Phase.Attack => hosted.AttackSequence,
-                    Rac2OpeningMsr1Phase.Recovery => Rac2Class2827HostileSession.RecoverySequence,
-                    _ => throw new InvalidOperationException("Unregistered GC encounter phase."),
-                };
-                node.ApplyAnimationSample(OBP.RAC2.Animation.Rac2Class2827Presentation.Sample(animation, sequence, native.NativeState!.StateTicks));
-            }, retire: () =>
-            {
-                _rac2Class2827Hostiles.Remove(node.Source.InstanceIndex); _rac2OpeningMsr1.Remove(node.Source.InstanceIndex);
-                _actorContactBodies.Remove(ActorTarget(node)); body.CollisionLayer = body.CollisionMask = 0; scene.Root.QueueFree();
-            });
-        }
-        catch
-        {
-            _rac2Class2827Hostiles.Remove(node.Source.InstanceIndex); _rac2OpeningMsr1.Remove(node.Source.InstanceIndex);
-            _actorContactBodies.Remove(ActorTarget(node)); scene.Root.QueueFree(); throw;
-        }
-    }
-
-    private HostedActor CreatePlacedRac3Prop(ActorPlacement placement, RuntimeWorld library, string path)
-    {
-        if (placement.Source.Game != ObpSourceGame.Rac3 || placement.NativeClassId != 500 || placement.LevelId != 1 ||
-            placement.InitialNativeState != Rac3Class500Destructible.ActiveNativeState || placement.NativeContextId != "uya/table1-class500-deactivate/v1")
-            throw new NotSupportedException("UYA target requires its recovered TABLE1 class-500 deactivation context.");
-        var (scene, node, registration) = CreateActorView(placement, library, source => Rac3Class500Destructible.PostBreakRoute(Rac3Class500Destructible.ReadAuthored(source)) == Rac3Class500PostBreakRoute.Deactivate);
-        try
-        {
-            var runtime = new Rac3MobyRuntimeSession(); runtime.Register(node.Source); _ = new Rac3Class500DestructibleSession(runtime);
-            var body = AddRegisteredActorBody(node, scene.Root);
-            registration = registration with
-            {
-                Capabilities = registration.Capabilities.Concat(new[]
-            {
-                new ActorCapabilityRegistration("break-presentation", CapabilityAdmission.Unimplemented, "The recovered UYA consumer deactivates the target; original break SFX/scatter presentation is not yet recovered."),
-            }).ToArray()
-            };
-            return new(registration, node, () => ObserveRac3Actor(node, runtime), intent => ApplyRegisteredRac3Damage(node, runtime, intent), retire: () =>
-            { _actorContactBodies.Remove(ActorTarget(node)); body.CollisionLayer = body.CollisionMask = 0; scene.Root.QueueFree(); });
-        }
-        catch { _actorContactBodies.Remove(ActorTarget(node)); scene.Root.QueueFree(); throw; }
     }
 
     private void RegisterExistingNativeTargets()
@@ -205,7 +93,7 @@ public partial class OBPGame
         var result = native.Apply(new(Rac2GameplayEntityRef.Player, Rac2GameplayEntityRef.Moby(node.Source),
             new(Rac2Class2827HostileSession.DamageQueryMask, 0, 0, 0, intent.SourceDamage, 0)));
         node.ApplyState(result.EntityState);
-        if (result.Terminal && _actorContactBodies.TryGetValue(ActorTarget(node), out var body)) body.CollisionLayer = body.CollisionMask = 0;
+        if (result.Terminal && _actorWorld.Bodies.TryGetValue(ActorTarget(node), out var body)) body.CollisionLayer = body.CollisionMask = 0;
         return new(result.Admitted, result.Terminal, result.Admitted ? null : "Native GC damage cooldown or terminal state.");
     }
 
@@ -215,7 +103,7 @@ public partial class OBPGame
             Rac3GameplayEntityRef.Moby(new(node.Source.NativeClassId, node.Source.InstanceIndex)), intent.SourceDamage, 1);
         if (!native.TryDispatchDamage<Rac3Class500BreakResult>(damage, out var result) || result is null) return new(false, false, "Native UYA class-500 receiver rejected this contact.");
         node.ApplyState(result.EntityState);
-        if (_actorContactBodies.TryGetValue(ActorTarget(node), out var body)) body.CollisionLayer = body.CollisionMask = 0;
+        if (_actorWorld.Bodies.TryGetValue(ActorTarget(node), out var body)) body.CollisionLayer = body.CollisionMask = 0;
         return new(true, true);
     }
 }
