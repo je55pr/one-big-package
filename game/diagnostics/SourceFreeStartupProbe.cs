@@ -51,10 +51,12 @@ public partial class SourceFreeStartupProbe : Node
         {
             InputMap.ActionAddEvent(action, down);
             Input.ParseInputEvent(down); // Engine input only; never an OS keystroke.
+            Input.FlushBufferedEvents();
             if (!Input.IsActionPressed(action)) throw new InvalidOperationException("The physical-input fixture did not press its action.");
             var input = new GodotDiagnosticInputActions();
             using (var lease = input.Acquire(CancellationToken.None)) lease.SetAction(action, 1);
             Input.ParseInputEvent(up);
+            Input.FlushBufferedEvents();
             if (Input.IsActionPressed(action)) throw new InvalidOperationException("Diagnostic input remained simulated after physical release.");
             using var first = input.Acquire(CancellationToken.None);
             using var second = new GodotDiagnosticInputActions().Acquire(CancellationToken.None);
@@ -67,7 +69,7 @@ public partial class SourceFreeStartupProbe : Node
         }
         finally
         {
-            Input.ParseInputEvent(up); Input.ActionRelease(action); InputMap.EraseAction(action);
+            Input.ParseInputEvent(up); Input.FlushBufferedEvents(); Input.ActionRelease(action); InputMap.EraseAction(action);
         }
     }
 
