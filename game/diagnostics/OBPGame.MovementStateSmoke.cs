@@ -62,7 +62,7 @@ public partial class OBPGame
             Require(saved.World is not null && saved.World.InactiveObjects.Count >= defeated.Length + 1, "world removals were not saved");
             await LoadMovementStateAsync(MovementStatePath);
             RequireWorldRestored();
-            var first = await RecordForwardMovementReplayAsync(25);
+            var first = await RecordForwardMovementReplayAsync(25, _hostOperations.Token);
             Require(Math.Sqrt(Math.Pow(first[^1].Position.X - savedPosition.X, 2) + Math.Pow(first[^1].Position.Z - savedPosition.Z, 2)) > .25f,
                 "saved movement setup produced no forward travel");
 

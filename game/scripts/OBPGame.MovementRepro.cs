@@ -117,10 +117,16 @@ public partial class OBPGame
         }
     }
 
-    public void LoadMovementStateFromBootstrap() => _ = LoadMovementStateAsync(_args.LoadMovementState!, startup: true);
+    public void LoadMovementStateFromBootstrap() => StartMovementStateLoad(_args.LoadMovementState!, startup: true);
 
-    private async Task<List<MovementReplaySample>?> LoadMovementStateAsync(string path, bool startup = false, int? recordFrames = null)
+    private void StartMovementStateLoad(string path, bool startup = false) =>
+        _hostOperations.Start("movement-state-load", token => LoadMovementStateAsync(path, startup, cancellationToken: token));
+
+    private async Task<List<MovementReplaySample>?> LoadMovementStateAsync(string path, bool startup = false, int? recordFrames = null,
+        CancellationToken cancellationToken = default)
     {
+        if (!cancellationToken.CanBeCanceled) cancellationToken = _hostOperations.Token;
+        cancellationToken.ThrowIfCancellationRequested();
         if (_playtest?.RejectMovementLoad() == true) return null;
         if (_movementStateLoading) return null;
         PlayerHost? restoringPlayer = null;
@@ -166,7 +172,9 @@ public partial class OBPGame
             restoringPlayer.SetPhysicsProcess(false);
             // A newly imported collision mesh needs registration before the
             // floor-contact cache can be primed. Never use spawn ground snapping.
-            await PhysicsFramesAsync(2);
+            for (int frame = 0; frame < 2; frame++)
+                await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.PhysicsFrame, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             if (_player != restoringPlayer || !IsInstanceValid(restoringPlayer))
                 throw new InvalidOperationException("The world changed while loading the movement state.");
             restoringPlayer.RestoreMovementRepro(state.Player);
@@ -180,6 +188,8 @@ public partial class OBPGame
             GD.Print($"[movement-state] loaded {path}; position={restoringPlayer.GlobalPosition}; " +
                 $"saved-assembly={state.HostAssemblyId}; current-assembly={typeof(OBPGame).Module.ModuleVersionId}");
         }
+        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+        { return null; }
         catch (Exception ex)
         {
             ReportMovementState($"Movement state not loaded: {ex.Message}");
@@ -199,7 +209,8 @@ public partial class OBPGame
             try
             {
                 Engine.MaxFps = 60;
-                var samples = await RecordForwardMovementReplayAsync(replayFrames);
+                var samples = await RecordForwardMovementReplayAsync(replayFrames, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!startup) return samples;
                 string output = _args.ReplayOut ?? Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, "forward-replay.json");
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
@@ -214,6 +225,8 @@ public partial class OBPGame
                     $"start={samples[0].Position}, end={samples[^1].Position}");
                 ApplicationLifecycle.RequestQuit(this, "movement-replay-pass", 0);
             }
+            catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+            { return null; }
             catch (Exception ex)
             {
                 GD.PrintErr($"[movement-replay] FAIL: {ex.Message}");
@@ -258,9 +271,11 @@ public partial class OBPGame
                     Engine.GetFramesPerSecond()));
     }
 
-    private async Task<List<MovementReplaySample>> RecordForwardMovementReplayAsync(int frames)
+    private async Task<List<MovementReplaySample>> RecordForwardMovementReplayAsync(int frames, CancellationToken cancellationToken)
     {
         PlayerHost player = _player ?? throw new InvalidOperationException("Replay player is missing.");
+        using var worldWork = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
+            _worldScenes?.Current?.Lifetime ?? throw new InvalidOperationException("Replay world lease is missing."));
         player.DevelopmentProfileEnabled = _args.ReplayProfile;
         System.Diagnostics.Stopwatch? timer = _args.ReplayProfile ? System.Diagnostics.Stopwatch.StartNew() : null;
         if (_args.ReplayProfile)
@@ -288,14 +303,17 @@ public partial class OBPGame
         {
             player.DevelopmentPhysicsCompleted += CompletedPhysics;
             SetAnalogueSmokeInput(0f, 1f);
-            Task finished = await Task.WhenAny(complete.Task, Task.Delay(TimeSpan.FromSeconds(frames / 60d + 30d)));
-            if (finished != complete.Task) throw new TimeoutException("Movement replay stopped receiving physics updates.");
-            return await complete.Task;
+            return await complete.Task.WaitAsync(TimeSpan.FromSeconds(frames / 60d + 30d), worldWork.Token);
+        }
+        catch (OperationCanceledException error) when (error.CancellationToken == worldWork.Token && worldWork.IsCancellationRequested)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw new InvalidOperationException("The replay world changed.", error);
         }
         finally
         {
             player.DevelopmentPhysicsCompleted -= CompletedPhysics;
-            player.DevelopmentProfileEnabled = false;
+            if (IsInstanceValid(player)) player.DevelopmentProfileEnabled = false;
             if (_args.ReplayProfile)
                 RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), false);
             ClearMovementSmokeInput();
@@ -305,6 +323,7 @@ public partial class OBPGame
     private void ReportMovementState(string message)
     {
         GD.Print($"[movement-state] {message}");
+        if (_hostOperations.Stopping) return;
         _pauseMenu?.SetMovementStatus(message);
         if (!_debugOutputEnabled) return;
         if (_movementStateNotice is null || !IsInstanceValid(_movementStateNotice) || _movementStateNotice.IsQueuedForDeletion())
@@ -327,12 +346,14 @@ public partial class OBPGame
         }
         _movementStateNotice.Text = message;
         _movementStateNotice.Visible = true;
-        _ = ClearMovementStateNoticeAsync(++_movementStateNoticeGeneration);
+        if (!_hostOperations.Stopping)
+            _hostOperations.Start("movement-state-notice", token => ClearMovementStateNoticeAsync(++_movementStateNoticeGeneration, token));
     }
 
-    private async Task ClearMovementStateNoticeAsync(int generation)
+    private async Task ClearMovementStateNoticeAsync(int generation, CancellationToken cancellationToken)
     {
-        await ToSignal(GetTree().CreateTimer(6d, processAlways: true), SceneTreeTimer.SignalName.Timeout);
+        await GodotAsyncWait.SignalAsync(GetTree().CreateTimer(6d, processAlways: true), SceneTreeTimer.SignalName.Timeout, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         if (generation == _movementStateNoticeGeneration && IsInstanceValid(_movementStateNotice))
             _movementStateNotice!.Visible = false;
     }

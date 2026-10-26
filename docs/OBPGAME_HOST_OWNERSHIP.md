@@ -21,6 +21,12 @@ The root retains one lifecycle-owner reference and a readonly, unloaded
 presentation host for pre-world diagnostic calls. This is a state boundary,
 not a claim that the remaining host has been completely separated.
 
+The async-supervision step leaves 121 partials, 470 fields and 314 mutable
+fields. It removes the two shared verification-result/progress fields, adds one
+verification owner, a readonly root-operation owner and a bug-view cancellation
+scope. Total field count is not the goal: background jobs can no longer publish
+into unrelated root fields or outlive the resources they use.
+
 `WorldSceneLifetime<GodotWorldResources>` owns the staged candidate, current scene
 lease, entry facts, small last-destination metadata and deferred navigation work.
 `GodotWorldResources` owns the staged root, world presentation and bound transient
@@ -42,7 +48,8 @@ portable lifetime tests without inventing fake Godot objects.
 | Actor runtime set, views, placements, reward/contact bodies | Current world lease; actor controllers remain source-owned | Current binding/reset callbacks; registration/factory ownership is #309 |
 | Actor source tasks and animation libraries | Source/build/path/length/write stamp | Existing pruning and source-change reset retained; move ownership with #309 |
 | Cameras, menus, overlays and HUD | Root UI/camera objects plus world-local subscriptions/views | Input/composition bridge; binding retirement runs while retiring-world facts remain available |
-| Capture/profile/report writers | Persistent player/report operation, not destination geometry | Preserve schema/build checks and supervise critical work in the next bounded #308 step |
+| Capture/profile/report writers | `HostOperationScope` for launched work; existing persistent writer owns flushing | Root drains work before teardown; report views have narrower cancellation; preserve schema/build checks |
+| Optional source hash verification | `SourceVerificationOperation`, exact source/build/path/length/write stamp | Root renders only the current attachment's progress/outcome; retirement cancels the old job |
 
 All world entry paths, including the authored Lab, use the same owner. Lab keeps
 its authored destination and no native destination descriptor. A world still
@@ -63,6 +70,8 @@ selects only content and authored context.
    once old-scene retirement has begun.
 7. Retire/dispose is idempotent. Candidate and live resources are independent.
    Old player collision is detached before replacement placement rays run.
+   Each scene lease cancels its own work before disposing scene resources;
+   cancellation cannot carry into a replacement world.
 
 Only the source entry adapter can override the active lease's authored start.
 The ownership fingerprint changes for that adapter retain its original rationale;
@@ -76,9 +85,11 @@ cancels older pending navigation before it checks the requested source/provider.
 | Deferred bootstrap waiting for shared weapons | Previously discarded task and uncancellable frame wait | Now owned by scene lifetime; newer entry/menu/quit cancels it; shutdown awaits completion; unexpected failures are reported with superseded status |
 | Shared weapon preparation | `FusionWeaponPreparation` stores completion/cancellation; main thread publishes or reports failure | Retain attachment ownership; level teardown cannot cancel persistent source assets |
 | Actor imports/placement/animation jobs | Source-stamped tasks and world dictionaries; tick polls completion and reset clears bindings | #309 must own admission/versioning, disposal and late completion observation |
-| `RunCaptureAsync`, `RunShotsAsync`, `RunStressSwitchAsync` | Root-launched diagnostic work, with cross-world traversal intentional | Next bounded #308 step: root-lifetime supervision, cancellation and failure exit behavior |
-| Movement-state load and bug import/export/replay | Existing in-flight state and local error/UI handling | Audit cancellation after awaited IO and root/menu teardown in the same supervision step |
-| Optional native hash verification | Background catch reports outcome, but progress/result fields live in root | Give it attachment/operation ownership and reject stale publication in the supervision step |
+| `RunCaptureAsync`, `RunShotsAsync`, `RunStressSwitchAsync` | `HostOperationScope` stores completion and observed failures; cross-world traversal is intentional | Quit cancels signal/capture waits, drains admitted tasks and reports failures with a nonzero status before releasing resources |
+| Movement-state load / forward replay | Root-owned launch; existing player check after collision registration; forward recording links to the current scene lease | Root cancellation cannot restore/update a released player; world change ends sampling and detaches the physics observer |
+| Bug save / export / replay | Existing save task is awaited to finish persistent IO; export/replay use root supervision plus a view token | Closing a view cancels observation and prevents UI publication after IO. Import remains synchronous. Canceled automated child replays are stopped; user-opened reproduction windows remain independent |
+| Recording save and replay bookmarks | Root-owned completion; persistent writer flush remains deliberately non-cancellable | Shutdown admits no new save jobs and waits for saved prefixes before releasing writer resources; the existing final recording/replay callbacks, schemas and native tick order stay unchanged |
+| Optional native hash verification | `SourceVerificationOperation` owns immutable attachment stamp, progress and one outcome | Attach/detach, changed file stamp or quit cancels it; reader closure is awaited; an old operation cannot write replacement progress/result |
 | Explicit world/player/native smoke commands | Most have top-level failure-to-exit handling; several intentionally traverse worlds | Root-lifetime diagnostics, not automatically canceled on every world transition; preserve native tick ordering |
 
 Cancellation is expected only for the operation's own token. Other faults remain
@@ -87,10 +98,28 @@ cannot request a new world's exit. Godot frame subscriptions are removed in the
 owned wait's `finally`. No broad catch-and-ignore or world-origin player gate is
 introduced.
 
-The remaining order is: finish critical async supervision under #308, move actor
-factories/registrations under #309 using this lease boundary, and measure portable
-contracts under #310. Do not rename host files during extraction or absorb native
-enemy/weapon behavior changes into these steps.
+`HostOperationScope` is a bounded task owner, not a service container. It records
+work before invoking it, so a task which immediately requests quit cannot escape
+the drain or deadlock on its own registration. Cancellation suppresses only an
+`OperationCanceledException` carrying that job's canceled token. Other failures,
+including faults after supersession and throwing cancellation callbacks, remain
+in an explicit queue drained by the host and by quit preparation. A shutdown
+failure upgrades an earlier successful quit result. External engine teardown also
+requests cancellation; normal app exits await completion before releasing audio,
+scene and source resources.
+
+`GodotAsyncWait` disconnects parameterless signal subscriptions on completion or
+cancellation. Successful waits retain the signal's callback phase, including
+`FramePostDraw`, so a capture cannot pair an earlier image with later metadata.
+Capture watchdog subscriptions are removed on every outcome, including IO failure
+and cancellation. Unsuccessful captures/reports remain failures, not silent passes.
+
+The remaining order is to move actor factories, source-stamped import caches and
+registration cleanup under #309 using this lease boundary, while #310 measures
+portable contracts independently. Actor imports retain their existing poll/reset
+behavior until that focused migration; do not claim they are already supervised
+by this step. Do not rename host files or absorb native enemy/weapon behavior
+changes into these extractions.
 
 ## Validation
 
@@ -100,9 +129,17 @@ authored starts, binding-retirement order, cancellation, late failure observatio
 and disposal. `WorldSceneOwnershipArchitectureTests` reject reintroduced writable
 world fields and unowned deferred bootstrap entry.
 
+`HostOperationScopeTests` exercise root/UI cancellation, cross-world root work,
+synchronous/asynchronous faults, unrelated cancellation, late errors, immediate
+quit reentrancy, callback failure and a complete shutdown drain.
+`SourceVerificationOperationTests` check delayed results from retired attachments,
+exact stamp admission and progress/outcome ownership. Architecture guards reject
+unowned critical launches and reintroduced shared verification fields.
+
 The headless `tools/player-session-smoke.ps1` checks real native/Lab transitions,
 one player/scene, retained session state, missing-source/failed-stage isolation
-and canceled navigation. The full reconciliation gate still covers profile/save,
+and canceled navigation, signal-phase retention, subscription cleanup and a
+canceled capture that never reads the viewport or writes output. The full reconciliation gate still covers profile/save,
 exact replay, bookmarks and fresh-process bug-report reproduction. Portable tests
 prove host contracts, not retail-native equivalence; authorised retail and actual
 visual/audio/controller checks retain their existing boundaries.

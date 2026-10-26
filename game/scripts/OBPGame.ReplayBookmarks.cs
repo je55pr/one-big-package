@@ -100,7 +100,11 @@ public partial class OBPGame
                 Game.ReportMovementState("Universal bookmark saved with a completed replay prefix. Move both sibling files together.");
                 GD.Print("[movement-state] universal bookmark saved at step " + step);
             }
-            catch (Exception error) { Game.ReportMovementState("Bookmark not saved: " + error.Message); }
+            catch (Exception error)
+            {
+                Game.ReportMovementState("Bookmark not saved: " + error.Message);
+                if (Game._hostOperations.Stopping) throw;
+            }
             finally
             {
                 _bookmarkSaving = false;

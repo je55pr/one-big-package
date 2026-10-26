@@ -79,16 +79,10 @@ public partial class OBPGame
         OnDestinationChosen(destination);
     }
 
-    private async Task WaitForWorldPreparationFrameAsync(CancellationToken cancellationToken)
+    private Task WaitForWorldPreparationFrameAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var tree = GetTree();
-        var frame = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        void OnFrame() => frame.TrySetResult();
-        tree.ProcessFrame += OnFrame;
-        using var registration = cancellationToken.Register(() => frame.TrySetCanceled(cancellationToken));
-        try { await frame.Task; }
-        finally { if (GodotObject.IsInstanceValid(tree)) tree.ProcessFrame -= OnFrame; }
+        return GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame, cancellationToken);
     }
 
     /// <summary>
@@ -105,7 +99,7 @@ public partial class OBPGame
     }
 
     public void RunRac2StressSwitchFromBootstrap(string sequence) =>
-        _ = RunStressSwitchAsync(sequence);
+        _hostOperations.Start("stress-switch", token => RunStressSwitchAsync(sequence, token));
 
     /// <summary>
     /// Smoke/bootstrap convenience that enters the persisted native CurrentLevel

@@ -47,6 +47,7 @@ public partial class OBPGame
                 GD.Print($"[player-session-smoke] {id}: same player/profile/selection/health; one player/scene; no old effects");
             }
             await CheckDeferredWorldEntryOwnershipAsync();
+            await CheckHostOperationCancellationAsync();
             var liveWorld = _world;
             var livePlayer = _player;
             var avatarSource = _sources.Get(ObpSourceGame.Rac1)!;
@@ -85,6 +86,51 @@ public partial class OBPGame
             ApplicationLifecycle.RequestQuit(this, "player-session-smoke-fail", 3);
         }
         finally { CameraSettingsStore.Set(originalOptions, persist: false); }
+    }
+
+    private async Task CheckHostOperationCancellationAsync()
+    {
+        var pulse = new Node();
+        try
+        {
+            bool emitting = false, resumedInsideSignal = false;
+            async Task Probe()
+            {
+                await GodotAsyncWait.SignalAsync(pulse, Node.SignalName.TreeEntered, CancellationToken.None);
+                resumedInsideSignal = emitting;
+            }
+            var probe = Probe();
+            emitting = true;
+            pulse.EmitSignal(Node.SignalName.TreeEntered);
+            emitting = false;
+            await probe;
+            Require(resumedInsideSignal, "signal wait moved continuation into a different callback phase");
+        }
+        finally { pulse.Free(); }
+        using var operations = new HostOperationScope();
+        int subscriptions = RenderingServer.Singleton.GetSignalConnectionList(RenderingServer.SignalName.FramePostDraw).Count;
+        operations.Start("waiting-for-render", token => GodotAsyncWait.SignalAsync(
+            RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw, token));
+        Require(RenderingServer.Singleton.GetSignalConnectionList(RenderingServer.SignalName.FramePostDraw).Count == subscriptions + 1,
+            "owned signal wait was not connected");
+        await operations.StopAsync();
+        Require(operations.PendingCount == 0 && operations.TakeFailures().Count == 0,
+            "canceled host work failed or did not drain");
+        Require(RenderingServer.Singleton.GetSignalConnectionList(RenderingServer.SignalName.FramePostDraw).Count == subscriptions,
+            "canceled render signal left a subscription");
+        using var canceled = new CancellationTokenSource();
+        bool metadataRead = false;
+        string output = Path.Combine(ProjectSettings.GlobalizePath("res://../captures"), "canceled-" + Guid.NewGuid().ToString("N") + ".png");
+        var capture = CaptureHarness.CaptureAsync(this, output, 60, () =>
+        {
+            metadataRead = true;
+            return new Dictionary<string, object?>();
+        }, canceled.Token);
+        canceled.Cancel();
+        try { await capture; throw new InvalidOperationException("Canceled capture completed successfully."); }
+        catch (OperationCanceledException error) when (error.CancellationToken == canceled.Token) { }
+        Require(!metadataRead && !File.Exists(output), "canceled capture accessed a retired viewport or wrote an output");
+        GD.Print("[player-session-smoke] PASS: canceled host/render waits drain, disconnect and publish no capture");
     }
 
     private async Task CheckDeferredWorldEntryOwnershipAsync()

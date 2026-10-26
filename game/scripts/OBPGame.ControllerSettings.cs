@@ -138,7 +138,7 @@ public partial class OBPGame
         _pauseMenu.ControllerSettingsRequested += () => OpenControllerSettings(fromPause: true);
         _pauseMenu.DebugOutputChanged += SetDebugOutputEnabled;
         _pauseMenu.SaveMovementStateRequested += SaveMovementState;
-        _pauseMenu.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
+        _pauseMenu.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
         _pauseMenu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_rac1WeaponPreviewInventory is not null); };
         _pauseMenu.RefillPreviewRequested += () => { ClosePauseMenu(); if (_rac1WeaponPreviewInventory is not null) SetRac1WeaponPreview(false); };
         _pauseMenu.PackPreviewRequested += () => { _player?.CycleRac1DevelopmentPack(); ClosePauseMenu(); };
