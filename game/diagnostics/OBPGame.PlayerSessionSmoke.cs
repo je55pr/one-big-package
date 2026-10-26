@@ -131,6 +131,10 @@ public partial class OBPGame
         catch (OperationCanceledException error) when (error.CancellationToken == canceled.Token)
         { /* The deliberate cancellation must finish without publishing capture metadata. */ }
         Require(!metadataRead && !File.Exists(output), "canceled capture accessed a retired viewport or wrote an output");
+        using var retiredDiagnostic = new CancellationTokenSource();
+        retiredDiagnostic.Cancel();
+        await RunMovementStateSmokeAsync(retiredDiagnostic.Token);
+        Require(!_hostOperations.Stopping, "expected diagnostic cancellation requested a failing quit");
         GD.Print("[player-session-smoke] PASS: canceled host/render waits drain, disconnect and publish no capture");
     }
 

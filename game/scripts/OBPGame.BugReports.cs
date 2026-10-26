@@ -39,7 +39,7 @@ public partial class OBPGame
                     !Guid.TryParse(_args.BugReportId, out var reportId))
                     throw new InvalidDataException("Choose a saved report and its report identity.");
                 _bugReports = new(Path.GetDirectoryName(directory)!);
-                var resolved = _bugReports.Resolve(sessionId, reportId);
+                var resolved = _bugReports.Resolve(sessionId, reportId, _hostOperations.Token);
                 _bugReplayReport = resolved.Report;
                 _args = _args with { ReplayPlaytest = resolved.RecordingPath };
             }

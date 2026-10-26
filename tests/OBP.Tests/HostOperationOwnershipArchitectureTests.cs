@@ -42,6 +42,9 @@ public sealed class HostOperationOwnershipArchitectureTests
     [InlineData("_hostOperations.Start(\"capture\", token=>RunCaptureAsync(1, token));", true)]
     [InlineData("StartBugOverlayWork(\"replay\", token=>ReplaySelectedBugAsync(token));", true)]
     [InlineData("await Task.Run(()=>{_=RunCaptureAsync(1, token);});", false)]
+    [InlineData("_=Task.Run(async()=>await RunCaptureAsync(1, token));", false)]
+    [InlineData("_hostOperations.Start(\"capture\", async token=>await RunCaptureAsync(1, token));", true)]
+    [InlineData("_hostOperations.Start(\"capture\", token=>{_=RunCaptureAsync(1, token); return Task.CompletedTask;});", false)]
     public void GuardRecognizesAwaitedOrOwnedCallsRatherThanDiscardSpelling(string body, bool expected)
     {
         var tree = CSharpSyntaxTree.ParseText("class Fixture { async Task Run() { " + body + " } }");
@@ -59,11 +62,14 @@ public sealed class HostOperationOwnershipArchitectureTests
 
     private static bool Owned(InvocationExpressionSyntax call)
     {
+        SyntaxNode expression = call;
         SyntaxNode? parent = call.Parent;
-        while (parent is ParenthesizedExpressionSyntax) parent = parent.Parent;
-        if (parent is AwaitExpressionSyntax) return true;
-        var lambda = call.Ancestors().OfType<LambdaExpressionSyntax>().FirstOrDefault();
-        if (lambda?.Parent is not ArgumentSyntax argument || argument.Parent?.Parent is not InvocationExpressionSyntax owner)
+        while (parent is ParenthesizedExpressionSyntax) { expression = parent; parent = parent.Parent; }
+        var function = call.Ancestors().OfType<AnonymousFunctionExpressionSyntax>().FirstOrDefault();
+        if (function is null) return parent is AwaitExpressionSyntax;
+        bool consumed = parent is AwaitExpressionSyntax or ReturnStatementSyntax ||
+            function is LambdaExpressionSyntax lambda && lambda.Body == expression;
+        if (!consumed || function.Parent is not ArgumentSyntax argument || argument.Parent?.Parent is not InvocationExpressionSyntax owner)
             return false;
         return Name(owner.Expression) == "StartBugOverlayWork" || owner.Expression is MemberAccessExpressionSyntax member &&
             member.Name.Identifier.ValueText == "Start" && member.Expression.ToString().EndsWith("_hostOperations", StringComparison.Ordinal);

@@ -357,16 +357,21 @@ public partial class OBPGame
         throw new InvalidOperationException("partial-air-control jump did not land within smoke timeout");
     }
 
-    private async System.Threading.Tasks.Task WaitForGroundedAsync(PlayerHost player, int maxFrames)
+    private Task WaitForGroundedAsync(PlayerHost player, int maxFrames) =>
+        WaitForGroundedCancelableAsync(player, maxFrames, CancellationToken.None);
+
+    private async Task WaitForGroundedCancelableAsync(PlayerHost player, int maxFrames, CancellationToken cancellationToken)
     {
         int supportedUpdates = 0;
         for (int frame = 0; frame < maxFrames; frame++)
         {
-            await PhysicsFramesAsync(1);
+            await PhysicsFramesCancelableAsync(1, cancellationToken);
             // PhysicsFrame is emitted before node physics callbacks. Inspect
             // the completed update and require settled controller support;
             // the floor bit can still describe the pre-teleport collision.
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            if (cancellationToken.CanBeCanceled)
+                await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame, cancellationToken);
+            else await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             supportedUpdates = player.IsOnFloor() &&
                 player.Rac1MovementPhase == Rac1RatchetMovementPhase.Grounded
                     ? supportedUpdates + 1 : 0;
@@ -455,10 +460,14 @@ public partial class OBPGame
         GD.Print("[movement-smoke] steady walking sequence 3 advanced and wrapped");
     }
 
-    private async System.Threading.Tasks.Task PhysicsFramesAsync(int count)
+    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, CancellationToken.None);
+
+    private async Task PhysicsFramesCancelableAsync(int count, CancellationToken cancellationToken)
     {
         for (int i = 0; i < count; i++)
-            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            if (cancellationToken.CanBeCanceled)
+                await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.PhysicsFrame, cancellationToken);
+            else await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
     }
     private async System.Threading.Tasks.Task TapPhysicalKeyAsync(Key key)
     {

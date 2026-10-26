@@ -137,7 +137,7 @@ public partial class OBPGame
                 RunRac1EnemySmokeAsync,
                 () =>
                 {
-                    _hostOperations.Start("movement-state-smoke", _ => RunMovementStateSmokeAsync(), lifetime: CancellationToken.None);
+                    _hostOperations.Start("movement-state-smoke", token => RunMovementStateSmokeAsync(token), lifetime: CancellationToken.None);
                     return Task.CompletedTask;
                 },
                 RunRac1BombGloveSmokeAsync,

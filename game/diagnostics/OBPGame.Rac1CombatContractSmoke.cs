@@ -449,12 +449,18 @@ public partial class OBPGame
         _rac1Class749PresentationNodes.Count(node =>
             IsInstanceValid(node.Root) && node.Root.Visible);
 
-    private async Task Rac1SmokeWaitAsync(Func<bool> condition, int maxFrames, string label)
+    private Task Rac1SmokeWaitAsync(Func<bool> condition, int maxFrames, string label) =>
+        Rac1SmokeWaitCancelableAsync(condition, maxFrames, label, CancellationToken.None);
+
+    private async Task Rac1SmokeWaitCancelableAsync(Func<bool> condition, int maxFrames, string label, CancellationToken cancellationToken)
     {
         for (int frame = 0; frame < maxFrames; frame++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (condition()) return;
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            if (cancellationToken.CanBeCanceled)
+                await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame, cancellationToken);
+            else await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
 
         throw new TimeoutException($"Timed out waiting for RAC1 smoke phase: {label}.");
