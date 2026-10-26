@@ -77,17 +77,17 @@ public partial class AmbientUvScrollProbe : Node
     private static StandardMaterial3D Material(RuntimeWorldScene.Result scene, string? group)
     {
         var matching = scene.AmbientMeshBindings!.Where(binding => binding.PresentationGroup == group).ToArray();
-        if (matching.Length == 0) throw new Exception($"Missing group: {group ?? "(ungrouped)"}");
+        if (matching.Length == 0) throw new InvalidOperationException($"Missing group: {group ?? "(ungrouped)"}");
         var first = (StandardMaterial3D)matching[0].Mesh.MaterialOverride;
         if (matching.Any(binding => !ReferenceEquals(first, binding.Mesh.MaterialOverride)))
-            throw new Exception($"Meshes in group {group} should share a material when their animation matches");
+            throw new InvalidOperationException($"Meshes in group {group} should share a material when their animation matches");
         return first;
     }
 
     private static void Offset(StandardMaterial3D material, float u, float v)
     {
         if (material.Uv1Offset.DistanceTo(new Vector3(u, v, 0)) > 0.00001f)
-            throw new Exception($"UV offset was {material.Uv1Offset}; expected {u}, {v}");
+            throw new InvalidOperationException($"UV offset was {material.Uv1Offset}; expected {u}, {v}");
     }
 
     private void GroupedScrollKeepsOtherGroupsStill()
@@ -98,7 +98,7 @@ public partial class AmbientUvScrollProbe : Node
         var b = Material(scene, "B");
         var none = Material(scene, null);
         if (ReferenceEquals(a, b) || !ReferenceEquals(b, none))
-            throw new Exception("Scrolling group A must isolate its material, but leave other materials shared");
+            throw new InvalidOperationException("Scrolling group A must isolate its material, but leave other materials shared");
         host.Tick(2, Vector3.Zero);
         Offset(a, 0.2f, 0.4f);
         Offset(b, 0f, 0f);
@@ -114,7 +114,7 @@ public partial class AmbientUvScrollProbe : Node
         var b = Material(scene, "B");
         var none = Material(scene, null);
         if (!ReferenceEquals(a, b) || !ReferenceEquals(b, none))
-            throw new Exception("Same ungrouped UV scroll should keep the factory's material sharing");
+            throw new InvalidOperationException("Same ungrouped UV scroll should keep the factory's material sharing");
         host.Tick(1, Vector3.Zero);
         Offset(a, 0.125f, 0.25f);
         Offset(b, 0.125f, 0.25f);
@@ -122,39 +122,32 @@ public partial class AmbientUvScrollProbe : Node
         host.Unload();
     }
 
-    private void IndependentlyAnimatedGroupsStayIndependent()
-    {
-        var (host, scene) = Build(
+    private void IndependentlyAnimatedGroupsStayIndependent() =>
+        VerifyIndependentScrollProfiles(0f, 0f,
             new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0.1, 0, 0), TargetGroup: "A"),
             new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0, 0.2, 0), TargetGroup: "B"));
-        var a = Material(scene, "A");
-        var b = Material(scene, "B");
-        var none = Material(scene, null);
-        if (ReferenceEquals(a, b) || ReferenceEquals(a, none) || ReferenceEquals(b, none))
-            throw new Exception("Different UV scroll profiles must have independent materials");
-        host.Tick(2, Vector3.Zero);
-        Offset(a, 0.2f, 0f);
-        Offset(b, 0f, 0.4f);
-        Offset(none, 0f, 0f);
-        host.Unload();
-    }
 
     /// <summary>Exercise the partition path where every material user has an animation profile.</summary>
-    private void EverySharedBindingHasAScrollProfile()
-    {
-        var (host, scene) = Build(
+    private void EverySharedBindingHasAScrollProfile() =>
+        VerifyIndependentScrollProfiles(0.1f, 0.1f,
             new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0.05, 0.05, 0)),
             new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0.1, 0, 0), TargetGroup: "A"),
             new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0, 0.2, 0), TargetGroup: "B"));
+
+    /// <summary>Assert that groups A, B and ungrouped material have distinct UV offsets after a world tick.</summary>
+    private void VerifyIndependentScrollProfiles(float ungroupedU, float ungroupedV,
+        params RuntimeAmbientAnimation[] animations)
+    {
+        var (host, scene) = Build(animations);
         var a = Material(scene, "A");
         var b = Material(scene, "B");
         var none = Material(scene, null);
         if (ReferenceEquals(a, b) || ReferenceEquals(a, none) || ReferenceEquals(b, none))
-            throw new Exception("Every distinct scroll profile needs its own material");
+            throw new InvalidOperationException("Different UV scroll profiles must have independent materials");
         host.Tick(2, Vector3.Zero);
         Offset(a, 0.2f, 0f);
         Offset(b, 0f, 0.4f);
-        Offset(none, 0.1f, 0.1f);
+        Offset(none, ungroupedU, ungroupedV);
         host.Unload();
     }
 
@@ -176,7 +169,7 @@ public partial class AmbientUvScrollProbe : Node
         var sharedTexture = sky.GroupBy(m => m.TextureId)
             .FirstOrDefault(g => g.Select(m => m.PresentationGroup).Distinct().Count() > 1);
         var chosen = sharedTexture?.FirstOrDefault() ?? sky.FirstOrDefault()
-            ?? throw new Exception("UYA retail sky contains no textured presentation groups");
+            ?? throw new InvalidOperationException("UYA retail sky contains no textured presentation groups");
         string group = chosen.PresentationGroup!;
         int textureId = chosen.TextureId;
 
@@ -205,7 +198,7 @@ public partial class AmbientUvScrollProbe : Node
             b.TextureId == textureId && b.PresentationGroup == group).ToArray();
         var other = bindings.Where(b => b.AssetKind == "sky" &&
             b.TextureId == textureId && b.PresentationGroup != group).ToArray();
-        if (targeted.Length == 0) throw new Exception("Retail group was lost during scene construction");
+        if (targeted.Length == 0) throw new InvalidOperationException("Retail group was lost during scene construction");
 
         host.Tick(1, Vector3.Zero);
         foreach (var binding in targeted)

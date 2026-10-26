@@ -250,7 +250,7 @@ public sealed class WorldHost
         // texture and render state, including across independently animated shells.
         var materialShares = bindings
             .Where(b => b.Mesh.MaterialOverride is StandardMaterial3D)
-            .GroupBy(b => b.Mesh.MaterialOverride!.GetInstanceId())
+            .GroupBy(b => b.Mesh.MaterialOverride.GetInstanceId())
             .ToArray();
 
         foreach (var shares in materialShares)
@@ -258,7 +258,7 @@ public sealed class WorldHost
             var profiles = shares.GroupBy(Profile).ToArray();
             if (profiles.Length < 2) continue;
 
-            var original = (StandardMaterial3D)shares.First().Mesh.MaterialOverride!;
+            var original = (StandardMaterial3D)shares.First().Mesh.MaterialOverride;
             // Leave non-scrolling users on the original material when possible.
             var keep = profiles.FirstOrDefault(group => group.Key.Length == 0) ?? profiles[0];
             foreach (var profile in profiles)
