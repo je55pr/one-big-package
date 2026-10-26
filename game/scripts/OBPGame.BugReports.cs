@@ -187,7 +187,7 @@ public partial class OBPGame
             var selected = SelectedBug();
             ui.SetBusy(true, "Preparing portable ZIP…");
             var inbox = _bugReports!;
-            string archive = await Task.Run(() => inbox.Export(selected.Session, selected.Report.Id), cancellationToken);
+            string archive = await Task.Run(() => inbox.Export(selected.Session, selected.Report.Id, cancellationToken), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (!BugUiCurrent(ui)) return;
             ui.SetBusy(false, $"ZIP saved in exports/{Path.GetFileName(archive)}. Review it before sharing.");
@@ -251,7 +251,7 @@ public partial class OBPGame
             var selected = SelectedBug();
             var inbox = _bugReports ?? throw new InvalidOperationException("Report inbox is unavailable.");
             ui.SetBusy(true, "Checking the completed recording…");
-            var resolved = await Task.Run(() => inbox.Resolve(selected.Session, selected.Report.Id), cancellationToken);
+            var resolved = await Task.Run(() => inbox.Resolve(selected.Session, selected.Report.Id, cancellationToken), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (!BugUiCurrent(ui)) return;
             using var reader = new PlaytestRunReader(resolved.RecordingPath);
@@ -303,7 +303,9 @@ public partial class OBPGame
                 await WaitForWorldPreparationFrameAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (!BugUiCurrent(ui)) return;
-            if (OS.IsProcessRunning(process)) throw new IOException("Replay is still running. Inspect its game window.");
+            if (OS.IsProcessRunning(process)) throw new IOException(automatedReplay
+                ? "Automated replay exceeded its deadline."
+                : "Replay is still running. Inspect its game window.");
             if (!File.Exists(result)) throw new IOException("Replay exited without a result file.");
             using var json = JsonDocument.Parse(File.ReadAllText(result));
             string? outcome = json.RootElement.GetProperty("Result").GetString();
@@ -321,11 +323,15 @@ public partial class OBPGame
         }
         finally
         {
-            // Interactive reproductions are independent user windows. An automated child must not outlive its canceled owner.
-            if (automatedReplay && cancellationToken.IsCancellationRequested && process >= 0 && OS.IsProcessRunning(process))
+            // Interactive reproductions are independent user windows. Automated children must not outlive any exit path.
+            if (automatedReplay && process >= 0 && OS.IsProcessRunning(process))
             {
                 var result = OS.Kill(process);
-                if (result != Error.Ok) GD.PrintErr("[bug-report] could not stop canceled automated replay: " + result);
+                if (result != Error.Ok && OS.IsProcessRunning(process))
+                {
+                    GD.PrintErr("[bug-report] could not stop owned automated replay: " + result);
+                    if (IsInsideTree()) ApplicationLifecycle.RequestQuit(this, "bug-replay-child-stop-failed", 2);
+                }
             }
         }
     }
