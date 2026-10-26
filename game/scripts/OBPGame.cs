@@ -841,7 +841,8 @@ public partial class OBPGame : Node3D
         CreateMovementDiagnosticHarness().RunFallAsync(GodotMovementPlayer.Copy(position), LegacyDiagnosticCancellation.Current);
     internal Task CheckControllerWeaponInputAsync() => CreateMovementDiagnosticHarness().RunControllerAsync(_hostOperations.Token);
     private Task<float> MeasureJumpAsync(PlayerHost player, int holdFrames, bool applyPartialAirControl, bool movingAtLaunch = false) =>
-        CreateMovementDiagnosticHarness().MeasureJumpAsync(holdFrames, applyPartialAirControl, movingAtLaunch, LegacyDiagnosticCancellation.Current);
+        GodotMovementCompatibility.MeasureJumpAsync(() => CreateMovementDiagnosticHarness()
+            .MeasureJumpAsync(holdFrames, applyPartialAirControl, movingAtLaunch, LegacyDiagnosticCancellation.Current));
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
         GodotRac1DiagnosticSurface.Add(parent, name, material, triangles);
