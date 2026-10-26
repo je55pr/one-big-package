@@ -14,6 +14,8 @@ public sealed class PlayerCapabilitiesScenario(DiagnosticScenarioDefinition defi
     IDiagnosticCapabilityHealthFixture health, Func<string?> configurationIdentity, string? output, Action<string> log) : IDiagnosticScenario
 {
     public DiagnosticScenarioDefinition Definition { get; } = definition;
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification =
+        "The diagnostic requires the exact native tick endpoint: 240 / 60 = 4 seconds. A tolerance could hide a wrong tick count.")]
     public async Task RunAsync(DiagnosticRunContext run)
     {
         var entry = player.Read(); Require(entry.Ordinary && entry.NativePresent, "ordinary session required");
@@ -94,6 +96,8 @@ public sealed class PlayerCapabilitiesScenario(DiagnosticScenarioDefinition defi
         Require(equipment.Select("rac2/item/30").Accepted && player.Read().State!.HandEquipment == FusionWeaponSession.Lancer, "source recovery could not re-equip remembered weapon");
         await run.WaitAsync(DiagnosticFramePhase.Physics);
     }
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification =
+        "Health is a quantized native counter. These checks require exact counter values and an identical HUD copy, not approximate computed geometry.")]
     private async Task CheckHealth(DiagnosticRunContext run)
     {
         Require((await navigation.NavigateAsync("rac2:LEVEL0", run.CancellationToken)).Accepted, "Aranos source combat entry failed");
