@@ -38,6 +38,16 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+      - name: Measure root ownership boundaries
+        run: |
+          dotnet run --project tools/OBP.ArchitectureTool -c Release --no-build -- census . > .build/root-census.json
+      - name: Publish root ownership census
+        uses: actions/upload-artifact@v7
+        with:
+          name: root-ownership-census
+          path: .build/root-census.json
+          if-no-files-found: error
+          retention-days: 14
 
   godot-smoke:
     name: godot-smoke

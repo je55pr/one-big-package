@@ -32,6 +32,7 @@
 - An unavailable source/provider or unrecovered capability needs an explicit failure/status. No silent capsule fallback in ordinary play; no placeholder avatar or gadget advertised as working. Stage-0 contracts do not mean the later host migrations are implemented.
 
 ## Working style
+- During #333 decomposition, follow [ROOT_DECOMPOSITION.md](docs/ROOT_DECOMPOSITION.md). New root feature/diagnostic state and partials are rejected by the Roslyn guard. Use owned components and focused ports; record exact temporary composition exceptions and retire old permissions with each migration. Do not expand the frozen origin ledger. Existing-body fixes remain allowed.
 - `dev` is the protected integration branch. Never push directly to `dev`; work in a feature branch or isolated worktree and open a pull request targeting `dev`.
 - Pull requests must pass the required GitHub checks and resolve review conversations. All merges are deliberate and manual; do not enable auto-merge.
 - `dev` is the sole maintained integration/release branch; do not recreate a permanent `main` release pointer. Keep changes focused and avoid bookkeeping-only commits.
