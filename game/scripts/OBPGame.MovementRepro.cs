@@ -120,7 +120,7 @@ public partial class OBPGame
     public void LoadMovementStateFromBootstrap() => StartMovementStateLoad(_args.LoadMovementState!, startup: true);
 
     private void StartMovementStateLoad(string path, bool startup = false) =>
-        _hostOperations.Start("movement-state-load", token => LoadMovementStateAsync(path, startup, cancellationToken: token));
+        _hostOperations.Start("movement-state-load", token => LoadMovementStateAsync(path, startup, cancellationToken: token), lifetime: CancellationToken.None);
 
     private async Task<List<MovementReplaySample>?> LoadMovementStateAsync(string path, bool startup = false, int? recordFrames = null,
         CancellationToken cancellationToken = default)
@@ -347,7 +347,7 @@ public partial class OBPGame
         _movementStateNotice.Text = message;
         _movementStateNotice.Visible = true;
         if (!_hostOperations.Stopping)
-            _hostOperations.Start("movement-state-notice", token => ClearMovementStateNoticeAsync(++_movementStateNoticeGeneration, token));
+            _hostOperations.Start("movement-state-notice", token => ClearMovementStateNoticeAsync(++_movementStateNoticeGeneration, token), lifetime: CancellationToken.None);
     }
 
     private async Task ClearMovementStateNoticeAsync(int generation, CancellationToken cancellationToken)

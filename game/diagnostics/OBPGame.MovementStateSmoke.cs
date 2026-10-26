@@ -60,7 +60,7 @@ public partial class OBPGame
             MovementReproState saved = MovementReproStateFile.Load(MovementStatePath);
             Vector3 savedPosition = player.GlobalPosition;
             Require(saved.World is not null && saved.World.InactiveObjects.Count >= defeated.Length + 1, "world removals were not saved");
-            await LoadMovementStateAsync(MovementStatePath);
+            await LoadMovementStateAsync(MovementStatePath, cancellationToken: _hostOperations.Token);
             RequireWorldRestored();
             var first = await RecordForwardMovementReplayAsync(25, _hostOperations.Token);
             Require(Math.Sqrt(Math.Pow(first[^1].Position.X - savedPosition.X, 2) + Math.Pow(first[^1].Position.Z - savedPosition.Z, 2)) > .25f,
@@ -75,7 +75,7 @@ public partial class OBPGame
             RequireWorldRestored();
             Require(Math.Abs(first[0].ControlHeading - saved.Player.Camera!.ControlHeadingRadians) < .000001,
                 "movement load changed the camera/control heading");
-            var second = await LoadMovementStateAsync(MovementStatePath, recordFrames: 25)
+            var second = await LoadMovementStateAsync(MovementStatePath, recordFrames: 25, cancellationToken: _hostOperations.Token)
                 ?? throw new InvalidOperationException("Second state replay failed.");
             player = _player!;
             RequireWorldRestored();
@@ -98,9 +98,9 @@ public partial class OBPGame
             };
             string fallbackPath = Path.Combine(Path.GetDirectoryName(MovementStatePath)!, "smoke-fallback-state.json");
             MovementReproStateFile.Save(fallbackPath, fallback);
-            var fallbackFirst = await LoadMovementStateAsync(fallbackPath, recordFrames: 15)
+            var fallbackFirst = await LoadMovementStateAsync(fallbackPath, recordFrames: 15, cancellationToken: _hostOperations.Token)
                 ?? throw new InvalidOperationException("Fallback camera replay failed.");
-            var fallbackSecond = await LoadMovementStateAsync(fallbackPath, recordFrames: 15)
+            var fallbackSecond = await LoadMovementStateAsync(fallbackPath, recordFrames: 15, cancellationToken: _hostOperations.Token)
                 ?? throw new InvalidOperationException("Fallback camera reload failed.");
             Require(!(_player?.HasActiveRecoveredCamera ?? true) && fallbackFirst.Zip(fallbackSecond).All(pair =>
                 pair.First.Position == pair.Second.Position && pair.First.ControlHeading == pair.Second.ControlHeading),

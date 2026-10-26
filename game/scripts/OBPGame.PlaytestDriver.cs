@@ -340,10 +340,10 @@ public partial class OBPGame
                         if (_bookmarkPath is { } bookmark && !PreparingWorld)
                         {
                             _bookmarkPath = null;
-                            Game._hostOperations.Start("bookmark-save", _ => SaveBookmarkAsync(bookmark, _nextStep - 1));
+                            Game._hostOperations.Start("bookmark-save", _ => SaveBookmarkAsync(bookmark, _nextStep - 1), lifetime: CancellationToken.None);
                         }
                         if (_stopRequested || _nextStep >= 999_990)
-                            Game._hostOperations.Start("recording-save", _ => SaveAsync());
+                            Game._hostOperations.Start("recording-save", _ => SaveAsync(), lifetime: CancellationToken.None);
                     }
                     PaceHumanRecording();
                 }

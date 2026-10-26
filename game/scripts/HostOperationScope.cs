@@ -40,7 +40,8 @@ public sealed class HostOperationScope : IDisposable
     {
         var token = cancellation.Token;
         try { await work(token); }
-        catch (OperationCanceledException error) when (error.CancellationToken == token && token.IsCancellationRequested) { }
+        catch (OperationCanceledException error) when (error.CancellationToken == token && token.IsCancellationRequested)
+        { /* Expected owner retirement; the finally block still releases and completes this job. */ }
         catch (Exception error) { _failures.Enqueue(new(name, error, token.IsCancellationRequested)); }
         finally
         {

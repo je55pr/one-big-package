@@ -102,7 +102,7 @@ public partial class OBPGame : Node3D
         if (_args.TestScene == "fusion-lab")
         {
             if (EnterFusionLab() && _args.CaptureFrame is { } fusionCapture)
-                _hostOperations.Start("capture", token => RunCaptureAsync(fusionCapture, token));
+                _hostOperations.Start("capture", token => RunCaptureAsync(fusionCapture, token), lifetime: CancellationToken.None);
             return;
         }
 
@@ -110,7 +110,7 @@ public partial class OBPGame : Node3D
         // destination/provider path used by ordinary world entry.
         if (_args.ShotsPath is { } shotList)
         {
-            _hostOperations.Start("shots", token => RunShotsAsync(shotList, token));
+            _hostOperations.Start("shots", token => RunShotsAsync(shotList, token), lifetime: CancellationToken.None);
             return;
         }
 
@@ -140,7 +140,7 @@ public partial class OBPGame : Node3D
         if (_args.CaptureFrame is { } frame)
         {
             Engine.MaxFps = 60;
-            _hostOperations.Start("capture", token => RunCaptureAsync(frame, token));
+            _hostOperations.Start("capture", token => RunCaptureAsync(frame, token), lifetime: CancellationToken.None);
         }
     }
 

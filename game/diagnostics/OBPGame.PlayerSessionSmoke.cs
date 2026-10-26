@@ -110,7 +110,7 @@ public partial class OBPGame
         using var operations = new HostOperationScope();
         int subscriptions = RenderingServer.Singleton.GetSignalConnectionList(RenderingServer.SignalName.FramePostDraw).Count;
         operations.Start("waiting-for-render", token => GodotAsyncWait.SignalAsync(
-            RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw, token));
+            RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw, token), lifetime: CancellationToken.None);
         Require(RenderingServer.Singleton.GetSignalConnectionList(RenderingServer.SignalName.FramePostDraw).Count == subscriptions + 1,
             "owned signal wait was not connected");
         await operations.StopAsync();
@@ -126,9 +126,10 @@ public partial class OBPGame
             metadataRead = true;
             return new Dictionary<string, object?>();
         }, canceled.Token);
-        canceled.Cancel();
+        canceled.Cancel(); // Keep this Godot-thread cancellation synchronous while checking subscription cleanup.
         try { await capture; throw new InvalidOperationException("Canceled capture completed successfully."); }
-        catch (OperationCanceledException error) when (error.CancellationToken == canceled.Token) { }
+        catch (OperationCanceledException error) when (error.CancellationToken == canceled.Token)
+        { /* The deliberate cancellation must finish without publishing capture metadata. */ }
         Require(!metadataRead && !File.Exists(output), "canceled capture accessed a retired viewport or wrote an output");
         GD.Print("[player-session-smoke] PASS: canceled host/render waits drain, disconnect and publish no capture");
     }

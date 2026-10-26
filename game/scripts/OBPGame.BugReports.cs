@@ -192,7 +192,8 @@ public partial class OBPGame
             if (!BugUiCurrent(ui)) return;
             ui.SetBusy(false, $"ZIP saved in exports/{Path.GetFileName(archive)}. Review it before sharing.");
         }
-        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+        { /* The view/host owner retired; completed disk IO must not update the closed view. */ }
         catch (Exception error) { ReportBugUiFailure(ui, error); }
     }
 
@@ -307,7 +308,8 @@ public partial class OBPGame
                 "Replay could not complete. Inspect its result in replay-results.");
             GD.Print($"[bug-report] replay {outcome}; id={selected.Report.Id:N}");
         }
-        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+        { /* Expected owner retirement; automated child cleanup still runs below. */ }
         catch (Exception error) { ReportBugUiFailure(ui, error); }
         finally
         {
