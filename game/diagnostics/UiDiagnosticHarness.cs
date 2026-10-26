@@ -10,6 +10,7 @@ internal sealed class UiDiagnosticHarness(CommandLineArgs args, bool ordinarySou
     IDiagnosticRetailPauseFixture retail, IDiagnosticWorldObservations worlds, IDiagnosticNavigationActions navigation,
     DiagnosticScenarioRunner runner, HostOperationScope operations, Action<string, int> quit, Action<string> log, Action<string> logError)
 {
+    internal IDiagnosticMenuFixture Menus => menus;
     internal static DiagnosticScenarioRegistry Registry { get; } = new(
     [
         new("ordinary-ui-smoke", ["--ordinary-ui-smoke"], a => a.OrdinaryUiSmoke),

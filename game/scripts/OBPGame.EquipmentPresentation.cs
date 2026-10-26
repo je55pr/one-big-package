@@ -72,7 +72,7 @@ public partial class OBPGame
         _playerAudioBankLevel = OrdinaryPlayerSession ? 0 : world.LevelId;
         _rac1PlayerAudio = assets?.PlayerAudio is { } audio ? new Rac1PlayerAudioSession(audio.Animations) : null;
         _rac1PlayerReactions = assets?.PlayerAudio is { } reactions ? new Rac1PlayerReactionAudioSession(reactions.Animations) : null;
-        _rac1PlayerSoundTrace.Clear();
+        _playerAudioDiagnosticEvents.Clear();
         if (assets is null) _playerAudioDiagnostics.Add("Selected player audio bank is unavailable.");
         // Foreign/unclassified contact material is deliberately treated as a
         // dry surface by the selected movement adapter. The authentic LEVEL0

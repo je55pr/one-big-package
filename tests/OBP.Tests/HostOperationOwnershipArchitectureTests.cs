@@ -16,8 +16,7 @@ public sealed class HostOperationOwnershipArchitectureTests
     public void CriticalLaunchesAreOwnedAndShutdownDrainsThemBeforeResourceRelease()
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var tree in HostOwnershipAudit.Host.Value.SyntaxTrees.Where(tree =>
-            Path.GetFileName(tree.FilePath).StartsWith("OBPGame", StringComparison.Ordinal)))
+        foreach (var tree in HostOwnershipAudit.Host.Value.SyntaxTrees)
         {
             foreach (var call in tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
             {
@@ -27,6 +26,18 @@ public sealed class HostOperationOwnershipArchitectureTests
                 Assert.True(Owned(call), $"Unowned critical operation {name} in {tree.FilePath}:{call.GetLocation().GetLineSpan().StartLinePosition.Line + 1}");
             }
         }
+        // The retired player-session partial bound this existing entrypoint to a focused engine proof.
+        // Keep auditing both constructor bindings and the awaited delegate, rather than dropping the critical operation.
+        var movementBindings = HostOwnershipAudit.Host.Value.SyntaxTrees.SelectMany(tree => tree.GetRoot().DescendantNodes().OfType<ArgumentSyntax>())
+            .Where(argument => argument.Expression is IdentifierNameSyntax identifier && identifier.Identifier.ValueText == "RunMovementStateSmokeAsync").ToArray();
+        Assert.Equal(2, movementBindings.Length);
+        Assert.All(movementBindings, argument => Assert.Contains(
+            Assert.IsType<ObjectCreationExpressionSyntax>(argument.Parent!.Parent).Type.ToString(),
+            new[] { "WorldSmokeHarness.Entrypoints", "GodotSessionOperationChecks" }));
+        var proof = HostOwnershipAudit.Host.Value.SyntaxTrees.Single(tree => Path.GetFileName(tree.FilePath) == "GodotSessionOperationChecks.cs");
+        var delegated = Assert.Single(proof.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>(), call => Name(call.Expression) == "movementStateCheck");
+        Assert.True(Owned(delegated), "The retained movement cancellation proof must await the bound critical operation.");
+        seen.Add("RunMovementStateSmokeAsync");
         Assert.True(CriticalOperations.SetEquals(seen), "The guard must encounter every retained critical operation.");
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         int stop = root.IndexOf("await hostStopped;", StringComparison.Ordinal);

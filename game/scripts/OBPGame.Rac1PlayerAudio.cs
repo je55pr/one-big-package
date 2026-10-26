@@ -1,4 +1,6 @@
 using Godot;
+using OBP.Core;
+using OBP.Game.Diagnostics;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
@@ -19,7 +21,6 @@ public partial class OBPGame
     private Rac1PickupRandom? _rac1PlayerAudioRandom;
     private Rac1PickupRandom PlayerAudioRandom => _rac1PlayerAudioRandom ??=
         Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
-    private readonly List<(Rac1PlayerAudioSession.Cue Cue, bool Loop)> _rac1PlayerSoundTrace = [];
 
     private void ResetRac1PlayerAudio(bool includeReactions = true, bool freeImmediately = false)
     {
@@ -82,7 +83,14 @@ public partial class OBPGame
         else PlayerPresentationAssets?.Sounds?.TryGetValue((cue.Class, cue.Sound), out sound);
         if (sound is null) { ReportPlayerAudioMissing(cue.Class, cue.Sound); return; }
         var clip = sound.SelectPitch(PlayerAudioRandom);
-        if (clip.FrameCount == 0) return; // Native probability programs may select silence.
+        if (clip.FrameCount == 0)
+        {
+            // Retain a source-qualified diagnostic outcome for an admitted probability branch; this is not playback.
+            if (_args.Rac1PlayerAudioSmoke) _playerAudioDiagnosticEvents.Record(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId,
+                _playerAudioBankLevel, _playerPhysicsClock?.Tick ?? 0, cue.Class, cue.Sound, false, cue.LevelSound)
+            { Playback = DiagnosticAudioPlayback.NativeSilence });
+            return;
+        }
         // Listener-relative self audio is host presentation policy. Native
         // SoundDef gain/pitch and sample/loop data remain source-owned; Godot's
         // default inverse-distance attenuation must not mute the player's feet.
@@ -115,7 +123,8 @@ public partial class OBPGame
     {
         TraceSelectedPlayerAudio(cue.Class, cue.Sound, loop, cue.LevelSound);
         if (!_args.Rac1WrenchSmoke && !_args.Rac1WeaponsSmoke && !_args.Rac1PlayerAudioSmoke) return;
-        _rac1PlayerSoundTrace.Add((cue, loop));
+        _playerAudioDiagnosticEvents.Record(new(ObpSourceGame.Rac1, OBP.RAC1.Rac1Authority.Primary.BuildId, _playerAudioBankLevel,
+            _playerPhysicsClock?.Tick ?? 0, cue.Class, cue.Sound, loop, cue.LevelSound));
     }
 
     private void TryPlayRac1WrenchWorldContact(global::Godot.Collections.Dictionary hit)
