@@ -80,16 +80,22 @@ public static class DiagnosticScenarioDispatch
                 }
             }
             if (operations.Stopping) return;
-            if (failure is { } rejected)
-            {
-                logError("[diagnostic] " + rejected.Result.Id + ": " + (rejected.Result.Error?.ToString() ?? rejected.Result.Detail));
-                var failed = (scenarios[rejected.Index] as IDiagnosticProcessOutcome)?.FailureExit;
-                quit(failed is { Code: > 0 } ? failed.Reason : "diagnostic-scenario-failed", failed is { Code: > 0 } ? failed.Code : rejected.Result.ExitCode);
-                return;
-            }
-            var completed = scenarios.OfType<IDiagnosticProcessOutcome>().Select(scenario => scenario.Exit).FirstOrDefault(exit => exit is not null)
-                ?? new DiagnosticExit("diagnostic-scenarios-complete", 0);
-            quit(completed.Reason, completed.Code);
+            CommitOutcome(scenarios, failure, quit, logError);
         }, lifetime: CancellationToken.None);
+    }
+
+    private static void CommitOutcome(IReadOnlyList<IDiagnosticScenario> scenarios, (int Index, DiagnosticRunResult Result)? failure,
+        Action<string, int> quit, Action<string> logError)
+    {
+        if (failure is { } rejected)
+        {
+            logError("[diagnostic] " + rejected.Result.Id + ": " + (rejected.Result.Error?.ToString() ?? rejected.Result.Detail));
+            var failed = (scenarios[rejected.Index] as IDiagnosticProcessOutcome)?.FailureExit;
+            quit(failed is { Code: > 0 } ? failed.Reason : "diagnostic-scenario-failed", failed is { Code: > 0 } ? failed.Code : rejected.Result.ExitCode);
+            return;
+        }
+        var completed = scenarios.OfType<IDiagnosticProcessOutcome>().Select(scenario => scenario.Exit).FirstOrDefault(exit => exit is not null)
+            ?? new DiagnosticExit("diagnostic-scenarios-complete", 0);
+        quit(completed.Reason, completed.Code);
     }
 }

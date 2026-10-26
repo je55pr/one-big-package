@@ -10,7 +10,7 @@ namespace OBP.Game.Diagnostics;
 
 internal sealed class GodotDiagnosticMenus(Node owner, Node3D worldRoot,
     Func<DiagnosticNavigationSnapshot> navigation, Func<DiagnosticStartupPresentation> presentation,
-    Func<DiagnosticMenuSurface, Node?> surface, Func<TitleScreen?> title,
+    Func<DiagnosticMenuSurface, Node?> surfaceNode, Func<TitleScreen?> title,
     Func<DestinationSelectorUi?> selector, Func<PauseMenuUi?> pause,
     Action showTitle, Action showWorldSelect, Func<bool> back, Func<bool> openPause, Func<bool> closePause) : IDiagnosticMenuFixture
 {
@@ -25,8 +25,8 @@ internal sealed class GodotDiagnosticMenus(Node owner, Node3D worldRoot,
         VisiblePlaceholders = [.. new[] { "SmokeCube", "Floor" }.Where(name =>
             worldRoot.GetNodeOrNull<MeshInstance3D>(name)?.IsVisibleInTree() == true)],
     };
-    public ImmutableArray<string> ReadVisibleText(DiagnosticMenuSurface target) =>
-        GodotDiagnosticSurface.Read(surface(target) ?? throw new DiagnosticUnavailableException("The requested UI surface is missing: " + target));
+    public ImmutableArray<string> ReadVisibleText(DiagnosticMenuSurface surface) =>
+        GodotDiagnosticSurface.Read(surfaceNode(surface) ?? throw new DiagnosticUnavailableException("The requested UI surface is missing: " + surface));
     public void ShowTitle() => showTitle();
     public void ShowWorldSelect() => showWorldSelect();
     public bool Back() => back();
