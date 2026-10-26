@@ -24,7 +24,8 @@ public static class CoverageReport
     { "OBP.Core", "OBP.IO", "OBP.Runtime", "OBP.Fusion", "OBP.PS2", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3", "OBP.Tests" };
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
-    public static CoverageSummary Write(string root, string coberturaPath, string openCoverPath, string output)
+    public static CoverageSummary Write(string root, string coberturaPath, string openCoverPath, string output,
+        string sourceRepository = "je55pr/one-big-package")
     {
         root = Path.GetFullPath(root);
         var cobertura = Read(coberturaPath);
@@ -40,7 +41,7 @@ public static class CoverageReport
             measuredModules.Add(module);
             foreach (var type in package.Descendants("class"))
             {
-                string file = SourcePath(root, Required(type, "filename"));
+                string file = SourcePath(root, Required(type, "filename"), sourceRepository);
                 type.SetAttributeValue("filename", file);
                 if (!lines.TryGetValue((module, file), out var fileLines)) lines[(module, file)] = fileLines = [];
                 foreach (var line in type.Element("lines")?.Elements("line") ?? [])
@@ -62,7 +63,7 @@ public static class CoverageReport
             var paths = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var file in module.Descendants("File"))
             {
-                string path = SourcePath(root, Required(file, "fullPath"));
+                string path = SourcePath(root, Required(file, "fullPath"), sourceRepository);
                 file.SetAttributeValue("fullPath", path);
                 if (!paths.TryAdd(Required(file, "uid"), path)) throw new InvalidDataException("Coverage has duplicate source identifiers.");
             }
@@ -106,7 +107,7 @@ public static class CoverageReport
         return XDocument.Load(reader);
     }
 
-    private static string SourcePath(string root, string reported)
+    private static string SourcePath(string root, string reported, string sourceRepository)
     {
         string candidate = reported.Replace('\\', '/');
         string prefix = root.Replace('\\', '/').TrimEnd('/') + '/';
@@ -116,7 +117,7 @@ public static class CoverageReport
         else if (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) && uri.Scheme == "https" && uri.Host == "raw.githubusercontent.com")
         {
             string[] parts = Uri.UnescapeDataString(uri.AbsolutePath).TrimStart('/').Split('/');
-            if (parts.Length < 5 || parts[0] != "je55pr" || parts[1] != "one-big-package")
+            if (parts.Length < 5 || !string.Equals(parts[0] + "/" + parts[1], sourceRepository, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("Coverage has an unexpected source repository.");
             candidate = string.Join('/', parts.Skip(3));
         }

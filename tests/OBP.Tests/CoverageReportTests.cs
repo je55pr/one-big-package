@@ -153,15 +153,75 @@ public sealed class CoverageReportTests
         Assert.DoesNotContain("A&B.cs", html, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("relative")]
+    [InlineData("deterministic")]
+    [InlineData("source-link")]
+    public void LinkedHostSourceAcceptsRepositoryRelativeDeterministicAndForkSourceLinkPaths(string form)
+    {
+        using var fixture = new Fixture("test-owner/fork");
+        fixture.CreateReports();
+        string relative = "game/scripts/Fixture.cs";
+        string reported = form switch
+        {
+            "deterministic" => "/_/" + relative,
+            "source-link" => "https://raw.githubusercontent.com/TEST-OWNER/FORK/commit/" + relative,
+            _ => relative
+        };
+        var cobertura = XDocument.Load(fixture.Cobertura);
+        cobertura.Descendants("package").Single(module => (string?)module.Attribute("name") == "OBP.Tests")
+            .Descendants("class").Single().SetAttributeValue("filename", reported);
+        cobertura.Save(fixture.Cobertura);
+        var open = XDocument.Load(fixture.OpenCover);
+        open.Descendants("Module").Single(module => module.Element("ModuleName")!.Value == "OBP.Tests")
+            .Descendants("File").Single().SetAttributeValue("fullPath", reported);
+        open.Save(fixture.OpenCover);
+        Assert.Contains(fixture.Write().Files, file => file.Module == "OBP.Tests" && file.File == relative);
+    }
+
+    [Theory]
+    [InlineData("repository")]
+    [InlineData("assembly")]
+    [InlineData("duplicate-uid")]
+    [InlineData("unknown-fileid")]
+    [InlineData("zero-line")]
+    [InlineData("schema")]
+    public void MalformedCollectorIdentitySchemaAndLineReferencesFailBeforePublishing(string defect)
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var cobertura = XDocument.Load(fixture.Cobertura);
+        var open = XDocument.Load(fixture.OpenCover);
+        switch (defect)
+        {
+            case "repository":
+                cobertura.Descendants("class").First().SetAttributeValue("filename",
+                "https://raw.githubusercontent.com/unexpected/repository/commit/src/OBP.Core/Fixture.cs"); break;
+            case "assembly": cobertura.Descendants("package").First().SetAttributeValue("name", "Undeclared"); break;
+            case "duplicate-uid": open.Descendants("Files").First().Add(new XElement(open.Descendants("File").First())); break;
+            case "unknown-fileid": open.Descendants("SequencePoint").First().SetAttributeValue("fileid", "999"); break;
+            case "zero-line": cobertura.Descendants("line").First().SetAttributeValue("number", "0"); break;
+            case "schema": open.Root!.Name = "Unexpected"; break;
+        }
+        cobertura.Save(fixture.Cobertura); open.Save(fixture.OpenCover);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
     private sealed class Fixture : IDisposable
     {
+        private readonly string _repository;
         public string Container { get; } = Path.Combine(Path.GetTempPath(), "obp-coverage-tests-" + Guid.NewGuid().ToString("N"));
         public string Root => Path.Combine(Container, "repo");
         public string Output => Path.Combine(Container, "output");
         public string Cobertura => Path.Combine(Container, "input.cobertura.xml");
         public string OpenCover => Path.Combine(Container, "input.opencover.xml");
-        public Fixture() => Directory.CreateDirectory(Root);
-        public CoverageSummary Write() => CoverageReport.Write(Root, Cobertura, OpenCover, Output);
+        public Fixture(string repository = "je55pr/one-big-package")
+        {
+            _repository = repository;
+            Directory.CreateDirectory(Root);
+        }
+        public CoverageSummary Write() => CoverageReport.Write(Root, Cobertura, OpenCover, Output, _repository);
 
         public void CreateReports(string? zeroModule = null, string[]? modules = null, string fileName = "Fixture.cs")
         {
@@ -169,12 +229,12 @@ public sealed class CoverageReportTests
             var packages = new XElement("packages"); var openModules = new XElement("Modules");
             foreach (string module in modules)
             {
-                string file = "src/" + module + "/" + fileName;
+                string file = module == "OBP.Tests" ? "game/scripts/" + fileName : "src/" + module + "/" + fileName;
                 string path = Path.Combine(Root, file);
                 Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                 File.WriteAllText(path, "public class Fixture {}\n");
                 int hits = zeroModule == "all" || zeroModule == module ? 0 : 1;
-                string reported = module == "OBP.Runtime" ? "https://raw.githubusercontent.com/je55pr/one-big-package/commit/" + file : path;
+                string reported = module == "OBP.Runtime" ? "https://raw.githubusercontent.com/" + _repository + "/commit/" + file : path;
                 packages.Add(new XElement("package", new XAttribute("name", module), new XElement("classes",
                     new XElement("class", new XAttribute("filename", reported), new XElement("lines",
                         new XElement("line", new XAttribute("number", "1"), new XAttribute("hits", hits)))))));
