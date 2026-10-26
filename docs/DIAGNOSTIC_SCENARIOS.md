@@ -100,6 +100,43 @@ root composition field and three delegating methods are exact #336 exceptions
 expiring with #344 (the profile caller moves in #338). Neither assertions nor
 mutable check collections remain implemented as root partials.
 
+## Startup, ordinary UI and live pause (#337)
+
+`UiDiagnosticHarness` registers the three existing startup/menu/source-loss
+commands and the two nested Veldin/live-world pause checks. `OrdinaryUiScenario`,
+`SourceSetupScenario`, `StartupVisibilityScenario` and the two retail pause
+scenarios own their assertions outside `OBPGame`. Their ports return copied
+screen, focus, visible-text, panel, pixel, player-continuity and campaign-travel
+facts. Scenarios never receive a root reference, node tree, mutable inventory or
+source library. Dedicated menu actions and a source-repair fixture exercise the
+existing production paths; native campaign operations remain in `OBP.RAC1`.
+
+The ordinary UI and live-source-loss checks intentionally request repair exit
+**2 on success**. `DiagnosticProcessScenario` defers the production repair quit
+until assertions and cleanup finish, requires that expected policy outcome, and
+maps an assertion or cleanup failure to the original failure exit 1. This does
+not grant ordinary play a diagnostic source exemption. The repair checks still
+require all three primary authorities at admission and verify that persistent
+player/profile state survives source loss. Profile evidence compares SHA-256
+digests of the same files instead of retaining their payloads in scenarios.
+
+`GodotRetailPauseFixture` owns the temporary 960x720 review viewport, exact
+injected-event input guard and logical pointer state. Its disposable lease
+closes pause, frees the guard and restores the caller's viewport/input state;
+each admitted synthetic press is released in `finally`, including cancellation.
+The original process-frame counts, 600-frame page bounds, native elapsed
+transition timing, six-panel/Items-grid/focus checks, opacity thresholds and
+capture paths remain. Headless runs verify structure and navigation; rendered
+pixel evidence is sampled only with a renderer. Startup visibility still
+requires nine actual post-draw signals and explicitly reports unavailable
+headlessly. No automated check needs desktop pointer capture.
+
+Four exact temporary composition entries retain the UI fixture factory and
+three bootstrap/nested-call delegations. The #340/#343 callers and the
+#346/#347/#348 source/navigation/pause ownership migrations remove them; none
+contains a diagnostic assertion. All five audited root partials and their
+historical member permissions are retired.
+
 ## Exact frame phases
 
 `Process` and `Physics` await the corresponding SceneTree frame-start signal,

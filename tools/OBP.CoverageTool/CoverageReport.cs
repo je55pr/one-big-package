@@ -27,7 +27,7 @@ public static class CoverageReport
     { "game/diagnostics/DiagnosticContracts.cs", "game/diagnostics/DiagnosticInputActions.cs",
         "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs",
         "game/diagnostics/AcceptanceEvidence.cs", "game/diagnostics/DiagnosticScenarioRegistry.cs",
-        "game/diagnostics/LegacyDiagnosticScenario.cs", "game/diagnostics/ExistingDiagnosticWorld.cs", "game/diagnostics/WorldSmokeHarness.cs" };
+        "game/diagnostics/LegacyDiagnosticScenario.cs", "game/diagnostics/ExistingDiagnosticWorld.cs", "game/diagnostics/WorldSmokeHarness.cs", "game/diagnostics/UiDiagnosticPorts.cs", "game/diagnostics/OrdinaryUiScenario.cs", "game/diagnostics/SourceSetupScenario.cs", "game/diagnostics/StartupVisibilityScenario.cs", "game/diagnostics/Rac1VeldinRetailPauseScenario.cs", "game/diagnostics/Rac1RetailNavigationScenario.cs", "game/diagnostics/DiagnosticProcessScenario.cs", "game/diagnostics/UiDiagnosticHarness.cs" };
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
     public static CoverageSummary Write(string root, string coberturaPath, string openCoverPath, string output,
