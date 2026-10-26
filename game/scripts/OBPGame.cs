@@ -7,6 +7,7 @@ using OBP.RAC1.Progression;
 using OBP.RAC2;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
+using OBP.Runtime.Player;
 using OBP.Game.Diagnostics;
 
 namespace OBP.Game;
@@ -810,6 +811,60 @@ public partial class OBPGame : Node3D
 
     // Temporary composition for retained Phase 1 callers. #340/#343 remove the nested pause entrypoints;
     // #346/#347/#348 move these bindings to their source/navigation/pause owners.
+
+    private MovementDiagnosticHarness CreateMovementDiagnosticHarness()
+    {
+        var clock = new GodotDiagnosticFrameClock(this);
+        var ports = new MovementScenarioPorts(new GodotMovementPlayer(() => _player, () => _world),
+            new GodotMovementAnimation(new(() => _playerAvatarView, () => _playerAvatarAnimationController, () => _playerAvatarAnimationSink,
+                CurrentPlayerAvatarSourceSequence, PlayerAvatarPresentationIsSynchronized, () => _playerAvatar?.AnimationBounds.Height ?? double.NaN)),
+            new GodotMovementGeometry(this), new GodotMovementWorld(() => _world,
+                () => _sceneResult?.CollisionBodies ?? 0, () => _rac1NovalisWater is not null),
+            new GodotDiagnosticInputActions(), new GodotMovementPhysicalInput(), clock, message => GD.Print(message), message => GD.PrintErr(message));
+        var water = new GodotMovementWater(() => [.. _rac1Enemies.Values.Select(enemy => ((Node3D)enemy.Node.Root, (Node3D)enemy.Body))],
+            position => SampleRac1NovalisWaterHeight(GodotMovementPlayer.Engine(position)),
+            () => _playerHud?.FindChild("Air", true, false) is Control air ? air.Visible : null, _rac1Nanotech.Probe);
+        var environment = new DiagnosticEnvironmentalDeathFixture(() => new(_rac1Nanotech.EnvironmentalDeathGeneration,
+            _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), _rac1LastEnvironmentalDeathBoundary,
+            GodotMovementPlayer.Copy(_rac1LastEnvironmentalDeathPosition), _rac1LastEnvironmentalDeathContactSeparation,
+            MeasureRac1ContactSeparation(), _rac1CampaignSession.LevelCheckpoint?.AuthoredClass0.Yaw));
+        var equipment = new DiagnosticControllerEquipmentFixture(() =>
+        {
+            var player = _player ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable.");
+            return new(_rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo,
+                _rac1HeldItem.NativeItemId, _rac1WrenchView?.Visible == true, _rac1BombGloveView?.Visible == true,
+                player.Rac1WrenchFrame.Active, player.Rac1AudioMovementAction, CurrentWeaponKey, [.. PlayerWeaponOrder()]);
+        },
+            OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested);
+        return new(ports, water, environment, equipment, _activeDestination,
+            [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>
+                new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock), _hostOperations, _args.MovementCase);
+    }
+    private Task RunRac1NaturalVeldinFallRespawnSmokeAsync(Vector3 position) =>
+        CreateMovementDiagnosticHarness().RunFallAsync(GodotMovementPlayer.Copy(position), LegacyDiagnosticCancellation.Current);
+    internal Task CheckControllerWeaponInputAsync() => CreateMovementDiagnosticHarness().RunControllerAsync(_hostOperations.Token);
+    private Task<float> MeasureJumpAsync(PlayerHost player, int holdFrames, bool applyPartialAirControl, bool movingAtLaunch = false) =>
+        GodotMovementCompatibility.MeasureJumpAsync(() => CreateMovementDiagnosticHarness()
+            .MeasureJumpAsync(holdFrames, applyPartialAirControl, movingAtLaunch, LegacyDiagnosticCancellation.Current));
+    private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
+    private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
+        GodotRac1DiagnosticSurface.Add(parent, name, material, triangles);
+    private Task WaitForGroundedAsync(PlayerHost player, int frames) => WaitForGroundedCancelableAsync(player, frames, LegacyDiagnosticCancellation.Current);
+    private Task WaitForGroundedCancelableAsync(PlayerHost player, int frames, CancellationToken token) => GodotMovementCompatibility.GroundedAsync(this, player, frames, token);
+    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, LegacyDiagnosticCancellation.Current);
+    private Task PhysicsFramesCancelableAsync(int count, CancellationToken token) => GodotMovementCompatibility.FramesAsync(this, count, token);
+    private Task WaitForPlayerAvatarSequenceAsync(int sequence, int frames, string label) => CreateMovementDiagnosticHarness().WaitSequenceAsync(sequence, frames, label, LegacyDiagnosticCancellation.Current);
+    private Task TapPhysicalKeyAsync(Key key) => GodotMovementCompatibility.TapKeyAsync(this, key);
+    private static void SendPhysicalKey(Key key, bool pressed) => GodotMovementCompatibility.Key(key, pressed);
+    private static void SetAnalogueSmokeInput(float right, float forward) => GodotMovementCompatibility.Analogue(right, forward);
+    private static void SetRac1SmokeConditionedInput(double right, double forward) => GodotMovementCompatibility.Conditioned(right, forward);
+    private static void ClearMovementSmokeInput() => GodotMovementCompatibility.Clear();
+    private static float HorizontalSpeed(PlayerHost player) => DiagnosticMovementMath.HorizontalSpeed(GodotMovementPlayer.Copy(player.Velocity));
+    private static float HorizontalDistance(Vector3 a, Vector3 b) => DiagnosticMovementMath.HorizontalDistance(GodotMovementPlayer.Copy(a), GodotMovementPlayer.Copy(b));
+    private static double WrapAngle(double value) => DiagnosticMovementMath.WrapAngle(value);
+    private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
+
     private UiDiagnosticHarness CreateUiDiagnosticHarness()
     {
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);

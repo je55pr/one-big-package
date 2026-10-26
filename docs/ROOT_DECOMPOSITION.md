@@ -66,6 +66,19 @@ until #344. Synthetic R&C1 collision construction is external too, behind its
 retained #339 delegation. These dependencies do not mean the later partials
 have already been retired.
 
+The #339 movement extraction removes all nine assigned diagnostic partials and
+the privileged fragment in `ControllerSmoke.cs`; its ordinary UI driver stays.
+The measured root has 101 files, 23,470 file lines, 717 direct methods, 456
+fields (311 mutable), 44 exposed members and 2,431 cross-file references.
+Movement, native air/ground/contact, water, tether, environmental restart and
+controller-weapon assertions consume copied facts and focused fixture actions.
+One input/clock driver owns logical actions, simulated keys/buttons and phase
+waits. Synthetic geometry, development settings, relocated enemies and drowning
+subscriptions have scoped cleanup. Forty-six historical declaration/member
+permissions retire; twenty exact composition delegations remain for later
+diagnostic, audio, controller-UI and movement-reproduction owners. Their expiry
+owners are recorded individually; the origin ledger does not expand.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

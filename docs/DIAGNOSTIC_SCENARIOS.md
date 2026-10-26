@@ -226,3 +226,34 @@ Portable coverage includes the engine-free diagnostic files linked into
 unrelated diagnostic files remain excluded; the report does not claim engine
 integration coverage. Path normalization and source/payload privacy checks
 still apply to these linked files.
+
+## Movement, water and traversal extraction (#339)
+
+The nine movement partials and the controller weapon-input fragment are now
+standalone suites. `MovementDiagnosticDriver` retains the original physics and
+process frame-start signals, three consecutive completed support observations,
+conditioned-stick inverse and controller edge timing. Its leases release only
+owned logical actions and simulated in-application keys/buttons. The asset-free
+engine probe cancels a real physics-frame subscription and verifies that both
+input types and the subscription are released while the scene remains alive.
+
+Suites receive immutable movement/animation/world facts and narrow development,
+geometry, water, environmental-death or equipment actions. Native controllers,
+scene nodes and backing actor maps stay inside the engine adapters. Temporary
+surfaces, pack/fly settings, displaced combat actors and drowning listeners are
+scoped. Native constants, authored routes, numerical tolerances and existing
+report/replay fields are retained.
+
+The existing `--movement-smoke`, `--rac1-novalis-swim-smoke`, Veldin/combat and
+controller commands retain their grouped checks. `--movement-case` additionally
+selects `full`, `small-step`, `slope-jump`, `airborne`, `landing`,
+`traversal-contact`, `swingshot`, `environmental-death`, `controller-weapons` or
+`swim`. Individual cases require Veldin, except `swim`, which requires Novalis.
+The fall and swim cases explicitly select the same native-parity mode as their
+existing source commands. Swimming stages its own pool without a preceding
+ground trial. Unknown case names fail at CLI parsing. Automated engine runs use
+`--headless` and isolated profiles/app data.
+
+Remaining source suites, native audio and movement reproduction use exact,
+temporary root delegations to compatibility helpers until their recorded
+migration owners remove them. They do not regain access to movement assertions.

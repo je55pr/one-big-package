@@ -54,6 +54,21 @@
     <Compile Include="../../game/diagnostics/PlayerSessionDiagnosticHarness.cs" Link="Diagnostics/PlayerSessionDiagnosticHarness.cs" />
     <Compile Include="../../game/diagnostics/PlayerProfileDiagnosticFixtures.cs" Link="Diagnostics/PlayerProfileDiagnosticFixtures.cs" />
     <Compile Include="../../game/diagnostics/Rac1DiagnosticCollision.cs" Link="Diagnostics/Rac1DiagnosticCollision.cs" />
+    <Compile Include="../../game/diagnostics/MovementDiagnosticPorts.cs" Link="Diagnostics/MovementDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/MovementDiagnosticDriver.cs" Link="Diagnostics/MovementDiagnosticDriver.cs" />
+    <Compile Include="../../game/diagnostics/MovementScenarioSupport.cs" Link="Diagnostics/MovementScenarioSupport.cs" />
+    <Compile Include="../../game/diagnostics/DiagnosticPhysicalInput.cs" Link="Diagnostics/DiagnosticPhysicalInput.cs" />
+    <Compile Include="../../game/diagnostics/MovementDiagnosticHarness.cs" Link="Diagnostics/MovementDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/MovementScenario.cs" Link="Diagnostics/MovementScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1AirborneRegression.cs" Link="Diagnostics/Rac1AirborneRegression.cs" />
+    <Compile Include="../../game/diagnostics/Rac1EnvironmentalDeathRegression.cs" Link="Diagnostics/Rac1EnvironmentalDeathRegression.cs" />
+    <Compile Include="../../game/diagnostics/Rac1LandingRegression.cs" Link="Diagnostics/Rac1LandingRegression.cs" />
+    <Compile Include="../../game/diagnostics/Rac1NovalisSwimScenario.cs" Link="Diagnostics/Rac1NovalisSwimScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1SlopeJumpRegression.cs" Link="Diagnostics/Rac1SlopeJumpRegression.cs" />
+    <Compile Include="../../game/diagnostics/Rac1SmallStepRegression.cs" Link="Diagnostics/Rac1SmallStepRegression.cs" />
+    <Compile Include="../../game/diagnostics/Rac1SwingshotRegression.cs" Link="Diagnostics/Rac1SwingshotRegression.cs" />
+    <Compile Include="../../game/diagnostics/Rac1TraversalContactRegression.cs" Link="Diagnostics/Rac1TraversalContactRegression.cs" />
+    <Compile Include="../../game/diagnostics/ControllerWeaponInputRegression.cs" Link="Diagnostics/ControllerWeaponInputRegression.cs" />
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />
