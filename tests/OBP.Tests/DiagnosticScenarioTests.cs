@@ -141,13 +141,15 @@ public sealed class DiagnosticScenarioTests
     public async Task CancellationReleasesTemporaryInputAndDoesNotClaimSuccess()
     {
         using var cancel = new CancellationTokenSource();
-        var state = new Dictionary<string, float> { ["move_forward"] = .25f };
-        var input = new DiagnosticInputActions(state.ContainsKey, action => state[action], (action, strength) => state[action] = strength);
+        var state = new Dictionary<string, float> { ["move_forward"] = 0 };
+        var input = new DiagnosticInputActions(state.ContainsKey, (action, strength) => state[action] = strength);
+        using var otherOwner = input.Acquire(CancellationToken.None);
+        otherOwner.SetAction("move_forward", .25f);
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var scenario = new Scenario(Definition, async run =>
         {
             var lease = run.Own(input.Acquire(run.CancellationToken));
-            lease.SetAction("move_forward", 1); lease.SetAction("move_forward", 0); started.SetResult();
+            lease.SetAction("move_forward", 1); lease.SetAction("move_forward", .6f); started.SetResult();
             await Task.Delay(Timeout.Infinite, run.CancellationToken);
         });
         var pending = new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(scenario, true, cancel.Token);
@@ -159,20 +161,45 @@ public sealed class DiagnosticScenarioTests
     [Fact]
     public void LogicalInputValidatesActionsAndRestoresAllStatesEvenIfOneRestoreFails()
     {
-        var state = new Dictionary<string, float> { ["a"] = 0, ["b"] = .5f };
+        var state = new Dictionary<string, float> { ["a"] = 0, ["b"] = 0 };
         bool restoring = false;
-        var input = new DiagnosticInputActions(state.ContainsKey, action => state[action], (action, strength) =>
+        var input = new DiagnosticInputActions(state.ContainsKey, (action, strength) =>
         {
             if (restoring && action == "a") throw new IOException("input restore fixture");
             state[action] = strength;
         });
+        using var otherOwner = input.Acquire(CancellationToken.None);
+        otherOwner.SetAction("b", .5f);
         var lease = input.Acquire(CancellationToken.None);
         Assert.Throws<ArgumentException>(() => lease.SetAction("unknown", 1));
         Assert.Throws<ArgumentOutOfRangeException>(() => lease.SetAction("a", float.NaN));
-        lease.SetAction("a", 1); lease.SetAction("b", 0); restoring = true;
+        lease.SetAction("a", 1); lease.SetAction("b", 1); restoring = true;
         Assert.Throws<AggregateException>(lease.Dispose); Assert.Equal(.5f, state["b"]);
         lease.Dispose(); Assert.Throws<ObjectDisposedException>(() => lease.SetAction("a", 0));
         Assert.Throws<OperationCanceledException>(() => input.Acquire(new CancellationToken(true)));
+    }
+
+    [Fact]
+    public void DisposingSimulatedInputCannotConvertPhysicalStrengthIntoAPersistentPress()
+    {
+        float physical = .7f, simulated = 0;
+        var input = new DiagnosticInputActions(_ => true, (_, strength) => simulated = strength);
+        var lease = input.Acquire(CancellationToken.None);
+        lease.SetAction("fire", 1); Assert.Equal(1, Math.Max(physical, simulated));
+        lease.Dispose(); Assert.Equal(.7f, Math.Max(physical, simulated));
+        physical = 0; Assert.Equal(0, Math.Max(physical, simulated));
+    }
+
+    [Fact]
+    public void IndependentSimulatedOwnersCanRetireInEitherOrder()
+    {
+        float simulated = 0;
+        var input = new DiagnosticInputActions(_ => true, (_, strength) => simulated = strength);
+        var first = input.Acquire(CancellationToken.None); var second = input.Acquire(CancellationToken.None);
+        first.SetAction("fire", .4f); second.SetAction("fire", .8f);
+        first.Dispose(); Assert.Equal(.8f, simulated);
+        second.SetAction("fire", 0); Assert.Equal(0, simulated);
+        second.Dispose(); Assert.Equal(0, simulated);
     }
 
     [Fact]

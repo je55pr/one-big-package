@@ -153,15 +153,23 @@ public sealed class CoverageReportTests
         Assert.DoesNotContain("A&B.cs", html, StringComparison.Ordinal);
     }
 
+    public static IEnumerable<object[]> LinkedHostPaths()
+    {
+        foreach (string form in new[] { "relative", "deterministic", "source-link" })
+            foreach (string path in new[] { "game/scripts/Fixture.cs", "game/diagnostics/DiagnosticContracts.cs",
+                "game/diagnostics/DiagnosticInputActions.cs", "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs" })
+                yield return new object[] { form, path };
+    }
+
     [Theory]
-    [InlineData("relative")]
-    [InlineData("deterministic")]
-    [InlineData("source-link")]
-    public void LinkedHostSourceAcceptsRepositoryRelativeDeterministicAndForkSourceLinkPaths(string form)
+    [MemberData(nameof(LinkedHostPaths))]
+    public void LinkedHostSourceAcceptsRepositoryRelativeDeterministicAndForkSourceLinkPaths(string form, string relative)
     {
         using var fixture = new Fixture("test-owner/fork");
         fixture.CreateReports();
-        string relative = "game/scripts/Fixture.cs";
+        string path = Path.Combine(fixture.Root, relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "public class Fixture {}\n");
         string reported = form switch
         {
             "deterministic" => "/_/" + relative,
@@ -177,6 +185,24 @@ public sealed class CoverageReportTests
             .Descendants("File").Single().SetAttributeValue("fullPath", reported);
         open.Save(fixture.OpenCover);
         Assert.Contains(fixture.Write().Files, file => file.Module == "OBP.Tests" && file.File == relative);
+    }
+
+    [Theory]
+    [InlineData("GodotDiagnosticAdapters.cs")]
+    [InlineData("SourceFreeStartupProbe.cs")]
+    [InlineData("UnrelatedScenario.cs")]
+    public void UnlinkedDiagnosticFilesRemainOutsideTheCoverageScope(string name)
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        string relative = "game/diagnostics/" + name;
+        string path = Path.Combine(fixture.Root, relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, "public class Fixture {}\n");
+        var report = XDocument.Load(fixture.Cobertura);
+        report.Descendants("class").First().SetAttributeValue("filename", relative);
+        report.Save(fixture.Cobertura);
+        Assert.Throws<InvalidDataException>(fixture.Write);
     }
 
     [Theory]

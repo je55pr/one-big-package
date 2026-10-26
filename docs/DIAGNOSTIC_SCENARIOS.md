@@ -45,8 +45,14 @@ not a substitute.
 Write operations are developer/test capabilities bound by the explicit driver.
 They are not public mutation hooks on the production root. Navigation and fresh
 setup continue through the existing application/world owners. Input leases
-change logical Godot actions only, restore their prior strengths on disposal,
-and never move the desktop pointer or change mouse capture mode.
+change logical Godot actions only and release only their owned simulated
+presses. Multiple leases share a simulation owner and preserve one another's
+contributions, even when disposed out of order. Effective physical input is
+never read back and re-injected as a synthetic press. Legacy direct-`Input`
+diagnostic drivers must remain mutually exclusive with this binding until
+their migration routes them through the same owner; the engine cannot recover
+ownership of unregistered API presses. These ports never move the desktop
+pointer or change mouse capture mode.
 
 Phase 0 binds scene observations, the clock and logical input. The startup
 pilot uses only scene observations and the clock. The other domain contracts
@@ -86,3 +92,14 @@ world/caller cancellation, cleanup and exceptions. The existing complete
 17-phase reconciliation gate remains the compatibility check for gameplay,
 profiles, bookmarks and fresh same-build replay; older recordings are never
 silently accepted as same-build evidence.
+
+The explicit CI probe also checks the engine input binding using a temporary
+F24 action and Godot-only key events: releasing physical input must leave no
+synthetic press, and disposing one simulation must preserve another owner.
+The fixture removes its events/action in `finally` and sends no desktop input.
+
+Portable coverage includes the four engine-free diagnostic files linked into
+`OBP.Tests`, using exact source-path permissions. Godot adapters/probes and
+unrelated diagnostic files remain excluded; the report does not claim engine
+integration coverage. Path normalization and source/payload privacy checks
+still apply to these linked files.

@@ -26,6 +26,7 @@ public partial class SourceFreeStartupProbe : Node
                 var scenario = new SourceFreeStartupScenario(new GodotDiagnosticSceneObservations(startupScene));
                 var runner = new DiagnosticScenarioRunner(new NoSources(), new GodotDiagnosticFrameClock(this));
                 var result = await runner.RunAsync(scenario, args.TestSceneExplicit && args.TestScene == "picker", lifetime.Token);
+                if (result.Status == DiagnosticRunStatus.Passed) VerifyInputOwnership();
                 if (!_retired) EmitSignal(SignalName.Completed, result.Status == DiagnosticRunStatus.Passed, result.Detail);
             }
             catch (Exception error)
@@ -38,6 +39,37 @@ public partial class SourceFreeStartupProbe : Node
     }
 
     public override void _ExitTree() { _retired = true; _operations.Dispose(); }
+
+    private static void VerifyInputOwnership()
+    {
+        const string action = "obp_ci_diagnostic_input_ownership";
+        if (InputMap.HasAction(action)) throw new InvalidOperationException("The diagnostic input fixture action already exists.");
+        using var down = new InputEventKey { Keycode = Key.F24, PhysicalKeycode = Key.F24, Pressed = true };
+        using var up = new InputEventKey { Keycode = Key.F24, PhysicalKeycode = Key.F24, Pressed = false };
+        InputMap.AddAction(action);
+        try
+        {
+            InputMap.ActionAddEvent(action, down);
+            Input.ParseInputEvent(down); // Engine input only; never an OS keystroke.
+            if (!Input.IsActionPressed(action)) throw new InvalidOperationException("The physical-input fixture did not press its action.");
+            var input = new GodotDiagnosticInputActions();
+            using (var lease = input.Acquire(CancellationToken.None)) lease.SetAction(action, 1);
+            Input.ParseInputEvent(up);
+            if (Input.IsActionPressed(action)) throw new InvalidOperationException("Diagnostic input remained simulated after physical release.");
+            using var first = input.Acquire(CancellationToken.None);
+            using var second = new GodotDiagnosticInputActions().Acquire(CancellationToken.None);
+            first.SetAction(action, .4f); second.SetAction(action, .8f);
+            second.Dispose();
+            if (Math.Abs(Input.GetActionStrength(action) - .4f) > .001f) throw new InvalidOperationException("A separate simulated owner was cleared.");
+            first.Dispose();
+            if (Input.IsActionPressed(action)) throw new InvalidOperationException("The last simulated input owner was not released.");
+            GD.Print("[diagnostic-bindings-smoke] PASS: physical release and independent simulated input ownership");
+        }
+        finally
+        {
+            Input.ParseInputEvent(up); Input.ActionRelease(action); InputMap.EraseAction(action);
+        }
+    }
 
     private sealed class NoSources : IDiagnosticSources
     {

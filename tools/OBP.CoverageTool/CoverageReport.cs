@@ -22,6 +22,10 @@ public static class CoverageReport
 {
     private static readonly HashSet<string> AllowedModules = new(StringComparer.Ordinal)
     { "OBP.Core", "OBP.IO", "OBP.Runtime", "OBP.Fusion", "OBP.PS2", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3", "OBP.Tests" };
+    // Only the engine-free diagnostic sources linked into OBP.Tests are measured.
+    private static readonly HashSet<string> LinkedDiagnosticSources = new(StringComparer.Ordinal)
+    { "game/diagnostics/DiagnosticContracts.cs", "game/diagnostics/DiagnosticInputActions.cs",
+        "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs" };
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
     public static CoverageSummary Write(string root, string coberturaPath, string openCoverPath, string output,
@@ -123,7 +127,7 @@ public static class CoverageReport
         }
         string[] segments = candidate.Split('/');
         if (segments.Any(segment => segment is "" or "." or "..") || candidate.Contains(':') ||
-            !(candidate.StartsWith("src/OBP.", StringComparison.Ordinal) || candidate.StartsWith("game/scripts/", StringComparison.Ordinal)) ||
+            !(candidate.StartsWith("src/OBP.", StringComparison.Ordinal) || candidate.StartsWith("game/scripts/", StringComparison.Ordinal) || LinkedDiagnosticSources.Contains(candidate)) ||
             !candidate.EndsWith(".cs", StringComparison.Ordinal) || !File.Exists(Path.Combine(root, candidate)))
             throw new InvalidDataException("Coverage has a file outside the declared repository source scope.");
         return candidate;
@@ -135,7 +139,7 @@ public static class CoverageReport
         ? number : throw new InvalidDataException("Coverage has an invalid count.");
     private static string Scope(string module) => module switch
     {
-        "OBP.Tests" => "Portable host source compiled into the test assembly; not full app/engine coverage",
+        "OBP.Tests" => "Portable host/scenario source compiled into the test assembly; not full app/engine coverage",
         "OBP.RAC1" or "OBP.RAC2" or "OBP.RAC3" => "Source-library synthetic/portable fixtures; not retail equivalence",
         _ => "Engine-neutral library"
     };
@@ -148,7 +152,7 @@ public static class CoverageReport
         foreach (var module in summary.Modules)
             text.AppendLine($"| {module.Name} | {module.CoveredLines}/{module.TotalLines} | {Rate(module.CoveredLines, module.TotalLines)} | {module.Scope} |");
         text.AppendLine("\nA measured zero is shown as zero. Missing reports or assemblies fail the command. No arbitrary percentage threshold is imposed.");
-        text.AppendLine("\nThe OBP.Game binary, Godot scene/physics/render/audio execution, tool code, test code and generated code are outside this report. Host rows measure only the linked production source exercised by portable tests.");
+        text.AppendLine("\nThe OBP.Game binary, Godot scene/physics/render/audio execution, tool code, xUnit test implementations and generated code are outside this report. Host rows measure only the linked host/scenario source exercised by portable tests.");
         text.AppendLine("\nSonar coverage import is unavailable under the current automatic analysis. Its missing coverage must not be read as measured zero; use this validated report.");
         return text.ToString();
     }

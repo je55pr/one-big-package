@@ -37,10 +37,9 @@ internal sealed class GodotDiagnosticFrameClock(Node owner) : IDiagnosticFrameCl
 /// <summary>Logical Godot actions only. No OS input, pointer position or mouse-mode changes.</summary>
 internal sealed class GodotDiagnosticInputActions : IDiagnosticInputActions
 {
-    private readonly DiagnosticInputActions _actions = new(action => InputMap.HasAction(action),
-        action => Input.GetActionStrength(action), (action, strength) =>
+    private static readonly DiagnosticInputActions Actions = new(action => InputMap.HasAction(action), (action, strength) =>
         {
             if (strength == 0) Input.ActionRelease(action); else Input.ActionPress(action, strength);
         });
-    public IDiagnosticInputLease Acquire(CancellationToken lifetime) => _actions.Acquire(lifetime);
+    public IDiagnosticInputLease Acquire(CancellationToken lifetime) => Actions.Acquire(lifetime);
 }
