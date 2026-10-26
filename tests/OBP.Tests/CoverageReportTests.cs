@@ -1,0 +1,202 @@
+using System.Text.Json;
+using System.Xml;
+using System.Xml.Linq;
+using OBP.CoverageTool;
+
+namespace OBP.Tests;
+
+public sealed class CoverageReportTests
+{
+    [Fact]
+    public void ReportsAreSourceRelativeAndARealZeroRemainsMeasuredZero()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports(zeroModule: "OBP.IO");
+        var result = fixture.Write();
+        Assert.Equal(8, result.CoveredLines);
+        Assert.Equal(9, result.TotalLines);
+        Assert.Equal(0, result.Modules.Single(module => module.Name == "OBP.IO").CoveredLines);
+        Assert.Equal("measured", result.Status);
+        foreach (string name in new[] { "coverage.cobertura.xml", "coverage.opencover.xml", "summary.json", "summary.md", "index.html" })
+        {
+            string text = File.ReadAllText(Path.Combine(fixture.Output, name));
+            Assert.DoesNotContain(fixture.Root, text, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("raw.githubusercontent.com", text, StringComparison.Ordinal);
+        }
+        Assert.Contains("src/OBP.Core/Fixture.cs", File.ReadAllText(Path.Combine(fixture.Output, "summary.json")), StringComparison.Ordinal);
+        Assert.Contains("0.0%", File.ReadAllText(Path.Combine(fixture.Output, "summary.md")), StringComparison.Ordinal);
+        using var summary = JsonDocument.Parse(File.ReadAllText(Path.Combine(fixture.Output, "summary.json")));
+        Assert.Equal(1, summary.RootElement.GetProperty("Version").GetInt32());
+    }
+
+    [Fact]
+    public void MissingCollectionFailsInsteadOfPublishingAZeroReport()
+    {
+        using var fixture = new Fixture();
+        var error = Assert.Throws<InvalidDataException>(fixture.Write);
+        Assert.Contains("fresh collector report is missing", error.Message, StringComparison.Ordinal);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
+    [Fact]
+    public void MissingExpectedAssemblyAndAnEmptyMeasurementBothFail()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports(modules: ["OBP.Core"]);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+        fixture.CreateReports(zeroModule: "all");
+        Assert.Throws<InvalidDataException>(fixture.Write);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
+    [Fact]
+    public void SonarAndHumanReportCannotDisagreeAboutExecution()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var report = XDocument.Load(fixture.OpenCover);
+        report.Descendants("SequencePoint").First().SetAttributeValue("vc", "0");
+        report.Save(fixture.OpenCover);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+    }
+
+    [Fact]
+    public void EqualCountsCannotHideDisagreementAboutUncoveredSourceLines()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports(zeroModule: "OBP.IO");
+        var report = XDocument.Load(fixture.OpenCover);
+        report.Descendants("Module").Single(module => module.Element("ModuleName")!.Value == "OBP.IO")
+            .Descendants("SequencePoint").Single().SetAttributeValue("sl", "2");
+        report.Save(fixture.OpenCover);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+    }
+
+    [Theory]
+    [InlineData("OBP.Core")]
+    [InlineData("OBP.IO")]
+    [InlineData("OBP.Runtime")]
+    [InlineData("OBP.Fusion")]
+    [InlineData("OBP.PS2")]
+    [InlineData("OBP.RAC1")]
+    [InlineData("OBP.RAC2")]
+    [InlineData("OBP.RAC3")]
+    [InlineData("OBP.Tests")]
+    public void EveryDeclaredAssemblyMustProduceAReport(string missing)
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        foreach (string path in new[] { fixture.Cobertura, fixture.OpenCover })
+        {
+            var report = XDocument.Load(path);
+            if (path == fixture.Cobertura) report.Descendants("package").Single(module => (string?)module.Attribute("name") == missing).Remove();
+            else report.Descendants("Module").Single(module => module.Element("ModuleName")!.Value == missing).Remove();
+            report.Save(path);
+        }
+        Assert.Throws<InvalidDataException>(fixture.Write);
+        Assert.False(Directory.Exists(fixture.Output));
+    }
+
+    [Theory]
+    [InlineData("../../captures/source.iso")]
+    [InlineData("tests/OBP.Tests/Private.cs")]
+    [InlineData("src/OBP.Core/../../Private.cs")]
+    public void FilesOutsideTheDeclaredProductionScopeAreRejected(string path)
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var report = XDocument.Load(fixture.Cobertura);
+        report.Descendants("class").First().SetAttributeValue("filename", path);
+        report.Save(fixture.Cobertura);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+    }
+
+    [Fact]
+    public void AbsolutePathsOutsideTheCheckoutAreRejected()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var report = XDocument.Load(fixture.Cobertura);
+        report.Descendants("class").First().SetAttributeValue("filename", Path.Combine(fixture.Container, "private.cs"));
+        report.Save(fixture.Cobertura);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+    }
+
+    [Fact]
+    public void DtdEntitiesAreNotReadFromCollectorOutput()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        File.WriteAllText(fixture.Cobertura, "<!DOCTYPE coverage [<!ENTITY extra SYSTEM 'file:///private'>]><coverage>&extra;</coverage>");
+        Assert.Throws<XmlException>(fixture.Write);
+    }
+
+    [Fact]
+    public void InvalidAndNegativeCountsAreNotConvertedToZero()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports();
+        var report = XDocument.Load(fixture.Cobertura);
+        report.Descendants("line").First().SetAttributeValue("hits", "-1");
+        report.Save(fixture.Cobertura);
+        Assert.Throws<InvalidDataException>(fixture.Write);
+    }
+
+    [Fact]
+    public void SourceNamesAreEscapedInTheHumanReport()
+    {
+        using var fixture = new Fixture();
+        fixture.CreateReports(fileName: "A&B.cs");
+        fixture.Write();
+        string html = File.ReadAllText(Path.Combine(fixture.Output, "index.html"));
+        Assert.Contains("A&amp;B.cs", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("A&B.cs", html, StringComparison.Ordinal);
+    }
+
+    private sealed class Fixture : IDisposable
+    {
+        public string Container { get; } = Path.Combine(Path.GetTempPath(), "obp-coverage-tests-" + Guid.NewGuid().ToString("N"));
+        public string Root => Path.Combine(Container, "repo");
+        public string Output => Path.Combine(Container, "output");
+        public string Cobertura => Path.Combine(Container, "input.cobertura.xml");
+        public string OpenCover => Path.Combine(Container, "input.opencover.xml");
+        public Fixture() => Directory.CreateDirectory(Root);
+        public CoverageSummary Write() => CoverageReport.Write(Root, Cobertura, OpenCover, Output);
+
+        public void CreateReports(string? zeroModule = null, string[]? modules = null, string fileName = "Fixture.cs")
+        {
+            modules ??= ["OBP.Core", "OBP.IO", "OBP.Runtime", "OBP.Fusion", "OBP.PS2", "OBP.RAC1", "OBP.RAC2", "OBP.RAC3", "OBP.Tests"];
+            var packages = new XElement("packages"); var openModules = new XElement("Modules");
+            foreach (string module in modules)
+            {
+                string file = "src/" + module + "/" + fileName;
+                string path = Path.Combine(Root, file);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, "public class Fixture {}\n");
+                int hits = zeroModule == "all" || zeroModule == module ? 0 : 1;
+                string reported = module == "OBP.Runtime" ? "https://raw.githubusercontent.com/je55pr/one-big-package/commit/" + file : path;
+                packages.Add(new XElement("package", new XAttribute("name", module), new XElement("classes",
+                    new XElement("class", new XAttribute("filename", reported), new XElement("lines",
+                        new XElement("line", new XAttribute("number", "1"), new XAttribute("hits", hits)))))));
+                openModules.Add(new XElement("Module", new XElement("ModuleName", module),
+                    new XElement("ModulePath", Path.Combine(Root, "bin", module + ".dll")),
+                    new XElement("Files", new XElement("File", new XAttribute("uid", "1"), new XAttribute("fullPath", reported))),
+                    new XElement("Classes", new XElement("SequencePoint", new XAttribute("fileid", "1"),
+                        new XAttribute("sl", "1"), new XAttribute("vc", hits)))));
+            }
+            new XDocument(new XElement("coverage", new XElement("sources", new XElement("source", Root)), packages)).Save(Cobertura);
+            new XDocument(new XElement("CoverageSession", openModules)).Save(OpenCover);
+        }
+
+        public void Dispose()
+        {
+            string absolute = Path.GetFullPath(Container);
+            var directory = new DirectoryInfo(absolute);
+            if (directory.Parent?.FullName != Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) ||
+                !directory.Name.StartsWith("obp-coverage-tests-", StringComparison.Ordinal) ||
+                !Guid.TryParseExact(directory.Name[19..], "N", out _))
+                throw new InvalidOperationException("Refusing cleanup outside the owned temporary coverage directory.");
+            Directory.Delete(absolute, recursive: true);
+        }
+    }
+}

@@ -2,3 +2,10 @@ root = true
 
 [*]
 end_of_line = lf
+
+[*.cs]
+# Correctness rules only; native arithmetic and documentation style remain scoped reviews.
+dotnet_diagnostic.CA2012.severity = warning
+dotnet_diagnostic.CA2016.severity = warning
+dotnet_diagnostic.CA2200.severity = warning
+dotnet_diagnostic.CA2208.severity = warning

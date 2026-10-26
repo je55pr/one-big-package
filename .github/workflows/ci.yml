@@ -25,7 +25,18 @@ jobs:
       - run: dotnet restore OneBigPackage.sln
       - run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
       - run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror
-      - run: dotnet test OneBigPackage.sln -c Release --no-build --nologo
+      - name: Portable tests and validated managed coverage
+        shell: pwsh
+        run: ./tools/test-coverage.ps1 -Configuration Release -NoBuild
+      - name: Publish safe coverage reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: portable-coverage
+          path: .build/coverage/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
   godot-smoke:
     name: godot-smoke

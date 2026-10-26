@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <xUnit>
+    <MaxParallelThreads>2</MaxParallelThreads>
+  </xUnit>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <Format>cobertura,opencover</Format>
+          <Include>[OBP.Core]*,[OBP.IO]*,[OBP.Runtime]*,[OBP.Fusion]*,[OBP.PS2]*,[OBP.RAC1]*,[OBP.RAC2]*,[OBP.RAC3]*,[OBP.Tests]*</Include>
+          <IncludeTestAssembly>true</IncludeTestAssembly>
+          <ExcludeByFile>**/tests/**,**/obj/**,**/tools/**</ExcludeByFile>
+          <ExcludeByAttribute>GeneratedCodeAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
+          <UseSourceLink>true</UseSourceLink>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
