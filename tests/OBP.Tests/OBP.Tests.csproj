@@ -53,6 +53,7 @@
     <ProjectReference Include="../../src/OBP.RAC3/OBP.RAC3.csproj" />
     <ProjectReference Include="../../src/OBP.Runtime/OBP.Runtime.csproj" />
     <ProjectReference Include="../../tools/OBP.CoverageTool/OBP.CoverageTool.csproj" />
+    <ProjectReference Include="../../tools/OBP.ArchitectureTool/OBP.ArchitectureTool.csproj" />
   </ItemGroup>
 
 </Project>
