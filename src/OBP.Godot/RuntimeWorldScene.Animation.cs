@@ -31,7 +31,8 @@ public static partial class RuntimeWorldScene
 
 
     private static (int Instances, int Triangles, IReadOnlyList<AnimatedMesh> Players) BuildAnimatedMeshes(
-        RuntimeWorld world, Node3D root, WorldMaterialFactory mats)
+        RuntimeWorld world, Node3D root, WorldMaterialFactory mats,
+        System.Collections.Generic.List<AmbientMeshBinding> ambientBindings)
     {
         int triangles = 0;
         // --- animated mobies: one CPU-skinned node per instance/texture group,
@@ -94,6 +95,7 @@ public static partial class RuntimeWorldScene
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             };
             root.AddChild(mi);
+            ambientBindings.Add(new(mi, am.AssetKind, am.TextureId, null));
             animatedPlayers.Add(new AnimatedMesh(mi, animMesh, frames, idx, uv, col, am.FramesPerSecond, am.Name));
             animatedMeshInstances++;
             triangles += am.TriangleCount;
