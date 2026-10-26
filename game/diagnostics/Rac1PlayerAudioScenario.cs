@@ -138,7 +138,11 @@ public sealed class Rac1PlayerAudioScenario(DiagnosticScenarioDefinition definit
         }
         async Task Wait(Func<bool> condition, int maximumFrames, string label)
         {
-            for (int frame = 0; frame < maximumFrames; frame++) { if (condition()) return; await run.WaitAsync(DiagnosticFramePhase.Process); }
+            for (int frame = 0; frame < maximumFrames; frame++)
+            {
+                if (condition()) { return; }
+                await run.WaitAsync(DiagnosticFramePhase.Process);
+            }
             throw new TimeoutException("Timed out waiting for RAC1 smoke phase: " + label + ".");
         }
         Task WrenchTime(float time) => Wait(() => fixture.Read() is { WrenchActive: true, WrenchBlending: false } state && state.WrenchAnimationTime >= time, 180, $"wrench authored time {time}");

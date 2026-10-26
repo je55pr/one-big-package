@@ -46,7 +46,11 @@ internal sealed class GodotPlayerAudioFixture(Node owner, GodotPlayerAudioBindin
             try { bindings.ClearInput(); if (_ownsPause && owner.GetTree().Paused) bindings.Back(); }
             finally
             {
-                try { if (GodotObject.IsInstanceValid(stage)) stage.QueueFree(); if (GodotObject.IsInstanceValid(player)) player.Scripted = previousScripted; }
+                try
+                {
+                    if (GodotObject.IsInstanceValid(stage)) { stage.QueueFree(); }
+                    if (GodotObject.IsInstanceValid(player)) { player.Scripted = previousScripted; }
+                }
                 finally
                 {
                     _stage = null; _ownsPause = false;

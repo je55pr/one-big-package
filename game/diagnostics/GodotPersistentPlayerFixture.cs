@@ -78,7 +78,8 @@ internal sealed class GodotPlayerInputFixture(Func<PlayerHost?> player) : IDiagn
         }
         public void Dispose()
         {
-            if (_disposed) return; _disposed = true;
+            if (_disposed) { return; }
+            _disposed = true;
             if (GodotObject.IsInstanceValid(actor)) actor.PlaytestInputFilter = _previous;
         }
     }

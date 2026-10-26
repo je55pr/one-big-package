@@ -55,7 +55,12 @@ internal sealed class GodotCommonContactFixture(Func<Node3D?> scene, Func<Player
     private sealed class DeckLease(StaticBody3D deck) : IDisposable
     {
         private bool _disposed;
-        public void Dispose() { if (_disposed) return; _disposed = true; if (GodotObject.IsInstanceValid(deck)) deck.QueueFree(); }
+        public void Dispose()
+        {
+            if (_disposed) { return; }
+            _disposed = true;
+            if (GodotObject.IsInstanceValid(deck)) { deck.QueueFree(); }
+        }
     }
 }
 
