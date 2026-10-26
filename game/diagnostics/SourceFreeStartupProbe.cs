@@ -69,7 +69,8 @@ public partial class SourceFreeStartupProbe : Node
         }
         finally
         {
-            Input.ParseInputEvent(up); Input.FlushBufferedEvents(); Input.ActionRelease(action); InputMap.EraseAction(action);
+            using var cleanupUp = new InputEventKey { Keycode = Key.F24, PhysicalKeycode = Key.F24, Pressed = false };
+            Input.ParseInputEvent(cleanupUp); Input.FlushBufferedEvents(); Input.ActionRelease(action); InputMap.EraseAction(action);
         }
     }
 
