@@ -15,7 +15,7 @@
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
     "Kind": "adapter",
     "Reason": "Resolve the native world provider and its own attached source, not player assets.",
-    "Hash": "2c36c42bcee5a1d74254e1617eab181e3581fc4ded15d87111b0945e42e2d593"
+    "Hash": "62e07090f4377af103da13a941ab5ff95792e5b7ca52dd33062e18d849c26338"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TravelRac1CampaignTo(int)",
@@ -195,7 +195,7 @@
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.BeginSourceWorldEntry(RuntimeWorld)",
     "Kind": "adapter",
     "Reason": "Begin the matching original source campaign checkpoint; never selects a player profile.",
-    "Hash": "afbd2565945ac9b03628d1fb5c0f3c9b9cec137e1137e5abdd585a5af3598f93"
+    "Hash": "4fcb2551d897ad514b8de3145e6750d21b61ab87adf066bb16b9b8f30b3a1f2d"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.CommitSourceWorldEntry(RuntimeWorld)",

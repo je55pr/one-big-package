@@ -209,6 +209,11 @@ its transform semantics are independently established.
 
 ## Host lifecycle and presentation
 
+The [host ownership map](OBPGAME_HOST_OWNERSHIP.md) records the field census and
+staged #308 extraction. `WorldSceneLifetime` owns candidate/live scene resources
+and deferred navigation; Fusion retains player/entry policy and source adapters
+retain authored starts. Root world facts are read-only views of that owner.
+
 `ApplicationLifecycle` owns explicit quit requests with a reason/exit code.
 Desktop close remains distinct from Back/navigation; Escape from gameplay or
 source/selector UI must not accidentally become process exit. Automated gates

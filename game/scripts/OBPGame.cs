@@ -42,10 +42,11 @@ public partial class OBPGame : Node3D
     private string _sceneKind = "smoke";
 
     // the live world
-    private WorldHost _worldHost = new();
+    private readonly WorldHost _idleWorldHost = new();
+    private WorldHost _worldHost => _worldScenes?.Current?.Resources.Presentation ?? _idleWorldHost;
     private readonly HudStateAdapter _hudState = new();
-    private RuntimeWorld? _world;
-    private RuntimeWorldScene.Result? _sceneResult;
+    private RuntimeWorld? _world => _worldScenes?.Current?.Plan.Prepared.World;
+    private RuntimeWorldScene.Result? _sceneResult => _worldScenes?.Current?.Resources.Scene;
     private DebugOverlay? _overlay;
     private WorldInspectorPanel? _inspector;
     private PlayerHost? _player;
@@ -315,6 +316,7 @@ public partial class OBPGame : Node3D
         ResetRac1WeaponAudio(freeImmediately: true);
         ResetFusionWeapons(freeImmediately: true);
         ResetSharedWeaponAssets();
+        _worldScenes?.Dispose();
     }
 
     private async Task PrepareForQuitAsync()
@@ -322,6 +324,11 @@ public partial class OBPGame : Node3D
         // Stop gameplay before releasing its audio, otherwise a final physics
         // update can start another footstep/voice during shutdown.
         ProcessMode = ProcessModeEnum.Disabled;
+        if (_worldScenes is { } scenes)
+        {
+            scenes.CancelPreparation();
+            await scenes.PendingPreparation;
+        }
         _playtest?.SuspendBugCaptureForQuit();
         if (_bugSaveInFlight is { } save) await save;
         if (_playtest is { } playtest) await playtest.PrepareBugCaptureQuitAsync();
@@ -405,11 +412,12 @@ public partial class OBPGame : Node3D
     }
 
     /// <summary>Free the current world sub-tree and everything it owns. Safe to call when nothing is loaded.</summary>
-    private void TeardownWorld()
+    private void TeardownWorld() => WorldScenes.Retire();
+
+    private void RetireWorldBindings()
     {
         FlushRac1CampaignSaves("world teardown");
         ResetRegisteredActors();
-        _worldEntries?.Unload();
         _playerNative?.Life.EndWorld(); _playerDamageActors.Clear();
         ClearFusionLabStatus();
         CloseWeaponQuickSelect();
@@ -426,13 +434,9 @@ public partial class OBPGame : Node3D
         _player?.QueueFree();
         _player = null;
 
-        _worldHost.Unload(); // scene tree, environment, hero light + GC.Collect
-
-        _sceneResult = null;
         _overlay = null; // its nodes live under the world sub-tree that was just freed
         _inspector?.QueueFree();
         _inspector = null;
-        _world = null;
         ResetRac2GameplayHost();
         ResetRac3Gameplay();
     }

@@ -46,6 +46,7 @@ public partial class OBPGame
                 if (id == "obp:fusion-lab") await CheckPlayerSessionLabControlsAsync();
                 GD.Print($"[player-session-smoke] {id}: same player/profile/selection/health; one player/scene; no old effects");
             }
+            await CheckDeferredWorldEntryOwnershipAsync();
             var liveWorld = _world;
             var livePlayer = _player;
             var avatarSource = _sources.Get(ObpSourceGame.Rac1)!;
@@ -84,6 +85,27 @@ public partial class OBPGame
             ApplicationLifecycle.RequestQuit(this, "player-session-smoke-fail", 3);
         }
         finally { CameraSettingsStore.Set(originalOptions, persist: false); }
+    }
+
+    private async Task CheckDeferredWorldEntryOwnershipAsync()
+    {
+        var owner = _playerSession;
+        bool staleEntryRan = false;
+        WorldScenes.PrepareLater(async token =>
+        {
+            await WaitForWorldPreparationFrameAsync(token);
+            staleEntryRan = true;
+            EnterFusionLab();
+        }, (_, _) => Require(false, "canceled deferred entry reported failure"));
+        var pending = WorldScenes.PendingPreparation;
+        ShowDestinationSelector();
+        await pending;
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        Require(!staleEntryRan && _world is null && _mode == Mode.Selector,
+            "deferred entry replaced newer navigation");
+        Require(ReferenceEquals(owner, _playerSession), "canceling navigation replaced the player owner");
+        Require(OnDestinationChosen(TrilogyWorldProviders.Resolve("rac1:LEVEL0")!), "entry after cancellation failed");
+        GD.Print("[player-session-smoke] PASS: canceled deferred entry cannot replace newer navigation");
     }
 
     private async Task CheckPlayerSessionLabControlsAsync()
