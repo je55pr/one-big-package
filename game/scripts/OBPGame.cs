@@ -830,7 +830,8 @@ public partial class OBPGame : Node3D
             MeasureRac1ContactSeparation(), _rac1CampaignSession.LevelCheckpoint?.AuthoredClass0.Yaw));
         var equipment = new DiagnosticControllerEquipmentFixture(() => new(_rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo,
             _rac1HeldItem.NativeItemId, _rac1WrenchView?.Visible == true, _rac1BombGloveView?.Visible == true,
-            _player?.Rac1WrenchFrame.Active == true, _player?.Rac1AudioMovementAction ?? 0, CurrentWeaponKey, [.. PlayerWeaponOrder()]),
+            _player?.Rac1WrenchFrame.Active ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable."),
+            _player?.Rac1AudioMovementAction ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable."), CurrentWeaponKey, [.. PlayerWeaponOrder()]),
             OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested);
         return new(ports, water, environment, equipment, _activeDestination,
             [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],

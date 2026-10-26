@@ -33,6 +33,42 @@ public abstract class MovementScenarioSupport(MovementDiagnosticContext context)
     {
         _cleanup = true; return new CleanupLease(() => _cleanup = false);
     }
+    protected void CleanupStep(Action restore)
+    {
+        try { restore(); }
+        catch (Exception error) { Driver.RecordCleanupFailure(error); }
+    }
+    protected async Task CleanupPhysicsAsync(int frames)
+    {
+        try { await PhysicsFramesAsync(frames); }
+        catch (Exception error) { Driver.RecordCleanupFailure(error); }
+    }
+    protected async Task RestoreFixturePlayerAsync(IDiagnosticGeometryLease fixture, DiagnosticMovementState saved, bool preserveSwingshotDelay = false)
+    {
+        using var cleanup = BeginCleanup();
+        CleanupStep(ClearMovementSmokeInput);
+        CleanupStep(fixture.Dispose);
+        CleanupStep(() => Player.SetBackpack(saved.Rac1ActiveBackpack));
+        CleanupStep(() => Player.SetClank(saved.Rac1ClankAvailable));
+        CleanupStep(() =>
+        {
+            for (int i = 0; i < 3 && Player.Read().Rac1DevelopmentPackPreview != saved.Rac1DevelopmentPackPreview; i++) Player.CyclePack();
+            Require(Player.Read().Rac1DevelopmentPackPreview == saved.Rac1DevelopmentPackPreview, "Could not restore the movement fixture pack preview.");
+        });
+        bool toggled = false;
+        CleanupStep(() =>
+        {
+            if (Player.Read().Rac1DevelopmentSwingshotPreview != saved.Rac1DevelopmentSwingshotPreview)
+            { Player.ToggleSwingshot(); toggled = true; }
+        });
+        // The old Swingshot cleanup waited two physics frames on each F11 edge.
+        // Keep those waits on normal completion while restoring directly through the scoped fixture action.
+        if (preserveSwingshotDelay && toggled && !Driver.Lifetime.IsCancellationRequested) { await CleanupPhysicsAsync(4); }
+        CleanupStep(() => Player.SetRotation(saved.Rotation));
+        CleanupStep(() => Player.SetYaw(saved.Rac1CurrentYaw));
+        CleanupStep(() => Player.ResetAt(saved.GlobalPosition));
+        await CleanupPhysicsAsync(3);
+    }
     protected Task WaitForGroundedAsync(IDiagnosticMovementPlayer player, int maxFrames) =>
         Driver.WaitGroundedAsync(() => player.Read().Grounded, () => player.Read().Rac1MovementPhase == Rac1RatchetMovementPhase.Grounded, maxFrames);
     protected async Task WaitForAnimationStateAsync(IDiagnosticMovementPlayer player, PlayerAnimationState expected, int maxFrames, string label)
@@ -94,5 +130,5 @@ public static class DiagnosticMovementMath
     }
     public static void Require(bool condition, string message) { if (!condition) { throw new InvalidOperationException(message); } }
     public static float DistanceTo(this Vector3 value, Vector3 other) => Vector3.Distance(value, other);
-    public static Vector3 Normalized(this Vector3 value) => Vector3.Normalize(value);
+    public static Vector3 Normalized(this Vector3 value) => value.LengthSquared().Equals(0f) ? Vector3.Zero : Vector3.Normalize(value);
 }

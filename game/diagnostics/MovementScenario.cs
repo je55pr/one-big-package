@@ -68,7 +68,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
             Require(walkMagnitude >= 0.25d && walkMagnitude < 0.83d, "low stick did not land in the recovered walk band");
             Require(walkTarget > 0d && walkTarget < 0.03d, "low stick did not select the walk plateau");
             Require(walkSpeed > 0.1f, "low stick produced no host movement");
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             {
                 Require(
                     CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.LocomotionStartSequenceId &&
@@ -92,7 +92,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
             Require(
                 Math.Abs(WrapAngle(diagonalYaw - cardinalYaw)) > 0.15d,
                 "arbitrary-angle stick input did not change steering target");
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             {
                 await WaitForPlayerAvatarSequenceAsync(
                     Rac1RatchetSequenceSelection.SustainedLocomotionSequenceId,
@@ -119,7 +119,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
 
             ClearMovementSmokeInput();
             await WaitForAnimationStateAsync(player, PlayerAnimationState.Idle, 120, "post-run idle");
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             {
                 await WaitForPlayerAvatarSequenceAsync(
                     Rac1RatchetSequenceSelection.StandingSequenceId,
@@ -135,10 +135,10 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
             Driver.SetAction(MovementDiagnosticDriver.Crouch, true);
             await PhysicsFramesAsync(4);
             Require(
-                player.Read().Rac1LocomotionState.ToString() is "Crouched" or "CrouchTurning",
+                player.Read().Rac1LocomotionState is Rac1RatchetLocomotionState.Crouched or Rac1RatchetLocomotionState.CrouchTurning,
                 $"crouch action did not reach the common controller; state={player.Read().Rac1LocomotionState}; " +
                 $"phase={player.Read().Rac1MovementPhase}; grounded={player.Read().Grounded}; alive={player.Read().Rac1GameplayAlive}");
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             {
                 await WaitForPlayerAvatarSequenceAsync(
                     Rac1RatchetSequenceSelection.CrouchSequenceId,
@@ -159,11 +159,11 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
                 await WaitForPlayerAvatarSequenceAsync(13, 180, "crouch turn settling");
             }
             Driver.SetAction(MovementDiagnosticDriver.Crouch, false);
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             { await WaitForPlayerAvatarSequenceAsync(0, 30, "crouch release presentation"); }
             await PhysicsFramesAsync(20);
 
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             {
                 await RequireOrdinaryStopRestartAsync(player);
                 await RequireRunToCrouchStopAsync(player);
@@ -212,7 +212,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
             float respawnError = HorizontalDistance(spawn, player.Read().GlobalPosition);
             Require(respawnError < 1.0f, "development respawn did not return to the host spawn");
             Require(player.Read().Grounded, "respawned player did not re-enter Godot floor contact");
-            if (destination.Game == ObpSourceGame.Rac1)
+            if (player.Read().HasNativeLocomotion)
             {
                 Require(
                     player.Read().Rac1MaxObservedSlideCollisions < player.Read().MaxSlides,
@@ -246,9 +246,9 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
         }
         finally
         {
-            ClearMovementSmokeInput();
-            SendPhysicalKey(DiagnosticPhysicalKey.W, false);
-            SendPhysicalKey(DiagnosticPhysicalKey.Space, false);
+            CleanupStep(() => ClearMovementSmokeInput());
+            CleanupStep(() => SendPhysicalKey(DiagnosticPhysicalKey.W, false));
+            CleanupStep(() => SendPhysicalKey(DiagnosticPhysicalKey.Space, false));
         }
     }
 
@@ -275,7 +275,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
                 if (!sawAir)
                 {
                     sawAir = true;
-                    if (World.Read().Source == ObpSourceGame.Rac1)
+                    if (Player.Read().HasNativeLocomotion)
                     {
                         await WaitForPlayerAvatarSequenceAsync(
                             Rac1RatchetSequenceSelection.SelectJumpSequence(movingAtLaunch),
@@ -290,7 +290,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
             apex = Math.Max(apex, player.Read().GlobalPosition.Y);
             if (sawAir && player.Read().Grounded)
             {
-                if (movingAtLaunch && World.Read().Source == ObpSourceGame.Rac1)
+                if (movingAtLaunch && Player.Read().HasNativeLocomotion)
                 {
                     // Retain movement across touchdown: clearing it here hid
                     // the permanent loss of the native locomotion clock.
@@ -375,7 +375,7 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
                 PlayerAvatarPresentationIsSynchronized(),
                 $"steady low-stick walk lost synchronized looping sequence 3; frame={currentFrame}; " +
                 $"sequence={CurrentPlayerAvatarSourceSequence()}; semantic={Player.Read().AnimationState}");
-            if (World.Read().Source == ObpSourceGame.Rac1)
+            if (Player.Read().HasNativeLocomotion)
             {
                 Require(Animation.Read() is { OrdinaryLocomotionSample: not null, OrdinaryLocomotionMultiplier: > 2.35f and < 2.36f, SinkPosePresent: true },
                     "steady low-stick walk is not using the physics-sampled native locomotion clock/rate");
@@ -503,10 +503,13 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
         SetAnalogueSmokeInput(0f, 1f);
         await PhysicsFramesAsync(48);
         await ProcessFrameAsync();
-        Vector3 direction = new Vector3(player.Read().Velocity.X, 0, player.Read().Velocity.Z).Normalized();
-        using var fixture = Geometry.Create("CrouchCarrySmoke", Vector3.Zero);
-        using var wall = fixture.AddBox("CrouchCarrySmokeWall", new(6, 5, .4f),
-            player.Read().GlobalPosition + direction * .9f + Vector3.UnitY * 2, MathF.Atan2(direction.X, direction.Z));
+        Vector3 velocity = player.Read().Velocity;
+        Require(float.IsFinite(velocity.X) && float.IsFinite(velocity.Z) && HorizontalSpeed(player) > 0,
+            "synthetic wall placement requires a finite moving player");
+        Vector3 direction = new Vector3(velocity.X, 0, velocity.Z).Normalized();
+        var fixture = Driver.Own(Geometry.Create("CrouchCarrySmoke", Vector3.Zero));
+        var wall = Driver.Own(fixture.AddBox("CrouchCarrySmokeWall", new(6, 5, .4f),
+            player.Read().GlobalPosition + direction * .9f + Vector3.UnitY * 2, MathF.Atan2(direction.X, direction.Z)));
         try
         {
             await PhysicsFramesAsync(30);
@@ -528,8 +531,8 @@ public sealed class MovementScenario(MovementDiagnosticContext context) : Moveme
         }
         finally
         {
-            wall.Dispose();
-            ClearMovementSmokeInput();
+            CleanupStep(() => wall.Dispose());
+            CleanupStep(() => ClearMovementSmokeInput());
         }
     }
 

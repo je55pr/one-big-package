@@ -10,8 +10,8 @@ public sealed class MovementDiagnosticScenario(DiagnosticScenarioDefinition defi
     public DiagnosticScenarioDefinition Definition { get; } = definition;
     public async Task RunAsync(DiagnosticRunContext run)
     {
-        using var settings = run.Own(ports.Player.PreserveDevelopmentSettings());
-        using var input = run.Own(new MovementDiagnosticDriver(run, ports.Input, ports.Physical));
+        run.Own(ports.Player.PreserveDevelopmentSettings());
+        var input = run.Own(new MovementDiagnosticDriver(run, ports.Input, ports.Physical));
         await execute(new(ports, input));
     }
 }

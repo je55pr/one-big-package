@@ -1,6 +1,9 @@
 using System.Numerics;
+using System.Collections.Immutable;
 using OBP.Game;
 using OBP.Game.Diagnostics;
+using OBP.RAC1.Player;
+using OBP.Runtime;
 
 namespace OBP.Tests;
 
@@ -11,13 +14,14 @@ public sealed class MovementDiagnosticTests
         public List<DiagnosticFramePhase> Phases { get; } = [];
         public int ProcessFrames { get; private set; }
         public bool Block { get; init; }
+        public Action? BeforeCompletion { get; init; }
         public int Subscribers { get; private set; }
         public DiagnosticFrameSnapshot ReadFrames() => new((ulong)ProcessFrames, (ulong)Phases.Count(p => p == DiagnosticFramePhase.Physics));
         public async Task NextAsync(DiagnosticFramePhase phase, CancellationToken token)
         {
             Phases.Add(phase);
             if (phase == DiagnosticFramePhase.Process) ProcessFrames++;
-            if (!Block) return;
+            if (!Block) { BeforeCompletion?.Invoke(); return; }
             Subscribers++;
             var signal = new TaskCompletionSource();
             using var registration = token.Register(() => signal.TrySetCanceled(token));
@@ -100,6 +104,7 @@ public sealed class MovementDiagnosticTests
     }
 
     [Theory]
+    [InlineData("full")]
     [InlineData("airborne")]
     [InlineData("environmental-death")]
     [InlineData("landing")]
@@ -122,5 +127,140 @@ public sealed class MovementDiagnosticTests
     {
         Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse(["--movement-case", "unknown"]));
         Assert.Throws<ArgumentException>(() => CommandLineArgs.Parse(["--movement-case"]));
+    }
+
+    [Fact]
+    public void FailedPhysicalReleaseCannotPoisonTheNextOwner()
+    {
+        bool held = false, failRelease = true;
+        var input = new DiagnosticPhysicalInput((_, value) =>
+        {
+            if (!value && failRelease) { failRelease = false; throw new IOException("Expected release failure"); }
+            held = value;
+        }, (_, _) => { });
+        using var first = input.Acquire(); first.SetKey(DiagnosticPhysicalKey.E, true);
+        Assert.Throws<AggregateException>(first.Dispose); Assert.True(held);
+        using var second = input.Acquire(); second.SetKey(DiagnosticPhysicalKey.E, true); second.Dispose();
+        Assert.False(held);
+        first.Dispose(); Assert.False(held);
+    }
+
+    [Fact]
+    public void FailedPhysicalPressStillGetsAReleaseAttempt()
+    {
+        bool held = false, failPress = true;
+        var input = new DiagnosticPhysicalInput((_, value) =>
+        {
+            held = value;
+            if (value && failPress) { failPress = false; throw new IOException("Expected partially applied press"); }
+        }, (_, _) => { });
+        using var lease = input.Acquire();
+        Assert.Throws<IOException>(() => lease.SetKey(DiagnosticPhysicalKey.E, true)); Assert.True(held);
+        lease.Dispose(); Assert.False(held);
+    }
+
+    [Fact]
+    public async Task CancelledDriverAllowsNeutralReleaseAndRejectsALateButtonPress()
+    {
+        using var cancel = new CancellationTokenSource();
+        var clock = new Clock { BeforeCompletion = cancel.Cancel }; var fixture = new Fixture();
+        using var run = new DiagnosticRunContext(clock, cancel.Token, 20); using var driver = fixture.Create(run);
+        driver.Analogue(.5f, 1);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => driver.SetButtonAsync(DiagnosticPhysicalButton.EquippedUse, true));
+        Assert.Empty(fixture.Buttons);
+        driver.Analogue(0, 0); await driver.SetButtonAsync(DiagnosticPhysicalButton.EquippedUse, false);
+        Assert.All(fixture.Actions.Values, value => Assert.Equal(0, value));
+    }
+
+    [Fact]
+    public void NormalizationRetainsGodotsZeroVectorBehaviour()
+    {
+        Assert.Equal(Vector3.Zero, DiagnosticMovementMath.Normalized(Vector3.Zero));
+        Assert.Equal(Vector3.UnitX, DiagnosticMovementMath.Normalized(new(5, 0, 0)));
+        Assert.True(float.IsNaN(DiagnosticMovementMath.Normalized(new(float.NaN, 0, 0)).X));
+    }
+
+    private sealed class Release(Action action) : IDisposable { public void Dispose() => action(); }
+    private sealed class PlayerFixture : IDiagnosticMovementPlayer
+    {
+        public DiagnosticMovementState State { get; set; } = new()
+        {
+            GlobalPosition = new(1, 2, 3),
+            Rotation = new(0, .5f, 0),
+            Rac1CurrentYaw = .5,
+            Rac1ClankAvailable = true,
+            Rac1DevelopmentPackPreview = 2
+        };
+        public bool FailPack { get; set; }
+        public bool FailSettingsCleanup { get; set; }
+        public DiagnosticMovementState Read() => State;
+        public IDisposable PreserveDevelopmentSettings() => new Release(() => { if (FailSettingsCleanup) throw new IOException("settings cleanup"); });
+        public void SetPosition(Vector3 position) => State = State with { GlobalPosition = position };
+        public void ResetAt(Vector3 position) => SetPosition(position);
+        public void SetRotation(Vector3 rotation) => State = State with { Rotation = rotation };
+        public void SetYaw(double yaw) => State = State with { Rac1CurrentYaw = yaw };
+        public void SetBackpack(Rac1TraversalEquipmentId? backpack) => State = State with { Rac1ActiveBackpack = backpack };
+        public void SetClank(bool available) => State = State with { Rac1ClankAvailable = available };
+        public void CyclePack()
+        {
+            if (FailPack) throw new IOException("pack cleanup");
+            State = State with { Rac1DevelopmentPackPreview = State.Rac1DevelopmentPackPreview switch { null => 2, 2 => 3, _ => null } };
+        }
+        public void ToggleSwingshot() => State = State with { Rac1DevelopmentSwingshotPreview = !State.Rac1DevelopmentSwingshotPreview };
+        public void SetSnapReach(float reach) { }
+        public void ResetCollisionDiagnostics() { }
+        public void ResetToSpawn() { }
+        public void StageWater(Vector3 position) => SetPosition(position);
+        public void ConfigureTargets(ImmutableArray<RuntimeDynamicObject> targets) { }
+        public void RestoreWorldTargets() { }
+        public IDisposable SubscribeDrowned(Action action) => new Release(() => { });
+    }
+    private sealed class Geometry : IDiagnosticGeometryLease
+    {
+        public Vector3 GlobalPosition => Vector3.Zero;
+        public bool Disposed { get; private set; }
+        public void Dispose() => Disposed = true;
+        public void AddMesh(string name, int rawFaceType, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) { }
+        public IDisposable AddBox(string name, Vector3 size, Vector3 position, float yaw) => new Release(() => { });
+    }
+    private sealed class Sources : IDiagnosticSources { public ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => []; }
+    private static MovementScenarioPorts Ports(PlayerFixture player, Clock clock) => new(player, null!, null!, null!,
+        new DiagnosticInputActions(_ => true, (_, _) => { }), new DiagnosticPhysicalInput((_, _) => { }, (_, _) => { }), clock, _ => { }, _ => { });
+    private static DiagnosticScenarioDefinition Definition => new("movement-cleanup-fixture/v1", DiagnosticSourceAccess.AssetFree,
+        DiagnosticSetup.AssetFreeFixture, [], TimeSpan.FromSeconds(10), 100);
+    private sealed class RestoreProbe(MovementDiagnosticContext context, PlayerFixture player, Geometry geometry) : MovementScenarioSupport(context)
+    {
+        public async Task RunAsync()
+        {
+            var saved = player.Read(); player.State = saved with { GlobalPosition = new(100, 200, 300), Rac1DevelopmentPackPreview = 3 };
+            player.FailPack = true;
+            try { throw new InvalidOperationException("original scenario assertion"); }
+            finally { await RestoreFixturePlayerAsync(geometry, saved); }
+        }
+    }
+
+    [Fact]
+    public async Task RunnerRetainsTheOriginalFailureWhenOwnedSettingsCleanupFails()
+    {
+        var clock = new Clock(); var player = new PlayerFixture { FailSettingsCleanup = true };
+        var scenario = new MovementDiagnosticScenario(Definition, Ports(player, clock), _ => throw new InvalidOperationException("original scenario assertion"));
+        var result = await new DiagnosticScenarioRunner(new Sources(), clock).RunAsync(scenario, true, CancellationToken.None);
+        var errors = Assert.IsType<AggregateException>(result.Error).Flatten().InnerExceptions;
+        Assert.Contains(errors, error => error.Message == "original scenario assertion");
+        Assert.Contains(errors, error => error.Message == "settings cleanup");
+    }
+
+    [Fact]
+    public async Task FailedPackRestoreDoesNotSkipPositionRestoreOrHideTheAssertion()
+    {
+        var clock = new Clock(); var player = new PlayerFixture(); var original = player.State; var geometry = new Geometry();
+        var scenario = new MovementDiagnosticScenario(Definition, Ports(player, clock), context => new RestoreProbe(context, player, geometry).RunAsync());
+        var result = await new DiagnosticScenarioRunner(new Sources(), clock).RunAsync(scenario, true, CancellationToken.None);
+        var errors = Assert.IsType<AggregateException>(result.Error).Flatten().InnerExceptions;
+        Assert.Contains(errors, error => error.Message == "original scenario assertion");
+        Assert.Contains(errors, error => error.Message == "pack cleanup");
+        Assert.Equal(original.GlobalPosition, player.State.GlobalPosition);
+        Assert.Equal(original.Rotation, player.State.Rotation); Assert.Equal(original.Rac1CurrentYaw, player.State.Rac1CurrentYaw);
+        Assert.True(geometry.Disposed);
     }
 }

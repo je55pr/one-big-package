@@ -45,7 +45,7 @@ public sealed class Rac1EnvironmentalDeathRegression(MovementDiagnosticContext c
         }
         finally
         {
-            ClearMovementSmokeInput();
+            CleanupStep(() => ClearMovementSmokeInput());
         }
 
         if (environment.Read().DeathGeneration != deathGenerationBefore + 1 ||

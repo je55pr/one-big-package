@@ -18,11 +18,8 @@ public sealed class Rac1SwingshotRegression(MovementDiagnosticContext context) :
     public async Task RunAsync()
     {
         var player = Player;
-        Vector3 savedPosition = player.Read().GlobalPosition;
-        Vector3 savedRotation = player.Read().Rotation;
-        double savedYaw = player.Read().Rac1CurrentYaw;
-        bool savedPreview = player.Read().Rac1DevelopmentSwingshotPreview;
-        using var fixture = Geometry.Create("SyntheticRac1SwingshotFixture", new Vector3(2000f, 64f, 2200f));
+        var saved = player.Read();
+        var fixture = Driver.Own(Geometry.Create("SyntheticRac1SwingshotFixture", new Vector3(2000f, 64f, 2200f)));
         try
         {
             ClearMovementSmokeInput();
@@ -114,21 +111,10 @@ public sealed class Rac1SwingshotRegression(MovementDiagnosticContext context) :
         }
         finally
         {
-            using var cleanup = BeginCleanup();
-            SendPhysicalKey(DiagnosticPhysicalKey.E, false);
-            SendPhysicalKey(DiagnosticPhysicalKey.F11, false);
-            ClearMovementSmokeInput();
-            player.RestoreWorldTargets();
-            if (player.Read().Rac1DevelopmentSwingshotPreview != savedPreview)
-            {
-                if (Driver.Lifetime.IsCancellationRequested) { player.ToggleSwingshot(); }
-                else await ToggleSyntheticSwingshotPreviewAsync();
-            }
-            fixture.Dispose();
-            player.SetRotation(savedRotation);
-            player.SetYaw(savedYaw);
-            player.ResetAt(savedPosition);
-            await PhysicsFramesAsync(3);
+            CleanupStep(() => SendPhysicalKey(DiagnosticPhysicalKey.E, false));
+            CleanupStep(() => SendPhysicalKey(DiagnosticPhysicalKey.F11, false));
+            CleanupStep(player.RestoreWorldTargets);
+            await RestoreFixturePlayerAsync(fixture, saved, preserveSwingshotDelay: true);
         }
 
         async Task ToggleSyntheticSwingshotPreviewAsync()

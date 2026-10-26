@@ -17,14 +17,8 @@ public sealed class Rac1TraversalContactRegression(MovementDiagnosticContext con
     public async Task RunAsync()
     {
         var player = Player;
-        Vector3 savedPosition = player.Read().GlobalPosition;
-        Vector3 savedRotation = player.Read().Rotation;
-        double savedYaw = player.Read().Rac1CurrentYaw;
-        var savedPack = player.Read().Rac1ActiveBackpack;
-        bool savedClank = player.Read().Rac1ClankAvailable;
-        int? savedPreview = player.Read().Rac1DevelopmentPackPreview;
-        bool savedSwingshotPreview = player.Read().Rac1DevelopmentSwingshotPreview;
-        using var fixture = Geometry.Create("SyntheticRac1TraversalContactFixture", new Vector3(2000f, 64f, 2000f));
+        var saved = player.Read();
+        var fixture = Driver.Own(Geometry.Create("SyntheticRac1TraversalContactFixture", new Vector3(2000f, 64f, 2000f)));
         const float ledgeTop = 3.0f;
         try
         {
@@ -33,6 +27,8 @@ public sealed class Rac1TraversalContactRegression(MovementDiagnosticContext con
             player.SetClank(false);
             for (int cycle = 0; player.Read().Rac1DevelopmentPackPreview.HasValue && cycle < 3; cycle++)
                 player.CyclePack();
+            Require(!player.Read().Rac1DevelopmentPackPreview.HasValue,
+                "could not clear the development pack preview for traversal-contact fixtures");
             if (player.Read().Rac1DevelopmentSwingshotPreview)
             { player.ToggleSwingshot(); }
 
@@ -177,19 +173,7 @@ public sealed class Rac1TraversalContactRegression(MovementDiagnosticContext con
         }
         finally
         {
-            using var cleanup = BeginCleanup();
-            ClearMovementSmokeInput();
-            fixture.Dispose();
-            player.SetBackpack(savedPack);
-            player.SetClank(savedClank);
-            for (int cycle = 0; player.Read().Rac1DevelopmentPackPreview != savedPreview && cycle < 3; cycle++)
-                player.CyclePack();
-            if (player.Read().Rac1DevelopmentSwingshotPreview != savedSwingshotPreview)
-            { player.ToggleSwingshot(); }
-            player.SetRotation(savedRotation);
-            player.SetYaw(savedYaw);
-            player.ResetAt(savedPosition);
-            await PhysicsFramesAsync(3);
+            await RestoreFixturePlayerAsync(fixture, saved);
         }
 
         async Task GrabSyntheticLedgeAsync()

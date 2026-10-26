@@ -18,14 +18,8 @@ public sealed class Rac1SlopeJumpRegression(MovementDiagnosticContext context) :
     public async Task RunAsync()
     {
         var player = Player;
-        Vector3 savedPosition = player.Read().GlobalPosition;
-        Vector3 savedRotation = player.Read().Rotation;
-        double savedYaw = player.Read().Rac1CurrentYaw;
-        var savedPack = player.Read().Rac1ActiveBackpack;
-        bool savedClank = player.Read().Rac1ClankAvailable;
-        int? savedPreview = player.Read().Rac1DevelopmentPackPreview;
-        bool savedSwingshotPreview = player.Read().Rac1DevelopmentSwingshotPreview;
-        using var fixture = Geometry.Create("SyntheticRac1SlopeJumpFixture", new Vector3(2000f, 64f, 1800f));
+        var saved = player.Read();
+        var fixture = Driver.Own(Geometry.Create("SyntheticRac1SlopeJumpFixture", new Vector3(2000f, 64f, 1800f)));
         (string Name, float Degrees, float Lane, bool Seam)[] ramps =
         [
             ("descending-five", 5f, 0f, false),
@@ -85,6 +79,8 @@ public sealed class Rac1SlopeJumpRegression(MovementDiagnosticContext context) :
                     $"pos={player.Read().GlobalPosition - fixture.GlobalPosition}, velocity={player.Read().Velocity}, " +
                     $"phase={player.Read().Rac1MovementPhase}, support={player.Read().Rac1RecoveredSupportGrounded}");
 
+                Require(!ramp.Seam || player.Read().GlobalPosition.X - fixture.GlobalPosition.X <= .30f,
+                    $"synthetic {ramp.Name} run never reached the seam before Cross");
                 var samples = new List<string>();
                 bool sawAnticipation = false;
                 bool sawRising = false;
@@ -119,19 +115,7 @@ public sealed class Rac1SlopeJumpRegression(MovementDiagnosticContext context) :
         }
         finally
         {
-            using var cleanup = BeginCleanup();
-            ClearMovementSmokeInput();
-            fixture.Dispose();
-            player.SetBackpack(savedPack);
-            player.SetClank(savedClank);
-            for (int cycle = 0; player.Read().Rac1DevelopmentPackPreview != savedPreview && cycle < 3; cycle++)
-                player.CyclePack();
-            if (player.Read().Rac1DevelopmentSwingshotPreview != savedSwingshotPreview)
-            { player.ToggleSwingshot(); }
-            player.SetRotation(savedRotation);
-            player.SetYaw(savedYaw);
-            player.ResetAt(savedPosition);
-            await PhysicsFramesAsync(3);
+            await RestoreFixturePlayerAsync(fixture, saved);
         }
     }
 

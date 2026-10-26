@@ -7,38 +7,51 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
     private readonly Action<DiagnosticPhysicalButton, bool> _button = button;
     private readonly Dictionary<DiagnosticPhysicalKey, HashSet<Lease>> _keys = [];
     private readonly Dictionary<DiagnosticPhysicalButton, HashSet<Lease>> _buttons = [];
+    private readonly HashSet<DiagnosticPhysicalKey> _dirtyKeys = [];
+    private readonly HashSet<DiagnosticPhysicalButton> _dirtyButtons = [];
     public IDiagnosticPhysicalInputLease Acquire() => new Lease(this);
-    private static void Set<T>(Dictionary<T, HashSet<Lease>> owners, Lease lease, T value, bool pressed, Action<T, bool> write) where T : notnull
+    private static void Set<T>(Dictionary<T, HashSet<Lease>> owners, HashSet<T> dirty, Lease lease, T value, bool pressed, Action<T, bool> write) where T : notnull
     {
         owners.TryGetValue(value, out var leases);
-        if (!pressed && (leases is null || !leases.Contains(lease))) { return; }
+        if (!pressed && (leases is null || !leases.Contains(lease)) && !dirty.Contains(value)) { return; }
         bool previous = leases is { Count: > 0 };
-        bool effective = pressed || leases!.Any(item => item != lease);
-        if (effective != previous) { write(value, effective); }
+        // A failed release cannot leave a dead lease counted as a live input owner.
+        if (!pressed) { leases?.Remove(lease); }
+        bool effective = pressed || leases is { Count: > 0 };
+        if (effective != previous || dirty.Contains(value))
+        {
+            dirty.Add(value); // Preserve uncertainty so disposal/new owners can retry after a failed engine write.
+            write(value, effective);
+            dirty.Remove(value);
+        }
         if (pressed) { if (leases is null) { owners[value] = leases = []; } leases.Add(lease); }
-        else { leases!.Remove(lease); if (leases.Count == 0) { owners.Remove(value); } }
+        else if (leases is { Count: 0 }) { owners.Remove(value); }
     }
     private sealed class Lease(DiagnosticPhysicalInput owner) : IDiagnosticPhysicalInputLease
     {
         private bool _disposed;
+        private readonly HashSet<DiagnosticPhysicalKey> _touchedKeys = [];
+        private readonly HashSet<DiagnosticPhysicalButton> _touchedButtons = [];
         public void SetKey(DiagnosticPhysicalKey value, bool pressed)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            Set(owner._keys, this, value, pressed, owner._key);
+            if (pressed) { _touchedKeys.Add(value); }
+            Set(owner._keys, owner._dirtyKeys, this, value, pressed, owner._key);
         }
         public void SetButton(DiagnosticPhysicalButton value, bool pressed)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            Set(owner._buttons, this, value, pressed, owner._button);
+            if (pressed) { _touchedButtons.Add(value); }
+            Set(owner._buttons, owner._dirtyButtons, this, value, pressed, owner._button);
         }
         public void Dispose()
         {
             _disposed = true;
             List<Exception>? failures = null;
-            foreach (var value in owner._keys.Where(pair => pair.Value.Contains(this)).Select(pair => pair.Key).ToArray())
-                try { Set(owner._keys, this, value, false, owner._key); } catch (Exception error) { (failures ??= []).Add(error); }
-            foreach (var value in owner._buttons.Where(pair => pair.Value.Contains(this)).Select(pair => pair.Key).ToArray())
-                try { Set(owner._buttons, this, value, false, owner._button); } catch (Exception error) { (failures ??= []).Add(error); }
+            foreach (var value in _touchedKeys.ToArray())
+                try { Set(owner._keys, owner._dirtyKeys, this, value, false, owner._key); _touchedKeys.Remove(value); } catch (Exception error) { (failures ??= []).Add(error); }
+            foreach (var value in _touchedButtons.ToArray())
+                try { Set(owner._buttons, owner._dirtyButtons, this, value, false, owner._button); _touchedButtons.Remove(value); } catch (Exception error) { (failures ??= []).Add(error); }
             if (failures is not null) { throw new AggregateException("Physical diagnostic input restoration failed.", failures); }
         }
     }

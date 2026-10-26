@@ -16,7 +16,7 @@ public sealed class Rac1SmallStepRegression(MovementDiagnosticContext context) :
         Vector3 savedPosition = player.Read().GlobalPosition;
         double savedYaw = player.Read().Rac1CurrentYaw;
         float savedSnapReach = player.Read().InitialGroundSnapUpwardReach;
-        using var fixture = Geometry.Create("SyntheticRac1SmallStepFixture", new Vector3(2200f, 64f, 1800f));
+        var fixture = Driver.Own(Geometry.Create("SyntheticRac1SmallStepFixture", new Vector3(2200f, 64f, 1800f)));
         try
         {
             // Ground placement must not select the top of the low-ceiling
@@ -89,12 +89,12 @@ public sealed class Rac1SmallStepRegression(MovementDiagnosticContext context) :
         finally
         {
             using var cleanup = BeginCleanup();
-            ClearMovementSmokeInput();
-            fixture.Dispose();
-            player.SetSnapReach(savedSnapReach);
-            player.SetYaw(savedYaw);
-            player.ResetAt(savedPosition);
-            await PhysicsFramesAsync(3);
+            CleanupStep(() => ClearMovementSmokeInput());
+            CleanupStep(() => fixture.Dispose());
+            CleanupStep(() => player.SetSnapReach(savedSnapReach));
+            CleanupStep(() => player.SetYaw(savedYaw));
+            CleanupStep(() => player.ResetAt(savedPosition));
+            await CleanupPhysicsAsync(3);
         }
     }
 
@@ -119,16 +119,17 @@ public sealed class Rac1SmallStepRegression(MovementDiagnosticContext context) :
         {
             SetSyntheticNativeHeading(player, yaw, magnitude);
             await PhysicsFramesAsync(1);
-            maximumHeight = Math.Max(maximumHeight, player.Read().GlobalPosition.Y);
-            if (!player.Read().Grounded) { unsupportedUpdates++; }
-            if (player.Read().Rac1MovementPhase != Rac1RatchetMovementPhase.Grounded) { airborneUpdates++; }
+            var state = player.Read();
+            maximumHeight = Math.Max(maximumHeight, state.GlobalPosition.Y);
+            if (!state.Grounded) { unsupportedUpdates++; }
+            if (state.Rac1MovementPhase != Rac1RatchetMovementPhase.Grounded) { airborneUpdates++; }
             if (samples.Count < 60 &&
-                (tick % 20 == 0 || !player.Read().Grounded || player.Read().Rac1MovementPhase != Rac1RatchetMovementPhase.Grounded))
+                (tick % 20 == 0 || !state.Grounded || state.Rac1MovementPhase != Rac1RatchetMovementPhase.Grounded))
             {
-                samples.Add($"{tick}:{player.Read().GlobalPosition}/floor={player.Read().Grounded}/" +
-                $"phase={player.Read().Rac1MovementPhase}/velocity={player.Read().Velocity}/step={player.Read().Rac1SmallStepDecision}");
+                samples.Add($"{tick}:{state.GlobalPosition}/floor={state.Grounded}/" +
+                $"phase={state.Rac1MovementPhase}/velocity={state.Velocity}/step={state.Rac1SmallStepDecision}");
             }
-            if (reached(player.Read().GlobalPosition))
+            if (reached(state.GlobalPosition))
             {
                 crossed = true;
                 break;

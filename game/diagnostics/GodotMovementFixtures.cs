@@ -121,14 +121,20 @@ internal sealed class GodotMovementAnimation(GodotMovementAnimationBindings bind
 {
     public DiagnosticMovementAnimation Read()
     {
-        var view = bindings.View(); var controller = bindings.Controller(); var native = controller as Rac1PlayerAnimationPresentationController;
+        var view = bindings.View() is { } candidate && GodotObject.IsInstanceValid(candidate) ? candidate : null;
+        var controller = bindings.Controller(); var native = controller as Rac1PlayerAnimationPresentationController;
+        var sink = bindings.Sink();
+        if (sink is GodotObject nativeSink && !GodotObject.IsInstanceValid(nativeSink)) { sink = null; }
         var current = controller?.Current; var pose = current?.SampledPose;
-        return new(view is not null && GodotObject.IsInstanceValid(view), native is not null, bindings.Sink() is not null,
-            bindings.Synchronized(), bindings.Sequence(), view?.CurrentFrame, view?.FrameCount, view?.FramesPerSecond,
+        double height = bindings.StandingHeight();
+        if (native is not null && (!double.IsFinite(height) || height <= 0))
+            throw new DiagnosticUnavailableException("The native movement avatar bounds are unavailable.");
+        return new(view is not null, native is not null, sink is not null,
+            view is not null && sink is not null && bindings.Synchronized(), sink is not null ? bindings.Sequence() : null, view?.CurrentFrame, view?.FrameCount, view?.FramesPerSecond,
             current?.Loop, current?.SourceStateKey, current?.SemanticState, native?.OrdinaryLocomotionSample,
             native?.OrdinaryLocomotionMultiplier, native?.OrdinaryStopSample, native?.OrdinaryStandingSample,
             native?.CrouchSample is not null, pose is null ? null : new(pose.FrameIndex, [.. pose.LocalPositions]),
-            bindings.Sink()?.CurrentAnimationPresentation.SampledPose is not null, bindings.StandingHeight());
+            sink?.CurrentAnimationPresentation.SampledPose is not null, height);
     }
 }
 

@@ -1,4 +1,5 @@
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Player;
 using OBP.Runtime.Player;
 
 namespace OBP.Game.Diagnostics;
@@ -28,7 +29,8 @@ public sealed class ControllerWeaponInputRegression(MovementDiagnosticContext co
         await Driver.TapButtonAsync(DiagnosticPhysicalButton.EquippedUse);
         Require(!equipment.Read().WrenchActive && equipment.Read().BombAmmo == 19,
             "Circle did not fire exactly one Bomb Glove round");
-        await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == 0, 120, "controller Bomb Glove recovery");
+        await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
+            PlayerAvatarPresentationIsSynchronized(), 120, "controller Bomb Glove recovery");
         await PhysicsFramesAsync(60);
         Require(equipment.Read().BombVisible && !equipment.Read().WrenchVisible &&
             equipment.Read().HeldNativeId == (int)Rac1WeaponId.FirstRanged,
@@ -50,17 +52,21 @@ public sealed class ControllerWeaponInputRegression(MovementDiagnosticContext co
         await PhysicsFramesAsync(8);
         Require(equipment.Read().BombAmmo == 18, "continuing the switch hold did not throw a bomb");
         await Driver.SetButtonAsync(DiagnosticPhysicalButton.EquippedUse, false);
-        await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == 0, 120, "held-switch Bomb Glove recovery");
+        await Rac1SmokeWaitAsync(() => CurrentPlayerAvatarSourceSequence() == Rac1RatchetSequenceSelection.StandingSequenceId &&
+            PlayerAvatarPresentationIsSynchronized(), 120, "held-switch Bomb Glove recovery");
         equipment.Select(Rac1WeaponId.Wrench);
-        await Driver.TapButtonAsync(DiagnosticPhysicalButton.EquippedUse);
-        Require(!equipment.Read().WrenchActive && equipment.Read().BombAmmo == 18,
-            "Circle fell back to wrench with legacy item 8 selected");
-        equipment.Cycle(1);
-        Require(equipment.Read().Selected == Rac1WeaponId.FirstRanged, "weapon cycle did not leave the legacy wrench selection");
-        equipment.Cycle(-1);
-        Require(equipment.Read().Current == equipment.Read().Order[^1] && equipment.Read().Current != PlayerEquipmentRegistrations.Wrench,
-            "weapon cycle did not follow the development loadout or exposed the wrench as Circle equipment");
-        equipment.Select(Rac1WeaponId.FirstRanged);
+        try
+        {
+            await Driver.TapButtonAsync(DiagnosticPhysicalButton.EquippedUse);
+            Require(!equipment.Read().WrenchActive && equipment.Read().BombAmmo == 18,
+                "Circle fell back to wrench with legacy item 8 selected");
+            equipment.Cycle(1);
+            Require(equipment.Read().Selected == Rac1WeaponId.FirstRanged, "weapon cycle did not leave the legacy wrench selection");
+            equipment.Cycle(-1);
+            Require(equipment.Read().Current == equipment.Read().Order[^1] && equipment.Read().Current != PlayerEquipmentRegistrations.Wrench,
+                "weapon cycle did not follow the development loadout or exposed the wrench as Circle equipment");
+        }
+        finally { CleanupStep(() => equipment.Select(Rac1WeaponId.FirstRanged)); }
         Log("[controller-smoke] wrench on entry, Circle tap draws, second press fires, continuous switch hold fires after delay, last-used item PASS");
 
     }

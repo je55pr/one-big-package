@@ -32,6 +32,7 @@ public sealed class MovementDiagnosticDriver : IDisposable
     }
     public ulong PhysicsFrame => _run.Frames.Physics;
     public CancellationToken Lifetime => _run.CancellationToken;
+    internal T Own<T>(T lease) where T : IDisposable => _run.Own(lease);
     public Task PhysicsAsync(int count = 1) => _run.WaitAsync(DiagnosticFramePhase.Physics, count);
     public Task ProcessAsync(int count = 1) => _run.WaitAsync(DiagnosticFramePhase.Process, count);
     public void SetAction(string action, bool pressed, float strength = 1)
@@ -48,8 +49,14 @@ public sealed class MovementDiagnosticDriver : IDisposable
     }
     public async Task SetButtonAsync(DiagnosticPhysicalButton button, bool pressed)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (!pressed && _run.CancellationToken.IsCancellationRequested) { _physical.SetButton(button, false); return; }
         // Hardware arrives between physics updates. Device 15 remains separate from connected controllers.
-        await ProcessAsync();
+        try { await ProcessAsync(); }
+        catch (OperationCanceledException error) when (!pressed && error.CancellationToken == _run.CancellationToken && _run.CancellationToken.IsCancellationRequested)
+        { _physical.SetButton(button, false); return; }
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (pressed) { _run.CancellationToken.ThrowIfCancellationRequested(); }
         _physical.SetButton(button, pressed);
     }
     public async Task TapButtonAsync(DiagnosticPhysicalButton button)
@@ -65,7 +72,7 @@ public sealed class MovementDiagnosticDriver : IDisposable
     public void Analogue(float right, float forward)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _run.CancellationToken.ThrowIfCancellationRequested();
+        if (!right.Equals(0f) || !forward.Equals(0f)) { _run.CancellationToken.ThrowIfCancellationRequested(); }
         ReleaseDirections();
         if (right > 0) { _actions.SetAction(Right, right); }
         else if (right < 0) { _actions.SetAction(Left, -right); }
@@ -105,9 +112,16 @@ public sealed class MovementDiagnosticDriver : IDisposable
     }
     public void Dispose()
     {
-        if (_disposed) { return; }
         _disposed = true;
-        try { _physical.Dispose(); }
-        finally { _actions.Dispose(); }
+        List<Exception>? failures = null;
+        try { _physical.Dispose(); } catch (Exception error) { (failures ??= []).Add(error); }
+        try { _actions.Dispose(); } catch (Exception error) { (failures ??= []).Add(error); }
+        if (failures is not null) { throw new AggregateException("Movement input cleanup failed.", failures); }
+    }
+
+    internal void RecordCleanupFailure(Exception error) => _run.Own(new CleanupFailure(error));
+    private sealed class CleanupFailure(Exception error) : IDisposable
+    {
+        public void Dispose() => System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
     }
 }

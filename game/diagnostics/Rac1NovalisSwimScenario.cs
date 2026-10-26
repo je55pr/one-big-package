@@ -265,7 +265,7 @@ public sealed class Rac1NovalisSwimScenario(MovementDiagnosticContext context, I
         }
         finally
         {
-            ClearMovementSmokeInput();
+            CleanupStep(() => ClearMovementSmokeInput());
         }
     }
 

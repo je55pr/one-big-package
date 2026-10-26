@@ -18,14 +18,8 @@ public sealed class Rac1LandingRegression(MovementDiagnosticContext context) : M
     public async Task RunAsync()
     {
         var player = Player;
-        Vector3 savedPosition = player.Read().GlobalPosition;
-        Vector3 savedRotation = player.Read().Rotation;
-        double savedYaw = player.Read().Rac1CurrentYaw;
-        var savedPack = player.Read().Rac1ActiveBackpack;
-        bool savedClank = player.Read().Rac1ClankAvailable;
-        int? savedPreview = player.Read().Rac1DevelopmentPackPreview;
-        bool savedSwingshotPreview = player.Read().Rac1DevelopmentSwingshotPreview;
-        using var fixture = Geometry.Create("SyntheticRac1LandingRegressionFixture", new Vector3(2000f, 64f, 2600f));
+        var saved = player.Read();
+        var fixture = Driver.Own(Geometry.Create("SyntheticRac1LandingRegressionFixture", new Vector3(2000f, 64f, 2600f)));
         try
         {
             ClearMovementSmokeInput();
@@ -164,18 +158,7 @@ public sealed class Rac1LandingRegression(MovementDiagnosticContext context) : M
         }
         finally
         {
-            using var cleanup = BeginCleanup();
-            ClearMovementSmokeInput();
-            fixture.Dispose();
-            player.SetBackpack(savedPack);
-            player.SetClank(savedClank);
-            SelectLandingPack(savedPreview);
-            if (player.Read().Rac1DevelopmentSwingshotPreview != savedSwingshotPreview)
-            { player.ToggleSwingshot(); }
-            player.SetRotation(savedRotation);
-            player.SetYaw(savedYaw);
-            player.ResetAt(savedPosition);
-            await PhysicsFramesAsync(3);
+            await RestoreFixturePlayerAsync(fixture, saved);
         }
 
         void SelectLandingPack(int? pack)
