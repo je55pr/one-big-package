@@ -13,19 +13,21 @@ internal sealed class DiagnosticInputActions(Func<string, bool> exists, Action<s
 
     private void Set(InputLease lease, string action, float strength)
     {
-        if (!_presses.TryGetValue(action, out var owners))
-        {
-            if (strength == 0) return;
-            _presses[action] = owners = [];
-        }
+        _presses.TryGetValue(action, out var owners);
+        if (strength == 0 && (owners is null || !owners.ContainsKey(lease))) return;
+        float combined = Math.Max(strength, owners?.Where(pair => pair.Key != lease).Select(pair => pair.Value).DefaultIfEmpty(0).Max() ?? 0);
+        // Retain the last accepted ownership state if the engine rejects this change.
+        write(action, combined);
         if (strength == 0)
         {
-            if (!owners.Remove(lease)) return;
+            owners!.Remove(lease);
+            if (owners.Count == 0) _presses.Remove(action);
         }
-        else owners[lease] = strength;
-        float combined = owners.Values.DefaultIfEmpty(0).Max();
-        if (owners.Count == 0) _presses.Remove(action);
-        write(action, combined);
+        else
+        {
+            if (owners is null) _presses[action] = owners = [];
+            owners[lease] = strength;
+        }
     }
 
     private sealed class InputLease(DiagnosticInputActions owner, CancellationToken lifetime) : IDiagnosticInputLease
@@ -43,15 +45,13 @@ internal sealed class DiagnosticInputActions(Func<string, bool> exists, Action<s
         }
         public void Dispose()
         {
-            if (_disposed) return;
             _disposed = true;
             List<Exception>? failures = null;
-            foreach (string action in _touched)
+            foreach (string action in _touched.ToArray())
             {
-                try { owner.Set(this, action, 0); }
+                try { owner.Set(this, action, 0); _touched.Remove(action); }
                 catch (Exception error) { (failures ??= []).Add(error); }
             }
-            _touched.Clear();
             if (failures is not null) throw new AggregateException("Logical input restoration failed.", failures);
         }
     }

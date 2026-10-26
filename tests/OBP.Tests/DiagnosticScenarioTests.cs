@@ -175,8 +175,26 @@ public sealed class DiagnosticScenarioTests
         Assert.Throws<ArgumentOutOfRangeException>(() => lease.SetAction("a", float.NaN));
         lease.SetAction("a", 1); lease.SetAction("b", 1); restoring = true;
         Assert.Throws<AggregateException>(lease.Dispose); Assert.Equal(.5f, state["b"]);
+        Assert.Throws<ObjectDisposedException>(() => lease.SetAction("a", 0));
+        restoring = false;
         lease.Dispose(); Assert.Throws<ObjectDisposedException>(() => lease.SetAction("a", 0));
+        Assert.Equal(0, state["a"]);
         Assert.Throws<OperationCanceledException>(() => input.Acquire(new CancellationToken(true)));
+    }
+
+    [Fact]
+    public void ARejectedReleaseRetainsItsOwnerAndCanBeRetried()
+    {
+        float simulated = 0; bool reject = true;
+        var input = new DiagnosticInputActions(_ => true, (_, strength) =>
+        {
+            if (strength == 0 && reject) { reject = false; throw new IOException("transient release fixture"); }
+            simulated = strength;
+        });
+        var lease = input.Acquire(CancellationToken.None); lease.SetAction("fire", 1);
+        Assert.Throws<AggregateException>(lease.Dispose); Assert.Equal(1, simulated);
+        lease.Dispose(); Assert.Equal(0, simulated);
+        lease.Dispose(); Assert.Equal(0, simulated);
     }
 
     [Fact]
