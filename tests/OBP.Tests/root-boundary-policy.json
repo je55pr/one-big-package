@@ -2629,6 +2629,146 @@
       "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
       "ExpiresWith": "#359",
       "Hash": "c1e818eefe78381694faf4895d16c6a06e26ca41a8f9774332ae0ef31a3ac489"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#342",
+      "Hash": "8d32d715d1ab2e11a61cb81b5a4d5d8bc272071e8433b37ad4ca8beca4b54d8e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:internal",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#348",
+      "Hash": "f638499040963141463a3f0aeafa269534b1d6c319144eed70c185618de044da"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearMovementSmokeInput():void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#358",
+      "Hash": "706a2e8596906c2ead963d034b79f267904720a9b28f1c609046641ef690182d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#359",
+      "Hash": "cf18e18af948bb68483f8c8167ae928171c3d126ff943cd8b338fa6d2526f19b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:HorizontalDistance(:Vector3,:Vector3):float:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "531248684163b9ce662612ea191e17b7daef10ef0620fb8d4d9757c2e98c8ceb"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:HorizontalSpeed(:PlayerHost):float:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "194a32f358ddb08d2e9a896f023f06b3599f09dc471460e6cb21b4afec539480"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:MeasureJumpAsync(:PlayerHost,:int,:bool,:bool):Task < float >:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#340",
+      "Hash": "bd9fb99c943d04424c5fef199a397f60329060ee314f0863e20a99017f0763cc"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:PhysicsFramesAsync(:int):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "8e85c7fefb59b68e1157eff091064ad443a6da4896ddade7c11f8e6d4e4a6f70"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:PhysicsFramesCancelableAsync(:int,:CancellationToken):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "a1dbab77c2d5fc79abe543c07be3080eab1af39b674c289f55dd88561b630808"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:Require(:bool,:string):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "acc93a95f3a0d8bff2e8d270734317fd95ccd929e1f61fa914c8aa5e319923fe"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1NaturalVeldinFallRespawnSmokeAsync(:Vector3):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#340",
+      "Hash": "94beb4c3e02e89220509e710de2ed9c675cc0928affe87b9ca768a608f1795dd"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SendPhysicalKey(:Key,:bool):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "cd9e12b119b7a1948c59a8e62529926e7cd9d85836a0ab04a0edd83b674ed64d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetAnalogueSmokeInput(:float,:float):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#358",
+      "Hash": "34ceeb7b8a92509d26af616dbdcf1ed2ca32b991a965310712c6414c3f842d88"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetRac1SmokeConditionedInput(:double,:double):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#354",
+      "Hash": "5b4698bb376a67c89ed5d6da33e427d5a8ea1031e3c536e5d26151bdff1b0dfe"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#343",
+      "Hash": "5c1e15615efb5fdc85feb786b19b39b591420fc723429a624756c3e4916309e3"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TapPhysicalKeyAsync(:Key):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "6c479ac94d92e9d0f1dcaa64bb8771167737c4488fdeb4560993b548d26c0721"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WaitForGroundedAsync(:PlayerHost,:int):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "6bf26e503dc4a98aefe616dbb570633a26faf21bafa6ed5c090e03d0636da21f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WaitForGroundedCancelableAsync(:PlayerHost,:int,:CancellationToken):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "fd368a7a6056cfab15797a8fe5691fdea397dd8808c7d66f0befaf342a139f88"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WaitForPlayerAvatarSequenceAsync(:int,:int,:string):Task:private",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "ff55c30c70defea20f7ae0f7a43e45b6afb3caf778f6ca05b0181f70d8c32fcf"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WrapAngle(:double):double:private,static",
+      "Owner": "#339",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "ExpiresWith": "#345",
+      "Hash": "0a8925420a1dc2961a0140ccb3573ef32f95114d74a0c6ed0bb23c90272dc88e"
     }
   ],
   "RetiredMembers": [
@@ -2678,7 +2818,53 @@
     "game/diagnostics/OBPGame.Rac1PlayerAudioSmoke.cs::OBPGame::method:RunRac1PlayerAudioSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.SharedProfileSmoke.cs::OBPGame::method:RunSharedProfileSmokeAsync():Task:async,private",
-    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerSoundTrace:List < ( Rac1PlayerAudioSession . Cue Cue , bool Loop ) >:private,readonly"
+    "game/scripts/OBPGame.Rac1PlayerAudio.cs::OBPGame::field:_rac1PlayerSoundTrace:List < ( Rac1PlayerAudioSession . Cue Cue , bool Loop ) >:private,readonly",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:ClearMovementSmokeInput():void:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:HorizontalDistance(:Vector3,:Vector3):float:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:HorizontalSpeed(:PlayerHost):float:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:MeasureAirControlAsync(:PlayerHost):System . Threading . Tasks . Task < float >:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:MeasureJumpAsync(:PlayerHost,:int,:bool,:bool):System . Threading . Tasks . Task < float >:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:PhysicsFramesAsync(:int):Task:private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:PhysicsFramesCancelableAsync(:int,:CancellationToken):Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:ReleaseMovementActions():void:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:Require(:bool,:string):void:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:RequireBlockedRunCrouchCarryAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:RequireOrdinaryStopRestartAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:RequireRunToCrouchStopAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:RequireWalkingAvatarLoopAsync(:int):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:RunMovementSmokeAsync(:ObpDestination):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:SendPhysicalKey(:Key,:bool):void:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:SetAnalogueSmokeInput(:float,:float):void:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:SetRac1SmokeConditionedInput(:double,:double):void:private,static",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:TapPhysicalKeyAsync(:Key):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WaitForAnimationStateAsync(:PlayerHost,:PlayerAnimationState,:int,:string):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WaitForGroundedAsync(:PlayerHost,:int):Task:private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WaitForGroundedCancelableAsync(:PlayerHost,:int,:CancellationToken):Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WaitForPlayerAvatarSequenceAsync(:int,:int,:string):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.MovementSmoke.cs::OBPGame::method:WrapAngle(:double):double:private,static",
+    "game/diagnostics/OBPGame.Rac1AirborneSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1AirborneSmoke.cs::OBPGame::method:RequireRac1AirborneSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1EnvironmentalDeathSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1EnvironmentalDeathSmoke.cs::OBPGame::method:RunRac1NaturalVeldinFallRespawnSmokeAsync(:Vector3):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1LandingRegressionSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1LandingRegressionSmoke.cs::OBPGame::method:RequireRac1LandingRegressionSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisSwimSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisSwimSmoke.cs::OBPGame::method:RunRac1NovalisSwimSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SlopeJumpSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1SlopeJumpSmoke.cs::OBPGame::method:RequireRac1SlopeJumpSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::method:CheckSmallStepRouteAsync(:PlayerHost,:string,:Vector3,:double,:Func < Vector3 , bool >,:bool,:double,:int,:bool):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SmallStepSmoke.cs::OBPGame::method:RequireRac1SmallStepSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::method:RequireRac1SwingshotSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1SwingshotSmoke.cs::OBPGame::method:SyntheticTraversalTarget(:int,:int,:Vector3):RuntimeDynamicObject:private,static",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:RequireRac1TraversalContactSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
+    "game/diagnostics/ControllerSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal"
   ],
   "RetiredAccess": []
 }

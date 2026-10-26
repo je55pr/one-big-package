@@ -44,7 +44,8 @@ public sealed record CommandLineArgs
         Rac1CombatContractSmoke || Rac1WrenchSmoke || Rac1CrateSmoke || Rac1EnemySmoke || Rac1FrogSmoke ||
         Rac1BombGloveSmoke || Rac1NovalisSwimSmoke || Rac1NovalisRouteSmoke || Rac1NovalisPeckbotSmoke ||
         Rac1NovalisBirdbotSmoke || Rac1NovalisMusicSmoke || Rac1MetropolisTaxiSmoke || Rac1WeaponsSmoke ||
-        Rac1PlacedBoltSmoke || Rac1CampaignSmoke || Rac1MissionPlaySmoke || Rac1PlayerAudioSmoke || MovementStateSmoke;
+        Rac1PlacedBoltSmoke || Rac1CampaignSmoke || Rac1MissionPlaySmoke || Rac1PlayerAudioSmoke || MovementStateSmoke ||
+        MovementCase is "environmental-death" or "swim";
     public bool DefaultWeaponsSmoke { get; init; }
     public bool BugCapture { get; init; }
     public bool BugReportSmoke { get; init; }
@@ -174,6 +175,7 @@ public sealed record CommandLineArgs
 
     /// <summary>Run the cross-game Godot analogue/input smoke against the selected destination and quit.</summary>
     public bool MovementSmoke { get; init; }
+    public string? MovementCase { get; init; }
 
     public static CommandLineArgs Parse(string[] args)
     {
@@ -293,12 +295,16 @@ public sealed record CommandLineArgs
                 "--rac1-campaign-persist" => result with { Rac1CampaignPersist = true },
                 "--rac1-campaign-save" => result with { Rac1CampaignSavePath = Next() },
                 "--movement-smoke" => result with { MovementSmoke = true },
+                "--movement-case" => result with { MovementSmoke = true, MovementCase = Next() },
                 // Existing diagnostic scenes also consume these automation markers.
                 "--automation" or "--smoke" => result,
                 _ => throw new ArgumentException("Unknown OBP argument: " + a + ". OBP options follow Godot's -- separator."),
             };
         }
 
+        if (result.MovementCase is not (null or "full" or "airborne" or "environmental-death" or "landing" or "swim" or
+            "slope-jump" or "small-step" or "swingshot" or "traversal-contact" or "controller-weapons"))
+            throw new ArgumentException("--movement-case requires a known movement regression name.");
         if (result.RecordPlaytest is not null && result.ReplayPlaytest is not null)
             throw new ArgumentException("--record-playtest cannot be combined with --replay-playtest.");
         if (result.BugCapture && (result.PlaytestRequested || result.ReplayBugReport is not null))

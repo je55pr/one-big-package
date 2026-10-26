@@ -28,6 +28,7 @@ public partial class SourceFreeStartupProbe : Node
                 var runner = new DiagnosticScenarioRunner(new NoSources(), new GodotDiagnosticFrameClock(this));
                 var result = await runner.RunAsync(scenario, args.TestSceneExplicit && args.TestScene == "picker", lifetime.Token);
                 if (result.Status == DiagnosticRunStatus.Passed) VerifyInputOwnership();
+                if (result.Status == DiagnosticRunStatus.Passed) await VerifyMovementCancellationAsync();
                 if (result.Status == DiagnosticRunStatus.Passed) await VerifyInteractiveLifetimeAsync();
                 if (!_retired) EmitSignal(SignalName.Completed, result.Status == DiagnosticRunStatus.Passed, result.Detail);
             }
@@ -120,5 +121,42 @@ public partial class SourceFreeStartupProbe : Node
     private sealed class NoSources : IDiagnosticSources
     {
         public ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => [];
+    }
+
+    private async Task VerifyMovementCancellationAsync()
+    {
+        const string logical = "obp_ci_movement_logical", physical = "obp_ci_movement_physical";
+        if (InputMap.HasAction(logical) || InputMap.HasAction(physical))
+            throw new InvalidOperationException("The movement cancellation fixture actions already exist.");
+        InputMap.AddAction(logical); InputMap.AddAction(physical);
+        try
+        {
+            using var key = new InputEventKey { Keycode = Key.F11, PhysicalKeycode = Key.F11 };
+            InputMap.ActionAddEvent(physical, key);
+            var tree = GetTree();
+            int subscriptions = tree.GetSignalConnectionList(SceneTree.SignalName.PhysicsFrame).Count;
+            using var cancellation = new CancellationTokenSource();
+            using var run = new DiagnosticRunContext(new GodotDiagnosticFrameClock(this), cancellation.Token, 10);
+            var driver = run.Own(new MovementDiagnosticDriver(run, new GodotDiagnosticInputActions(), new GodotMovementPhysicalInput()));
+            driver.SetAction(logical, true); driver.SetKey(DiagnosticPhysicalKey.F11, true);
+            Input.FlushBufferedEvents();
+            if (!Input.IsActionPressed(logical) || !Input.IsActionPressed(physical))
+                throw new InvalidOperationException("The movement fixture did not inject both owned input types.");
+            Task pending = driver.PhysicsAsync();
+            if (tree.GetSignalConnectionList(SceneTree.SignalName.PhysicsFrame).Count != subscriptions + 1)
+                throw new InvalidOperationException("The movement driver did not connect its physics-frame wait.");
+            cancellation.Cancel();
+            try { await pending; throw new InvalidOperationException("A canceled movement wait completed successfully."); }
+            catch (OperationCanceledException error) when (error.CancellationToken == cancellation.Token) { /* Expected run-owned cancellation. */ }
+            run.Dispose(); Input.FlushBufferedEvents();
+            if (run.CleanupFailures.Count != 0 || tree.GetSignalConnectionList(SceneTree.SignalName.PhysicsFrame).Count != subscriptions ||
+                Input.IsActionPressed(logical) || Input.IsActionPressed(physical))
+                throw new InvalidOperationException("Canceled movement diagnostics retained input or a physics subscription.");
+            GD.Print("[diagnostic-bindings-smoke] PASS: movement cancellation releases logical/physical input and the real physics-frame subscription");
+        }
+        finally
+        {
+            InputMap.EraseAction(logical); InputMap.EraseAction(physical);
+        }
     }
 }

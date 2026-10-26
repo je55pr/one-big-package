@@ -39,9 +39,9 @@ public sealed class WorldSmokeArchitectureTests
         {
             "OBPGame.Rac1CombatContractSmoke.cs",
             "OBPGame.Rac1VeldinPlaySmoke.cs",
-            "OBPGame.MovementSmoke.cs",
+            "MovementScenario.cs",
             "OBPGame.Rac1CampaignSmoke.cs",
-            "OBPGame.Rac1EnvironmentalDeathSmoke.cs",
+            "Rac1EnvironmentalDeathRegression.cs",
             "StartupVisibilityScenario.cs",
             "OBPGame.Rac1WrenchSmoke.cs",
             "OBPGame.Rac1BombGloveSmoke.cs",
