@@ -79,7 +79,7 @@ public partial class OBPGame
                 bool rejected = false;
                 try { _actorWorld.Factories!.Resolve(placement with { NativeContextId = "unrecovered-context" }).Create(placement, library, source); }
                 catch (NotSupportedException) { rejected = true; }
-                Require(rejected && _actors!.Count == 3 && _actorWorld.Bodies.Count == 3, "missing native context left a partial actor");
+                Require(rejected && _actors!.Count == 3 && _actorWorld.Bodies.Count == 3, "unrecovered native context was admitted or changed actor registrations");
             }
             // This explicit encounter fixture starts after all background IO.
             // Reset every native session, not its recorded gameplay results.
