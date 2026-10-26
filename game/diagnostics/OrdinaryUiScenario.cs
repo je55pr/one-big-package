@@ -30,6 +30,7 @@ public sealed class OrdinaryUiScenario(DiagnosticScenarioDefinition definition, 
         VerifySurface(DiagnosticMenuSurface.Overlay);
         VerifySurface(DiagnosticMenuSurface.World);
         Require(menus.OpenPause(), "The ordinary pause menu did not open.");
+        bool closed;
         try
         {
             await run.WaitAsync(DiagnosticFramePhase.Process);
@@ -39,7 +40,8 @@ public sealed class OrdinaryUiScenario(DiagnosticScenarioDefinition definition, 
                 VerifySurface(DiagnosticMenuSurface.Pause);
             }
         }
-        finally { Require(menus.ClosePause(), "The pause menu did not close."); }
+        finally { closed = menus.ClosePause(); }
+        Require(closed, "The pause menu did not close.");
         menus.ShowWorldSelect();
         var before = player.Capture();
         string? saved = profile.ReadDigest();
@@ -48,7 +50,7 @@ public sealed class OrdinaryUiScenario(DiagnosticScenarioDefinition definition, 
         state = menus.ReadNavigation();
         Require(state.SourceManagerPresent && state.RepairActive && !state.TitlePresent, "Genuine source loss did not replace the title with repair.");
         var after = player.Capture();
-        Require(before.Configuration == after.Configuration && before.LoadoutJson == after.LoadoutJson && before.Health == after.Health,
+        Require(before == after,
             "Repair reset the persistent player session.");
         Require(!profile.TrySave("ordinary UI repair check"), "Repair allowed a profile write.");
         if (saved is not null) Require(saved == profile.ReadDigest(), "Repair rewrote the saved game.");

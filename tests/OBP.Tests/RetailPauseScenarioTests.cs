@@ -128,10 +128,12 @@ public sealed class RetailPauseScenarioTests
     public async Task CancellationDuringAnAdmittedPressReleasesInputAndRestoresViewport()
     {
         var fixture = new Fixture(); var clock = new Clock(fixture); using var cancellation = new CancellationTokenSource();
-        clock.OnFrame = frame => { if (frame == 15) cancellation.Cancel(); };
+        bool heldAtCancel = false;
+        clock.OnFrame = frame => { if (frame == 15) { heldAtCancel = fixture.Pressed.Contains("ui_down"); cancellation.Cancel(); } };
         var result = await new DiagnosticScenarioRunner(new Sources(), clock).RunAsync(
             new Rac1RetailNavigationScenario(Definition, "Veldin", fixture, _ => { }), true, cancellation.Token);
         Assert.Equal(DiagnosticRunStatus.Canceled, result.Status); Assert.Equal(1, fixture.Restores);
+        Assert.True(heldAtCancel, "Cancellation must land while the admitted press is held.");
         Assert.Empty(fixture.Pressed); Assert.False(fixture.Guard); Assert.False(fixture.State.PauseOpen); Assert.Equal("Captured", fixture.State.PointerMode);
     }
 
@@ -142,6 +144,17 @@ public sealed class RetailPauseScenarioTests
         var result = await new DiagnosticScenarioRunner(new Sources(), clock).RunAsync(
             new Rac1VeldinRetailPauseScenario(Definition, fixture, _ => { }), true, CancellationToken.None);
         Assert.Equal(DiagnosticRunStatus.Passed, result.Status); Assert.Equal(9, clock.Waits);
+        Assert.False(fixture.State.PauseOpen); Assert.False(fixture.State.TreePaused);
+    }
+
+    [Fact]
+    public async Task VeldinPanelFailureStillClosesPause()
+    {
+        var fixture = new Fixture(); fixture.State = fixture.State with { Panels = [] };
+        var result = await new DiagnosticScenarioRunner(new Sources(), new Clock(fixture)).RunAsync(
+            new Rac1VeldinRetailPauseScenario(Definition, fixture, _ => { }), true, CancellationToken.None);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status);
+        Assert.Contains("six native projected and shaded panels", result.Detail, StringComparison.Ordinal);
         Assert.False(fixture.State.PauseOpen); Assert.False(fixture.State.TreePaused);
     }
 }

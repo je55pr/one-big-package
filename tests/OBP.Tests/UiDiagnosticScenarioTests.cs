@@ -17,12 +17,14 @@ public sealed class UiDiagnosticScenarioTests
         public List<DiagnosticFramePhase> Phases { get; } = [];
         public Action? Tick { get; set; }
         public bool RenderAvailable { get; set; } = true;
+        public bool Async { get; set; }
         public DiagnosticFrameSnapshot ReadFrames() => new((ulong)Phases.Count, 0);
-        public Task NextAsync(DiagnosticFramePhase phase, CancellationToken cancellationToken)
+        public async Task NextAsync(DiagnosticFramePhase phase, CancellationToken cancellationToken)
         {
             Phases.Add(phase); Tick?.Invoke(); cancellationToken.ThrowIfCancellationRequested();
             if (phase == DiagnosticFramePhase.PostDraw && !RenderAvailable) throw new DiagnosticUnavailableException("Post-draw unavailable headlessly.");
-            return Task.CompletedTask;
+            if (Async) await Task.Yield();
+            cancellationToken.ThrowIfCancellationRequested();
         }
     }
     private sealed class Player : IDiagnosticPlayerContinuity
@@ -50,6 +52,8 @@ public sealed class UiDiagnosticScenarioTests
         public bool LostSource { get; set; }
         public bool ReturnTitleOnBack { get; set; } = true;
         public bool PauseOpen { get; private set; }
+        public bool CloseSucceeded { get; set; } = true;
+        public bool FailPauseSection { get; set; }
         public Action? Repair { get; set; }
         public DiagnosticNavigationSnapshot ReadNavigation() => State;
         public DiagnosticStartupPresentation ReadStartupPresentation() => Presentation;
@@ -60,8 +64,12 @@ public sealed class UiDiagnosticScenarioTests
         public void PressTitleStart() => ShowWorldSelect();
         public void PressLab() => State = State with { SelectorActive = false, WorldActive = true, WorldLoaded = true, Destination = "obp:fusion-lab" };
         public bool OpenPause() { PauseOpen = true; return true; }
-        public bool ClosePause() { PauseOpen = false; return true; }
-        public void ShowPauseSection(string section) => Sections.Add(section);
+        public bool ClosePause() { PauseOpen = false; return CloseSucceeded; }
+        public void ShowPauseSection(string section)
+        {
+            if (FailPauseSection) throw new InvalidOperationException("original pause section failure");
+            Sections.Add(section);
+        }
     }
     private sealed class RepairFixture(Menus menus) : IDiagnosticSourceRepairFixture
     {
@@ -123,6 +131,7 @@ public sealed class UiDiagnosticScenarioTests
     [InlineData("provenance", "provenance leaked")]
     [InlineData("save", "profile write")]
     [InlineData("session", "player session")]
+    [InlineData("currency", "player session")]
     public async Task OrdinaryFailuresOverrideTheExpectedRepairExit(string fault, string detail)
     {
         var menus = new Menus(); var repair = new RepairFixture(menus); var player = new Player(); var profile = new Profile();
@@ -132,6 +141,7 @@ public sealed class UiDiagnosticScenarioTests
         if (fault == "provenance") menus.Text = ["Attach source adapter"];
         if (fault == "save") profile.AllowWrite = true;
         if (fault == "session") repair.DuringRepair = () => player.State = player.State with { LoadoutJson = "reset" };
+        if (fault == "currency") repair.DuringRepair = () => player.State = player.State with { CurrenciesJson = "reset" };
         var scenario = Process(new OrdinaryUiScenario(Definition, "fresh", menus, player, profile, repair, _ => { }));
         var result = await new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(scenario, true, CancellationToken.None);
         Assert.Equal(DiagnosticRunStatus.Failed, result.Status); Assert.Contains(detail, result.Detail, StringComparison.OrdinalIgnoreCase);
@@ -183,38 +193,40 @@ public sealed class UiDiagnosticScenarioTests
         using var operations = new HostOperationScope(); var menus = new Menus();
         menus.State = menus.State with { WorldLoaded = true };
         var scenario = Process(new SourceSetupScenario(Definition, menus, new Player(), new Profile(), new RepairFixture(menus), _ => { }));
-        int? exit = null;
-        DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock()), (_, code) => exit = code, _ => Assert.Fail("Unexpected repair failure"));
+        var quit = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock { Async = true }), (_, code) => quit.TrySetResult(code),
+            message => quit.TrySetException(new InvalidOperationException("Unexpected repair failure: " + message)));
+        Assert.Equal(2, await quit.Task.WaitAsync(TimeSpan.FromSeconds(10)));
         await operations.StopAsync();
-        Assert.Equal(2, exit);
     }
 
     [Fact]
     public async Task CleanupFailureCannotCommitAnExpectedRepairExit()
     {
         using var operations = new HostOperationScope();
-        var scenario = Process(new Scenario(run =>
+        var scenario = Process(new Scenario(async run =>
         {
+            await run.WaitAsync(DiagnosticFramePhase.Process);
             run.Own(new FailingCleanup());
             Assert.True(ApplicationQuitDeferral.TryHandle("trilogy-setup-required", 2));
-            return Task.CompletedTask;
         }));
-        int? exit = null;
-        DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock()), (_, code) => exit = code, _ => { });
+        var quit = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock { Async = true }), (_, code) => quit.TrySetResult(code), _ => { });
+        Assert.Equal(1, await quit.Task.WaitAsync(TimeSpan.FromSeconds(10)));
         await operations.StopAsync();
-        Assert.Equal(1, exit);
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task SourceRepairRequiresOrdinaryAccessAndAPersistentProfile(bool diagnosticAccess)
+    [InlineData(true, true, "requires a loaded ordinary world")]
+    [InlineData(false, false, "requires --profile")]
+    public async Task SourceRepairRequiresOrdinaryAccessAndAPersistentProfile(bool diagnosticAccess, bool hasExplicitPath, string detail)
     {
         var menus = new Menus(); menus.State = menus.State with { WorldLoaded = true, DiagnosticSourceAccess = diagnosticAccess };
         var repair = new RepairFixture(menus);
         var result = await new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(
-            new SourceSetupScenario(Definition, menus, new Player(), new Profile { HasExplicitPath = diagnosticAccess }, repair, _ => { }), true, CancellationToken.None);
+            new SourceSetupScenario(Definition, menus, new Player(), new Profile { HasExplicitPath = hasExplicitPath }, repair, _ => { }), true, CancellationToken.None);
         Assert.Equal(DiagnosticRunStatus.Failed, result.Status);
+        Assert.Contains(detail, result.Detail, StringComparison.Ordinal);
         Assert.Equal(0, repair.Detachments);
     }
 
@@ -222,7 +234,9 @@ public sealed class UiDiagnosticScenarioTests
     public void UiRegistryRetainsAllThreeAliasesAndTwoNestedChecks()
     {
         Assert.Equal(5, UiDiagnosticHarness.Registry.Registrations.Length);
-        foreach (var registration in UiDiagnosticHarness.Registry.Registrations.Where(entry => entry.Aliases.Length > 0))
+        var aliased = UiDiagnosticHarness.Registry.Registrations.Where(entry => entry.Aliases.Length > 0).ToArray();
+        Assert.Equal(3, aliased.Length);
+        foreach (var registration in aliased)
         {
             var tokens = registration.Id == "ordinary-ui-smoke" ? new[] { registration.Aliases[0], "fresh" } : [registration.Aliases[0]];
             Assert.True(registration.Requested(CommandLineArgs.Parse(tokens)));
@@ -230,5 +244,26 @@ public sealed class UiDiagnosticScenarioTests
         }
         foreach (string file in new[] { "OrdinaryUiSmoke", "SourceSetupCheck", "Rac1StartupVisibilitySmoke", "Rac1VeldinRetailPauseSmoke", "Rac1WorldRetailReviewSmoke" })
             Assert.False(File.Exists(Path.Combine(RepoPaths.Root, "game", "diagnostics", "OBPGame." + file + ".cs")));
+    }
+
+    [Fact]
+    public async Task AnUnsuccessfulCloseCannotReplaceTheOriginalSectionFailure()
+    {
+        var menus = new Menus { CloseSucceeded = false, FailPauseSection = true };
+        var result = await new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(
+            new OrdinaryUiScenario(Definition, "fresh", menus, new Player(), new Profile(), new RepairFixture(menus), _ => { }), true, CancellationToken.None);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status);
+        Assert.Contains("original pause section failure", result.Detail, StringComparison.Ordinal);
+        Assert.False(menus.PauseOpen);
+    }
+
+    [Fact]
+    public async Task DispatchDoesNotStartOrRequestAnotherQuitAfterHostStop()
+    {
+        using var operations = new HostOperationScope(); await operations.StopAsync();
+        bool entered = false, quit = false;
+        var scenario = Process(new Scenario(_ => { entered = true; return Task.CompletedTask; }));
+        DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock()), (_, _) => quit = true, _ => Assert.Fail("Stopped work logged a failure"));
+        Assert.False(entered); Assert.False(quit); Assert.Equal(0, operations.PendingCount);
     }
 }

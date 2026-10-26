@@ -52,7 +52,7 @@ public static class DiagnosticScenarioDispatch
     public static void Start(IReadOnlyList<IDiagnosticScenario> scenarios, HostOperationScope operations,
         DiagnosticScenarioRunner runner, Action<string, int> quit, Action<string> logError)
     {
-        if (scenarios.Count == 0) return;
+        if (scenarios.Count == 0 || operations.Stopping) return;
         operations.Start("diagnostic-scenarios", async token =>
         {
             using var batch = CancellationTokenSource.CreateLinkedTokenSource(token);
