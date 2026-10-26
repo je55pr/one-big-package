@@ -17,7 +17,9 @@ public sealed class SourceVerificationOperationTests
         using var release = new ManualResetEventSlim();
         jobs.Start("verify", token => old.RunAsync((progress, _) =>
         {
-            progress.Report(.5); entered.SetResult(); release.Wait(); return "old attachment verified";
+            progress.Report(.5); entered.SetResult();
+            release.Wait(CancellationToken.None); // Deliberately finish late, like synchronous IO that cannot be interrupted.
+            return "old attachment verified";
         }, token), old.Retirement);
         await entered.Task;
         old.Dispose();
