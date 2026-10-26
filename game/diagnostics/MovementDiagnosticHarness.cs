@@ -21,6 +21,8 @@ internal sealed class MovementDiagnosticHarness(MovementScenarioPorts ports, IDi
     IDiagnosticEnvironmentalDeath environment, IDiagnosticControllerEquipment equipment, ObpDestination? destination,
     ImmutableArray<DiagnosticSourceRequirement> authorities, DiagnosticScenarioRunner runner, HostOperationScope operations, string? movementCase)
 {
+    internal MovementScenarioPorts Ports => ports;
+    internal IDiagnosticControllerEquipment Equipment => equipment;
     internal IDiagnosticScenario CreateMovement(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
         new MovementDiagnosticScenario(definition, ports, RunSelectedAsync),
         new("movement-smoke-pass", 0), new("movement-smoke-fail", 1));

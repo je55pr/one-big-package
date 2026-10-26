@@ -2769,6 +2769,20 @@
       "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
       "ExpiresWith": "#345",
       "Hash": "0a8925420a1dc2961a0140ccb3573ef32f95114d74a0c6ed0bb23c90272dc88e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "ff03c22381c34828ab0451eb288f0152ec3394e86f98143df6ef46cc9417f48d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
+      "Owner": "#340",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "ExpiresWith": "#359",
+      "Hash": "bf7eb16d1f36981f6ed6293bc697372ac5a1fae153f0ea6e6559e972c6076463"
     }
   ],
   "RetiredMembers": [
@@ -2864,7 +2878,22 @@
     "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:RequireRac1TraversalContactSmokeAsync(:PlayerHost):System . Threading . Tasks . Task:async,private",
     "game/diagnostics/OBPGame.Rac1TraversalContactSmoke.cs::OBPGame::method:SetSyntheticNativeHeading(:PlayerHost,:double,:double):void:private,static",
     "game/diagnostics/ControllerSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal"
+    "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:CaptureRac1EnemiesAsync(:string,:Vector3):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:EnemySmokeDistanceToRoute(:IReadOnlyList < System . Numerics . Vector3 >,:System . Numerics . Vector3):float:private,static",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:EnemySmokeGroundSeparation(:Rac1HostedEnemy):float ?:private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:RunRac1EnemySmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1EnemySmoke.cs::OBPGame::method:RunRac1ToadGroundingSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisBirdbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisBirdbotSmoke.cs::OBPGame::method:RunRac1NovalisBirdbotSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisPeckbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisPeckbotSmoke.cs::OBPGame::method:RunRac1NovalisPeckbotSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:Rac1AridiaSmokeWaitNativeFramesAsync(:Func < bool >,:int,:string,:Func < string > ?):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:RunRac1AridiaConstructorbotSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:VerifyAridiaConstructorbotEdgeSupportAsync(:Rac1HostedEnemy):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1AridiaConstructorbotSmoke.cs::OBPGame::method:VerifyAridiaSharkTwoCycleAuthoredHome():void:private"
   ],
   "RetiredAccess": []
 }

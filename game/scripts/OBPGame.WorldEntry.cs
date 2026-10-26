@@ -60,8 +60,10 @@ public partial class OBPGame
                     new WorldSmokeHarness.Entrypoints(RunRac1VeldinPlaySmokeAsync, RunRac1MovementContactSmokeAsync,
                         RunRac1CombatContractSmokeAsync, RunRac1CampaignSmokeAsync, definition => CreateMovementDiagnosticHarness().CreateMovement(definition),
                         RunRac1CrateSmokeAsync, RunRac1PlacedBoltSmokeAsync, RunRac1WrenchSmokeAsync,
-                        RunRac1EnemySmokeAsync, RunMovementStateSmokeAsync, RunRac1BombGloveSmokeAsync,
-                        definition => CreateMovementDiagnosticHarness().CreateSwim(definition), RunRac1NovalisPeckbotSmokeAsync, RunRac1NovalisBirdbotSmokeAsync,
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), RunMovementStateSmokeAsync, RunRac1BombGloveSmokeAsync,
+                        definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
+                        definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
                         RunRac1NovalisMusicSmokeAsync, RunRac1WeaponsSmokeAsync, definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         RunRac1MetropolisTaxiSmokeAsync, RunRac1MissionPlaySmokeAsync, RunRac1NovalisRouteSmokeAsync,
                         RunRac1FrogSmokeAsync), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);

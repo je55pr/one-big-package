@@ -865,6 +865,42 @@ public partial class OBPGame : Node3D
     private static double WrapAngle(double value) => DiagnosticMovementMath.WrapAngle(value);
     private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
 
+    private Rac1EncounterDiagnosticHarness CreateRac1EncounterDiagnosticHarness()
+    {
+        var actors = new GodotRac1EnemyDiagnosticFixture(new(() => [.. _rac1Enemies.Values],
+            () => _rac1Class1440, () => _rac1Peckbots, () => _rac1Birdbots, () => _rac1Hostiles,
+            () => new(_rac1Enemies.Count, _rac1Class1440?.RegisteredCount ?? 0, _rac1Peckbots?.RegisteredCount ?? 0,
+                _rac1Birdbots?.RegisteredCount ?? 0, _rac1BirdbotShotCount, _rac1Nanotech.Probe().Nanotech,
+                _worldSwitches, _rac1CombatRetry?.Visible == true), () => _player, node => TryStrikeRac1Hostile(node),
+            TryGroundRac1Enemy, EnemyForward, EnemySocket, EnemyRayTouchesPlayer), new GodotDiagnosticWorldObservations(WorldScenes));
+        var movement = CreateMovementDiagnosticHarness();
+        var loot = new GodotRac1EncounterLoot(() => new(_rac1BoltWallet.Balance, _rac1BoltPickups.OutstandingCount,
+            [.. _rac1PickupMotion.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
+                pair.Value.Position, pair.Value.NativeState, pair.Value.CollectionStep))],
+            [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)]));
+        return new(movement.Ports, actors, actors, loot,
+            new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), ApplyRac1EnemyPlayerDamage, () => _rac1CombatRetry),
+            new GodotRac1EnemyDiagnosticCapture(this, () => _ui, () => _player, new GodotDiagnosticFrameClock(this)),
+            new GodotRac1WrenchApproachFixture(() => _player, _rac1Wrench.ResolveFirstSwingFacing, Rac1WrenchHostRootHeight),
+            movement.Equipment, CreateRac1AridiaDiagnosticFixture(actors));
+    }
+
+    private GodotRac1AridiaDiagnosticFixture CreateRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors)
+    {
+        return new(actors, new(() => _rac1MobyRuntime, () => _rac1AridiaEnemies, session => _rac1AridiaEnemies = session,
+            () => _rac1AridiaClipVolumes.Count, index => _rac1AridiaClipVolumes[index].Centre,
+            (index, point) => _rac1AridiaClipVolumes[index].Contains(point),
+            id => _rac1ConstructorbotNativeWaypoints.TryGetValue(id, out var point) ? point : null,
+            id => _rac1ConstructorbotRoamingTargets.TryGetValue(id, out var point) ? point : null,
+            id => _rac1ConstructorbotRoamExitFlags.TryGetValue(id, out var flags) ? flags : null,
+            id => _rac1ConstructorbotRoamingTargets.Remove(id),
+            id => _rac1ConstructorbotNativeLiftCounts.GetValueOrDefault(id),
+            id => _rac1ConstructorbotSweepProbeCounts.GetValueOrDefault(id),
+            id => _rac1ConstructorbotStateThreeVerticalSteps.GetValueOrDefault(id), AridiaHostUpdateRadius,
+            ProbeRac1ConstructorbotStateThreeFloor, ProbeRac1AridiaWalkerGroundLift, ProbeRac1AridiaWalkerSupport,
+            ProbeRac1AridiaWalkerSpherePushouts, MoveRac1AridiaWalkerContact, SelectRac1EnemySequence, ActivateNearbyRac1AridiaShark));
+    }
+
     private UiDiagnosticHarness CreateUiDiagnosticHarness()
     {
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
