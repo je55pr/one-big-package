@@ -208,7 +208,7 @@ public partial class OBPGame
             _rac1BombOcclusionExclusions = [player.GetRid()];
             foreach (var body in _rac1CrateBodies.Values.Concat<CollisionObject3D>(_rac1Enemies.Values.Select(enemy => enemy.Body)))
                 if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
-            foreach (var body in _actorContactBodies.Values)
+            foreach (var body in _actorWorld.Bodies.Values)
                 if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
         }
         return _rac1BombOcclusionExclusions;

@@ -11,7 +11,7 @@ public partial class OBPGame
     private IReadOnlyList<PlaytestAdapter> CaptureReplayAdapters()
     {
         var adapters = new SortedSet<string>(StringComparer.Ordinal) { "obp/shared-player/v1", "rac1/ordinary-player/v1", "obp/weapon-controllers/v1" };
-        foreach (var actor in _actorViews.Values)
+        foreach (var actor in _actorWorld.Views.Values)
         {
             string adapter = actor.Registration.AdapterId;
             var target = actor.Registration.Instance.Target;
@@ -26,9 +26,9 @@ public partial class OBPGame
 
     private bool CaptureWorldReady()
     {
-        if (_fusionPreparation is not null || _actorPlacementTasks.Values.Any(task => !task.IsCompleted)) return false;
-        if (_actorProblems.Count > 0) throw new InvalidOperationException("Capture requires admitted actor contexts: " + string.Join("; ", _actorProblems.Values));
-        if (_actorLab is not null && _placedActors.Count != _actorPlacements.Count) return false;
+        if (_fusionPreparation is not null || _actorWorld.Preparation.Values.Any(task => !task.IsCompleted)) return false;
+        if (_actorWorld.Problems.Count > 0) throw new InvalidOperationException("Capture requires admitted actor contexts: " + string.Join("; ", _actorWorld.Problems.Values));
+        if (_actorWorld.Lab is not null && _actorWorld.Placed.Count != _actorWorld.Placements.Count) return false;
         _ = CaptureReplayAdapters();
         return _player is not null && _world is not null;
     }
@@ -71,7 +71,7 @@ public partial class OBPGame
         values.Add("obp.player", new(Text: Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(player))));
         values.Add("obp.adapters", new(Text: Digest(CaptureReplayAdapters())));
         values.Add("obp.sources", new(Text: Digest(CaptureProfileSources())));
-        foreach (var actor in _actorViews.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
+        foreach (var actor in _actorWorld.Views.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
             .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex))
         {
             var key = actor.Registration.Instance.Target; var state = actor.Observe();

@@ -27,7 +27,7 @@ public partial class OBPGame
         float length = from.DistanceTo(to);
         if (length < .000001f) yield break;
         var ray = PhysicsRayQueryParameters3D.Create(from, to); ray.Exclude = Rac1DamageableRayExclusions(); ray.HitFromInside = true;
-        foreach (var body in _actorContactBodies.Values)
+        foreach (var body in _actorWorld.Bodies.Values)
             if (IsInstanceValid(body)) ray.Exclude.Add(body.GetRid());
         var hit = _player!.GetWorld3D().DirectSpaceState.IntersectRay(ray);
         float closest = hit.TryGetValue("position", out var point) ? from.DistanceTo(point.AsVector3()) / length : float.PositiveInfinity;
@@ -42,7 +42,7 @@ public partial class OBPGame
 
     private IEnumerable<(WeaponTargetKey Key, RuntimeWorldScene.DynamicObjectNode Node, Aabb Bounds)> RegisteredCombatGeometry()
     {
-        foreach (var (key, actor) in _actorViews.OrderBy(pair => pair.Key.SourceGame)
+        foreach (var (key, actor) in _actorWorld.Views.OrderBy(pair => pair.Key.SourceGame)
             .ThenBy(pair => pair.Key.NativeClassId).ThenBy(pair => pair.Key.InstanceIndex))
         {
             if (!actor.Observe().Alive || !IsInstanceValid(actor.Node.Root)) continue;

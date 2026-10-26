@@ -97,6 +97,16 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
             throw new ArgumentException("Actor belongs to a different/retired lease or duplicates a target identity.");
     }
 
+    /// <summary>Transfer a constructed adapter to this lease, or release it if admission fails.</summary>
+    public T CreateAndRegister<T>(Func<T> construct) where T : IRegisteredActor
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(construct);
+        var actor = construct();
+        try { Register(actor); return actor; }
+        catch { actor?.Dispose(); throw; }
+    }
+
     public IRegisteredActor? Find(WeaponTargetKey key) => _disposed ? null : _actors.GetValueOrDefault(key);
 
     public void RegisterWeapon(SourceWeaponKey key, string build, Func<bool> available)
@@ -146,15 +156,21 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
     public void Retire(ActorInstanceKey key)
     {
         if (key.WorldInstanceId != WorldInstanceId || key.Generation != Generation) return;
-        if (_actors.Remove(key.Target, out var actor)) { _retiredTargets.Add(key.Target); actor.Dispose(); }
         _receipts.RemoveWhere(receipt => receipt.Target == key.Target);
+        if (_actors.Remove(key.Target, out var actor)) { _retiredTargets.Add(key.Target); actor.Dispose(); }
     }
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
-        foreach (var actor in Ordered) actor.Dispose();
+        List<Exception>? failures = null;
+        foreach (var actor in Ordered)
+        {
+            try { actor.Dispose(); }
+            catch (Exception error) { (failures ??= []).Add(error); }
+        }
         _actors.Clear(); _receipts.Clear(); _groups.Clear(); _weapons.Clear(); _retiredTargets.Clear();
+        if (failures is not null) throw new AggregateException("Actor retirement failed after all actors were released.", failures);
     }
 }

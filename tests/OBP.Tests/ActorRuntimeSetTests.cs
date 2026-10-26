@@ -24,11 +24,17 @@ public sealed class ActorRuntimeSetTests
         public double Health { get; private set; } = 3;
         public int Hits { get; private set; }
         public bool Disposed { get; private set; }
+        public bool ThrowOnDispose { get; init; }
+        public int DisposeCount { get; private set; }
         public ActorObservation Observe() => new(Vector3.Zero, Health > 0 && !Disposed, Disposed, Health, 12, null);
         public void Tick(ActorTickFacts facts) => order?.Add(SourceIdentityWire.FormatSource(key.Target.SourceGame) + "/" + key.Target.InstanceIndex + "/" + facts.Tick);
         public ActorHitResult Apply(WeaponDamageIntent damage)
         { Hits++; Health -= damage.SourceDamage; return new(true, Health <= 0); }
-        public void Dispose() => Disposed = true;
+        public void Dispose()
+        {
+            Disposed = true; DisposeCount++;
+            if (ThrowOnDispose) throw new IOException("retirement fixture");
+        }
     }
 
     [Fact]
@@ -99,6 +105,35 @@ public sealed class ActorRuntimeSetTests
         set.RegisterWeapon(new(ObpSourceGame.Rac1, 10), "r1-build", () => false);
         Assert.False(set.Apply(key, new(new(new(ObpSourceGame.Rac1, 10), 1, 1), key.Target, 1, 0, "hit")).Applied);
         Assert.Throws<ArgumentException>(() => set.Register(new Actor(key with { Generation = 8 })));
+    }
+
+    [Fact]
+    public void FailedAdmissionDisposesOnlyTheUnregisteredConstruction()
+    {
+        using var set = Create(); var existing = new Actor(set.Allocate(ObpSourceGame.Rac2, 2827));
+        set.Register(existing);
+        var duplicate = new Actor(existing.Registration.Instance);
+        Assert.Throws<ArgumentException>(() => set.CreateAndRegister(() => duplicate));
+        Assert.Equal(1, duplicate.DisposeCount); Assert.False(existing.Disposed);
+        Assert.Equal(1, set.Count);
+        Assert.Throws<IOException>(() => set.CreateAndRegister<Actor>(() => throw new IOException("construction fixture")));
+        Assert.Equal(1, set.Count);
+    }
+
+    [Fact]
+    public void OneBrokenRetirementCannotLeakOtherActorsOrUpdateGroups()
+    {
+        var set = Create(); int ticks = 0;
+        set.RegisterUpdateGroup("rac1/test", _ => ticks++);
+        var broken = new Actor(set.Allocate(ObpSourceGame.Rac1, 749)) { ThrowOnDispose = true };
+        var other = new Actor(set.Allocate(ObpSourceGame.Rac2, 2827));
+        set.Register(broken); set.Register(other); set.Step(Vector3.Zero, true);
+        Assert.Throws<AggregateException>(set.Dispose);
+        Assert.Equal(1, broken.DisposeCount); Assert.Equal(1, other.DisposeCount); Assert.Equal(0, set.Count);
+        set.Dispose(); Assert.Equal(1, broken.DisposeCount); Assert.Equal(1, other.DisposeCount);
+        Assert.Throws<ObjectDisposedException>(() => set.Step(Vector3.Zero, true)); Assert.Equal(1, ticks);
+        using var next = Create(); next.RegisterUpdateGroup("rac1/test", _ => ticks++);
+        next.Step(Vector3.Zero, true); Assert.Equal(2, ticks);
     }
 
     [Fact]
