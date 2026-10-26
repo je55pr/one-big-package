@@ -38,6 +38,10 @@ public partial class OBPGame
                 $"sector {_rac1Music!.Tracks[3].Sector}, decoded {_rac1MusicDecoded.Count} clips");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-music-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[novalis-music-smoke] FAIL {ex}");

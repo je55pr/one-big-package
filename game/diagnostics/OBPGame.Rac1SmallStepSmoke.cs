@@ -85,6 +85,7 @@ public partial class OBPGame
         }
         finally
         {
+            using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
             ClearMovementSmokeInput();
             fixture.QueueFree();
             player.InitialGroundSnapUpwardReach = savedSnapReach;

@@ -254,6 +254,10 @@ public partial class OBPGame
             GD.Print("[novalis-swim-smoke] oxygen exhaustion, sequence95, completed death event PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-swim-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             foreach (string sample in middleTrace)

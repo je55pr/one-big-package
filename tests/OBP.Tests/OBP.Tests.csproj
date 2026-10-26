@@ -28,6 +28,11 @@
     <Compile Include="../../game/diagnostics/DiagnosticInputActions.cs" Link="Diagnostics/DiagnosticInputActions.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticScenarioRunner.cs" Link="Diagnostics/DiagnosticScenarioRunner.cs" />
     <Compile Include="../../game/diagnostics/SourceFreeStartupScenario.cs" Link="Diagnostics/SourceFreeStartupScenario.cs" />
+    <Compile Include="../../game/diagnostics/AcceptanceEvidence.cs" Link="Diagnostics/AcceptanceEvidence.cs" />
+    <Compile Include="../../game/diagnostics/DiagnosticScenarioRegistry.cs" Link="Diagnostics/DiagnosticScenarioRegistry.cs" />
+    <Compile Include="../../game/diagnostics/LegacyDiagnosticScenario.cs" Link="Diagnostics/LegacyDiagnosticScenario.cs" />
+    <Compile Include="../../game/diagnostics/ExistingDiagnosticWorld.cs" Link="Diagnostics/ExistingDiagnosticWorld.cs" />
+    <Compile Include="../../game/diagnostics/WorldSmokeHarness.cs" Link="Diagnostics/WorldSmokeHarness.cs" />
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />

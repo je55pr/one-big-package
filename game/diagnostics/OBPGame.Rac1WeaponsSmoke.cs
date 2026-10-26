@@ -133,6 +133,10 @@ public partial class OBPGame
             await RunRac1ArsenalSmokeAsync();
             ApplicationLifecycle.RequestQuit(this, "rac1-weapons-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[weapons-smoke] FAIL: {ex}"); ApplicationLifecycle.RequestQuit(this, "rac1-weapons-smoke-fail", 2);

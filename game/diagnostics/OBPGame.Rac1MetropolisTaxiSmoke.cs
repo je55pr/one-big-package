@@ -318,6 +318,10 @@ public partial class OBPGame
                 "ordinary world input, physical motion and post-ride control recovery");
             ApplicationLifecycle.RequestQuit(this, "rac1-metropolis-taxi-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[rac1-metropolis-taxi-smoke] FAIL: {ex}");

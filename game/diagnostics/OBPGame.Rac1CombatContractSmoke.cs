@@ -43,7 +43,7 @@ public partial class OBPGame
                 pair => pair.Key,
                 pair => pair.Value.Root.GlobalPosition);
             for (int frame = 0; frame < 30; frame++)
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
 
             foreach (var pair in _rac1HostileNodes)
             {
@@ -162,7 +162,7 @@ public partial class OBPGame
                     _player.GlobalPosition = pickup.Value.GlobalPosition;
                     _player.Velocity = Vector3.Zero;
                 }
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
             await Rac1SmokeWaitAsync(
                 () => _rac1BoltCrates.CollectedBolts > 0,
@@ -328,6 +328,10 @@ public partial class OBPGame
             GD.Print("[rac1-combat-contract] PASS: recovered Veldin population contracts survived LEVEL0/LEVEL18/unload-reload");
             ApplicationLifecycle.RequestQuit(this, "rac1-combat-contract-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[rac1-combat-contract] FAIL: {ex.Message}\n{ex.StackTrace}");
@@ -460,7 +464,7 @@ public partial class OBPGame
             if (condition()) return;
             if (cancellationToken.CanBeCanceled)
                 await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame, cancellationToken);
-            else await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            else await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
 
         throw new TimeoutException($"Timed out waiting for RAC1 smoke phase: {label}.");
@@ -623,7 +627,7 @@ public partial class OBPGame
                     Rac1SmokeDriveToward(hostile.Root.GlobalPosition, distance < 4 ? .35f : 1f);
                 }
 
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
         }
         finally
@@ -736,7 +740,7 @@ public partial class OBPGame
                 SetAnalogueSmokeInput(
                     inputScale * Math.Clamp(desired.Dot(controlRight), -1f, 1f),
                     inputScale * Math.Clamp(desired.Dot(controlForward), -1f, 1f));
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
         }
         finally

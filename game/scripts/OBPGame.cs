@@ -7,6 +7,7 @@ using OBP.RAC1.Progression;
 using OBP.RAC2;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
+using OBP.Game.Diagnostics;
 
 namespace OBP.Game;
 
@@ -41,6 +42,7 @@ public partial class OBPGame : Node3D
     // capture / smoke bookkeeping
     private string _sceneKind = "smoke";
     private readonly HostOperationScope _hostOperations = new();
+    private readonly AcceptanceEvidence _acceptanceEvidence = new();
 
     // the live world
     private readonly WorldHost _idleWorldHost = new();
@@ -143,6 +145,25 @@ public partial class OBPGame : Node3D
             _hostOperations.Start("capture", token => RunCaptureAsync(frame, token), lifetime: CancellationToken.None);
         }
     }
+
+    // Temporary composition bridges for the retained #338/#344 scenarios.
+    private void AcceptanceAssert(bool passed, string id, string detail) =>
+        _acceptanceEvidence.Assert(passed, id, _currentDestinationId, detail);
+
+    private void WriteAcceptanceEvidence(string phase, Exception? failure = null)
+    {
+        if (_args.AcceptanceOut is not { } path) return;
+        _acceptanceEvidence.Write(path, phase, new(
+            DisplayServer.GetName() == "headless",
+            [.. _sources.Attached.Values.Select(source => source.Identity)],
+            _playerSession?.Capture().Configuration,
+            [.. ReadPlayerEquipment().Select(entry => new AcceptanceEquipment(entry.Definition.Id,
+                entry.Definition.SourceGame, entry.Definition.Implementation, entry.Usability, entry.Reason))]), failure);
+    }
+
+    private void FinishAcceptanceFailure(string phase, Exception error, string reason) =>
+        AcceptanceEvidence.FinishFailure(error, reason, () => WriteAcceptanceEvidence(phase, error),
+            message => GD.PrintErr(message), (message, code) => ApplicationLifecycle.RequestQuit(this, message, code));
 
     public override void _PhysicsProcess(double delta)
     {

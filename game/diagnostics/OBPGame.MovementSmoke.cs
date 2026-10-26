@@ -240,6 +240,10 @@ public partial class OBPGame
                 $"maxSlideContacts={player.Rac1MaxObservedSlideCollisions}/{player.MaxSlides}");
             ApplicationLifecycle.RequestQuit(this, "movement-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[movement-smoke] FAIL {destination.DestinationId}: {ex.Message}");
@@ -297,7 +301,7 @@ public partial class OBPGame
                     for (int update = 0; update < 5; update++)
                     {
                         await PhysicsFramesAsync(1);
-                        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                         var controller = _playerAvatarAnimationController as Rac1PlayerAnimationPresentationController;
                         Require(controller?.OrdinaryLocomotionSample is not null &&
                             controller.Current.SampledPose is not null && PlayerAvatarPresentationIsSynchronized(),
@@ -358,7 +362,7 @@ public partial class OBPGame
     }
 
     private Task WaitForGroundedAsync(PlayerHost player, int maxFrames) =>
-        WaitForGroundedCancelableAsync(player, maxFrames, CancellationToken.None);
+        WaitForGroundedCancelableAsync(player, maxFrames, Diagnostics.LegacyDiagnosticCancellation.Current);
 
     private async Task WaitForGroundedCancelableAsync(PlayerHost player, int maxFrames, CancellationToken cancellationToken)
     {
@@ -371,7 +375,7 @@ public partial class OBPGame
             // the floor bit can still describe the pre-teleport collision.
             if (cancellationToken.CanBeCanceled)
                 await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame, cancellationToken);
-            else await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            else await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             supportedUpdates = player.IsOnFloor() &&
                 player.Rac1MovementPhase == Rac1RatchetMovementPhase.Grounded
                     ? supportedUpdates + 1 : 0;
@@ -406,7 +410,7 @@ public partial class OBPGame
     {
         for (int frame = 0; frame < maxFrames; frame++)
         {
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             if (CurrentPlayerAvatarSourceSequence() == expectedSequence &&
                 PlayerAvatarPresentationIsSynchronized())
             {
@@ -434,7 +438,7 @@ public partial class OBPGame
         bool wrapped = false;
         for (int frame = 0; frame < frames; frame++)
         {
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             int currentFrame = _playerAvatarView?.CurrentFrame ?? -1;
             Require(
                 currentFrame >= 0 &&
@@ -460,14 +464,14 @@ public partial class OBPGame
         GD.Print("[movement-smoke] steady walking sequence 3 advanced and wrapped");
     }
 
-    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, CancellationToken.None);
+    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, Diagnostics.LegacyDiagnosticCancellation.Current);
 
     private async Task PhysicsFramesCancelableAsync(int count, CancellationToken cancellationToken)
     {
         for (int i = 0; i < count; i++)
             if (cancellationToken.CanBeCanceled)
                 await GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.PhysicsFrame, cancellationToken);
-            else await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            else await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.PhysicsFrame);
     }
     private async System.Threading.Tasks.Task TapPhysicalKeyAsync(Key key)
     {
@@ -491,7 +495,7 @@ public partial class OBPGame
             for (int update = 0; update < 12; update++)
             {
                 await PhysicsFramesAsync(1);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 int? sequence = CurrentPlayerAvatarSourceSequence();
                 sawStop |= sequence is 5 or 6 or 20;
                 if (strength == 1 && sawStop)
@@ -506,14 +510,14 @@ public partial class OBPGame
                 // Reverse direction while the stop blend is still active.
                 SetAnalogueSmokeInput(0, -1);
                 await PhysicsFramesAsync(3);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 Require(controller.OrdinaryLocomotionSample is not null &&
                     controller.OrdinaryStopSample is null && CurrentPlayerAvatarSourceSequence() == 3 &&
                     PlayerAvatarPresentationIsSynchronized(), "quick reverse restart did not re-enter native locomotion");
                 SetAnalogueSmokeInput(0, 0);
             }
             await PhysicsFramesAsync(100);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(CurrentPlayerAvatarSourceSequence() == 0 && PlayerAvatarPresentationIsSynchronized(),
                 "ordinary release did not settle to synchronized standing");
             if (strength < 1)
@@ -531,7 +535,7 @@ public partial class OBPGame
             await WaitForGroundedAsync(player, 180);
             SetAnalogueSmokeInput(0f, 1f);
             await PhysicsFramesAsync(48);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             float startSpeed = HorizontalSpeed(player);
             Require(startSpeed > 5.5f && player.IsOnFloor(), "run-to-crouch trial did not start at supported full speed");
             var contactMotion = player.Rac1ContactProcessedMotion;
@@ -548,7 +552,7 @@ public partial class OBPGame
             for (int tick = 1; tick <= 65; tick++)
             {
                 await PhysicsFramesAsync(1);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 float speed = HorizontalSpeed(player);
                 Require(player.Rac1LocomotionState is Rac1RatchetLocomotionState.Crouched or Rac1RatchetLocomotionState.CrouchTurning,
                     $"run-to-crouch lost its state at tick {tick}; phase={player.Rac1MovementPhase}; floor={player.IsOnFloor()}; speed={speed:F4}");
@@ -583,7 +587,7 @@ public partial class OBPGame
         await WaitForGroundedAsync(player, 180);
         SetAnalogueSmokeInput(0f, 1f);
         await PhysicsFramesAsync(48);
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         Vector3 direction = new Vector3(player.Velocity.X, 0, player.Velocity.Z).Normalized();
         var wall = new StaticBody3D { Name = "CrouchCarrySmokeWall" };
         wall.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(6, 5, 0.4f) } });
@@ -593,7 +597,7 @@ public partial class OBPGame
         try
         {
             await PhysicsFramesAsync(30);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             var motion = player.Rac1ContactProcessedMotion;
             Require(motion.HasValue && Math.Sqrt(motion.Value.X * motion.Value.X + motion.Value.Y * motion.Value.Y) < 0.02,
                 $"blocked run did not produce bounded contact carry: {motion}");
@@ -601,10 +605,10 @@ public partial class OBPGame
             await PhysicsFramesAsync(2);
             wall.QueueFree();
             await PhysicsFramesAsync(2);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Vector3 start = player.GlobalPosition;
             await PhysicsFramesAsync(30);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             float distance = HorizontalDistance(start, player.GlobalPosition);
             Require(distance < 0.3f, $"crouch retained phantom run momentum after wall removal: {distance:F4}");
             GD.Print($"[movement-smoke] synthetic-wall crouch release distance={distance:F4}");

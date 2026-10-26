@@ -33,7 +33,7 @@ public partial class OBPGame
                 owner.Restore(initial);
                 Require(id == "obp:fusion-lab" ? EnterFusionLab() : OnDestinationChosen(TrilogyWorldProviders.Resolve(id)!), "entry failed " + id);
                 await PhysicsFramesAsync(3);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 if (retiredActor is not null)
                     Require(ApplyPlayerSourceDamage(retiredActor, OBP.RAC1.Rac1Authority.Primary.BuildId,
                         PlayerSessionNativeState.Rac1DamageAdapter, PlayerSessionNativeState.Rac1DamageDescriptor, 999999, 1, 0).Status == PlayerIntakeStatus.StaleLease,
@@ -85,6 +85,10 @@ public partial class OBPGame
                 System.IO.File.WriteAllText(output, JsonSerializer.Serialize(new { Version = 1, Baselines = baselines }));
             GD.Print("[player-capabilities-smoke] PASS: world-independent profiles, native clock/poses, camera, input masking, source recovery, catalog and shared health");
             ApplicationLifecycle.RequestQuit(this, "player-capabilities-smoke-pass", 0);
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception error)
         {
@@ -158,8 +162,8 @@ public partial class OBPGame
         player.PlaytestInputFilter = _ => default;
         Require(TryOpenPauseMenu(), "pause unavailable");
         long clock = _playerPhysicsClock!.Tick;
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         Require(_playerPhysicsClock.Tick == clock, "pause advanced native player clock");
         ClosePauseMenu();
     }

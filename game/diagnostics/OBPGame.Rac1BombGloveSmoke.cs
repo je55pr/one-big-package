@@ -157,6 +157,10 @@ public partial class OBPGame
             GD.Print("[bomb-glove-smoke] PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-bomb-glove-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception exception)
         {
             GD.PrintErr($"[bomb-glove-smoke] FAIL: {exception.Message}\n{exception.StackTrace}");
@@ -221,7 +225,7 @@ public partial class OBPGame
         playerHud.Visible = false;
         camera.GlobalPosition = focus + (close ? new Vector3(-1.8f, .7f, 2.1f) : new Vector3(4, 2.5f, 5));
         camera.LookAt(focus);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         GetViewport().GetTexture().GetImage().SavePng(Path.Combine(directory, name + ".png"));
         _ui.Visible = uiVisible;
         playerHud.Visible = playerHudVisible;

@@ -34,6 +34,10 @@ public partial class OBPGame
                 $"sequence={next.Sequence} projectilesFired={_rac1BirdbotShotCount} HP={_rac1Nanotech.Probe().Nanotech}");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-birdbot-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[novalis-birdbot-smoke] FAIL {ex}");

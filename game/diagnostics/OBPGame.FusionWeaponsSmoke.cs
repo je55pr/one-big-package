@@ -15,7 +15,7 @@ public partial class OBPGame
         try
         {
             for (int i = 0; i < 360 && _playtest?.WaitingForEntry == true; i++)
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(_fusion is not null && _fusionAssets?.Problems.Count == 0, "fusion recording requires all three original sources");
             await WaitForGroundedAsync(_player!, 180);
             await PhysicsFramesAsync(20);
@@ -224,7 +224,7 @@ public partial class OBPGame
             Require(JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()) == normalInventory, "normal inventory was not restored");
             Require(ReferenceEquals(_fusion!.Rac1Inventory, _rac1CampaignSession.Weapons), "default weapons replaced the campaign inventory");
             FusionKey(Key.Q, true);
-            for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int i = 0; i < 3; i++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(_quickSelect!.Entries.Any(e => e.Weapon == FusionWeaponSession.Lancer) &&
                 _quickSelect.Entries.Any(e => e.Weapon == FusionWeaponSession.ShockCannon), "default Quick Select omitted the two foreign weapons");
             FusionKey(Key.Q, false);
@@ -273,6 +273,10 @@ public partial class OBPGame
             GD.Print("[fusion-smoke] PASS: source models/audio/beam, ordinary selector, staged three-weapon damage, occlusion, reset and normal re-entry");
             ApplicationLifecycle.RequestQuit(this, "fusion-smoke-pass");
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception error)
         {
             GD.PrintErr("[fusion-smoke] FAIL: " + error);
@@ -289,19 +293,19 @@ public partial class OBPGame
     {
         var timeout = System.Diagnostics.Stopwatch.StartNew();
         while (_fusionPreparation is not null && timeout.Elapsed < TimeSpan.FromMinutes(4))
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         Require(_fusionAssets is not null, "shared preparation did not finish: " + _fusionAssetFailure);
     }
 
     private async Task SelectFusionByInputAsync(int slot)
     {
         FusionKey(Key.Q, true);
-        for (int i = 0; i < 3; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        for (int i = 0; i < 3; i++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         Require(QuickSelectOpen && _quickSelect!.Entries.Count == 3, "fusion Quick Select did not expose three entries");
         float angle = slot * MathF.PI / 4;
         Input.ParseInputEvent(new InputEventJoypadMotion { Axis = JoyAxis.LeftX, AxisValue = MathF.Sin(angle) });
         Input.ParseInputEvent(new InputEventJoypadMotion { Axis = JoyAxis.LeftY, AxisValue = -MathF.Cos(angle) });
-        for (int i = 0; i < 4; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        for (int i = 0; i < 4; i++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         Require(_quickSelect!.SelectedWeapon == FusionWeaponSession.Weapons[slot], "wheel direction selected the wrong source key");
         await CaptureFusionAsync("selector-" + slot);
         FusionKey(Key.Q, false);
@@ -464,7 +468,7 @@ public partial class OBPGame
         string? directory = System.Environment.GetEnvironmentVariable("OBP_FUSION_CAPTURE_DIR");
         if (string.IsNullOrWhiteSpace(directory) || DisplayServer.GetName() == "headless") return;
         Directory.CreateDirectory(directory);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         using var image = GetViewport().GetTexture().GetImage();
         Require(image.SavePng(Path.Combine(directory, name + ".png")) == Error.Ok, "fusion capture failed");
         File.WriteAllText(Path.Combine(directory, name + ".pose.json"), JsonSerializer.Serialize(new

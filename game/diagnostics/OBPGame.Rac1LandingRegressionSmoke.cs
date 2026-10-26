@@ -54,7 +54,7 @@ public partial class OBPGame
             SetSyntheticNativeHeading(player, Math.PI / 2d);
             Input.ActionPress(RawGamepadInput.Jump);
             await PhysicsFramesAsync(3);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(player.Rac1TraversalAction == 0x0b && CurrentPlayerAvatarSourceSequence() is 28 or 29 or 31,
                 "synthetic directional crouch/Cross did not enter the flip family");
             ClearMovementSmokeInput();
@@ -84,7 +84,7 @@ public partial class OBPGame
             for (int tick = 0; tick < 90; tick++)
             {
                 await PhysicsFramesAsync(1);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 if (CurrentPlayerAvatarSourceSequence() == 0 &&
                     (_playerAvatarAnimationController as Rac1PlayerAnimationPresentationController)?.CrouchSample is null)
                     break;
@@ -109,7 +109,7 @@ public partial class OBPGame
                 }
                 Input.ActionPress(RawGamepadInput.Jump);
                 await PhysicsFramesAsync(2);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 int action = pack == 2 ? 0x0a : 0x10;
                 int sequence = pack == 2 ? 18 : 38;
                 Require(player.Rac1TraversalAction == action && CurrentPlayerAvatarSourceSequence() == sequence,
@@ -161,6 +161,7 @@ public partial class OBPGame
         }
         finally
         {
+            using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
             ClearMovementSmokeInput();
             if (GodotObject.IsInstanceValid(fixture) && !fixture.IsQueuedForDeletion())
                 fixture.QueueFree();
@@ -203,7 +204,7 @@ public partial class OBPGame
             for (int tick = 0; tick < 360; tick++)
             {
                 await PhysicsFramesAsync(1);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 sawFlight |= player.GlobalPosition.Y > fixture.GlobalPosition.Y + .15f;
                 if (touchdown is null && sawFlight && player.IsOnFloor())
                 {
@@ -249,7 +250,7 @@ public partial class OBPGame
             for (int tick = 0; tick < 60; tick++)
             {
                 await PhysicsFramesAsync(1);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 Require(CurrentPlayerAvatarSourceSequence() == 0 && HasNativeStandingOwner(controller) &&
                     controller.Current.SampledPose is not null && PlayerAvatarPresentationIsSynchronized(),
                     $"synthetic {label} lost synchronized source standing after landing");

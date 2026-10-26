@@ -21,7 +21,7 @@ public partial class OBPGame
         try
         {
             for (int i = 0; i < 6; i++)
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
 
             var overlay = _pauseMenu.GetNodeOrNull<Control>("NativeProjectedRootPanels");
             var buttons = overlay?.GetChildren().OfType<Rac1RetailMenuButton>().ToArray() ?? [];
@@ -65,7 +65,7 @@ public partial class OBPGame
         }
 
         for (int i = 0; i < 3; i++)
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         if (GetTree().Paused || PauseMenuOpen)
             throw new InvalidOperationException("Real Veldin gameplay did not resume after closing retail pause.");
     }

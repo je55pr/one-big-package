@@ -157,7 +157,9 @@ public sealed class CoverageReportTests
     {
         foreach (string form in new[] { "relative", "deterministic", "source-link" })
             foreach (string path in new[] { "game/scripts/Fixture.cs", "game/diagnostics/DiagnosticContracts.cs",
-                "game/diagnostics/DiagnosticInputActions.cs", "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs" })
+                "game/diagnostics/DiagnosticInputActions.cs", "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs",
+                "game/diagnostics/AcceptanceEvidence.cs", "game/diagnostics/DiagnosticScenarioRegistry.cs", "game/diagnostics/LegacyDiagnosticScenario.cs",
+                "game/diagnostics/ExistingDiagnosticWorld.cs", "game/diagnostics/WorldSmokeHarness.cs" })
                 yield return new object[] { form, path };
     }
 

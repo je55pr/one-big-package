@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Godot;
+using OBP.Godot;
 
 namespace OBP.Game.Diagnostics;
 
@@ -27,6 +28,7 @@ public partial class SourceFreeStartupProbe : Node
                 var runner = new DiagnosticScenarioRunner(new NoSources(), new GodotDiagnosticFrameClock(this));
                 var result = await runner.RunAsync(scenario, args.TestSceneExplicit && args.TestScene == "picker", lifetime.Token);
                 if (result.Status == DiagnosticRunStatus.Passed) VerifyInputOwnership();
+                if (result.Status == DiagnosticRunStatus.Passed) await VerifyInteractiveLifetimeAsync();
                 if (!_retired) EmitSignal(SignalName.Completed, result.Status == DiagnosticRunStatus.Passed, result.Detail);
             }
             catch (Exception error)
@@ -39,6 +41,47 @@ public partial class SourceFreeStartupProbe : Node
     }
 
     public override void _ExitTree() { _retired = true; _operations.Dispose(); }
+
+    private async Task VerifyInteractiveLifetimeAsync()
+    {
+        var tree = GetTree();
+        int before = tree.GetSignalConnectionList(SceneTree.SignalName.ProcessFrame).Count;
+        var definition = new DiagnosticScenarioDefinition("ci-interactive-loop/v1", DiagnosticSourceAccess.AssetFree,
+            DiagnosticSetup.AssetFreeFixture, [], TimeSpan.FromSeconds(10), 120, FailureExitCode: 3);
+        var runner = new DiagnosticScenarioRunner(new NoSources(), new GodotDiagnosticFrameClock(this));
+        bool released = false, quit = false;
+        var entered = new TaskCompletionSource();
+        LegacyDiagnosticScenario Loop() => new(definition, async _ =>
+        {
+            entered.TrySetResult();
+            try
+            {
+                while (IsInsideTree()) await LegacyDiagnosticWait.SignalAsync(tree, SceneTree.SignalName.ProcessFrame);
+            }
+            finally { released = true; }
+        });
+        using (var owner = new HostOperationScope())
+        {
+            DiagnosticScenarioDispatch.Start([Loop()], owner, runner, (_, _) => quit = true, _ => { });
+            await entered.Task;
+            await GodotAsyncWait.SignalAsync(tree, SceneTree.SignalName.ProcessFrame, CancellationToken.None);
+            await owner.StopAsync();
+            if (!released || quit || owner.PendingCount != 0 || !IsInsideTree())
+                throw new InvalidOperationException("An interactive diagnostic did not cancel/drain before scene retirement.");
+        }
+        released = false;
+        var completed = new TaskCompletionSource<int>();
+        using (var owner = new HostOperationScope())
+        {
+            var failed = new LegacyDiagnosticScenario(definition with { Id = "ci-throw/v1" }, _ => throw new IOException("Expected CI sibling failure"));
+            DiagnosticScenarioDispatch.Start([Loop(), failed], owner, runner, (_, code) => completed.TrySetResult(code), _ => { });
+            if (await completed.Task != 3 || !released) throw new InvalidOperationException("A failed diagnostic did not cancel/drain its interactive sibling.");
+            await owner.StopAsync();
+        }
+        if (tree.GetSignalConnectionList(SceneTree.SignalName.ProcessFrame).Count != before)
+            throw new InvalidOperationException("Interactive diagnostic retirement leaked a frame subscription.");
+        GD.Print("[diagnostic-bindings-smoke] PASS: interactive host-stop and fail-fast sibling cleanup while the scene remains alive");
+    }
 
     private static void VerifyInputOwnership()
     {

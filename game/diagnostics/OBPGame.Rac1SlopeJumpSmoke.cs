@@ -95,7 +95,7 @@ public partial class OBPGame
                         Input.ActionRelease(RawGamepadInput.Jump);
                     SetSyntheticNativeHeading(player, 0d);
                     await PhysicsFramesAsync(1);
-                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                     float localX = player.GlobalPosition.X - fixture.GlobalPosition.X;
                     float supportHeight = fixture.GlobalPosition.Y + gradient * (ramp.Seam ? Math.Min(0f, localX) : localX);
                     float clearance = player.GlobalPosition.Y - supportHeight;
@@ -116,6 +116,7 @@ public partial class OBPGame
         }
         finally
         {
+            using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
             ClearMovementSmokeInput();
             if (GodotObject.IsInstanceValid(fixture) && !fixture.IsQueuedForDeletion())
                 fixture.QueueFree();

@@ -11,7 +11,7 @@ public partial class OBPGame
     {
         try
         {
-            while (_playtest!.WaitingForEntry) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            while (_playtest!.WaitingForEntry) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             var configuration = _playerSession!.Capture().Configuration;
             int visit = 0;
             foreach (string destination in new[] { "rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab", "rac1:LEVEL0" })
@@ -21,7 +21,7 @@ public partial class OBPGame
                     string before = JsonSerializer.Serialize(ProfilePlayer.Capture(_playerSession.Capture()) with { Generation = 0 });
                     Require(destination == "obp:fusion-lab" ? EnterFusionLab() : OnDestinationChosen(TrilogyWorldProviders.Resolve(destination)!), "capture world entry failed");
                     AcceptanceAssert(before == JsonSerializer.Serialize(ProfilePlayer.Capture(_playerSession.Capture()) with { Generation = 0 }), "transition-preserves-session", "player state unchanged at world commit");
-                    while (_playtest.PreparingWorld) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    while (_playtest.PreparingWorld) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 }
                 AcceptanceAssert(_playerSession.Capture().Configuration == configuration && _playerAvatarView is not null && _playerAvatar?.Identity == configuration.Avatar &&
                     _player!.ControlProfile == PlayerHostProfiles.Native && Engine.PhysicsTicksPerSecond == configuration.NativeTicksPerSecond,
@@ -40,13 +40,13 @@ public partial class OBPGame
                     AcceptanceAssert(_fusion.ShotsFired > before, "recorded-native-firing", item);
                 }
                 Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = true });
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = false });
                 await PhysicsFramesAsync(2);
                 string bookmarkDirectory = Path.GetFullPath(_args.RecordPlaytest!) + ".bookmarks";
                 string bookmark = Path.Combine(bookmarkDirectory, $"{visit++:D2}-" + destination.Replace(':', '-') + ".bookmark.json");
                 _playtest.RequestBookmark(bookmark);
-                for (int frame = 0; !File.Exists(bookmark) && frame < 600; frame++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                for (int frame = 0; !File.Exists(bookmark) && frame < 600; frame++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 AcceptanceAssert(File.Exists(bookmark) && MovementReproStateFile.Load(bookmark).Destination == destination, "universal-bookmark", "completed prefix and shared profile at " + destination);
                 GD.Print("[reconciliation-capture] selection, firing, marker: " + destination);
             }

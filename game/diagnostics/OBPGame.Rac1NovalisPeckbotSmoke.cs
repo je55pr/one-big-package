@@ -60,6 +60,10 @@ public partial class OBPGame
                 $"sequence={next.Sequence} moved={moved:F2}, RatchetHP={_rac1Nanotech.Probe().Nanotech}");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-peckbot-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[novalis-peckbot-smoke] FAIL {ex}");

@@ -117,7 +117,7 @@ public partial class OBPGame
             await PhysicsFramesAsync(2);
             Input.ActionPress(RawGamepadInput.Jump);
             await PhysicsFramesAsync(2);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(player.Rac1TraversalAction == 0x11 && CurrentPlayerAvatarSourceSequence() == 35,
                 $"synthetic opposing-wall slot did not select native wall jump/sequence35: " +
                 $"action={player.Rac1TraversalAction}, pos={player.GlobalPosition - fixture.GlobalPosition}");
@@ -164,7 +164,7 @@ public partial class OBPGame
             float earlyCrouch = HorizontalSpeed(player);
             ulong earlyCrouchPhysicsFrame = Engine.GetPhysicsFrames();
             await PhysicsFramesAsync(20);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             float lateCrouch = HorizontalSpeed(player);
             ulong crouchPhysicsTicks = Engine.GetPhysicsFrames() - earlyCrouchPhysicsFrame;
             float expectedLoss = (float)(Rac1SurfaceMovementSession.IceCrouchBrake * 60d * crouchPhysicsTicks);
@@ -178,6 +178,7 @@ public partial class OBPGame
         }
         finally
         {
+            using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
             ClearMovementSmokeInput();
             if (GodotObject.IsInstanceValid(fixture) && !fixture.IsQueuedForDeletion())
                 fixture.QueueFree();
@@ -224,7 +225,7 @@ public partial class OBPGame
                 $"position={player.GlobalPosition - fixture.GlobalPosition}, action={player.Rac1TraversalAction}");
             for (int tick = 0; tick < 90 && player.Rac1TraversalAction != 0x19; tick++)
                 await PhysicsFramesAsync(1);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
     }
 

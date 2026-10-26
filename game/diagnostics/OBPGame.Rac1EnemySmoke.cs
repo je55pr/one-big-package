@@ -204,6 +204,10 @@ public partial class OBPGame
             GD.Print("[enemy-smoke] PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-enemy-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[enemy-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
@@ -241,7 +245,7 @@ public partial class OBPGame
                     worst[instance] = Math.Min(worst[instance], separation);
                 lowestBody = Math.Min(lowestBody, enemy.Body.GlobalPosition.Y);
             }
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         }
         foreach (var enemy in pair)
         {
@@ -290,8 +294,8 @@ public partial class OBPGame
         bool hudVisible = hud.Visible;
         _ui.Visible = false;
         hud.Visible = false;
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         GetViewport().GetTexture().GetImage().SavePng(Path.Combine(directory, name + ".png"));
         _ui.Visible = visible;
         hud.Visible = hudVisible;

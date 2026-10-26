@@ -23,7 +23,7 @@ public partial class OBPGame
                 throw new InvalidOperationException(
                     "Campaign smoke requires --rac1-campaign-save so it cannot modify the normal host save.");
 
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
 
             if (_rac1CampaignRestoreWarning is not null)
             {
@@ -39,7 +39,7 @@ public partial class OBPGame
                     "Recovery smoke progression mutation was not admitted.");
                 TickRac1CampaignSaves(5);
                 FlushRac1CampaignSaves("corrupt-save smoke");
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 RequireRac1CampaignSmoke(
                     original.AsSpan().SequenceEqual(File.ReadAllBytes(damagedPath)),
                     "Queued progress overwrote the damaged save.");
@@ -62,6 +62,10 @@ public partial class OBPGame
 
             GD.Print("[rac1-campaign-smoke] PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-campaign-smoke-pass", 0);
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -115,7 +119,7 @@ public partial class OBPGame
             result == Rac1PlanetTravelStartResult.Started,
             $"Travel to destination {destinationId} returned {result}.");
 
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
 
         RequireRac1CampaignSmoke(
             _world is { Game.SourceGame: ObpSourceGame.Rac1 } world && world.LevelId == destinationId,
@@ -180,7 +184,7 @@ public partial class OBPGame
     {
         int currentBefore = _rac1CampaignSession.Campaign.CurrentLevel;
         OpenDestinationFromBootstrap($"rac1:LEVEL{levelId}");
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
 
         RequireRac1CampaignSmoke(
             _rac1CampaignSession.Campaign.CurrentLevel == currentBefore,

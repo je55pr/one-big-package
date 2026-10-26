@@ -40,6 +40,7 @@ public static class ApplicationLifecycle
 
     public static void RequestQuit(SceneTree tree, string reason, int exitCode = 0)
     {
+        if (ApplicationQuitDeferral.TryHandle(reason, exitCode)) return;
         // A failure during shutdown must still turn an earlier pass into failure.
         if (_quitPending && exitCode == 0) return;
         _lastQuitReason = reason;

@@ -34,6 +34,10 @@ public partial class OBPGame
             GD.Print("[rac1-mission-play] PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-mission-play-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception exception)
         {
             GD.PrintErr($"[rac1-mission-play] FAIL: {exception.Message}\n{exception.StackTrace}");
@@ -53,7 +57,7 @@ public partial class OBPGame
         bool sawDeath = false, sawRestart = false;
         while (IsInsideTree())
         {
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             var campaign = _rac1CampaignSession.Campaign;
             if (_player?.DevelopmentControls.FlyEnabled == true)
                 throw new InvalidOperationException("Development flight invalidates the ordinary-input check.");
