@@ -18,6 +18,7 @@ public partial class AmbientUvScrollProbe : Node
         try
         {
             GroupedScrollKeepsOtherGroupsStill();
+            AssetKindAndTextureIdMismatchesStayStill();
             UngroupedScrollRetainsSharedBinding();
             IndependentlyAnimatedGroupsStayIndependent();
             EverySharedBindingHasAScrollProfile();
@@ -61,12 +62,15 @@ public partial class AmbientUvScrollProbe : Node
             AmbientAnimations: animations);
     }
 
-    private (WorldHost Host, RuntimeWorldScene.Result Scene) Build(params RuntimeAmbientAnimation[] animations)
+    private (WorldHost Host, RuntimeWorldScene.Result Scene) Build(params RuntimeAmbientAnimation[] animations) =>
+        BuildWorld(Fixture(animations));
+
+    private (WorldHost Host, RuntimeWorldScene.Result Scene) BuildWorld(RuntimeWorld world)
     {
         var parent = new Node3D { Name = "AmbientFixture" };
         AddChild(parent);
         var host = new WorldHost();
-        var scene = host.Load(this, parent, Fixture(animations), "Fixture", new WorldHost.Options
+        var scene = host.Load(this, parent, world, "Fixture", new WorldHost.Options
         {
             ManageEnvironment = false,
             IncludeCollision = false,
@@ -103,6 +107,42 @@ public partial class AmbientUvScrollProbe : Node
         Offset(a, 0.2f, 0.4f);
         Offset(b, 0f, 0f);
         Offset(none, 0f, 0f);
+        host.Unload();
+    }
+
+    /// <summary>Only an exact asset-kind and texture-ID match may inherit a group-scoped scroll.</summary>
+    private void AssetKindAndTextureIdMismatchesStayStill()
+    {
+        var scroll = new RuntimeAmbientAnimation(
+            "sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0.1, 0.2, 0), TargetGroup: "A");
+        var source = Fixture(scroll);
+        var templateMesh = source.Meshes[0];
+        var templateTexture = source.Textures[0];
+        var world = source with
+        {
+            Meshes = [.. source.Meshes,
+                templateMesh with { AssetKind = "tie" },
+                templateMesh with { TextureId = 4 }],
+            Textures = [.. source.Textures,
+                templateTexture with { AssetKind = "tie" },
+                templateTexture with { TextureId = 4 }],
+            MaterialCount = 3,
+        };
+
+        var (host, scene) = BuildWorld(world);
+        var mismatches = scene.AmbientMeshBindings!
+            .Where(b => (b.AssetKind == "tie" && b.TextureId == 3) ||
+                        (b.AssetKind == "sky" && b.TextureId == 4))
+            .ToArray();
+        if (mismatches.Length != 2)
+            throw new InvalidOperationException("Both mismatch fixtures must be built");
+        host.Tick(2, Vector3.Zero);
+        foreach (var mismatch in mismatches)
+            Offset((StandardMaterial3D)mismatch.Mesh.MaterialOverride, 0f, 0f);
+        Offset(Material(scene, "B"), 0f, 0f);
+        var matched = scene.AmbientMeshBindings!
+            .First(b => b.AssetKind == "sky" && b.TextureId == 3 && b.PresentationGroup == "A");
+        Offset((StandardMaterial3D)matched.Mesh.MaterialOverride, 0.2f, 0.4f);
         host.Unload();
     }
 
