@@ -8,6 +8,8 @@ using OBP.IO;
 using OBP.RAC3;
 using OBP.Runtime;
 
+namespace OBP.Game;
+
 /// <summary>Headless Godot integration fixture for issue #172's ambient material binding.</summary>
 public partial class AmbientUvScrollProbe : Node
 {
@@ -18,6 +20,7 @@ public partial class AmbientUvScrollProbe : Node
             GroupedScrollKeepsOtherGroupsStill();
             UngroupedScrollRetainsSharedBinding();
             IndependentlyAnimatedGroupsStayIndependent();
+            EverySharedBindingHasAScrollProfile();
             VerifyRetailSkyGroupIfAvailable();
             GD.Print("[ambient-uv-scroll-smoke] PASS: grouped, ungrouped and shared material tick behaviour");
             GetTree().Quit(0);
@@ -136,6 +139,25 @@ public partial class AmbientUvScrollProbe : Node
         host.Unload();
     }
 
+    /// <summary>Exercise the partition path where every material user has an animation profile.</summary>
+    private void EverySharedBindingHasAScrollProfile()
+    {
+        var (host, scene) = Build(
+            new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0.05, 0.05, 0)),
+            new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0.1, 0, 0), TargetGroup: "A"),
+            new RuntimeAmbientAnimation("sky", 3, RuntimeAmbientAnimationKind.UvScroll, (0, 0.2, 0), TargetGroup: "B"));
+        var a = Material(scene, "A");
+        var b = Material(scene, "B");
+        var none = Material(scene, null);
+        if (ReferenceEquals(a, b) || ReferenceEquals(a, none) || ReferenceEquals(b, none))
+            throw new Exception("Every distinct scroll profile needs its own material");
+        host.Tick(2, Vector3.Zero);
+        Offset(a, 0.2f, 0f);
+        Offset(b, 0f, 0.4f);
+        Offset(none, 0.1f, 0.1f);
+        host.Unload();
+    }
+
     /// <summary>Exercise a real UYA sky's presentation groups with a synthetic UV rate.
     /// Retail supplies the geometry/group identities, not this test animation.</summary>
     private void VerifyRetailSkyGroupIfAvailable()
@@ -191,7 +213,15 @@ public partial class AmbientUvScrollProbe : Node
         foreach (var binding in other)
             Offset((StandardMaterial3D)binding.Mesh.MaterialOverride, 0f, 0f);
         host.Unload();
-        GD.Print($"[ambient-uv-scroll-smoke] Retail UYA sky: group {group}, texture {textureId}, " +
-                 $"{targeted.Length} targeted and {other.Length} same-texture other-group meshes verified");
+        if (other.Length == 0)
+        {
+            GD.Print($"[ambient-uv-scroll-smoke] Retail UYA sky: targeted group {group} offset verified; " +
+                     "SKIP cross-group isolation: no sky texture is shared across presentation groups");
+        }
+        else
+        {
+            GD.Print($"[ambient-uv-scroll-smoke] Retail UYA sky: group {group}, texture {textureId}, " +
+                     $"{targeted.Length} targeted and {other.Length} same-texture other-group meshes verified");
+        }
     }
 }
