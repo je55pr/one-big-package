@@ -828,10 +828,13 @@ public partial class OBPGame : Node3D
             _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), _rac1LastEnvironmentalDeathBoundary,
             GodotMovementPlayer.Copy(_rac1LastEnvironmentalDeathPosition), _rac1LastEnvironmentalDeathContactSeparation,
             MeasureRac1ContactSeparation(), _rac1CampaignSession.LevelCheckpoint?.AuthoredClass0.Yaw));
-        var equipment = new DiagnosticControllerEquipmentFixture(() => new(_rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo,
-            _rac1HeldItem.NativeItemId, _rac1WrenchView?.Visible == true, _rac1BombGloveView?.Visible == true,
-            _player?.Rac1WrenchFrame.Active ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable."),
-            _player?.Rac1AudioMovementAction ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable."), CurrentWeaponKey, [.. PlayerWeaponOrder()]),
+        var equipment = new DiagnosticControllerEquipmentFixture(() =>
+        {
+            var player = _player ?? throw new DiagnosticUnavailableException("The controller fixture player is unavailable.");
+            return new(_rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo,
+                _rac1HeldItem.NativeItemId, _rac1WrenchView?.Visible == true, _rac1BombGloveView?.Visible == true,
+                player.Rac1WrenchFrame.Active, player.Rac1AudioMovementAction, CurrentWeaponKey, [.. PlayerWeaponOrder()]);
+        },
             OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested);
         return new(ports, water, environment, equipment, _activeDestination,
             [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],

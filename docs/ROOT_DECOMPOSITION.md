@@ -68,7 +68,7 @@ have already been retired.
 
 The #339 movement extraction removes all nine assigned diagnostic partials and
 the privileged fragment in `ControllerSmoke.cs`; its ordinary UI driver stays.
-The measured root has 101 files, 23,467 file lines, 717 direct methods, 456
+The measured root has 101 files, 23,470 file lines, 717 direct methods, 456
 fields (311 mutable), 44 exposed members and 2,431 cross-file references.
 Movement, native air/ground/contact, water, tether, environmental restart and
 controller-weapon assertions consume copied facts and focused fixture actions.

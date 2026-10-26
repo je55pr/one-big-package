@@ -25,7 +25,12 @@ public abstract class MovementScenarioSupport(MovementDiagnosticContext context)
     protected Task ProcessFrameAsync() => WaitAsync(DiagnosticFramePhase.Process, 1);
     private async Task WaitAsync(DiagnosticFramePhase phase, int count)
     {
-        if (!_cleanup) { if (phase == DiagnosticFramePhase.Physics) { await Driver.PhysicsAsync(count); } else await Driver.ProcessAsync(count); return; }
+        if (!_cleanup)
+        {
+            if (phase == DiagnosticFramePhase.Physics) { await Driver.PhysicsAsync(count); }
+            else { await Driver.ProcessAsync(count); }
+            return;
+        }
         if (count > 4) { throw new InvalidOperationException("Movement cleanup is limited to four frame waits."); }
         for (int i = 0; i < count; i++) await Context.Ports.CleanupClock.NextAsync(phase, CancellationToken.None);
     }
