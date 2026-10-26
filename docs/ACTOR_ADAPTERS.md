@@ -54,12 +54,15 @@ order. Worker completion order cannot choose target identities or advance one
 actor early. Rendering still observes the existing fixed 60-Hz native groups.
 
 World retirement disposes every actor once and clears groups/receipts even if
-one adapter fails to retire. Factory construction failures release their native
+one adapter fails to retire. `RetirementFailures` retains those errors for the
+Godot host to report after cleanup; `Dispose` does not interrupt later teardown.
+Factory construction failures release their native
 bindings and scene before ownership transfer. A rejected registry transfer
 disposes the rejected actor without retiring an existing target with the same id.
 World transitions keep decoded data but never controllers, scenes or bodies.
 Source invalidation cancels imports, drops decoded caches and retires relocated
-actors; reset must re-admit the current attachment. Stamps are checked before and
+actors and marks both live and pending placements unavailable; reset must
+re-admit the current attachment. Stamps are checked before and
 after import/baking and again before activation. Native importers currently lack
 mid-read cancellation: their result is discarded on retirement and shutdown
 awaits reader closure. A late failure stays observable without publishing to a

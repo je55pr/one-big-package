@@ -54,11 +54,9 @@ public partial class OBPGame
     private void ClearActorSourceCaches()
     {
         _actorSources?.Clear();
-        foreach (var (id, instance) in _actorWorld.Placed.ToArray())
-        {
-            RetirePlacedActor(instance);
+        foreach (var instance in _actorWorld.Placed.Values.ToArray()) RetirePlacedActor(instance);
+        foreach (string id in _actorWorld.Placements.Keys)
             _actorWorld.Problems[id] = "Actor source attachments changed. Reset the encounter after source preparation.";
-        }
         _actorWorld.Placed.Clear(); _actorWorld.Preparation.Clear(); _actorWorld.Sources.Clear();
     }
 
@@ -114,10 +112,14 @@ public partial class OBPGame
             }
         }
         if (_fusionLabStatus is not null)
+        {
+            string status = _actorWorld.Placed.Count < _actorWorld.Placements.Count
+                ? " · preparing original assets in the background" : " · live native controllers";
+            if (_actorWorld.Problems.Count > 0)
+                status = "\n" + string.Join("\n", _actorWorld.Problems.Select(pair => pair.Key + ": " + pair.Value));
             _fusionLabStatus.Text = "OBP FUSION LAB  |  PAUSE: LOADOUT / SETTINGS\n" +
-                $"Mixed encounter: {_actorWorld.Placed.Count}/{_actorWorld.Placements.Count} source actors" +
-                (_actorWorld.Problems.Count > 0 ? "\n" + string.Join("\n", _actorWorld.Problems.Select(pair => pair.Key + ": " + pair.Value)) :
-                    _actorWorld.Placed.Count < _actorWorld.Placements.Count ? " · preparing original assets in the background" : " · live native controllers");
+                $"Mixed encounter: {_actorWorld.Placed.Count}/{_actorWorld.Placements.Count} source actors" + status;
+        }
     }
 
     private void RegisterActorView(HostedActor actor)
@@ -132,7 +134,8 @@ public partial class OBPGame
     {
         var key = ActorTarget(node);
         if (_actors?.Find(key) is null) return;
-        if (!_actorWorld.Rewards.TryGetValue(key, out var owned)) _actorWorld.Rewards.Add(key, owned = []);
+        if (!_actorWorld.Rewards.TryGetValue(key, out var owned))
+        { owned = []; _actorWorld.Rewards.Add(key, owned); }
         owned.UnionWith(pickups);
     }
 
@@ -153,7 +156,8 @@ public partial class OBPGame
         if (!_actorWorld.Placed.Values.Any(instance => instance.Target == key)) return false;
         if (_rac1PickupAssets?.Sounds?.TryGetValue((node.Source.NativeClassId, localSound), out var sound) != true)
         { GD.Print($"[actors] {key}: original sound {localSound} unavailable"); return true; }
-        if (!_actorWorld.Audio.TryGetValue(key, out var audio)) _actorWorld.Audio.Add(key, audio = new());
+        if (!_actorWorld.Audio.TryGetValue(key, out var audio))
+        { audio = new(); _actorWorld.Audio.Add(key, audio); }
         _actorWorld.PlaybackRandom ??= OBP.RAC1.Gameplay.Rac1PickupRandom.FromSeed(unchecked((uint)(_args.FixedSeed ?? System.Environment.TickCount)));
         var clip = sound!.SelectPitch(_actorWorld.PlaybackRandom);
         if (clip.FrameCount > 0) audio.PlayEffect(node.Root, new(clip, OBP.Runtime.Audio.RuntimeAudioCategory.SoundEffect, gain: sound.Gain, position: new(0, 0, 0)));

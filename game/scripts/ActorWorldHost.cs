@@ -31,16 +31,18 @@ internal sealed class ActorWorldHost
 
     public void Reset()
     {
-        try { Runtime?.Dispose(); }
+        var runtime = Runtime;
+        try { runtime?.Dispose(); }
         finally
         {
             Runtime = null;
             foreach (var audio in Audio.Values) audio.StopAll();
-            foreach (var body in Bodies.Values)
-                if (GodotObject.IsInstanceValid(body)) body.CollisionLayer = body.CollisionMask = 0;
+            foreach (var body in Bodies.Values.Where(GodotObject.IsInstanceValid)) body.CollisionLayer = body.CollisionMask = 0;
             Audio.Clear(); Rewards.Clear(); PlaybackRandom = null; Bodies.Clear();
             Preparation.Clear(); Sources.Clear(); Views.Clear(); Placements.Clear(); Placed.Clear(); Problems.Clear();
             Lab = null; Factories = null;
+            foreach (var error in runtime?.RetirementFailures ?? Array.Empty<Exception>())
+                GD.PrintErr("[actors] retirement failed after lease cleanup: " + error);
         }
     }
 }

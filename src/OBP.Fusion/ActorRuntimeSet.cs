@@ -77,6 +77,8 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
     public long Generation { get; } = generation >= 0 ? generation : throw new ArgumentOutOfRangeException(nameof(generation));
     public long TickCount => _tick;
     public int Count => _actors.Count;
+    /// <summary>Cleanup continues after adapter failures; the host reports these after releasing the lease.</summary>
+    public IReadOnlyList<Exception> RetirementFailures { get; private set; } = Array.Empty<Exception>();
     public IReadOnlyList<IRegisteredActor> Ordered => _actors.Values.OrderBy(actor => actor.Registration.Instance.Target.SourceGame)
         .ThenBy(actor => actor.Registration.Instance.Target.NativeClassId).ThenBy(actor => actor.Registration.Instance.Target.InstanceIndex).ToArray();
 
@@ -171,6 +173,6 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
             catch (Exception error) { (failures ??= []).Add(error); }
         }
         _actors.Clear(); _receipts.Clear(); _groups.Clear(); _weapons.Clear(); _retiredTargets.Clear();
-        if (failures is not null) throw new AggregateException("Actor retirement failed after all actors were released.", failures);
+        RetirementFailures = failures is null ? Array.Empty<Exception>() : failures.AsReadOnly();
     }
 }

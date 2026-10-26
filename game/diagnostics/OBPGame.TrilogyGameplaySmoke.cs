@@ -152,14 +152,18 @@ public partial class OBPGame
             GD.Print("[trilogy-gameplay-smoke] partial actor construction rollback PASS");
             GetTree().Paused = true;
             var detachedActors = _actorWorld.Placed.Values.ToArray();
+            const string pendingId = "source-invalidation-pending-fixture";
+            _actorWorld.Placements.Add(pendingId, toadPlacement with { Id = pendingId });
             ClearActorSourceCaches();
             Require(_actors!.Count == 0 && _actorWorld.Bodies.Count == 0 && _actorWorld.Views.Count == 0 &&
                 ActorSources.LibraryCount == 0 && ActorSources.AssetCount == 0 &&
+                _actorWorld.Problems.ContainsKey(pendingId) &&
                 detachedActors.All(actor => !_playerDamageActors.Contains(actor)), "source invalidation retained live actors or player attack registrations");
+            _actorWorld.Placements.Remove(pendingId); _actorWorld.Problems.Remove(pendingId);
             foreach (string id in _actorWorld.Placements.Keys) _ = ResetPlacedActor(id);
             deadline = Time.GetTicksMsec() + 180_000;
             while (_actorWorld.Placed.Count + _actorWorld.Problems.Count < _actorWorld.Placements.Count && Time.GetTicksMsec() < deadline)
-            { await Task.Delay(10); TickActorPreparation(); }
+            { await Task.Delay(10, CancellationToken.None); TickActorPreparation(); }
             Require(_actorWorld.Problems.Count == 0 && _actorWorld.Placed.Count == 3 && _actorWorld.Bodies.Count == 3 &&
                 _actorWorld.Placed.Values.All(actor => !detachedActors.Contains(actor)), "source re-admission failed or revived retired target identities");
             sourceTask = ActorSources.Library(sourceKey, toadPlacement.LevelId);

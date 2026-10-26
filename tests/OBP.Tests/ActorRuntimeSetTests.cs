@@ -128,7 +128,8 @@ public sealed class ActorRuntimeSetTests
         var broken = new Actor(set.Allocate(ObpSourceGame.Rac1, 749)) { ThrowOnDispose = true };
         var other = new Actor(set.Allocate(ObpSourceGame.Rac2, 2827));
         set.Register(broken); set.Register(other); set.Step(Vector3.Zero, true);
-        Assert.Throws<AggregateException>(set.Dispose);
+        set.Dispose();
+        Assert.IsType<IOException>(Assert.Single(set.RetirementFailures));
         Assert.Equal(1, broken.DisposeCount); Assert.Equal(1, other.DisposeCount); Assert.Equal(0, set.Count);
         set.Dispose(); Assert.Equal(1, broken.DisposeCount); Assert.Equal(1, other.DisposeCount);
         Assert.Throws<ObjectDisposedException>(() => set.Step(Vector3.Zero, true)); Assert.Equal(1, ticks);
