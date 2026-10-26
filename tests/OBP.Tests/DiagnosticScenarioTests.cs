@@ -254,7 +254,13 @@ public sealed class DiagnosticScenarioTests
     [Fact]
     public async Task RetiringTheWorldCancelsTheScenarioBeforeDisposingItsLease()
     {
-        var definition = Definition with { SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic, Setup = DiagnosticSetup.ExistingWorld, DestinationId = "rac1:LEVEL0" };
+        var definition = Definition with
+        {
+            SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic,
+            RequiredSources = [new(ObpSourceGame.Rac1, "build")],
+            Setup = DiagnosticSetup.ExistingWorld,
+            DestinationId = "rac1:LEVEL0"
+        };
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously); var world = new World();
         bool released = false;
         var scenario = new Scenario(definition, async run =>
@@ -262,7 +268,8 @@ public sealed class DiagnosticScenarioTests
             run.Own(new Lease(() => released = true)); started.SetResult();
             await Task.Delay(Timeout.Infinite, run.CancellationToken);
         });
-        var pending = new DiagnosticScenarioRunner(new Sources(), new Clock(), world).RunAsync(scenario, true, CancellationToken.None);
+        var pending = new DiagnosticScenarioRunner(new Sources(new DiagnosticSourceSnapshot(ObpSourceGame.Rac1, "build", true)), new Clock(), world)
+            .RunAsync(scenario, true, CancellationToken.None);
         await started.Task.WaitAsync(DeadlockGuard); world.Retire();
         var result = await pending.WaitAsync(DeadlockGuard);
         Assert.Equal(DiagnosticRunStatus.Canceled, result.Status); Assert.True(released); Assert.Equal(1, world.Disposed);
@@ -295,9 +302,17 @@ public sealed class DiagnosticScenarioTests
     [Fact]
     public async Task UnboundCapabilitiesAreExplicitlyUnavailable()
     {
-        var definition = Definition with { SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic, Setup = DiagnosticSetup.FreshWorld, DestinationId = "rac2:LEVEL0" };
-        var result = await new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(new Scenario(definition, _ => Task.CompletedTask), true, CancellationToken.None);
+        var definition = Definition with
+        {
+            SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic,
+            RequiredSources = [new(ObpSourceGame.Rac2, "build")],
+            Setup = DiagnosticSetup.FreshWorld,
+            DestinationId = "rac2:LEVEL0"
+        };
+        var result = await new DiagnosticScenarioRunner(new Sources(new DiagnosticSourceSnapshot(ObpSourceGame.Rac2, "build", true)), new Clock())
+            .RunAsync(new Scenario(definition, _ => Task.CompletedTask), true, CancellationToken.None);
         Assert.Equal(DiagnosticRunStatus.Unavailable, result.Status); Assert.NotEqual(0, result.ExitCode);
+        Assert.Equal("No diagnostic world setup port is bound.", result.Detail);
     }
 
     [Fact]
@@ -307,8 +322,13 @@ public sealed class DiagnosticScenarioTests
         Assert.Throws<ArgumentException>(() => (Definition with { MaximumFrameWaits = 0 }).Validate());
         Assert.Throws<ArgumentException>(() => (Definition with { RequiredSources = default }).Validate());
         Assert.Throws<ArgumentException>(() => (Definition with { SourceAccess = DiagnosticSourceAccess.OrdinaryPlay }).Validate());
+        Assert.Throws<ArgumentException>(() => (Definition with { SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic }).Validate());
         Assert.Throws<ArgumentException>(() => (Definition with { Setup = DiagnosticSetup.FreshWorld }).Validate());
-        Assert.Throws<ArgumentException>(() => (Definition with { RequiredSources = [new(ObpSourceGame.Rac1, "a"), new(ObpSourceGame.Rac1, "b")] }).Validate());
+        Assert.Throws<ArgumentException>(() => (Definition with
+        {
+            SourceAccess = DiagnosticSourceAccess.ExplicitSourceDiagnostic,
+            RequiredSources = [new(ObpSourceGame.Rac1, "a"), new(ObpSourceGame.Rac1, "b")]
+        }).Validate());
     }
 
     [Fact]
@@ -318,8 +338,15 @@ public sealed class DiagnosticScenarioTests
             typeof(IDiagnosticActorObservations), typeof(IDiagnosticEquipmentObservations), typeof(IDiagnosticAudioObservations),
             typeof(IDiagnosticReplayEvidence), typeof(IDiagnosticNavigationActions), typeof(IDiagnosticPoseObservations),
             typeof(IDiagnosticHudObservations), typeof(IDiagnosticCameraObservations), typeof(IDiagnosticUiObservations), typeof(IDiagnosticUiActions)];
-        foreach (var type in ports.SelectMany(port => port.GetMethods()).SelectMany(method => method.GetParameters().Select(parameter => parameter.ParameterType).Append(method.ReturnType)))
+        var snapshotProperties = typeof(DiagnosticSceneSnapshot).Assembly.GetTypes()
+            .Where(type => type.Namespace == "OBP.Game.Diagnostics" && type.Name.EndsWith("Snapshot", StringComparison.Ordinal))
+            .SelectMany(type => type.GetProperties()).Select(property => property.PropertyType);
+        foreach (var type in ports.SelectMany(port => port.GetMethods()).SelectMany(method => method.GetParameters().Select(parameter => parameter.ParameterType).Append(method.ReturnType))
+            .Concat(snapshotProperties))
+        {
             Assert.DoesNotContain("Godot", type.ToString(), StringComparison.Ordinal);
+            Assert.NotEqual(RootBoundaryAudit.RootName, type.FullName);
+        }
         var compilation = RootBoundaryAudit.Compile([CSharpSyntaxTree.ParseText("namespace OBP.Game { public class OBPGame { private int _private; } } class ExternalScenario { int Read(OBP.Game.OBPGame root) => root._private; }")]);
         Assert.Contains(compilation.GetDiagnostics(), diagnostic => diagnostic.Id == "CS0122" && diagnostic.Severity == DiagnosticSeverity.Error);
     }

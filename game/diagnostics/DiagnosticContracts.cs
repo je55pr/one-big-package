@@ -31,6 +31,7 @@ public sealed record DiagnosticScenarioDefinition(string Id, DiagnosticSourceAcc
             RequiredSources.Select(source => source.Game).Distinct().Count() != RequiredSources.Length)
             throw new ArgumentException("Diagnostic sources require distinct source/build authorities.");
         if (SourceAccess == DiagnosticSourceAccess.AssetFree && (RequiredSources.Length != 0 || Setup != DiagnosticSetup.AssetFreeFixture) ||
+            SourceAccess == DiagnosticSourceAccess.ExplicitSourceDiagnostic && RequiredSources.Length == 0 ||
             Setup != DiagnosticSetup.AssetFreeFixture && string.IsNullOrWhiteSpace(DestinationId) ||
             SourceAccess == DiagnosticSourceAccess.OrdinaryPlay &&
                 !new[] { ObpSourceGame.Rac1, ObpSourceGame.Rac2, ObpSourceGame.Rac3 }.All(game => RequiredSources.Any(source => source.Game == game)))
