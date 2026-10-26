@@ -7,6 +7,9 @@ assertions belong in their actual owners. Existing world/session/actor/operation
 owners remain authoritative; extraction must not create replacement sessions or
 another all-capabilities manager.
 
+The [diagnostic scenario contract](DIAGNOSTIC_SCENARIOS.md) defines focused
+observation/action ports and the bounded external startup proof for #335.
+
 Godot C# node scripts still need `partial` for source generation. Ordinary
 components do not become nodes merely to make them independently owned. Moving
 a file without removing privileged access is not encapsulation. Preserve script
