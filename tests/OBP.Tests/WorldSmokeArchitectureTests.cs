@@ -13,10 +13,12 @@ public sealed class WorldSmokeArchitectureTests
         string loader = File.ReadAllText(Path.Combine(scripts, "OBPGame.Destinations.cs"));
         string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
         string harness = File.ReadAllText(Path.Combine(
-            RepoPaths.Root, "game", "diagnostics", "OBPGame.SmokeDispatch.cs"));
+            RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
 
         Assert.Contains("EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
-        Assert.Contains("DispatchRequestedWorldSmokes(nativeDestination);", entry, StringComparison.Ordinal);
+        Assert.Contains("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
+        Assert.Contains("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);
         foreach (string flag in new[]
         {
             "_args.Rac1VeldinPlaySmoke",
@@ -27,19 +29,6 @@ public sealed class WorldSmokeArchitectureTests
         })
             Assert.DoesNotContain(flag, loader, StringComparison.Ordinal);
 
-        Assert.Contains("if (worldSwitches != 1)", harness, StringComparison.Ordinal);
-        Assert.Contains("destination.Game == ObpSourceGame.Rac1", harness, StringComparison.Ordinal);
-        Assert.Contains("if (args.MovementSmoke)", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1VeldinPlaySmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1MovementContactSmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1CombatContractSmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1CampaignSmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunMovementSmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1WrenchSmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1EnemySmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunMovementStateSmokeAsync(token)", harness, StringComparison.Ordinal);
-        Assert.Contains("_hostOperations.Start(\"movement-state-smoke\"", harness, StringComparison.Ordinal);
-        Assert.Contains("RunRac1BombGloveSmokeAsync", harness, StringComparison.Ordinal);
     }
 
     [Fact]

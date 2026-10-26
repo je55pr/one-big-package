@@ -36,6 +36,16 @@ Godot callbacks are included. These are measurements, not size quotas.
 
 ## CI guard and migration ledger
 
+The #336 registry/evidence migration retires two root fragments and eight
+historical declaration/member permissions. Its measured root is 120 files,
+27,204 file lines, 755 direct methods, 457 fields (312 mutable), 44 exposed
+members and 2,651 distinct cross-file references. The evidence reporter owns
+its check collection and assertions; four exact temporary composition entries
+retain the field/delegating bridges for #338/#344 callers and expire in #344.
+Legacy scenario invocation callbacks remain until their individual Phase 1
+suites migrate. This is a bounded intermediate measurement, not completion of
+the diagnostic extraction programme.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

@@ -2559,7 +2559,45 @@
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     }
   ],
-  "Composition": [],
-  "RetiredMembers": [],
+  "Composition": [
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_acceptanceEvidence:AcceptanceEvidence:private,readonly",
+      "Owner": "#336",
+      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
+      "ExpiresWith": "#344",
+      "Hash": "0733228c98ba5fa28c7f5531421313c3e283e7beae6f4de846756fedc0b99604"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AcceptanceAssert(:bool,:string,:string):void:private",
+      "Owner": "#336",
+      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
+      "ExpiresWith": "#344",
+      "Hash": "0d02da18bb22294dfa76642267598436deea2eb4c1aa39ed614a1119ab1d5e9b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:FinishAcceptanceFailure(:string,:Exception,:string):void:private",
+      "Owner": "#336",
+      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
+      "ExpiresWith": "#344",
+      "Hash": "5902df8679b06d0e00e0667e884e43b3f01ca88c4360b6e92c8c047b968cede0"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WriteAcceptanceEvidence(:string,:Exception ?):void:private",
+      "Owner": "#336",
+      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
+      "ExpiresWith": "#344",
+      "Hash": "b89f91bf322c7843c3576475646e5c94bb1296da03096c610d457684bff18727"
+    }
+  ],
+  "RetiredMembers": [
+    "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame+AcceptanceCheck::declaration:RecordDeclaration:private,sealed:::( string Id , string ? Destination , bool Passed , string Detail )",
+    "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::field:_acceptanceChecks:List < AcceptanceCheck >:private,readonly",
+    "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:AcceptanceAssert(:bool,:string,:string):void:private",
+    "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:FinishAcceptanceFailure(:string,:Exception,:string):void:private",
+    "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:WriteAcceptanceEvidence(:string,:Exception ?):void:private",
+    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::method:DispatchRequestedWorldSmokes(:ObpDestination):void:private"
+  ],
   "RetiredAccess": []
 }

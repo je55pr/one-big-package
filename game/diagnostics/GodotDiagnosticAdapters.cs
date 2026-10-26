@@ -3,6 +3,21 @@ using OBP.Godot;
 
 namespace OBP.Game.Diagnostics;
 
+internal sealed class GodotDiagnosticSources(Func<System.Collections.Immutable.ImmutableArray<DiagnosticSourceSnapshot>> read) : IDiagnosticSources
+{
+    public System.Collections.Immutable.ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => read();
+}
+
+internal sealed class GodotDiagnosticWorldObservations(WorldSceneLifetime<GodotWorldResources> worlds) : IDiagnosticWorldObservations
+{
+    public DiagnosticWorldSnapshot ReadWorld()
+    {
+        var lease = worlds.Current;
+        return new(worlds.DestinationId, lease?.Plan.Prepared.World.Game,
+            lease?.Plan.Request.WorldInstanceId, lease?.Plan.Request.Generation ?? 0);
+    }
+}
+
 /// <summary>Engine-thread bindings. The scenario sees copied facts, never the scene node.</summary>
 internal sealed class GodotDiagnosticSceneObservations(Node scene) : IDiagnosticSceneObservations
 {

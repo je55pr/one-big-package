@@ -25,7 +25,9 @@ public static class CoverageReport
     // Only the engine-free diagnostic sources linked into OBP.Tests are measured.
     private static readonly HashSet<string> LinkedDiagnosticSources = new(StringComparer.Ordinal)
     { "game/diagnostics/DiagnosticContracts.cs", "game/diagnostics/DiagnosticInputActions.cs",
-        "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs" };
+        "game/diagnostics/DiagnosticScenarioRunner.cs", "game/diagnostics/SourceFreeStartupScenario.cs",
+        "game/diagnostics/AcceptanceEvidence.cs", "game/diagnostics/DiagnosticScenarioRegistry.cs",
+        "game/diagnostics/LegacyDiagnosticScenario.cs", "game/diagnostics/ExistingDiagnosticWorld.cs", "game/diagnostics/WorldSmokeHarness.cs" };
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
     public static CoverageSummary Write(string root, string coberturaPath, string openCoverPath, string output,

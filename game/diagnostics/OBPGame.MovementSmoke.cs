@@ -358,7 +358,7 @@ public partial class OBPGame
     }
 
     private Task WaitForGroundedAsync(PlayerHost player, int maxFrames) =>
-        WaitForGroundedCancelableAsync(player, maxFrames, CancellationToken.None);
+        WaitForGroundedCancelableAsync(player, maxFrames, Diagnostics.LegacyDiagnosticCancellation.Current);
 
     private async Task WaitForGroundedCancelableAsync(PlayerHost player, int maxFrames, CancellationToken cancellationToken)
     {
@@ -460,7 +460,7 @@ public partial class OBPGame
         GD.Print("[movement-smoke] steady walking sequence 3 advanced and wrapped");
     }
 
-    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, CancellationToken.None);
+    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, Diagnostics.LegacyDiagnosticCancellation.Current);
 
     private async Task PhysicsFramesCancelableAsync(int count, CancellationToken cancellationToken)
     {

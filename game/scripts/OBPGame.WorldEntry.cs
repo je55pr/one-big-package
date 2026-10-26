@@ -4,6 +4,7 @@ using OBP.Fusion;
 using OBP.Godot;
 using OBP.RAC1.Progression;
 using OBP.Runtime;
+using OBP.Game.Diagnostics;
 
 namespace OBP.Game;
 
@@ -55,7 +56,22 @@ public partial class OBPGame
             _lastCommittedProfileDestination = destinationId;
             if (nativeDestination is not null)
             {
-                DispatchRequestedWorldSmokes(nativeDestination);
+                var scenarios = WorldSmokeHarness.Create(_args, nativeDestination, _worldSwitches,
+                    new WorldSmokeHarness.Entrypoints(RunRac1VeldinPlaySmokeAsync, RunRac1MovementContactSmokeAsync,
+                        RunRac1CombatContractSmokeAsync, RunRac1CampaignSmokeAsync, RunMovementSmokeAsync,
+                        RunRac1CrateSmokeAsync, RunRac1PlacedBoltSmokeAsync, RunRac1WrenchSmokeAsync,
+                        RunRac1EnemySmokeAsync, RunMovementStateSmokeAsync, RunRac1BombGloveSmokeAsync,
+                        RunRac1NovalisSwimSmokeAsync, RunRac1NovalisPeckbotSmokeAsync, RunRac1NovalisBirdbotSmokeAsync,
+                        RunRac1NovalisMusicSmokeAsync, RunRac1WeaponsSmokeAsync, RunRac1PlayerAudioSmokeAsync,
+                        RunRac1MetropolisTaxiSmokeAsync, RunRac1MissionPlaySmokeAsync, RunRac1NovalisRouteSmokeAsync,
+                        RunRac1FrogSmokeAsync), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
+                var runner = new DiagnosticScenarioRunner(
+                    new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>
+                        new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+                    new GodotDiagnosticFrameClock(this),
+                    new ExistingDiagnosticWorld(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations.Token));
+                DiagnosticScenarioDispatch.Start(scenarios, _hostOperations, runner,
+                    (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
                 StartRequestedSourceVerification(nativeDestination, sourcePath!);
             }
             SaveSharedProfile("world transition");

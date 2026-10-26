@@ -58,8 +58,39 @@ Phase 0 binds scene observations, the clock and logical input. The startup
 pilot uses only scene observations and the clock. The other domain contracts
 are intentionally unbound until the relevant Phase 1 migration supplies and
 tests its narrow adapter. They do not claim that the existing 44 diagnostic
-partials have already been extracted. There is no all-capabilities container
-or replacement global scenario registry in this change; #336 owns dispatch.
+partials have already been extracted. The Phase 1A registry below supplies
+world-smoke dispatch without an all-capabilities host or service locator.
+
+## Registry migration (#336)
+
+`WorldSmokeHarness` registers the original 21 first-world smoke flags and their
+legacy source gates/order in `DiagnosticScenarioRegistry`. Normal launch selects
+none. Unknown names and missing entry points fail explicitly. The remaining
+startup/session/replay/tool entry points join the registry in their own
+#337-#345 migrations; they are not silently treated as already extracted.
+
+Retained root suites currently bind invocation-only `LegacyDiagnosticScenario`
+callbacks. `DiagnosticScenarioDispatch` supervises all selected tasks through
+`HostOperationScope` and the bounded runner. `ApplicationQuitDeferral` collects
+each legacy callback's exit request in its own async flow; execution and cleanup
+finish before the dispatcher commits the process exit. Failures override passes,
+and exceptions after a legacy pass cannot become successful exits. Deferral does
+not capture unrelated callbacks or late children after the scope is disposed.
+The temporary cancellation-only bridge lets retained movement helpers observe
+the run token, preserving the actual process/physics signal phase; #339 removes
+that bridge when it moves the helpers to explicit context waits.
+
+`ExistingDiagnosticWorld` validates the initial world without owning or disposing
+its scene. Legacy application-scoped suites deliberately survive their own world
+travel/respawn and remain linked to host shutdown. The real scene leases and
+persistent player owner remain authoritative. Future world-local suites bind
+their actual world lifetime rather than inheriting that legacy scope blindly.
+
+`AcceptanceEvidence` owns ordered assertions and the unchanged version-1 JSON
+schema. A retained profile/reconciliation run has one reporter; its temporary
+root composition field and three delegating methods are exact #336 exceptions
+expiring with #344 (the profile caller moves in #338). Neither assertions nor
+mutable check collections remain implemented as root partials.
 
 ## Exact frame phases
 
@@ -98,7 +129,7 @@ F24 action and Godot-only key events: releasing physical input must leave no
 synthetic press, and disposing one simulation must preserve another owner.
 The fixture removes its events/action in `finally` and sends no desktop input.
 
-Portable coverage includes the four engine-free diagnostic files linked into
+Portable coverage includes the engine-free diagnostic files linked into
 `OBP.Tests`, using exact source-path permissions. Godot adapters/probes and
 unrelated diagnostic files remain excluded; the report does not claim engine
 integration coverage. Path normalization and source/payload privacy checks
