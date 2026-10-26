@@ -29,14 +29,16 @@ func _run_smoke() -> void:
         return
 
     root.add_child(game)
-    # SourceManagerBootstrap routes to the Game Sources screen via CallDeferred.
-    for frame in range(6):
-        await process_frame
-
-    var ui: Node = game.get_node_or_null("UI")
-    var manager: Node = game.get_node_or_null("SourceManager")
-    if ui == null or manager == null or not manager.is_inside_tree():
-        _fail("Asset-free startup failed to display the Game Sources UI")
+    # The standalone scenario owns the same six-frame settling/assertion through
+    # copied scene facts and the bounded diagnostic clock contract.
+    var probe: Node = load("res://diagnostics/SourceFreeStartupProbe.cs").new()
+    root.add_child(probe)
+    # Connect the await before Start can synchronously reject an invalid launch.
+    probe.call_deferred("Start", game)
+    var result: Array = await probe.Completed
+    probe.queue_free()
+    if not result[0]:
+        _fail(str(result[1]))
         return
 
     print("[godot-ci-smoke] PASS: OBPGame loads and Game Sources opens without retail data")
