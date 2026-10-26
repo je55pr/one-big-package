@@ -823,7 +823,7 @@ public partial class OBPGame : Node3D
             new GodotDiagnosticInputActions(), new GodotMovementPhysicalInput(), clock, message => GD.Print(message), message => GD.PrintErr(message));
         var water = new GodotMovementWater(() => [.. _rac1Enemies.Values.Select(enemy => ((Node3D)enemy.Node.Root, (Node3D)enemy.Body))],
             position => SampleRac1NovalisWaterHeight(GodotMovementPlayer.Engine(position)),
-            () => _playerHud?.FindChild("Air", true, false) is Control { Visible: true }, _rac1Nanotech.Probe);
+            () => _playerHud?.FindChild("Air", true, false) is Control air ? air.Visible : null, _rac1Nanotech.Probe);
         var environment = new DiagnosticEnvironmentalDeathFixture(() => new(_rac1Nanotech.EnvironmentalDeathGeneration,
             _rac1Nanotech.EnvironmentalRestartGeneration, _rac1Nanotech.Probe(), _rac1LastEnvironmentalDeathBoundary,
             GodotMovementPlayer.Copy(_rac1LastEnvironmentalDeathPosition), _rac1LastEnvironmentalDeathContactSeparation,

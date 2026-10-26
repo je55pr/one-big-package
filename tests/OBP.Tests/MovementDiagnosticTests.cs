@@ -78,12 +78,16 @@ public sealed class MovementDiagnosticTests
     public void PhysicalLeasesDisposedOutOfOrderPreserveOtherSimulationOwners()
     {
         bool heldKey = false, heldButton = false;
-        var input = new DiagnosticPhysicalInput((_, value) => heldKey = value, (_, value) => heldButton = value);
+        var keyEdges = new List<bool>(); var buttonEdges = new List<bool>();
+        var input = new DiagnosticPhysicalInput((_, value) => { heldKey = value; keyEdges.Add(value); },
+            (_, value) => { heldButton = value; buttonEdges.Add(value); });
         using var first = input.Acquire(); using var second = input.Acquire();
         first.SetKey(DiagnosticPhysicalKey.W, true); second.SetKey(DiagnosticPhysicalKey.W, true);
         first.SetButton(DiagnosticPhysicalButton.Wrench, true); second.SetButton(DiagnosticPhysicalButton.Wrench, true);
         first.Dispose(); Assert.True(heldKey); Assert.True(heldButton);
         second.Dispose(); Assert.False(heldKey); Assert.False(heldButton);
+        Assert.Equal(new[] { true, false }, keyEdges);
+        Assert.Equal(new[] { true, false }, buttonEdges);
     }
 
     [Fact]

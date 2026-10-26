@@ -20,7 +20,7 @@ internal sealed class GodotMovementWorld(Func<RuntimeWorld?> world, Func<int> co
     }
 }
 internal sealed class GodotMovementWater(Func<ImmutableArray<(Node3D Root, Node3D Body)>> enemies,
-    Func<NVector3, float?> height, Func<bool> airVisible, Func<Rac1RatchetNanotechSnapshot> nanotech) : IDiagnosticWaterFixture
+    Func<NVector3, float?> height, Func<bool?> airVisible, Func<Rac1RatchetNanotechSnapshot> nanotech) : IDiagnosticWaterFixture
 {
     public IDisposable IsolateCombat()
     {
@@ -36,7 +36,7 @@ internal sealed class GodotMovementWater(Func<ImmutableArray<(Node3D Root, Node3
         });
     }
     public float? SampleHeight(NVector3 position) => height(position);
-    public bool AirMeterVisible => airVisible();
+    public bool AirMeterVisible => airVisible() ?? throw new DiagnosticUnavailableException("The native water HUD air panel is unavailable.");
     public Rac1RatchetNanotechSnapshot ReadNanotech() => nanotech();
 }
 internal sealed class DiagnosticEnvironmentalDeathFixture(Func<DiagnosticEnvironmentalDeath> read) : IDiagnosticEnvironmentalDeath

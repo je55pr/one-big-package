@@ -2656,7 +2656,7 @@
       "Owner": "#339",
       "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
       "ExpiresWith": "#359",
-      "Hash": "cf18e18af948bb68483f8c8167ae928171c3d126ff943cd8b338fa6d2526f19b"
+      "Hash": "0737e67a3b058b3c0a507006358635b20eccbda6b2dea75ebc04d68019099ad1"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:HorizontalDistance(:Vector3,:Vector3):float:private,static",

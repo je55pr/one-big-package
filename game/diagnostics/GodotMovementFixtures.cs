@@ -89,7 +89,8 @@ internal sealed class GodotMovementPlayer(Func<PlayerHost?> read, Func<RuntimeWo
             player.Rac1ActiveBackpack = pack; player.Rac1ClankAvailable = clank;
             for (int i = 0; i < 3 && player.Rac1DevelopmentPackPreview != preview; i++) player.CycleRac1DevelopmentPack();
             if (player.Rac1DevelopmentSwingshotPreview != swingshot) { player.ToggleRac1DevelopmentSwingshot(); }
-            player.DevelopmentControls.SetFlyEnabled(fly); player.InitialGroundSnapUpwardReach = reach;
+            if (player.DevelopmentControls.FlyEnabled != fly) { player.DevelopmentControls.SetFlyEnabled(fly); }
+            player.InitialGroundSnapUpwardReach = reach;
         });
     }
     public void ResetToSpawn() => Player.DevelopmentControls.ResetToSpawn();

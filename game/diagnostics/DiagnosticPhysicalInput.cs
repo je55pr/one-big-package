@@ -12,8 +12,9 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
     {
         owners.TryGetValue(value, out var leases);
         if (!pressed && (leases is null || !leases.Contains(lease))) { return; }
+        bool previous = leases is { Count: > 0 };
         bool effective = pressed || leases!.Any(item => item != lease);
-        write(value, effective);
+        if (effective != previous) { write(value, effective); }
         if (pressed) { if (leases is null) { owners[value] = leases = []; } leases.Add(lease); }
         else { leases!.Remove(lease); if (leases.Count == 0) { owners.Remove(value); } }
     }
