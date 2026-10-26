@@ -38,6 +38,9 @@ public static partial class RuntimeWorldScene
     /// <summary>Stable node name used to keep independently animated presentation groups separate.</summary>
     public static string PresentationGroupNodeName(string group) => $"PresentationGroup_{group}";
 
+    /// <summary>Exact source identity for a material-bearing mesh in the built Godot scene.</summary>
+    public sealed record AmbientMeshBinding(MeshInstance3D Mesh, string AssetKind, int TextureId, string? PresentationGroup);
+
     public sealed record Result(
         Node3D Root,
         Node3D? SkyRoot,
@@ -52,7 +55,8 @@ public static partial class RuntimeWorldScene
         int AnimatedMobies = 0,
         System.Collections.Generic.IReadOnlyList<AnimatedMesh>? AnimatedMeshes = null,
         int DynamicObjects = 0,
-        System.Collections.Generic.IReadOnlyList<DynamicObjectNode>? DynamicObjectNodes = null);
+        System.Collections.Generic.IReadOnlyList<DynamicObjectNode>? DynamicObjectNodes = null,
+        System.Collections.Generic.IReadOnlyList<AmbientMeshBinding>? AmbientMeshBindings = null);
 
     /// <summary>
     /// Scene root for one preserved dynamic gameplay object. This carries source
@@ -91,14 +95,15 @@ public static partial class RuntimeWorldScene
         var root = new Node3D { Name = name };
         var skyRoot = new Node3D { Name = "Sky" };
         var mats = new WorldMaterialFactory(world);
+        var ambientBindings = new System.Collections.Generic.List<AmbientMeshBinding>();
         try
         {
             var (staticMeshInstances, staticTriangles, skyMeshes) =
-                BuildStaticMeshes(world, root, skyRoot, options, mats);
+                BuildStaticMeshes(world, root, skyRoot, options, mats, ambientBindings);
             var (dynamicObjectCount, dynamicMeshInstances, dynamicTriangles, dynamicNodes) =
-                BuildDynamicObjects(world, root, options, mats);
+                BuildDynamicObjects(world, root, options, mats, ambientBindings);
             var (animatedMeshInstances, animatedTriangles, animatedPlayers) =
-                BuildAnimatedMeshes(world, root, mats);
+                BuildAnimatedMeshes(world, root, mats, ambientBindings);
 
             if (mats.UntexturedTriangleReport.Count > 0)
             {
@@ -124,7 +129,8 @@ public static partial class RuntimeWorldScene
                 animatedMeshInstances,
                 animatedPlayers,
                 dynamicObjectCount,
-                dynamicNodes);
+                dynamicNodes,
+                ambientBindings);
         }
         catch
         {

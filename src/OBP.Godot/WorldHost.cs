@@ -189,6 +189,9 @@ public sealed class WorldHost
             ? declared
             : options.AnimateSky && _skyRoot is not null ? SyntheticSky : System.Array.Empty<RuntimeAmbientAnimation>();
 
+        var bindings = Result.AmbientMeshBindings ?? System.Array.Empty<RuntimeWorldScene.AmbientMeshBinding>();
+        IsolateUvScrollingMaterials(source, bindings);
+
         foreach (var anim in source)
         {
             var materials = new System.Collections.Generic.List<StandardMaterial3D>();
@@ -204,14 +207,14 @@ public sealed class WorldHost
 
             if (anim.Kind == RuntimeAmbientAnimationKind.UvScroll)
             {
-                foreach (var mi in MeshInstances(root))
+                foreach (var binding in bindings)
                 {
-                    if (!TryParseKind(mi.Name, out string kind, out int textureId) || !anim.Matches(kind, textureId))
+                    if (!anim.Matches(binding.AssetKind, binding.TextureId, binding.PresentationGroup))
                     {
                         continue;
                     }
 
-                    if (mi.MaterialOverride is StandardMaterial3D mat && seen.Add(mat.GetInstanceId()))
+                    if (binding.Mesh.MaterialOverride is StandardMaterial3D mat && seen.Add(mat.GetInstanceId()))
                     {
                         // A repeating sampler so the scrolled UV wraps instead of
                         // sliding the texture off its shell.
@@ -228,18 +231,43 @@ public sealed class WorldHost
         }
     }
 
-    private static System.Collections.Generic.IEnumerable<MeshInstance3D> MeshInstances(Node node)
+    /// <summary>
+    /// Separate only materials with different UV-scroll targets. Keep normal cache sharing,
+    /// and share one duplicate per identical animation profile rather than per mesh.
+    /// </summary>
+    private static void IsolateUvScrollingMaterials(
+        IReadOnlyList<RuntimeAmbientAnimation> animations,
+        IReadOnlyList<RuntimeWorldScene.AmbientMeshBinding> bindings)
     {
-        foreach (var child in node.GetChildren())
-        {
-            if (child is MeshInstance3D mi)
-            {
-                yield return mi;
-            }
+        var scrolls = animations.Where(a => a.Kind == RuntimeAmbientAnimationKind.UvScroll).ToArray();
+        if (scrolls.Length == 0) return;
 
-            foreach (var nested in MeshInstances(child))
+        string Profile(RuntimeWorldScene.AmbientMeshBinding binding) =>
+            string.Join(",", Enumerable.Range(0, scrolls.Length)
+                .Where(i => scrolls[i].Matches(binding.AssetKind, binding.TextureId, binding.PresentationGroup)));
+
+        // Group before mutating overrides: the factory deliberately shares materials by
+        // texture and render state, including across independently animated shells.
+        var materialShares = bindings
+            .Where(b => b.Mesh.MaterialOverride is StandardMaterial3D)
+            .GroupBy(b => b.Mesh.MaterialOverride!.GetInstanceId())
+            .ToArray();
+
+        foreach (var shares in materialShares)
+        {
+            var profiles = shares.GroupBy(Profile).ToArray();
+            if (profiles.Length < 2) continue;
+
+            var original = (StandardMaterial3D)shares.First().Mesh.MaterialOverride!;
+            // Leave non-scrolling users on the original material when possible.
+            var keep = profiles.FirstOrDefault(group => group.Key.Length == 0) ?? profiles[0];
+            foreach (var profile in profiles)
             {
-                yield return nested;
+                if (ReferenceEquals(profile, keep)) continue;
+
+                var isolated = (StandardMaterial3D)original.Duplicate();
+                foreach (var binding in profile)
+                    binding.Mesh.MaterialOverride = isolated;
             }
         }
     }
@@ -254,21 +282,6 @@ public sealed class WorldHost
             if (nested is not null) return nested;
         }
         return null;
-    }
-
-    /// <summary><see cref="RuntimeWorldScene"/> names each mesh instance <c>"{kind}_{textureId}"</c>.</summary>
-    private static bool TryParseKind(string name, out string kind, out int textureId)
-    {
-        kind = string.Empty;
-        textureId = 0;
-        int underscore = name.LastIndexOf('_');
-        if (underscore <= 0 || !int.TryParse(name.AsSpan(underscore + 1), out textureId))
-        {
-            return false;
-        }
-
-        kind = name[..underscore];
-        return true;
     }
 
     /// <summary>Free the loaded world and everything it owns. Safe when nothing is loaded.</summary>

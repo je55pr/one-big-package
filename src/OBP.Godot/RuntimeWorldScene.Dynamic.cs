@@ -242,7 +242,8 @@ public static partial class RuntimeWorldScene
 
 
     private static (int Count, int MeshInstances, int Triangles, IReadOnlyList<DynamicObjectNode> Nodes) BuildDynamicObjects(
-        RuntimeWorld world, Node3D root, Options options, WorldMaterialFactory mats)
+        RuntimeWorld world, Node3D root, Options options, WorldMaterialFactory mats,
+        System.Collections.Generic.List<AmbientMeshBinding> ambientBindings)
     {
         int meshInstances = 0;
         int triangles = 0;
@@ -333,6 +334,7 @@ public static partial class RuntimeWorldScene
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                     };
                     objRoot.AddChild(childMesh);
+                    ambientBindings.Add(new(childMesh, m.AssetKind, m.TextureId, null));
                     childMeshNodes.Add(childMesh);
                     childMeshes++;
                     meshInstances++;

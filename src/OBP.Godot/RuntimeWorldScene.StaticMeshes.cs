@@ -10,7 +10,8 @@ public static partial class RuntimeWorldScene
 {
     // Static, sky and presentation-group mesh construction.
     private static (int MeshInstances, int Triangles, int SkyMeshes) BuildStaticMeshes(
-        RuntimeWorld world, Node3D root, Node3D skyRoot, Options options, WorldMaterialFactory mats)
+        RuntimeWorld world, Node3D root, Node3D skyRoot, Options options, WorldMaterialFactory mats,
+        System.Collections.Generic.List<AmbientMeshBinding> ambientBindings)
     {
         var presentationGroups = new System.Collections.Generic.Dictionary<(Node3D Parent, string Group), Node3D>();
 
@@ -153,6 +154,7 @@ public static partial class RuntimeWorldScene
                 skyMeshes++;
             }
             parent.AddChild(mi);
+            ambientBindings.Add(new(mi, m.AssetKind, m.TextureId, m.PresentationGroup));
 
             meshInstances++;
             triangles += m.TriangleCount;
