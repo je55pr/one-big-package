@@ -121,6 +121,25 @@ public sealed class ActorRuntimeSetTests
     }
 
     [Fact]
+    public void BatchRetirementReportsFailuresAfterInvalidatingEverySelectedActor()
+    {
+        using var set = Create();
+        var broken = new Actor(set.Allocate(ObpSourceGame.Rac1, 749)) { ThrowOnDispose = true };
+        var later = new Actor(set.Allocate(ObpSourceGame.Rac2, 2827));
+        var unrelated = new Actor(set.Allocate(ObpSourceGame.Rac3, 500));
+        set.Register(broken); set.Register(later); set.Register(unrelated);
+        ActorInstanceKey[] invalidated = [broken.Registration.Instance, later.Registration.Instance];
+        Assert.IsType<IOException>(Assert.Single(set.RetireActors(invalidated)));
+        Assert.Equal(1, broken.DisposeCount); Assert.Equal(1, later.DisposeCount);
+        Assert.Null(set.Find(invalidated[0].Target)); Assert.Null(set.Find(invalidated[1].Target));
+        Assert.Same(unrelated, set.Find(unrelated.Registration.Instance.Target));
+        Assert.Empty(set.RetireActors(invalidated));
+        Assert.Equal(1, broken.DisposeCount); Assert.Equal(1, later.DisposeCount);
+        Assert.Throws<ArgumentException>(() => set.Register(new Actor(invalidated[0])));
+        Assert.Equal(1, set.Count);
+    }
+
+    [Fact]
     public void OneBrokenRetirementCannotLeakOtherActorsOrUpdateGroups()
     {
         var set = Create(); int ticks = 0;

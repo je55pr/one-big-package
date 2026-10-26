@@ -62,7 +62,9 @@ disposes the rejected actor without retiring an existing target with the same id
 World transitions keep decoded data but never controllers, scenes or bodies.
 Source invalidation cancels imports, drops decoded caches and retires relocated
 actors and marks both live and pending placements unavailable; reset must
-re-admit the current attachment. Stamps are checked before and
+re-admit the current attachment. Batch retirement reports individual callback
+failures only after invalidating every selected actor, then the host clears all
+placement/preparation bindings. Stamps are checked before and
 after import/baking and again before activation. Native importers currently lack
 mid-read cancellation: their result is discarded on retirement and shutdown
 awaits reader closure. A late failure stays observable without publishing to a

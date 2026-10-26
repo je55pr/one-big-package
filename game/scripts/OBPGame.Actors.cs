@@ -54,10 +54,13 @@ public partial class OBPGame
     private void ClearActorSourceCaches()
     {
         _actorSources?.Clear();
-        foreach (var instance in _actorWorld.Placed.Values.ToArray()) RetirePlacedActor(instance);
+        var instances = _actorWorld.Placed.Values.ToArray();
+        var failures = _actors?.RetireActors(instances) ?? Array.Empty<Exception>();
+        foreach (var instance in instances) UnbindPlacedActor(instance);
         foreach (string id in _actorWorld.Placements.Keys)
             _actorWorld.Problems[id] = "Actor source attachments changed. Reset the encounter after source preparation.";
         _actorWorld.Placed.Clear(); _actorWorld.Preparation.Clear(); _actorWorld.Sources.Clear();
+        foreach (var error in failures) GD.PrintErr("[actors] source invalidation retirement failed after cleanup: " + error);
     }
 
     private void PrepareActorSource(ActorPlacement placement)
@@ -177,12 +180,14 @@ public partial class OBPGame
     private void RetirePlacedActor(ActorInstanceKey instance)
     {
         try { _actors?.Retire(instance); }
-        finally
-        {
-            _actorWorld.Views.Remove(instance.Target);
-            _playerDamageActors.Remove(instance); _playerNative?.Life.RetireActor(instance);
-            _rac1BombOcclusionFrame = ulong.MaxValue;
-        }
+        finally { UnbindPlacedActor(instance); }
+    }
+
+    private void UnbindPlacedActor(ActorInstanceKey instance)
+    {
+        _actorWorld.Views.Remove(instance.Target);
+        _playerDamageActors.Remove(instance); _playerNative?.Life.RetireActor(instance);
+        _rac1BombOcclusionFrame = ulong.MaxValue;
     }
 
     private IReadOnlyDictionary<string, string> ReadPlacedActorStatus() => _actorWorld.Placements.Values.ToDictionary(

@@ -162,6 +162,19 @@ public sealed class ActorRuntimeSet(string worldInstanceId, long generation) : I
         if (_actors.Remove(key.Target, out var actor)) { _retiredTargets.Add(key.Target); actor.Dispose(); }
     }
 
+    /// <summary>Invalidate an attachment's actors without letting one failed callback retain the others.</summary>
+    public IReadOnlyList<Exception> RetireActors(IEnumerable<ActorInstanceKey> instances)
+    {
+        ArgumentNullException.ThrowIfNull(instances);
+        List<Exception>? failures = null;
+        foreach (var instance in instances)
+        {
+            try { Retire(instance); }
+            catch (Exception error) { (failures ??= []).Add(error); }
+        }
+        return failures is null ? Array.Empty<Exception>() : failures.AsReadOnly();
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
