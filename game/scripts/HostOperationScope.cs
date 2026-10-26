@@ -2,7 +2,10 @@ using System.Collections.Concurrent;
 
 namespace OBP.Game;
 
-public sealed record HostOperationFailure(string Name, Exception Error, bool Superseded);
+public sealed record HostOperationFailure(string Name, Exception Error, bool Superseded)
+{
+    public bool RequiresFailureExit(bool hostStopping) => !Superseded || hostStopping;
+}
 
 /// <summary>Own critical host work until completion or root shutdown. Failures are drained by the host.</summary>
 public sealed class HostOperationScope : IDisposable
@@ -53,9 +56,18 @@ public sealed class HostOperationScope : IDisposable
 
     public IReadOnlyList<HostOperationFailure> TakeFailures()
     {
+        if (_failures.IsEmpty) return Array.Empty<HostOperationFailure>();
         var result = new List<HostOperationFailure>();
         while (_failures.TryDequeue(out var failure)) result.Add(failure);
         return result;
+    }
+
+    /// <summary>Finish an existing persistence owner's write during quit; retain failure without skipping later cleanup.</summary>
+    public async Task ObserveQuitWriteAsync(string name, Task write)
+    {
+        if (!Stopping) throw new InvalidOperationException("Quit writes require a stopping host.");
+        try { await write; }
+        catch (Exception error) { _failures.Enqueue(new(name, error, true)); }
     }
 
     /// <summary>Idempotently cancel, await all admitted work and release cancellation resources.</summary>

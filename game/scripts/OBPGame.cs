@@ -328,8 +328,10 @@ public partial class OBPGame : Node3D
         }
         await hostStopped;
         ReportHostOperationFailures();
-        if (_bugSaveInFlight is { } save) await save;
-        if (_playtest is { } playtest) await playtest.PrepareBugCaptureQuitAsync();
+        if (_bugSaveInFlight is { } save) await _hostOperations.ObserveQuitWriteAsync("bug-report-save", save);
+        if (_playtest is { } playtest)
+            await _hostOperations.ObserveQuitWriteAsync("capture-flush", playtest.PrepareBugCaptureQuitAsync());
+        ReportHostOperationFailures();
         ReleaseAudioForExit();
 
         // Godot 4.7.2 retires stopped playbacks on the mixing thread, then

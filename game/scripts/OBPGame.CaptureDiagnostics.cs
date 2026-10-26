@@ -54,17 +54,18 @@ public partial class OBPGame
     private void TickSourceVerification()
     {
         if (_verification is not { } operation) return;
-        if (!operation.Matches(CurrentVerificationStamp(operation.Source.Game)))
+        var update = operation.Poll(Time.GetTicksMsec(), () => CurrentVerificationStamp(operation.Source.Game));
+        if (update.SourceChanged)
         {
             CancelSourceVerification(operation.Source.Game);
             ReportVerificationStatus("Verification canceled because the attached source changed.");
         }
-        else if (operation.TakeOutcome() is { } outcome)
+        else if (update.Outcome is { } outcome)
         {
             CancelSourceVerification(operation.Source.Game);
             ReportVerificationStatus($"{_loadSummary}   —   {outcome}", error: outcome.StartsWith('⚠'));
         }
-        else ReportVerificationStatus($"{_loadSummary}   —   verifying disc SHA-256… ({operation.Progress * 100:0}%)");
+        else ReportVerificationStatus($"{_loadSummary}   —   verifying disc SHA-256… ({update.Progress * 100:0}%)");
     }
 
     private void ReportVerificationStatus(string text, bool error = false)
@@ -80,7 +81,8 @@ public partial class OBPGame
         foreach (var failure in _hostOperations.TakeFailures())
         {
             GD.PrintErr($"[lifecycle] {failure.Name} failed (superseded={failure.Superseded}): {failure.Error}");
-            if (IsInsideTree()) ApplicationLifecycle.RequestQuit(this, failure.Name + "-failed", 2);
+            if (failure.RequiresFailureExit(_hostOperations.Stopping) && IsInsideTree())
+                ApplicationLifecycle.RequestQuit(this, failure.Name + "-failed", 2);
         }
     }
 

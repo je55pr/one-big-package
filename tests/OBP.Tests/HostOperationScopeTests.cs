@@ -4,6 +4,8 @@ namespace OBP.Tests;
 
 public sealed class HostOperationScopeTests
 {
+    // Bound a broken drain while allowing heavily loaded test runners.
+    private static readonly TimeSpan DeadlockTimeout = TimeSpan.FromMinutes(2);
     [Fact]
     public async Task ShutdownCancelsAndDrainsEveryAdmittedJobOnce()
     {
@@ -18,7 +20,7 @@ public sealed class HostOperationScopeTests
         Assert.Equal(3, owner.PendingCount);
         var stopped = owner.StopAsync();
         Assert.Same(stopped, owner.StopAsync());
-        await stopped;
+        await stopped.WaitAsync(DeadlockTimeout, CancellationToken.None);
         Assert.Equal(3, cleanup);
         Assert.Equal(0, owner.PendingCount);
         Assert.Empty(owner.TakeFailures());
@@ -33,7 +35,7 @@ public sealed class HostOperationScopeTests
         var asynchronous = new IOException("async failure");
         owner.Start("sync", _ => throw synchronous);
         owner.Start("async", async _ => { await Task.Yield(); throw asynchronous; });
-        await owner.StopAsync();
+        await owner.StopAsync().WaitAsync(DeadlockTimeout, CancellationToken.None);
         var failures = owner.TakeFailures();
         Assert.Equal(2, failures.Count);
         Assert.Same(synchronous, failures.Single(failure => failure.Name == "sync").Error);
@@ -53,7 +55,7 @@ public sealed class HostOperationScopeTests
         ui.Cancel();
         Assert.False(owner.Token.IsCancellationRequested);
         io.SetResult();
-        await owner.StopAsync();
+        await owner.StopAsync().WaitAsync(DeadlockTimeout, CancellationToken.None);
         Assert.False(published);
         Assert.True(rootCompleted);
         Assert.Empty(owner.TakeFailures());
@@ -70,10 +72,12 @@ public sealed class HostOperationScopeTests
         owner.Start("late-fault", async _ => { await fault.Task; throw new IOException("late IO fault"); }, ui.Token);
         owner.Start("wrong-token", _ => Task.FromCanceled(unrelated.Token));
         ui.Cancel(); fault.SetResult();
-        await owner.StopAsync();
+        await owner.StopAsync().WaitAsync(DeadlockTimeout, CancellationToken.None);
         var failures = owner.TakeFailures();
         Assert.Equal(2, failures.Count);
         Assert.True(failures.Single(failure => failure.Name == "late-fault").Superseded);
+        Assert.False(failures.Single(failure => failure.Name == "late-fault").RequiresFailureExit(hostStopping: false));
+        Assert.True(failures.Single(failure => failure.Name == "late-fault").RequiresFailureExit(hostStopping: true));
         Assert.IsAssignableFrom<OperationCanceledException>(failures.Single(failure => failure.Name == "wrong-token").Error);
     }
 
@@ -83,7 +87,7 @@ public sealed class HostOperationScopeTests
         using var owner = new HostOperationScope();
         Task? shutdown = null;
         owner.Start("quit-request", _ => { shutdown = owner.StopAsync(); return Task.CompletedTask; });
-        await shutdown!;
+        await shutdown!.WaitAsync(DeadlockTimeout, CancellationToken.None);
         Assert.Empty(owner.TakeFailures());
         Assert.Equal(0, owner.PendingCount);
     }
@@ -98,8 +102,24 @@ public sealed class HostOperationScopeTests
             using var registration = token.Register(() => throw new InvalidOperationException("hook failed"));
             await pending;
         });
-        await owner.StopAsync();
+        await owner.StopAsync().WaitAsync(DeadlockTimeout, CancellationToken.None);
         Assert.Equal(0, owner.PendingCount);
         Assert.IsType<AggregateException>(Assert.Single(owner.TakeFailures()).Error);
+    }
+
+    [Fact]
+    public async Task FailedQuitWriteRemainsObservableAndDoesNotSkipTheFollowingFlush()
+    {
+        using var owner = new HostOperationScope();
+        await owner.StopAsync().WaitAsync(DeadlockTimeout, CancellationToken.None);
+        var error = new IOException("Injected report-save failure.");
+        await owner.ObserveQuitWriteAsync("report-save", Task.FromException(error)).WaitAsync(DeadlockTimeout, CancellationToken.None);
+        bool flushed = false;
+        Task Flush() { flushed = true; return Task.CompletedTask; }
+        await owner.ObserveQuitWriteAsync("recording-flush", Flush()).WaitAsync(DeadlockTimeout, CancellationToken.None);
+        Assert.True(flushed);
+        var failure = Assert.Single(owner.TakeFailures());
+        Assert.Same(error, failure.Error);
+        Assert.True(failure.RequiresFailureExit(owner.Stopping));
     }
 }

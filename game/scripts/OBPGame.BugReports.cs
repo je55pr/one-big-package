@@ -194,7 +194,11 @@ public partial class OBPGame
         }
         catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
         { /* The view/host owner retired; completed disk IO must not update the closed view. */ }
-        catch (Exception error) { ReportBugUiFailure(ui, error); }
+        catch (Exception error)
+        {
+            ReportBugUiFailure(ui, error);
+            if (_hostOperations.Stopping) throw;
+        }
     }
 
     private void ImportBugArchive()
@@ -310,7 +314,11 @@ public partial class OBPGame
         }
         catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
         { /* Expected owner retirement; automated child cleanup still runs below. */ }
-        catch (Exception error) { ReportBugUiFailure(ui, error); }
+        catch (Exception error)
+        {
+            ReportBugUiFailure(ui, error);
+            if (_hostOperations.Stopping) throw;
+        }
         finally
         {
             // Interactive reproductions are independent user windows. An automated child must not outlive its canceled owner.

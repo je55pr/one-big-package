@@ -89,7 +89,7 @@ cancels older pending navigation before it checks the requested source/provider.
 | Movement-state load / forward replay | Root-owned launch; existing player check after collision registration; forward recording links to the current scene lease | Root cancellation cannot restore/update a released player; world change ends sampling and detaches the physics observer |
 | Bug save / export / replay | Existing save task is awaited to finish persistent IO; export/replay use root supervision plus a view token | Closing a view cancels observation and prevents UI publication after IO. Import remains synchronous. Canceled automated child replays are stopped; user-opened reproduction windows remain independent |
 | Recording save and replay bookmarks | Root-owned completion; persistent writer flush remains deliberately non-cancellable | Shutdown admits no new save jobs and waits for saved prefixes before releasing writer resources; the existing final recording/replay callbacks, schemas and native tick order stay unchanged |
-| Optional native hash verification | `SourceVerificationOperation` owns immutable attachment stamp, progress and one outcome | Attach/detach, changed file stamp or quit cancels it; reader closure is awaited; an old operation cannot write replacement progress/result |
+| Optional native hash verification | `SourceVerificationOperation` owns immutable attachment stamp, progress and one outcome | Attach/detach or quit cancels it; metadata is checked at most every 250 ms during progress and always before publishing an outcome; reader closure is awaited |
 | Explicit world/player/native smoke commands | Most have top-level failure-to-exit handling; several intentionally traverse worlds | Root-lifetime diagnostics, not automatically canceled on every world transition; preserve native tick ordering |
 
 Cancellation is expected only for the operation's own token. Other faults remain
@@ -107,6 +107,13 @@ in an explicit queue drained by the host and by quit preparation. A shutdown
 failure upgrades an earlier successful quit result. External engine teardown also
 requests cancellation; normal app exits await completion before releasing audio,
 scene and source resources.
+
+Superseded failures remain logged without quitting a replacement view/world.
+During shutdown, they still produce a failing exit status. A failed report save
+is observed without skipping the subsequent writer flush or audio drain. The
+complete movement-state diagnostic is admitted to the root owner, including its
+existing finite settling checks and replay sampling, so cleanup waits for its
+whole task rather than only the inner load/replay helpers.
 
 `GodotAsyncWait` disconnects parameterless signal subscriptions on completion or
 cancellation. Successful waits retain the signal's callback phase, including
@@ -135,6 +142,8 @@ quit reentrancy, callback failure and a complete shutdown drain.
 `SourceVerificationOperationTests` check delayed results from retired attachments,
 exact stamp admission and progress/outcome ownership. Architecture guards reject
 unowned critical launches and reintroduced shared verification fields.
+The invocation guard scans all `OBPGame` partials with Roslyn, including diagnostic
+files; targeted syntax cases cover discarded/assigned calls and ownership wrappers.
 
 The headless `tools/player-session-smoke.ps1` checks real native/Lab transitions,
 one player/scene, retained session state, missing-source/failed-stage isolation
