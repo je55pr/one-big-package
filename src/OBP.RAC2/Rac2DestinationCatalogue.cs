@@ -43,6 +43,6 @@ public sealed class Rac2DestinationCatalogue : IObpDestinationCatalogue
             Rac2LevelKind.SpaceCombat => ObpDestinationKind.SpaceCombat,
             Rac2LevelKind.Scene => ObpDestinationKind.Scene,
             Rac2LevelKind.Unresolved => ObpDestinationKind.Unresolved,
-            _ => throw new ArgumentOutOfRangeException(nameof(entry.Kind), entry.Kind, "Unknown GC destination kind."),
+            _ => throw new ArgumentOutOfRangeException(nameof(entry), entry.Kind, "Unknown GC destination kind."),
         });
 }

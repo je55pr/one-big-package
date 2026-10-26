@@ -846,9 +846,14 @@ OBP requires your own supported retail game files to load original levels. **No 
 
 # Tests that require locally supplied game data
 ./tools/test-retail.ps1
+
+# Portable tests and validated managed coverage (no retail data)
+./tools/test-coverage.ps1 -Configuration Release
 ```
 
 Pull requests run .NET tests (including strict C# UID sidecar coverage), CodeQL analysis and an asset-free Godot startup test. The Godot smoke also checks that the preceding pinned headless import left the game working tree unchanged. The six .NET xUnit UID-tooling regressions run with the ordinary test suite. Some R&C1 gameplay can be recorded and replayed; see [movement and replay documentation](docs/MOVEMENT_REPRO_STATES.md).
+
+CI publishes a `portable-coverage` artifact with module/file reports and a job summary. See [coverage scope, baseline and analysis policy](docs/TEST_COVERAGE.md), including the explicit limits of linked host measurement and Sonar's currently unavailable coverage import.
 
 ## Documentation
 
