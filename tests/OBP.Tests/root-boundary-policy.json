@@ -2419,142 +2419,142 @@
   ],
   "LegacyAccess": [
     {
-      "Key": "game/diagnostics/ControllerSmoke.Loadout.cs::ControllerSmoke::OBP.Game.OBPGame.ReadPlayerEquipment()",
+      "Key": "game/diagnostics/ControllerSmoke.Loadout.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.ReadPlayerEquipment()",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.Loadout.cs::ControllerSmoke::OBP.Game.OBPGame.ReadPlayerQuickSlots()",
+      "Key": "game/diagnostics/ControllerSmoke.Loadout.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.ReadPlayerQuickSlots()",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::OBP.Game.OBPGame",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::OBP.Game.OBPGame.CheckControllerWeaponInputAsync()",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.CheckControllerWeaponInputAsync()",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::OBP.Game.OBPGame.OpenDestinationFromBootstrap(string)",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.OpenDestinationFromBootstrap(string)",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::OBP.Game.OBPGame.ReadPlayerEquipment()",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.ReadPlayerEquipment()",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::OBP.Game.OBPGame.RememberCommandLineSource(OBP.Core.ObpSourceGame, string, bool)",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.RememberCommandLineSource(OBP.Core.ObpSourceGame, string, bool)",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::OBP.Game.OBPGame.ShowSourceManagerFromBootstrap()",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::OBP.Game.OBPGame.ShowSourceManagerFromBootstrap()",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/diagnostics/ControllerSmoke.cs::ControllerSmoke::bool persist",
+      "Key": "game/diagnostics/ControllerSmoke.cs::OBP.Game.ControllerSmoke::bool persist",
       "Owner": "#339",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.BugReportModalOpen",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.BugReportModalOpen",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.LoadMovementStateFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.LoadMovementStateFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.OpenDestinationFromBootstrap(string)",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.OpenDestinationFromBootstrap(string)",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.OpenLegacyRac2DestinationFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.OpenLegacyRac2DestinationFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.OpenRac1CampaignCurrentFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.OpenRac1CampaignCurrentFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.ProfileRecoveryRequired",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.ProfileRecoveryRequired",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.RequireStartupSetup()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RequireStartupSetup()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.RunRac2StressSwitchFromBootstrap(string)",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac2StressSwitchFromBootstrap(string)",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.ShowDestinationSelectorFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.ShowDestinationSelectorFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.ShowSourceManagerFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.ShowSourceManagerFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.ShowTitleFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.ShowTitleFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.StartupArgs",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.StartupArgs",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.TryCloseRac1PlanetMap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.TryCloseRac1PlanetMap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.TryHandleInteractiveBack()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.TryHandleInteractiveBack()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.TryOpenRac1PlanetMap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.TryOpenRac1PlanetMap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.TryOpenWeaponQuickSelect(Godot.InputEvent)",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.TryOpenWeaponQuickSelect(Godot.InputEvent)",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     },
     {
-      "Key": "game/scripts/SourceManagerBootstrap.cs::SourceManagerBootstrap::OBP.Game.OBPGame.TryResumeSharedProfileFromBootstrap()",
+      "Key": "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.TryResumeSharedProfileFromBootstrap()",
       "Owner": "#346",
       "Rationale": "Existing typed bootstrap/controller integration; migrate to a narrow owner port without expanding root access."
     }

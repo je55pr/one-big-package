@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -19,13 +21,16 @@ public sealed record RootReference(string From, string To, string Member, bool E
 public sealed record RootFileCensus(string Path, int Lines, int Methods, int Fields, int MutableFields, int ExposedMembers);
 public sealed record RootCensus(int Files, int Lines, int Methods, int Fields, int MutableFields, int ExposedMembers,
     RootFileCensus[] ByFile, RootReference[] CrossPartialReferences);
+public sealed record RootBuild(string Name, string[] Symbols, CSharpCompilation Compilation);
 
 /// <summary>Structural ownership guard. Native semantics and the width of reviewed ports still require code review.</summary>
 public static class RootBoundaryAudit
 {
     public const string RootName = "OBP.Game.OBPGame";
     public const string BaselineCommit = "eea806399f864f30949d665701d39d510549a7ac";
-    public const string FrozenOriginHash = "f03bf71a5a63b5b3445b6a15f8493111cb3b8113f329c74aab91230948824051";
+    public const string FrozenOriginHash = "9c46d5abaab02c0be6eb64e9ba1ec6497d92309b3cad9dececc245ed2cdd8f91";
+    private static readonly ConditionalWeakTable<CSharpCompilation, RootMember[]> MemberCache = new();
+    private static readonly ConditionalWeakTable<CSharpCompilation, RootReference[]> ReferenceCache = new();
 
     private static readonly Lazy<PortableExecutableReference[]> Metadata = new(() =>
     {
@@ -43,16 +48,44 @@ public static class RootBoundaryAudit
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
 
-    public static CSharpCompilation Read(string root) => Compile(Directory.EnumerateFiles(Path.Combine(root, "game"), "*.cs", SearchOption.AllDirectories)
+    private static string[] SourceFiles(string root) => Directory.EnumerateFiles(Path.Combine(root, "game"), "*.cs", SearchOption.AllDirectories)
         .Where(path => !new[] { "/obj/", "/bin/", "/.godot/" }.Any(part => path.Replace('\\', '/').Contains(part, StringComparison.Ordinal)))
-        .Order(StringComparer.Ordinal).Select(path => CSharpSyntaxTree.ParseText(File.ReadAllText(path),
-            path: Path.GetRelativePath(root, path).Replace('\\', '/'))));
+        .Order(StringComparer.Ordinal).ToArray();
+
+    public static CSharpCompilation Read(string root) => ReadBuilds(root)[0].Compilation;
+
+    public static RootBuild[] ReadBuilds(string root)
+    {
+        var files = SourceFiles(root).Select(path => (Path: Path.GetRelativePath(root, path).Replace('\\', '/'), Text: File.ReadAllText(path))).ToArray();
+        var builds = new List<RootBuild>();
+        foreach (string configuration in new[] { "Debug", "Release" })
+            foreach (string platform in new[] { "windows", "linuxbsd" })
+            {
+                // Evaluate the real SDK/project symbols without compiling or emitting app code.
+                var start = new ProcessStartInfo("dotnet") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                foreach (string argument in new[] { "msbuild", Path.Combine(root, "game", "OBP.Game.csproj"), "-nologo",
+                    "-target:AddImplicitDefineConstants", "-getProperty:DefineConstants", "-p:Configuration=" + configuration, "-p:GodotTargetPlatform=" + platform })
+                    start.ArgumentList.Add(argument);
+                using var process = Process.Start(start) ?? throw new IOException("Cannot evaluate diagnostic build symbols.");
+                var output = process.StandardOutput.ReadToEndAsync();
+                var error = process.StandardError.ReadToEndAsync();
+                if (!process.WaitForExit(60_000)) { process.Kill(entireProcessTree: true); throw new IOException("Build-symbol evaluation timed out."); }
+                if (process.ExitCode != 0) throw new IOException("Build-symbol evaluation failed: " + error.GetAwaiter().GetResult());
+                string[] symbols = output.GetAwaiter().GetResult().Trim().Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (!symbols.Contains("GODOT", StringComparer.Ordinal)) throw new InvalidDataException("The game SDK did not provide its build symbols.");
+                var options = CSharpParseOptions.Default.WithPreprocessorSymbols(symbols);
+                builds.Add(new(configuration + "/" + platform, symbols,
+                    Compile(files.Select(file => CSharpSyntaxTree.ParseText(file.Text, options, file.Path)))));
+            }
+        return builds.ToArray();
+    }
 
     private static IEnumerable<BaseTypeDeclarationSyntax> RootScopes(SyntaxTree tree) => tree.GetRoot().DescendantNodes()
         .OfType<BaseTypeDeclarationSyntax>().Where(type => IsRoot(type) || type.Ancestors().OfType<BaseTypeDeclarationSyntax>().Any(IsRoot));
 
     private static bool IsRoot(BaseTypeDeclarationSyntax type) => type.Identifier.ValueText == "OBPGame" &&
-        string.Join(".", type.Ancestors().OfType<BaseNamespaceDeclarationSyntax>().Reverse().Select(ns => ns.Name.ToString())) == "OBP.Game";
+        string.Join(".", type.Ancestors().OfType<BaseNamespaceDeclarationSyntax>().Reverse()
+            .SelectMany(ns => ns.Name.DescendantTokens().Where(token => token.IsKind(SyntaxKind.IdentifierToken)).Select(token => token.ValueText))) == "OBP.Game";
 
     private static string Scope(BaseTypeDeclarationSyntax type) => string.Join("+", type.AncestorsAndSelf()
         .OfType<BaseTypeDeclarationSyntax>().Reverse().Select(item => item.Identifier.ValueText));
@@ -60,7 +93,9 @@ public static class RootBoundaryAudit
     private static string Tokens(SyntaxNode node) => string.Join(" ", node.DescendantTokens().Select(token => token.Text.Replace("\r\n", "\n", StringComparison.Ordinal)));
     private static string Hash(SyntaxNode node) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Tokens(node)))).ToLowerInvariant();
 
-    public static RootMember[] Members(CSharpCompilation compilation)
+    public static RootMember[] Members(CSharpCompilation compilation) => [.. MemberCache.GetValue(compilation, ComputeMembers)];
+
+    private static RootMember[] ComputeMembers(CSharpCompilation compilation)
     {
         var result = new List<RootMember>();
         foreach (var tree in compilation.SyntaxTrees)
@@ -102,9 +137,18 @@ public static class RootBoundaryAudit
         return result.OrderBy(item => item.Key, StringComparer.Ordinal).ToArray();
     }
 
+    public static RootMember[] Members(IEnumerable<CSharpCompilation> compilations) => compilations.SelectMany(Members)
+        .GroupBy(member => member.Key, StringComparer.Ordinal).Select(group =>
+        {
+            string[] hashes = group.Select(member => member.Hash).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+            return group.First() with { Hash = hashes.Length == 1 ? hashes[0] : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("\n", hashes)))).ToLowerInvariant() };
+        }).OrderBy(member => member.Key, StringComparer.Ordinal).ToArray();
+
     private static string Parameter(ParameterSyntax parameter) => string.Join(" ", parameter.Modifiers.Select(token => token.Text)) + ":" + (parameter.Type is { } type ? Tokens(type) : "");
 
-    public static RootReference[] References(CSharpCompilation compilation)
+    public static RootReference[] References(CSharpCompilation compilation) => [.. ReferenceCache.GetValue(compilation, ComputeReferences)];
+
+    private static RootReference[] ComputeReferences(CSharpCompilation compilation)
     {
         var root = compilation.GetTypeByMetadataName(RootName);
         if (root is null) return [];
@@ -120,7 +164,7 @@ public static class RootBoundaryAudit
                 string owner = symbol!.DeclaringSyntaxReferences.FirstOrDefault()?.SyntaxTree.FilePath ?? "";
                 var enclosing = name.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
                 bool privileged = enclosing is not null && (IsRoot(enclosing) || enclosing.Ancestors().OfType<TypeDeclarationSyntax>().Any(IsRoot));
-                string scope = enclosing is null ? "<top-level>" : Scope(enclosing);
+                string scope = enclosing is null ? "<top-level>" : model.GetDeclaredSymbol(enclosing)?.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat) ?? Scope(enclosing);
                 string member = symbol.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
                 string key = tree.FilePath + "::" + scope + "::" + member;
                 if (!privileged || owner != tree.FilePath)
@@ -129,6 +173,9 @@ public static class RootBoundaryAudit
         }
         return references.Values.OrderBy(item => item.Key, StringComparer.Ordinal).ToArray();
     }
+
+    public static RootReference[] References(IEnumerable<CSharpCompilation> compilations) => compilations.SelectMany(References)
+        .GroupBy(reference => reference.Key, StringComparer.Ordinal).Select(group => group.First()).OrderBy(reference => reference.Key, StringComparer.Ordinal).ToArray();
 
     public static RootCensus Census(CSharpCompilation compilation)
     {
@@ -145,17 +192,22 @@ public static class RootBoundaryAudit
             files.Sum(item => item.MutableFields), files.Sum(item => item.ExposedMembers), files, References(compilation));
     }
 
-    public static string[] Violations(CSharpCompilation compilation, RootBoundaryPolicy policy)
+    public static string[] Violations(CSharpCompilation compilation, RootBoundaryPolicy policy) => Violations([compilation], policy);
+
+    public static string[] Violations(IEnumerable<CSharpCompilation> compilations, RootBoundaryPolicy policy)
     {
-        var errors = BoundaryViolations(compilation, policy).ToList();
+        var errors = BoundaryViolations(compilations, policy).ToList();
         if (policy.Version != 1 || policy.BaselineCommit != BaselineCommit) errors.Add("OBP002 Invalid frozen root boundary policy version/commit.");
         if (OriginHash(policy) != FrozenOriginHash) errors.Add("OBP002 Frozen origin ledger changed (" + OriginHash(policy) + "); use named composition exceptions and retire old entries.");
         return errors.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
     }
 
     /// <summary>Structural rules, independently testable on small compilations; CI also validates the pinned origin.</summary>
-    public static string[] BoundaryViolations(CSharpCompilation compilation, RootBoundaryPolicy policy)
+    public static string[] BoundaryViolations(CSharpCompilation compilation, RootBoundaryPolicy policy) => BoundaryViolations([compilation], policy);
+
+    public static string[] BoundaryViolations(IEnumerable<CSharpCompilation> compilations, RootBoundaryPolicy policy)
     {
+        var builds = compilations.ToArray();
         var errors = new List<string>();
         var original = policy.LegacyFiles.SelectMany(file => file.Members).ToHashSet(StringComparer.Ordinal);
         var legacy = original.Except(policy.RetiredMembers).ToHashSet(StringComparer.Ordinal);
@@ -165,7 +217,7 @@ public static class RootBoundaryAudit
         var files = policy.LegacyFiles.Select(file => file.Path).ToHashSet(StringComparer.Ordinal);
         foreach (var file in policy.LegacyFiles)
             if (string.IsNullOrWhiteSpace(file.Owner) || string.IsNullOrWhiteSpace(file.Rationale)) errors.Add("OBP002 Missing migration owner/rationale: " + file.Path);
-        var members = Members(compilation);
+        var members = Members(builds);
         foreach (var member in members)
         {
             if (!files.Contains(member.Path)) errors.Add("OBP002 New root partial/scope: " + member.Path);
@@ -181,7 +233,7 @@ public static class RootBoundaryAudit
         var access = policy.LegacyAccess.Where(item => !policy.RetiredAccess.Contains(item.Key, StringComparer.Ordinal)).ToDictionary(item => item.Key, StringComparer.Ordinal);
         if (policy.RetiredAccess.Distinct(StringComparer.Ordinal).Count() != policy.RetiredAccess.Length || policy.RetiredAccess.Any(key => policy.LegacyAccess.All(item => item.Key != key)))
             errors.Add("OBP002 Invalid/duplicate root access retirement.");
-        var external = References(compilation).Where(reference => reference.External).ToArray();
+        var external = References(builds).Where(reference => reference.External).ToArray();
         foreach (var reference in external)
             if (!access.TryGetValue(reference.Key, out var entry) || string.IsNullOrWhiteSpace(entry.Owner) || string.IsNullOrWhiteSpace(entry.Rationale))
                 errors.Add("OBP002 Unapproved external root access: " + reference.Key);

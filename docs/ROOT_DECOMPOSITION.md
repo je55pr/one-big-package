@@ -37,6 +37,13 @@ Godot callbacks are included. These are measurements, not size quotas.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds
 references and identifies the class declaration rather than its filename.
+It evaluates the actual game's MSBuild `DefineConstants` (including implicit
+.NET framework constants) for Debug/Release on Windows/LinuxBSD, the supported
+desktop targets. All four compilations contribute to the permission check;
+an inactive conditional branch in one build is not a retirement. Reports retain
+per-configuration symbols/census and the union of member/reference keys.
+Escaped identifiers are decoded, and external consumer identities include
+their namespace/containing type/generic arity rather than only a short name.
 
 The guard rejects:
 

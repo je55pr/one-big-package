@@ -9,15 +9,18 @@ if (args.Length != 2 || args[0] is not ("census" or "check"))
 try
 {
     string root = Path.GetFullPath(args[1]);
-    var compilation = RootBoundaryAudit.Read(root);
+    var builds = RootBoundaryAudit.ReadBuilds(root);
+    var compilations = builds.Select(build => build.Compilation).ToArray();
     if (args[0] == "census")
     {
-        Console.WriteLine(JsonSerializer.Serialize(new { Census = RootBoundaryAudit.Census(compilation), Members = RootBoundaryAudit.Members(compilation) }, new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine(JsonSerializer.Serialize(new { Census = RootBoundaryAudit.Census(compilations[0]),
+            Configurations = builds.Select(build => new { build.Name, build.Symbols, Census = RootBoundaryAudit.Census(build.Compilation) }),
+            Members = RootBoundaryAudit.Members(compilations), References = RootBoundaryAudit.References(compilations) }, new JsonSerializerOptions { WriteIndented = true }));
         return 0;
     }
     var policy = JsonSerializer.Deserialize<RootBoundaryPolicy>(File.ReadAllText(Path.Combine(root, "tests", "OBP.Tests", "root-boundary-policy.json")))
         ?? throw new InvalidDataException("Missing root boundary policy.");
-    var errors = RootBoundaryAudit.Violations(compilation, policy);
+    var errors = RootBoundaryAudit.Violations(compilations, policy);
     foreach (string error in errors) Console.Error.WriteLine(error);
     Console.WriteLine($"Root boundary: {errors.Length} violation(s).");
     return errors.Length == 0 ? 0 : 1;

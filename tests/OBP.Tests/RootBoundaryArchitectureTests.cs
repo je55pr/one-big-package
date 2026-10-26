@@ -8,7 +8,7 @@ public sealed class RootBoundaryArchitectureTests
 {
     private const string PathName = "game/scripts/OBPGame.cs";
     private const string Fixture = "namespace OBP.Game; public partial class OBPGame { private int _old; public int Read() => _old; }";
-    private static readonly Lazy<Microsoft.CodeAnalysis.CSharp.CSharpCompilation> Host = new(() => RootBoundaryAudit.Read(RepoPaths.Root));
+    private static readonly Lazy<RootBuild[]> Host = new(() => RootBoundaryAudit.ReadBuilds(RepoPaths.Root));
     private static RootBoundaryPolicy Policy => JsonSerializer.Deserialize<RootBoundaryPolicy>(File.ReadAllText(
         Path.Combine(RepoPaths.Root, "tests/OBP.Tests/root-boundary-policy.json")))!;
 
@@ -26,7 +26,7 @@ public sealed class RootBoundaryArchitectureTests
     [Fact]
     public void ActualRootAndExternalAccessMatchTheFrozenMigrationLedger()
     {
-        var errors = RootBoundaryAudit.Violations(Host.Value, Policy);
+        var errors = RootBoundaryAudit.Violations(Host.Value.Select(build => build.Compilation), Policy);
         Assert.True(errors.Length == 0, string.Join("\n", errors));
     }
 
@@ -70,6 +70,60 @@ public sealed class RootBoundaryArchitectureTests
         var original = Compile((PathName, Fixture));
         var changed = Compile((PathName, Fixture), (path, "namespace OBP.Game; public partial class OBPGame { private void ConfigureRac3Enemy() {} }"));
         Assert.Contains(RootBoundaryAudit.BoundaryViolations(changed, FixturePolicy(original)), error => error.Contains("New root partial/scope", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void EscapedNamespaceIdentifiersCannotHideAnotherRootPartial()
+    {
+        var original = Compile((PathName, Fixture));
+        var changed = Compile((PathName, Fixture), ("game/diagnostics/Escaped.cs",
+            "namespace @OBP.@Game; public partial class @OBPGame { private int _escapedState; }"));
+        Assert.Contains(RootBoundaryAudit.BoundaryViolations(changed, FixturePolicy(original)), error => error.Contains("_escapedState", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ConditionalMembersAreAuditedAcrossBothBuildConfigurations()
+    {
+        const string source = "namespace OBP.Game; public partial class OBPGame {\n#if DEBUG\nprivate int _debugState;\n#else\nprivate int _releaseState;\n#endif\n}";
+        var debug = RootBoundaryAudit.Compile([CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithPreprocessorSymbols("DEBUG"), PathName)]);
+        var release = RootBoundaryAudit.Compile([CSharpSyntaxTree.ParseText(source, CSharpParseOptions.Default.WithPreprocessorSymbols("RELEASE"), PathName)]);
+        var original = Compile((PathName, "namespace OBP.Game; public partial class OBPGame {}"));
+        var errors = RootBoundaryAudit.BoundaryViolations(new[] { debug, release }, FixturePolicy(original));
+        Assert.Contains(errors, error => error.Contains("_debugState", StringComparison.Ordinal));
+        Assert.Contains(errors, error => error.Contains("_releaseState", StringComparison.Ordinal));
+        var members = RootBoundaryAudit.Members(new[] { debug, release });
+        var accepted = new RootBoundaryPolicy(1, RootBoundaryAudit.BaselineCommit,
+            [new(PathName, "#376", "Conditional fixture", members.Select(member => member.Key).ToArray())], [], [], [], []);
+        Assert.Empty(RootBoundaryAudit.BoundaryViolations(new[] { debug, release }, accepted));
+    }
+
+    [Fact]
+    public void RealBuildSymbolsCoverSupportedDesktopTargetsAndConfigurations()
+    {
+        Assert.Equal(new[] { "Debug/linuxbsd", "Debug/windows", "Release/linuxbsd", "Release/windows" }, Host.Value.Select(build => build.Name).Order(StringComparer.Ordinal));
+        foreach (var build in Host.Value)
+        {
+            Assert.Contains("NET8_0", build.Symbols); Assert.Contains("GODOT", build.Symbols);
+            Assert.Contains(build.Name.StartsWith("Debug", StringComparison.Ordinal) ? "DEBUG" : "RELEASE", build.Symbols);
+            Assert.Contains(build.Name.EndsWith("windows", StringComparison.Ordinal) ? "GODOT_WINDOWS" : "GODOT_LINUXBSD", build.Symbols);
+        }
+    }
+
+    [Fact]
+    public void SameNamedConsumersInDifferentNamespacesCannotShareAnAccessException()
+    {
+        const string path = "game/diagnostics/Consumers.cs";
+        const string allowed = "namespace Allowed { class Consumer { int Read(OBP.Game.OBPGame root) => root.Read(); } }";
+        const string unexpected = "namespace Unexpected { class Consumer { int Read(OBP.Game.OBPGame root) => root.Read(); } }";
+        var original = Compile((PathName, Fixture), (path, allowed));
+        var policy = FixturePolicy(original) with
+        {
+            LegacyAccess = RootBoundaryAudit.References(original).Where(reference => reference.External)
+                .Select(reference => new RootAccessPolicy(reference.Key, "#337", "Existing fixture consumer")).ToArray()
+        };
+        Assert.Empty(RootBoundaryAudit.BoundaryViolations(original, policy));
+        var changed = Compile((PathName, Fixture), (path, allowed + unexpected));
+        Assert.Contains(RootBoundaryAudit.BoundaryViolations(changed, policy), error => error.Contains("Unexpected.Consumer", StringComparison.Ordinal));
     }
 
     [Theory]
