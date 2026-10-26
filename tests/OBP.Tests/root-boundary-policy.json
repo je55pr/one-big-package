@@ -2587,6 +2587,34 @@
       "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
       "ExpiresWith": "#344",
       "Hash": "b89f91bf322c7843c3576475646e5c94bb1296da03096c610d457684bff18727"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
+      "Owner": "#337",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
+      "ExpiresWith": "#348",
+      "Hash": "5c96f96cfcbac45889c6f5c58092558ae2b5bc0acd98980db87951e0a1e9847e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1StartupVisibilitySmokeFromBootstrap():void:public",
+      "Owner": "#337",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
+      "ExpiresWith": "#346",
+      "Hash": "0c8d90f79aba0796f99af55030ce77f69aa21a277d53d4f9edc7bf6100739a89"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:private",
+      "Owner": "#337",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
+      "ExpiresWith": "#340",
+      "Hash": "b87f685890d9c65491f929226699505eb999d28302a03f172ab7ea813f0b0759"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1WorldRetailNavigationSmokeAsync(:string):Task:private",
+      "Owner": "#337",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
+      "ExpiresWith": "#343",
+      "Hash": "857a7a6c6ce1df3d402d1648493fa9411c186cb95403f37eff90b4bec95a7225"
     }
   ],
   "RetiredMembers": [
@@ -2597,7 +2625,26 @@
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:FinishAcceptanceFailure(:string,:Exception,:string):void:private",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame::method:WriteAcceptanceEvidence(:string,:Exception ?):void:private",
     "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::method:DispatchRequestedWorldSmokes(:ObpDestination):void:private"
+    "game/diagnostics/OBPGame.SmokeDispatch.cs::OBPGame::method:DispatchRequestedWorldSmokes(:ObpDestination):void:private",
+    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::method:CheckOrdinaryUiStartupAsync():Task:async,private",
+    "game/diagnostics/OBPGame.OrdinaryUiSmoke.cs::OBPGame::method:RunOrdinaryUiSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:AssertNoStartupPlaceholderVisible(:string):void:private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:AssertRac1StartupGameplayReady():void:private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:RunRac1StartupVisibilitySmokeAsync():System . Threading . Tasks . Task:async,private",
+    "game/diagnostics/OBPGame.Rac1StartupVisibilitySmoke.cs::OBPGame::method:RunRac1StartupVisibilitySmokeFromBootstrap():void:public",
+    "game/diagnostics/OBPGame.Rac1VeldinRetailPauseSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1VeldinRetailPauseSmoke.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::field:_retailReviewInputGuard:Rac1PauseSmokeInputGuard ?:private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:EnumerateControls(:Node):IEnumerable < Control >:private,static",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewFrames(:int):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewPage(:PauseMenuUi,:Rac1RetailMenuPage,:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:ReviewTap(:JoyButton):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WorldRetailReviewSmoke.cs::OBPGame::method:RunRac1WorldRetailNavigationSmokeAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.SourceSetupCheck.cs::OBPGame::method:RunSourceSetupCheckAsync():Task:async,private"
   ],
   "RetiredAccess": []
 }

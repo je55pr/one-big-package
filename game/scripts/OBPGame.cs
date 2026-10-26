@@ -97,7 +97,7 @@ public partial class OBPGame : Node3D
 
         BuildSkeleton();
         if (!InitializeStartupSources()) return;
-        if (_args.OrdinaryUiSmoke) _ = RunOrdinaryUiSmokeAsync();
+        if (_args.OrdinaryUiSmoke) CreateUiDiagnosticHarness().Start("ordinary-ui-smoke");
 
         // Dedicated deterministic fixture through the same playable Lab host
         // used by the ordinary World Select button.
@@ -806,6 +806,45 @@ public partial class OBPGame : Node3D
             },
         });
     }
+
+    // Temporary composition for retained Phase 1 callers. #340/#343 remove the nested pause entrypoints;
+    // #346/#347/#348 move these bindings to their source/navigation/pause owners.
+    private UiDiagnosticHarness CreateUiDiagnosticHarness()
+    {
+        var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
+        var menus = new GodotDiagnosticMenus(this, _worldRoot,
+            () => new(_mode == Mode.Title, _mode == Mode.Selector, _mode == Mode.World, _mode == Mode.Picker,
+                _diagnosticSourceAccess, _sourceManager is not null, _titleScreen is not null, _world is not null,
+                _currentDestinationId, _profileDocument?.Destination, _profileWriteBlocked, null, false, false),
+            () => new([], _player?.VisualRoot.FallbackVisible == true, _sceneResult is not null,
+                _player is not null && IsInstanceValid(_player), _playerAvatarView is not null && IsInstanceValid(_playerAvatarView),
+                _player is not null && ReferenceEquals(_activeCamera, _player.Camera) && _player.Camera.Current, _world?.LevelId),
+            surface => surface switch
+            {
+                DiagnosticMenuSurface.Title => _titleScreen,
+                DiagnosticMenuSurface.WorldSelect => _destinationSelector,
+                DiagnosticMenuSurface.Overlay => _ui,
+                DiagnosticMenuSurface.World => _sceneResult?.Root,
+                DiagnosticMenuSurface.Pause => _pauseMenu,
+                _ => null
+            },
+            () => _titleScreen, () => _destinationSelector, () => _pauseMenu,
+            ShowTitleScreen, ShowDestinationSelector, TryHandleInteractiveBack, TryOpenPauseMenu, TryClosePauseMenu);
+        return new(_args, !_diagnosticSourceAccess,
+            [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], menus,
+            new DiagnosticPlayerContinuityAdapter(() => _playerSession?.Capture() ?? throw new DiagnosticUnavailableException("The player session is missing.")),
+            new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),
+            new DiagnosticSourceRepairFixture(_sources.Remove, RequireOrdinarySourceSetup, () => _rac1CampaignSession),
+            new GodotRetailPauseFixture(this, () => _player, () => _pauseMenu, () => PauseMenuOpen, TryOpenPauseMenu, TryClosePauseMenu, () => _rac1Weapons, worlds), worlds,
+            new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+                new GodotDiagnosticFrameClock(this)), _hostOperations,
+            (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
+    }
+
+    public void RunRac1StartupVisibilitySmokeFromBootstrap() => CreateUiDiagnosticHarness().Start("rac1-startup-visibility-smoke");
+    private Task RunRac1VeldinRetailPauseSmokeAsync() => CreateUiDiagnosticHarness().RunVeldinPauseAsync(LegacyDiagnosticCancellation.Current);
+    private Task RunRac1WorldRetailNavigationSmokeAsync(string world) => CreateUiDiagnosticHarness().RunRetailNavigationAsync(world, LegacyDiagnosticCancellation.Current);
 
     private void BuildScene(string scene)
     {

@@ -75,7 +75,7 @@ public partial class OBPGame
                 StartRequestedSourceVerification(nativeDestination, sourcePath!);
             }
             SaveSharedProfile("world transition");
-            if (_args.SourceSetupCheck && _worldSwitches == 1) _ = RunSourceSetupCheckAsync();
+            if (_args.SourceSetupCheck && _worldSwitches == 1) CreateUiDiagnosticHarness().Start("source-setup-check");
             if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
             _playtest?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();

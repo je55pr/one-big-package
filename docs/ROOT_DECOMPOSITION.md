@@ -46,6 +46,15 @@ Legacy scenario invocation callbacks remain until their individual Phase 1
 suites migrate. This is a bounded intermediate measurement, not completion of
 the diagnostic extraction programme.
 
+The #337 startup/menu/pause extraction then removes five more diagnostic
+fragments and 19 historical member/declaration permissions. The root has
+115 files, 746 direct methods and 456 fields (311 mutable); the public root
+surface remains 44 members. The removed review input-guard field is owned by
+the disposable engine fixture. Four exact composition entries bind narrow UI
+ports and delegate the retained bootstrap/nested callers; their removal owners
+are #340/#343 and #346/#348. All UI assertions and scenario control flow live
+outside the root. The frozen origin ledger is unchanged.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

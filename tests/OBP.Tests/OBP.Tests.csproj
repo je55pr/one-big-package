@@ -33,6 +33,14 @@
     <Compile Include="../../game/diagnostics/LegacyDiagnosticScenario.cs" Link="Diagnostics/LegacyDiagnosticScenario.cs" />
     <Compile Include="../../game/diagnostics/ExistingDiagnosticWorld.cs" Link="Diagnostics/ExistingDiagnosticWorld.cs" />
     <Compile Include="../../game/diagnostics/WorldSmokeHarness.cs" Link="Diagnostics/WorldSmokeHarness.cs" />
+    <Compile Include="../../game/diagnostics/UiDiagnosticPorts.cs" Link="Diagnostics/UiDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/OrdinaryUiScenario.cs" Link="Diagnostics/OrdinaryUiScenario.cs" />
+    <Compile Include="../../game/diagnostics/SourceSetupScenario.cs" Link="Diagnostics/SourceSetupScenario.cs" />
+    <Compile Include="../../game/diagnostics/StartupVisibilityScenario.cs" Link="Diagnostics/StartupVisibilityScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1VeldinRetailPauseScenario.cs" Link="Diagnostics/Rac1VeldinRetailPauseScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1RetailNavigationScenario.cs" Link="Diagnostics/Rac1RetailNavigationScenario.cs" />
+    <Compile Include="../../game/diagnostics/DiagnosticProcessScenario.cs" Link="Diagnostics/DiagnosticProcessScenario.cs" />
+    <Compile Include="../../game/diagnostics/UiDiagnosticHarness.cs" Link="Diagnostics/UiDiagnosticHarness.cs" />
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />

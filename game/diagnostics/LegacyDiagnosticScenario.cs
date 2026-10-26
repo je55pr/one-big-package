@@ -3,10 +3,15 @@ using OBP.Godot;
 namespace OBP.Game.Diagnostics;
 
 public sealed record DiagnosticExit(string Reason, int Code);
+public interface IDiagnosticProcessOutcome
+{
+    DiagnosticExit? Exit { get; }
+    DiagnosticExit? FailureExit => Exit is { Code: > 0 } ? Exit : null;
+}
 
 /// <summary>Temporary, invocation-only adapter. Each Phase 1 suite replaces its callback with focused typed ports.</summary>
 public sealed class LegacyDiagnosticScenario(DiagnosticScenarioDefinition definition,
-    Func<DiagnosticRunContext, Task> execute) : IDiagnosticScenario
+    Func<DiagnosticRunContext, Task> execute) : IDiagnosticScenario, IDiagnosticProcessOutcome
 {
     public DiagnosticScenarioDefinition Definition { get; } = definition;
     public DiagnosticExit? Exit { get; private set; }
@@ -44,10 +49,10 @@ internal static class LegacyDiagnosticCancellation
 /// <summary>Supervise selected diagnostics and commit their process outcome after execution/cleanup finishes.</summary>
 public static class DiagnosticScenarioDispatch
 {
-    public static void Start(IReadOnlyList<LegacyDiagnosticScenario> scenarios, HostOperationScope operations,
+    public static void Start(IReadOnlyList<IDiagnosticScenario> scenarios, HostOperationScope operations,
         DiagnosticScenarioRunner runner, Action<string, int> quit, Action<string> logError)
     {
-        if (scenarios.Count == 0) return;
+        if (scenarios.Count == 0 || operations.Stopping) return;
         operations.Start("diagnostic-scenarios", async token =>
         {
             using var batch = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -75,15 +80,22 @@ public static class DiagnosticScenarioDispatch
                 }
             }
             if (operations.Stopping) return;
-            if (failure is { } rejected)
-            {
-                logError("[diagnostic] " + rejected.Result.Id + ": " + (rejected.Result.Error?.ToString() ?? rejected.Result.Detail));
-                var failed = scenarios[rejected.Index].Exit;
-                quit(failed is { Code: > 0 } ? failed.Reason : "diagnostic-scenario-failed", failed is { Code: > 0 } ? failed.Code : rejected.Result.ExitCode);
-                return;
-            }
-            var completed = scenarios.Select(scenario => scenario.Exit).First(exit => exit is not null)!;
-            quit(completed.Reason, completed.Code);
+            CommitOutcome(scenarios, failure, quit, logError);
         }, lifetime: CancellationToken.None);
+    }
+
+    private static void CommitOutcome(IReadOnlyList<IDiagnosticScenario> scenarios, (int Index, DiagnosticRunResult Result)? failure,
+        Action<string, int> quit, Action<string> logError)
+    {
+        if (failure is { } rejected)
+        {
+            logError("[diagnostic] " + rejected.Result.Id + ": " + (rejected.Result.Error?.ToString() ?? rejected.Result.Detail));
+            var failed = (scenarios[rejected.Index] as IDiagnosticProcessOutcome)?.FailureExit;
+            quit(failed is { Code: > 0 } ? failed.Reason : "diagnostic-scenario-failed", failed is { Code: > 0 } ? failed.Code : rejected.Result.ExitCode);
+            return;
+        }
+        var completed = scenarios.OfType<IDiagnosticProcessOutcome>().Select(scenario => scenario.Exit).FirstOrDefault(exit => exit is not null)
+            ?? new DiagnosticExit("diagnostic-scenarios-complete", 0);
+        quit(completed.Reason, completed.Code);
     }
 }
