@@ -20,6 +20,7 @@ public sealed class LegacyDiagnosticScenario(DiagnosticScenarioDefinition defini
         });
         using var cancellation = LegacyDiagnosticCancellation.Bind(run.CancellationToken);
         await execute(run);
+        if (Exit is null) run.CancellationToken.ThrowIfCancellationRequested();
         if (Exit is null) throw new InvalidOperationException("Legacy diagnostic completed without reporting an outcome: " + Definition.Id);
         if (Exit.Code != 0) throw new InvalidOperationException("Diagnostic reported failure: " + Exit.Reason);
     }
@@ -30,6 +31,7 @@ internal static class LegacyDiagnosticCancellation
 {
     private static readonly AsyncLocal<CancellationToken> Token = new();
     public static CancellationToken Current => Token.Value;
+    public static bool IsOwned(OperationCanceledException error) => Current.IsCancellationRequested && error.CancellationToken == Current;
     public static IDisposable Bind(CancellationToken token)
     {
         var previous = Token.Value; Token.Value = token;
@@ -48,14 +50,36 @@ public static class DiagnosticScenarioDispatch
         if (scenarios.Count == 0) return;
         operations.Start("diagnostic-scenarios", async token =>
         {
-            var results = await Task.WhenAll(scenarios.Select(scenario => runner.RunAsync(scenario, explicitlyRequested: true, token)));
-            if (operations.Stopping) return;
-            for (int i = 0; i < results.Length; i++)
+            using var batch = CancellationTokenSource.CreateLinkedTokenSource(token);
+            var pending = scenarios.Select((scenario, index) => (Task: runner.RunAsync(scenario, explicitlyRequested: true, batch.Token), Index: index))
+                .ToDictionary(entry => entry.Task, entry => entry.Index);
+            (int Index, DiagnosticRunResult Result)? failure = null;
+            try
             {
-                if (results[i].Status == DiagnosticRunStatus.Passed) continue;
-                logError("[diagnostic] " + results[i].Id + ": " + (results[i].Error?.ToString() ?? results[i].Detail));
-                var failed = scenarios[i].Exit;
-                quit(failed is { Code: > 0 } ? failed.Reason : "diagnostic-scenario-failed", failed is { Code: > 0 } ? failed.Code : results[i].ExitCode);
+                while (pending.Count > 0)
+                {
+                    var completedTask = await Task.WhenAny(pending.Keys);
+                    int index = pending[completedTask]; pending.Remove(completedTask);
+                    var result = await completedTask;
+                    if (failure is not null || result.Status == DiagnosticRunStatus.Passed) continue;
+                    failure = (index, result);
+                    batch.Cancel();
+                }
+            }
+            finally
+            {
+                if (pending.Count > 0)
+                {
+                    batch.Cancel();
+                    await Task.WhenAll(pending.Keys);
+                }
+            }
+            if (operations.Stopping) return;
+            if (failure is { } rejected)
+            {
+                logError("[diagnostic] " + rejected.Result.Id + ": " + (rejected.Result.Error?.ToString() ?? rejected.Result.Detail));
+                var failed = scenarios[rejected.Index].Exit;
+                quit(failed is { Code: > 0 } ? failed.Reason : "diagnostic-scenario-failed", failed is { Code: > 0 } ? failed.Code : rejected.Result.ExitCode);
                 return;
             }
             var completed = scenarios.Select(scenario => scenario.Exit).First(exit => exit is not null)!;

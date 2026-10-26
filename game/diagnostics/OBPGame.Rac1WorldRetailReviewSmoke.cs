@@ -216,7 +216,7 @@ public partial class OBPGame
     private async Task ReviewFrames(int count)
     {
         for (int i = 0; i < count; i++)
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
     }
 
     private static IEnumerable<Control> EnumerateControls(Node node)

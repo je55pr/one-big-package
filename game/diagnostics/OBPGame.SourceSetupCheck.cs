@@ -12,7 +12,7 @@ public partial class OBPGame
     {
         try
         {
-            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.PhysicsFrame);
             Require(!_diagnosticSourceAccess && _world is not null, "The source-loss check requires a loaded ordinary world.");
             string path = SharedProfilePath ?? throw new InvalidOperationException("The source-loss check requires --profile.");
             var before = _playerSession!.Capture();

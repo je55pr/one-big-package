@@ -97,7 +97,7 @@ public partial class OBPGame
                 await PhysicsFramesAsync(5);
                 Require(_rac1PlayerSoundTrace.Count(item => item.Loop) == count, "pack loop restarted every physics update");
                 Require(TryHandleInteractiveBack() && GetTree().Paused, "audio pause fixture did not pause");
-                for (int tick = 0; tick < 3; tick++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                for (int tick = 0; tick < 3; tick++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 var voices = player.GetChildren().OfType<AudioStreamPlayer>().Where(node => !node.IsQueuedForDeletion()).ToArray();
                 Require(voices.Any(node => node.Stream is AudioStreamWav { LoopMode: AudioStreamWav.LoopModeEnum.Forward } && node.StreamPaused),
                     "paused pack loop did not retain its paused playback");
@@ -195,6 +195,10 @@ public partial class OBPGame
                 await PhysicsFramesAsync(30);
                 _rac1PlayerSoundTrace.Clear();
             }
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception ex)
         {

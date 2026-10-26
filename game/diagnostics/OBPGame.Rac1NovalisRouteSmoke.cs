@@ -134,6 +134,10 @@ public partial class OBPGame
             GD.Print($"[novalis-route-smoke] reported unclassified static ledge grabbed, held and jumped onto: {player.GlobalPosition}");
             ApplicationLifecycle.RequestQuit(this, "rac1-novalis-route-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[novalis-route-smoke] FAIL: {ex}");

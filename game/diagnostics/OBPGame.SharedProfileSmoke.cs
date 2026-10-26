@@ -16,7 +16,7 @@ public partial class OBPGame
             AcceptanceAssert(OrdinaryPlayerSession && SharedProfilePath is not null && !_profileWriteBlocked, "profile-storage", "isolated ordinary profile is writable");
             if (_args.ProfileSmoke == "write")
             {
-                while (_fusionPreparation is not null) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                while (_fusionPreparation is not null) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 AcceptanceAssert(SelectPlayerEquipment("rac2/item/30").Accepted, "native-selection", "source-qualified Lancer selected");
                 _playerNative!.Weapons.LancerSession.ResetWorld(17); _playerNative.Weapons.CannonSession.Reset(9);
                 _playerNative.Health.ApplyAdmittedDamageUnits(1); _playerNative.Wallet.Credit(42);
@@ -45,6 +45,10 @@ public partial class OBPGame
             WriteAcceptanceEvidence("profile-" + _args.ProfileSmoke);
             GD.Print("[shared-profile-smoke] PASS: " + _args.ProfileSmoke);
             ApplicationLifecycle.RequestQuit(this, "shared-profile-smoke-pass");
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception error)
         {

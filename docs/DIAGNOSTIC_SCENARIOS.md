@@ -73,12 +73,20 @@ Retained root suites currently bind invocation-only `LegacyDiagnosticScenario`
 callbacks. `DiagnosticScenarioDispatch` supervises all selected tasks through
 `HostOperationScope` and the bounded runner. `ApplicationQuitDeferral` collects
 each legacy callback's exit request in its own async flow; execution and cleanup
-finish before the dispatcher commits the process exit. Failures override passes,
-and exceptions after a legacy pass cannot become successful exits. Deferral does
+finish before the dispatcher commits the process exit. Results are observed as
+they complete; a failure cancels and drains its siblings, including interactive
+loops. Failures override passes, and exceptions after a legacy pass cannot
+become successful exits. Deferral does
 not capture unrelated callbacks or late children after the scope is disposed.
-The temporary cancellation-only bridge lets retained movement helpers observe
-the run token, preserving the actual process/physics signal phase; #339 removes
-that bridge when it moves the helpers to explicit context waits.
+The temporary cancellation-only bridge lets retained waits observe the run
+token, preserving the actual process/physics/post-draw signal phase. Owned
+cancellation is rethrown through legacy catch-all handlers; bounded cleanup
+waits deliberately finish without the retired run token. These small mechanical
+changes are necessary before registering legacy callbacks as shutdown work.
+#339 and the individual suite migrations remove the bridge as their helpers
+move to explicit context waits. The asset-free engine probe cancels a real
+frame-driven interactive loop while its scene remains alive, checks signal
+unsubscription, and verifies fail-fast cancellation/drain of a waiting sibling.
 
 `ExistingDiagnosticWorld` validates the initial world without owning or disposing
 its scene. Legacy application-scoped suites deliberately survive their own world

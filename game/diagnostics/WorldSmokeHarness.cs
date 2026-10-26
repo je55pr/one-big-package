@@ -50,13 +50,8 @@ internal static class WorldSmokeHarness
     internal static DiagnosticScenarioRegistry Registry { get; } = new(Entries.Select(entry => entry.Registration));
 
     // Compatibility policy used by replay admission and desktop-close classification.
-    internal static bool IsRequested(CommandLineArgs args) =>
-        args.ControllerSmoke || args.Rac1PlayerAudioSmoke || args.MovementStateSmoke || args.ReplayForwardFrames.HasValue ||
-        args.Rac1MetropolisTaxiSmoke || args.Rac1VeldinPlaySmoke || args.Rac1MovementContactSmoke || args.Rac1CombatContractSmoke ||
-        args.Rac1WrenchSmoke || args.Rac1BombGloveSmoke || args.Rac1NovalisSwimSmoke || args.Rac1NovalisRouteSmoke ||
-        args.Rac1NovalisPeckbotSmoke || args.Rac1NovalisBirdbotSmoke || args.Rac1NovalisMusicSmoke || args.Rac1WeaponsSmoke ||
-        args.Rac1CrateSmoke || args.Rac1EnemySmoke || args.Rac1FrogSmoke || args.Rac1PlacedBoltSmoke ||
-        args.Rac1CampaignSmoke || args.Rac1MissionPlaySmoke || args.MovementSmoke;
+    internal static bool IsRequested(CommandLineArgs args) => args.ControllerSmoke || args.ReplayForwardFrames.HasValue ||
+        Registry.Registrations.Any(registration => registration.Requested(args));
 
     internal static LegacyDiagnosticScenario[] Create(CommandLineArgs args, ObpDestination destination, int worldSwitches,
         Entrypoints entrypoints, bool ordinarySourceAccess, IReadOnlyList<ObpSourceDefinition> authorities)

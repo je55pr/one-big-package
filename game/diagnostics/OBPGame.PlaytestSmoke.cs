@@ -10,7 +10,7 @@ public partial class OBPGame
         try
         {
             for (int i = 0; i < 360 && _playtest?.WaitingForEntry == true; ++i)
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             if (_playtest is null || _player is null) throw new InvalidOperationException("Playtest recorder/player missing.");
             await PhysicsFramesAsync(30);
             // Ordinary input events, including UI edges and raw analogue axes.
@@ -47,26 +47,26 @@ public partial class OBPGame
             GetWindow().Size = new(1000, 700);
             await PhysicsFramesAsync(10);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.Start, Pressed = true });
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.Start, Pressed = false });
-            for (int frame = 0; frame < 15; ++frame) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int frame = 0; frame < 15; ++frame) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             if (!PauseMenuOpen) throw new InvalidOperationException("Recorded Start did not pause.");
             // Leave focus on Controller Settings using real menu input.
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.DpadDown, Pressed = true });
-            for (int frame = 0; frame < 2; ++frame) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int frame = 0; frame < 2; ++frame) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.DpadDown, Pressed = false });
-            for (int frame = 0; frame < 5; ++frame) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int frame = 0; frame < 5; ++frame) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             // Both logical and physical-only function-key events must mark.
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.F8, Pressed = true });
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.F8, Pressed = false });
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = true });
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F8, Pressed = false });
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.X, Pressed = true });
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Input.ParseInputEvent(new InputEventJoypadButton { ButtonIndex = JoyButton.X, Pressed = false });
             if (_world?.LevelId == 0)
                 Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F9, Pressed = true });

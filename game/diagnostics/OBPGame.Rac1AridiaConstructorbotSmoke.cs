@@ -631,6 +631,7 @@ public partial class OBPGame
             }
             finally
             {
+                using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
                 other.Body.GlobalPosition = originalOtherBody;
                 other.Node.Root.GlobalPosition = originalOtherRoot;
                 await PhysicsFramesAsync(2);
@@ -638,6 +639,7 @@ public partial class OBPGame
         }
         finally
         {
+            using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
             platform.QueueFree();
             await PhysicsFramesAsync(2);
         }

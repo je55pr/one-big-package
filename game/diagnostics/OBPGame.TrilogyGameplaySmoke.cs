@@ -42,7 +42,7 @@ public partial class OBPGame
                 _pauseMenu!.ShowUniversalSection("Quick Select");
                 Require(AssignPlayerQuickSelect(7, "rac3/item/43").Accepted, "mixed slot assignment failed");
                 _pauseMenu.ShowUniversalSection("Gadgets"); _pauseMenu.ShowUniversalSection("Appearance");
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 Require(_playerPhysicsClock.Tick == before && _fusion.ShotsFired == shots, "pause advanced weapon/player clock");
                 TryClosePauseMenu();
                 foreach (string catalogId in new[] { "rac1/item/10", "rac1/item/16", "rac2/item/30", "rac3/item/43" })
@@ -200,6 +200,10 @@ public partial class OBPGame
                 await PhysicsFramesAsync(100);
                 GD.Print($"[trilogy-gameplay-smoke] ordinary {weapon} -> {id}: alive={target.Observe().Alive}, health={target.Observe().Health}, player={_playerNative.Life.Capture().Current}, yaw={player.Rac1CurrentYaw}, hits={_fusionAcceptedHits}");
             }
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception error)
         {

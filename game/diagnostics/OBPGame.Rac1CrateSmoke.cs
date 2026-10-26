@@ -128,6 +128,10 @@ public partial class OBPGame
             GD.Print($"[crate-smoke] PASS level={_world!.LevelId}");
             ApplicationLifecycle.RequestQuit(this, "rac1-crate-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[crate-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
@@ -161,8 +165,8 @@ public partial class OBPGame
         camera.LookAt(focus);
         _ui.Visible = false;
         playerHud.Visible = false;
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         GetViewport().GetTexture().GetImage().SavePng(Path.Combine(directory, $"level{_world!.LevelId}-{name}.png"));
         _ui.Visible = uiVisible;
         playerHud.Visible = playerHudVisible;

@@ -9,7 +9,7 @@ public partial class OBPGame
 {
     private async Task BugFrames(int count)
     {
-        for (int i = 0; i < count; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        for (int i = 0; i < count; i++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
     }
 
     private async Task WaitBugAsync(Func<bool> condition, string failure, int maximum = 5000)
@@ -45,7 +45,7 @@ public partial class OBPGame
     private async Task CaptureBugUi(string name)
     {
         if (DisplayServer.GetName() == "headless") return;
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         using var image = GetViewport().GetTexture().GetImage();
         image.SavePng(Path.Combine(_bugReports!.Root, name + ".png"));
     }

@@ -17,7 +17,7 @@ public partial class OBPGame
         {
             // Sample the first actual draw before entering Veldin. This is where the
             // old implicit smoke fixture could leak its cube into production startup.
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
             AssertNoStartupPlaceholderVisible("pre-world first draw");
 
             OpenDestinationFromBootstrap("rac1:LEVEL0");
@@ -27,7 +27,7 @@ public partial class OBPGame
             // or deferred QueueFree race fails deterministically.
             for (int i = 0; i < 8; i++)
             {
-                await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
                 AssertNoStartupPlaceholderVisible($"gameplay draw {i + 1}");
                 AssertRac1StartupGameplayReady();
             }

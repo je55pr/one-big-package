@@ -603,6 +603,10 @@ public partial class OBPGame
             fixture.QueueFree();
             ApplicationLifecycle.RequestQuit(this, "rac1-frog-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PushError($"[frog-smoke] FAIL {ex}");

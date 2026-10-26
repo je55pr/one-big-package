@@ -27,6 +27,7 @@ public sealed class DiagnosticRegistryTests
         foreach (var registration in WorldSmokeHarness.Registry.Registrations)
         {
             var args = CommandLineArgs.Parse([Assert.Single(registration.Aliases)]);
+            Assert.True(WorldSmokeHarness.IsRequested(args));
             Assert.Equal(registration, WorldSmokeHarness.Registry.Find(registration.Id));
             Assert.Equal(registration, WorldSmokeHarness.Registry.Find(registration.Aliases[0]));
             Assert.Equal(registration, Assert.Single(WorldSmokeHarness.Registry.Select(args, ObpSourceGame.Rac1, 1)));
@@ -36,6 +37,9 @@ public sealed class DiagnosticRegistryTests
             else Assert.Single(WorldSmokeHarness.Registry.Select(args, ObpSourceGame.Rac2, 1));
         }
         Assert.Empty(WorldSmokeHarness.Registry.Select(new(), ObpSourceGame.Rac1, 1));
+        Assert.False(WorldSmokeHarness.IsRequested(new()));
+        Assert.True(WorldSmokeHarness.IsRequested(new() { ControllerSmoke = true }));
+        Assert.True(WorldSmokeHarness.IsRequested(new() { ReplayForwardFrames = 1 }));
     }
 
     [Fact]
@@ -106,6 +110,34 @@ public sealed class DiagnosticRegistryTests
     }
 
     [Fact]
+    public async Task InvalidMetadataReachesTheExistingCriticalHostFailureDrain()
+    {
+        using var operations = new HostOperationScope(); bool quit = false;
+        var scenario = new LegacyDiagnosticScenario(Definition with { Timeout = TimeSpan.Zero }, _ => Task.CompletedTask);
+        DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock()), (_, _) => quit = true, _ => { });
+        await operations.StopAsync().WaitAsync(Guard);
+        var failure = Assert.Single(operations.TakeFailures());
+        Assert.Equal("diagnostic-scenarios", failure.Name); Assert.IsType<ArgumentException>(failure.Error);
+        Assert.True(failure.RequiresFailureExit(hostStopping: true)); Assert.False(quit);
+    }
+
+    [Fact]
+    public async Task LegacyCancellationRemainsOwnedWhenTheOldCallbackHandlesRetirement()
+    {
+        using var cancel = new CancellationTokenSource();
+        var scenario = new LegacyDiagnosticScenario(Definition, _ =>
+        {
+            cancel.Cancel();
+            var owned = new OperationCanceledException(LegacyDiagnosticCancellation.Current);
+            Assert.True(LegacyDiagnosticCancellation.IsOwned(owned));
+            Assert.False(LegacyDiagnosticCancellation.IsOwned(new OperationCanceledException(CancellationToken.None)));
+            return Task.CompletedTask;
+        });
+        var result = await new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(scenario, true, cancel.Token);
+        Assert.Equal(DiagnosticRunStatus.Canceled, result.Status);
+    }
+
+    [Fact]
     public async Task ACompletedLegacyInstanceCannotReuseItsOldPassForAnotherRun()
     {
         var scenario = new LegacyDiagnosticScenario(Definition, _ =>
@@ -129,6 +161,32 @@ public sealed class DiagnosticRegistryTests
         DiagnosticScenarioDispatch.Start([scenario], operations, new(new Sources(), new Clock()), (_, _) => completed = true, _ => { });
         await entered.Task.WaitAsync(Guard); await operations.StopAsync().WaitAsync(Guard);
         Assert.True(released); Assert.False(completed);
+    }
+
+    [Fact]
+    public async Task AnImmediateFailureCancelsAndDrainsAnAlreadyWaitingSibling()
+    {
+        using var operations = new HostOperationScope(); bool released = false;
+        var completed = new TaskCompletionSource<DiagnosticExit>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var pending = new LegacyDiagnosticScenario(Definition, async run =>
+        {
+            try { await Task.Delay(Timeout.Infinite, run.CancellationToken); }
+            finally { released = true; }
+        });
+        var failed = new LegacyDiagnosticScenario(Definition with { Id = "failed/v1" }, _ => throw new IOException("fixture failure"));
+        DiagnosticScenarioDispatch.Start([pending, failed], operations, new(new Sources(), new Clock()),
+            (reason, code) => { Assert.True(released); completed.SetResult(new(reason, code)); }, _ => { });
+        Assert.Equal(3, (await completed.Task.WaitAsync(Guard)).Code);
+        await operations.StopAsync(); Assert.Empty(operations.TakeFailures());
+    }
+
+    [Fact]
+    public void TheActualInteractiveMissionLoopUsesTheCancellableWaitBoundary()
+    {
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs"));
+        Assert.Contains("while (IsInsideTree())", source, StringComparison.Ordinal);
+        Assert.Contains("Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame)", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("await ToSignal", source, StringComparison.Ordinal);
     }
 
     [Fact]

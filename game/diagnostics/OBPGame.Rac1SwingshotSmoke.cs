@@ -53,7 +53,7 @@ public partial class OBPGame
             // hold the use button. It must not require a second key transition.
             player.ConfigureRac1TraversalTargets([SyntheticTraversalTarget(758, 900758, pullAnchor)]);
             await PhysicsFramesAsync(3);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(player.Rac1SwingshotActive && player.Rac1SwingshotTargetIndex == 900758 &&
                 player.Rac1TraversalAction == 0x25,
                 $"synthetic class758 target did not enter attached pull: action={player.Rac1TraversalAction}");
@@ -79,7 +79,7 @@ public partial class OBPGame
             Vector3 swingStart = player.GlobalPosition;
             SendPhysicalKey(Key.E, true);
             await PhysicsFramesAsync(3);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(player.Rac1SwingshotActive && player.Rac1SwingshotTargetIndex == 900803 &&
                 player.Rac1TraversalAction == 0x2c,
                 $"synthetic class803 target did not enter attached swing: action={player.Rac1TraversalAction}");
@@ -115,6 +115,7 @@ public partial class OBPGame
         }
         finally
         {
+            using var legacyCleanupWaits = Diagnostics.LegacyDiagnosticCancellation.Bind(CancellationToken.None);
             SendPhysicalKey(Key.E, false);
             SendPhysicalKey(Key.F11, false);
             ClearMovementSmokeInput();

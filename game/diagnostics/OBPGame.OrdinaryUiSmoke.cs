@@ -11,11 +11,11 @@ public partial class OBPGame
     {
         try
         {
-            for (int frame = 0; frame < 8; frame++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int frame = 0; frame < 8; frame++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(!_diagnosticSourceAccess, "Ordinary navigation must retain the complete trilogy requirement.");
             Require(_sourceManager is null, "Ready startup opened setup.");
             await CheckOrdinaryUiStartupAsync();
-            for (int frame = 0; frame < 3; frame++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int frame = 0; frame < 3; frame++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(_mode == Mode.Selector && _destinationSelector is not null, "Title did not open World Select.");
             PauseLoadoutSmoke.VerifyOrdinarySurface(_destinationSelector!);
             Require(GetViewport().GuiGetFocusOwner() is Button { Disabled: false }, "World Select has no controller focus.");
@@ -25,12 +25,12 @@ public partial class OBPGame
             var lab = _destinationSelector!.FindChild("FusionLab", true, false) as Button;
             Require(lab is not null, "The playable Lab button is missing.");
             lab!.EmitSignal(Button.SignalName.Pressed);
-            for (int frame = 0; frame < 4; frame++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            for (int frame = 0; frame < 4; frame++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             Require(_world is not null && _mode == Mode.World, "The playable Lab did not load.");
             PauseLoadoutSmoke.VerifyOrdinarySurface(_ui);
             PauseLoadoutSmoke.VerifyOrdinarySurface(_sceneResult!.Root);
             Require(TryOpenPauseMenu(), "The ordinary pause menu did not open.");
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
             foreach (string section in new[] { "Weapons", "Gadgets", "Appearance", "Quick Select", "Settings" })
             {
                 _pauseMenu!.ShowUniversalSection(section);
@@ -77,6 +77,6 @@ public partial class OBPGame
         else Require(!_profileWriteBlocked, "Fresh startup unexpectedly blocked saving.");
         PauseLoadoutSmoke.VerifyOrdinarySurface(_titleScreen!);
         _titleScreen!._UnhandledInput(new InputEventJoypadButton { ButtonIndex = JoyButton.Start, Pressed = true });
-        for (int frame = 0; frame < 120 && _mode != Mode.Selector; frame++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        for (int frame = 0; frame < 120 && _mode != Mode.Selector; frame++) await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
     }
 }

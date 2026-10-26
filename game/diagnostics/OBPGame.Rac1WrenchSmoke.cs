@@ -192,6 +192,10 @@ public partial class OBPGame
             GD.Print("[wrench-smoke] PASS");
             ApplicationLifecycle.RequestQuit(this, "rac1-wrench-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[wrench-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
@@ -221,7 +225,7 @@ public partial class OBPGame
         string? directory = System.Environment.GetEnvironmentVariable("OBP_WRENCH_CAPTURE_DIR");
         if (string.IsNullOrWhiteSpace(directory)) return;
         Directory.CreateDirectory(directory);
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         var camera = _player!.Camera;
         Transform3D previous = camera.GlobalTransform;
         bool worldVisible = _sceneResult!.Root.Visible;
@@ -231,7 +235,7 @@ public partial class OBPGame
         camera.LookAt(focus);
         _sceneResult.Root.Visible = false;
         _ui.Visible = false;
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         GetViewport().GetTexture().GetImage().SavePng(Path.Combine(directory, name + ".png"));
         _sceneResult.Root.Visible = worldVisible;
         _ui.Visible = uiVisible;

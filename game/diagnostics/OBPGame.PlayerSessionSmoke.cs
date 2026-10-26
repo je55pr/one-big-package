@@ -29,8 +29,8 @@ public partial class OBPGame
             {
                 bool entered = id == "obp:fusion-lab" ? EnterFusionLab() : OnDestinationChosen(TrilogyWorldProviders.Resolve(id)!);
                 Require(entered, "world entry " + id);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
                 Require(ReferenceEquals(owner, _playerSession) && ReferenceEquals(controller, _fusion), "player/controller owner replaced");
                 var current = owner.Capture();
                 Require(current.Configuration == configuration && current.Generation == initial.Generation, "player profile/generation changed");
@@ -79,6 +79,10 @@ public partial class OBPGame
             Require(CameraSettingsStore.Current.Horizontal.ToString() == initial.Preferences["camera/horizontal"], "restore did not apply host preferences");
             GD.Print("[player-session-smoke] PASS: persistent owner, native/custom round-trip, retained selections/health and failed-stage isolation");
             ApplicationLifecycle.RequestQuit(this, "player-session-smoke-pass", 0);
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception error)
         {
@@ -151,7 +155,7 @@ public partial class OBPGame
         var pending = WorldScenes.PendingPreparation;
         ShowDestinationSelector();
         await pending;
-        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
         Require(!staleEntryRan && _world is null && _mode == Mode.Selector,
             "deferred entry replaced newer navigation");
         Require(ReferenceEquals(owner, _playerSession), "canceling navigation replaced the player owner");

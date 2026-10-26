@@ -3,6 +3,12 @@ using OBP.Godot;
 
 namespace OBP.Game.Diagnostics;
 
+internal static class LegacyDiagnosticWait
+{
+    public static Task SignalAsync(GodotObject source, StringName signal) =>
+        GodotAsyncWait.SignalAsync(source, signal, LegacyDiagnosticCancellation.Current);
+}
+
 internal sealed class GodotDiagnosticSources(Func<System.Collections.Immutable.ImmutableArray<DiagnosticSourceSnapshot>> read) : IDiagnosticSources
 {
     public System.Collections.Immutable.ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => read();

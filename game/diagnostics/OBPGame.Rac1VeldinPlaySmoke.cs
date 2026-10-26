@@ -76,6 +76,10 @@ public partial class OBPGame
                 "and natural fall/death/automatic restart all passed without smoke staging or development respawn input");
             ApplicationLifecycle.RequestQuit(this, "rac1-veldin-play-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[rac1-veldin-play] FAIL: {ex.Message}\n{ex.StackTrace}");
@@ -154,6 +158,10 @@ public partial class OBPGame
                 $"maxSlideContacts={_player.Rac1MaxObservedSlideCollisions}/{_player.MaxSlides}; " +
                 "authored edge/death/restart and post-restart support all passed without cheats");
             ApplicationLifecycle.RequestQuit(this, "rac1-movement-contact-smoke-pass", 0);
+        }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -295,7 +303,7 @@ public partial class OBPGame
             pair => pair.Key,
             pair => pair.Value.Root.GlobalPosition);
         for (int frame = 0; frame < 30; frame++)
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
 
         int moved = 0;
         foreach (var pair in _rac1HostileNodes)

@@ -38,7 +38,7 @@ Godot callbacks are included. These are measurements, not size quotas.
 
 The #336 registry/evidence migration retires two root fragments and eight
 historical declaration/member permissions. Its measured root is 120 files,
-27,204 file lines, 755 direct methods, 457 fields (312 mutable), 44 exposed
+27,311 file lines, 755 direct methods, 457 fields (312 mutable), 44 exposed
 members and 2,651 distinct cross-file references. The evidence reporter owns
 its check collection and assertions; four exact temporary composition entries
 retain the field/delegating bridges for #338/#344 callers and expire in #344.

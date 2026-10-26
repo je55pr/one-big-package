@@ -92,6 +92,10 @@ public partial class OBPGame
             GD.Print($"[placed-bolt-smoke] PASS level={_world.LevelId}");
             ApplicationLifecycle.RequestQuit(this, "rac1-placed-bolt-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             GD.PrintErr($"[placed-bolt-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
