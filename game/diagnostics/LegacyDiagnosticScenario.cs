@@ -60,6 +60,6 @@ public static class DiagnosticScenarioDispatch
             }
             var completed = scenarios.Select(scenario => scenario.Exit).First(exit => exit is not null)!;
             quit(completed.Reason, completed.Code);
-        });
+        }, lifetime: CancellationToken.None);
     }
 }
