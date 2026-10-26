@@ -37,7 +37,8 @@ public sealed class WorldSmokeArchitectureTests
         Assert.Contains("RunMovementSmokeAsync,", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1WrenchSmokeAsync,", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1EnemySmokeAsync,", harness, StringComparison.Ordinal);
-        Assert.Contains("RunMovementStateSmokeAsync,", harness, StringComparison.Ordinal);
+        Assert.Contains("RunMovementStateSmokeAsync(token)", harness, StringComparison.Ordinal);
+        Assert.Contains("_hostOperations.Start(\"movement-state-smoke\"", harness, StringComparison.Ordinal);
         Assert.Contains("RunRac1BombGloveSmokeAsync", harness, StringComparison.Ordinal);
     }
 

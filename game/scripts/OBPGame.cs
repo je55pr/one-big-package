@@ -40,6 +40,7 @@ public partial class OBPGame : Node3D
 
     // capture / smoke bookkeeping
     private string _sceneKind = "smoke";
+    private readonly HostOperationScope _hostOperations = new();
 
     // the live world
     private readonly WorldHost _idleWorldHost = new();
@@ -55,8 +56,7 @@ public partial class OBPGame : Node3D
     private Camera3D _activeCamera = null!;
     private Label? _worldHud;
     private PlayerHud? _playerHud;
-    private volatile string? _verifyOutcome;
-    private long _verifyProgressBits = -1;
+    private SourceVerificationOperation? _verification;
     private string _loadSummary = string.Empty;
 
     public override void _Ready()
@@ -102,7 +102,7 @@ public partial class OBPGame : Node3D
         if (_args.TestScene == "fusion-lab")
         {
             if (EnterFusionLab() && _args.CaptureFrame is { } fusionCapture)
-                _ = RunCaptureAsync(fusionCapture);
+                _hostOperations.Start("capture", token => RunCaptureAsync(fusionCapture, token), lifetime: CancellationToken.None);
             return;
         }
 
@@ -110,7 +110,7 @@ public partial class OBPGame : Node3D
         // destination/provider path used by ordinary world entry.
         if (_args.ShotsPath is { } shotList)
         {
-            _ = RunShotsAsync(shotList);
+            _hostOperations.Start("shots", token => RunShotsAsync(shotList, token), lifetime: CancellationToken.None);
             return;
         }
 
@@ -140,7 +140,7 @@ public partial class OBPGame : Node3D
         if (_args.CaptureFrame is { } frame)
         {
             Engine.MaxFps = 60;
-            _ = RunCaptureAsync(frame);
+            _hostOperations.Start("capture", token => RunCaptureAsync(frame, token), lifetime: CancellationToken.None);
         }
     }
 
@@ -154,6 +154,8 @@ public partial class OBPGame : Node3D
 
     public override void _Process(double delta)
     {
+        ReportHostOperationFailures();
+        if (_hostOperations.Stopping) return;
         _frame++;
         TickSourceSetup(delta);
         TickFusionPreparation();
@@ -174,17 +176,7 @@ public partial class OBPGame : Node3D
             UpdateWorldHud();
         }
 
-        if (_verifyOutcome is { } outcome)
-        {
-            _verifyOutcome = null;
-            _verifyProgressBits = -1;
-            ReportVerificationStatus($"{_loadSummary}   —   {outcome}", error: outcome.StartsWith('⚠'));
-        }
-        else if (System.Threading.Interlocked.Read(ref _verifyProgressBits) is var bits and >= 0)
-        {
-            double p = System.BitConverter.Int64BitsToDouble(bits);
-            ReportVerificationStatus($"{_loadSummary}   —   verifying disc SHA-256… ({p * 100:0}%)");
-        }
+        TickSourceVerification();
     }
 
     public override void _UnhandledInput(InputEvent @event)
@@ -306,6 +298,9 @@ public partial class OBPGame : Node3D
 
     private void ReleaseAudioForExit()
     {
+        _hostOperations.Dispose();
+        RetireBugOverlayLifetime();
+        if (_verification is { } verification) CancelSourceVerification(verification.Source.Game);
         SaveSharedProfile("clean exit");
         // An external exit can bypass normal world teardown. Finish campaign
         // persistence before shutting down its owning Godot session.
@@ -324,14 +319,19 @@ public partial class OBPGame : Node3D
         // Stop gameplay before releasing its audio, otherwise a final physics
         // update can start another footstep/voice during shutdown.
         ProcessMode = ProcessModeEnum.Disabled;
+        _playtest?.SuspendBugCaptureForQuit();
+        Task hostStopped = _hostOperations.StopAsync();
         if (_worldScenes is { } scenes)
         {
             scenes.CancelPreparation();
             await scenes.PendingPreparation;
         }
-        _playtest?.SuspendBugCaptureForQuit();
-        if (_bugSaveInFlight is { } save) await save;
-        if (_playtest is { } playtest) await playtest.PrepareBugCaptureQuitAsync();
+        await hostStopped;
+        ReportHostOperationFailures();
+        if (_bugSaveInFlight is { } save) await _hostOperations.ObserveQuitWriteAsync("bug-report-save", save);
+        if (_playtest is { } playtest)
+            await _hostOperations.ObserveQuitWriteAsync("capture-flush", playtest.PrepareBugCaptureQuitAsync());
+        ReportHostOperationFailures();
         ReleaseAudioForExit();
 
         // Godot 4.7.2 retires stopped playbacks on the mixing thread, then
@@ -664,7 +664,7 @@ public partial class OBPGame : Node3D
         player.PlayerServicesPhysicsUpdated += StepPlayerServicesPhysics;
         if (_playerNative is not null) player.PlayerHealth = _playerNative.Life.Capture();
         player.DevelopmentControls.SaveMovementStateRequested += SaveMovementState;
-        player.DevelopmentControls.LoadMovementStateRequested += () => _ = LoadMovementStateAsync(MovementStatePath);
+        player.DevelopmentControls.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
         AttachPlayerAvatarVisual(player);
         ArmRac2GameplayHost(player);
         ArmRac1Gameplay(player);

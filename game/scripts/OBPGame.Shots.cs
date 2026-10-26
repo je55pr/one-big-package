@@ -19,8 +19,9 @@ namespace OBP.Game;
 /// </summary>
 public partial class OBPGame
 {
-    private async System.Threading.Tasks.Task RunShotsAsync(string listPath)
+    private async System.Threading.Tasks.Task RunShotsAsync(string listPath, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         ShotList list;
         try
         {
@@ -89,7 +90,8 @@ public partial class OBPGame
                     ["settleFrames"] = shot.SettleFrames,
                 };
                 return meta;
-            });
+            }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!result.Ok)
             {
                 failures++;

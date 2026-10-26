@@ -7,15 +7,16 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private async Task RunMovementStateSmokeAsync()
+    private async Task RunMovementStateSmokeAsync(CancellationToken cancellationToken)
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Engine.MaxFps = 60;
             PlayerHost player = _player ?? throw new InvalidOperationException("Movement state smoke requires a player.");
             ClearMovementSmokeInput();
-            await WaitForGroundedAsync(player, 180);
-            await PhysicsFramesAsync(8);
+            await WaitForGroundedCancelableAsync(player, 180, cancellationToken);
+            await PhysicsFramesCancelableAsync(8, cancellationToken);
             // Capture lethal reactions before animation terminalization too.
             // Restoring removals must neither resurrect enemies nor emit loot.
             int[] defeated = _rac1Enemies.Values.GroupBy(enemy => enemy.Node.Source.NativeClassId)
@@ -56,26 +57,29 @@ public partial class OBPGame
             // Exercise the real development hotkey and persistent reader.
             SendPhysicalKey(Key.F12, true);
             SendPhysicalKey(Key.F12, false);
-            await Rac1SmokeWaitAsync(() => File.Exists(MovementStatePath), 30, "F12 movement save");
+            await Rac1SmokeWaitCancelableAsync(() => File.Exists(MovementStatePath), 30, "F12 movement save", cancellationToken);
             MovementReproState saved = MovementReproStateFile.Load(MovementStatePath);
             Vector3 savedPosition = player.GlobalPosition;
             Require(saved.World is not null && saved.World.InactiveObjects.Count >= defeated.Length + 1, "world removals were not saved");
-            await LoadMovementStateAsync(MovementStatePath);
+            await LoadMovementStateAsync(MovementStatePath, cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             RequireWorldRestored();
-            var first = await RecordForwardMovementReplayAsync(25);
+            var first = await RecordForwardMovementReplayAsync(25, cancellationToken);
             Require(Math.Sqrt(Math.Pow(first[^1].Position.X - savedPosition.X, 2) + Math.Pow(first[^1].Position.Z - savedPosition.Z, 2)) > .25f,
                 "saved movement setup produced no forward travel");
 
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.F12, PhysicalKeycode = Key.F12, ShiftPressed = true, Pressed = true });
             Input.ParseInputEvent(new InputEventKey { Keycode = Key.F12, PhysicalKeycode = Key.F12, ShiftPressed = true, Pressed = false });
-            await Rac1SmokeWaitAsync(() => !_movementStateLoading &&
+            await Rac1SmokeWaitCancelableAsync(() => !_movementStateLoading &&
                 _player is not null && _player.GlobalPosition.DistanceTo(savedPosition) < .0001f,
-                60, "Shift+F12 movement load");
+                60, "Shift+F12 movement load", cancellationToken);
             player = _player!;
             RequireWorldRestored();
             Require(Math.Abs(first[0].ControlHeading - saved.Player.Camera!.ControlHeadingRadians) < .000001,
                 "movement load changed the camera/control heading");
-            var second = await LoadMovementStateAsync(MovementStatePath, recordFrames: 25)
+            var secondResult = await LoadMovementStateAsync(MovementStatePath, recordFrames: 25, cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var second = secondResult
                 ?? throw new InvalidOperationException("Second state replay failed.");
             player = _player!;
             RequireWorldRestored();
@@ -98,9 +102,13 @@ public partial class OBPGame
             };
             string fallbackPath = Path.Combine(Path.GetDirectoryName(MovementStatePath)!, "smoke-fallback-state.json");
             MovementReproStateFile.Save(fallbackPath, fallback);
-            var fallbackFirst = await LoadMovementStateAsync(fallbackPath, recordFrames: 15)
+            var fallbackFirstResult = await LoadMovementStateAsync(fallbackPath, recordFrames: 15, cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var fallbackFirst = fallbackFirstResult
                 ?? throw new InvalidOperationException("Fallback camera replay failed.");
-            var fallbackSecond = await LoadMovementStateAsync(fallbackPath, recordFrames: 15)
+            var fallbackSecondResult = await LoadMovementStateAsync(fallbackPath, recordFrames: 15, cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var fallbackSecond = fallbackSecondResult
                 ?? throw new InvalidOperationException("Fallback camera reload failed.");
             Require(!(_player?.HasActiveRecoveredCamera ?? true) && fallbackFirst.Zip(fallbackSecond).All(pair =>
                 pair.First.Position == pair.Second.Position && pair.First.ControlHeading == pair.Second.ControlHeading),
@@ -121,6 +129,8 @@ public partial class OBPGame
                 $"native/fallback camera/control, no spawn snap, forward replay error={error:F6}; state={MovementStatePath}");
             ApplicationLifecycle.RequestQuit(this, "movement-state-smoke-pass", 0);
         }
+        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+        { /* The host already owns quit and its exit status; cancellation finishes only this diagnostic. */ }
         catch (Exception ex)
         {
             GD.PrintErr($"[movement-state-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");

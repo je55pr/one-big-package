@@ -15,6 +15,7 @@ public partial class OBPGame
     private BugReportUi? _bugReportUi;
     private BugReportEntry? _bugDraft;
     private Task? _bugSaveInFlight;
+    private CancellationTokenSource? _bugOverlayLifetime;
     private readonly List<(Guid Session, BugReportEntry Report)> _bugRows = [];
     private int _bugSelection;
     private Guid? _bugDeleteConfirmation, _bugChangedBuildConfirmation;
@@ -38,7 +39,7 @@ public partial class OBPGame
                     !Guid.TryParse(_args.BugReportId, out var reportId))
                     throw new InvalidDataException("Choose a saved report and its report identity.");
                 _bugReports = new(Path.GetDirectoryName(directory)!);
-                var resolved = _bugReports.Resolve(sessionId, reportId);
+                var resolved = _bugReports.Resolve(sessionId, reportId, _hostOperations.Token);
                 _bugReplayReport = resolved.Report;
                 _args = _args with { ReplayPlaytest = resolved.RecordingPath };
             }
@@ -103,6 +104,7 @@ public partial class OBPGame
 
     private void OpenBugReportForm(BugReportEntry draft)
     {
+        BeginBugOverlayLifetime();
         _bugDraft = draft;
         _bugReportUi = new BugReportUi { DefaultTitle = draft.Title };
         _bugReportUi.SubmitRequested += (title, description) => _bugSaveInFlight = SaveBugReportAsync(title, description);
@@ -119,17 +121,20 @@ public partial class OBPGame
             var report = _bugDraft! with { Title = title, Description = description };
             await _bugReports!.SaveAsync(_bugSessionId, _playtest!.BugWriter, report);
             GD.Print($"[bug-report] SAVED id={report.Id:N} session={_bugSessionId:N} step={report.Step}");
+            if (!BugUiCurrent(ui)) return;
             CloseBugReportOverlay();
             _playtest.ShowBugNotice("Report saved locally · recording continues · F7 opens reports");
         }
         catch (Exception error)
         {
-            ui.SetBusy(false, "Could not save. Your recording is retained. " + error.Message);
+            ReportBugUiFailure(ui, error, "Could not save. Your recording is retained. ");
+            if (_hostOperations.Stopping) throw;
         }
     }
 
     private void OpenBugReportInbox()
     {
+        BeginBugOverlayLifetime();
         _bugReportUi = new BugReportUi { InboxMode = true };
         _bugReportUi.CloseRequested += CloseBugReportOverlay;
         _bugReportUi.SelectionChanged += index =>
@@ -150,8 +155,8 @@ public partial class OBPGame
             Directory.CreateDirectory(_bugReports!.Root);
             OS.ShellOpen(_bugReports.Root);
         };
-        _bugReportUi.ReplayRequested += () => _ = ReplaySelectedBugAsync();
-        _bugReportUi.ExportRequested += () => _ = ExportSelectedBugAsync();
+        _bugReportUi.ReplayRequested += () => StartBugOverlayWork("bug-replay", token => ReplaySelectedBugAsync(token));
+        _bugReportUi.ExportRequested += () => StartBugOverlayWork("bug-export", token => ExportSelectedBugAsync(token));
         _bugReportUi.ImportRequested += ImportBugArchive;
         _bugReportUi.DeleteRequested += DeleteSelectedBugSession;
         _playtest!.AddChild(_bugReportUi);
@@ -173,17 +178,27 @@ public partial class OBPGame
     private (Guid Session, BugReportEntry Report) SelectedBug() => _bugRows.Count > 0 && _bugSelection < _bugRows.Count
         ? _bugRows[_bugSelection] : throw new InvalidDataException("Select a saved report first.");
 
-    private async Task ExportSelectedBugAsync()
+    private async Task ExportSelectedBugAsync(CancellationToken cancellationToken = default)
     {
+        if (!cancellationToken.CanBeCanceled) cancellationToken = _hostOperations.Token;
         var ui = _bugReportUi!;
         try
         {
             var selected = SelectedBug();
             ui.SetBusy(true, "Preparing portable ZIP…");
-            string archive = await Task.Run(() => _bugReports!.Export(selected.Session, selected.Report.Id));
+            var inbox = _bugReports!;
+            string archive = await Task.Run(() => inbox.Export(selected.Session, selected.Report.Id, cancellationToken), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!BugUiCurrent(ui)) return;
             ui.SetBusy(false, $"ZIP saved in exports/{Path.GetFileName(archive)}. Review it before sharing.");
         }
-        catch (Exception error) { ui.SetBusy(false, error.Message); }
+        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+        { /* The view/host owner retired; completed disk IO must not update the closed view. */ }
+        catch (Exception error)
+        {
+            ReportBugUiFailure(ui, error);
+            if (_hostOperations.Stopping) throw;
+        }
     }
 
     private void ImportBugArchive()
@@ -225,15 +240,20 @@ public partial class OBPGame
         catch (Exception error) { _bugReportUi!.SetStatus(error.Message); }
     }
 
-    private async Task ReplaySelectedBugAsync()
+    private async Task ReplaySelectedBugAsync(CancellationToken cancellationToken = default)
     {
+        if (!cancellationToken.CanBeCanceled) cancellationToken = _hostOperations.Token;
         var ui = _bugReportUi!;
+        int process = -1;
+        bool automatedReplay = _args.BugReportSmoke || DisplayServer.GetName() == "headless";
         try
         {
             var selected = SelectedBug();
             var inbox = _bugReports ?? throw new InvalidOperationException("Report inbox is unavailable.");
             ui.SetBusy(true, "Checking the completed recording…");
-            var resolved = await Task.Run(() => inbox.Resolve(selected.Session, selected.Report.Id));
+            var resolved = await Task.Run(() => inbox.Resolve(selected.Session, selected.Report.Id, cancellationToken), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!BugUiCurrent(ui)) return;
             using var reader = new PlaytestRunReader(resolved.RecordingPath);
             if (reader.Header.EngineVersion != Engine.GetVersionInfo()["string"].AsString() ||
                 reader.Header.Platform != OS.GetName() || reader.Header.PhysicsEngine != PlaytestPhysicsEngine())
@@ -253,9 +273,10 @@ public partial class OBPGame
                 ui.AddChild(confirmation);
                 confirmation.Confirmed += () =>
                 {
+                    if (!BugUiCurrent(ui)) return;
                     _bugChangedBuildConfirmation = selected.Report.Id;
                     confirmation.QueueFree();
-                    _ = ReplaySelectedBugAsync();
+                    StartBugOverlayWork("bug-replay", token => ReplaySelectedBugAsync(token));
                 };
                 confirmation.Canceled += () => confirmation.QueueFree();
                 confirmation.PopupCentered(new(520, 180));
@@ -265,7 +286,6 @@ public partial class OBPGame
             Directory.CreateDirectory(results);
             string result = Path.Combine(results, Guid.NewGuid().ToString("N") + ".json");
             var arguments = new List<string> { "--path", ProjectSettings.GlobalizePath("res://"), "--fixed-fps", "60" };
-            bool automatedReplay = _args.BugReportSmoke || DisplayServer.GetName() == "headless";
             if (automatedReplay) arguments.Add("--headless");
             arguments.AddRange(["--", "--replay-bug-report", Path.Combine(inbox.SessionDirectory(selected.Session), "session.json"),
                 "--bug-report-id", selected.Report.Id.ToString(), "--playtest-report", result]);
@@ -275,12 +295,17 @@ public partial class OBPGame
             if (_args.Rac3Iso is { } rac3Iso) arguments.AddRange(["--rac3-iso", rac3Iso]);
             if (changed) arguments.Add("--playtest-allow-build-change");
             ui.SetBusy(true, "Replaying in a separate game process…");
-            int process = OS.CreateProcess(OS.GetExecutablePath(), arguments.ToArray());
+            cancellationToken.ThrowIfCancellationRequested();
+            process = OS.CreateProcess(OS.GetExecutablePath(), arguments.ToArray());
             if (process < 0) throw new IOException("Could not start the replay process.");
             ulong deadline = Time.GetTicksMsec() + 30 * 60 * 1000;
             while (OS.IsProcessRunning(process) && Time.GetTicksMsec() < deadline)
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            if (OS.IsProcessRunning(process)) throw new IOException("Replay is still running. Inspect its game window.");
+                await WaitForWorldPreparationFrameAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!BugUiCurrent(ui)) return;
+            if (OS.IsProcessRunning(process)) throw new IOException(automatedReplay
+                ? "Automated replay exceeded its deadline."
+                : "Replay is still running. Inspect its game window.");
             if (!File.Exists(result)) throw new IOException("Replay exited without a result file.");
             using var json = JsonDocument.Parse(File.ReadAllText(result));
             string? outcome = json.RootElement.GetProperty("Result").GetString();
@@ -289,11 +314,59 @@ public partial class OBPGame
                 "Replay could not complete. Inspect its result in replay-results.");
             GD.Print($"[bug-report] replay {outcome}; id={selected.Report.Id:N}");
         }
-        catch (Exception error) { ui.SetBusy(false, error.Message); }
+        catch (OperationCanceledException error) when (error.CancellationToken == cancellationToken && cancellationToken.IsCancellationRequested)
+        { /* Expected owner retirement; automated child cleanup still runs below. */ }
+        catch (Exception error)
+        {
+            ReportBugUiFailure(ui, error);
+            if (_hostOperations.Stopping) throw;
+        }
+        finally
+        {
+            // Interactive reproductions are independent user windows. Automated children must not outlive any exit path.
+            if (automatedReplay && process >= 0 && OS.IsProcessRunning(process))
+            {
+                var result = OS.Kill(process);
+                if (result != Error.Ok && OS.IsProcessRunning(process))
+                {
+                    GD.PrintErr("[bug-report] could not stop owned automated replay: " + result);
+                    if (IsInsideTree()) ApplicationLifecycle.RequestQuit(this, "bug-replay-child-stop-failed", 2);
+                }
+            }
+        }
+    }
+
+    private void BeginBugOverlayLifetime()
+    {
+        RetireBugOverlayLifetime();
+        _bugOverlayLifetime = new();
+    }
+
+    private void RetireBugOverlayLifetime()
+    {
+        _bugOverlayLifetime?.Cancel();
+        _bugOverlayLifetime?.Dispose();
+        _bugOverlayLifetime = null;
+    }
+
+    private void StartBugOverlayWork(string name, Func<CancellationToken, Task> work)
+    {
+        if (!_hostOperations.Stopping && _bugOverlayLifetime is { } lifetime)
+            _hostOperations.Start(name, work, lifetime.Token);
+    }
+
+    private bool BugUiCurrent(BugReportUi ui) => !_hostOperations.Stopping && ReferenceEquals(_bugReportUi, ui) &&
+        IsInstanceValid(ui) && !ui.IsQueuedForDeletion();
+
+    private void ReportBugUiFailure(BugReportUi ui, Exception error, string prefix = "")
+    {
+        GD.PrintErr("[bug-report] operation failed: " + error);
+        if (BugUiCurrent(ui)) ui.SetBusy(false, prefix + error.Message);
     }
 
     private void CloseBugReportOverlay()
     {
+        RetireBugOverlayLifetime();
         if (_bugReportUi is not null)
         {
             _bugReportUi.ProcessMode = ProcessModeEnum.Disabled;

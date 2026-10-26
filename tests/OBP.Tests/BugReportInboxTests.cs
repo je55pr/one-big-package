@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Reflection;
 using System.Text.Json;
 using OBP.Runtime.Diagnostics;
 
@@ -9,6 +10,48 @@ public sealed class BugReportInboxTests : IDisposable
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "obp-bug-report-test-" + Guid.NewGuid().ToString("N"));
     private BugReportInbox Inbox => new(Path.Combine(_directory, "inbox"));
     private string Run => Path.Combine(_directory, "live.run.jsonl.gz");
+
+    [Fact]
+    public async Task CanceledResolutionAndExportLeaveTheCompletedReportAndArchiveUntouched()
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        using var writer = new PlaytestRunWriter(Run, Header());
+        var report = AddReport(writer, 0, "cancellation fixture");
+        await inbox.SaveAsync(id, writer, report);
+        string archive = inbox.Export(id, report.Id);
+        byte[] original = File.ReadAllBytes(archive);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => inbox.Resolve(id, report.Id, canceled.Token)).CancellationToken);
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => inbox.Export(id, report.Id, canceled.Token)).CancellationToken);
+        Assert.Equal(original, File.ReadAllBytes(archive));
+        Assert.Empty(Directory.GetFiles(Path.Combine(inbox.Root, "exports"), "*.partial"));
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+    }
+
+    [Fact]
+    public void ArchiveCopyObservesCancellationAfterAReadBeforeWritingItsChunk()
+    {
+        using var canceled = new CancellationTokenSource();
+        using var input = new CancelingReadStream(canceled);
+        using var output = new MemoryStream();
+        var copy = typeof(BugReportInbox).GetMethod("CopyBounded", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Bounded archive copy helper is missing.");
+        var error = Assert.Throws<TargetInvocationException>(() => copy.Invoke(null, [input, output, 200_000L, canceled.Token]));
+        Assert.Equal(canceled.Token, Assert.IsAssignableFrom<OperationCanceledException>(error.InnerException).CancellationToken);
+        Assert.Equal(0, output.Length);
+    }
+
+    private sealed class CancelingReadStream(CancellationTokenSource cancellation) : MemoryStream(new byte[200_000])
+    {
+        public override int Read(Span<byte> buffer)
+        {
+            int count = base.Read(buffer);
+            cancellation.Cancel();
+            return count;
+        }
+    }
 
     [Fact]
     public void InterruptedCaptures_AreCountedSeparatelyAndNeverListedAsReadyReports()

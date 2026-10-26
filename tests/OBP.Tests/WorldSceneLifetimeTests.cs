@@ -10,6 +10,21 @@ namespace OBP.Tests;
 public sealed class WorldSceneLifetimeTests
 {
     [Fact]
+    public void RetiringAWorldCancelsItsWorkBeforeDisposingResourcesAndCannotCancelTheReplacement()
+    {
+        using var fixture = new Fixture();
+        var old = fixture.Enter("rac1:LEVEL0");
+        var lifetime = fixture.Scenes.Current!.Lifetime;
+        bool canceled = false;
+        using var subscription = lifetime.Register(() => { Assert.Equal(0, old.Disposals); canceled = true; });
+        fixture.Enter("obp:fusion-lab");
+        Assert.True(canceled);
+        Assert.True(lifetime.IsCancellationRequested);
+        Assert.Equal(1, old.Disposals);
+        Assert.False(fixture.Scenes.Current!.Lifetime.IsCancellationRequested);
+    }
+
+    [Fact]
     public void NativeAndAuthoredRoundTripsRetireResourcesOnceAndKeepThePlayer()
     {
         using var fixture = new Fixture();

@@ -1,4 +1,5 @@
 using Godot;
+using OBP.Core;
 using OBP.Godot;
 using OBP.IO;
 using OBP.RAC2;
@@ -12,23 +13,59 @@ public partial class OBPGame
 
     private void StartBackgroundVerify(string isoPath)
     {
-        System.Threading.Interlocked.Exchange(ref _verifyProgressBits, System.BitConverter.DoubleToInt64Bits(0));
-        var progress = new System.Progress<double>(p =>
-            System.Threading.Interlocked.Exchange(ref _verifyProgressBits, System.BitConverter.DoubleToInt64Bits(p)));
-
-        System.Threading.Tasks.Task.Run(() =>
+        CancelSourceVerification(ObpSourceGame.Rac2);
+        var stamp = CurrentVerificationStamp(ObpSourceGame.Rac2)
+            ?? throw new InvalidOperationException("Verification requires its attached source.");
+        var operation = _verification = new(stamp);
+        _hostOperations.Start("source-verification", token => operation.RunAsync((progress, cancellation) =>
         {
             try
             {
                 using var reader = new FileRandomAccessReader(isoPath);
-                var verified = Rac2IsoLoad.Verify(reader, progress);
-                _verifyOutcome = $"✓ authority build verified — {verified.Serial} {verified.Revision}";
+                var verified = Rac2IsoLoad.Verify(reader, progress, cancellation);
+                return $"✓ authority build verified — {verified.Serial} {verified.Revision}";
             }
-            catch (System.Exception ex)
+            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
             {
-                _verifyOutcome = $"⚠ disc does not match the known-good dump: {ex.Message}";
+                return $"⚠ disc does not match the known-good dump: {ex.Message}";
             }
-        });
+        }, token), operation.Retirement);
+    }
+
+    private VerificationSourceStamp? CurrentVerificationStamp(ObpSourceGame game)
+    {
+        var source = _sources.Get(game);
+        if (source is null) return null;
+        try
+        {
+            var file = SourceFileStamp(source.Path);
+            return file is { } stamp ? new(game, source.Identity.BuildId, source.Path, stamp.Length, stamp.Written) : null;
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return null; }
+    }
+
+    private void CancelSourceVerification(ObpSourceGame game)
+    {
+        if (_verification?.Source.Game != game) return;
+        _verification.Dispose();
+        _verification = null;
+    }
+
+    private void TickSourceVerification()
+    {
+        if (_verification is not { } operation) return;
+        var update = operation.Poll(Time.GetTicksMsec(), () => CurrentVerificationStamp(operation.Source.Game));
+        if (update.SourceChanged)
+        {
+            CancelSourceVerification(operation.Source.Game);
+            ReportVerificationStatus("Verification canceled because the attached source changed.");
+        }
+        else if (update.Outcome is { } outcome)
+        {
+            CancelSourceVerification(operation.Source.Game);
+            ReportVerificationStatus($"{_loadSummary}   —   {outcome}", error: outcome.StartsWith('⚠'));
+        }
+        else ReportVerificationStatus($"{_loadSummary}   —   verifying disc SHA-256… ({update.Progress * 100:0}%)");
     }
 
     private void ReportVerificationStatus(string text, bool error = false)
@@ -39,7 +76,17 @@ public partial class OBPGame
 
     // --- deterministic capture ----------------------------------------
 
-    private async System.Threading.Tasks.Task RunCaptureAsync(int frameArg)
+    private void ReportHostOperationFailures()
+    {
+        foreach (var failure in _hostOperations.TakeFailures())
+        {
+            GD.PrintErr($"[lifecycle] {failure.Name} failed (superseded={failure.Superseded}): {failure.Error}");
+            if (failure.RequiresFailureExit(_hostOperations.Stopping) && IsInsideTree())
+                ApplicationLifecycle.RequestQuit(this, failure.Name + "-failed", 2);
+        }
+    }
+
+    private async System.Threading.Tasks.Task RunCaptureAsync(int frameArg, CancellationToken cancellationToken)
     {
         var result = await CaptureHarness.CaptureAsync(
             this,
@@ -51,7 +98,8 @@ public partial class OBPGame
                 meta["capture"] = _sceneKind;
                 meta["captureFrameArg"] = frameArg;
                 return meta;
-            });
+            }, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         ApplicationLifecycle.RequestQuit(
             this,
             result.Ok ? "capture-complete" : "capture-save-failed",

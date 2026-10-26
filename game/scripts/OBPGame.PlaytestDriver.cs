@@ -335,8 +335,16 @@ public partial class OBPGame
                         ? $"BUG CAPTURE · {_processSteps / 60}s\nF8: Report · F7: Inbox · Paused: Square Report / Select Inbox\n{(_processSteps < _bugNoticeUntil ? _bugNotice : "")}"
                         : $"RECORDING  ·  {_processSteps / 60}s  ·  {_marks} bug markers\nF8: Mark bug   F9: Save run\nPaused: Square marks · Select saves{focus}");
                     if (_bugOverlayRequested) EnterBugOverlay(_nextStep - 1);
-                    if (_bookmarkPath is { } bookmark && !PreparingWorld) { _bookmarkPath = null; _ = SaveBookmarkAsync(bookmark, _nextStep - 1); }
-                    if (_stopRequested || _nextStep >= 999_990) _ = SaveAsync();
+                    if (!Game._hostOperations.Stopping)
+                    {
+                        if (_bookmarkPath is { } bookmark && !PreparingWorld)
+                        {
+                            _bookmarkPath = null;
+                            Game._hostOperations.Start("bookmark-save", _ => SaveBookmarkAsync(bookmark, _nextStep - 1), lifetime: CancellationToken.None);
+                        }
+                        if (_stopRequested || _nextStep >= 999_990)
+                            Game._hostOperations.Start("recording-save", _ => SaveAsync(), lifetime: CancellationToken.None);
+                    }
                     PaceHumanRecording();
                 }
             }
@@ -399,6 +407,7 @@ public partial class OBPGame
                 GD.PrintErr("[playtest] save failed: " + error.Message);
                 if (Game._args.ReconciliationSmoke) Game.FinishAcceptanceFailure("capture-route", error, "playtest-save-failed");
                 else if (Game._args.PlaytestSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
+                if (Game._hostOperations.Stopping) throw;
             }
         }
 

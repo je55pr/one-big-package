@@ -115,20 +115,30 @@ public sealed class BugReportInbox
             File.Exists(Path.Combine(directory, "session.run.jsonl.gz.partial")));
     }
 
-    public (BugReportSession Session, BugReportEntry Report, string RecordingPath) Resolve(Guid sessionId, Guid reportId)
+    public (BugReportSession Session, BugReportEntry Report, string RecordingPath) Resolve(Guid sessionId, Guid reportId) =>
+        Resolve(sessionId, reportId, CancellationToken.None);
+
+    public (BugReportSession Session, BugReportEntry Report, string RecordingPath) Resolve(Guid sessionId, Guid reportId,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var session = Read(sessionId);
+        cancellationToken.ThrowIfCancellationRequested();
         var report = session.Reports.SingleOrDefault(r => r.Id == reportId)
             ?? throw new InvalidDataException("Report not found in this session.");
         string path = Path.Combine(SessionDirectory(sessionId), session.Recording.FileName);
-        VerifyRecording(session, path);
+        VerifyRecording(session, path, cancellationToken);
         return (session, report, path);
     }
 
-    public string Export(Guid sessionId, Guid reportId, long maximumBytes = MaximumArchiveBytes)
+    public string Export(Guid sessionId, Guid reportId, long maximumBytes = MaximumArchiveBytes) =>
+        Export(sessionId, reportId, CancellationToken.None, maximumBytes);
+
+    public string Export(Guid sessionId, Guid reportId, CancellationToken cancellationToken, long maximumBytes = MaximumArchiveBytes)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (maximumBytes is <= 0 or > MaximumArchiveBytes) throw new ArgumentOutOfRangeException(nameof(maximumBytes));
-        var (session, report, path) = Resolve(sessionId, reportId);
+        var (session, report, path) = Resolve(sessionId, reportId, cancellationToken);
         var selected = session with { Reports = [report] };
         byte[] manifest = JsonSerializer.SerializeToUtf8Bytes(selected, Json);
         if (session.Recording.Bytes + manifest.Length + 8192 > maximumBytes)
@@ -142,11 +152,13 @@ public sealed class BugReportInbox
             using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write))
             using (var zip = new ZipArchive(file, ZipArchiveMode.Create))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 using (var output = zip.CreateEntry("report.json").Open()) output.Write(manifest);
                 using var input = File.OpenRead(path);
                 using var recording = zip.CreateEntry(session.Recording.FileName, CompressionLevel.NoCompression).Open();
-                CopyBounded(input, recording, maximumBytes);
+                CopyBounded(input, recording, maximumBytes, cancellationToken);
             }
+            cancellationToken.ThrowIfCancellationRequested();
             if (new FileInfo(temporary).Length > maximumBytes) throw new IOException("Portable report exceeds its size limit.");
             File.Move(temporary, target, overwrite: true);
             return target;
@@ -224,11 +236,12 @@ public sealed class BugReportInbox
         return session;
     }
 
-    private static void VerifyRecording(BugReportSession session, string path)
+    private static void VerifyRecording(BugReportSession session, string path, CancellationToken cancellationToken = default)
     {
-        if (new FileInfo(path).Length != session.Recording.Bytes || Hash(path) != session.Recording.Sha256)
+        cancellationToken.ThrowIfCancellationRequested();
+        if (new FileInfo(path).Length != session.Recording.Bytes || Hash(path, cancellationToken) != session.Recording.Sha256)
             throw new InvalidDataException("Recording size/hash does not match its report; it may be incomplete or changed.");
-        var (header, steps, markers) = InspectRecording(path);
+        var (header, steps, markers) = InspectRecording(path, cancellationToken);
         var info = session.Recording;
         if (steps != info.Steps || header.AssemblyId != info.AssemblyId || header.SourceBuild != info.SourceBuild ||
             header.Destination != info.Destination || header.EngineVersion != info.EngineVersion ||
@@ -239,10 +252,16 @@ public sealed class BugReportInbox
             throw new InvalidDataException("Recording identity or marker does not match its report.");
     }
 
-    private static (PlaytestRunHeader Header, int Steps, IReadOnlyList<PlaytestMarker> Markers) InspectRecording(string path)
+    private static (PlaytestRunHeader Header, int Steps, IReadOnlyList<PlaytestMarker> Markers) InspectRecording(string path,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var reader = new PlaytestRunReader(path);
-        while (reader.ReadNextStep() is not null) { }
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (reader.ReadNextStep() is null) break;
+        }
         if (reader.End?.Reason is not ("saved" or "closed")) throw new InvalidDataException("Recording was not completed successfully.");
         return (reader.Header, reader.End.Steps, reader.Markers);
     }
@@ -284,7 +303,20 @@ public sealed class BugReportInbox
             throw new InvalidDataException("Invalid report title, description or marker.");
     }
 
-    private static string Hash(string path) { using var file = File.OpenRead(path); return Convert.ToHexString(SHA256.HashData(file)); }
+    private static string Hash(string path, CancellationToken cancellationToken = default)
+    {
+        using var file = File.OpenRead(path);
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        byte[] buffer = new byte[65536];
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            int count = file.Read(buffer);
+            if (count == 0) break;
+            hash.AppendData(buffer.AsSpan(0, count));
+        }
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
 
     private static void WriteAtomic(string path, BugReportSession session)
     {
@@ -300,13 +332,17 @@ public sealed class BugReportInbox
         finally { TryDelete(temporary); }
     }
 
-    private static void CopyBounded(Stream input, Stream output, long maximum)
+    private static void CopyBounded(Stream input, Stream output, long maximum, CancellationToken cancellationToken = default)
     {
         byte[] buffer = new byte[65536];
         long total = 0;
         int count;
-        while ((count = input.Read(buffer)) != 0)
+        while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            count = input.Read(buffer);
+            if (count == 0) break;
+            cancellationToken.ThrowIfCancellationRequested();
             total += count;
             if (total > maximum) throw new InvalidDataException("Report entry exceeds its size limit.");
             output.Write(buffer, 0, count);

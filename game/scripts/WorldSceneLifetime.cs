@@ -144,6 +144,8 @@ public sealed class WorldSceneLease<TResources>(WorldEntryPlan plan, ObpDestinat
     Action<WorldSceneLease<TResources>> retired) : IDisposable where TResources : class, IDisposable
 {
     private bool _disposed;
+    private readonly CancellationTokenSource _lifetime = new();
+    public CancellationToken Lifetime => _lifetime.Token;
     public WorldEntryPlan Plan { get; } = plan;
     public ObpDestination? NativeDestination { get; } = destination;
     public FusionLabDefinition? Lab { get; } = lab;
@@ -156,7 +158,11 @@ public sealed class WorldSceneLease<TResources>(WorldEntryPlan plan, ObpDestinat
     {
         if (_disposed) return;
         _disposed = true;
-        try { Resources.Dispose(); }
-        finally { retired(this); }
+        try { _lifetime.Cancel(); }
+        finally
+        {
+            try { Resources.Dispose(); }
+            finally { _lifetime.Dispose(); retired(this); }
+        }
     }
 }

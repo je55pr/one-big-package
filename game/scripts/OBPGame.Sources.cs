@@ -148,6 +148,7 @@ public partial class OBPGame
             }
 
             var attached = _sources.Attach(path, reader);
+            CancelSourceVerification(expectedGame);
             string? uiWarning = RefreshRetailUiSource(attached, reader);
             PrepareSharedWeaponSources(force: true);
             if (persist)
@@ -274,6 +275,7 @@ public partial class OBPGame
             return;
         }
 
+        CancelSourceVerification(game);
         if (game == ObpSourceGame.Rac1) RefreshRetailUiSource(null);
         PrepareSharedWeaponSources(force: true);
 

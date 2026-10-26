@@ -25,13 +25,14 @@ public static class CaptureHarness
     /// </summary>
     public static System.Threading.Tasks.Task<Result> CaptureAsync(
         Node node, string outPath, int settleFrames,
-        System.Collections.Generic.IDictionary<string, object?> metadata) =>
-        CaptureAsync(node, outPath, settleFrames, () => metadata);
+        System.Collections.Generic.IDictionary<string, object?> metadata, CancellationToken cancellationToken = default) =>
+        CaptureAsync(node, outPath, settleFrames, () => metadata, cancellationToken);
 
     public static async System.Threading.Tasks.Task<Result> CaptureAsync(
         Node node, string outPath, int settleFrames,
-        System.Func<System.Collections.Generic.IDictionary<string, object?>> metadataFactory)
+        System.Func<System.Collections.Generic.IDictionary<string, object?>> metadataFactory, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var tree = node.GetTree();
         double seconds = System.Math.Max(0.25, settleFrames / 60.0);
 
@@ -39,38 +40,47 @@ public static class CaptureHarness
         // earlier shot in a --shots run) can't later Quit(2) over the real exit.
         bool finished = false;
         var watchdog = tree.CreateTimer(seconds + 20.0);
-        watchdog.Timeout += () =>
+        void Watchdog()
         {
-            if (finished)
+            if (finished || cancellationToken.IsCancellationRequested)
             {
                 return;
             }
 
             GD.PrintErr("[CaptureHarness] watchdog fired — quitting");
             ApplicationLifecycle.RequestQuit(tree, "capture-watchdog", 2);
-        };
+        }
+        watchdog.Timeout += Watchdog;
 
-        await node.ToSignal(tree.CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout);
-        await node.ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        try
+        {
+            await GodotAsyncWait.SignalAsync(tree.CreateTimer(seconds), SceneTreeTimer.SignalName.Timeout, cancellationToken);
+            await GodotAsyncWait.SignalAsync(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
-        var metadata = metadataFactory();
-        var image = node.GetViewport().GetTexture().GetImage();
-        string pngPath = outPath.StartsWith("res://") || outPath.StartsWith("user://")
-            ? ProjectSettings.GlobalizePath(outPath)
-            : System.IO.Path.GetFullPath(outPath);
-        string jsonPath = System.IO.Path.ChangeExtension(pngPath, ".json");
-        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(pngPath)!);
+            var metadata = metadataFactory();
+            var image = node.GetViewport().GetTexture().GetImage();
+            string pngPath = outPath.StartsWith("res://") || outPath.StartsWith("user://")
+                ? ProjectSettings.GlobalizePath(outPath)
+                : System.IO.Path.GetFullPath(outPath);
+            string jsonPath = System.IO.Path.ChangeExtension(pngPath, ".json");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(pngPath)!);
 
-        Error err = image.SavePng(pngPath);
+            Error err = image.SavePng(pngPath);
 
-        metadata["width"] = image.GetWidth();
-        metadata["height"] = image.GetHeight();
-        metadata["savePngResult"] = err.ToString();
-        System.IO.File.WriteAllText(jsonPath, JsonSerializer.Serialize(metadata, JsonOptions));
+            metadata["width"] = image.GetWidth();
+            metadata["height"] = image.GetHeight();
+            metadata["savePngResult"] = err.ToString();
+            System.IO.File.WriteAllText(jsonPath, JsonSerializer.Serialize(metadata, JsonOptions));
 
-        finished = true;
-        GD.Print($"[CaptureHarness] {pngPath} ({image.GetWidth()}x{image.GetHeight()}, {err}) + {System.IO.Path.GetFileName(jsonPath)}");
-        return new Result(pngPath, jsonPath, image.GetWidth(), image.GetHeight(), err);
+            GD.Print($"[CaptureHarness] {pngPath} ({image.GetWidth()}x{image.GetHeight()}, {err}) + {System.IO.Path.GetFileName(jsonPath)}");
+            return new Result(pngPath, jsonPath, image.GetWidth(), image.GetHeight(), err);
+        }
+        finally
+        {
+            finished = true;
+            if (GodotObject.IsInstanceValid(watchdog)) watchdog.Timeout -= Watchdog;
+        }
     }
 
     public static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };

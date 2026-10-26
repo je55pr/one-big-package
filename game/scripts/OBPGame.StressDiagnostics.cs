@@ -13,7 +13,7 @@ public partial class OBPGame
     /// counts so a leak (orphan nodes, duplicated meshes, creeping memory) shows
     /// up as a trend. Headless — quits when done.
     /// </summary>
-    private async System.Threading.Tasks.Task RunStressSwitchAsync(string seq)
+    private async System.Threading.Tasks.Task RunStressSwitchAsync(string seq, CancellationToken cancellationToken)
     {
         var tokens = seq.Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries);
         var rows = new System.Collections.Generic.List<string>();
@@ -21,6 +21,7 @@ public partial class OBPGame
 
         for (int i = 0; i < tokens.Length; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string tok = tokens[i];
             if (tok == "__bad-import")
             {
@@ -61,19 +62,19 @@ public partial class OBPGame
                 ShowDestinationSelector();
                 for (int f = 0; f < 10; f++)
                 {
-                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    await WaitForWorldPreparationFrameAsync(cancellationToken);
                 }
             }
 
             OpenDestinationFromBootstrap(destinationId);
             for (int f = 0; f < 45; f++)
             {
-                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                await WaitForWorldPreparationFrameAsync(cancellationToken);
             }
 
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await WaitForWorldPreparationFrameAsync(cancellationToken);
 
             double mem = Performance.GetMonitor(Performance.Monitor.MemoryStatic) / 1048576.0;
             double objs = Performance.GetMonitor(Performance.Monitor.ObjectCount);
