@@ -9,37 +9,22 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
-    private RuntimeSpawn? _worldPlayerEntry;
-    private float _worldEntrySnapReach = 8;
+    private WorldSceneLifetime<GodotWorldResources>? _worldScenes;
+    private WorldSceneLifetime<GodotWorldResources> WorldScenes => _worldScenes ??=
+        new(RetireWorldBindings, ActivateOwnedWorld, () => _worldEntries?.Unload());
+    private RuntimeSpawn? _worldPlayerEntry => _worldScenes?.PlayerEntry;
+    private float _worldEntrySnapReach => _worldScenes?.EntrySnapReach ?? 8;
 
     private sealed class WorldSource(Func<WorldEntryRequest, PreparedWorldEntry> prepare) : IWorldEntrySource
     {
         public PreparedWorldEntry Prepare(WorldEntryRequest request) => prepare(request);
     }
 
-    private sealed class EntryHost(Func<WorldEntryPlan, IDisposable> activate) : IWorldEntryHost
-    {
-        public IDisposable Activate(WorldEntryPlan plan) => activate(plan);
-    }
-
-    private sealed class SceneLease(WorldHost host, PlayerHost? player) : IDisposable
-    {
-        private bool _disposed;
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            host.Unload();
-            if (GodotObject.IsInstanceValid(player) && !player!.IsQueuedForDeletion()) player.QueueFree();
-        }
-    }
-
     private bool EnterWorld(string destinationId, Func<RuntimeWorld> load, ObpDestination? nativeDestination,
         string? sourcePath, FusionLabDefinition? lab = null)
     {
+        _worldScenes?.CancelPreparation();
         if (!RequireOrdinarySourceSetup("world entry")) return false;
-        RuntimeWorldScene.Result? preparedScene = null;
-        bool activating = false;
         try
         {
             var worldSourceStamp = SourceFileStamp(sourcePath);
@@ -57,35 +42,16 @@ public partial class OBPGame
                 return new(world, spawn, []); // Mixed native actor adapters are registered by #256.
             });
             var plan = _worldEntries.Prepare(request, source, PlayerAvatarProviders);
-            preparedScene = WorldHost.PrepareScene(plan.Prepared.World, destinationId, WorldOptions(plan.Prepared.World));
+            using var staged = WorldScenes.Prepare(plan, nativeDestination, lab, SourceEntrySnapReach(plan.Prepared.World),
+                () => new GodotWorldResources(WorldHost.PrepareScene(plan.Prepared.World, destinationId, WorldOptions(plan.Prepared.World))));
             // Recheck attachments before the destructive boundary. Native source
             // data and selected player assets are independent dependencies.
             PrepareSelectedPlayerAssets();
             if (SourceFileStamp(sourcePath) != worldSourceStamp)
                 throw new InvalidDataException("The world source changed during preparation. Reattach it in Game Sources.");
             if (!RequireOrdinarySourceSetup("world activation"))
-            {
-                preparedScene.Root.Free();
                 return false;
-            }
-            var staged = preparedScene;
-            _worldEntries.Commit(plan, new EntryHost(entry =>
-            {
-                activating = true;
-                TeardownWorld();
-                ClearBootstrapSceneArtifacts();
-                _worldHost = new();
-                _activeDestination = nativeDestination; // Custom destinations keep their real identity.
-                _currentDestinationId = entry.Request.DestinationId;
-                _worldPlayerEntry = entry.Prepared.EntryPoint;
-                _worldEntrySnapReach = SourceEntrySnapReach(entry.Prepared.World);
-                BeginPlayerHealthWorld(entry.Request.WorldInstanceId, entry.Request.Generation);
-                _destinationSelector?.QueueFree(); _destinationSelector = null;
-                _sourceManager?.QueueFree(); _sourceManager = null;
-                ActivateWorld(entry.Prepared.World, staged, nativeDestination, lab);
-                return new SceneLease(_worldHost, _player);
-            }));
-            preparedScene = null;
+            _worldEntries.Commit(plan, WorldScenes);
             _lastCommittedProfileDestination = destinationId;
             if (nativeDestination is not null)
             {
@@ -105,9 +71,6 @@ public partial class OBPGame
         }
         catch (Exception error)
         {
-            if (activating) TeardownWorld();
-            if (preparedScene is not null && GodotObject.IsInstanceValid(preparedScene.Root) && !preparedScene.Root.IsInsideTree())
-                preparedScene.Root.Free();
             AbandonFailedRac1Travel();
             DestinationError($"{destinationId} could not load: {error.Message}");
             if (_world is null)
@@ -119,6 +82,22 @@ public partial class OBPGame
                 ApplicationLifecycle.RequestQuit(this, "world-entry-failed", 2);
             return false;
         }
+    }
+
+    private void ActivateOwnedWorld(WorldSceneLease<GodotWorldResources> entry)
+    {
+        ClearBootstrapSceneArtifacts();
+        BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
+        _destinationSelector?.QueueFree(); _destinationSelector = null;
+        _sourceManager?.QueueFree(); _sourceManager = null;
+        ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
+        entry.Resources.BindPlayer(_player);
+    }
+
+    private void ReportWorldPreparationFailure(Exception error, bool superseded)
+    {
+        GD.PrintErr($"[lifecycle] deferred world preparation failed (superseded={superseded}): {error}");
+        if (!superseded && IsInsideTree()) ApplicationLifecycle.RequestQuit(this, "world-preparation-failed", 2);
     }
 
     private static (long Length, long Written)? SourceFileStamp(string? path)
@@ -146,22 +125,21 @@ public partial class OBPGame
     private static float SourceEntrySnapReach(RuntimeWorld world) =>
         world.Game == WorldContentIdentity.FusionLab || (world.Game == ObpSourceGame.Rac2 && world.LevelId == 0 && world.PlayerStart is not null) ? .75f : 8f;
 
-    private void ActivateWorld(RuntimeWorld world, RuntimeWorldScene.Result prepared,
+    private void ActivateWorld(RuntimeWorld world, GodotWorldResources resources,
         ObpDestination? destination, FusionLabDefinition? lab)
     {
-        _world = world;
         _worldSwitches++;
         BeginSourceWorldEntry(world);
-        _sceneResult = _worldHost.Load(this, _worldRoot, world, _currentDestinationId!, WorldOptions(world), prepared);
-        SetupOverlay(_sceneResult, world);
+        resources.Load(this, _worldRoot, world, _currentDestinationId!, WorldOptions(world));
+        SetupOverlay(resources.Scene, world);
         ConfigureRac2GameplayHost();
         bool staticCamera = _args.ShotsPath is not null || _args.CaptureFrame is not null &&
             (_args.DirectLoad || _args.Destination is not null) && _args.TestScene != "player" &&
             !_args.AnimSolo && !_args.CrateFocus && !_args.CrateAutoStrike;
         if (!staticCamera)
         {
-            ConfigureRac1Gameplay(world, _sceneResult);
-            ConfigureRac3Gameplay(world, _sceneResult);
+            ConfigureRac1Gameplay(world, resources.Scene);
+            ConfigureRac3Gameplay(world, resources.Scene);
         }
         if (_args.AnimSolo) FrameAnimatedMobies(world);
         else if (staticCamera) FrameShowcaseCamera(world);
@@ -179,7 +157,7 @@ public partial class OBPGame
         if (OrdinaryPlayerSession) PublishPersistentPlayerHud();
         UpdatePlayerHud(); UpdateWorldHud();
         CommitSourceWorldEntry(world);
-        _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {_sceneResult.MeshInstances} meshes";
+        _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {resources.Scene.MeshInstances} meshes";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches}, player generation {_playerSession!.Capture().Generation})");
     }
 
@@ -187,7 +165,7 @@ public partial class OBPGame
     {
         if (world.Game != ObpSourceGame.Rac1) return;
         _rac1CampaignSession.StartLevelCheckpointSession(world.LevelId, world.PlayerStart!);
-        _worldPlayerEntry = _rac1CampaignSession.LevelCheckpoint!.AuthoredClass0;
+        WorldScenes.OverrideAuthoredEntry(_rac1CampaignSession.LevelCheckpoint!.AuthoredClass0);
     }
 
     private void CommitSourceWorldEntry(RuntimeWorld world)

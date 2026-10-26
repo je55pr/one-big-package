@@ -15,8 +15,8 @@ public partial class OBPGame
     private Input.MouseModeEnum _rac1PlanetMapPreviousMouseMode;
     private bool _planetMapOwnsPause;
     private int _preMapHeldButtons;
-    private ObpDestination? _activeDestination;
-    private string? _currentDestinationId;
+    private ObpDestination? _activeDestination => _worldScenes?.NativeDestination;
+    private string? _currentDestinationId => _worldScenes?.DestinationId;
     private bool _genericNavigationActive;
 
     private bool Rac1PlanetMapOpen =>
@@ -52,19 +52,23 @@ public partial class OBPGame
         _genericNavigationActive = _args.CaptureFrame is null;
         if ((_args.PlaytestRequested || _args.FusionSmoke || _args.PlayerSessionSmoke || _args.PlayerCapabilitiesSmoke || _args.TrilogyGameplaySmoke) && _fusionPreparation is not null)
         {
-            _ = EnterWorldAfterSharedPreparationAsync(destination);
+            WorldScenes.PrepareLater(token => EnterWorldAfterSharedPreparationAsync(destination, token), ReportWorldPreparationFailure);
             return;
         }
         OnDestinationChosen(destination);
     }
 
-    private async Task EnterWorldAfterSharedPreparationAsync(ObpDestination destination)
+    private async Task EnterWorldAfterSharedPreparationAsync(ObpDestination destination, CancellationToken cancellationToken)
     {
         // Capture source identities before the first deterministic simulation step.
         // Yield frames so disc verification never blocks the application window.
         long firstFrame = _frame;
         while (_fusionPreparation is not null)
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await WaitForWorldPreparationFrameAsync(cancellationToken);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
         GD.Print($"[fusion] source setup remained responsive for {_frame - firstFrame} frames before fixture/recording entry");
         if (_fusionAssetFailure is not null)
         {
@@ -73,6 +77,18 @@ public partial class OBPGame
             return;
         }
         OnDestinationChosen(destination);
+    }
+
+    private async Task WaitForWorldPreparationFrameAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var tree = GetTree();
+        var frame = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnFrame() => frame.TrySetResult();
+        tree.ProcessFrame += OnFrame;
+        using var registration = cancellationToken.Register(() => frame.TrySetCanceled(cancellationToken));
+        try { await frame.Task; }
+        finally { if (GodotObject.IsInstanceValid(tree)) tree.ProcessFrame -= OnFrame; }
     }
 
     /// <summary>
@@ -248,6 +264,7 @@ public partial class OBPGame
 
     private bool OnDestinationChosen(ObpDestination destination)
     {
+        _worldScenes?.CancelPreparation();
         if (!RequireOrdinarySourceSetup("destination entry")) return false;
         var provider = TrilogyWorldProviders.Find(destination.Game);
         var source = _sources.Get(destination.Game);

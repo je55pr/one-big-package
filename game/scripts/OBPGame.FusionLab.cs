@@ -16,6 +16,7 @@ public partial class OBPGame
     /// </summary>
     private bool EnterFusionLab()
     {
+        _worldScenes?.CancelPreparation();
         try
         {
             var definition = FusionLabDefinition.Parse(File.ReadAllText(ProjectSettings.GlobalizePath("res://data/fusion_lab.json")));

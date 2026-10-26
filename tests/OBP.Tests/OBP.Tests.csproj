@@ -20,6 +20,7 @@
     <Compile Include="../../game/scripts/AutomationRunPolicy.cs" Link="Game/AutomationRunPolicy.cs" />
     <Compile Include="../../game/scripts/DiagnosticSnapshotGate.cs" Link="Game/DiagnosticSnapshotGate.cs" />
     <Compile Include="../../game/scripts/SourceSetupPolicy.cs" Link="Game/SourceSetupPolicy.cs" />
+    <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/ApplicationPointer.cs" Link="Game/ApplicationPointer.cs" />
     <Compile Include="../../game/scripts/FusionWeaponSession.cs" Link="Game/FusionWeaponSession.cs" />
     <Compile Include="../../game/scripts/PlayerSessionNativeState.cs" Link="Game/PlayerSessionNativeState.cs" />
