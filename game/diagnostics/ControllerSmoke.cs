@@ -55,7 +55,9 @@ public partial class ControllerSmoke : Node
             Require(Focus() is Button, "Source menu has no controller focus");
             var initial = Focus(); await Press(JoyButton.DpadDown);
             Require(Focus() != initial, "D-pad does not navigate source controls");
-            await FocusButton("CONTROLLER SETTINGS"); await Press(JoyButton.A);
+            await FocusButton("CONTROLLER SETTINGS");
+            await CheckFailedSettingsOpenAsync();
+            await Press(JoyButton.A);
             Require(Find<ControllerSettingsUi>() is { Visible: true }, "Cross does not open controller settings");
             var settings = Find<ControllerSettingsUi>()!;
             await CheckCameraSettingsAsync(settings);
@@ -284,6 +286,7 @@ public partial class ControllerSmoke : Node
         var player = Find<PlayerHost>(); Require(player is not null, "Controller world test did not load Veldin");
         Require(Find<SourceManagerUi>() is null, "World entry retained the source menu over gameplay");
         await Frames(50);
+        await CheckFailedGameplayModalOpensAsync(player!);
         Require(Math.Abs(player!.Camera.Fov - Rac1CameraProjection.VerticalFieldOfViewRadians * 180d / Math.PI) < .001d,
             "Ordinary R&C1 still uses Godot's default lens");
         await _game.CheckControllerWeaponInputAsync();
