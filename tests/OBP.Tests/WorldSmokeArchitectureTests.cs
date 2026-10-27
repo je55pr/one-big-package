@@ -10,12 +10,12 @@ public sealed class WorldSmokeArchitectureTests
     public void DestinationLoaderDelegatesSmokeSelectionToDiagnosticHarness()
     {
         string scripts = Path.Combine(RepoPaths.Root, "game", "scripts");
-        string loader = File.ReadAllText(Path.Combine(scripts, "OBPGame.Destinations.cs"));
+        string loader = File.ReadAllText(Path.Combine(scripts, "ApplicationNavigationCoordinator.cs"));
         string entry = File.ReadAllText(Path.Combine(scripts, "OBPGame.WorldEntry.cs"));
         string harness = File.ReadAllText(Path.Combine(
             RepoPaths.Root, "game", "diagnostics", "WorldSmokeHarness.cs"));
 
-        Assert.Contains("EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
+        Assert.Contains("_ports.EnterWorld(destination.DestinationId", loader, StringComparison.Ordinal);
         Assert.Contains("WorldSmokeHarness.Create(", entry, StringComparison.Ordinal);
         Assert.Contains("DiagnosticScenarioDispatch.Start(", entry, StringComparison.Ordinal);
         Assert.DoesNotContain("partial class OBPGame", harness, StringComparison.Ordinal);

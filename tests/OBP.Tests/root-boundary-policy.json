@@ -2565,7 +2565,7 @@
       "Owner": "#337",
       "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#348",
-      "Hash": "fa33c3a838e0943645bd617059e5733c1f11bcf4403d998224cb192ea6ec911a"
+      "Hash": "d32c5e53aeb91fe1ba5c008fa9daad1c7c8eb4bc63508c8c88aad98971eb7944"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:private",
@@ -2640,35 +2640,35 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#359",
       "Hash": "7b0868a4e58b3bcd82332d44226c704d6d102b061be01beb69c68a85221fbb31"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#359",
       "Hash": "bf7eb16d1f36981f6ed6293bc697372ac5a1fae153f0ea6e6559e972c6076463"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CombatDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1CombatDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#359",
       "Hash": "cd67a6058bd1d8aee403f9f665129862d91a9052c76585545eea5345c32a8fad"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#359",
       "Hash": "1c9404a903d1c90296d71eece3657e3a6954f6bb97f5e16caef173de279a0818"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1QueenDiagnosticBindings():GodotRac1QueenDiagnosticBindings:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R\u0026C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#359",
       "Hash": "c76a67bdd06d7a806133152253c4b89ea35ea32e53a2858e81fa8f8af3dc31af"
     },
@@ -2785,13 +2785,6 @@
       "Hash": "4322f3a787b640ca5b3605d2c4e90cca1b480fd29aad6c5285729724f14f1c47"
     },
     {
-      "Key": "game/scripts/OBPGame.Navigation.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
-      "Owner": "#346",
-      "Rationale": "Relocated existing selector-back navigation bridge after retiring the source partial. Navigation ownership removes it in #347; no source state or policy remains here.",
-      "ExpiresWith": "#347",
-      "Hash": "79ce0ca192f4f3d8f08112a9fc8dd0c028233c2817c01a3a55484e094b914a6d"
-    },
-    {
       "Key": "game/scripts/OBPGame.Profile.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
       "Owner": "#346",
       "Rationale": "Relocated read-only profile recovery observation into the existing profile partial; profile ownership removes this bootstrap bridge in #349.",
@@ -2810,7 +2803,7 @@
       "Owner": "#346",
       "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
       "ExpiresWith": "#376",
-      "Hash": "ebbcca23de220bf880dd533cda817de5d26b84d909e85c8615957a55f7d1d9da"
+      "Hash": "29c7fcf5bd157273fc4785c5c5ad4350f4356ca0ae6e52ea0a4a950e6d82c849"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
@@ -2839,6 +2832,195 @@
       "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
       "ExpiresWith": "#376",
       "Hash": "f066fa120be074e32846b992f08b41e0889b1b7bed1a0ca6dee6fb3c0cc76025"
+    },
+    {
+      "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
+      "Owner": "#347",
+      "Rationale": "Existing world host presentation options moved beside world preparation; no new world loading policy or alternative lifetime.",
+      "ExpiresWith": "#376",
+      "Hash": "cab8f9e61e114d005f78f50e39c91672e2f7d3a1f868335648587447c55b91f2"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_navigation:ApplicationNavigationCoordinator:private",
+      "Owner": "#347",
+      "Rationale": "Single temporary navigation-owner reference; application page state lives outside the root and the existing world/session leases remain authoritative.",
+      "ExpiresWith": "#376",
+      "Hash": "88747dfdaebff70a48ead75f4ccf5db4d67bdb6213201850b9311eb680acab2f"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AbandonFailedRac1Travel():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "7cb1d65e6605a21d6d97feefa0a157a652d0d4ce2fdf6c9d033adb4f9484fa3c"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearFusionLabStatus():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "e23ba97f7a6ffc9497a76eb116adafadc42395b5dde3b30b41219d48736bbdaf"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ClearTitleScreen():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "d52d15841b01d3b9d12e76129d5fb59c968948e52e450820487b34918399106b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "bef1c1925aa31e545ab7740fcf1c1e0400ef14b7ec56dc39ffd24f74e7f4b5ec"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:DestinationError(:string):void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "44a47405800a71d5e2d55750f20982d6604146420224ad68f0ce8599679009b7"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterFusionLab():bool:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "c6f7da493de9c6050d98cf4e6a6399d6c242221f1e3d93d1606ab086856e0c73"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:EnterProviderWorld(:string,:ObpDestination):bool:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "15e2c3fb78df64b5bc73cc5bac148e44b2604ca759d56df92d29e2d7da4dffe6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:OnDestinationChosen(:ObpDestination):bool:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "9fde244ae15c44df8213a7e7d72e232cfe880404328562571415529460b1ab9d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:OpenDestinationFromBootstrap(:string):void:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "c0e70b43b8ad3f751636ae9979bca98b014b1aedafb13be4a6f7fa07afbd9515"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:OpenLegacyRac2DestinationFromBootstrap():void:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "f30e6227ae0651808531ac9ca738f563c27c119d664616a1ac302878585cb871"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:OpenRac1CampaignCurrentFromBootstrap():void:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "e916803c56c100ca2bdcf45e4fc5e78b7578921572d5938bc4ae10a5958d630e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac2StressSwitchFromBootstrap(:string):void:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "8ff4a0b05788c78e2674837191711f0d7235747693ff21ae830f69ff0b62635b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowDestinationSelector():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "3fd725d900e6ffa58104c8bceafd4f3783b72260178428ca052c88bf27424056"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowDestinationSelectorFromBootstrap():void:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "176d1e1f3f82decedf8bc45711ecd314f28a140346769f5762ce8e09adf8a588"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowTitleFromBootstrap():void:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "2dcfed8d60a7403fff68aa02413483a5cb95bc2a0fc375fd3b724db7ccb5cc41"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowTitleScreen():void:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "368da910762bc05b22c019b5af2003ede400b094126ef3b5a46488b647ecc402"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TravelRac1CampaignTo(:int):Rac1PlanetTravelStartResult:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "37bfdcc4865dfc47793f29c30818b32ddad0764e561be78f3d8b6ac33ca9b037"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryCloseRac1PlanetMap():bool:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "d4ca3f027eed7227b6196a27c4856b0bd156148aa89154b55d4445e862e6910e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryOpenRac1PlanetMap():bool:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "1c8fa7a90ca83a30f8234b33e674d9064c8980799c64fe495aabf437bcdebd44"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "550eb0d3e0f99a13f0e156c4a7245ce41450b529785ce23a05f427f7e1981717"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TryReturnWorldToDestinations():bool:public",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "cf921f91fe3fd748a083889663a6d3b908f0e3df2a10b92d8282de713b6881e5"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WaitForWorldPreparationFrameAsync(:CancellationToken):Task:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "ac8d57409d0f43fc6be2b07fb027c6eaa74da7398cb5c52bcffd1e987cd68fdd"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Rac1PlanetMapOpen:bool:get/:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "706c75fc2580e4e696e70d0450c318562194bb4495fddda0c2228ef95874a1ed"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_activeDestination:ObpDestination ?:get/:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "654cb034f02762ca4f4cc18cdadaa63e802d9b75d88523999a78cd360e291165"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:_currentDestinationId:string ?:get/:private",
+      "Owner": "#347",
+      "Rationale": "Existing navigation/bootstrap signature retained as a thin forwarding port while the coordinator owns page and destination logic; final root composition owns its expiry.",
+      "ExpiresWith": "#376",
+      "Hash": "b0a20898ae7b9586aca05bfd072682607dcf2de8f3f64f51f5260444467a2054"
     }
   ],
   "RetiredMembers": [
@@ -3122,7 +3304,48 @@
     "game/scripts/OBPGame.Sources.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
     "game/scripts/OBPGame.Sources.cs::OBPGame::method:RestoreRememberedSources():void:private",
     "game/scripts/OBPGame.Sources.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
-    "game/scripts/OBPGame.Sources.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public"
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_destinationSelector:DestinationSelectorUi ?:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_genericNavigationActive:bool:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_planetMapOwnsPause:bool:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_preMapHeldButtons:int:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_rac1PlanetMapPausedPlayer:PlayerHost ?:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_rac1PlanetMapPreviousMouseMode:Input . MouseModeEnum:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_rac1PlanetMapPreviousPlayerMode:Node . ProcessModeEnum ?:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::field:_rac1PlanetTravelUi:Rac1PlanetTravelUi ?:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:AbandonFailedRac1Travel():void:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:BrowseWorlds():void:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:DestinationError(:string):void:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:EnterProviderWorld(:string,:ObpDestination):bool:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:EnterWorldAfterSharedPreparationAsync(:ObpDestination,:CancellationToken):Task:async,private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:OnDestinationChosen(:ObpDestination):bool:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:OnRac1PlanetTravelRequested(:int):void:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:OpenDestinationFromBootstrap(:string):void:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:OpenLegacyRac2DestinationFromBootstrap():void:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:OpenRac1CampaignCurrentFromBootstrap():void:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:RunRac2StressSwitchFromBootstrap(:string):void:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:ShowDestinationSelector():void:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:ShowDestinationSelectorFromBootstrap():void:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:TravelRac1CampaignTo(:int):Rac1PlanetTravelStartResult:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:TryCloseRac1PlanetMap():bool:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:TryOpenRac1PlanetMap():bool:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:TryReturnWorldToDestinations():bool:public",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:WaitForWorldPreparationFrameAsync(:CancellationToken):Task:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::method:WorldOptions(:RuntimeWorld):WorldHost . Options:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::property:Rac1PlanetMapOpen:bool:get/:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::property:_activeDestination:ObpDestination ?:get/:private",
+    "game/scripts/OBPGame.Destinations.cs::OBPGame::property:_currentDestinationId:string ?:get/:private",
+    "game/scripts/OBPGame.FusionLab.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.FusionLab.cs::OBPGame::field:_fusionLabStatus:Label ?:private",
+    "game/scripts/OBPGame.FusionLab.cs::OBPGame::method:ClearFusionLabStatus():void:private",
+    "game/scripts/OBPGame.FusionLab.cs::OBPGame::method:DecorateFusionLab(:FusionLabDefinition,:bool):void:private",
+    "game/scripts/OBPGame.FusionLab.cs::OBPGame::method:EnterFusionLab():bool:private",
+    "game/scripts/OBPGame.Navigation.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Navigation.cs::OBPGame::field:_titleScreen:TitleScreen ?:private",
+    "game/scripts/OBPGame.Navigation.cs::OBPGame::method:ClearTitleScreen():void:private",
+    "game/scripts/OBPGame.Navigation.cs::OBPGame::method:ShowTitleFromBootstrap():void:public",
+    "game/scripts/OBPGame.Navigation.cs::OBPGame::method:ShowTitleScreen():void:private"
   ],
   "RetiredAccess": [
     "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"

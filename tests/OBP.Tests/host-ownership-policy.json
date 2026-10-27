@@ -12,25 +12,19 @@
     "Hash": "c738fe2b81d5e1d66f1ae4afe82b6137eda915b0bd44736f2e69cdba611773a0"
   },
   {
-    "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
+    "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.Choose(ObpDestination)",
     "Kind": "adapter",
-    "Reason": "Resolve the native world provider and its own attached source, not player assets. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. No origin permission or player-global selection is added.",
-    "Hash": "6dcbe66dead329f654891c9d284684a2d70412983d95997466652df2f7519f54"
+    "Reason": "Resolve the native world provider and its own attached source, not player assets. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. Source-specific navigation remains separate from player service selection. No player-global selection is added.",
+    "Hash": "a6d1b2a6d04c295d3b6770b3adbafb1e2daa1e1ec68ebfaf52a82158db7759fb"
   },
   {
-    "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TravelRac1CampaignTo(int)",
+    "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.TravelRac1CampaignTo(int)",
     "Kind": "adapter",
-    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. No origin permission or player-global selection is added.",
-    "Hash": "c1d17b36c3159d1af8919fead0465f09ed570fe18962f8990905d50844d5b63b"
+    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. #347 review adds explicit abandonment of an uncommitted native travel transition when world selection fails; navigation architecture tests pin the failure path. Source-specific navigation remains separate from player service selection. No player-global selection is added.",
+    "Hash": "d050d38bb7705b85385e02ec6136f22060d498b67c3977b1ac5f21ab3c3cee40"
   },
   {
-    "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TryOpenRac1PlanetMap()",
-    "Kind": "adapter",
-    "Reason": "Explicit R&C1 campaign map and native travel state; not the common pause/loadout interface. Mouse requests use the shared ApplicationPointer boundary so opening/restoring this source UI cannot capture automated desktop input (AutomationDesktopSafetyTests, AutomationDesktopSmoke).",
-    "Hash": "63190750778e3af2f686ea36f61320ea7dbc1fcd62ed888f7144131e16d66112"
-  },
-  {
-    "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.WorldOptions(RuntimeWorld)",
+    "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.WorldOptions(RuntimeWorld)",
     "Kind": "adapter",
     "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified.",
     "Hash": "cab8f9e61e114d005f78f50e39c91672e2f7d3a1f868335648587447c55b91f2"
