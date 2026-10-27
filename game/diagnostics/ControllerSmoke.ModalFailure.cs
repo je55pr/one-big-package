@@ -75,10 +75,14 @@ public partial class ControllerSmoke
             fixture.OpenSettings(fromPause: false);
             await Frames(4);
             Require(fixture.SettingsOpen, "Controller settings did not recover on the next open");
+            ulong settingsInstance = fixture.Settings!.GetInstanceId();
             fixture.CloseSettings();
             await Frames(4);
             Require(!fixture.SettingsOpen && sources.Visible && Focus() == focus,
                 "Controller-settings retry failed to restore the source menu focus");
+            Require(GodotObject.InstanceFromId(settingsInstance) is null,
+                "Failed settings recovery left an orphaned native settings CanvasLayer");
+            GD.Print($"[controller-smoke] settings instance retired: {settingsInstance}");
             GD.Print("[controller-smoke] failed settings attach and retry restore keyboard/gamepad focus PASS");
         }
         finally
@@ -121,11 +125,15 @@ public partial class ControllerSmoke
             await Frames(3);
             Require(fixture.QuickSelectOpen && player.QuickSelectOwnsGameplayInput && !GetTree().Paused,
                 "Quick Select retry failed to take exclusive live input");
+            ulong wheelInstance = fixture.QuickSelect!.GetInstanceId();
             fixture.CloseQuickSelect(retiring: true);
             await Frames(3);
             Require(!fixture.QuickSelectOpen && !player.QuickSelectOwnsGameplayInput &&
                 ApplicationPointer.MouseMode == captured && !GetTree().Paused,
                 "Quick Select retry did not restore pointer/input/pause state");
+            Require(GodotObject.InstanceFromId(wheelInstance) is null,
+                "Quick Select retry left an orphaned native CanvasLayer");
+            GD.Print($"[controller-smoke] wheel instance retired: {wheelInstance}");
             GD.Print("[controller-smoke] throwing pause/wheel readers and successful wheel retry PASS");
         }
         finally
