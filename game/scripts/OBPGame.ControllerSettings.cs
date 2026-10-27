@@ -59,6 +59,14 @@ public partial class OBPGame
             SharedProfileStatusReader = () => _profileStatus,
             SaveNoticeReader = () => PlayerSaveNotice,
             ActorReset = ResetPlacedActor,
+            EffectStatusReader = () =>
+            {
+                var resources = _worldScenes?.Current?.Resources;
+                resources?.Effects?.Prepare();
+                return resources?.Effects?.Status ?? resources?.EffectsFailure ?? "World effects are unavailable.";
+            },
+            EffectControl = operation => _worldScenes?.Current?.Resources.Effects?.Control(operation) ??
+                new(false, _worldScenes?.Current?.Resources.EffectsFailure ?? "World effects are unavailable."),
             CatalogIcon = entry => entry.Definition.Item is { SourceGame: ObpSourceGame.Rac1 } item &&
                 Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)item.NativeItemId) is { } icon
                 ? Rac1RetailUiAssets.Sprite(icon.AnimationId, icon.Frame) : null,

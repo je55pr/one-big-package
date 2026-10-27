@@ -185,6 +185,7 @@ public partial class OBPGame : Node3D
         TickSourceSetup(delta);
         TickFusionPreparation();
         TickActorPreparation();
+        _worldScenes?.Current?.Resources.Effects?.PrepareTick();
         TickSharedProfile(delta);
         TickRac1CampaignSaves(delta);
 
@@ -193,6 +194,7 @@ public partial class OBPGame : Node3D
             if (_playtest is { WaitingForEntry: true } or { PreparingWorld: true }) return;
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
+            _worldScenes?.Current?.Resources.Effects?.Render();
             TickFusionLabTraversalSmoke();
             TickRac2Gameplay(delta);
             TickRac1Gameplay(delta);

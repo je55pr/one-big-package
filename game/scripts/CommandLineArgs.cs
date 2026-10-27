@@ -16,6 +16,7 @@ public sealed record CommandLineArgs
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
     public string? RecordPlaytest { get; init; }
+    public bool RecordEffects { get; init; }
     public string? ReplayPlaytest { get; init; }
     public string? PlaytestReport { get; init; }
     public bool PlaytestAllowBuildChange { get; init; }
@@ -23,6 +24,7 @@ public sealed record CommandLineArgs
     /// <summary>Explicit, ephemeral three-game weapon demo on fresh R&amp;C1 Veldin.</summary>
     public bool FusionTest { get; init; }
     public bool FusionSmoke { get; init; }
+    public bool EffectsSmoke { get; init; }
     public bool RetailParity { get; init; }
     public bool DiagnosticPlayer { get; init; }
     public bool DiagnosticSources { get; init; }
@@ -220,6 +222,8 @@ public sealed record CommandLineArgs
                 "--playtest-smoke" => result with { PlaytestSmoke = true },
                 "--fusion-test" => result with { FusionTest = true },
                 "--fusion-smoke" => result with { FusionTest = true, FusionSmoke = true },
+                "--effects-smoke" => result with { EffectsSmoke = true },
+                "--record-effects" => result with { RecordEffects = true },
                 "--default-weapons-smoke" => result with { DefaultWeaponsSmoke = true },
                 "--bug-capture" => result with { BugCapture = true },
                 "--bug-report-smoke" => result with { BugReportSmoke = true },
@@ -307,6 +311,8 @@ public sealed record CommandLineArgs
             throw new ArgumentException("--movement-case requires a known movement regression name.");
         if (result.RecordPlaytest is not null && result.ReplayPlaytest is not null)
             throw new ArgumentException("--record-playtest cannot be combined with --replay-playtest.");
+        if (result.RecordEffects && (result.RecordPlaytest is null || result.NativeParityRequested))
+            throw new ArgumentException("--record-effects requires --record-playtest with the ordinary shared player.");
         if (result.BugCapture && (result.PlaytestRequested || result.ReplayBugReport is not null))
             throw new ArgumentException("--bug-capture cannot be combined with --record-playtest, --replay-playtest or --replay-bug-report.");
         if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)
@@ -314,6 +320,7 @@ public sealed record CommandLineArgs
         if (result.PlaytestRequested && (result.LoadMovementState is not null || result.CaptureFrame.HasValue ||
             result.ShotsPath is not null || result.ReplayForwardFrames.HasValue || result.StressSwitch is not null))
             throw new ArgumentException("--record-playtest/--replay-playtest require ordinary entry without --load-movement-state, --capture-frame, --shots, --replay-forward or --stress-switch.");
+        if (result.EffectsSmoke && !result.TestSceneExplicit && result.Destination is null) result = result with { TestScene = "fusion-lab", TestSceneExplicit = true };
         return result;
     }
 }

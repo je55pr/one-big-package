@@ -68,6 +68,7 @@ public partial class OBPGame
                 {
                     "obp/universal-loadout/v1" => "PAUSE: weapons, gadgets, appearance and Quick Select",
                     "obp/mixed-encounter/v1" => "PAUSE > DEVELOPER: actor status and independent resets",
+                    "obp/effects-experiment/v1" => "PAUSE > DEVELOPER: start/reset native effects\nR&C1 Novalis / GC Museum / UYA Cannon",
                     _ => "UNAVAILABLE: feature not yet implemented",
                 }),
                 Position = RuntimeWorldScene.ToScene(

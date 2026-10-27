@@ -126,6 +126,9 @@ public sealed partial class PauseMenuUi
 
     public override void _Process(double delta)
     {
+        if (UniversalEnabled && _universalSection == "Developer" &&
+            _universalBody?.GetNodeOrNull<Label>("EffectsStatus") is { } effectStatus)
+            effectStatus.Text = EffectStatusReader?.Invoke() ?? "Effects unavailable.";
         if (!RetailEnabled || !IsInsideTree()) return;
         RetainQuickSelectCandidateFocus();
         if (_retailNativeRootMotion is not null &&

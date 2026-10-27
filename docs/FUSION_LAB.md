@@ -51,6 +51,12 @@ until adapters, catalogues and mixed encounter work land in follow-ups.
 
 ## Future integrations
 
+The [three-source native effect station](EFFECT_HOST.md) uses the existing
+Developer page for start/reset and the `native-effects` reset key. Its authored
+recipe references live in `game/data/effects_experiment.json`; native parameters
+remain with their source adapters. It retires only effects, independently of
+the mixed encounter and persistent player session.
+
 #255 supplies universal equipment, #256 mixed actor/combat adapters, #257
 reset/experiment UI, #258 mechanics gallery and #259 pause/loadout menu.
 Additional rooms and stations should be described in authored data; no

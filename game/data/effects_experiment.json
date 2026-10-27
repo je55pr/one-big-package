@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "obp/three-source-effects/v1",
+  "resetKey": "native-effects",
+  "effects": [
+    {
+      "id": "novalis-285", "game": "rac1", "buildId": "rac1-ntscu-original", "levelId": "LEVEL1",
+      "assetKind": "moby", "originalId": "285", "recipe": "rac1/class27/type6/v1", "seed": 1234,
+      "position": { "x": -6, "y": 1, "z": 18 }, "end": { "x": -6, "y": 1, "z": 18 }, "emissionTicks": 120
+    },
+    {
+      "id": "novalis-286", "game": "rac1", "buildId": "rac1-ntscu-original", "levelId": "LEVEL1",
+      "assetKind": "moby", "originalId": "286", "recipe": "rac1/class27/type6/v1", "seed": 32768,
+      "position": { "x": -4, "y": 1, "z": 18 }, "end": { "x": -4, "y": 1, "z": 18 }, "emissionTicks": 120
+    },
+    {
+      "id": "museum-262", "game": "rac2", "buildId": "rac2-ntscu-v1.01", "levelId": "LEVEL21",
+      "assetKind": "moby", "originalId": "262", "recipe": "rac2/museum/type85/v1", "seed": 1234,
+      "position": { "x": -1.5, "y": 1, "z": 18 }, "end": { "x": -1.5, "y": 1, "z": 18 }, "emissionTicks": 120
+    },
+    {
+      "id": "museum-263", "game": "rac2", "buildId": "rac2-ntscu-v1.01", "levelId": "LEVEL21",
+      "assetKind": "moby", "originalId": "263", "recipe": "rac2/museum/type85/v1", "seed": 1234,
+      "position": { "x": 1.5, "y": 1, "z": 18 }, "end": { "x": 1.5, "y": 1, "z": 18 }, "emissionTicks": 120
+    },
+    {
+      "id": "cannon-charge", "game": "rac3", "buildId": "rac3-ntscu-original", "levelId": "TABLE1",
+      "assetKind": "particle-caller", "originalId": "385f18", "recipe": "rac3/shock-cannon/charging/v1", "seed": 1234,
+      "position": { "x": 4, "y": 1, "z": 18 }, "end": { "x": 4, "y": 1, "z": 18 }, "emissionTicks": 60
+    },
+    {
+      "id": "cannon-shot", "game": "rac3", "buildId": "rac3-ntscu-original", "levelId": "TABLE1",
+      "assetKind": "particle-caller", "originalId": "38667c+386724", "recipe": "rac3/shock-cannon/beam-glow/v1", "seed": 1234,
+      "position": { "x": 6, "y": 1, "z": 17 }, "end": { "x": 6, "y": 1, "z": 21 }, "emissionTicks": 30
+    }
+  ]
+}

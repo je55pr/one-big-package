@@ -93,7 +93,8 @@ public sealed record PlaytestCommand(string Kind, string Value, int Slot = 0, bo
 {
     public void Validate()
     {
-        if (Kind is not ("destination" or "equip" or "gadget" or "quick-slot" or "unequip") || Value is null || Value.Length > 160 || Value.Any(char.IsControl) ||
+        if (Kind is not ("destination" or "equip" or "gadget" or "quick-slot" or "unequip" or "effects") || Value is null || Value.Length > 160 || Value.Any(char.IsControl) ||
+            Kind == "effects" && Value is not ("start" or "reset") ||
             Kind == "quick-slot" && Slot is < 0 or > 7)
             throw new InvalidDataException("Unsupported player-session command.");
     }

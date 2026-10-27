@@ -504,8 +504,9 @@ public partial class OBPGame
                 _rac1TeslaMaterials.Add(ribbon.Texture, material);
             }
             var beam = _rac1ArsenalBeams[slot]; beam.MaterialOverride = material;
-            var mesh = beam.Mesh as ImmediateMesh ?? new ImmediateMesh();
-            mesh.ClearSurfaces(); mesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
+            var mesh = beam.Mesh as ArrayMesh;
+            if (mesh is null) { var previous = beam.Mesh; mesh = new ArrayMesh(); beam.Mesh = mesh; previous?.Dispose(); }
+            var positions = new List<double>(); var uvs = new List<float>(); var colors = new List<float>();
             uint rgba = ribbon.Color;
             var tint = new Color((rgba & 255) / 128f, (rgba >> 8 & 255) / 128f, (rgba >> 16 & 255) / 128f, (rgba >> 24) / 128f);
             var points = ribbon.Points.Select(FromEffectNative).ToArray();
@@ -539,13 +540,16 @@ public partial class OBPGame
                 Add(la, a, 0, i); Add(ra, a, 1, i); Add(rb, b, 1, i + 1);
                 Add(la, a, 0, i); Add(rb, b, 1, i + 1); Add(lb, b, 0, i + 1);
             }
-            mesh.SurfaceEnd(); beam.Mesh = mesh; beam.Visible = true;
+            EffectMeshSceneView.Upload(mesh, new(effects.FxTextures[ribbon.Texture].AssetKind, ribbon.Texture,
+                positions.ToArray(), uvs.ToArray(), Enumerable.Range(0, positions.Count / 3).ToArray(), colors.ToArray()));
+            beam.Visible = true;
 
             void Add(Vector3 p, float u, float v, int point)
             {
                 var vertexColor = tint;
                 if (point == 0 || point == points.Length - 1) vertexColor.A = 0;
-                mesh.SurfaceSetColor(vertexColor); mesh.SurfaceSetUV(new(u, v)); mesh.SurfaceAddVertex(p);
+                positions.AddRange([-p.X, p.Y, p.Z]); uvs.AddRange([u, v]);
+                colors.AddRange([vertexColor.R, vertexColor.G, vertexColor.B, vertexColor.A]);
             }
         }
     }

@@ -39,7 +39,8 @@ public sealed class FusionLabDefinitionTests
         Assert.Equal("entrance", lab.Rooms[0].Id);
         Assert.Equal("test-room", lab.Rooms[^1].Id);
         Assert.Contains(lab.Rooms, r => r.Id == "hub");
-        Assert.Equal(3, lab.Stations.Count);
+        Assert.Equal(4, lab.Stations.Count);
+        Assert.Contains(lab.Stations, station => station.AdapterId == "obp/effects-experiment/v1" && station.ResetKey == "native-effects");
         Assert.All(lab.Stations, s => Assert.False(string.IsNullOrWhiteSpace(s.ResetKey)));
 
         // Each portal meets both floor edges. Following the connections gives
