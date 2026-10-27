@@ -56,6 +56,11 @@
     <Compile Include="../../game/diagnostics/Rac1DiagnosticCollision.cs" Link="Diagnostics/Rac1DiagnosticCollision.cs" />
     <Compile Include="../../game/diagnostics/MovementDiagnosticPorts.cs" Link="Diagnostics/MovementDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticCleanup.cs" Link="Diagnostics/DiagnosticCleanup.cs" />
+    <Compile Include="../../game/diagnostics/Rac1BombAcceptancePorts.cs" Link="Diagnostics/Rac1BombAcceptancePorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1BombGloveScenario.cs" Link="Diagnostics/Rac1BombGloveScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WeaponDiagnosticPorts.cs" Link="Diagnostics/Rac1WeaponDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WrenchScenario.cs" Link="Diagnostics/Rac1WrenchScenario.cs" />
+    <Compile Include="../../game/diagnostics/WeaponDiagnosticHarness.cs" Link="Diagnostics/WeaponDiagnosticHarness.cs" />
     <Compile Include="../../game/diagnostics/Rac1EnemyDiagnosticPorts.cs" Link="Diagnostics/Rac1EnemyDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1AridiaDiagnosticPorts.cs" Link="Diagnostics/Rac1AridiaDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1AridiaScenario.cs" Link="Diagnostics/Rac1AridiaScenario.cs" />

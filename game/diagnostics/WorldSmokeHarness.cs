@@ -12,9 +12,9 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> MovementContact,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> CombatContract,
         Func<Task> Campaign, Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Movement,
-        Func<Task>? Crates = null, Func<Task>? PlacedBolts = null, Func<Task>? Wrench = null,
+        Func<Task>? Crates = null, Func<Task>? PlacedBolts = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Wrench = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Enemies = null, Func<CancellationToken, Task>? MovementState = null,
-        Func<Task>? BombGlove = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisSwim = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? BombGlove = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisSwim = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisPeckbot = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<Task>? NovalisMusic = null, Func<Task>? Weapons = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<Task>? MissionPlay = null,
@@ -34,8 +34,10 @@ internal static class WorldSmokeHarness
         TypedCase("rac1-veldin-play-smoke", a => a.Rac1VeldinPlaySmoke, (e, definition) => e.VeldinPlay(definition)),
         TypedCase("rac1-movement-contact-smoke", a => a.Rac1MovementContactSmoke, (e, definition) => e.MovementContact(definition)),
         TypedCase("rac1-combat-contract-smoke", a => a.Rac1CombatContractSmoke, (e, definition) => e.CombatContract(definition)),
-        Case("rac1-wrench-smoke", a => a.Rac1WrenchSmoke, (e, _, _) => e.Wrench?.Invoke()),
-        Case("rac1-bomb-glove-smoke", a => a.Rac1BombGloveSmoke, (e, _, _) => e.BombGlove?.Invoke()),
+        TypedCase("rac1-wrench-smoke", a => a.Rac1WrenchSmoke, (e, definition) => e.Wrench?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No wrench diagnostic is bound."))),
+        TypedCase("rac1-bomb-glove-smoke", a => a.Rac1BombGloveSmoke, (e, definition) => e.BombGlove?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Bomb Glove diagnostic is bound."))),
         TypedCase("rac1-novalis-swim-smoke", a => a.Rac1NovalisSwimSmoke, (e, definition) => e.NovalisSwim?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No swimming diagnostic is bound."))),
         Case("rac1-novalis-route-smoke", a => a.Rac1NovalisRouteSmoke, (e, _, _) => e.NovalisRoute?.Invoke()),

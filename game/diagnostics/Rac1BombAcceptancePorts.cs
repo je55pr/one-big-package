@@ -1,0 +1,31 @@
+using System.Collections.Immutable;
+using System.Numerics;
+using OBP.Runtime.Gameplay;
+
+namespace OBP.Game.Diagnostics;
+
+public sealed record Rac1BombViewDiagnostic(bool GloveVisible, bool StagedVisible, bool WrenchVisible,
+    int VertexCount, int TriangleCount, Vector3 Socket, Vector3 StagedPosition, bool StagedFollowsSocket);
+public sealed record Rac1BombEffectsDiagnostic(int Fragments, int Bursts, int Particles, int Impacts, ImmutableArray<int> ParticleTypes);
+public sealed record Rac1BombAcceptanceShot(long ProjectileId, SourceWeaponKey Weapon, Vector3 NativePosition,
+    Vector3 NativeVelocity, int NativeState, bool Flying, bool OriginalModel);
+public interface IRac1BombAcceptanceWitness { Rac1BombAcceptanceShot Read(); }
+public interface IRac1BombAcceptanceFixture
+{
+    Rac1BombViewDiagnostic ReadView();
+    Rac1BombEffectsDiagnostic ReadEffects();
+    IRac1BombAcceptanceWitness CaptureSingleShot();
+    bool HasLineOfSight(Vector3 from, Vector3 to);
+    Vector3? ProbeWorldContact(Vector3 from, Vector3 to);
+    string DescribeRay(Vector3 from, Vector3 to);
+    bool ConsumeAmmo(int amount);
+    string? SavedReproductionPath { get; }
+}
+public sealed record WeaponMovementStateDiagnostic(bool WorldPresent, int CapturedMobies, bool WeaponPreview);
+public interface IWeaponMovementStateFixture
+{
+    bool Loading { get; }
+    WeaponMovementStateDiagnostic CaptureBoundary();
+    Task SaveAndReloadAsync(string fileName, CancellationToken token);
+    Task LoadAsync(string path, CancellationToken token);
+}

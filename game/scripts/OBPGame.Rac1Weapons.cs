@@ -300,7 +300,7 @@ public partial class OBPGame
     private bool IsRac1WeaponAimTarget(RuntimeWorldScene.DynamicObjectNode node) =>
         node.Source.NativeClassId == Rac1FrogQueenGroup.QueenClassId
             ? _rac1QueenNode == node && _rac1QueenRecovery?.CanReceiveHostWeaponContact == true
-            : IsRac1GameplayActive(node) && !_rac1Enemies[node.Source.InstanceIndex].RewardEmitted;
+            : IsRac1GameplayActive(node) && (!_rac1Enemies.TryGetValue(node.Source.InstanceIndex, out var enemy) || !enemy.RewardEmitted);
 
     private Vector3 EquipmentAim(Vector3 origin, float distance, float coneDot)
     {

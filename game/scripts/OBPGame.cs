@@ -868,6 +868,48 @@ public partial class OBPGame : Node3D
     private static double WrapAngle(double value) => DiagnosticMovementMath.WrapAngle(value);
     private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
 
+    private Task TapWrenchSmokeAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, Rac1WeaponId.Wrench);
+    private Task CaptureRac1BombAsync(string name, Vector3 focus, bool close = false) =>
+        CreateWeaponDiagnosticHarness().CaptureBombAsync(name, GodotMovementPlayer.Copy(focus), close, LegacyDiagnosticCancellation.Current);
+
+    private WeaponDiagnosticHarness CreateWeaponDiagnosticHarness()
+    {
+        var movement = CreateMovementDiagnosticHarness();
+        var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
+        var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values],
+            IsRac1GameplayActive, StageRac1CrateForSmoke), worlds);
+        var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _rac1WrenchView, () => _playerAvatar,
+            () => _playerAvatarAnimationController, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
+            WrenchWorldPosition, () => _rac1BombGloveView?.Visible == true));
+        var capture = new GodotWeaponDiagnosticCapture(this, () => _player, () => _sceneResult?.Root, () => _ui, new GodotDiagnosticFrameClock(this));
+        var bomb = new GodotRac1BombAcceptanceFixture(new(
+            () =>
+            {
+                var glove = _rac1BombGloveView; var staged = _rac1StagedBombView;
+                bool glovePresent = glove is not null && IsInstanceValid(glove), stagedPresent = staged is not null && IsInstanceValid(staged);
+                return new(glovePresent && glove!.Visible, stagedPresent && staged!.Visible,
+                    _rac1WrenchView is { } view && IsInstanceValid(view) && view.Visible,
+                    _rac1BombGloveAsset?.VertexCount ?? 0, _rac1BombGloveAsset?.TriangleCount ?? 0,
+                    glovePresent ? GodotMovementPlayer.Copy(glove!.BombLocal) : System.Numerics.Vector3.Zero,
+                    stagedPresent ? GodotMovementPlayer.Copy(staged!.Position) : System.Numerics.Vector3.Zero,
+                    glovePresent && stagedPresent && staged!.Position.IsEqualApprox(glove!.BombLocal));
+            },
+            () => new(_rac1BombFragments.Count, _rac1BombBursts.Count, _rac1Particles?.Count ?? 0, _rac1BombImpactCount,
+                _rac1Particles is { } particles ? [.. particles.Live.Select(particle => particle.Type)] : []),
+            () =>
+            {
+                var shot = _rac1Projectiles.Single();
+                bool originalModel = shot.Value.Node.GetChildren().OfType<MeshInstance3D>().All(mesh => mesh.Mesh is ArrayMesh);
+                return new GodotRac1BombAcceptanceWitness(new(worlds), () => new(shot.Key, FusionWeaponSession.BombGlove,
+                    shot.Value.Motion.Position, shot.Value.Motion.Velocity, shot.Value.Motion.NativeState, shot.Value.Motion.Flying, originalModel));
+            }, BombHasLineOfSight, ProbeBombWorldContact,
+            amount => _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, amount), () => _player));
+        var reproduction = new GodotWeaponMovementStateFixture(() => _movementStateLoading, () => CaptureMovementState(),
+            async (path, token) => { await LoadMovementStateAsync(path, cancellationToken: token); },
+            name => Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "repros", name)));
+        return new(movement.Ports, movement.Equipment, wrench, targets, CreateRac1EncounterDiagnosticHarness().Combat, capture, bomb, reproduction);
+    }
+
     private Rac1EncounterDiagnosticHarness CreateRac1EncounterDiagnosticHarness()
     {
         var actors = new GodotRac1EnemyDiagnosticFixture(new(() => [.. _rac1Enemies.Values],
