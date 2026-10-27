@@ -62,7 +62,7 @@ public partial class OBPGame
                         definition => CreateRac1EncounterDiagnosticHarness().CreateCombat(definition),
                         definition => CreateRac1CampaignDiagnosticHarness().CreateCampaign(definition), definition => CreateMovementDiagnosticHarness().CreateMovement(definition),
                         definition => CreateRac1LootDiagnosticHarness().CreateCrates(definition), definition => CreateRac1LootDiagnosticHarness().CreatePlacedBolts(definition), definition => CreateWeaponDiagnosticHarness().CreateWrench(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), RunMovementStateSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateBomb(definition),
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), definition => CreateCaptureDiagnosticHarness().CreateMovement(definition), definition => CreateWeaponDiagnosticHarness().CreateBomb(definition),
                         definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
@@ -84,7 +84,7 @@ public partial class OBPGame
             _playtest?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) CreateFusionWeaponDiagnosticHarness().Start();
             if (_worldSwitches == 1 && PlayerSessionDiagnosticHarness.IsRequested(_args)) CreatePlayerDiagnosticHarness().StartRequested();
-            if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) _ = RunTrilogyGameplaySmokeAsync();
+            if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) CreateCaptureDiagnosticHarness().StartTrilogy();
             return true;
         }
         catch (Exception error)

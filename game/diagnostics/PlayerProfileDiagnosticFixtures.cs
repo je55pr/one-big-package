@@ -44,10 +44,16 @@ internal sealed class DiagnosticPlayerInterfaceFixture(Func<DiagnosticPlayerInte
     public bool ToggleMetalDetector() => detector();
 }
 
-internal sealed class DiagnosticAcceptanceReporter(Action<bool, string, string> assert, Action<string> write,
-    Action<string, Exception, string> fail) : IDiagnosticAcceptanceReporter
+/// <summary>Application-owned acceptance evidence; no diagnostic checks or collections live in the production root.</summary>
+internal sealed class OwnedDiagnosticAcceptanceReporter(Func<string?> destination, Func<string?> path,
+    Func<AcceptanceSnapshot> snapshot, Action<string> error, Action<string, int> quit) : IDiagnosticAcceptanceReporter
 {
-    public void Assert(bool condition, string id, string detail) => assert(condition, id, detail);
-    public void Write(string phase) => write(phase);
-    public void Fail(string phase, Exception error, string reason) => fail(phase, error, reason);
+    private readonly AcceptanceEvidence _evidence = new();
+    public void Assert(bool condition, string id, string detail) => _evidence.Assert(condition, id, destination(), detail);
+    public void Write(string phase) => Write(phase, null);
+    private void Write(string phase, Exception? failure)
+    {
+        if (path() is { } target) _evidence.Write(target, phase, snapshot(), failure);
+    }
+    public void Fail(string phase, Exception failure, string reason) => AcceptanceEvidence.FinishFailure(failure, reason, () => Write(phase, failure), error, quit);
 }

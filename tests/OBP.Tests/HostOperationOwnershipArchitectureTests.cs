@@ -9,7 +9,7 @@ public sealed class HostOperationOwnershipArchitectureTests
     private static readonly HashSet<string> CriticalOperations = new(StringComparer.Ordinal)
     {
         "RunCaptureAsync", "RunShotsAsync", "RunStressSwitchAsync", "LoadMovementStateAsync",
-        "ExportSelectedBugAsync", "ReplaySelectedBugAsync", "RunMovementStateSmokeAsync"
+        "ExportSelectedBugAsync", "ReplaySelectedBugAsync", "CheckMovementCancellationAsync"
     };
 
     [Fact]
@@ -26,18 +26,13 @@ public sealed class HostOperationOwnershipArchitectureTests
                 Assert.True(Owned(call), $"Unowned critical operation {name} in {tree.FilePath}:{call.GetLocation().GetLineSpan().StartLinePosition.Line + 1}");
             }
         }
-        // The retired player-session partial bound this existing entrypoint to a focused engine proof.
-        // Keep auditing both constructor bindings and the awaited delegate, rather than dropping the critical operation.
-        var movementBindings = HostOwnershipAudit.Host.Value.SyntaxTrees.SelectMany(tree => tree.GetRoot().DescendantNodes().OfType<ArgumentSyntax>())
-            .Where(argument => argument.Expression is IdentifierNameSyntax identifier && identifier.Identifier.ValueText == "RunMovementStateSmokeAsync").ToArray();
-        Assert.Equal(2, movementBindings.Length);
-        Assert.All(movementBindings, argument => Assert.Contains(
-            Assert.IsType<ObjectCreationExpressionSyntax>(argument.Parent!.Parent).Type.ToString(),
-            new[] { "WorldSmokeHarness.Entrypoints", "GodotSessionOperationChecks" }));
+        // The movement flow is a typed scenario now; the independent engine proof still awaits its cancellation boundary.
+        var movementBindings = HostOwnershipAudit.Host.Value.SyntaxTrees.SelectMany(tree => tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
+            .Where(call => Name(call.Expression) == "CheckMovementCancellationAsync").ToArray();
+        Assert.Single(movementBindings);
         var proof = HostOwnershipAudit.Host.Value.SyntaxTrees.Single(tree => Path.GetFileName(tree.FilePath) == "GodotSessionOperationChecks.cs");
         var delegated = Assert.Single(proof.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>(), call => Name(call.Expression) == "movementStateCheck");
         Assert.True(Owned(delegated), "The retained movement cancellation proof must await the bound critical operation.");
-        seen.Add("RunMovementStateSmokeAsync");
         Assert.True(CriticalOperations.SetEquals(seen), "The guard must encounter every retained critical operation.");
         string root = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.cs"));
         int stop = root.IndexOf("await hostStopped;", StringComparison.Ordinal);
@@ -56,6 +51,12 @@ public sealed class HostOperationOwnershipArchitectureTests
     [InlineData("_=Task.Run(async()=>await RunCaptureAsync(1, token));", false)]
     [InlineData("_hostOperations.Start(\"capture\", async token=>await RunCaptureAsync(1, token));", true)]
     [InlineData("_hostOperations.Start(\"capture\", token=>{_=RunCaptureAsync(1, token); return Task.CompletedTask;});", false)]
+    [InlineData("var checks = new GodotSessionOperationChecks(token=>CheckMovementCancellationAsync(token));", true)]
+    [InlineData("var checks = new GodotSessionOperationChecks(token=>{_=CheckMovementCancellationAsync(token); return Task.CompletedTask;});", false)]
+    [InlineData("var checks = new OtherChecks(token=>CheckMovementCancellationAsync(token));", false)]
+    [InlineData("var fixture = new GodotMovementStateDiagnosticFixture(new Bindings { Load = async (path, frames, token) => { await LoadMovementStateAsync(path); } });", true)]
+    [InlineData("var fixture = new GodotMovementStateDiagnosticFixture(new Bindings { Load = async (path, frames, token) => { _=LoadMovementStateAsync(path); } });", false)]
+    [InlineData("var fixture = new OtherFixture(new Bindings { Load = async (path, frames, token) => { await LoadMovementStateAsync(path); } });", false)]
     public void GuardRecognizesAwaitedOrOwnedCallsRatherThanDiscardSpelling(string body, bool expected)
     {
         var tree = CSharpSyntaxTree.ParseText("class Fixture { async Task Run() { " + body + " } }");
@@ -73,11 +74,28 @@ public sealed class HostOperationOwnershipArchitectureTests
 
     private static bool Owned(InvocationExpressionSyntax call)
     {
+        if (Name(call.Expression) == "CheckMovementCancellationAsync" &&
+            call.Parent is SimpleLambdaExpressionSyntax binding && ReferenceEquals(binding.Body, call) &&
+            binding.Parent is ArgumentSyntax { Parent.Parent: ObjectCreationExpressionSyntax creation } && creation.Type.ToString() == "GodotSessionOperationChecks")
+            return true;
         SyntaxNode expression = call;
         SyntaxNode? parent = call.Parent;
         while (parent is ParenthesizedExpressionSyntax) { expression = parent; parent = parent.Parent; }
         var function = call.Ancestors().OfType<AnonymousFunctionExpressionSyntax>().FirstOrDefault();
         if (function is null) return parent is AwaitExpressionSyntax;
+        if (Name(call.Expression) == "LoadMovementStateAsync" && parent is AwaitExpressionSyntax &&
+            function.Parent is AssignmentExpressionSyntax
+            {
+                Left: IdentifierNameSyntax { Identifier.ValueText: "Load" },
+                Parent: InitializerExpressionSyntax
+                {
+                    Parent: BaseObjectCreationExpressionSyntax
+                    {
+                        Parent: ArgumentSyntax { Parent.Parent: ObjectCreationExpressionSyntax fixture }
+                    }
+                }
+            } && fixture.Type.ToString() == "GodotMovementStateDiagnosticFixture")
+            return true;
         bool consumed = parent is AwaitExpressionSyntax or ReturnStatementSyntax ||
             function is LambdaExpressionSyntax lambda && lambda.Body == expression;
         if (!consumed || function.Parent is not ArgumentSyntax argument || argument.Parent?.Parent is not InvocationExpressionSyntax owner)

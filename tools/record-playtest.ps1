@@ -58,7 +58,21 @@ if ($FusionTest) { $engineArgs += '--fusion-test' }
 if ($DefaultWeaponsSmoke) { $engineArgs += '--default-weapons-smoke' }
 if ($Smoke) { $engineArgs += '--playtest-smoke' }
 if ($ReconciliationSmoke) { $engineArgs += '--reconciliation-smoke' }
-if ($Profile) { $engineArgs += @('--profile', [IO.Path]::GetFullPath($Profile)) }
+if ($Profile) {
+    $recordProfile = [IO.Path]::GetFullPath($Profile)
+    if ($Smoke -or $ReconciliationSmoke) {
+        $isolatedProfile = $Out + '.profile.json'
+        foreach ($suffix in @('', '.bak')) {
+            if (Test-Path -LiteralPath ($isolatedProfile + $suffix)) { throw 'Choose a new isolated smoke profile filename.' }
+            if (Test-Path -LiteralPath ($recordProfile + $suffix) -PathType Leaf) {
+                Copy-Item -LiteralPath ($recordProfile + $suffix) -Destination ($isolatedProfile + $suffix)
+            }
+        }
+        $recordProfile = $isolatedProfile
+    }
+    $engineArgs += @('--profile', $recordProfile)
+}
+elseif ($Smoke -or $ReconciliationSmoke) { $engineArgs += '--no-profile' }
 if ($CampaignSave) {
     if (-not (Test-Path -LiteralPath $CampaignSave -PathType Leaf)) { throw 'Starting campaign save not found.' }
     $isolatedCampaign = $Out + '.campaign.json'

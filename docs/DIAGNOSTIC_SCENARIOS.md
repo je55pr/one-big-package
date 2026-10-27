@@ -403,3 +403,57 @@ The source lease restores on cancellation/failure. Shared profiles are rejected
 before test actions; use `--no-profile`. The taxi wrapper defaults to headless
 mode; `-Render` opts into a visible window. The seven linked engine-free files
 have exact coverage permissions; scene adapters are not portable coverage.
+
+## Recording, reports, movement states and trilogy reconciliation (#344)
+
+The five capture suites are independent drivers. They use recorder/bookmark,
+report UI/archive, movement-save, trilogy-player and actor-cache ports; scene
+nodes, file paths, native controllers and mutable actor maps remain inside
+engine fixtures. The cached app harness owns acceptance evidence across the
+five-stop capture and its finished-recording continuation. Recording input is
+device zero and preserves logical-only versus physical-only keys separately
+from the shared movement driver's simulated controller. Physics, process and
+rendered post-draw waits retain their original signal phases. Terminal input
+stays held until the writer closes, then its input lease releases it.
+
+The exact route is R&C1 LEVEL0, R&C2 LEVEL1, R&C3 TABLE1, the Fusion Lab, then
+R&C1 LEVEL0. Source-qualified equipment, native shot timing, persistent profile,
+HUD, markers, completed-prefix bookmarks and post-recording clocks retain their
+original assertions. F7/F8 forms preserve paused/wheel state, exclude typed
+description keys from gameplay, export through the ordinary report API, and
+launch two fresh same-build replay children. Those process-frame polls retain
+their 90-second wall deadlines; an unpaced headless parent must not exhaust a
+60-Hz-derived frame budget while its child imports assets.
+
+Diagnostics require no shared profile or an isolated profile/report inbox under
+`captures` or the system temporary directory. The recording smoke wrapper uses
+`--no-profile` by default, or copies an explicit starting profile and backup
+beside its output. Human recording retains its ordinary profile behavior.
+Movement-state files use a unique
+owned directory and restore the path override and frame-rate limit. Input,
+per-visit filters and invalidation probes have scoped cleanup. Teardown cancels
+owned operations; failures preserve their existing quit codes and evidence.
+Archives, profiles, movement states and source/build/digest identities retain
+their formats. No retail payload is added to the repository.
+
+Portable protocol goldens check the ordinary 499-physics/28-process sequence,
+both terminal routes, five-stop equipment/bookmark ordering and rejection of
+changed sessions, missing bookmarks and invalid finished-recording state. For
+private before/after runs, use Python 3's standard library:
+
+```text
+python tools/test-capture-parity.py
+python tools/compare-capture-parity.py <before-gate-directory> <after-gate-directory>
+```
+
+The comparator checks exact source/profile/initial-state headers, ordered inputs
+and commands, acceptance JSON and the mixed-actor trace digest. It also compares
+the complete deterministic ordinary tape after removing wall timestamps and
+requires fresh same-build replay matches in both runs. World import/bookmark
+flushes can add variable process-wait frames to the five-stop tape; those counts
+are not golden tick values. Build assembly IDs differ between revisions and are
+excluded only from the cross-build header comparison. Same-build replay checks
+are unchanged. Missing/incomplete evidence fails explicitly. Evidence archives
+stay private and ignored; the comparator emits no payloads or machine paths.
+The ten engine-free files have exact portable coverage permissions; engine
+fixtures remain outside that coverage claim.

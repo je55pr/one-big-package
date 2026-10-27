@@ -54,7 +54,11 @@ public sealed class WorldSmokeArchitectureTests
             "Rac1WeaponsScenario.cs",
             "Rac1ArsenalScenario.cs",
             "FusionWeaponsScenario.cs",
-            "OBPGame.MovementStateSmoke.cs",
+            "MovementStateScenario.cs",
+            "PlaytestRecordingScenario.cs",
+            "ReconciliationCaptureScenario.cs",
+            "BugReporterScenario.cs",
+            "TrilogyGameplayScenario.cs",
         })
         {
             Assert.True(File.Exists(Path.Combine(root, "diagnostics", name)), name);

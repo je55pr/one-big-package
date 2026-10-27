@@ -73,6 +73,16 @@
     <Compile Include="../../game/diagnostics/Rac1LootDiagnosticPorts.cs" Link="Diagnostics/Rac1LootDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1CampaignDiagnosticHarness.cs" Link="Diagnostics/Rac1CampaignDiagnosticHarness.cs" />
     <Compile Include="../../game/diagnostics/Rac1WorldRouteDiagnosticHarness.cs" Link="Diagnostics/Rac1WorldRouteDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/TrilogyGameplayScenario.cs" Link="Diagnostics/TrilogyGameplayScenario.cs" />
+    <Compile Include="../../game/diagnostics/TrilogyGameplayDiagnosticPorts.cs" Link="Diagnostics/TrilogyGameplayDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/MovementStateScenario.cs" Link="Diagnostics/MovementStateScenario.cs" />
+    <Compile Include="../../game/diagnostics/MovementStateDiagnosticPorts.cs" Link="Diagnostics/MovementStateDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/BugReporterScenario.cs" Link="Diagnostics/BugReporterScenario.cs" />
+    <Compile Include="../../game/diagnostics/BugReporterDiagnosticPorts.cs" Link="Diagnostics/BugReporterDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/ReconciliationCaptureScenario.cs" Link="Diagnostics/ReconciliationCaptureScenario.cs" />
+    <Compile Include="../../game/diagnostics/PlaytestRecordingScenario.cs" Link="Diagnostics/PlaytestRecordingScenario.cs" />
+    <Compile Include="../../game/diagnostics/CaptureDiagnosticHarness.cs" Link="Diagnostics/CaptureDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/CaptureDiagnosticPorts.cs" Link="Diagnostics/CaptureDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1MetropolisTaxiScenario.cs" Link="Diagnostics/Rac1MetropolisTaxiScenario.cs" />
     <Compile Include="../../game/diagnostics/Rac1NovalisRouteScenario.cs" Link="Diagnostics/Rac1NovalisRouteScenario.cs" />
     <Compile Include="../../game/diagnostics/Rac1NovalisMusicScenario.cs" Link="Diagnostics/Rac1NovalisMusicScenario.cs" />

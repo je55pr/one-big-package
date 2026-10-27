@@ -2561,34 +2561,6 @@
   ],
   "Composition": [
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_acceptanceEvidence:AcceptanceEvidence:private,readonly",
-      "Owner": "#336",
-      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
-      "ExpiresWith": "#344",
-      "Hash": "0733228c98ba5fa28c7f5531421313c3e283e7beae6f4de846756fedc0b99604"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:AcceptanceAssert(:bool,:string,:string):void:private",
-      "Owner": "#336",
-      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
-      "ExpiresWith": "#344",
-      "Hash": "0d02da18bb22294dfa76642267598436deea2eb4c1aa39ed614a1119ab1d5e9b"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:FinishAcceptanceFailure(:string,:Exception,:string):void:private",
-      "Owner": "#336",
-      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
-      "ExpiresWith": "#344",
-      "Hash": "5902df8679b06d0e00e0667e884e43b3f01ca88c4360b6e92c8c047b968cede0"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:WriteAcceptanceEvidence(:string,:Exception ?):void:private",
-      "Owner": "#336",
-      "Rationale": "Temporary reporter composition for retained profile/reconciliation callers; assertions and mutable checks are owned by AcceptanceEvidence.",
-      "ExpiresWith": "#344",
-      "Hash": "b89f91bf322c7843c3576475646e5c94bb1296da03096c610d457684bff18727"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
       "Owner": "#337",
       "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
@@ -2621,7 +2593,7 @@
       "Owner": "#338",
       "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
       "ExpiresWith": "#359",
-      "Hash": "b3dec26c930bc0208241445c6f759a6e14b6665d4743faf40bac21de4ff31fcd"
+      "Hash": "769815b48f24bed3d467842e550340e17c8836a5ca609102a7e1836dd4f658d4"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
@@ -2827,13 +2799,6 @@
       "Hash": "b6c1895f360fbbb737bc3b9e2368d2d608c046985db2036ccacc3becc683e591"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunFusionRecordingSmokeAsync():Task:private",
-      "Owner": "#341",
-      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
-      "ExpiresWith": "#344",
-      "Hash": "e3db1a63c67742885e07c88b52995ec149eb5472466a3d31c830e6e02aa66278"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CampaignDiagnosticHarness():Rac1CampaignDiagnosticHarness:private",
       "Owner": "#342",
       "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners.",
@@ -2860,6 +2825,41 @@
       "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone.",
       "ExpiresWith": "#370",
       "Hash": "61177e74ed989e194457ef88318b0a06bc10e1cc1015a911f94bcf5eab8e0d25"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_captureDiagnostics:CaptureDiagnosticHarness ?:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#356",
+      "Hash": "010acffa3c86b93e7f35f06446fe313e805c7d3e8c3cec69474d1cb20cf4eb63"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureDiagnosticHarness():CaptureDiagnosticHarness:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#356",
+      "Hash": "24815d3bc470531f04e6b4044acd7090871f09b8e0c79d444da7d98baa14bed1"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#358",
+      "Hash": "08a3e754e31403ea2717746e556a57627a1856eefedfa95c1808ad027a588db0"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyActorDiagnosticFixture():ITrilogyActorDiagnosticFixture:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#359",
+      "Hash": "27bdf656eaf28d75cd6ce4351ab9b0dbc1671fed81768b00e6d891e8c4276e3b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyPlayerDiagnosticFixture():ITrilogyPlayerDiagnosticFixture:private",
+      "Owner": "#344",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "ExpiresWith": "#359",
+      "Hash": "a83aa5565a13beb4ce7be32a92d759dd52abae2fef3081721fe0db4197d36481"
     }
   ],
   "RetiredMembers": [
@@ -3069,7 +3069,24 @@
     "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::method:RunRac1NovalisMusicSmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
-    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::method:RunRac1NovalisRouteSmokeAsync():Task:async,private"
+    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::method:RunRac1NovalisRouteSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugFrames(:int):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugKey(:Key):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:BugPad(:JoyButton):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:CaptureBugUi(:string):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:ClickBugButton(:string):Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:RunBugReporterSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.BugReporterSmoke.cs::OBPGame::method:WaitBugAsync(:Func < bool >,:string,:int):Task:async,private",
+    "game/diagnostics/OBPGame.MovementStateSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.MovementStateSmoke.cs::OBPGame::method:RunMovementStateSmokeAsync(:CancellationToken):Task:async,private",
+    "game/diagnostics/OBPGame.PlaytestSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.PlaytestSmoke.cs::OBPGame::method:RunPlaytestRecordingSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.ReconciliationSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.ReconciliationSmoke.cs::OBPGame::method:RunReconciliationRecordingSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.ReconciliationSmoke.cs::OBPGame::method:VerifyFinishedCaptureContinuationAsync():Task:async,private",
+    "game/diagnostics/OBPGame.TrilogyGameplaySmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.TrilogyGameplaySmoke.cs::OBPGame::method:RunTrilogyGameplaySmokeAsync():Task:async,private"
   ],
   "RetiredAccess": []
 }
