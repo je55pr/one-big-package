@@ -74,11 +74,11 @@ internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities auth
             var driver = context.Run.Own(new MovementDiagnosticDriver(context.Run, movement.Input, movement.Physical));
             await new MovementStateScenario(context, new(movement, driver), ports.MovementStates()).RunAsync();
         }), new("movement-state-smoke-pass", 0), new("movement-state-smoke-fail", 3));
-    internal async Task CheckMovementCancellationAsync(CancellationToken token)
+    internal async Task<DiagnosticRunStatus> CheckMovementCancellationAsync(CancellationToken token)
     {
-        if (token.IsCancellationRequested) return;
         var result = await runner.RunAsync(CreateMovement(Definition("movement-state-smoke")), true, token);
         if (result.Status is not (DiagnosticRunStatus.Passed or DiagnosticRunStatus.Canceled)) throw result.Error ?? new InvalidOperationException(result.Detail);
+        return result.Status;
     }
 }
 public sealed class CaptureOwnedScenario(DiagnosticScenarioDefinition definition, ICaptureDiagnosticInputFactory inputs,

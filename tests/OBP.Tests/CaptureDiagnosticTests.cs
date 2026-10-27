@@ -250,6 +250,19 @@ public sealed class CaptureDiagnosticTests
     }
 
     [Fact]
+    public async Task RetiredMovementDiagnosticReachesRunnerAdmissionAndReturnsCanceledWithoutAcquiringInput()
+    {
+        var fixture = new Fixture();
+        using var operations = new HostOperationScope();
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(DiagnosticRunStatus.Canceled, await fixture.Harness(operations).CheckMovementCancellationAsync(canceled.Token));
+        Assert.False(fixture.Disposed); // Admission rejects before a scenario input lease exists.
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(fixture.Failures);
+        Assert.False(operations.Stopping);
+    }
+
+    [Fact]
     public void UnpacedReportPollingRetainsItsWallDeadlineRatherThanA60HzFrameBudget()
     {
         var fixture = new Fixture();

@@ -50,6 +50,10 @@ func _run_smoke() -> void:
     save.pressed = false
     Input.parse_input_event(save)
     game.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+    deadline = Time.get_ticks_msec() + 60000
+    while Time.get_ticks_msec() < deadline:
+        await process_frame
+    _fail("Game did not quit after window-close notification")
 
 
 func _fail(message: String) -> void:
