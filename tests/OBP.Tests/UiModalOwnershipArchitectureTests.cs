@@ -28,16 +28,23 @@ public sealed class UiModalOwnershipArchitectureTests
             .ToArray();
         Assert.Equal(1, rootFields.Count(field => field == "_modals"));
         foreach (string retired in new[] { "_pauseMenu", "_controllerSettings", "_pauseOwnsTreePause",
-                     "_prePauseMouseMode", "_prePauseHeldButtons", "_settingsReturnFocus",
+                     "_controllerSettingsFromPause", "_prePauseMouseMode", "_prePauseHeldButtons", "_settingsReturnFocus",
                      "_quickSelect", "_preQuickSelectMouse", "_preQuickSelectHeldButtons",
                      "_lastQuickSelectTap", "_previousSelectedWeapon", "_debugOutputEnabled" })
             Assert.DoesNotContain(retired, rootFields);
 
         string owner = Read("UiModalCoordinator.cs");
+        var ownerRoot = CSharpSyntaxTree.ParseText(owner).GetRoot();
+        var ownerFields = ownerRoot.DescendantNodes().OfType<FieldDeclarationSyntax>()
+            .SelectMany(field => field.Declaration.Variables.Select(variable => variable.Identifier.ValueText))
+            .ToArray();
         foreach (string state in new[] { "_pause", "_settings", "_wheel", "_ownsPause",
-                     "_beforePauseButtons", "_beforeWheelButtons", "_settingsReturnFocus",
-                     "_lastWheelTap", "PreviousSelectedWeapon" })
-            Assert.Contains(state, owner, StringComparison.Ordinal);
+                     "_beforePauseButtons", "_beforeWheelButtons", "_settingsReturnFocus", "_lastWheelTap",
+                     "_pausePointerOpened" })
+            Assert.Contains(state, ownerFields);
+        var ownerProperties = ownerRoot.DescendantNodes().OfType<PropertyDeclarationSyntax>()
+            .Select(property => property.Identifier.ValueText).ToArray();
+        Assert.Contains("PreviousSelectedWeapon", ownerProperties);
         Assert.DoesNotContain("_playerNative", owner, StringComparison.Ordinal);
         Assert.DoesNotContain("_rac1Weapons", owner, StringComparison.Ordinal);
     }
@@ -80,7 +87,21 @@ public sealed class UiModalOwnershipArchitectureTests
         Assert.Contains("player.QuickSelectOwnsGameplayInput = false", closeWheel, StringComparison.Ordinal);
         Assert.Contains("SuppressButtonsUntilRelease(_beforeWheelButtons)", closeWheel, StringComparison.Ordinal);
         Assert.Contains("UiPointerModality.MenuClosed(_beforePauseMouse)", release, StringComparison.Ordinal);
+        Assert.Contains("_pausePointerOpened = true", pause, StringComparison.Ordinal);
+        Assert.Contains("_pausePointerOpened", release, StringComparison.Ordinal);
+        Assert.True(pause.IndexOf("UiPointerModality.MenuOpened()", StringComparison.Ordinal) <
+            pause.IndexOf("_pausePointerOpened = true", StringComparison.Ordinal));
         Assert.Contains("MenuFocus.Restore(_settingsReturnFocus", owner, StringComparison.Ordinal);
+        string failedSettings = Method(owner, "OpenSettings").ToFullString();
+        Assert.Contains("RestoreSettingsParent()", failedSettings, StringComparison.Ordinal);
+        Assert.Contains("MenuFocus.Restore(_settingsReturnFocus", failedSettings, StringComparison.Ordinal);
+        Assert.Contains("ApplicationPointer.MouseMode = _beforeSettingsMouse", failedSettings, StringComparison.Ordinal);
+        Assert.True(wheel.IndexOf("_beforeWheelMouse = ApplicationPointer.MouseMode", StringComparison.Ordinal) <
+            wheel.IndexOf("equipment.WheelEntries()", StringComparison.Ordinal));
+        Assert.True(wheel.IndexOf("_beforeWheelButtons = player.MenuHeldButtons", StringComparison.Ordinal) <
+            wheel.IndexOf("equipment.WheelEntries()", StringComparison.Ordinal));
+        Assert.True(wheel.IndexOf("equipment.WheelEntries()", StringComparison.Ordinal) <
+            wheel.IndexOf("new WeaponQuickSelectUi", StringComparison.Ordinal));
     }
 
     [Fact]

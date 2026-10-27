@@ -5,13 +5,14 @@ using OBP.Runtime.Gameplay;
 
 namespace OBP.Game;
 
+/// <summary>Back action priority: wheel, settings, then pause.</summary>
+internal enum ModalBackResult { None, WheelClosed, SettingsClosed, PauseClosed }
+
 /// <summary>
 /// Single owner of pause, controller settings, and real-time Quick Select. The
 /// underlying retail and universal menu presenters remain independent; only
 /// modal focus, input, pointer, and SceneTree pause leases are shared here.
 /// </summary>
-internal enum ModalBackResult { None, WheelClosed, SettingsClosed, PauseClosed }
-
 internal sealed class UiModalCoordinator(UiModalPorts ports)
 {
     private readonly UiModalPorts _ports = ports;
@@ -21,6 +22,7 @@ internal sealed class UiModalCoordinator(UiModalPorts ports)
     private bool _settingsFromPause;
     private bool _ownsPause;
     private bool _audioPaused;
+    private bool _pausePointerOpened;
     private Input.MouseModeEnum _beforePauseMouse;
     private Input.MouseModeEnum _beforeSettingsMouse;
     private Input.MouseModeEnum _beforeWheelMouse;
@@ -94,6 +96,7 @@ internal sealed class UiModalCoordinator(UiModalPorts ports)
             _ports.Host.AddChild(view);
             _pause = view;
             UiPointerModality.MenuOpened();
+            _pausePointerOpened = true;
             _ports.SetPlayerAudioPaused(true);
             _audioPaused = true;
             _ports.Host.GetTree().Paused = true;
@@ -151,8 +154,9 @@ internal sealed class UiModalCoordinator(UiModalPorts ports)
             _ports.SetPlayerAudioPaused(false);
             _audioPaused = false;
         }
-        if (_pause is null)
+        if (_pause is null && _pausePointerOpened)
         {
+            _pausePointerOpened = false;
             UiPointerModality.MenuClosed(_beforePauseMouse);
             _ports.Player()?.SuppressButtonsUntilRelease(_beforePauseButtons);
         }
@@ -196,8 +200,11 @@ internal sealed class UiModalCoordinator(UiModalPorts ports)
             if (Alive(page)) { page!.ProcessMode = Node.ProcessModeEnum.Disabled; page.QueueFree(); }
             _settings = null;
             RestoreSettingsParent();
+            MenuFocus.Restore(_settingsReturnFocus, []);
+            _ports.Player()?.SuppressButtonsUntilRelease(_beforeSettingsButtons);
             _settingsReturnFocus = null;
             _settingsFromPause = false;
+            ApplicationPointer.MouseMode = _beforeSettingsMouse;
         }
     }
 
@@ -268,21 +275,27 @@ internal sealed class UiModalCoordinator(UiModalPorts ports)
             return true;
         }
 
+        // Read both values before invoking any fallible equipment readers.
+        // Failure recovery must restore this attempt, not a previous wheel.
+        _beforeWheelMouse = ApplicationPointer.MouseMode;
+        _beforeWheelButtons = player.MenuHeldButtons;
         WeaponQuickSelectUi? view = null;
         try
         {
+            // Read before constructing the Godot CanvasLayer. An exception in
+            // either reader must not leak an unassigned native UI object.
+            var entries = equipment.WheelEntries();
+            var currentWeapon = equipment.CurrentWeapon();
             view = new WeaponQuickSelectUi
             {
-                Entries = equipment.WheelEntries(),
-                CurrentWeapon = equipment.CurrentWeapon(),
+                Entries = entries,
+                CurrentWeapon = currentWeapon,
             };
             int generation = ++_generation;
             view.Completed += selected =>
             {
                 if (generation == _generation) CloseQuickSelect(selected);
             };
-            _beforeWheelMouse = ApplicationPointer.MouseMode;
-            _beforeWheelButtons = player.MenuHeldButtons;
             _ports.Host.AddChild(view);
             _wheel = view;
             player.QuickSelectOwnsGameplayInput = true;
