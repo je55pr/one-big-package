@@ -29,6 +29,13 @@ class CaptureParityTests(unittest.TestCase):
                         {**later, "Events": [event, {**event, "Pressed": False}]}):
             self.assertNotEqual(parity.stable_step(step), parity.stable_step(changed))
 
+    def test_informational_version_keeps_semantic_version_and_non_commit_metadata(self):
+        def header(version):
+            return parity.stable_header([{"Header": {"ApplicationVersion": version}}])
+        self.assertEqual(header("1.0.0+" + "a" * 40), header("1.0.0+" + "b" * 40))
+        self.assertNotEqual(header("1.0.0+" + "a" * 40), header("2.0.0+" + "b" * 40))
+        self.assertNotEqual(header("1.0.0+custom"), header("1.0.0+other"))
+
     def test_qualified_commands_are_not_normalized(self):
         def rows(source):
             return [{"Step": {"Events": [], "Commands": [{"Kind": "equip", "Value": source + "/item/30"}]}}]

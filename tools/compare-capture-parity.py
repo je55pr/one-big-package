@@ -20,8 +20,13 @@ def read_archive(root, name):
 def stable_header(rows):
     # Assembly IDs identify different builds. StartedUtc and input timestamps are
     # host wall time. Source/build/digest, schemas, profiles and initial facts stay exact.
-    return {key: value for key, value in rows[0]["Header"].items()
-            if key not in ("AssemblyId", "Assemblies", "StartedUtc")}
+    stable = {key: value for key, value in rows[0]["Header"].items()
+              if key not in ("AssemblyId", "Assemblies", "StartedUtc")}
+    # The SDK informational version appends the Git commit. Keep its actual
+    # version and other metadata exact, excluding only that full commit suffix.
+    if "ApplicationVersion" in stable:
+        stable["ApplicationVersion"] = re.sub(r"\+[0-9a-fA-F]{40}$", "+<commit>", stable["ApplicationVersion"])
+    return stable
 
 
 def stable_step(step):

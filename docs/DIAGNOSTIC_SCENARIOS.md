@@ -427,10 +427,11 @@ their 90-second wall deadlines; an unpaced headless parent must not exhaust a
 
 Diagnostics require no shared profile or an isolated profile/report inbox under
 `captures` or the system temporary directory. The recording smoke wrapper uses
-`--no-profile` by default, or copies an explicit starting profile and backup
-beside its output. Human recording retains its ordinary profile behavior.
-Movement-state files use a unique
-owned directory and restore the path override and frame-rate limit. Input,
+`--no-profile` by default, or copies an explicit starting profile and backup into
+a unique system-temp directory, independent of the recording's output path.
+The wrapper removes those owned files on success or failure. Human recording
+retains its ordinary profile behavior. Movement-state files use a unique owned
+directory and restore the path override and frame-rate limit. Input,
 per-visit filters and invalidation probes have scoped cleanup. Teardown cancels
 owned operations; failures preserve their existing quit codes and evidence.
 Archives, profiles, movement states and source/build/digest identities retain
@@ -451,9 +452,11 @@ and commands, acceptance JSON and the mixed-actor trace digest. It also compares
 the complete deterministic ordinary tape after removing wall timestamps and
 requires fresh same-build replay matches in both runs. World import/bookmark
 flushes can add variable process-wait frames to the five-stop tape; those counts
-are not golden tick values. Build assembly IDs differ between revisions and are
-excluded only from the cross-build header comparison. Same-build replay checks
-are unchanged. Missing/incomplete evidence fails explicitly. Evidence archives
+are not golden tick values. Build assembly IDs and the informational version's
+full Git commit suffix differ between revisions and are excluded only from the
+cross-build header comparison; the semantic application version remains exact.
+Same-build replay checks are unchanged. Missing/incomplete evidence fails
+explicitly. Evidence archives
 stay private and ignored; the comparator emits no payloads or machine paths.
 The ten engine-free files have exact portable coverage permissions; engine
 fixtures remain outside that coverage claim.
