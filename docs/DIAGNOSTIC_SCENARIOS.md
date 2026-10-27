@@ -363,3 +363,38 @@ manual check. Automated native evidence covers fresh/restored/corrupt campaign
 files, mission restart and headless refusal, Veldin/Novalis crates, and authored
 bolts on Veldin/Batalia/Pokitaru. The ten linked engine-free files have exact
 coverage permissions; native scene adapters remain outside portable coverage.
+
+## Novalis route/music and Metropolis taxis (#343)
+
+The three world-specific suites run independently through the same explicit
+commands and source/first-world gates. Their assertions no longer run in root
+partials. Novalis observations copy the authored rocks, piston/door state and
+source-qualified actor identity; collision probes keep Godot queries and scene
+nodes inside the fixture. The shared movement driver owns the original frame
+phases and logical/simulated input, including the out-of-range taxi T key.
+
+Taxi snapshots separate source stops, rendered hulls, traffic state, passenger
+attachment and camera ownership. Native passenger-frame evaluation stays in its
+source implementation. The suite preserves i919's walk-to/abort/retry, supported
+i921 dismount and ordinary controller movement. The i962 unsupported-dock direct
+boarding/return remains the existing bounded host fallback. It is not evidence
+of recovered two-ended landing geometry or an ordinary off-centre walk-in.
+Native HUD slot 12 remains separate from the controller/scripted world camera.
+The five-frame sampling, alignment/range thresholds and staged 12x game-clock
+acceleration are unchanged; input, process mode, frame-rate and time scale have
+scoped cleanup.
+
+Music observations contain original track/sector/duration facts and copied mixer
+events. Explicit authored-crank and tick actions retain the Enemy/Cave intro-loop
+sequence without exporting decoded audio or moving the zone/native policy.
+These staged mechanism checks do not claim a completed human Novalis route.
+
+After each primary suite, the lifetime scenario retires the world through the
+ordinary title action, temporarily detaches its source while queued resources
+drain, and checks captured old scene/audio/hull references. The source is restored
+before entry. Two visits require fresh generations under the existing stable
+world ID, the original resource census and released taxi passenger/camera state.
+The source lease restores on cancellation/failure. Shared profiles are rejected
+before test actions; use `--no-profile`. The taxi wrapper defaults to headless
+mode; `-Render` opts into a visible window. The seven linked engine-free files
+have exact coverage permissions; scene adapters are not portable coverage.

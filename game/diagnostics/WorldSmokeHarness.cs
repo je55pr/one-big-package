@@ -16,9 +16,9 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Enemies = null, Func<CancellationToken, Task>? MovementState = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? BombGlove = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisSwim = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisPeckbot = null,
-        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<Task>? NovalisMusic = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Weapons = null,
-        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MissionPlay = null,
-        Func<Task>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null);
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisMusic = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Weapons = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MetropolisTaxi = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MissionPlay = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null);
 
     private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
         Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario>? Create = null);
@@ -40,13 +40,16 @@ internal static class WorldSmokeHarness
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Bomb Glove diagnostic is bound."))),
         TypedCase("rac1-novalis-swim-smoke", a => a.Rac1NovalisSwimSmoke, (e, definition) => e.NovalisSwim?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No swimming diagnostic is bound."))),
-        Case("rac1-novalis-route-smoke", a => a.Rac1NovalisRouteSmoke, (e, _, _) => e.NovalisRoute?.Invoke()),
+        TypedCase("rac1-novalis-route-smoke", a => a.Rac1NovalisRouteSmoke, (e, definition) => e.NovalisRoute?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Novalis route diagnostic is bound."))),
         TypedCase("rac1-novalis-peckbot-smoke", a => a.Rac1NovalisPeckbotSmoke, (e, definition) => e.NovalisPeckbot?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Peckbot diagnostic is bound."))),
         TypedCase("rac1-novalis-birdbot-smoke", a => a.Rac1NovalisBirdbotSmoke, (e, definition) => e.NovalisBirdbot?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Birdbot diagnostic is bound."))),
-        Case("rac1-novalis-music-smoke", a => a.Rac1NovalisMusicSmoke, (e, _, _) => e.NovalisMusic?.Invoke()),
-        Case("rac1-metropolis-taxi-smoke", a => a.Rac1MetropolisTaxiSmoke, (e, _, _) => e.MetropolisTaxi?.Invoke()),
+        TypedCase("rac1-novalis-music-smoke", a => a.Rac1NovalisMusicSmoke, (e, definition) => e.NovalisMusic?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Novalis music diagnostic is bound."))),
+        TypedCase("rac1-metropolis-taxi-smoke", a => a.Rac1MetropolisTaxiSmoke, (e, definition) => e.MetropolisTaxi?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Metropolis taxi diagnostic is bound."))),
         TypedCase("rac1-weapons-smoke", a => a.Rac1WeaponsSmoke, (e, definition) => e.Weapons?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No weapon diagnostic is bound."))),
         TypedCase("rac1-player-audio-smoke", a => a.Rac1PlayerAudioSmoke, (e, definition) => e.PlayerAudio?.Invoke(definition)

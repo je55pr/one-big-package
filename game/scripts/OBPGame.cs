@@ -1268,7 +1268,46 @@ public partial class OBPGame : Node3D
 
     public void RunRac1StartupVisibilitySmokeFromBootstrap() => CreateUiDiagnosticHarness().Start("rac1-startup-visibility-smoke");
     private Task RunRac1VeldinRetailPauseSmokeAsync() => CreateUiDiagnosticHarness().RunVeldinPauseAsync(LegacyDiagnosticCancellation.Current);
-    private Task RunRac1WorldRetailNavigationSmokeAsync(string world) => CreateUiDiagnosticHarness().RunRetailNavigationAsync(world, LegacyDiagnosticCancellation.Current);
+    private Rac1WorldRouteDiagnosticHarness CreateRac1WorldRouteDiagnosticHarness()
+    {
+        var movement = CreateMovementDiagnosticHarness(); var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
+        var ui = CreateUiDiagnosticHarness();
+        var lifetime = new GodotRac1WorldRouteLifetimeFixture(this,
+            () => new(worlds.ReadWorld(), _rac1NovalisMechanisms.Count, _rac1TaxiNodes.Count, _rac1TaxiCollisionBodies.Count,
+                _rac1Music?.Tracks.Count ?? 0, _rac1MusicDecoded.Count, _rac1MusicReader is not null, _rac1TaxiCameraWorldOwned,
+                _rac1FlyingTaxi is not null || _rac1TaxiPendingStop is not null || _rac1TaxiRiderFrame is not null, SharedProfilePath is not null),
+            () => _worldHost.Root, () => _rac1TaxiCollisionBodies.Values, () => _player?.Camera);
+        return new(movement.Ports,
+            () => new GodotRac1NovalisRouteFixture(() => _rac1NovalisMechanisms, () => _player, worlds),
+            () => new GodotRac1NovalisMusicFixture(worlds, () => new(worlds.ReadWorld(), _rac1Music is { } music
+                    ? [.. music.Tracks.Select(track => new Rac1NovalisMusicTrackDiagnostic(track.Index, track.Sector, track.DurationSeconds))] : [],
+                _rac1MusicArea, _rac1MusicSlot, _rac1MusicIntroRemaining, _rac1MusicDecoded.Count,
+                [.. _worldHost.AudioDiagnostics.Select(item => item.Message)], _worldHost.AudioStatusLine), OnRac1NovalisCrankMusic, TickRac1NovalisMusic),
+            CreateRac1TaxiDiagnosticFixture, ui, lifetime, ui.Menus,
+            new DiagnosticNavigationActions(destination => TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native)),
+            new DiagnosticSourceAttachmentFixture(_sources, RefreshPlayerSourceAvailability));
+    }
+
+    private IRac1TaxiDiagnosticFixture CreateRac1TaxiDiagnosticFixture() => new GodotRac1TaxiDiagnosticFixture(new()
+    {
+        Session = () => _rac1MetropolisTaxis,
+        Nodes = () => _rac1TaxiNodes,
+        Hulls = () => _rac1TaxiCollisionBodies,
+        Hovers = () => _rac1TaxiHovers.Count,
+        Player = () => _player,
+        Pending = () => _rac1TaxiPendingStop,
+        HeroTarget = () => _rac1TaxiHeroTarget,
+        Flying = () => _rac1FlyingTaxi,
+        Rider = () => _rac1TaxiRiderFrame,
+        CameraOwned = () => _rac1TaxiCameraWorldOwned,
+        Hud = GetRac1MetropolisTaxiHudLine,
+        Input = TryHandleRac1MetropolisTaxiInput,
+        Abort = AbortRac1MetropolisTaxiRide,
+        Landing = TryResolveRac1TaxiLanding,
+        ToNative = ToTaxiPoint,
+        ToScene = FromTaxiPoint,
+        Basis = ToTaxiCabBasis,
+    }, new GodotDiagnosticWorldObservations(WorldScenes));
 
     private void BuildScene(string scene)
     {
