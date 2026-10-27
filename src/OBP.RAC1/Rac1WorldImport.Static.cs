@@ -211,9 +211,12 @@ public static partial class Rac1WorldImport
                 {
                     // The saved swimming-area view identifies class 121 as the
                     // layered canopy and class 116 as the red-leaf shrub.
-                    // Their authored leaf textures are predominantly hard
-                    // cutouts; a depth-writing alpha test avoids order-dependent
-                    // double blending of overlapping leaf cards.
+                    // Their authored leaf textures mix hard cutouts with a
+                    // smaller band of partial-alpha pixels (roughly 7-16%).
+                    // Depth-writing cutouts intentionally trade that soft
+                    // alpha away for stable intersecting leaf-card depth on
+                    // these two visually verified classes only. Other shrubs
+                    // retain their native alpha-blend interpretation.
                     bool cutout = cutoutClasses?.Contains(instance.OClass) == true &&
                         alphaProfiles.TryGetValue(textureId, out var profile) &&
                         profile.CutoutFraction >= 0.05 &&

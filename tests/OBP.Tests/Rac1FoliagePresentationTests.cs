@@ -62,6 +62,14 @@ public sealed class Rac1FoliagePresentationTests
             Assert.Contains(shrubs, mesh => mesh.TextureId == textureId &&
                 mesh.MaterialPresentation?.PreferFoliageCutout is true);
 
+        // Those specific textures contain meaningful intermediate alpha.
+        // Cutout is an explicit visual-stability tradeoff at these authored
+        // placements, not a rule silently applied to all translucent foliage.
+        var foliageTextures = world.Textures.Where(texture => texture.AssetKind == "shrub")
+            .ToDictionary(texture => texture.TextureId, texture => AlphaProfile.Analyse(texture.Rgba));
+        Assert.True(foliageTextures[10].TranslucentFraction > 0.02);
+        Assert.True(foliageTextures[16].TranslucentFraction > 0.02);
+
         // The unrelated class-107 shrub retains the preceding, independently
         // sorted alpha blend and must not silently gain this treatment.
         Assert.DoesNotContain(shrubs, mesh => mesh.TextureId == 14 &&

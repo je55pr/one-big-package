@@ -80,7 +80,7 @@ public partial class PlayerDevelopmentControls : Node
     /// Save a visual-only diagnostic without claiming a deterministic gameplay
     /// replay. This remains usable when source actors have no replay fixture.
     /// </summary>
-    private void SaveViewBookmark()
+    private async void SaveViewBookmark()
     {
         if (_host is null || !IsInstanceValid(_host)) return;
         try
@@ -94,7 +94,11 @@ public partial class PlayerDevelopmentControls : Node
             var imagePath = Path.Combine(directory, name + ".png");
             var jsonPath = Path.Combine(directory, name + ".json");
 
-            var image = GetViewport().GetTexture().GetImage();
+            // Read the viewport only after the newly drawn frame completes.
+            // Sample camera/player pose at the same frame boundary.
+            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+            if (!IsInstanceValid(camera) || _host is null || !IsInstanceValid(_host)) return;
+            using var image = GetViewport().GetTexture().GetImage();
             var imageError = image.SavePng(imagePath);
             if (imageError != Error.Ok)
                 throw new IOException($"Could not save view screenshot: {imageError}");
