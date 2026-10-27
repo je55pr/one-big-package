@@ -106,13 +106,21 @@ help/menu identities prove the distinction; the destination catalogue now uses
 the correct name. Overlay SHA-256:
 `b46e44c26195efd160b1bc62910cf22e1b1fe3eb46944f5926a9f2b7879e45b6`.
 
-`GcMuseumEffectControls` reads the actual particle-editor registrations at
+`Rac2MuseumEffectControls` reads the actual particle-editor registrations at
 `0x4187d4..0x4189f8` (helper`0x413528`) and their labels from retail memory.
 The seventeen controls identify velocity XYZ, life, RGB, rotation, initial/end
 opacity and scale, gravity, two texture selectors and min/max emission interval.
 Values include opacity0..127, Texture1 indices0..103 and Texture2 indices0..20.
 The emission path at `0x418a4c..0x418b54` invokes particle constructor`0x33e8f8`;
 this is evidence from the native editor, not an invented Godot control panel.
+
+`Rac2MuseumParticleEmitter` and `Rac2ParticleSession` now implement that source
+path and type-85 callback, with an independent Part-bank decoder and native
+sprite descriptor math. Three distinct authored Museum emitters use the same
+implementation. Retail tests compare original EE/VU menu writes, records through
+expiry, texture bindings and sprite descriptors. The [#283 recovery notes](RAC2_MUSEUM_PARTICLES.md)
+document the integer-opacity lifetime adjustment, copied-owner inputs, explicit
+context restriction and conditioned draw boundaries. Host composition remains #285.
 
 Museum shot and explosion demonstrators additionally expose beam thickness,
 textures, colour/alpha, debris/cloud/line counts, shell, distortion and camera

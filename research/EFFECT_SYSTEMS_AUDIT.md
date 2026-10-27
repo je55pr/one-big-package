@@ -5,6 +5,10 @@ It records an investigation and a proposed boundary, not an implemented engine.
 Milestones #282–#285 remain separate. No production, shared host, session or
 Runtime contract changes are part of this audit.
 
+Implementation follow-ups: [R&C1 #282](RAC1_TYPE6_EMITTER.md) and
+[GC Museum #283](RAC2_MUSEUM_PARTICLES.md). This catalogue retains its audit
+baseline below; the follow-ups record implemented coverage and refined findings.
+
 Survey date: 2026-10-25. OBP baseline: `dev`
 `77821e1377c42f8e3344d1dd00c1429894696293`. Recheck host locations when the
 pending structural changes land; the native identities below do not depend on
