@@ -238,6 +238,7 @@ public sealed class Rac1CombatContractScenario(MovementDiagnosticContext context
                 throw new InvalidOperationException(
                     $"Bomb Glove admitted {bombContact.AdmittedContactCount} contacts, expected one staged recovered Veldin class-749 placement.");
             var bombDamage = bombContact.DamageResults[0];
+#pragma warning disable S1244 // Native damage constants and the resulting exact health are retained acceptance witnesses.
             if (bombDamage.TargetNativeClassId != Rac1Class749Hostile.NativeClassId ||
                 bombDamage.NativeDamage != Rac1BombGlove.NativeDamage ||
                 bombDamage.NativeDamageFlags != Rac1BombGlove.NativeDamageFlags)
@@ -247,6 +248,7 @@ public sealed class Rac1CombatContractScenario(MovementDiagnosticContext context
                 !hostile.Read().Visible)
                 throw new InvalidOperationException(
                     "Bomb Glove contact failed the two-point descriptor and visible lethal reaction.");
+#pragma warning restore S1244
             await Rac1SmokeWaitAsync(() => !Combat.ReadBombs().Projectiles.Contains(bombContact.ProjectileId),
                 30, "Bomb Glove blast completion");
             Log(

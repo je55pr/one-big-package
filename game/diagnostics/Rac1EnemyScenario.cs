@@ -64,8 +64,10 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
             Require(!Actors.TryStrike(frog.Key), "frog emitted a duplicate lethal reward");
             int frogReward = loot.ReadLoot().Pickups.Where(pickup => pickup.Id > 0).Sum(pickup => Rac1BoltCrate.ValueForNativePickupClass(pickup.NativeClassId));
             Require(Rac1BoltCrate.RewardRange(7).Contains(frogReward), "frog reward escaped source range");
+#pragma warning disable S1244 // Exact native health witnesses; preserve the original acceptance comparison.
             Require(Actors.TryStrike(robot.Key) && Enemies.ReadRobot(Enemy(197).Key).Health == 1 && robot.Read().Visible,
                 "robot did not initialize to two health and stagger after one hit");
+#pragma warning restore S1244
             await PhysicsFramesAsync(12);
             await CaptureRac1EnemiesAsync("reactions", origin + new Vector3(1.4f, .7f, 0));
             await Rac1SmokeWaitAsync(() => !frog.Read().Visible && Enemies.ReadRobot(Enemy(197).Key).HitCooldown == 0, 260, "enemy reaction completion");
@@ -152,7 +154,9 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
             await PhysicsFramesAsync(4);
             await TapPhysicalKeyAsync(DiagnosticPhysicalKey.Key1);
             await TapRac1PrimaryActionAsync();
+#pragma warning disable S1244 // One admitted native wrench hit must leave exactly one health.
             await Rac1SmokeWaitAsync(() => Enemies.ReadRobot(Enemy(190).Key).Health == 1, 100, "animated wrench/robot contact");
+#pragma warning restore S1244
             await PhysicsFramesAsync(65);
             await Rac1SmokeApproachWrenchTargetAsync(() => wrenchTarget.Read().Position, 180, "staggered robot", minimumTravel: 0);
             await TapRac1PrimaryActionAsync();

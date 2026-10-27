@@ -107,8 +107,8 @@ internal sealed class GodotRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticF
         public void Dispose()
         {
             if (_disposed) return; _disposed = true;
-            List<Exception>? failures = null;
-            void Restore(Action action) { try { action(); } catch (Exception error) { (failures ??= []).Add(error); } }
+            List<Exception> failures = [];
+            void Restore(Action action) { try { action(); } catch (Exception error) { failures.Add(error); } }
             Restore(() => { if (ReferenceEquals(_bindings.Session(), _fixture)) _bindings.ReplaceSession(_original); });
             bool live = true;
             try { _actors.Resolve(Start.Shark); } catch (DiagnosticUnavailableException) { live = false; }
@@ -118,7 +118,7 @@ internal sealed class GodotRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticF
                 Restore(() => _runtime.SetNativeState(_native, _state));
                 Restore(() => { if (_shark.Animation.Sequence != _sequence && _shark.Animation.SupportsSequence(_sequence)) _bindings.SelectSequence(_shark, _sequence, 1); });
             }
-            if (failures is not null) throw new AggregateException("Aridia shark fixture cleanup failed.", failures);
+            if (failures.Count != 0) throw new AggregateException("Aridia shark fixture cleanup failed.", failures);
         }
     }
 }

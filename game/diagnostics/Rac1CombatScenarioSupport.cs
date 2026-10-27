@@ -123,6 +123,7 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
                     if (!sawPursuit || entryDistance is null || entryFacing is null)
                         throw new InvalidOperationException(
                             "Class-749 reached its transported attack marker without observed pursuit/attack entry.");
+#pragma warning disable S1244 // Transport must retain the exact recovered attack marker and damage constants.
                     if (damageEvent.NativeMarker is not double nativeMarker ||
                         nativeMarker != Rac1Class749Hostile.AttackMarker ||
                         damageEvent.NativeDamage != Rac1Class749Hostile.AttackDamage)
@@ -131,6 +132,7 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
                             $"Class-749 transported marker/damage {damageEvent.NativeMarker?.ToString("R") ?? "null"}/{damageEvent.NativeDamage:R}, " +
                             $"expected {Rac1Class749Hostile.AttackMarker:R}/{Rac1Class749Hostile.AttackDamage:R}.");
                     }
+#pragma warning restore S1244
                     if (nanotechAfter.Nanotech != nanotechBefore.Nanotech - 1 || nanotechAfter.IsDead)
                         throw new InvalidOperationException(
                             $"Class-749 ordinary attack changed Nanotech {nanotechBefore.Nanotech}->{nanotechAfter.Nanotech}, expected exactly one.");

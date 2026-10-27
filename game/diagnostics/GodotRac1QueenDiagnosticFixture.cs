@@ -162,11 +162,11 @@ internal sealed class GodotRac1QueenDiagnosticFixture(GodotRac1DiagnosticWorldSc
         return new MovementFixtureLease(() =>
         {
             try { scope.RequireCurrent(); } catch (DiagnosticUnavailableException) { return; }
-            List<Exception>? failures = null;
-            void Restore(Action action) { try { action(); } catch (Exception error) { (failures ??= []).Add(error); } }
+            List<Exception> failures = [];
+            void Restore(Action action) { try { action(); } catch (Exception error) { failures.Add(error); } }
             Restore(() => { if (!saved.GuidedPresent && _ownedGuided) EndGuidedCamera(); });
             Restore(() => { if (!saved.QueenPresent && Live(bindings.QueenCamera()) is not null) EndQueenCamera(); });
-            if (failures is not null) throw new AggregateException("Queen camera fixture cleanup failed.", failures);
+            if (failures.Count != 0) throw new AggregateException("Queen camera fixture cleanup failed.", failures);
         });
     }
     public IDisposable CreateConflictingCamera()
