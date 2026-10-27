@@ -39,8 +39,11 @@ public class HostCoordinatorArchitectureTests
 
         Assert.Contains("private void TickRac2OpeningMsr1NativeTick(",
             File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac2AranosOpeningHost.cs")), StringComparison.Ordinal);
-        Assert.Contains("private CrateDebugSnapshot? GetCrateDebugSnapshot(",
-            File.ReadAllText(Path.Combine(scripts, "OBPGame.Rac2CrateDebugHarness.cs")), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(scripts, "OBPGame.Rac2CrateDebugHarness.cs")));
+        string probe = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Rac2CrateDiagnosticProbe.cs"));
+        Assert.Contains("Rac2CrateDebugSnapshot? Capture(", probe, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class OBPGame", probe, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rac2FreshBoltSession", probe, StringComparison.Ordinal);
 
         Assert.Contains("private void ResetRac2GameplayHost(", core, StringComparison.Ordinal);
         Assert.Contains("private void ConfigureRac2GameplayHost(", core, StringComparison.Ordinal);

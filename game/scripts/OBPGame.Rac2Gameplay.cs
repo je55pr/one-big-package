@@ -17,11 +17,6 @@ public partial class OBPGame
     private Rac2DamageTransportSession _rac2DamageTransport = new();
     private void ResetRac2GameplayHost()
     {
-        _crateDebugTarget = null;
-        _crateDebugStatus = "off";
-        _crateDebugPvarC8 = null;
-        _crateDebugRoute = null;
-        _crateDebugBroken = false;
         _rac2DamageTransport = new Rac2DamageTransportSession();
         _rac2Class2827Hostiles.Clear();
         _rac2OpeningMsr1.Clear();
@@ -29,8 +24,6 @@ public partial class OBPGame
         _rac2OpeningDoor = null;
         _rac2RatchetNanotech = new Rac2RatchetNanotechSession();
         _rac2NativeTickAccumulator = 0d;
-        _crateBoltSession = new Rac2FreshBoltSession();
-        _crateRewardStatus = "off";
     }
     private void ConfigureRac2GameplayHost()
     {
@@ -75,24 +68,7 @@ public partial class OBPGame
             }
         }
 
-        if (!CrateDebugRequested)
-        {
-            return;
-        }
-
-        _crateDebugTarget = nodes
-            .Where(n => n.Source.SourceGame == ObpSourceGame.Rac2 && n.Source.NativeClassId == 500)
-            .OrderBy(n => n.Source.InstanceIndex)
-            .FirstOrDefault();
-
-        _crateDebugStatus = _crateDebugTarget is null
-            ? "requested: no class-500 target"
-            : $"ready: {_crateDebugTarget.Source.InteractionId}";
-
-        if (_crateDebugTarget is { } target)
-        {
-            GD.Print($"[crate-debug] target {target.Source.InteractionId} uid={target.Source.NativeUid?.ToString() ?? "?"}");
-        }
+        _worldScenes!.Current!.Resources.CrateDiagnostics.Configure(_args.CrateFocus, _args.CrateAutoStrike);
     }
 
     private void ArmRac2GameplayHost(PlayerHost player)
@@ -103,7 +79,9 @@ public partial class OBPGame
         }
 
         player.CrateStrikeRequested += OnRac2PrimaryAttackRequested;
-        if (_args.CrateAutoStrike && _crateDebugTarget is { } target)
+        if (_worldScenes?.Current?.Resources.CrateDiagnostics.Probe is { AutoStrike: true, TargetIndex: { } index } &&
+            _sceneResult.DynamicObjectNodes.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
+                node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index) is { } target)
         {
             ApplyRac2Class500Strike(target, "auto");
         }
@@ -113,7 +91,8 @@ public partial class OBPGame
         var target = SelectRac2PrimaryTargetFromAim();
         if (target is null)
         {
-            _crateDebugStatus = "strike: no aimed GC gameplay target";
+            if (_worldScenes?.Current?.Resources.CrateDiagnostics.Probe is { } probe)
+                probe.Status = "strike: no aimed GC gameplay target";
             GD.Print("[gc-damage] strike ignored: no aimed GC gameplay target");
             return;
         }
@@ -129,7 +108,9 @@ public partial class OBPGame
 
     private RuntimeWorldScene.DynamicObjectNode? SelectRac2PrimaryTargetFromAim()
     {
-        if (CrateDebugRequested && _crateDebugTarget is { } focused
+        if (_worldScenes?.Current?.Resources.CrateDiagnostics.Probe is { FocusRequested: true, TargetIndex: { } index } &&
+            _sceneResult?.DynamicObjectNodes?.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
+                node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index) is { } focused
             && IsInstanceValid(focused.Root) && focused.Root.Visible)
         {
             return focused;
@@ -207,6 +188,8 @@ public partial class OBPGame
 
     private void ApplyRac2Class500Strike(RuntimeWorldScene.DynamicObjectNode target, string source)
     {
+        var resources = _worldScenes!.Current!.Resources;
+        var probe = resources.CrateDiagnostics.Probe;
         var damageEvent = Rac2DamageRuntime.FromPlayerState20(target.Source);
         var dispatch = _rac2DamageTransport.Publish(damageEvent);
 
@@ -220,14 +203,14 @@ public partial class OBPGame
         }
         catch (InvalidDataException ex)
         {
-            _crateDebugStatus = "strike: target has no usable class-500 authority state";
+            probe.Status = "strike: target has no usable class-500 authority state";
             GD.PrintErr($"[crate-debug] {target.Source.InteractionId}: {ex.Message}");
             return;
         }
 
         if (lifecycle is null)
         {
-            _crateDebugStatus = $"{source}: recovered damage was not admitted";
+            probe.Status = $"{source}: recovered damage was not admitted";
             GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId}: no class-500 consequence");
             return;
         }
@@ -235,10 +218,7 @@ public partial class OBPGame
         var authored = lifecycle.Authored;
         byte c8 = authored.PvarC8!.Value;
         var route = lifecycle.Route;
-        _crateDebugTarget = target;
-        _crateDebugPvarC8 = c8;
-        _crateDebugRoute = route.ToString();
-        _crateDebugStatus = $"{source}: state 1 -> 3 -> {route}";
+        probe.ObserveStrike(target.Source.InstanceIndex, c8, route.ToString(), source);
 
         Rac2Class500Payout payout;
         try
@@ -246,20 +226,20 @@ public partial class OBPGame
             // Reward-session inputs are explicit deterministic choices within
             // recovered native domains, not claims about arbitrary retail save
             // state. Multiplier zero is neutral via native max(1, byte).
-            payout = _crateBoltSession.PlanClass500Payout(
+            payout = resources.Rac2CrateBolts.PlanClass500Payout(
                 authored.Uid, authored.AuthoredBolts, rewardMultiplierByte: 0,
                 progressionLikeInput: 0, rngMod2: 1);
         }
         catch (InvalidOperationException ex)
         {
-            _crateRewardStatus = ex.Message;
+            probe.RewardStatus = ex.Message;
             GD.PrintErr($"[crate-bolts] {target.Source.InteractionId}: {ex.Message}");
             return;
         }
 
         SpawnCrateBoltPickups(target.Root.GlobalPosition, payout);
         PlayRepresentativeAudioOneShot(AudioPosition(target.Source));
-        _crateRewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
+        probe.RewardStatus = $"fresh selector {payout.Selector}: centre {payout.RewardCentreValue} => " +
             $"{string.Join("+", payout.PhysicalPickups.Select(p => p.Denomination))} physical, {payout.DeferredValue} deferred";
 
         // The Oozla class-500 state-3 path immediately enters the native
@@ -268,7 +248,7 @@ public partial class OBPGame
         target.ApplyState(lifecycle.EntityState);
         if (route == Rac2Class500PostBreakRoute.Deactivate)
         {
-            _crateDebugBroken = true;
+            probe.Broken = true;
         }
         GD.Print($"[gc-damage] seq={dispatch.Sequence} {target.Source.InteractionId} " +
                  $"state20 flags=0x{damageEvent.Damage.DamageFlags:X8} hp={damageEvent.Damage.DamageHp:0.###} " +

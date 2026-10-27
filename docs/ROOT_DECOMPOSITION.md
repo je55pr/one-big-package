@@ -134,6 +134,19 @@ Five exact composition permissions expire with recording #356, movement repro
 #358 and player/world wiring #359; five old evidence/recording bridge permissions
 retire. The frozen origin ledger is unchanged.
 
+The #345 CLI/Lab extraction retires the four assigned partials and 27 historical
+declaration/member permissions, plus 13 expired movement/encounter invocation
+bridges. The root now has 73 files, 16,961 file lines, 603 methods, 446 fields
+(302 mutable), 44 exposed members and 1,937 cross-file references. Independent
+Lab, crate-observation, shot-list and stress components own their control/state;
+their engine fixtures copy scene/world facts and bind existing operations.
+The native R&C2 fresh-bolt session remains source-owned and is held by the
+existing world resource lease, separate from the optional diagnostic probe.
+Three exact composition entries expire with Lab navigation #347, capture
+presentation #356 and final world-entry composition #376. Both old Lab origin
+permissions retire; the frozen origin does not expand. Ordinary Lab presentation
+retains room/station labels and hides development status/help captions.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

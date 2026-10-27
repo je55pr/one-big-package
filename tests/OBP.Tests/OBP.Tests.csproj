@@ -148,6 +148,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../../game/diagnostics/FusionLabTraversalScenario.cs" Link="Diagnostics/FusionLabTraversalScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac2CrateDiagnosticProbe.cs" Link="Diagnostics/Rac2CrateDiagnosticProbe.cs" />
+    <Compile Include="../../game/diagnostics/ShotListCliService.cs" Link="Diagnostics/ShotListCliService.cs" />
+    <Compile Include="../../game/diagnostics/StressSwitchCliService.cs" Link="Diagnostics/StressSwitchCliService.cs" />
     <ProjectReference Include="../../src/OBP.Fusion/OBP.Fusion.csproj" />
     <ProjectReference Include="../../src/OBP.Core/OBP.Core.csproj" />
     <ProjectReference Include="../../src/OBP.Godot/OBP.Godot.csproj" />

@@ -61,16 +61,17 @@ public partial class OBPGame
 
         foreach (var station in definition.Stations)
         {
+            string hint = station.AdapterId switch
+            {
+                "obp/universal-loadout/v1" => "PAUSE: weapons, gadgets, appearance and Quick Select",
+                "obp/mixed-encounter/v1" => _diagnosticSourceAccess ? "PAUSE > DEVELOPER: actor status and independent resets" : string.Empty,
+                "obp/effects-experiment/v1" => _diagnosticSourceAccess ? "PAUSE > DEVELOPER: start/reset native effects\nR&C1 Novalis / GC Museum / UYA Cannon" : string.Empty,
+                _ => "UNAVAILABLE: feature not yet implemented",
+            };
             var sign = new Label3D
             {
                 Name = "Station_" + station.Id,
-                Text = station.Label + "\n" + (station.AdapterId switch
-                {
-                    "obp/universal-loadout/v1" => "PAUSE: weapons, gadgets, appearance and Quick Select",
-                    "obp/mixed-encounter/v1" => "PAUSE > DEVELOPER: actor status and independent resets",
-                    "obp/effects-experiment/v1" => "PAUSE > DEVELOPER: start/reset native effects\nR&C1 Novalis / GC Museum / UYA Cannon",
-                    _ => "UNAVAILABLE: feature not yet implemented",
-                }),
+                Text = string.IsNullOrEmpty(hint) ? station.Label : station.Label + "\n" + hint,
                 Position = RuntimeWorldScene.ToScene(
                     station.Position.X, 2.0 + station.Position.Y, station.Position.Z),
                 FontSize = 31,
@@ -80,11 +81,12 @@ public partial class OBPGame
             root.AddChild(sign);
         }
 
+        if (!_diagnosticSourceAccess) return;
         _fusionLabStatus = new Label
         {
             Name = "FusionLabStatus",
             Text = "OBP FUSION LAB  |  PLAYTEST" +
-                (_diagnosticSourceAccess ? (nativeAvatarAvailable ? "  |  Avatar available" : "  |  Diagnostic capsule") : "") +
+                (nativeAvatarAvailable ? "  |  Avatar available" : "  |  Diagnostic capsule") +
                 "\nRooms: Entrance > Hub > Test Chamber > Return   |   ESC: pause/back",
             Position = new Vector2(28, 16),
             Modulate = new Color(0.88f, 0.93f, 1f),
