@@ -30,12 +30,12 @@ public sealed class Rac2MuseumParticleEmitter
         Countdown = parameters.AuthoredCountdown;
     }
 
-    public static Rac2MuseumParticleEmitter FromAuthored(Rac2Instances.MobyInstance instance)
+    public static Rac2MuseumParticleEmitter FromAuthored(ObpSourceRef levelSource, Rac2Instances.MobyInstance instance)
     {
         if (instance.OClass != NativeClassId || instance.PVarData is null)
             throw new NotSupportedException("This Moby is not an authored Museum class-4887 emitter.");
-        return new(new(ObpSourceGame.Rac2, Rac2Authority.Primary.BuildId, "LEVEL21", "moby",
-            instance.Index.ToString(CultureInfo.InvariantCulture)), Rac2MuseumParticleParameters.Parse(instance.PVarData),
+        return new(levelSource with { AssetKind = "moby", OriginalId = instance.Index.ToString(CultureInfo.InvariantCulture) },
+            Rac2MuseumParticleParameters.Parse(instance.PVarData),
             new(instance.Position.X, instance.Position.Y, instance.Position.Z));
     }
 

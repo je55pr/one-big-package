@@ -52,6 +52,17 @@ public sealed class Rac2ParticleTests
     }
 
     [Fact]
+    public void AuthoredFactoryRetainsCallerLevelProvenanceAndRejectsOtherSources()
+    {
+        var instance = new Rac2Instances.MobyInstance(262, 4887, 1, (1, 2, 3), default, default, 0, 0, 0, 118, 0, [], Parameters());
+        var owner = Rac2MuseumParticleEmitter.FromAuthored(Source, instance);
+        Assert.Equal(Source with { AssetKind = "moby", OriginalId = "262" }, owner.Source);
+        Assert.Throws<ArgumentException>(() => Rac2MuseumParticleEmitter.FromAuthored(Source with { LevelId = "LEVEL01" }, instance));
+        Assert.Throws<ArgumentException>(() => Rac2MuseumParticleEmitter.FromAuthored(Source with { Game = ObpSourceGame.Rac1 }, instance));
+        Assert.Throws<ArgumentException>(() => Rac2MuseumParticleEmitter.FromAuthored(Source with { BuildId = "other" }, instance));
+    }
+
+    [Fact]
     public void MenuUsesHundredthFloatStepsIntegerClampsAndShortWrapBeforeClamp()
     {
         var p = Rac2MuseumParticleParameters.Parse(Parameters());

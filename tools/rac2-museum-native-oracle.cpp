@@ -5,8 +5,11 @@
 #include <runtime/ee/ps2_fpu.h>
 #include <runtime/kernel/ee_memory.h>
 #include <cmath>
+#include <cfenv>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <initializer_list>
 #include <iomanip>
 #include <iostream>
 #include <string>

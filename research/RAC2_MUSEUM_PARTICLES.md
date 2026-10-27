@@ -100,7 +100,8 @@ Boot rand/srand are `0x1163b0` / `0x1163a0`; the 32-bit state uses
 `state*0x41c64e6d+0x3039`, with high 15 bits consumed by Museum helpers.
 `0x321110` uses inclusive interval modulo; `0x3210d0(255)` gives angle 0..254.
 An initial zero-interval success consumes **3** samples (startup, interval,
-angle); later successes consume **2**, pool-full attempts consume **1**.
+angle); an initial pool-full attempt consumes **2** (startup, interval).
+Later successes consume **2**; later pool-full attempts consume **1**.
 No callback samples RNG. A chosen seed controls this fixture, not other global
 retail consumers. `Step` is one NTSC simulation tick (60 Hz); callers retain
 phase ownership. Whole-world Moby/hero/camera scheduling remains outside #283.
@@ -109,6 +110,8 @@ phase ownership. Whole-world Moby/hero/camera scheduling remains outside #283.
 
 All three class-4887 Mobies are read unmodified from Museum gameplay. They use
 zero interval and context 0. At seed 1234, all start at angle 32.
+The authored factory requires the caller's level-qualified source and retains
+its game/build/level; it cannot label another level's record as Museum implicitly.
 
 | Moby / PVar | Life | Velocity Z | RGB | Opacity requested / actual | Scale | Spin | Definition/frame → Part |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -140,6 +143,9 @@ colour/depth fade, projected rotating axes, blend and cached TEX0. Extra probes
 cover repeated interval emission, hole reuse, negative gravity/spin, integer
 opacity adjustment and near/far fade. Every registered menu control's actual
 PVar writes are compared for ±1 / ±5 edits.
+Mixed-sign callback probes also cover operand exponent differences 24 through
+40 in VU position addition and EE gravity subtraction; all match without a
+different arithmetic implementation.
 
 ## Textures and presentation boundary
 
@@ -191,7 +197,10 @@ instruction comparisons additionally need `OBP_RAC2_MUSEUM_ORACLE`.
 Build that optional executable with `tools/build-rac2-museum-oracle.ps1`, giving
 `-ReferenceRoot` for the MIT interpreter at revision
 `3fd14c12e4dff2fd4b6661a6e54187faea3f76c8`, a C++20 compiler via `-Cxx`, and an
-external/ignored `-OutputPath`. The tests build private boot/overlay/core/PVar RAM
+external/ignored `-OutputPath`.
+Git reference checkouts qualify the compiled source/header contents against the
+pin, including dirty worktrees; a non-Git export remains caller-qualified.
+The tests build private boot/overlay/core/PVar RAM
 images, execute them, then delete the temporary files in `finally`. No upstream
 GC decomp build is required. Ordinary CI runs portable synthetic branch fixtures;
 retail bytes and the optional interpreter stay local.

@@ -28,7 +28,7 @@ public sealed class Rac2ParticleRetailTests
     {
         using var fixture = new Fixture();
         Assert.Equal(new[] { 262, 263, 264 }, fixture.Instances.Select(m => m.Index));
-        Assert.Equal(PvarHashes, fixture.Instances.Select(m => Rac2MuseumParticleEmitter.FromAuthored(m).AuthoredParametersSha256));
+        Assert.Equal(PvarHashes, fixture.Instances.Select(m => Rac2MuseumParticleEmitter.FromAuthored(fixture.Source, m).AuthoredParametersSha256));
         Assert.Equal(new[] { 118, 119, 120 }, fixture.Instances.Select(m => m.PVarIndex));
         Assert.Equal(109, fixture.Assets.Textures.Count); Assert.Equal(111, fixture.Assets.Definitions.DefinitionCount);
         Assert.Equal(0, fixture.Assets.Definitions.Texture(104, 0));
@@ -42,7 +42,7 @@ public sealed class Rac2ParticleRetailTests
         var colors = new[] { 0x05801212u, 0x141c2a2fu, 0x0f0d0c0cu };
         for (int i = 0; i < 3; i++)
         {
-            var owner = Rac2MuseumParticleEmitter.FromAuthored(fixture.Instances[i]);
+            var owner = Rac2MuseumParticleEmitter.FromAuthored(fixture.Source, fixture.Instances[i]);
             var rng = Rac2ParticleRandom.FromSeed(1234); var session = new Rac2ParticleSession(fixture.Assets, rng);
             var p = session.Emit(owner).Particle!;
             Assert.Equal(expectedTextures[i], p.Texture); Assert.Equal(colors[i], p.Color); Assert.Equal(3, rng.SamplesConsumed);
@@ -61,7 +61,7 @@ public sealed class Rac2ParticleRetailTests
         string program = Oracle(); using var fixture = new Fixture();
         foreach (var instance in fixture.Instances)
             foreach (uint seed in new uint[] { 0, 1234, 32768 })
-                Compare(program, fixture, instance, instance.PVarData!, seed, Rac2MuseumParticleEmitter.FromAuthored(instance).Parameters.Lifespan, false, 100);
+                Compare(program, fixture, instance, instance.PVarData!, seed, Rac2MuseumParticleEmitter.FromAuthored(fixture.Source, instance).Parameters.Lifespan, false, 100);
     }
 
     [SkippableFact]
@@ -85,6 +85,23 @@ public sealed class Rac2ParticleRetailTests
         }
         foreach (float distance in new[] { 4f, 4.5f, 479.5f })
             Compare(program, fixture, instance, instance.PVarData!, 1234, 1, false, distance);
+    }
+
+    [SkippableFact]
+    public void WideExponentAndMixedSignAddSubtractOperandsMatchTheOriginalCallback()
+    {
+        string program = Oracle(); using var fixture = new Fixture(); var instance = fixture.Instances[1];
+        // Synthetic arithmetic probes; position addition is VU, gravity subtraction is EE SUB.S.
+        foreach (int exponent in Enumerable.Range(24, 17))
+            foreach (int sign in new[] { -1, 1 })
+            {
+                float large = sign * 1.99999988f, small = MathF.ScaleB(1.234567f, -exponent);
+                byte[] p = (byte[])instance.PVarData!.Clone();
+                Rac2ParticleTests.Put(p, 0, small); Rac2ParticleTests.Put(p, 4, -small); Rac2ParticleTests.Put(p, 8, large);
+                Rac2ParticleTests.Put(p, 0x34, small); Rac2ParticleTests.Put(p, 0x10, 3);
+                var probe = instance with { Position = (large, large, 0) };
+                Compare(program, fixture, probe, p, 1234, 2, false, 100);
+            }
     }
 
     [SkippableFact]
@@ -117,7 +134,7 @@ public sealed class Rac2ParticleRetailTests
         for (int i = 0; i < Rac2ParticleSession.NativeCapacity; i++)
             Assert.NotNull(session.Spawn85(Rac2ParticleTests.Source, new(Vector3.Zero, Vector3.Zero, 40, 0, 0, 0, 0, 0, 0, 0)));
         long before = rng.SamplesConsumed;
-        Assert.Equal(Rac2ParticleSession.EmissionStatus.PoolFull, session.Emit(Rac2MuseumParticleEmitter.FromAuthored(instance)).Status);
+        Assert.Equal(Rac2ParticleSession.EmissionStatus.PoolFull, session.Emit(Rac2MuseumParticleEmitter.FromAuthored(fixture.Source, instance)).Status);
         Assert.Equal(2, rng.SamplesConsumed - before); Assert.Equal(2048, session.Count);
     }
 
@@ -131,7 +148,7 @@ public sealed class Rac2ParticleRetailTests
             var bound = fixture.Assets.NativeLayouts[int.Parse(row[1])].Bind(0x1000);
             Assert.Equal(bound.Palette, uint.Parse(row[2])); Assert.Equal(bound.Pixels, uint.Parse(row[3]));
         }
-        var owner = Rac2MuseumParticleEmitter.FromAuthored(instance);
+        var owner = Rac2MuseumParticleEmitter.FromAuthored(fixture.Source, instance);
         owner.ApplyNativeFrame(Rac2MuseumParticleParameters.Parse(pvars), owner.Position);
         var rng = Rac2ParticleRandom.FromSeed(seed); var session = new Rac2ParticleSession(fixture.Assets, rng);
         var draw = Rac2ParticleDraw.ReadMuseum(fixture.Overlay);
@@ -180,6 +197,7 @@ public sealed class Rac2ParticleRetailTests
         private readonly FileRandomAccessReader _disc;
         public Rac2LevelOverlay.Image Overlay { get; }
         public Rac2ParticleAssets Assets { get; }
+        public OBP.Core.ObpSourceRef Source => Assets.Source;
         public Rac2Instances.MobyInstance[] Instances { get; }
         private readonly byte[] _ram = new byte[32 * 1024 * 1024];
         public Fixture()

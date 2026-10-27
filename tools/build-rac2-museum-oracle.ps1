@@ -7,6 +7,16 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $reference = (Resolve-Path -LiteralPath $ReferenceRoot).Path
+# Qualify the actual compiler inputs, including dirty checkouts and worktrees;
+# HEAD alone can differ while these files still match the pinned revision.
+if (Test-Path -LiteralPath (Join-Path $reference '.git')) {
+    $expectedRevision = '3fd14c12e4dff2fd4b6661a6e54187faea3f76c8'
+    $interpreterInputs = @('runtime/ee/ee_interpreter.cpp', 'runtime/ee/ee_interpreter.h', 'runtime/ee/ps2_fpu.h',
+        'runtime/kernel/ee_memory.h', 'runtime/kernel/ee_types.h', 'runtime/vu/vu_interpreter.cpp',
+        'runtime/vu/vu_interpreter.h', 'runtime/vu/vu_xgkick.h')
+    & git -C $reference diff --quiet --no-ext-diff $expectedRevision -- @interpreterInputs
+    if ($LASTEXITCODE -ne 0) { throw 'Interpreter inputs differ from the documented pin, or its Git object is unavailable.' }
+}
 $compiler = (Get-Command -Name $Cxx -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 $output = [IO.Path]::GetFullPath($OutputPath)
 [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($output)) | Out-Null
