@@ -209,9 +209,17 @@ public static class RcShrub
             {
                 for (int i = 0; i < prim.Verts.Count - 2; i++)
                 {
-                    indices.Add(baseV + i);
-                    indices.Add(baseV + i + 1);
-                    indices.Add(baseV + i + 2);
+                    // PS2 GIF strips alternate their directed shared edge. The
+                    // later Godot coordinate conversion mirrors X separately.
+                    int a = baseV + i, b = baseV + i + 1, c = baseV + i + 2;
+                    if ((i & 1) != 0)
+                    {
+                        (a, b) = (b, a);
+                    }
+
+                    indices.Add(a);
+                    indices.Add(b);
+                    indices.Add(c);
                     slots.Add(prim.Material);
                     materialStateIndices.Add(prim.MaterialStateIndex);
                     alphaBlend.Add(prim.AlphaBlendEnabled);
