@@ -44,6 +44,10 @@ The GC Museum particle research oracle also uses these interpreters to execute
 original menu writes, particle allocation/simulation, texture relocation and
 sprite descriptor construction. GC reconstructed C sources are not included or
 translated; this adapter supplies declared external UI/view boundaries only.
+The UYA reusable-particle oracle uses the same MIT interpreter to execute the
+original type-97 constructor, callback, allocator, two Cannon recipe blocks,
+resource relocation and sprite descriptors with declared pose/world/view inputs.
+It includes no UYA reconstructed C or assembly payload.
 
 Upstream: https://github.com/daino-selvatico/rac1-native-game
 

@@ -7,6 +7,8 @@ Museum editor already run.
 Completed source fixtures are documented separately for [R&C1 #282](RAC1_TYPE6_EMITTER.md)
 and [GC Museum #283](RAC2_MUSEUM_PARTICLES.md). The latter has three distinct
 authored type-85 presets; type 97 is no longer needed to demonstrate reuse in #283.
+The [UYA #284 follow-up](RAC3_PARTICLES.md) implements type 97 with two native
+Cannon recipes and records the independently verified sequel comparison.
 
 ## Checks supplied by the investigation
 

@@ -215,6 +215,8 @@ public sealed class Rac2ParticleRetailTests
             foreach (var s in Elf32Reader.ReadProgramHeaders(executable).Where(p => p.Type == Elf32Reader.ProgramTypeLoad))
                 executable.Read(s.Offset, checked((int)s.FileSize)).CopyTo(_ram, checked((int)s.VirtualAddress));
             foreach (var s in Overlay.Sections) Overlay.Raw.AsSpan(s.DataOffset, s.CopySize).CopyTo(_ram.AsSpan((int)s.DestinationAddress));
+            // Museum overrides this boot address; witness the sprite leaf after loading that overlay.
+            Assert.Equal("400bce1e6a3040e64674c888a902a0c1c682de798285afb218b4f158aef92526", Hash(_ram.AsSpan(0x3310e8, 0x118).ToArray()));
             core.Index.CopyTo(_ram, 0x1000000);
         }
         public string[] Execute(string program, Rac2Instances.MobyInstance owner, byte[] pvars, string mode, string input)

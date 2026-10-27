@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 using System.Numerics;
-using OBP.Core;
+using OBP.PS2.Graphics;
 using OBP.RAC2.Level;
 using M = OBP.RAC2.Gameplay.Rac2ParticleMath;
 
@@ -29,7 +29,7 @@ public sealed class Rac2ParticleDraw
 
     /// <summary>Caller supplies the native view's depth row and projection W factor, and admits frustum visibility.
     /// Depth rejection/fade is native; this method does not infer a Godot camera or run VU1.</summary>
-    public Sprite? Build(Rac2ParticleSession.Particle p, View view, Rac2PartTextureLayout layout, uint cachePage)
+    public RcParticleSpriteDescriptor? Build(Rac2ParticleSession.Particle p, View view, Rac2PartTextureLayout layout, uint cachePage)
     {
         if (!Finite(view.Eye) || !Finite(view.DepthRow) || !float.IsFinite(view.ProjectionW) || view.ProjectionW <= 0 || view.FarDepthLimit < 1)
             throw new ArgumentException("GC sprite view inputs must be finite and have a positive depth/projection range.", nameof(view));
@@ -55,21 +55,4 @@ public sealed class Rac2ParticleDraw
     private static bool Finite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 
     public readonly record struct View(Vector3 Eye, Vector3 DepthRow, float ProjectionW, int FarDepthLimit);
-    public readonly record struct Sprite(ObpSourceRef EmitterSource, ObpSourceRef TextureSource, Vector3 RelativePosition,
-        Vector2 ProjectedAxes, uint Color, byte Blend, ulong NativeTex0)
-    {
-        /// <summary>Derived 64-byte sprite descriptor, with its transient material-cache TEX0 value.</summary>
-        public byte[] CopyNativeDescriptor()
-        {
-            byte[] result = new byte[64];
-            void F(int at, float f) => BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(at), f);
-            void U(int at, uint n) => BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(at), n);
-            F(0, RelativePosition.X); F(4, RelativePosition.Y); F(8, RelativePosition.Z);
-            U(0x10, Color & 255); U(0x14, Color >> 8 & 255); U(0x18, Color >> 16 & 255); U(0x1c, Color >> 24);
-            F(0x20, ProjectedAxes.X); F(0x24, ProjectedAxes.Y);
-            BinaryPrimitives.WriteUInt64LittleEndian(result.AsSpan(0x28), Blend);
-            BinaryPrimitives.WriteUInt64LittleEndian(result.AsSpan(0x30), NativeTex0);
-            return result;
-        }
-    }
 }

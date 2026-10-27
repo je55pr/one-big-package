@@ -5,6 +5,12 @@ All addresses below are **TABLE1 loaded EE addresses**, except the boot/global
 disc ranges explicitly identified. This slice supplies engine-neutral requests
 and damage intents; it does not put a firing UYA weapon into Godot.
 
+The separate [UYA particle milestone #284](RAC3_PARTICLES.md) now recovers the
+pre-ready charging and charged-shot glow recipes through source-owned type 97.
+It consumes the current weapon frame without advancing this controller or
+executing damage again. Ready-charge extra families remain explicitly unrecovered;
+host composition remains #285. Existing beam meshes stay separate from particles.
+
 ## Identity and upgrade admission
 
 The native item table is `0x002C5640`, 156 rows, stride `0xF0`.
