@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using OBP.Core;
 using OBP.IO;
+using OBP.PS2.Graphics;
 using OBP.RAC3.Level;
 using M = OBP.RAC3.Gameplay.Rac3ParticleMath;
 
@@ -72,17 +73,7 @@ public sealed class Rac3ParticleDraw
         Vector2 ProjectedAxes, uint Color, byte Blend, ulong NativeTex0)
     {
         /// <summary>Derived 64-byte sprite descriptor, with its transient material-cache TEX0 value.</summary>
-        public byte[] CopyNativeDescriptor()
-        {
-            byte[] result = new byte[64];
-            void F(int at, float f) => BinaryPrimitives.WriteSingleLittleEndian(result.AsSpan(at), f);
-            void U(int at, uint n) => BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(at), n);
-            F(0, RelativePosition.X); F(4, RelativePosition.Y); F(8, RelativePosition.Z);
-            U(0x10, Color & 255); U(0x14, Color >> 8 & 255); U(0x18, Color >> 16 & 255); U(0x1c, Color >> 24);
-            F(0x20, ProjectedAxes.X); F(0x24, ProjectedAxes.Y);
-            BinaryPrimitives.WriteUInt64LittleEndian(result.AsSpan(0x28), Blend);
-            BinaryPrimitives.WriteUInt64LittleEndian(result.AsSpan(0x30), NativeTex0);
-            return result;
-        }
+        public byte[] CopyNativeDescriptor() =>
+            new RcParticleSpriteDescriptor(RelativePosition, ProjectedAxes, Color, Blend, NativeTex0).Encode();
     }
 }

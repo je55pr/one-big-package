@@ -157,8 +157,10 @@ GC's separate type 97 (`3401B0/340328`) remains a distinct, unimplemented family
 from the #281 catalogue. This comparison does not claim that GC97 equals UYA97.
 Source-owned C# draw projections preserve the proven sprite leaf, native cosine
 tables, depth fade and cache TEX0 packing independently. Neutral reuse is limited
-to existing `RuntimeTexture`, provenance/typed identities and the shared PS2
-palette codec; there is no cross-game particle simulator or RAC3→RAC2 dependency.
+to existing `RuntimeTexture`, provenance/typed identities, the shared PS2 palette
+codec and `RcParticleSpriteDescriptor`'s proven 64-byte VU packet encoding. The
+packet codec contains no projection, simulation or resource interpretation;
+there is no cross-game particle simulator or RAC3→RAC2 dependency.
 
 The draw oracle declares a view, projection W=1/420000, GS bank/cache bindings
 and one admitted sprite after culling/sorting. Original material/descriptor
