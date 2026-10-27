@@ -391,9 +391,14 @@ These staged mechanism checks do not claim a completed human Novalis route.
 
 After each primary suite, the lifetime scenario retires the world through the
 ordinary title action, temporarily detaches its source while queued resources
-drain, and checks captured old scene/audio/hull references. The source is restored
-before entry. Two visits require fresh generations under the existing stable
-world ID, the original resource census and released taxi passenger/camera state.
+drain, and checks captured old scene/audio/hull/camera references for actual
+deallocation, including detached-but-valid nodes. An owned, unparented-node probe
+exercises that distinction and frees its synthetic nodes. The source is restored
+before entry. Two visits require fresh generations under the same stable world
+ID, the original fresh-entry resource census (including decoded opening music),
+and released taxi passenger/camera state. The fresh baseline is captured before
+the primary music scenario warms additional clips. Taxi HUD evidence requires
+the decoded retail text; a presentation fallback reports unavailable.
 The source lease restores on cancellation/failure. Shared profiles are rejected
 before test actions; use `--no-profile`. The taxi wrapper defaults to headless
 mode; `-Render` opts into a visible window. The seven linked engine-free files

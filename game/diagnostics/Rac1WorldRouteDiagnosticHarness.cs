@@ -13,8 +13,9 @@ internal sealed class Rac1WorldRouteDiagnosticHarness(MovementScenarioPorts move
     private IDiagnosticScenario Create(DiagnosticScenarioDefinition definition, string id, int failureExit, Func<MovementDiagnosticContext, Task> execute) =>
         new DiagnosticProcessScenario(new MovementDiagnosticScenario(definition, movement, async context =>
         {
-            Rac1WorldRouteLifetimeScenario.RequireIsolated(resources.Read());
+            var entry = resources.Read();
+            Rac1WorldRouteLifetimeScenario.RequireIsolated(entry);
             await execute(context);
-            await new Rac1WorldRouteLifetimeScenario(resources, menus, navigation, sources, movement.Log).RunAsync(context);
+            await new Rac1WorldRouteLifetimeScenario(resources, menus, navigation, sources, movement.Log).RunAsync(context, entry);
         }), new(id + "-pass", 0), new(id + "-fail", failureExit));
 }

@@ -29,7 +29,9 @@ public sealed class Rac1NovalisRouteScenario(MovementDiagnosticContext context, 
     private async Task CheckRocksAsync()
     {
         Player.StageWater(new(-191f, 65.2f, 128.5f)); await PhysicsFramesAsync(210);
-        foreach (var rock in route.ReadRocks())
+        var rocks = route.ReadRocks();
+        Require(rocks.Length == 3, "Expected all three authored Novalis staircase rocks.");
+        foreach (var rock in rocks)
             Require(rock.State == 4 && Math.Abs(rock.Position.Z - (rock.Home.Z - 20)) < .001f,
                 $"Staircase rock {rock.Actor.Target.InstanceIndex} did not land: state={rock.State}, pos={rock.Position}");
         Log("[novalis-route-smoke] authored approach dropped all three staircase rocks");

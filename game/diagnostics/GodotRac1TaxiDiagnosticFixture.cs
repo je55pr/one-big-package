@@ -89,7 +89,12 @@ internal sealed class GodotRac1TaxiDiagnosticFixture(GodotRac1TaxiDiagnosticBind
         _scope.RequireCurrent(); bool supported = bindings.Landing(Player, GodotMovementPlayer.Engine(waypoint), out var landing);
         return new(supported, GodotMovementPlayer.Copy(landing));
     }
-    public string ReadRetailText(int id) { _scope.RequireCurrent(); return Rac1RetailUiAssets.Text(id, "Taxi: T / Triangle to ride"); }
+    public string ReadRetailText(int id)
+    {
+        _scope.RequireCurrent(); const string unavailable = "\0missing-retail-taxi-text\0";
+        string text = Rac1RetailUiAssets.Text(id, unavailable);
+        return text == unavailable ? throw new DiagnosticUnavailableException("The original retail taxi HUD text is unavailable.") : text;
+    }
     public void SetTimeScale(double value) { _scope.RequireCurrent(); Engine.TimeScale = value; }
     public void SuspendAtApproach(ActorInstanceKey actor)
     {

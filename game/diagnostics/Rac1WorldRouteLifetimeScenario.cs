@@ -6,18 +6,30 @@ public sealed record Rac1WorldRouteResources(DiagnosticWorldSnapshot World, int 
     int MusicTracks, int DecodedMusicClips, bool MusicReader, bool TaxiCameraOwned, bool TaxiPassenger, bool SharedProfileActive = false);
 public sealed record Rac1WorldRouteRetirement(bool SceneRetired, int LiveTaxiHulls, int LiveAudioPlayers, bool CameraRetired);
 public interface IRac1WorldRouteRetirementWitness { Rac1WorldRouteRetirement Read(); }
+public interface IRac1WorldRouteDetachedProbe : IDisposable { IRac1WorldRouteRetirementWitness Witness { get; } }
 public interface IRac1WorldRouteLifetimeFixture
 {
     Rac1WorldRouteResources Read();
     IRac1WorldRouteRetirementWitness Capture();
+    IRac1WorldRouteDetachedProbe CreateDetachedProbe();
 }
 public sealed class Rac1WorldRouteLifetimeScenario(IRac1WorldRouteLifetimeFixture resources, IDiagnosticMenuFixture menus,
     IDiagnosticNavigationActions navigation, IDiagnosticSourceAttachmentFixture sources, Action<string> log)
 {
-    public async Task RunAsync(MovementDiagnosticContext context)
+    public async Task RunAsync(MovementDiagnosticContext context, Rac1WorldRouteResources? expectedEntry = null)
     {
-        var initial = resources.Read();
-        RequireIsolated(initial);
+        RequireIsolated(resources.Read());
+        var initial = expectedEntry ?? resources.Read();
+        var probe = resources.CreateDetachedProbe();
+        using (probe)
+        {
+            var detached = probe.Witness.Read();
+            Require(!detached.SceneRetired && detached.LiveTaxiHulls == 1 && detached.LiveAudioPlayers == 1 && !detached.CameraRetired,
+                "Detached but unfreed nodes were incorrectly accepted as retired.");
+        }
+        var freed = probe.Witness.Read();
+        Require(freed.SceneRetired && freed.LiveTaxiHulls == 0 && freed.LiveAudioPlayers == 0 && freed.CameraRetired,
+            "The detached-resource probe did not free its nodes.");
         string destination = initial.World.DestinationId ?? throw new DiagnosticUnavailableException("The source route destination is unavailable.");
         for (int visit = 0; visit < 2; visit++)
         {
@@ -37,9 +49,10 @@ public sealed class Rac1WorldRouteLifetimeScenario(IRac1WorldRouteLifetimeFixtur
             await context.Driver.PhysicsAsync(6);
             var current = resources.Read();
             Require(current.World.DestinationId == destination && current.World.Content == initial.World.Content && current.World.Generation > before.World.Generation &&
-                !string.IsNullOrWhiteSpace(current.World.WorldInstanceId), "Route re-entry reused a retired world identity.");
+                current.World.WorldInstanceId == initial.World.WorldInstanceId, "Route re-entry replaced the stable world identity or reused a retired generation.");
             Require(current.Mechanisms == initial.Mechanisms && current.TaxiNodes == initial.TaxiNodes && current.TaxiHulls == initial.TaxiHulls &&
-                current.MusicTracks == initial.MusicTracks && current.MusicReader == initial.MusicReader && !current.TaxiCameraOwned && !current.TaxiPassenger,
+                current.MusicTracks == initial.MusicTracks && current.DecodedMusicClips == initial.DecodedMusicClips &&
+                current.MusicReader == initial.MusicReader && !current.TaxiCameraOwned && !current.TaxiPassenger,
                 "Route re-entry duplicated or lost its source resources.");
         }
         log("[rac1-world-route-lifetime] source detach, title exit, repeated visits and scene/audio/hull retirement PASS");

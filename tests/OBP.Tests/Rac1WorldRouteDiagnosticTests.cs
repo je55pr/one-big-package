@@ -36,15 +36,40 @@ public sealed class Rac1WorldRouteDiagnosticTests
         var fixture = new Fixture { ReuseIdentity = identity, DuplicatePopulation = !identity };
         var result = await fixture.RunAsync(music: false);
         Assert.Equal(DiagnosticRunStatus.Failed, result.Status);
-        Assert.Contains(identity ? "retired world identity" : "duplicated or lost", result.Detail, StringComparison.Ordinal);
+        Assert.Contains(identity ? "world identity" : "duplicated or lost", result.Detail, StringComparison.Ordinal);
         Assert.False(fixture.Detached);
     }
     [Fact]
     public async Task AnotherDestinationFromTheSameSourceCannotImpersonateReentry()
     {
         var fixture = new Fixture { WrongDestination = true }; var result = await fixture.RunAsync(music: false);
-        Assert.Equal(DiagnosticRunStatus.Failed, result.Status); Assert.Contains("retired world identity", result.Detail, StringComparison.Ordinal);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status); Assert.Contains("world identity", result.Detail, StringComparison.Ordinal);
         Assert.False(fixture.Detached);
+    }
+    [Fact]
+    public async Task AReplacedStableWorldIdCannotPassWithOnlyAFreshGeneration()
+    {
+        var fixture = new Fixture { ReplaceWorldId = true }; var result = await fixture.RunAsync(music: false);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status); Assert.Contains("world identity", result.Detail, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task MissingDecodedOpeningMusicCannotPassTheFreshResourceCensus()
+    {
+        var fixture = new Fixture { MissingDecodedMusic = true }; var result = await fixture.RunAsync(music: false);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status); Assert.Contains("duplicated or lost", result.Detail, StringComparison.Ordinal);
+    }
+    [Fact]
+    public async Task ReentryUsesTheFreshEntryBaselineRatherThanTheWarmedScenarioCache()
+    {
+        var fixture = new Fixture { WarmPrimaryCache = true }; var result = await fixture.RunAsync(music: false);
+        Assert.Equal(DiagnosticRunStatus.Passed, result.Status); Assert.Equal(2, fixture.Entries);
+    }
+    [Fact]
+    public async Task ADetachedButUnfreedNodeCannotPassTheRetirementProbe()
+    {
+        var fixture = new Fixture { InvalidDetachedProbe = true }; var result = await fixture.RunAsync(music: false);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status); Assert.Contains("Detached but unfreed", result.Detail, StringComparison.Ordinal);
+        Assert.Equal(0, fixture.Exits); Assert.Equal(0, fixture.Detaches);
     }
     [Fact]
     public async Task CancellationDuringQueuedCleanupRestoresTheSourceWithoutReportingPass()
@@ -87,14 +112,25 @@ public sealed class Rac1WorldRouteDiagnosticTests
     {
         public int Exits, Entries, Detaches, Restores, Generation = 1, PhysicsFrames;
         public int OldHulls, OldAudio; public bool OldScene, OldCamera, ReuseIdentity, DuplicatePopulation, WrongDestination, SharedProfile, RefuseLoop;
+        public bool ReplaceWorldId, MissingDecodedMusic, WarmPrimaryCache, InvalidDetachedProbe;
+        private int _decoded = 1;
         public bool Detached; private bool _title;
         public CancellationTokenSource? StopDuringCleanup;
         public List<string> Logs { get; } = []; public List<int> Cranks { get; } = [];
         public double MusicDelta; public int Slot; public Rac1NovalisMusic.Area Area = Rac1NovalisMusic.Area.Enemy;
-        private DiagnosticWorldSnapshot World => new(_title ? null : WrongDestination && Entries > 0 ? "rac1:LEVEL3" : "rac1:LEVEL1", _title ? null : ObpSourceGame.Rac1, _title ? null : "obp-world", Generation);
+        private DiagnosticWorldSnapshot World => new(_title ? null : WrongDestination && Entries > 0 ? "rac1:LEVEL3" : "rac1:LEVEL1", _title ? null : ObpSourceGame.Rac1,
+            _title ? null : ReplaceWorldId && Entries > 0 ? "replacement" : "obp-world", Generation);
         public Rac1WorldRouteResources Read() => new(World, _title ? 0 : DuplicatePopulation && Entries > 0 ? 36 : 18,
-            0, 0, _title ? 0 : 9, _title ? 0 : 1, !_title, false, false, SharedProfile);
+            0, 0, _title ? 0 : 9, _title ? 0 : _decoded, !_title, false, false, SharedProfile);
         public IRac1WorldRouteRetirementWitness Capture() => new Witness(this);
+        public IRac1WorldRouteDetachedProbe CreateDetachedProbe() => new Probe(InvalidDetachedProbe);
+        private sealed class Probe(bool invalid) : IRac1WorldRouteDetachedProbe, IRac1WorldRouteRetirementWitness
+        {
+            private bool _freed;
+            public IRac1WorldRouteRetirementWitness Witness => this;
+            public Rac1WorldRouteRetirement Read() => _freed || invalid ? new(true, 0, 0, true) : new(false, 1, 1, false);
+            public void Dispose() => _freed = true;
+        }
         private sealed class Witness(Fixture fixture) : IRac1WorldRouteRetirementWitness
         { public Rac1WorldRouteRetirement Read() => new(!fixture.OldScene, fixture.OldHulls, fixture.OldAudio, !fixture.OldCamera); }
         public void ShowTitle() { _title = true; Exits++; }
@@ -102,6 +138,7 @@ public sealed class Rac1WorldRouteDiagnosticTests
         {
             token.ThrowIfCancellationRequested(); if (Detached) throw new InvalidOperationException("A detached source was used for entry.");
             Entries++; _title = false; if (!ReuseIdentity) Generation++;
+            _decoded = MissingDecodedMusic ? 0 : 1;
             return Task.FromResult(new DiagnosticActionResult(true, null));
         }
         public IDisposable Detach(ObpSourceGame game, bool refreshOnDetach)
@@ -130,8 +167,9 @@ public sealed class Rac1WorldRouteDiagnosticTests
             var scenario = new Scenario(async run =>
             {
                 using var driver = new MovementDiagnosticDriver(run, actions, physical); var context = new MovementDiagnosticContext(ports, driver);
+                var entry = Read(); if (WarmPrimaryCache) _decoded = 3;
                 if (music) await new Rac1NovalisMusicScenario(context, this).RunAsync();
-                else await new Rac1WorldRouteLifetimeScenario(this, this, this, this, Logs.Add).RunAsync(context);
+                else await new Rac1WorldRouteLifetimeScenario(this, this, this, this, Logs.Add).RunAsync(context, entry);
             });
             return await new DiagnosticScenarioRunner(this, this).RunAsync(scenario, true, token);
         }
