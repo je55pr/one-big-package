@@ -448,7 +448,8 @@ python tools/compare-capture-parity.py <before-gate-directory> <after-gate-direc
 ```
 
 The comparator checks exact source/profile/initial-state headers, ordered inputs
-and physics-aligned commands, acceptance JSON and the mixed-actor trace digest. It also compares
+and physics-aligned commands/markers with their frame phases, acceptance JSON
+and the mixed-actor trace digest. It also compares
 the complete deterministic ordinary tape after removing wall timestamps and
 requires fresh same-build replay matches in both runs. Bookmark flushes can add
 variable process waits and corresponding idle physics ticks before the next

@@ -48,14 +48,29 @@ def protocol(rows, per_world=False):
         step = stable_step(row["Step"])
         if step["Kind"] == 0:
             physics += 1
-        result.extend({"physics": physics, "event": event} for event in step["Events"])
+        result.extend({"physics": physics, "phase": step["Kind"], "event": event} for event in step["Events"])
         for command in step["Commands"]:
             # Bookmarks flush asynchronously after the last marker in each world,
             # allowing a variable number of idle physics ticks before the next entry.
             if per_world and command["Kind"] == "destination":
                 physics = 0
-            result.append({"physics": physics, "command": command})
+            result.append({"physics": physics, "phase": step["Kind"], "command": command})
     return result
+
+
+def route_markers(rows):
+    positions = {}
+    physics = 0
+    for row in rows:
+        if "Step" not in row:
+            continue
+        step = row["Step"]
+        if step["Kind"] == 0:
+            physics += 1
+        if any(command["Kind"] == "destination" for command in step["Commands"]):
+            physics = 0
+        positions[step["Index"]] = {"physics": physics, "phase": step["Kind"]}
+    return [{**row["Marker"], "Step": positions[row["Marker"]["Step"]]} for row in rows if "Marker" in row]
 
 
 def completed(rows):
@@ -88,6 +103,10 @@ def compare(before, after):
                   [stable_step(row["Step"]) for row in right if "Step" in row])
             equal("legacy markers and end", [row for row in left if "Marker" in row or "End" in row],
                   [row for row in right if "Marker" in row or "End" in row])
+        else:
+            left_markers, right_markers = route_markers(left), route_markers(right)
+            equal("route physics-aligned markers", left_markers, right_markers)
+            equal("five route markers present", len(left_markers) == len(right_markers) == 5, True)
     pattern = r"native encounter trace ([0-9A-F]{64})"
     digests = [re.findall(pattern, (root / "trilogy-gameplay.log").read_text(encoding="utf-8"))
                for root in (before, after)]

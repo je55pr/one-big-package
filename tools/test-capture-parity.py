@@ -62,6 +62,21 @@ class CaptureParityTests(unittest.TestCase):
         self.assertEqual(parity.protocol([entry, action], True), parity.protocol([idle, entry, action], True))
         self.assertNotEqual(parity.protocol([entry, action], True), parity.protocol([entry, idle, action], True))
 
+    def test_protocol_retains_process_versus_physics_phase_at_the_same_physics_count(self):
+        physics_action = {"Step": {"Kind": 0, "Events": [{"Code": 1}], "Commands": []}}
+        process_action = {"Step": {"Kind": 1, "Events": [{"Code": 1}], "Commands": []}}
+        idle = {"Step": {"Kind": 0, "Events": [], "Commands": []}}
+        self.assertNotEqual(parity.protocol([physics_action], True), parity.protocol([idle, process_action], True))
+
+    def test_route_markers_retain_labels_and_physics_positions_across_async_entry_waits(self):
+        entry = {"Step": {"Index": 0, "Kind": 1, "Commands": [{"Kind": "destination"}]}}
+        marker_step = {"Step": {"Index": 1, "Kind": 0, "Commands": []}}
+        marker = {"Marker": {"Step": 1, "Label": "Bug 1"}}
+        idle = {"Step": {"Index": -1, "Kind": 0, "Commands": []}}
+        self.assertEqual(parity.route_markers([entry, marker_step, marker]), parity.route_markers([idle, entry, marker_step, marker]))
+        self.assertNotEqual(parity.route_markers([entry, marker_step, marker]), parity.route_markers([entry, idle, marker_step, marker]))
+        self.assertNotEqual(parity.route_markers([entry, marker_step, marker]), parity.route_markers([entry, marker_step, {"Marker": {"Step": 1, "Label": "changed"}}]))
+
     def test_corrupt_or_truncated_gzip_emits_failure_json_without_a_traceback(self):
         payload = gzip.compress(b'{"Header":{}}\n')
         corrupt = bytearray(payload)
