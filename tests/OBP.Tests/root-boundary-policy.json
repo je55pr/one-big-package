@@ -2610,13 +2610,6 @@
       "Hash": "b87f685890d9c65491f929226699505eb999d28302a03f172ab7ea813f0b0759"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1WorldRetailNavigationSmokeAsync(:string):Task:private",
-      "Owner": "#337",
-      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
-      "ExpiresWith": "#343",
-      "Hash": "857a7a6c6ce1df3d402d1648493fa9411c186cb95403f37eff90b4bec95a7225"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_playerAudioDiagnosticEvents:DiagnosticPlayerAudioCollector:private,readonly",
       "Owner": "#338",
       "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
@@ -2853,6 +2846,20 @@
       "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners.",
       "ExpiresWith": "#369",
       "Hash": "0a90aac89178623d8c1c44f33ab9c01e547c781ab8961959b5ae79f5d88a0535"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1TaxiDiagnosticFixture():IRac1TaxiDiagnosticFixture:private",
+      "Owner": "#343",
+      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone.",
+      "ExpiresWith": "#371",
+      "Hash": "5ecd0612e31283bfd87d3b78e89344a89c0ce6006b85bcc1fb9f67a7e0de4ae3"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldRouteDiagnosticHarness():Rac1WorldRouteDiagnosticHarness:private",
+      "Owner": "#343",
+      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone.",
+      "ExpiresWith": "#370",
+      "Hash": "61177e74ed989e194457ef88318b0a06bc10e1cc1015a911f94bcf5eab8e0d25"
     }
   ],
   "RetiredMembers": [
@@ -3054,7 +3061,15 @@
     "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs::OBPGame::method:RunRac1MissionPlaySmokeAsync():Task:async,private",
     "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:RunRac1PlacedBoltSmokeAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:StageRac1PlacedBoltForSmoke(:Rac1PlacedBoltSession . Registration,:Vector3):void:private"
+    "game/diagnostics/OBPGame.Rac1PlacedBoltSmoke.cs::OBPGame::method:StageRac1PlacedBoltForSmoke(:Rac1PlacedBoltSession . Registration,:Vector3):void:private",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:RequireTaxiFacesMovingRouteAsync(:Node3D,:string,:int):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:RunRac1MetropolisTaxiSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1MetropolisTaxiSmoke.cs::OBPGame::method:WaitForTaxiSmokeStateAsync(:Func < bool >,:int,:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisMusicSmoke.cs::OBPGame::method:RunRac1NovalisMusicSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1NovalisRouteSmoke.cs::OBPGame::method:RunRac1NovalisRouteSmokeAsync():Task:async,private"
   ],
   "RetiredAccess": []
 }

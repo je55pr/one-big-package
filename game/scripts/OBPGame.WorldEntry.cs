@@ -66,8 +66,8 @@ public partial class OBPGame
                         definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
-                        RunRac1NovalisMusicSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
-                        RunRac1MetropolisTaxiSmokeAsync, definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), RunRac1NovalisRouteSmokeAsync,
+                        definition => CreateRac1WorldRouteDiagnosticHarness().CreateMusic(definition), definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
+                        definition => CreateRac1WorldRouteDiagnosticHarness().CreateTaxi(definition), definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), definition => CreateRac1WorldRouteDiagnosticHarness().CreateRoute(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
                     new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>

@@ -21,6 +21,7 @@ internal sealed class GodotMovementPhysicalInput : IDiagnosticPhysicalInput
             DiagnosticPhysicalKey.X => Key.X,
             DiagnosticPhysicalKey.F8 => Key.F8,
             DiagnosticPhysicalKey.F9 => Key.F9,
+            DiagnosticPhysicalKey.T => Key.T,
             _ => throw new ArgumentOutOfRangeException(nameof(key)),
         };
         using var input = new InputEventKey { Keycode = native, PhysicalKeycode = native, Pressed = pressed, Echo = false };

@@ -111,6 +111,16 @@ with the campaign owner #372 and pickup owner #369. The two remaining logical
 attack delegations are removed; source-native rules and the frozen origin stay
 with their existing owners.
 
+The #343 world-route extraction retires the Novalis route/music and Metropolis
+taxi partials and eight historical declaration/member permissions. The measured
+root has 82 files, 17,921 file lines, 636 direct methods, 456 fields (311 mutable),
+44 exposed members and 2,065 cross-file references. Scoped adapters expose copied
+mechanism, vehicle/passenger/camera and music facts; independent scenarios retain
+the existing native thresholds, input and frame phases. Repeated entry, temporary
+source detachment during queued teardown and scene/audio/hull retirement have
+separate test ports. Two exact factory entries expire with #370/#371. The obsolete
+retail-navigation delegation is removed; the frozen origin is unchanged.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

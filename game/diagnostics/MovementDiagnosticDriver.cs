@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace OBP.Game.Diagnostics;
 
-public enum DiagnosticPhysicalKey { W, Space, F, R, E, F11, Key1, Key2, Q, X, F8, F9 }
+public enum DiagnosticPhysicalKey { W, Space, F, R, E, F11, Key1, Key2, Q, X, F8, F9, T }
 public enum DiagnosticPhysicalButton { Wrench, EquippedUse }
 public enum DiagnosticPhysicalAxis { LeftX, LeftY }
 public interface IDiagnosticPhysicalInput

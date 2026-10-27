@@ -72,6 +72,13 @@
     <Compile Include="../../game/diagnostics/Rac1CrateScenario.cs" Link="Diagnostics/Rac1CrateScenario.cs" />
     <Compile Include="../../game/diagnostics/Rac1LootDiagnosticPorts.cs" Link="Diagnostics/Rac1LootDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1CampaignDiagnosticHarness.cs" Link="Diagnostics/Rac1CampaignDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WorldRouteDiagnosticHarness.cs" Link="Diagnostics/Rac1WorldRouteDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/Rac1MetropolisTaxiScenario.cs" Link="Diagnostics/Rac1MetropolisTaxiScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1NovalisRouteScenario.cs" Link="Diagnostics/Rac1NovalisRouteScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1NovalisMusicScenario.cs" Link="Diagnostics/Rac1NovalisMusicScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WorldRouteLifetimeScenario.cs" Link="Diagnostics/Rac1WorldRouteLifetimeScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1TaxiDiagnosticPorts.cs" Link="Diagnostics/Rac1TaxiDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1NovalisDiagnosticPorts.cs" Link="Diagnostics/Rac1NovalisDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1MissionPlayScenario.cs" Link="Diagnostics/Rac1MissionPlayScenario.cs" />
     <Compile Include="../../game/diagnostics/Rac1CampaignScenario.cs" Link="Diagnostics/Rac1CampaignScenario.cs" />
     <Compile Include="../../game/diagnostics/Rac1CampaignScenarioAssertions.cs" Link="Diagnostics/Rac1CampaignScenarioAssertions.cs" />

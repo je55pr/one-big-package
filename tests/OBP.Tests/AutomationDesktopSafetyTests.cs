@@ -11,6 +11,7 @@ public sealed class AutomationDesktopSafetyTests
     [InlineData("rac1-campaign-smoke.ps1")]
     [InlineData("rac1-crate-smoke.ps1")]
     [InlineData("rac1-placed-bolt-smoke.ps1")]
+    [InlineData("rac1-metropolis-taxi-smoke.ps1")]
     public void CampaignAndLootWrappersRequireAnExplicitRenderedOptIn(string name)
     {
         string script = File.ReadAllText(Path.Combine(RepoPaths.Root, "tools", name));
