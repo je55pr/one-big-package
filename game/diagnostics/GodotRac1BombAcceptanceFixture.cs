@@ -43,7 +43,7 @@ internal sealed class GodotRac1BombAcceptanceWitness(GodotRac1DiagnosticWorldSco
     public Rac1BombAcceptanceShot Read() { scope.RequireCurrent(); return read(); }
 }
 internal sealed class GodotWeaponMovementStateFixture(Func<bool> loading, Func<MovementReproState> capture,
-    Func<string, CancellationToken, Task> load, Func<string, string> reproPath, IWeaponDiagnosticTransientFixture transients) : IWeaponMovementStateFixture
+    Func<string, CancellationToken, Task<bool>> load, Func<string, string> reproPath, IWeaponDiagnosticTransientFixture transients) : IWeaponMovementStateFixture
 {
     public bool Loading => loading();
     public WeaponMovementStateDiagnostic CaptureBoundary()
@@ -51,18 +51,8 @@ internal sealed class GodotWeaponMovementStateFixture(Func<bool> loading, Func<M
         var state = capture(); return new(state.World is not null, state.World?.CapturedMobies?.Count ?? 0, state.World?.WeaponPreview ?? false,
             state.World?.MorphedMobies is { } morphed ? [.. morphed.Select(key => new OBP.Runtime.Gameplay.WeaponTargetKey(OBP.Core.ObpSourceGame.Rac1, key.NativeClassId, key.InstanceIndex))] : []);
     }
-    public async Task<IDisposable> LoadAsync(string path, CancellationToken token)
-    {
-        token.ThrowIfCancellationRequested(); await load(path, token);
-        var cleanup = transients.BeginCleanup();
-        try { token.ThrowIfCancellationRequested(); return cleanup; }
-        catch (Exception error)
-        {
-            try { cleanup.Dispose(); }
-            catch (Exception failure) { throw new AggregateException("Reload cancellation and transient cleanup failed.", error, failure); }
-            throw;
-        }
-    }
+    public Task<IDisposable> LoadAsync(string path, CancellationToken token) =>
+        WeaponDiagnosticReload.LoadAsync(cancellation => load(path, cancellation), transients, token);
     public async Task<IDisposable> SaveAndReloadAsync(string fileName, CancellationToken token)
     {
         token.ThrowIfCancellationRequested(); var path = reproPath(fileName);

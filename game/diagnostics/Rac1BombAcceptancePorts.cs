@@ -31,3 +31,26 @@ public interface IWeaponMovementStateFixture
     Task<IDisposable> SaveAndReloadAsync(string fileName, CancellationToken token);
     Task<IDisposable> LoadAsync(string path, CancellationToken token);
 }
+
+/// <summary>Accepts only a confirmed reload and transfers its transient cleanup without losing cancellation.</summary>
+public static class WeaponDiagnosticReload
+{
+    public static async Task<IDisposable> LoadAsync(Func<CancellationToken, Task<bool>> load,
+        IWeaponDiagnosticTransientFixture transients, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (!await load(token))
+        {
+            token.ThrowIfCancellationRequested();
+            throw new DiagnosticUnavailableException("The weapon fixture saved-state reload did not complete.");
+        }
+        var cleanup = transients.BeginCleanup();
+        try { token.ThrowIfCancellationRequested(); return cleanup; }
+        catch (Exception error)
+        {
+            try { cleanup.Dispose(); }
+            catch (Exception failure) { throw new AggregateException("Reload cancellation and transient cleanup failed.", error, failure); }
+            throw;
+        }
+    }
+}

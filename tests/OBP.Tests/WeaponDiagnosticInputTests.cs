@@ -5,6 +5,58 @@ namespace OBP.Tests;
 public sealed class WeaponDiagnosticInputTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RejectedReloadCannotAcquireCleanupOrReportSuccess(bool canceled)
+    {
+        using var lifetime = new CancellationTokenSource(); var transients = new Transients();
+        Task<IDisposable> Reload() => WeaponDiagnosticReload.LoadAsync(_ =>
+        {
+            if (canceled) lifetime.Cancel();
+            return Task.FromResult(false);
+        }, transients, lifetime.Token);
+        if (canceled)
+        {
+            var error = await Assert.ThrowsAnyAsync<OperationCanceledException>(Reload);
+            Assert.Equal(lifetime.Token, error.CancellationToken);
+        }
+        else await Assert.ThrowsAsync<DiagnosticUnavailableException>(Reload);
+        Assert.Equal(0, transients.Acquisitions);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CancellationAfterCommittedReloadCleansTheNewWorld(bool failAudioCleanup)
+    {
+        using var lifetime = new CancellationTokenSource();
+        var transients = new Transients { FailAudio = failAudioCleanup, Shots = 1, Audio = 1, Effects = 1 };
+        Task<IDisposable> Reload() => WeaponDiagnosticReload.LoadAsync(_ =>
+        {
+            lifetime.Cancel(); return Task.FromResult(true);
+        }, transients, lifetime.Token);
+        if (failAudioCleanup)
+        {
+            var error = await Assert.ThrowsAsync<AggregateException>(Reload);
+            Assert.Contains(error.InnerExceptions, inner => inner is OperationCanceledException canceled && canceled.CancellationToken == lifetime.Token);
+            Assert.Contains(error.Flatten().InnerExceptions, inner => inner is IOException);
+        }
+        else await Assert.ThrowsAnyAsync<OperationCanceledException>(Reload);
+        Assert.Equal(1, transients.Acquisitions); Assert.Equal(1, transients.Cleanups);
+        Assert.Equal(0, transients.Shots); Assert.Equal(0, transients.Audio); Assert.Equal(0, transients.Effects);
+    }
+
+    [Fact]
+    public async Task ConfirmedReloadTransfersItsCleanupLeaseToTheCaller()
+    {
+        var transients = new Transients { Shots = 1, Audio = 1, Effects = 1 };
+        var cleanup = await WeaponDiagnosticReload.LoadAsync(_ => Task.FromResult(true), transients, CancellationToken.None);
+        Assert.Equal(1, transients.Acquisitions); Assert.Equal(0, transients.Cleanups);
+        cleanup.Dispose(); Assert.Equal(1, transients.Cleanups);
+        Assert.Equal(0, transients.Shots); Assert.Equal(0, transients.Audio); Assert.Equal(0, transients.Effects);
+    }
+
+    [Theory]
     [InlineData(true, false)]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -110,14 +162,18 @@ public sealed class WeaponDiagnosticInputTests
     private sealed class Release(Action release) : IDisposable { public void Dispose() => release(); }
     private sealed class Transients : IWeaponDiagnosticTransientFixture
     {
-        public int Shots, Audio, Effects, Cleanups;
+        public int Shots, Audio, Effects, Acquisitions, Cleanups;
         public bool FailAudio;
-        public IDisposable BeginCleanup() => new Release(() =>
+        public IDisposable BeginCleanup()
         {
-            Cleanups++;
-            DiagnosticCleanup.Run("weapon fixture cleanup", () => Shots = 0,
-                () => { Audio = 0; if (FailAudio) throw new IOException("audio cleanup failed"); }, () => Effects = 0);
-        });
+            Acquisitions++;
+            return new Release(() =>
+            {
+                Cleanups++;
+                DiagnosticCleanup.Run("weapon fixture cleanup", () => Shots = 0,
+                    () => { Audio = 0; if (FailAudio) throw new IOException("audio cleanup failed"); }, () => Effects = 0);
+            });
+        }
     }
     private sealed class Scenario(DiagnosticScenarioDefinition definition, Func<DiagnosticRunContext, Task> run) : IDiagnosticScenario
     {

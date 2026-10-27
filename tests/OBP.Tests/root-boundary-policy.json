@@ -2838,7 +2838,7 @@
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
       "ExpiresWith": "#367",
-      "Hash": "1c8161e4bbb6e6a29c2a7fa4abd71e0ca43a5ea5306b7e6b765cd3f650a3ea44"
+      "Hash": "50e322632c2e9362bc2ccff9c62409226298ed438a4a606736790e5459cba2f2"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunFusionRecordingSmokeAsync():Task:private",

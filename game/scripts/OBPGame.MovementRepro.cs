@@ -233,6 +233,11 @@ public partial class OBPGame
                 ApplicationLifecycle.RequestQuit(this, "movement-replay-fail", 3);
             }
         }
+        else
+        {
+            // An empty sample list confirms a successful restore without a requested forward replay.
+            return [];
+        }
         return null;
     }
 

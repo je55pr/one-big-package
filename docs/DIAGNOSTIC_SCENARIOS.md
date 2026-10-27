@@ -308,7 +308,8 @@ transient scope delegates projectile, audio and effect cleanup to existing
 owners on completion, failure or cancellation; it never clears a replacement
 world. An explicit saved-state reload transfers a new cleanup lease to the
 scenario for its reloaded world. Portable checks cover cancellation and partial
-cleanup failure. The
+cleanup failure, rejected reloads and cancellation after a committed reload.
+The port returns a cleanup lease only after confirmed restoration. The
 native suite retains missing-asset, source-invalidation and canceled-worker
 checks and requires explicit unavailable results.
 
