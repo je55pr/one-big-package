@@ -8,6 +8,9 @@ have all been implemented.
 The [effects reference audit](EFFECT_SYSTEMS_AUDIT.md) and its
 [bounded fixture plan](EFFECT_SYSTEMS_FIXTURES.md) map the reusable native
 generators, upstream licences and remaining recovery work for #280/#281.
+The [shared native effect host](../docs/EFFECT_HOST.md) documents the admitted
+three-source Fusion Lab experiment, source-qualified resources and reset/replay
+workflow implemented in #285.
 
 ## R&C1 particles and weapon explosions
 
@@ -22,7 +25,7 @@ distributed. The Veldin overlay identity is
 | --- | --- | --- |
 | 2 | `0x2690b8` / `0x269290` | Three-phase flame motes; packed directions, fade-in, colour/size transition, fade-out |
 | 4 | `0x269958` / `0x269a70` | Growing, slowing fragment trails; 45 frames |
-| 6 | Novalis `0x27e900` / `0x27eb08` | Class-27 PVar-driven sprites; source implementation, host registration deferred to #285 |
+| 6 | Novalis `0x27e900` / `0x27eb08` | Class-27 PVar-driven sprites; registered source-owned instances in the shared host |
 | 8 | `0x26a4c8` / `0x26a5b8` | Growing explosion puffs; ten authored texture frames |
 | 11 | `0x26a9f0` / `0x26ac78` | Splitting explosion particles, two child generations, then smoke |
 | 12 | `0x26b230` / `0x26b500` | Pyrocitor's two flame looks, rise, braking, growth and fading |
@@ -68,7 +71,8 @@ Novalis preset, its parameter map, live-owner boundary, unsupported collision an
 original EE/VU instruction comparisons. The other seven family algorithms and
 weapon recipes remain unchanged. No second authored preset is invented.
 
-`Rac1ParticleView` batches copied sprite snapshots by native texture/blend/depth range. GS ALPHA
+`Rac1ParticleView` delegates copied sprite snapshots to the shared renderer,
+batched by qualified native texture/blend/depth range. GS ALPHA
 selector`0x44` maps to alpha blending and`0x48` to additive blending; primitive
 colour components use the PS2 unity value128. Native angle bytes and near/far
 depth fading are retained. Fx rows differ from Part rows: palette, pixels, width,
@@ -120,13 +124,15 @@ sprite descriptor math. Three distinct authored Museum emitters use the same
 implementation. Retail tests compare original EE/VU menu writes, records through
 expiry, texture bindings and sprite descriptors. The [#283 recovery notes](RAC2_MUSEUM_PARTICLES.md)
 document the integer-opacity lifetime adjustment, copied-owner inputs, explicit
-context restriction and conditioned draw boundaries. Host composition remains #285.
+context restriction and conditioned draw boundaries. The #285 source factory
+now exposes these emitters to the shared host without changing that simulation.
 
 Museum shot and explosion demonstrators additionally expose beam thickness,
 textures, colour/alpha, debris/cloud/line counts, shell, distortion and camera
 shake. They guide further GC recovery; they are not evidence that the GC and
 R&C1 recurrences are interchangeable. The Museum editor and GC/UYA particle
-engines are not yet hosted.
+editor UI is not hosted. The recovered GC/UYA generator slices are now admitted
+through the shared effect host.
 
 Shared R&C1 effect descriptions also resolve to class639 dynamic lights
 (`0x2d3838` / `0x2d3a10`): independent RGB/radius rise, hold and fall, delays and

@@ -23,6 +23,7 @@ public sealed record CommandLineArgs
     /// <summary>Explicit, ephemeral three-game weapon demo on fresh R&amp;C1 Veldin.</summary>
     public bool FusionTest { get; init; }
     public bool FusionSmoke { get; init; }
+    public bool EffectsSmoke { get; init; }
     public bool RetailParity { get; init; }
     public bool DiagnosticPlayer { get; init; }
     public bool DiagnosticSources { get; init; }
@@ -220,6 +221,7 @@ public sealed record CommandLineArgs
                 "--playtest-smoke" => result with { PlaytestSmoke = true },
                 "--fusion-test" => result with { FusionTest = true },
                 "--fusion-smoke" => result with { FusionTest = true, FusionSmoke = true },
+                "--effects-smoke" => result with { EffectsSmoke = true },
                 "--default-weapons-smoke" => result with { DefaultWeaponsSmoke = true },
                 "--bug-capture" => result with { BugCapture = true },
                 "--bug-report-smoke" => result with { BugReportSmoke = true },
@@ -314,6 +316,7 @@ public sealed record CommandLineArgs
         if (result.PlaytestRequested && (result.LoadMovementState is not null || result.CaptureFrame.HasValue ||
             result.ShotsPath is not null || result.ReplayForwardFrames.HasValue || result.StressSwitch is not null))
             throw new ArgumentException("--record-playtest/--replay-playtest require ordinary entry without --load-movement-state, --capture-frame, --shots, --replay-forward or --stress-switch.");
+        if (result.EffectsSmoke && !result.TestSceneExplicit && result.Destination is null) result = result with { TestScene = "fusion-lab", TestSceneExplicit = true };
         return result;
     }
 }

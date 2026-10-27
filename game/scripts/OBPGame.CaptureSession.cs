@@ -11,6 +11,7 @@ public partial class OBPGame
     private IReadOnlyList<PlaytestAdapter> CaptureReplayAdapters()
     {
         var adapters = new SortedSet<string>(StringComparer.Ordinal) { "obp/shared-player/v1", "rac1/ordinary-player/v1", "obp/weapon-controllers/v1" };
+        if (_worldScenes?.Current?.Resources.Effects is { } effects) adapters.Add("obp/source-effects/v1:" + effects.ReplayIdentity);
         foreach (var actor in _actorWorld.Views.Values)
         {
             string adapter = actor.Registration.AdapterId;
@@ -27,6 +28,8 @@ public partial class OBPGame
     private bool CaptureWorldReady()
     {
         if (_fusionPreparation is not null || _actorWorld.Preparation.Values.Any(task => !task.IsCompleted)) return false;
+        if (_worldScenes?.Current?.Resources.Effects is { Failure: { } failure }) throw new InvalidDataException(failure);
+        if (_worldScenes?.Current?.Resources.Effects is { Ready: false }) return false;
         if (_actorWorld.Problems.Count > 0) throw new InvalidOperationException("Capture requires admitted actor contexts: " + string.Join("; ", _actorWorld.Problems.Values));
         if (_actorWorld.Lab is not null && _actorWorld.Placed.Count != _actorWorld.Placements.Count) return false;
         _ = CaptureReplayAdapters();
@@ -53,6 +56,7 @@ public partial class OBPGame
             "gadget" => SetPlayerGadgetEnabled(command.Value, command.Enabled).Accepted,
             "quick-slot" => AssignPlayerQuickSelect(command.Slot, command.Value.Length == 0 ? null : command.Value).Accepted,
             "unequip" => UnequipPlayerEquipment().Accepted,
+            "effects" => _worldScenes?.Current?.Resources.Effects?.Control(command.Value).Accepted == true,
             _ => false,
         };
         if (!accepted) throw new InvalidDataException("Recorded session operation is unavailable: " + command.Kind + " " + command.Value);
@@ -79,6 +83,7 @@ public partial class OBPGame
                 state.Alive ? 1 : 0, state.Retired ? 1 : 0, state.Health ?? -1, state.NativeState, state.NativeSequence ?? -1], Tolerance: .0001));
         }
         values.Add("obp.actor-clock", new([_actors?.TickCount ?? 0]));
+        _worldScenes?.Current?.Resources.Effects?.AddCheckpoint(values);
         static string Digest(object value) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));
     }
 }

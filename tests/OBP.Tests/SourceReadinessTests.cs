@@ -111,6 +111,7 @@ public sealed class SourceReadinessTests
     [InlineData("--destination obp:fusion-lab", false)]
     [InlineData("--record-playtest run.gz", false)]
     [InlineData("--reconciliation-smoke", false)]
+    [InlineData("--effects-smoke", false)]
     [InlineData("--source-setup-check", false)]
     [InlineData("--ordinary-ui-smoke fresh", false)]
     [InlineData("--diagnostic-sources", true)]

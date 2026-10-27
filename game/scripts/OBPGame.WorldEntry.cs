@@ -104,6 +104,7 @@ public partial class OBPGame
 
     private void ActivateOwnedWorld(WorldSceneLease<GodotWorldResources> entry)
     {
+        entry.Resources.EffectScope = entry.Plan.Request;
         ClearBootstrapSceneArtifacts();
         BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
         _destinationSelector?.QueueFree(); _destinationSelector = null;
@@ -171,10 +172,40 @@ public partial class OBPGame
             if (_player is { } player) StartFusionLabTraversalSmoke(player);
         }
         ConfigureRegisteredActors(lab);
+        var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
+        resources.Effects = new(resources.Scene.Root, worldId: effectScope.WorldInstanceId,
+            generation: effectScope.Generation, camera: () => GetViewport().GetCamera3D(),
+            sources: () => _sources.Attached.Values.ToArray(),
+            actorAlive: key => _actorWorld.Views.TryGetValue(key.Target, out var actor) && actor.Registration.Instance == key && actor.Observe().Alive,
+            placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
+                WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
+            suspended: () => _movementStateLoading || _playtest is { WaitingForEntry: true } or { PreparingWorld: true },
+            recordOperation: operation => RecordCaptureCommand(new("effects", operation)));
         EnsurePlayerHud(); EnsureWorldHud();
         if (OrdinaryPlayerSession) PublishPersistentPlayerHud();
         UpdatePlayerHud(); UpdateWorldHud();
         CommitSourceWorldEntry(world);
+        if (_args.EffectsSmoke && !_args.PlaytestRequested && _worldSwitches == 1)
+        {
+            string report = _args.AcceptanceOut ?? ProjectSettings.GlobalizePath("res://captures/effects-285/report.json");
+            var effectsFixture = new GodotEffectsFixture(this, () => _worldScenes?.Current?.Resources.Effects,
+                () => _worldScenes?.Current?.Resources.Scene.Root,
+                () => System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    Configuration = _playerSession?.Capture().Configuration,
+                    Loadout = _playerSession?.Capture().Loadout,
+                    Actors = _actorWorld.Views.Values.Select(a => new { a.Registration.Instance, a.Observe().Health }).ToArray(),
+                }), Path.GetDirectoryName(Path.GetFullPath(report))!);
+            var definition = new DiagnosticScenarioDefinition("effects-room/v1", DiagnosticSourceAccess.OrdinaryPlay, DiagnosticSetup.ExistingWorld,
+                [.. TrilogySourceDefinitions.All.Select(s => new DiagnosticSourceRequirement(s.Game, s.Authority.BuildId))], TimeSpan.FromMinutes(10), 30000, "obp:fusion-lab");
+            var scenario = new EffectsExperimentScenario(definition, effectsFixture,
+                new EffectDiagnosticNavigation(id => id == "obp:fusion-lab" ? EnterFusionLab() :
+                    TrilogyWorldProviders.Resolve(id) is { } next && OnDestinationChosen(next)),
+                new DiagnosticSourceAttachmentFixture(_sources, () => { }), report, message => GD.Print(message));
+            var runner = new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(s => new DiagnosticSourceSnapshot(s.Game, s.Identity.BuildId, true))]),
+                new GodotDiagnosticFrameClock(this), new ExistingDiagnosticWorld(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations.Token));
+            DiagnosticScenarioDispatch.Start([scenario], _hostOperations, runner, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
+        }
         _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {resources.Scene.MeshInstances} meshes";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches}, player generation {_playerSession!.Capture().Generation})");
     }

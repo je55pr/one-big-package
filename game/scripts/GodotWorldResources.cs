@@ -1,6 +1,7 @@
 using Godot;
 using OBP.Godot;
 using OBP.Runtime;
+using OBP.Fusion;
 
 namespace OBP.Game;
 
@@ -11,6 +12,8 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     private bool _disposed;
     public WorldHost Presentation { get; } = new();
     public RuntimeWorldScene.Result Scene { get; } = prepared;
+    public WorldEffectHost? Effects { get; set; }
+    public WorldEntryRequest? EffectScope { get; set; }
 
     public void Load(Node owner, Node3D parent, RuntimeWorld world, string name, WorldHost.Options options) =>
         Presentation.Load(owner, parent, world, name, options, Scene);
@@ -23,6 +26,7 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
         _disposed = true;
         try
         {
+            Effects?.Dispose(); Effects = null;
             if (GodotObject.IsInstanceValid(_player))
             {
                 if (_player!.GetParent() is { } parent) parent.RemoveChild(_player);

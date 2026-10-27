@@ -4,7 +4,7 @@ namespace OBP.Game;
 public static class SourceSetupPolicy
 {
     public static bool IsDiagnostic(CommandLineArgs args, IReadOnlyList<string> userArgs, IReadOnlyList<string> engineArgs) =>
-        !args.ReconciliationSmoke && !args.SourceSetupCheck && !args.OrdinaryUiSmoke &&
+        !args.ReconciliationSmoke && !args.SourceSetupCheck && !args.OrdinaryUiSmoke && !args.EffectsSmoke &&
         (args.DiagnosticSources || args.NativeParityRequested || args.DiagnosticPlayer || args.TestSceneExplicit ||
         args.ShotsPath is not null || args.CaptureFrame is not null || args.StressSwitch is not null || args.ProfileSmoke is not null ||
         userArgs.Any(argument => argument.StartsWith("--", StringComparison.Ordinal) && argument.EndsWith("-smoke", StringComparison.Ordinal)) ||
