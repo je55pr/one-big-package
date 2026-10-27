@@ -21,7 +21,7 @@ OBP.IO random-access source
   -> neutral/runtime data
 ```
 
-A source may be one seekable image or a validated numbered split set exposed through `ConcatenatedRandomAccessReader`. `Ps2BuildIdentification` and the authority-manifest helpers keep cheap identification distinct from full exact verification.
+The maintained native importers consume a complete, seekable ISO file; numbered split-file sources are not supported. `Ps2BuildIdentification` and the authority-manifest helpers keep cheap identification distinct from full exact verification.
 
 Going Commando additionally exposes `OBP.RAC2.GcIsoLoad`: `Identify` performs the fast supported-build gate, `LoadLevel` imports through the native C# world path, and `Verify` performs the slower streamed SHA-256 authority check.
 
@@ -52,4 +52,4 @@ These labels originated in the TypeScript importer registry, but the evidence di
 
 All three trilogy games now identify, import and render through native C# production providers. The old TypeScript importer architecture is retired; older research references to it are historical provenance only. See [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) for the provider boundaries; implementation and validation history live in Git and the native tests.
 
-For agent-driven retail questions, prefer a narrow direct local probe against the verified authority. Agent sandbox materialisation and remote split/range transport remain fallbacks, not production architecture.
+For agent-driven retail questions, prefer a narrow direct local probe against the verified, complete ISO authority.
