@@ -1,6 +1,7 @@
 using OBP.Core;
 using Godot;
 using OBP.Runtime.Gameplay;
+using OBP.Runtime.Effects;
 
 namespace OBP.Game;
 
@@ -20,6 +21,8 @@ public sealed partial class PauseMenuUi
     public Func<string?>? SharedProfileStatusReader { get; init; }
     public Func<string?>? SaveNoticeReader { get; init; }
     public Func<string, EquipmentChangeResult>? ActorReset { get; init; }
+    public Func<string?>? EffectStatusReader { get; init; }
+    public Func<string, RuntimeEffectControlResult>? EffectControl { get; init; }
     public bool LabAvailable { get; init; }
     public event Action? LabRequested;
     public bool UniversalEnabled => CatalogReader is not null;
@@ -270,6 +273,13 @@ public sealed partial class PauseMenuUi
                     var result = ActorReset?.Invoke(actor.Key);
                     _catalogStatus.Text = result?.Reason ?? (result?.Accepted == true ? "Actor reset." : "Reset is unavailable.");
                 });
+            }
+            if (EffectControl is { } effectControl)
+            {
+                var effectsStatus = new Label { Name = "EffectsStatus", Text = EffectStatusReader?.Invoke() ?? "Effects unavailable.", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+                _universalBody.AddChild(effectsStatus);
+                Option("START NATIVE EFFECTS EXPERIMENT", () => { _catalogStatus.Text = effectControl("start").Reason; effectsStatus.Text = EffectStatusReader?.Invoke() ?? _catalogStatus.Text; });
+                Option("RESET NATIVE EFFECTS EXPERIMENT", () => { _catalogStatus.Text = effectControl("reset").Reason; effectsStatus.Text = EffectStatusReader?.Invoke() ?? _catalogStatus.Text; });
             }
         }
         _universalReturnFocus = _universalFocus.Skip(1 + _universalTabs.Count).FirstOrDefault() ?? _resume;

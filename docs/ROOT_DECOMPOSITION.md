@@ -122,8 +122,9 @@ separate test ports. Two exact factory entries expire with #370/#371. The obsole
 retail-navigation delegation is removed; the frozen origin is unchanged.
 
 The #344 recording/report extraction retires five more partials and 17 historical
-declaration/member permissions. The root has 77 files, 17,339 file lines, 624
-direct methods, 456 fields (312 mutable), 44 exposed members and 1,968 cross-file
+declaration/member permissions. After integrating the independently merged
+source-effects and shrub presentation changes, the root has 77 files, 17,409 file
+lines, 624 direct methods, 456 fields (312 mutable), 44 exposed members and 1,976 cross-file
 references. Independent recording, reconciliation, bug-report, movement-state
 and trilogy suites consume focused fixtures and immutable observations. The
 cached capture harness replaces the readonly evidence reference: its mutable

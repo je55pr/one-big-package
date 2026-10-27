@@ -24,6 +24,8 @@
     <Compile Include="../../game/scripts/AutomationRunPolicy.cs" Link="Game/AutomationRunPolicy.cs" />
     <Compile Include="../../game/scripts/DiagnosticSnapshotGate.cs" Link="Game/DiagnosticSnapshotGate.cs" />
     <Compile Include="../../game/scripts/SourceSetupPolicy.cs" Link="Game/SourceSetupPolicy.cs" />
+    <Compile Include="../../game/scripts/EffectCaptureContract.cs" Link="Game/EffectCaptureContract.cs" />
+    <Compile Include="../../game/scripts/EffectSourceData.cs" Link="Game/EffectSourceData.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticContracts.cs" Link="Diagnostics/DiagnosticContracts.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticInputActions.cs" Link="Diagnostics/DiagnosticInputActions.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticScenarioRunner.cs" Link="Diagnostics/DiagnosticScenarioRunner.cs" />

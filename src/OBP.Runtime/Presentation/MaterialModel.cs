@@ -101,6 +101,20 @@ public static class MaterialModel
     }
 
     /// <summary>
+    /// Native shrub GIF tags enable blending even on opaque textures.
+    /// Ordinary source-alpha surfaces only need separate sort origins when
+    /// the texture has alpha, but fixed-alpha and additive equations remain
+    /// transparent in Godot even with a fully opaque source texture.
+    /// </summary>
+    public static bool RequiresFoliageAlphaSorting(
+        string assetKind, AlphaProfile alpha, RuntimeMaterialPresentation? presentation) =>
+        assetKind == "shrub" && presentation is
+        { PreferPerPlacementFoliageDepth: true, PreferFoliageCutout: false, AlphaBlendEnabled: true } &&
+        (alpha.HasTransparency || presentation.BlendEquation is
+            RuntimeBlendEquation.FixedAlpha or RuntimeBlendEquation.AdditiveSourceAlpha or
+            RuntimeBlendEquation.AdditiveFixedAlpha);
+
+    /// <summary>
     /// Whether a kind's geometry may be back-face culled. Currently <c>false</c>
     /// for everything: the decoded winding is not reliably outward-facing across
     /// terrain and built structure (whole regions — e.g. the Tabora desert

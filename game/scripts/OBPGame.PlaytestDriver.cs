@@ -215,6 +215,8 @@ public partial class OBPGame
                         _writer = new(Game._args.RecordPlaytest!, _header);
                         GD.Print($"[playtest] recording: {_writer.Path}; build={_header.AssemblyId}; seed={_header.Seed}");
                     }
+                    if (Game._args.EffectsSmoke && kind == PlaytestStepKind.Process)
+                        Diagnostics.EffectReplayScript.Apply(_processSteps, Game.ApplyCaptureCommand, () => _stopRequested = true);
                     var actions = InputMap.GetActions().Select(a => (Name: a.ToString(), Strength: Input.GetActionStrength(a)))
                         .Where(a => a.Strength > 0).ToDictionary(a => a.Name, a => a.Strength, StringComparer.Ordinal);
                     _step = new(_nextStep, kind, PlaytestClock.RecordedMilliseconds, delta, _pending.ToArray(), actions, [])
@@ -353,7 +355,7 @@ public partial class OBPGame
 
         private void PaceHumanRecording()
         {
-            if (Game._args.PlaytestSmoke || Game._args.BugReportSmoke || Game._args.ReconciliationSmoke) return;
+            if (Game._args.PlaytestSmoke || Game._args.BugReportSmoke || Game._args.ReconciliationSmoke || Game._args.EffectsSmoke) return;
             // --fixed-fps disables Godot's real-time synchronization. Explicitly
             // pace the visible recorder; --max-fps alone does not cap this mode.
             // Replays and input smokes still run as fast as their host allows.
@@ -398,7 +400,7 @@ public partial class OBPGame
                 SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
                 GD.Print($"[playtest] SAVED {_writer.Path}; steps={_nextStep}; markers={_marks}");
                 if (Game._args.ReconciliationSmoke) await Game.CreateCaptureDiagnosticHarness().VerifyFinishedContinuationAsync();
-                if (!Game._hostOperations.Stopping && (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke))
+                if (!Game._hostOperations.Stopping && (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke || Game._args.EffectsSmoke))
                     ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
             }
             catch (OperationCanceledException error) when (Game._hostOperations.Stopping && error.CancellationToken == Game._hostOperations.Token)
@@ -409,7 +411,7 @@ public partial class OBPGame
                 SetNotice("Recording could not be saved: " + error.Message);
                 GD.PrintErr("[playtest] save failed: " + error.Message);
                 if (Game._args.ReconciliationSmoke) Game.CreateCaptureDiagnosticHarness().Acceptance.Fail("capture-route", error, "playtest-save-failed");
-                else if (Game._args.PlaytestSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
+                else if (Game._args.PlaytestSmoke || Game._args.EffectsSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
                 if (Game._hostOperations.Stopping) throw;
             }
         }
@@ -484,7 +486,7 @@ public partial class OBPGame
             {
                 SetNotice("Recording stopped: " + error.Message);
                 if (Game._args.BugCapture && _bugReportButton is { } reportButton) reportButton.Disabled = true;
-                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke || Game._args.BugReportSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-failed", 2);
+                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke || Game._args.BugReportSmoke || Game._args.EffectsSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-failed", 2);
             }
             PlaytestClock.Active = false;
         }

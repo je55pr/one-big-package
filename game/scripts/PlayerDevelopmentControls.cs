@@ -32,8 +32,12 @@ public partial class PlayerDevelopmentControls : Node
             return;
         if (key.Keycode == Key.F12)
         {
-            if (key.ShiftPressed) LoadMovementStateRequested?.Invoke();
-            else SaveMovementStateRequested?.Invoke();
+            if (key.CtrlPressed)
+                CallDeferred(nameof(SaveViewBookmark));
+            else if (key.ShiftPressed)
+                LoadMovementStateRequested?.Invoke();
+            else
+                SaveMovementStateRequested?.Invoke();
             GetViewport().SetInputAsHandled();
         }
         else if (key.Keycode == Key.Tab && !GetWindow().Unfocusable)
@@ -69,6 +73,61 @@ public partial class PlayerDevelopmentControls : Node
         else if (key.Keycode == Key.R && !_host.CanSaveMovementState)
         {
             ResetToSpawn();
+        }
+    }
+
+    /// <summary>
+    /// Save a visual-only diagnostic without claiming a deterministic gameplay
+    /// replay. This remains usable when source actors have no replay fixture.
+    /// </summary>
+    private async void SaveViewBookmark()
+    {
+        if (_host is null || !IsInstanceValid(_host)) return;
+        try
+        {
+            var camera = GetViewport().GetCamera3D()
+                ?? throw new InvalidOperationException("No active camera is available.");
+            var directory = Path.GetFullPath(Path.Combine(
+                ProjectSettings.GlobalizePath("res://"), "..", "captures", "repros"));
+            Directory.CreateDirectory(directory);
+            var name = "view-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss-fff");
+            var imagePath = Path.Combine(directory, name + ".png");
+            var jsonPath = Path.Combine(directory, name + ".json");
+
+            // Read the viewport only after the newly drawn frame completes.
+            // Sample camera/player pose at the same frame boundary.
+            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+            if (!IsInstanceValid(camera) || _host is null || !IsInstanceValid(_host)) return;
+            using var image = GetViewport().GetTexture().GetImage();
+            var imageError = image.SavePng(imagePath);
+            if (imageError != Error.Ok)
+                throw new IOException($"Could not save view screenshot: {imageError}");
+
+            static float[] Vec(Vector3 v) => [v.X, v.Y, v.Z];
+            var pose = camera.GlobalTransform;
+            var record = new
+            {
+                Version = 1,
+                Kind = "visual-only; not a replay or game save",
+                CapturedUtc = DateTimeOffset.UtcNow,
+                PlayerPosition = Vec(_host.GlobalPosition),
+                CameraPosition = Vec(pose.Origin),
+                CameraRight = Vec(pose.Basis.X),
+                CameraUp = Vec(pose.Basis.Y),
+                CameraForward = Vec(-pose.Basis.Z),
+                CameraFovDegrees = camera.Fov,
+                Screenshot = Path.GetFileName(imagePath),
+            };
+            File.WriteAllText(jsonPath, System.Text.Json.JsonSerializer.Serialize(
+                record, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            GD.Print($"[view-bookmark] SAVED {jsonPath}");
+            GetWindow().Title = $"One Big Package (DEBUG) - view saved {name}";
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or
+            InvalidOperationException or ArgumentException)
+        {
+            GD.PushError("[view-bookmark] " + error.Message);
+            GetWindow().Title = "One Big Package (DEBUG) - view save failed";
         }
     }
 

@@ -6,7 +6,8 @@ Milestones #282–#285 remain separate. No production, shared host, session or
 Runtime contract changes are part of this audit.
 
 Implementation follow-ups: [R&C1 #282](RAC1_TYPE6_EMITTER.md),
-[GC Museum #283](RAC2_MUSEUM_PARTICLES.md) and [UYA #284](RAC3_PARTICLES.md). This catalogue retains its audit
+[GC Museum #283](RAC2_MUSEUM_PARTICLES.md), [UYA #284](RAC3_PARTICLES.md) and
+[shared host #285](../docs/EFFECT_HOST.md). This catalogue retains its audit
 baseline below; the follow-ups record implemented coverage and refined findings.
 
 Survey date: 2026-10-25. OBP baseline: `dev`

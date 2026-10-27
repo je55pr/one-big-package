@@ -65,6 +65,40 @@ public class MaterialModelTests
     }
 
     [Fact]
+    public void FoliageNativeBlending_OnlyNeedsPerInstanceSortingForRealAlpha()
+    {
+        var nativeBlend = new RuntimeMaterialPresentation(AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true);
+        var cutout = nativeBlend with { PreferFoliageCutout = true };
+        var unscopedBlend = new RuntimeMaterialPresentation(AlphaBlendEnabled: true);
+        var nativeOpaque = new RuntimeMaterialPresentation(AlphaBlendEnabled: false);
+        var solid = AlphaProfile.FullyOpaque;
+        var canopy = new AlphaProfile(0.6, 0.3, 0.1, true);
+
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid, nativeBlend));
+        Assert.True(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeBlend));
+        foreach (var blend in new[]
+        {
+            RuntimeBlendEquation.FixedAlpha,
+            RuntimeBlendEquation.AdditiveSourceAlpha,
+            RuntimeBlendEquation.AdditiveFixedAlpha,
+        })
+        {
+            var fixedBlend = nativeBlend with { BlendEquation = blend, FixedAlphaFactor = 0.5 };
+            Assert.True(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid, fixedBlend));
+            Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid,
+                fixedBlend with { PreferFoliageCutout = true }));
+            Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid,
+                fixedBlend with { AlphaBlendEnabled = false }));
+        }
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, cutout));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, unscopedBlend));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeOpaque));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, null));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("tie", canopy, nativeBlend));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("moby", canopy, nativeBlend));
+    }
+
+    [Fact]
     public void Culling_And_Tiling_And_VertexColour_ByKind()
     {
         // All world geometry is two-sided — decoded winding is not reliably outward.

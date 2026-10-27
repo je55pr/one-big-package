@@ -389,7 +389,7 @@ public class Rac2LevelTests
     }
 
     [SkippableFact]
-    public void Level1_ShrubClassesMatchTypeScript()
+    public void Level1_ShrubClassesHavePinnedCorrectedStripWinding()
     {
         var iso = Environment.GetEnvironmentVariable("OBP_GC_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_GC_ISO not set");
@@ -401,7 +401,9 @@ public class Rac2LevelTests
         Assert.Equal(24, classes.Count);
         var sha = HashClassMeshes(classes.OrderBy(kv => kv.Key)
             .Select(kv => (kv.Key, kv.Value.Mesh.Indices, kv.Value.Mesh.Positions, kv.Value.Mesh.TriangleMaterialSlots, kv.Value.TriangleTextureIds)));
-        Assert.Equal("fffd756fef1e6cf04c6578d1daa2dc84886e24a589f2acb7278bb963707b92ea", sha);
+        // The earlier TypeScript parity bug produced fffd756...; this SHA pins
+        // corrected GIF-strip winding without changing positions/materials.
+        Assert.Equal("42f20d3041c86ba68e99493e03f4dbdf73ccd0126a7fa676c99fb8d2e5349b29", sha);
     }
 
     [SkippableFact]

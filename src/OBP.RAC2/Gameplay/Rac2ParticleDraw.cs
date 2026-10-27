@@ -31,6 +31,18 @@ public sealed class Rac2ParticleDraw
     /// Depth rejection/fade is native; this method does not infer a Godot camera or run VU1.</summary>
     public RcParticleSpriteDescriptor? Build(Rac2ParticleSession.Particle p, View view, Rac2PartTextureLayout layout, uint cachePage)
     {
+        if (Project(p, view) is not { } projected) return null;
+        int dimensionLog2 = BitOperations.Log2((uint)layout.Dimension);
+        if (layout.Dimension is < 1 or > 1024 || (1 << dimensionLog2) != layout.Dimension)
+            throw new ArgumentException("GC Part sprite dimensions must be powers of two in the admitted slice.", nameof(layout));
+        ulong page = cachePage >> 8;
+        ulong tex0 = _tex0Template | (ulong)dimensionLog2 << 26 | (ulong)dimensionLog2 << 30 | page << 37 | unchecked(cachePage + 1024u) >> 8;
+        return new(p.Source, p.TextureSource, projected.RelativePosition, projected.Axes, projected.Color, p.Blend, tex0);
+    }
+
+    /// <summary>The measured sprite projection, before material-cache binding. Hosts without GS memory need no invented cache address.</summary>
+    public Projection? Project(Rac2ParticleSession.Particle p, View view)
+    {
         if (!Finite(view.Eye) || !Finite(view.DepthRow) || !float.IsFinite(view.ProjectionW) || view.ProjectionW <= 0 || view.FarDepthLimit < 1)
             throw new ArgumentException("GC sprite view inputs must be finite and have a positive depth/projection range.", nameof(view));
         Vector3 relative = new(M.Subtract(p.Position.X, view.Eye.X), M.Subtract(p.Position.Y, view.Eye.Y), M.Subtract(p.Position.Z, view.Eye.Z));
@@ -43,16 +55,11 @@ public sealed class Rac2ParticleDraw
         uint color = p.Color & 0xffffff | (uint)(fade * (p.Color >> 24) >> 12) << 24;
         float q = M.VuDivide(M.Multiply(p.NativeSize, view.ProjectionW), M.Add(depth, .5f));
         Vector2 axes = new(M.Multiply(_cosines[p.Angle], q), M.Multiply(_cosines[(p.Angle + 192) & 255], q));
-        int dimensionLog2 = BitOperations.Log2((uint)layout.Dimension);
-        if (layout.Dimension is < 1 or > 1024 || (1 << dimensionLog2) != layout.Dimension)
-            throw new ArgumentException("GC Part sprite dimensions must be powers of two in the admitted slice.", nameof(layout));
-        // 0x331688's PSMT8 cache TEX0. The physical cache page is supplied, never invented as an asset identity.
-        ulong page = cachePage >> 8;
-        ulong tex0 = _tex0Template | (ulong)dimensionLog2 << 26 | (ulong)dimensionLog2 << 30 | page << 37 | unchecked(cachePage + 1024u) >> 8;
-        return new(p.Source, p.TextureSource, relative, axes, color, p.Blend, tex0);
+        return new(relative, axes, color);
     }
 
     private static bool Finite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 
     public readonly record struct View(Vector3 Eye, Vector3 DepthRow, float ProjectionW, int FarDepthLimit);
+    public readonly record struct Projection(Vector3 RelativePosition, Vector2 Axes, uint Color);
 }

@@ -16,6 +16,7 @@
     { "from": "north-link", "to": "test-room", "openingWidth": 6 }
   ],
   "stations": [
+    { "id": "native-effects", "roomId": "test-room", "label": "Three-source native effects", "position": { "x": 0, "y": 0.2, "z": 14 }, "adapterId": "obp/effects-experiment/v1", "resetKey": "native-effects", "parameters": { "preset": "obp/three-source-effects/v1" } },
     { "id": "hub-loadouts", "roomId": "hub", "label": "Universal Loadout", "position": { "x": -7, "y": 0.2, "z": 0 }, "adapterId": "obp/universal-loadout/v1", "resetKey": "loadout-hub" },
     { "id": "combat-target", "roomId": "test-room", "label": "Mixed native encounter: R&C1 / GC / UYA", "position": { "x": -5, "y": 0.2, "z": 17 }, "adapterId": "obp/mixed-encounter/v1", "resetKey": "test-target" },
     { "id": "gadget-bench", "roomId": "test-room", "label": "Cross-Game Gadget Bench [NOT YET AVAILABLE]", "position": { "x": 5, "y": 0.2, "z": 17 }, "resetKey": "gadget-bench" }
