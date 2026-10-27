@@ -55,6 +55,24 @@
     <Compile Include="../../game/diagnostics/PlayerProfileDiagnosticFixtures.cs" Link="Diagnostics/PlayerProfileDiagnosticFixtures.cs" />
     <Compile Include="../../game/diagnostics/Rac1DiagnosticCollision.cs" Link="Diagnostics/Rac1DiagnosticCollision.cs" />
     <Compile Include="../../game/diagnostics/MovementDiagnosticPorts.cs" Link="Diagnostics/MovementDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/DiagnosticCleanup.cs" Link="Diagnostics/DiagnosticCleanup.cs" />
+    <Compile Include="../../game/diagnostics/Rac1EnemyDiagnosticPorts.cs" Link="Diagnostics/Rac1EnemyDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1AridiaDiagnosticPorts.cs" Link="Diagnostics/Rac1AridiaDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1AridiaScenario.cs" Link="Diagnostics/Rac1AridiaScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1FrogDiagnosticPorts.cs" Link="Diagnostics/Rac1FrogDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1FrogScenario.cs" Link="Diagnostics/Rac1FrogScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1AlienQueenScenario.cs" Link="Diagnostics/Rac1AlienQueenScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CombatDiagnosticPorts.cs" Link="Diagnostics/Rac1CombatDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CombatAssertions.cs" Link="Diagnostics/Rac1CombatAssertions.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CombatScenarioSupport.cs" Link="Diagnostics/Rac1CombatScenarioSupport.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CombatContractScenario.cs" Link="Diagnostics/Rac1CombatContractScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1VeldinScenario.cs" Link="Diagnostics/Rac1VeldinScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1NovalisEnemyScenarios.cs" Link="Diagnostics/Rac1NovalisEnemyScenarios.cs" />
+    <Compile Include="../../game/diagnostics/Rac1EncounterScenarioSupport.cs" Link="Diagnostics/Rac1EncounterScenarioSupport.cs" />
+    <Compile Include="../../game/diagnostics/Rac1EnemyScenario.cs" Link="Diagnostics/Rac1EnemyScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1EncounterInput.cs" Link="Diagnostics/Rac1EncounterInput.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WrenchApproachScenario.cs" Link="Diagnostics/Rac1WrenchApproachScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1EncounterDiagnosticHarness.cs" Link="Diagnostics/Rac1EncounterDiagnosticHarness.cs" />
     <Compile Include="../../game/diagnostics/MovementDiagnosticDriver.cs" Link="Diagnostics/MovementDiagnosticDriver.cs" />
     <Compile Include="../../game/diagnostics/MovementScenarioSupport.cs" Link="Diagnostics/MovementScenarioSupport.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticPhysicalInput.cs" Link="Diagnostics/DiagnosticPhysicalInput.cs" />

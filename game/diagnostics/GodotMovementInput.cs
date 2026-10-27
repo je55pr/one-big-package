@@ -15,6 +15,8 @@ internal sealed class GodotMovementPhysicalInput : IDiagnosticPhysicalInput
             DiagnosticPhysicalKey.R => Key.R,
             DiagnosticPhysicalKey.E => Key.E,
             DiagnosticPhysicalKey.F11 => Key.F11,
+            DiagnosticPhysicalKey.Key1 => Key.Key1,
+            DiagnosticPhysicalKey.Key2 => Key.Key2,
             _ => throw new ArgumentOutOfRangeException(nameof(key)),
         };
         using var input = new InputEventKey { Keycode = native, PhysicalKeycode = native, Pressed = pressed, Echo = false };
@@ -67,11 +69,6 @@ internal static class GodotMovementCompatibility
     {
         Key(key, true); await FramesAsync(owner, 2, LegacyDiagnosticCancellation.Current);
         Key(key, false); await FramesAsync(owner, 2, LegacyDiagnosticCancellation.Current);
-    }
-    public static async Task<float> MeasureJumpAsync(Func<Task<float>> trial)
-    {
-        try { return await trial(); }
-        finally { Clear(); } // Retained callers still own direct API presses until #340 migrates them.
     }
     public static void Analogue(float right, float forward)
     {

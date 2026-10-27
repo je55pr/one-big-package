@@ -45,7 +45,7 @@ public sealed class Rac1HostArchitectureTests
             RepoPaths.Root,
             "game",
             "diagnostics",
-            "OBPGame.Rac1VeldinPlaySmoke.cs"));
+            "Rac1VeldinScenario.cs"));
 
         string[] forbidden =
         [
@@ -58,22 +58,29 @@ public sealed class Rac1HostArchitectureTests
             "TapPhysicalKeyAsync(Key.F)",
             ".Root.GlobalPosition =",
             "_player.GlobalPosition =",
+            "Combat.Stage",
+            "Combat.SetPresence(",
+            "Combat.PlacePlayerFacing(",
+            "Actors.Stage",
+            "Player.ResetAt(",
+            "Player.SetPosition(",
+            "Driver.SetKey(DiagnosticPhysicalKey.R",
+            "Driver.SetKey(DiagnosticPhysicalKey.F",
         ];
 
         foreach (string shortcut in forbidden)
             Assert.DoesNotContain(shortcut, smoke, StringComparison.Ordinal);
 
-        Assert.Contains(
-            "Input.ActionPress(action)",
-            smoke,
-            StringComparison.Ordinal);
-        Assert.Contains("RawGamepadInput.Traversal : RawGamepadInput.Action", smoke, StringComparison.Ordinal);
+        string input = File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "diagnostics", "Rac1EncounterInput.cs"));
+        Assert.Contains("context.Driver.SetAction(action, true)", input, StringComparison.Ordinal);
+        Assert.Contains("MovementDiagnosticDriver.Traversal : MovementDiagnosticDriver.Action", input, StringComparison.Ordinal);
+        Assert.Contains("Rac1EncounterInput.TapPrimaryAsync(", smoke, StringComparison.Ordinal);
         Assert.Contains(
             "Rac1SmokeDriveToward(",
             smoke,
             StringComparison.Ordinal);
         Assert.Contains(
-            "RunRac1NaturalVeldinFallRespawnSmokeAsync",
+            "new Rac1EnvironmentalDeathRegression(",
             smoke,
             StringComparison.Ordinal);
     }

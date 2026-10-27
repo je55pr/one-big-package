@@ -37,8 +37,8 @@ public sealed class WorldSmokeArchitectureTests
         string root = Path.Combine(RepoPaths.Root, "game");
         foreach (string name in new[]
         {
-            "OBPGame.Rac1CombatContractSmoke.cs",
-            "OBPGame.Rac1VeldinPlaySmoke.cs",
+            "Rac1CombatContractScenario.cs",
+            "Rac1VeldinScenario.cs",
             "MovementScenario.cs",
             "OBPGame.Rac1CampaignSmoke.cs",
             "Rac1EnvironmentalDeathRegression.cs",
@@ -53,12 +53,14 @@ public sealed class WorldSmokeArchitectureTests
         }
 
         string play = File.ReadAllText(Path.Combine(
-            root, "diagnostics", "OBPGame.Rac1VeldinPlaySmoke.cs"));
+            root, "diagnostics", "Rac1VeldinScenario.cs"));
         string contract = File.ReadAllText(Path.Combine(
-            root, "diagnostics", "OBPGame.Rac1CombatContractSmoke.cs"));
-        Assert.Contains("RunRac1NaturalVeldinFallRespawnSmokeAsync(", play, StringComparison.Ordinal);
+            root, "diagnostics", "Rac1CombatContractScenario.cs"));
+        Assert.Contains("new Rac1EnvironmentalDeathRegression(", play, StringComparison.Ordinal);
         Assert.Contains("Rac1SmokeDriveToward(", play, StringComparison.Ordinal);
         Assert.Contains("synthetic", contract, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class OBPGame", play, StringComparison.Ordinal);
+        Assert.DoesNotContain("partial class OBPGame", contract, StringComparison.Ordinal);
     }
 
     [Fact]

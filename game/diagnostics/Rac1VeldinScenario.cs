@@ -1,89 +1,84 @@
+using System.Numerics;
 using OBP.Core;
-using Godot;
-using OBP.Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Player;
 using OBP.RAC1.Presentation;
 using OBP.RAC1.Progression;
 
-namespace OBP.Game;
+namespace OBP.Game.Diagnostics;
 
-/// <summary>
-/// End-to-end Veldin gate that starts from the ordinary ephemeral local-dev state
-/// and drives only public player input. It deliberately contains no transform
-/// staging, checkpoint/death injection, ammo mutation, or direct consequence calls.
-/// </summary>
-public partial class OBPGame
+/// <summary>Ordinary Veldin input witnesses; no transform staging, ammo mutation or direct consequence calls.</summary>
+public sealed class Rac1VeldinScenario(MovementDiagnosticContext context, Rac1CombatScenarioPorts ports) : Rac1CombatScenarioSupport(context, ports)
 {
-    private async Task RunRac1VeldinPlaySmokeAsync()
+    public async Task RunAsync()
     {
         try
         {
-            if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 } || _player is null)
+            if (World.Read() is not { Source: ObpSourceGame.Rac1, LevelId: 0 } || Player is null)
                 throw new InvalidOperationException(
                     "Veldin play smoke must begin in ordinary rac1:LEVEL0.");
 
-            Engine.MaxFps = 60;
+            using var frameRate = World.LimitFrameRate(60);
             ClearRac1VeldinPlaySmokeInput();
-            await WaitForGroundedAsync(_player, 360);
+            await WaitForGroundedAsync(Player, 360);
             AssertRac1VeldinEphemeralOpening();
 
-            Vector3 authoredRespawnPosition = _player.GlobalPosition;
-            if (_rac1HostileNodes.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
-                _rac1Hostiles.RegisteredCount != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
+            Vector3 authoredRespawnPosition = Player.Read().GlobalPosition;
+            if (Hostiles.Count != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
+                Combat.ReadPopulation().RegisteredClass749 != Rac1Class749VeldinPopulation.AuthoredPlacementCount ||
                 !TryGetRac1Hostile(143, out var hostile, out _) ||
                 hostile is null ||
-                !IsInstanceValid(hostile.Root) ||
-                !hostile.Root.Visible)
+                !Combat.IsAvailable(hostile.Key) ||
+                !hostile.Read().Visible)
                 throw new InvalidOperationException(
                     "Ordinary Veldin start does not expose the recovered 16-placement class-749 population.");
 
             await RunRac1VeldinPopulationOpeningIdleSmokeAsync();
-            await RunRac1VeldinRetailPauseSmokeAsync();
-            await RunRac1WorldRetailNavigationSmokeAsync("Veldin");
+            await Ports.Menus.CheckVeldinPauseAsync(Driver.Lifetime);
+            await Ports.Menus.CheckRetailNavigationAsync("Veldin", Driver.Lifetime);
 
-            GD.Print(
+            Log(
                 $"[rac1-veldin-play] opening PASS: ephemeral current=0, " +
-                $"Bomb Glove equipped, ammo={_rac1Weapons.FirstRangedAmmo}");
+                $"Bomb Glove equipped, ammo={Ports.Equipment.Read().BombAmmo}");
 
             // Run the fall route before camera input changes the recovered control heading.
-            await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
-            await RunRac1RecoveredCameraInputSmokeAsync(_player);
+            await new Rac1EnvironmentalDeathRegression(Context, Ports.Environment).RunAsync(authoredRespawnPosition);
+            await RunRac1RecoveredCameraInputSmokeAsync();
             await RunRac1OrdinaryBombGloveUseSmokeAsync();
 
             var naturalAttack = await Rac1SmokeProvokeClass749AttackAsync(
                 hostile,
                 maxFrames: 3000);
-            if (_rac1Nanotech.EnvironmentalRestartGeneration != _rac1Nanotech.EnvironmentalDeathGeneration ||
+            if (Ports.Environment.Read().RestartGeneration != Ports.Environment.Read().DeathGeneration ||
                 naturalAttack.PlayerTravel < 5f)
                 throw new InvalidOperationException(
                     $"Ordinary movement did not resume after automatic Veldin restart: " +
-                    $"restart={_rac1Nanotech.EnvironmentalRestartGeneration}, " +
-                    $"death={_rac1Nanotech.EnvironmentalDeathGeneration}, " +
+                    $"restart={Ports.Environment.Read().RestartGeneration}, " +
+                    $"death={Ports.Environment.Read().DeathGeneration}, " +
                     $"travel={naturalAttack.PlayerTravel:R}.");
-            GD.Print(
+            Log(
                 $"[rac1-veldin-play] natural hostile attack / post-restart control PASS: " +
                 $"Ratchet travel={naturalAttack.PlayerTravel:0.###}, " +
                 $"hostile travel={naturalAttack.HostileTravel:0.###}, " +
-                $"Nanotech={_rac1Nanotech.Probe().Nanotech}/4");
+                $"Nanotech={lifecycle.ReadNanotech().Nanotech}/4");
 
-            await RunRac1OrdinaryHostileWrenchSmokeAsync(_rac1HostileNodes[naturalAttack.AttackerInstance]);
+            await RunRac1OrdinaryHostileWrenchSmokeAsync(Hostiles[naturalAttack.AttackerInstance]);
             await RunRac1OrdinaryCrateWrenchSmokeAsync();
 
-            GD.Print(
+            Log(
                 "[rac1-veldin-play] PASS: clean opening, recovered camera input, " +
                 "Bomb Glove use, natural hostile motion/attack, practical wrench contacts, " +
                 "and natural fall/death/automatic restart all passed without smoke staging or development respawn input");
-            ApplicationLifecycle.RequestQuit(this, "rac1-veldin-play-smoke-pass", 0);
+
         }
-        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime)
         {
             throw;
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[rac1-veldin-play] FAIL: {ex.Message}\n{ex.StackTrace}");
-            ApplicationLifecycle.RequestQuit(this, "rac1-veldin-play-smoke-fail", 3);
+            LogError($"[rac1-veldin-play] FAIL: {ex.Message}\n{ex.StackTrace}");
+            throw;
         }
         finally
         {
@@ -91,34 +86,35 @@ public partial class OBPGame
         }
     }
 
-    private async Task RunRac1MovementContactSmokeAsync()
+
+    public async Task RunMovementContactAsync()
     {
         try
         {
-            if (_world is not { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 0 } || _player is null)
+            if (World.Read() is not { Source: ObpSourceGame.Rac1, LevelId: 0 } || Player is null)
                 throw new InvalidOperationException(
                     "R&C1 movement/contact smoke must begin in ordinary rac1:LEVEL0.");
 
-            Engine.MaxFps = 60;
+            using var frameRate = World.LimitFrameRate(60);
             ClearRac1VeldinPlaySmokeInput();
-            await WaitForGroundedAsync(_player, 360);
+            await WaitForGroundedAsync(Player, 360);
             AssertRac1VeldinEphemeralOpening();
-            _player.ResetRac1CollisionDiagnostics();
+            Player.ResetCollisionDiagnostics();
 
-            Vector3 authoredRespawnPosition = _player.GlobalPosition;
+            Vector3 authoredRespawnPosition = Player.Read().GlobalPosition;
 
             // First prove the ordinary recovered ground/edge path can leave authored
             // collision, hit the retail Veldin death boundary, and reacquire the
             // authored start automatically. No transform or development respawn input.
-            await RunRac1NaturalVeldinFallRespawnSmokeAsync(authoredRespawnPosition);
+            await new Rac1EnvironmentalDeathRegression(Context, Ports.Environment).RunAsync(authoredRespawnPosition);
 
-            Vector3 movementStart = _player.GlobalPosition;
+            Vector3 movementStart = Player.Read().GlobalPosition;
             SetAnalogueSmokeInput(0f, 0.60f);
             await PhysicsFramesAsync(48);
-            float walkSpeed = HorizontalSpeed(_player);
-            float walkTravel = HorizontalDistance(movementStart, _player.GlobalPosition);
-            double walkMagnitude = _player.Rac1AnalogueMagnitude;
-            double walkTarget = _player.Rac1TargetPlanarStep;
+            float walkSpeed = HorizontalSpeed(Player);
+            float walkTravel = HorizontalDistance(movementStart, Player.Read().GlobalPosition);
+            double walkMagnitude = Player.Read().Rac1AnalogueMagnitude;
+            double walkTarget = Player.Read().Rac1TargetPlanarStep;
             Require(
                 walkMagnitude >= 0.25d && walkMagnitude < 0.83d,
                 "ordinary Veldin low-stick input did not land in the recovered walk band");
@@ -127,46 +123,46 @@ public partial class OBPGame
                 "ordinary Veldin low-stick input did not select the recovered walk plateau");
             Require(walkTravel > 0.25f, "ordinary Veldin walk produced no useful traversal");
 
-            Vector3 runStart = _player.GlobalPosition;
+            Vector3 runStart = Player.Read().GlobalPosition;
             SetAnalogueSmokeInput(0f, 1f);
             await PhysicsFramesAsync(48);
-            float runSpeed = HorizontalSpeed(_player);
-            float runTravel = HorizontalDistance(runStart, _player.GlobalPosition);
+            float runSpeed = HorizontalSpeed(Player);
+            float runTravel = HorizontalDistance(runStart, Player.Read().GlobalPosition);
             Require(
                 runSpeed > walkSpeed + 1.0f,
                 "ordinary Veldin full-stick input did not progress from walk to run");
             Require(
-                _player.Rac1TargetPlanarStep > walkTarget,
+                Player.Read().Rac1TargetPlanarStep > walkTarget,
                 "ordinary Veldin full-stick target did not exceed the walk target");
             Require(runTravel > walkTravel + 1.0f, "ordinary Veldin run did not out-travel walk");
 
-            float movingJump = await MeasureJumpAsync(
-                _player,
+            float movingJump = await new MovementScenario(Context).MeasureJumpAsync(
+                Player,
                 holdFrames: 8,
                 applyPartialAirControl: false,
                 movingAtLaunch: true);
             Require(movingJump > 0.5f, "ordinary Veldin moving jump produced no useful apex");
-            Require(_player.IsOnFloor(), "ordinary Veldin jump did not reacquire floor support");
+            Require(Player.Read().Grounded, "ordinary Veldin jump did not reacquire floor support");
             Require(
-                _player.Rac1MaxObservedSlideCollisions < _player.MaxSlides,
-                $"ordinary Veldin movement saturated Godot MaxSlides={_player.MaxSlides}; " +
-                $"observed={_player.Rac1MaxObservedSlideCollisions}");
+                Player.Read().Rac1MaxObservedSlideCollisions < Player.Read().MaxSlides,
+                $"ordinary Veldin movement saturated Godot MaxSlides={Player.Read().MaxSlides}; " +
+                $"observed={Player.Read().Rac1MaxObservedSlideCollisions}");
 
-            GD.Print(
+            Log(
                 $"[rac1-movement-contact] PASS walk={walkSpeed:0.000}/{walkTravel:0.000} " +
                 $"run={runSpeed:0.000}/{runTravel:0.000} movingJump={movingJump:0.000} " +
-                $"maxSlideContacts={_player.Rac1MaxObservedSlideCollisions}/{_player.MaxSlides}; " +
+                $"maxSlideContacts={Player.Read().Rac1MaxObservedSlideCollisions}/{Player.Read().MaxSlides}; " +
                 "authored edge/death/restart and post-restart support all passed without cheats");
-            ApplicationLifecycle.RequestQuit(this, "rac1-movement-contact-smoke-pass", 0);
+
         }
-        catch (OperationCanceledException error) when (Diagnostics.LegacyDiagnosticCancellation.IsOwned(error))
+        catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime)
         {
             throw;
         }
         catch (Exception ex)
         {
-            GD.PrintErr($"[rac1-movement-contact] FAIL: {ex.Message}\n{ex.StackTrace}");
-            ApplicationLifecycle.RequestQuit(this, "rac1-movement-contact-smoke-fail", 3);
+            LogError($"[rac1-movement-contact] FAIL: {ex.Message}\n{ex.StackTrace}");
+            throw;
         }
         finally
         {
@@ -174,32 +170,33 @@ public partial class OBPGame
         }
     }
 
+
     private void AssertRac1VeldinEphemeralOpening()
     {
-        if (_args.Rac1CampaignPersistenceRequested || _rac1CampaignPersistence.Enabled)
+        if (Combat.ReadOpening().PersistenceRequested || Combat.ReadOpening().PersistenceEnabled)
             throw new InvalidOperationException(
                 "Veldin play smoke requires the ordinary ephemeral local-dev campaign session.");
-        if (_rac1CampaignRestoreKind != Rac1CampaignRestoreKind.DefaultedMissingState)
+        if (Combat.ReadOpening().RestoreKind != Rac1CampaignRestoreKind.DefaultedMissingState)
             throw new InvalidOperationException(
-                $"Ephemeral opening restore kind was {_rac1CampaignRestoreKind}.");
-        if (_rac1CampaignSession.Campaign.CurrentLevel != 0 ||
-            _rac1CampaignSession.Campaign.AdmittedDestinationCount != 0)
+                $"Ephemeral opening restore kind was {Combat.ReadOpening().RestoreKind}.");
+        if (Combat.ReadOpening().CurrentLevel != 0 ||
+            Combat.ReadOpening().AdmittedDestinations != 0)
             throw new InvalidOperationException(
                 "Ephemeral opening campaign state was not the clean Veldin default.");
-        if (!_rac1Weapons.OwnsFirstRanged ||
-            _rac1Weapons.Equipped != Rac1WeaponId.FirstRanged ||
-            _rac1Weapons.FirstRangedAmmo != 20)
+        if (!Combat.ReadOpening().OwnsFirstRanged ||
+            Ports.Equipment.Read().Selected != Rac1WeaponId.FirstRanged ||
+            Ports.Equipment.Read().BombAmmo != 20)
             throw new InvalidOperationException(
-                $"Opening inventory drifted: item10-owned={_rac1Weapons.OwnsFirstRanged}, " +
-                $"equipped={_rac1Weapons.Equipped}, ammo={_rac1Weapons.FirstRangedAmmo}; " +
+                $"Opening inventory drifted: item10-owned={Combat.ReadOpening().OwnsFirstRanged}, " +
+                $"equipped={Ports.Equipment.Read().Selected}, ammo={Ports.Equipment.Read().BombAmmo}; " +
                 "expected Bomb Glove equipped with twenty usable rounds.");
-        var life = _rac1Nanotech.Probe();
+        var life = lifecycle.ReadNanotech();
         if (life.IsDead || life.Nanotech != 4)
             throw new InvalidOperationException(
                 $"Opening Nanotech was {life.Nanotech}, dead={life.IsDead}; expected 4/alive.");
-        if (_rac1BoltCrates.DestroyedCrateCount != 0 ||
-            _rac1PickupNodes.Keys.Any(id => id > 0) ||
-            _rac1Projectiles.Count != 0)
+        if (Combat.ReadLoot().DestroyedCrates != 0 ||
+            Combat.ReadLoot().Pickups.Any(item => item.Id > 0) ||
+            Combat.ReadBombs().Projectiles.Length != 0)
             throw new InvalidOperationException(
                 "Opening Veldin gameplay state was not clean.");
         AssertRac1SmokeHudWeapon(
@@ -207,38 +204,39 @@ public partial class OBPGame
             expectedAmmo: 20);
     }
 
-    private async Task RunRac1RecoveredCameraInputSmokeAsync(PlayerHost player)
+
+    private async Task RunRac1RecoveredCameraInputSmokeAsync()
     {
-        if (!player.HasActiveRecoveredCamera ||
-            player.CameraControllerLabel != "rac1-native-type0" ||
-            player.Rac1RuntimeCameraState is null)
+        if (!Combat.ReadPlayerCamera().ActiveRecovered ||
+            Combat.ReadPlayerCamera().ControllerLabel != "rac1-native-type0" ||
+            !Combat.ReadPlayerCamera().RuntimeStatePresent)
             throw new InvalidOperationException(
                 "Ordinary Veldin did not start with the recovered type-0 camera.");
 
-        Vector3 playerStart = player.GlobalPosition;
-        Vector3 eyeStart = player.Camera.GlobalPosition;
-        double headingStart = player.Rac1ControlYaw;
+        Vector3 playerStart = Player.Read().GlobalPosition;
+        Vector3 eyeStart = Combat.ReadPlayerCamera().Eye;
+        double headingStart = Combat.ReadPlayerCamera().ControlYaw;
 
         SetRac1CameraSmokeInput(right: 1f, up: 0f);
         await PhysicsFramesAsync(36);
         ReleaseRac1CameraSmokeInput();
 
-        Vector3 eyeAfterHorizontal = player.Camera.GlobalPosition;
-        double headingDelta = Math.Abs(WrapAngle(player.Rac1ControlYaw - headingStart));
+        Vector3 eyeAfterHorizontal = Combat.ReadPlayerCamera().Eye;
+        double headingDelta = Math.Abs(WrapAngle(Combat.ReadPlayerCamera().ControlYaw - headingStart));
         if (headingDelta < 0.10d ||
             HorizontalDistance(eyeStart, eyeAfterHorizontal) < 0.25f)
             throw new InvalidOperationException(
                 $"Recovered horizontal camera input was not visible: heading={headingDelta:R}, " +
                 $"eye={HorizontalDistance(eyeStart, eyeAfterHorizontal):R}.");
 
-        double pitchBefore = player.Rac1CameraManualPitch;
-        float eyeYBefore = player.Camera.GlobalPosition.Y;
+        double pitchBefore = Combat.ReadPlayerCamera().ManualPitch;
+        float eyeYBefore = Combat.ReadPlayerCamera().Eye.Y;
         SetRac1CameraSmokeInput(right: 0f, up: 1f);
         await PhysicsFramesAsync(36);
         ReleaseRac1CameraSmokeInput();
 
-        double pitchAtRelease = player.Rac1CameraManualPitch;
-        float eyeYAtRelease = player.Camera.GlobalPosition.Y;
+        double pitchAtRelease = Combat.ReadPlayerCamera().ManualPitch;
+        float eyeYAtRelease = Combat.ReadPlayerCamera().Eye.Y;
         double pitchDelta = Math.Abs(pitchAtRelease - pitchBefore);
         float eyeYDelta = Math.Abs(eyeYAtRelease - eyeYBefore);
         if (pitchDelta < 0.40d || eyeYDelta < 0.25f)
@@ -249,68 +247,70 @@ public partial class OBPGame
         await PhysicsFramesAsync(90);
 
         double neutralReleaseDrift =
-            Math.Abs(player.Rac1CameraManualPitch - pitchAtRelease);
+            Math.Abs(Combat.ReadPlayerCamera().ManualPitch - pitchAtRelease);
         float neutralEyeYDrift =
-            Math.Abs(player.Camera.GlobalPosition.Y - eyeYAtRelease);
-        if (Math.Abs(player.Rac1CameraManualPitch) > 0.02d)
+            Math.Abs(Combat.ReadPlayerCamera().Eye.Y - eyeYAtRelease);
+        if (Math.Abs(Combat.ReadPlayerCamera().ManualPitch) > 0.02d)
             throw new InvalidOperationException(
                 $"Recovered vertical camera command did not complete its native slow release: " +
                 $"manual drift={neutralReleaseDrift:R}, eyeY drift={neutralEyeYDrift:R}.");
 
-        if (HorizontalDistance(playerStart, player.GlobalPosition) > 0.05f)
+        if (HorizontalDistance(playerStart, Player.Read().GlobalPosition) > 0.05f)
             throw new InvalidOperationException(
                 "Camera smoke moved Ratchet while only camera actions were pressed.");
 
-        GD.Print(
+        Log(
             $"[rac1-veldin-play] camera PASS: heading delta={headingDelta:0.###} rad, " +
             $"vertical state delta={pitchDelta:0.###}, eyeY delta={eyeYDelta:0.###}, " +
             $"neutral drift={neutralReleaseDrift:0.###}");
     }
 
+
     private async Task RunRac1OrdinaryBombGloveUseSmokeAsync()
     {
-        int ammoBefore = _rac1Weapons.FirstRangedAmmo;
+        int ammoBefore = Ports.Equipment.Read().BombAmmo;
         if (ammoBefore != 20)
             throw new InvalidOperationException(
                 $"Bomb Glove use must begin from twenty opening rounds, found {ammoBefore}.");
 
-        await TapPhysicalKeyAsync(Key.Key2);
+        await TapPhysicalKeyAsync(DiagnosticPhysicalKey.Key2);
         await Rac1SmokeWaitAsync(
-            () => _rac1Weapons.Equipped == Rac1WeaponId.FirstRanged,
+            () => Ports.Equipment.Read().Selected == Rac1WeaponId.FirstRanged,
             60,
             "ordinary Bomb Glove selection");
         AssertRac1SmokeHudWeapon(
             Rac1HudProjection.BombGlovePresentationKey,
             ammoBefore);
 
-        await TapRac1PrimaryActionAsync();
+        await Rac1EncounterInput.TapPrimaryAsync(Context, Ports.Equipment);
         await Rac1SmokeWaitAsync(
-            () => _rac1Weapons.FirstRangedAmmo == ammoBefore - 1,
+            () => Ports.Equipment.Read().BombAmmo == ammoBefore - 1,
             90,
             "ordinary Bomb Glove fire");
         AssertRac1SmokeHudWeapon(
             Rac1HudProjection.BombGlovePresentationKey,
             ammoBefore - 1);
 
-        GD.Print(
+        Log(
             $"[rac1-veldin-play] Bomb Glove PASS: ordinary input consumed " +
-            $"{ammoBefore}->{_rac1Weapons.FirstRangedAmmo}");
+            $"{ammoBefore}->{Ports.Equipment.Read().BombAmmo}");
     }
+
 
     private async Task RunRac1VeldinPopulationOpeningIdleSmokeAsync()
     {
-        var starts = _rac1HostileNodes.ToDictionary(
+        var starts = Hostiles.ToDictionary(
             pair => pair.Key,
-            pair => pair.Value.Root.GlobalPosition);
+            pair => pair.Value.Read().Position);
         for (int frame = 0; frame < 30; frame++)
-            await Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ProcessFrameAsync();
 
         int moved = 0;
-        foreach (var pair in _rac1HostileNodes)
+        foreach (var pair in Hostiles)
         {
-            if (pair.Value.Root.GlobalPosition.DistanceTo(starts[pair.Key]) > 0.02f)
+            if (pair.Value.Read().Position.DistanceTo(starts[pair.Key]) > 0.02f)
                 moved++;
-            var probe = _rac1Hostiles.Probe(pair.Value.Source);
+            var probe = Enemies.ReadToad(pair.Value.Key);
             if (probe.NativeState is Rac1Class749Hostile.TargetedNativeState or Rac1Class749Hostile.AttackNativeState)
                 throw new InvalidOperationException(
                     $"Class-749 i{pair.Key} pursued at ordinary Veldin start in state {probe.NativeState}.");
@@ -320,87 +320,89 @@ public partial class OBPGame
             throw new InvalidOperationException(
                 $"Ordinary Veldin start moved {moved} class-749 placements before polygon admission.");
 
-        GD.Print(
+        Log(
             "[rac1-veldin-play] population opening PASS: all 16 class-749 placements idle at authored start");
     }
 
+
     private async Task RunRac1OrdinaryHostileWrenchSmokeAsync(
-        RuntimeWorldScene.DynamicObjectNode hostile)
+        Rac1DiagnosticObject hostile)
     {
         float approach = 0f;
-        if (!Rac1SmokeCurrentWrenchPolicyAdmits(hostile.Root.GlobalPosition))
+        if (!Ports.Approach.Admits(hostile.Read().Position))
         {
             approach = await Rac1SmokeApproachWrenchTargetAsync(
-                () => hostile.Root.GlobalPosition,
+                () => hostile.Read().Position,
                 maxFrames: 360,
                 "naturally pursuing class-749 hostile");
         }
 
-        await TapWrenchSmokeAsync();
+        await Rac1EncounterInput.TapWrenchAsync(Context);
         await Rac1SmokeWaitAsync(
-            () => _rac1Hostiles.Probe(hostile.Source).Health == 0f &&
-                !hostile.Root.Visible,
+            () => Enemies.ReadToad(hostile.Key).Health == 0f &&
+                !hostile.Read().Visible,
             120,
             "ordinary hostile wrench contact");
 
-        GD.Print(
+        Log(
             $"[rac1-veldin-play] hostile wrench PASS: ordinary approach={approach:0.###}");
     }
 
+
     private async Task RunRac1OrdinaryCrateWrenchSmokeAsync()
     {
-        if (_player is null)
+        if (Player is null)
             throw new InvalidOperationException("Veldin player disappeared before crate smoke.");
 
         var (crate, waypoints) = SelectRac1PracticalWrenchCrate();
-        Vector3 routeStart = _player.GlobalPosition;
-        float directDistance = HorizontalDistance(routeStart, crate.Root.GlobalPosition);
-        GD.Print($"[rac1-veldin-play] ordinary crate route: start={routeStart}, crate=i{crate.Source.InstanceIndex}, " +
+        Vector3 routeStart = Player.Read().GlobalPosition;
+        float directDistance = HorizontalDistance(routeStart, crate.Read().Position);
+        Log($"[rac1-veldin-play] ordinary crate route: start={routeStart}, crate=i{crate.Key.Target.InstanceIndex}, " +
             $"waypoints={string.Join(';', waypoints)}");
         await Rac1SmokeFollowWalkRouteAsync(waypoints);
 
         float finalApproach = await Rac1SmokeSettleForWrenchContactAsync(
-            () => crate.Root.GlobalPosition,
+            () => crate.Read().Position,
             maxFrames: 360,
-            $"planned class-500 crate i{crate.Source.InstanceIndex}");
+            $"planned class-500 crate i{crate.Key.Target.InstanceIndex}");
 
-        int destroyedBefore = _rac1BoltCrates.DestroyedCrateCount;
-        int[] visibleBefore = _rac1CrateNodes
-            .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
-            .Select(node => node.Source.InstanceIndex)
+        int destroyedBefore = Combat.ReadLoot().DestroyedCrates;
+        int[] visibleBefore = Crates.Where(node => Combat.IsAvailable(node.Key) && node.Read().Visible)
+            .Select(node => node.Key.Target.InstanceIndex)
             .ToArray();
 
-        await TapWrenchSmokeAsync();
+        await Rac1EncounterInput.TapWrenchAsync(Context);
         await Rac1SmokeWaitAsync(
-            () => _rac1BoltCrates.DestroyedCrateCount > destroyedBefore && !IsRac1GameplayActive(crate),
+            () => Combat.ReadLoot().DestroyedCrates > destroyedBefore && !Combat.ReadObject(crate.Key).GameplayActive,
             120,
             "ordinary wrench crate contact");
 
-        int[] brokenInstances = _rac1CrateNodes
-            .Where(node => visibleBefore.Contains(node.Source.InstanceIndex))
-            .Where(node => IsInstanceValid(node.Root) && !node.Root.Visible)
-            .Select(node => node.Source.InstanceIndex)
+        int[] brokenInstances = Crates
+            .Where(node => visibleBefore.Contains(node.Key.Target.InstanceIndex))
+            .Where(node => Combat.IsAvailable(node.Key) && !node.Read().Visible)
+            .Select(node => node.Key.Target.InstanceIndex)
             .ToArray();
-        Require(brokenInstances.Contains(crate.Source.InstanceIndex),
+        Require(brokenInstances.Contains(crate.Key.Target.InstanceIndex),
             "ordinary wrench sweep missed the planned crate");
 
-        float travelled = HorizontalDistance(routeStart, _player.GlobalPosition);
-        GD.Print(
-            $"[rac1-veldin-play] crate wrench PASS: planned=i{crate.Source.InstanceIndex}, " +
+        float travelled = HorizontalDistance(routeStart, Player.Read().GlobalPosition);
+        Log(
+            $"[rac1-veldin-play] crate wrench PASS: planned=i{crate.Key.Target.InstanceIndex}, " +
             $"broken=[{string.Join(',', brokenInstances)}], direct={directDistance:0.###}, " +
             $"route-points={waypoints.Count}, travel={travelled:0.###}, " +
             $"final={finalApproach:0.###}");
     }
+
 
     private async Task<float> Rac1SmokeSettleForWrenchContactAsync(
         Func<Vector3> targetCenterProvider,
         int maxFrames,
         string label)
     {
-        if (_player is null)
+        if (Player is null)
             throw new InvalidOperationException("Veldin player disappeared during wrench approach.");
 
-        Vector3 start = _player.GlobalPosition;
+        Vector3 start = Player.Read().GlobalPosition;
         Vector3 target = targetCenterProvider();
         int admittedStoppedFrames = 0;
         try
@@ -411,9 +413,9 @@ public partial class OBPGame
                 // The old planar admission cone extends beyond the recovered
                 // animated hand/tip sweep. Approach the crate itself before
                 // expecting a real contact; continue using ordinary input only.
-                bool admitted = Rac1SmokeCurrentWrenchPolicyAdmits(target) &&
-                    HorizontalDistance(_player.GlobalPosition, target) <= 1.45f;
-                float speed = HorizontalSpeed(_player);
+                bool admitted = Ports.Approach.Admits(target) &&
+                    HorizontalDistance(Player.Read().GlobalPosition, target) <= 1.45f;
+                float speed = HorizontalSpeed(Player);
 
                 if (admitted)
                 {
@@ -422,7 +424,7 @@ public partial class OBPGame
                     {
                         admittedStoppedFrames++;
                         if (admittedStoppedFrames >= 2)
-                            return HorizontalDistance(start, _player.GlobalPosition);
+                            return HorizontalDistance(start, Player.Read().GlobalPosition);
                     }
                     else
                     {
@@ -447,53 +449,55 @@ public partial class OBPGame
 
         throw new TimeoutException(
             $"Timed out settling ordinary movement inside wrench host policy for {label}: " +
-            $"player={_player.GlobalPosition}, target={target}, speed={HorizontalSpeed(_player):R}.");
+            $"player={Player.Read().GlobalPosition}, target={target}, speed={HorizontalSpeed(Player):R}.");
     }
 
+
     private (
-        RuntimeWorldScene.DynamicObjectNode Crate,
+        Rac1DiagnosticObject Crate,
         IReadOnlyList<Vector3> Waypoints) SelectRac1PracticalWrenchCrate()
     {
-        if (_player is null)
+        if (Player is null)
             throw new InvalidOperationException("Veldin player disappeared.");
 
-        var candidates = _rac1CrateNodes
-            .Where(node => IsInstanceValid(node.Root) && node.Root.Visible)
-            .OrderBy(node => HorizontalDistance(_player.GlobalPosition, node.Root.GlobalPosition))
-            .ThenBy(node => node.Source.InstanceIndex)
+        var candidates = Crates.Where(node => Combat.IsAvailable(node.Key) && node.Read().Visible)
+            .OrderBy(node => HorizontalDistance(Player.Read().GlobalPosition, node.Read().Position))
+            .ThenBy(node => node.Key.Target.InstanceIndex)
             .ToArray();
 
         foreach (var candidate in candidates)
         {
             float distance = HorizontalDistance(
-                _player.GlobalPosition,
-                candidate.Root.GlobalPosition);
+                Player.Read().GlobalPosition,
+                candidate.Read().Position);
             if (distance < 1f || distance > 70f)
                 continue;
             if (TryPlanRac1SmokeWalkRoute(
-                    candidate.Root.GlobalPosition,
+                    candidate.Read().Position,
                     out var waypoints))
                 return (candidate, waypoints);
         }
 
         throw new InvalidOperationException(
             $"No visible centre-10 class-500 crate had a collision-backed ordinary walk route " +
-            $"from {_player.GlobalPosition}; candidates={candidates.Length}.");
+            $"from {Player.Read().GlobalPosition}; candidates={candidates.Length}.");
     }
 
+
     private readonly record struct Rac1SmokeGridNode(int X, int Z);
+
 
     private bool TryPlanRac1SmokeWalkRoute(
         Vector3 target,
         out IReadOnlyList<Vector3> waypoints)
     {
         waypoints = Array.Empty<Vector3>();
-        if (_player is null)
+        if (Player is null)
             return false;
 
         const float step = 2.5f;
         const float goalRadius = 2.0f;
-        Vector3 origin = _player.GlobalPosition;
+        Vector3 origin = Player.Read().GlobalPosition;
         float directDistance = HorizontalDistance(origin, target);
         int radius = Math.Clamp(
             (int)Math.Ceiling((directDistance + 24f) / step),
@@ -510,19 +514,14 @@ public partial class OBPGame
                 origin.X + node.X * step,
                 origin.Y,
                 origin.Z + node.Z * step);
-            var query = PhysicsRayQueryParameters3D.Create(
-                sample + Vector3.Up * 24f,
-                sample + Vector3.Down * 64f);
-            query.Exclude =
-                new global::Godot.Collections.Array<Rid> { _player.GetRid() };
-            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
-            if (hit.Count == 0 || ((Vector3)hit["normal"]).Y < 0.52f)
+            var hit = Actors.Ray(sample + Vector3.UnitY * 24f, sample - Vector3.UnitY * 64f, [], true);
+            if (hit is null || hit.Normal.Y < 0.52f)
             {
                 floorCache[node] = null;
                 return null;
             }
 
-            Vector3 floor = (Vector3)hit["position"];
+            Vector3 floor = hit.Position;
             floorCache[node] = floor;
             return floor;
         }
@@ -532,17 +531,12 @@ public partial class OBPGame
             if (Math.Abs(a.Y - b.Y) > 1.35f)
                 return false;
 
-            var query = PhysicsRayQueryParameters3D.Create(
-                a + Vector3.Up * 1.0f,
-                b + Vector3.Up * 1.0f);
-            query.Exclude =
-                new global::Godot.Collections.Array<Rid> { _player.GetRid() };
-            var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(query);
-            if (hit.Count == 0)
+            var hit = Actors.Ray(a + Vector3.UnitY * 1.0f, b + Vector3.UnitY * 1.0f, [], true);
+            if (hit is null)
                 return true;
 
-            Vector3 point = (Vector3)hit["position"];
-            return point.DistanceTo(b + Vector3.Up * 1.0f) < 0.35f;
+            Vector3 point = hit.Position;
+            return point.DistanceTo(b + Vector3.UnitY * 1.0f) < 0.35f;
         }
 
         var start = new Rac1SmokeGridNode(0, 0);
@@ -618,7 +612,7 @@ public partial class OBPGame
                 a.Y = b.Y = 0f;
                 if (a.LengthSquared() > 0.01f &&
                     b.LengthSquared() > 0.01f &&
-                    Math.Abs(a.Normalized().Dot(b.Normalized())) > 0.999f)
+                    Math.Abs(Vector3.Dot(a.Normalized(), b.Normalized())) > 0.999f)
                     continue;
             }
             compact.Add(reverse[i]);
@@ -628,10 +622,11 @@ public partial class OBPGame
         return compact.Count > 0;
     }
 
+
     private async Task Rac1SmokeFollowWalkRouteAsync(
         IReadOnlyList<Vector3> waypoints)
     {
-        if (_player is null)
+        if (Player is null)
             throw new InvalidOperationException("Veldin player disappeared during route.");
 
         try
@@ -640,14 +635,14 @@ public partial class OBPGame
             {
                 bool reached = false;
                 float bestDistance =
-                    HorizontalDistance(_player.GlobalPosition, waypoint);
+                    HorizontalDistance(Player.Read().GlobalPosition, waypoint);
                 int stagnantFrames = 0;
                 int jumpHeldFrames = 0;
 
                 for (int frame = 0; frame < 360; frame++)
                 {
                     float distance =
-                        HorizontalDistance(_player.GlobalPosition, waypoint);
+                        HorizontalDistance(Player.Read().GlobalPosition, waypoint);
                     if (distance <= 0.85f)
                     {
                         reached = true;
@@ -668,9 +663,9 @@ public partial class OBPGame
                     // sustained lack of planar progress, never to inject position.
                     if (stagnantFrames >= 45 &&
                         jumpHeldFrames == 0 &&
-                        _player.IsOnFloor())
+                        Player.Read().Grounded)
                     {
-                        Input.ActionPress(RawGamepadInput.Jump);
+                        Driver.SetAction(MovementDiagnosticDriver.Jump, true);
                         jumpHeldFrames = 8;
                         stagnantFrames = 0;
                     }
@@ -679,56 +674,34 @@ public partial class OBPGame
                     await PhysicsFramesAsync(1);
 
                     if (jumpHeldFrames > 0 && --jumpHeldFrames == 0)
-                        Input.ActionRelease(RawGamepadInput.Jump);
+                        Driver.SetAction(MovementDiagnosticDriver.Jump, false);
                 }
 
-                Input.ActionRelease(RawGamepadInput.Jump);
+                Driver.SetAction(MovementDiagnosticDriver.Jump, false);
                 if (!reached)
                     throw new TimeoutException(
                         $"Ordinary crate route stalled before waypoint {waypoint}; " +
-                        $"player={_player.GlobalPosition}, velocity={_player.Velocity}, " +
-                        $"phase={_player.Rac1MovementPhase}, floor={_player.IsOnFloor()}, " +
-                        $"support={_player.Rac1RecoveredSupportGrounded}, best={bestDistance}, stagnant={stagnantFrames}; " +
-                        $"contacts={string.Join(';', Enumerable.Range(0, _player.GetSlideCollisionCount()).Select(i => _player.GetSlideCollision(i).GetNormal()))}.");
+                        $"player={Player.Read().GlobalPosition}, velocity={Player.Read().Velocity}, " +
+                        $"phase={Player.Read().Rac1MovementPhase}, floor={Player.Read().Grounded}, " +
+                        $"support={Player.Read().Rac1RecoveredSupportGrounded}, best={bestDistance}, stagnant={stagnantFrames}; " +
+                        $"contacts={string.Join(';', Combat.ReadPlayerContactNormals())}.");
             }
         }
         finally
         {
-            Input.ActionRelease(RawGamepadInput.Jump);
+            Driver.SetAction(MovementDiagnosticDriver.Jump, false);
             ClearMovementSmokeInput();
         }
     }
 
-    private async Task TapRac1PrimaryActionAsync()
-    {
-        StringName action = _rac1Weapons.Equipped == Rac1WeaponId.FirstRanged
-            ? RawGamepadInput.Traversal : RawGamepadInput.Action;
-        Input.ActionPress(action);
-        await PhysicsFramesAsync(2);
-        Input.ActionRelease(action);
-        await PhysicsFramesAsync(2);
-    }
-
-    private static void SetRac1CameraSmokeInput(float right, float up)
+    private void SetRac1CameraSmokeInput(float right, float up)
     {
         ReleaseRac1CameraSmokeInput();
-        if (right > 0f) Input.ActionPress(RawGamepadInput.CameraRight, right);
-        else if (right < 0f) Input.ActionPress(RawGamepadInput.CameraLeft, -right);
-        if (up > 0f) Input.ActionPress(RawGamepadInput.CameraUp, up);
-        else if (up < 0f) Input.ActionPress(RawGamepadInput.CameraDown, -up);
+        if (right > 0) Driver.SetAction("obp_camera_right", true, right); else if (right < 0) Driver.SetAction("obp_camera_left", true, -right);
+        if (up > 0) Driver.SetAction("obp_camera_up", true, up); else if (up < 0) Driver.SetAction("obp_camera_down", true, -up);
     }
+    private void ReleaseRac1CameraSmokeInput()
+    { foreach (string action in new[] { "obp_camera_left", "obp_camera_right", "obp_camera_up", "obp_camera_down" }) Driver.SetAction(action, false); }
+    private void ClearRac1VeldinPlaySmokeInput() { ClearMovementSmokeInput(); ReleaseRac1CameraSmokeInput(); }
 
-    private static void ReleaseRac1CameraSmokeInput()
-    {
-        Input.ActionRelease(RawGamepadInput.CameraLeft);
-        Input.ActionRelease(RawGamepadInput.CameraRight);
-        Input.ActionRelease(RawGamepadInput.CameraUp);
-        Input.ActionRelease(RawGamepadInput.CameraDown);
-    }
-
-    private static void ClearRac1VeldinPlaySmokeInput()
-    {
-        ClearMovementSmokeInput();
-        ReleaseRac1CameraSmokeInput();
-    }
 }

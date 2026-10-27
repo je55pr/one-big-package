@@ -8,9 +8,11 @@ internal sealed class UiDiagnosticHarness(CommandLineArgs args, bool ordinarySou
     ImmutableArray<DiagnosticSourceRequirement> authorities, IDiagnosticMenuFixture menus,
     IDiagnosticPlayerContinuity player, IDiagnosticProfileEvidence profile, IDiagnosticSourceRepairFixture repair,
     IDiagnosticRetailPauseFixture retail, IDiagnosticWorldObservations worlds, IDiagnosticNavigationActions navigation,
-    DiagnosticScenarioRunner runner, HostOperationScope operations, Action<string, int> quit, Action<string> log, Action<string> logError)
+    DiagnosticScenarioRunner runner, HostOperationScope operations, Action<string, int> quit, Action<string> log, Action<string> logError) : IRac1EncounterMenuChecks
 {
     internal IDiagnosticMenuFixture Menus => menus;
+    Task IRac1EncounterMenuChecks.CheckVeldinPauseAsync(CancellationToken token) => RunVeldinPauseAsync(token);
+    Task IRac1EncounterMenuChecks.CheckRetailNavigationAsync(string world, CancellationToken token) => RunRetailNavigationAsync(world, token);
     internal static DiagnosticScenarioRegistry Registry { get; } = new(
     [
         new("ordinary-ui-smoke", ["--ordinary-ui-smoke"], a => a.OrdinaryUiSmoke),

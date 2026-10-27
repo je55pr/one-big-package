@@ -103,6 +103,45 @@ public sealed class MovementDiagnosticTests
         Assert.Equal(Vector2.Zero, MovementDiagnosticDriver.RawConditionedAxes(1e-9, -1e-9));
     }
 
+    private sealed class WrenchApproach : IRac1WrenchApproachFixture
+    {
+        public double ControlYaw => 0;
+        public bool Admits(Vector3 targetCenter) => false;
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WrenchApproachRetainsDiagonalRunSpeedAndReleasesInputOnTimeoutOrCancellation(bool canceled)
+    {
+        using var cancel = new CancellationTokenSource();
+        var fixture = new Fixture();
+        Rac1AnalogueInput.Conditioned? observed = null;
+        var clock = new Clock
+        {
+            BeforeCompletion = () =>
+            {
+                observed = Rac1AnalogueInput.ConditionUnitAxes(
+                    fixture.Actions.GetValueOrDefault(MovementDiagnosticDriver.Right) - fixture.Actions.GetValueOrDefault(MovementDiagnosticDriver.Left),
+                    fixture.Actions.GetValueOrDefault(MovementDiagnosticDriver.Forward) - fixture.Actions.GetValueOrDefault(MovementDiagnosticDriver.Back));
+                if (canceled) cancel.Cancel();
+            }
+        };
+        var player = new PlayerFixture();
+        using var run = new DiagnosticRunContext(clock, cancel.Token, 10);
+        using var driver = fixture.Create(run);
+        var scenario = new Rac1WrenchApproachScenario(new(Ports(player, clock), driver), new WrenchApproach());
+        Task Approach() => scenario.RunAsync(() => player.State.GlobalPosition + new Vector3(-1, 0, -1), canceled ? 2 : 1, "diagonal regression");
+        if (canceled) await Assert.ThrowsAnyAsync<OperationCanceledException>(Approach);
+        else await Assert.ThrowsAsync<TimeoutException>(Approach);
+        var input = Assert.IsType<Rac1AnalogueInput.Conditioned>(observed);
+        Assert.Equal(Rac1AnalogueSpeedBand.Run, input.SpeedBand);
+        Assert.InRange(input.Magnitude, .999999, 1);
+        Assert.InRange(input.Direction.X, Math.Sqrt(.5) - .000001, Math.Sqrt(.5) + .000001);
+        Assert.InRange(input.Direction.Y, Math.Sqrt(.5) - .000001, Math.Sqrt(.5) + .000001);
+        Assert.All(fixture.Actions.Values, value => Assert.Equal(0, value));
+    }
+
     [Theory]
     [InlineData("full")]
     [InlineData("airborne")]

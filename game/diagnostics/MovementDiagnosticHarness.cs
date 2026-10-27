@@ -21,6 +21,9 @@ internal sealed class MovementDiagnosticHarness(MovementScenarioPorts ports, IDi
     IDiagnosticEnvironmentalDeath environment, IDiagnosticControllerEquipment equipment, ObpDestination? destination,
     ImmutableArray<DiagnosticSourceRequirement> authorities, DiagnosticScenarioRunner runner, HostOperationScope operations, string? movementCase)
 {
+    internal MovementScenarioPorts Ports => ports;
+    internal IDiagnosticControllerEquipment Equipment => equipment;
+    internal IDiagnosticEnvironmentalDeath Environment => environment;
     internal IDiagnosticScenario CreateMovement(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
         new MovementDiagnosticScenario(definition, ports, RunSelectedAsync),
         new("movement-smoke-pass", 0), new("movement-smoke-fail", 1));
@@ -60,17 +63,8 @@ internal sealed class MovementDiagnosticHarness(MovementScenarioPorts ports, IDi
     internal IDiagnosticScenario CreateSwim(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
         new MovementDiagnosticScenario(definition, ports, context => new Rac1NovalisSwimScenario(context, water).RunAsync()),
         new("rac1-novalis-swim-smoke-pass", 0), new("rac1-novalis-swim-smoke-fail", 1));
-    internal Task RunFallAsync(Vector3 respawn, CancellationToken lifetime) => RunHelperAsync("rac1-natural-veldin-fall", context =>
-        new Rac1EnvironmentalDeathRegression(context, environment).RunAsync(respawn), lifetime);
     internal Task RunControllerAsync(CancellationToken lifetime) => RunHelperAsync("controller-weapon-input", context =>
         new ControllerWeaponInputRegression(context, equipment).RunAsync(), lifetime);
-    internal async Task<float> MeasureJumpAsync(int holdFrames, bool partialAir, bool moving, CancellationToken lifetime)
-    {
-        float height = 0;
-        await RunHelperAsync("movement-jump", async context => height = await new MovementScenario(context)
-            .MeasureJumpAsync(ports.Player, holdFrames, partialAir, moving), lifetime);
-        return height;
-    }
     internal Task WaitSequenceAsync(int sequence, int maxFrames, string label, CancellationToken lifetime) =>
         RunHelperAsync("movement-avatar-wait", context => new MovementWaits(context).SequenceAsync(sequence, maxFrames, label), lifetime);
     private Task RunHelperAsync(string id, Func<MovementDiagnosticContext, Task> execute, CancellationToken lifetime)
