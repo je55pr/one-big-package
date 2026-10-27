@@ -136,7 +136,7 @@ retire. The frozen origin ledger is unchanged.
 
 The #345 CLI/Lab extraction retires the four assigned partials and 27 historical
 declaration/member permissions, plus 13 expired movement/encounter invocation
-bridges. The root now has 73 files, 16,960 file lines, 603 methods, 446 fields
+bridges. The root now has 73 files, 16,961 file lines, 603 methods, 446 fields
 (302 mutable), 44 exposed members and 1,937 cross-file references. Independent
 Lab, crate-observation, shot-list and stress components own their control/state;
 their engine fixtures copy scene/world facts and bind existing operations.

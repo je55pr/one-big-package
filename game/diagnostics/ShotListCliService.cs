@@ -27,9 +27,7 @@ public sealed class ShotListCliService(CommandLineArgs args, Action<ObpSourceGam
             quit("shots-list-read-failed", 2);
             return;
         }
-        if (args.Rac1Iso is { } rac1) registerSource(ObpSourceGame.Rac1, rac1);
-        if (args.Rac2Iso is { } rac2) registerSource(ObpSourceGame.Rac2, rac2);
-        if (args.Rac3Iso is { } rac3) registerSource(ObpSourceGame.Rac3, rac3);
+        RegisterSources();
         string? token = args.ShotsWorld ?? list.World ?? args.Planet;
         string destination, slug;
         if (token is { } value && value.Contains(':'))
@@ -82,5 +80,11 @@ public sealed class ShotListCliService(CommandLineArgs args, Action<ObpSourceGam
         }
         log($"[shots] done — {list.Shots.Count - failures}/{list.Shots.Count} written to captures/shots/");
         quit(failures == 0 ? "shots-complete" : "shots-capture-failed", failures == 0 ? 0 : 1);
+    }
+    private void RegisterSources()
+    {
+        if (args.Rac1Iso is { } rac1) registerSource(ObpSourceGame.Rac1, rac1);
+        if (args.Rac2Iso is { } rac2) registerSource(ObpSourceGame.Rac2, rac2);
+        if (args.Rac3Iso is { } rac3) registerSource(ObpSourceGame.Rac3, rac3);
     }
 }

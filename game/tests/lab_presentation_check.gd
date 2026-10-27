@@ -27,9 +27,13 @@ func _check() -> void:
 		push_error("[lab-presentation-check] ordinary Lab showed a development status caption")
 		quit(1)
 		return
-	for sign in world.find_children("*", "Label3D", true, false):
-		if "DEVELOPER" in sign.text or "PLAYTEST" in sign.text or "Diagnostic capsule" in sign.text:
+	for label in world.find_children("*", "Label3D", true, false):
+		if "DEVELOPER" in label.text or "PLAYTEST" in label.text or "Diagnostic capsule" in label.text:
 			push_error("[lab-presentation-check] ordinary Lab showed a development sign")
+			quit(1)
+			return
+		if label.text.ends_with("\n"):
+			push_error("[lab-presentation-check] ordinary Lab sign has a trailing blank line")
 			quit(1)
 			return
 	print("[lab-presentation-check] PASS: ordinary playable Lab has no development captions")

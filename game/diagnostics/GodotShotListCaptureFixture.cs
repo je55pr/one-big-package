@@ -43,6 +43,6 @@ internal sealed class GodotShotListCaptureFixture(Node owner, Camera3D camera, A
         updateHud();
     }
     public IDictionary<string, object?> ReadMetadata() => metadata();
-    public async Task<bool> CaptureAsync(string output, int settleFrames, Func<IDictionary<string, object?>> metadataFactory, CancellationToken token) =>
-        (await CaptureHarness.CaptureAsync(owner, output, settleFrames, metadataFactory, token)).Ok;
+    public async Task<bool> CaptureAsync(string output, int settleFrames, Func<IDictionary<string, object?>> metadata, CancellationToken token) =>
+        (await CaptureHarness.CaptureAsync(owner, output, settleFrames, metadata, token)).Ok;
 }

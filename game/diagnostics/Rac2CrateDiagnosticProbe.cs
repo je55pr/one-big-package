@@ -29,7 +29,8 @@ public sealed class Rac2CrateDiagnosticProbe
         FocusRequested = focus || autoStrike;
         AutoStrike = autoStrike;
         TargetIndex = FocusRequested ? target?.InstanceIndex : null;
-        Status = !FocusRequested ? "off" : target is null ? "requested: no class-500 target" : $"ready: {target.InteractionId}";
+        Status = "off";
+        if (FocusRequested) Status = target is null ? "requested: no class-500 target" : $"ready: {target.InteractionId}";
     }
     public void ObserveStrike(int instanceIndex, byte pvarC8, string route, string source)
     {

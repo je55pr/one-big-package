@@ -11,9 +11,18 @@ internal sealed class GodotRac2CrateDiagnosticFixture(IReadOnlyList<RuntimeWorld
 {
     public Rac2CrateDiagnosticProbe Probe { get; } = new();
     private RuntimeWorldScene.DynamicObjectNode? _target;
-    private RuntimeWorldScene.DynamicObjectNode? Target => Probe.TargetIndex is not { } index ? null :
-        _target?.Source.InstanceIndex == index ? _target : _target = nodes.FirstOrDefault(node =>
-            node.Source.SourceGame == ObpSourceGame.Rac2 && node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index);
+    private RuntimeWorldScene.DynamicObjectNode? Target
+    {
+        get
+        {
+            if (Probe.TargetIndex is not { } index) return null;
+            if (_target?.Source.InstanceIndex != index)
+                _target = nodes.FirstOrDefault(node => node.Source.SourceGame == ObpSourceGame.Rac2 &&
+                    node.Source.NativeClassId == 500 && node.Source.InstanceIndex == index);
+            return _target;
+        }
+    }
+    private Rac2CrateTargetSnapshot? ReadTarget() => Target is { } target ? Read(target) : null;
     private static Rac2CrateTargetSnapshot Read(RuntimeWorldScene.DynamicObjectNode node)
     {
         bool valid = GodotObject.IsInstanceValid(node.Root);
@@ -45,7 +54,7 @@ internal sealed class GodotRac2CrateDiagnosticFixture(IReadOnlyList<RuntimeWorld
         return found;
     }
     public string HudLine(Rac2FreshBoltSession rewards) => Probe.Status == "off" ? string.Empty :
-        Probe.HudLine(Target is { } target ? Read(target) : null, Read(rewards));
+        Probe.HudLine(ReadTarget(), Read(rewards));
     public Rac2CrateDebugSnapshot? Capture(Rac2FreshBoltSession rewards) => Probe.Status == "off" ? null :
-        Probe.Capture(Target is { } target ? Read(target) : null, Read(rewards));
+        Probe.Capture(ReadTarget(), Read(rewards));
 }

@@ -47,14 +47,16 @@ function Invoke-CliCheck {
     $log = Join-Path $Out ($Name + '.log'); $errors = Join-Path $Out ($Name + '.err.log')
     $code = Invoke-ObpNativeProcessCapture -FilePath $engine -ArgumentList $engineArgs -WorkingDirectory $repoRoot -StandardOutputPath $log -StandardErrorPath $errors
     $passed = $code -eq $ExpectedExit -and (Select-String -LiteralPath $log -SimpleMatch $Expected -Quiet)
-    if (Select-String -LiteralPath $errors -Pattern 'SCRIPT ERROR:|ObjectDB instances leaked|resources still in use' -Quiet) { $passed = $false }
+    if (Select-String -LiteralPath $errors -Pattern 'SCRIPT ERROR:|ObjectDB instances leaked|resources still in use|\[cli-tool-engine-smoke\] FAIL:' -Quiet) { $passed = $false }
     $results.Add([pscustomobject]@{ Name = $Name; Passed = $passed; ExitCode = $code; Log = ($Name + '.log') })
     if (-not $passed) { throw "Diagnostic CLI check $Name failed. Inspect its local logs." }
-    Write-Host "$Name passed"
+    Write-Information "$Name passed" -InformationAction Continue
 }
 try {
     Invoke-CliCheck 'lab' @('--test-scene', 'fusion-lab', '--diagnostic-player', '--capture-frame', '1800', '--capture-out', (Join-Path $Out 'lab.png')) '[fusion-smoke] PASS:'
     Invoke-CliCheck 'postdraw' @('--shots-out', (Join-Path $Out 'phase')) '[cli-tool-engine-smoke] PASS:' -Entry @('res://diagnostics/CliToolEngineSmoke.tscn')
+    Invoke-CliCheck 'postdraw-canceled' @('--shots-out', (Join-Path $Out 'phase-canceled')) '[cli-tool-engine-smoke] started' -Entry @('--quit-after', '1', 'res://diagnostics/CliToolEngineSmoke.tscn')
+    if (Test-Path -LiteralPath (Join-Path $Out 'phase-canceled/postdraw.png')) { throw 'Canceled engine proof wrote a screenshot.' }
     Invoke-CliCheck 'bad-list' @('--shots', (Join-Path $Out 'missing.json')) 'reason=shots-list-read-failed exitCode=2' -ExpectedExit 2 -Headless
     $single = Join-Path $Out 'single.json'
     [IO.File]::WriteAllText($single, '{"shots":[{"name":"top","camera":"topDown","settleFrames":1}]}')

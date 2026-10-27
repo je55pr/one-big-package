@@ -108,6 +108,7 @@ public sealed class DiagnosticCliServiceTests
     [InlineData("player")]
     [InlineData("campaign")]
     [InlineData("admitted")]
+    [InlineData("missing-world")]
     public async Task StressRejectsFailedImportThatChangesAnyRetainedOwner(string changed)
     {
         var world = new StressWorld { Corrupt = changed }; var exits = new List<(string, int)>();
@@ -178,7 +179,7 @@ public sealed class DiagnosticCliServiceTests
         private StressRetentionSnapshot _retained = new(new("rac2:LEVEL1", ObpSourceGame.Rac2, "world", 1), 10, 11, 0);
         public string? Corrupt;
         public List<string> Events { get; } = [];
-        public StressRetentionSnapshot ReadRetention() => _retained;
+        public StressRetentionSnapshot ReadRetention() => Corrupt == "missing-world" ? new(new(null, null, null, 0), null, null, 0) : _retained;
         public bool RejectImport(string missingPath)
         {
             Assert.False(File.Exists(missingPath)); Events.Add("bad-import");
@@ -190,7 +191,7 @@ public sealed class DiagnosticCliServiceTests
                 "campaign" => _retained with { CampaignLevel = 1 },
                 _ => _retained,
             };
-            return Corrupt != "admitted";
+            return Corrupt is not ("admitted" or "missing-world");
         }
         public void ShowSelector() => Events.Add("selector");
         public void OpenDestination(string destinationId) => Events.Add("open:" + destinationId);

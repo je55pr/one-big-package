@@ -1,4 +1,5 @@
 using OBP.RAC2;
+using System.Diagnostics.CodeAnalysis;
 
 namespace OBP.Game.Diagnostics;
 
@@ -29,38 +30,16 @@ public sealed class StressSwitchCliService(IStressWorldFixture world, IDiagnosti
             string token = tokens[i];
             if (token == "__bad-import")
             {
-                var retained = world.ReadRetention();
-                bool rejected = world.RejectImport(Path.Combine(Path.GetTempPath(), "obp-world-does-not-exist-" + Guid.NewGuid().ToString("N") + ".iso"));
-                if (!rejected || retained != world.ReadRetention())
-                {
-                    error("[stress] FAIL failed import destroyed the active world or campaign state");
-                    quit("stress-import-retention-failed", 1);
-                    return;
-                }
-                log("[stress] PASS rejected bad import, retained world/player/campaign");
+                if (!CheckRejectedImport()) return;
                 continue;
             }
-            int? level = token.StartsWith("rac", StringComparison.OrdinalIgnoreCase) ? null : Rac2PlanetCatalogue.Resolve(token);
-            string? destination = token.StartsWith("rac", StringComparison.OrdinalIgnoreCase) ? token : level is null ? null : $"rac2:LEVEL{level.Value}";
+            string? destination = ResolveDestination(token);
             if (destination is null)
             {
                 error($"[stress] unknown planet '{token}' — skipped");
                 continue;
             }
-            // Preserve the every-third token bounce, including skipped/failed-import token positions.
-            if (i > 0 && i % 3 == 0)
-            {
-                world.ShowSelector();
-                for (int f = 0; f < 10; f++) await frames.NextAsync(DiagnosticFramePhase.Process, cancellationToken);
-            }
-            cancellationToken.ThrowIfCancellationRequested();
-            world.OpenDestination(destination);
-            for (int f = 0; f < 45; f++) await frames.NextAsync(DiagnosticFramePhase.Process, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            await frames.NextAsync(DiagnosticFramePhase.Process, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
+            await VisitAsync(destination, i, cancellationToken);
             var counters = world.ReadCounters();
             if (i == 0) baseMem = counters.MemoryMb;
             string row = $"#{i,2} {token,-10} L{counters.Level,-2} | mem {counters.MemoryMb,7:0.0} MB (+{counters.MemoryMb - baseMem,6:0.0}) | " +
@@ -73,5 +52,45 @@ public sealed class StressSwitchCliService(IStressWorldFixture world, IDiagnosti
         log("[stress] ================ summary ================");
         foreach (string row in rows) log("[stress] " + row);
         quit("stress-switch-complete", 0);
+    }
+    private bool CheckRejectedImport()
+    {
+        var retained = world.ReadRetention();
+        bool rejected = world.RejectImport(Path.Combine(Path.GetTempPath(), "obp-world-does-not-exist-" + Guid.NewGuid().ToString("N") + ".iso"));
+        if (!rejected || retained != world.ReadRetention())
+        {
+            error("[stress] FAIL failed import destroyed the active world or campaign state");
+            quit("stress-import-retention-failed", 1);
+            return false;
+        }
+        log("[stress] PASS rejected bad import, retained world/player/campaign");
+        return true;
+    }
+    private static string? ResolveDestination(string token)
+    {
+        if (token.StartsWith("rac", StringComparison.OrdinalIgnoreCase)) return token;
+        return Rac2PlanetCatalogue.Resolve(token) is { } level ? $"rac2:LEVEL{level}" : null;
+    }
+    private async Task VisitAsync(string destination, int index, CancellationToken token)
+    {
+        // Preserve the every-third token bounce, including skipped/failed-import token positions.
+        if (index > 0 && index % 3 == 0)
+        {
+            world.ShowSelector();
+            for (int f = 0; f < 10; f++) await frames.NextAsync(DiagnosticFramePhase.Process, token);
+        }
+        token.ThrowIfCancellationRequested();
+        world.OpenDestination(destination);
+        for (int f = 0; f < 45; f++) await frames.NextAsync(DiagnosticFramePhase.Process, token);
+        token.ThrowIfCancellationRequested();
+        CollectForMeasurement();
+        await frames.NextAsync(DiagnosticFramePhase.Process, token);
+        token.ThrowIfCancellationRequested();
+    }
+    [SuppressMessage("Performance", "S1215", Justification = "This explicit developer stress tool measures retained heap after collection, matching its existing monitor contract.")]
+    private static void CollectForMeasurement()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 }

@@ -35,6 +35,18 @@ public sealed class LabAndCrateDiagnosticTests
     }
 
     [Fact]
+    public async Task FailedLabReentryIsNotReportedAsAPassedScenario()
+    {
+        var fixture = new Lab([-4, 15, -14]) { ReloadSucceeds = false }; var messages = new List<string>();
+        var scenario = new FusionLabTraversalScenario(fixture, messages.Add, messages.Add);
+        var result = await new DiagnosticScenarioRunner(fixture, fixture).RunAsync(scenario, true, default);
+        Assert.Equal(DiagnosticRunStatus.Failed, result.Status);
+        Assert.IsType<InvalidOperationException>(result.Error);
+        Assert.True(fixture.Released);
+        Assert.DoesNotContain(messages, message => message.StartsWith("[fusion-smoke] PASS:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void CrateFocusRemainsOptInAndUnavailableTargetsHaveNoSyntheticPose()
     {
         var probe = new Rac2CrateDiagnosticProbe(); var rewards = new Rac2CrateRewardSnapshot(0, 0, 0);
@@ -51,7 +63,7 @@ public sealed class LabAndCrateDiagnosticTests
     {
         var probe = new Rac2CrateDiagnosticProbe(); probe.Configure(true, false, Target);
         Assert.True(probe.TryGetFocusPose(Target, new Vector3(10, 50, 0), out var spawn, out float yaw));
-        Assert.Equal(new Vector3(7, 4, 0), spawn); Assert.Equal(MathF.PI * .5f, yaw);
+        Assert.Equal(new Vector3(7, 4, 0), spawn); Assert.Equal(MathF.PI * .5f, yaw, 5);
         probe.ObserveStrike(9, 0, "Deactivate", "auto"); probe.Broken = true; probe.RewardStatus = "observed";
         var snapshot = probe.Capture(Target with { Visible = false }, new(2, 3, 4))!;
         Assert.Equal("auto: state 1 -> 3 -> Deactivate", snapshot.Status);
@@ -66,16 +78,18 @@ public sealed class LabAndCrateDiagnosticTests
     }
 
     private static Rac2CrateTargetSnapshot Target => new("rac2:class500:9", 8, 9, Vector3.Zero, true, true);
-    private sealed class Lab(float[] positions) : IFusionLabTraversalFixture, IDiagnosticFrameClock
+    private sealed class Lab(float[] positions) : IFusionLabTraversalFixture, IDiagnosticFrameClock, IDiagnosticSources
     {
         private Func<FusionLabTraversalPose, Vector2>? _input;
         private int _index;
         public int Reloads;
         public bool Released, Suspend;
+        public bool ReloadSucceeds = true;
         public List<Vector2> Axes { get; } = [];
         public IDisposable Drive(Func<FusionLabTraversalPose, Vector2> input) { _input = input; return new Release(() => { Released = true; _input = null; }); }
         public FusionLabTraversalPose Read() => new(0, positions[Math.Min(_index, positions.Length - 1)], _index);
-        public Task<bool> ReloadDeferredAsync(CancellationToken token) { token.ThrowIfCancellationRequested(); Reloads++; return Task.FromResult(true); }
+        public Task<bool> ReloadDeferredAsync(CancellationToken token) { token.ThrowIfCancellationRequested(); Reloads++; return Task.FromResult(ReloadSucceeds); }
+        public System.Collections.Immutable.ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => [];
         public DiagnosticFrameSnapshot ReadFrames() => new((ulong)_index, (ulong)_index);
         public Task NextAsync(DiagnosticFramePhase phase, CancellationToken cancellationToken)
         {

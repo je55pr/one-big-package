@@ -9,12 +9,13 @@ namespace OBP.Game.Diagnostics;
 public partial class CliToolEngineSmoke : Node3D
 {
     private readonly HostOperationScope _hostOperations = new();
-    public override void _Ready() => _hostOperations.Start("cli-tool-engine-proof", RunAsync);
+    public override void _Ready() => _hostOperations.Start("cli-tool-engine-proof", RunAsync, lifetime: CancellationToken.None);
     public override void _ExitTree() => _hostOperations.Dispose();
     private async Task RunAsync(CancellationToken token)
     {
         try
         {
+            GD.Print("[cli-tool-engine-smoke] started");
             var args = CommandLineArgs.Parse(OS.GetCmdlineUserArgs());
             string output = args.ShotsOut ?? throw new ArgumentException("Choose an isolated --shots-out directory.");
             var lab = FusionLabDefinition.Parse(File.ReadAllText(ProjectSettings.GlobalizePath("res://data/fusion_lab.json")));
@@ -48,6 +49,7 @@ public partial class CliToolEngineSmoke : Node3D
             finally { RenderingServer.FramePostDraw -= Drawn; }
             GetTree().Quit(0);
         }
+        catch (OperationCanceledException error) when (error.CancellationToken == token && token.IsCancellationRequested) { }
         catch (Exception error)
         {
             GD.PrintErr("[cli-tool-engine-smoke] FAIL: " + error);
