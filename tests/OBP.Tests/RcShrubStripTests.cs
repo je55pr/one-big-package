@@ -19,21 +19,23 @@ public sealed class RcShrubStripTests
     {
         var mesh = RcShrub.ReadClass(SyntheticClass(lastIsStrip: true, lastVertexCount: 2));
 
-        // A four-vertex strip, then a fresh six-vertex strip. The final two-vertex
-        // primitive must not produce a triangle or carry parity into another tag.
+        // A five-vertex strip yields three triangles (odd parity), then
+        // a fresh six-vertex strip. If parity leaked across GIF tags, the
+        // second strip would turn inside-out. The final two-vertex primitive
+        // must not contribute a triangle.
         Assert.Equal(new[]
         {
-            0, 1, 2, 2, 1, 3,
-            4, 5, 6, 6, 5, 7, 6, 7, 8, 8, 7, 9,
+            0, 1, 2, 2, 1, 3, 2, 3, 4,
+            5, 6, 7, 7, 6, 8, 7, 8, 9, 9, 8, 10,
         }, mesh.Indices);
-        Assert.Equal(10, mesh.Positions.Length / 3);
-        Assert.Equal(6, mesh.Indices.Length / 3);
-        Assert.Equal(new[] { 5, 5, 9, 9, 9, 9 }, mesh.TriangleMaterialSlots);
-        Assert.Equal(new[] { 0, 0, 1, 1, 1, 1 }, mesh.TriangleMaterialStateIndices);
-        Assert.Equal(new bool?[] { true, true, false, false, false, false }, mesh.TriangleAlphaBlendEnabled);
+        Assert.Equal(11, mesh.Positions.Length / 3);
+        Assert.Equal(7, mesh.Indices.Length / 3);
+        Assert.Equal(new[] { 5, 5, 5, 9, 9, 9, 9 }, mesh.TriangleMaterialSlots);
+        Assert.Equal(new[] { 0, 0, 0, 1, 1, 1, 1 }, mesh.TriangleMaterialStateIndices);
+        Assert.Equal(new bool?[] { true, true, true, false, false, false, false }, mesh.TriangleAlphaBlendEnabled);
         Assert.Equal(new[] { 5, 9, 13 }, mesh.Materials.Select(m => m.TextureId));
 
-        Assert.Equal(4, DirectedSharedEdges(mesh.Indices));
+        Assert.Equal(5, DirectedSharedEdges(mesh.Indices));
         Assert.Equal(0, ConflictingDirectedEdges(mesh.Indices));
         for (int triangle = 0; triangle < mesh.Indices.Length / 3; triangle++)
             Assert.True(SignedAreaXY(mesh.Positions, mesh.Indices, triangle) > 0,
@@ -41,11 +43,32 @@ public sealed class RcShrubStripTests
     }
 
     [Fact]
+    public void GifStrip_MaterialOnlyBoundaryRestartsParityWithoutNewGifTag()
+    {
+        var mesh = RcShrub.ReadClass(SyntheticClass(
+            lastIsStrip: true, lastVertexCount: 2, materialOnlySecond: true));
+
+        // Five vertices produce three triangles; a subsequent AD-GIF material
+        // change, with NO new GIF primitive tag, starts its own strip parity.
+        Assert.Equal(new[]
+        {
+            0, 1, 2, 2, 1, 3, 2, 3, 4,
+            5, 6, 7, 7, 6, 8, 7, 8, 9, 9, 8, 10,
+        }, mesh.Indices);
+        Assert.Equal(new[] { 5, 5, 5, 9, 9, 9, 9 }, mesh.TriangleMaterialSlots);
+        Assert.Equal(new[] { 0, 0, 0, 1, 1, 1, 1 }, mesh.TriangleMaterialStateIndices);
+        Assert.Equal(new bool?[] { true, true, true, true, true, true, true },
+            mesh.TriangleAlphaBlendEnabled);
+        Assert.Equal(5, DirectedSharedEdges(mesh.Indices));
+        Assert.Equal(0, ConflictingDirectedEdges(mesh.Indices));
+    }
+
+    [Fact]
     public void GifTriangleList_KeepsOriginalOrderAndIgnoresIncompleteTail()
     {
         var mesh = RcShrub.ReadClass(SyntheticClass(lastIsStrip: false, lastVertexCount: 4));
-        Assert.Equal(new[] { 10, 11, 12 }, mesh.Indices[^3..]);
-        Assert.Equal(7, mesh.Indices.Length / 3);
+        Assert.Equal(new[] { 11, 12, 13 }, mesh.Indices[^3..]);
+        Assert.Equal(8, mesh.Indices.Length / 3);
         Assert.Equal(13, mesh.TriangleMaterialSlots[^1]);
         Assert.Equal(2, mesh.TriangleMaterialStateIndices[^1]);
         Assert.True(mesh.TriangleAlphaBlendEnabled[^1]);
@@ -53,7 +76,7 @@ public sealed class RcShrubStripTests
 
     [SkippableTheory]
     [InlineData(0, 33, 12_244)]
-    [InlineData(1, 51, 0)]
+    [InlineData(1, 51, 24_070)]
     public void Rac1RetailFoliage_StripsHaveOppositeSharedEdgesAndUnchangedTriangleCount(
         int levelId, int expectedClasses, int expectedTriangles)
     {
@@ -63,8 +86,7 @@ public sealed class RcShrubStripTests
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == levelId);
         var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Shrubs;
         Assert.Equal(expectedClasses, classes.Count);
-        if (expectedTriangles > 0)
-            Assert.Equal(expectedTriangles, classes.Values.Sum(c => c.Mesh.Indices.Length / 3));
+        Assert.Equal(expectedTriangles, classes.Values.Sum(c => c.Mesh.Indices.Length / 3));
 
         int observed = 0;
         foreach (var cls in classes.Values)
@@ -144,33 +166,40 @@ public sealed class RcShrubStripTests
     private static int DirectedSharedEdges(int[] indices) => EdgeCensus(indices).Edges;
     private static int ConflictingDirectedEdges(int[] indices) => EdgeCensus(indices).Conflicts;
 
-    private static byte[] SyntheticClass(bool lastIsStrip, int lastVertexCount)
+    private static byte[] SyntheticClass(bool lastIsStrip, int lastVertexCount, bool materialOnlySecond = false)
     {
         // Three VIF UNPACKs: 16-byte quadword header, and parallel 8-byte
         // position/UV records. Offset counters model native GIF+AD+vertex walk:
         // tag=1, material=5, vertex=3 qwords.
-        int[] lengths = [4, 6, lastVertexCount];
-        int[] tagOffsets = [0, 18, 42];
-        int[] adOffsets = [1, 19, 43];
+        int[] lengths = [5, 6, lastVertexCount];
+        int gifTagCount = materialOnlySecond ? 2 : 3;
+        // With no second GIF tag, material #2 starts immediately after the
+        // odd-length first strip. The next GIF tag follows the six-vertex strip.
+        int[] tagOffsets = materialOnlySecond ? [0, 44] : [0, 21, 45];
+        int[] adOffsets = materialOnlySecond ? [1, 21, 45] : [1, 22, 46];
         int[][] coords =
         [
-            [0, 0, 10, 0, 0, 10, 10, 10],
+            [0, 0, 10, 0, 0, 10, 10, 10, 0, 20],
             [0, 20, 10, 20, 0, 30, 10, 30, 0, 40, 10, 40],
             [0, 50, 10, 50, 0, 60, 10, 60],
         ];
         var hd = new byte[0x100];
         BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(0), 3);
-        BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(4), 3);
+        BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(4), gifTagCount);
         BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(8), lengths.Sum());
-        for (int p = 0; p < 3; p++)
+        for (int g = 0; g < gifTagCount; g++)
         {
-            int tag = 0x10 + p * 0x10;
-            int type = p == 2 && !lastIsStrip ? 0b011 : 0b100;
-            int prim = type | (p != 1 ? 0x40 : 0);
+            int tag = 0x10 + g * 0x10;
+            int type = g == gifTagCount - 1 && !lastIsStrip ? 0b011 : 0b100;
+            int prim = type | (materialOnlySecond || g != 1 ? 0x40 : 0);
             BinaryPrimitives.WriteUInt64LittleEndian(hd.AsSpan(tag),
                 (1UL << 46) | ((ulong)prim << 47));
-            BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(tag + 0x0c), tagOffsets[p]);
-            int mat = 0x10 + 3 * 0x10 + p * 0x40;
+            BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(tag + 0x0c), tagOffsets[g]);
+        }
+
+        for (int p = 0; p < 3; p++)
+        {
+            int mat = 0x10 + gifTagCount * 0x10 + p * 0x40;
             BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(mat + 0x0c), adOffsets[p]);
             BinaryPrimitives.WriteInt32LittleEndian(hd.AsSpan(mat + 0x30), p == 0 ? 5 : p == 1 ? 9 : 13);
         }
