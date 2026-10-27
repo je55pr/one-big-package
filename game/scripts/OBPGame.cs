@@ -7,6 +7,8 @@ using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.IO;
 using OBP.RAC1.Progression;
+using OBP.RAC1.Player;
+using OBP.Runtime.Gameplay;
 using OBP.RAC2;
 using OBP.Runtime;
 using OBP.Runtime.Presentation;
@@ -46,6 +48,7 @@ public partial class OBPGame : Node3D
         return new(this, setup, new(EnsureRac1CampaignPersistenceInitialized, () =>
         {
             _navigation.CancelNavigation(); _navigation.RetireMenuPages(); _mode = Mode.Picker; _sceneKind = "sources";
+            _modals?.RetireAll();
             TeardownWorld(); EnsurePlainEnvironment();
             _navigation.RetireSelector();
             if (_worldHud is not null && IsInstanceValid(_worldHud)) _worldHud.Visible = false;
@@ -144,6 +147,7 @@ public partial class OBPGame : Node3D
             EnterWorld: (id, load, destination, sourcePath, lab) => EnterWorld(id, load, destination, sourcePath, lab),
             EnterPage: isTitle =>
             {
+                _modals?.RetireAll();
                 _mode = isTitle ? Mode.Title : Mode.Selector;
                 _sceneKind = isTitle ? "title" : "destinations";
                 TeardownWorld();
@@ -311,21 +315,16 @@ public partial class OBPGame : Node3D
 
     public bool TryHandleInteractiveBack()
     {
-        if (QuickSelectOpen)
+        switch (Modals.HandleBack())
         {
-            CloseWeaponQuickSelect();
-            return TryOpenPauseMenu();
-        }
-        if (TryCloseControllerSettings())
-        {
-            ApplicationLifecycle.ReportNavigation("controller-settings-close");
-            return true;
-        }
-
-        if (TryClosePauseMenu())
-        {
-            ApplicationLifecycle.ReportNavigation("pause-menu-close");
-            return true;
+            case ModalBackResult.WheelClosed:
+                return true;
+            case ModalBackResult.SettingsClosed:
+                ApplicationLifecycle.ReportNavigation("controller-settings-close");
+                return true;
+            case ModalBackResult.PauseClosed:
+                ApplicationLifecycle.ReportNavigation("pause-menu-close");
+                return true;
         }
 
         if (TryCloseRac1PlanetMap())
@@ -368,6 +367,7 @@ public partial class OBPGame : Node3D
 
     private void ReleaseAudioForExit()
     {
+        _modals?.RetireAll();
         _hostOperations.Dispose();
         _sourceSetup?.Dispose();
         RetireBugOverlayLifetime();
@@ -390,6 +390,7 @@ public partial class OBPGame : Node3D
         // Stop gameplay before releasing its audio, otherwise a final physics
         // update can start another footstep/voice during shutdown.
         ProcessMode = ProcessModeEnum.Disabled;
+        _modals?.RetireAll();
         _playtest?.SuspendBugCaptureForQuit();
         Task hostStopped = _hostOperations.StopAsync();
         if (_worldScenes is { } scenes)
@@ -1596,4 +1597,236 @@ public partial class OBPGame : Node3D
             _rac1CampaignSession.AbandonUncommittedHostLoad();
     }
 
+
+    private UiModalCoordinator? _modals;
+    private UiModalCoordinator Modals => _modals ??= CreateModalCoordinator();
+    private PauseMenuUi? _pauseMenu => Modals.PauseMenu;
+    private WeaponQuickSelectUi? _quickSelect => Modals.QuickSelect;
+    private bool _debugOutputEnabled => Modals.DebugOutputEnabled;
+    private bool PauseMenuOpen => Modals.PauseOpen;
+    private bool ControllerSettingsOpen => Modals.SettingsOpen;
+    private bool QuickSelectOpen => Modals.QuickSelectOpen;
+    private SourceWeaponKey? _previousSelectedWeapon { get => Modals.PreviousSelectedWeapon; set => Modals.PreviousSelectedWeapon = value; }
+    private ulong _lastQuickSelectTap { set { if (value == 0) Modals.ResetWheelGesture(); } }
+    private SourceWeaponKey CurrentWeaponKey => _fusion is { Selected.SourceGame: ObpSourceGame.Rac2 or ObpSourceGame.Rac3 }
+        ? _fusion.Selected : new(ObpSourceGame.Rac1, _rac1Weapons.CurrentItemId);
+
+    private UiModalCoordinator CreateModalCoordinator()
+    {
+        var equipment = new ModalEquipmentPorts(
+            Catalog: ReadPlayerEquipment,
+            QuickSlots: ReadPlayerQuickSlots,
+            Equip: SelectPlayerEquipment,
+            Unequip: UnequipPlayerEquipment,
+            SetGadget: SetPlayerGadgetEnabled,
+            AssignSlot: AssignPlayerQuickSelect,
+            AssignNativeSlot: (slot, id) => _playerNative is not null
+                ? AssignPlayerQuickSelect(slot, $"rac1/item/{id}").Accepted
+                : _rac1Weapons.TryAssignQuickSelect(slot, id),
+            SelectNativeWeapon: OnRac1WeaponSelectionRequested,
+            CurrentWeapon: () => CurrentWeaponKey,
+            SelectWeapon: SelectWeaponKey,
+            CanRepeatWeapon: key => key.SourceGame == ObpSourceGame.Rac1
+                ? _rac1Weapons.Owns((Rac1WeaponId)key.NativeItemId)
+                : _fusion is not null && FusionWeaponSession.Weapons.Contains(key),
+            WheelEntries: ReadWeaponQuickSelectEntries);
+
+        return new UiModalCoordinator(new UiModalPorts(
+            Host: this,
+            CanPause: () => _mode == Mode.World && _args.CaptureFrame is null,
+            CanQuickSelect: () => _mode == Mode.World && !Rac1PlanetMapOpen,
+            BuildPauseMenu: CreatePauseMenuPresentation,
+            Player: () => _player,
+            HasSourceView: () => Sources.HasView,
+            SetSourceVisible: visible => Sources.SetVisible(visible),
+            SetSelectorVisible: visible => _navigation.SetSelectorVisible(visible),
+            SetPlayerAudioPaused: SetPlayerAudioPaused,
+            TryMissionInteraction: TryHandleRac1MissionInteraction,
+            TryTaxiInteraction: TryHandleRac1MetropolisTaxiInput,
+            Equipment: equipment));
+    }
+
+    public void ShowControllerSettingsFromMenu()
+    {
+        if (!ControllerSettingsOpen) Modals.OpenSettings(fromPause: false);
+    }
+
+    public bool TryOpenPauseMenu() => Modals.OpenPause();
+    public bool TryClosePauseMenu() => Modals.TryClosePause();
+    public bool TryCloseControllerSettings() => Modals.TryCloseSettings();
+    private void ClosePauseMenu() => Modals.ClosePause();
+    private void CloseWeaponQuickSelect(SourceWeaponKey? weapon = null) => Modals.CloseQuickSelect(weapon);
+    private void TearDownInteractiveOverlays() => Modals.RetireAll();
+    public bool TryOpenWeaponQuickSelect(InputEvent input) => Modals.OpenQuickSelect(input);
+
+    private void ReturnToWorldsFromPause()
+    {
+        ClosePauseMenu();
+        ShowDestinationSelector();
+    }
+
+    private PauseMenuUi CreatePauseMenuPresentation()
+    {
+        var equip = Modals.Equipment;
+        var menu = new PauseMenuUi
+        {
+            ProcessMode = ProcessModeEnum.Always,
+            RetailEnabled = !OrdinaryPlayerSession && _player?.HasRetailPresentation == true && Rac1RetailUiAssets.IsLoaded,
+            CatalogReader = OrdinaryPlayerSession ? equip.Catalog : null,
+            SlotReader = OrdinaryPlayerSession ? equip.QuickSlots : null,
+            CatalogEquip = equip.Equip,
+            CatalogUnequip = equip.Unequip,
+            CatalogGadget = equip.SetGadget,
+            CatalogAssign = equip.AssignSlot,
+            CatalogPreview = CreateEquipmentAppearancePreview,
+            ActorStatusReader = ReadPlacedActorStatus,
+            SharedProfileStatusReader = () => _profileStatus,
+            SaveNoticeReader = () => PlayerSaveNotice,
+            ActorReset = ResetPlacedActor,
+            EffectStatusReader = () =>
+            {
+                var resources = _worldScenes?.Current?.Resources;
+                resources?.Effects?.Prepare();
+                return resources?.Effects?.Status ?? resources?.EffectsFailure ?? "World effects are unavailable.";
+            },
+            EffectControl = operation => _worldScenes?.Current?.Resources.Effects?.Control(operation) ??
+                new(false, _worldScenes?.Current?.Resources.EffectsFailure ?? "World effects are unavailable."),
+            CatalogIcon = entry => entry.Definition.Item is { SourceGame: ObpSourceGame.Rac1 } item &&
+                Rac1WeaponIconCatalog.Ordinary((Rac1WeaponId)item.NativeItemId) is { } icon
+                ? Rac1RetailUiAssets.Sprite(icon.AnimationId, icon.Frame) : null,
+            LabAvailable = OrdinaryPlayerSession,
+            Weapons = Rac1WeaponProfiles.Additional.Select(profile => profile.Item)
+                .Prepend(Rac1WeaponId.FirstRanged)
+                .OrderBy(weapon => (int)weapon)
+                .Select(weapon => new PauseMenuUi.RetailItem(
+                    (int)weapon, Rac1WeaponProfiles.Name(weapon),
+                    _rac1Weapons.Owns(weapon), _rac1Weapons.Equipped == weapon,
+                    Rac1WeaponIconCatalog.Ordinary(weapon)?.AnimationId))
+                .ToArray(),
+            Gadgets = (Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                .SelectMany(group => group.Cells).Select(cell => cell.NativeId) ??
+                Enum.GetValues<Rac1TraversalEquipmentId>().Select(gadget => (int)gadget))
+                .Select(id =>
+                {
+                    var gadget = (Rac1TraversalEquipmentId)id;
+                    string name = Enum.IsDefined(gadget) ? gadget.ToString() switch
+                    {
+                        "HeliPack" => "Heli-Pack",
+                        "ThrusterPack" => "Thruster-Pack",
+                        "HydroPack" => "Hydro-Pack",
+                        "OxygenMask" => "O2 Mask",
+                        "Magneboots" => "Magneboots",
+                        "Grindboots" => "Grindboots",
+                        _ => gadget.ToString(),
+                    } : $"Native item {id}";
+                    return new PauseMenuUi.RetailItem(id, name,
+                        _rac1Weapons.OwnsNativeItem(id), false);
+                }).ToArray(),
+            QuickSlots = (_playerNative?.Assignments.Capture().QuickSelect ?? _rac1Weapons.QuickSelect
+                .Select(id => id == 0 ? (OBP.Runtime.Gameplay.SourceWeaponKey?)null : new OBP.Runtime.Gameplay.SourceWeaponKey(ObpSourceGame.Rac1, id)).ToArray()).Select((key, slot) =>
+            {
+                // The retained native menu only admits native icon/item IDs.
+                // Foreign slots remain real in the OBP read model and wheel;
+                // #259 owns their full pause-menu presentation.
+                int id = key is { SourceGame: ObpSourceGame.Rac1 } native ? native.NativeItemId : 0;
+                Rac1WeaponId weapon = (Rac1WeaponId)id;
+                var icon = Rac1WeaponIconCatalog.Ordinary(weapon);
+                return new PauseMenuUi.RetailItem(id,
+                    key is { SourceGame: not ObpSourceGame.Rac1 } foreign ? $"{FusionWeaponName(foreign)} [{SourceIdentityWire.FormatSource(foreign.SourceGame)}]" :
+                    id == 0 ? $"Slot {slot + 1}: Empty" :
+                    Enum.IsDefined(weapon) ? Rac1WeaponProfiles.Name(weapon) : $"Native item {id}",
+                    id != 0 && _rac1Weapons.OwnsNativeItem(id),
+                    id != 0 && _rac1Weapons.Equipped == weapon,
+                    icon?.AnimationId);
+            }).ToArray(),
+            // Retail Items kind=0 reads item_available[]. Kind=1 reads
+            // independent alternate_item_available[] progression flags,
+            // which this campaign host does not yet model or invent.
+            NativePrimaryItemAvailability = _rac1Weapons.Items,
+            Items = Enumerable.Range(0, Rac1NativeInventoryLayout.ItemCount)
+                .Where(id => _rac1Weapons.OwnsNativeItem(id) &&
+                    !Enum.IsDefined((Rac1WeaponId)id) &&
+                    !Enum.IsDefined((Rac1TraversalEquipmentId)id) &&
+                    !(Rac1RetailUiAssets.NativeMenuPages?.NativeGadgetsGrid.Groups
+                        .Any(group => group.Cells.Any(cell => cell.NativeId == id)) ?? false))
+                .Select(id => new PauseMenuUi.RetailItem(id, $"Native item {id}", true, false))
+                .ToArray(),
+            DebugOutputEnabled = _debugOutputEnabled,
+            MovementStatesAvailable = _player?.CanSaveMovementState == true,
+            WeaponPreviewEnabled = _rac1WeaponPreviewInventory is not null,
+            FusionTestAvailable = CanRunNativeFusionFixture,
+            FusionTestEnabled = FusionTestActive,
+            EquipmentStatus = _player is { } activePlayer
+                ? FusionTestActive ? "Three-game Veldin test · temporary inventory\nOriginal damage · OBP hand mounts / spread feedback\nHold Triangle / Q to select; Circle / E to fire."
+                : $"Weapons: {(_rac1WeaponPreviewInventory is null ? "campaign inventory" : "full arsenal preview")}\nPack: {activePlayer.Rac1EquipmentLabel}\nSwingshot preview: {(activePlayer.Rac1DevelopmentSwingshotPreview ? "on" : "off")}"
+                : string.Empty,
+        };
+        menu.EquipRequested += equip.SelectNativeWeapon;
+        menu.FusionTestRequested += ToggleFusionTest;
+        menu.LabRequested += () => { ClosePauseMenu(); EnterFusionLab(); };
+        menu.QuickSelectAssignRequested = equip.AssignNativeSlot;
+        menu.ResumeRequested += () => ClosePauseMenu();
+        menu.ControllerSettingsRequested += () => Modals.OpenSettings(fromPause: true);
+        menu.DebugOutputChanged += SetDebugOutputEnabled;
+        menu.SaveMovementStateRequested += SaveMovementState;
+        menu.LoadMovementStateRequested += () => StartMovementStateLoad(MovementStatePath);
+        menu.WeaponPreviewRequested += () => { ClosePauseMenu(); SetRac1WeaponPreview(_rac1WeaponPreviewInventory is not null); };
+        menu.RefillPreviewRequested += () => { ClosePauseMenu(); if (_rac1WeaponPreviewInventory is not null) SetRac1WeaponPreview(false); };
+        menu.PackPreviewRequested += () => { _player?.CycleRac1DevelopmentPack(); ClosePauseMenu(); };
+        menu.SwingshotPreviewRequested += () => { _player?.ToggleRac1DevelopmentSwingshot(); ClosePauseMenu(); };
+        menu.WorldsRequested += ReturnToWorldsFromPause;
+        menu.QuitRequested += () =>
+            ApplicationLifecycle.RequestQuit(this, "pause-menu-quit");
+        return menu;
+    }
+    private void SetDebugOutputEnabled(bool enabled)
+    {
+        Modals.DebugOutputEnabled = enabled;
+        _player?.SetDebugOutputEnabled(enabled);
+        if (_playerHud is not null && IsInstanceValid(_playerHud))
+            _playerHud.DebugOutputEnabled = enabled;
+        if (!enabled)
+        {
+            if (_inspector is { IsOpen: true }) _inspector.Toggle();
+            _overlay?.Clear();
+            if (_movementStateNotice is not null && IsInstanceValid(_movementStateNotice))
+                _movementStateNotice.Visible = false;
+            ++_movementStateNoticeGeneration;
+        }
+        UpdateWorldHud();
+        UpdatePlayerHud();
+    }
+
+    private WeaponQuickSelectUi.Entry[] ReadWeaponQuickSelectEntries()
+    {
+        var available = Rac1WeaponProfiles.Additional.Select(p => p.Item).Prepend(Rac1WeaponId.FirstRanged)
+            .Where(_rac1Weapons.Owns).ToArray();
+        // Respect native ring order, then expose owned implemented items not yet
+        // inserted by the incomplete acquisition adapter. Extra pages are OBP UI.
+        var order = _rac1Weapons.QuickSelect.Where(id => available.Contains((Rac1WeaponId)id))
+            .Select(id => (Rac1WeaponId)id).Concat(available).Distinct().ToArray();
+        var entries = order.Select(weapon => new WeaponQuickSelectUi.Entry(new(ObpSourceGame.Rac1, (int)weapon),
+            weapon == Rac1WeaponId.FirstRanged ? "Bomb Glove" : Rac1WeaponProfiles.Get(weapon).Name,
+            (int)weapon == 9 ? $"{_rac1AdditionalWeapons?.Cargo.Count ?? 0} captured" :
+            Rac1ItemAmmoDescriptors.Get((int)weapon).MaxAmmo > 0 ? $"{_rac1Weapons.GetAmmo((int)weapon)} ammo" : "")).ToArray();
+        if (_fusion is not null && _playerNative is null)
+        {
+            var keys = PlayerWeaponOrder();
+            entries = keys.Select(key => key.SourceGame == ObpSourceGame.Rac1 && !FusionTestActive ? entries.Single(e => e.Weapon == key) :
+                new WeaponQuickSelectUi.Entry(key, FusionWeaponName(key) + $" [{SourceIdentityWire.FormatSource(key.SourceGame)}]",
+                    _fusionAssets?.Available(key) == false ? "Source unavailable" : FusionWeaponDetail(key))).ToArray();
+        }
+        if (_playerNative is not null)
+        {
+            var catalog = ReadPlayerEquipment();
+            entries = PlayerQuickSelectOrder().Select(key =>
+            {
+                if (key is null) return new WeaponQuickSelectUi.Entry(null, "Empty", "Unassigned slot");
+                var entry = catalog.Single(entry => entry.Definition.Item == key);
+                return new WeaponQuickSelectUi.Entry(key, entry.Definition.DisplayName + $" [{SourceIdentityWire.FormatSource(entry.Definition.SourceGame)}]",
+                    entry.Reason ?? (entry.State.Capacity is { } capacity ? $"{entry.State.Ammo}/{capacity}" : ""));
+            }).ToArray();
+        }
+        return entries;
+    }
 }

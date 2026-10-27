@@ -187,6 +187,21 @@ with newly generated sidecars for the focused owners. Existing bootstrap,
 diagnostic, profile and input entrypoints remain thin root delegations pending
 final composition #376.
 
+The #348 modal ownership extraction retires `OBPGame.ControllerSettings.cs`
+and `OBPGame.QuickSelect.cs` and their UID sidecars, replacing 13 old modal
+root state fields with one `UiModalCoordinator` composition reference (12 net
+fields retired). The root census is now 66 files, 16,035 lines, 590 methods,
+414 fields (271 mutable), and 43 exposed members; before #348 it was 68 files,
+16,205 lines, 589 methods, 426 fields (283 mutable), and 43 exposed members.
+`UiModalCoordinator` alone owns pause leases, controller-settings visibility,
+return focus, mouse mode, held-button suppression, live Quick Select input
+capture and wheel gesture timing. `ModalEquipmentPorts` routes equipment
+mutations through the existing player equipment API, while the native retail
+menu and ordinary universal catalog retain separate presentation policies.
+The root only composes the already-existing menu read models and forwards
+stable public entrypoints. Reviewed temporary #348 root composition bindings
+expire with #376; the frozen origin/access ledger does not grow.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds
