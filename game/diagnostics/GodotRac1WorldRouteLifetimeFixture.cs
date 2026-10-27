@@ -10,7 +10,7 @@ internal sealed class GodotRac1WorldRouteLifetimeFixture(Node owner, Func<Rac1Wo
         .Where(node => node.Name.ToString().StartsWith("RuntimeAudio", StringComparison.Ordinal)).ToArray(), camera());
     private sealed class Witness(Node3D? root, Node[] hulls, Node[] audio, Camera3D? camera) : IRac1WorldRouteRetirementWitness
     {
-        private static bool Live(Node? node) => GodotObject.IsInstanceValid(node) && node!.IsInsideTree();
+        private static bool Live(Node? node) => GodotObject.IsInstanceValid(node) && node.IsInsideTree();
         public Rac1WorldRouteRetirement Read() => new(!Live(root), hulls.Count(Live), audio.Count(Live), !Live(camera));
     }
 }

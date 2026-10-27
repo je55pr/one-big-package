@@ -28,14 +28,14 @@ internal sealed class GodotRac1NovalisRouteFixture(Func<IReadOnlyList<(Rac1Noval
         _scope.RequireCurrent();
         return mechanisms().Single(item => item.Mechanism.InstanceIndex == index);
     }
-    public Rac1NovalisPistonDiagnostic ReadPiston(int index)
+    public Rac1NovalisPistonDiagnostic ReadPiston(int instanceIndex)
     {
-        var (mechanism, node) = Resolve(index); var piston = (Rac1NovalisPiston)mechanism;
+        var (mechanism, node) = Resolve(instanceIndex); var piston = (Rac1NovalisPiston)mechanism;
         return new(Key(piston), piston.End, piston.Timer, GodotMovementPlayer.Copy(node.Root.GlobalPosition));
     }
-    public Rac1NovalisDoorDiagnostic ReadDoor(int index)
+    public Rac1NovalisDoorDiagnostic ReadDoor(int instanceIndex)
     {
-        var (mechanism, node) = Resolve(index); var door = (Rac1NovalisProximityDoor)mechanism;
+        var (mechanism, node) = Resolve(instanceIndex); var door = (Rac1NovalisProximityDoor)mechanism;
         return new(Key(door), door.State, door.Progress, new(-door.Home.X, door.Home.Z, door.Home.Y), GodotMovementPlayer.Copy(node.Root.GlobalPosition));
     }
     private Rac1RouteRayDiagnostic Probe(ActorInstanceKey actor, Func<Rac1NovalisMechanism, Node3D, PhysicsRayQueryParameters3D> ray)

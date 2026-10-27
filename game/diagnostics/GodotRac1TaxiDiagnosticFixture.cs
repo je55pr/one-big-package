@@ -115,7 +115,11 @@ internal sealed class GodotRac1TaxiDiagnosticFixture(GodotRac1TaxiDiagnosticBind
         {
             try { _scope.RequireCurrent(); bindings.Abort(); }
             catch (DiagnosticUnavailableException) { /* The world owner already retired its taxi. */ }
-            finally { if (GodotObject.IsInstanceValid(player)) player.ProcessMode = process; Engine.TimeScale = scale; }
+            finally
+            {
+                if (GodotObject.IsInstanceValid(player)) { player.ProcessMode = process; }
+                Engine.TimeScale = scale;
+            }
         });
     }
     private sealed class Restore(Action restore) : IDisposable { public void Dispose() => restore(); }
