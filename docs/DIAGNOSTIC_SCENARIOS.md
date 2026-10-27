@@ -286,5 +286,5 @@ release on timeout/cancellation. Production movement is unchanged.
 Authorised headless checks cover Veldin, Novalis, Aridia and frog/queen levels
 6 and 10, including actual level retry and unload/reload. Optional enemy image
 capture still requires a rendered post-draw signal and reports unavailable in
-headless mode. The seventeen newly linked engine-free files have exact coverage
+headless mode. The eighteen newly linked engine-free files have exact coverage
 path permissions; engine fixtures remain outside portable coverage.

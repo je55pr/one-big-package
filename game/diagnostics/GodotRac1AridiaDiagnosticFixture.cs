@@ -107,18 +107,16 @@ internal sealed class GodotRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticF
         public void Dispose()
         {
             if (_disposed) return; _disposed = true;
-            List<Exception> failures = [];
-            void Restore(Action action) { try { action(); } catch (Exception error) { failures.Add(error); } }
-            Restore(() => { if (ReferenceEquals(_bindings.Session(), _fixture)) _bindings.ReplaceSession(_original); });
+            List<Action> restorations = [() => { if (ReferenceEquals(_bindings.Session(), _fixture)) _bindings.ReplaceSession(_original); }];
             bool live = true;
             try { _actors.Resolve(Start.Shark); } catch (DiagnosticUnavailableException) { live = false; }
             if (live)
             {
-                Restore(_pose.Dispose); Restore(() => _shark.DeathTicks = _deathTicks);
-                Restore(() => _runtime.SetNativeState(_native, _state));
-                Restore(() => { if (_shark.Animation.Sequence != _sequence && _shark.Animation.SupportsSequence(_sequence)) _bindings.SelectSequence(_shark, _sequence, 1); });
+                restorations.Add(_pose.Dispose); restorations.Add(() => _shark.DeathTicks = _deathTicks);
+                restorations.Add(() => _runtime.SetNativeState(_native, _state));
+                restorations.Add(() => { if (_shark.Animation.Sequence != _sequence && _shark.Animation.SupportsSequence(_sequence)) _bindings.SelectSequence(_shark, _sequence, 1); });
             }
-            if (failures.Count != 0) throw new AggregateException("Aridia shark fixture cleanup failed.", failures);
+            DiagnosticCleanup.Run("Aridia shark fixture cleanup failed.", [.. restorations]);
         }
     }
 }

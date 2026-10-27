@@ -43,7 +43,7 @@ public static class CoverageReport
         "game/diagnostics/Rac1EncounterScenarioSupport.cs",
         "game/diagnostics/Rac1EnemyScenario.cs",
         "game/diagnostics/Rac1EncounterInput.cs",
-        "game/diagnostics/Rac1WrenchApproachScenario.cs",
+        "game/diagnostics/Rac1WrenchApproachScenario.cs", "game/diagnostics/DiagnosticCleanup.cs",
         "game/diagnostics/Rac1EncounterDiagnosticHarness.cs" };
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
