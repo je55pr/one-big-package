@@ -470,3 +470,49 @@ fixture waits for the public partial recording to exist before counting 180
 process frames, uses ordinary F9 input to finish the tape, then closes through
 the normal window-close notification. Source preparation cannot consume that
 timing window. The paced recording must replay exactly in a fresh process.
+
+## Explicit Lab and CLI tools (#345)
+
+`FusionLabTraversalScenario` owns the original input-driven entrance, hub,
+chamber and return thresholds. Its scoped player input is installed only for
+`--test-scene fusion-lab --capture-frame`; the source-free fixture still requires
+the explicit `--diagnostic-player` option. Reload is deferred from the input
+callback through the ordinary selector/Lab route. There is no Lab smoke call in
+the production process loop, and ordinary Lab presentation has no development
+status/help captions. Ordinary play still uses its selected native avatar and
+the normal all-three-source admission gate.
+
+`Rac2CrateDiagnosticProbe` receives copied source-qualified class-500 target and
+reward facts. `--crate-focus` and `--crate-auto-strike` retain their native target,
+staging, damage tuple, HUD text and `crateDebug` sidecar schema. Diagnostic state
+and the existing `Rac2FreshBoltSession` have separate owners in one world lease;
+the probe never owns payout planning, collection or the persistent wallet.
+
+`ShotListCliService` retains source registration, world-token precedence, camera
+choices, overlay application, shot order and `<world>-<shot>.png` naming. Its
+Godot adapter calls the unchanged capture primitive, which samples metadata
+after `FramePostDraw` and writes the PNG/JSON pair. CLI paths retain the existing
+resolution semantics. Bad lists/missing GC source exit 2, unavailable worlds or
+failed PNG saves exit 1, and unexpected output IO failures remain owned lifecycle
+failures exiting 2. Canceled capture/stress operations publish no success quit.
+
+`StressSwitchCliService` compares immutable world-generation, scene-root,
+player-node and native campaign witnesses around `__bad-import`. It preserves
+the token-indexed selector bounce, 10/45/1 process-frame waits, monitor rows and
+summary. Both CLI services run under `HostOperationScope`, with no detached task.
+
+The four engine-free components are linked into the portable suite with exact
+coverage paths. Engine tests use private artifacts and unfocusable offscreen
+captures; navigation and cancellation checks are headless. Reproduce them with:
+
+```powershell
+./tools/test-diagnostic-cli.ps1
+./tools/test-diagnostic-cli.ps1 -Retail
+```
+
+The retail option requires the existing authorised trilogy source environment
+variables and adds original shot lists, crate captures, failed-import retention,
+cancellation during an actual stress settle wait, and ordinary Lab presentation.
+The source-free post-draw proof exercises the actual screenshot adapter, PNG and
+sidecar writes, and a blocked output directory. The summary records every check;
+artifacts remain ignored and contain no committed retail payload.

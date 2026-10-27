@@ -108,7 +108,10 @@ public partial class OBPGame : Node3D
         if (_args.TestScene == "fusion-lab")
         {
             if (EnterFusionLab() && _args.CaptureFrame is { } fusionCapture)
+            {
+                if (_player is { } player) StartFusionLabTraversalSmoke(player);
                 _hostOperations.Start("capture", token => RunCaptureAsync(fusionCapture, token), lifetime: CancellationToken.None);
+            }
             return;
         }
 
@@ -116,7 +119,7 @@ public partial class OBPGame : Node3D
         // destination/provider path used by ordinary world entry.
         if (_args.ShotsPath is { } shotList)
         {
-            _hostOperations.Start("shots", token => RunShotsAsync(shotList, token), lifetime: CancellationToken.None);
+            _hostOperations.Start("shots", token => CreateShotListCliService().RunShotsAsync(shotList, token), lifetime: CancellationToken.None);
             return;
         }
 
@@ -176,7 +179,6 @@ public partial class OBPGame : Node3D
             // Sky-follow, animated mobies and per-region hero light / fog.
             _worldHost.Tick(delta, _activeCamera?.GlobalPosition ?? Vector3.Zero);
             _worldScenes?.Current?.Resources.Effects?.Render();
-            TickFusionLabTraversalSmoke();
             TickRac2Gameplay(delta);
             TickRac1Gameplay(delta);
             TickRac3Gameplay(delta);
@@ -627,7 +629,7 @@ public partial class OBPGame : Node3D
             GD.Print($"[OBPGame] anim-focus spawn near {anim[0].Name} at ({cx / n:0},{cy / n:0},{cz / n:0})");
         }
 
-        if (TryGetCrateFocusPose(world, out var crateSpawn, out var crateYaw))
+        if (_worldScenes?.Current?.Resources.CrateDiagnostics.TryGetFocusPose(world, out var crateSpawn, out var crateYaw) == true)
         {
             spawn = crateSpawn;
             yaw = crateYaw;
@@ -748,7 +750,8 @@ public partial class OBPGame : Node3D
             ground = p.IsOnFloor() ? "grounded" : "air";
         }
 
-        string crateDebug = GetCrateDebugHudLine();
+        var resources = _worldScenes?.Current?.Resources;
+        string crateDebug = resources?.CrateDiagnostics.HudLine(resources.Rac2CrateBolts) ?? string.Empty;
         string rac2Gameplay = GetRac2GameplayHudLine();
         string rac1Gameplay = GetRac1GameplayHudLine();
         string rac3Gameplay = GetRac3GameplayHudLine();
@@ -827,27 +830,12 @@ public partial class OBPGame : Node3D
                 new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock), _hostOperations, _args.MovementCase);
     }
     internal Task CheckControllerWeaponInputAsync() => CreateMovementDiagnosticHarness().RunControllerAsync(_hostOperations.Token);
-    private Task Rac1SmokeWaitAsync(Func<bool> condition, int frames, string label) =>
-        GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, LegacyDiagnosticCancellation.Current);
-    private Task Rac1SmokeWaitCancelableAsync(Func<bool> condition, int frames, string label, CancellationToken token) =>
-        GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, token);
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
         GodotRac1DiagnosticSurface.Add(parent, name, material, triangles);
-    private Task WaitForGroundedAsync(PlayerHost player, int frames) => WaitForGroundedCancelableAsync(player, frames, LegacyDiagnosticCancellation.Current);
-    private Task WaitForGroundedCancelableAsync(PlayerHost player, int frames, CancellationToken token) => GodotMovementCompatibility.GroundedAsync(this, player, frames, token);
-    private Task PhysicsFramesAsync(int count) => PhysicsFramesCancelableAsync(count, LegacyDiagnosticCancellation.Current);
-    private Task PhysicsFramesCancelableAsync(int count, CancellationToken token) => GodotMovementCompatibility.FramesAsync(this, count, token);
-    private Task WaitForPlayerAvatarSequenceAsync(int sequence, int frames, string label) => CreateMovementDiagnosticHarness().WaitSequenceAsync(sequence, frames, label, LegacyDiagnosticCancellation.Current);
-    private Task TapPhysicalKeyAsync(Key key) => GodotMovementCompatibility.TapKeyAsync(this, key);
-    private static void SendPhysicalKey(Key key, bool pressed) => GodotMovementCompatibility.Key(key, pressed);
     private static void SetAnalogueSmokeInput(float right, float forward) => GodotMovementCompatibility.Analogue(right, forward);
     private static void SetRac1SmokeConditionedInput(double right, double forward) => GodotMovementCompatibility.Conditioned(right, forward);
     private static void ClearMovementSmokeInput() => GodotMovementCompatibility.Clear();
-    private static float HorizontalSpeed(PlayerHost player) => DiagnosticMovementMath.HorizontalSpeed(GodotMovementPlayer.Copy(player.Velocity));
-    private static float HorizontalDistance(Vector3 a, Vector3 b) => DiagnosticMovementMath.HorizontalDistance(GodotMovementPlayer.Copy(a), GodotMovementPlayer.Copy(b));
-    private static double WrapAngle(double value) => DiagnosticMovementMath.WrapAngle(value);
-    private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
 
 
     private FusionWeaponDiagnosticHarness CreateFusionWeaponDiagnosticHarness()
@@ -1412,6 +1400,33 @@ public partial class OBPGame : Node3D
         ToScene = FromTaxiPoint,
         Basis = ToTaxiCabBasis,
     }, new GodotDiagnosticWorldObservations(WorldScenes));
+
+    private ShotListCliService CreateShotListCliService() => new(_args, (game, path) => RememberCommandLineSource(game, path),
+        new GodotShotListCaptureFixture(this, _camera, camera => _activeCamera = camera, OpenDestinationFromBootstrap,
+            () => _mode == Mode.World ? _world : null, FrameShowcaseCamera, ApplyOverlaySpec, UpdateWorldHud, CaptureMetadata),
+        (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
+
+    private StressSwitchCliService CreateStressSwitchCliService() => new(
+        new GodotStressWorldFixture(() => new(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld(),
+                _worldHost.Root?.GetInstanceId(), _player?.GetInstanceId(), _rac1CampaignSession.Campaign.CurrentLevel),
+            path => _activeDestination is { } destination && _worldHost.Root is not null && !EnterProviderWorld(path, destination),
+            ShowDestinationSelector, OpenDestinationFromBootstrap, _worldRoot, () => _world?.LevelId ?? -1, () => _player?.IsOnFloor()),
+        new GodotDiagnosticFrameClock(this), (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),
+        message => GD.Print(message), message => GD.PrintErr(message));
+
+    private void StartFusionLabTraversalSmoke(PlayerHost player)
+    {
+        var runner = new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => []), new GodotDiagnosticFrameClock(this));
+        var scenario = new FusionLabTraversalScenario(new GodotFusionLabTraversalFixture(player, () => _frame,
+            new GodotDiagnosticWorldObservations(WorldScenes), ShowDestinationSelector, EnterFusionLab, () => _player is not null),
+            message => GD.Print(message), message => GD.PrintErr(message));
+        _hostOperations.Start("fusion-lab-traversal", async token =>
+        {
+            var result = await runner.RunAsync(scenario, explicitlyRequested: true, token);
+            if (result.Status is not (DiagnosticRunStatus.Passed or DiagnosticRunStatus.Canceled))
+                throw result.Error ?? new InvalidOperationException(result.Detail);
+        }, lifetime: CancellationToken.None);
+    }
 
     private void BuildScene(string scene)
     {

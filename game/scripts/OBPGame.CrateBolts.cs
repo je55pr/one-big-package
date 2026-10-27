@@ -76,11 +76,13 @@ public partial class OBPGame
             return;
         }
 
+        if (_worldScenes?.Current?.Resources is not { } resources) return;
+        var rewards = resources.Rac2CrateBolts;
         int denomination;
         if (_playerNative is not null && (long)_playerNative.Wallet.Balance + pickup.Denomination > int.MaxValue) return;
         try
         {
-            denomination = _crateBoltSession.CollectPickup(pickup.PickupId);
+            denomination = rewards.CollectPickup(pickup.PickupId);
         }
         catch (InvalidOperationException)
         {
@@ -100,9 +102,9 @@ public partial class OBPGame
         area.SetDeferred(Area3D.PropertyName.Monitoring, false);
         area.QueueFree();
         PlayRepresentativeAudioOneShot();
-        _crateRewardStatus = $"collected +{denomination}; session total {_crateBoltSession.CollectedBolts}; " +
-            $"{_crateBoltSession.OutstandingPickupCount} physical remain, {_crateBoltSession.DeferredBolts} deferred";
+        resources.CrateDiagnostics.Probe.RewardStatus = $"collected +{denomination}; session total {rewards.CollectedBolts}; " +
+            $"{rewards.OutstandingPickupCount} physical remain, {rewards.DeferredBolts} deferred";
         GD.Print($"[crate-bolts] pickup={pickup.PickupId} denomination={denomination} " +
-                 $"collected={_crateBoltSession.CollectedBolts} deferred={_crateBoltSession.DeferredBolts}");
+                 $"collected={rewards.CollectedBolts} deferred={rewards.DeferredBolts}");
     }
 }

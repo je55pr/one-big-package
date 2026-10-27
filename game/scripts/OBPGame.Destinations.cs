@@ -99,7 +99,7 @@ public partial class OBPGame
     }
 
     public void RunRac2StressSwitchFromBootstrap(string sequence) =>
-        _hostOperations.Start("stress-switch", token => RunStressSwitchAsync(sequence, token), lifetime: CancellationToken.None);
+        _hostOperations.Start("stress-switch", token => CreateStressSwitchCliService().RunStressSwitchAsync(sequence, token), lifetime: CancellationToken.None);
 
     /// <summary>
     /// Smoke/bootstrap convenience that enters the persisted native CurrentLevel

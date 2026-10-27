@@ -2,6 +2,8 @@ using Godot;
 using OBP.Godot;
 using OBP.Runtime;
 using OBP.Fusion;
+using OBP.Game.Diagnostics;
+using OBP.RAC2.Gameplay;
 
 namespace OBP.Game;
 
@@ -12,6 +14,9 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     private bool _disposed;
     public WorldHost Presentation { get; } = new();
     public RuntimeWorldScene.Result Scene { get; } = prepared;
+    // Native rewards follow the world lease. The optional probe only observes them.
+    public Rac2FreshBoltSession Rac2CrateBolts { get; } = new();
+    public GodotRac2CrateDiagnosticFixture CrateDiagnostics { get; } = new(prepared.DynamicObjectNodes ?? []);
     public WorldEffectHost? Effects { get; set; }
     public string? EffectsFailure { get; set; }
     public WorldEntryRequest? EffectScope { get; set; }

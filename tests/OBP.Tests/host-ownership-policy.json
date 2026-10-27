@@ -2,14 +2,14 @@
   {
     "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
     "Kind": "adapter",
-    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header.",
-    "Hash": "db683cfebce452bec6536f852f4d189075e6d9ba89b699d200851141e570f1d0"
+    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added.",
+    "Hash": "cfc54240d12f527d5c1279e517b42cbbaee5190801d284a6afd11f060f9688fe"
   },
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
-    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate.",
-    "Hash": "0109f205ffaa1fc82c9c968af179860f73fc1e638726f4915c838f8371c813b4"
+    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added.",
+    "Hash": "c738fe2b81d5e1d66f1ae4afe82b6137eda915b0bd44736f2e69cdba611773a0"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
@@ -34,18 +34,6 @@
     "Kind": "adapter",
     "Reason": "Novalis source water collision-face admission; environment semantics must remain source-qualified.",
     "Hash": "cab8f9e61e114d005f78f50e39c91672e2f7d3a1f868335648587447c55b91f2"
-  },
-  {
-    "Key": "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame.CompleteFusionLabTraversalSmoke()",
-    "Kind": "adapter",
-    "Reason": "Explicit opt-in Lab traversal smoke validates the loaded custom-world identity.",
-    "Hash": "2e069122994cbdc125c2e55a9869e463d1bb6bc16a6557714cd02c8e95e171e0"
-  },
-  {
-    "Key": "game/scripts/OBPGame.FusionLabSmoke.cs::OBPGame.TickFusionLabTraversalSmoke()",
-    "Kind": "adapter",
-    "Reason": "Explicit opt-in Lab traversal smoke dispatch; not ordinary player capability admission.",
-    "Hash": "fe80407ba30b0cd562c561d2ce1e1e58322f657f3c96a0142ea9ca932ff1bae7"
   },
   {
     "Key": "game/scripts/OBPGame.Rac2Gameplay.cs::OBPGame.GetRac2GameplayHudLine()",

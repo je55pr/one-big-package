@@ -67,8 +67,8 @@ public partial class OBPGame
                 Text = station.Label + "\n" + (station.AdapterId switch
                 {
                     "obp/universal-loadout/v1" => "PAUSE: weapons, gadgets, appearance and Quick Select",
-                    "obp/mixed-encounter/v1" => "PAUSE > DEVELOPER: actor status and independent resets",
-                    "obp/effects-experiment/v1" => "PAUSE > DEVELOPER: start/reset native effects\nR&C1 Novalis / GC Museum / UYA Cannon",
+                    "obp/mixed-encounter/v1" => _diagnosticSourceAccess ? "PAUSE > DEVELOPER: actor status and independent resets" : string.Empty,
+                    "obp/effects-experiment/v1" => _diagnosticSourceAccess ? "PAUSE > DEVELOPER: start/reset native effects\nR&C1 Novalis / GC Museum / UYA Cannon" : string.Empty,
                     _ => "UNAVAILABLE: feature not yet implemented",
                 }),
                 Position = RuntimeWorldScene.ToScene(
@@ -80,6 +80,7 @@ public partial class OBPGame
             root.AddChild(sign);
         }
 
+        if (!_diagnosticSourceAccess) return;
         _fusionLabStatus = new Label
         {
             Name = "FusionLabStatus",

@@ -169,7 +169,6 @@ public partial class OBPGame
         if (lab is not null)
         {
             DecorateFusionLab(lab, _playerAvatarView is not null);
-            if (_player is { } player) StartFusionLabTraversalSmoke(player);
         }
         ConfigureRegisteredActors(lab);
         var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");

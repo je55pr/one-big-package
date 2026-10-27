@@ -135,7 +135,7 @@ public partial class OBPGame
             ["shrubInstances"] = r?.ShrubInstances ?? 0,
             ["mobyInstances"] = r?.MobyInstances ?? 0,
             ["dynamicObjects"] = r?.DynamicObjects ?? 0,
-            ["crateDebug"] = GetCrateDebugSnapshot(),
+            ["crateDebug"] = _worldScenes?.Current?.Resources is { } resources ? resources.CrateDiagnostics.Capture(resources.Rac2CrateBolts) : null,
             ["rac1Gameplay"] = GetRac1GameplaySnapshot(),
             ["hud"] = _hudState.Current,
             ["player"] = _player is { } pl && IsInstanceValid(pl)
