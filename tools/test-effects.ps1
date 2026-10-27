@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 # Source-authorized rendered effect acceptance and fresh-process input replay.
 [CmdletBinding()]
 param(
@@ -43,7 +44,9 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     $arguments = @('--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--rendering-driver', 'opengl3',
         '--fixed-fps', '60', '--max-fps', '60', '--resolution', '960x540', '--', '--effects-smoke', '--fixed-seed', '1234', '--no-profile',
         '--source-config', (Join-Path $output 'sources.private.json'), '--rac1-iso', $Rac1Iso, '--rac2-iso', $Rac2Iso, '--rac3-iso', $Rac3Iso) + $ExtraArguments
-    foreach ($argument in $arguments) { $start.ArgumentList.Add($argument) }
+    # Windows CRT quoting also works on the repository's Windows PowerShell 5.1 baseline.
+    $quoted = $arguments | ForEach-Object { '"' + ($_ -replace '(\\*)"', '$1$1\"' -replace '(\\+)$', '$1$1') + '"' }
+    $start.Arguments = $quoted -join ' '
     $process = [Diagnostics.Process]::Start($start)
     $outPath = Join-Path $output "$RunName.stdout.log"
     $errPath = Join-Path $output "$RunName.stderr.log"
@@ -54,7 +57,7 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     try {
         while (!$process.WaitForExit(1000)) {
-            if ($watch.Elapsed.TotalMinutes -gt 11) { $process.Kill($true); throw "Effects $RunName run timed out." }
+            if ($watch.Elapsed.TotalMinutes -gt 11) { $process.Kill(); throw "Effects $RunName run timed out." }
         }
         $outCopy.GetAwaiter().GetResult() | Out-Null
         $errCopy.GetAwaiter().GetResult() | Out-Null
