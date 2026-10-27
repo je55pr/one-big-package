@@ -56,6 +56,7 @@ public static partial class Rac1WorldImport
             tieTextureIds,
             null,
             null,
+            null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -82,6 +83,12 @@ public static partial class Rac1WorldImport
                 1 => new HashSet<int> { 116, 121 },
                 _ => null,
             },
+            // Veldin shrub 501 texture 13 is a root-ring overlay authored
+            // coplanar with opaque terrain (Y=29.5 at the saved viewpoint).
+            // PS2 overlay draw ordering cannot be inferred from these UVs.
+            // Lift only this render surface by 0.005 world units
+            // for stable depth separation; never move class data or collision.
+            levelId == 0 ? new HashSet<(int, int)> { (501, 13) } : null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -175,6 +182,7 @@ public static partial class Rac1WorldImport
         HashSet<int> textureIds,
         IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles,
         IReadOnlySet<int>? cutoutClasses,
+        IReadOnlySet<(int ClassId, int TextureId)>? raisedDecalSurfaces,
         List<RuntimeMesh> meshes,
         ref double minX,
         ref double minY,
@@ -231,6 +239,7 @@ public static partial class Rac1WorldImport
             for (int face = 0; face < cls.TriangleTextureIds.Length; face++)
             {
                 int textureId = cls.TriangleTextureIds[face];
+                bool raiseDecal = raisedDecalSurfaces?.Contains((instance.OClass, textureId)) == true;
                 if (textureId < 0 || !textureIds.Contains(textureId))
                 {
                     throw new InvalidDataException($"R&C1 {kind} class {instance.OClass} references missing texture {textureId}.");
@@ -303,7 +312,11 @@ public static partial class Rac1WorldImport
                         throw new InvalidDataException($"R&C1 {kind} class {instance.OClass} has an invalid index {sourceVertex}.");
                     }
                     double x = worldPositions[sourceVertex * 3];
-                    double y = worldPositions[sourceVertex * 3 + 1];
+                    // Keep native placement geometry untouched. The observed
+                    // coplanar root-ring overlay needs a render-only separation
+                    // from tfrag 21 to survive perspective depth quantisation.
+                    double y = worldPositions[sourceVertex * 3 + 1] +
+                        (raiseDecal ? 0.005d : 0d);
                     double z = worldPositions[sourceVertex * 3 + 2];
                     double s = R4(cls.Uvs[sourceVertex * 2]);
                     double t = R4(cls.Uvs[sourceVertex * 2 + 1]);
