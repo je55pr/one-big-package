@@ -49,7 +49,8 @@ public sealed record RuntimeMaterialPresentation(
     bool? AlphaBlendEnabled = null,
     RuntimeBlendEquation BlendEquation = RuntimeBlendEquation.Unknown,
     double? FixedAlphaFactor = null,
-    RuntimeSurfaceEffect SurfaceEffect = RuntimeSurfaceEffect.Unknown)
+    RuntimeSurfaceEffect SurfaceEffect = RuntimeSurfaceEffect.Unknown,
+    bool PreferPerPlacementFoliageDepth = false)
 {
     public bool HasNativeEvidence =>
         WrapS != RuntimeTextureWrap.Unknown

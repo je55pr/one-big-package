@@ -200,6 +200,14 @@ public static partial class Rac1WorldImport
                 var presentation = (uint)face < (uint)cls.TrianglePresentations.Length
                     ? cls.TrianglePresentations[face]
                     : null;
+                // Only the R&C1 importer opts its shrub surfaces into the
+                // per-placement transparency policy; the neutral Godot host
+                // must not branch on source-game identity.
+                if (alphaProfiles is not null)
+                    presentation = (presentation ?? new RuntimeMaterialPresentation()) with
+                    {
+                        PreferPerPlacementFoliageDepth = true,
+                    };
                 // Alpha-blended foliage cards need their own per-placement
                 // sorting origin. A whole-level welded material surface cannot
                 // be sorted against itself or neighboring trees in Godot.

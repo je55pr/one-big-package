@@ -109,7 +109,9 @@ public static class MaterialModel
     /// </summary>
     public static bool RequiresFoliageAlphaSorting(
         string assetKind, AlphaProfile alpha, RuntimeMaterialPresentation? presentation) =>
-        assetKind == "shrub" && presentation?.AlphaBlendEnabled is true && alpha.HasTransparency;
+        assetKind == "shrub" && presentation is
+        { PreferPerPlacementFoliageDepth: true, AlphaBlendEnabled: true } &&
+        alpha.HasTransparency;
 
     /// <summary>
     /// Whether a kind's geometry may be back-face culled. Currently <c>false</c>

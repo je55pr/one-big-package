@@ -74,8 +74,8 @@ public static partial class RuntimeWorldScene
             // around its own bounds centre instead of keeping every origin at
             // the world origin. Coordinates remain unchanged in world space.
             Vector3 pivot = Vector3.Zero;
-            if (world.Game.SourceGame == OBP.Core.ObpSourceGame.Rac1 &&
-                m.AssetKind == "shrub" && m.MaterialPresentation?.AlphaBlendEnabled is true &&
+            if (m.AssetKind == "shrub" && m.MaterialPresentation is
+                { PreferPerPlacementFoliageDepth: true, AlphaBlendEnabled: true } &&
                 mats.AlphaFor(m.AssetKind, m.TextureId) is { HasTransparency: true })
             {
                 Vector3 minimum = verts[0], maximum = verts[0];

@@ -31,7 +31,7 @@ public partial class FoliageSortingProbe : Node
         Positions: [x, 2d, 7d, x + 2d, 2d, 7d, x, 4d, 7d],
         Uvs: [0f, 0f, 1f, 0f, 0f, 1f],
         Indices: [0, 1, 2],
-        MaterialPresentation: new(AlphaBlendEnabled: true));
+        MaterialPresentation: new(AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: kind == "shrub"));
 
     private static RuntimeTexture Texture(string kind, int tex, bool partial) =>
         new(kind, tex, 2, 2,
@@ -54,14 +54,28 @@ public partial class FoliageSortingProbe : Node
                 Surface("shrub", 14, 20),
                 Surface("shrub", 14, 80),
                 Surface("shrub", 15, 60),
+                Surface("shrub", 16, 120) with { MaterialPresentation = new(
+                    AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
+                    BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.FixedAlpha,
+                    FixedAlphaFactor: 0.5) },
+                Surface("shrub", 17, 160) with { MaterialPresentation = new(
+                    AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
+                    BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.AdditiveSourceAlpha) },
+                Surface("shrub", 18, 200) with { MaterialPresentation = new(
+                    AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
+                    BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.AdditiveFixedAlpha,
+                    FixedAlphaFactor: 0.5) },
                 Surface("tie", 14, 40),
             ],
             Textures: [
                 Texture("shrub", 14, partial: true),
                 Texture("shrub", 15, partial: false),
+                Texture("shrub", 16, partial: false),
+                Texture("shrub", 17, partial: false),
+                Texture("shrub", 18, partial: false),
                 Texture("tie", 14, partial: true),
             ],
-            MaterialCount: 3,
+            MaterialCount: 6,
             CollisionMeshes: [],
             Bounds: new ObpBounds(Vec3.Zero, new Vec3(100, 10, 10)),
             Environment: null,
@@ -106,6 +120,15 @@ public partial class FoliageSortingProbe : Node
         if (bark.Transparency != BaseMaterial3D.TransparencyEnum.Disabled ||
             trunk.Position != Vector3.Zero)
             throw new InvalidOperationException("Opaque bark should write depth without repositioning.");
+
+        foreach (var id in new[] { 16, 17, 18 })
+        {
+            var blendMesh = scene.AmbientMeshBindings!.Single(binding =>
+                binding.AssetKind == "shrub" && binding.TextureId == id).Mesh;
+            var blendMaterial = (StandardMaterial3D)blendMesh.MaterialOverride;
+            if (blendMaterial.Transparency != BaseMaterial3D.TransparencyEnum.Alpha)
+                throw new InvalidOperationException($"Fixed/additive alpha shrub {id} must stay transparent.");
+        }
 
         var tie = scene.AmbientMeshBindings!.Single(binding => binding.AssetKind == "tie").Mesh;
         var tieMaterial = (StandardMaterial3D)tie.MaterialOverride;
