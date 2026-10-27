@@ -20,8 +20,8 @@
   {
     "Key": "game/scripts/ApplicationNavigationCoordinator.cs::ApplicationNavigationCoordinator.TravelRac1CampaignTo(int)",
     "Kind": "adapter",
-    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. Source-specific navigation remains separate from player service selection. No player-global selection is added.",
-    "Hash": "0918b2456bf93bf1e78043dc676a6a7b1e3ffc8a6e52d710448da66437569217"
+    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. #347 review adds explicit abandonment of an uncommitted native travel transition when world selection fails; navigation architecture tests pin the failure path. Source-specific navigation remains separate from player service selection. No player-global selection is added.",
+    "Hash": "d050d38bb7705b85385e02ec6136f22060d498b67c3977b1ac5f21ab3c3cee40"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.WorldOptions(RuntimeWorld)",

@@ -8,10 +8,10 @@ namespace OBP.Game;
 /// One modal planet-map page. Owns its input, focus, player suppression and
 /// tree-pause lifetime; the campaign session alone determines travel admission.
 /// </summary>
-internal sealed class Rac1PlanetMapPage(Node3D host, Func<PlayerHost?> player)
+internal sealed class Rac1PlanetMapPage(Node3D host, Func<PlayerHost?> playerProvider)
 {
     private readonly Node3D _host = host;
-    private readonly Func<PlayerHost?> _player = player;
+    private readonly Func<PlayerHost?> _player = playerProvider;
     private Rac1PlanetTravelUi? _view;
     private PlayerHost? _pausedPlayer;
     private Node.ProcessModeEnum? _previousPlayerMode;
@@ -24,7 +24,30 @@ internal sealed class Rac1PlanetMapPage(Node3D host, Func<PlayerHost?> player)
 
     internal bool Open(Rac1PlanetMapSnapshot snapshot, Func<int, Rac1PlanetTravelStartResult> travel)
     {
-        if (IsOpen) return true;
+        if (_view is not null)
+        {
+            if (IsOpen) return true;
+            Close(); // Restore a stale/freed page's saved player and pointer state.
+        }
+
+        // Prepare fallible UI before disabling the player or changing pointer/pause state.
+        var view = new Rac1PlanetTravelUi { ProcessMode = Node.ProcessModeEnum.Always };
+        try
+        {
+            _host.AddChild(view);
+            view.Populate(snapshot);
+        }
+        catch (Exception error)
+        {
+            GD.PrintErr($"[rac1-travel] planet map could not open: {error}");
+            if (GodotObject.IsInstanceValid(view))
+            {
+                view.ProcessMode = Node.ProcessModeEnum.Disabled;
+                view.QueueFree();
+            }
+            return false;
+        }
+
         _pausedPlayer = _player() is { } player && GodotObject.IsInstanceValid(player)
             ? player : null;
         if (_pausedPlayer is not null)
@@ -36,7 +59,6 @@ internal sealed class Rac1PlanetMapPage(Node3D host, Func<PlayerHost?> player)
         _heldButtons = _player()?.MenuHeldButtons ?? 0;
         ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
-        var view = new Rac1PlanetTravelUi { ProcessMode = Node.ProcessModeEnum.Always };
         _view = view;
         int generation = ++_pageGeneration;
         view.TravelRequested += id =>
@@ -61,8 +83,6 @@ internal sealed class Rac1PlanetMapPage(Node3D host, Func<PlayerHost?> player)
         {
             if (generation == _pageGeneration) Close();
         };
-        _host.AddChild(view);
-        view.Populate(snapshot);
         _host.GetTree().Paused = true;
         _ownsPause = true;
         GD.Print($"[rac1-travel] planet map shown — {snapshot.UnlockedDestinations.Count} recovered destination(s)");

@@ -145,7 +145,8 @@ internal sealed class ApplicationNavigationCoordinator
 
     internal void OpenFromBootstrap(string id)
     {
-        CancelNavigation();
+        // Bootstrap retries must not invalidate callbacks on an existing browser.
+        _ports.CancelPreparation();
         _ports.Sources().Initialize();
         if (id == "obp:fusion-lab") { EnterLab(); return; }
         var destination = TrilogyWorldProviders.Resolve(id);
@@ -164,7 +165,7 @@ internal sealed class ApplicationNavigationCoordinator
              args.PlayerCapabilitiesSmoke || args.TrilogyGameplaySmoke) && _ports.FusionPreparing())
         {
             int generation = _intentGeneration;
-            _ports.Scenes().PrepareLater(
+            _ports.PrepareLater(
                 token => EnterAfterSharedPreparationAsync(destination, generation, token),
                 _ports.ReportFailure);
             return;
@@ -210,7 +211,10 @@ internal sealed class ApplicationNavigationCoordinator
 
         var start = campaign.BeginTravel(nativeLevelId);
         if (start == Rac1PlanetTravelStartResult.Started && !Choose(destination))
+        {
+            _ports.AbandonFailedTravel();
             return Rac1PlanetTravelStartResult.DestinationUnavailable;
+        }
         return start;
     }
 
@@ -299,7 +303,8 @@ internal sealed class ApplicationNavigationCoordinator
             _ports.Sources().SetStatus(message, error: true);
     }
 
-    internal void SetSelectorHint(string message) => _selector?.SetHint(message, error: true);
+    internal void SetSelectorHint(string message) => _selector?.SetHint(
+        _ports.DebugOutput() ? message : "That world could not be opened. Please choose another world.", error: true);
 
     internal bool TryReturnWorldToDestinations()
     {

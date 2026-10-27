@@ -15,7 +15,7 @@ internal sealed record ApplicationNavigationPorts(
     Node3D Host,
     Func<SourceSetupController> Sources,
     Func<CommandLineArgs> Args,
-    Func<WorldSceneLifetime<GodotWorldResources>> Scenes,
+    Action<Func<CancellationToken, Task>, Action<Exception, bool>> PrepareLater,
     Func<RuntimeWorld?> World,
     Func<RuntimeWorldScene.Result?> SceneResult,
     Func<CanvasLayer> Ui,

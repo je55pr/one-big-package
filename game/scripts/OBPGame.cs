@@ -129,17 +129,20 @@ public partial class OBPGame : Node3D
 
         BuildSkeleton();
         _navigation = new(new ApplicationNavigationPorts(
-            this, () => Sources, () => _args, () => WorldScenes,
-            () => _world, () => _sceneResult, () => _ui, () => _player,
-            () => _rac1CampaignSession, () => _frame,
-            () => _mode == Mode.World, () => _mode == Mode.Selector,
-            () => PauseMenuOpen, () => ControllerSettingsOpen, () => QuickSelectOpen,
-            () => _debugOutputEnabled, () => PlayerSaveNotice, () => _worldScenes?.DestinationId,
-            () => _fusionPreparation is not null, () => _fusionAssetFailure,
-            () => _worldScenes?.CancelPreparation(), AbandonFailedRac1Travel,
-            ReportWorldPreparationFailure,
-            (id, load, destination, sourcePath, lab) => EnterWorld(id, load, destination, sourcePath, lab),
-            isTitle =>
+            Host: this, Sources: () => Sources, Args: () => _args,
+            PrepareLater: (work, report) => WorldScenes.PrepareLater(work, report),
+            World: () => _world, SceneResult: () => _sceneResult,
+            Ui: () => _ui, Player: () => _player,
+            Campaign: () => _rac1CampaignSession, Frame: () => _frame,
+            IsWorld: () => _mode == Mode.World, IsSelector: () => _mode == Mode.Selector,
+            PauseMenuOpen: () => PauseMenuOpen, ControllerSettingsOpen: () => ControllerSettingsOpen,
+            QuickSelectOpen: () => QuickSelectOpen, DebugOutput: () => _debugOutputEnabled,
+            SaveNotice: () => PlayerSaveNotice, CurrentDestinationId: () => _worldScenes?.DestinationId,
+            FusionPreparing: () => _fusionPreparation is not null, FusionFailure: () => _fusionAssetFailure,
+            CancelPreparation: () => _worldScenes?.CancelPreparation(),
+            AbandonFailedTravel: AbandonFailedRac1Travel, ReportFailure: ReportWorldPreparationFailure,
+            EnterWorld: (id, load, destination, sourcePath, lab) => EnterWorld(id, load, destination, sourcePath, lab),
+            EnterPage: isTitle =>
             {
                 _mode = isTitle ? Mode.Title : Mode.Selector;
                 _sceneKind = isTitle ? "title" : "destinations";
