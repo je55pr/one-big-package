@@ -74,9 +74,9 @@ public static partial class RuntimeWorldScene
             // around its own bounds centre instead of keeping every origin at
             // the world origin. Coordinates remain unchanged in world space.
             Vector3 pivot = Vector3.Zero;
-            if (m.AssetKind == "shrub" && m.MaterialPresentation is
-                { PreferPerPlacementFoliageDepth: true, PreferFoliageCutout: false, AlphaBlendEnabled: true } &&
-                mats.AlphaFor(m.AssetKind, m.TextureId) is { HasTransparency: true })
+            if (mats.AlphaFor(m.AssetKind, m.TextureId) is { } foliageAlpha &&
+                MaterialModel.RequiresFoliageAlphaSorting(
+                    m.AssetKind, foliageAlpha, m.MaterialPresentation))
             {
                 Vector3 minimum = verts[0], maximum = verts[0];
                 for (int i = 1; i < verts.Length; i++)

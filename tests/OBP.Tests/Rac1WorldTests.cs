@@ -8,34 +8,12 @@ namespace OBP.Tests;
 /// <summary>Retail equivalence for the native R&amp;C1 RuntimeWorld slice.</summary>
 public sealed class Rac1LevelTests_World
 {
-    private static FileRandomAccessReader OpenVerifiedDisc(string path)
-    {
-        var reader = new FileRandomAccessReader(path);
-        try
-        {
-            Assert.Equal(Rac1Authority.PrimaryIsoSizeBytes, reader.Length);
-            string expectedHash = Rac1Authority.Primary.Sha256
-                ?? throw new InvalidOperationException("R&C1 authority SHA-256 is missing.");
-            var verification = new FileVerificationCache(Path.Combine(
-                Path.GetTempPath(), "obp-retail-test-verification"));
-            Assert.Equal(expectedHash,
-                verification.Verify(path, reader, expectedHash).Sha256,
-                ignoreCase: true);
-            return reader;
-        }
-        catch
-        {
-            reader.Dispose();
-            throw;
-        }
-    }
-
     [SkippableFact]
     public void Level0_NativeRuntimeWorldMatchesReferenceStaticWorldSlice()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
-        using var reader = OpenVerifiedDisc(iso!);
+        using var reader = Rac1VerifiedDisc.Open(iso!);
 
         var world = Rac1WorldImport.Build(reader, 0);
 
@@ -135,7 +113,7 @@ public sealed class Rac1LevelTests_World
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
-        using var reader = OpenVerifiedDisc(iso!);
+        using var reader = Rac1VerifiedDisc.Open(iso!);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 0);
         var gameplay = Rac1Instances.Parse(Rac1LevelSettings.ReadGameplay(reader, level));
         var world = Rac1WorldImport.Build(reader, 0);
@@ -171,7 +149,7 @@ public sealed class Rac1LevelTests_World
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
-        using var reader = OpenVerifiedDisc(iso!);
+        using var reader = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(reader, 1);
         // Novalis' two verified leaf-card classes now use depth-writing
         // cutouts; unrelated blended foliage remains sorted per placement.
@@ -192,7 +170,7 @@ public sealed class Rac1LevelTests_World
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
-        using var reader = OpenVerifiedDisc(iso!);
+        using var reader = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(reader, 2);
         Assert.Equal(728, world.Meshes.Count);
         Assert.Equal(687_037, world.TotalRenderTriangles);

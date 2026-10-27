@@ -13,7 +13,7 @@ public sealed class Rac1FoliagePresentationTests
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
-        using var disc = new FileRandomAccessReader(iso!);
+        using var disc = Rac1VerifiedDisc.Open(iso!);
         var level = Rac1DiscIndex.Read(disc).Levels.Single(x => x.LevelId == 1);
         var core = Rac1LevelCore.Open(disc, level);
         var sourceClasses = Rac1StaticClasses.Read(core).Shrubs;
@@ -52,7 +52,7 @@ public sealed class Rac1FoliagePresentationTests
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
-        using var disc = new FileRandomAccessReader(iso!);
+        using var disc = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(disc, 1);
         var shrubs = world.Meshes.Where(mesh => mesh.AssetKind == "shrub").ToArray();
 
@@ -83,7 +83,7 @@ public sealed class Rac1FoliagePresentationTests
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
-        using var disc = new FileRandomAccessReader(iso!);
+        using var disc = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(disc, 0);
         var level = Rac1DiscIndex.Read(disc).Levels.Single(entry => entry.LevelId == 0);
         var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(disc, level)).Shrubs;

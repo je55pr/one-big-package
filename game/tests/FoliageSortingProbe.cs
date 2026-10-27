@@ -58,6 +58,10 @@ public partial class FoliageSortingProbe : Node
                     AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
                     BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.FixedAlpha,
                     FixedAlphaFactor: 0.5) },
+                Surface("shrub", 16, 280) with { MaterialPresentation = new(
+                    AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
+                    BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.FixedAlpha,
+                    FixedAlphaFactor: 0.5) },
                 Surface("shrub", 17, 160) with { MaterialPresentation = new(
                     AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
                     BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.AdditiveSourceAlpha) },
@@ -133,13 +137,32 @@ public partial class FoliageSortingProbe : Node
             cutoutLeaf.Position != Vector3.Zero)
             throw new InvalidOperationException("Authorised foliage cutout must write depth without alpha-sort recentering.");
 
+        // A fully opaque texture becomes translucent under a native fixed-alpha
+        // equation. These two surfaces must therefore remain separate mesh
+        // instances with distinct sorting origins despite their common texture.
+        var fixedAlphaMeshes = scene.AmbientMeshBindings!
+            .Where(binding => binding.AssetKind == "shrub" && binding.TextureId == 16)
+            .Select(binding => binding.Mesh).ToArray();
+        if (fixedAlphaMeshes.Length != 2 ||
+            fixedAlphaMeshes.Any(mesh => mesh.Position == Vector3.Zero) ||
+            fixedAlphaMeshes[0].Position.DistanceTo(fixedAlphaMeshes[1].Position) < 100f)
+            throw new InvalidOperationException("Opaque-texture fixed-alpha shrubs require independent sorting pivots.");
+        if (!ReferenceEquals(fixedAlphaMeshes[0].MaterialOverride,
+                fixedAlphaMeshes[1].MaterialOverride))
+            throw new InvalidOperationException("Fixed-alpha shrubs should still share the cached material.");
+
         foreach (var id in new[] { 16, 17, 18 })
         {
-            var blendMesh = scene.AmbientMeshBindings!.Single(binding =>
-                binding.AssetKind == "shrub" && binding.TextureId == id).Mesh;
-            var blendMaterial = (StandardMaterial3D)blendMesh.MaterialOverride;
-            if (blendMaterial.Transparency != BaseMaterial3D.TransparencyEnum.Alpha)
-                throw new InvalidOperationException($"Fixed/additive alpha shrub {id} must stay transparent.");
+            var blendMeshes = scene.AmbientMeshBindings!
+                .Where(binding => binding.AssetKind == "shrub" && binding.TextureId == id)
+                .Select(binding => binding.Mesh);
+            foreach (var blendMesh in blendMeshes)
+            {
+                var blendMaterial = (StandardMaterial3D)blendMesh.MaterialOverride;
+                if (blendMaterial.Transparency != BaseMaterial3D.TransparencyEnum.Alpha ||
+                    blendMesh.Position == Vector3.Zero)
+                    throw new InvalidOperationException($"Fixed/additive alpha shrub {id} must remain sorted and transparent.");
+            }
         }
 
         var tie = scene.AmbientMeshBindings!.Single(binding => binding.AssetKind == "tie").Mesh;

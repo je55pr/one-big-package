@@ -76,6 +76,20 @@ public class MaterialModelTests
 
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid, nativeBlend));
         Assert.True(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeBlend));
+        foreach (var blend in new[]
+        {
+            RuntimeBlendEquation.FixedAlpha,
+            RuntimeBlendEquation.AdditiveSourceAlpha,
+            RuntimeBlendEquation.AdditiveFixedAlpha,
+        })
+        {
+            var fixedBlend = nativeBlend with { BlendEquation = blend, FixedAlphaFactor = 0.5 };
+            Assert.True(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid, fixedBlend));
+            Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid,
+                fixedBlend with { PreferFoliageCutout = true }));
+            Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid,
+                fixedBlend with { AlphaBlendEnabled = false }));
+        }
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, cutout));
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, unscopedBlend));
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeOpaque));
