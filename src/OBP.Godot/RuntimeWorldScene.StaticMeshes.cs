@@ -75,7 +75,7 @@ public static partial class RuntimeWorldScene
             // the world origin. Coordinates remain unchanged in world space.
             Vector3 pivot = Vector3.Zero;
             if (m.AssetKind == "shrub" && m.MaterialPresentation is
-                { PreferPerPlacementFoliageDepth: true, AlphaBlendEnabled: true } &&
+                { PreferPerPlacementFoliageDepth: true, PreferFoliageCutout: false, AlphaBlendEnabled: true } &&
                 mats.AlphaFor(m.AssetKind, m.TextureId) is { HasTransparency: true })
             {
                 Vector3 minimum = verts[0], maximum = verts[0];

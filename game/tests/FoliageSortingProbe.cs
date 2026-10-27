@@ -65,6 +65,9 @@ public partial class FoliageSortingProbe : Node
                     AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
                     BlendEquation: OBP.Runtime.Presentation.RuntimeBlendEquation.AdditiveFixedAlpha,
                     FixedAlphaFactor: 0.5) },
+                Surface("shrub", 19, 240) with { MaterialPresentation = new(
+                    AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true,
+                    PreferFoliageCutout: true) },
                 Surface("tie", 14, 40),
             ],
             Textures: [
@@ -73,9 +76,10 @@ public partial class FoliageSortingProbe : Node
                 Texture("shrub", 16, partial: false),
                 Texture("shrub", 17, partial: false),
                 Texture("shrub", 18, partial: false),
+                Texture("shrub", 19, partial: true),
                 Texture("tie", 14, partial: true),
             ],
-            MaterialCount: 6,
+            MaterialCount: 7,
             CollisionMeshes: [],
             Bounds: new ObpBounds(Vec3.Zero, new Vec3(100, 10, 10)),
             Environment: null,
@@ -120,6 +124,14 @@ public partial class FoliageSortingProbe : Node
         if (bark.Transparency != BaseMaterial3D.TransparencyEnum.Disabled ||
             trunk.Position != Vector3.Zero)
             throw new InvalidOperationException("Opaque bark should write depth without repositioning.");
+
+        var cutoutLeaf = scene.AmbientMeshBindings!.Single(binding =>
+            binding.AssetKind == "shrub" && binding.TextureId == 19).Mesh;
+        var cutout = (StandardMaterial3D)cutoutLeaf.MaterialOverride;
+        if (cutout.Transparency != BaseMaterial3D.TransparencyEnum.AlphaScissor ||
+            Mathf.Abs(cutout.AlphaScissorThreshold - 0.5f) > 0.0001f ||
+            cutoutLeaf.Position != Vector3.Zero)
+            throw new InvalidOperationException("Authorised foliage cutout must write depth without alpha-sort recentering.");
 
         foreach (var id in new[] { 16, 17, 18 })
         {

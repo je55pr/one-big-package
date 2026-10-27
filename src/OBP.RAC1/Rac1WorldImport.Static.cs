@@ -12,6 +12,7 @@ public static partial class Rac1WorldImport
     private static IReadOnlyList<RuntimeDynamicObject> AddPlacedStaticGeometry(
         Rac1LevelCore.Core core,
         byte[] gameplayBytes,
+        int levelId,
         List<RuntimeMesh> meshes,
         List<RuntimeTexture> textures,
         List<RuntimeAnimatedMesh> animatedMeshes,
@@ -54,6 +55,7 @@ public static partial class Rac1WorldImport
                 : null,
             tieTextureIds,
             null,
+            null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -69,6 +71,7 @@ public static partial class Rac1WorldImport
                 : null,
             shrubTextureIds,
             shrubAlphaProfiles,
+            levelId == 1 ? new HashSet<int> { 116, 121 } : null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -141,6 +144,7 @@ public static partial class Rac1WorldImport
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds, RuntimeMaterialPresentation?[] TrianglePresentations)?> lookup,
         HashSet<int> textureIds,
         IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles,
+        IReadOnlySet<int>? cutoutClasses,
         List<RuntimeMesh> meshes,
         ref double minX,
         ref double minY,
@@ -204,10 +208,25 @@ public static partial class Rac1WorldImport
                 // per-placement transparency policy; the neutral Godot host
                 // must not branch on source-game identity.
                 if (alphaProfiles is not null)
+                {
+                    // The saved swimming-area view identifies class 121 as the
+                    // layered canopy and class 116 as the red-leaf shrub.
+                    // Their authored leaf textures are predominantly hard
+                    // cutouts; a depth-writing alpha test avoids order-dependent
+                    // double blending of overlapping leaf cards.
+                    bool cutout = cutoutClasses?.Contains(instance.OClass) == true &&
+                        alphaProfiles.TryGetValue(textureId, out var profile) &&
+                        profile.CutoutFraction >= 0.05 &&
+                        presentation?.AlphaBlendEnabled is true &&
+                        presentation.BlendEquation is not (
+                            RuntimeBlendEquation.FixedAlpha or RuntimeBlendEquation.AdditiveSourceAlpha or
+                            RuntimeBlendEquation.AdditiveFixedAlpha);
                     presentation = (presentation ?? new RuntimeMaterialPresentation()) with
                     {
                         PreferPerPlacementFoliageDepth = true,
+                        PreferFoliageCutout = cutout,
                     };
+                }
                 // Alpha-blended foliage cards need their own per-placement
                 // sorting origin. A whole-level welded material surface cannot
                 // be sorted against itself or neighboring trees in Godot.

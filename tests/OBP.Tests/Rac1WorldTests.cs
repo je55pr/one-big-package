@@ -14,6 +14,14 @@ public sealed class Rac1LevelTests_World
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
+        Assert.Equal(Rac1Authority.PrimaryIsoSizeBytes, reader.Length);
+        var verification = new FileVerificationCache(Path.Combine(
+            Path.GetTempPath(), "obp-retail-test-verification"));
+        string expectedHash = Rac1Authority.Primary.Sha256
+            ?? throw new InvalidOperationException("R&C1 authority SHA-256 is missing.");
+        Assert.Equal(expectedHash,
+            verification.Verify(iso!, reader, expectedHash).Sha256,
+            ignoreCase: true);
 
         var world = Rac1WorldImport.Build(reader, 0);
 

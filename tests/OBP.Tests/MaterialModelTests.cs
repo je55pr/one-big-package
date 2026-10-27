@@ -68,6 +68,7 @@ public class MaterialModelTests
     public void FoliageNativeBlending_OnlyNeedsPerInstanceSortingForRealAlpha()
     {
         var nativeBlend = new RuntimeMaterialPresentation(AlphaBlendEnabled: true, PreferPerPlacementFoliageDepth: true);
+        var cutout = nativeBlend with { PreferFoliageCutout = true };
         var unscopedBlend = new RuntimeMaterialPresentation(AlphaBlendEnabled: true);
         var nativeOpaque = new RuntimeMaterialPresentation(AlphaBlendEnabled: false);
         var solid = AlphaProfile.FullyOpaque;
@@ -75,6 +76,7 @@ public class MaterialModelTests
 
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid, nativeBlend));
         Assert.True(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeBlend));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, cutout));
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, unscopedBlend));
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeOpaque));
         Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, null));

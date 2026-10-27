@@ -153,6 +153,17 @@ public sealed class WorldMaterialFactory
 
         ApplyNativePresentation(mat, presentation);
         if (assetKind == "shrub" && presentation is
+            { PreferFoliageCutout: true, AlphaBlendEnabled: true } &&
+            _alpha.TryGetValue(textureKey, out var foliageAlpha) && foliageAlpha.HasTransparency)
+        {
+            // The source importer admits specifically recovered leaf-card
+            // surfaces. Alpha testing writes depth per surviving leaf pixel;
+            // it avoids incorrect blending order within intersecting canopies.
+            mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+            mat.AlphaScissorThreshold = 0.5f;
+        }
+
+        if (assetKind == "shrub" && presentation is
             { PreferPerPlacementFoliageDepth: true, AlphaBlendEnabled: true } &&
             presentation.BlendEquation is not (RuntimeBlendEquation.FixedAlpha or
                 RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha) &&

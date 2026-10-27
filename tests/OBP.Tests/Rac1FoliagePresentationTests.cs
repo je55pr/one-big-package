@@ -48,6 +48,29 @@ public sealed class Rac1FoliagePresentationTests
     }
 
     [SkippableFact]
+    public void Novalis_SavedSwimmingViewAdmitsOnlyIdentifiedTreeAndRedLeafCutouts()
+    {
+        string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
+        Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
+        using var disc = new FileRandomAccessReader(iso!);
+        var world = Rac1WorldImport.Build(disc, 1);
+        var shrubs = world.Meshes.Where(mesh => mesh.AssetKind == "shrub").ToArray();
+
+        // The saved view ray intersects class 121's layered canopy (textures
+        // 10/11, 20-24). Class 116 supplies the red-leaf textures 16/17 nearby.
+        foreach (int textureId in new[] { 10, 11, 16, 17, 20, 21, 22, 23, 24 })
+            Assert.Contains(shrubs, mesh => mesh.TextureId == textureId &&
+                mesh.MaterialPresentation?.PreferFoliageCutout is true);
+
+        // The unrelated class-107 shrub retains the preceding, independently
+        // sorted alpha blend and must not silently gain this treatment.
+        Assert.DoesNotContain(shrubs, mesh => mesh.TextureId == 14 &&
+            mesh.MaterialPresentation?.PreferFoliageCutout is true);
+        Assert.All(shrubs.Where(mesh => mesh.MaterialPresentation?.PreferFoliageCutout is true),
+            mesh => Assert.True(mesh.MaterialPresentation?.AlphaBlendEnabled));
+    }
+
+    [SkippableFact]
     public void Veldin_NativeShrubTriangleCountRemainsStable()
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
