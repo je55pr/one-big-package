@@ -169,6 +169,24 @@ source-free tests exercise admission, recovery, replacement and profile-suspensi
 state. Engine startup/source-loss, UI and replay checks retain the existing wire
 formats, native input phases and explicit nonzero failures.
 
+The #347 navigation extraction retires the three title/destinations/Lab root
+partials. The root now has 68 files, 16,202 file lines, 589 methods, 426 fields
+(283 mutable), and 43 exposed members, down from 71 files, 592 methods and
+435 fields (292 mutable) after #346; the exposed root API remains unchanged.
+One explicit coordinator reference replaces the title, browser, Lab overlay,
+and R&C1 planet-map pause/UI fields. The coordinator receives 25 focused
+composition ports (one Godot host node and 24 read/action delegates) rather
+than privileged root access. R&C1 travel admission still uses its existing
+campaign session, authored Lab geometry belongs to the active world scene,
+and `WorldSceneLifetime` remains the sole world transition owner. Generation
+checks retire stale title/browser and deferred preparation callbacks; rejected
+destinations leave the current browser interactive. The native world-adapter
+ledger relocates the existing provider/travel/collision exceptions without
+granting player-global authority. All three retired script UIDs are removed,
+with newly generated sidecars for the focused owners. Existing bootstrap,
+diagnostic, profile and input entrypoints remain thin root delegations pending
+final composition #376.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

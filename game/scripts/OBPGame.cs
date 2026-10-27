@@ -1,4 +1,5 @@
 using OBP.Core;
+using OBP.Fusion;
 using Godot;
 using OBP.RAC1.Gameplay;
 using OBP.RAC1.Presentation;
@@ -44,9 +45,9 @@ public partial class OBPGame : Node3D
             message => GD.Print(message), message => GD.PrintErr(message));
         return new(this, setup, new(EnsureRac1CampaignPersistenceInitialized, () =>
         {
-            ClearTitleScreen(); _mode = Mode.Picker; _sceneKind = "sources";
+            _navigation.CancelNavigation(); _navigation.RetireMenuPages(); _mode = Mode.Picker; _sceneKind = "sources";
             TeardownWorld(); EnsurePlainEnvironment();
-            _destinationSelector?.QueueFree(); _destinationSelector = null;
+            _navigation.RetireSelector();
             if (_worldHud is not null && IsInstanceValid(_worldHud)) _worldHud.Visible = false;
             _camera.Current = true; _activeCamera = _camera;
         }, ShowTitleScreen, ShowDestinationSelector, ShowControllerSettingsFromMenu, AbandonFailedRac1Travel,
@@ -72,6 +73,7 @@ public partial class OBPGame : Node3D
     private string _sceneKind = "smoke";
     private readonly HostOperationScope _hostOperations = new();
     private CaptureDiagnosticHarness? _captureDiagnostics;
+    private ApplicationNavigationCoordinator _navigation = null!;
     private readonly DiagnosticPlayerAudioCollector _playerAudioDiagnosticEvents = new();
 
     // the live world
@@ -126,6 +128,29 @@ public partial class OBPGame : Node3D
         }
 
         BuildSkeleton();
+        _navigation = new(new ApplicationNavigationPorts(
+            this, () => Sources, () => _args, () => WorldScenes,
+            () => _world, () => _sceneResult, () => _ui, () => _player,
+            () => _rac1CampaignSession, () => _frame,
+            () => _mode == Mode.World, () => _mode == Mode.Selector,
+            () => PauseMenuOpen, () => ControllerSettingsOpen, () => QuickSelectOpen,
+            () => _debugOutputEnabled, () => PlayerSaveNotice, () => _worldScenes?.DestinationId,
+            () => _fusionPreparation is not null, () => _fusionAssetFailure,
+            () => _worldScenes?.CancelPreparation(), AbandonFailedRac1Travel,
+            ReportWorldPreparationFailure,
+            (id, load, destination, sourcePath, lab) => EnterWorld(id, load, destination, sourcePath, lab),
+            isTitle =>
+            {
+                _mode = isTitle ? Mode.Title : Mode.Selector;
+                _sceneKind = isTitle ? "title" : "destinations";
+                TeardownWorld();
+                EnsurePlainEnvironment();
+                Sources.RetireView();
+                if (_worldHud is not null && IsInstanceValid(_worldHud)) _worldHud.Visible = false;
+                _camera.Current = true;
+                _activeCamera = _camera;
+                ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
+            }));
         if (!Sources.InitializeStartup(_args))
         {
             GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
@@ -1316,21 +1341,21 @@ public partial class OBPGame : Node3D
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var menus = new GodotDiagnosticMenus(this, _worldRoot,
             () => new(_mode == Mode.Title, _mode == Mode.Selector, _mode == Mode.World, _mode == Mode.Picker,
-                (Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic), Sources.HasView, _titleScreen is not null, _world is not null,
+                (Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic), Sources.HasView, _navigation.Title is not null, _world is not null,
                 _currentDestinationId, _profileDocument?.Destination, _profileWriteBlocked, null, false, false),
             () => new([], _player?.VisualRoot.FallbackVisible == true, _sceneResult is not null,
                 _player is not null && IsInstanceValid(_player), _playerAvatarView is not null && IsInstanceValid(_playerAvatarView),
                 _player is not null && ReferenceEquals(_activeCamera, _player.Camera) && _player.Camera.Current, _world?.LevelId),
             surface => surface switch
             {
-                DiagnosticMenuSurface.Title => _titleScreen,
-                DiagnosticMenuSurface.WorldSelect => _destinationSelector,
+                DiagnosticMenuSurface.Title => _navigation.Title,
+                DiagnosticMenuSurface.WorldSelect => _navigation.Selector,
                 DiagnosticMenuSurface.Overlay => _ui,
                 DiagnosticMenuSurface.World => _sceneResult?.Root,
                 DiagnosticMenuSurface.Pause => _pauseMenu,
                 _ => null
             },
-            () => _titleScreen, () => _destinationSelector, () => _pauseMenu,
+            () => _navigation.Title, () => _navigation.Selector, () => _pauseMenu,
             ShowTitleScreen, ShowDestinationSelector, TryHandleInteractiveBack, TryOpenPauseMenu, TryClosePauseMenu);
         return new(_args, Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic,
             [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], menus,
@@ -1509,6 +1534,63 @@ public partial class OBPGame : Node3D
                 MessageKey: "Activate test console",
                 Progress: 0.42)));
         _playerHud!.Render(snapshot);
+    }
+
+
+    private bool Rac1PlanetMapOpen => _navigation.PlanetMapOpen;
+    private Task WaitForWorldPreparationFrameAsync(CancellationToken token) =>
+        GodotAsyncWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame, token);
+
+    private ObpDestination? _activeDestination => _worldScenes?.NativeDestination;
+    private string? _currentDestinationId => _worldScenes?.DestinationId;
+
+    // Established bootstrap, diagnostic and world-entry method contracts.
+    public bool TryReturnSelectorToMenu() => _navigation.TryReturnSelectorToMenu();
+    public bool TryReturnWorldToDestinations() => _navigation.TryReturnWorldToDestinations();
+    public bool TryOpenRac1PlanetMap() => _navigation.TryOpenPlanetMap();
+    public bool TryCloseRac1PlanetMap() => _navigation.TryClosePlanetMap();
+    public Rac1PlanetTravelStartResult TravelRac1CampaignTo(int id) => _navigation.TravelRac1CampaignTo(id);
+    public void ShowTitleFromBootstrap() => _navigation.ShowTitle();
+    public void ShowDestinationSelectorFromBootstrap()
+    {
+        Sources.Initialize();
+        _navigation.ShowSelector();
+    }
+    public void OpenDestinationFromBootstrap(string id) => _navigation.OpenFromBootstrap(id);
+
+    public void OpenLegacyRac2DestinationFromBootstrap()
+    {
+        int levelId = _args.Planet is { } token
+            ? OBP.RAC2.Rac2PlanetCatalogue.Resolve(token) ?? _args.Rac2Level
+            : _args.Rac2Level;
+        OpenDestinationFromBootstrap($"rac2:LEVEL{levelId}");
+    }
+    public void RunRac2StressSwitchFromBootstrap(string sequence) =>
+        _hostOperations.Start("stress-switch", token => CreateStressSwitchCliService().RunStressSwitchAsync(sequence, token),
+            lifetime: CancellationToken.None);
+    public void OpenRac1CampaignCurrentFromBootstrap()
+    {
+        Sources.Initialize();
+        OpenDestinationFromBootstrap($"rac1:LEVEL{_rac1CampaignSession.Campaign.CurrentLevel}");
+    }
+
+    private void ShowTitleScreen() => _navigation.ShowTitle();
+    private void ClearTitleScreen() => _navigation.ClearTitle();
+    private void ShowDestinationSelector() => _navigation.ShowSelector();
+    private bool OnDestinationChosen(ObpDestination destination) => _navigation.Choose(destination);
+    private bool EnterProviderWorld(string path, ObpDestination destination) =>
+        _navigation.EnterProviderWorld(path, destination);
+    private bool EnterFusionLab() => _navigation.EnterLab();
+    private void DecorateFusionLab(FusionLabDefinition definition, bool nativeAvatarAvailable) =>
+        _navigation.DecorateLab(definition, nativeAvatarAvailable);
+    private void ClearFusionLabStatus() => _navigation.ClearLab();
+    private void DestinationError(string message) => _navigation.Error(message);
+
+    private void AbandonFailedRac1Travel()
+    {
+        if (_rac1CampaignSession.Travel.TransitionActive &&
+            !_rac1CampaignSession.Travel.CurrentLevelCommitted)
+            _rac1CampaignSession.AbandonUncommittedHostLoad();
     }
 
 }

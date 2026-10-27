@@ -120,7 +120,7 @@ public sealed class SourceNeutralHostArchitectureTests
             Assert.DoesNotContain("UseRac1Gameplay", tree.GetText().ToString(), StringComparison.Ordinal);
         var avatar = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.PlayerAvatar.cs"));
         Assert.DoesNotContain("Get(destination.Game)", avatar, StringComparison.Ordinal);
-        var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/OBPGame.FusionLab.cs"));
+        var lab = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/scripts/ApplicationNavigationCoordinator.cs"));
         Assert.DoesNotContain("rac1:LEVEL0", lab, StringComparison.Ordinal);
         Assert.DoesNotContain("_activeDestination =", lab, StringComparison.Ordinal);
         Assert.Contains("EnterWorld(definition.Id", lab, StringComparison.Ordinal);
@@ -152,7 +152,7 @@ public sealed class SourceNeutralHostArchitectureTests
     [Fact]
     public void ApprovedWorldAdapterCannotAcquireTheReportedEquipmentSelectionCall()
     {
-        var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.Destinations.cs", "WorldOptions", """
+        var (compilation, tree) = InsertAdapterStatement("game/scripts/OBPGame.WorldEntry.cs", "WorldOptions", """
             if (world.Game == ObpSourceGame.Rac1)
                 OnRac1WeaponSelectionRequested(OBP.RAC1.Gameplay.Rac1WeaponId.Blaster);
             """);

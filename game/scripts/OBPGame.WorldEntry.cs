@@ -94,7 +94,7 @@ public partial class OBPGame
             if (_world is null)
             {
                 ShowDestinationSelector();
-                _destinationSelector?.SetHint(error.Message, error: true);
+                _navigation.SetSelectorHint(error.Message);
             }
             if (_args.CaptureFrame is not null || (_args.PlayerSessionSmoke || _args.PlayerCapabilitiesSmoke) && _world is null)
                 ApplicationLifecycle.RequestQuit(this, "world-entry-failed", 2);
@@ -107,7 +107,7 @@ public partial class OBPGame
         entry.Resources.EffectScope = entry.Plan.Request;
         ClearBootstrapSceneArtifacts();
         BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
-        _destinationSelector?.QueueFree(); _destinationSelector = null;
+        _navigation.RetireMenuPages();
         Sources.RetireView();
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
@@ -165,7 +165,7 @@ public partial class OBPGame
         else SpawnPlayer(world);
         _mode = Mode.World;
         _sceneKind = lab is null ? "destination" : "fusion-lab";
-        _genericNavigationActive = _args.CaptureFrame is null;
+        _navigation.WorldActivated(_args.CaptureFrame is null);
         if (lab is not null)
         {
             DecorateFusionLab(lab, _playerAvatarView is not null);
@@ -216,6 +216,26 @@ public partial class OBPGame
         }
         _loadSummary = $"✓ {destination?.DisplayName ?? (lab is not null ? "Fusion Lab" : world.DisplayName)} · {resources.Scene.MeshInstances} meshes";
         GD.Print($"[destinations] world ready — {_loadSummary} (switch #{_worldSwitches}, player generation {_playerSession!.Capture().Generation})");
+    }
+
+    private WorldHost.Options WorldOptions(RuntimeWorld world)
+    {
+        bool framedCapture = _args.CaptureFrame is not null
+            && (_args.DirectLoad || _args.Destination is not null)
+            && _args.TestScene != "player"
+            && !_args.AnimSolo
+            && !_args.CrateFocus && !_args.CrateAutoStrike;
+        return new WorldHost.Options
+        {
+            IncludeMobyMarkers = !(_args.CaptureFrame is not null && !framedCapture),
+            IncludeSky = !_args.AnimSolo,
+            IncludeCollision = true,
+            AdmitCollisionFace = world is { Game.SourceGame: ObpSourceGame.Rac1, LevelId: 1 }
+                ? AdmitRac1NovalisCollisionFace
+                : null,
+            ShowCollisionDebug = _args.CollisionDebug,
+            OnlyAnimatedMobies = _args.AnimSolo,
+        };
     }
 
     private void BeginSourceWorldEntry(RuntimeWorld world)

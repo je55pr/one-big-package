@@ -114,15 +114,7 @@ public partial class OBPGame
                 GD.PrintErr($"[actors] {placement.Id} unavailable: {error.Message}");
             }
         }
-        if (_fusionLabStatus is not null)
-        {
-            string status = _actorWorld.Placed.Count < _actorWorld.Placements.Count
-                ? " · preparing original assets in the background" : " · live native controllers";
-            if (_actorWorld.Problems.Count > 0)
-                status = "\n" + string.Join("\n", _actorWorld.Problems.Select(pair => pair.Key + ": " + pair.Value));
-            _fusionLabStatus.Text = "OBP FUSION LAB  |  PAUSE: LOADOUT / SETTINGS\n" +
-                $"Mixed encounter: {_actorWorld.Placed.Count}/{_actorWorld.Placements.Count} source actors" + status;
-        }
+        _navigation.UpdateLabStatus(_actorWorld.Placed.Count, _actorWorld.Placements.Count, _actorWorld.Problems);
     }
 
     private void RegisterActorView(HostedActor actor)

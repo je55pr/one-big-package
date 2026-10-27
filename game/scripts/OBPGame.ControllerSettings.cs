@@ -213,7 +213,7 @@ public partial class OBPGame
         else
         {
             if (Sources.HasView) Sources.SetVisible(false);
-            if (_destinationSelector is not null) _destinationSelector.Visible = false;
+            _navigation.SetSelectorVisible(false);
         }
 
         _controllerSettings = new ControllerSettingsUi
@@ -245,7 +245,7 @@ public partial class OBPGame
         {
             ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
             if (Sources.HasView) { Sources.SetVisible(true); }
-            if (_destinationSelector is not null) _destinationSelector.Visible = true;
+            _navigation.SetSelectorVisible(true);
         }
 
         MenuFocus.Restore(_settingsReturnFocus, []);
