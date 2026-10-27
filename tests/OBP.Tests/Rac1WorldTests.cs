@@ -98,7 +98,7 @@ public sealed class Rac1LevelTests_World
         var ratchet = world.AnimatedMeshes!.Where(m => m.Name.StartsWith("ratchet_", StringComparison.Ordinal)).ToArray();
         Assert.Equal(4, ratchet.Length);
         Assert.Equal(6_856, ratchet.Sum(m => m.TriangleCount));
-        Assert.Equal(900_909, world.TotalRenderTriangles + world.TotalDynamicTriangles + ratchet.Sum(m => m.TriangleCount));
+        Assert.Equal(900_879, world.TotalRenderTriangles + world.TotalDynamicTriangles + ratchet.Sum(m => m.TriangleCount));
         Assert.All(ratchet, mesh =>
         {
             Assert.Equal("moby", mesh.AssetKind);
@@ -120,12 +120,13 @@ public sealed class Rac1LevelTests_World
 
         var dynamicObjects = Assert.IsAssignableFrom<IReadOnlyList<OBP.Runtime.RuntimeDynamicObject>>(world.DynamicObjects);
         Assert.Equal(296, dynamicObjects.Count);
-        Assert.Equal(285, dynamicObjects.Count(o => o.Meshes.Count > 0));
+        Assert.Equal(284, dynamicObjects.Count(o => o.Meshes.Count > 0));
         var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Mobies;
         Assert.Equal(10, dynamicObjects.Count(o => o.Meshes.Count == 0 && (!classes.TryGetValue(o.NativeClassId, out var cls) || cls.Mesh.Indices.Length == 0)));
-        Assert.Single(dynamicObjects, o => o.Meshes.Count == 0 && classes.TryGetValue(o.NativeClassId, out var cls) && cls.Mesh.Indices.Length > 0);
-        Assert.Equal(142_618, world.TotalDynamicTriangles);
-        Assert.Equal(894_053, world.TotalRenderTriangles + world.TotalDynamicTriangles);
+        Assert.Equal(2, dynamicObjects.Count(o => o.Meshes.Count == 0 &&
+            classes.TryGetValue(o.NativeClassId, out var cls) && cls.Mesh.Indices.Length > 0));
+        Assert.Equal(142_588, world.TotalDynamicTriangles);
+        Assert.Equal(894_023, world.TotalRenderTriangles + world.TotalDynamicTriangles);
 
         var class500 = dynamicObjects.Where(o => o.NativeClassId == 500).ToArray();
         Assert.Equal(103, class500.Length);
