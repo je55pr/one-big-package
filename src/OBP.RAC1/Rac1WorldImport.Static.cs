@@ -77,7 +77,7 @@ public static partial class Rac1WorldImport
             ref maxX, ref maxY, ref maxZ);
 
         return BuildMobyDynamicObjects(
-            instances.MobyInstances, classes.Mobies, mobyTextureIds, animatedMobyInstances,
+            levelId, instances.MobyInstances, classes.Mobies, mobyTextureIds, animatedMobyInstances,
             ref minX, ref minY, ref minZ, ref maxX, ref maxY, ref maxZ);
     }
 

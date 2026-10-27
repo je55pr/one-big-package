@@ -127,6 +127,7 @@ public static partial class Rac1WorldImport
     }
 
     private static IReadOnlyList<RuntimeDynamicObject> BuildMobyDynamicObjects(
+        int levelId,
         IReadOnlyList<Rac1Instances.MobyInstance> instances,
         IReadOnlyDictionary<int, Rac1StaticClasses.MobyClass> classes,
         HashSet<int> textureIds,
@@ -140,6 +141,25 @@ public static partial class Rac1WorldImport
         {
             if (!classes.TryGetValue(oClass, out var cls) || cls.Mesh.Indices.Length == 0) continue;
             var mesh = cls.Mesh;
+            // Veldin class 1964 is one authored placement (instance 295), but
+            // the NTSC-U level-0 overlay does not register its Moby updater.
+            // Its single packet emits 30 triangles, all with native slot -1
+            // (the source has no texture to present). Rendering them as the
+            // generic opaque beige Moby fallback creates the giant panel at
+            // Ratchet's ship. Keep the runtime entity and source payload, but
+            // admit no substitute visible surface for this unregistered
+            // unsupported class. The separate textured TIE fence stays intact.
+            // See research/generated/rac1-moby-updater-atlas.json, level 0.
+            if (levelId == 0 && oClass == 1964)
+            {
+                if (cls.TriangleTextureIds.Length != 30 ||
+                    cls.TriangleTextureIds.Any(id => id != -1))
+                    throw new InvalidDataException(
+                        "Veldin unregistered class 1964 no longer matches its untextured retail specimen.");
+                models[oClass] = [];
+                continue;
+            }
+
             if (mesh.Indices.Length != cls.TriangleTextureIds.Length * 3 ||
                 mesh.Uvs.Length != mesh.Positions.Length / 3 * 2)
                 throw new InvalidDataException($"R&C1 moby class {oClass} has inconsistent surface arrays.");
