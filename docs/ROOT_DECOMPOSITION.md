@@ -79,6 +79,17 @@ permissions retire; twenty exact composition delegations remain for later
 diagnostic, audio, controller-UI and movement-reproduction owners. Their expiry
 owners are recorded individually; the origin ledger does not expand.
 
+The #340 encounter extraction retires seven more diagnostic partials and 52
+historical declaration/member permissions. The root now has 94 files, 20,255
+file lines, 680 direct methods, 456 fields (311 mutable) and 44 exposed members.
+Enemy, Novalis, Aridia, frog/queen and Veldin/combat suites consume immutable
+facts and fixture actions instead of privileged root access. Actor handles use
+the existing source-qualified world-generation identity and reject retired
+worlds. Nine exact composition entries bind these fixtures or delegate the four
+remaining wait/input/placement helpers; their expiry owners are #341, #342,
+#345 and #359. Two expired movement delegations are removed. The frozen origin
+ledger remains unchanged.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

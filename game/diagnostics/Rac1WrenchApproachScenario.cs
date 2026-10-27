@@ -3,7 +3,7 @@ using System.Numerics;
 namespace OBP.Game.Diagnostics;
 
 /// <summary>Test-side ordinary input approach; it never stages the player.</summary>
-public sealed class Rac1WrenchApproachScenario(MovementDiagnosticContext context, IRac1WrenchApproachFixture approach)
+public sealed class Rac1WrenchApproachScenario(MovementDiagnosticContext context, IRac1WrenchApproachFixture approach, Func<string>? failureEvidence = null)
     : MovementScenarioSupport(context)
 {
     public async Task<float> RunAsync(Func<Vector3> targetCenterProvider, int maxFrames, string label,
@@ -33,12 +33,14 @@ public sealed class Rac1WrenchApproachScenario(MovementDiagnosticContext context
                 double controlYaw = approach.ControlYaw;
                 Vector3 controlForward = new(-(float)Math.Cos(controlYaw), 0, (float)Math.Sin(controlYaw));
                 Vector3 controlRight = new(-(float)Math.Sin(controlYaw), 0, -(float)Math.Cos(controlYaw));
-                SetAnalogueSmokeInput(inputScale * Math.Clamp(Vector3.Dot(desired, controlRight), -1, 1),
+                // These are desired conditioned axes. Raw diagonal axes would be
+                // deadbanded a second time and reduce this run to walking.
+                SetRac1SmokeConditionedInput(inputScale * Math.Clamp(Vector3.Dot(desired, controlRight), -1, 1),
                     inputScale * Math.Clamp(Vector3.Dot(desired, controlForward), -1, 1));
                 await ProcessFrameAsync();
             }
         }
         finally { CleanupStep(ClearMovementSmokeInput); }
-        throw new TimeoutException($"Timed out driving ordinary movement into wrench host policy for {label}: start={start}, current={Player.Read().GlobalPosition}, target={targetCenter}, yaw={Player.Read().Rac1CurrentYaw:R}, control={approach.ControlYaw:R}.");
+        throw new TimeoutException($"Timed out driving ordinary movement into wrench host policy for {label}: start={start}, current={Player.Read().GlobalPosition}, target={targetCenter}, yaw={Player.Read().Rac1CurrentYaw:R}, control={approach.ControlYaw:R}; velocity={Player.Read().Velocity}; grounded={Player.Read().Grounded}; contacts={failureEvidence?.Invoke()}.");
     }
 }

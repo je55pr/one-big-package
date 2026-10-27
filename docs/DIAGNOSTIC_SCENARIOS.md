@@ -257,3 +257,34 @@ ground trial. Unknown case names fail at CLI parsing. Automated engine runs use
 Remaining source suites, native audio and movement reproduction use exact,
 temporary root delegations to compatibility helpers until their recorded
 migration owners remove them. They do not regain access to movement assertions.
+
+## R&C1 encounters and Veldin acceptance (#340)
+
+The seven enemy, Novalis birdbot/peckbot, Aridia, frog and Veldin/combat partials
+are standalone suites, with queen checks separated from the frog suite. Their
+existing command names, dispatch order, failure codes, native 60-Hz sequencing
+and acceptance tolerances remain. Copied observations cover authored placement,
+activation, animation, contact, damage, rewards and camera ownership. Existing
+`ActorInstanceKey` handles qualify native IDs by source, world and generation;
+foreign-source and retired-world handles fail explicitly.
+
+Engine fixtures retain native sessions, PVars, scene nodes and actor maps.
+Temporary geometry, player/actor pose, the isolated shark-recycle session,
+camera ownership, damage listeners and simulated input have scoped cleanup.
+Cleanup skips retired scene actors and does not release another camera owner.
+The synthetic combat command remains a host-contract fixture; it does not
+claim to be an ordinary retail playthrough. Native rules and controllers stay
+with their existing source owners.
+
+Validation found a pre-existing approach-fixture bug: a desired conditioned
+diagonal direction was sent as raw stick axes, so native deadband conditioning
+reduced the requested run to walking. The fixture now uses the existing
+conditioned-stick inverse, with its original 180-frame and distance limits.
+Portable regressions check the resulting native run speed/direction and input
+release on timeout/cancellation. Production movement is unchanged.
+
+Authorised headless checks cover Veldin, Novalis, Aridia and frog/queen levels
+6 and 10, including actual level retry and unload/reload. Optional enemy image
+capture still requires a rendered post-draw signal and reports unavailable in
+headless mode. The seventeen newly linked engine-free files have exact coverage
+path permissions; engine fixtures remain outside portable coverage.

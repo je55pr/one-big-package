@@ -4,8 +4,21 @@ namespace OBP.Game.Diagnostics;
 internal sealed class Rac1EncounterDiagnosticHarness(MovementScenarioPorts movement,
     IRac1EnemyDiagnosticFacts enemies, IRac1EnemyDiagnosticActions actors, IRac1DiagnosticLootFacts loot,
     IRac1EncounterLifecycle lifecycle, IRac1EnemyDiagnosticCapture capture, IRac1WrenchApproachFixture approach,
-    IDiagnosticControllerEquipment equipment, IRac1AridiaDiagnosticFixture aridia)
+    IDiagnosticControllerEquipment equipment, IRac1AridiaDiagnosticFixture aridia, IRac1FrogDiagnosticFixture frogs, Rac1CombatScenarioPorts combat)
 {
+    internal IRac1CombatDiagnosticFixture Combat => combat.Combat;
+    internal IDiagnosticScenario CreateVeldin(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
+        new MovementDiagnosticScenario(definition, movement, context => new Rac1VeldinScenario(context, combat).RunAsync()),
+        new("rac1-veldin-play-smoke-pass", 0), new("rac1-veldin-play-smoke-fail", 3));
+    internal IDiagnosticScenario CreateMovementContact(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
+        new MovementDiagnosticScenario(definition, movement, context => new Rac1VeldinScenario(context, combat).RunMovementContactAsync()),
+        new("rac1-movement-contact-smoke-pass", 0), new("rac1-movement-contact-smoke-fail", 3));
+    internal IDiagnosticScenario CreateCombat(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
+        new MovementDiagnosticScenario(definition, movement, context => new Rac1CombatContractScenario(context, combat).RunAsync()),
+        new("rac1-combat-contract-pass", 0), new("rac1-combat-contract-fail", 3));
+    internal IDiagnosticScenario CreateFrogs(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
+        new MovementDiagnosticScenario(definition, movement, context => new Rac1FrogScenario(context, enemies, actors, frogs, lifecycle).RunAsync()),
+        new("rac1-frog-smoke-pass", 0), new("rac1-frog-smoke-fail", 1));
     internal IDiagnosticScenario CreateEnemies(DiagnosticScenarioDefinition definition)
     {
         if (movement.World.Read() is { Source: OBP.Core.ObpSourceGame.Rac1, LevelId: OBP.RAC1.Gameplay.Rac1AridiaEnemies.LevelId })

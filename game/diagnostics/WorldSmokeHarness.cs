@@ -8,7 +8,9 @@ namespace OBP.Game;
 internal static class WorldSmokeHarness
 {
     internal sealed record Entrypoints(
-        Func<Task> VeldinPlay, Func<Task> MovementContact, Func<Task> CombatContract,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario> VeldinPlay,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario> MovementContact,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario> CombatContract,
         Func<Task> Campaign, Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Movement,
         Func<Task>? Crates = null, Func<Task>? PlacedBolts = null, Func<Task>? Wrench = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Enemies = null, Func<CancellationToken, Task>? MovementState = null,
@@ -16,7 +18,7 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisPeckbot = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<Task>? NovalisMusic = null, Func<Task>? Weapons = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<Task>? MissionPlay = null,
-        Func<Task>? NovalisRoute = null, Func<Task>? Frogs = null);
+        Func<Task>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null);
 
     private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
         Func<Entrypoints, DiagnosticScenarioDefinition, IDiagnosticScenario>? Create = null);
@@ -29,9 +31,9 @@ internal static class WorldSmokeHarness
     // Original independent flag order. Only explicit first-world registrations are selected.
     private static readonly Entry[] Entries =
     [
-        Case("rac1-veldin-play-smoke", a => a.Rac1VeldinPlaySmoke, (e, _, _) => e.VeldinPlay()),
-        Case("rac1-movement-contact-smoke", a => a.Rac1MovementContactSmoke, (e, _, _) => e.MovementContact()),
-        Case("rac1-combat-contract-smoke", a => a.Rac1CombatContractSmoke, (e, _, _) => e.CombatContract()),
+        TypedCase("rac1-veldin-play-smoke", a => a.Rac1VeldinPlaySmoke, (e, definition) => e.VeldinPlay(definition)),
+        TypedCase("rac1-movement-contact-smoke", a => a.Rac1MovementContactSmoke, (e, definition) => e.MovementContact(definition)),
+        TypedCase("rac1-combat-contract-smoke", a => a.Rac1CombatContractSmoke, (e, definition) => e.CombatContract(definition)),
         Case("rac1-wrench-smoke", a => a.Rac1WrenchSmoke, (e, _, _) => e.Wrench?.Invoke()),
         Case("rac1-bomb-glove-smoke", a => a.Rac1BombGloveSmoke, (e, _, _) => e.BombGlove?.Invoke()),
         TypedCase("rac1-novalis-swim-smoke", a => a.Rac1NovalisSwimSmoke, (e, definition) => e.NovalisSwim?.Invoke(definition)
@@ -49,7 +51,8 @@ internal static class WorldSmokeHarness
         Case("rac1-crate-smoke", a => a.Rac1CrateSmoke, (e, _, _) => e.Crates?.Invoke()),
         TypedCase("rac1-enemy-smoke", a => a.Rac1EnemySmoke, (e, definition) => e.Enemies?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No enemy diagnostic is bound."))),
-        Case("rac1-frog-smoke", a => a.Rac1FrogSmoke, (e, _, _) => e.Frogs?.Invoke()),
+        TypedCase("rac1-frog-smoke", a => a.Rac1FrogSmoke, (e, definition) => e.Frogs?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Frog diagnostic is bound."))),
         Case("movement-state-smoke", a => a.MovementStateSmoke, (e, _, r) => e.MovementState?.Invoke(r.CancellationToken)),
         Case("rac1-placed-bolt-smoke", a => a.Rac1PlacedBoltSmoke, (e, _, _) => e.PlacedBolts?.Invoke()),
         Case("rac1-campaign-smoke", a => a.Rac1CampaignSmoke, (e, _, _) => e.Campaign()),

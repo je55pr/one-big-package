@@ -1,5 +1,6 @@
 using OBP.Core;
 using Godot;
+using OBP.RAC1.Gameplay;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.IO;
@@ -841,12 +842,14 @@ public partial class OBPGame : Node3D
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>
                 new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock), _hostOperations, _args.MovementCase);
     }
-    private Task RunRac1NaturalVeldinFallRespawnSmokeAsync(Vector3 position) =>
-        CreateMovementDiagnosticHarness().RunFallAsync(GodotMovementPlayer.Copy(position), LegacyDiagnosticCancellation.Current);
     internal Task CheckControllerWeaponInputAsync() => CreateMovementDiagnosticHarness().RunControllerAsync(_hostOperations.Token);
-    private Task<float> MeasureJumpAsync(PlayerHost player, int holdFrames, bool applyPartialAirControl, bool movingAtLaunch = false) =>
-        GodotMovementCompatibility.MeasureJumpAsync(() => CreateMovementDiagnosticHarness()
-            .MeasureJumpAsync(holdFrames, applyPartialAirControl, movingAtLaunch, LegacyDiagnosticCancellation.Current));
+    private Task Rac1SmokeWaitAsync(Func<bool> condition, int frames, string label) =>
+        GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, LegacyDiagnosticCancellation.Current);
+    private Task Rac1SmokeWaitCancelableAsync(Func<bool> condition, int frames, string label, CancellationToken token) =>
+        GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, token);
+    private void Rac1SmokePlaceGroundedFacing(Vector3 position, Vector3 direction) =>
+        CreateRac1EncounterDiagnosticHarness().Combat.PlacePlayerFacing(GodotMovementPlayer.Copy(position), GodotMovementPlayer.Copy(direction), true);
+    private Task TapRac1PrimaryActionAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, _rac1Weapons.Equipped);
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
         GodotRac1DiagnosticSurface.Add(parent, name, material, triangles);
@@ -878,12 +881,51 @@ public partial class OBPGame : Node3D
             [.. _rac1PickupMotion.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
                 pair.Value.Position, pair.Value.NativeState, pair.Value.CollectionStep))],
             [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)]));
+        var lifecycle = new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), ApplyRac1EnemyPlayerDamage, () => _rac1CombatRetry);
+        var approach = new GodotRac1WrenchApproachFixture(() => _player, _rac1Wrench.ResolveFirstSwingFacing, Rac1WrenchHostRootHeight);
+        var combat = new Rac1CombatScenarioPorts(actors, actors, CreateRac1CombatDiagnosticFixture(actors), approach, movement.Equipment,
+            new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
+            CreateUiDiagnosticHarness(), movement.Environment, lifecycle);
         return new(movement.Ports, actors, actors, loot,
-            new GodotRac1EncounterLifecycle(() => _rac1Nanotech.Probe(), ApplyRac1EnemyPlayerDamage, () => _rac1CombatRetry),
+            lifecycle,
             new GodotRac1EnemyDiagnosticCapture(this, () => _ui, () => _player, new GodotDiagnosticFrameClock(this)),
-            new GodotRac1WrenchApproachFixture(() => _player, _rac1Wrench.ResolveFirstSwingFacing, Rac1WrenchHostRootHeight),
-            movement.Equipment, CreateRac1AridiaDiagnosticFixture(actors));
+            approach, movement.Equipment, CreateRac1AridiaDiagnosticFixture(actors), CreateRac1FrogDiagnosticFixture(actors), combat);
     }
+
+    private GodotRac1CombatDiagnosticFixture CreateRac1CombatDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors) => new(actors,
+        new GodotDiagnosticWorldObservations(WorldScenes), new()
+        {
+            Crates = () => [.. _rac1CrateNodes],
+            Hostiles = () => [.. _rac1HostileNodes.Values],
+            World = () => _world,
+            Player = () => _player,
+            Opening = () => new(_args.Rac1CampaignPersistenceRequested, _rac1CampaignPersistence.Enabled, _rac1CampaignRestoreKind,
+                _rac1CampaignSession.Campaign.CurrentLevel, _rac1CampaignSession.Campaign.AdmittedDestinationCount, _rac1Weapons.OwnsFirstRanged),
+            Population = () => new(_world?.DynamicObjects?.Count(source => source.NativeClassId == Rac1Class749Hostile.NativeClassId) ?? 0,
+                _rac1Class749PresentationNodes.Count(node => IsInstanceValid(node.Root) && node.Root.Visible), _rac1HostileNodes.Count, _rac1Hostiles.RegisteredCount),
+            Presentation = () =>
+            {
+                var wrench = _rac1WrenchView; bool present = wrench is not null && IsInstanceValid(wrench);
+                return new(_hudState.Current.CurrentWeapon, present, present && wrench!.Visible,
+                    present && _playerAvatarView is not null && wrench!.GetParent() == _playerAvatarView);
+            },
+            Loot = () => new(_rac1BoltCrates.DestroyedCrateCount, _rac1BoltCrates.CollectedBolts,
+                [.. _rac1PickupNodes.Select(pair => new Rac1CombatPickupDiagnostic(pair.Key, IsInstanceValid(pair.Value),
+                    IsInstanceValid(pair.Value) ? GodotMovementPlayer.Copy(pair.Value.GlobalPosition) : System.Numerics.Vector3.Zero, _rac1BoltCrates.OwnsPickup(pair.Key)))]),
+            Bombs = () => new(_rac1BombFireRequested, [.. _rac1Projectiles.Keys],
+                _rac1LastBombContactResolution is { } contact ? new(contact.ProjectileId, [.. contact.DamageResults]) : null),
+            BombWitness = () =>
+            {
+                var shot = _rac1Projectiles.FirstOrDefault();
+                return shot.Value is null ? null : new GodotRac1BombDiagnosticWitness(() => new(shot.Key,
+                    new(ObpSourceGame.Rac1, (int)Rac1WeaponId.FirstRanged), shot.Value.Motion.Position, shot.Value.Motion.NativeState));
+            },
+            Active = IsRac1GameplayActive,
+            Forward = EnemyForward,
+            Presence = SetRac1HostedPresence,
+            PrimaryAttack = OnRac1PrimaryAttackRequested,
+            Damage = () => _rac1DamageTransport,
+        });
 
     private GodotRac1AridiaDiagnosticFixture CreateRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors)
     {
@@ -900,6 +942,61 @@ public partial class OBPGame : Node3D
             ProbeRac1ConstructorbotStateThreeFloor, ProbeRac1AridiaWalkerGroundLift, ProbeRac1AridiaWalkerSupport,
             ProbeRac1AridiaWalkerSpherePushouts, MoveRac1AridiaWalkerContact, SelectRac1EnemySequence, ActivateNearbyRac1AridiaShark));
     }
+
+    private GodotRac1FrogDiagnosticFixture CreateRac1FrogDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors) => new(actors,
+        new GodotRac1DiagnosticWorldScope(new GodotDiagnosticWorldObservations(WorldScenes)), new()
+        {
+            Frogs = () => _rac1Frogs,
+            Shuttle = () => _rac1FrogShuttle,
+            Waves = () => _rac1FrogWaves,
+            WaveControllers = () => [.. _rac1FrogWaveNodes.Keys],
+            Carriers = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1FrogCarrierChildren),
+            HasPickupModel = nativeClass => _rac1PickupAssets?.Models.ContainsKey(nativeClass) == true,
+            Counts = () => (_rac1CrateNodes.Count, _rac1PickupMotion.Count, _rac1Debris.Count),
+            TickFrog = TickRac1Frog,
+            TickCarrier = TickRac1FrogCarrier,
+            MeleeTouchesPlayer = EnemyMeleeTouchesPlayer,
+            ResolveWrench = ResolveRac1AnimatedWrenchContacts,
+            TickShuttle = TickRac1FrogShuttleSwitch,
+            ApplyShuttle = ApplyRac1FrogShuttleSelection,
+            TickWaves = TickRac1FrogWaves,
+            Queen = CreateRac1QueenDiagnosticBindings(),
+        });
+
+    private GodotRac1QueenDiagnosticBindings CreateRac1QueenDiagnosticBindings() => new()
+    {
+        Group = () => _rac1FrogQueen,
+        Recovery = () => _rac1QueenRecovery,
+        Entrance = () => _rac1QueenEntrance,
+        Flight = () => _rac1QueenFlight,
+        PendingCamera = () => _rac1QueenPendingCamera,
+        Linked = () => _rac1QueenLinkedGate,
+        Tuning = () => _rac1QueenGateNative,
+        Animation = () => _rac1QueenAnimation,
+        Node = () => _rac1QueenNode,
+        AuthoredNativeZ = () => _rac1QueenAuthoredNativeZ,
+        Parents = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1QueenLinkedNodes),
+        Children = () => System.Collections.Immutable.ImmutableDictionary.CreateRange(_rac1QueenLinkedChildVisuals),
+        WorldRoot = () => _sceneResult?.Root,
+        Player = () => _player,
+        ActiveCamera = () => _activeCamera,
+        QueenCamera = () => _rac1QueenScriptedCamera,
+        GuidedCamera = () => _rac1MissileCamera,
+        DamageSequence = () => _rac1DamageTransport.Sequence,
+        ForgetWrenchContact = key => _rac1WrenchHitTargets.Remove(key),
+        ResolveWrench = ResolveRac1QueenWrenchContacts,
+        InvalidateEquipmentGeometry = () => _rac1EquipmentGeometryFrame = ulong.MaxValue,
+        GeometryContainsQueen = () => _rac1QueenNode is { } queen && EquipmentGeometry.Any(entry => entry.Node == queen),
+        AimTargetAdmitted = () => _rac1QueenNode is { } queen && IsRac1WeaponAimTarget(queen),
+        TickFlight = () => TickRac1QueenFlight(),
+        TickRecovery = TickRac1QueenRecovery,
+        TickLinked = TickRac1QueenLinkedChildren,
+        SynchronizeLinked = SynchronizeRac1QueenLinkedParents,
+        ObserveFrogEvent = ObserveRac1QueenFrogEvent,
+        BeginGuided = BeginRac1GuidedCamera,
+        EndGuided = EndRac1GuidedCamera,
+        EndQueen = EndRac1QueenScriptedCamera,
+    };
 
     private UiDiagnosticHarness CreateUiDiagnosticHarness()
     {
