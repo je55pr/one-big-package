@@ -14,6 +14,7 @@ public sealed class Rac1PickupRandom(Func<int> next15)
     });
     private int Next() => next15() is >= 0 and <= 32767 and var value
         ? value : throw new InvalidOperationException("Expected a 15-bit retail random sample.");
+    internal int Next15() => Next();
     public int Below(int limit) => limit > 0 ? Next() % limit : throw new ArgumentOutOfRangeException(nameof(limit));
     public int Inclusive(int minimum, int maximum) => minimum + Below(checked(maximum - minimum + 1));
     public float Range(float minimum, float maximum) => minimum + Next() * (maximum - minimum) / 32768f;

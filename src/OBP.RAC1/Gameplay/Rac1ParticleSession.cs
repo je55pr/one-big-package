@@ -32,6 +32,9 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
         public int Total { get; internal set; }
         public bool Smoke => (Flags & 1) != 0 && Type == 11;
         public int Generation { get; internal set; }
+        public Rac1ParticleEmitter? Emitter { get; internal set; }
+        internal float EmitterAlpha, EmitterAngle;
+        internal byte RedLow, GreenLow, BlueLow, EmitterDirections;
         internal float RawSize, BaseSize, Speed, Reach;
         internal uint StartColor, EndColor;
         internal byte Flags, Spin;
@@ -51,9 +54,9 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
     {
         get { for (int i = 0; i <= _highest; i++) if (_slots[i] is { } p) yield return p; }
     }
-    public bool IsLive(Particle particle) => ReferenceEquals(_slots[particle.Slot], particle);
+    public bool IsLive(Particle particle) => (uint)particle.Slot < _slots.Length && ReferenceEquals(_slots[particle.Slot], particle);
 
-    private Particle? Allocate(int type, int textureType, int textureChoice, Blend blend, Vector3 position)
+    private Particle? Allocate(int type, int textureType, int textureChoice, Blend blend, Vector3 position, byte? depthRange = null)
     {
         int free = Array.FindIndex(_slots, p => p is null);
         if (free < 0) return null;
@@ -70,11 +73,11 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
             Angle = type switch
             {
                 2 => (byte)(int)random.Range(0, 255),
-                8 => 0,
+                6 or 8 => 0,
                 12 => (byte)random.Below(255),
                 _ => (byte)random.Below(256)
             },
-            DepthRange = type is 2 or 12 or 16 ? (byte)0x44 : (byte)0xa4
+            DepthRange = depthRange ?? (type is 2 or 12 or 16 ? (byte)0x44 : (byte)0xa4)
         };
         _slots[free] = p; _highest = Math.Max(_highest, free); Count++;
         return p;
@@ -168,6 +171,7 @@ public sealed partial class Rac1ParticleSession(Rac1EffectAssets assets, Rac1Pic
             {
                 case 12: StepFlame(p, enforceLevelBounds); break;
                 case 4: StepTrail(p); break;
+                case 6: StepEmitter(p); break;
                 case 11: StepExplosion(p, camera); break;
                 case 2: StepSecondary(p); break;
                 case 8: StepGlow(p); break;

@@ -11,6 +11,7 @@ public sealed partial class Rac1ParticleView : Node3D
     private readonly Dictionary<(int Texture, Rac1ParticleSession.Blend Blend, byte Depth), Batch> _batches = [];
     private readonly Dictionary<int, ImageTexture> _textures = [];
     private readonly Dictionary<(Rac1ParticleSession.Blend Blend, byte Depth), Shader> _shaders = [];
+    private readonly List<Rac1ParticleSession.SpriteSnapshot> _snapshots = [];
     public int RenderedCount { get; private set; }
     public int DrawCalls { get; private set; }
 
@@ -18,7 +19,8 @@ public sealed partial class Rac1ParticleView : Node3D
     {
         foreach (var batch in _batches.Values) batch.Instances.VisibleInstanceCount = 0;
         RenderedCount = DrawCalls = 0;
-        foreach (var group in session.Live.Where(p => p.Size > 0 && p.Remaining > 0)
+        session.CaptureSprites(_snapshots);
+        foreach (var group in _snapshots.Where(p => p.Size > 0 && p.Remaining > 0)
             .GroupBy(p => (p.Texture, p.Blending, p.DepthRange)))
         {
             if (!textures.TryGetValue(group.Key.Texture, out var texture)) continue;

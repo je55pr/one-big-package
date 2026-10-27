@@ -1,5 +1,31 @@
 # Third-party acknowledgements
 
+## ReRAC type-6 emitter reference — ISC License
+
+The source-owned R&C1 class-27/type-6 emitter uses the parameter layout and
+algorithm reference in `crates/rc-game/src/particles/type06.rs` from
+https://github.com/re-rac/rerac at revision
+`7d0d031a4f293c1214d01de90918fe3ec234b673`.
+OBP independently compares the implementation against original retail EE/VU
+instructions. No retail code or assets are included. The optional type-6
+research oracle builds the external MIT interpreter acknowledged below.
+
+Copyright (c) 2026 ReRAC contributors
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+## rac1-native-game reference
+
 R&C1 camera, player-audio, weapon and mission reconstruction uses the public `rac1-native-game` source and its
 function/address annotations as a reference, including Blaster contact and
 steering behavior, Taunter queries, player sound/footstep dispatch, weapon/deployment timing,
