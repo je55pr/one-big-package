@@ -50,8 +50,25 @@ internal sealed class GodotTrilogyPlayerDiagnosticFixture(Node owner, GodotTrilo
     public void ShowPauseSection(string section) => bindings.PauseSection(section);
     public void ClosePause() => bindings.ClosePause();
     public ImmutableArray<TrilogyEquipmentDiagnostic> ReadEquipment() => bindings.Equipment();
-    public void HoldEquipped(bool held) => Player.PlaytestInputFilter = _ => new RawPlayerInputFrame { TraversalHeld = held };
-    public void SetPaused(bool paused) => owner.GetTree().Paused = paused;
+    public void HoldEquipped(bool held)
+    {
+        var player = bindings.Player();
+        if (player is null || !GodotObject.IsInstanceValid(player))
+        {
+            if (held) throw new DiagnosticUnavailableException("The trilogy player is unavailable.");
+            return; // A retired player has no synthetic control left to release.
+        }
+        player.PlaytestInputFilter = _ => new RawPlayerInputFrame { TraversalHeld = held };
+    }
+    public void SetPaused(bool paused)
+    {
+        if (!GodotObject.IsInstanceValid(owner) || !owner.IsInsideTree())
+        {
+            if (paused) throw new DiagnosticUnavailableException("The trilogy scene is unavailable.");
+            return;
+        }
+        owner.GetTree().Paused = paused;
+    }
     public void StageEncounter() { Player.PlaytestInputFilter = _ => default; Player.ApplyDevelopmentReset(new(0, 1, 14)); }
     public void StageAttack(System.Numerics.Vector3 target)
     {
