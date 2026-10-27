@@ -182,7 +182,11 @@ public static partial class Rac1WorldImport
                     cls.Positions[i],
                     cls.Positions[i + 1],
                     cls.Positions[i + 2]);
-                double x = R2(nx), y = R2(nz), z = R2(ny);
+                // Native shrub decals can sit just 0.0025 world units above terrain.
+                // Centimetre rounding collapses that authored separation and causes
+                // exact coplanar depth fighting. Keep sub-centimetre shrub height;
+                // retain the existing TIE weld/placement policy unchanged.
+                double x = R2(nx), y = kind == "shrub" ? R4(nz) : R2(nz), z = R2(ny);
                 worldPositions[i] = x;
                 worldPositions[i + 1] = y;
                 worldPositions[i + 2] = z;
