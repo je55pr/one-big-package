@@ -34,7 +34,7 @@ public partial class OBPGame
 
     private VerificationSourceStamp? CurrentVerificationStamp(ObpSourceGame game)
     {
-        var source = _sources.Get(game);
+        var source = Sources.Setup.Library.Get(game);
         if (source is null) return null;
         try
         {
@@ -71,7 +71,7 @@ public partial class OBPGame
     private void ReportVerificationStatus(string text, bool error = false)
     {
         GD.Print($"[verification] {text}");
-        _sourceManager?.SetStatus(text, error);
+        Sources.SetStatus(text, error);
     }
 
     // --- deterministic capture ----------------------------------------

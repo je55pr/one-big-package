@@ -2563,16 +2563,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateUiDiagnosticHarness():UiDiagnosticHarness:private",
       "Owner": "#337",
-      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
+      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#348",
-      "Hash": "5c96f96cfcbac45889c6f5c58092558ae2b5bc0acd98980db87951e0a1e9847e"
-    },
-    {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1StartupVisibilitySmokeFromBootstrap():void:public",
-      "Owner": "#337",
-      "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates.",
-      "ExpiresWith": "#346",
-      "Hash": "0c8d90f79aba0796f99af55030ce77f69aa21a277d53d4f9edc7bf6100739a89"
+      "Hash": "a6beae57a73afff573a7185df279cfaefb402c5bb4833006fab5b4e234be920e"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:private",
@@ -2591,9 +2584,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
       "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers.",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#359",
-      "Hash": "769815b48f24bed3d467842e550340e17c8836a5ca609102a7e1836dd4f658d4"
+      "Hash": "deb3e03c6784eb294915214633a4f4e8aa9935344bf48d1464769d8f0092dcef"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:AddSyntheticTraversalMesh(:Node3D,:string,:int,params:( Vector3 A , Vector3 B , Vector3 C ) [  ]):void:private,static",
@@ -2619,9 +2612,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
       "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration.",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#359",
-      "Hash": "0188d1970cc0131c930ea41752debe01fa3e11db3295b5170f5a505d3a7f3f16"
+      "Hash": "afdd26dfcf8ad0889722cef4bf0056c5d3d38e3a0437f0ae3beefac4f42b9e91"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:SetAnalogueSmokeInput(:float,:float):void:private,static",
@@ -2682,9 +2675,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponDiagnosticHarness():FusionWeaponDiagnosticHarness:private",
       "Owner": "#341",
-      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#352",
-      "Hash": "f0fcbf052a58383d3085b18a911519d4fc3b9209b3a1c2921e6ba07d58e3796b"
+      "Hash": "5f3aef501524b5ae77298079c203d663a34f000fb90861595cddc9ef2d857c73"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
@@ -2710,9 +2703,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CampaignDiagnosticHarness():Rac1CampaignDiagnosticHarness:private",
       "Owner": "#342",
-      "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners.",
+      "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#372",
-      "Hash": "7c1b81e329333b467e44f14eee9178df3e89d8cd02bf4575a0c92e3015118b45"
+      "Hash": "b7c0acc86bfb6b56c12f7f6b1e4daf3ddb3ade5860a953a7882775e344bc7ba5"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1LootDiagnosticHarness():Rac1LootDiagnosticHarness:private",
@@ -2731,9 +2724,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1WorldRouteDiagnosticHarness():Rac1WorldRouteDiagnosticHarness:private",
       "Owner": "#343",
-      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone.",
+      "Rationale": "Invocation-only Novalis music/mechanism, taxi and lease-retirement fixture composition. Source-native sessions, source attachment paths, scene nodes and collision/audio resources stay behind scoped adapters; assertions and test control flow are standalone. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#370",
-      "Hash": "61177e74ed989e194457ef88318b0a06bc10e1cc1015a911f94bcf5eab8e0d25"
+      "Hash": "bb2cb94128255c3380dc727937219b06ccce26703afb5bfa9f99b97a79b945e8"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_captureDiagnostics:CaptureDiagnosticHarness ?:private",
@@ -2745,9 +2738,9 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateCaptureDiagnosticHarness():CaptureDiagnosticHarness:private",
       "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#356",
-      "Hash": "afabd95f472e89ba7c891e1baa5ea28601625e8a6487fe8d57b2a257e5dd2869"
+      "Hash": "cd67ca4e87b55c44b03d5426cd493230d9c83d0d3c33bd9adbc2011f8d49bb5c"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
@@ -2790,6 +2783,62 @@
       "Rationale": "Temporary explicit Lab fixture composition. The scoped scenario owns input, traversal and deferred reload; retire this binding with Lab navigation ownership.",
       "ExpiresWith": "#347",
       "Hash": "4322f3a787b640ca5b3605d2c4e90cca1b480fd29aad6c5285729724f14f1c47"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Navigation.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public",
+      "Owner": "#346",
+      "Rationale": "Relocated existing selector-back navigation bridge after retiring the source partial. Navigation ownership removes it in #347; no source state or policy remains here.",
+      "ExpiresWith": "#347",
+      "Hash": "79ce0ca192f4f3d8f08112a9fc8dd0c028233c2817c01a3a55484e094b914a6d"
+    },
+    {
+      "Key": "game/scripts/OBPGame.Profile.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
+      "Owner": "#346",
+      "Rationale": "Relocated read-only profile recovery observation into the existing profile partial; profile ownership removes this bootstrap bridge in #349.",
+      "ExpiresWith": "#349",
+      "Hash": "542dd084287a988c9486b9558237127ffab121a21fa05a27b52125a79eeb30c6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::field:_sourceSetup:SourceSetupController ?:private",
+      "Owner": "#346",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "ExpiresWith": "#376",
+      "Hash": "f0865cc5a5d91692a09573b5723bed5432968122bbf60003f4e6b1fee2f8adf6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateSourceSetup():SourceSetupController:private",
+      "Owner": "#346",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "ExpiresWith": "#376",
+      "Hash": "ebbcca23de220bf880dd533cda817de5d26b84d909e85c8615957a55f7d1d9da"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
+      "Owner": "#346",
+      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
+      "ExpiresWith": "#347",
+      "Hash": "4f3a5f6acbb67b5ea318bdebc68c9babd7399565d888de3286b8144acdbc13b6"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RequireStartupSetup():bool:public",
+      "Owner": "#346",
+      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
+      "ExpiresWith": "#347",
+      "Hash": "9fbe3083e29d91f08d7ff3eb8d21f7f523a1b027c1384aac5a339455e23e2ec4"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
+      "Owner": "#346",
+      "Rationale": "Existing bootstrap/controller compatibility port delegates to SourceSetupController without source state or policy. Navigation ownership removes the root bridge in #347.",
+      "ExpiresWith": "#347",
+      "Hash": "f0c779c68f84cde6a8fbc6d6cdb4499f1b63d21eeeb2aaedfb1c5c76739a7c4b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::property:Sources:SourceSetupController:get/:private",
+      "Owner": "#346",
+      "Rationale": "Composition-only reference/lazy construction binds the owned source coordinator and setup view to existing scene navigation, profile notices, source-consumer retirement and host cancellation. Source state, admission and repair live outside the root; final world-entry composition removes this bridge.",
+      "ExpiresWith": "#376",
+      "Hash": "f066fa120be074e32846b992f08b41e0889b1b7bed1a0ca6dee6fb3c0cc76025"
     }
   ],
   "RetiredMembers": [
@@ -3043,7 +3092,39 @@
     "game/scripts/OBPGame.Shots.cs::OBPGame::method:RunShotsAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
     "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:CountDescendants(:Node):int:private,static",
-    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:RunStressSwitchAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private"
+    "game/scripts/OBPGame.StressDiagnostics.cs::OBPGame::method:RunStressSwitchAsync(:string,:CancellationToken):System . Threading . Tasks . Task:async,private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_diagnosticSourceAccess:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_setupProfileSuspended:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceCheckElapsed:double:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceConfigNeedsRepair:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_sourceReadiness:SourceReadinessEvaluator:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::field:_startupSourcesResolved:bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:CompleteSourceSetup():void:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:InitializeStartupSources():bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:RequireOrdinarySourceSetup(:string):bool:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:RequireStartupSetup():bool:public",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::method:TickSourceSetup(:double):void:private",
+    "game/scripts/OBPGame.SourceSetup.cs::OBPGame::property:ProfileRecoveryRequired:bool:get/:internal",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceConfigPath:string:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceConfigWarning:string ?:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceManager:SourceManagerUi ?:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourceRestoreWarnings:Dictionary < ObpSourceGame , string >:private,readonly",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sources:ObpSourceLibrary:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::field:_sourcesInitialized:bool:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:AttachExpectedSource(:ObpSourceGame,:string,:bool,:bool):bool:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:BuildSourceManagerScreen():void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:EnsureSourceLibraryInitialized():void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:ForgetSource(:ObpSourceGame):void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:OpenSourcePicker(:ObpSourceGame):void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RefreshRetailUiSource(:ObpAttachedSource ?,:IRandomAccessReader ?):string ?:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RememberCommandLineSource(:ObpSourceGame,:string,:bool):void:public",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:RestoreRememberedSources():void:private",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:ShowSourceManagerFromBootstrap():void:public",
+    "game/scripts/OBPGame.Sources.cs::OBPGame::method:TryReturnSelectorToMenu():bool:public"
   ],
-  "RetiredAccess": []
+  "RetiredAccess": [
+    "game/scripts/SourceManagerBootstrap.cs::OBP.Game.SourceManagerBootstrap::OBP.Game.OBPGame.RunRac1StartupVisibilitySmokeFromBootstrap()"
+  ]
 }

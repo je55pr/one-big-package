@@ -16,7 +16,7 @@ public partial class OBPGame
     private void ConfigureRac1NovalisMechanisms(RuntimeWorld world, RuntimeWorldScene.Result result)
     {
         if (world.LevelId != 1 || world.BuildId != "rac1-ntscu-original") return;
-        var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Novalis mechanisms require the retail source.");
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Novalis mechanisms require the retail source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == 1);
         byte[] gameplay = Rac1LevelSettings.ReadGameplay(reader, level);

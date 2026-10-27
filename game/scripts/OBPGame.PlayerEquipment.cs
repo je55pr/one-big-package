@@ -10,7 +10,7 @@ namespace OBP.Game;
 public partial class OBPGame
 {
     public IReadOnlyList<SourceWeaponKey?> ReadPlayerQuickSlots() => _playerNative?.Assignments.Capture().QuickSelect ?? [];
-    private IReadOnlyDictionary<ObpSourceGame, string> PlayerEquipmentSources => _sources.Attached.Values
+    private IReadOnlyDictionary<ObpSourceGame, string> PlayerEquipmentSources => Sources.Setup.Library.Attached.Values
         .ToDictionary(source => source.Game, source => source.Identity.BuildId);
 
     /// <summary>Read model for the future all-trilogy loadout UI; no native IDs or layouts are needed by that UI.</summary>

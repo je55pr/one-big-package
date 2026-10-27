@@ -11,6 +11,7 @@ namespace OBP.Game;
 public partial class SourceManagerBootstrap : Node
 {
     private OBPGame? _game;
+    internal Action? StartupVisibilityCheck { get; set; }
 
     public override void _Ready()
     {
@@ -104,7 +105,7 @@ public partial class SourceManagerBootstrap : Node
 
         if (args.Rac1StartupVisibilitySmoke)
         {
-            _game.RunRac1StartupVisibilitySmokeFromBootstrap();
+            (StartupVisibilityCheck ?? throw new InvalidOperationException("The startup visibility diagnostic is not bound."))();
             return;
         }
 

@@ -28,7 +28,7 @@ public partial class OBPGame
     private void ConfigureRac1MetalDetector(RuntimeWorld world)
     {
         if (world.LevelId == 0) return;
-        var source = _sources.Get(ObpSourceGame.Rac1)
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1)
             ?? throw new InvalidOperationException("Metal Detector targets require the retail source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(entry => entry.LevelId == world.LevelId);

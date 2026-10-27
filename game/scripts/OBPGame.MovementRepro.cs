@@ -144,8 +144,8 @@ public partial class OBPGame
                 throw new InvalidDataException("Forward replay must contain 1 through 3600 physics updates.");
             var destination = TrilogyWorldProviders.Resolve(state.Destination)
                 ?? throw new InvalidDataException("The saved destination is unavailable.");
-            EnsureSourceLibraryInitialized();
-            var source = _sources.Get(destination.Game);
+            Sources.Initialize();
+            var source = Sources.Setup.Library.Get(destination.Game);
             if (source is null || source.Identity.BuildId != state.SourceBuildId || !File.Exists(source.Path))
                 throw new InvalidDataException("Attach the saved state's supported R&C1 source before loading.");
             _movementStateLoading = true;

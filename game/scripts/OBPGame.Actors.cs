@@ -69,7 +69,7 @@ public partial class OBPGame
         {
             // Reject unsupported recipes before starting IO or constructing a scene.
             _ = _actorWorld.Factories!.Resolve(placement);
-            var source = _sources.Get(placement.Source.Game);
+            var source = Sources.Setup.Library.Get(placement.Source.Game);
             if (source is null || source.Identity.BuildId != placement.Source.Build)
                 throw new InvalidDataException("Missing or unsupported " + placement.Source.Game + " source.");
             var stamp = SourceFileStamp(source.Path) ?? throw new InvalidDataException("Actor source is unavailable.");
@@ -92,7 +92,7 @@ public partial class OBPGame
             // identities or give one enemy extra native ticks before the others.
             if (preparing) break;
             if (_actorWorld.Placed.ContainsKey(placement.Id) || _actorWorld.Problems.ContainsKey(placement.Id)) continue;
-            var source = _sources.Attached.Values.SingleOrDefault(source => source.Game == placement.Source.Game);
+            var source = Sources.Setup.Library.Attached.Values.SingleOrDefault(source => source.Game == placement.Source.Game);
             if (source is null) { _actorWorld.Problems[placement.Id] = "Source was detached before actor activation."; continue; }
             var task = _actorWorld.Preparation.GetValueOrDefault(placement.Id);
             if (task is null || !task.IsCompleted) continue;

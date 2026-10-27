@@ -55,7 +55,7 @@ public partial class OBPGame
 
     private void RegisterOriginalActor(RuntimeWorldScene.DynamicObjectNode node, Func<ActorObservation> observe, Func<WeaponDamageIntent, ActorHitResult> damage)
     {
-        string build = _sources.Attached.Values.Single(source => source.Game == node.Source.SourceGame).Identity.BuildId;
+        string build = Sources.Setup.Library.Attached.Values.Single(source => source.Game == node.Source.SourceGame).Identity.BuildId;
         var registration = new ActorRegistration(new(_actors!.WorldInstanceId, _actors.Generation, ActorTarget(node)),
             new(node.Source.SourceGame, build, node.Source.InteractionId), "source-world/" + SourceIdentityWire.FormatSource(node.Source.SourceGame),
             node.Source.InteractionId, [new("damage", CapabilityAdmission.Ready), new("native-update", CapabilityAdmission.Ready)]);

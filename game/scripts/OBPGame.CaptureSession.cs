@@ -72,7 +72,7 @@ public partial class OBPGame
     private void ValidateCaptureProvenance(PlaytestRunHeader header)
     {
         if (header.Version == PlaytestRunHeader.LegacyVersion) return;
-        header.VerifySessionSources(_sources.Attached.Values.Select(source => source.Identity), CaptureReplayAdapters());
+        header.VerifySessionSources(Sources.Setup.Library.Attached.Values.Select(source => source.Identity), CaptureReplayAdapters());
     }
 
     private void CaptureSharedCheckpoint(SortedDictionary<string, PlaytestValue> values)

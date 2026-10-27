@@ -88,7 +88,7 @@ public partial class OBPGame
     private void PrepareSharedWeaponSources(bool force = false)
     {
         RefreshPlayerSourceAvailability();
-        var snapshot = _sources.Attached.Values.OrderBy(s => s.Game).ToArray();
+        var snapshot = Sources.Setup.Library.Attached.Values.OrderBy(s => s.Game).ToArray();
         if (!force && _fusionSourceSnapshot is not null && snapshot.SequenceEqual(_fusionSourceSnapshot)) return;
         ResetSharedWeaponAssets();
         _fusionSourceSnapshot = snapshot;
@@ -99,6 +99,11 @@ public partial class OBPGame
 
     private void ShowSharedWeaponPreparation(string? status)
     {
+        if (Sources.Setup.Access == SourceAccessMode.OrdinaryPlay)
+        {
+            if (_fusionPreparationLayer is not null) _fusionPreparationLayer.Visible = false;
+            return;
+        }
         if (_args.CaptureFrame is not null || _args.ShotsPath is not null) return;
         if (status is null)
         {

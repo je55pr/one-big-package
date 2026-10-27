@@ -49,7 +49,7 @@ public partial class OBPGame
 
     private void ConfigureRac1PickupPresentation(RuntimeWorld world)
     {
-        var source = _sources.Get(OBP.Core.ObpSourceGame.Rac1);
+        var source = Sources.Setup.Library.Get(OBP.Core.ObpSourceGame.Rac1);
         if (source is null) throw new InvalidOperationException("R&C1 pickup presentation requires the active source.");
         _rac1PickupAssets = world.LevelId == 0 && _selectedRac1PresentationAssets is not null
             ? _selectedRac1PresentationAssets : Rac1PickupAssets.Load(source.Path, world.LevelId);
