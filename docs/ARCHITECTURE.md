@@ -9,7 +9,7 @@ design stay separate. Creative direction is in [PROJECT_VISION.md](PROJECT_VISIO
 | Layer | Owns |
 |---|---|
 | `OBP.Core` | Shared provenance, identity and math |
-| `OBP.IO` | Bounded/random-access file and split reads, streaming hashes, authority verification |
+| `OBP.IO` | Bounded/random-access single-file reads, streaming hashes, authority verification |
 | `OBP.PS2` | Shared ISO/ELF, compression, texture, packet and collision formats, plus a `Presentation/` adapter for neutral runtime materials |
 | `OBP.RAC1/2/3` | Source-specific containers, interpretation, recovered behaviour and provenance |
 | `OBP.Runtime` | Engine-neutral world/player/actor facts, identities, snapshots and ports; no native formulas or orchestration policy |

@@ -2,7 +2,7 @@
 
 OBP treats original game data as private research input, never repository content.
 
-Every source should distinguish the **authoritative payload** from the way that payload is stored or transported. Jess may supply a split archive, a raw ISO split into numbered parts, or a complete ISO. Those forms are not interchangeable and need explicit identities.
+Every source should distinguish the **authoritative payload** from the way it was stored or transported. Historical research inputs included split archives, numbered raw-ISO parts and complete ISO files; those formats are not interchangeable, and the native importer now accepts only a complete ISO.
 
 Record:
 
@@ -17,16 +17,16 @@ Record:
 - chunking method and volume size
 - per-volume SHA-256 values when practical
 
-## Split source semantics
+## Historical split transport provenance
 
-Two `binary-concat` cases are intentionally distinguished:
+Older authority manifests record two distinct `binary-concat` transport formats. These are historical storage records, not supported native import inputs:
 
 1. `raw-iso-split`: the numbered parts are contiguous slices of the authoritative disc payload. Concatenating them reconstructs the ISO itself, so final size/SHA-256 verification must use `payload.sizeBytes` and `payload.sha256`.
 2. split archive transport such as `7z`: concatenating the numbered parts reconstructs the archive transport. A second extraction step yields the authoritative disc payload, which then has its own size/SHA-256.
 
 A manifest must never verify a reconstructed raw ISO only against transport metadata that omits the payload identity.
 
-## Raw ISO split example
+## Historical raw ISO split manifest example
 
 ```json
 {
@@ -54,9 +54,7 @@ A manifest must never verify a reconstructed raw ISO only against transport meta
 }
 ```
 
-The streaming assembly helper writes `<output>.partial` and only atomically promotes it after supplied size/hash checks pass. For `raw-iso-split`, those final checks are taken from the payload identity. The complete source is never loaded into RAM.
-
-For importer probing, reassembly is unnecessary: ordered split parts can be wrapped as `RandomAccessReader`s and exposed through `ConcatenatedRandomAccessReader`, so a native offset read touches only the necessary source ranges.
+The native importer accepts a complete, seekable ISO file only. Historical numbered parts cannot be passed directly to the importer: if reconstructed outside OBP, verify the resulting ISO against the authoritative payload size and SHA-256 before importing. The old split-file random-access reader API has been removed.
 
 ## Initial authority plan
 
