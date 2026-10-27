@@ -170,7 +170,7 @@ state. Engine startup/source-loss, UI and replay checks retain the existing wire
 formats, native input phases and explicit nonzero failures.
 
 The #347 navigation extraction retires the three title/destinations/Lab root
-partials. The root now has 68 files, 16,202 file lines, 589 methods, 426 fields
+partials. The root now has 68 files, 16,205 file lines, 589 methods, 426 fields
 (283 mutable), and 43 exposed members, down from 71 files, 592 methods and
 435 fields (292 mutable) after #346; the exposed root API remains unchanged.
 One explicit coordinator reference replaces the title, browser, Lab overlay,
