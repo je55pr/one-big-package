@@ -31,22 +31,22 @@ internal sealed class GodotRac1WeaponTargetFixture(GodotRac1WeaponTargetBindings
         GodotMovementPlayer.Copy(node.Root.GlobalPosition), bindings.Active(node), reward, Rac1BoltCrate.ReadAuthored(node.Source)?.RewardCentre);
     public ImmutableArray<Rac1WeaponTargetDiagnostic> ReadCrates() => [.. bindings.Crates().Select(node => Snapshot(node))];
     public ImmutableArray<Rac1WeaponTargetDiagnostic> ReadEnemies() => [.. bindings.Enemies().Select(enemy => Snapshot(enemy.Node, enemy.RewardEmitted))];
-    public Rac1WeaponTargetDiagnostic Read(ActorInstanceKey key)
+    public Rac1WeaponTargetDiagnostic Read(ActorInstanceKey actor)
     {
-        var node = Resolve(key);
+        var node = Resolve(actor);
         return Snapshot(node, bindings.Enemies().SingleOrDefault(enemy => ReferenceEquals(enemy.Node, node))?.RewardEmitted ?? false);
     }
-    public void StageCrate(ActorInstanceKey key, NVector3 position) => bindings.StageCrate(Resolve(key), GodotMovementPlayer.Engine(position));
-    public float ReadRobotHealth(ActorInstanceKey key)
+    public void StageCrate(ActorInstanceKey actor, NVector3 position) => bindings.StageCrate(Resolve(actor), GodotMovementPlayer.Engine(position));
+    public float ReadRobotHealth(ActorInstanceKey actor)
     {
-        Resolve(key);
-        if (key.Target.NativeClassId != 1440) throw new DiagnosticUnavailableException("The robot health fixture requires class1440.");
-        return bindings.RobotHealth(key.Target.InstanceIndex);
+        Resolve(actor);
+        if (actor.Target.NativeClassId != 1440) throw new DiagnosticUnavailableException("The robot health fixture requires class1440.");
+        return bindings.RobotHealth(actor.Target.InstanceIndex);
     }
-    public void StageEnemy(ActorInstanceKey key, NVector3 position)
+    public void StageEnemy(ActorInstanceKey actor, NVector3 position)
     {
-        Resolve(key);
-        var enemy = bindings.Enemies().SingleOrDefault(enemy => enemy.Node.Source.NativeClassId == key.Target.NativeClassId && enemy.Node.Source.InstanceIndex == key.Target.InstanceIndex)
+        Resolve(actor);
+        var enemy = bindings.Enemies().SingleOrDefault(enemy => enemy.Node.Source.NativeClassId == actor.Target.NativeClassId && enemy.Node.Source.InstanceIndex == actor.Target.InstanceIndex)
             ?? throw new DiagnosticUnavailableException("The weapon fixture requires a hosted enemy.");
         StageEnemy(enemy, GodotMovementPlayer.Engine(position));
     }

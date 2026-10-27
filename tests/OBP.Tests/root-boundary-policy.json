@@ -2817,7 +2817,7 @@
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
       "ExpiresWith": "#352",
-      "Hash": "ec1d1a4b86f3faad99d8b4491c2bad2385b9c8b7916f6851c400060962acbae8"
+      "Hash": "f0fcbf052a58383d3085b18a911519d4fc3b9209b3a1c2921e6ba07d58e3796b"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
@@ -2831,7 +2831,7 @@
       "Owner": "#341",
       "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
       "ExpiresWith": "#367",
-      "Hash": "ae0281df526b6b2f04afb0c19657dd86417f49260ab4bc5806adc626b5cb03bf"
+      "Hash": "c04cc08cabad940494e164d4b16af8be676a52042877d78e8fe4e33c92b3aaaf"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateWeaponDiagnosticHarness():WeaponDiagnosticHarness:private",

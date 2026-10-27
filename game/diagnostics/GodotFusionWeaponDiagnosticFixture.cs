@@ -111,7 +111,11 @@ internal sealed class GodotFusionWeaponDiagnosticFixture(Node owner, GodotFusion
             if (!ReferenceEquals(bindings.Sources(), _installed)) throw new DiagnosticUnavailableException("Another owner replaced the isolated source library.");
             bindings.ReplaceSources(_original); _installed = null;
         }
-        public void Dispose() { if (_disposed) return; try { RestoreAll(); } finally { _disposed = true; } }
+        public void Dispose()
+        {
+            if (_disposed) return;
+            try { RestoreAll(); } finally { _disposed = true; }
+        }
     }
     public IFusionPreparationDiagnosticWitness CapturePreparation() => new PreparationWitness(bindings,
         bindings.Preparation() ?? throw new DiagnosticUnavailableException("No shared preparation is active."));

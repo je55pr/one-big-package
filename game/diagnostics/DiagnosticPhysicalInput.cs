@@ -22,7 +22,7 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
         owners.RemoveAll(entry => entry.Owner == lease);
         if (strength != 0) owners.Add((lease, strength));
         float effective = owners.Count == 0 ? 0 : owners[^1].Value;
-        if (effective == previous && !_dirtyAxes.Contains(value)) return;
+        if (effective.Equals(previous) && !_dirtyAxes.Contains(value)) return;
         _dirtyAxes.Add(value);
         write(value, effective);
         _dirtyAxes.Remove(value);
@@ -51,11 +51,11 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
         private readonly HashSet<DiagnosticPhysicalKey> _touchedKeys = [];
         private readonly HashSet<DiagnosticPhysicalButton> _touchedButtons = [];
         private readonly HashSet<DiagnosticPhysicalAxis> _touchedAxes = [];
-        public void SetAxis(DiagnosticPhysicalAxis value, float strength)
+        public void SetAxis(DiagnosticPhysicalAxis axis, float value)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (strength != 0) _touchedAxes.Add(value);
-            owner.SetAxis(this, value, strength);
+            if (value != 0) _touchedAxes.Add(axis);
+            owner.SetAxis(this, axis, value);
         }
         public void SetKey(DiagnosticPhysicalKey value, bool pressed)
         {

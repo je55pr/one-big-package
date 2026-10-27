@@ -9,6 +9,7 @@ public sealed class Rac1WrenchScenario(MovementDiagnosticContext context, IRac1W
     IRac1WeaponTargetFixture targets, IRac1CombatDiagnosticFixture combat, IDiagnosticControllerEquipment equipment, IWeaponDiagnosticCapture capture)
     : MovementScenarioSupport(context)
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification = "Exact native health/damage constants are retained acceptance witnesses from the original suite.")]
     public async Task RunAsync()
     {
         IDiagnosticGeometryLease? attachmentFixture = null;

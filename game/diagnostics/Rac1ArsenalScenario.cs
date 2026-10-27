@@ -131,7 +131,6 @@ public sealed class Rac1ArsenalScenario(MovementDiagnosticContext context, Rac1W
         await CaptureRac1BombAsync("taunter-rings", Player.Read().GlobalPosition + EquipmentForward + Vector3.UnitY);
         Driver.SetAction(MovementDiagnosticDriver.Traversal, false);
         Log("[arsenal-smoke] Taunter rings, forward crate query and no invented ammo PASS");
-        var state = Ports.Reproduction.CaptureBoundary();
         await Ports.Reproduction.SaveAndReloadAsync("arsenal-smoke-state.json", Driver.Lifetime);
         Require(Arsenal.ReadChickens().Length == 1 && Arsenal.ReadChickens().All(chicken => chicken.Active && !chicken.RewardEmitted),
             "Morph state did not survive an actual world reload");

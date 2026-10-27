@@ -905,7 +905,7 @@ public partial class OBPGame : Node3D
             SourceSequence = CurrentPlayerAvatarSourceSequence,
             Held = () => _rac1HeldItem.Hand.Equipment,
         }, new GodotDiagnosticFrameClock(this));
-        return new(weapons.Movement, weapons.Ports, weapons.Transients, fixture,
+        return new(weapons, fixture,
             [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))],
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
@@ -977,7 +977,11 @@ public partial class OBPGame : Node3D
             GodotWeaponModelFacts.Read(decoy.View), decoy.Grounded, decoy.RetiringTicks), () => decoy.GroundTicks = Rac1ArsenalRules.DecoyLifetime - 1))],
         () => [.. _rac1Chickens.Values.Select(chicken => new Rac1ChickenDiagnostic(targets.Key(chicken.Enemy.Node), IsRac1GameplayActive(chicken.Enemy.Node),
             chicken.Enemy.RewardEmitted, GodotWeaponModelFacts.Read(chicken.View)))],
-        () => { foreach (var drone in _rac1Drones) if (IsInstanceValid(drone.View)) drone.View.QueueFree(); _rac1Drones.Clear(); },
+        () =>
+        {
+            foreach (var drone in _rac1Drones.Where(drone => IsInstanceValid(drone.View))) drone.View.QueueFree();
+            _rac1Drones.Clear();
+        },
         () => _rac1WeaponWorldTick = 0,
         (actor, player) =>
         {
