@@ -1,6 +1,5 @@
 using OBP.Core;
 using System.Text.Json;
-using OBP.IO;
 using OBP.RAC1;
 using OBP.RAC1.Level;
 
@@ -34,7 +33,7 @@ public sealed class Rac1AllLevelsTests
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
-        using var reader = new FileRandomAccessReader(iso!);
+        using var reader = Rac1VerifiedDisc.Open(iso!);
         var world = Rac1WorldImport.Build(reader, levelId);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == levelId);
         var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Mobies;
@@ -49,8 +48,10 @@ public sealed class Rac1AllLevelsTests
         int noGeometry = dynamicObjects.Count(o => o.Meshes.Count == 0 &&
             (!classes.TryGetValue(o.NativeClassId, out var cls) || cls.Mesh.Indices.Length == 0));
         Assert.Equal(noGeometryInstances, noGeometry);
-        Assert.Equal(animatedHandoffs + unpresentedInstances,
-            dynamicObjects.Count - (linkedInstances - unpresentedInstances) - noGeometry);
+        Assert.Equal(animatedHandoffs,
+            dynamicObjects.Count - (linkedInstances - unpresentedInstances) - noGeometry - unpresentedInstances);
+        Assert.Equal(unpresentedInstances,
+            dynamicObjects.Count(o => o.NativeClassId == 1964 && o.Meshes.Count == 0));
         Assert.Equal(staticTriangles, world.TotalRenderTriangles);
         Assert.Equal(dynamicTriangles - 30 * unpresentedInstances, world.TotalDynamicTriangles);
         Assert.Equal(animatedTriangles, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
