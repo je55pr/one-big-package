@@ -18,10 +18,11 @@ Part and Fx banks from the authorized disc. No texture or executable payload is
 distributed. The Veldin overlay identity is
 `eaa4b0c0065e4a72e72ea4c6746c2a53169340501996077023353f12bfdb3804`.
 
-| Type (decimal) | Constructor / update | Hosted behavior |
+| Type (decimal) | Constructor / update | Implemented behavior |
 | --- | --- | --- |
 | 2 | `0x2690b8` / `0x269290` | Three-phase flame motes; packed directions, fade-in, colour/size transition, fade-out |
 | 4 | `0x269958` / `0x269a70` | Growing, slowing fragment trails; 45 frames |
+| 6 | Novalis `0x27e900` / `0x27eb08` | Class-27 PVar-driven sprites; source implementation, host registration deferred to #285 |
 | 8 | `0x26a4c8` / `0x26a5b8` | Growing explosion puffs; ten authored texture frames |
 | 11 | `0x26a9f0` / `0x26ac78` | Splitting explosion particles, two child generations, then smoke |
 | 12 | `0x26b230` / `0x26b500` | Pyrocitor's two flame looks, rise, braking, growth and fading |
@@ -62,7 +63,12 @@ mine instead uses type16 sprays, with the source planar camera-distance count
 and four dust/fire/smoke modes. Underwater and gold-weapon branches remain
 separate recovery work.
 
-`Rac1ParticleView` batches sprites by native texture/blend/depth range. GS ALPHA
+The [type-6 milestone](RAC1_TYPE6_EMITTER.md) records the single genuinely authored
+Novalis preset, its parameter map, live-owner boundary, unsupported collision and
+original EE/VU instruction comparisons. The other seven family algorithms and
+weapon recipes remain unchanged. No second authored preset is invented.
+
+`Rac1ParticleView` batches copied sprite snapshots by native texture/blend/depth range. GS ALPHA
 selector`0x44` maps to alpha blending and`0x48` to additive blending; primitive
 colour components use the PS2 unity value128. Native angle bytes and near/far
 depth fading are retained. Fx rows differ from Part rows: palette, pixels, width,

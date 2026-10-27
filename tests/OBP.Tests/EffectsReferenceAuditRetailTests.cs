@@ -59,12 +59,12 @@ public sealed class EffectsReferenceAuditRetailTests
     {
         using var disc = Open("OBP_GC_ISO", Rac2Authority.PrimaryIsoSizeBytes);
         var wad = Iso9660Filesystem.Open(disc).OpenFile("/G/LEVEL21.WAD")!;
-        var header = GcLevelWad.ReadHeader(wad);
+        var header = Rac2LevelWad.ReadHeader(wad);
         Assert.Equal(30, header.LevelId);
-        var image = GcLevelOverlay.Open(GcLevelWad.RequireLump(wad, header, 0));
+        var image = Rac2LevelOverlay.Open(Rac2LevelWad.RequireLump(wad, header, 0));
         Hash(image.Raw, "b46e44c26195efd160b1bc62910cf22e1b1fe3eb46944f5926a9f2b7879e45b6");
         var read = image.ReadVirtual;
-        Assert.Equal(17, GcMuseumEffectControls.ReadParticleEditor(image).Count);
+        Assert.Equal(17, Rac2MuseumEffectControls.ReadParticleEditor(image).Count);
 
         Hash(read(0x330670, 0x150), "94d8be2522a9704dfbbb425339fba8dad82b2c3f4b7266acad214f7c6db707af");
         Assert.Equal(0x2301f800u, Word(read(0x330688, 4)));
@@ -102,7 +102,7 @@ public sealed class EffectsReferenceAuditRetailTests
     public void UyaChargeMuzzleAndReferenceSpawnerHaveSeparatePoolPaths()
     {
         using var disc = Open("OBP_UYA_ISO", Rac3Authority.PrimaryIsoSizeBytes);
-        var main = UyaDiscIndex.OpenMainLevel(disc, 1).Reader;
+        var main = Rac3DiscIndex.OpenMainLevel(disc, 1).Reader;
         byte[] header = main.Read(0, 0x60);
         var primary = new SubRangeReader(main, (long)Word(header, 0x10) * 0x800, (long)Word(header, 0x14) * 0x800);
         byte[] range = primary.Read(0, 8);

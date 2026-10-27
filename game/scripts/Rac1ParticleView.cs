@@ -18,7 +18,7 @@ public sealed partial class Rac1ParticleView : Node3D
     {
         foreach (var batch in _batches.Values) batch.Instances.VisibleInstanceCount = 0;
         RenderedCount = DrawCalls = 0;
-        foreach (var group in session.Live.Where(p => p.Size > 0 && p.Remaining > 0)
+        foreach (var group in session.CaptureSprites().Where(p => p.Size > 0 && p.Remaining > 0)
             .GroupBy(p => (p.Texture, p.Blending, p.DepthRange)))
         {
             if (!textures.TryGetValue(group.Key.Texture, out var texture)) continue;
