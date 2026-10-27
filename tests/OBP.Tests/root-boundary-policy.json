@@ -2852,7 +2852,7 @@
       "Owner": "#342",
       "Rationale": "Invocation-only campaign/checkpoint/mission or crate/pickup diagnostic fixture composition. Immutable source-qualified observations and explicit fixture actions retain native sessions, actors and save paths inside their owners.",
       "ExpiresWith": "#369",
-      "Hash": "436af513c21000b66adebd2b6b0106f756eb8e689d42182f0492783c1ab985a4"
+      "Hash": "0a90aac89178623d8c1c44f33ab9c01e547c781ab8961959b5ae79f5d88a0535"
     }
   ],
   "RetiredMembers": [

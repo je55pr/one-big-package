@@ -28,7 +28,7 @@ public sealed class Rac1CampaignSaveDiagnostics(Func<Rac1CampaignSaveProvenance>
     private sealed class FileWitness(string path) : IRac1CampaignFileWitness
     {
         private readonly byte[] _original = File.ReadAllBytes(path);
-        public bool Unchanged => _original.AsSpan().SequenceEqual(File.ReadAllBytes(path));
+        public bool Unchanged => File.Exists(path) && _original.AsSpan().SequenceEqual(File.ReadAllBytes(path));
         public bool TemporaryFileExists => File.Exists(path + ".tmp");
     }
 }

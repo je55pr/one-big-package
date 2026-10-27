@@ -26,7 +26,8 @@ public sealed class Rac1PlacedBoltScenario(MovementDiagnosticContext context, Ra
             int expectedCount = level switch { 0 => 29, 8 => 194, 11 => 40, _ => -1 };
             var placements = Loot.ReadPlacedBolts();
             Require(placements.Length == expectedCount, "authored bolt census changed");
-            Require(placements.All(item => item.PickupId < 0 && item.OriginalNodeAlias), "authored bolt presentation was duplicated or aliased with emitted ids");
+            Require(Loot.PlacedBoltPresentationIntact && placements.All(item => item.PickupId < 0 && item.OriginalNodeAlias),
+                "authored bolt presentation was duplicated or aliased with emitted ids");
             if (level == 8)
             {
                 var floating = placements.Where(item => item.PreserveAuthoredHeight).ToArray();

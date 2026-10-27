@@ -11,7 +11,7 @@ public sealed record Rac1AmmoPickupDiagnostic(SourceWeaponKey Item, int Amount, 
 public sealed record Rac1LootDiagnosticState(ObpSourceGame Source, int Wallet, int? HudWallet, int Sounds, int Health,
     int BombAmmo, int OutstandingCratePickups, ImmutableArray<int> DebrisClasses,
     ImmutableArray<Rac1LootMotionDiagnostic> Pickups, ImmutableArray<Rac1AmmoPickupDiagnostic> Ammo,
-    ImmutableArray<bool> HealthCloudAttraction, bool OriginalPickupMeshes);
+    ImmutableArray<bool> HealthCloudAttraction);
 public sealed record Rac1PlacedBoltPlacement(ActorInstanceKey Actor, int PickupId, int NativeClass,
     bool Active, bool PreserveAuthoredHeight, Vector3 NativeAuthoredPosition, float? MotionNativeZ, bool OriginalNodeAlias);
 public sealed record Rac1PlacedBoltDiagnostic(int PickupId, int NativeState, bool Collected, bool Active,
@@ -20,6 +20,8 @@ public interface IRac1PlacedBoltDiagnosticWitness { Rac1PlacedBoltDiagnostic Rea
 public interface IRac1LootDiagnosticFixture
 {
     Rac1LootDiagnosticState Read();
+    bool OriginalPickupMeshes { get; }
+    bool PlacedBoltPresentationIntact { get; }
     int PendingPlacedBolts { get; }
     ImmutableArray<Rac1PlacedBoltPlacement> ReadPlacedBolts();
     IRac1PlacedBoltDiagnosticWitness CapturePlacedBolt(ActorInstanceKey actor);

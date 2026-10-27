@@ -38,7 +38,7 @@ public sealed class Rac1CrateScenario(MovementDiagnosticContext context, Rac1Loo
             var pickups = Loot.Read().Pickups.Where(pickup => pickup.Id > 0).ToArray();
             Require(pickups.Length > 0 && pickups.All(pickup => pickup.NativeState == 3), "distant scattered bolts failed to bounce/settle");
             Require(Loot.Read().Wallet == balance, "distant bolt was credited without attraction");
-            Require(Loot.Read().OriginalPickupMeshes, "bolt presentation used a placeholder primitive");
+            Require(Loot.OriginalPickupMeshes, "bolt presentation used a placeholder primitive");
             await CaptureAsync("settled", origin + Vector3.UnitY * .25f);
             Player.ResetAt(origin + Vector3.UnitY * .05f); await PhysicsFramesAsync(8);
             await CaptureAsync("homing", origin + Vector3.UnitY * .7f);

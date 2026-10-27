@@ -62,13 +62,17 @@ public sealed class Rac1CampaignDiagnosticTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, true)]
-    public void CampaignRequiresExplicitSourceSaveAndRejectsTheSharedProfile(bool explicitPath, bool shared)
+    [InlineData(false, false, ObpSourceGame.Rac1, false)]
+    [InlineData(true, true, ObpSourceGame.Rac1, false)]
+    [InlineData(true, false, ObpSourceGame.Rac2, false)]
+    [InlineData(true, false, ObpSourceGame.Rac3, false)]
+    [InlineData(true, false, ObpSourceGame.Rac1, true)]
+    public void CampaignRequiresExplicitSourceSaveAndRejectsTheSharedProfile(bool explicitPath, bool shared, ObpSourceGame source, bool accepted)
     {
-        var save = new Rac1CampaignSaveDiagnostics(() => Provenance() with { ExplicitPath = explicitPath, SharedProfileActive = shared },
+        var save = new Rac1CampaignSaveDiagnostics(() => Provenance() with { ExplicitPath = explicitPath, SharedProfileActive = shared, Source = source },
             () => null, () => null);
-        Assert.Throws<InvalidOperationException>(() => Rac1CampaignScenarioAssertions.IsolatedSave(save));
+        if (accepted) Rac1CampaignScenarioAssertions.IsolatedSave(save);
+        else Assert.Throws<InvalidOperationException>(() => Rac1CampaignScenarioAssertions.IsolatedSave(save));
     }
 
     [Fact]
@@ -99,6 +103,7 @@ public sealed class Rac1CampaignDiagnosticTests
         Assert.True(witness.Unchanged); Assert.False(witness.TemporaryFileExists);
         File.WriteAllText(file.Path + ".tmp", "staged"); Assert.True(witness.TemporaryFileExists);
         File.WriteAllText(file.Path, "changed"); Assert.False(witness.Unchanged);
+        File.Delete(file.Path); Assert.False(witness.Unchanged);
     }
 
     private static Rac1CampaignSaveProvenance Provenance() => new(ObpSourceGame.Rac1, "fixture", true, false, true, true, false, Rac1CampaignRestoreKind.DefaultedMissingState);

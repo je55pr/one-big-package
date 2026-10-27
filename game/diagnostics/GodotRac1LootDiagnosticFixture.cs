@@ -11,6 +11,7 @@ namespace OBP.Game.Diagnostics;
 internal sealed class GodotRac1LootDiagnosticBindings
 {
     internal required Func<Rac1LootDiagnosticState> Read { get; init; }
+    internal required Func<bool> OriginalPickupMeshes { get; init; }
     internal required Func<int> Pending { get; init; }
     internal required Func<Rac1PlacedBoltSession> Placed { get; init; }
     internal required Func<IReadOnlyDictionary<int, RuntimeWorldScene.DynamicObjectNode>> PlacedNodes { get; init; }
@@ -28,6 +29,9 @@ internal sealed class GodotRac1LootDiagnosticFixture(GodotRac1LootDiagnosticBind
     GodotRac1WeaponTargetFixture targets, IDiagnosticWorldObservations worlds) : IRac1LootDiagnosticFixture
 {
     public Rac1LootDiagnosticState Read() => bindings.Read();
+    public bool OriginalPickupMeshes => bindings.OriginalPickupMeshes();
+    public bool PlacedBoltPresentationIntact => bindings.PlacedNodes().All(pair => pair.Key < 0 &&
+        bindings.PickupNodes().TryGetValue(pair.Key, out var pickup) && ReferenceEquals(pair.Value.Root, pickup));
     public int PendingPlacedBolts => bindings.Pending();
     private ActorInstanceKey Key(Rac1PlacedBoltSession.Registration registration)
     {
