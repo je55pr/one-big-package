@@ -49,7 +49,7 @@ internal sealed class GodotRac1QueenDiagnosticFixture(GodotRac1DiagnosticWorldSc
     : IRac1QueenDiagnosticFixture
 {
     private Camera3D? _conflict;
-    private bool _ownedGuided;
+    private Camera3D? _ownedGuided;
     private static T? Live<T>(T? value) where T : GodotObject => value is not null && GodotObject.IsInstanceValid(value) ? value : null;
     private T Require<T>(Func<T?> read, string role) where T : class
     { scope.RequireCurrent(); return read() ?? throw new DiagnosticUnavailableException("The Queen " + role + " is unavailable."); }
@@ -163,7 +163,7 @@ internal sealed class GodotRac1QueenDiagnosticFixture(GodotRac1DiagnosticWorldSc
         {
             try { scope.RequireCurrent(); } catch (DiagnosticUnavailableException) { return; }
             DiagnosticCleanup.Run("Queen camera fixture cleanup failed.",
-                () => { if (!saved.GuidedPresent && _ownedGuided) EndGuidedCamera(); },
+                () => { if (!saved.GuidedPresent && _ownedGuided is not null) EndGuidedCamera(); },
                 () => { if (!saved.QueenPresent && Live(bindings.QueenCamera()) is not null) EndQueenCamera(); });
         });
     }
@@ -187,8 +187,20 @@ internal sealed class GodotRac1QueenDiagnosticFixture(GodotRac1DiagnosticWorldSc
     {
         scope.RequireCurrent();
         if (Live(bindings.GuidedCamera()) is not null) throw new DiagnosticUnavailableException("Another guided-camera owner is already active.");
-        _ownedGuided = true; bindings.BeginGuided();
+        try { bindings.BeginGuided(); }
+        finally { _ownedGuided = Live(bindings.GuidedCamera()); }
     }
-    public void EndGuidedCamera() { scope.RequireCurrent(); bindings.EndGuided(); _ownedGuided = false; }
+    public void EndGuidedCamera()
+    {
+        scope.RequireCurrent();
+        var owned = _ownedGuided; _ownedGuided = null;
+        if (owned is null || !ReferenceEquals(Live(bindings.GuidedCamera()), owned)) return;
+        try { bindings.EndGuided(); }
+        catch
+        {
+            if (ReferenceEquals(Live(bindings.GuidedCamera()), owned)) _ownedGuided = owned;
+            throw;
+        }
+    }
     public void EndQueenCamera() { scope.RequireCurrent(); bindings.EndQueen(); }
 }

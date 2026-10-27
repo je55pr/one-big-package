@@ -2761,7 +2761,7 @@
       "Owner": "#340",
       "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#359",
-      "Hash": "462fff165badae4a7816080ff78ab792c5108e05144eb356fef328207dc49091"
+      "Hash": "7b0868a4e58b3bcd82332d44226c704d6d102b061be01beb69c68a85221fbb31"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
@@ -2796,7 +2796,7 @@
       "Owner": "#340",
       "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#341",
-      "Hash": "52179a0e32eabf4b693328a08fb01cdc020ba00779d5558d0670e246089d34e6"
+      "Hash": "333fe85fabc3a2d023e32329245d197b129303fdfb017ff55b326ddb9bdd64a5"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:Rac1SmokeWaitAsync(:Func < bool >,:int,:string):Task:private",

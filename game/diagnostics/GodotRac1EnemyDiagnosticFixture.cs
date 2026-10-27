@@ -15,7 +15,7 @@ internal sealed record GodotRac1EnemyDiagnosticBindings(Func<ImmutableArray<Rac1
     Func<Rac1EnemyPopulationSnapshot> Population, Func<PlayerHost?> Player,
     Func<RuntimeWorldScene.DynamicObjectNode, bool> Strike, Func<Rac1HostedEnemy, float, float, bool> Ground,
     Func<RuntimeWorldScene.DynamicObjectNode, Vector3> Forward, Func<Rac1HostedEnemy, Vector3> Socket,
-    Func<Rac1HostedEnemy, Vector3, Vector3, bool> RayTouchesPlayer);
+    Func<Rac1HostedEnemy, Vector3, Vector3, bool> RayTouchesPlayer, Func<int, bool> HasBirdbotShot);
 
 /// <summary>Maps live source actors to copied facts. Engine/native objects remain inside this fixture.</summary>
 internal sealed class GodotRac1EnemyDiagnosticFixture(GodotRac1EnemyDiagnosticBindings bindings, IDiagnosticWorldObservations worlds)
@@ -24,7 +24,7 @@ internal sealed class GodotRac1EnemyDiagnosticFixture(GodotRac1EnemyDiagnosticBi
     private ActorInstanceKey Key(Rac1HostedEnemy enemy)
     {
         var world = worlds.ReadWorld(); var source = enemy.Node.Source;
-        if (world.WorldInstanceId is null || source.SourceGame != ObpSourceGame.Rac1)
+        if (string.IsNullOrWhiteSpace(world.WorldInstanceId) || source.SourceGame != ObpSourceGame.Rac1)
             throw new DiagnosticUnavailableException("The source-qualified R&C1 enemy world is unavailable.");
         return new(world.WorldInstanceId, world.Generation, new(source.SourceGame, source.NativeClassId, source.InstanceIndex));
     }
@@ -66,6 +66,8 @@ internal sealed class GodotRac1EnemyDiagnosticFixture(GodotRac1EnemyDiagnosticBi
     public IDisposable PreservePlayerPose()
     {
         var actor = bindings.Player() ?? throw new DiagnosticUnavailableException("The encounter fixture player is unavailable.");
+        if (!GodotObject.IsInstanceValid(actor) || actor.IsQueuedForDeletion())
+            throw new DiagnosticUnavailableException("The encounter fixture player was retired.");
         var world = worlds.ReadWorld();
         var position = actor.GlobalPosition; var rotation = actor.Rotation; double yaw = actor.Rac1CurrentYaw;
         return new MovementFixtureLease(() =>
@@ -102,7 +104,7 @@ internal sealed class GodotRac1EnemyDiagnosticFixture(GodotRac1EnemyDiagnosticBi
     {
         var actor = Enemy(key, 459);
         var state = (bindings.Birdbots() ?? throw new DiagnosticUnavailableException("The Birdbot controller is unavailable.")).Get(actor.Node.Source.InstanceIndex);
-        return new(state.Mode, state.Sequence, state.Health);
+        return new(state.Mode, state.Sequence, state.Health, bindings.HasBirdbotShot(key.Target.InstanceIndex));
     }
     public Rac1ToadDiagnosticSnapshot ReadToad(ActorInstanceKey key)
     {

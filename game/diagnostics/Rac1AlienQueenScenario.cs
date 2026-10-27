@@ -134,7 +134,7 @@ public sealed class Rac1AlienQueenScenario(MovementDiagnosticContext context, IR
             }
             queenFixture.SynchronizeLinkedParents();
             Require(queenFixture.ReadLinkedParent(parentId).Children.All(child =>
-                !(queenFixture.ReadLinkedChildVisual(child.RuntimeId)?.Visible == true)),
+                queenFixture.ReadLinkedChildVisual(child.RuntimeId)?.Visible != true),
                 "Native child state7 failed to hide its original class1021 visual.");
             Require(!queenFixture.ReadLinkedParentVisual(parentId).Visible,
                 "Original linked class1021 parent mesh failed to hide.");
@@ -222,10 +222,13 @@ public sealed class Rac1AlienQueenScenario(MovementDiagnosticContext context, IR
             queenFixture.ReadCamera().RemoteControl && queenFixture.ReadFlight()?.NativeState == 2,
             "Queen camera could not reacquire after owned cancellation.");
         int flightTicks = 1;
-        while (flightTicks++ < 1000 &&
+        while (flightTicks < 1000 &&
             !(queenFixture.ReadFlight()?.CameraCompletionCandidate ?? false))
+        {
             queenFixture.TickFlight();
-        Require(flightTicks < 1000 &&
+            flightTicks++;
+        }
+        Require((queenFixture.ReadFlight()?.CameraCompletionCandidate ?? false) &&
             queenFixture.ReadFlight() is { Sequence: 1, NativeState: 7, CameraBlend: 1f } &&
             Math.Abs(queenFixture.ReadFlight()!.Z - sourceLandingZ) < .001f &&
             queenFixture.ReadPendingCamera() is { CanCompleteWithAppliedCamera: true } &&
@@ -272,9 +275,12 @@ public sealed class Rac1AlienQueenScenario(MovementDiagnosticContext context, IR
             queenFixture.ReadAnimationSequence() == 6,
             "Native Queen 20-HP recovery failed to select original sequence6.");
         int animationTicks = 0;
-        while (queenFixture.ReadRecovery().Sequence == 6 && animationTicks++ < 2400)
+        while (queenFixture.ReadRecovery().Sequence == 6 && animationTicks < 2400)
+        {
             queenFixture.TickRecovery();
-        Require(animationTicks < 2400 && queenFixture.ReadRecovery() is
+            animationTicks++;
+        }
+        Require(queenFixture.ReadRecovery() is
         { NativeState: 3, Sequence: 1 } &&
             queenFixture.ReadAnimationSequence() == 1 &&
             queen.Members.All(id => frogs.Get(id).NativeState == 6) &&

@@ -848,7 +848,7 @@ public partial class OBPGame : Node3D
     private Task Rac1SmokeWaitCancelableAsync(Func<bool> condition, int frames, string label, CancellationToken token) =>
         GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, token);
     private void Rac1SmokePlaceGroundedFacing(Vector3 position, Vector3 direction) =>
-        CreateRac1EncounterDiagnosticHarness().Combat.PlacePlayerFacing(GodotMovementPlayer.Copy(position), GodotMovementPlayer.Copy(direction), true);
+        GodotRac1CombatDiagnosticFixture.PlacePlayerFacing(_player, GodotMovementPlayer.Copy(position), GodotMovementPlayer.Copy(direction), true);
     private Task TapRac1PrimaryActionAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, _rac1Weapons.Equipped);
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
@@ -875,7 +875,8 @@ public partial class OBPGame : Node3D
             () => new(_rac1Enemies.Count, _rac1Class1440?.RegisteredCount ?? 0, _rac1Peckbots?.RegisteredCount ?? 0,
                 _rac1Birdbots?.RegisteredCount ?? 0, _rac1BirdbotShotCount, _rac1Nanotech.Probe().Nanotech,
                 _worldSwitches, _rac1CombatRetry?.Visible == true), () => _player, node => TryStrikeRac1Hostile(node),
-            TryGroundRac1Enemy, EnemyForward, EnemySocket, EnemyRayTouchesPlayer), new GodotDiagnosticWorldObservations(WorldScenes));
+            TryGroundRac1Enemy, EnemyForward, EnemySocket, EnemyRayTouchesPlayer,
+            id => _rac1BirdbotShots.Values.Any(shot => shot.OwnerInstance == id)), new GodotDiagnosticWorldObservations(WorldScenes));
         var movement = CreateMovementDiagnosticHarness();
         var loot = new GodotRac1EncounterLoot(() => new(_rac1BoltWallet.Balance, _rac1BoltPickups.OutstandingCount,
             [.. _rac1PickupMotion.Select(pair => new Rac1DiagnosticPickup(pair.Key, pair.Value.NativeClassId,
@@ -886,10 +887,9 @@ public partial class OBPGame : Node3D
         var combat = new Rac1CombatScenarioPorts(actors, actors, CreateRac1CombatDiagnosticFixture(actors), approach, movement.Equipment,
             new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
             CreateUiDiagnosticHarness(), movement.Environment, lifecycle);
-        return new(movement.Ports, actors, actors, loot,
-            lifecycle,
+        return new(movement.Ports, loot,
             new GodotRac1EnemyDiagnosticCapture(this, () => _ui, () => _player, new GodotDiagnosticFrameClock(this)),
-            approach, movement.Equipment, CreateRac1AridiaDiagnosticFixture(actors), CreateRac1FrogDiagnosticFixture(actors), combat);
+            CreateRac1AridiaDiagnosticFixture(actors), CreateRac1FrogDiagnosticFixture(actors), combat);
     }
 
     private GodotRac1CombatDiagnosticFixture CreateRac1CombatDiagnosticFixture(GodotRac1EnemyDiagnosticFixture actors) => new(actors,

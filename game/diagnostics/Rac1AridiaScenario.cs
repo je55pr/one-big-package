@@ -507,6 +507,10 @@ public sealed class Rac1AridiaScenario(MovementDiagnosticContext context, IRac1E
             VerifyAridiaSharkTwoCycleAuthoredHome();
 
         }
+        catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             LogError($"[aridia-bot-smoke] FAIL: {ex.Message}\n{ex.StackTrace}");
@@ -570,7 +574,7 @@ public sealed class Rac1AridiaScenario(MovementDiagnosticContext context, IRac1E
             // Reposition a second original Constructorbot capsule, not a
             // decorative Area3D, above this verified real Godot platform.
             var other = Enemy(548);
-            Require(!(other.Key == bot.Key) &&
+            Require(other.Key != bot.Key &&
                     other.Read().CollisionLayer != 0,
                 "other-hostile terrain fixture requires a live enemy body");
             var otherPose = Driver.Own(Actors.PreserveActorPose(other.Key));

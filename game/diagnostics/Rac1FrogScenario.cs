@@ -49,8 +49,10 @@ public sealed class Rac1FrogScenario(MovementDiagnosticContext context, IRac1Ene
                 Log("[frog-smoke] carriers " + string.Join(", ", carriers.Select(c =>
                     $"i{c.Key.Target.InstanceIndex}(switch={frogs.GetAuthored(c.Key.Target.InstanceIndex).SwitchSelector},target={frogs.GetAuthored(c.Key.Target.InstanceIndex).TargetInstance})")));
             await PhysicsFramesAsync(5);
-            if (World.Read().LevelId == 6 && frogs.Shuttle is { } shuttle)
+            if (World.Read().LevelId == 6)
             {
+                var shuttle = frogs.Shuttle ?? throw new DiagnosticUnavailableException("LEVEL6 Frog shuttle unavailable.");
+                var gatedWaves = frogs.Waves ?? throw new DiagnosticUnavailableException("LEVEL6 Frog waves unavailable.");
                 // Stage player at the authored class-1109 stop-1 clip volume
                 // without advancing physics. Exercise the actual host gate,
                 // renderer and contact masks, not merely the neutral session.
@@ -67,35 +69,32 @@ public sealed class Rac1FrogScenario(MovementDiagnosticContext context, IRac1Ene
                     });
                     Require(alternate > 0 && frogs.ReadCounts().Presented == alternate,
                         "Shuttle native gate selected an incorrect Frog population");
-                    if (frogs.Waves is { } gatedWaves)
-                    {
-                        int gatedController = (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Controllers.Single(id =>
-                            gatedWaves.Group(id) == 6);
-                        Player.SetPosition(FromEffectNative(gatedWaves.ZoneCentre(gatedController)));
-                        for (int tick = 0; tick < 30; tick++)
-                            (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Tick();
-                        Require(gatedWaves.State(gatedController) == 0 &&
-                            gatedWaves.Members(gatedController).All(id =>
-                                frogs.Get(id) is { NativeState: 15, Presented: false }),
-                            "Opposite shuttle group wrongly consumed a native hidden Frog wave.");
-                        int alternateProducer = (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Controllers.Single(id =>
-                            gatedWaves.Group(id) == 20);
-                        var alternateMembers = gatedWaves.Members(alternateProducer).ToArray();
-                        Require(alternateMembers.SequenceEqual(new[] { 442, 443, 444 }) &&
-                            gatedWaves.Members((frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Controllers.Single(id =>
-                                gatedWaves.Group(id) == 21)).SequenceEqual(new[] { 445, 446, 447 }),
-                            "Wrong native switch-one wave groups.");
-                        Player.SetPosition(FromEffectNative(gatedWaves.ZoneCentre(alternateProducer)));
-                        for (int tick = 0; tick < 600 && gatedWaves.State(alternateProducer) != 3; tick++)
-                            (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Tick();
-                        Require(gatedWaves.State(alternateProducer) == 3 &&
-                            alternateMembers.All(id =>
-                                frogs.Get(id) is { NativeState: 6, Presented: true }) &&
-                            Enumerable.Range(445, 3).All(id =>
-                                frogs.Get(id) is { NativeState: 6, Presented: true }),
-                            "Source switch-one class1066 wave failed to emit its group20/21 members.");
-                        Player.SetPosition(FromEffectNative(shuttle.StopVolumeCentre(2)));
-                    }
+                    int gatedController = gatedWaves.Controllers.Single(id =>
+                        gatedWaves.Group(id) == 6);
+                    Player.SetPosition(FromEffectNative(gatedWaves.ZoneCentre(gatedController)));
+                    for (int tick = 0; tick < 30; tick++)
+                        gatedWaves.Tick();
+                    Require(gatedWaves.State(gatedController) == 0 &&
+                        gatedWaves.Members(gatedController).All(id =>
+                            frogs.Get(id) is { NativeState: 15, Presented: false }),
+                        "Opposite shuttle group wrongly consumed a native hidden Frog wave.");
+                    int alternateProducer = gatedWaves.Controllers.Single(id =>
+                        gatedWaves.Group(id) == 20);
+                    var alternateMembers = gatedWaves.Members(alternateProducer).ToArray();
+                    Require(alternateMembers.SequenceEqual(new[] { 442, 443, 444 }) &&
+                        gatedWaves.Members(gatedWaves.Controllers.Single(id =>
+                            gatedWaves.Group(id) == 21)).SequenceEqual(new[] { 445, 446, 447 }),
+                        "Wrong native switch-one wave groups.");
+                    Player.SetPosition(FromEffectNative(gatedWaves.ZoneCentre(alternateProducer)));
+                    for (int tick = 0; tick < 600 && gatedWaves.State(alternateProducer) != 3; tick++)
+                        gatedWaves.Tick();
+                    Require(gatedWaves.State(alternateProducer) == 3 &&
+                        alternateMembers.All(id =>
+                            frogs.Get(id) is { NativeState: 6, Presented: true }) &&
+                        Enumerable.Range(445, 3).All(id =>
+                            frogs.Get(id) is { NativeState: 6, Presented: true }),
+                        "Source switch-one class1066 wave failed to emit its group20/21 members.");
+                    Player.SetPosition(FromEffectNative(shuttle.StopVolumeCentre(2)));
                     Require(population.All(e =>
                     {
                         bool present = frogs.Get(e.Key.Target.InstanceIndex).Presented;
@@ -124,9 +123,9 @@ public sealed class Rac1FrogScenario(MovementDiagnosticContext context, IRac1Ene
                 // directly injected call to the child Frog launch handler.
                 var waves = frogs.Waves
                     ?? throw new InvalidOperationException("LEVEL6 original Frog wave controllers missing.");
-                Require(waves.RegisteredCount == 6 && (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Controllers.Length == 6,
+                Require(waves.RegisteredCount == 6 && waves.Controllers.Length == 6,
                     "Original native zone-trigger population differs from retail.");
-                int producer = (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Controllers.Single(id => waves.Group(id) == 6);
+                int producer = waves.Controllers.Single(id => waves.Group(id) == 6);
                 var originalMembers = waves.Members(producer).ToArray();
                 Require(originalMembers.SequenceEqual(new[] { 383, 385, 435 }) &&
                     originalMembers.All(id => frogs.Get(id) is { NativeState: 15, Presented: false }),
@@ -139,7 +138,7 @@ public sealed class Rac1FrogScenario(MovementDiagnosticContext context, IRac1Ene
                     // as normal gameplay, without dispatching unrelated player
                     // movement while the smoke fixture is teleported.
                     for (int tick = 0; tick < 600 && waves.State(producer) != 3; tick++)
-                        (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Tick();
+                        waves.Tick();
                     Require(waves.State(producer) == 3 &&
                         originalMembers.All(id =>
                             frogs.Get(id) is { NativeState: 6, Presented: true } &&
@@ -151,13 +150,13 @@ public sealed class Rac1FrogScenario(MovementDiagnosticContext context, IRac1Ene
                             FromEffectNative(waves.NativePosition(producer))) < .001f),
                         "Retail class1066 trigger launch positions differ from native owner Moby.");
                     Log($"[frog-smoke] original class1066 i{producer} clip/animation/20-tick wave released exactly [{string.Join(",", originalMembers)}] PASS");
-                    int nextProducer = (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Controllers.Single(id => waves.Group(id) == 9);
+                    int nextProducer = waves.Controllers.Single(id => waves.Group(id) == 9);
                     var nextMembers = waves.Members(nextProducer).ToArray();
                     Require(nextMembers.SequenceEqual(new[] { 436, 437, 438 }),
                         "Native Frog group9 membership differs.");
                     Player.SetPosition(FromEffectNative(waves.ZoneCentre(nextProducer)));
                     for (int tick = 0; tick < 600 && waves.State(nextProducer) != 3; tick++)
-                        (frogs.Waves ?? throw new DiagnosticUnavailableException("Frog waves unavailable.")).Tick();
+                        waves.Tick();
                     Require(waves.State(nextProducer) == 3 &&
                         nextMembers.All(id => frogs.Get(id) is { NativeState: 6, Presented: true }) &&
                         Enumerable.Range(439, 3).All(id =>

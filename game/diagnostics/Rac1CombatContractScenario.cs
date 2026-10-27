@@ -85,12 +85,11 @@ public sealed class Rac1CombatContractScenario(MovementDiagnosticContext context
             if (Hostiles.Count != 16 || Combat.ReadPopulation().RegisteredClass749 != 16)
                 throw new InvalidOperationException(
                     $"Veldin active class-749 runtime count was {Hostiles.Count}/{Combat.ReadPopulation().RegisteredClass749}, expected recovered population 16/16.");
-            var hostile = Hostiles[naturalAttack.AttackerInstance];
-            if (!Hostiles.ContainsKey(hostile.Key.Target.InstanceIndex) ||
+            if (!Hostiles.TryGetValue(naturalAttack.AttackerInstance, out var hostile) ||
                 !Combat.IsAvailable(hostile.Key) ||
                 !hostile.Read().Visible)
                 throw new InvalidOperationException(
-                    $"Recovered class-749 instance {hostile.Key.Target.InstanceIndex} is unavailable.");
+                    $"Recovered class-749 instance {naturalAttack.AttackerInstance} is unavailable.");
 
             // From here onward this is the explicitly synthetic contract harness.
             // Quarantine the recovered population while isolating crate/player-avatar

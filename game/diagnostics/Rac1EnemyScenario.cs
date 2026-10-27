@@ -186,11 +186,13 @@ public sealed class Rac1EnemyScenario(MovementDiagnosticContext context, IRac1En
 
             // This final fixture supplies admitted descriptors to isolate OBP's
             // explicit retry UI, not to claim a recovered retail combat restart.
-            while (!lifecycle.ReadNanotech().IsDead)
+            int remainingDamageAttempts = lifecycle.ReadNanotech().Nanotech;
+            while (!lifecycle.ReadNanotech().IsDead && remainingDamageAttempts-- > 0)
             {
                 await PhysicsFramesAsync(78);
                 lifecycle.ApplyAdmittedPlayerDamage(Rac1DamageRuntime.FromClass749Attack(new(749, 143), new(34, 1)));
             }
+            Require(lifecycle.ReadNanotech().IsDead, "Retry fixture exhausted its one admitted damage attempt per starting Nanotech without reaching death.");
             await PhysicsFramesAsync(2);
             Require(Enemies.ReadPopulation().RetryVisible, "combat death offers no explicit level retry");
             int switches = Enemies.ReadPopulation().WorldSwitches;

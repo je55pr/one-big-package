@@ -81,12 +81,14 @@ internal sealed class GodotRac1CombatDiagnosticFixture(GodotRac1EnemyDiagnosticF
         var player = Player; player.GlobalPosition = GodotMovementPlayer.Engine(position);
         if (clearVelocity) player.Velocity = Vector3.Zero;
     }
-    public void PlacePlayerFacing(NVector3 position, NVector3 direction, bool grounded)
+    public void PlacePlayerFacing(NVector3 position, NVector3 direction, bool grounded) => PlacePlayerFacing(Player, position, direction, grounded);
+    internal static void PlacePlayerFacing(PlayerHost? player, NVector3 position, NVector3 direction, bool grounded)
     {
+        if (player is null || !GodotObject.IsInstanceValid(player)) throw new DiagnosticUnavailableException("The placement fixture player is unavailable.");
         direction.Y = 0;
         if (direction.LengthSquared() <= 1e-5f) throw new ArgumentException("RAC1 smoke facing direction must be planar and non-zero.");
         direction = NVector3.Normalize(direction);
-        var player = Player; player.GlobalPosition = GodotMovementPlayer.Engine(position); player.Velocity = Vector3.Zero;
+        player.GlobalPosition = GodotMovementPlayer.Engine(position); player.Velocity = Vector3.Zero;
         player.Rac1CurrentYaw = Math.Atan2(direction.Z, -direction.X);
         if (!grounded) return;
         using var query = PhysicsRayQueryParameters3D.Create(player.GlobalPosition + Vector3.Up * 8, player.GlobalPosition + Vector3.Down * 128);

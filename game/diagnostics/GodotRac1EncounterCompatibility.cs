@@ -18,6 +18,7 @@ internal static class GodotRac1EncounterCompatibility
         }
         throw new TimeoutException($"Timed out waiting for RAC1 smoke phase: {label}.");
     }
+    // #342 removes this last logical-attack shim; extracted suites use Rac1EncounterInput.
     internal static async Task TapPrimaryAsync(Node owner, Rac1WeaponId selected)
     {
         var action = selected == Rac1WeaponId.FirstRanged ? RawGamepadInput.Traversal : RawGamepadInput.Action;

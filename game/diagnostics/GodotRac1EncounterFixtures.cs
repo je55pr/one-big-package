@@ -15,7 +15,10 @@ internal sealed class GodotRac1EncounterLifecycle(Func<Rac1RatchetNanotechSnapsh
         var menu = retry();
         if (menu is null || !GodotObject.IsInstanceValid(menu))
             throw new DiagnosticUnavailableException("The explicit encounter retry control is unavailable.");
-        menu.GetChildren().OfType<VBoxContainer>().Single().GetChildren().OfType<Button>().Single().EmitSignal(Button.SignalName.Pressed);
+        var buttons = menu.GetChildren().OfType<VBoxContainer>().SelectMany(box => box.GetChildren().OfType<Button>()).ToArray();
+        if (buttons.Length != 1 || buttons[0].Disabled || !buttons[0].IsVisibleInTree())
+            throw new DiagnosticUnavailableException("The encounter retry fixture needs one visible, enabled retry button.");
+        buttons[0].EmitSignal(Button.SignalName.Pressed);
     }
 }
 internal sealed class GodotRac1WrenchApproachFixture(Func<PlayerHost?> player,
@@ -48,12 +51,16 @@ internal sealed class GodotRac1EnemyDiagnosticCapture(Node3D owner, Func<CanvasL
         string? directory = System.Environment.GetEnvironmentVariable("OBP_ENEMY_CAPTURE_DIR");
         if (string.IsNullOrWhiteSpace(directory)) return;
         if (DisplayServer.GetName() == "headless")
-            throw new DiagnosticUnavailableException("Optional enemy image capture requires a rendered post-draw signal.");
+        {
+            GD.Print("[enemy-capture] unavailable: optional image capture requires a rendered post-draw signal.");
+            return;
+        }
         Directory.CreateDirectory(directory);
         var actor = player() ?? throw new DiagnosticUnavailableException("The enemy capture player is unavailable.");
         var ui = overlay();
         var hud = actor.GetNode<CanvasLayer>("PlayerHud");
         bool visible = ui.Visible, hudVisible = hud.Visible;
+        var previousCamera = owner.GetViewport().GetCamera3D();
         var camera = new Camera3D { Current = true, Fov = 55, Far = 10000 };
         owner.AddChild(camera);
         try
@@ -71,7 +78,7 @@ internal sealed class GodotRac1EnemyDiagnosticCapture(Node3D owner, Func<CanvasL
             if (GodotObject.IsInstanceValid(ui)) ui.Visible = visible;
             if (GodotObject.IsInstanceValid(hud)) hud.Visible = hudVisible;
             if (GodotObject.IsInstanceValid(camera)) camera.QueueFree();
-            if (GodotObject.IsInstanceValid(actor) && GodotObject.IsInstanceValid(actor.Camera)) actor.Camera.MakeCurrent();
+            if (GodotObject.IsInstanceValid(previousCamera)) previousCamera.MakeCurrent();
         }
     }
 }

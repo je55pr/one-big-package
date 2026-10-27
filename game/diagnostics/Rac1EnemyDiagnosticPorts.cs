@@ -18,7 +18,7 @@ public sealed record Rac1EnemyPopulationSnapshot(int Enemies, int Class1440, int
 public sealed record Rac1Class1440DiagnosticSnapshot(float Health, int NativeState, int Sequence, int HitCooldown,
     bool HasAttackSlot, bool ReactionActive);
 public sealed record Rac1PeckbotDiagnosticSnapshot(int NativeState, int Sequence, float Health, bool InitialLoiter);
-public sealed record Rac1BirdbotDiagnosticSnapshot(Rac1NovalisBirdbotSession.HostMode Mode, int Sequence, float Health);
+public sealed record Rac1BirdbotDiagnosticSnapshot(Rac1NovalisBirdbotSession.HostMode Mode, int Sequence, float Health, bool HasHostedShot);
 public sealed record Rac1ToadDiagnosticSnapshot(int NativeState, float Health, int? NativeSequence, int NativeSequenceUpdate,
     int? LinkedTargetInstanceIndex, float NavigationYawOffset, bool Active, bool Visible, bool ReactionActive,
     Rac1Class749AttackEvent? Attack);

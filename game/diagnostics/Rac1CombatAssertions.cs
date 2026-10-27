@@ -16,7 +16,7 @@ public static class Rac1CombatAssertions
             if (weapon.Ammo is not null) throw new InvalidOperationException("Wrench HUD unexpectedly exposed ammo.");
             return;
         }
-        if (weapon.Ammo?.Current != expectedAmmo || weapon.Ammo.Capacity != Rac1BombGlove.MaxAmmo)
+        if (weapon.Ammo is null || weapon.Ammo.Current != expectedAmmo || weapon.Ammo.Capacity != Rac1BombGlove.MaxAmmo)
             throw new InvalidOperationException($"Bomb Glove HUD ammo was {weapon.Ammo?.Current}/{weapon.Ammo?.Capacity}, expected {expectedAmmo}/{Rac1BombGlove.MaxAmmo}.");
     }
     public static void Wrench(Rac1CombatPresentationDiagnostic value, bool visible, string phase)

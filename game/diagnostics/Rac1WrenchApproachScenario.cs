@@ -9,6 +9,7 @@ public sealed class Rac1WrenchApproachScenario(MovementDiagnosticContext context
     public async Task<float> RunAsync(Func<Vector3> targetCenterProvider, int maxFrames, string label,
         float inputScale = 1, float minimumTravel = .5f, float maximumPlanarDistance = float.PositiveInfinity)
     {
+        if (!(inputScale > 0 && inputScale <= 1)) throw new ArgumentOutOfRangeException(nameof(inputScale));
         Vector3 start = Player.Read().GlobalPosition;
         Vector3 targetCenter = targetCenterProvider();
         try
@@ -30,13 +31,10 @@ public sealed class Rac1WrenchApproachScenario(MovementDiagnosticContext context
                 if (desired.LengthSquared() <= 1e-5f)
                     throw new InvalidOperationException($"{label} reached the target origin without entering the wrench host policy.");
                 desired = desired.Normalized();
-                double controlYaw = approach.ControlYaw;
-                Vector3 controlForward = new(-(float)Math.Cos(controlYaw), 0, (float)Math.Sin(controlYaw));
-                Vector3 controlRight = new(-(float)Math.Sin(controlYaw), 0, -(float)Math.Cos(controlYaw));
                 // These are desired conditioned axes. Raw diagonal axes would be
                 // deadbanded a second time and reduce this run to walking.
-                SetRac1SmokeConditionedInput(inputScale * Math.Clamp(Vector3.Dot(desired, controlRight), -1, 1),
-                    inputScale * Math.Clamp(Vector3.Dot(desired, controlForward), -1, 1));
+                var axes = Rac1EncounterInput.ConditionedAxesToward(desired, approach.ControlYaw, inputScale);
+                SetRac1SmokeConditionedInput(axes.Right, axes.Forward);
                 await ProcessFrameAsync();
             }
         }

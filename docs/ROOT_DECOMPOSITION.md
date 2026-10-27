@@ -81,7 +81,8 @@ owners are recorded individually; the origin ledger does not expand.
 
 The #340 encounter extraction retires seven more diagnostic partials and 52
 historical declaration/member permissions. The root now has 94 files, 20,255
-file lines, 680 direct methods, 456 fields (311 mutable) and 44 exposed members.
+file lines, 680 direct methods, 456 fields (311 mutable), 44 exposed members
+and 2,291 cross-file references.
 Enemy, Novalis, Aridia, frog/queen and Veldin/combat suites consume immutable
 facts and fixture actions instead of privileged root access. Actor handles use
 the existing source-qualified world-generation identity and reject retired

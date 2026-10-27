@@ -74,6 +74,9 @@ internal sealed class GodotRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticF
         {
             _actors = actors; _bindings = bindings;
             var keys = actors.ReadEnemies();
+            if (!keys.Any(key => key.Target.NativeClassId == Rac1AridiaEnemies.Sandshark) ||
+                !keys.Any(key => key.Target.NativeClassId == Rac1AridiaEnemies.Nest))
+                throw new DiagnosticUnavailableException("The shark recycle fixture needs a hosted Sandshark and Nest.");
             var shark = keys.First(key => key.Target.NativeClassId == Rac1AridiaEnemies.Sandshark);
             var nest = keys.First(key => key.Target.NativeClassId == Rac1AridiaEnemies.Nest);
             _shark = actors.Resolve(shark); _original = bindings.Session();
@@ -84,7 +87,13 @@ internal sealed class GodotRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticF
             _fixture.Register(shark.Target.InstanceIndex, Rac1AridiaEnemies.Sandshark, groupId: 7);
             _fixture.SetAuthoredGroupRoster(new Dictionary<int, int[]> { [7] = [shark.Target.InstanceIndex] });
             _pose = actors.PreserveActorPose(shark);
-            bindings.ReplaceSession(_fixture);
+            try { bindings.ReplaceSession(_fixture); }
+            catch (Exception original)
+            {
+                try { Dispose(); }
+                catch (Exception cleanup) { throw new AggregateException("Shark fixture construction and cleanup failed.", original, cleanup); }
+                throw;
+            }
         }
         private void RequireCurrent()
         { ObjectDisposedException.ThrowIf(_disposed, this); _actors.Resolve(Start.Shark); }
@@ -106,7 +115,8 @@ internal sealed class GodotRac1AridiaDiagnosticFixture(GodotRac1EnemyDiagnosticF
         public NVector3 ReadAuthoredHomeScene() { RequireCurrent(); return GodotMovementPlayer.Copy(_shark.AuthoredHomePosition); }
         public void Dispose()
         {
-            if (_disposed) return; _disposed = true;
+            if (_disposed) return;
+            _disposed = true;
             List<Action> restorations = [() => { if (ReferenceEquals(_bindings.Session(), _fixture)) _bindings.ReplaceSession(_original); }];
             bool live = true;
             try { _actors.Resolve(Start.Shark); } catch (DiagnosticUnavailableException) { live = false; }

@@ -52,7 +52,7 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
         var groupEntries = new Dictionary<int, (double Distance, double Facing)>();
         double? entryDistance = null;
         double? entryFacing = null;
-        bool sawPursuit = false;
+        var pursuedMembers = new HashSet<int>();
         int activationGroup = Rac1Class749VeldinPopulation.GetActivationGroup(
             hostile.Key.Target.InstanceIndex);
         int expectedGroupMembers = Hostiles.Keys.Count(instanceIndex =>
@@ -95,13 +95,21 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
                         memberProbe.NativeState != Rac1Class749Hostile.TargetSearchNativeState)
                     {
                         activatedGroupMembers.Add(pair.Key);
+                        if (memberProbe.NativeState == Rac1Class749Hostile.TargetedNativeState)
+                            pursuedMembers.Add(pair.Key);
                         if (memberProbe.NativeState == Rac1Class749Hostile.AttackNativeState && !groupEntries.ContainsKey(pair.Key))
+                        {
+                            double memberDistance = pair.Value.Read().Position.DistanceTo(Player.Read().GlobalPosition);
+                            double memberFacing = Rac1SmokeClass749FacingError(pair.Value, Player.Read().GlobalPosition);
+                            if (!(memberDistance < Rac1Class749Hostile.AttackDistanceExclusive) ||
+                                !(memberFacing < Rac1Class749Hostile.AttackFacingErrorExclusive))
+                                throw new InvalidOperationException($"Class-749 i{pair.Key} entered attack outside recovered gates: distance={memberDistance:R}, facing={memberFacing:R}.");
                             groupEntries.Add(pair.Key, (pair.Value.Read().Position.DistanceTo(Player.Read().GlobalPosition),
                                 Rac1SmokeClass749FacingError(pair.Value, Player.Read().GlobalPosition)));
+                        }
                     }
                 }
 
-                sawPursuit |= probe.NativeState == Rac1Class749Hostile.TargetedNativeState;
                 if (probe.NativeState == Rac1Class749Hostile.AttackNativeState &&
                     entryDistance is null)
                 {
@@ -120,7 +128,7 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
                     Require(groupEntries.TryGetValue(attacker, out var attackEntry), "attacker never entered its native attack state");
                     entryDistance = attackEntry.Distance; entryFacing = attackEntry.Facing;
                     var nanotechAfter = lifecycle.ReadNanotech();
-                    if (!sawPursuit || entryDistance is null || entryFacing is null)
+                    if (!pursuedMembers.Contains(attacker))
                         throw new InvalidOperationException(
                             "Class-749 reached its transported attack marker without observed pursuit/attack entry.");
 #pragma warning disable S1244 // Transport must retain the exact recovered attack marker and damage constants.
@@ -234,18 +242,8 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
         }
         desired = desired.Normalized();
 
-        double controlYaw = Ports.Approach.ControlYaw;
-        Vector3 controlForward = new(
-            -(float)Math.Cos(controlYaw),
-            0f,
-            (float)Math.Sin(controlYaw));
-        Vector3 controlRight = new(
-            -(float)Math.Sin(controlYaw),
-            0f,
-            -(float)Math.Cos(controlYaw));
-        SetRac1SmokeConditionedInput(
-            inputScale * Math.Clamp(Vector3.Dot(desired, controlRight), -1f, 1f),
-            inputScale * Math.Clamp(Vector3.Dot(desired, controlForward), -1f, 1f));
+        var axes = Rac1EncounterInput.ConditionedAxesToward(desired, Ports.Approach.ControlYaw, inputScale);
+        SetRac1SmokeConditionedInput(axes.Right, axes.Forward);
     }
 
 }
