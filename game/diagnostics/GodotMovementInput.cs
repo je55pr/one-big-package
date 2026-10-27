@@ -17,6 +17,10 @@ internal sealed class GodotMovementPhysicalInput : IDiagnosticPhysicalInput
             DiagnosticPhysicalKey.F11 => Key.F11,
             DiagnosticPhysicalKey.Key1 => Key.Key1,
             DiagnosticPhysicalKey.Key2 => Key.Key2,
+            DiagnosticPhysicalKey.Q => Key.Q,
+            DiagnosticPhysicalKey.X => Key.X,
+            DiagnosticPhysicalKey.F8 => Key.F8,
+            DiagnosticPhysicalKey.F9 => Key.F9,
             _ => throw new ArgumentOutOfRangeException(nameof(key)),
         };
         using var input = new InputEventKey { Keycode = native, PhysicalKeycode = native, Pressed = pressed, Echo = false };
@@ -28,6 +32,20 @@ internal sealed class GodotMovementPhysicalInput : IDiagnosticPhysicalInput
             Device = 15,
             ButtonIndex = button == DiagnosticPhysicalButton.Wrench ? JoyButton.X : JoyButton.B,
             Pressed = pressed
+        };
+        Input.ParseInputEvent(input);
+    }, (axis, value) =>
+    {
+        using var input = new InputEventJoypadMotion
+        {
+            Device = 15,
+            Axis = axis switch
+            {
+                DiagnosticPhysicalAxis.LeftX => JoyAxis.LeftX,
+                DiagnosticPhysicalAxis.LeftY => JoyAxis.LeftY,
+                _ => throw new ArgumentOutOfRangeException(nameof(axis)),
+            },
+            AxisValue = value
         };
         Input.ParseInputEvent(input);
     });

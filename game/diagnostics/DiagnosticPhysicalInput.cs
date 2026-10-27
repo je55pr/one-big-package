@@ -1,7 +1,8 @@
 namespace OBP.Game.Diagnostics;
 
 /// <summary>Ownership of simulated in-application key/button events. It never reads or re-injects hardware state.</summary>
-public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> key, Action<DiagnosticPhysicalButton, bool> button) : IDiagnosticPhysicalInput
+public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> key, Action<DiagnosticPhysicalButton, bool> button,
+    Action<DiagnosticPhysicalAxis, float>? axis = null) : IDiagnosticPhysicalInput
 {
     private readonly Action<DiagnosticPhysicalKey, bool> _key = key;
     private readonly Action<DiagnosticPhysicalButton, bool> _button = button;
@@ -9,6 +10,23 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
     private readonly Dictionary<DiagnosticPhysicalButton, HashSet<Lease>> _buttons = [];
     private readonly HashSet<DiagnosticPhysicalKey> _dirtyKeys = [];
     private readonly HashSet<DiagnosticPhysicalButton> _dirtyButtons = [];
+    private readonly Dictionary<DiagnosticPhysicalAxis, List<(Lease Owner, float Value)>> _axes = [];
+    private readonly HashSet<DiagnosticPhysicalAxis> _dirtyAxes = [];
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification = "Axis ownership forwards the exact latest requested strength; tolerances would discard intentional input changes.")]
+    private void SetAxis(Lease lease, DiagnosticPhysicalAxis value, float strength)
+    {
+        if (!_axes.TryGetValue(value, out var owners)) _axes[value] = owners = [];
+        if (strength == 0 && !owners.Any(entry => entry.Owner == lease) && !_dirtyAxes.Contains(value)) return;
+        var write = axis ?? throw new DiagnosticUnavailableException("Simulated stick axes are not bound.");
+        float previous = owners.Count == 0 ? 0 : owners[^1].Value;
+        owners.RemoveAll(entry => entry.Owner == lease);
+        if (strength != 0) owners.Add((lease, strength));
+        float effective = owners.Count == 0 ? 0 : owners[^1].Value;
+        if (effective.Equals(previous) && !_dirtyAxes.Contains(value)) return;
+        _dirtyAxes.Add(value);
+        write(value, effective);
+        _dirtyAxes.Remove(value);
+    }
     public IDiagnosticPhysicalInputLease Acquire() => new Lease(this);
     private static void Set<T>(Dictionary<T, HashSet<Lease>> owners, HashSet<T> dirty, Lease lease, T value, bool pressed, Action<T, bool> write) where T : notnull
     {
@@ -32,6 +50,15 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
         private bool _disposed;
         private readonly HashSet<DiagnosticPhysicalKey> _touchedKeys = [];
         private readonly HashSet<DiagnosticPhysicalButton> _touchedButtons = [];
+        private readonly HashSet<DiagnosticPhysicalAxis> _touchedAxes = [];
+        public void SetAxis(DiagnosticPhysicalAxis axis, float value)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!Enum.IsDefined(axis)) throw new ArgumentOutOfRangeException(nameof(axis));
+            if (!float.IsFinite(value) || value is < -1 or > 1) throw new ArgumentOutOfRangeException(nameof(value));
+            if (value != 0) _touchedAxes.Add(axis);
+            owner.SetAxis(this, axis, value);
+        }
         public void SetKey(DiagnosticPhysicalKey value, bool pressed)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -52,6 +79,8 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
                 try { Set(owner._keys, owner._dirtyKeys, this, value, false, owner._key); _touchedKeys.Remove(value); } catch (Exception error) { (failures ??= []).Add(error); }
             foreach (var value in _touchedButtons.ToArray())
                 try { Set(owner._buttons, owner._dirtyButtons, this, value, false, owner._button); _touchedButtons.Remove(value); } catch (Exception error) { (failures ??= []).Add(error); }
+            foreach (var value in _touchedAxes.ToArray())
+                try { owner.SetAxis(this, value, 0); _touchedAxes.Remove(value); } catch (Exception error) { (failures ??= []).Add(error); }
             if (failures is not null) { throw new AggregateException("Physical diagnostic input restoration failed.", failures); }
         }
     }

@@ -2792,13 +2792,6 @@
       "Hash": "c76a67bdd06d7a806133152253c4b89ea35ea32e53a2858e81fa8f8af3dc31af"
     },
     {
-      "Key": "game/scripts/OBPGame.cs::OBPGame::method:Rac1SmokePlaceGroundedFacing(:Vector3,:Vector3):void:private",
-      "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#341",
-      "Hash": "333fe85fabc3a2d023e32329245d197b129303fdfb017ff55b326ddb9bdd64a5"
-    },
-    {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:Rac1SmokeWaitAsync(:Func < bool >,:int,:string):Task:private",
       "Owner": "#340",
       "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
@@ -2818,6 +2811,48 @@
       "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
       "ExpiresWith": "#342",
       "Hash": "e9445a1188e034d548c2f9c69231acae344b6e22450c32bfb0249d74dce1d94e"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateFusionWeaponDiagnosticHarness():FusionWeaponDiagnosticHarness:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#352",
+      "Hash": "f0fcbf052a58383d3085b18a911519d4fc3b9209b3a1c2921e6ba07d58e3796b"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AdditionalWeaponDiagnosticFixture(:IDiagnosticWorldObservations):GodotRac1AdditionalWeaponDiagnosticFixture:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#367",
+      "Hash": "5b752bde547c9b804f549fb9f37fe05fe835c9e7e7500fdf33e4283fe34b9f30"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1ArsenalDiagnosticFixture(:IDiagnosticWorldObservations,:GodotRac1WeaponTargetFixture):GodotRac1ArsenalDiagnosticFixture:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#367",
+      "Hash": "c04cc08cabad940494e164d4b16af8be676a52042877d78e8fe4e33c92b3aaaf"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateWeaponDiagnosticHarness():WeaponDiagnosticHarness:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#367",
+      "Hash": "50e322632c2e9362bc2ccff9c62409226298ed438a4a606736790e5459cba2f2"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunFusionRecordingSmokeAsync():Task:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#344",
+      "Hash": "e3db1a63c67742885e07c88b52995ec149eb5472466a3d31c830e6e02aa66278"
+    },
+    {
+      "Key": "game/scripts/OBPGame.cs::OBPGame::method:TapWrenchSmokeAsync():Task:private",
+      "Owner": "#341",
+      "Rationale": "Invocation-only weapon diagnostic fixture composition. Source-qualified immutable weapon/model/ammo/audio observations and scoped test input/actions keep native sessions and scene nodes inside adapters.",
+      "ExpiresWith": "#342",
+      "Hash": "367eeb6ee88c2bea53641f0971722cfba0510260fc1a64ce3b9e5802bbe7c2d7"
     }
   ],
   "RetiredMembers": [
@@ -2965,7 +3000,38 @@
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:SelectRac1PracticalWrenchCrate():( RuntimeWorldScene . DynamicObjectNode Crate , IReadOnlyList < Vector3 > Waypoints ):private",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:SetRac1CameraSmokeInput(:float,:float):void:private,static",
     "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:TapRac1PrimaryActionAsync():Task:async,private",
-    "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:TryPlanRac1SmokeWalkRoute(:Vector3,out:IReadOnlyList < Vector3 >):bool:private"
+    "game/diagnostics/OBPGame.Rac1VeldinPlaySmoke.cs::OBPGame::method:TryPlanRac1SmokeWalkRoute(:Vector3,out:IReadOnlyList < Vector3 >):bool:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CaptureFusionAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CaptureFusionProfileAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CheckFusionJumpAttachmentAsync(:bool):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:CheckFusionMovementTransitionsAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionCheckWrenchPersistenceAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionFireInputAsync(:int):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionKey(:Key,:bool):void:private,static",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:FusionMarkAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionGunAlignment():void:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionHandAttachment():void:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RequireFusionTransitionContinuity(:Transform3D,:double [  ] ?,ref:int):void:private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RunFusionRecordingSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:RunFusionWeaponsSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:SelectFusionByInputAsync(:int):Task:async,private",
+    "game/diagnostics/OBPGame.FusionWeaponsSmoke.cs::OBPGame::method:WaitForSharedWeaponsSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1ArsenalSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1ArsenalSmoke.cs::OBPGame::method:RunRac1ArsenalSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:CaptureRac1BombAsync(:string,:Vector3,:bool):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:RunRac1BombGloveSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1BombGloveSmoke.cs::OBPGame::method:RunRac1SavedBombReproAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::method:PlaceWeaponSmokeEnemy(:Rac1HostedEnemy,:Vector3):void:private,static",
+    "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::method:RunRac1WeaponIdleAndAudioSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WeaponsSmoke.cs::OBPGame::method:RunRac1WeaponsSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:CaptureWrenchSmokeAsync(:string):Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:RunRac1WrenchSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:TapWrenchSmokeAsync():Task:async,private",
+    "game/diagnostics/OBPGame.Rac1WrenchSmoke.cs::OBPGame::method:WaitWrenchTimeAsync(:float):Task:private"
   ],
   "RetiredAccess": []
 }

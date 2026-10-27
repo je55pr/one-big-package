@@ -288,3 +288,41 @@ Authorised headless checks cover Veldin, Novalis, Aridia and frog/queen levels
 capture still requires a rendered post-draw signal and reports unavailable in
 headless mode. The eighteen newly linked engine-free files have exact coverage
 path permissions; engine fixtures remain outside portable coverage.
+
+## Weapon, arsenal and mixed-source acceptance (#341)
+
+The five fusion, arsenal, Bomb Glove, weapon and wrench partials are standalone
+scenarios. R&C1 acceptance remains grouped behind the existing world-smoke
+dispatcher; the mixed-source suite and recording helper use the same bounded,
+supervised runner. Immutable observations cover source-qualified inventory,
+ammo, damage, held models, hand transforms, animation layers, particles and
+audio traces. Scene nodes, native sessions, source libraries and projectile
+maps stay inside focused engine fixtures. Actor/projectile witnesses reject
+retired world generations instead of exposing backing state.
+
+The shared movement driver now owns the original fusion key and simulated
+stick-axis input too. Releasing one scope preserves other simulations, and
+failed neutral writes can be retried. Temporary preview, geometry, camera,
+source-library and unavailable-asset fixtures restore their owners. A weapon
+transient scope delegates projectile, audio and effect cleanup to existing
+owners on completion, failure or cancellation; it never clears a replacement
+world. An explicit saved-state reload transfers a new cleanup lease to the
+scenario for its reloaded world. Portable checks cover cancellation and partial
+cleanup failure, rejected reloads and cancellation after a committed reload.
+The port returns a cleanup lease only after confirmed restoration. The
+native suite retains missing-asset, source-invalidation and canceled-worker
+checks and requires explicit unavailable results.
+
+Original command names, native constants, frame ordering, damage/range and
+ammo assertions, capture JSON fields and save/replay identifiers are retained.
+Optional image capture reports unavailable headlessly; all automated weapon
+runs use headless engine processes. Ordinary fusion recording is followed by a
+fresh same-build replay, including its original marks and finish input. The
+fourteen linked engine-free files have exact coverage permissions; engine
+adapters are not claimed as portable coverage.
+
+The pre-extraction arsenal run exposed a host contact bug: aiming at a crate
+indexed the enemy map with the crate instance ID, interrupting Tesla feedback.
+The existing target predicate now accepts active non-enemy geometry through a
+checked lookup. The `--rac1-weapons-smoke` command checks that crate path and
+Tesla feedback; native damage and effective-range rules are unchanged.

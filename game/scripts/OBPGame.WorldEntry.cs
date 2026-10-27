@@ -61,12 +61,12 @@ public partial class OBPGame
                         definition => CreateRac1EncounterDiagnosticHarness().CreateMovementContact(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateCombat(definition),
                         RunRac1CampaignSmokeAsync, definition => CreateMovementDiagnosticHarness().CreateMovement(definition),
-                        RunRac1CrateSmokeAsync, RunRac1PlacedBoltSmokeAsync, RunRac1WrenchSmokeAsync,
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), RunMovementStateSmokeAsync, RunRac1BombGloveSmokeAsync,
+                        RunRac1CrateSmokeAsync, RunRac1PlacedBoltSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateWrench(definition),
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), RunMovementStateSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateBomb(definition),
                         definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
-                        RunRac1NovalisMusicSmokeAsync, RunRac1WeaponsSmokeAsync, definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
+                        RunRac1NovalisMusicSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         RunRac1MetropolisTaxiSmokeAsync, RunRac1MissionPlaySmokeAsync, RunRac1NovalisRouteSmokeAsync,
                         definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
@@ -82,7 +82,7 @@ public partial class OBPGame
             if (_args.SourceSetupCheck && _worldSwitches == 1) CreateUiDiagnosticHarness().Start("source-setup-check");
             if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
             _playtest?.WorldEntered();
-            if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
+            if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) CreateFusionWeaponDiagnosticHarness().Start();
             if (_worldSwitches == 1 && PlayerSessionDiagnosticHarness.IsRequested(_args)) CreatePlayerDiagnosticHarness().StartRequested();
             if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) _ = RunTrilogyGameplaySmokeAsync();
             return true;

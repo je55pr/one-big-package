@@ -2,8 +2,9 @@ using System.Numerics;
 
 namespace OBP.Game.Diagnostics;
 
-public enum DiagnosticPhysicalKey { W, Space, F, R, E, F11, Key1, Key2 }
+public enum DiagnosticPhysicalKey { W, Space, F, R, E, F11, Key1, Key2, Q, X, F8, F9 }
 public enum DiagnosticPhysicalButton { Wrench, EquippedUse }
+public enum DiagnosticPhysicalAxis { LeftX, LeftY }
 public interface IDiagnosticPhysicalInput
 {
     IDiagnosticPhysicalInputLease Acquire();
@@ -12,6 +13,7 @@ public interface IDiagnosticPhysicalInputLease : IDisposable
 {
     void SetKey(DiagnosticPhysicalKey key, bool pressed);
     void SetButton(DiagnosticPhysicalButton button, bool pressed);
+    void SetAxis(DiagnosticPhysicalAxis axis, float value);
 }
 
 /// <summary>One scoped input owner and the exact frame-start phases used by the original movement regressions.</summary>
@@ -46,6 +48,12 @@ public sealed class MovementDiagnosticDriver : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (pressed) { _run.CancellationToken.ThrowIfCancellationRequested(); }
         _physical.SetKey(key, pressed);
+    }
+    public void SetAxis(DiagnosticPhysicalAxis axis, float value)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (value != 0) _run.CancellationToken.ThrowIfCancellationRequested();
+        _physical.SetAxis(axis, value);
     }
     public async Task SetButtonAsync(DiagnosticPhysicalButton button, bool pressed)
     {
