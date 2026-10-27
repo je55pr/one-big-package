@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using System.Numerics;
-using OBP.Core;
 using OBP.IO;
 using OBP.PS2.Graphics;
 using OBP.RAC3.Level;
@@ -45,7 +44,7 @@ public sealed class Rac3ParticleDraw
     }
     /// <summary>Caller supplies the native view's depth row and projection W factor, and admits frustum visibility.
     /// Depth rejection/fade is native; this method does not infer a Godot camera or run VU1.</summary>
-    public Sprite? Build(Rac3ParticleSession.Particle p, View view, Rac3PartTextureLayout layout, uint cachePage)
+    public RcParticleSpriteDescriptor? Build(Rac3ParticleSession.Particle p, View view, Rac3PartTextureLayout layout, uint cachePage)
     {
         if (!Finite(view.Eye) || !Finite(view.DepthRow) || !float.IsFinite(view.ProjectionW) || view.ProjectionW <= 0 || view.FarDepthLimit < 1)
             throw new ArgumentException("UYA sprite view inputs must be finite and have a positive depth/projection range.", nameof(view));
@@ -69,11 +68,4 @@ public sealed class Rac3ParticleDraw
     private static bool Finite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);
 
     public readonly record struct View(Vector3 Eye, Vector3 DepthRow, float ProjectionW, int FarDepthLimit);
-    public readonly record struct Sprite(ObpSourceRef EmitterSource, ObpSourceRef TextureSource, Vector3 RelativePosition,
-        Vector2 ProjectedAxes, uint Color, byte Blend, ulong NativeTex0)
-    {
-        /// <summary>Derived 64-byte sprite descriptor, with its transient material-cache TEX0 value.</summary>
-        public byte[] CopyNativeDescriptor() =>
-            new RcParticleSpriteDescriptor(RelativePosition, ProjectedAxes, Color, Blend, NativeTex0).Encode();
-    }
 }

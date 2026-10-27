@@ -25,6 +25,9 @@ public sealed class Rac3ParticleRetailTests
         // This narrow sprite leaf is byte-identical to the separately witnessed GC leaf; the whole renderers differ.
         Assert.Equal("400bce1e6a3040e64674c888a902a0c1c682de798285afb218b4f158aef92526", Hash(fixture.Read(0x45ee98, 0x118)));
         Assert.Equal("7b501f4a20f4760aa38169d4ca794e4db7f36a6379a5ece8b506e9b0c3ad79d7", Hash(fixture.Read(0x45e810, 0xc28)));
+        Assert.Equal(0x46800020u, BinaryPrimitives.ReadUInt32LittleEndian(fixture.Read(0x46dd7c, 4))); // CVT.S.W life.
+        Assert.Equal(0x4614a881u, BinaryPrimitives.ReadUInt32LittleEndian(fixture.Read(0x46dd80, 4))); // SUB.S sizes.
+        Assert.Equal(0x46001083u, BinaryPrimitives.ReadUInt32LittleEndian(fixture.Read(0x46dda4, 4))); // DIV.S size step.
         Assert.Equal(0x0c11b72eu, BinaryPrimitives.ReadUInt32LittleEndian(fixture.Read(0x385f18, 4)));
         Assert.Equal(0x0c11b72eu, BinaryPrimitives.ReadUInt32LittleEndian(fixture.Read(0x38667c, 4)));
         Assert.Equal(0x0c11b72eu, BinaryPrimitives.ReadUInt32LittleEndian(fixture.Read(0x386724, 4)));
@@ -191,7 +194,9 @@ public sealed class Rac3ParticleRetailTests
             string path = Path.Combine(Path.GetTempPath(), $"obp-uya-particles-{Guid.NewGuid():N}.bin");
             try
             {
-                File.WriteAllBytes(path, _ram);
+                var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+                if (!OperatingSystem.IsWindows()) options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+                using (var stream = new FileStream(path, options)) stream.Write(_ram);
                 var start = new ProcessStartInfo(program) { RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
                 start.ArgumentList.Add(path); start.ArgumentList.Add(constructor ? "constructor" : beam ? "beam" : "charge"); using var process = Process.Start(start)!;
                 var output = process.StandardOutput.ReadToEndAsync(); var errors = process.StandardError.ReadToEndAsync();

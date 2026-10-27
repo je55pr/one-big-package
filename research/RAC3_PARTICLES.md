@@ -10,7 +10,7 @@ composition remains #285.
 ## Authority and external references
 
 Authority is original NTSC-U SCUS-97353, `rac3-ntscu-original`, **TABLE1/Veldin**.
-The packed boot block is at LBA 1463, 771008 bytes; its WAD starts at +7080.
+The packed boot block is at LBA 1463, 771008 bytes; its WAD starts at +0x7080.
 SHA-256 values:
 
 - Packed boot: `200068cb4186715521cdc1c20bc6c5a88054d0da54aa336ffdb2022633351c7d`.
@@ -82,6 +82,13 @@ same life. Updates wrap alpha, add old velocity to XYZ, perform native frame
 conversion, apply gravity, wrap angle and add size step. A life N has N−1 moves
 and expires on update N. There is no particle collision, damage query or live
 owner-PVar dependency in this family.
+
+The size-step sequence is `CVT.S.W` at `0x46dd7c`, `SUB.S` at `0x46dd80`,
+then `DIV.S f2,f2,f0` at `0x46dda4` (word `46001083`). The pinned MIT oracle
+[models EE division as nearest, ties to even](https://github.com/daino-selvatico/rac1-native-game/blob/3fd14c12e4dff2fd4b6661a6e54187faea3f76c8/runtime/ee/ps2_fpu.h),
+separately from chopped add/subtract/multiply and VU division. `Rac3ParticleMath.Divide`
+matches that model for the admitted ordinary finite values and positive lifetimes;
+the per-tick record comparisons include the resulting size-step bits.
 
 | Recipe | Native parameters and result |
 | --- | --- |

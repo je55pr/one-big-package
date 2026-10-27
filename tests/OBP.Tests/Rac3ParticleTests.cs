@@ -96,6 +96,7 @@ public sealed class Rac3ParticleTests
         Assert.Throws<InvalidOperationException>(() => session.EmitShockCannonCharging(Owner with { Source = Source with { Game = ObpSourceGame.Rac2 } }, 30, Muzzle));
         Assert.Throws<NotSupportedException>(() => session.EmitShockCannonCharging(Owner, 79, Muzzle));
         Assert.Throws<ArgumentException>(() => session.Spawn97(Owner, new(new(float.NaN, 0, 0, 1), Vector3.Zero, 1, 0, 0, 0, 0, 0, 0, 0)));
+        Assert.Empty(session.Live); Assert.Equal(0, rng.SamplesConsumed);
         var p = session.EmitShockCannonCharging(Owner, 30, Muzzle); long before = rng.SamplesConsumed;
         var b = session.Live.First().CopyNativeRecord();
         Assert.Throws<NotSupportedException>(() => session.Step(movingFrameActive: true));
