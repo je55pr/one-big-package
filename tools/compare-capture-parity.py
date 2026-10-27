@@ -95,7 +95,7 @@ def main():
     args = parser.parse_args()
     try:
         result = compare(args.before, args.after)
-    except (OSError, ValueError, KeyError, TypeError, IndexError):
+    except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError):
         # Missing/incomplete or malformed evidence fails without exposing source paths.
         result = {"Version": 1, "Passed": False, "Error": "Evidence missing or invalid."}
     encoded = json.dumps(result, indent=2)

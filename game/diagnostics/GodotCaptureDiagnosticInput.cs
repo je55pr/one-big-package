@@ -28,7 +28,7 @@ internal sealed class GodotCaptureDiagnosticInputFactory : ICaptureDiagnosticInp
             CaptureKey.F12 => global::Godot.Key.F12,
             _ => throw new ArgumentOutOfRangeException(nameof(key)),
         };
-        public void Key(CaptureKey key, bool pressed, CaptureKeyOrigin origin, bool shift, char? unicode)
+        public void Key(CaptureKey key, bool pressed, CaptureKeyOrigin origin = CaptureKeyOrigin.Both, bool shift = false, char? unicode = null)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             var owned = (key, origin, shift); if (pressed) _keys.Add(owned); else _keys.Remove(owned);
@@ -76,14 +76,13 @@ internal sealed class GodotCaptureDiagnosticInputFactory : ICaptureDiagnosticInp
         public void Dispose()
         {
             if (_disposed) return;
-            List<Exception> failures = [];
-            void Release(Action action) { try { action(); } catch (Exception error) { failures.Add(error); } }
-            foreach (var (key, origin, shift) in _keys.ToArray()) Release(() => Key(key, false, origin, shift, null));
-            foreach (var button in _buttons.ToArray()) Release(() => Pad(button, false));
-            foreach (var axis in _axes.ToArray()) Release(() => Axis(axis, 0));
-            if (_mouse is { } point) Release(() => Mouse(false, point));
-            _disposed = true;
-            if (failures.Count > 0) throw new AggregateException("Synthetic capture input cleanup failed.", failures);
+            List<Action> releases = [];
+            foreach (var (key, origin, shift) in _keys.ToArray()) releases.Add(() => Key(key, false, origin, shift, null));
+            foreach (var button in _buttons.ToArray()) releases.Add(() => Pad(button, false));
+            foreach (var axis in _axes.ToArray()) releases.Add(() => Axis(axis, 0));
+            if (_mouse is { } point) releases.Add(() => Mouse(false, point));
+            try { DiagnosticCleanup.Run("Synthetic capture input cleanup failed.", [.. releases]); }
+            finally { _disposed = true; }
         }
     }
 }

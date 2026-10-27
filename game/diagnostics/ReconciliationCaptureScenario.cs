@@ -16,13 +16,7 @@ public sealed class ReconciliationCaptureScenario(CaptureDiagnosticContext conte
         int visit = 0;
         foreach (string destination in Route)
         {
-            if (recorder.Read().Destination != destination)
-            {
-                string before = recorder.Read().ProfileJson;
-                Require((await navigation.NavigateAsync(destination, Lifetime)).Accepted, "capture world entry failed");
-                report.Assert(before == recorder.Read().ProfileJson, "transition-preserves-session", "player state unchanged at world commit");
-                while (recorder.Read().PreparingWorld) await Frames();
-            }
+            await EnterAsync(destination);
             var state = recorder.Read();
             report.Assert(state.Configuration == configuration && state.GenuineAvatar && state.PlayerPresent && state.NativeProfile &&
                 state.PhysicsTicksPerSecond == configuration.NativeTicksPerSecond, "same-player", "genuine Ratchet, selected native profile and physics cadence across worlds");
@@ -42,6 +36,14 @@ public sealed class ReconciliationCaptureScenario(CaptureDiagnosticContext conte
             Log("[reconciliation-capture] selection, firing, marker: " + destination);
         }
         report.Write("capture-route"); recorder.Save();
+    }
+    private async Task EnterAsync(string destination)
+    {
+        if (recorder.Read().Destination == destination) return;
+        string before = recorder.Read().ProfileJson;
+        Require((await navigation.NavigateAsync(destination, Lifetime)).Accepted, "capture world entry failed");
+        report.Assert(before == recorder.Read().ProfileJson, "transition-preserves-session", "player state unchanged at world commit");
+        while (recorder.Read().PreparingWorld) await Frames();
     }
     public async Task VerifyFinishedContinuationAsync()
     {

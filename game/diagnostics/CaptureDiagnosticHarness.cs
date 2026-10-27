@@ -34,20 +34,29 @@ internal sealed class CaptureDiagnosticHarness(ImmutableArray<DiagnosticSourceRe
         if (operations.Stopping) return;
         operations.Start(id, async token =>
         {
-            var result = await runner.RunAsync(Scenario(Definition(id), async context =>
-            {
-                await execute(context);
-                // The writer closes at its process callback. Keep terminal controls held
-                // until then so lease cleanup does not append a new release to the tape.
-                while (!terminal && !ports.Recorder.Read().Finished)
-                    await context.Run.WaitAsync(DiagnosticFramePhase.Process);
-            }), true, token);
-            if (operations.Stopping || result.Status == DiagnosticRunStatus.Canceled && token.IsCancellationRequested) return;
-            if (result.Status == DiagnosticRunStatus.Passed) { if (terminal) quit(id + "-pass", 0); return; }
-            var failure = result.Error ?? new InvalidOperationException(result.Detail);
-            if (evidence is not null) acceptance.Fail(evidence, failure, failureReason);
-            else { error("[" + id + "] FAIL: " + failure); quit(failureReason, failureCode); }
+            var result = await runner.RunAsync(Scenario(Definition(id), context => AwaitCommitAsync(context, execute, terminal)), true, token);
+            Finish(result, id, failureReason, failureCode, terminal, evidence, token);
         });
+    }
+    private async Task AwaitCommitAsync(CaptureDiagnosticContext context, Func<CaptureDiagnosticContext, Task> execute, bool terminal)
+    {
+        await execute(context);
+        // The writer closes at its process callback. Keep terminal controls held
+        // until then so lease cleanup does not append a new release to the tape.
+        while (!terminal && !ports.Recorder.Read().Finished)
+            await context.Run.WaitAsync(DiagnosticFramePhase.Process);
+    }
+    private void Finish(DiagnosticRunResult result, string id, string failureReason, int failureCode, bool terminal, string? evidence, CancellationToken token)
+    {
+        if (operations.Stopping || result.Status == DiagnosticRunStatus.Canceled && token.IsCancellationRequested) return;
+        if (result.Status == DiagnosticRunStatus.Passed)
+        {
+            if (terminal) { quit(id + "-pass", 0); }
+            return;
+        }
+        var failure = result.Error ?? new InvalidOperationException(result.Detail);
+        if (evidence is not null) acceptance.Fail(evidence, failure, failureReason);
+        else { error("[" + id + "] FAIL: " + failure); quit(failureReason, failureCode); }
     }
     internal async Task VerifyFinishedContinuationAsync()
     {

@@ -46,7 +46,7 @@ internal sealed class DiagnosticPlayerInterfaceFixture(Func<DiagnosticPlayerInte
 
 /// <summary>Application-owned acceptance evidence; no diagnostic checks or collections live in the production root.</summary>
 internal sealed class OwnedDiagnosticAcceptanceReporter(Func<string?> destination, Func<string?> path,
-    Func<AcceptanceSnapshot> snapshot, Action<string> error, Action<string, int> quit) : IDiagnosticAcceptanceReporter
+    Func<AcceptanceSnapshot> snapshot, Action<string> logError, Action<string, int> quit) : IDiagnosticAcceptanceReporter
 {
     private readonly AcceptanceEvidence _evidence = new();
     public void Assert(bool condition, string id, string detail) => _evidence.Assert(condition, id, destination(), detail);
@@ -55,5 +55,5 @@ internal sealed class OwnedDiagnosticAcceptanceReporter(Func<string?> destinatio
     {
         if (path() is { } target) _evidence.Write(target, phase, snapshot(), failure);
     }
-    public void Fail(string phase, Exception failure, string reason) => AcceptanceEvidence.FinishFailure(failure, reason, () => Write(phase, failure), error, quit);
+    public void Fail(string phase, Exception error, string reason) => AcceptanceEvidence.FinishFailure(error, reason, () => Write(phase, error), logError, quit);
 }

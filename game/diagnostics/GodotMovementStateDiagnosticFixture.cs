@@ -54,7 +54,8 @@ internal sealed class GodotMovementStateDiagnosticFixture(GodotMovementStateDiag
     public WeaponTargetKey BreakCrate()
     {
         var crate = bindings.Crates().First(node => node.Source.NativeClassId == 500 && bindings.Active(node));
-        if (!bindings.Strike(crate)) throw new InvalidOperationException("movement save fixture rejected crate break"); return Target(crate);
+        if (!bindings.Strike(crate)) { throw new InvalidOperationException("movement save fixture rejected crate break"); }
+        return Target(crate);
     }
     public bool SelectAndConsumeBomb() => bindings.Consume();
     public void Credit(int bolts) => bindings.Credit(bolts);

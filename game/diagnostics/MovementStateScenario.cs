@@ -43,6 +43,7 @@ public sealed class MovementStateScenario(CaptureDiagnosticContext context, Move
                 "movement load changed inventory/currency or re-emitted death rewards");
         }
     }
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification = "The original fallback-camera regression requires bit-exact replay samples; a tolerance would weaken this parity check.")]
     private async Task VerifyFallbackAndExactPoseAsync(IMovementStateSaveWitness saved)
     {
         var fallback = saved.WriteFallback();
@@ -61,13 +62,13 @@ public sealed class MovementStateScenario(CaptureDiagnosticContext context, Move
         {
             await Physics(1); await Frames(); var state = movement.Ports.Player.Read();
             supported = state.Grounded && state.Rac1MovementPhase == OBP.RAC1.Player.Rac1RatchetMovementPhase.Grounded ? supported + 1 : 0;
-            if (supported >= 3) return;
+            if (supported >= 3) { return; }
         }
         throw new InvalidOperationException("player did not reach Godot floor contact within smoke timeout");
     }
     private async Task WaitFileAsync(Func<bool> ready, int frames, string phase)
     {
-        for (int i = 0; i < frames; i++) { if (ready()) return; await Frames(); }
+        for (int i = 0; i < frames; i++) { if (ready()) { return; } await Frames(); }
         throw new TimeoutException("Timed out waiting for RAC1 smoke phase: " + phase + ".");
     }
     private static double Distance(Vec3 a, Vec3 b) => Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2) + Math.Pow(a.Z - b.Z, 2));
