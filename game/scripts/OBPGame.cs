@@ -1,6 +1,7 @@
 using OBP.Core;
 using Godot;
 using OBP.RAC1.Gameplay;
+using OBP.RAC1.Presentation;
 using OBP.Godot;
 using OBP.Godot.Player;
 using OBP.IO;
@@ -847,7 +848,6 @@ public partial class OBPGame : Node3D
         GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, LegacyDiagnosticCancellation.Current);
     private Task Rac1SmokeWaitCancelableAsync(Func<bool> condition, int frames, string label, CancellationToken token) =>
         GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, token);
-    private Task TapRac1PrimaryActionAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, _rac1Weapons.Equipped);
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
         GodotRac1DiagnosticSurface.Add(parent, name, material, triangles);
@@ -866,7 +866,6 @@ public partial class OBPGame : Node3D
     private static double WrapAngle(double value) => DiagnosticMovementMath.WrapAngle(value);
     private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
 
-    private Task TapWrenchSmokeAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, Rac1WeaponId.Wrench);
     private Task RunFusionRecordingSmokeAsync() => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(LegacyDiagnosticCancellation.Current);
 
     private FusionWeaponDiagnosticHarness CreateFusionWeaponDiagnosticHarness()
@@ -911,12 +910,78 @@ public partial class OBPGame : Node3D
                 new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
     }
 
+    private Rac1CampaignDiagnosticHarness CreateRac1CampaignDiagnosticHarness()
+    {
+        var movement = CreateMovementDiagnosticHarness();
+        var facts = new Rac1CampaignDiagnosticFacts(() =>
+        {
+            var campaign = _rac1CampaignSession.Campaign; var travel = _rac1CampaignSession.Travel;
+            return new(campaign.CurrentLevel, travel.SelectedDestination, [.. campaign.GalacticMap.Take(campaign.AdmittedDestinationCount)], [.. campaign.LevelStates], travel.TransitionActive)
+            { NovalisAvailable = campaign.CanSelectDestination(1), AridiaAvailable = campaign.CanSelectDestination(2) };
+        }, () =>
+        {
+            var state = _rac1Nanotech.Probe();
+            return new(state.Nanotech, state.IsDead, state.HasRecoveredEnvironmentalRespawn, _rac1Nanotech.EnvironmentalDeathGeneration);
+        }, () => _rac1Missions?.Probe().SingleOrDefault(actor => actor.Key.NativeClassId == 774)?.Retired == true);
+        var actions = new Rac1CampaignDiagnosticActions(ApplyRac1CampaignProgressionEvent, TravelRac1CampaignTo, () => _rac1CampaignSession.Travel.OpenPlanetMap(),
+            level => OpenDestinationFromBootstrap($"rac1:LEVEL{level}"), TickRac1CampaignSaves, FlushRac1CampaignSaves);
+        var checkpoints = new GodotRac1CampaignCheckpointFixture(() =>
+        {
+            var checkpoint = _rac1CampaignSession.LevelCheckpoint ?? throw new DiagnosticUnavailableException("R&C1 smoke checkpoint session is missing.");
+            return new(checkpoint.NativeLevelId, checkpoint.AuthoredClass0, _world?.PlayerStart, checkpoint.ActiveCheckpoint is not null, checkpoint.ResolveEnvironmentalRestart().Kind);
+        }, activation => (_rac1CampaignSession.LevelCheckpoint ?? throw new DiagnosticUnavailableException("The checkpoint session is unavailable.")).Activate(activation),
+        () =>
+        {
+            var player = _player ?? throw new DiagnosticUnavailableException("The checkpoint fixture player is unavailable.");
+            var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset(); player.Rac1GameplayState = dead;
+            return new(dead.Nanotech, dead.IsDead, dead.HasRecoveredEnvironmentalRespawn, _rac1Nanotech.EnvironmentalDeathGeneration);
+        }, () => TryCompleteRac1EnvironmentalRestart(automatic: false));
+        var save = new Rac1CampaignSaveDiagnostics(() => new(ObpSourceGame.Rac1, _sources.Get(ObpSourceGame.Rac1)?.Identity.BuildId,
+            !string.IsNullOrWhiteSpace(_args.Rac1CampaignSavePath), OrdinaryPlayerSession, _rac1CampaignPersistence.Enabled, _rac1SaveBatcher is not null,
+            _rac1CampaignRestoreWarning is not null, _rac1CampaignRestoreKind), () => _args.Rac1CampaignSavePath, () => _rac1CampaignPersistence.SavePath);
+        return new(movement.Ports, new(facts, actions, checkpoints, save, new GodotRac1MissionDiagnosticUi(() => _ui)));
+    }
+
+    private Rac1LootDiagnosticHarness CreateRac1LootDiagnosticHarness()
+    {
+        var movement = CreateMovementDiagnosticHarness(); var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
+        var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values], IsRac1GameplayActive,
+            (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
+            id => _rac1Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
+        var loot = new GodotRac1LootDiagnosticFixture(new()
+        {
+            Read = () => new(ObpSourceGame.Rac1, _rac1BoltWallet.Balance, Rac1HudProjection.Capture(_rac1Nanotech, _rac1Weapons, _rac1BoltWallet).Bolts?.Balance,
+                _rac1PickupSoundCount, _rac1Nanotech.Probe().Nanotech, _rac1Weapons.FirstRangedAmmo, _rac1BoltCrates.OutstandingPickupCount,
+                [.. _rac1Debris.Select(piece => piece.Motion.NativeClassId)],
+                [.. _rac1PickupMotion.Select(pair => new Rac1LootMotionDiagnostic(pair.Key, pair.Value.NativeClassId, pair.Value.NativeState, pair.Value.Position,
+                    GodotMovementPlayer.Copy(FromEffectNative(pair.Value.Position))))],
+                [.. _rac1AmmoPickups.Select(pickup => new Rac1AmmoPickupDiagnostic(new(ObpSourceGame.Rac1, pickup.Motion.Definition.Item), pickup.Motion.Definition.Amount,
+                    pickup.Motion.Position, pickup.Motion.Velocity, pickup.Motion.DelayTicks, _rac1Weapons.GetAmmo(pickup.Motion.Definition.Item)))],
+                [.. _rac1NanotechClouds.Select(cloud => cloud.Motion.Attracting)],
+                _rac1PickupNodes.Values.All(node => GodotWeaponModelFacts.Read(node).OriginalMeshes)),
+            Pending = () => _rac1PendingPlacedBolts.Count,
+            Placed = () => _rac1PlacedBolts,
+            PlacedNodes = () => _rac1PlacedBoltNodes,
+            Motions = () => _rac1PickupMotion,
+            PickupNodes = () => _rac1PickupNodes,
+            Random = () => Rac1EffectRandom,
+            ToNative = ToEffectNative,
+            FromNative = FromEffectNative,
+            Orientation = FromEffectOrientation,
+            CrateBody = id => _rac1CrateBodies.ContainsKey(id),
+            Strike = node => TryStrikeRac1Crate(node),
+            Damage = () => _rac1Nanotech.ApplyDamage(Rac1DamageRuntime.FromClass749Attack(new(749, 149), new(34, 1))),
+        }, targets, worlds);
+        return new(movement.Ports, new(loot, targets, movement.Equipment, new GodotRac1LootDiagnosticCapture(this,
+            () => _world?.LevelId ?? throw new DiagnosticUnavailableException("The loot capture world is unavailable."), () => _ui, () => _player, new GodotDiagnosticFrameClock(this))));
+    }
+
     private WeaponDiagnosticHarness CreateWeaponDiagnosticHarness()
     {
         var movement = CreateMovementDiagnosticHarness();
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values],
-            IsRac1GameplayActive, StageRac1CrateForSmoke,
+            IsRac1GameplayActive, (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates),
             id => _rac1Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _rac1WrenchView, () => _playerAvatar,
             () => _playerAvatarAnimationController, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
@@ -1181,7 +1246,8 @@ public partial class OBPGame : Node3D
             () => new(_rac1PlayerAudio is not null, _world?.LevelId, _rac1PackSound, _rac1ThrownWrenchSound, _rac1WeaponLoop is not null,
                 _rac1WrenchThrow.Active, _rac1BoltCrates.DestroyedCrateCount, _rac1Nanotech.Probe().Nanotech, _rac1Nanotech.Probe().IsDead),
             ClearMovementSmokeInput, SetAnalogueSmokeInput, SetRac1SmokeConditionedInput, TryHandleInteractiveBack,
-            OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. _rac1CrateNodes], IsRac1GameplayActive, StageRac1CrateForSmoke, ApplyRac1EnemyPlayerDamage));
+            OnRac1WeaponSelectionRequested, SetRac1WeaponPreview, () => [.. _rac1CrateNodes], IsRac1GameplayActive,
+            (node, position) => GodotRac1CrateStaging.Place(node, position, _rac1FallingCrates), ApplyRac1EnemyPlayerDamage));
         var ports = new PlayerSessionDiagnosticPorts(player,
             new GodotPlayerObservations(() => _player, () => _playerAvatar?.Identity,
                 () => _playerPhysicsClock?.Tick ?? throw new DiagnosticUnavailableException("The native player clock is unavailable."), () => _playerNative?.Life.Capture().Current),

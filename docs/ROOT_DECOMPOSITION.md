@@ -101,6 +101,16 @@ the original fusion recording keys and simulated stick axes. Six exact
 composition/delegation entries expire with #342, #344, #352 and #367; the
 expired #340 placement delegation is removed. The frozen origin is unchanged.
 
+The #342 campaign/mission/loot extraction retires four more diagnostic partials
+and 23 historical declaration/member permissions. The measured root has 85
+files, 18,420 file lines, 640 direct methods, 456 fields (311 mutable), 44
+exposed members and 2,084 cross-file references. Campaign save/travel/checkpoint,
+the read-only mission observer, crate and placed-bolt suites use immutable
+observations and focused fixture actions. Two exact composition entries expire
+with the campaign owner #372 and pickup owner #369. The two remaining logical
+attack delegations are removed; source-native rules and the frozen origin stay
+with their existing owners.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

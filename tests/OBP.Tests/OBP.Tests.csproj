@@ -67,6 +67,16 @@
     <Compile Include="../../game/diagnostics/FusionWeaponScenarioSupport.cs" Link="Diagnostics/FusionWeaponScenarioSupport.cs" />
     <Compile Include="../../game/diagnostics/FusionWeaponsScenario.cs" Link="Diagnostics/FusionWeaponsScenario.cs" />
     <Compile Include="../../game/diagnostics/FusionWeaponRecordingScenario.cs" Link="Diagnostics/FusionWeaponRecordingScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1LootDiagnosticHarness.cs" Link="Diagnostics/Rac1LootDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/Rac1PlacedBoltScenario.cs" Link="Diagnostics/Rac1PlacedBoltScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CrateScenario.cs" Link="Diagnostics/Rac1CrateScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1LootDiagnosticPorts.cs" Link="Diagnostics/Rac1LootDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CampaignDiagnosticHarness.cs" Link="Diagnostics/Rac1CampaignDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/Rac1MissionPlayScenario.cs" Link="Diagnostics/Rac1MissionPlayScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CampaignScenario.cs" Link="Diagnostics/Rac1CampaignScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CampaignScenarioAssertions.cs" Link="Diagnostics/Rac1CampaignScenarioAssertions.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CampaignSaveDiagnostics.cs" Link="Diagnostics/Rac1CampaignSaveDiagnostics.cs" />
+    <Compile Include="../../game/diagnostics/Rac1CampaignDiagnosticPorts.cs" Link="Diagnostics/Rac1CampaignDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1WeaponDiagnosticPorts.cs" Link="Diagnostics/Rac1WeaponDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1WrenchScenario.cs" Link="Diagnostics/Rac1WrenchScenario.cs" />
     <Compile Include="../../game/diagnostics/WeaponDiagnosticHarness.cs" Link="Diagnostics/WeaponDiagnosticHarness.cs" />

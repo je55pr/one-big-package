@@ -58,7 +58,17 @@ public static class CoverageReport
         "game/diagnostics/FusionWeaponDiagnosticHarness.cs",
         "game/diagnostics/FusionWeaponScenarioSupport.cs",
         "game/diagnostics/FusionWeaponsScenario.cs",
-        "game/diagnostics/FusionWeaponRecordingScenario.cs" };
+        "game/diagnostics/FusionWeaponRecordingScenario.cs",
+        "game/diagnostics/Rac1LootDiagnosticHarness.cs",
+        "game/diagnostics/Rac1PlacedBoltScenario.cs",
+        "game/diagnostics/Rac1CrateScenario.cs",
+        "game/diagnostics/Rac1LootDiagnosticPorts.cs",
+        "game/diagnostics/Rac1CampaignDiagnosticHarness.cs",
+        "game/diagnostics/Rac1MissionPlayScenario.cs",
+        "game/diagnostics/Rac1CampaignScenario.cs",
+        "game/diagnostics/Rac1CampaignScenarioAssertions.cs",
+        "game/diagnostics/Rac1CampaignSaveDiagnostics.cs",
+        "game/diagnostics/Rac1CampaignDiagnosticPorts.cs" };
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
     public static CoverageSummary Write(string root, string coberturaPath, string openCoverPath, string output,

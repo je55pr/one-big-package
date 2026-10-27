@@ -37,6 +37,17 @@ public sealed class MovementDiagnosticDriver : IDisposable
     internal T Own<T>(T lease) where T : IDisposable => _run.Own(lease);
     public Task PhysicsAsync(int count = 1) => _run.WaitAsync(DiagnosticFramePhase.Physics, count);
     public Task ProcessAsync(int count = 1) => _run.WaitAsync(DiagnosticFramePhase.Process, count);
+    public async Task WaitUntilAsync(Func<bool> ready, int frames, string timeoutMessage)
+    {
+        if (frames < 0) throw new ArgumentOutOfRangeException(nameof(frames));
+        for (int i = 0; i < frames; i++)
+        {
+            _run.CancellationToken.ThrowIfCancellationRequested();
+            if (ready()) return;
+            await ProcessAsync();
+        }
+        throw new TimeoutException(timeoutMessage);
+    }
     public void SetAction(string action, bool pressed, float strength = 1)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

@@ -326,3 +326,40 @@ indexed the enemy map with the crate instance ID, interrupting Tesla feedback.
 The existing target predicate now accepts active non-enemy geometry through a
 checked lookup. The `--rac1-weapons-smoke` command checks that crate path and
 Tesla feedback; native damage and effective-range rules are unchanged.
+
+## Campaign, missions and loot (#342)
+
+The four campaign, mission-play, crate and placed-bolt partials are standalone
+suites. Campaign snapshots include level/admission order, map selection,
+checkpoint provenance and restart placement. Read-only file witnesses retain
+save bytes and paths inside their fixture; immutable persisted observations
+copy all recovered inventory slots, campaign tables, currency and collectible
+history. The existing source save schema, unknown native inventory fields and
+the separation from ordinary shared profiles are retained. Diagnostic campaign
+flows require an explicit source campaign save and reject a shared profile.
+
+Campaign travel, discovery and checkpoint/death injection remain explicit test
+actions. They do not infer unrecovered mission or checkpoint trigger producers.
+Opening the planet map is also an explicit action: campaign observations never
+reset its selection or interrupt a travel handoff. The mission observer only
+reads native state and waits for frames; it creates no input, currency, unlocks
+or travel. Its hint is scoped, and closing/canceling a run cannot report a pass.
+Portable timelines check progression order, development/external-travel
+rejection, cancellation and headless refusal. A scripted timeline is not a human
+playthrough witness.
+
+Loot facts copy source-owned crate presence/contact outcomes, debris classes,
+pickup motion, wallet/HUD credit, ammo, health and audio counts. Authored bolt
+handles use the existing world-generation/source identity; witnesses retain
+final motion after collection and reject a retired world. Original staging,
+native frame counts, reward/range assertions and one/five-bolt denominations
+are retained. Geometry, frame-rate limits, input, capture cameras and mission
+hints have scoped cleanup. Optional image capture reports unavailable headlessly.
+
+The automated campaign, crate and placed-bolt wrappers default to headless mode
+and disable shared profiles. `-Render` explicitly requests a visible capture
+window. The human mission wrapper requires `-Interactive`; it remains a separate
+manual check. Automated native evidence covers fresh/restored/corrupt campaign
+files, mission restart and headless refusal, Veldin/Novalis crates, and authored
+bolts on Veldin/Batalia/Pokitaru. The ten linked engine-free files have exact
+coverage permissions; native scene adapters remain outside portable coverage.

@@ -15,9 +15,11 @@ param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
     [string]$Godot,
     [string]$OutputDirectory,
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$Interactive
 )
 $ErrorActionPreference = 'Stop'
+if (-not $Interactive) { throw 'This observer needs a human playthrough. Pass -Interactive to open its game window explicitly.' }
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $Rac1Iso -or -not (Test-Path -LiteralPath $Rac1Iso -PathType Leaf)) {
     throw 'An authorized supported R&C1 ISO is required.'
@@ -46,7 +48,7 @@ foreach ($pass in 1..2) {
     Write-Host "Mission play pass $pass/2; save/logs: $OutputDirectory" -ForegroundColor Cyan
     & $Godot '--windowed' '--path' (Join-Path $root 'game') '--rendering-method' 'gl_compatibility' '--log-file' $log '--' `
         '--rac1-iso' $Rac1Iso '--destination' $destination '--fixed-seed' '1440' `
-        '--rac1-mission-play-smoke' '--rac1-campaign-save' $state
+        '--rac1-mission-play-smoke' '--no-profile' '--rac1-campaign-save' $state
     if ($LASTEXITCODE -ne 0) { throw "Mission play pass $pass failed (exit $LASTEXITCODE). See $log" }
     if (-not (Select-String -LiteralPath $log -SimpleMatch '[rac1-mission-play] PASS' -Quiet)) {
         throw "Mission play pass $pass was cancelled before PASS. See $log"

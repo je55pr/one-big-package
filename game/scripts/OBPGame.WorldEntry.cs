@@ -60,14 +60,14 @@ public partial class OBPGame
                     new WorldSmokeHarness.Entrypoints(definition => CreateRac1EncounterDiagnosticHarness().CreateVeldin(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateMovementContact(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateCombat(definition),
-                        RunRac1CampaignSmokeAsync, definition => CreateMovementDiagnosticHarness().CreateMovement(definition),
-                        RunRac1CrateSmokeAsync, RunRac1PlacedBoltSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateWrench(definition),
+                        definition => CreateRac1CampaignDiagnosticHarness().CreateCampaign(definition), definition => CreateMovementDiagnosticHarness().CreateMovement(definition),
+                        definition => CreateRac1LootDiagnosticHarness().CreateCrates(definition), definition => CreateRac1LootDiagnosticHarness().CreatePlacedBolts(definition), definition => CreateWeaponDiagnosticHarness().CreateWrench(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateEnemies(definition), RunMovementStateSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateBomb(definition),
                         definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
                         RunRac1NovalisMusicSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
-                        RunRac1MetropolisTaxiSmokeAsync, RunRac1MissionPlaySmokeAsync, RunRac1NovalisRouteSmokeAsync,
+                        RunRac1MetropolisTaxiSmokeAsync, definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), RunRac1NovalisRouteSmokeAsync,
                         definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
                     new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>

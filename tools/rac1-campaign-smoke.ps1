@@ -17,7 +17,8 @@
 param(
   [string]$Rac1Iso = $env:OBP_RAC1_ISO,
   [string]$RenderingMethod = 'gl_compatibility',
-  [switch]$SkipBuild
+  [switch]$SkipBuild,
+  [switch]$Render
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,13 +50,14 @@ $commonArgs = @(
   '--',
   '--rac1-iso', $Rac1Iso,
   '--rac1-campaign-smoke',
+  '--no-profile',
   '--rac1-campaign-save', $statePath
 )
 
 try {
   foreach ($pass in 1..2) {
     Write-Host "R&C1 campaign smoke pass $pass/2" -ForegroundColor Cyan
-    $windowArgs = @(Get-ObpWindowArguments)
+    $windowArgs = if ($Render) { @(Get-ObpWindowArguments) } else { @('--headless') }
     & $godot @windowArgs @commonArgs
     if ($LASTEXITCODE -ne 0) {
       Write-Error "R&C1 campaign smoke pass $pass failed (exit $LASTEXITCODE)."
