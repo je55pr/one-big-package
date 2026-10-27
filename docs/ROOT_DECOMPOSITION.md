@@ -147,6 +147,28 @@ presentation #356 and final world-entry composition #376. Both old Lab origin
 permissions retire; the frozen origin does not expand. Ordinary Lab presentation
 retains room/station labels and hides development status/help captions.
 
+The #346 source/setup extraction retires both assigned root partials and their
+30 historical declaration/member permissions, plus the expired startup-visibility
+bridge and its external access. The root now has 71 files, 16,612 file lines,
+592 methods, 435 fields (292 mutable), 43 exposed members and 1,879 cross-file
+references. One source coordinator owns the library, bounded stamp/probe cache,
+explicit ordinary/diagnostic admission, recovery and consumer invalidation; its
+small controller owns the setup view and generation-scoped picker callbacks.
+The player session/profile remains with its existing owner and saving is suspended
+before repair tears down the world. Changed sources retire pending verification,
+actor caches and equipment preparation; explicit successful repair prepares them
+again. Unchanged files retain the existing cached authority verification rather
+than a full-disc hash on each launch. Ordinary canvases hide source preparation
+status, and UI observations include sibling application overlays.
+Eight exact composition/compatibility entries expire with navigation #347,
+profile #349 and final world-entry composition #376. The frozen root origin does
+not expand; three existing source-world adapter fingerprints change only to read
+the same source library through its owner, with their native rationale retained.
+The source coordinator and physical storage have no engine dependency; focused
+source-free tests exercise admission, recovery, replacement and profile-suspension
+state. Engine startup/source-loss, UI and replay checks retain the existing wire
+formats, native input phases and explicit nonzero failures.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

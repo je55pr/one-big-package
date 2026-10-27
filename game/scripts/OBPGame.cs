@@ -30,6 +30,32 @@ public partial class OBPGame : Node3D
 {
     private enum Mode { Smoke, Picker, Selector, World, Title }
 
+    private SourceSetupController? _sourceSetup;
+    private SourceSetupController Sources => _sourceSetup ??= CreateSourceSetup();
+    public void ShowSourceManagerFromBootstrap() => Sources.ShowForStartup();
+    public void RememberCommandLineSource(ObpSourceGame game, string path, bool persist = true) => Sources.Remember(game, path, persist);
+    public bool RequireStartupSetup() => Sources.RequireOrdinary("startup");
+    private SourceSetupController CreateSourceSetup()
+    {
+        var setup = new SourceSetupCoordinator(TrilogySourceDefinitions.All,
+            _args.SourceConfigPath ?? ProjectSettings.GlobalizePath("user://sources.json"),
+            SourceSetupPolicy.Resolve(_args, OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()), new PhysicalSourceSetupStorage(),
+            new GodotSourceSetupConsumers(this, game => { CancelSourceVerification(game); ResetSharedWeaponAssets(); }, PrepareSharedWeaponSources),
+            message => GD.Print(message), message => GD.PrintErr(message));
+        return new(this, setup, new(EnsureRac1CampaignPersistenceInitialized, () =>
+        {
+            ClearTitleScreen(); _mode = Mode.Picker; _sceneKind = "sources";
+            TeardownWorld(); EnsurePlainEnvironment();
+            _destinationSelector?.QueueFree(); _destinationSelector = null;
+            if (_worldHud is not null && IsInstanceValid(_worldHud)) _worldHud.Visible = false;
+            _camera.Current = true; _activeCamera = _camera;
+        }, ShowTitleScreen, ShowDestinationSelector, ShowControllerSettingsFromMenu, AbandonFailedRac1Travel,
+            (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code)),
+            () => new(_profileStatus, _profileWriteBlocked, _rac1CampaignRestoreWarning), () => _debugOutputEnabled,
+            _hostOperations.Token, DisplayServer.GetName() == "headless" || AutomationRunPolicy.IsAutomated(OS.GetCmdlineUserArgs(), OS.GetCmdlineArgs()));
+    }
+
+
     private Node3D _worldRoot = null!;
     private Node3D _playerRoot = null!;
     private Node3D _cameraRoot = null!;
@@ -100,7 +126,13 @@ public partial class OBPGame : Node3D
         }
 
         BuildSkeleton();
-        if (!InitializeStartupSources()) return;
+        if (!Sources.InitializeStartup(_args))
+        {
+            GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
+            return;
+        }
+        if (GetNodeOrNull<SourceManagerBootstrap>("SourceManagerBootstrap") is { } bootstrap)
+            bootstrap.StartupVisibilityCheck = () => CreateUiDiagnosticHarness().Start("rac1-startup-visibility-smoke");
         if (_args.OrdinaryUiSmoke) CreateUiDiagnosticHarness().Start("ordinary-ui-smoke");
 
         // Dedicated deterministic fixture through the same playable Lab host
@@ -166,7 +198,7 @@ public partial class OBPGame : Node3D
         ReportHostOperationFailures();
         if (_hostOperations.Stopping) return;
         _frame++;
-        TickSourceSetup(delta);
+        Sources.Tick(delta, _mode is Mode.World or Mode.Selector or Mode.Title);
         TickFusionPreparation();
         TickActorPreparation();
         _worldScenes?.Current?.Resources.Effects?.PrepareTick();
@@ -309,6 +341,7 @@ public partial class OBPGame : Node3D
     private void ReleaseAudioForExit()
     {
         _hostOperations.Dispose();
+        _sourceSetup?.Dispose();
         RetireBugOverlayLifetime();
         if (_verification is { } verification) CancelSourceVerification(verification.Source.Game);
         SaveSharedProfile("clean exit");
@@ -825,8 +858,8 @@ public partial class OBPGame : Node3D
         },
             OnRac1WeaponSelectionRequested, OnRac1WeaponCycleRequested);
         return new(ports, water, environment, equipment, _activeDestination,
-            [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
-            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>
+            [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source =>
                 new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock), _hostOperations, _args.MovementCase);
     }
     internal Task CheckControllerWeaponInputAsync() => CreateMovementDiagnosticHarness().RunControllerAsync(_hostOperations.Token);
@@ -856,8 +889,8 @@ public partial class OBPGame : Node3D
             Assets = () => _fusionAssets,
             ReplaceAssets = assets => _fusionAssets = assets,
             Preparation = () => _fusionPreparation,
-            Sources = () => _sources,
-            ReplaceSources = sources => _sources = sources,
+            Sources = () => Sources.Setup.Library,
+            ReplaceSources = Sources.Setup.ReplaceDiagnosticLibrary,
             Views = () => [.. _fusionHeldViews],
             Animation = () => _playerAvatarAnimationController,
             Avatar = () => _playerAvatar,
@@ -876,7 +909,7 @@ public partial class OBPGame : Node3D
         }, new GodotDiagnosticFrameClock(this));
         return new(weapons, fixture,
             [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))],
-            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
     }
 
@@ -906,7 +939,7 @@ public partial class OBPGame : Node3D
             var dead = _rac1Nanotech.ApplyEnvironmentalDeathReset(); player.Rac1GameplayState = dead;
             return new(dead.Nanotech, dead.IsDead, dead.HasRecoveredEnvironmentalRespawn, _rac1Nanotech.EnvironmentalDeathGeneration);
         }, () => TryCompleteRac1EnvironmentalRestart(automatic: false));
-        var save = new Rac1CampaignSaveDiagnostics(() => new(ObpSourceGame.Rac1, _sources.Get(ObpSourceGame.Rac1)?.Identity.BuildId,
+        var save = new Rac1CampaignSaveDiagnostics(() => new(ObpSourceGame.Rac1, Sources.Setup.Library.Get(ObpSourceGame.Rac1)?.Identity.BuildId,
             !string.IsNullOrWhiteSpace(_args.Rac1CampaignSavePath), OrdinaryPlayerSession, _rac1CampaignPersistence.Enabled, _rac1SaveBatcher is not null,
             _rac1CampaignRestoreWarning is not null, _rac1CampaignRestoreKind), () => _args.Rac1CampaignSavePath, () => _rac1CampaignPersistence.SavePath);
         return new(movement.Ports, new(facts, actions, checkpoints, save, new GodotRac1MissionDiagnosticUi(() => _ui)));
@@ -1193,7 +1226,7 @@ public partial class OBPGame : Node3D
                 System.Text.Json.JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()), QuickSelectOpen, PauseMenuOpen, GetTree().Paused),
             () => _bugReports, () => _bugSessionId, () => _playtest);
         var acceptance = new OwnedDiagnosticAcceptanceReporter(() => _currentDestinationId, () => _args.AcceptanceOut,
-            () => new(DisplayServer.GetName() == "headless", [.. _sources.Attached.Values.Select(source => source.Identity)],
+            () => new(DisplayServer.GetName() == "headless", [.. Sources.Setup.Library.Attached.Values.Select(source => source.Identity)],
                 _playerSession?.Capture().Configuration, [.. ReadPlayerEquipment().Select(entry => new AcceptanceEquipment(entry.Definition.Id,
                     entry.Definition.SourceGame, entry.Definition.Implementation, entry.Usability, entry.Reason))]),
             message => GD.PrintErr(message), (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code));
@@ -1202,10 +1235,10 @@ public partial class OBPGame : Node3D
             CreateTrilogyPlayerDiagnosticFixture(), CreateTrilogyActorDiagnosticFixture(), navigation,
             token => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(token),
             () => CaptureDiagnosticIsolation.Isolated(SharedProfilePath, captures) && CaptureDiagnosticIsolation.Isolated(_bugReports?.Root, captures));
-        return _captureDiagnostics = new(new(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
+        return _captureDiagnostics = new(new(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
                 [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))]),
             ports, CreateMovementDiagnosticHarness().Ports, new GodotCaptureDiagnosticInputFactory(), new GodotCaptureDiagnosticTime(), acceptance,
-            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock),
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock),
             _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
     }
 
@@ -1283,7 +1316,7 @@ public partial class OBPGame : Node3D
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var menus = new GodotDiagnosticMenus(this, _worldRoot,
             () => new(_mode == Mode.Title, _mode == Mode.Selector, _mode == Mode.World, _mode == Mode.Picker,
-                _diagnosticSourceAccess, _sourceManager is not null, _titleScreen is not null, _world is not null,
+                (Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic), Sources.HasView, _titleScreen is not null, _world is not null,
                 _currentDestinationId, _profileDocument?.Destination, _profileWriteBlocked, null, false, false),
             () => new([], _player?.VisualRoot.FallbackVisible == true, _sceneResult is not null,
                 _player is not null && IsInstanceValid(_player), _playerAvatarView is not null && IsInstanceValid(_playerAvatarView),
@@ -1299,14 +1332,14 @@ public partial class OBPGame : Node3D
             },
             () => _titleScreen, () => _destinationSelector, () => _pauseMenu,
             ShowTitleScreen, ShowDestinationSelector, TryHandleInteractiveBack, TryOpenPauseMenu, TryClosePauseMenu);
-        return new(_args, !_diagnosticSourceAccess,
+        return new(_args, Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic,
             [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], menus,
             new DiagnosticPlayerContinuityAdapter(() => _playerSession?.Capture() ?? throw new DiagnosticUnavailableException("The player session is missing.")),
             new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),
-            new DiagnosticSourceRepairFixture(_sources.Remove, RequireOrdinarySourceSetup, () => _rac1CampaignSession),
+            new DiagnosticSourceRepairFixture(Sources.Setup.Library.Remove, Sources.RequireOrdinary, () => _rac1CampaignSession),
             new GodotRetailPauseFixture(this, () => _player, () => _pauseMenu, () => PauseMenuOpen, TryOpenPauseMenu, TryClosePauseMenu, () => _rac1Weapons, worlds), worlds,
             new DiagnosticNavigationActions(destination => { OpenDestinationFromBootstrap(destination); return _world is not null && _currentDestinationId == destination; }),
-            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this)), _hostOperations,
             (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
     }
@@ -1318,7 +1351,7 @@ public partial class OBPGame : Node3D
             () => _fusion, () => _player, () => _playerAvatarView, () => _playerAvatar?.Identity, _playerRoot, _worldRoot,
             () => (_fusionProjectiles.Count, _fusionAudioPlayers.Count, _fusionEffects.Count), () => _activeDestination is not null, () => _currentDestinationId),
             worlds, SelectWeaponKey, SetRac1WeaponPreview);
-        var sources = new DiagnosticSourceAttachmentFixture(_sources, RefreshPlayerSourceAvailability);
+        var sources = new DiagnosticSourceAttachmentFixture(Sources.Setup.Library, RefreshPlayerSourceAvailability);
         var navigation = new DiagnosticNavigationActions(destination => destination == "obp:fusion-lab" ? EnterFusionLab() :
             TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native));
         var menus = CreateUiDiagnosticHarness().Menus;
@@ -1353,12 +1386,11 @@ public partial class OBPGame : Node3D
             new DiagnosticRetiredActorProbe(() => [.. _rac1HostileNodes.Values], ApplyPlayerSourceDamage), health,
             () => PlayerEquipmentConfigurationIdentity, audio, _playerAudioDiagnosticEvents);
         return new(_args, [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], ports,
-            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code),
             message => GD.Print(message), message => GD.PrintErr(message));
     }
 
-    public void RunRac1StartupVisibilitySmokeFromBootstrap() => CreateUiDiagnosticHarness().Start("rac1-startup-visibility-smoke");
     private Task RunRac1VeldinRetailPauseSmokeAsync() => CreateUiDiagnosticHarness().RunVeldinPauseAsync(LegacyDiagnosticCancellation.Current);
     private Rac1WorldRouteDiagnosticHarness CreateRac1WorldRouteDiagnosticHarness()
     {
@@ -1377,7 +1409,7 @@ public partial class OBPGame : Node3D
                 [.. _worldHost.AudioDiagnostics.Select(item => item.Message)], _worldHost.AudioStatusLine), OnRac1NovalisCrankMusic, TickRac1NovalisMusic),
             CreateRac1TaxiDiagnosticFixture, ui, lifetime, ui.Menus,
             new DiagnosticNavigationActions(destination => TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native)),
-            new DiagnosticSourceAttachmentFixture(_sources, RefreshPlayerSourceAvailability));
+            new DiagnosticSourceAttachmentFixture(Sources.Setup.Library, RefreshPlayerSourceAvailability));
     }
 
     private IRac1TaxiDiagnosticFixture CreateRac1TaxiDiagnosticFixture() => new GodotRac1TaxiDiagnosticFixture(new()

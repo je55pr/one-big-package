@@ -74,7 +74,7 @@ public partial class OBPGame
     public Rac1DestinationDiscoveryResult ApplyRac1CampaignProgressionEvent(
         int progressionEventId)
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         Rac1DestinationDiscoveryResult result =
             _rac1CampaignSession.Campaign.ApplyProgressionEvent(progressionEventId);
 
@@ -91,7 +91,7 @@ public partial class OBPGame
     /// </summary>
     public Rac1ItemAcquisitionResult ApplyRac1ItemAcquisition(int nativeItemId)
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         EnsureRac1CampaignPersistenceInitialized();
 
         Rac1ItemAcquisitionResult result =
@@ -116,7 +116,7 @@ public partial class OBPGame
     /// </summary>
     public Rac1AmmoGrantResult ApplyRac1AmmoGrant(int nativeItemId, int amount)
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         EnsureRac1CampaignPersistenceInitialized();
 
         Rac1AmmoGrantResult result =

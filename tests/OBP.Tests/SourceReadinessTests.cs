@@ -123,6 +123,8 @@ public sealed class SourceReadinessTests
     {
         string[] tokens = options.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(diagnostic, SourceSetupPolicy.IsDiagnostic(CommandLineArgs.Parse(tokens), tokens, ["--headless"]));
+        Assert.Equal(diagnostic ? SourceAccessMode.ExplicitDiagnostic : SourceAccessMode.OrdinaryPlay,
+            SourceSetupPolicy.Resolve(CommandLineArgs.Parse(tokens), tokens, ["--headless"]));
         Assert.True(SourceSetupPolicy.IsDiagnostic(CommandLineArgs.Parse([]), [], ["--script", "res://tests/ci_bootstrap_smoke.gd"]));
     }
 }

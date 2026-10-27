@@ -139,7 +139,7 @@ public partial class OBPGame
         Assemblies = PlaytestAssemblyIds(),
         Weapons = FusionConfiguration,
         PlayerProfile = OrdinaryPlayerSession ? JsonSerializer.Deserialize<JsonElement>(CaptureSharedProfile().Encode()) : null,
-        Sources = OrdinaryPlayerSession ? _sources.Attached.Values.Select(source => source.Identity).OrderBy(source => source.Game).ToArray() : [],
+        Sources = OrdinaryPlayerSession ? Sources.Setup.Library.Attached.Values.Select(source => source.Identity).OrderBy(source => source.Game).ToArray() : [],
         Adapters = OrdinaryPlayerSession ? CaptureReplayAdapters() : [],
         ApplicationVersion = typeof(OBPGame).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown",
     };

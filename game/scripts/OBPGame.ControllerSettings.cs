@@ -212,7 +212,7 @@ public partial class OBPGame
         }
         else
         {
-            if (_sourceManager is not null) _sourceManager.Visible = false;
+            if (Sources.HasView) Sources.SetVisible(false);
             if (_destinationSelector is not null) _destinationSelector.Visible = false;
         }
 
@@ -244,7 +244,7 @@ public partial class OBPGame
         else if (!PauseMenuOpen)
         {
             ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
-            if (_sourceManager is not null) { _sourceManager.Visible = true; _sourceManager.RestoreFocus(); }
+            if (Sources.HasView) { Sources.SetVisible(true); }
             if (_destinationSelector is not null) _destinationSelector.Visible = true;
         }
 

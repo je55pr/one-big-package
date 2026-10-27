@@ -129,6 +129,7 @@ public sealed class UiDiagnosticScenarioTests
     [InlineData("focus", "controller focus")]
     [InlineData("back", "return to the title")]
     [InlineData("provenance", "provenance leaked")]
+    [InlineData("preparation", "provenance leaked")]
     [InlineData("save", "profile write")]
     [InlineData("session", "player session")]
     [InlineData("currency", "player session")]
@@ -139,6 +140,7 @@ public sealed class UiDiagnosticScenarioTests
         if (fault == "focus") menus.State = menus.State with { EnabledButtonFocused = false };
         if (fault == "back") menus.ReturnTitleOnBack = false;
         if (fault == "provenance") menus.Text = ["Attach source adapter"];
+        if (fault == "preparation") menus.Text = ["SHARED EQUIPMENT  ·  Preparing trilogy data"];
         if (fault == "save") profile.AllowWrite = true;
         if (fault == "session") repair.DuringRepair = () => player.State = player.State with { LoadoutJson = "reset" };
         if (fault == "currency") repair.DuringRepair = () => player.State = player.State with { CurrenciesJson = "reset" };

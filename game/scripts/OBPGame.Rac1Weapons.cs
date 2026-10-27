@@ -136,7 +136,7 @@ public partial class OBPGame
     private void AttachRac1EquipmentViews(Node3D avatarView)
     {
         AttachFusionWeaponViews(avatarView);
-        var source = _sources.Get(OBP.Core.ObpSourceGame.Rac1)!;
+        var source = Sources.Setup.Library.Get(OBP.Core.ObpSourceGame.Rac1)!;
         if (_rac1EquipmentAssets is null || _rac1EquipmentSource != source.Path)
         {
             _rac1EquipmentAssets = Rac1EquipmentAssets.Load(source.Path);

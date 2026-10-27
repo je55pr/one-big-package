@@ -39,7 +39,7 @@ public partial class OBPGame
         // An external provider/debug load is not permission to mutate a different
         // campaign. Ordinary current-level entry and actor/map travel are eligible.
         if (world.LevelId != _rac1CampaignSession.Campaign.CurrentLevel) return;
-        var source = _sources.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Mission actors require the retail source.");
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1) ?? throw new InvalidOperationException("Mission actors require the retail source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == world.LevelId);
         var gameplay = Rac1LevelSettings.ReadGameplay(reader, level);

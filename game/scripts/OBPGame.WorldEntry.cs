@@ -25,7 +25,7 @@ public partial class OBPGame
         string? sourcePath, FusionLabDefinition? lab = null)
     {
         _worldScenes?.CancelPreparation();
-        if (!RequireOrdinarySourceSetup("world entry")) return false;
+        if (!Sources.RequireOrdinary("world entry")) return false;
         try
         {
             var worldSourceStamp = SourceFileStamp(sourcePath);
@@ -50,7 +50,7 @@ public partial class OBPGame
             PrepareSelectedPlayerAssets();
             if (SourceFileStamp(sourcePath) != worldSourceStamp)
                 throw new InvalidDataException("The world source changed during preparation. Reattach it in Game Sources.");
-            if (!RequireOrdinarySourceSetup("world activation"))
+            if (!Sources.RequireOrdinary("world activation"))
                 return false;
             _worldEntries.Commit(plan, WorldScenes);
             _lastCommittedProfileDestination = destinationId;
@@ -68,9 +68,9 @@ public partial class OBPGame
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
                         definition => CreateRac1WorldRouteDiagnosticHarness().CreateMusic(definition), definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         definition => CreateRac1WorldRouteDiagnosticHarness().CreateTaxi(definition), definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), definition => CreateRac1WorldRouteDiagnosticHarness().CreateRoute(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
-                    new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source =>
+                    new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source =>
                         new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
                     new GodotDiagnosticFrameClock(this),
                     new ExistingDiagnosticWorld(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations.Token));
@@ -108,7 +108,7 @@ public partial class OBPGame
         ClearBootstrapSceneArtifacts();
         BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
         _destinationSelector?.QueueFree(); _destinationSelector = null;
-        _sourceManager?.QueueFree(); _sourceManager = null;
+        Sources.RetireView();
         ActivateWorld(entry.Plan.Prepared.World, entry.Resources, entry.NativeDestination, entry.Lab);
         entry.Resources.BindPlayer(_player);
     }
@@ -176,7 +176,7 @@ public partial class OBPGame
         {
             resources.Effects = new(resources.Scene.Root, worldId: effectScope.WorldInstanceId,
                 generation: effectScope.Generation, camera: () => GetViewport().GetCamera3D(),
-                sources: () => _sources.Attached.Values.ToArray(),
+                sources: () => Sources.Setup.Library.Attached.Values.ToArray(),
                 actorAlive: key => _actorWorld.Views.TryGetValue(key.Target, out var actor) && actor.Registration.Instance == key && actor.Observe().Alive,
                 placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
                     WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
@@ -209,8 +209,8 @@ public partial class OBPGame
             var scenario = new EffectsExperimentScenario(definition, effectsFixture,
                 new EffectDiagnosticNavigation(id => id == "obp:fusion-lab" ? EnterFusionLab() :
                     TrilogyWorldProviders.Resolve(id) is { } next && OnDestinationChosen(next)),
-                new DiagnosticSourceAttachmentFixture(_sources, () => { }), report, message => GD.Print(message));
-            var runner = new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(s => new DiagnosticSourceSnapshot(s.Game, s.Identity.BuildId, true))]),
+                new DiagnosticSourceAttachmentFixture(Sources.Setup.Library, () => { }), report, message => GD.Print(message));
+            var runner = new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(s => new DiagnosticSourceSnapshot(s.Game, s.Identity.BuildId, true))]),
                 new GodotDiagnosticFrameClock(this), new ExistingDiagnosticWorld(new GodotDiagnosticWorldObservations(WorldScenes).ReadWorld, _hostOperations.Token));
             DiagnosticScenarioDispatch.Start([scenario], _hostOperations, runner, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
         }

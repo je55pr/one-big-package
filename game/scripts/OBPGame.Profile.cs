@@ -10,6 +10,7 @@ namespace OBP.Game;
 
 public partial class OBPGame
 {
+    internal bool ProfileRecoveryRequired => _profileWriteBlocked;
     private ObpProfile? _profileDocument;
     private bool _profileInitialized, _profileWriteBlocked, _profileSaveFailed;
     private string? _profileStatus;
@@ -34,8 +35,8 @@ public partial class OBPGame
     }
 
     private IReadOnlyList<ProfileSource> CaptureProfileSources() => (_profileDocument?.Sources ?? [])
-        .Where(saved => !_sources.Attached.Values.Any(source => source.Game == saved.Game))
-        .Concat(_sources.Attached.Values.Select(source => new ProfileSource(source.Game,
+        .Where(saved => !Sources.Setup.Library.Attached.Values.Any(source => source.Game == saved.Game))
+        .Concat(Sources.Setup.Library.Attached.Values.Select(source => new ProfileSource(source.Game,
             source.Identity.BuildId, source.Identity.Sha256 ?? throw new InvalidDataException("Source has no authority digest."))
         { Extensions = _profileDocument?.Sources.SingleOrDefault(saved => saved.Game == source.Game)?.Extensions }))
         .OrderBy(source => source.Game).ToArray();
@@ -90,7 +91,7 @@ public partial class OBPGame
     private void ApplySharedProfile(ObpProfile profile)
     {
         profile.Validate();
-        profile.VerifyAvailableSources(_sources.Attached.Values.Select(source => new ProfileSource(source.Game,
+        profile.VerifyAvailableSources(Sources.Setup.Library.Attached.Values.Select(source => new ProfileSource(source.Game,
             source.Identity.BuildId, source.Identity.Sha256 ?? "")));
         var snapshot = profile.Player.Restore(DecodeProfileComponent);
         _playerNative!.ValidateRestore(new(snapshot.Loadout, snapshot.Health, snapshot.Currencies, snapshot.Components));
@@ -125,7 +126,7 @@ public partial class OBPGame
 
     private bool SaveSharedProfile(string reason)
     {
-        if (SharedProfilePath is not { } path || _playerSession is null || _profileWriteBlocked || _setupProfileSuspended || _playtest is not null) return false;
+        if (SharedProfilePath is not { } path || _playerSession is null || _profileWriteBlocked || Sources.Setup.ProfileSuspended || _playtest is not null) return false;
         try
         {
             var profile = CaptureSharedProfile(); byte[] bytes = profile.Encode();
@@ -155,7 +156,7 @@ public partial class OBPGame
 
     public bool TryResumeSharedProfileFromBootstrap()
     {
-        if (!RequireOrdinarySourceSetup("profile resume")) return false;
+        if (!Sources.RequireOrdinary("profile resume")) return false;
         EnsurePlayerSession();
         if (_profileWriteBlocked || _profileDocument?.Destination is not { } destination) return false;
         if (destination == "obp:fusion-lab") return EnterFusionLab();

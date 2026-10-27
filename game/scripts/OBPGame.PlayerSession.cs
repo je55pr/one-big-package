@@ -28,7 +28,7 @@ public partial class OBPGame
     {
         if (_playerSession is not null) return;
         _playerEntryMode = PlayerEntryMode;
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         bool diagnostic = PlayerEntryMode == WorldEntryMode.Diagnostic;
         var provider = diagnostic ? (IPlayerAvatarProvider)DiagnosticAvatarProvider.Instance : Rac1PlayerAvatarProvider.Instance;
         var avatar = new PlayerAvatarIdentity(provider.SourceGame, provider.BuildId, provider.DefaultAvatarId,
@@ -57,7 +57,7 @@ public partial class OBPGame
 
     private void RefreshPlayerSourceAvailability()
     {
-        _playerSession?.SetAttachedSources(_sources.Attached.Values.Select(source => source.Identity));
+        _playerSession?.SetAttachedSources(Sources.Setup.Library.Attached.Values.Select(source => source.Identity));
         _playerNative?.RefreshDevelopmentSources(PlayerEquipmentSources);
         RefreshPlayerEquipmentAvailability();
     }
@@ -74,7 +74,7 @@ public partial class OBPGame
         if (avatar.SourceGame == ObpSourceGame.Synthetic) return;
         var availability = _playerSession.Availability(avatar.SourceGame, avatar.BuildId, true, true);
         if (!availability.Usable) throw new InvalidOperationException(availability.Reason);
-        var source = _sources.Get(avatar.SourceGame)!;
+        var source = Sources.Setup.Library.Get(avatar.SourceGame)!;
         var file = new FileInfo(source.Path);
         if (!file.Exists || file.Length != source.SizeBytes) throw new InvalidOperationException("The selected avatar source is missing or has changed size. Reattach it in Game Sources.");
         var stamp = (file.Length, file.LastWriteTimeUtc.Ticks);
@@ -83,7 +83,7 @@ public partial class OBPGame
         if (_playerAvatar is null || _playerAvatarSourcePath != source.Path || _playerAvatarSourceGame != avatar.SourceGame || _avatarSourceStamp != stamp)
         {
             using var reader = new FileRandomAccessReader(source.Path);
-            var probe = _sources.Probe(reader);
+            var probe = Sources.Setup.Library.Probe(reader);
             if (!probe.Supported || probe.Definition?.Authority.BuildId != avatar.BuildId)
                 throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
             _playerAvatar = provider.Load(source.Path, avatar.AvatarId);

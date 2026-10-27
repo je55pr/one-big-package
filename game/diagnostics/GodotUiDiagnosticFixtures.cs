@@ -25,8 +25,9 @@ internal sealed class GodotDiagnosticMenus(Node owner, Node3D worldRoot,
         VisiblePlaceholders = [.. new[] { "SmokeCube", "Floor" }.Where(name =>
             worldRoot.GetNodeOrNull<MeshInstance3D>(name)?.IsVisibleInTree() == true)],
     };
-    public ImmutableArray<string> ReadVisibleText(DiagnosticMenuSurface surface) =>
-        GodotDiagnosticSurface.Read(surfaceNode(surface) ?? throw new DiagnosticUnavailableException("The requested UI surface is missing: " + surface));
+    public ImmutableArray<string> ReadVisibleText(DiagnosticMenuSurface surface) => surface == DiagnosticMenuSurface.Overlay
+        ? [.. owner.GetChildren().OfType<CanvasLayer>().SelectMany(layer => GodotDiagnosticSurface.Read(layer))]
+        : GodotDiagnosticSurface.Read(surfaceNode(surface) ?? throw new DiagnosticUnavailableException("The requested UI surface is missing: " + surface));
     public void ShowTitle() => showTitle();
     public void ShowWorldSelect() => showWorldSelect();
     public bool Back() => back();

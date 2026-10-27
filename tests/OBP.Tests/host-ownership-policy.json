@@ -14,14 +14,14 @@
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.OnDestinationChosen(ObpDestination)",
     "Kind": "adapter",
-    "Reason": "Resolve the native world provider and its own attached source, not player assets.",
-    "Hash": "62e07090f4377af103da13a941ab5ff95792e5b7ca52dd33062e18d849c26338"
+    "Reason": "Resolve the native world provider and its own attached source, not player assets. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. No origin permission or player-global selection is added.",
+    "Hash": "6dcbe66dead329f654891c9d284684a2d70412983d95997466652df2f7519f54"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TravelRac1CampaignTo(int)",
     "Kind": "adapter",
-    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy.",
-    "Hash": "6a8ea86e897baa286f99b4f2fa4b571b172862d48a8ff7ef0d1bc75e2b6ac2ff"
+    "Reason": "Recovered R&C1 campaign destination admission; source campaign travel is distinct from ordinary player policy. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. No origin permission or player-global selection is added.",
+    "Hash": "c1d17b36c3159d1af8919fead0465f09ed570fe18962f8990905d50844d5b63b"
   },
   {
     "Key": "game/scripts/OBPGame.Destinations.cs::OBPGame.TryOpenRac1PlanetMap()",
@@ -134,8 +134,8 @@
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisMusic.cs::OBPGame.ConfigureRac1NovalisMusic(RuntimeWorld)",
     "Kind": "adapter",
-    "Reason": "Original Novalis level music is world content, distinct from player/equipment audio profile.",
-    "Hash": "6f5904c08121f6fd1a985c72112cfe27c38b4659294c6f67550b5c9feb1a09e6"
+    "Reason": "Original Novalis level music is world content, distinct from player/equipment audio profile. #346 reads the same source-qualified library through SourceSetupCoordinator; SourceSetupCoordinatorTests cover replacement/retirement and source-loss/reconciliation engine checks retain native travel/music and player continuity. No origin permission or player-global selection is added.",
+    "Hash": "a60381de4d1777ec0e990e6bd7787d347db3ef0a5dd0f51d01a2928437042379"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1NovalisWater.cs::OBPGame.ConfigureRac1NovalisWater(RuntimeWorld)",

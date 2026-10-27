@@ -19,7 +19,7 @@ public partial class OBPGame
     private void ConfigureRac1CheckpointTriggers(RuntimeWorld world)
     {
         if (world.LevelId == 0) return;
-        var source = _sources.Get(ObpSourceGame.Rac1)
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1)
             ?? throw new InvalidOperationException("R&C1 checkpoint volumes require an attached retail source.");
         using var reader = new FileRandomAccessReader(source.Path);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(entry => entry.LevelId == world.LevelId);

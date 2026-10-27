@@ -28,7 +28,7 @@ public partial class OBPGame
     /// <summary>Deterministic/debug bootstrap entry used by --test-scene worlds.</summary>
     public void ShowDestinationSelectorFromBootstrap()
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         ShowDestinationSelector();
     }
 
@@ -38,14 +38,14 @@ public partial class OBPGame
     /// </summary>
     public void OpenDestinationFromBootstrap(string destinationId)
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         if (destinationId == "obp:fusion-lab") { EnterFusionLab(); return; }
         var destination = TrilogyWorldProviders.Resolve(destinationId);
         if (destination is null)
         {
             GD.PrintErr($"[destinations] unknown destination id '{destinationId}'");
-            BuildSourceManagerScreen();
-            _sourceManager?.SetStatus($"Unknown destination id '{destinationId}'. Use a canonical id such as rac2:LEVEL1.", error: true);
+            Sources.Show();
+            Sources.SetStatus($"Unknown destination id '{destinationId}'. Use a canonical id such as rac2:LEVEL1.", error: true);
             return;
         }
 
@@ -107,7 +107,7 @@ public partial class OBPGame
     /// </summary>
     public void OpenRac1CampaignCurrentFromBootstrap()
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
         OpenDestinationFromBootstrap(
             $"rac1:LEVEL{_rac1CampaignSession.Campaign.CurrentLevel}");
     }
@@ -120,7 +120,7 @@ public partial class OBPGame
     /// </summary>
     public Rac1PlanetTravelStartResult TravelRac1CampaignTo(int nativeLevelId)
     {
-        EnsureSourceLibraryInitialized();
+        Sources.Initialize();
 
         if (_world is not { Game.SourceGame: ObpSourceGame.Rac1 } current ||
             current.LevelId != _rac1CampaignSession.Campaign.CurrentLevel)
@@ -128,7 +128,7 @@ public partial class OBPGame
 
         var destination = TrilogyWorldProviders.Resolve($"rac1:LEVEL{nativeLevelId}");
         var provider = destination is null ? null : TrilogyWorldProviders.Find(destination.Game);
-        var source = _sources.Get(ObpSourceGame.Rac1);
+        var source = Sources.Setup.Library.Get(ObpSourceGame.Rac1);
         if (destination is null || destination.Game != ObpSourceGame.Rac1 ||
             provider is null || source is null || !provider.CanLoad(destination))
             return Rac1PlanetTravelStartResult.DestinationUnavailable;
@@ -225,8 +225,8 @@ public partial class OBPGame
 
     private void ShowDestinationSelector()
     {
-        EnsureSourceLibraryInitialized();
-        if (!RequireOrdinarySourceSetup("world selection")) return;
+        Sources.Initialize();
+        if (!Sources.RequireOrdinary("world selection")) return;
         ClearTitleScreen();
         _mode = Mode.Selector;
         _sceneKind = "destinations";
@@ -234,8 +234,7 @@ public partial class OBPGame
         TeardownWorld();
         EnsurePlainEnvironment();
 
-        _sourceManager?.QueueFree();
-        _sourceManager = null;
+        Sources.RetireView();
         if (_worldHud is not null && IsInstanceValid(_worldHud))
         {
             _worldHud.Visible = false;
@@ -246,12 +245,12 @@ public partial class OBPGame
         ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
 
         _destinationSelector?.QueueFree();
-        _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled, DiagnosticSources = _diagnosticSourceAccess };
+        _destinationSelector = new DestinationSelectorUi { DebugOutputEnabled = _debugOutputEnabled, DiagnosticSources = (Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic) };
         _destinationSelector.DestinationChosen += destination => OnDestinationChosen(destination);
         _destinationSelector.FusionLabRequested += () => EnterFusionLab();
         _destinationSelector.BackRequested += () => TryReturnSelectorToMenu();
         AddChild(_destinationSelector);
-        _destinationSelector.Populate(_sources, TrilogySourceDefinitions.All, TrilogyWorldProviders.All, _currentDestinationId);
+        _destinationSelector.Populate(Sources.Setup.Library, TrilogySourceDefinitions.All, TrilogyWorldProviders.All, _currentDestinationId);
 
         GD.Print($"[destinations] selector shown — {TrilogyWorldProviders.All.Count} runtime provider(s)");
     }
@@ -259,9 +258,9 @@ public partial class OBPGame
     private bool OnDestinationChosen(ObpDestination destination)
     {
         _worldScenes?.CancelPreparation();
-        if (!RequireOrdinarySourceSetup("destination entry")) return false;
+        if (!Sources.RequireOrdinary("destination entry")) return false;
         var provider = TrilogyWorldProviders.Find(destination.Game);
-        var source = _sources.Get(destination.Game);
+        var source = Sources.Setup.Library.Get(destination.Game);
         if (provider is null)
         {
             DestinationError($"No production world provider is registered for {destination.Game} yet.");
@@ -330,9 +329,9 @@ public partial class OBPGame
         {
             _destinationSelector.SetHint(_debugOutputEnabled ? message : "That world could not be opened. Please choose another world.", error: true);
         }
-        else if (_sourceManager is not null)
+        else if (Sources.HasView)
         {
-            _sourceManager.SetStatus(message, error: true);
+            Sources.SetStatus(message, error: true);
         }
     }
 

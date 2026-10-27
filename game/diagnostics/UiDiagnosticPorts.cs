@@ -54,7 +54,7 @@ public static class OrdinaryUiSurfacePolicy
     public static void Verify(IEnumerable<string> visibleText)
     {
         foreach (string text in visibleText)
-            if (Regex.IsMatch(text, @"game sources|source (needed|ready|connected|unavailable)|attach|\.iso\b|rac[123]-ntsc|shared profile|provider|adapter|build id|native destination",
+            if (Regex.IsMatch(text, @"game sources|source (needed|ready|connected|unavailable)|shared equipment|attach|\.iso\b|rac[123]-ntsc|shared profile|provider|adapter|build id|native destination",
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)))
                 throw new InvalidOperationException("Setup/provenance leaked into ordinary UI: " + text);
     }
