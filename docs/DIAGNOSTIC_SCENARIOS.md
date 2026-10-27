@@ -403,3 +403,70 @@ The source lease restores on cancellation/failure. Shared profiles are rejected
 before test actions; use `--no-profile`. The taxi wrapper defaults to headless
 mode; `-Render` opts into a visible window. The seven linked engine-free files
 have exact coverage permissions; scene adapters are not portable coverage.
+
+## Recording, reports, movement states and trilogy reconciliation (#344)
+
+The five capture suites are independent drivers. They use recorder/bookmark,
+report UI/archive, movement-save, trilogy-player and actor-cache ports; scene
+nodes, file paths, native controllers and mutable actor maps remain inside
+engine fixtures. The cached app harness owns acceptance evidence across the
+five-stop capture and its finished-recording continuation. Recording input is
+device zero and preserves logical-only versus physical-only keys separately
+from the shared movement driver's simulated controller. Physics, process and
+rendered post-draw waits retain their original signal phases. Terminal input
+stays held until the writer closes, then its input lease releases it.
+
+The exact route is R&C1 LEVEL0, R&C2 LEVEL1, R&C3 TABLE1, the Fusion Lab, then
+R&C1 LEVEL0. Source-qualified equipment, native shot timing, persistent profile,
+HUD, markers, completed-prefix bookmarks and post-recording clocks retain their
+original assertions. F7/F8 forms preserve paused/wheel state, exclude typed
+description keys from gameplay, export through the ordinary report API, and
+launch two fresh same-build replay children. Those process-frame polls retain
+their 90-second wall deadlines; an unpaced headless parent must not exhaust a
+60-Hz-derived frame budget while its child imports assets.
+
+Diagnostics require no shared profile or an isolated profile/report inbox under
+`captures` or the system temporary directory. The recording smoke wrapper uses
+`--no-profile` by default, or copies an explicit starting profile and backup into
+a unique system-temp directory, independent of the recording's output path.
+The wrapper removes those owned files on success or failure. Human recording
+retains its ordinary profile behavior. Movement-state files use a unique owned
+directory and restore the path override and frame-rate limit. Input,
+per-visit filters and invalidation probes have scoped cleanup. Teardown cancels
+owned operations; failures preserve their existing quit codes and evidence.
+Archives, profiles, movement states and source/build/digest identities retain
+their formats. No retail payload is added to the repository.
+
+Portable protocol goldens check the ordinary 499-physics/28-process sequence,
+both terminal routes, five-stop equipment/bookmark ordering and rejection of
+changed sessions, missing bookmarks and invalid finished-recording state. For
+private before/after runs, use Python 3's standard library:
+
+```text
+python tools/test-capture-parity.py
+python tools/compare-capture-parity.py <before-gate-directory> <after-gate-directory>
+```
+
+The comparator checks exact source/profile/initial-state headers, ordered inputs
+and physics-aligned commands/markers with their frame phases, acceptance JSON
+and the mixed-actor trace digest. It also compares
+the complete deterministic ordinary tape after removing wall timestamps and
+requires fresh same-build replay matches in both runs. Bookmark flushes can add
+variable process waits and corresponding idle physics ticks before the next
+destination command. Five-stop physics alignment resets at that command; input
+timing within each world stays exact. Build assembly names stay exact, while
+their IDs and the informational version's
+full Git commit suffix differ between revisions and are excluded only from the
+cross-build header comparison; the semantic application version remains exact.
+Same-build replay checks are unchanged. Missing/incomplete evidence fails
+explicitly. Evidence archives
+stay private and ignored; the comparator emits no payloads or machine paths.
+The ten engine-free files have exact portable coverage permissions; engine
+fixtures remain outside that coverage claim.
+
+The ordinary recording wrapper also checks Veldin/Novalis, explicit build
+overrides, divergent checkpoints and incomplete archives. Its human-pacing
+fixture waits for the public partial recording to exist before counting 180
+process frames, uses ordinary F9 input to finish the tape, then closes through
+the normal window-close notification. Source preparation cannot consume that
+timing window. The paced recording must replay exactly in a fresh process.

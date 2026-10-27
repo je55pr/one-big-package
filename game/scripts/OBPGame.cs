@@ -45,7 +45,7 @@ public partial class OBPGame : Node3D
     // capture / smoke bookkeeping
     private string _sceneKind = "smoke";
     private readonly HostOperationScope _hostOperations = new();
-    private readonly AcceptanceEvidence _acceptanceEvidence = new();
+    private CaptureDiagnosticHarness? _captureDiagnostics;
     private readonly DiagnosticPlayerAudioCollector _playerAudioDiagnosticEvents = new();
 
     // the live world
@@ -149,25 +149,6 @@ public partial class OBPGame : Node3D
             _hostOperations.Start("capture", token => RunCaptureAsync(frame, token), lifetime: CancellationToken.None);
         }
     }
-
-    // Temporary composition bridges for the retained #338/#344 scenarios.
-    private void AcceptanceAssert(bool passed, string id, string detail) =>
-        _acceptanceEvidence.Assert(passed, id, _currentDestinationId, detail);
-
-    private void WriteAcceptanceEvidence(string phase, Exception? failure = null)
-    {
-        if (_args.AcceptanceOut is not { } path) return;
-        _acceptanceEvidence.Write(path, phase, new(
-            DisplayServer.GetName() == "headless",
-            [.. _sources.Attached.Values.Select(source => source.Identity)],
-            _playerSession?.Capture().Configuration,
-            [.. ReadPlayerEquipment().Select(entry => new AcceptanceEquipment(entry.Definition.Id,
-                entry.Definition.SourceGame, entry.Definition.Implementation, entry.Usability, entry.Reason))]), failure);
-    }
-
-    private void FinishAcceptanceFailure(string phase, Exception error, string reason) =>
-        AcceptanceEvidence.FinishFailure(error, reason, () => WriteAcceptanceEvidence(phase, error),
-            message => GD.PrintErr(message), (message, code) => ApplicationLifecycle.RequestQuit(this, message, code));
 
     public override void _PhysicsProcess(double delta)
     {
@@ -868,7 +849,6 @@ public partial class OBPGame : Node3D
     private static double WrapAngle(double value) => DiagnosticMovementMath.WrapAngle(value);
     private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
 
-    private Task RunFusionRecordingSmokeAsync() => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(LegacyDiagnosticCancellation.Current);
 
     private FusionWeaponDiagnosticHarness CreateFusionWeaponDiagnosticHarness()
     {
@@ -1188,6 +1168,128 @@ public partial class OBPGame : Node3D
         EndQueen = EndRac1QueenScriptedCamera,
     };
 
+    private CaptureDiagnosticHarness CreateCaptureDiagnosticHarness()
+    {
+        if (_captureDiagnostics is { } active) return active;
+        var clock = new GodotDiagnosticFrameClock(this);
+        var recorder = new GodotCaptureRecorderDiagnosticFixture(() => new()
+        {
+            RecorderPresent = _playtest is not null,
+            WaitingForEntry = _playtest?.WaitingForEntry == true,
+            PreparingWorld = _playtest?.PreparingWorld == true,
+            Finished = _playtest?.Finished == true,
+            PlayerPresent = _player is not null,
+            LevelId = _world?.LevelId,
+            Destination = _currentDestinationId,
+            Configuration = _playerSession?.Capture().Configuration,
+            ProfileJson = _playerSession is null ? "" : System.Text.Json.JsonSerializer.Serialize(OBP.Fusion.ProfilePlayer.Capture(_playerSession.Capture()) with { Generation = 0 }),
+            GenuineAvatar = _playerAvatarView is not null && _playerAvatar?.Identity == _playerSession?.Capture().Configuration.Avatar,
+            NativeProfile = _player?.ControlProfile == PlayerHostProfiles.Native,
+            PhysicsTicksPerSecond = Engine.PhysicsTicksPerSecond,
+            HudHealth = _hudState.Current.Health is not null,
+            HudBolts = _hudState.Current.Bolts is not null,
+            HudVisible = _playerHud?.Visible == true,
+            QuickSelectOpen = QuickSelectOpen,
+            PauseOpen = PauseMenuOpen,
+            TreePaused = GetTree().Paused,
+            PhysicsTick = _playerPhysicsClock?.Tick ?? 0,
+            PlayerNode = _player?.GetInstanceId(),
+            Shots = _fusion?.ShotsFired ?? 0,
+        }, (width, height) => GetWindow().Size = new(width, height), () => _args.RecordPlaytest,
+            path => _playtest!.RequestBookmark(path), () => _playtest!.Save());
+        var navigation = new DiagnosticNavigationActions(destination => destination == "obp:fusion-lab" ? EnterFusionLab() :
+            TrilogyWorldProviders.Resolve(destination) is { } native && OnDestinationChosen(native));
+        var equipment = new CaptureEquipmentActions((slot, item) => AssignPlayerQuickSelect(slot, item).Accepted, item => SelectPlayerEquipment(item).Accepted);
+        var reports = new GodotBugReporterDiagnosticFixture(this, () => _bugReportUi, () => BugReportModalOpen,
+            () => new(GodotMovementPlayer.Copy(_player!.GlobalPosition), _rac1BoltWallet.Balance,
+                System.Text.Json.JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()), QuickSelectOpen, PauseMenuOpen, GetTree().Paused),
+            () => _bugReports, () => _bugSessionId, () => _playtest);
+        var acceptance = new OwnedDiagnosticAcceptanceReporter(() => _currentDestinationId, () => _args.AcceptanceOut,
+            () => new(DisplayServer.GetName() == "headless", [.. _sources.Attached.Values.Select(source => source.Identity)],
+                _playerSession?.Capture().Configuration, [.. ReadPlayerEquipment().Select(entry => new AcceptanceEquipment(entry.Definition.Id,
+                    entry.Definition.SourceGame, entry.Definition.Implementation, entry.Usability, entry.Reason))]),
+            message => GD.PrintErr(message), (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code));
+        var captures = ProjectSettings.GlobalizePath("res://../captures");
+        var ports = new CaptureDiagnosticPorts(recorder, equipment, reports, CreateMovementStateDiagnosticFixture,
+            CreateTrilogyPlayerDiagnosticFixture(), CreateTrilogyActorDiagnosticFixture(), navigation,
+            token => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(token),
+            () => CaptureDiagnosticIsolation.Isolated(SharedProfilePath, captures) && CaptureDiagnosticIsolation.Isolated(_bugReports?.Root, captures));
+        return _captureDiagnostics = new(new(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
+                [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))]),
+            ports, CreateMovementDiagnosticHarness().Ports, new GodotCaptureDiagnosticInputFactory(), new GodotCaptureDiagnosticTime(), acceptance,
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock),
+            _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
+    }
+
+    private IMovementStateDiagnosticFixture CreateMovementStateDiagnosticFixture() => new GodotMovementStateDiagnosticFixture(new()
+    {
+        Player = () => _player,
+        Enemies = () => [.. _rac1Enemies.Values.Select(enemy => enemy.Node)],
+        Crates = () => [.. _rac1CrateNodes],
+        Active = IsRac1GameplayActive,
+        Damage = ApplyRac1EnemyWeaponDamage,
+        Strike = node => TryStrikeRac1Crate(node),
+        Read = () => new([.. _rac1Enemies.Values.Select(enemy => new MovementStateEnemyDiagnostic(new(ObpSourceGame.Rac1, enemy.Node.Source.NativeClassId,
+                enemy.Node.Source.InstanceIndex), IsRac1GameplayActive(enemy.Node), enemy.Node.Root.Visible, enemy.Body.CollisionLayer, enemy.RewardEmitted))],
+            [.. _rac1CrateNodes.Select(node => new MovementStateCrateDiagnostic(new(ObpSourceGame.Rac1, node.Source.NativeClassId, node.Source.InstanceIndex),
+                IsRac1GameplayActive(node), _rac1CrateBodies.ContainsKey(node.Source.InstanceIndex)))], _rac1BoltCrates.DestroyedCrateCount,
+            _rac1Weapons.Equipped, _rac1Weapons.FirstRangedAmmo, _rac1BoltWallet.Balance, _rac1PickupMotion.Keys.Any(id => id > 0)),
+        Consume = () => { OnRac1WeaponSelectionRequested(Rac1WeaponId.FirstRanged); return _rac1Weapons.TryUseEquipped(); },
+        Credit = amount => _rac1BoltWallet.Credit(amount),
+        Loading = () => _movementStateLoading,
+        Override = () => _movementStatePathOverride,
+        SetOverride = path => _movementStatePathOverride = path,
+        Path = () => MovementStatePath,
+        Load = async (path, frames, token) =>
+        {
+            var result = await LoadMovementStateAsync(path, recordFrames: frames, cancellationToken: token); token.ThrowIfCancellationRequested();
+            if (result is null) throw new InvalidOperationException("Movement state load/replay failed.");
+            return [.. result.Select(sample => new MovementStateReplayDiagnostic(sample.Position, sample.ControlHeading))];
+        },
+        Forward = async (frames, token) => [.. (await RecordForwardMovementReplayAsync(frames, token)).Select(sample => new MovementStateReplayDiagnostic(sample.Position, sample.ControlHeading))],
+    });
+
+    private ITrilogyPlayerDiagnosticFixture CreateTrilogyPlayerDiagnosticFixture() => new GodotTrilogyPlayerDiagnosticFixture(this, new()
+    {
+        Session = () => _playerSession!,
+        Player = () => _player,
+        Scene = () => _sceneResult!.Root,
+        Read = () => new(OrdinaryPlayerSession, _playerNative is not null, PlayerPresentationAssets is not null, _rac1PlayerAudio is not null,
+            _rac1HeldItem.Hand.WrenchHeld, _playerPhysicsClock?.Tick ?? 0, _fusion?.ShotsFired ?? 0, _pauseMenu?.UniversalEnabled == true,
+            _pauseMenu?.RetailEnabled == true, _rac1PyroEmitting, _rac1Particles?.Live.Any(particle => particle.Type == 12) == true,
+            _rac1ParticleView?.RenderedCount ?? 0, _playerNative?.Life.Capture().Current ?? 0, GodotMovementPlayer.Copy(_player?.GlobalPosition ?? Vector3.Zero),
+            _player?.Rac1CurrentYaw ?? 0, _fusionAcceptedHits, _fusionProjectiles.Count, _fusionAudioPlayers.Count),
+        ResetAudio = () => { _rac1PlayerAudioRandom = Rac1PickupRandom.FromSeed(1440); _selectedPlayerAudioTrace.Clear(); },
+        Audio = () => [.. _selectedPlayerAudioTrace.Select(cue => new TrilogyAudioDiagnostic(cue.Source, cue.Build, cue.Level, cue.Class, cue.Sound, cue.LevelSound, cue.Loop, cue.Tick))],
+        Trial = token => CreatePlayerDiagnosticHarness().CaptureTrialAsync(token),
+        OpenPause = TryOpenPauseMenu,
+        PauseSection = section => _pauseMenu!.ShowUniversalSection(section),
+        ClosePause = () => TryClosePauseMenu(),
+        Equipment = () => [.. ReadPlayerEquipment().Select(entry => new TrilogyEquipmentDiagnostic(entry.Definition.Id, entry.Definition.Item,
+            entry.Selectable, entry.Reason, entry.Definition.Item is { } item ? _fusion!.Status(item).Ammo : 0))],
+        Respawn = () => _playerNative!.Life.Respawn(),
+    });
+
+    private ITrilogyActorDiagnosticFixture CreateTrilogyActorDiagnosticFixture() => new GodotTrilogyActorDiagnosticFixture(new()
+    {
+        World = () => _actorWorld,
+        Sources = () => ActorSources,
+        Rac2Animation = () => _rac2OpeningMsr1.Count == 1 && _rac2OpeningMsr1.Values.Single().Node.AnimationSample is not null,
+        Pump = TickActorPreparation,
+        Reset = id => ResetPlacedActor(id).Accepted,
+        ResetEncounter = () => { ClearFusionTransients(); _rac1EffectRandom = Rac1PickupRandom.FromSeed(1440); },
+        ClearSources = ClearActorSourceCaches,
+        ResetSharedAssets = ResetSharedWeaponAssets,
+        Prepare = PrepareActorSource,
+        DamageTarget = key => _playerDamageActors.Contains(key),
+        Scene = () => _sceneResult!.Root,
+        Enemies = () => _rac1Enemies.Count,
+        Hostiles = () => _rac1HostileNodes.Count,
+        FaultBindings = () => new(_rac1Hostiles, _rac1HostileNodes, _rac1Enemies, ObserveRac1Actor, ApplyRegisteredRac1Damage, ClearRegisteredActorTransients,
+            index => _rac1Captures.RemoveAll(capture => capture.Key == new Rac1MobyRuntimeKey(749, index)),
+            _ => throw new InvalidDataException("actor construction fixture"), _ => { }),
+    });
+
     private UiDiagnosticHarness CreateUiDiagnosticHarness()
     {
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
@@ -1256,9 +1358,9 @@ public partial class OBPGame : Node3D
             new GodotPlayerInputFixture(() => _player), navigation, menus, sources,
             new GodotWorldLifecycleFixture(this, WorldScenes, EnterFusionLab,
                 () => EnterWorld(DiagnosticWorldFailures.Destination, DiagnosticWorldFailures.Load, null, null)),
-            new GodotSessionOperationChecks(this, RunMovementStateSmokeAsync, () => _hostOperations.Stopping, message => GD.Print(message)),
+            new GodotSessionOperationChecks(this, token => CreateCaptureDiagnosticHarness().CheckMovementCancellationAsync(token), () => _hostOperations.Stopping, message => GD.Print(message)),
             equipment, ui, profile, new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),
-            new DiagnosticAcceptanceReporter(AcceptanceAssert, phase => WriteAcceptanceEvidence(phase), FinishAcceptanceFailure), samples,
+            CreateCaptureDiagnosticHarness().Acceptance, samples,
             new GodotCommonContactFixture(() => _sceneResult?.Root, () => _player),
             new DiagnosticRetiredActorProbe(() => [.. _rac1HostileNodes.Values], ApplyPlayerSourceDamage), health,
             () => PlayerEquipmentConfigurationIdentity, audio, _playerAudioDiagnosticEvents);

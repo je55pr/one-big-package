@@ -58,18 +58,46 @@ if ($FusionTest) { $engineArgs += '--fusion-test' }
 if ($DefaultWeaponsSmoke) { $engineArgs += '--default-weapons-smoke' }
 if ($Smoke) { $engineArgs += '--playtest-smoke' }
 if ($ReconciliationSmoke) { $engineArgs += '--reconciliation-smoke' }
-if ($Profile) { $engineArgs += @('--profile', [IO.Path]::GetFullPath($Profile)) }
-if ($CampaignSave) {
-    if (-not (Test-Path -LiteralPath $CampaignSave -PathType Leaf)) { throw 'Starting campaign save not found.' }
-    $isolatedCampaign = $Out + '.campaign.json'
-    if (Test-Path -LiteralPath $isolatedCampaign) { throw 'Starting campaign copy already exists.' }
-    Copy-Item -LiteralPath $CampaignSave -Destination $isolatedCampaign
-    $engineArgs += @('--rac1-campaign-save', $isolatedCampaign)
+$smokeProfileDirectory = $null
+try {
+    if ($Profile) {
+        $recordProfile = [IO.Path]::GetFullPath($Profile)
+        if ($Smoke -or $ReconciliationSmoke) {
+            $smokeProfileDirectory = Join-Path ([IO.Path]::GetTempPath()) ('obp-recording-profile-' + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path $smokeProfileDirectory | Out-Null
+            $isolatedProfile = Join-Path $smokeProfileDirectory 'profile.json'
+            foreach ($suffix in @('', '.bak')) {
+                if (Test-Path -LiteralPath ($recordProfile + $suffix) -PathType Leaf) {
+                    Copy-Item -LiteralPath ($recordProfile + $suffix) -Destination ($isolatedProfile + $suffix)
+                }
+            }
+            $recordProfile = $isolatedProfile
+        }
+        $engineArgs += @('--profile', $recordProfile)
+    }
+    elseif ($Smoke -or $ReconciliationSmoke) { $engineArgs += '--no-profile' }
+    if ($CampaignSave) {
+        if (-not (Test-Path -LiteralPath $CampaignSave -PathType Leaf)) { throw 'Starting campaign save not found.' }
+        $isolatedCampaign = $Out + '.campaign.json'
+        if (Test-Path -LiteralPath $isolatedCampaign) { throw 'Starting campaign copy already exists.' }
+        Copy-Item -LiteralPath $CampaignSave -Destination $isolatedCampaign
+        $engineArgs += @('--rac1-campaign-save', $isolatedCampaign)
+    }
+    Write-Host "Recording $Destination. F8 marks; F9 saves. Paused controller: Square marks, Select saves." -ForegroundColor Cyan
+    Write-Host "Run: $Out"
+    & $godot @engineArgs
+    $recordExit = $LASTEXITCODE
 }
-Write-Host "Recording $Destination. F8 marks; F9 saves. Paused controller: Square marks, Select saves." -ForegroundColor Cyan
-Write-Host "Run: $Out"
-& $godot @engineArgs
-$recordExit = $LASTEXITCODE
+finally {
+    if ($smokeProfileDirectory) {
+        foreach ($suffix in @('', '.bak')) {
+            $ownedProfile = Join-Path $smokeProfileDirectory ('profile.json' + $suffix)
+            if (Test-Path -LiteralPath $ownedProfile -PathType Leaf) { Remove-Item -LiteralPath $ownedProfile -Force }
+        }
+        # Non-recursive: unexpected files cannot cause deletion outside this owned copy.
+        Remove-Item -LiteralPath $smokeProfileDirectory
+    }
+}
 if ($recordExit -ne 0) { exit $recordExit }
 if (-not (Test-Path -LiteralPath $Out -PathType Leaf)) { throw 'No completed recording was saved; inspect the log/partial file.' }
 Write-Host "Saved run: $Out" -ForegroundColor Green

@@ -99,11 +99,11 @@ public partial class OBPGame
                 Game.SetPhysicsProcess(false); Game._player?.SetPhysicsProcess(false);
             }
             if (Game._args.PlaytestSmoke && Reader is null && WaitingForEntry)
-                Callable.From(() => { _ = Game._args.FusionTest || Game._args.DefaultWeaponsSmoke ? Game.RunFusionRecordingSmokeAsync() : Game.RunPlaytestRecordingSmokeAsync(); }).CallDeferred();
+                Callable.From(() => Game.CreateCaptureDiagnosticHarness().StartRecording(Game._args.FusionTest || Game._args.DefaultWeaponsSmoke)).CallDeferred();
             if (Game._args.BugReportSmoke && Reader is null && WaitingForEntry)
-                Callable.From(() => { _ = Game.RunBugReporterSmokeAsync(); }).CallDeferred();
+                Callable.From(() => Game.CreateCaptureDiagnosticHarness().StartReports()).CallDeferred();
             if (Game._args.ReconciliationSmoke && Reader is null && WaitingForEntry)
-                Callable.From(() => { _ = Game.RunReconciliationRecordingSmokeAsync(); }).CallDeferred();
+                Callable.From(() => Game.CreateCaptureDiagnosticHarness().StartReconciliation()).CallDeferred();
         }
 
         public override void _PhysicsProcess(double delta) => Begin(PlaytestStepKind.Physics, delta);
@@ -399,15 +399,18 @@ public partial class OBPGame
                 await _flush;
                 SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
                 GD.Print($"[playtest] SAVED {_writer.Path}; steps={_nextStep}; markers={_marks}");
-                if (Game._args.ReconciliationSmoke) await Game.VerifyFinishedCaptureContinuationAsync();
-                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke || Game._args.EffectsSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
+                if (Game._args.ReconciliationSmoke) await Game.CreateCaptureDiagnosticHarness().VerifyFinishedContinuationAsync();
+                if (!Game._hostOperations.Stopping && (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke || Game._args.EffectsSmoke))
+                    ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
             }
+            catch (OperationCanceledException error) when (Game._hostOperations.Stopping && error.CancellationToken == Game._hostOperations.Token)
+            { /* Durable tape committed; the host's original quit still owns the canceled continuation. */ }
             catch (Exception error)
             {
                 _recordingError = error.Message;
                 SetNotice("Recording could not be saved: " + error.Message);
                 GD.PrintErr("[playtest] save failed: " + error.Message);
-                if (Game._args.ReconciliationSmoke) Game.FinishAcceptanceFailure("capture-route", error, "playtest-save-failed");
+                if (Game._args.ReconciliationSmoke) Game.CreateCaptureDiagnosticHarness().Acceptance.Fail("capture-route", error, "playtest-save-failed");
                 else if (Game._args.PlaytestSmoke || Game._args.EffectsSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-save-failed", 2);
                 if (Game._hostOperations.Stopping) throw;
             }

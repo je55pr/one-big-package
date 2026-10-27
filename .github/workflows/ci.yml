@@ -26,6 +26,8 @@ jobs:
       - run: dotnet restore OneBigPackage.sln
       - run: dotnet format OneBigPackage.sln --verify-no-changes --no-restore --verbosity minimal
       - run: dotnet build OneBigPackage.sln -c Release --no-restore --nologo -warnaserror
+      - name: Capture parity comparator regressions
+        run: python3 tools/test-capture-parity.py
       - name: Portable tests and validated managed coverage
         shell: pwsh
         run: ./tools/test-coverage.ps1 -Configuration Release -NoBuild

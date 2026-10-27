@@ -4,7 +4,7 @@ using OBP.Godot;
 namespace OBP.Game.Diagnostics;
 
 /// <summary>Existing real-engine signal/capture ownership proof, independent of the production root's private state.</summary>
-internal sealed class GodotSessionOperationChecks(Node owner, Func<CancellationToken, Task> movementStateCheck,
+internal sealed class GodotSessionOperationChecks(Node owner, Func<CancellationToken, Task<DiagnosticRunStatus>> movementStateCheck,
     Func<bool> hostStopping, Action<string> log) : IDiagnosticSessionEngineChecks
 {
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -40,8 +40,8 @@ internal sealed class GodotSessionOperationChecks(Node owner, Func<CancellationT
         catch (OperationCanceledException error) when (error.CancellationToken == canceled.Token) { }
         Require(!metadataRead && !File.Exists(output), "canceled capture accessed a retired viewport or wrote an output");
         using var retiredDiagnostic = new CancellationTokenSource(); retiredDiagnostic.Cancel();
-        await movementStateCheck(retiredDiagnostic.Token);
-        Require(!hostStopping(), "expected diagnostic cancellation requested a failing quit");
+        var status = await movementStateCheck(retiredDiagnostic.Token);
+        Require(status == DiagnosticRunStatus.Canceled && !hostStopping(), "expected diagnostic cancellation was not observed or requested a failing quit");
         log("[player-session-smoke] PASS: canceled host/render waits drain, disconnect and publish no capture");
     }
     private static void Require(bool condition, string detail) { if (!condition) throw new InvalidOperationException(detail); }

@@ -86,7 +86,12 @@ if ($invalid.Error -notlike '*incomplete*') { throw 'Missing completion record w
 $manifest = Get-Content (Join-Path $PSScriptRoot 'godot-toolchain.json') -Raw | ConvertFrom-Json
 $godot = Join-Path $root ".tools/godot/$($manifest.godot.artifacts.win64.exe)"
 $pacedRun = Join-Path $output 'paced.run.jsonl.gz'
-& $godot --headless --path (Join-Path $root 'game') --rendering-method gl_compatibility --fixed-fps 60 --quit-after 180 --log-file ($pacedRun + '.log') -- --destination rac1:LEVEL0 --record-playtest $pacedRun --fixed-seed 1440 --rac1-iso $Rac1Iso | Out-Null
+$pacedArguments = @('--headless', '--path', (Join-Path $root 'game'), '--rendering-method', 'gl_compatibility', '--fixed-fps', '60',
+    '--script', 'res://tests/playtest_pacing_smoke.gd', '--log-file', ($pacedRun + '.log'), '--', '--destination', 'rac1:LEVEL0',
+    '--record-playtest', $pacedRun, '--fixed-seed', '1440', '--rac1-iso', $Rac1Iso, '--no-profile')
+if ($env:OBP_GC_ISO) { $pacedArguments += @('--rac2-iso', $env:OBP_GC_ISO) }
+if ($env:OBP_UYA_ISO) { $pacedArguments += @('--rac3-iso', $env:OBP_UYA_ISO) }
+& $godot @pacedArguments | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Paced recording failed.' }
 $reader = [IO.StreamReader]::new([IO.Compression.GZipStream]::new([IO.File]::OpenRead($pacedRun), [IO.Compression.CompressionMode]::Decompress))
 $processCount = 0

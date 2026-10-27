@@ -13,7 +13,7 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> CombatContract,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Campaign, Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Movement,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Crates = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlacedBolts = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Wrench = null,
-        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Enemies = null, Func<CancellationToken, Task>? MovementState = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Enemies = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MovementState = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? BombGlove = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisSwim = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisPeckbot = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisMusic = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Weapons = null,
@@ -60,7 +60,8 @@ internal static class WorldSmokeHarness
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No enemy diagnostic is bound."))),
         TypedCase("rac1-frog-smoke", a => a.Rac1FrogSmoke, (e, definition) => e.Frogs?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Frog diagnostic is bound."))),
-        Case("movement-state-smoke", a => a.MovementStateSmoke, (e, _, r) => e.MovementState?.Invoke(r.CancellationToken)),
+        TypedCase("movement-state-smoke", a => a.MovementStateSmoke, (e, definition) => e.MovementState?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No movement-state diagnostic is bound."))),
         TypedCase("rac1-placed-bolt-smoke", a => a.Rac1PlacedBoltSmoke, (e, definition) => e.PlacedBolts?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No placed-bolt diagnostic is bound."))),
         TypedCase("rac1-campaign-smoke", a => a.Rac1CampaignSmoke, (e, definition) => e.Campaign(definition)),

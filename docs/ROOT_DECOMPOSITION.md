@@ -121,6 +121,19 @@ source detachment during queued teardown and scene/audio/hull retirement have
 separate test ports. Two exact factory entries expire with #370/#371. The obsolete
 retail-navigation delegation is removed; the frozen origin is unchanged.
 
+The #344 recording/report extraction retires five more partials and 17 historical
+declaration/member permissions. After integrating the independently merged
+source-effects and shrub presentation changes, the root has 77 files, 17,409 file
+lines, 624 direct methods, 456 fields (312 mutable), 44 exposed members and 1,976 cross-file
+references. Independent recording, reconciliation, bug-report, movement-state
+and trilogy suites consume focused fixtures and immutable observations. The
+cached capture harness replaces the readonly evidence reference: its mutable
+nullable reference accounts for the one mutable-field increase. Its owned
+reporter retains the ordered acceptance collection across capture completion.
+Five exact composition permissions expire with recording #356, movement repro
+#358 and player/world wiring #359; five old evidence/recording bridge permissions
+retire. The frozen origin ledger is unchanged.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds
