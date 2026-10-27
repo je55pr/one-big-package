@@ -12,9 +12,9 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
     private readonly HashSet<DiagnosticPhysicalButton> _dirtyButtons = [];
     private readonly Dictionary<DiagnosticPhysicalAxis, List<(Lease Owner, float Value)>> _axes = [];
     private readonly HashSet<DiagnosticPhysicalAxis> _dirtyAxes = [];
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "S1244", Justification = "Axis ownership forwards the exact latest requested strength; tolerances would discard intentional input changes.")]
     private void SetAxis(Lease lease, DiagnosticPhysicalAxis value, float strength)
     {
-        if (!float.IsFinite(strength) || strength is < -1 or > 1) throw new ArgumentOutOfRangeException(nameof(strength));
         if (!_axes.TryGetValue(value, out var owners)) _axes[value] = owners = [];
         if (strength == 0 && !owners.Any(entry => entry.Owner == lease) && !_dirtyAxes.Contains(value)) return;
         var write = axis ?? throw new DiagnosticUnavailableException("Simulated stick axes are not bound.");
@@ -54,6 +54,8 @@ public sealed class DiagnosticPhysicalInput(Action<DiagnosticPhysicalKey, bool> 
         public void SetAxis(DiagnosticPhysicalAxis axis, float value)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (!Enum.IsDefined(axis)) throw new ArgumentOutOfRangeException(nameof(axis));
+            if (!float.IsFinite(value) || value is < -1 or > 1) throw new ArgumentOutOfRangeException(nameof(value));
             if (value != 0) _touchedAxes.Add(axis);
             owner.SetAxis(this, axis, value);
         }

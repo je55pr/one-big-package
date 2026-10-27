@@ -153,6 +153,19 @@ public sealed class CoverageReportTests
         Assert.DoesNotContain("A&B.cs", html, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void ExplicitDiagnosticCoveragePermissionsMatchThePortableProjectLinks()
+    {
+        var project = XDocument.Load(Path.Combine(RepoPaths.Root, "tests", "OBP.Tests", "OBP.Tests.csproj"));
+        var links = project.Descendants("Compile").Select(element => element.Attribute("Include")?.Value.Replace('\\', '/'))
+            .Where(path => path?.StartsWith("../../game/diagnostics/", StringComparison.Ordinal) == true)
+            .Select(path => path![6..]).OrderBy(path => path, StringComparer.Ordinal).ToArray();
+        var permissions = LinkedHostPaths().Select(row => (string)row[1])
+            .Where(path => path.StartsWith("game/diagnostics/", StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal).OrderBy(path => path, StringComparer.Ordinal).ToArray();
+        Assert.Equal(permissions, links);
+    }
+
     public static IEnumerable<object[]> LinkedHostPaths()
     {
         foreach (string form in new[] { "relative", "deterministic", "source-link" })

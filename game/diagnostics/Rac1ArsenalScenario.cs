@@ -131,7 +131,7 @@ public sealed class Rac1ArsenalScenario(MovementDiagnosticContext context, Rac1W
         await CaptureRac1BombAsync("taunter-rings", Player.Read().GlobalPosition + EquipmentForward + Vector3.UnitY);
         Driver.SetAction(MovementDiagnosticDriver.Traversal, false);
         Log("[arsenal-smoke] Taunter rings, forward crate query and no invented ammo PASS");
-        await Ports.Reproduction.SaveAndReloadAsync("arsenal-smoke-state.json", Driver.Lifetime);
+        Driver.Own(await Ports.Reproduction.SaveAndReloadAsync("arsenal-smoke-state.json", Driver.Lifetime));
         Require(Arsenal.ReadChickens().Length == 1 && Arsenal.ReadChickens().All(chicken => chicken.Active && !chicken.RewardEmitted),
             "Morph state did not survive an actual world reload");
         Require(Arsenal.ReadMissiles().Length == 0 && Arsenal.ReadDecoys().Length == 0 && Arsenal.Read().Drones == 0 && !Additional.Read().GuidedCameraPresent,
@@ -144,7 +144,7 @@ public sealed class Rac1ArsenalScenario(MovementDiagnosticContext context, Rac1W
         await Rac1SmokeWaitAsync(() => Additional.Read().Cargo == 1, 40, "Suck Cannon chicken capture");
         Driver.SetAction(MovementDiagnosticDriver.Traversal, false); await PhysicsFramesAsync(25);
         Require(Arsenal.Read().ChickenCargo == 1, "captured chicken lost its presentation identity");
-        await Ports.Reproduction.SaveAndReloadAsync("arsenal-smoke-state.json", Driver.Lifetime);
+        Driver.Own(await Ports.Reproduction.SaveAndReloadAsync("arsenal-smoke-state.json", Driver.Lifetime));
         Require(Arsenal.Read().ChickenCargo == 1 && Arsenal.ReadChickens().Length == 0, "captured chicken reverted on reload");
         Ports.Combat.RequestPrimaryAttack(); await PhysicsFramesAsync(2);
         Require(Additional.ReadShots().Any(shot => shot.Read().Weapon == Weapon(Rac1WeaponId.SuckCannon) &&

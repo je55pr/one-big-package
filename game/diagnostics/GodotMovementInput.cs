@@ -38,8 +38,13 @@ internal sealed class GodotMovementPhysicalInput : IDiagnosticPhysicalInput
     {
         using var input = new InputEventJoypadMotion
         {
-            Device = 0,
-            Axis = axis == DiagnosticPhysicalAxis.LeftX ? JoyAxis.LeftX : JoyAxis.LeftY,
+            Device = 15,
+            Axis = axis switch
+            {
+                DiagnosticPhysicalAxis.LeftX => JoyAxis.LeftX,
+                DiagnosticPhysicalAxis.LeftY => JoyAxis.LeftY,
+                _ => throw new ArgumentOutOfRangeException(nameof(axis)),
+            },
             AxisValue = value
         };
         Input.ParseInputEvent(input);

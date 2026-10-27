@@ -46,7 +46,8 @@ public abstract class FusionWeaponScenarioSupport(MovementDiagnosticContext cont
         RequireFusionHandAttachment();
         Require(MathF.Abs(basis.X.Length() - 1) < .0001f && MathF.Abs(basis.Y.Length() - 1) < .0001f &&
             MathF.Abs(basis.Z.Length() - 1) < .0001f && MathF.Abs(Vector3.Dot(basis.X, basis.Y)) < .0001f &&
-            MathF.Abs(Vector3.Dot(basis.Y, basis.Z)) < .0001f, $"{Selected} mount distorts the source proportions");
+            MathF.Abs(Vector3.Dot(basis.Y, basis.Z)) < .0001f && MathF.Abs(Vector3.Dot(basis.X, basis.Z)) < .0001f,
+            $"{Selected} mount distorts the source proportions");
     }
     protected void RequireFusionHandAttachment()
     {

@@ -27,6 +27,7 @@ public interface IWeaponMovementStateFixture
 {
     bool Loading { get; }
     WeaponMovementStateDiagnostic CaptureBoundary();
-    Task SaveAndReloadAsync(string fileName, CancellationToken token);
-    Task LoadAsync(string path, CancellationToken token);
+    /// <summary>Transfers cleanup ownership for the explicitly reloaded fixture world to the caller.</summary>
+    Task<IDisposable> SaveAndReloadAsync(string fileName, CancellationToken token);
+    Task<IDisposable> LoadAsync(string path, CancellationToken token);
 }

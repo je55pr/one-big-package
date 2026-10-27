@@ -306,7 +306,9 @@ failed neutral writes can be retried. Temporary preview, geometry, camera,
 source-library and unavailable-asset fixtures restore their owners. A weapon
 transient scope delegates projectile, audio and effect cleanup to existing
 owners on completion, failure or cancellation; it never clears a replacement
-world. Portable checks cover cancellation and partial cleanup failure. The
+world. An explicit saved-state reload transfers a new cleanup lease to the
+scenario for its reloaded world. Portable checks cover cancellation and partial
+cleanup failure. The
 native suite retains missing-asset, source-invalidation and canceled-worker
 checks and requires explicit unavailable results.
 
@@ -321,5 +323,5 @@ adapters are not claimed as portable coverage.
 The pre-extraction arsenal run exposed a host contact bug: aiming at a crate
 indexed the enemy map with the crate instance ID, interrupting Tesla feedback.
 The existing target predicate now accepts active non-enemy geometry through a
-checked lookup. The original arsenal suite passes with that isolated fix, as
-does the extracted suite; native damage and effective-range rules are unchanged.
+checked lookup. The `--rac1-weapons-smoke` command checks that crate path and
+Tesla feedback; native damage and effective-range rules are unchanged.

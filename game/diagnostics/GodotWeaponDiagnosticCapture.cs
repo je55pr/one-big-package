@@ -37,7 +37,7 @@ internal sealed class GodotWeaponDiagnosticCapture(Node owner, Func<PlayerHost?>
             else hud.Visible = false;
             await clock.NextAsync(DiagnosticFramePhase.PostDraw, token);
             using var image = owner.GetViewport().GetTexture().GetImage();
-            image.SavePng(Path.Combine(directory, name + ".png"));
+            if (image.SavePng(Path.Combine(directory, name + ".png")) != Error.Ok) throw new IOException("Weapon capture failed.");
         }
         finally
         {

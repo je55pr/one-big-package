@@ -93,7 +93,7 @@ ledger remains unchanged.
 
 The #341 weapon extraction retires five more diagnostic partials and 31
 historical declaration/member permissions. The measured root has 89 files,
-19,043 file lines, 659 direct methods, 456 fields (311 mutable), 44 exposed
+19,044 file lines, 659 direct methods, 456 fields (311 mutable), 44 exposed
 members and 2,145 cross-file references. Wrench, Bomb Glove, arsenal, idle/audio
 and mixed-source weapon acceptance now use copied source-qualified facts and
 focused equipment fixtures. Shared movement input/clock ownership includes

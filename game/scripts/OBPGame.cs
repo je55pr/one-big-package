@@ -939,19 +939,20 @@ public partial class OBPGame : Node3D
             () =>
             {
                 var shot = _rac1Projectiles.Single();
-                bool originalModel = shot.Value.Node.GetChildren().OfType<MeshInstance3D>().All(mesh => mesh.Mesh is ArrayMesh);
+                bool originalModel = GodotWeaponModelFacts.Read(shot.Value.Node).OriginalMeshes;
                 return new GodotRac1BombAcceptanceWitness(new(worlds), () => new(shot.Key, FusionWeaponSession.BombGlove,
                     shot.Value.Motion.Position, shot.Value.Motion.Velocity, shot.Value.Motion.NativeState, shot.Value.Motion.Flying, originalModel));
             }, BombHasLineOfSight, ProbeBombWorldContact,
             amount => _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, amount), () => _player));
+        var transients = new GodotWeaponDiagnosticTransientFixture(worlds, () => DiagnosticCleanup.Run("Weapon fixture transient cleanup",
+            () => { foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile); },
+            ResetRac1BombPresentation, ResetRac1AdditionalWeapons, () => ClearFusionTransients()));
         async Task LoadWeaponStateAsync(string path, CancellationToken token) => await LoadMovementStateAsync(path, cancellationToken: token);
         var reproduction = new GodotWeaponMovementStateFixture(() => _movementStateLoading, () => CaptureMovementState(), LoadWeaponStateAsync,
-            name => Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "repros", name)));
+            name => Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "repros", name)), transients);
         return new(movement.Ports, wrench, new(movement.Equipment, targets, CreateRac1EncounterDiagnosticHarness().Combat, capture, bomb, reproduction,
             CreateRac1AdditionalWeaponDiagnosticFixture(worlds), CreateRac1ArsenalDiagnosticFixture(worlds, targets)),
-            new GodotWeaponDiagnosticTransientFixture(worlds, () => DiagnosticCleanup.Run("Weapon fixture transient cleanup",
-                () => { foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile); },
-                ResetRac1BombPresentation, ResetRac1AdditionalWeapons, () => ClearFusionTransients())));
+            transients);
     }
 
     private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(

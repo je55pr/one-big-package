@@ -49,7 +49,12 @@ public sealed class FusionWeaponRecordingScenario(MovementDiagnosticContext cont
             await PhysicsFramesAsync(15);
             Require(Player.Read().GlobalPosition.DistanceTo(start) > .2f, $"movement did not recover after equipment selection: {start}->{Player.Read().GlobalPosition}; phase={Player.Read().Rac1MovementPhase}");
             Log($"[fusion-record] PASS ordinary opening/input, three weapons, native ammo, charge and movement; foreign hits={Fusion.ReadSession().AcceptedHits}");
+            // The original stop-recording edge is consumed immediately; the driver lease releases F9 on disposal.
             FusionKey(DiagnosticPhysicalKey.F9, true);
+        }
+        catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime)
+        {
+            throw;
         }
         catch (Exception error)
         {

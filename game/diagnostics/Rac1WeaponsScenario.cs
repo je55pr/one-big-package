@@ -78,7 +78,8 @@ public sealed class Rac1WeaponsScenario(MovementDiagnosticContext context, Rac1W
             Require(Additional.ReadAmmo(17) == ammo - 1, "mine ammo");
             await PhysicsFramesAsync(15);
             Require(mine.Read().Model.Sequence == 2, "mine did not enter animated armed sequence");
-            Require(mine.Read().Position.Y - mine.Read().Model.FootOffset!.Value >= fixture.GlobalPosition.Y - .02f,
+            float footOffset = mine.Read().Model.FootOffset ?? throw new DiagnosticUnavailableException("The armed mine model has no native foot offset.");
+            Require(mine.Read().Position.Y - footOffset >= fixture.GlobalPosition.Y - .02f,
                 "grounded mine is embedded in the floor");
             await CaptureRac1BombAsync("mine-armed", mine.Read().Position);
             Targets.StageCrate(crates[2].Key, mine.Read().Position + new Vector3(.7f, -.05f, 0)); await PhysicsFramesAsync(3);
@@ -117,7 +118,7 @@ public sealed class Rac1WeaponsScenario(MovementDiagnosticContext context, Rac1W
             Require(Additional.ReadAmmo(9) == 0, "capture wrote ordinary ammo");
             var state = Ports.Reproduction.CaptureBoundary();
             Require(state is { WorldPresent: true, CapturedMobies: 1, WeaponPreview: true }, "state lost cargo/preview boundary");
-            await Ports.Reproduction.SaveAndReloadAsync("weapon-smoke-state.json", Driver.Lifetime);
+            Driver.Own(await Ports.Reproduction.SaveAndReloadAsync("weapon-smoke-state.json", Driver.Lifetime));
             Require(Additional.Read().Cargo == 1 && Additional.Read().Preview &&
                 !Additional.Read().CampaignOwnsBlaster, "reload lost cargo or exported preview inventory");
             Ports.Combat.RequestPrimaryAttack(); await PhysicsFramesAsync(2);

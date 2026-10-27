@@ -8,6 +8,7 @@ public sealed class WeaponDiagnosticInputTests
     [InlineData(true, false)]
     [InlineData(false, false)]
     [InlineData(false, true)]
+    [InlineData(true, true)]
     public async Task FailedOrCanceledWeaponRunReleasesInputAndEveryTransientOwner(bool canceled, bool failAudioCleanup)
     {
         using var cancellation = new CancellationTokenSource();
@@ -26,7 +27,7 @@ public sealed class WeaponDiagnosticInputTests
         });
         var result = await new DiagnosticScenarioRunner(new Sources(), new Clock()).RunAsync(
             new WeaponDiagnosticScenario(inner, transients), true, cancellation.Token);
-        Assert.Equal(canceled ? DiagnosticRunStatus.Canceled : DiagnosticRunStatus.Failed, result.Status);
+        Assert.Equal(canceled && !failAudioCleanup ? DiagnosticRunStatus.Canceled : DiagnosticRunStatus.Failed, result.Status);
         Assert.Equal(0, axis);
         Assert.Equal(0, transients.Shots);
         Assert.Equal(0, transients.Audio);
@@ -35,7 +36,7 @@ public sealed class WeaponDiagnosticInputTests
         if (failAudioCleanup)
         {
             var errors = Assert.IsType<AggregateException>(result.Error).Flatten().InnerExceptions;
-            Assert.Contains(errors, error => error.Message == "original weapon assertion");
+            if (!canceled) Assert.Contains(errors, error => error.Message == "original weapon assertion");
             Assert.Contains(errors, error => error.Message == "audio cleanup failed");
         }
     }
@@ -62,6 +63,47 @@ public sealed class WeaponDiagnosticInputTests
         });
         using var lease = input.Acquire(); lease.SetAxis(DiagnosticPhysicalAxis.LeftX, 1);
         Assert.Throws<AggregateException>(lease.Dispose); Assert.Equal(1, current);
+        lease.Dispose(); Assert.Equal(0, current);
+    }
+
+    [Theory]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(1.01f)]
+    [InlineData(-1.01f)]
+    public void InvalidStickStrengthCannotPoisonInputOwnership(float value)
+    {
+        int writes = 0;
+        var input = new DiagnosticPhysicalInput((_, _) => { }, (_, _) => { }, (_, _) => writes++);
+        using var lease = input.Acquire();
+        Assert.Throws<ArgumentOutOfRangeException>(() => lease.SetAxis(DiagnosticPhysicalAxis.LeftX, value));
+        lease.Dispose(); Assert.Equal(0, writes);
+    }
+
+    [Fact]
+    public void UndefinedAxisAndDisposedLeaseCannotWriteInput()
+    {
+        int writes = 0;
+        var input = new DiagnosticPhysicalInput((_, _) => { }, (_, _) => { }, (_, _) => writes++);
+        using var lease = input.Acquire();
+        Assert.Throws<ArgumentOutOfRangeException>(() => lease.SetAxis((DiagnosticPhysicalAxis)42, 1));
+        lease.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => lease.SetAxis(DiagnosticPhysicalAxis.LeftY, 1));
+        Assert.Equal(0, writes);
+    }
+
+    [Fact]
+    public void PartiallyAppliedAxisWriteCanBeRetriedAndReleased()
+    {
+        float current = 0; bool fail = true;
+        var input = new DiagnosticPhysicalInput((_, _) => { }, (_, _) => { }, (_, value) =>
+        {
+            current = value;
+            if (fail) { fail = false; throw new IOException("partially applied axis"); }
+        });
+        using var lease = input.Acquire();
+        Assert.Throws<IOException>(() => lease.SetAxis(DiagnosticPhysicalAxis.LeftX, 1)); Assert.Equal(1, current);
+        lease.SetAxis(DiagnosticPhysicalAxis.LeftX, 1); Assert.Equal(1, current);
         lease.Dispose(); Assert.Equal(0, current);
     }
 

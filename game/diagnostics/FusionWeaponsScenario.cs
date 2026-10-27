@@ -117,7 +117,8 @@ public sealed class FusionWeaponsScenario(MovementDiagnosticContext context, Rac
             await CaptureFusionAsync("lancer-contact");
             await PhysicsFramesAsync(30); // Drain shots already past the broken crate before placing the robot.
 
-            var robot = Targets.ReadEnemies().First(e => e.Key.Target.NativeClassId == 1440 && !e.RewardEmitted);
+            var robot = Targets.ReadEnemies().FirstOrDefault(e => e.Key.Target.NativeClassId == 1440 && !e.RewardEmitted)
+                ?? throw new DiagnosticUnavailableException("The fusion damage fixture requires an original class1440 robot.");
             Targets.StageEnemy(robot.Key, Player.Read().GlobalPosition + EquipmentForward * 5);
             await PhysicsFramesAsync(7);
             float health = Targets.ReadRobotHealth(robot.Key);

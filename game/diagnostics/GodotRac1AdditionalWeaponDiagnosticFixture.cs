@@ -10,8 +10,8 @@ internal static class GodotWeaponModelFacts
     internal static WeaponModelDiagnostic Read(Node3D node)
     {
         if (!GodotObject.IsInstanceValid(node)) return new(false, false, false, null, null, null, NVector3.Zero, NVector3.Zero);
-        var meshes = node.GetChildren().OfType<MeshInstance3D>().ToArray(); var equipment = node as Rac1EquipmentView;
-        return new(node.Visible, meshes.Length != 0, meshes.All(mesh => mesh.Mesh is ArrayMesh), equipment?.NativeClass,
+        var meshes = node.FindChildren("*", nameof(MeshInstance3D), recursive: true, owned: false).OfType<MeshInstance3D>().ToArray(); var equipment = node as Rac1EquipmentView;
+        return new(node.Visible, meshes.Length != 0, meshes.Length != 0 && meshes.All(mesh => mesh.Mesh is ArrayMesh), equipment?.NativeClass,
             equipment?.Sequence, equipment?.FootOffset, GodotMovementPlayer.Copy(node.GlobalPosition), GodotMovementPlayer.Copy(node.Scale));
     }
 }

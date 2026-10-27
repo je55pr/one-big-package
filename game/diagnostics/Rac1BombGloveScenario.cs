@@ -84,7 +84,8 @@ public sealed class Rac1BombGloveScenario(MovementDiagnosticContext context, IRa
             combat.RequestPrimaryAttack();
             await Rac1SmokeWaitAsync(() => combat.ReadLoot().DestroyedCrates >= destroyed + 2, 150, "one blast reaching two crates");
             Require(equipment.Read().BombAmmo == ammo - 2, "blast spent additional ammo");
-            Require(combat.ReadBombs().LastContact!.DamageResults.All(result => result.NativeDamage == 2), "blast damage differs from retail envelope");
+            var blastContact = combat.ReadBombs().LastContact ?? throw new InvalidOperationException("Nearby-target blast did not record a contact.");
+            Require(blastContact.DamageResults.All(result => result.NativeDamage == 2), "blast damage differs from retail envelope");
             await PhysicsFramesAsync(35);
             Log("[bomb-glove-smoke] nearby-target blast and once-per-victim damage PASS");
 
@@ -174,7 +175,7 @@ public sealed class Rac1BombGloveScenario(MovementDiagnosticContext context, IRa
 
     private async Task RunRac1SavedBombReproAsync(string path)
     {
-        await reproduction.LoadAsync(path, Driver.Lifetime);
+        Driver.Own(await reproduction.LoadAsync(path, Driver.Lifetime));
         Require(!reproduction.Loading, "saved bomb setup did not load");
         equipment.Select(Rac1WeaponId.FirstRanged);
         await PhysicsFramesAsync(2);

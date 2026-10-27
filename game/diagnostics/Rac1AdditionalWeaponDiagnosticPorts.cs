@@ -8,7 +8,7 @@ using OBP.Runtime.Presentation;
 
 namespace OBP.Game.Diagnostics;
 
-/// <summary>A one-way observation of a fixture entity; its engine owner checks retirement on every read.</summary>
+/// <summary>A one-way observation valid in its captured world generation, retaining final motion values after entity retirement.</summary>
 public interface IWeaponDiagnosticWitness<out T> { T Read(); }
 public sealed record WeaponModelDiagnostic(bool Visible, bool HasMeshes, bool OriginalMeshes,
     int? NativeClass, int? Sequence, float? FootOffset, Vector3 Position, Vector3 Scale);
