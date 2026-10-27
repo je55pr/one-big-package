@@ -463,3 +463,10 @@ explicitly. Evidence archives
 stay private and ignored; the comparator emits no payloads or machine paths.
 The ten engine-free files have exact portable coverage permissions; engine
 fixtures remain outside that coverage claim.
+
+The ordinary recording wrapper also checks Veldin/Novalis, explicit build
+overrides, divergent checkpoints and incomplete archives. Its human-pacing
+fixture waits for the public partial recording to exist before counting 180
+process frames, uses ordinary F9 input to finish the tape, then closes through
+the normal window-close notification. Source preparation cannot consume that
+timing window. The paced recording must replay exactly in a fresh process.

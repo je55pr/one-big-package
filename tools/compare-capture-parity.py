@@ -42,34 +42,43 @@ def stable_step(step):
 def protocol(rows, per_world=False):
     result = []
     physics = 0
+    process = 0
     for row in rows:
         if "Step" not in row:
             continue
         step = stable_step(row["Step"])
         if step["Kind"] == 0:
             physics += 1
-        result.extend({"physics": physics, "phase": step["Kind"], "event": event} for event in step["Events"])
+        else:
+            process += 1
+        timing = {"physics": physics, "process": process, "phase": step["Kind"], "delta": step.get("Delta")}
+        result.extend({**timing, "event": event} for event in step["Events"])
         for command in step["Commands"]:
             # Bookmarks flush asynchronously after the last marker in each world,
             # allowing a variable number of idle physics ticks before the next entry.
             if per_world and command["Kind"] == "destination":
                 physics = 0
-            result.append({"physics": physics, "phase": step["Kind"], "command": command})
+                process = 0
+            result.append({**timing, "physics": physics, "process": process, "command": command})
     return result
 
 
 def route_markers(rows):
     positions = {}
     physics = 0
+    process = 0
     for row in rows:
         if "Step" not in row:
             continue
         step = row["Step"]
         if step["Kind"] == 0:
             physics += 1
+        else:
+            process += 1
         if any(command["Kind"] == "destination" for command in step["Commands"]):
             physics = 0
-        positions[step["Index"]] = {"physics": physics, "phase": step["Kind"]}
+            process = 0
+        positions[step["Index"]] = {"physics": physics, "process": process, "phase": step["Kind"], "delta": step.get("Delta")}
     return [{**row["Marker"], "Step": positions[row["Marker"]["Step"]]} for row in rows if "Marker" in row]
 
 
