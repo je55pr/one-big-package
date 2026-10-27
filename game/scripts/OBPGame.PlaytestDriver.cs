@@ -398,8 +398,11 @@ public partial class OBPGame
                 SetNotice($"Recording saved · {_marks} bug markers\n{Path.GetFileName(_writer.Path)}");
                 GD.Print($"[playtest] SAVED {_writer.Path}; steps={_nextStep}; markers={_marks}");
                 if (Game._args.ReconciliationSmoke) await Game.CreateCaptureDiagnosticHarness().VerifyFinishedContinuationAsync();
-                if (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke) ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
+                if (!Game._hostOperations.Stopping && (Game._args.PlaytestSmoke || Game._args.ReconciliationSmoke))
+                    ApplicationLifecycle.RequestQuit(Game, "playtest-record-smoke-pass");
             }
+            catch (OperationCanceledException error) when (Game._hostOperations.Stopping && error.CancellationToken == Game._hostOperations.Token)
+            { /* Durable tape committed; the host's original quit still owns the canceled continuation. */ }
             catch (Exception error)
             {
                 _recordingError = error.Message;

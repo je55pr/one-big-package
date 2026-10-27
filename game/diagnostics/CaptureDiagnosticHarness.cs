@@ -6,8 +6,10 @@ internal sealed record CaptureDiagnosticPorts(ICaptureRecorderDiagnosticFixture 
     IBugReporterDiagnosticFixture Reports, Func<IMovementStateDiagnosticFixture> MovementStates,
     ITrilogyPlayerDiagnosticFixture Player, ITrilogyActorDiagnosticFixture Actors,
     IDiagnosticNavigationActions Navigation, Func<CancellationToken, Task> FusionRecording, Func<bool> Isolated);
+internal sealed record CaptureDiagnosticAuthorities(Func<ImmutableArray<DiagnosticSourceRequirement>> Current,
+    ImmutableArray<DiagnosticSourceRequirement> Trilogy);
 
-internal sealed class CaptureDiagnosticHarness(ImmutableArray<DiagnosticSourceRequirement> authorities, CaptureDiagnosticPorts ports,
+internal sealed class CaptureDiagnosticHarness(CaptureDiagnosticAuthorities authorities, CaptureDiagnosticPorts ports,
     MovementScenarioPorts movement, ICaptureDiagnosticInputFactory inputs, ICaptureDiagnosticTime time,
     IDiagnosticAcceptanceReporter acceptance, DiagnosticScenarioRunner runner, HostOperationScope operations,
     Action<string, int> quit, Action<string> log, Action<string> error)
@@ -22,14 +24,15 @@ internal sealed class CaptureDiagnosticHarness(ImmutableArray<DiagnosticSourceRe
     private DiagnosticScenarioDefinition Definition(string id) => new(id + "/v1", DiagnosticSourceAccess.ExplicitSourceDiagnostic,
         // Report replays poll process frames while a child imports its world. Headless
         // process frames are unpaced; their 90-second wall-clock deadlines own this wait.
-        DiagnosticSetup.AssetFreeFixture, authorities, TimeSpan.FromMinutes(30), id == "bug-report-smoke" ? int.MaxValue : 108_000);
+        DiagnosticSetup.AssetFreeFixture, id is "reconciliation-capture" or "finished-capture-continuation" or "trilogy-gameplay-smoke"
+            ? authorities.Trilogy : authorities.Current(), TimeSpan.FromMinutes(30), id == "bug-report-smoke" ? int.MaxValue : 108_000);
     private IDiagnosticScenario Scenario(DiagnosticScenarioDefinition definition, Func<CaptureDiagnosticContext, Task> execute) =>
         new CaptureOwnedScenario(definition, inputs, time, log, async context =>
         {
             if (!ports.Isolated()) throw new DiagnosticUnavailableException("Capture diagnostics require --no-profile or an isolated temporary profile/inbox under captures or the temporary directory.");
             await execute(context);
         });
-    private void Start(string id, Func<CaptureDiagnosticContext, Task> execute, string failureReason, int failureCode, bool terminal, string? evidence = null)
+    internal void Start(string id, Func<CaptureDiagnosticContext, Task> execute, string failureReason, int failureCode, bool terminal, string? evidence = null)
     {
         if (operations.Stopping) return;
         operations.Start(id, async token =>
@@ -61,12 +64,14 @@ internal sealed class CaptureDiagnosticHarness(ImmutableArray<DiagnosticSourceRe
     internal async Task VerifyFinishedContinuationAsync()
     {
         var result = await runner.RunAsync(Scenario(Definition("finished-capture-continuation"), context => Reconciliation(context).VerifyFinishedContinuationAsync()), true, operations.Token);
+        if (result.Status == DiagnosticRunStatus.Canceled && operations.Token.IsCancellationRequested)
+            operations.Token.ThrowIfCancellationRequested();
         if (result.Status != DiagnosticRunStatus.Passed) throw result.Error ?? new InvalidOperationException(result.Detail);
     }
     internal IDiagnosticScenario CreateMovement(DiagnosticScenarioDefinition definition) => new DiagnosticProcessScenario(
         Scenario(definition, async context =>
         {
-            using var driver = new MovementDiagnosticDriver(context.Run, movement.Input, movement.Physical);
+            var driver = context.Run.Own(new MovementDiagnosticDriver(context.Run, movement.Input, movement.Physical));
             await new MovementStateScenario(context, new(movement, driver), ports.MovementStates()).RunAsync();
         }), new("movement-state-smoke-pass", 0), new("movement-state-smoke-fail", 3));
     internal async Task CheckMovementCancellationAsync(CancellationToken token)

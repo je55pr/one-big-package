@@ -49,6 +49,21 @@ public interface ICaptureRecorderDiagnosticFixture
     ICaptureBookmarkDiagnostic RequestBookmark(int visit, string destination);
     void Save();
 }
+internal sealed class CaptureEquipmentActions(Func<int, string, bool> assign, Func<string, bool> select) : ICaptureEquipmentActions
+{
+    public bool AssignQuickSelect(int slot, string item) => assign(slot, item);
+    public bool Select(string item) => select(item);
+}
+internal static class CaptureDiagnosticIsolation
+{
+    internal static bool Isolated(string? path, string captures)
+    {
+        if (path is null) return true;
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        string full = Path.GetFullPath(path);
+        return new[] { captures, Path.GetTempPath() }.Any(root => full.StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar, comparison));
+    }
+}
 public sealed record CaptureDiagnosticContext(DiagnosticRunContext Run, ICaptureDiagnosticInput Input,
     ICaptureDiagnosticTime Time, Action<string> Log);
 public abstract class CaptureScenarioSupport(CaptureDiagnosticContext context)

@@ -122,7 +122,7 @@ separate test ports. Two exact factory entries expire with #370/#371. The obsole
 retail-navigation delegation is removed; the frozen origin is unchanged.
 
 The #344 recording/report extraction retires five more partials and 17 historical
-declaration/member permissions. The root has 77 files, 17,335 file lines, 624
+declaration/member permissions. The root has 77 files, 17,339 file lines, 624
 direct methods, 456 fields (312 mutable), 44 exposed members and 1,968 cross-file
 references. Independent recording, reconciliation, bug-report, movement-state
 and trilogy suites consume focused fixtures and immutable observations. The

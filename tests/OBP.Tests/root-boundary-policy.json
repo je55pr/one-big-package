@@ -2838,14 +2838,14 @@
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
       "ExpiresWith": "#356",
-      "Hash": "24815d3bc470531f04e6b4044acd7090871f09b8e0c79d444da7d98baa14bed1"
+      "Hash": "afabd95f472e89ba7c891e1baa5ea28601625e8a6487fe8d57b2a257e5dd2869"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementStateDiagnosticFixture():IMovementStateDiagnosticFixture:private",
       "Owner": "#344",
       "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
       "ExpiresWith": "#358",
-      "Hash": "08a3e754e31403ea2717746e556a57627a1856eefedfa95c1808ad027a588db0"
+      "Hash": "55c2b93df48af357f38281763ee741906ed43693f5d8218d669108de2ea45b21"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyActorDiagnosticFixture():ITrilogyActorDiagnosticFixture:private",

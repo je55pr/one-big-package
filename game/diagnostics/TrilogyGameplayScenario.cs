@@ -13,29 +13,31 @@ public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, IT
     {
         Require(player.Read() is { Ordinary: true, NativePresent: true }, "ordinary selected player required");
         var initial = player.CaptureSession(); ITrilogyPoseWitness? canonical = null; string[]? audioBaseline = null;
-        try
+        Context.Run.Own(new Controls(player));
+        foreach (string destination in new[] { "rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab" })
         {
-            foreach (string destination in new[] { "rac1:LEVEL0", "rac2:LEVEL1", "rac3:TABLE1", "obp:fusion-lab" })
-            {
-                initial.Restore(); Require((await navigation.NavigateAsync(destination, Lifetime)).Accepted, "entry failed: " + destination);
-                using var visit = player.BeginVisit(); player.StageDeck(); await Physics(2);
-                player.StageEncounterDeck();
-                await Physics(40); Require(player.Read() is { AssetsReady: true, AudioReady: true }, "selected source bank missing in " + destination);
-                canonical ??= player.CapturePose(); canonical.Restore(); player.ResetAudio(); await player.CaptureTrialAsync(Lifetime);
-                var audio = player.ReadAudio(); var cues = audio.Select(cue => $"{cue.Source}/{cue.Build}/{cue.Level}/{cue.Class}/{cue.Sound}/{cue.LevelSound}/{cue.Loop}@{cue.Tick}").ToArray();
-                Require(audio.Any(cue => cue.Class == 0) && cues.Length > 0, "movement/jump/wrench audio is silent in " + destination);
-                Require(player.Read().WrenchHeld, "wrench attack did not retain hand ownership in " + destination);
-                if (audioBaseline is null) audioBaseline = cues;
-                else Require(audioBaseline.SequenceEqual(cues), "same physics-clock player actions changed audio intents in " + destination);
-                await VerifyPauseAsync(); await VerifyWeaponsAsync(destination);
-                audio = player.ReadAudio(); Require(audio.Length > 0, "selected Ratchet/equipment went silent in " + destination);
-                Require(audio.All(cue => cue.Source == "rac1" && cue.Build == Rac1Authority.Primary.BuildId && cue.Level == 0), "player voice/surface bank followed destination");
-                Log($"[trilogy-gameplay-smoke] {destination}: universal menu, held models, native firing/ammo and {cues.Length} matching player audio intents PASS");
-            }
-            await VerifyMixedActorsAsync();
-            await VerifyCacheAndInvalidationAsync();
+            initial.Restore(); Require((await navigation.NavigateAsync(destination, Lifetime)).Accepted, "entry failed: " + destination);
+            using var visit = player.BeginVisit(); player.StageDeck(); await Physics(2);
+            player.StageEncounterDeck();
+            await Physics(40); Require(player.Read() is { AssetsReady: true, AudioReady: true }, "selected source bank missing in " + destination);
+            canonical ??= player.CapturePose(); canonical.Restore(); player.ResetAudio(); await player.CaptureTrialAsync(Lifetime);
+            var audio = player.ReadAudio(); var cues = audio.Select(cue => $"{cue.Source}/{cue.Build}/{cue.Level}/{cue.Class}/{cue.Sound}/{cue.LevelSound}/{cue.Loop}@{cue.Tick}").ToArray();
+            Require(audio.Any(cue => cue.Class == 0) && cues.Length > 0, "movement/jump/wrench audio is silent in " + destination);
+            Require(player.Read().WrenchHeld, "wrench attack did not retain hand ownership in " + destination);
+            if (audioBaseline is null) audioBaseline = cues;
+            else Require(audioBaseline.SequenceEqual(cues), "same physics-clock player actions changed audio intents in " + destination);
+            await VerifyPauseAsync(); await VerifyWeaponsAsync(destination);
+            audio = player.ReadAudio(); Require(audio.Length > 0, "selected Ratchet/equipment went silent in " + destination);
+            Require(audio.All(cue => cue.Source == "rac1" && cue.Build == Rac1Authority.Primary.BuildId && cue.Level == 0), "player voice/surface bank followed destination");
+            Log($"[trilogy-gameplay-smoke] {destination}: universal menu, held models, native firing/ammo and {cues.Length} matching player audio intents PASS");
         }
-        finally { player.SetPaused(false); player.HoldEquipped(false); }
+        await VerifyMixedActorsAsync();
+        await VerifyCacheAndInvalidationAsync();
+    }
+    private sealed class Controls(ITrilogyPlayerDiagnosticFixture owner) : IDisposable
+    {
+        public void Dispose() => DiagnosticCleanup.Run("Trilogy controls could not be released.",
+            () => owner.SetPaused(false), () => owner.HoldEquipped(false));
     }
     private async Task VerifyPauseAsync()
     {
@@ -70,7 +72,7 @@ public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, IT
         player.SetPaused(true); await PrepareActorsAsync(); var population = actors.Read();
         Require(population.Problems.Length == 0, "mixed actor preparation: " + string.Join("; ", population.Problems));
         Require(population.Placed == 3 && population.Registered == 3, "three native source actors did not coexist");
-        Require(await actors.RejectUnknownContextsAsync() && actors.Read() is { Registered: 3, Bodies: 3 }, "unrecovered native context was admitted or changed actor registrations");
+        Require(await actors.RejectUnknownContextsAsync(Lifetime) && actors.Read() is { Registered: 3, Bodies: 3 }, "unrecovered native context was admitted or changed actor registrations");
         foreach (var actor in actors.ReadActors()) Require(actors.Reset(actor.Id), "initial encounter reset failed");
         actors.ResetEncounter(); player.SetPaused(false); player.StageEncounter();
         var starts = actors.ReadActors().ToDictionary(actor => actor.Key.Target, actor => actor.Facts.Position);
@@ -118,7 +120,7 @@ public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, IT
     private async Task VerifyCacheAndInvalidationAsync()
     {
         var cache = actors.CaptureCache(); Require(cache.Reused, "current source version was not reused");
-        Require(await actors.VerifyConstructionRollbackAsync(), "failed factory leaked native registrations, scene or physics");
+        Require(await actors.VerifyConstructionRollbackAsync(Lifetime), "failed factory leaked native registrations, scene or physics");
         Log("[trilogy-gameplay-smoke] partial actor construction rollback PASS");
         player.SetPaused(true);
         using (var invalidated = actors.Invalidate())
@@ -126,8 +128,9 @@ public sealed class TrilogyGameplayScenario(CaptureDiagnosticContext context, IT
             Require(actors.Read() is { Registered: 0, Bodies: 0, Placed: 0, Libraries: 0, Assets: 0 } && invalidated.PendingRejected && invalidated.Retired.DamageTargetsRemoved,
                 "source invalidation retained live actors or player attack registrations");
             actors.Readmit(); await PrepareActorsAsync();
-            Require(actors.Read() is { Placed: 3, Bodies: 3 } current && current.Problems.Length == 0 && invalidated.Retired.ReadmittedWithNewIdentities,
-                "source re-admission failed or revived retired target identities");
+            var readmitted = actors.Read();
+            Require(readmitted is { Placed: 3, Bodies: 3 } && readmitted.Problems.Length == 0 && invalidated.Retired.ReadmittedWithNewIdentities,
+                "source re-admission failed or revived retired target identities; placed=" + readmitted.Placed + "; " + string.Join("; ", readmitted.Problems));
         }
         cache = actors.CaptureCache(); player.SetPaused(false); Log("[trilogy-gameplay-smoke] live source invalidation and re-admission PASS");
         var retired = actors.CaptureRetirement(); int ammo = player.ReadEquipment().Single(item => item.Id == "rac2/item/30").Ammo;

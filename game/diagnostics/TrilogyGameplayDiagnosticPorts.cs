@@ -49,13 +49,13 @@ public interface ITrilogyActorDiagnosticFixture
     TrilogyActorPopulationDiagnostic Read();
     ImmutableArray<TrilogyActorDiagnostic> ReadActors();
     Task PumpAsync(CancellationToken token);
-    Task<bool> RejectUnknownContextsAsync();
+    Task<bool> RejectUnknownContextsAsync(CancellationToken token);
     bool Reset(string id);
     bool HasRuntimeActor(ActorInstanceKey key);
     bool HasRewardOrAudio(ActorInstanceKey key);
     void ResetEncounter();
     ITrilogyActorCacheWitness CaptureCache();
-    Task<bool> VerifyConstructionRollbackAsync();
+    Task<bool> VerifyConstructionRollbackAsync(CancellationToken token);
     ITrilogyActorInvalidation Invalidate();
     void Readmit();
     ITrilogyActorRetirementWitness CaptureRetirement();

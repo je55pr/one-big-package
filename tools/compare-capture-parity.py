@@ -5,6 +5,7 @@ import argparse
 import gzip
 import json
 import re
+import zlib
 from pathlib import Path
 
 
@@ -22,6 +23,8 @@ def stable_header(rows):
     # host wall time. Source/build/digest, schemas, profiles and initial facts stay exact.
     stable = {key: value for key, value in rows[0]["Header"].items()
               if key not in ("AssemblyId", "Assemblies", "StartedUtc")}
+    if "Assemblies" in rows[0]["Header"]:
+        stable["Assemblies"] = sorted(rows[0]["Header"]["Assemblies"])
     # The SDK informational version appends the Git commit. Keep its actual
     # version and other metadata exact, excluding only that full commit suffix.
     if "ApplicationVersion" in stable:
@@ -36,14 +39,22 @@ def stable_step(step):
     return stable
 
 
-def protocol(rows):
+def protocol(rows, per_world=False):
     result = []
+    physics = 0
     for row in rows:
         if "Step" not in row:
             continue
         step = stable_step(row["Step"])
-        result.extend({"event": event} for event in step["Events"])
-        result.extend({"command": command} for command in step["Commands"])
+        if step["Kind"] == 0:
+            physics += 1
+        result.extend({"physics": physics, "event": event} for event in step["Events"])
+        for command in step["Commands"]:
+            # Bookmarks flush asynchronously after the last marker in each world,
+            # allowing a variable number of idle physics ticks before the next entry.
+            if per_world and command["Kind"] == "destination":
+                physics = 0
+            result.append({"physics": physics, "command": command})
     return result
 
 
@@ -69,7 +80,7 @@ def compare(before, after):
         left, right = read_archive(before, name), read_archive(after, name)
         equal(name + " completed archives", completed(left) and completed(right), True)
         equal(name + " source/profile/initial-state header", stable_header(left), stable_header(right))
-        equal(name + " ordered input and commands", protocol(left), protocol(right))
+        equal(name + " ordered input and physics-aligned commands", protocol(left, name == "route"), protocol(right, name == "route"))
         # World imports and bookmark flushes can take a variable number of process
         # frames. Do not compare their wall-time waiting frames as deterministic ticks.
         if name == "legacy":
@@ -100,7 +111,7 @@ def main():
     args = parser.parse_args()
     try:
         result = compare(args.before, args.after)
-    except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError):
+    except (OSError, ValueError, KeyError, TypeError, IndexError, AttributeError, EOFError, zlib.error):
         # Missing/incomplete or malformed evidence fails without exposing source paths.
         result = {"Version": 1, "Passed": False, "Error": "Evidence missing or invalid."}
     encoded = json.dumps(result, indent=2)

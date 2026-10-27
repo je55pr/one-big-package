@@ -31,11 +31,12 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
     public ImmutableArray<TrilogyActorDiagnostic> ReadActors() => [.. World.Placed.Select(pair =>
         new TrilogyActorDiagnostic(pair.Key, pair.Value, World.Runtime?.Find(pair.Value.Target)?.Observe() ?? throw new DiagnosticUnavailableException("A placed native actor is unavailable.")))];
     public async Task PumpAsync(CancellationToken token) { await Task.Delay(10, token); bindings.Pump(); }
-    public async Task<bool> RejectUnknownContextsAsync()
+    public async Task<bool> RejectUnknownContextsAsync(CancellationToken token)
     {
         foreach (var placement in World.Placements.Values)
         {
-            var library = await World.Preparation[placement.Id]; var source = World.Sources[placement.Id]; bool rejected = false;
+            var library = await World.Preparation[placement.Id].WaitAsync(token); token.ThrowIfCancellationRequested();
+            var source = World.Sources[placement.Id]; bool rejected = false;
             try { World.Factories!.Resolve(placement with { NativeContextId = "unrecovered-context" }).Create(placement, library, source); }
             catch (NotSupportedException) { rejected = true; }
             if (!rejected || World.Runtime?.Count != 3 || World.Bodies.Count != 3) return false;
@@ -52,10 +53,10 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
         var task = bindings.Sources().Library(source, placement.LevelId); bindings.Prepare(placement);
         return new Cache(() => ReferenceEquals(task, World.Placements.ContainsKey(placement.Id) ? World.Preparation[placement.Id] : bindings.Sources().Library(source, placement.LevelId)));
     }
-    public async Task<bool> VerifyConstructionRollbackAsync()
+    public async Task<bool> VerifyConstructionRollbackAsync(CancellationToken token)
     {
         var placement = World.Placements["arena-rac1-toad"]; var source = World.Sources[placement.Id];
-        var library = await bindings.Sources().Library(source, placement.LevelId);
+        var library = await bindings.Sources().Library(source, placement.LevelId).WaitAsync(token); token.ThrowIfCancellationRequested();
         int roots = bindings.Scene().GetChildCount(), enemies = bindings.Enemies(), hostiles = bindings.Hostiles(); bool rolledBack = false;
         var factory = new Rac1ToadActorFactory(new(World.Runtime!, bindings.Scene(), World.Bodies), bindings.Sources(), bindings.FaultBindings());
         try { factory.Create(placement, library, source); }
@@ -72,6 +73,8 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
     public void Readmit()
     {
         _invalidation?.RemovePending();
+        // False includes a valid asynchronous preparation. The scenario pumps
+        // those tasks before checking the full population and placement problems.
         foreach (string id in World.Placements.Keys) _ = bindings.Reset(id);
     }
     public ITrilogyActorRetirementWitness CaptureRetirement() => new Retirement(bindings);
@@ -96,8 +99,9 @@ internal sealed class GodotTrilogyActorDiagnosticFixture(GodotTrilogyActorDiagno
             _bindings = bindings; var world = bindings.World(); _runtime = world.Runtime; _actors = [.. world.Placed.Values]; _roots = [.. world.Views.Values.Select(actor => actor.Node.Root)];
         }
         public bool OldActorsRetired => _runtime?.Count == 0;
-        public bool OldRootsFreed => _roots.All(root => !GodotObject.IsInstanceValid(root));
-        public bool DamageTargetsRemoved => _actors.All(actor => !_bindings.DamageTarget(actor));
-        public bool ReadmittedWithNewIdentities => _bindings.World().Placed.Values.All(actor => !_actors.Contains(actor));
+        public bool OldRootsFreed => _roots.Length > 0 && _roots.All(root => !GodotObject.IsInstanceValid(root));
+        public bool DamageTargetsRemoved => _actors.Length > 0 && _actors.All(actor => !_bindings.DamageTarget(actor));
+        public bool ReadmittedWithNewIdentities => _actors.Length > 0 && _bindings.World().Placed.Count == _actors.Length &&
+            _bindings.World().Placed.Values.All(actor => !_actors.Contains(actor));
     }
 }

@@ -1,6 +1,8 @@
 using System.Collections.Immutable;
 using System.Numerics;
 using OBP.Game.Diagnostics;
+using OBP.Game;
+using OBP.Core;
 
 namespace OBP.Tests;
 
@@ -78,8 +80,10 @@ public sealed class CaptureDiagnosticTests
     {
         var fixture = new Fixture { MutateProfile = mutate, MissingBookmark = missing };
         using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 5000);
+        var reporter = new OwnedDiagnosticAcceptanceReporter(() => fixture.State.Destination, () => null,
+            () => throw new InvalidOperationException("No output snapshot requested."), _ => { }, (_, _) => { });
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            new ReconciliationCaptureScenario(fixture.Context(run), fixture, fixture, fixture, fixture).RunAsync());
+            new ReconciliationCaptureScenario(fixture.Context(run), fixture, fixture, fixture, reporter).RunAsync());
         Assert.Contains(check, error.Message, StringComparison.Ordinal);
         Assert.Empty(fixture.Writes);
         Assert.False(fixture.Saved);
@@ -119,6 +123,154 @@ public sealed class CaptureDiagnosticTests
         Assert.True(fixture.Disposed);
     }
 
+    [Fact]
+    public async Task RecordingCannotSendInputBeforeEntryCompletes()
+    {
+        var fixture = new Fixture { State = Fixture.Initial with { WaitingForEntry = true } };
+        using var run = new DiagnosticRunContext(fixture, CancellationToken.None, 400);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => new PlaytestRecordingScenario(fixture.Context(run), fixture).RunAsync());
+        Assert.Equal(360UL, fixture.Process);
+        Assert.Empty(fixture.Protocol);
+    }
+
+    [Theory]
+    [InlineData(25, 0, false)]
+    [InlineData(25, 25, false)]
+    [InlineData(25, 26, true)]
+    [InlineData(25, 27, false)]
+    [InlineData(15, 0, false)]
+    [InlineData(15, 15, false)]
+    [InlineData(15, 16, true)]
+    public void MovementReplayComparisonsRequireTheWholeRequestedTrace(int frames, int count, bool accepted)
+    {
+        var samples = Enumerable.Repeat(new MovementStateReplayDiagnostic(new(0, 0, 0), 0), count).ToImmutableArray();
+        if (accepted) Assert.Equal(samples, MovementStateScenario.RequireReplaySamples(samples, frames, "fixture route"));
+        else Assert.Contains("fixture route", Assert.Throws<InvalidOperationException>(() => MovementStateScenario.RequireReplaySamples(samples, frames, "fixture route")).Message);
+    }
+
+    [Fact]
+    public void IsolationUsesDirectoryBoundariesAndNormalizesEscapes()
+    {
+        string captures = Path.Combine(Path.GetPathRoot(RepoPaths.Root)!, "obp-portable-path-fixture", "captures");
+        Assert.True(CaptureDiagnosticIsolation.Isolated(null, captures));
+        Assert.True(CaptureDiagnosticIsolation.Isolated(Path.Combine(captures, "profile.json"), captures));
+        Assert.True(CaptureDiagnosticIsolation.Isolated(Path.Combine(Path.GetTempPath(), "profile.json"), captures));
+        Assert.False(CaptureDiagnosticIsolation.Isolated(Path.Combine(captures + "-evil", "profile.json"), captures));
+        Assert.False(CaptureDiagnosticIsolation.Isolated(Path.Combine(captures, "..", "escape", "profile.json"), captures));
+    }
+
+    [Fact]
+    public async Task NonTerminalSupervisionWaitsForWriterCommitBeforeReleasingInputAndNeverQuits()
+    {
+        var fixture = new Fixture { HoldFrames = true };
+        using var operations = new HostOperationScope();
+        var harness = fixture.Harness(operations);
+        harness.Start("capture-fixture", _ => Task.CompletedTask, "capture-failed", 7, false);
+        Assert.Equal(1, operations.PendingCount);
+        Assert.False(fixture.Disposed);
+        Assert.Empty(fixture.Quits);
+        fixture.State = fixture.State with { Finished = true };
+        fixture.NextFrame.TrySetResult();
+        await fixture.Released.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await operations.StopAsync();
+        Assert.True(fixture.Disposed);
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(operations.TakeFailures());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SupervisionKeepsFailureReasonCodeAndOptionalAcceptanceEvidence(bool evidence)
+    {
+        var fixture = new Fixture();
+        using var operations = new HostOperationScope();
+        fixture.Harness(operations).Start("capture-fixture", _ => throw new InvalidDataException("original fixture failure"),
+            "capture-failed", 7, false, evidence ? "capture-route" : null);
+        Assert.Equal(new[] { ("capture-failed", evidence ? 2 : 7) }, fixture.Quits);
+        Assert.True(fixture.Disposed);
+        if (evidence)
+        {
+            var failure = Assert.Single(fixture.Failures);
+            Assert.Equal("capture-route", failure.Phase);
+            Assert.Equal("original fixture failure", failure.Error.Message);
+        }
+        else Assert.Contains(fixture.Errors, message => message.Contains("original fixture failure", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void TerminalPassQuitsOnlyAfterInputCleanupAndRequirementsRefreshOnStart()
+    {
+        var fixture = new Fixture();
+        using var operations = new HostOperationScope();
+        fixture.Sources = [new(ObpSourceGame.Rac1, "fixture", true), new(ObpSourceGame.Rac2, "fixture", true)];
+        var harness = fixture.Harness(operations);
+        fixture.Sources = [new(ObpSourceGame.Rac1, "fixture", true)];
+        harness.Start("capture-fixture", _ => Task.CompletedTask, "capture-failed", 7, true);
+        Assert.Equal(new[] { ("capture-fixture-pass", 0) }, fixture.Quits);
+        Assert.True(fixture.Disposed);
+        Assert.True(fixture.DisposedAtQuit);
+    }
+
+    [Fact]
+    public void MultiSourceRoutesRejectPartialAdmissionBeforeExecuting()
+    {
+        var fixture = new Fixture();
+        using var operations = new HostOperationScope();
+        bool executed = false;
+        fixture.Harness(operations).Start("trilogy-gameplay-smoke", _ => { executed = true; return Task.CompletedTask; }, "missing-source", 1, true);
+        Assert.False(executed);
+        Assert.Equal(new[] { ("missing-source", 1) }, fixture.Quits);
+    }
+
+    [Fact]
+    public async Task HostCancellationReleasesInputWithoutClaimingAResult()
+    {
+        var fixture = new Fixture { HoldFrames = true };
+        using var operations = new HostOperationScope();
+        fixture.Harness(operations).Start("capture-fixture", context => context.Run.WaitAsync(DiagnosticFramePhase.Process), "capture-failed", 7, true);
+        await operations.StopAsync();
+        Assert.True(fixture.Disposed);
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(fixture.Failures);
+        Assert.Empty(operations.TakeFailures());
+    }
+
+    [Fact]
+    public async Task FinishedContinuationPreservesOwnedCancellationRatherThanAFailedSave()
+    {
+        var fixture = new Fixture { HoldFrames = true, Sources = Fixture.AllSources };
+        using var operations = new HostOperationScope();
+        var task = fixture.Harness(operations).VerifyFinishedContinuationAsync();
+        await operations.StopAsync();
+        var canceled = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
+        Assert.Equal(operations.Token, canceled.CancellationToken);
+        Assert.Empty(fixture.Quits);
+        Assert.Empty(fixture.Failures);
+    }
+
+    [Fact]
+    public void UnpacedReportPollingRetainsItsWallDeadlineRatherThanA60HzFrameBudget()
+    {
+        var fixture = new Fixture();
+        using var operations = new HostOperationScope();
+        fixture.Harness(operations).Start("bug-report-smoke", context => context.Run.WaitAsync(DiagnosticFramePhase.Process, 108_001), "report-failed", 1, true);
+        Assert.Equal(108_001UL, fixture.Process);
+        Assert.Equal(new[] { ("bug-report-smoke-pass", 0) }, fixture.Quits);
+    }
+
+    [Fact]
+    public void SupervisionRetainsOriginalFailureAlongsideInputCleanupFailure()
+    {
+        var fixture = new Fixture { FailDispose = true };
+        using var operations = new HostOperationScope();
+        fixture.Harness(operations).Start("capture-fixture", _ => throw new InvalidDataException("original fixture failure"), "capture-failed", 7, true, "capture-route");
+        var failure = Assert.IsType<AggregateException>(Assert.Single(fixture.Failures).Error);
+        Assert.Contains(failure.InnerExceptions, error => error.Message == "original fixture failure");
+        Assert.Contains(failure.InnerExceptions, error => error.Message == "fixture cleanup failure");
+        Assert.Equal(new[] { ("capture-failed", 2) }, fixture.Quits);
+    }
+
     private sealed class Fixture : ICaptureRecorderDiagnosticFixture, ICaptureDiagnosticInput, ICaptureDiagnosticInputFactory,
         ICaptureDiagnosticTime, IDiagnosticFrameClock, IDiagnosticSources, IDiagnosticNavigationActions, ICaptureEquipmentActions, IDiagnosticAcceptanceReporter
     {
@@ -140,7 +292,18 @@ public sealed class CaptureDiagnosticTests
         };
         internal CaptureRuntimeDiagnostic State { get; set; } = Initial;
         internal ulong Physics, Process;
-        internal bool Saved, MutateProfile, MissingBookmark, Disposed;
+        internal bool Saved, MutateProfile, MissingBookmark, Disposed, HoldFrames, DisposedAtQuit, FailDispose;
+        internal static ImmutableArray<DiagnosticSourceSnapshot> AllSources => [new(ObpSourceGame.Rac1, "fixture", true), new(ObpSourceGame.Rac2, "fixture", true), new(ObpSourceGame.Rac3, "fixture", true)];
+        internal ImmutableArray<DiagnosticSourceSnapshot> Sources = [new(ObpSourceGame.Rac1, "fixture", true)];
+        internal TaskCompletionSource NextFrame { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource Released { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal List<(string, int)> Quits { get; } = [];
+        internal List<string> Errors { get; } = [];
+        internal List<(string Phase, Exception Error, string Reason)> Failures { get; } = [];
+        internal CaptureDiagnosticHarness Harness(HostOperationScope operations) => new(new(() => [.. Sources.Select(source => new DiagnosticSourceRequirement(source.Game, source.Build))],
+                [.. AllSources.Select(source => new DiagnosticSourceRequirement(source.Game, source.Build))]),
+            new(this, this, null!, null!, null!, null!, this, _ => Task.CompletedTask, () => true), null!, this, this, this,
+            new(this, this), operations, (reason, code) => { DisposedAtQuit = Disposed; Quits.Add((reason, code)); }, _ => { }, Errors.Add);
         internal List<string> Protocol { get; } = [];
         internal List<string> Visits { get; } = [];
         internal List<(int, string)> Bookmarks { get; } = [];
@@ -161,7 +324,7 @@ public sealed class CaptureDiagnosticTests
         public void Axis(CaptureAxis axis, float value) => Record(FormattableString.Invariant($"axis {axis} {value}"));
         public void Mouse(bool pressed, Vector2 position) => throw new NotSupportedException();
         public ICaptureDiagnosticInput Acquire() => this;
-        public void Dispose() => Disposed = true;
+        public void Dispose() { Disposed = true; Released.TrySetResult(); if (FailDispose) throw new IOException("fixture cleanup failure"); }
         public CaptureRuntimeDiagnostic Read() => State with { PhysicsTick = (long)Physics };
         public void ResizeWindow(int width, int height) => Record($"resize {width} {height}");
         public ICaptureBookmarkDiagnostic RequestBookmark(int visit, string destination)
@@ -173,11 +336,11 @@ public sealed class CaptureDiagnosticTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (phase == DiagnosticFramePhase.Physics) Physics++; else Process++;
-            return Task.CompletedTask;
+            return HoldFrames ? NextFrame.Task.WaitAsync(cancellationToken) : Task.CompletedTask;
         }
         public ulong Milliseconds => Process + Physics;
         public Task DelayAsync(int milliseconds, CancellationToken token) => throw new NotSupportedException();
-        public ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => [];
+        public ImmutableArray<DiagnosticSourceSnapshot> ReadSources() => Sources;
         public Task<DiagnosticActionResult> NavigateAsync(string destinationId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested(); Visits.Add(destinationId);
@@ -189,6 +352,6 @@ public sealed class CaptureDiagnosticTests
         public void Assert(bool condition, string id, string detail)
         { if (!condition) throw new InvalidOperationException(id); Checks.Add(id); }
         public void Write(string phase) => Writes.Add(phase);
-        public void Fail(string phase, Exception error, string reason) => throw new NotSupportedException();
+        public void Fail(string phase, Exception error, string reason) { Failures.Add((phase, error, reason)); Quits.Add((reason, 2)); }
     }
 }

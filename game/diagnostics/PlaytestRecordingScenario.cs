@@ -6,7 +6,7 @@ public sealed class PlaytestRecordingScenario(CaptureDiagnosticContext context, 
     public async Task RunAsync()
     {
         for (int i = 0; i < 360 && recorder.Read().WaitingForEntry; i++) await Frames();
-        Require(recorder.Read() is { RecorderPresent: true, PlayerPresent: true }, "Playtest recorder/player missing.");
+        Require(recorder.Read() is { RecorderPresent: true, PlayerPresent: true, WaitingForEntry: false }, "Playtest recorder/player missing or entry did not finish.");
         await MovementAndEquipmentAsync();
         await WheelAndPauseAsync();
         await MarkAndFinishAsync();

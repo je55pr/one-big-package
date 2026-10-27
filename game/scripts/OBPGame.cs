@@ -1212,7 +1212,8 @@ public partial class OBPGame : Node3D
             CreateTrilogyPlayerDiagnosticFixture(), CreateTrilogyActorDiagnosticFixture(), navigation,
             token => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(token),
             () => CaptureDiagnosticIsolation.Isolated(SharedProfilePath, captures) && CaptureDiagnosticIsolation.Isolated(_bugReports?.Root, captures));
-        return _captureDiagnostics = new([.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
+        return _captureDiagnostics = new(new(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceRequirement(source.Game, source.Identity.BuildId))],
+                [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))]),
             ports, CreateMovementDiagnosticHarness().Ports, new GodotCaptureDiagnosticInputFactory(), new GodotCaptureDiagnosticTime(), acceptance,
             new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]), clock),
             _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.Print(message), message => GD.PrintErr(message));
@@ -1240,8 +1241,8 @@ public partial class OBPGame : Node3D
         Load = async (path, frames, token) =>
         {
             var result = await LoadMovementStateAsync(path, recordFrames: frames, cancellationToken: token); token.ThrowIfCancellationRequested();
-            if (frames is not null && result is null) throw new InvalidOperationException("Movement state replay failed.");
-            return result is null ? [] : [.. result.Select(sample => new MovementStateReplayDiagnostic(sample.Position, sample.ControlHeading))];
+            if (result is null) throw new InvalidOperationException("Movement state load/replay failed.");
+            return [.. result.Select(sample => new MovementStateReplayDiagnostic(sample.Position, sample.ControlHeading))];
         },
         Forward = async (frames, token) => [.. (await RecordForwardMovementReplayAsync(frames, token)).Select(sample => new MovementStateReplayDiagnostic(sample.Position, sample.ControlHeading))],
     });
