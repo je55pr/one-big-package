@@ -68,7 +68,7 @@ public partial class OBPGame
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
                         definition => CreateRac1WorldRouteDiagnosticHarness().CreateMusic(definition), definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         definition => CreateRac1WorldRouteDiagnosticHarness().CreateTaxi(definition), definition => CreateRac1CampaignDiagnosticHarness().CreateMission(definition), definition => CreateRac1WorldRouteDiagnosticHarness().CreateRoute(definition),
-                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), !(Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic), TrilogySourceDefinitions.All);
+                        definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
                     new GodotDiagnosticSources(() => [.. Sources.Setup.Library.Attached.Values.Select(source =>
                         new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),

@@ -18,7 +18,7 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
     private long _viewVersion;
     private bool _initialized, _disposed;
     public SourceSetupCoordinator Setup { get; } = setup;
-    public bool HasView => GodotObject.IsInstanceValid(_view) && !_view!.IsQueuedForDeletion();
+    public bool HasView => GodotObject.IsInstanceValid(_view) && !_view.IsQueuedForDeletion();
     public void Initialize()
     {
         if (_initialized) return;
@@ -45,7 +45,8 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
         if (Setup.RequireOrdinary(out var readiness)) return true;
         GD.PrintErr("[setup] Trilogy setup required before " + reason + ": " + string.Join("; ",
             readiness.Entries.Where(entry => !entry.Ready).Select(entry => entry.DisplayName + ": " + entry.Problem)) +
-            (Setup.RepairNeeded ? "; remembered configuration needs explicit repair" : ""));
+            (Setup.RepairNeeded ? "; remembered configuration needs explicit repair" : "") +
+            (Setup.ConsumersInvalidated ? "; sources changed; confirm setup to continue" : ""));
         navigation.AbandonTravel(); Show();
         if (automated) navigation.Quit("trilogy-setup-required", 2);
         return false;
@@ -59,13 +60,14 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
     {
         Initialize();
         var result = Setup.Attach(game, path, persist);
+        if (Setup.ConsumersInvalidated && Setup.Access == SourceAccessMode.OrdinaryPlay && (!HasView || !_view!.Visible))
+            RequireOrdinary("source replacement");
         if (HasView) _view!.Refresh(Setup.Library);
         if (reportStatus)
         {
             string message = result.Accepted && !debug() ? $"✓ {Setup.Library.Definition(game).DisplayName} attached" : result.Message;
             SetStatus(result.Warning is null ? message : message + "\n" + result.Warning, !result.Accepted || result.Warning is not null);
         }
-        if (Setup.ConsumersInvalidated && Setup.Access == SourceAccessMode.OrdinaryPlay) RequireOrdinary("source replacement");
     }
     private void Forget(ObpSourceGame game)
     {
@@ -85,7 +87,7 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
         Initialize();
         navigation.PrepareSetupScene();
         var world = owner.GetNode<Node3D>("WorldRoot");
-        foreach (var child in world.GetChildren()) if (!child.IsQueuedForDeletion()) child.QueueFree();
+        foreach (var child in world.GetChildren().Where(child => !child.IsQueuedForDeletion())) child.QueueFree();
         owner.GetNodeOrNull<DirectionalLight3D>("Sun")?.QueueFree();
         owner.GetNode<CanvasLayer>("UI").GetNodeOrNull<Label>("Banner")?.QueueFree();
         ApplicationPointer.MouseMode = Input.MouseModeEnum.Visible;
@@ -161,5 +163,10 @@ internal sealed class SourceSetupController(Node owner, SourceSetupCoordinator s
         if (HasView) _view!.QueueFree();
         _view = null;
     }
-    public void Dispose() { if (_disposed) return; _disposed = true; RetireView(); }
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        RetireView();
+    }
 }

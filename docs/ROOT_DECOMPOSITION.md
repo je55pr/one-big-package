@@ -149,7 +149,7 @@ retains room/station labels and hides development status/help captions.
 
 The #346 source/setup extraction retires both assigned root partials and their
 30 historical declaration/member permissions, plus the expired startup-visibility
-bridge and its external access. The root now has 71 files, 16,608 file lines,
+bridge and its external access. The root now has 71 files, 16,612 file lines,
 592 methods, 435 fields (292 mutable), 43 exposed members and 1,879 cross-file
 references. One source coordinator owns the library, bounded stamp/probe cache,
 explicit ordinary/diagnostic admission, recovery and consumer invalidation; its

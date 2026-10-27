@@ -28,7 +28,9 @@ $cases = @(
     @{ Name = 'modes'; Options = @('--record-playtest', 'a', '--replay-playtest', 'b'); Expected = '--record-playtest cannot be combined' },
     @{ Name = 'engine-after-boundary'; Options = @('--headless'); Expected = 'Unknown OBP argument: --headless' },
     @{ Name = 'retired-viewer'; Options = @('--compose'); Expected = 'Unknown OBP argument: --compose' },
-    @{ Name = 'retired-viewer-document'; Options = @('--composition', 'old.json'); Expected = 'Unknown OBP argument: --composition' }
+    @{ Name = 'retired-viewer-document'; Options = @('--composition', 'old.json'); Expected = 'Unknown OBP argument: --composition' },
+    @{ Name = 'source-missing'; Options = @('--rac1-iso', (Join-Path $evidence 'missing-disc.iso'), '--source-config', (Join-Path $evidence 'rejected-sources.json'), '--no-profile'); Prefix = '[sources] '; Expected = 'Could not attach Ratchet & Clank'; Reason = 'source-argument-invalid' },
+    @{ Name = 'source-missing-visibility'; Options = @('--rac1-iso', (Join-Path $evidence 'missing-disc.iso'), '--source-config', (Join-Path $evidence 'rejected-sources.json'), '--no-profile', '--rac1-startup-visibility-smoke'); Prefix = '[sources] '; Expected = 'Could not attach Ratchet & Clank'; Reason = 'source-argument-invalid' }
 )
 foreach ($case in $cases) {
     $log = Join-Path $evidence ($case.Name + '.log')
@@ -42,6 +44,11 @@ foreach ($case in $cases) {
     if ($code -ne 2 -or -not (Select-String -LiteralPath $errorLog -SimpleMatch ($prefix + $case.Expected) -Quiet) -or
         -not (Select-String -LiteralPath $log -SimpleMatch ("reason=$reason exitCode=2") -Quiet)) {
         throw "CLI case $($case.Name) failed (exit $code). Inspect $evidence."
+    }
+    if ($reason -eq 'source-argument-invalid' -and (
+        (Select-String -LiteralPath $log -Pattern '\[sources\] source manager shown|\[destinations\] world ready' -Quiet) -or
+        (Select-String -LiteralPath $errorLog -Pattern 'not bound|SCRIPT ERROR:|InvalidOperationException' -Quiet))) {
+        throw "Rejected source startup continued through its deferred bootstrap: $($case.Name). Inspect $evidence."
     }
     Write-Host "CLI rejection $($case.Name) passed"
 }

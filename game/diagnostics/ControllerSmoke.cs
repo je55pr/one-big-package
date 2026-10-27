@@ -1,4 +1,7 @@
 using OBP.Core;
+using OBP.Game.Diagnostics;
+using OBP.IO;
+using OBP.PS2;
 using Godot;
 using OBP.Godot;
 using OBP.RAC1.Gameplay;
@@ -84,10 +87,17 @@ public partial class ControllerSmoke : Node
             GD.Print("[controller-smoke] controller source-file dialog and cancel PASS");
             await CheckControllerWidgetsAsync();
             await CheckMissionSceneAcknowledgementAsync();
+            if (args.Rac1Iso is not null && args.Rac2Iso is not null && args.Rac3Iso is not null)
+                await CheckSourceReplacementAsync(args);
 
             if (args.Rac1Iso is not null || args.Rac2Iso is not null || args.Rac3Iso is not null)
             {
-                await FocusButton("CONTINUE TO WORLDS"); await Press(JoyButton.A);
+                var sourceMenu = Find<SourceManagerUi>()!;
+                Require(sourceMenu.DiagnosticSources, "Controller navigation requires explicit diagnostic source access");
+                var continueButton = Descendants(sourceMenu).OfType<Button>().SingleOrDefault(button => !button.Disabled &&
+                    button.Text is "CONTINUE TO WORLDS" or "REPAIR CONFIGURATION AND CONTINUE");
+                Require(continueButton is not null, "Source setup has no enabled world-navigation action");
+                await FocusButton(continueButton!.Text); await Press(JoyButton.A);
                 var selector = Find<DestinationSelectorUi>();
                 Require(selector is not null, "World list did not open with Cross");
                 var beforeStick = Focus(); await Axis(JoyAxis.LeftY, 1); await Axis(JoyAxis.LeftY, 0);
@@ -474,6 +484,73 @@ public partial class ControllerSmoke : Node
         ulong deadline = Time.GetTicksMsec() + 5000;
         while (menu.RetailPage != page && Time.GetTicksMsec() < deadline) await Frames(1);
         Require(menu.RetailPage == page, $"Retail page {page} failed to open");
+    }
+
+    private async Task CheckSourceReplacementAsync(CommandLineArgs args)
+    {
+        string folder = System.IO.Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "controller-smoke", Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(folder);
+        var files = new ReviewSourceFiles(args.Rac2Iso!);
+        var setup = new SourceSetupCoordinator(TrilogySourceDefinitions.All, System.IO.Path.Combine(folder, "sources.json"),
+            SourceAccessMode.OrdinaryPlay, files, new ReviewSourceConsumers(), _ => { }, _ => { });
+        Require(setup.ResolveStartup([(ObpSourceGame.Rac1, args.Rac1Iso), (ObpSourceGame.Rac2, args.Rac2Iso), (ObpSourceGame.Rac3, args.Rac3Iso)], false) &&
+            setup.RequireOrdinary(out _), "The replacement fixture requires three ready sources");
+        var owner = new Node3D(); owner.AddChild(new Node3D { Name = "WorldRoot" }); owner.AddChild(new CanvasLayer { Name = "UI" });
+        _game.AddChild(owner);
+        int preparations = 0;
+        using var controller = new SourceSetupController(owner, setup,
+            new(() => { }, () => preparations++, () => { }, () => { }, () => { }, () => { },
+                (reason, code) => throw new InvalidOperationException($"Unexpected replacement quit: {reason}/{code}")),
+            () => new(null, false, null), () => false, CancellationToken.None, false);
+        try
+        {
+            controller.Show(); await Frames(2);
+            var view = owner.GetChildren().OfType<SourceManagerUi>().Single();
+            var select = Descendants(view).OfType<Button>().Where(button => button.Text == "CHANGE SOURCE").ElementAt(1);
+            select.GrabFocus(); select.EmitSignal(BaseButton.SignalName.Pressed); await Frames(2);
+            var picker = owner.GetChildren().OfType<FileDialog>().Single();
+            // Change only this fixture's observed stamp; the original disc file is untouched.
+            files.Changed = true;
+            picker.EmitSignal(FileDialog.SignalName.FileSelected, args.Rac2Iso!); await Frames(2);
+            Require(preparations == 1 && ReferenceEquals(view, owner.GetChildren().OfType<SourceManagerUi>().Single()),
+                "Replacing a source rebuilt the active setup view");
+            Require(GodotDiagnosticSurface.Read(view).Any(text => text.Contains("Going Commando attached", StringComparison.Ordinal)),
+                "Source replacement lost its success status");
+            Require(ReferenceEquals(GetViewport().GuiGetFocusOwner(), select) && setup.ProfileSuspended && setup.ConsumersInvalidated,
+                "Source replacement lost focus or released the profile before confirmation");
+            select.EmitSignal(BaseButton.SignalName.Pressed); await Frames(2);
+            var latePicker = owner.GetChildren().OfType<FileDialog>().Single(); int opened = files.Opens;
+            controller.RetireView(); latePicker.EmitSignal(FileDialog.SignalName.FileSelected, args.Rac2Iso!);
+            Require(files.Opens == opened, "A retired picker callback reopened a source");
+            GD.Print("[controller-smoke] ordinary source replacement status/focus, profile suspension and retired picker callback PASS");
+        }
+        finally
+        {
+            controller.Dispose(); owner.QueueFree(); await Frames(2);
+            Find<SourceManagerUi>()?.RestoreFocus();
+        }
+    }
+
+    private sealed class ReviewSourceFiles(string changedPath) : ISourceSetupStorage
+    {
+        private readonly PhysicalSourceSetupStorage _physical = new();
+        public bool Changed;
+        public int Opens;
+        public bool Exists(string path) => _physical.Exists(path);
+        public DocumentRead<ObpSavedSource[]> ReadConfiguration(string path) => _physical.ReadConfiguration(path);
+        public void SaveConfiguration(ObpSourceLibrary library, string path) => _physical.SaveConfiguration(library, path);
+        public IRandomAccessReader Open(string path) { Opens++; return _physical.Open(path); }
+        public SourceFileIdentity Inspect(string path)
+        {
+            var stamp = _physical.Inspect(path);
+            return Changed && path == changedPath ? stamp with { Written = stamp.Written + 1 } : stamp;
+        }
+    }
+    private sealed class ReviewSourceConsumers : ISourceSetupConsumers
+    {
+        public string? RefreshPresentation(ObpAttachedSource? source, IRandomAccessReader? reader) => null;
+        public void Invalidate(ObpSourceGame game) { }
+        public void Prepare(bool force) { }
     }
 
     private async Task FocusButton(string text, bool contains = false)

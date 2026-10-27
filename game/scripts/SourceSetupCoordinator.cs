@@ -5,7 +5,10 @@ using OBP.PS2;
 namespace OBP.Game;
 
 public enum SourceAccessMode { OrdinaryPlay, ExplicitDiagnostic }
-public sealed record SourceSetupOperation(bool Accepted, string Message, string? Warning = null);
+public sealed record SourceSetupOperation(bool Accepted, string Message, string? Warning = null)
+{
+    public bool PersistenceFailed { get; init; }
+}
 public interface ISourceSetupStorage : ISourceValidationFiles
 {
     bool Exists(string path);
@@ -89,7 +92,11 @@ public sealed class SourceSetupCoordinator
         Initialize();
         if (StartupResolved) return true;
         foreach (var (game, path) in arguments)
-            if (path is not null && !Attach(game, path, persist).Accepted) { SuspendProfile(); return false; }
+        {
+            if (path is null) continue;
+            var result = Attach(game, path, persist);
+            if (!result.Accepted || result.PersistenceFailed) { SuspendProfile(); return false; }
+        }
         StartupResolved = true;
         return true;
     }
@@ -110,13 +117,24 @@ public sealed class SourceSetupCoordinator
             _consumers.Invalidate(game);
             string? warning = _consumers.RefreshPresentation(attached, reader);
             _consumers.Prepare(true);
-            if (persist) SaveConfiguration();
             _warnings.Remove(game);
-            if (warning is not null) _warnings[game] = warning;
             RememberObservation(attached);
+            bool persistenceFailed = false;
+            if (persist)
+            {
+                try { SaveConfiguration(); }
+                catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or InvalidDataException or NotSupportedException)
+                {
+                    persistenceFailed = true;
+                    string problem = "Attached for this session, but the remembered-source configuration could not be saved: " + error.Message;
+                    warning = warning is null ? problem : warning + "\n" + problem;
+                    _error("[sources] " + problem);
+                }
+            }
+            if (warning is not null) _warnings[game] = warning;
             string message = $"✓ {attached.Definition.DisplayName} attached — {attached.DiscSerial} · {attached.Identity.BuildId}";
             _log($"[sources] {message} path={attached.Path}");
-            return new(true, message, warning);
+            return new(true, message, warning) { PersistenceFailed = persistenceFailed };
         }
         catch (Exception error) { return Reject($"Could not attach {expected.DisplayName}: {error.Message}"); }
     }

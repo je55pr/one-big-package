@@ -120,10 +120,51 @@ public sealed class SourceSetupCoordinatorTests
         Assert.True(setup.Attach(ObpSourceGame.Rac2, "replacement.iso").Accepted);
         Assert.True(setup.ProfileSuspended); Assert.True(setup.ConsumersInvalidated);
         Assert.True(setup.Complete().Accepted); Assert.True(setup.RequireOrdinary(out _));
-        f.Files.FailSave = true; string saved = File.ReadAllText(f.Path);
+        f.Files.SaveFailure = new IOException("Read-only document."); string saved = File.ReadAllText(f.Path);
         var result = setup.Forget(ObpSourceGame.Rac2);
         Assert.False(result.Accepted); Assert.Null(setup.Library.Get(ObpSourceGame.Rac2));
         Assert.True(setup.ProfileSuspended); Assert.Equal(saved, File.ReadAllText(f.Path));
+    }
+    [Theory]
+    [InlineData("io")]
+    [InlineData("denied")]
+    [InlineData("invalid-data")]
+    [InlineData("invalid-path")]
+    public void AttachPersistenceFailureRetainsAnExplicitSessionAttachmentWithoutRepeatedInvalidation(string failure)
+    {
+        using var f = new Fixture(); var setup = f.Create(); setup.ResolveStartup(f.Arguments(3), true);
+        Assert.True(setup.RequireOrdinary(out _));
+        string saved = File.ReadAllText(f.Path); int invalidated = f.Consumers.Invalidated.Count;
+        f.Files.Entries["replacement.iso"] = f.Files.Entries["Rac2.iso"];
+        f.Files.SaveFailure = failure switch
+        {
+            "io" => new IOException("Read-only document."),
+            "denied" => new UnauthorizedAccessException("Access denied."),
+            "invalid-data" => new InvalidDataException("Invalid document."),
+            _ => new ArgumentException("Invalid config path."),
+        };
+        var result = setup.Attach(ObpSourceGame.Rac2, "replacement.iso");
+        Assert.True(result.Accepted); Assert.True(result.PersistenceFailed);
+        Assert.Contains("Attached for this session", result.Warning);
+        Assert.Equal(result.Warning, setup.RestoreWarnings[ObpSourceGame.Rac2]);
+        Assert.Equal("replacement.iso", setup.Library.Get(ObpSourceGame.Rac2)!.Path);
+        Assert.True(setup.ProfileSuspended); Assert.True(setup.ConsumersInvalidated);
+        Assert.True(setup.Readiness().Ready);
+        Assert.Equal(invalidated + 1, f.Consumers.Invalidated.Count);
+        Assert.Equal(saved, File.ReadAllText(f.Path));
+    }
+    [Theory]
+    [InlineData(SourceAccessMode.OrdinaryPlay)]
+    [InlineData(SourceAccessMode.ExplicitDiagnostic)]
+    public void StartupPersistenceFailureStillRejectsTheInvocationAndRetainsCurrentObservation(SourceAccessMode mode)
+    {
+        using var f = new Fixture(); var setup = f.Create(mode);
+        f.Files.SaveFailure = new IOException("Read-only document.");
+        Assert.False(setup.ResolveStartup(f.Arguments(3), true));
+        Assert.False(setup.StartupResolved); Assert.True(setup.ProfileSuspended);
+        Assert.NotNull(setup.Library.Get(ObpSourceGame.Rac1));
+        int invalidated = f.Consumers.Invalidated.Count;
+        setup.Readiness(); Assert.Equal(invalidated, f.Consumers.Invalidated.Count);
     }
     [Fact]
     public void OnlyResolvedOrdinarySurfacesAccumulatePeriodicChecks()
@@ -161,12 +202,12 @@ public sealed class SourceSetupCoordinatorTests
     {
         public Dictionary<string, Entry> Entries { get; } = [];
         public int Opened, Saved, Loaded;
-        public bool FailSave;
+        public Exception? SaveFailure;
         public bool Exists(string path) => Entries.ContainsKey(path);
         public SourceFileIdentity Inspect(string path) => Entries.TryGetValue(path, out var entry) ? entry.Identity : throw new FileNotFoundException("Source missing.");
         public IRandomAccessReader Open(string path) { Opened++; return new InMemoryReader(path, Entries[path].Bytes); }
         public DocumentRead<ObpSavedSource[]> ReadConfiguration(string path) { Loaded++; return ObpSourceLibrary.ReadConfig(path); }
-        public void SaveConfiguration(ObpSourceLibrary library, string path) { if (FailSave) throw new IOException("Read-only document."); Saved++; library.SaveConfig(path); }
+        public void SaveConfiguration(ObpSourceLibrary library, string path) { if (SaveFailure is { } failure) throw failure; Saved++; library.SaveConfig(path); }
     }
     private sealed class Consumers : ISourceSetupConsumers
     {

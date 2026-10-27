@@ -81,7 +81,7 @@ public partial class OBPGame
             root.AddChild(sign);
         }
 
-        if (!(Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic)) return;
+        if (Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic) return;
         _fusionLabStatus = new Label
         {
             Name = "FusionLabStatus",

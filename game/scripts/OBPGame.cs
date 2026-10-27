@@ -126,7 +126,11 @@ public partial class OBPGame : Node3D
         }
 
         BuildSkeleton();
-        if (!Sources.InitializeStartup(_args)) return;
+        if (!Sources.InitializeStartup(_args))
+        {
+            GetNodeOrNull<Node>("SourceManagerBootstrap")?.Free();
+            return;
+        }
         if (GetNodeOrNull<SourceManagerBootstrap>("SourceManagerBootstrap") is { } bootstrap)
             bootstrap.StartupVisibilityCheck = () => CreateUiDiagnosticHarness().Start("rac1-startup-visibility-smoke");
         if (_args.OrdinaryUiSmoke) CreateUiDiagnosticHarness().Start("ordinary-ui-smoke");
@@ -1328,7 +1332,7 @@ public partial class OBPGame : Node3D
             },
             () => _titleScreen, () => _destinationSelector, () => _pauseMenu,
             ShowTitleScreen, ShowDestinationSelector, TryHandleInteractiveBack, TryOpenPauseMenu, TryClosePauseMenu);
-        return new(_args, !(Sources.Setup.Access == SourceAccessMode.ExplicitDiagnostic),
+        return new(_args, Sources.Setup.Access != SourceAccessMode.ExplicitDiagnostic,
             [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))], menus,
             new DiagnosticPlayerContinuityAdapter(() => _playerSession?.Capture() ?? throw new DiagnosticUnavailableException("The player session is missing.")),
             new DiagnosticProfileEvidence(() => SharedProfilePath, SaveSharedProfile),

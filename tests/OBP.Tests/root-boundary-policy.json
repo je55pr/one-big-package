@@ -2565,7 +2565,7 @@
       "Owner": "#337",
       "Rationale": "Temporary UI fixture composition only; standalone scenarios own all assertions and the disposable engine fixture owns input/viewport cleanup. Retained bootstrap or Phase 1 callers use these thin delegations until their owner migrates. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
       "ExpiresWith": "#348",
-      "Hash": "a6beae57a73afff573a7185df279cfaefb402c5bb4833006fab5b4e234be920e"
+      "Hash": "fa33c3a838e0943645bd617059e5733c1f11bcf4403d998224cb192ea6ec911a"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:RunRac1VeldinRetailPauseSmokeAsync():Task:private",
