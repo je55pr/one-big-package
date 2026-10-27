@@ -48,20 +48,34 @@ SW = 13 (software), both at native resolution (upscale_multiplier = 1).
 The first test load showed a 'memory card removed' warning because the card
 was absent from the clone; copying the original cards into both isolated
 profiles cleared that warning. Both now display the same stationary tree
-scene with broadly similar appearance. A single frame does NOT tell us
-whether either renderer flickers when the camera moves.
+scene with broadly similar appearance.
+
+**Jess's moving-camera result (27 October 2026): the same tree-base ground
+flickering remains visible in the isolated PCSX2 software renderer.** It was
+also visible in the Vulkan/normal retail-emulator view. This excludes an
+exclusively Vulkan hardware-renderer defect from the observed reproductions,
+but does not determine whether original physical PS2 hardware also flickers.
+The comparison was observational, not a scripted pixel-identical camera path.
+
+The present source evidence is consistent with essentially coplanar retail
+geometry having imperfect depth resolution, even under GEQUAL and 24-bit
+depth writes. Recreating source draw order alone is therefore not established
+as a sufficient fix. The human-verified, slightly raised OBP overlay (#415)
+remains a deliberate rendering improvement.
 
 ## Next experiments
 
-1. Compare the same camera movement from the private saved tree position in
-   Vulkan and software renderers. Record motion-dependent flicker, not merely
-   one static screenshot. Keep any screenshots or footage outside git.
-2. Match class-501 texture-13 native packets to actual GS vertex batches
-   using texture VRAM identity; inspect TEST_1, ZBUF_1, ALPHA_1 and GIF PRIM
-   at that precise draw.
-3. Test a reusable world-overlay policy experimentally in Godot without
-   disturbing the established, working #415 geometry workaround.
-4. Separate faithful retail reproduction from deliberate visual improvement
-   if the original itself shows camera-dependent flickering.
+1. Correlate the native class-501 texture-13 packet with actual streamed GS
+   vertex batches using texture VRAM identity; inspect TEST_1, ZBUF_1,
+   ALPHA_1 and GIF PRIM at that **specific** draw. Our live frame-level
+   register counts are not per-object proof.
+2. Optionally collect matched input/movie captures on PCSX2 hardware and
+   software renderers if a quantitative comparison becomes necessary; current
+   Jess observations already establish both paths flicker.
+3. Evaluate a reusable world-overlay policy experimentally in Godot against
+   class-500 and class-501 decorations, without weakening the established
+   #415 visual fix, source geometry provenance, or collision.
+4. Separate source parity from intentional visual improvement, and do not
+   substitute a flickering reproduction for a stable user-approved result.
 
 Raw retail dumps, savestates, textures and screenshots stay under ignored private capture storage, never source control.
