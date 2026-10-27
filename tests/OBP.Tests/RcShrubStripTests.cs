@@ -82,7 +82,7 @@ public sealed class RcShrubStripTests
     {
         string? iso = Environment.GetEnvironmentVariable("OBP_RAC1_ISO");
         Skip.If(string.IsNullOrWhiteSpace(iso), "OBP_RAC1_ISO not set");
-        using var reader = new FileRandomAccessReader(iso!);
+        using var reader = Rac1VerifiedDisc.Open(iso!);
         var level = Rac1DiscIndex.Read(reader).Levels.Single(l => l.LevelId == levelId);
         var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Shrubs;
         Assert.Equal(expectedClasses, classes.Count);
