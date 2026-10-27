@@ -8,7 +8,7 @@ using OBP.RAC1.Progression;
 namespace OBP.Game.Diagnostics;
 
 /// <summary>Ordinary Veldin input witnesses; no transform staging, ammo mutation or direct consequence calls.</summary>
-public sealed class Rac1VeldinScenario(MovementDiagnosticContext context,Rac1CombatScenarioPorts ports) : Rac1CombatScenarioSupport(context,ports)
+public sealed class Rac1VeldinScenario(MovementDiagnosticContext context, Rac1CombatScenarioPorts ports) : Rac1CombatScenarioSupport(context, ports)
 {
     public async Task RunAsync()
     {
@@ -694,14 +694,14 @@ public sealed class Rac1VeldinScenario(MovementDiagnosticContext context,Rac1Com
         }
     }
 
-    private void SetRac1CameraSmokeInput(float right,float up)
+    private void SetRac1CameraSmokeInput(float right, float up)
     {
         ReleaseRac1CameraSmokeInput();
-        if(right>0) Driver.SetAction("obp_camera_right",true,right); else if(right<0) Driver.SetAction("obp_camera_left",true,-right);
-        if(up>0) Driver.SetAction("obp_camera_up",true,up); else if(up<0) Driver.SetAction("obp_camera_down",true,-up);
+        if (right > 0) Driver.SetAction("obp_camera_right", true, right); else if (right < 0) Driver.SetAction("obp_camera_left", true, -right);
+        if (up > 0) Driver.SetAction("obp_camera_up", true, up); else if (up < 0) Driver.SetAction("obp_camera_down", true, -up);
     }
     private void ReleaseRac1CameraSmokeInput()
-    { foreach(string action in new[]{"obp_camera_left","obp_camera_right","obp_camera_up","obp_camera_down"}) Driver.SetAction(action,false); }
+    { foreach (string action in new[] { "obp_camera_left", "obp_camera_right", "obp_camera_up", "obp_camera_down" }) Driver.SetAction(action, false); }
     private void ClearRac1VeldinPlaySmokeInput() { ClearMovementSmokeInput(); ReleaseRac1CameraSmokeInput(); }
 
 }

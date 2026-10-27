@@ -627,7 +627,7 @@ public sealed class Rac1AridiaScenario(MovementDiagnosticContext context, IRac1E
         var expected = ToEffectNative(start.AuthoredHomeScene) - ToEffectNative(nestPosition);
         float sourceYaw = MathF.Atan2(expected.Y, expected.X);
         float? firstYaw = null;
-        foreach(float z in new[] { 5f, -5f })
+        foreach (float z in new[] { 5f, -5f })
         {
             Vector3 deathPosition = nestPosition + Vector3.UnitZ * z;
             var retirement = trial.StageDeathAndRetire(deathPosition);
@@ -641,7 +641,7 @@ public sealed class Rac1AridiaScenario(MovementDiagnosticContext context, IRac1E
                 MathF.Abs(launched.Yaw - sourceYaw) < .001f && launched.Motion.X > 0 &&
                 sample.NativeState == Rac1AridiaEnemies.NestReleasedSharkState,
                 "staged recycled shark aimed toward its mutable death location");
-            if(firstYaw.HasValue) Require(MathF.Abs(firstYaw.Value - launched.Yaw) < .001f,
+            if (firstYaw.HasValue) Require(MathF.Abs(firstYaw.Value - launched.Yaw) < .001f,
                 "second shark relaunch did not preserve first authored heading");
             firstYaw = launched.Yaw;
         }
