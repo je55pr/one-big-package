@@ -1,5 +1,6 @@
 using OBP.RAC1;
 using OBP.RAC1.Level;
+using OBP.Runtime.Presentation;
 
 namespace OBP.Tests;
 
@@ -68,5 +69,48 @@ public sealed class Rac1TieUvWrapTests
         int runtimeFaces = world.Meshes.Where(m => m.AssetKind == "tie")
             .Sum(m => m.TriangleCount);
         Assert.Equal(nativeFaces, runtimeFaces);
+    }
+
+    [Fact]
+    public void PackedUvSeamDecision_IsPortableAndAxisIndependent()
+    {
+        // Only the wrapped axis changes; the orthogonal axis stays authored.
+        bool seamS = Rac1WorldImport.CrossesPackedTieUvSeam(
+            15.5f, 0f, 15.5f, RuntimeTextureWrap.Repeat);
+        bool ordinaryT = Rac1WorldImport.CrossesPackedTieUvSeam(
+            0f, 0.5f, 0f, RuntimeTextureWrap.Repeat);
+        Assert.True(seamS);
+        Assert.False(ordinaryT);
+        Assert.Equal(15.5, Rac1WorldImport.UnwrapPackedTieUv(15.5, seamS));
+        Assert.Equal(16, Rac1WorldImport.UnwrapPackedTieUv(0, seamS));
+        Assert.Equal(0.5, Rac1WorldImport.UnwrapPackedTieUv(0.5, ordinaryT));
+
+        bool ordinaryS = Rac1WorldImport.CrossesPackedTieUvSeam(
+            0f, 0.5f, 0f, RuntimeTextureWrap.Repeat);
+        bool seamT = Rac1WorldImport.CrossesPackedTieUvSeam(
+            15.5f, 0f, 15.5f, RuntimeTextureWrap.Repeat);
+        Assert.False(ordinaryS);
+        Assert.True(seamT);
+        Assert.Equal(16, Rac1WorldImport.UnwrapPackedTieUv(0, seamT));
+    }
+
+    [Fact]
+    public void PackedUvSeamDecision_PreservesClampAndOrdinaryFaces()
+    {
+        bool clamp = Rac1WorldImport.CrossesPackedTieUvSeam(
+            15.5f, 0f, 15.5f, RuntimeTextureWrap.Clamp);
+        bool ordinary = Rac1WorldImport.CrossesPackedTieUvSeam(
+            0.5f, 1f, 0.5f, RuntimeTextureWrap.Repeat);
+        bool nonBoundary = Rac1WorldImport.CrossesPackedTieUvSeam(
+            15.5f, 0f, 7f, RuntimeTextureWrap.Repeat);
+        Assert.False(clamp);
+        Assert.False(ordinary);
+        Assert.False(nonBoundary);
+        Assert.Equal(0, Rac1WorldImport.UnwrapPackedTieUv(0, clamp));
+        Assert.Equal(0.5, Rac1WorldImport.UnwrapPackedTieUv(0.5, ordinary));
+        Assert.Equal(0, Rac1WorldImport.UnwrapPackedTieUv(0, nonBoundary));
+
+        // Unspecified native wrap state keeps the original fallback.
+        Assert.True(Rac1WorldImport.CrossesPackedTieUvSeam(15.5f, 0f, 15.5f, null));
     }
 }

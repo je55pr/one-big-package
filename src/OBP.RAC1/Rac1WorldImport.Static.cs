@@ -143,13 +143,20 @@ public static partial class Rac1WorldImport
     // endpoints stretches a texture across 15.5 tiles inside one tiny face.
     // Only recognise triangles whose *all* corners are near that packed seam;
     // other authored repeats and the native class data are left untouched.
-    private static bool CrossesPackedTieUvSeam(float a, float b, float c)
+    internal static bool CrossesPackedTieUvSeam(
+        float a, float b, float c, RuntimeTextureWrap? wrap)
     {
+        if (wrap == RuntimeTextureWrap.Clamp)
+            return false;
+
         static bool NearBoundary(float value) => value is >= 0f and <= 1f or >= 15f and < 16f;
         return NearBoundary(a) && NearBoundary(b) && NearBoundary(c) &&
             (a <= 1f || b <= 1f || c <= 1f) &&
             (a >= 15f || b >= 15f || c >= 15f);
     }
+
+    internal static double UnwrapPackedTieUv(double value, bool crossesSeam) =>
+        crossesSeam && value <= 1d ? value + 16d : value;
 
     private static void PlaceMatrixInstances(
         string kind,
@@ -273,10 +280,10 @@ public static partial class Rac1WorldImport
                         b * 3 + 2 >= worldPositions.Length ||
                         c * 3 + 2 >= worldPositions.Length)
                         throw new InvalidDataException($"R&C1 tie class {instance.OClass} has an invalid face vertex.");
-                    unwrapS = presentation?.WrapS != RuntimeTextureWrap.Clamp &&
-                        CrossesPackedTieUvSeam(cls.Uvs[a * 2], cls.Uvs[b * 2], cls.Uvs[c * 2]);
-                    unwrapT = presentation?.WrapT != RuntimeTextureWrap.Clamp &&
-                        CrossesPackedTieUvSeam(cls.Uvs[a * 2 + 1], cls.Uvs[b * 2 + 1], cls.Uvs[c * 2 + 1]);
+                    unwrapS = CrossesPackedTieUvSeam(
+                        cls.Uvs[a * 2], cls.Uvs[b * 2], cls.Uvs[c * 2], presentation?.WrapS);
+                    unwrapT = CrossesPackedTieUvSeam(
+                        cls.Uvs[a * 2 + 1], cls.Uvs[b * 2 + 1], cls.Uvs[c * 2 + 1], presentation?.WrapT);
                 }
 
                 for (int corner = 0; corner < 3; corner++)
@@ -293,8 +300,8 @@ public static partial class Rac1WorldImport
                     double t = R4(cls.Uvs[sourceVertex * 2 + 1]);
                     // An integer 16-tile shift samples the same texture texels
                     // with Repeat, but restores interpolation across this wrap.
-                    if (unwrapS && s <= 1d) s += 16d;
-                    if (unwrapT && t <= 1d) t += 16d;
+                    s = UnwrapPackedTieUv(s, unwrapS);
+                    t = UnwrapPackedTieUv(t, unwrapT);
                     var key = (x, y, z, s, t);
                     if (!group.Weld.TryGetValue(key, out int runtimeVertex))
                     {
