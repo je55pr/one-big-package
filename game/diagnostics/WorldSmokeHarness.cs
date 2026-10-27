@@ -11,13 +11,13 @@ internal static class WorldSmokeHarness
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> VeldinPlay,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> MovementContact,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario> CombatContract,
-        Func<Task> Campaign, Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Movement,
-        Func<Task>? Crates = null, Func<Task>? PlacedBolts = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Wrench = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Campaign, Func<DiagnosticScenarioDefinition, IDiagnosticScenario> Movement,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Crates = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlacedBolts = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Wrench = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Enemies = null, Func<CancellationToken, Task>? MovementState = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? BombGlove = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisSwim = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisPeckbot = null,
         Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? NovalisBirdbot = null, Func<Task>? NovalisMusic = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Weapons = null,
-        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<Task>? MissionPlay = null,
+        Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? PlayerAudio = null, Func<Task>? MetropolisTaxi = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? MissionPlay = null,
         Func<Task>? NovalisRoute = null, Func<DiagnosticScenarioDefinition, IDiagnosticScenario>? Frogs = null);
 
     private sealed record Entry(DiagnosticRegistration Registration, Func<Entrypoints, ObpDestination, DiagnosticRunContext, Task?>? Invoke,
@@ -51,15 +51,18 @@ internal static class WorldSmokeHarness
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No weapon diagnostic is bound."))),
         TypedCase("rac1-player-audio-smoke", a => a.Rac1PlayerAudioSmoke, (e, definition) => e.PlayerAudio?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No player audio diagnostic is bound."))),
-        Case("rac1-crate-smoke", a => a.Rac1CrateSmoke, (e, _, _) => e.Crates?.Invoke()),
+        TypedCase("rac1-crate-smoke", a => a.Rac1CrateSmoke, (e, definition) => e.Crates?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No crate diagnostic is bound."))),
         TypedCase("rac1-enemy-smoke", a => a.Rac1EnemySmoke, (e, definition) => e.Enemies?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No enemy diagnostic is bound."))),
         TypedCase("rac1-frog-smoke", a => a.Rac1FrogSmoke, (e, definition) => e.Frogs?.Invoke(definition)
             ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No Frog diagnostic is bound."))),
         Case("movement-state-smoke", a => a.MovementStateSmoke, (e, _, r) => e.MovementState?.Invoke(r.CancellationToken)),
-        Case("rac1-placed-bolt-smoke", a => a.Rac1PlacedBoltSmoke, (e, _, _) => e.PlacedBolts?.Invoke()),
-        Case("rac1-campaign-smoke", a => a.Rac1CampaignSmoke, (e, _, _) => e.Campaign()),
-        Case("rac1-mission-play-smoke", a => a.Rac1MissionPlaySmoke, (e, _, _) => e.MissionPlay?.Invoke()),
+        TypedCase("rac1-placed-bolt-smoke", a => a.Rac1PlacedBoltSmoke, (e, definition) => e.PlacedBolts?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No placed-bolt diagnostic is bound."))),
+        TypedCase("rac1-campaign-smoke", a => a.Rac1CampaignSmoke, (e, definition) => e.Campaign(definition)),
+        TypedCase("rac1-mission-play-smoke", a => a.Rac1MissionPlaySmoke, (e, definition) => e.MissionPlay?.Invoke(definition)
+            ?? new LegacyDiagnosticScenario(definition, _ => throw new DiagnosticUnavailableException("No mission-play diagnostic is bound."))),
         TypedCase("movement-smoke", a => a.MovementSmoke, (e, definition) => e.Movement(definition), source: null),
     ];
     internal static DiagnosticScenarioRegistry Registry { get; } = new(Entries.Select(entry => entry.Registration));

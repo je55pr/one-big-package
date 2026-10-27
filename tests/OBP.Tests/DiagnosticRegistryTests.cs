@@ -183,9 +183,9 @@ public sealed class DiagnosticRegistryTests
     [Fact]
     public void TheActualInteractiveMissionLoopUsesTheCancellableWaitBoundary()
     {
-        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/OBPGame.Rac1MissionPlaySmoke.cs"));
-        Assert.Contains("while (IsInsideTree())", source, StringComparison.Ordinal);
-        Assert.Contains("Diagnostics.LegacyDiagnosticWait.SignalAsync(GetTree(), SceneTree.SignalName.ProcessFrame)", source, StringComparison.Ordinal);
+        string source = File.ReadAllText(Path.Combine(RepoPaths.Root, "game/diagnostics/Rac1MissionPlayScenario.cs"));
+        Assert.Contains("while (true)", source, StringComparison.Ordinal);
+        Assert.Contains("await ProcessFrameAsync()", source, StringComparison.Ordinal);
         Assert.DoesNotContain("await ToSignal", source, StringComparison.Ordinal);
     }
 

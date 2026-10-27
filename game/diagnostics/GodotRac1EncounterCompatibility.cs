@@ -1,6 +1,5 @@
 using Godot;
 using OBP.Godot;
-using OBP.RAC1.Gameplay;
 
 namespace OBP.Game.Diagnostics;
 
@@ -17,14 +16,5 @@ internal static class GodotRac1EncounterCompatibility
             await GodotAsyncWait.SignalAsync(owner.GetTree(), SceneTree.SignalName.ProcessFrame, token);
         }
         throw new TimeoutException($"Timed out waiting for RAC1 smoke phase: {label}.");
-    }
-    // #342 removes this last logical-attack shim; extracted suites use Rac1EncounterInput.
-    internal static async Task TapPrimaryAsync(Node owner, Rac1WeaponId selected)
-    {
-        var action = selected == Rac1WeaponId.FirstRanged ? RawGamepadInput.Traversal : RawGamepadInput.Action;
-        Input.ActionPress(action);
-        try { await GodotMovementCompatibility.FramesAsync(owner, 2, LegacyDiagnosticCancellation.Current); }
-        finally { Input.ActionRelease(action); }
-        await GodotMovementCompatibility.FramesAsync(owner, 2, LegacyDiagnosticCancellation.Current);
     }
 }

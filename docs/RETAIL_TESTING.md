@@ -38,11 +38,11 @@ they do not establish a matched retail trajectory or ordinary playability.
 | `./tools/rac1-bomb-glove-smoke.ps1` | Glove/bomb skins, socket/throw, arc, impact/splash/occlusion, ammo/cadence and cleanup. |
 | `./tools/rac1-weapons-smoke.ps1` | Full working arsenal, idle/use poses, audio lifetime, contact, cargo and deployed-agent fixtures. |
 | `./tools/fusion-weapons-smoke.ps1 -Rendered` | Opt-in Bomb Glove/Lancer/Shock Cannon on Veldin: original assets, staged authored-target reactions/occlusion, isolated campaign cleanup, ordinary input recording and fresh-process replay with all three source identities. See [fusion weapon testing](FUSION_WEAPONS_TESTING.md). |
-| `./tools/rac1-crate-smoke.ps1` | Crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. |
-| `./tools/rac1-placed-bolt-smoke.ps1` | Authored Veldin/Batalia/Pokitaru bolts, floating height, attraction, removal and exact one/five-bolt credit. |
-| `./tools/rac1-campaign-smoke.ps1` | Source-game travel and campaign-state integration. |
+| `./tools/rac1-crate-smoke.ps1` | Headless crate/support, debris, bolts, ammo and health fixtures on Veldin/Novalis. Use `-Render` for optional images. |
+| `./tools/rac1-placed-bolt-smoke.ps1` | Headless authored Veldin/Batalia/Pokitaru bolts, floating height, attraction, removal and exact one/five-bolt credit. Use `-Render` for optional images. |
+| `./tools/rac1-campaign-smoke.ps1` | Headless source-game travel and campaign-state integration; `-Render` opts into a visible window. |
 | `./tools/rac1-metropolis-taxi-smoke.ps1` | Staged retail Kerwan i919/i962 taxi boarding, source-backed hover/tilt PVar import and native side-specific class-1012 HUD message, travel, dismount, flight abort/relaunch, camera follow/reset and hull collision restoration. Uses the in-world input handler but stages player position and temporarily fast-forwards game time 12x, so this is not an ordinary walk-up route. |
-| `./tools/rac1-mission-play-smoke.ps1` | Interactive, human-played mission gate: Veldin encounter, Novalis Plumber purchase, death/retry, Aridia travel/revisit, then fresh-process save validation. No generated input or injected unlocks. |
+| `./tools/rac1-mission-play-smoke.ps1 -Interactive` | Explicit human-played mission gate: Veldin encounter, Novalis Plumber purchase, death/retry, Aridia travel/revisit, then fresh-process save validation. No generated input or injected unlocks; unattended launch is refused. |
 
 The movement wrapper requires all three sources and runs `rac1:LEVEL0`,
 `rac2:LEVEL1` and `rac3:TABLE1`. To isolate a destination, launch the built

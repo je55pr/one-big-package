@@ -203,7 +203,17 @@ public sealed class CoverageReportTests
         "game/diagnostics/FusionWeaponDiagnosticHarness.cs",
         "game/diagnostics/FusionWeaponScenarioSupport.cs",
         "game/diagnostics/FusionWeaponsScenario.cs",
-        "game/diagnostics/FusionWeaponRecordingScenario.cs" })
+        "game/diagnostics/FusionWeaponRecordingScenario.cs",
+        "game/diagnostics/Rac1LootDiagnosticHarness.cs",
+        "game/diagnostics/Rac1PlacedBoltScenario.cs",
+        "game/diagnostics/Rac1CrateScenario.cs",
+        "game/diagnostics/Rac1LootDiagnosticPorts.cs",
+        "game/diagnostics/Rac1CampaignDiagnosticHarness.cs",
+        "game/diagnostics/Rac1MissionPlayScenario.cs",
+        "game/diagnostics/Rac1CampaignScenario.cs",
+        "game/diagnostics/Rac1CampaignScenarioAssertions.cs",
+        "game/diagnostics/Rac1CampaignSaveDiagnostics.cs",
+        "game/diagnostics/Rac1CampaignDiagnosticPorts.cs" })
                 yield return new object[] { form, path };
     }
 

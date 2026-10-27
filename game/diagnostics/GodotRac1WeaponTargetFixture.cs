@@ -19,7 +19,7 @@ internal sealed class GodotRac1WeaponTargetFixture(GodotRac1WeaponTargetBindings
             throw new DiagnosticUnavailableException("The source-qualified R&C1 weapon fixture world is unavailable.");
         return new(world.WorldInstanceId, world.Generation, new(node.Source.SourceGame, node.Source.NativeClassId, node.Source.InstanceIndex));
     }
-    private RuntimeWorldScene.DynamicObjectNode Resolve(ActorInstanceKey key)
+    internal RuntimeWorldScene.DynamicObjectNode ResolveNode(ActorInstanceKey key)
     {
         Rac1DiagnosticActorScope.RequireCurrent(key, worlds.ReadWorld());
         var node = bindings.Crates().Concat(bindings.Enemies().Select(enemy => enemy.Node))
@@ -33,19 +33,19 @@ internal sealed class GodotRac1WeaponTargetFixture(GodotRac1WeaponTargetBindings
     public ImmutableArray<Rac1WeaponTargetDiagnostic> ReadEnemies() => [.. bindings.Enemies().Select(enemy => Snapshot(enemy.Node, enemy.RewardEmitted))];
     public Rac1WeaponTargetDiagnostic Read(ActorInstanceKey actor)
     {
-        var node = Resolve(actor);
+        var node = ResolveNode(actor);
         return Snapshot(node, bindings.Enemies().SingleOrDefault(enemy => ReferenceEquals(enemy.Node, node))?.RewardEmitted ?? false);
     }
-    public void StageCrate(ActorInstanceKey actor, NVector3 position) => bindings.StageCrate(Resolve(actor), GodotMovementPlayer.Engine(position));
+    public void StageCrate(ActorInstanceKey actor, NVector3 position) => bindings.StageCrate(ResolveNode(actor), GodotMovementPlayer.Engine(position));
     public float ReadRobotHealth(ActorInstanceKey actor)
     {
-        Resolve(actor);
+        ResolveNode(actor);
         if (actor.Target.NativeClassId != 1440) throw new DiagnosticUnavailableException("The robot health fixture requires class1440.");
         return bindings.RobotHealth(actor.Target.InstanceIndex);
     }
     public void StageEnemy(ActorInstanceKey actor, NVector3 position)
     {
-        Resolve(actor);
+        ResolveNode(actor);
         var enemy = bindings.Enemies().SingleOrDefault(enemy => enemy.Node.Source.NativeClassId == actor.Target.NativeClassId && enemy.Node.Source.InstanceIndex == actor.Target.InstanceIndex)
             ?? throw new DiagnosticUnavailableException("The weapon fixture requires a hosted enemy.");
         StageEnemy(enemy, GodotMovementPlayer.Engine(position));

@@ -7,6 +7,29 @@ namespace OBP.Tests;
 
 public sealed class AutomationDesktopSafetyTests
 {
+    [Theory]
+    [InlineData("rac1-campaign-smoke.ps1")]
+    [InlineData("rac1-crate-smoke.ps1")]
+    [InlineData("rac1-placed-bolt-smoke.ps1")]
+    public void CampaignAndLootWrappersRequireAnExplicitRenderedOptIn(string name)
+    {
+        string script = File.ReadAllText(Path.Combine(RepoPaths.Root, "tools", name));
+        Assert.Contains("[switch]$Render", script, StringComparison.Ordinal);
+        Assert.Contains("if ($Render) { @(Get-ObpWindowArguments) } else { @('--headless') }", script, StringComparison.Ordinal);
+        Assert.Contains("'--no-profile'", script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void HumanMissionWrapperRejectsUnattendedLaunchBeforeBuildingOrOpeningAWindow()
+    {
+        string script = File.ReadAllText(Path.Combine(RepoPaths.Root, "tools", "rac1-mission-play-smoke.ps1"));
+        int guard = script.IndexOf("if (-not $Interactive)", StringComparison.Ordinal);
+        Assert.True(guard > 0);
+        Assert.True(guard < script.IndexOf("build.ps1", StringComparison.Ordinal));
+        Assert.True(guard < script.IndexOf("'--windowed'", StringComparison.Ordinal));
+        Assert.Contains("'--no-profile'", script, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void SourceSetupCheckIsAutomatedWhileRetainingOrdinarySourceRequirements()
     {

@@ -3,7 +3,8 @@
 param(
     [string]$Rac1Iso = $env:OBP_RAC1_ISO,
     [string]$RenderingMethod = 'gl_compatibility',
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$Render
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -21,8 +22,8 @@ if (-not $SkipBuild) {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 foreach ($level in @(0, 8, 11)) {
-    $windowArgs = @(Get-ObpWindowArguments)
-    & $godot @windowArgs '--path' (Join-Path $root 'game') '--rendering-method' $RenderingMethod '--' '--rac1-iso' $Rac1Iso '--destination' "rac1:LEVEL$level" '--rac1-placed-bolt-smoke'
+    $windowArgs = if ($Render) { @(Get-ObpWindowArguments) } else { @('--headless') }
+    & $godot @windowArgs '--path' (Join-Path $root 'game') '--rendering-method' $RenderingMethod '--' '--rac1-iso' $Rac1Iso '--destination' "rac1:LEVEL$level" '--no-profile' '--rac1-placed-bolt-smoke'
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 exit 0
