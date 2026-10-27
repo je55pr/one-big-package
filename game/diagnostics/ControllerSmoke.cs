@@ -87,7 +87,7 @@ public partial class ControllerSmoke : Node
 
             if (args.Rac1Iso is not null || args.Rac2Iso is not null || args.Rac3Iso is not null)
             {
-                await FocusButton("ENTER WORLDS", contains: true); await Press(JoyButton.A);
+                await FocusButton("CONTINUE TO WORLDS"); await Press(JoyButton.A);
                 var selector = Find<DestinationSelectorUi>();
                 Require(selector is not null, "World list did not open with Cross");
                 var beforeStick = Focus(); await Axis(JoyAxis.LeftY, 1); await Axis(JoyAxis.LeftY, 0);
