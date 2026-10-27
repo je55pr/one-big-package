@@ -74,7 +74,7 @@ public static partial class Rac1WorldImport
         var gameplay = Rac1LevelSettings.ReadGameplay(disc, level);
         var animatedMeshes = new List<RuntimeAnimatedMesh>();
         var dynamicObjects = AddPlacedStaticGeometry(
-            core, gameplay, meshes, textures, animatedMeshes,
+            core, gameplay, levelId, meshes, textures, animatedMeshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
         // Preserve Kerwan's retail taxi splines in their native Moby payloads.

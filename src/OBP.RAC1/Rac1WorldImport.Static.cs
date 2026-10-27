@@ -12,6 +12,7 @@ public static partial class Rac1WorldImport
     private static IReadOnlyList<RuntimeDynamicObject> AddPlacedStaticGeometry(
         Rac1LevelCore.Core core,
         byte[] gameplayBytes,
+        int levelId,
         List<RuntimeMesh> meshes,
         List<RuntimeTexture> textures,
         List<RuntimeAnimatedMesh> animatedMeshes,
@@ -34,6 +35,8 @@ public static partial class Rac1WorldImport
 
         var tieTextureIds = tieTextures.Select(t => t.TextureId).ToHashSet();
         var shrubTextureIds = shrubTextures.Select(t => t.TextureId).ToHashSet();
+        var shrubAlphaProfiles = shrubTextures.ToDictionary(
+            t => t.TextureId, t => AlphaProfile.Analyse(t.Rgba));
         var mobyTextureIds = mobyTextures.Select(t => t.TextureId).ToHashSet();
 
         animatedMeshes.AddRange(BuildAnimatedMobyMeshes(
@@ -51,6 +54,8 @@ public static partial class Rac1WorldImport
                         c.TriangleTextureIds.Length))
                 : null,
             tieTextureIds,
+            null,
+            null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -65,6 +70,8 @@ public static partial class Rac1WorldImport
                         c.Mesh.TriangleAlphaBlendEnabled, c.TriangleTextureIds.Length))
                 : null,
             shrubTextureIds,
+            shrubAlphaProfiles,
+            levelId == 1 ? new HashSet<int> { 116, 121 } : null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -136,6 +143,8 @@ public static partial class Rac1WorldImport
         IEnumerable<(int OClass, float[] Matrix)> instances,
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds, RuntimeMaterialPresentation?[] TrianglePresentations)?> lookup,
         HashSet<int> textureIds,
+        IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles,
+        IReadOnlySet<int>? cutoutClasses,
         List<RuntimeMesh> meshes,
         ref double minX,
         ref double minY,
@@ -144,14 +153,16 @@ public static partial class Rac1WorldImport
         ref double maxY,
         ref double maxZ)
     {
-        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation, int SortGroup), (
             List<double> Positions,
             List<float> Uvs,
             List<int> Indices,
             Dictionary<(double X, double Y, double Z, double S, double T), int> Weld)>();
 
+        int instanceOrdinal = 0;
         foreach (var instance in instances)
         {
+            int sortInstance = ++instanceOrdinal;
             var cls = lookup(instance.OClass)
                 ?? throw new InvalidDataException($"R&C1 {kind} placement references missing class {instance.OClass}.");
             if (cls.Indices.Length != cls.TriangleTextureIds.Length * 3)
@@ -193,7 +204,40 @@ public static partial class Rac1WorldImport
                 var presentation = (uint)face < (uint)cls.TrianglePresentations.Length
                     ? cls.TrianglePresentations[face]
                     : null;
-                var surface = (textureId, presentation);
+                // Only the R&C1 importer opts its shrub surfaces into the
+                // per-placement transparency policy; the neutral Godot host
+                // must not branch on source-game identity.
+                if (alphaProfiles is not null)
+                {
+                    // The saved swimming-area view identifies class 121 as the
+                    // layered canopy and class 116 as the red-leaf shrub.
+                    // Their authored leaf textures mix hard cutouts with a
+                    // smaller band of partial-alpha pixels (roughly 7-16%).
+                    // Depth-writing cutouts intentionally trade that soft
+                    // alpha away for stable intersecting leaf-card depth on
+                    // these two visually verified classes only. Other shrubs
+                    // retain their native alpha-blend interpretation.
+                    bool cutout = cutoutClasses?.Contains(instance.OClass) == true &&
+                        alphaProfiles.TryGetValue(textureId, out var profile) &&
+                        profile.CutoutFraction >= 0.05 &&
+                        presentation?.AlphaBlendEnabled is true &&
+                        presentation.BlendEquation is not (
+                            RuntimeBlendEquation.FixedAlpha or RuntimeBlendEquation.AdditiveSourceAlpha or
+                            RuntimeBlendEquation.AdditiveFixedAlpha);
+                    presentation = (presentation ?? new RuntimeMaterialPresentation()) with
+                    {
+                        PreferPerPlacementFoliageDepth = true,
+                        PreferFoliageCutout = cutout,
+                    };
+                }
+                // Alpha-blended foliage cards need their own per-placement
+                // sorting origin. A whole-level welded material surface cannot
+                // be sorted against itself or neighboring trees in Godot.
+                int sortGroup = alphaProfiles is not null &&
+                    alphaProfiles.TryGetValue(textureId, out var alpha) &&
+                    MaterialModel.RequiresFoliageAlphaSorting(kind, alpha, presentation)
+                    ? sortInstance : 0;
+                var surface = (textureId, presentation, sortGroup);
                 if (!bySurface.TryGetValue(surface, out var group))
                 {
                     bySurface[surface] = group = (
@@ -231,7 +275,8 @@ public static partial class Rac1WorldImport
 
         foreach (var (surface, group) in bySurface
                      .OrderBy(kv => kv.Key.TextureId)
-                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
+                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal)
+                     .ThenBy(kv => kv.Key.SortGroup))
         {
             meshes.Add(new RuntimeMesh(
                 kind,

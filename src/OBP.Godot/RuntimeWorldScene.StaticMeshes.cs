@@ -68,6 +68,36 @@ public static partial class RuntimeWorldScene
                 verts[i] = ToScene(m.Positions[i * 3], m.Positions[i * 3 + 1], m.Positions[i * 3 + 2]);
             }
 
+            // Godot sorts transparent mesh instances by their placement, not
+            // individual triangles. The importer has separated source shrub
+            // placements that truly require alpha blending; place each mesh
+            // around its own bounds centre instead of keeping every origin at
+            // the world origin. Coordinates remain unchanged in world space.
+            Vector3 pivot = Vector3.Zero;
+            if (mats.AlphaFor(m.AssetKind, m.TextureId) is { } foliageAlpha &&
+                MaterialModel.RequiresFoliageAlphaSorting(
+                    m.AssetKind, foliageAlpha, m.MaterialPresentation))
+            {
+                Vector3 minimum = verts[0], maximum = verts[0];
+                for (int i = 1; i < verts.Length; i++)
+                {
+                    minimum = new Vector3(
+                        Mathf.Min(minimum.X, verts[i].X),
+                        Mathf.Min(minimum.Y, verts[i].Y),
+                        Mathf.Min(minimum.Z, verts[i].Z));
+                    maximum = new Vector3(
+                        Mathf.Max(maximum.X, verts[i].X),
+                        Mathf.Max(maximum.Y, verts[i].Y),
+                        Mathf.Max(maximum.Z, verts[i].Z));
+                }
+
+                pivot = (minimum + maximum) * 0.5f;
+                for (int i = 0; i < verts.Length; i++)
+                {
+                    verts[i] -= pivot;
+                }
+            }
+
             // ToScene negates X — a reflection — which reverses every triangle's
             // winding. Swap two corners back so the reflection is undone and
             // face orientation matches the source data (all world materials are
@@ -130,6 +160,7 @@ public static partial class RuntimeWorldScene
             var mi = new MeshInstance3D
             {
                 Name = $"{m.AssetKind}_{m.TextureId}",
+                Position = pivot,
                 Mesh = mesh,
                 MaterialOverride = mat,
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,

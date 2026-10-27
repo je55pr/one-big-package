@@ -152,6 +152,29 @@ public sealed class WorldMaterialFactory
         }
 
         ApplyNativePresentation(mat, presentation);
+        if (assetKind == "shrub" && presentation is
+            { PreferFoliageCutout: true, AlphaBlendEnabled: true } &&
+            _alpha.TryGetValue(textureKey, out var foliageAlpha) && foliageAlpha.HasTransparency)
+        {
+            // The source importer admits specifically recovered leaf-card
+            // surfaces. Alpha testing writes depth per surviving leaf pixel;
+            // it avoids incorrect blending order within intersecting canopies.
+            mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+            mat.AlphaScissorThreshold = 0.5f;
+        }
+
+        if (assetKind == "shrub" && presentation is
+            { PreferPerPlacementFoliageDepth: true, AlphaBlendEnabled: true } &&
+            presentation.BlendEquation is not (RuntimeBlendEquation.FixedAlpha or
+                RuntimeBlendEquation.AdditiveSourceAlpha or RuntimeBlendEquation.AdditiveFixedAlpha) &&
+            _alpha.TryGetValue(textureKey, out var alpha) && !alpha.HasTransparency)
+        {
+            // Native shrub PRIM enables blending even for 255-alpha bark and
+            // branches. Under our MIX mapping the colour is identical in the
+            // opaque pass, which must write depth ahead of translucent cards.
+            mat.Transparency = BaseMaterial3D.TransparencyEnum.Disabled;
+        }
+
         _cache[cacheKey] = mat;
         return mat;
     }
