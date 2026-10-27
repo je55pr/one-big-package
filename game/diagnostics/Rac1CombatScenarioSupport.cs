@@ -99,11 +99,6 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
                             pursuedMembers.Add(pair.Key);
                         if (memberProbe.NativeState == Rac1Class749Hostile.AttackNativeState && !groupEntries.ContainsKey(pair.Key))
                         {
-                            double memberDistance = pair.Value.Read().Position.DistanceTo(Player.Read().GlobalPosition);
-                            double memberFacing = Rac1SmokeClass749FacingError(pair.Value, Player.Read().GlobalPosition);
-                            if (!(memberDistance < Rac1Class749Hostile.AttackDistanceExclusive) ||
-                                !(memberFacing < Rac1Class749Hostile.AttackFacingErrorExclusive))
-                                throw new InvalidOperationException($"Class-749 i{pair.Key} entered attack outside recovered gates: distance={memberDistance:R}, facing={memberFacing:R}.");
                             groupEntries.Add(pair.Key, (pair.Value.Read().Position.DistanceTo(Player.Read().GlobalPosition),
                                 Rac1SmokeClass749FacingError(pair.Value, Player.Read().GlobalPosition)));
                         }
@@ -128,7 +123,12 @@ public abstract class Rac1CombatScenarioSupport(MovementDiagnosticContext contex
                     Require(groupEntries.TryGetValue(attacker, out var attackEntry), "attacker never entered its native attack state");
                     entryDistance = attackEntry.Distance; entryFacing = attackEntry.Facing;
                     var nanotechAfter = lifecycle.ReadNanotech();
-                    if (!pursuedMembers.Contains(attacker))
+                    // Validate the member that actually produced admitted player
+                    // damage. Other members may already be mid-attack from an
+                    // earlier fixture phase when this observation begins.
+                    if (!pursuedMembers.Contains(attacker) ||
+                        !(attackEntry.Distance < Rac1Class749Hostile.AttackDistanceExclusive) ||
+                        !(attackEntry.Facing < Rac1Class749Hostile.AttackFacingErrorExclusive))
                         throw new InvalidOperationException(
                             "Class-749 reached its transported attack marker without observed pursuit/attack entry.");
 #pragma warning disable S1244 // Transport must retain the exact recovered attack marker and damage constants.
