@@ -17,6 +17,7 @@ public sealed partial class Rac1ParticleView : Node3D
     public int DrawCalls => _view?.DrawCalls ?? 0;
     public void Render(Rac1ParticleSession session, IReadOnlyDictionary<int, RuntimeTexture> textures)
     {
+        if (session.Count == 0) { if (_view?.TextureCount > 0) _view.Clear(); return; }
         _view ??= new(this);
         var bindings = textures.Values.Select(t => new RuntimeEffectTexture(Bank with
         { AssetKind = t.AssetKind, OriginalId = t.TextureId.ToString(System.Globalization.CultureInfo.InvariantCulture) }, t)).ToArray();

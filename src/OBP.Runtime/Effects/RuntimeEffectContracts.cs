@@ -38,14 +38,15 @@ public readonly record struct RuntimeEffectView(Vector3 Eye, Vector3 Forward, Ve
 {
     public void Validate()
     {
-        new RuntimeEffectPose(Eye, Forward).Validate(); new RuntimeEffectPose(Right, Up).Validate();
-        if (!float.IsFinite(TanX) || !float.IsFinite(TanY) || !float.IsFinite(ProjectionY) || !float.IsFinite(Aspect) ||
+        if (!Finite(Eye) || !Finite(Forward) || !Finite(Right) || !Finite(Up) ||
+            !float.IsFinite(TanX) || !float.IsFinite(TanY) || !float.IsFinite(ProjectionY) || !float.IsFinite(Aspect) ||
             TanX <= 0 || TanY <= 0 || ProjectionY <= 0 || Aspect <= 0 ||
             MathF.Abs(Forward.LengthSquared() - 1) > .0001f || MathF.Abs(Right.LengthSquared() - 1) > .0001f ||
             MathF.Abs(Up.LengthSquared() - 1) > .0001f || MathF.Abs(Vector3.Dot(Forward, Right)) > .0001f ||
             MathF.Abs(Vector3.Dot(Forward, Up)) > .0001f || MathF.Abs(Vector3.Dot(Right, Up)) > .0001f)
             throw new ArgumentException("Effect presentation requires an orthonormal camera and positive projection factors.");
     }
+    private static bool Finite(Vector3 value) => float.IsFinite(value.X) && float.IsFinite(value.Y) && float.IsFinite(value.Z);
 }
 
 public enum RuntimeEffectSpriteProjection { WorldBillboard, ProjectedBillboard }

@@ -7,13 +7,22 @@ using OBP.Godot;
 namespace OBP.Game.Diagnostics;
 
 internal sealed class GodotEffectsFixture(Node owner, Func<WorldEffectHost?> current, Func<Node3D?> worldRoot,
-    Func<string> protectedState, string captureDirectory) : IDiagnosticEffectsFixture
+    Func<string> protectedState, string captureDirectory, Func<string?>? unavailable = null) : IDiagnosticEffectsFixture
 {
     private WorldEffectHost? _retired;
     private EffectHandle[] _oldHandles = [];
     private byte[]? _baseline;
     private Camera3D? _camera;
-    public bool Ready => current()?.Ready == true && !ReferenceEquals(current(), _retired);
+    public bool Ready
+    {
+        get
+        {
+            var host = current();
+            if (host is null && unavailable?.Invoke() is { } reason) throw new DiagnosticUnavailableException(reason);
+            host?.Prepare();
+            return host?.Ready == true && !ReferenceEquals(host, _retired);
+        }
+    }
     public string Status => current()?.Status ?? "World unavailable.";
     public int RenderedParticles => current()?.RenderedParticles ?? 0;
     public int TextureCount => current()?.TextureCount ?? 0;
@@ -72,7 +81,8 @@ internal sealed class GodotEffectsFixture(Node owner, Func<WorldEffectHost?> cur
         return new(name, width, height, changes);
     }
     public void RememberWorld() { _retired = current(); _oldHandles = _retired?.Handles ?? []; }
-    public bool RetiredWorldClean => _retired is { IsDisposed: true, LiveInstances: 0, TextureCount: 0, BatchCount: 0 } && _oldHandles.All(Rejects);
+    public bool RetiredWorldClean => _retired is { IsDisposed: true, LiveInstances: 0, TextureCount: 0, BatchCount: 0 } retired &&
+        _oldHandles.All(handle => !retired.Stop(handle) && Rejects(handle));
     private sealed class Cleanup(Action action) : IDisposable { public void Dispose() => action(); }
 }
 

@@ -276,9 +276,10 @@ public sealed partial class PauseMenuUi
             }
             if (EffectControl is { } effectControl)
             {
-                _universalBody.AddChild(new Label { Name = "EffectsStatus", Text = EffectStatusReader?.Invoke() ?? "Effects unavailable.", AutowrapMode = TextServer.AutowrapMode.WordSmart });
-                Option("START NATIVE EFFECTS EXPERIMENT", () => _catalogStatus.Text = effectControl("start").Reason);
-                Option("RESET NATIVE EFFECTS EXPERIMENT", () => _catalogStatus.Text = effectControl("reset").Reason);
+                var effectsStatus = new Label { Name = "EffectsStatus", Text = EffectStatusReader?.Invoke() ?? "Effects unavailable.", AutowrapMode = TextServer.AutowrapMode.WordSmart };
+                _universalBody.AddChild(effectsStatus);
+                Option("START NATIVE EFFECTS EXPERIMENT", () => { _catalogStatus.Text = effectControl("start").Reason; effectsStatus.Text = EffectStatusReader?.Invoke() ?? _catalogStatus.Text; });
+                Option("RESET NATIVE EFFECTS EXPERIMENT", () => { _catalogStatus.Text = effectControl("reset").Reason; effectsStatus.Text = EffectStatusReader?.Invoke() ?? _catalogStatus.Text; });
             }
         }
         _universalReturnFocus = _universalFocus.Skip(1 + _universalTabs.Count).FirstOrDefault() ?? _resume;

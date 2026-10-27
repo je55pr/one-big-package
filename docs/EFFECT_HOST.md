@@ -1,8 +1,8 @@
 # Shared native effect host (#285)
 
 Enter Fusion Lab with the three admitted original NTSC-U sources attached. Walk
-to Test Chamber Alpha, then use **PAUSE > DEVELOPER > START NATIVE EFFECTS**.
-**RESET NATIVE EFFECTS** retires only effects; player configuration, equipment,
+to Test Chamber Alpha, then use **PAUSE > DEVELOPER > START NATIVE EFFECTS EXPERIMENT**.
+**RESET NATIVE EFFECTS EXPERIMENT** retires only effects; player configuration, equipment,
 health and native actor state keep their existing owners. The same controls are
 available in original worlds, with the demonstration row placed above nearby
 terrain. Start again to replay the authored experiment from its original seeds.
@@ -56,7 +56,8 @@ modules and are decoded from the authorized sources.
 Each texture binding retains **game + build + level bank + Part/Fx kind + native
 texture ID**. An equal integer from another bank cannot choose the image.
 Source preparation verifies the original disc hash independently of the current
-world. Missing sources, wrong builds, absent images and unsupported recipes or
+world. It starts on demand from the effect controls or an opted-in recording;
+ordinary travel does not decode unused effect banks. Missing sources, wrong builds, absent images and unsupported recipes or
 contexts produce explicit failure/status, without replacement particles.
 Detaching/changing a source retires its active instances; re-enter after fixing
 the attachment. An unavailable experiment cannot partially start.
@@ -139,6 +140,11 @@ changes for each source, in addition to CPU snapshot and resource assertions.
 Record/replay captures ordinary `effects start/reset` operations and native
 ticks, counts, attempts, emission and RNG checkpoints; the experiment data
 fingerprint participates in replay provenance.
+Human input recordings opt in with `--record-effects --record-playtest ...`;
+the effects smoke opts in automatically. Replay follows the recorded versioned
+adapter manifest. Earlier recordings retain their original provenance and
+checkpoint fields and do not wait for unused effect banks. Effect controls are
+unavailable during a recording that did not opt in.
 
 The focused input tape covers two native windows of at least 20 ticks. A longer
 idle Lab tape currently exposes small class-749 actor wall-contact differences

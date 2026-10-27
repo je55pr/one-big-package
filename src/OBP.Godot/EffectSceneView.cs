@@ -13,7 +13,7 @@ public sealed class EffectSceneView : IDisposable
     private readonly Node3D _root;
     private readonly EffectMeshSceneView _meshes;
     private readonly Dictionary<ObpSourceRef, ImageTexture> _textures = [];
-    private readonly Dictionary<(RuntimeEffectDrawState State, RuntimeEffectSpriteProjection Projection), Shader> _shaders = [];
+    private readonly Dictionary<(RuntimeBlendEquation Blend, bool Test, bool Write, bool Fade, RuntimeEffectSpriteProjection Projection), Shader> _shaders = [];
     private readonly Dictionary<(ObpSourceRef Texture, RuntimeEffectDrawState State, RuntimeEffectSpriteProjection Projection), Batch> _batches = [];
     private readonly Dictionary<(ObpSourceRef Texture, RuntimeMaterialPresentation? State), StandardMaterial3D> _meshMaterials = [];
     private readonly List<OmniLight3D> _lights = [];
@@ -90,7 +90,8 @@ public sealed class EffectSceneView : IDisposable
     {
         if (state.Blend is not (RuntimeBlendEquation.SourceAlpha or RuntimeBlendEquation.AdditiveSourceAlpha))
             throw new NotSupportedException("This sprite blend equation is not admitted.");
-        if (!_shaders.TryGetValue((state, projection), out var shader))
+        var shaderKey = (state.Blend, state.DepthTest, state.DepthWrite, state.DepthFade, projection);
+        if (!_shaders.TryGetValue(shaderKey, out var shader))
         {
             string blend = state.Blend == RuntimeBlendEquation.AdditiveSourceAlpha ? "blend_add" : "blend_mix";
             string depth = state.DepthWrite ? "depth_draw_always" : "depth_draw_never";
@@ -124,7 +125,7 @@ public sealed class EffectSceneView : IDisposable
                     ALPHA = texel.a * COLOR.a * fade;
                 }
                 """ };
-            _shaders.Add((state, projection), shader);
+            _shaders.Add(shaderKey, shader);
         }
         var material = new ShaderMaterial { Shader = shader };
         material.SetShaderParameter("art", Texture(source, texture)); material.SetShaderParameter("near_depth", state.NearFade);

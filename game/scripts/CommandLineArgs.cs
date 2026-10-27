@@ -16,6 +16,7 @@ public sealed record CommandLineArgs
     public string? CaptureOut { get; init; }
     public int? FixedSeed { get; init; }
     public string? RecordPlaytest { get; init; }
+    public bool RecordEffects { get; init; }
     public string? ReplayPlaytest { get; init; }
     public string? PlaytestReport { get; init; }
     public bool PlaytestAllowBuildChange { get; init; }
@@ -222,6 +223,7 @@ public sealed record CommandLineArgs
                 "--fusion-test" => result with { FusionTest = true },
                 "--fusion-smoke" => result with { FusionTest = true, FusionSmoke = true },
                 "--effects-smoke" => result with { EffectsSmoke = true },
+                "--record-effects" => result with { RecordEffects = true },
                 "--default-weapons-smoke" => result with { DefaultWeaponsSmoke = true },
                 "--bug-capture" => result with { BugCapture = true },
                 "--bug-report-smoke" => result with { BugReportSmoke = true },
@@ -309,6 +311,8 @@ public sealed record CommandLineArgs
             throw new ArgumentException("--movement-case requires a known movement regression name.");
         if (result.RecordPlaytest is not null && result.ReplayPlaytest is not null)
             throw new ArgumentException("--record-playtest cannot be combined with --replay-playtest.");
+        if (result.RecordEffects && (result.RecordPlaytest is null || result.NativeParityRequested))
+            throw new ArgumentException("--record-effects requires --record-playtest with the ordinary shared player.");
         if (result.BugCapture && (result.PlaytestRequested || result.ReplayBugReport is not null))
             throw new ArgumentException("--bug-capture cannot be combined with --record-playtest, --replay-playtest or --replay-bug-report.");
         if (result.ReplayForwardFrames.HasValue && result.LoadMovementState is null)

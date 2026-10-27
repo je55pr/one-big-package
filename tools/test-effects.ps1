@@ -57,7 +57,11 @@ function Invoke-EffectsRun([string]$RunName, [string[]]$ExtraArguments) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     try {
         while (!$process.WaitForExit(1000)) {
-            if ($watch.Elapsed.TotalMinutes -gt 11) { $process.Kill(); throw "Effects $RunName run timed out." }
+            if ($watch.Elapsed.TotalMinutes -gt 11) {
+                $process.Kill(); $process.WaitForExit(5000) | Out-Null
+                try { [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($outCopy, $errCopy), 5000) | Out-Null } catch { }
+                throw "Effects $RunName run timed out."
+            }
         }
         $outCopy.GetAwaiter().GetResult() | Out-Null
         $errCopy.GetAwaiter().GetResult() | Out-Null

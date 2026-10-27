@@ -13,6 +13,7 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
     public WorldHost Presentation { get; } = new();
     public RuntimeWorldScene.Result Scene { get; } = prepared;
     public WorldEffectHost? Effects { get; set; }
+    public string? EffectsFailure { get; set; }
     public WorldEntryRequest? EffectScope { get; set; }
 
     public void Load(Node owner, Node3D parent, RuntimeWorld world, string name, WorldHost.Options options) =>
@@ -26,11 +27,15 @@ internal sealed class GodotWorldResources(RuntimeWorldScene.Result prepared) : I
         _disposed = true;
         try
         {
-            Effects?.Dispose(); Effects = null;
-            if (GodotObject.IsInstanceValid(_player))
+            try { Effects?.Dispose(); }
+            finally
             {
-                if (_player!.GetParent() is { } parent) parent.RemoveChild(_player);
-                if (!_player.IsQueuedForDeletion()) _player.QueueFree();
+                Effects = null;
+                if (GodotObject.IsInstanceValid(_player))
+                {
+                    if (_player!.GetParent() is { } parent) parent.RemoveChild(_player);
+                    if (!_player.IsQueuedForDeletion()) _player.QueueFree();
+                }
             }
         }
         finally

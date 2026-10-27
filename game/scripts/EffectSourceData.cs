@@ -31,33 +31,47 @@ internal sealed class EffectSourceData
         {
             token.ThrowIfCancellationRequested(); string name = SourceIdentityWire.FormatSource(expected.Game);
             var source = sources.SingleOrDefault(s => s.Game == expected.Game);
-            if (source is null) { Unavailable(RuntimeEffectAvailability.MissingSource, $"Attach {name} NTSC-U in Game Sources."); return; }
-            if (source.Identity.BuildId != expected.BuildId) { Unavailable(RuntimeEffectAvailability.WrongBuild, $"The {name} effect bank requires {expected.BuildId}."); return; }
-            try
+            if (source is null) { data.Unavailable(expected, RuntimeEffectAvailability.MissingSource, $"Attach {name} NTSC-U in Game Sources."); return; }
+            if (source.Identity.BuildId != expected.BuildId) { data.Unavailable(expected, RuntimeEffectAvailability.WrongBuild, $"The {name} effect bank requires {expected.BuildId}."); return; }
+            Stamp? stamp = null;
+            if (data.Prepare(expected, () =>
             {
                 progress.Report($"Verifying {name} effect source…");
-                var before = ReadStamp(source.Path);
+                stamp = ReadStamp(source.Path);
                 using var disc = new FileRandomAccessReader(source.Path);
                 string hash = expected.Sha256 ?? throw new InvalidDataException("Missing authority hash.");
                 var verification = cache.Verify(source.Path, disc, hash, cancellationToken: token);
                 if (!string.Equals(verification.Sha256, hash, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Source hash mismatch.");
                 progress.Report($"Decoding {name} native effect bank…");
                 var factories = decode(disc).ToArray(); token.ThrowIfCancellationRequested();
-                if (before != ReadStamp(source.Path)) throw new InvalidDataException("Source changed during decoding.");
-                data.Registry.Source(expected.Game, expected.BuildId);
-                foreach (var factory in factories) data.Registry.Register(factory);
-                data.Stamps.Add(expected.Game, before);
-            }
-            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
-            catch (Exception error) when (error is IOException or InvalidOperationException or ArgumentException or NotSupportedException)
-            { Unavailable(RuntimeEffectAvailability.MissingAssets, $"{name} native effect assets are unavailable ({error.GetType().Name}). Reattach the admitted original source."); }
-
-            void Unavailable(RuntimeEffectAvailability kind, string reason)
-            {
-                var problem = new RuntimeEffectProblem(kind, reason); data.Problems[expected.Game] = problem;
-                data.Registry.Source(expected.Game, expected.BuildId, problem);
-            }
+                if (stamp != ReadStamp(source.Path)) throw new InvalidDataException("Source changed during decoding.");
+                return factories;
+            }, token)) data.Stamps.Add(expected.Game, stamp!);
         }
+    }
+    internal bool Prepare(ObpBuildIdentity expected, Func<IEnumerable<IRuntimeEffectFactory>> prepare, CancellationToken token = default)
+    {
+        try
+        {
+            var factories = prepare().ToArray(); token.ThrowIfCancellationRequested();
+            if (factories.Any(f => f.Key.Source.Game != expected.Game || f.Key.Source.BuildId != expected.BuildId))
+                throw new InvalidDataException("The decoded recipes do not belong to the admitted source.");
+            Registry.Source(expected.Game, expected.BuildId);
+            foreach (var factory in factories) Registry.Register(factory);
+            return true;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+        catch (Exception error) when (error is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
+        {
+            Unavailable(expected, RuntimeEffectAvailability.MissingAssets,
+                $"{SourceIdentityWire.FormatSource(expected.Game)} native effect assets are unavailable ({error.GetType().Name}). Reattach the admitted original source.");
+            return false;
+        }
+    }
+    private void Unavailable(ObpBuildIdentity expected, RuntimeEffectAvailability kind, string reason)
+    {
+        var problem = new RuntimeEffectProblem(kind, reason); Problems[expected.Game] = problem;
+        Registry.Source(expected.Game, expected.BuildId, problem);
     }
     public static Stamp ReadStamp(string path)
     {

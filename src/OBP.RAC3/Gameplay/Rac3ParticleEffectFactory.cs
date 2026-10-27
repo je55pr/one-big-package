@@ -13,6 +13,9 @@ public sealed class Rac3ParticleEffectFactory : IRuntimeEffectFactory
 {
     public const string ChargingRecipe = "rac3/shock-cannon/charging/v1";
     public const string BeamGlowRecipe = "rac3/shock-cannon/beam-glow/v1";
+    // OBP presentation calibration of imported UYA sizes to NDC half extents.
+    // Kept source-local: this does not claim recovery of the native GS camera-global factor.
+    private const float PresentationProjectionUnits = 420000;
     private readonly Rac3ParticleAssets _assets;
     private readonly Rac3ParticleDraw _draw;
     private readonly bool _beam;
@@ -74,7 +77,7 @@ public sealed class Rac3ParticleEffectFactory : IRuntimeEffectFactory
         public RuntimeEffectFrame Capture(RuntimeEffectView view)
         {
             var sprites = ImmutableArray.CreateBuilder<RuntimeEffectSprite>();
-            var nativeView = new Rac3ParticleDraw.View(Native(view.Eye), Native(view.Forward), view.ProjectionY / 420000, int.MaxValue);
+            var nativeView = new Rac3ParticleDraw.View(Native(view.Eye), Native(view.Forward), view.ProjectionY / PresentationProjectionUnits, int.MaxValue);
             foreach (var p in _session.Live)
                 if (_factory._draw.Project(p, nativeView) is { } projection)
                 {

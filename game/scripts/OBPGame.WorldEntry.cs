@@ -173,14 +173,23 @@ public partial class OBPGame
         }
         ConfigureRegisteredActors(lab);
         var effectScope = resources.EffectScope ?? throw new InvalidOperationException("Effects require the existing world lease.");
-        resources.Effects = new(resources.Scene.Root, worldId: effectScope.WorldInstanceId,
-            generation: effectScope.Generation, camera: () => GetViewport().GetCamera3D(),
-            sources: () => _sources.Attached.Values.ToArray(),
-            actorAlive: key => _actorWorld.Views.TryGetValue(key.Target, out var actor) && actor.Registration.Instance == key && actor.Observe().Alive,
-            placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
-                WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
-            suspended: () => _movementStateLoading || _playtest is { WaitingForEntry: true } or { PreparingWorld: true },
-            recordOperation: operation => RecordCaptureCommand(new("effects", operation)));
+        try
+        {
+            resources.Effects = new(resources.Scene.Root, worldId: effectScope.WorldInstanceId,
+                generation: effectScope.Generation, camera: () => GetViewport().GetCamera3D(),
+                sources: () => _sources.Attached.Values.ToArray(),
+                actorAlive: key => _actorWorld.Views.TryGetValue(key.Target, out var actor) && actor.Registration.Instance == key && actor.Observe().Alive,
+                placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
+                    WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
+                suspended: () => _movementStateLoading || _playtest is { WaitingForEntry: true } or { PreparingWorld: true },
+                recordOperation: operation => RecordCaptureCommand(new("effects", operation)),
+                commandAllowed: () => _playtest is null || EffectCaptureContract.Includes(_args, _playtest.Reader?.Header));
+        }
+        catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or InvalidOperationException)
+        {
+            resources.EffectsFailure = "Native effects setup is unavailable (" + error.GetType().Name + "). Check the experiment definition.";
+            GD.PrintErr("[effects] " + resources.EffectsFailure);
+        }
         EnsurePlayerHud(); EnsureWorldHud();
         if (OrdinaryPlayerSession) PublishPersistentPlayerHud();
         UpdatePlayerHud(); UpdateWorldHud();
@@ -195,7 +204,7 @@ public partial class OBPGame
                     Configuration = _playerSession?.Capture().Configuration,
                     Loadout = _playerSession?.Capture().Loadout,
                     Actors = _actorWorld.Views.Values.Select(a => new { a.Registration.Instance, a.Observe().Health }).ToArray(),
-                }), Path.GetDirectoryName(Path.GetFullPath(report))!);
+                }), Path.GetDirectoryName(Path.GetFullPath(report))!, () => _worldScenes?.Current?.Resources.EffectsFailure);
             var definition = new DiagnosticScenarioDefinition("effects-room/v1", DiagnosticSourceAccess.OrdinaryPlay, DiagnosticSetup.ExistingWorld,
                 [.. TrilogySourceDefinitions.All.Select(s => new DiagnosticSourceRequirement(s.Game, s.Authority.BuildId))], TimeSpan.FromMinutes(10), 30000, "obp:fusion-lab");
             var scenario = new EffectsExperimentScenario(definition, effectsFixture,

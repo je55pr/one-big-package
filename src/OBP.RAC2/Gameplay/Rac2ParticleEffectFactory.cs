@@ -13,6 +13,9 @@ namespace OBP.RAC2.Gameplay;
 public sealed class Rac2ParticleEffectFactory : IRuntimeEffectFactory
 {
     public const string Recipe = "rac2/museum/type85/v1";
+    // OBP presentation conversion: native editor diameter units to NDC half extent.
+    // This is not a recovered GS camera-global value; native Project still owns depth/rotation/fade.
+    private const float PresentationProjectionUnits = 2 * Rac2ParticleSession.EditorSizeUnits;
     private readonly Rac2ParticleAssets _assets;
     private readonly Rac2MuseumParticleEmitter _template;
     private readonly Rac2ParticleDraw _draw;
@@ -75,7 +78,7 @@ public sealed class Rac2ParticleEffectFactory : IRuntimeEffectFactory
         public RuntimeEffectFrame Capture(RuntimeEffectView view)
         {
             var sprites = ImmutableArray.CreateBuilder<RuntimeEffectSprite>();
-            var nativeView = new Rac2ParticleDraw.View(Native(view.Eye), Native(view.Forward), view.ProjectionY / 420000, int.MaxValue);
+            var nativeView = new Rac2ParticleDraw.View(Native(view.Eye), Native(view.Forward), view.ProjectionY / PresentationProjectionUnits, int.MaxValue);
             foreach (var p in _session.Live)
                 if (_factory._draw.Project(p, nativeView) is { } projection)
                 {
