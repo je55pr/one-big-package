@@ -34,6 +34,8 @@ public static partial class Rac1WorldImport
 
         var tieTextureIds = tieTextures.Select(t => t.TextureId).ToHashSet();
         var shrubTextureIds = shrubTextures.Select(t => t.TextureId).ToHashSet();
+        var shrubAlphaProfiles = shrubTextures.ToDictionary(
+            t => t.TextureId, t => AlphaProfile.Analyse(t.Rgba));
         var mobyTextureIds = mobyTextures.Select(t => t.TextureId).ToHashSet();
 
         animatedMeshes.AddRange(BuildAnimatedMobyMeshes(
@@ -51,6 +53,7 @@ public static partial class Rac1WorldImport
                         c.TriangleTextureIds.Length))
                 : null,
             tieTextureIds,
+            null,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -65,6 +68,7 @@ public static partial class Rac1WorldImport
                         c.Mesh.TriangleAlphaBlendEnabled, c.TriangleTextureIds.Length))
                 : null,
             shrubTextureIds,
+            shrubAlphaProfiles,
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -136,6 +140,7 @@ public static partial class Rac1WorldImport
         IEnumerable<(int OClass, float[] Matrix)> instances,
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds, RuntimeMaterialPresentation?[] TrianglePresentations)?> lookup,
         HashSet<int> textureIds,
+        IReadOnlyDictionary<int, AlphaProfile>? alphaProfiles,
         List<RuntimeMesh> meshes,
         ref double minX,
         ref double minY,
@@ -144,14 +149,16 @@ public static partial class Rac1WorldImport
         ref double maxY,
         ref double maxZ)
     {
-        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation), (
+        var bySurface = new Dictionary<(int TextureId, RuntimeMaterialPresentation? Presentation, int SortGroup), (
             List<double> Positions,
             List<float> Uvs,
             List<int> Indices,
             Dictionary<(double X, double Y, double Z, double S, double T), int> Weld)>();
 
+        int instanceOrdinal = 0;
         foreach (var instance in instances)
         {
+            int sortInstance = ++instanceOrdinal;
             var cls = lookup(instance.OClass)
                 ?? throw new InvalidDataException($"R&C1 {kind} placement references missing class {instance.OClass}.");
             if (cls.Indices.Length != cls.TriangleTextureIds.Length * 3)
@@ -193,7 +200,14 @@ public static partial class Rac1WorldImport
                 var presentation = (uint)face < (uint)cls.TrianglePresentations.Length
                     ? cls.TrianglePresentations[face]
                     : null;
-                var surface = (textureId, presentation);
+                // Alpha-blended foliage cards need their own per-placement
+                // sorting origin. A whole-level welded material surface cannot
+                // be sorted against itself or neighboring trees in Godot.
+                int sortGroup = alphaProfiles is not null &&
+                    alphaProfiles.TryGetValue(textureId, out var alpha) &&
+                    MaterialModel.RequiresFoliageAlphaSorting(kind, alpha, presentation)
+                    ? sortInstance : 0;
+                var surface = (textureId, presentation, sortGroup);
                 if (!bySurface.TryGetValue(surface, out var group))
                 {
                     bySurface[surface] = group = (
@@ -231,7 +245,8 @@ public static partial class Rac1WorldImport
 
         foreach (var (surface, group) in bySurface
                      .OrderBy(kv => kv.Key.TextureId)
-                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal))
+                     .ThenBy(kv => kv.Key.Presentation?.ToString(), StringComparer.Ordinal)
+                     .ThenBy(kv => kv.Key.SortGroup))
         {
             meshes.Add(new RuntimeMesh(
                 kind,

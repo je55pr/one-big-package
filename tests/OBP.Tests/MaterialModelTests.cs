@@ -65,6 +65,22 @@ public class MaterialModelTests
     }
 
     [Fact]
+    public void FoliageNativeBlending_OnlyNeedsPerInstanceSortingForRealAlpha()
+    {
+        var nativeBlend = new RuntimeMaterialPresentation(AlphaBlendEnabled: true);
+        var nativeOpaque = new RuntimeMaterialPresentation(AlphaBlendEnabled: false);
+        var solid = AlphaProfile.FullyOpaque;
+        var canopy = new AlphaProfile(0.6, 0.3, 0.1, true);
+
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", solid, nativeBlend));
+        Assert.True(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeBlend));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, nativeOpaque));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("shrub", canopy, null));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("tie", canopy, nativeBlend));
+        Assert.False(MaterialModel.RequiresFoliageAlphaSorting("moby", canopy, nativeBlend));
+    }
+
+    [Fact]
     public void Culling_And_Tiling_And_VertexColour_ByKind()
     {
         // All world geometry is two-sided — decoded winding is not reliably outward.

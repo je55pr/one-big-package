@@ -48,6 +48,7 @@ public sealed class WorldMaterialFactory
         ["death-plane"] = new Color(0.22f, 0.55f, 0.35f),
     };
 
+    private readonly bool _rac1World;
     private readonly System.Collections.Generic.Dictionary<(string, int), ImageTexture> _textures = new();
     private readonly System.Collections.Generic.Dictionary<(string, int), AlphaProfile> _alpha = new();
     private readonly System.Collections.Generic.Dictionary<(string, int), double> _luminance = new();
@@ -56,6 +57,7 @@ public sealed class WorldMaterialFactory
 
     public WorldMaterialFactory(RuntimeWorld world)
     {
+        _rac1World = world.Game.SourceGame == OBP.Core.ObpSourceGame.Rac1;
         foreach (var t in world.Textures)
         {
             if (t.Width <= 0 || t.Height <= 0 || t.Rgba.Length != t.Width * t.Height * 4)
@@ -152,6 +154,15 @@ public sealed class WorldMaterialFactory
         }
 
         ApplyNativePresentation(mat, presentation);
+        if (_rac1World && assetKind == "shrub" && presentation?.AlphaBlendEnabled is true &&
+            _alpha.TryGetValue(textureKey, out var alpha) && !alpha.HasTransparency)
+        {
+            // Native shrub PRIM enables blending even for 255-alpha bark and
+            // branches. Under our MIX mapping the colour is identical in the
+            // opaque pass, which must write depth ahead of translucent cards.
+            mat.Transparency = BaseMaterial3D.TransparencyEnum.Disabled;
+        }
+
         _cache[cacheKey] = mat;
         return mat;
     }

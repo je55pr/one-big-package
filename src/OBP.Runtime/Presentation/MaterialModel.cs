@@ -101,6 +101,17 @@ public static class MaterialModel
     }
 
     /// <summary>
+    /// Native shrub GIF tags enable alpha blending even on entirely opaque
+    /// textures. Only textured, genuinely translucent shrub faces need
+    /// independent transparent-object sorting; an opaque source has exact
+    /// coverage and can use the depth-writing opaque pass instead.
+    /// Keep source blending intent on the material evidence, not the host queue.
+    /// </summary>
+    public static bool RequiresFoliageAlphaSorting(
+        string assetKind, AlphaProfile alpha, RuntimeMaterialPresentation? presentation) =>
+        assetKind == "shrub" && presentation?.AlphaBlendEnabled is true && alpha.HasTransparency;
+
+    /// <summary>
     /// Whether a kind's geometry may be back-face culled. Currently <c>false</c>
     /// for everything: the decoded winding is not reliably outward-facing across
     /// terrain and built structure (whole regions — e.g. the Tabora desert
