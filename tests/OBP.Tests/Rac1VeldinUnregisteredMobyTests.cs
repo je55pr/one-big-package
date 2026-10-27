@@ -37,7 +37,9 @@ public sealed class Rac1VeldinUnregisteredMobyTests
         Assert.Equal("moby:1964", runtime.ModelRef);
         Assert.Equal("moby:295", runtime.InteractionId);
         Assert.Empty(runtime.Meshes);
-        Assert.Contains(runtime.NativePayloads!, payload => payload.Format == "rac1-moby-instance-0x78");
+        var payload = Assert.Single(runtime.NativePayloads!,
+            item => item.Format == "rac1-moby-instance-0x78");
+        Assert.Equal<byte>(placement.RawRecord, payload.Data);
 
         // Neither the authored object registry nor the surrounding textured
         // fence/ship renderers may be removed to mask the problem.

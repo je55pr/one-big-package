@@ -40,14 +40,19 @@ public sealed class Rac1AllLevelsTests
         var classes = Rac1StaticClasses.Read(Rac1LevelCore.Open(reader, level)).Mobies;
         var dynamicObjects = Assert.IsAssignableFrom<IReadOnlyList<OBP.Runtime.RuntimeDynamicObject>>(world.DynamicObjects);
 
+        // The generated census predates #397's presentation-only suppression of
+        // Veldin's unregistered, wholly untextured class 1964. Preserve the
+        // original census evidence while accounting for its 30 hidden triangles.
+        int unpresentedInstances = levelId == 0 ? 1 : 0;
         Assert.Equal(placements, dynamicObjects.Count);
-        Assert.Equal(linkedInstances, dynamicObjects.Count(o => o.Meshes.Count > 0));
+        Assert.Equal(linkedInstances - unpresentedInstances, dynamicObjects.Count(o => o.Meshes.Count > 0));
         int noGeometry = dynamicObjects.Count(o => o.Meshes.Count == 0 &&
             (!classes.TryGetValue(o.NativeClassId, out var cls) || cls.Mesh.Indices.Length == 0));
         Assert.Equal(noGeometryInstances, noGeometry);
-        Assert.Equal(animatedHandoffs, dynamicObjects.Count - linkedInstances - noGeometry);
+        Assert.Equal(animatedHandoffs + unpresentedInstances,
+            dynamicObjects.Count - (linkedInstances - unpresentedInstances) - noGeometry);
         Assert.Equal(staticTriangles, world.TotalRenderTriangles);
-        Assert.Equal(dynamicTriangles, world.TotalDynamicTriangles);
+        Assert.Equal(dynamicTriangles - 30 * unpresentedInstances, world.TotalDynamicTriangles);
         Assert.Equal(animatedTriangles, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
         Assert.Equal(animationCapableInstances, dynamicObjects.Count(o => o.Animations is not null));
         Assert.Equal(animationCapableInstances, dynamicObjects.Count(o => o.Animations is not null));
