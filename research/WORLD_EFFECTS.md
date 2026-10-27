@@ -139,6 +139,18 @@ families, capacity/reuse, sustained emission and eventual cleanup. Native-window
 hashes and parameter assertions run with the authorized retail inputs; rendered
 weapon/Bomb smoke tests exercise the actual Godot materials and captures.
 
+## UYA reusable Cannon particles
+
+`Rac3ParticleSession` implements native type 97, used by two real V5 Cannon
+recipes: two pre-ready charging glows and six charged-shot glows. Source-owned
+RNG, opacity, requested lifetime, motion, gravity, texture selection and expiry
+are compared against original TABLE1 instructions, including native sprite
+descriptors. The [#284 notes](RAC3_PARTICLES.md) distinguish shared sequel format
+and draw facts from different simulation/RNG/context behavior. The frame bridge
+prevents repeated/stale admission and does not execute weapon damage again.
+Charged-ready extra families and moving/directional-gravity contexts remain
+explicitly unrecovered; live host composition remains #285.
+
 ## Native material effects
 
 Recovered GC/UYA GS material state already reaches `RuntimeMaterialPresentation`.

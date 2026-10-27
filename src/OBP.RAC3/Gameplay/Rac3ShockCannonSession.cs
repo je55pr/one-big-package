@@ -30,6 +30,7 @@ public sealed class Rac3ShockCannonSession
     }
 
     public int Ammo { get; private set; }
+    internal bool IsCurrentFrame(Rac3ShockCannonFrame frame) => ReferenceEquals(frame, _lastFrame) && frame.Generation == _generation;
     public Rac3ShockCannonState State { get; private set; } = Rac3ShockCannonState.Unequipped;
 
     /// <summary>Only the recovered V5 definition is admitted, not V1 or Mega.</summary>
