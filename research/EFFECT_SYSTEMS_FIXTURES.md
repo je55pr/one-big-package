@@ -4,6 +4,10 @@ Read [the catalogue and licence ledger](EFFECT_SYSTEMS_AUDIT.md) first. This
 file is the handoff to #282–#285, not a report that those generators or a new
 Museum editor already run.
 
+Completed source fixtures are documented separately for [R&C1 #282](RAC1_TYPE6_EMITTER.md)
+and [GC Museum #283](RAC2_MUSEUM_PARTICLES.md). The latter has three distinct
+authored type-85 presets; type 97 is no longer needed to demonstrate reuse in #283.
+
 ## Checks supplied by the investigation
 
 [EffectsReferenceAuditRetailTests](../tests/OBP.Tests/EffectsReferenceAuditRetailTests.cs)

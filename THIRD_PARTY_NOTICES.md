@@ -40,6 +40,10 @@ draw routines and sound attenuation code from the authorized original disc.
 The trilogy skeleton oracle uses the same interpreters to execute GC/UYA
 packed animation decoding, arm-layer baking and semantic joint queries on
 temporary, locally extracted retail inputs.
+The GC Museum particle research oracle also uses these interpreters to execute
+original menu writes, particle allocation/simulation, texture relocation and
+sprite descriptor construction. GC reconstructed C sources are not included or
+translated; this adapter supplies declared external UI/view boundaries only.
 
 Upstream: https://github.com/daino-selvatico/rac1-native-game
 
