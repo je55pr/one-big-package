@@ -22,14 +22,15 @@ public sealed class Rac1LevelTests_World
         Assert.Equal(0, world.LevelId);
         Assert.Equal("Veldin", world.DisplayName);
 
-        Assert.Equal(286, world.Meshes.Count);
+        // Per-placement alpha-sorted shrubs increase draw surfaces, not geometry.
+        Assert.Equal(797, world.Meshes.Count);
         Assert.Equal(751_435, world.TotalRenderTriangles);
         int Meshes(string kind) => world.Meshes.Count(m => m.AssetKind == kind);
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
         Assert.Equal((78, 24_520), (Meshes("tfrag"), Tris("tfrag")));
         Assert.Equal((7, 2_366), (Meshes("sky"), Tris("sky")));
         Assert.Equal((131, 396_708), (Meshes("tie"), Tris("tie")));
-        Assert.Equal((70, 327_841), (Meshes("shrub"), Tris("shrub")));
+        Assert.Equal((581, 327_841), (Meshes("shrub"), Tris("shrub")));
         Assert.Equal((0, 0), (Meshes("moby"), Tris("moby")));
 
         Assert.All(world.Meshes.Where(m => m.AssetKind == "tfrag"), mesh =>
@@ -150,7 +151,8 @@ public sealed class Rac1LevelTests_World
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var world = Rac1WorldImport.Build(reader, 1);
-        Assert.Equal(383, world.Meshes.Count);
+        // Native alpha foliage is now separated by placement for stable sorting.
+        Assert.Equal(1_581, world.Meshes.Count);
         Assert.Equal(1_118_293, world.TotalRenderTriangles);
         Assert.Equal(520_649, world.TotalDynamicTriangles);
         Assert.Equal(6_856, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
@@ -169,7 +171,7 @@ public sealed class Rac1LevelTests_World
         Skip.If(string.IsNullOrEmpty(iso), "OBP_RAC1_ISO not set");
         using var reader = new FileRandomAccessReader(iso!);
         var world = Rac1WorldImport.Build(reader, 2);
-        Assert.Equal(250, world.Meshes.Count);
+        Assert.Equal(728, world.Meshes.Count);
         Assert.Equal(687_037, world.TotalRenderTriangles);
         Assert.Equal(409_559, world.TotalDynamicTriangles);
         Assert.Equal(6_856, (world.AnimatedMeshes ?? []).Sum(m => m.TriangleCount));
