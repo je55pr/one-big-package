@@ -132,8 +132,17 @@ public sealed partial class Rac1ParticleSession
     }
 
     /// <summary>Copies deterministic sprite facts, in native slot order; no meshes or game-event recipes.</summary>
-    public IReadOnlyList<SpriteSnapshot> CaptureSprites() => Live.Select(p => new SpriteSnapshot(p.Slot, p.Identity,
-        p.Emitter?.Source, p.Emitter?.Owner, p.Texture, p.Blending, p.DepthRange, p.Position, p.Size, p.Color, p.Angle, p.Remaining)).ToArray();
+    public IReadOnlyList<SpriteSnapshot> CaptureSprites() => Live.Select(ToSpriteSnapshot).ToArray();
+
+    /// <summary>Copies the same facts into a reusable caller-owned buffer for presentation.</summary>
+    public void CaptureSprites(List<SpriteSnapshot> destination)
+    {
+        destination.Clear();
+        foreach (var p in Live) destination.Add(ToSpriteSnapshot(p));
+    }
+
+    private static SpriteSnapshot ToSpriteSnapshot(Particle p) => new(p.Slot, p.Identity, p.Emitter?.Source,
+        p.Emitter?.Owner, p.Texture, p.Blending, p.DepthRange, p.Position, p.Size, p.Color, p.Angle, p.Remaining);
 
     public readonly record struct SpriteSnapshot(int Slot, long Identity, ObpSourceRef? Source, Rac1MobyRuntimeKey? Owner,
         int Texture, Blend Blending, byte DepthRange, Vector3 Position, float Size, uint Color, byte Angle, int Remaining);

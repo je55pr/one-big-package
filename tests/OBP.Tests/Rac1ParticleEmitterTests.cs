@@ -48,7 +48,45 @@ public sealed class Rac1ParticleEmitterTests
         session.Step(Vector3.Zero);
         Assert.Equal(3, particle.Remaining); Assert.Equal(4, snapshot.Remaining);
         Assert.Equal(3, Assert.Single(session.CaptureSprites()).Remaining);
+        var buffer = new List<Rac1ParticleSession.SpriteSnapshot>();
+        session.CaptureSprites(buffer); Assert.Equal(Assert.Single(session.CaptureSprites()), Assert.Single(buffer));
+        session.Remove(particle); session.CaptureSprites(buffer); Assert.Empty(buffer);
+        Assert.Equal(4, snapshot.Remaining);
         Assert.True(Rac1ParticleSession.SupportsType(6)); Assert.False(Rac1ParticleSession.SupportsType(85));
+    }
+
+    [Theory]
+    [InlineData(0x2000, -1, 0, 1, 0, 1, 0)] // rotate the offset only
+    [InlineData(0x4000, 0, 1, 0, 1, 0, 1)] // rotate Cartesian velocity only
+    [InlineData(0x8008, 0, 1, 1, 0, 1, .5f)] // rotate acceleration, with acceleration enabled
+    public void IndividualRotationFlagsPreserveNativeZUpQuarterTurns(int flags,
+        float offsetX, float offsetY, float velocityX, float velocityY, float nextX, float nextY)
+    {
+        byte[] bytes = SyntheticParameters(); Put(bytes, 0x70, flags);
+        Put(bytes, 0xd0, 2f); Put(bytes, 0xd4, 4f); // fixed middle sample gives offset (0,1,0)
+        Put(bytes, 0x80, 1f); Put(bytes, 0x90, 1f); // Cartesian velocity (1,0,0)
+        Put(bytes, 0, .5f); Put(bytes, 0x40, 10f);
+        var owner = Owner(bytes, position: Vector3.Zero, rotation: new(0, 0, MathF.PI / 2));
+        var session = new Rac1ParticleSession(Assets(), new(() => 16384));
+        session.Emit(owner, Seeing(owner.Position)); var p = Assert.Single(session.Live);
+        Assert.InRange(Vector3.Distance(owner.Position + new Vector3(offsetX, offsetY, 0), p.Position), 0, .000001f);
+        Assert.InRange(Vector3.Distance(new(velocityX, velocityY, 0), p.Velocity), 0, .000001f);
+        session.Step(Vector3.Zero);
+        Assert.InRange(Vector3.Distance(new(nextX, nextY, 0), p.Velocity), 0, .000001f);
+    }
+
+    [Fact]
+    public void EulerOwnerBranchUsesTheNewXForBothSubsequentAngleAdditions()
+    {
+        byte[] bytes = SyntheticParameters(); Put(bytes, 0x70, 0x5000); Put(bytes, 0x80, 1f);
+        // Zero random Euler range, owner X = pi/2. Retail produces Euler (pi/2,pi/2,pi/2):
+        // base +X points down -Z. Ordinary independent angle additions would leave it on +X.
+        var owner = Owner(bytes, rotation: new(MathF.PI / 2, 0, 0));
+        int draws = 0;
+        var session = new Rac1ParticleSession(Assets(), new(() => { draws++; return 16384; }));
+        session.Emit(owner, Seeing(owner.Position));
+        Assert.InRange(Vector3.Distance(-Vector3.UnitZ, Assert.Single(session.Live).Velocity), 0, .000001f);
+        Assert.Equal(8, draws);
     }
 
     [Fact]

@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $reference = (Resolve-Path -LiteralPath $ReferenceRoot).Path
-$compiler = (Resolve-Path -LiteralPath $Cxx).Path
+$compiler = (Get-Command -Name $Cxx -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
 $output = [IO.Path]::GetFullPath($OutputPath)
 [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($output)) | Out-Null
 $arguments = @()

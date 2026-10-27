@@ -75,8 +75,8 @@ Those two safe lifetime controls are OBP policy, not recovered pointer behavior.
 
 `CaptureSprites` copies deterministic texture, blend, depth, transform, colour,
 angle, lifetime and slot identity facts in slot order; type-6 snapshots also carry
-the qualified source and owner. `Rac1ParticleView` consumes those copies with the
-same batching/shader behavior and contains no emission or motion implementation.
+the qualified source and owner. `Rac1ParticleView` reuses a caller-owned snapshot
+buffer with the same batching/shader behavior and contains no emission or motion implementation.
 No new lines/flat-quads/ribbons framework is needed for this fixture. `SupportsType`
 explicitly lists only 2,4,6,8,11,12,15,16; the other native pool types are unsupported
 by this managed session. This is not coverage of the entire native dispatcher.
@@ -106,7 +106,8 @@ $env:OBP_RAC1_TYPE6_ORACLE = (Resolve-Path captures/type6-oracle.exe).Path
 ```
 
 `$reference` is that local pinned checkout; `$compiler` is a C++20 compiler
-(Zig's `c++` driver is supported). `OBP_RAC1_ISO`, `OBP_GC_ISO`, `OBP_UYA_ISO`
+(Zig's `c++` driver is supported); either a path or an executable name on `PATH`
+is accepted. `OBP_RAC1_ISO`, `OBP_GC_ISO`, `OBP_UYA_ISO`
 select authorized local inputs. The test creates boot/Novalis RAM temporarily and
 deletes it in `finally`. No retail payload, executable, capture, personal path or
 upstream generated translation is committed.
