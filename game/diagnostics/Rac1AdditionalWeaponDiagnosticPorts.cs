@@ -17,7 +17,8 @@ public sealed record Rac1DoomAgentDiagnostic(SourceWeaponKey Weapon, long Id, Ve
 public sealed record Rac1WeaponAudioDiagnostic(ObpSourceGame Source, ulong NativeTick, int Class, int Sound, bool Loop);
 public sealed record Rac1AdditionalWeaponDiagnostic(bool Preview, bool CampaignOwnsBlaster, int Cargo,
     int UseTicks, int ShotsFired, bool PyroEmitting, (int Class, int Sound)? Loop, HudWeapon? Hud,
-    Vector3 Forward, bool RemoteControl, bool GuidedCameraPresent, bool GuidedCameraCurrent, bool PlayerCameraCurrent);
+    Vector3 Forward, bool RemoteControl, bool GuidedCameraPresent, bool GuidedCameraCurrent, bool PlayerCameraCurrent,
+    int RenderedParticles, int ParticleDrawCalls);
 public sealed record Rac1ArsenalMissileDiagnostic(SourceWeaponKey Weapon, long Id, WeaponModelDiagnostic Model);
 public sealed record Rac1DecoyDiagnostic(SourceWeaponKey Weapon, WeaponModelDiagnostic Model, bool Grounded, int RetiringTicks);
 public interface IRac1DecoyDiagnosticFixture : IWeaponDiagnosticWitness<Rac1DecoyDiagnostic> { void StageExpiry(); }

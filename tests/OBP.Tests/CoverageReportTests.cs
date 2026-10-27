@@ -176,7 +176,21 @@ public sealed class CoverageReportTests
         "game/diagnostics/Rac1EnemyScenario.cs",
         "game/diagnostics/Rac1EncounterInput.cs",
         "game/diagnostics/Rac1WrenchApproachScenario.cs", "game/diagnostics/DiagnosticCleanup.cs",
-        "game/diagnostics/Rac1EncounterDiagnosticHarness.cs" })
+        "game/diagnostics/Rac1EncounterDiagnosticHarness.cs",
+        "game/diagnostics/Rac1BombAcceptancePorts.cs",
+        "game/diagnostics/Rac1BombGloveScenario.cs",
+        "game/diagnostics/Rac1WeaponDiagnosticPorts.cs",
+        "game/diagnostics/Rac1WrenchScenario.cs",
+        "game/diagnostics/WeaponDiagnosticHarness.cs",
+        "game/diagnostics/Rac1AdditionalWeaponDiagnosticPorts.cs",
+        "game/diagnostics/Rac1WeaponScenarioSupport.cs",
+        "game/diagnostics/Rac1ArsenalScenario.cs",
+        "game/diagnostics/Rac1WeaponsScenario.cs",
+        "game/diagnostics/FusionWeaponDiagnosticPorts.cs",
+        "game/diagnostics/FusionWeaponDiagnosticHarness.cs",
+        "game/diagnostics/FusionWeaponScenarioSupport.cs",
+        "game/diagnostics/FusionWeaponsScenario.cs",
+        "game/diagnostics/FusionWeaponRecordingScenario.cs" })
                 yield return new object[] { form, path };
     }
 

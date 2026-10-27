@@ -13,14 +13,16 @@ internal sealed class GodotWeaponDiagnosticCapture(Node owner, Func<PlayerHost?>
             : System.Environment.GetEnvironmentVariable("OBP_BOMB_CAPTURE_DIR") ?? System.Environment.GetEnvironmentVariable("OBP_WEAPON_CAPTURE_DIR");
         if (string.IsNullOrWhiteSpace(directory)) return;
         if (DisplayServer.GetName() == "headless")
-            throw new DiagnosticUnavailableException("Optional weapon image capture requires a rendered post-draw signal.");
-        if (kind is WeaponDiagnosticCaptureKind.Fusion or WeaponDiagnosticCaptureKind.FusionProfile)
-            throw new DiagnosticUnavailableException("The mixed-source capture adapter is not bound.");
+        {
+            GD.Print("[weapon-capture] unavailable: optional image capture requires a rendered post-draw signal.");
+            return;
+        }
         var player = readPlayer() ?? throw new DiagnosticUnavailableException("The capture player is unavailable.");
         var world = readWorld() ?? throw new DiagnosticUnavailableException("The capture world is unavailable.");
         var overlay = readOverlay(); var hud = player.GetNode<CanvasLayer>("PlayerHud");
         Directory.CreateDirectory(directory);
         bool worldVisible = world.Visible, overlayVisible = overlay.Visible, hudVisible = hud.Visible;
+        var previousCamera = owner.GetViewport().GetCamera3D();
         var camera = kind == WeaponDiagnosticCaptureKind.Wrench ? player.Camera : new Camera3D { Current = true, Fov = 50, Far = 10000 };
         if (kind != WeaponDiagnosticCaptureKind.Wrench) owner.AddChild(camera);
         var saved = camera.GlobalTransform;
@@ -47,7 +49,7 @@ internal sealed class GodotWeaponDiagnosticCapture(Node owner, Func<PlayerHost?>
                 if (kind == WeaponDiagnosticCaptureKind.Wrench) camera.GlobalTransform = saved;
                 else camera.QueueFree();
             }
-            if (kind != WeaponDiagnosticCaptureKind.Wrench && GodotObject.IsInstanceValid(player) && GodotObject.IsInstanceValid(player.Camera)) player.Camera.MakeCurrent();
+            if (kind != WeaponDiagnosticCaptureKind.Wrench && GodotObject.IsInstanceValid(previousCamera)) previousCamera.MakeCurrent();
         }
     }
 }

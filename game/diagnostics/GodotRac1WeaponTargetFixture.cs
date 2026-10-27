@@ -9,10 +9,10 @@ namespace OBP.Game.Diagnostics;
 
 internal sealed record GodotRac1WeaponTargetBindings(Func<ImmutableArray<RuntimeWorldScene.DynamicObjectNode>> Crates,
     Func<ImmutableArray<Rac1HostedEnemy>> Enemies, Func<RuntimeWorldScene.DynamicObjectNode, bool> Active,
-    Action<RuntimeWorldScene.DynamicObjectNode, Vector3> StageCrate);
+    Action<RuntimeWorldScene.DynamicObjectNode, Vector3> StageCrate, Func<int, float> RobotHealth);
 internal sealed class GodotRac1WeaponTargetFixture(GodotRac1WeaponTargetBindings bindings, IDiagnosticWorldObservations worlds) : IRac1WeaponTargetFixture
 {
-    private ActorInstanceKey Key(RuntimeWorldScene.DynamicObjectNode node)
+    internal ActorInstanceKey Key(RuntimeWorldScene.DynamicObjectNode node)
     {
         var world = worlds.ReadWorld();
         if (string.IsNullOrWhiteSpace(world.WorldInstanceId) || node.Source.SourceGame != OBP.Core.ObpSourceGame.Rac1)
@@ -37,12 +37,22 @@ internal sealed class GodotRac1WeaponTargetFixture(GodotRac1WeaponTargetBindings
         return Snapshot(node, bindings.Enemies().SingleOrDefault(enemy => ReferenceEquals(enemy.Node, node))?.RewardEmitted ?? false);
     }
     public void StageCrate(ActorInstanceKey key, NVector3 position) => bindings.StageCrate(Resolve(key), GodotMovementPlayer.Engine(position));
+    public float ReadRobotHealth(ActorInstanceKey key)
+    {
+        Resolve(key);
+        if (key.Target.NativeClassId != 1440) throw new DiagnosticUnavailableException("The robot health fixture requires class1440.");
+        return bindings.RobotHealth(key.Target.InstanceIndex);
+    }
     public void StageEnemy(ActorInstanceKey key, NVector3 position)
     {
         Resolve(key);
         var enemy = bindings.Enemies().SingleOrDefault(enemy => enemy.Node.Source.NativeClassId == key.Target.NativeClassId && enemy.Node.Source.InstanceIndex == key.Target.InstanceIndex)
             ?? throw new DiagnosticUnavailableException("The weapon fixture requires a hosted enemy.");
-        enemy.NeedsGroundPlacement = false; enemy.Body.GlobalPosition = GodotMovementPlayer.Engine(position);
-        enemy.Body.Velocity = Vector3.Zero; enemy.Node.Root.GlobalPosition = GodotMovementPlayer.Engine(position);
+        StageEnemy(enemy, GodotMovementPlayer.Engine(position));
+    }
+    internal static void StageEnemy(Rac1HostedEnemy enemy, Vector3 position)
+    {
+        enemy.NeedsGroundPlacement = false; enemy.Body.GlobalPosition = position;
+        enemy.Body.Velocity = Vector3.Zero; enemy.Node.Root.GlobalPosition = position;
     }
 }

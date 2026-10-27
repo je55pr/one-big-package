@@ -91,6 +91,16 @@ remaining wait/input/placement helpers; their expiry owners are #341, #342,
 #345 and #359. Two expired movement delegations are removed. The frozen origin
 ledger remains unchanged.
 
+The #341 weapon extraction retires five more diagnostic partials and 31
+historical declaration/member permissions. The measured root has 89 files,
+19,039 file lines, 659 direct methods, 456 fields (311 mutable), 44 exposed
+members and 2,145 cross-file references. Wrench, Bomb Glove, arsenal, idle/audio
+and mixed-source weapon acceptance now use copied source-qualified facts and
+focused equipment fixtures. Shared movement input/clock ownership includes
+the original fusion recording keys and simulated stick axes. Six exact
+composition/delegation entries expire with #342, #344, #352 and #367; the
+expired #340 placement delegation is removed. The frozen origin is unchanged.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

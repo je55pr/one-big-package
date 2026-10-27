@@ -58,6 +58,15 @@
     <Compile Include="../../game/diagnostics/DiagnosticCleanup.cs" Link="Diagnostics/DiagnosticCleanup.cs" />
     <Compile Include="../../game/diagnostics/Rac1BombAcceptancePorts.cs" Link="Diagnostics/Rac1BombAcceptancePorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1BombGloveScenario.cs" Link="Diagnostics/Rac1BombGloveScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1AdditionalWeaponDiagnosticPorts.cs" Link="Diagnostics/Rac1AdditionalWeaponDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WeaponScenarioSupport.cs" Link="Diagnostics/Rac1WeaponScenarioSupport.cs" />
+    <Compile Include="../../game/diagnostics/Rac1ArsenalScenario.cs" Link="Diagnostics/Rac1ArsenalScenario.cs" />
+    <Compile Include="../../game/diagnostics/Rac1WeaponsScenario.cs" Link="Diagnostics/Rac1WeaponsScenario.cs" />
+    <Compile Include="../../game/diagnostics/FusionWeaponDiagnosticPorts.cs" Link="Diagnostics/FusionWeaponDiagnosticPorts.cs" />
+    <Compile Include="../../game/diagnostics/FusionWeaponDiagnosticHarness.cs" Link="Diagnostics/FusionWeaponDiagnosticHarness.cs" />
+    <Compile Include="../../game/diagnostics/FusionWeaponScenarioSupport.cs" Link="Diagnostics/FusionWeaponScenarioSupport.cs" />
+    <Compile Include="../../game/diagnostics/FusionWeaponsScenario.cs" Link="Diagnostics/FusionWeaponsScenario.cs" />
+    <Compile Include="../../game/diagnostics/FusionWeaponRecordingScenario.cs" Link="Diagnostics/FusionWeaponRecordingScenario.cs" />
     <Compile Include="../../game/diagnostics/Rac1WeaponDiagnosticPorts.cs" Link="Diagnostics/Rac1WeaponDiagnosticPorts.cs" />
     <Compile Include="../../game/diagnostics/Rac1WrenchScenario.cs" Link="Diagnostics/Rac1WrenchScenario.cs" />
     <Compile Include="../../game/diagnostics/WeaponDiagnosticHarness.cs" Link="Diagnostics/WeaponDiagnosticHarness.cs" />

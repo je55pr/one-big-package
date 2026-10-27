@@ -66,7 +66,7 @@ public partial class OBPGame
                         definition => CreateMovementDiagnosticHarness().CreateSwim(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreatePeckbot(definition),
                         definition => CreateRac1EncounterDiagnosticHarness().CreateBirdbot(definition),
-                        RunRac1NovalisMusicSmokeAsync, RunRac1WeaponsSmokeAsync, definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
+                        RunRac1NovalisMusicSmokeAsync, definition => CreateWeaponDiagnosticHarness().CreateWeapons(definition), definition => CreatePlayerDiagnosticHarness().CreateAudio(definition),
                         RunRac1MetropolisTaxiSmokeAsync, RunRac1MissionPlaySmokeAsync, RunRac1NovalisRouteSmokeAsync,
                         definition => CreateRac1EncounterDiagnosticHarness().CreateFrogs(definition)), !_diagnosticSourceAccess, TrilogySourceDefinitions.All);
                 var runner = new DiagnosticScenarioRunner(
@@ -82,7 +82,7 @@ public partial class OBPGame
             if (_args.SourceSetupCheck && _worldSwitches == 1) CreateUiDiagnosticHarness().Start("source-setup-check");
             if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
             _playtest?.WorldEntered();
-            if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) _ = RunFusionWeaponsSmokeAsync();
+            if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) CreateFusionWeaponDiagnosticHarness().Start();
             if (_worldSwitches == 1 && PlayerSessionDiagnosticHarness.IsRequested(_args)) CreatePlayerDiagnosticHarness().StartRequested();
             if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) _ = RunTrilogyGameplaySmokeAsync();
             return true;

@@ -3,6 +3,21 @@ using NVector3 = System.Numerics.Vector3;
 
 namespace OBP.Game.Diagnostics;
 
+internal sealed class GodotWeaponDiagnosticTransientFixture(IDiagnosticWorldObservations worlds, Action clear) : IWeaponDiagnosticTransientFixture
+{
+    public IDisposable BeginCleanup()
+    {
+        var world = worlds.ReadWorld();
+        return new MovementFixtureLease(() =>
+        {
+            var live = worlds.ReadWorld();
+            // World teardown already owns retired entities; never clear a replacement world's weapons.
+            if (!string.IsNullOrWhiteSpace(world.WorldInstanceId) && live.WorldInstanceId == world.WorldInstanceId && live.Generation == world.Generation)
+                clear();
+        });
+    }
+}
+
 internal sealed record GodotRac1BombAcceptanceBindings(Func<Rac1BombViewDiagnostic> View, Func<Rac1BombEffectsDiagnostic> Effects,
     Func<IRac1BombAcceptanceWitness> CaptureShot, Func<Vector3, Vector3, bool> LineOfSight,
     Func<Vector3, Vector3, Vector3?> Contact, Func<int, bool> ConsumeAmmo, Func<PlayerHost?> Player);
@@ -33,7 +48,8 @@ internal sealed class GodotWeaponMovementStateFixture(Func<bool> loading, Func<M
     public bool Loading => loading();
     public WeaponMovementStateDiagnostic CaptureBoundary()
     {
-        var state = capture(); return new(state.World is not null, state.World?.CapturedMobies?.Count ?? 0, state.World?.WeaponPreview ?? false);
+        var state = capture(); return new(state.World is not null, state.World?.CapturedMobies?.Count ?? 0, state.World?.WeaponPreview ?? false,
+            state.World?.MorphedMobies is { } morphed ? [.. morphed.Select(key => new OBP.Runtime.Gameplay.WeaponTargetKey(OBP.Core.ObpSourceGame.Rac1, key.NativeClassId, key.InstanceIndex))] : []);
     }
     public async Task LoadAsync(string path, CancellationToken token) { token.ThrowIfCancellationRequested(); await load(path, token); token.ThrowIfCancellationRequested(); }
     public async Task SaveAndReloadAsync(string fileName, CancellationToken token)

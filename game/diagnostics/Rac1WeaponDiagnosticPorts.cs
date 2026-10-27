@@ -20,9 +20,23 @@ public interface IRac1WeaponTargetFixture
     Rac1WeaponTargetDiagnostic Read(ActorInstanceKey actor);
     void StageCrate(ActorInstanceKey actor, Vector3 position);
     void StageEnemy(ActorInstanceKey actor, Vector3 position);
+    float ReadRobotHealth(ActorInstanceKey actor);
 }
-public enum WeaponDiagnosticCaptureKind { Wrench, Bomb, Fusion, FusionProfile }
+public enum WeaponDiagnosticCaptureKind { Wrench, Bomb }
 public interface IWeaponDiagnosticCapture
 {
     Task CaptureAsync(WeaponDiagnosticCaptureKind kind, string name, Vector3 focus, bool close, CancellationToken token);
+}
+
+/// <summary>Releases test-created weapon transients through their existing engine owners.</summary>
+public interface IWeaponDiagnosticTransientFixture { IDisposable BeginCleanup(); }
+
+public sealed class WeaponDiagnosticScenario(IDiagnosticScenario scenario, IWeaponDiagnosticTransientFixture transients) : IDiagnosticScenario
+{
+    public DiagnosticScenarioDefinition Definition => scenario.Definition;
+    public async Task RunAsync(DiagnosticRunContext run)
+    {
+        run.Own(transients.BeginCleanup());
+        await scenario.RunAsync(run);
+    }
 }

@@ -21,7 +21,7 @@ public sealed class Rac1BombGloveScenario(MovementDiagnosticContext context, IRa
             if (!string.IsNullOrWhiteSpace(savedRepro))
             {
                 await RunRac1SavedBombReproAsync(savedRepro);
-                
+
                 return;
             }
             fixture = Geometry.Create("SyntheticBombGloveFixture", new(-2000, 64, 2600));
@@ -153,7 +153,7 @@ public sealed class Rac1BombGloveScenario(MovementDiagnosticContext context, IRa
                 "throw recovery lost interpolated native standing clock");
             Log("[bomb-glove-smoke] held fire, empty ammo, run/throw/idle recovery PASS");
             Log("[bomb-glove-smoke] PASS");
-            
+
         }
         catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime)
         {

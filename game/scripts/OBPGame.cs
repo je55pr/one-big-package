@@ -847,8 +847,6 @@ public partial class OBPGame : Node3D
         GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, LegacyDiagnosticCancellation.Current);
     private Task Rac1SmokeWaitCancelableAsync(Func<bool> condition, int frames, string label, CancellationToken token) =>
         GodotRac1EncounterCompatibility.WaitAsync(this, condition, frames, label, token);
-    private void Rac1SmokePlaceGroundedFacing(Vector3 position, Vector3 direction) =>
-        GodotRac1CombatDiagnosticFixture.PlacePlayerFacing(_player, GodotMovementPlayer.Copy(position), GodotMovementPlayer.Copy(direction), true);
     private Task TapRac1PrimaryActionAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, _rac1Weapons.Equipped);
     private static void SetSyntheticNativeHeading(PlayerHost player, double yaw, double magnitude = 1) => GodotMovementCompatibility.Heading(player, yaw, magnitude);
     private static void AddSyntheticTraversalMesh(Node3D parent, string name, int material, params (Vector3 A, Vector3 B, Vector3 C)[] triangles) =>
@@ -869,15 +867,57 @@ public partial class OBPGame : Node3D
     private static void Require(bool condition, string message) => DiagnosticMovementMath.Require(condition, message);
 
     private Task TapWrenchSmokeAsync() => GodotRac1EncounterCompatibility.TapPrimaryAsync(this, Rac1WeaponId.Wrench);
-    private Task CaptureRac1BombAsync(string name, Vector3 focus, bool close = false) =>
-        CreateWeaponDiagnosticHarness().CaptureBombAsync(name, GodotMovementPlayer.Copy(focus), close, LegacyDiagnosticCancellation.Current);
+    private Task RunFusionRecordingSmokeAsync() => CreateFusionWeaponDiagnosticHarness().RunRecordingAsync(LegacyDiagnosticCancellation.Current);
+
+    private FusionWeaponDiagnosticHarness CreateFusionWeaponDiagnosticHarness()
+    {
+        var weapons = CreateWeaponDiagnosticHarness();
+        var fixture = new GodotFusionWeaponDiagnosticFixture(this, new()
+        {
+            Status = () => new(_fusion is not null, _fusionAssets is not null, _fusionAssets?.Problems.Count ?? -1, _fusionPreparation is not null,
+                _fusionAssetFailure, _frame, FusionTestActive, FusionConfiguration?.LoadoutId, _playtest?.WaitingForEntry == true, _playtest is not null),
+            Session = () => new(_fusion?.Selected, _fusion?.Hand.Equipment, _rac1HeldItem.Hand.WrenchHeld, _fusion?.LancerSession.Ammo ?? 0,
+                _fusion?.CannonSession.Ammo ?? 0, _fusionAcceptedHits, _fusionAudioStarted, _fusionBeam?.Visible == true, _fusion?.CannonFrame?.BeamUpdatesRemaining ?? 0,
+                _fusionLastDamage is { } damage ? new(damage.Shot.Weapon, damage.SourceDamage, damage.Kind) : null,
+                _player?.Rac1WrenchFrame.Active == true, _fusion is not null && ReferenceEquals(_fusion.Rac1Inventory, _rac1CampaignSession.Weapons),
+                ReferenceEquals(_rac1Weapons, _rac1CampaignSession.Weapons)),
+            Transients = () => new(_fusionProjectiles.Count, _fusion?.LancerSession.ActiveShots.Count ?? 0, _fusionEffects.Count, _fusionPendingAudio.Count, _fusionAudioPlayers.Count),
+            Menu = () => new(QuickSelectOpen, _quickSelect is { } menu ? [.. menu.Entries.Select(entry => entry.Weapon)] : [], _quickSelect?.SelectedWeapon),
+            NativeSession = () => _fusion,
+            Assets = () => _fusionAssets,
+            ReplaceAssets = assets => _fusionAssets = assets,
+            Preparation = () => _fusionPreparation,
+            Sources = () => _sources,
+            ReplaceSources = sources => _sources = sources,
+            Views = () => [.. _fusionHeldViews],
+            Animation = () => _playerAvatarAnimationController,
+            Avatar = () => _playerAvatar,
+            OriginalInventory = () => System.Text.Json.JsonSerializer.Serialize((_fusionOriginalCampaign ?? throw new DiagnosticUnavailableException("The isolated original campaign is unavailable.")).Weapons.CapturePersistentState()),
+            CurrentInventory = () => System.Text.Json.JsonSerializer.Serialize(_rac1Weapons.CapturePersistentState()),
+            Prepare = () => PrepareSharedWeaponSources(force: true),
+            Reset = () => ResetFusionWeapons(),
+            Clear = () => ClearFusionTransients(),
+            Reenter = () => { _args = _args with { FusionTest = false }; return OnDestinationChosen(_activeDestination!); },
+            ShowDestinations = ShowDestinationSelector,
+            Camera = () => _activeCamera,
+            Player = () => _player,
+            Forward = () => GodotMovementPlayer.Copy(EquipmentForward),
+            SourceSequence = CurrentPlayerAvatarSourceSequence,
+            Held = () => _rac1HeldItem.Hand.Equipment,
+        }, new GodotDiagnosticFrameClock(this));
+        return new(weapons.Movement, weapons.Ports, weapons.Transients, fixture,
+            [.. TrilogySourceDefinitions.All.Select(source => new DiagnosticSourceRequirement(source.Game, source.Authority.BuildId))],
+            new DiagnosticScenarioRunner(new GodotDiagnosticSources(() => [.. _sources.Attached.Values.Select(source => new DiagnosticSourceSnapshot(source.Game, source.Identity.BuildId, true))]),
+                new GodotDiagnosticFrameClock(this)), _hostOperations, (reason, code) => ApplicationLifecycle.RequestQuit(this, reason, code), message => GD.PrintErr(message));
+    }
 
     private WeaponDiagnosticHarness CreateWeaponDiagnosticHarness()
     {
         var movement = CreateMovementDiagnosticHarness();
         var worlds = new GodotDiagnosticWorldObservations(WorldScenes);
         var targets = new GodotRac1WeaponTargetFixture(new(() => [.. _rac1CrateNodes], () => [.. _rac1Enemies.Values],
-            IsRac1GameplayActive, StageRac1CrateForSmoke), worlds);
+            IsRac1GameplayActive, StageRac1CrateForSmoke,
+            id => _rac1Class1440?.Get(id).Health ?? throw new DiagnosticUnavailableException("The robot health source is unavailable.")), worlds);
         var wrench = new GodotRac1WrenchDiagnosticFacts(new(() => _player, () => _rac1WrenchView, () => _playerAvatar,
             () => _playerAvatarAnimationController, () => _rac1WrenchHostGeneration, () => _rac1WrenchThrow.Active,
             WrenchWorldPosition, () => _rac1BombGloveView?.Visible == true));
@@ -904,11 +944,47 @@ public partial class OBPGame : Node3D
                     shot.Value.Motion.Position, shot.Value.Motion.Velocity, shot.Value.Motion.NativeState, shot.Value.Motion.Flying, originalModel));
             }, BombHasLineOfSight, ProbeBombWorldContact,
             amount => _rac1Weapons.TryConsumeAmmo((int)Rac1WeaponId.FirstRanged, amount), () => _player));
-        var reproduction = new GodotWeaponMovementStateFixture(() => _movementStateLoading, () => CaptureMovementState(),
-            async (path, token) => { await LoadMovementStateAsync(path, cancellationToken: token); },
+        async Task LoadWeaponStateAsync(string path, CancellationToken token) => await LoadMovementStateAsync(path, cancellationToken: token);
+        var reproduction = new GodotWeaponMovementStateFixture(() => _movementStateLoading, () => CaptureMovementState(), LoadWeaponStateAsync,
             name => Path.GetFullPath(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "captures", "repros", name)));
-        return new(movement.Ports, movement.Equipment, wrench, targets, CreateRac1EncounterDiagnosticHarness().Combat, capture, bomb, reproduction);
+        return new(movement.Ports, wrench, new(movement.Equipment, targets, CreateRac1EncounterDiagnosticHarness().Combat, capture, bomb, reproduction,
+            CreateRac1AdditionalWeaponDiagnosticFixture(worlds), CreateRac1ArsenalDiagnosticFixture(worlds, targets)),
+            new GodotWeaponDiagnosticTransientFixture(worlds, () => DiagnosticCleanup.Run("Weapon fixture transient cleanup",
+                () => { foreach (var (id, projectile) in _rac1Projectiles.ToArray()) RetireBomb(id, projectile); },
+                ResetRac1BombPresentation, ResetRac1AdditionalWeapons, () => ClearFusionTransients())));
     }
+
+    private GodotRac1AdditionalWeaponDiagnosticFixture CreateRac1AdditionalWeaponDiagnosticFixture(IDiagnosticWorldObservations worlds) => new(new(
+        () => new(_rac1WeaponPreviewInventory is not null, _rac1CampaignSession.Weapons.Owns(Rac1WeaponId.Blaster), _rac1AdditionalWeapons?.Cargo.Count ?? 0,
+            _rac1EquipmentUseTicks, _rac1WeaponShotsFired, _rac1PyroEmitting, _rac1WeaponLoop, _hudState.Current.CurrentWeapon,
+            GodotMovementPlayer.Copy(EquipmentForward), _player?.Rac1RemoteControlActive == true, _rac1MissileCamera is not null,
+            _rac1MissileCamera?.Current == true, _player?.Camera.Current == true, _rac1ParticleView?.RenderedCount ?? 0, _rac1ParticleView?.DrawCalls ?? 0),
+        weapon => _rac1EquipmentViews.GetValueOrDefault(weapon), weapon => EquipmentMuzzle(weapon), item => _rac1Weapons.GetAmmo(item),
+        (nativeClass, sound) => _rac1PickupAssets?.Sounds?.TryGetValue((nativeClass, sound), out var voice) == true && voice.Clip.InterleavedPcm16.Any(sample => sample != 0),
+        () => [.. _rac1WeaponSoundTrace.Select(cue => new Rac1WeaponAudioDiagnostic(ObpSourceGame.Rac1, cue.Tick, cue.Class, cue.Sound, cue.Loop))],
+        () => [.. _rac1EquipmentShots.Select(shot => new GodotWeaponDiagnosticWitness<Rac1EquipmentShotDiagnostic>(new(worlds), () => new(
+            new(ObpSourceGame.Rac1, (int)shot.Weapon), shot.Id, GodotMovementPlayer.Copy(shot.Position), shot.Grounded, GodotWeaponModelFacts.Read(shot.Node))))],
+        () => [.. _rac1DoomAgents.Select(agent => new GodotWeaponDiagnosticWitness<Rac1DoomAgentDiagnostic>(new(worlds), () => new(
+            new(ObpSourceGame.Rac1, (int)Rac1WeaponId.GloveOfDoom), agent.Id, GodotMovementPlayer.Copy(agent.Body.GlobalPosition), agent.Motion.Wander,
+            GodotWeaponModelFacts.Read(agent.View))))], () => _rac1WeaponPreviewInventory is not null, SetRac1WeaponPreview));
+
+    private GodotRac1ArsenalDiagnosticFixture CreateRac1ArsenalDiagnosticFixture(IDiagnosticWorldObservations worlds, GodotRac1WeaponTargetFixture targets) => new(new(
+        () => new(_rac1RynoSalvo.Remaining, _rac1ArsenalId, _rac1Drones.Count, _rac1ChickenCargo.Count,
+            [.. _rac1ArsenalBeams.Select(beam => beam.Visible)], [.. _rac1ArsenalBeams.Select(beam => beam.MaterialOverride is ShaderMaterial)]),
+        () => [.. _rac1ArsenalMissiles.Select(missile => new GodotWeaponDiagnosticWitness<Rac1ArsenalMissileDiagnostic>(new(worlds), () => new(
+            new(ObpSourceGame.Rac1, (int)missile.Weapon), missile.Id, GodotWeaponModelFacts.Read(missile.View))))],
+        () => [.. _rac1Decoys.Select(decoy => new GodotRac1DecoyDiagnosticFixture(new(worlds), () => new(new(ObpSourceGame.Rac1, (int)Rac1WeaponId.DecoyGlove),
+            GodotWeaponModelFacts.Read(decoy.View), decoy.Grounded, decoy.RetiringTicks), () => decoy.GroundTicks = Rac1ArsenalRules.DecoyLifetime - 1))],
+        () => [.. _rac1Chickens.Values.Select(chicken => new Rac1ChickenDiagnostic(targets.Key(chicken.Enemy.Node), IsRac1GameplayActive(chicken.Enemy.Node),
+            chicken.Enemy.RewardEmitted, GodotWeaponModelFacts.Read(chicken.View)))],
+        () => { foreach (var drone in _rac1Drones) if (IsInstanceValid(drone.View)) drone.View.QueueFree(); _rac1Drones.Clear(); },
+        () => _rac1WeaponWorldTick = 0,
+        (actor, player) =>
+        {
+            targets.Read(actor); return GodotMovementPlayer.Copy(ArsenalEnemyGoal(
+            _rac1Enemies.TryGetValue(actor.Target.InstanceIndex, out var enemy) ? enemy : throw new DiagnosticUnavailableException("The arsenal fixture enemy is unavailable."),
+            GodotMovementPlayer.Engine(player)));
+        }));
 
     private Rac1EncounterDiagnosticHarness CreateRac1EncounterDiagnosticHarness()
     {

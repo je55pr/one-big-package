@@ -34,7 +34,7 @@ public sealed class Rac1WrenchScenario(MovementDiagnosticContext context, IRac1W
             ClearMovementSmokeInput();
             bool sawStop = false, sawIdle = false;
             var handPositions = new HashSet<Vector3>();
-                        for (int tick = 0; tick < 120; tick++)
+            for (int tick = 0; tick < 120; tick++)
             {
                 await PhysicsFramesAsync(1);
                 var hand = wrench.ReadWrench();
@@ -81,7 +81,7 @@ public sealed class Rac1WrenchScenario(MovementDiagnosticContext context, IRac1W
             Require(wrench.ReadWrench().Visible && !wrench.ReadWrench().GloveVisible,
                 "wrench combo did not leave the last-used wrench in hand");
             await Rac1SmokeWaitAsync(() => Animation.Read().Sequence == 0, 60, "wrench standing recovery");
-                        var previousPose = Animation.Read().Pose;
+            var previousPose = Animation.Read().Pose;
             bool interpolated = false;
             for (int tick = 0; tick < 24; tick++)
             {
@@ -180,7 +180,7 @@ public sealed class Rac1WrenchScenario(MovementDiagnosticContext context, IRac1W
             await Rac1SmokeWaitAsync(() => !wrench.ReadWrench().Frame.Active, 240, "throw contact recovery");
             Log("[wrench-smoke] staged throw/crate contact and distant bolt collection PASS");
             Log("[wrench-smoke] PASS");
-            
+
         }
         catch (OperationCanceledException error) when (Driver.Lifetime.IsCancellationRequested && error.CancellationToken == Driver.Lifetime)
         {

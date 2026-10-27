@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Numerics;
 using OBP.Runtime.Gameplay;
+using OBP.Fusion;
 
 namespace OBP.Game.Diagnostics;
 
@@ -21,7 +22,7 @@ public interface IRac1BombAcceptanceFixture
     bool ConsumeAmmo(int amount);
     string? SavedReproductionPath { get; }
 }
-public sealed record WeaponMovementStateDiagnostic(bool WorldPresent, int CapturedMobies, bool WeaponPreview);
+public sealed record WeaponMovementStateDiagnostic(bool WorldPresent, int CapturedMobies, bool WeaponPreview, ImmutableArray<WeaponTargetKey> Morphed);
 public interface IWeaponMovementStateFixture
 {
     bool Loading { get; }
