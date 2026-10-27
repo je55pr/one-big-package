@@ -71,7 +71,17 @@ public static partial class Rac1WorldImport
                 : null,
             shrubTextureIds,
             shrubAlphaProfiles,
-            levelId == 1 ? new HashSet<int> { 116, 121 } : null,
+            // Veldin class 466 layers red texture 3 and blue texture 4 on
+            // nearly coincident leaf geometry; blending their depth-unsorted
+            // cards flips their colour as the camera moves. Both textures
+            // have predominantly binary alpha, so cutout depth selects the
+            // nearest authored leaf rather than an arbitrary draw order.
+            levelId switch
+            {
+                0 => new HashSet<int> { 466 },
+                1 => new HashSet<int> { 116, 121 },
+                _ => null,
+            },
             meshes,
             ref minX, ref minY, ref minZ,
             ref maxX, ref maxY, ref maxZ);
@@ -233,14 +243,13 @@ public static partial class Rac1WorldImport
                 // must not branch on source-game identity.
                 if (alphaProfiles is not null)
                 {
-                    // The saved swimming-area view identifies class 121 as the
-                    // layered canopy and class 116 as the red-leaf shrub.
-                    // Their authored leaf textures mix hard cutouts with a
-                    // smaller band of partial-alpha pixels (roughly 7-16%).
-                    // Depth-writing cutouts intentionally trade that soft
-                    // alpha away for stable intersecting leaf-card depth on
-                    // these two visually verified classes only. Other shrubs
-                    // retain their native alpha-blend interpretation.
+                    // The source-verified class allowlist covers Novalis's
+                    // class 121 canopy and class 116 red leaves, plus Veldin's
+                    // class 466 overlapping red/blue leaf-card layers.
+                    // Their native textures have predominantly binary alpha,
+                    // with a smaller partial-alpha fringe. Depth-writing
+                    // cutouts trade that fringe for stable frontmost leaf
+                    // depth; unrelated shrubs retain native alpha blending.
                     bool cutout = cutoutClasses?.Contains(instance.OClass) == true &&
                         alphaProfiles.TryGetValue(textureId, out var profile) &&
                         profile.CutoutFraction >= 0.05 &&

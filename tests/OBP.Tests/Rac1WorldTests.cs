@@ -22,15 +22,17 @@ public sealed class Rac1LevelTests_World
         Assert.Equal(0, world.LevelId);
         Assert.Equal("Veldin", world.DisplayName);
 
-        // Per-placement alpha-sorted shrubs increase draw surfaces, not geometry.
-        Assert.Equal(797, world.Meshes.Count);
+        // Veldin class 466's depth-writing cutouts no longer need five
+        // separately sorted surfaces per colour. They batch as two surfaces
+        // instead of ten; all source triangles and other mesh kinds remain.
+        Assert.Equal(789, world.Meshes.Count);
         Assert.Equal(751_435, world.TotalRenderTriangles);
         int Meshes(string kind) => world.Meshes.Count(m => m.AssetKind == kind);
         int Tris(string kind) => world.Meshes.Where(m => m.AssetKind == kind).Sum(m => m.TriangleCount);
         Assert.Equal((78, 24_520), (Meshes("tfrag"), Tris("tfrag")));
         Assert.Equal((7, 2_366), (Meshes("sky"), Tris("sky")));
         Assert.Equal((131, 396_708), (Meshes("tie"), Tris("tie")));
-        Assert.Equal((581, 327_841), (Meshes("shrub"), Tris("shrub")));
+        Assert.Equal((573, 327_841), (Meshes("shrub"), Tris("shrub")));
         Assert.Equal((0, 0), (Meshes("moby"), Tris("moby")));
 
         Assert.All(world.Meshes.Where(m => m.AssetKind == "tfrag"), mesh =>
