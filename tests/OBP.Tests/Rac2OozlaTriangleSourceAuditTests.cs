@@ -128,12 +128,14 @@ public sealed class Rac2OozlaTriangleSourceAuditTests(ITestOutputHelper output)
             output.WriteLine($"class={id}: packets={packets}, vertices={globalVertexBase}, " +
                 $"source_kicks={kicks}, suppressed={suppressed}, degenerates={degenerate}, " +
                 $"texture_switches={packetSwitches}, source_faces={expected.Values.Sum()}, " +
-                $"obp_faces={mesh.Indices.Length/3}, missing={missing}, extra={extra}");
+                $"obp_faces={mesh.Indices.Length / 3}, missing={missing}, extra={extra}");
             foreach (var pair in expected.Where(x => x.Value > actual.GetValueOrDefault(x.Key)).Take(12))
                 output.WriteLine($"  MISSING source=({pair.Key.A},{pair.Key.B},{pair.Key.C}) count={pair.Value} obp={actual.GetValueOrDefault(pair.Key)}");
             foreach (var pair in actual.Where(x => x.Value > expected.GetValueOrDefault(x.Key)).Take(12))
                 output.WriteLine($"  EXTRA obp=({pair.Key.A},{pair.Key.B},{pair.Key.C}) count={pair.Value} source={expected.GetValueOrDefault(pair.Key)}");
             Assert.True(expected.Count > 0);
+            Assert.Equal(0, missing);
+            Assert.Equal(0, extra);
         }
     }
 }

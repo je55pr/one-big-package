@@ -304,22 +304,10 @@ public static partial class Rac2WorldImport
         return outp;
     }
 
-    private static byte[] NativeMobyClassBytes(Rac2LevelCore.Core core, int oClass)
-    {
-        var table = core.Header.MobyClasses;
-        int entry = Enumerable.Range(0, table.Count)
-            .Select(i => table.Offset + i * GcUyaMoby.ClassEntrySize)
-            .Single(at => BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(at + 4)) == oClass);
-        int start = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(entry));
-        if (start <= 0 || start >= core.Assets.Length)
-            throw new InvalidDataException($"Invalid native class {oClass} asset offset.");
-        int end = core.SectionBoundaries.FirstOrDefault(boundary => boundary > start, core.Assets.Length);
-        if (end <= start)
-            throw new InvalidDataException($"Invalid native class {oClass} asset bounds.");
-        return core.Assets.AsSpan(start, end - start).ToArray();
-    }
+    private static byte[] NativeMobyClassBytes(Rac2LevelCore.Core core, int oClass) =>
+        Rac2MobyClasses.ClassBytes(core, oClass);
 
-    private static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
+    internal static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
         GcUyaMoby.MobyClass cls,
         IReadOnlyList<RuntimeObjectMesh> surfaces,
         Rac2LevelCore.Core core,
@@ -350,7 +338,7 @@ public static partial class Rac2WorldImport
         {
             var posed = sourceBytes is null
                 ? OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame)
-                : GcUyaMobyNativePose.Pose(sourceBytes, cls.Mesh, frame);
+                : Ps2MobyNativePose.Pose(sourceBytes, cls.Mesh, frame);
             var local = new double[posed.Length];
             for (int i = 0; i < posed.Length; i += 3)
             {

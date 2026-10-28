@@ -9,7 +9,7 @@ namespace OBP.PS2.Geometry;
 /// native class bytes and a fully decoded regular frame. Pose and inverse bind
 /// are evaluated separately; neither is inferred from the legacy static mesh.
 /// </summary>
-public static class GcUyaMobyNativePose
+public static class Ps2MobyNativePose
 {
     private readonly record struct V(double X, double Y, double Z)
     {
@@ -134,8 +134,8 @@ public static class GcUyaMobyNativePose
         var output = new double[mesh.Positions.Length];
         for (int v = 0; v < output.Length; v += 3)
         {
-            var raw = new V(mesh.SkinLocalPositions[v], mesh.SkinLocalPositions[v+1],
-                mesh.SkinLocalPositions[v+2]);
+            var raw = new V(mesh.SkinLocalPositions[v], mesh.SkinLocalPositions[v + 1],
+                mesh.SkinLocalPositions[v + 2]);
             var value = new V(0, 0, 0);
             double sum = 0;
             for (int influence = 0; influence < 3; influence++)
@@ -154,8 +154,8 @@ public static class GcUyaMobyNativePose
             else value = (1 / sum) * value;
             if (!Finite(value)) throw new InvalidDataException("Nonfinite posed Moby vertex.");
             output[v] = value.X;
-            output[v+1] = value.Y;
-            output[v+2] = value.Z;
+            output[v + 1] = value.Y;
+            output[v + 2] = value.Z;
         }
         return output;
     }
@@ -164,17 +164,17 @@ public static class GcUyaMobyNativePose
     // conventional quaternion-to-matrix mapping (see original evaluator).
     private static M Rotation(Quaternion q)
     {
-        double x=q.X, y=q.Y, z=q.Z, w=q.W;
-        double length=Math.Sqrt(x*x+y*y+z*z+w*w);
+        double x = q.X, y = q.Y, z = q.Z, w = q.W;
+        double length = Math.Sqrt(x * x + y * y + z * z + w * w);
         if (!double.IsFinite(length) || length < 0.5)
             throw new InvalidDataException("Invalid native joint quaternion.");
-        x/=length; y/=length; z/=length; w/=length;
-        double xx=2*x*x, yy=2*y*y, zz=2*z*z, xy=2*x*y, xz=2*x*z, yz=2*y*z;
-        double xw=2*x*w, yw=2*y*w, zw=2*z*w;
+        x /= length; y /= length; z /= length; w /= length;
+        double xx = 2 * x * x, yy = 2 * y * y, zz = 2 * z * z, xy = 2 * x * y, xz = 2 * x * z, yz = 2 * y * z;
+        double xw = 2 * x * w, yw = 2 * y * w, zw = 2 * z * w;
         return new M(
-            new V(1-yy-zz,xy-zw,xz+yw),
-            new V(xy+zw,1-xx-zz,yz-xw),
-            new V(xz-yw,yz+xw,1-xx-yy),
-            new V(0,0,0));
+            new V(1 - yy - zz, xy - zw, xz + yw),
+            new V(xy + zw, 1 - xx - zz, yz - xw),
+            new V(xz - yw, yz + xw, 1 - xx - yy),
+            new V(0, 0, 0));
     }
 }

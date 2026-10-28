@@ -110,5 +110,7 @@ public sealed class Rac2MobyPacketCacheRetailTests(ITestOutputHelper log)
         foreach (var w in witnesses.OrderByDescending(w => w.CrossPacket).ThenByDescending(w => w.OldMissing).Take(35))
             log.WriteLine($"class={w.Id} packets={w.Packets} dup={w.Dups} old_missing={w.OldMissing} current_missing={w.LocalMissing} from_prior={w.CrossPacket} impossible={w.Impossible} late_id_changes={w.EpilogueChanged}");
         Assert.True(totalDups > 0);
+        Assert.Equal(0, totalImpossible);
+        Assert.Equal(0, badEpilogue);
     }
 }

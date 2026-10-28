@@ -1203,6 +1203,7 @@ public static class GcUyaMoby
             }
 
             int end = sectionBoundaries.FirstOrDefault(b => b > assetOffset, assets.Length);
+            bool nativePoseAdmitted = false;
             try
             {
                 var classBuf = assets.AsSpan(assetOffset, end - assetOffset).ToArray();
@@ -1228,9 +1229,10 @@ public static class GcUyaMoby
                 {
                     // Source-backed initial pose. Gameplay may select another
                     // sequence after the native instance is initialized.
+                    nativePoseAdmitted = true;
                     mesh = mesh with
                     {
-                        Positions = GcUyaMobyNativePose.Pose(classBuf, mesh, first.Frames[0])
+                        Positions = Ps2MobyNativePose.Pose(classBuf, mesh, first.Frames[0])
                     };
                 }
                 outp[oClass] = new MobyClass(
@@ -1238,7 +1240,7 @@ public static class GcUyaMoby
                     triTexIds.Where(id => id >= 0).Distinct().OrderBy(id => id).ToList(),
                     joints, sequences);
             }
-            catch when (previewNativeInitialPose?.Invoke(oClass) != true)
+            catch when (!nativePoseAdmitted)
             {
                 // Preserve the established GC permissive class-table behavior,
                 // but fail visibly for an explicitly admitted native bind.

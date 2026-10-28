@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using OBP.IO;
 using OBP.PS2.Geometry;
 using OBP.PS2.Iso;
@@ -29,18 +28,9 @@ public static class Rac2Class2827Presentation
         // otherwise the actor factory rejects the mismatched model entirely.
         var cls = Rac2MobyClasses.Read(core, level: 0,
             nativePoseOverride: nativePosePreview)[Rac2Class2827HostileSession.NativeClassId];
-        byte[]? nativeClassBytes = null;
-        if (nativePosePreview)
-        {
-            var t = core.Header.MobyClasses;
-            int indexEntry = Enumerable.Range(0, t.Count)
-                .Select(i => t.Offset + i * GcUyaMoby.ClassEntrySize)
-                .Single(at => BinaryPrimitives.ReadInt32LittleEndian(
-                    core.Index.AsSpan(at + 4)) == Rac2Class2827HostileSession.NativeClassId);
-            int start = BinaryPrimitives.ReadInt32LittleEndian(core.Index.AsSpan(indexEntry));
-            int end = core.SectionBoundaries.FirstOrDefault(b => b > start, core.Assets.Length);
-            nativeClassBytes = core.Assets.AsSpan(start, end - start).ToArray();
-        }
+        byte[]? nativeClassBytes = nativePosePreview
+            ? Rac2MobyClasses.ClassBytes(core, Rac2Class2827HostileSession.NativeClassId)
+            : null;
         var result = new Dictionary<int, RuntimeObjectAnimationClip>();
         foreach (int id in new[] { Rac2Class2827HostileSession.ChaseSequence, Rac2Class2827HostileSession.AttackSequence16,
             Rac2Class2827HostileSession.AttackSequence27, Rac2Class2827HostileSession.RecoverySequence })
@@ -52,7 +42,7 @@ public static class Rac2Class2827Presentation
             {
                 var posed = nativeClassBytes is null
                     ? Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame)
-                    : GcUyaMobyNativePose.Pose(nativeClassBytes, cls.Mesh, frame);
+                    : Ps2MobyNativePose.Pose(nativeClassBytes, cls.Mesh, frame);
                 var positions = new double[posed.Length];
                 for (int index = 0; index < posed.Length; index += 3)
                 { positions[index] = posed[index]; positions[index + 1] = posed[index + 2]; positions[index + 2] = posed[index + 1]; }
