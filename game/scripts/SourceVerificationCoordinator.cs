@@ -10,6 +10,7 @@ internal sealed class SourceVerificationCoordinator(Func<ObpSourceGame, Verifica
     private readonly HostOperationScope _operations = new();
     private SourceVerificationOperation? _active;
     private string? _activeJob;
+    private string? _lastProgress;
     private long _nextJob;
     internal int PendingCount => _operations.PendingCount;
 
@@ -19,6 +20,7 @@ internal sealed class SourceVerificationCoordinator(Func<ObpSourceGame, Verifica
         var stamp = current(game) ?? throw new InvalidOperationException("Verification requires its attached source.");
         _active?.Dispose();
         var operation = _active = new(stamp);
+        _lastProgress = null;
         _activeJob = "source-verification-" + ++_nextJob;
         _operations.Start(_activeJob, token => operation.RunAsync((progress, cancellation) =>
             verify(stamp, progress, cancellation), token), operation.Retirement);
@@ -50,7 +52,13 @@ internal sealed class SourceVerificationCoordinator(Func<ObpSourceGame, Verifica
             Cancel(operation.Source.Game);
             publish($"{summary()}   —   {outcome}", outcome.StartsWith('⚠'));
         }
-        else publish($"{summary()}   —   verifying disc SHA-256… ({update.Progress * 100:0}%)", false);
+        else
+        {
+            string message = $"{summary()}   —   verifying disc SHA-256… ({update.Progress * 100:0}%)";
+            if (message == _lastProgress) return;
+            _lastProgress = message;
+            publish(message, false);
+        }
     }
 
     internal Task StopAsync()

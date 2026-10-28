@@ -210,14 +210,13 @@ internal sealed class CaptureReplayCoordinator(CaptureReplayPorts ports, Capture
     internal PlaytestCheckpoint CaptureCheckpoint()
     {
         ValidateRecordingSources();
-        var checkpoint = CaptureCheckpointBuilder.Build(ports.Checkpoint());
+        var values = CaptureCheckpointBuilder.BuildValues(ports.Checkpoint());
         if (ports.OrdinaryPlayer())
         {
-            var values = (SortedDictionary<string, PlaytestValue>)checkpoint.Values;
             CaptureCheckpointBuilder.AddShared(values, ports.Shared(), ReplayAdapters());
             if (IncludesEffects) ports.Effects.Checkpoint(values);
         }
-        return checkpoint;
+        return new(values);
     }
 
     internal PlaytestRunHeader CaptureHeader()

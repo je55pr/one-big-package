@@ -32,6 +32,7 @@
     <Compile Include="../../game/scripts/CaptureCheckpointSnapshot.cs" Link="Game/CaptureCheckpointSnapshot.cs" />
     <Compile Include="../../game/scripts/CaptureFrameSnapshot.cs" Link="Game/CaptureFrameSnapshot.cs" />
     <Compile Include="../../game/scripts/SourceVerificationCoordinator.cs" Link="Game/SourceVerificationCoordinator.cs" />
+    <Compile Include="../../game/scripts/SourceVerificationFiles.cs" Link="Game/SourceVerificationFiles.cs" />
     <Compile Include="../../game/scripts/EffectSourceData.cs" Link="Game/EffectSourceData.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticContracts.cs" Link="Diagnostics/DiagnosticContracts.cs" />
     <Compile Include="../../game/diagnostics/DiagnosticInputActions.cs" Link="Diagnostics/DiagnosticInputActions.cs" />

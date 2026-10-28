@@ -42,7 +42,7 @@ internal sealed record CaptureSharedCheckpoint(ProfilePlayer Player, IReadOnlyLi
 
 internal static class CaptureCheckpointBuilder
 {
-    internal static PlaytestCheckpoint Build(CaptureCheckpointSnapshot snapshot)
+    internal static SortedDictionary<string, PlaytestValue> BuildValues(CaptureCheckpointSnapshot snapshot)
     {
         var values = new SortedDictionary<string, PlaytestValue>(StringComparer.Ordinal);
         void Text(string key, string? value) => values.Add(key, new(Text: value ?? ""));
@@ -124,7 +124,7 @@ internal static class CaptureCheckpointBuilder
         { Vector($"doom.{body.Id}.position", body.Position); Vector($"doom.{body.Id}.velocity", body.Velocity); }
         foreach (var pickup in snapshot.Pickups.OrderBy(p => p.Id)) Vector($"pickup.{pickup.Id}.position", pickup.Position);
         foreach (var crank in snapshot.Cranks.OrderBy(c => c.Id)) Numbers($"crank.{crank.Id}.progress", crank.Progress);
-        return new(values);
+        return values;
     }
 
     internal static void AddShared(SortedDictionary<string, PlaytestValue> values, CaptureSharedCheckpoint snapshot, IReadOnlyList<PlaytestAdapter> adapters)

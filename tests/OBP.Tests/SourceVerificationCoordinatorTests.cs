@@ -7,13 +7,12 @@ public sealed class SourceVerificationCoordinatorTests
 {
     private static readonly TimeSpan DeadlockTimeout = TimeSpan.FromMinutes(2);
     [Fact]
-    public async Task LateOptionalHashCannotPublishAfterReplacementOrCancelCriticalHostWork()
+    public async Task LateOptionalHashCannotPublishAfterReplacement()
     {
         var stamp = new VerificationSourceStamp(ObpSourceGame.Rac2, "fixture", "synthetic-private-source", 12, 34);
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var release = new ManualResetEventSlim();
         var publications = new List<string>();
-        using var critical = new HostOperationScope();
         using var optional = new SourceVerificationCoordinator(_ => stamp, (_, _, _) =>
         {
             entered.TrySetResult(); release.Wait(CancellationToken.None); return "old source verified";
@@ -26,17 +25,14 @@ public sealed class SourceVerificationCoordinatorTests
             optional.Tick(0);
             Assert.Single(publications); Assert.Contains("canceled", publications[0], StringComparison.Ordinal);
             Task stop = optional.StopAsync(); Assert.False(stop.IsCompleted);
-            Assert.False(critical.Stopping);
-            bool ran = false; critical.Start("capture", _ => { ran = true; return Task.CompletedTask; }); Assert.True(ran);
             release.Set(); await stop.WaitAsync(DeadlockTimeout, CancellationToken.None);
             optional.Tick(1); Assert.Single(publications);
-            Assert.Empty(critical.TakeFailures());
         }
         finally { release.Set(); await optional.StopAsync(); }
     }
 
     [Fact]
-    public async Task OptionalHashFailureIsReportedOnceAndNeverBecomesACriticalFailure()
+    public async Task OptionalHashFailureIsReportedOnce()
     {
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var publications = new List<(string, bool)>();
@@ -81,5 +77,55 @@ public sealed class SourceVerificationCoordinatorTests
             Assert.Contains(publications, text => text.Contains("replacement verified", StringComparison.Ordinal));
         }
         finally { release.Set(); await owner.StopAsync(); }
+    }
+
+    [Fact]
+    public async Task ProgressPublishesOnlyWhenTheMessageChangesAndResetsForANewJob()
+    {
+        var source = new VerificationSourceStamp(ObpSourceGame.Rac2, "fixture", "synthetic", 1, 1);
+        var entered = new TaskCompletionSource<IProgress<double>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        string summary = "first world";
+        var publications = new List<string>();
+        using var owner = new SourceVerificationCoordinator(_ => source, (_, progress, _) =>
+        {
+            entered.TrySetResult(progress);
+            release.Wait(CancellationToken.None);
+            return "verified";
+        }, () => summary, (text, _) => publications.Add(text));
+        try
+        {
+            owner.Start(ObpSourceGame.Rac2);
+            var progress = await entered.Task.WaitAsync(DeadlockTimeout, CancellationToken.None);
+            owner.Tick(0); owner.Tick(1);
+            Assert.Single(publications);
+            progress.Report(.003); owner.Tick(2);
+            Assert.Single(publications);
+            progress.Report(.01); owner.Tick(3);
+            Assert.Equal(2, publications.Count);
+            summary = "second world"; owner.Tick(4); owner.Tick(5);
+            Assert.Equal(3, publications.Count);
+            Assert.Contains("second world", publications[^1], StringComparison.Ordinal);
+            owner.Start(ObpSourceGame.Rac2); owner.Tick(6);
+            Assert.Equal(4, publications.Count);
+            Assert.Contains("(0%)", publications[^1], StringComparison.Ordinal);
+        }
+        finally { release.Set(); await owner.StopAsync(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void VerificationDistinguishesUnreadableFilesFromInvalidContent(bool invalidContent)
+    {
+        string path = Path.Combine(Path.GetTempPath(), "obp-verification-" + Guid.NewGuid().ToString("N") + ".iso");
+        try
+        {
+            if (invalidContent) File.WriteAllBytes(path, new byte[65536]);
+            string outcome = SourceVerificationFiles.VerifyRac2(new(ObpSourceGame.Rac2, "fixture", path, 65536, 0),
+                new Progress<double>(), CancellationToken.None);
+            Assert.StartsWith(invalidContent ? "⚠ disc does not match" : "⚠ could not read the disc image", outcome);
+        }
+        finally { File.Delete(path); }
     }
 }

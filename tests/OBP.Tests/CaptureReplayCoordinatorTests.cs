@@ -138,12 +138,12 @@ public sealed class CaptureReplayCoordinatorTests : IDisposable
         using (var writer = new PlaytestRunWriter(path, header)) await writer.FinishAsync("saved");
         var replay = fixture.Owner(build: Build with { AssemblyId = Guid.NewGuid() });
         var args = replay.Initialize(new() { ReplayPlaytest = path, PlaytestAllowBuildChange = true, FixedSeed = 1 }, () => throw new Exception(), fixture.Install);
+        using var replayReader = fixture.Session.Reader;
         Assert.Equal(271, args.FixedSeed); Assert.Equal(header.Destination, args.Destination); Assert.True(args.NoProfile);
         Assert.Equal(fixture.Profile.Encode(), replay.TakeStartingProfile()!.Encode()); Assert.Null(replay.TakeStartingProfile());
         replay.ValidateProvenance(header);
         fixture.Sources = [fixture.Sources[0] with { Sha256 = new string('F', 64) }];
         Assert.Throws<InvalidDataException>(() => replay.ValidateProvenance(header));
-        fixture.Session.Reader?.Dispose();
     }
 
     private sealed class Fixture

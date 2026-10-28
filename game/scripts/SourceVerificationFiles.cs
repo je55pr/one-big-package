@@ -25,7 +25,9 @@ internal static class SourceVerificationFiles
             var verified = Rac2IsoLoad.Verify(reader, progress, cancellation);
             return $"✓ authority build verified — {verified.Serial} {verified.Revision}";
         }
-        catch (Exception error) when (error is InvalidDataException or IOException or UnauthorizedAccessException)
+        catch (InvalidDataException error)
         { return $"⚠ disc does not match the known-good dump: {error.Message}"; }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        { return $"⚠ could not read the disc image: {error.Message}"; }
     }
 }

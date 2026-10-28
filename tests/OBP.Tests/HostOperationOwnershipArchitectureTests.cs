@@ -117,7 +117,30 @@ public sealed class HostOperationOwnershipArchitectureTests
         var owner = Assert.Single(root.GetMembers("_sourceVerification").OfType<IFieldSymbol>());
         Assert.Equal("SourceVerificationCoordinator", owner.Type.Name);
         var verification = HostOwnershipAudit.Host.Value.GetTypeByMetadataName("OBP.Game.SourceVerificationCoordinator")!;
-        Assert.Single(verification.GetMembers("_active").OfType<IFieldSymbol>());
-        Assert.Single(verification.GetMembers("_operations").OfType<IFieldSymbol>());
+        var scope = Assert.Single(verification.GetMembers("_operations").OfType<IFieldSymbol>());
+        Assert.Equal("OBP.Game.HostOperationScope", scope.Type.ToDisplayString());
+        Assert.True(scope.IsReadOnly);
+        Assert.False(scope.IsStatic);
+        var declaration = Assert.IsType<VariableDeclaratorSyntax>(Assert.Single(scope.DeclaringSyntaxReferences).GetSyntax());
+        var creation = Assert.IsAssignableFrom<BaseObjectCreationExpressionSyntax>(declaration.Initializer!.Value);
+        var model = HostOwnershipAudit.Host.Value.GetSemanticModel(creation.SyntaxTree);
+        Assert.True(SymbolEqualityComparer.Default.Equals(scope.Type, model.GetTypeInfo(creation).Type));
+        Assert.DoesNotContain(verification.InstanceConstructors.SelectMany(constructor => constructor.Parameters),
+            parameter => SymbolEqualityComparer.Default.Equals(parameter.Type, scope.Type));
+    }
+
+    [Fact]
+    public void EveryRecordingStepValidatesSourcesImmediatelyBeforeAppending()
+    {
+        var tree = HostOwnershipAudit.Host.Value.SyntaxTrees.Single(tree => Path.GetFileName(tree.FilePath) == "PlaytestDriver.cs");
+        var end = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>().Single(method => method.Identifier.ValueText == "End");
+        var append = Assert.Single(end.DescendantNodes().OfType<ExpressionStatementSyntax>(), statement =>
+            statement.Expression is InvocationExpressionSyntax { Expression: MemberAccessExpressionSyntax member } &&
+            member.Expression.ToString() == "_writer!" && member.Name.Identifier.ValueText == "Add");
+        var block = Assert.IsType<BlockSyntax>(append.Parent);
+        int index = block.Statements.IndexOf(append);
+        Assert.True(index > 0);
+        var validation = Assert.IsType<ExpressionStatementSyntax>(block.Statements[index - 1]);
+        Assert.Equal("Session.ValidateRecordingSources()", validation.Expression.ToString());
     }
 }

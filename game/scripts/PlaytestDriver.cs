@@ -174,7 +174,6 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
         if (!_entered || _finished || !ResumeBugCaptureAtBoundary(kind)) return;
         try
         {
-            Session.ValidateRecordingSources();
             if (Ports.MovementLoading()) throw new InvalidOperationException("Movement-state loads cannot be mixed into an input tape.");
             if (Ports.BookmarkStep() is { } bookmarkStep && _nextStep > bookmarkStep) { CompleteReplay(atBookmark: true); return; }
             if (Ports.Reports()?.ReplayReport is { } report && _nextStep > report.Step) { CompleteReplay(atReportMarker: true); return; }
@@ -312,6 +311,7 @@ internal sealed partial class PlaytestDriver : Node, ICaptureReplaySession
             {
                 bool observe = !PreparingWorld && kind == PlaytestStepKind.Process && (_processSteps % 60 == 0 || _markRequested || _stopRequested || _bugOverlayRequested || _bookmarkPath is not null);
                 _lastObserved = observe ? Session.CaptureCheckpoint() : null;
+                Session.ValidateRecordingSources();
                 _writer!.Add(_step with { Players = _players.ToArray(), Checkpoint = _lastObserved, Commands = _commands.ToArray(), Gameplay = _gameplay.ToArray() });
                 if (observe && _markRequested)
                 {
