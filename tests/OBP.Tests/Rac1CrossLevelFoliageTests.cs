@@ -21,17 +21,17 @@ public sealed class Rac1CrossLevelFoliageTests
         var indices = new List<int>();
         var textureIds = new List<int>();
         foreach (int layer in new[] { 10, 11, 12 })
-        for (int triangle = 0; triangle < faces; triangle++)
-        {
-            for (int corner = 0; corner < 3; corner++)
+            for (int triangle = 0; triangle < faces; triangle++)
             {
-                indices.Add(positions.Count / 3);
-                positions.Add(triangle * 5 + corner);
-                positions.Add(corner * 2);
-                positions.Add(layer == 12 ? 40 : layer == 11 && !overlap ? 20 : 0);
+                for (int corner = 0; corner < 3; corner++)
+                {
+                    indices.Add(positions.Count / 3);
+                    positions.Add(triangle * 5 + corner);
+                    positions.Add(corner * 2);
+                    positions.Add(layer == 12 ? 40 : layer == 11 && !overlap ? 20 : 0);
+                }
+                textureIds.Add(layer);
             }
-            textureIds.Add(layer);
-        }
 
         var state = new RcMaterialState(0,
             RcTextureWrapHint.Unknown, RcTextureWrapHint.Unknown,

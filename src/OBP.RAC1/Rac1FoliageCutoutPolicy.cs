@@ -69,27 +69,27 @@ internal static class Rac1FoliageCutoutPolicy
         var admitted = new HashSet<int>();
 
         for (int a = 0; a < candidates.Length; a++)
-        for (int b = a + 1; b < candidates.Length; b++)
-        {
-            int left = candidates[a], right = candidates[b];
-            if (Math.Min(facesByTexture[left], facesByTexture[right]) <
-                Math.Max(facesByTexture[left], facesByTexture[right]) * 0.75 ||
-                Math.Abs(alpha[left].CutoutFraction - alpha[right].CutoutFraction) >
-                    MaximumCutoutProfileDifference)
-                continue;
-
-            var smaller = verticesByTexture[left].Count <= verticesByTexture[right].Count
-                ? verticesByTexture[left] : verticesByTexture[right];
-            var larger = ReferenceEquals(smaller, verticesByTexture[left])
-                ? verticesByTexture[right] : verticesByTexture[left];
-
-            int shared = smaller.Count(point => larger.Contains(point));
-            if (shared >= smaller.Count * MinimumSharedVertexFraction)
+            for (int b = a + 1; b < candidates.Length; b++)
             {
-                admitted.Add(left);
-                admitted.Add(right);
+                int left = candidates[a], right = candidates[b];
+                if (Math.Min(facesByTexture[left], facesByTexture[right]) <
+                    Math.Max(facesByTexture[left], facesByTexture[right]) * 0.75 ||
+                    Math.Abs(alpha[left].CutoutFraction - alpha[right].CutoutFraction) >
+                        MaximumCutoutProfileDifference)
+                    continue;
+
+                var smaller = verticesByTexture[left].Count <= verticesByTexture[right].Count
+                    ? verticesByTexture[left] : verticesByTexture[right];
+                var larger = ReferenceEquals(smaller, verticesByTexture[left])
+                    ? verticesByTexture[right] : verticesByTexture[left];
+
+                int shared = smaller.Count(point => larger.Contains(point));
+                if (shared >= smaller.Count * MinimumSharedVertexFraction)
+                {
+                    admitted.Add(left);
+                    admitted.Add(right);
+                }
             }
-        }
 
         return admitted;
     }
