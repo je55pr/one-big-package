@@ -75,6 +75,27 @@ public sealed class Rac2MobyNativePoseTests
     }
 
     [Fact]
+    public void NonUniformScaleKeepsSkinnedNormalsPerpendicularToSurfaceTangents()
+    {
+        var source = Skeleton();
+        const double rootHalf = 0.7071067811865476;
+        var mesh = Mesh() with { Normals = [(float)rootHalf, (float)rootHalf, 0f] };
+        var frame = Frame([new GcUyaMoby.MobyScaleOverride(0, 2, 1, 1, true)]);
+        var posed = Ps2MobyNativePose.Pose(source, mesh, frame);
+        var normal = Ps2MobyNativePose.PoseNormals(source, mesh, frame, posed);
+        var displaced = Ps2MobyNativePose.Pose(source, mesh with
+        {
+            SkinLocalPositions = [6d + rootHalf, -rootHalf, 0d]
+        }, frame);
+
+        double dot = normal[0] * (displaced[0] - posed[0]) +
+            normal[1] * (displaced[1] - posed[1]) +
+            normal[2] * (displaced[2] - posed[2]);
+        Assert.InRange(Math.Abs(dot), 0, 1e-5);
+        Assert.InRange(Math.Abs(normal[0] / normal[1] - 0.5f), 0, 1e-5);
+    }
+
+    [Fact]
     public void InvalidNativeHierarchyFailsClosed()
     {
         var source = Skeleton();

@@ -161,38 +161,69 @@ public static class Ps2MobyNativePose
     }
 
     /// <summary>
-    /// Transform the authored vertex normals using the same affine native
-    /// palette as the vertices, without applying palette translations.
+    /// Apply the effective inverse-transpose skin transform to authored normals.
+    /// Two tangent probes form the corresponding transformed surface normal,
+    /// including non-uniform native scale and multi-joint blending.
     /// </summary>
     public static float[] PoseNormals(
         byte[] classBytes, GcUyaMoby.Mesh mesh, GcUyaMoby.MobyFrame frame, double[] posed)
     {
         if (mesh.Normals.Length != mesh.Positions.Length)
             return mesh.Normals;
-        var displacedLocal = new double[mesh.SkinLocalPositions.Length];
-        for (int i = 0; i < displacedLocal.Length; i++)
-            displacedLocal[i] = mesh.SkinLocalPositions[i] + mesh.Normals[i];
-        var displaced = Pose(classBytes, mesh with { SkinLocalPositions = displacedLocal }, frame);
+
+        static V Cross(V a, V b) =>
+            new(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
+        static double Length(V a) => Math.Sqrt(a.X * a.X + a.Y * a.Y + a.Z * a.Z);
+        static V Unit(V a) => (1 / Length(a)) * a;
+
+        var tangentA = new double[mesh.SkinLocalPositions.Length];
+        var tangentB = new double[mesh.SkinLocalPositions.Length];
+        for (int v = 0; v < tangentA.Length; v += 3)
+        {
+            var n = new V(mesh.Normals[v], mesh.Normals[v + 1], mesh.Normals[v + 2]);
+            var raw = new V(mesh.SkinLocalPositions[v], mesh.SkinLocalPositions[v + 1],
+                mesh.SkinLocalPositions[v + 2]);
+            var first = new V(0, 0, 0);
+            var second = first;
+            if (Length(n) > 1e-10)
+            {
+                n = Unit(n);
+                var axis = Math.Abs(n.Z) < 0.9 ? new V(0, 0, 1) : new V(0, 1, 0);
+                first = Unit(Cross(axis, n));
+                second = Cross(n, first);
+            }
+            var a = raw + first;
+            var b = raw + second;
+            tangentA[v] = a.X; tangentA[v + 1] = a.Y; tangentA[v + 2] = a.Z;
+            tangentB[v] = b.X; tangentB[v + 1] = b.Y; tangentB[v + 2] = b.Z;
+        }
+
+        var posedA = Pose(classBytes, mesh with { SkinLocalPositions = tangentA }, frame);
+        var posedB = Pose(classBytes, mesh with { SkinLocalPositions = tangentB }, frame);
         var normals = new float[mesh.Normals.Length];
         for (int v = 0; v < posed.Length; v += 3)
         {
-            double x = displaced[v] - posed[v], y = displaced[v + 1] - posed[v + 1],
-                z = displaced[v + 2] - posed[v + 2];
-            double length = Math.Sqrt(x * x + y * y + z * z);
+            var a = new V(posedA[v] - posed[v], posedA[v + 1] - posed[v + 1],
+                posedA[v + 2] - posed[v + 2]);
+            var b = new V(posedB[v] - posed[v], posedB[v + 1] - posed[v + 1],
+                posedB[v + 2] - posed[v + 2]);
+            var n = Cross(a, b);
+            double length = Length(n);
             if (!double.IsFinite(length))
                 throw new InvalidDataException("Native pose produced a nonfinite vertex normal.");
             if (length < 1e-10)
             {
-                // Degenerate authored normals have no stable skinned direction.
-                // Preserve their source value instead of failing the level import.
+                // Source-zero normals or a collapsed skin palette have no
+                // well-defined transformed normal. Keep their authored value.
                 normals[v] = mesh.Normals[v];
                 normals[v + 1] = mesh.Normals[v + 1];
                 normals[v + 2] = mesh.Normals[v + 2];
                 continue;
             }
-            normals[v] = (float)(x / length);
-            normals[v + 1] = (float)(y / length);
-            normals[v + 2] = (float)(z / length);
+            n = (1 / length) * n;
+            normals[v] = (float)n.X;
+            normals[v + 1] = (float)n.Y;
+            normals[v + 2] = (float)n.Z;
         }
         return normals;
     }
