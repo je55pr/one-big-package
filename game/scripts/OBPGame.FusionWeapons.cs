@@ -180,7 +180,7 @@ public partial class OBPGame
     private void ResetSharedWeaponAssets()
     {
         // Source changes and application exit own this lifetime, not level teardown.
-        ClearActorSourceCaches();
+        ActorHost.InvalidateSources();
         ClearFusionTransients();
         ReleaseFusionWeaponViews();
         _fusionPreparation?.Dispose(); _fusionPreparation = null;
@@ -311,7 +311,7 @@ public partial class OBPGame
         {
             if (OrdinaryPlayerSession)
             {
-                bool accepted = ApplyRegisteredWeaponContact(intent);
+                bool accepted = ActorHost.Combat.Apply(intent);
                 RecordGameplayFact("damage", new { Intent = intent, Accepted = accepted });
                 if (accepted) { _fusionAcceptedHits++; _fusionLastDamage = intent; }
                 continue;
@@ -357,7 +357,7 @@ public partial class OBPGame
     {
         float range = _fusion!.Selected == FusionWeaponSession.Lancer ? Rac2LancerProfile.ProjectileRange : Rac3ShockCannonProfile.RayLength;
         if (OrdinaryPlayerSession)
-            return RegisteredCombatGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
+            return ActorHost.Combat.ReadGeometry().Where(target => FusionDamagePolicy.AdmitsQueryTarget(_fusion.Selected, target.Key))
                 .Where(target => _fusion.Selected != FusionWeaponSession.Lancer || target.Key.SourceGame != ObpSourceGame.Rac1 || target.Key.NativeClassId != 749)
                 .Select(target => target.Bounds.GetCenter()).Where(point => point.DistanceSquaredTo(origin) is > .1f && point.DistanceSquaredTo(origin) < range * range &&
                     (point - origin).Normalized().Dot(EquipmentForward) > .9f && BombHasLineOfSight(origin, point))
@@ -375,7 +375,7 @@ public partial class OBPGame
         Vector3 from = ToGodot(query.From), to = ToGodot(query.To);
         if (OrdinaryPlayerSession)
         {
-            foreach (var contact in TraceRegisteredWeaponQuery(query, muzzle)) yield return contact;
+            foreach (var contact in ActorHost.Combat.Trace(query, muzzle)) yield return contact;
             yield break;
         }
         var candidates = EquipmentGeometry.Where(e => FusionDamagePolicy.Admits(new(ObpSourceGame.Rac1, e.Node.Source.NativeClassId, e.Node.Source.InstanceIndex)) &&

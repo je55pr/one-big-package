@@ -2562,6 +2562,10 @@
   "Composition": [
     {"Key":"game/scripts/OBPGame.cs::OBPGame::field:_bugReporting:BugReportUiCoordinator ?:private","Owner":"#355","Rationale":"Composition-only report coordinator reference and modal observation. View state, selection, confirmations, persistence requests and child reproduction lifetimes belong to the owned coordinator; the store and recording writer remain independent. Final root composition removes this bridge.","ExpiresWith":"#376","Hash":"25675209ada32833e88646a317983c56b5b613117e8ec49a01ac093ef6397a24"},
     {"Key":"game/scripts/OBPGame.cs::OBPGame::property:BugReportModalOpen:bool:get/:internal","Owner":"#355","Rationale":"Composition-only report coordinator reference and modal observation. View state, selection, confirmations, persistence requests and child reproduction lifetimes belong to the owned coordinator; the store and recording writer remain independent. Final root composition removes this bridge.","ExpiresWith":"#376","Hash":"dd5ef1c6e0319386e6f2e22a9cd5d4853311e6c5e446f2c6e0170ecddfd7f96e"},
+    {"Key":"game/scripts/OBPGame.cs::OBPGame::field:_actorHost:ActorWorldHost ?:private","Owner":"#359","Rationale":"Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.","ExpiresWith":"#376","Hash":"0cd73b449bff4bef3d04cc2756cbd3de77693d8f5e45e48d37a50e682cce5d6d"},
+    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:CreateActorHost():ActorWorldHost:private","Owner":"#359","Rationale":"Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.","ExpiresWith":"#376","Hash":"d2b6dc8554a02b96f9a9cf85d9b679d53bdaa747d0c480f22ad20804e5e71f13"},
+    {"Key":"game/scripts/OBPGame.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public","Owner":"#359","Rationale":"Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.","ExpiresWith":"#376","Hash":"a2ef8d8a1bd79895104dd3894ea3bf2c4b276bfbe56d6e3195098f79a5dc0b96"},
+    {"Key":"game/scripts/OBPGame.cs::OBPGame::property:ActorHost:ActorWorldHost:get/:private","Owner":"#359","Rationale":"Composition-only actor host reference, typed native/contact bindings and established reset entrypoint. Actor registration, preparation, private maps, scene transients, native damage bridges and receipts live behind the existing owned hosts; final root composition removes these bindings.","ExpiresWith":"#376","Hash":"e95ea4a594cf343565a5d15ec5bf6b4a3daa2bc7500a3f7e95616567e50dc4cb"},
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::field:_avatarPresentation:PlayerAvatarPresentationHost:private,readonly",
       "Owner": "#350",
@@ -2726,8 +2730,8 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateMovementDiagnosticHarness():MovementDiagnosticHarness:private",
       "Owner": "#339",
-      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary invocation-only movement diagnostic composition. Standalone suites own assertions, immutable snapshot ports own reads, and scoped fixtures own input, geometry and frame waits. Remaining diagnostic callers retire these bridges with their own migration. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376.",
+      "ExpiresWith": "#376",
       "Hash": "fa22383df6c3f21d923729e5ce067cb5a46121abd6e61162b78be17db739fdd5"
     },
     {
@@ -2740,15 +2744,15 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePauseMenuPresentation():PauseMenuUi:private",
       "Owner": "#348",
-      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing.",
+      "Rationale": "Application-level modal composition and existing public facade. Focus, mouse, pause, wheel gestures, and controller-settings lifetimes are owned by UiModalCoordinator; #376 retires remaining root composition plumbing. #359 reads actor status through an owned read-only projection; the established reset callback is retained.",
       "ExpiresWith": "#376",
-      "Hash": "45c9f7098ce8475fcf0807dfeb145cb8596999afe144cf61aaef5d5faafea5f1"
+      "Hash": "25626fe3226d0ba44c74ff1fac64260eb344e2d3e0a69e993baed7da907d5432"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreatePlayerDiagnosticHarness():PlayerSessionDiagnosticHarness:private",
       "Owner": "#338",
-      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary composition for independently owned player diagnostic fixtures and bounded source-stamped audio evidence. Scenarios receive copied facts/narrow actions, never the root or native controllers. #346 binds the same source-qualified observations to the owned source library; isolated diagnostic replacement uses its explicit typed access mode. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376.",
+      "ExpiresWith": "#376",
       "Hash": "cf98b0e2f6e8d946576b1bac0f90eea86c24faed34c0d5f11c42cbcec08979c6"
     },
     {
@@ -2761,8 +2765,8 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1AridiaDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1AridiaDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #363.",
+      "ExpiresWith": "#363",
       "Hash": "bf7eb16d1f36981f6ed6293bc697372ac5a1fae153f0ea6e6559e972c6076463"
     },
     {
@@ -2782,22 +2786,22 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1CombatDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1CombatDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #368.",
+      "ExpiresWith": "#368",
       "Hash": "0114cf9cd904ff98f751b23caecd2183896dfcede135d0ab015c8afe842a566e"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1EncounterDiagnosticHarness():Rac1EncounterDiagnosticHarness:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #361.",
+      "ExpiresWith": "#361",
       "Hash": "7b0868a4e58b3bcd82332d44226c704d6d102b061be01beb69c68a85221fbb31"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1FrogDiagnosticFixture(:GodotRac1EnemyDiagnosticFixture):GodotRac1FrogDiagnosticFixture:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #362.",
+      "ExpiresWith": "#362",
       "Hash": "1c9404a903d1c90296d71eece3657e3a6954f6bb97f5e16caef173de279a0818"
     },
     {
@@ -2810,8 +2814,8 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateRac1QueenDiagnosticBindings():GodotRac1QueenDiagnosticBindings:private",
       "Owner": "#340",
-      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters.",
-      "ExpiresWith": "#359",
+      "Rationale": "Temporary invocation-only encounter fixture composition. Independent R&C1 acceptance suites consume source-qualified immutable facts and explicit scoped fixture actions; native controllers and scene nodes remain inside adapters. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #362.",
+      "ExpiresWith": "#362",
       "Hash": "c76a67bdd06d7a806133152253c4b89ea35ea32e53a2858e81fa8f8af3dc31af"
     },
     {
@@ -2852,15 +2856,15 @@
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyActorDiagnosticFixture():ITrilogyActorDiagnosticFixture:private",
       "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
-      "ExpiresWith": "#359",
-      "Hash": "27bdf656eaf28d75cd6ce4351ab9b0dbc1671fed81768b00e6d891e8c4276e3b"
+      "Rationale": "Composition-only adapter for owned actor snapshots, cache and retirement witnesses, and controlled construction/invalidation trials. Focused encounter reset and shared-asset teardown callbacks remain until final root composition #376.",
+      "ExpiresWith": "#376",
+      "Hash": "34a293d7e1dae0058f95c9b53fc1c78a723923e80c8e7ee4e2825bb3aa12f0ac"
     },
     {
       "Key": "game/scripts/OBPGame.cs::OBPGame::method:CreateTrilogyPlayerDiagnosticFixture():ITrilogyPlayerDiagnosticFixture:private",
       "Owner": "#344",
-      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios.",
-      "ExpiresWith": "#359",
+      "Rationale": "Invocation-only capture/scenario supervision and focused recorder/report, movement-state and trilogy actor/player fixture bindings. Owned diagnostic components retain evidence and temporary state; native sessions, actor maps, paths and scene handles do not escape to the scenarios. #359 moves registered-actor ownership behind typed hosts. This remaining player/world or native-family fixture composition is bounded to its actual follow-up owner #376.",
+      "ExpiresWith": "#376",
       "Hash": "1d8dc6f2ff28d033f0c3a486e731ca1e4ab2f66c40b10ee79b30ce1decf6c3cf"
     },
     {
@@ -3608,6 +3612,43 @@
     "game/scripts/OBPGame.BugReports.cs::OBPGame::method:SelectedBug():( Guid Session , BugReportEntry Report ):private",
     "game/scripts/OBPGame.BugReports.cs::OBPGame::method:StartBugOverlayWork(:string,:Func < CancellationToken , Task >):void:private",
     "game/scripts/OBPGame.BugReports.cs::OBPGame::property:BugReportModalOpen:bool:get/:internal",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ApplyRegisteredRac1Damage(:RuntimeWorldScene . DynamicObjectNode,:WeaponDamageIntent):ActorHitResult:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ApplyRegisteredRac2Damage(:RuntimeWorldScene . DynamicObjectNode,:Rac2Class2827HostileSession,:WeaponDamageIntent):ActorHitResult:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ApplyRegisteredRac3Damage(:RuntimeWorldScene . DynamicObjectNode,:Rac3MobyRuntimeSession,:WeaponDamageIntent):ActorHitResult:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ConfigureActorFactories():void:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:EnsureRac1ActorPickupBank(:RuntimeWorld):void:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ObserveRac1Actor(:RuntimeWorldScene . DynamicObjectNode):ActorObservation:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ObserveRac2Actor(:RuntimeWorldScene . DynamicObjectNode,:Rac2Class2827HostileSession):ActorObservation:private,static",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:ObserveRac3Actor(:RuntimeWorldScene . DynamicObjectNode,:Rac3MobyRuntimeSession):ActorObservation:private,static",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:RegisterExistingNativeTargets():void:private",
+    "game/scripts/OBPGame.ActorAdapters.cs::OBPGame::method:RegisterOriginalActor(:RuntimeWorldScene . DynamicObjectNode,:Func < ActorObservation >,:Func < WeaponDamageIntent , ActorHitResult >):void:private",
+    "game/scripts/OBPGame.ActorContacts.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.ActorContacts.cs::OBPGame::method:ApplyRegisteredWeaponContact(:WeaponDamageIntent):bool:private",
+    "game/scripts/OBPGame.ActorContacts.cs::OBPGame::method:RegisteredCombatGeometry():IEnumerable < ( WeaponTargetKey Key , RuntimeWorldScene . DynamicObjectNode Node , Aabb Bounds ) >:private",
+    "game/scripts/OBPGame.ActorContacts.cs::OBPGame::method:ResolveRegisteredBlast(:SourceWeaponKey,:long,:long,:Vector3,:float,:float,:uint):void:private",
+    "game/scripts/OBPGame.ActorContacts.cs::OBPGame::method:ResolveRegisteredWrenchContacts(:Vector3,:Vector3,:Vector3,:Vector3,:float,:float):void:private",
+    "game/scripts/OBPGame.ActorContacts.cs::OBPGame::method:TraceRegisteredWeaponQuery(:WeaponQuery,:Vector3):IEnumerable < WeaponContact >:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::field:_actorSources:ActorSourceCache ?:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::field:_actorWorld:ActorWorldHost:private,readonly",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ActorTarget(:RuntimeWorldScene . DynamicObjectNode):WeaponTargetKey:private,static",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ClearActorSourceCaches():void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ClearRegisteredActorTransients(:WeaponTargetKey):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ConfigureRegisteredActors(:FusionLabDefinition ?):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:PlayRegisteredRac1ActorSound(:RuntimeWorldScene . DynamicObjectNode,:int):bool:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:PrepareActorSource(:ActorPlacement):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ReadPlacedActorStatus():IReadOnlyDictionary < string , string >:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:RegisterActorView(:HostedActor):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ResetPlacedActor(:string):EquipmentChangeResult:public",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:ResetRegisteredActors():void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:RetirePlacedActor(:ActorInstanceKey):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:StepRegisteredActorsPhysics():void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:TickActorPreparation():void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:TrackRegisteredActorPickups(:RuntimeWorldScene . DynamicObjectNode,:IEnumerable < int >):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::method:UnbindPlacedActor(:ActorInstanceKey):void:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::property:ActorSources:ActorSourceCache:get/:private",
+    "game/scripts/OBPGame.Actors.cs::OBPGame::property:_actors:ActorRuntimeSet ?:get/:private",
     "game/diagnostics/ControllerSmoke.cs::OBPGame::declaration:ClassDeclaration:public,partial:::",
     "game/diagnostics/ControllerSmoke.cs::OBPGame::method:CheckControllerWeaponInputAsync():Task:async,internal",
     "game/diagnostics/OBPGame.AcceptanceEvidence.cs::OBPGame+AcceptanceCheck::declaration:RecordDeclaration:private,sealed:::( string Id , string ? Destination , bool Passed , string Detail )",

@@ -22,6 +22,7 @@ internal sealed record Rac1ActorBindings(Rac1Class749HostileSession Hostiles,
 /// <summary>Godot binding of the recovered LEVEL0 class-749 target/home recipe.</summary>
 internal sealed class Rac1ToadActorFactory(ActorSceneFactory scenes, ActorSourceCache assets, Rac1ActorBindings native) : IActorFactory
 {
+    public bool SupportsDeterministicReplay => true;
     public ActorAdapterDescriptor Descriptor { get; } = new(ObpSourceGame.Rac1, Rac1Authority.Primary.BuildId, 749,
         "rac1/class749/v1", "rac1/veldin-target-home/v1", 0, Rac1Class749Hostile.TargetSearchNativeState);
 

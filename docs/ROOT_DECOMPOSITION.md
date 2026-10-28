@@ -309,6 +309,59 @@ remain explicitly pending; committed-save failures still reach host supervision
 and require the existing nonzero exit. Recovery/publication retries and explicit
 session deletion have portable regressions, with no new root fields or schemas
 for saved reports or portable archives.
+The #359 actor-composition extraction retires `OBPGame.Actors.cs`,
+`OBPGame.ActorAdapters.cs` and `OBPGame.ActorContacts.cs`. Against #350, the root
+changes from 62 files, 15,767 lines, 588 methods, 380 fields (238 mutable),
+43 exposed members and 1,675 cross-file references to 59 files, 15,340 lines,
+560 methods, 379 fields (238 mutable), 43 exposed members and 1,611 cross-file
+references. The source-cache and actor-world fields become one lazy owned-host
+reference. The established public placement-reset entrypoint remains a
+delegation; 37 historical declaration/member permissions retire and four exact
+composition entries expire with #376.
+
+`ActorWorldHost` privately owns registration, views, bodies, placed identities,
+reward/audio transients and world retirement. `ActorPlacementPreparation` owns
+the world's preparation barrier, stable source/class/id activation order,
+provenance checks and explicit retry status. Retiring that owner cannot activate
+a late import; `ActorSourceCache` retains attachment-owned decoded data and
+observes canceled/failed native reads through `HostOperationScope`. Source
+invalidation retires placed actors and player attack identities, disables their
+bodies and clears pending activation without resetting the persistent player.
+
+`ActorNativeAdapters` supplies typed R&C1/R&C2/R&C3 damage and update bindings;
+existing source controllers retain native formulas, masks, amounts, reactions
+and 60-Hz updates. `ActorCombatContactService` owns registered geometry, ray and
+sphere queries, blast/wrench dispatch and receipt routing through the existing
+`ActorRuntimeSet`. Shared OBP geometry retains the two original segment-test
+tolerances. Source-qualified factories explicitly declare their deterministic
+replay witness; the current admitted adapter IDs and source-world families are
+preserved without a root family switch or a replay schema change.
+
+The host receives nine world/source/lifetime ports, six contact ports and three
+source-specific native binding records. Its eleven-member diagnostic interface
+returns copied population/placement facts and controlled cache, construction,
+invalidation and retirement witnesses. Diagnostics no longer receive the actor
+host's dictionaries, runtime registry, body map or source cache. Existing scene,
+native-session and source-context fixture composition remains exact: the four
+player/world/trilogy bridges formerly expiring with #359 now expire with final
+composition #376; the five R&C1 encounter bridges expire with their actual
+source owners #361/#362/#363/#368. Their existing permissions remain narrow,
+and the frozen origin/access ledger does not grow. The R&C1 voice adapter's
+fingerprint changes only to call its owned voice scope; a focused regression
+retains rejection of player-equipment selection in that source adapter.
+
+The authorised mixed-encounter scenario reproduces the pre-extraction digest
+`B690142A3C5695161F095AD1D5F67F2EFB28B119CFAE0E1E5DC60B69E5C8C085` for
+its sampled identities, positions, native states/sequences, health and alive
+flags. The same scenario retains ordinary cross-game contacts, independent
+resets, failed construction rollback, source invalidation/re-admission, world
+retirement, source-cache reuse and persistent-ammunition acceptance.
+
+With #355 integrated after #359, the combined four-configuration census is
+58 files, 14,970 lines, 544 methods, 369 fields (229 mutable), 43 exposed
+members and 1,599 cross-file references. Both owners retain their independent
+composition entries and retired permissions; neither migration restores the
+other's root state or privileged access.
 
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.

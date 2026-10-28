@@ -78,8 +78,8 @@ public partial class OBPGame
         var candidates = Rac1EnemyNodes.Concat(_rac1CrateNodes)
             .Where(node => IsInstanceValid(node.Root) && IsRac1GameplayActive(node) && HasRac1HostContactGeometry(node))
             .Select(node => (Node: node, Point: ToEffectNative(node.Root.GlobalPosition + Vector3.Up * .5f)));
-        if (_actors is not null)
-            candidates = RegisteredCombatGeometry().Select(target => (target.Node, ToEffectNative(target.Bounds.GetCenter())));
+        if (ActorHost.Active)
+            candidates = ActorHost.Combat.ReadGeometry().Select(target => (target.Node, ToEffectNative(target.Bounds.GetCenter())));
         var aim = candidates
             .Select(candidate => (candidate.Node, candidate.Point, Offset: candidate.Point - origin))
             .Where(candidate => candidate.Offset.LengthSquared() is > .25f and < 225f &&
@@ -208,8 +208,7 @@ public partial class OBPGame
             _rac1BombOcclusionExclusions = [player.GetRid()];
             foreach (var body in _rac1CrateBodies.Values.Concat<CollisionObject3D>(_rac1Enemies.Values.Select(enemy => enemy.Body)))
                 if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
-            foreach (var body in _actorWorld.Bodies.Values)
-                if (IsInstanceValid(body)) _rac1BombOcclusionExclusions.Add(body.GetRid());
+            ActorHost.AddRayExclusions(_rac1BombOcclusionExclusions);
         }
         return _rac1BombOcclusionExclusions;
     }
@@ -225,7 +224,7 @@ public partial class OBPGame
             .OrderBy(node => node.Source.InstanceIndex)
             .Select(node => Rac1MobyContactFacts.FromRuntime(_rac1MobyRuntime.Require(node.Source), false)).ToArray();
         var resolution = _rac1BombGlove!.ResolveExplosionVolume(id, facts);
-        ResolveRegisteredBlast(FusionWeaponSession.BombGlove, generation, id,
+        ActorHost.Combat.ResolveBlast(FusionWeaponSession.BombGlove, generation, id,
             origin, motion.BlastRadius, (float)Rac1BombGlove.NativeDamage, Rac1BombGlove.NativeDamageFlags);
         if (resolution.DamageResults.Count == 0) return;
         _rac1LastBombContactResolution = resolution;
