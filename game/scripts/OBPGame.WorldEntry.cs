@@ -35,11 +35,7 @@ public partial class OBPGame
         {
             var worldSourceStamp = SourceFileStamp(sourcePath);
             PrepareSelectedPlayerAssets();
-            if (_playtest is { WaitingForEntry: true } && OrdinaryPlayerSession && !_captureControllersInitialized)
-            {
-                _playerNative!.ResetReplayControllers(); _fusion = _playerNative.Weapons;
-                _captureControllersInitialized = true;
-            }
+            CaptureReplay.PrepareControllers(() => { _playerNative!.ResetReplayControllers(); _fusion = _playerNative.Weapons; });
             var request = _worldEntries!.Request(destinationId, PlayerEntryMode);
             var source = new WorldSource(entry =>
             {
@@ -85,8 +81,8 @@ public partial class OBPGame
             }
             SaveSharedProfile("world transition");
             if (_args.SourceSetupCheck && _worldSwitches == 1) CreateUiDiagnosticHarness().Start("source-setup-check");
-            if (_playtest is { HasEntered: true }) RecordCaptureCommand(new("destination", destinationId));
-            _playtest?.WorldEntered();
+            if (_captureReplay?.Recorder is { HasEntered: true }) CaptureReplay.RecordCommand(new("destination", destinationId));
+            _captureReplay?.Recorder?.WorldEntered();
             if (_args.FusionSmoke && _worldSwitches == 1 && !_args.PlaytestRequested) CreateFusionWeaponDiagnosticHarness().Start();
             if (_worldSwitches == 1 && PlayerSessionDiagnosticHarness.IsRequested(_args)) CreatePlayerDiagnosticHarness().StartRequested();
             if (_args.TrilogyGameplaySmoke && _worldSwitches == 1) CreateCaptureDiagnosticHarness().StartTrilogy();
@@ -151,7 +147,7 @@ public partial class OBPGame
     private void StartRequestedSourceVerification(ObpDestination destination, string sourcePath)
     {
         if (_args.VerifyHash && _worldSwitches == 1 && destination.Game == ObpSourceGame.Rac2)
-            StartBackgroundVerify(sourcePath);
+            SourceVerification.Start(ObpSourceGame.Rac2);
     }
 
     private static RuntimeSpawn ValidateSourceEntry(RuntimeWorld world)
@@ -201,9 +197,9 @@ public partial class OBPGame
                 actorAlive: key => ActorHost.IsAlive(key),
                 placementOffset: () => lab is not null ? System.Numerics.Vector3.Zero :
                     WorldEffectHost.Runtime((_player?.GlobalPosition ?? Vector3.Zero) + EquipmentForward * 6 + Vector3.Up * 8) - new System.Numerics.Vector3(0, 0, 18),
-                suspended: () => _movementStateLoading || _playtest is { WaitingForEntry: true } or { PreparingWorld: true },
-                recordOperation: operation => RecordCaptureCommand(new("effects", operation)),
-                commandAllowed: () => _playtest is null || EffectCaptureContract.Includes(_args, _playtest.Reader?.Header));
+                suspended: () => _movementStateLoading || _captureReplay?.Recorder is { WaitingForEntry: true } or { PreparingWorld: true },
+                recordOperation: operation => CaptureReplay.RecordCommand(new("effects", operation)),
+                commandAllowed: () => _captureReplay?.Recorder is null || EffectCaptureContract.Includes(_args, _captureReplay!.Recorder!.Reader?.Header));
         }
         catch (Exception error) when (error is IOException or InvalidDataException or System.Text.Json.JsonException or ArgumentException or InvalidOperationException)
         {

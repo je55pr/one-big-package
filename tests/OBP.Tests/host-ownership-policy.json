@@ -1,14 +1,14 @@
 [
   {
-    "Key": "game/scripts/OBPGame.CaptureDiagnostics.cs::OBPGame.CaptureMetadata()",
+    "Key": "game/scripts/OBPGame.cs::OBPGame.CreateCapturePresentation()",
     "Kind": "adapter",
-    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "a9eb96456f481d946e4e9c96a67a877be4b903964a29f4a11a23d70b825cb0e2"
+    "Reason": "Optional capture/debug metadata names the actual loaded world provenance; source-qualified player replay uses its own shared-session header. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #356 relocates the unchanged world-provenance read into the capture snapshot binding; CaptureFrameMetadataTests and baseline sidecar comparison protect its wire fields. The binding supplies no player capability. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding.",
+    "Hash": "f43664300f28c86f0c14e3dcd91890c6f79954b97b49d3a26174deed65de3977"
   },
   {
     "Key": "game/scripts/OBPGame.cs::OBPGame.UpdateWorldHud()",
     "Kind": "adapter",
-    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Reason": "Optional debug overlay names the actual world/import provenance; ordinary PlayerHud is separate. #345 delegates crate facts to the world-owned diagnostic probe; DiagnosticCliServiceTests/LabAndCrateDiagnosticTests and exact retail capture sidecar parity cover the read-only binding. No player-global mutation is added. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected. #360/#356 integration reads lease-owned gameplay and the existing owned capture metadata projection; no player service is selected. Metadata wire tests and fresh native/shared replay cover this binding.",
     "Hash": "548251fea9b98635ba6aaa087d6e79609dc3abed6ed48294f56836b0bd841522"
   },
   {
@@ -58,36 +58,6 @@
     "Kind": "adapter",
     "Reason": "R&C1 native actor/session updates and original source context; placed actors use lease-owned voice scopes. TrilogyGameplaySmoke verifies live motion, native combat, scoped audio/pickup cleanup and reset. Only explicit parity retains native player health stepping here; no ordinary player service is selected. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
     "Hash": "df0f6585b22234150b385d89e1fd006b820eeb658b002dd4a3a3fbc623864c26"
-  },
-  {
-    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.BindSourcePlayerContacts(PlayerHost)",
-    "Kind": "adapter",
-    "Reason": "Bind only original R&C1 water/crank/traversal contact facts; player actions and profiles are bound independently. #354 forwards the same native water sound IDs to the selected audio presenter; this contact adapter cannot bind its audio source or select a player service. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "3cf4f8834b4d41d109e8191dacf04002a54b9a5cb00bee391f43db4919de2a83"
-  },
-  {
-    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.ConfigureActors(RuntimeWorld,RuntimeWorldScene.Result)",
-    "Kind": "adapter",
-    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "1ef7fa720583bcae6bfee072eee08d068a0233888942edc3095d09858525f68c"
-  },
-  {
-    "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Line()",
-    "Kind": "adapter",
-    "Reason": "Optional original-source debug probes; this does not choose the ordinary PlayerHud service. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "f97fbd40d713cca0de7ed8880ebdbcc4976e9e6b507213cfea1148fababc77e5"
-  },
-  {
-    "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Snapshot()",
-    "Kind": "adapter",
-    "Reason": "Source-native diagnostic snapshot for original-world witnesses, not the persistent OBP player snapshot. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "9ebecc9467ac45f6ac511f59c77aabec6a17a09287d10bce32a0e9a7d504f2a7"
-  },
-  {
-    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.Tick(double)",
-    "Kind": "adapter",
-    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
-    "Hash": "19d9bf06fd0f940b264e0cf39914ebb1d8ab8e7ba44c879f55f32d4f74fc1369"
   },
   {
     "Key": "game/scripts/OBPGame.Rac1GoldBolts.cs::OBPGame.TickRac1GoldBolts()",
@@ -194,8 +164,8 @@
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.StartRequestedSourceVerification(ObpDestination,string)",
     "Kind": "adapter",
-    "Reason": "Opt-in original GC source verification; no player service choice.",
-    "Hash": "d271329f7bea50279a020aa927720a2e479f2f9cfb013004a07542f1a89c1ac5"
+    "Reason": "Opt-in original GC source verification; no player service choice. #356 starts the optional verification owner for the same admitted source; its task scope is independent of critical startup/capture work.",
+    "Hash": "cdd268364d23df0f2fe394489d3ec6b0a5fbc541df3952541a07af0d6a349db9"
   },
   {
     "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame.ValidateSourceEntry(RuntimeWorld)",
@@ -214,5 +184,35 @@
     "Kind": "adapter",
     "Reason": "Validate the source actor asset library build/level against its placement, then construct only that actor using its own textures and authored model scale. This never selects player services; ActorRuntimeSetTests and TrilogyGameplaySmoke verify source identity, mixed native actors and independent resets.",
     "Hash": "c147df3f346c7c8df8a485d4517b3a238496a26390e13bc99f09ed9430ccaa5f"
+  },
+  {
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.BindSourcePlayerContacts(PlayerHost)",
+    "Kind": "adapter",
+    "Reason": "Bind only original R&C1 water/crank/traversal contact facts; player actions and profiles are bound independently. #354 forwards the same native water sound IDs to the selected audio presenter; this contact adapter cannot bind its audio source or select a player service. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "3cf4f8834b4d41d109e8191dacf04002a54b9a5cb00bee391f43db4919de2a83"
+  },
+  {
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.ConfigureActors(RuntimeWorld,RuntimeWorldScene.Result)",
+    "Kind": "adapter",
+    "Reason": "Source-owned R&C1 actor, pickup, mission and environment registration only. Player controller, equipment owner and HUD composition are outside this origin check. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "1ef7fa720583bcae6bfee072eee08d068a0233888942edc3095d09858525f68c"
+  },
+  {
+    "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Line()",
+    "Kind": "adapter",
+    "Reason": "Optional original-source debug probes; this does not choose the ordinary PlayerHud service. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "f97fbd40d713cca0de7ed8880ebdbcc4976e9e6b507213cfea1148fababc77e5"
+  },
+  {
+    "Key": "game/scripts/Rac1GameplayHudPresenter.cs::Rac1GameplayHudPresenter.Snapshot()",
+    "Kind": "adapter",
+    "Reason": "Source-native diagnostic snapshot for original-world witnesses, not the persistent OBP player snapshot. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "9ebecc9467ac45f6ac511f59c77aabec6a17a09287d10bce32a0e9a7d504f2a7"
+  },
+  {
+    "Key": "game/scripts/Rac1WorldModule.cs::Rac1WorldModule.Tick(double)",
+    "Kind": "adapter",
+    "Reason": "Original R&C1 missions/environment/pickups remain world-owned; ordinary enemy updates moved to the source-registered fixed actor clock. Explicit parity retains its source route; ActorRuntimeSetTests and TrilogyGameplaySmoke cover separate player and actor lifetimes. #360 moves the same source facts and callbacks to lease-owned context/presentation or the persistent campaign owner. Rac1WorldContextTests, player continuity and native reconciliation cover the move; player-global services remain independently selected.",
+    "Hash": "19d9bf06fd0f940b264e0cf39914ebb1d8ab8e7ba44c879f55f32d4f74fc1369"
   }
 ]

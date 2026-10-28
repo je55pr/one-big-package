@@ -63,7 +63,7 @@ public partial class OBPGame
     private void ConfigureFusionWeapons(RuntimeWorld world)
     {
         if (_playerNative is not null) { _fusion = _playerNative.Weapons; return; }
-        if (_playtest?.Reader is { Header.Weapons: null }) return;
+        if (_captureReplay?.Recorder?.Reader is { Header.Weapons: null }) return;
         _fusionAcceptedHits = _fusionAudioStarted = _fusionModelAge = _fusionModelSequence = 0;
         _fusionLastDamage = null; _fusionDeathCleared = false;
         _fusionUseStarted = _fusionPoseTriggerHeld = false;
@@ -206,7 +206,7 @@ public partial class OBPGame
 
     private void ToggleFusionTest()
     {
-        if (_playtest is not null) { ReportMovementState("Choose the fusion loadout before starting an input recording."); return; }
+        if (_captureReplay?.Recorder is not null) { ReportMovementState("Choose the fusion loadout before starting an input recording."); return; }
         if (OrdinaryPlayerSession) { ReportMovementState("Launch with --fusion-test to use the isolated native Veldin fixture loadout."); return; }
         if (_activeDestination is not { DestinationId: "rac1:LEVEL0" } destination) return;
         bool enable = !FusionTestActive;
@@ -312,7 +312,7 @@ public partial class OBPGame
             if (OrdinaryPlayerSession)
             {
                 bool accepted = ActorHost.Combat.Apply(intent);
-                RecordGameplayFact("damage", new { Intent = intent, Accepted = accepted });
+                CaptureReplay.RecordGameplayFact("damage", new { Intent = intent, Accepted = accepted });
                 if (accepted) { _fusionAcceptedHits++; _fusionLastDamage = intent; }
                 continue;
             }
@@ -323,7 +323,7 @@ public partial class OBPGame
         foreach (var cue in frame.Audio) QueueFusionAudio(cue);
         TickFusionAudio();
         foreach (var effect in frame.Effects.Where(e => e.Kind == "shot"))
-        { RecordGameplayFact("shot", new { effect.Shot }); _fusionModelSequence = 2; _fusionModelAge = 0; }
+        { CaptureReplay.RecordGameplayFact("shot", new { effect.Shot }); _fusionModelSequence = 2; _fusionModelAge = 0; }
         SynchronizeFusionProjectiles(frame);
         if (frame.Queries.Any(q => q.Kind == WeaponQueryKind.Ray)) SpawnFusionSpread(frame, contacts);
         for (int i = _fusionEffects.Count - 1; i >= 0; i--)
