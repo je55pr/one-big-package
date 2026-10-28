@@ -84,7 +84,8 @@ public sealed class BugReportInbox
         string directory = SessionDirectory(sessionId);
         Directory.CreateDirectory(directory);
         string path = DraftPath(sessionId, report.Id);
-        if (!File.Exists(path) && Directory.EnumerateFiles(directory, "draft-*.json").Take(MaximumReports).Count() >= MaximumReports)
+        if (!File.Exists(path) && Directory.EnumerateFiles(directory, "draft-*.json")
+            .Where(file => ValidDraftName(Path.GetFileName(file))).Take(MaximumReports).Count() >= MaximumReports)
             throw new InvalidDataException("This session has reached its pending draft limit.");
         WriteAtomicBytes(path, JsonSerializer.SerializeToUtf8Bytes(new PendingDraft(1, sessionId, report), Json));
     }
@@ -145,16 +146,25 @@ public sealed class BugReportInbox
         return restored;
     }
 
-    private IEnumerable<string> PendingDraftFiles()
+    private IReadOnlyList<string> PendingDraftFiles()
     {
-        if (!Directory.Exists(Root)) yield break;
+        var result = new List<string>();
+        if (!Directory.Exists(Root)) return result;
         foreach (string directory in Directory.EnumerateDirectories(Root))
         {
             if (!Guid.TryParseExact(Path.GetFileName(directory), "N", out var id)) continue;
-            // Keep the same directory/link boundary as ordinary saved reports.
-            string owned = SessionDirectory(id);
-            foreach (string path in Directory.EnumerateFiles(owned, "draft-*.json").Take(MaximumReports)) yield return path;
+            try
+            {
+                // Keep the same directory/link boundary as ordinary saved reports.
+                string owned = SessionDirectory(id);
+                var files = Directory.EnumerateFiles(owned, "draft-*.json")
+                    .Where(path => ValidDraftName(Path.GetFileName(path))).Take(MaximumReports).ToArray();
+                result.AddRange(files);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or InvalidDataException)
+            { /* One unreadable session must not block recovery of the others. */ }
         }
+        return result;
     }
 
     private string DraftPath(Guid sessionId, Guid reportId) =>

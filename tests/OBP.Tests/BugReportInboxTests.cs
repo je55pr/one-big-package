@@ -67,6 +67,34 @@ public sealed class BugReportInboxTests : IDisposable
         Assert.Equal(0, inbox.PendingDraftCount());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DraftRecoverySkipsInvalidSessionsAndFilenames(bool invalidSession)
+    {
+        var inbox = Inbox;
+        Guid id = Guid.NewGuid();
+        string recording = Path.Combine(inbox.Root, "live", id.ToString("N"), "session.run.jsonl.gz");
+        using var writer = new PlaytestRunWriter(recording, Header());
+        var report = AddReport(writer, 0, "recover beside invalid entries");
+        string directory = inbox.SessionDirectory(id);
+        Directory.CreateDirectory(directory);
+        string invalidDirectory = Path.Combine(inbox.Root, Guid.Empty.ToString("N"));
+        if (invalidSession) Directory.CreateDirectory(invalidDirectory);
+        else
+            for (int i = 0; i < BugReportInbox.MaximumReports; i++)
+                File.WriteAllText(Path.Combine(directory, $"draft-unowned-{i}.json"), "{}");
+
+        inbox.RetainPendingDraft(id, report);
+        await writer.FinishAsync("closed");
+        Assert.Equal(1, inbox.PendingDraftCount());
+        Assert.Equal(1, inbox.RestorePendingDrafts());
+        Assert.Equal(report, inbox.Resolve(id, report.Id).Report);
+        Assert.Equal(0, inbox.PendingDraftCount());
+        if (invalidSession) Assert.True(Directory.Exists(invalidDirectory));
+        else Assert.Equal(BugReportInbox.MaximumReports, Directory.GetFiles(directory, "draft-unowned-*.json").Length);
+    }
+
     [Fact]
     public async Task SuccessfulSaveRemovesOnlyItsSubmittedDraft()
     {
