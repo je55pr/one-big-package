@@ -26,7 +26,7 @@ $code = Invoke-ObpNativeProcessCapture -FilePath $godot -ArgumentList $arguments
 $log = (Get-Content -LiteralPath $stdout -Raw) + (Get-Content -LiteralPath $stderr -Raw)
 if ($code -ne 1 -or -not $log.Contains("The audio fixture's player is unavailable.") -or
     -not $log.Contains('reason=rac1-player-audio-smoke-fail exitCode=1') -or
-    $log -match '(?im)NullReferenceException|Object reference not set|^ERROR:|^SCRIPT ERROR:|ObjectDB instances were leaked|resources still in use') {
+    $log -match '(?im)NullReferenceException|Object reference not set|^ERROR:|^SCRIPT ERROR:|ObjectDB instances were leaked|resources still in use|quit preparation failed') {
     throw "Static-camera audio availability regression failed (exit=$code). Inspect $logs"
 }
 Write-Host '[player-audio-smoke] static-camera unavailable fixture is explicit and shuts down cleanly PASS'
