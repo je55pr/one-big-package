@@ -580,7 +580,7 @@ public class Rac2LevelTests
         Assert.Equal(304, world.Meshes.Count);
         // The native packet-cache path recovers additional source geometry;
         // keep the historical witness for OBP_RAC2_LEGACY_MOBY=1.
-        bool nativePose = Rac2MobyClasses.NativePoseEnabledForLevel(1);
+        bool nativePose = Environment.GetEnvironmentVariable("OBP_RAC2_LEGACY_MOBY") != "1";
         Assert.Equal(nativePose ? 1_950_147 : 1_860_879, world.TotalRenderTriangles);
         Assert.Equal(nativePose ? 23_560 : 21_470, world.TotalDynamicTriangles);
         Assert.Equal(nativePose ? 1_973_707 : 1_882_349,
@@ -726,7 +726,7 @@ public class Rac2LevelTests
         // oc2602 instances (200-frame spin) are lifted out as animated mobies;
         // class 500 crates, opening lift/doors and Aranos class-2827 MSR I hostiles
         // are preserved separately as per-instance dynamic objects.
-        bool nativePose = Rac2MobyClasses.NativePoseEnabledForLevel(0);
+        bool nativePose = Environment.GetEnvironmentVariable("OBP_RAC2_LEGACY_MOBY") != "1";
         Assert.Equal(nativePose ? 167_941 : 138_009, Tris("moby"));
         Assert.Equal(nativePose ? 100_838 : 91_651, world.TotalDynamicTriangles);
         Assert.Equal(43, world.DynamicObjects!.Count(o => o.NativeClassId == 500));

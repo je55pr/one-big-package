@@ -79,7 +79,7 @@ public class Rac2IsoLoadTests
         // The recovered VU1 cache restores authored Moby triangles. Preserve
         // both the reviewed original baseline and the retail-verified native
         // counts, selected by the same diagnostic mode as the importer.
-        bool nativePose = Rac2MobyClasses.NativePoseEnabledForLevel(1);
+        bool nativePose = Environment.GetEnvironmentVariable("OBP_RAC2_LEGACY_MOBY") != "1";
         Assert.Equal(nativePose ? 1_950_147 : 1_860_879, load.World.TotalRenderTriangles);
         Assert.Equal(nativePose ? 23_560 : 21_470, load.World.TotalDynamicTriangles);
         Assert.Equal(nativePose ? 1_973_707 : 1_882_349,
