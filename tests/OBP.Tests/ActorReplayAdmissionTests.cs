@@ -27,7 +27,10 @@ public sealed class ActorReplayAdmissionTests
         var descriptor = new ActorAdapterDescriptor(ObpSourceGame.Rac3, "build", 9001, adapter, "fixture/context", 0, 0);
         Assert.Equal(adapter, OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor, true)]));
         Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor, false)]));
+        Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor with { Source = ObpSourceGame.Rac2 }, true)]));
         Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor with { Build = "changed" }, true)]));
+        Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor with { NativeClassId = 9002 }, true)]));
+        Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor with { AdapterId = "fixture/other-family/v1" }, true)]));
         Assert.Throws<InvalidOperationException>(() => OBP.Game.ActorReplayAdmission.Require(actor, [new(descriptor with { NativeContextId = "other" }, true)]));
     }
 

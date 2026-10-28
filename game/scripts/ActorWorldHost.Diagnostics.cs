@@ -53,9 +53,10 @@ internal sealed partial class ActorWorldHost : IActorWorldDiagnostics
 
     IActorCacheObservation IActorWorldDiagnostics.CaptureCache(string placementId)
     {
-        var prepared = _preparation!.Prepared(placementId);
+        var preparation = _preparation ?? throw new InvalidOperationException("No actor encounter is active.");
+        var prepared = preparation.Prepared(placementId);
         var task = _sources.Library(prepared.Source, prepared.Placement.LevelId);
-        _preparation.Prepare(prepared.Placement);
+        preparation.Prepare(prepared.Placement);
         return new CacheObservation(() => _sources.IsCurrentLibrary(prepared.Source, prepared.Placement.LevelId, task));
     }
 
@@ -64,7 +65,9 @@ internal sealed partial class ActorWorldHost : IActorWorldDiagnostics
     async Task<ActorConstructionResult> IActorWorldDiagnostics.TrialConstructionAsync(ActorConstructionTrial request, CancellationToken token)
     {
         var preparation = _preparation ?? throw new InvalidOperationException("No actor encounter is active.");
-        var runtime = _runtime;
+        var runtime = _runtime ?? throw new InvalidOperationException("No actor runtime is active.");
+        var factories = _factories ?? throw new InvalidOperationException("No actor factories are registered.");
+        var scene = _scene ?? throw new InvalidOperationException("No actor scene is active.");
         var prepared = preparation.Prepared(request.PlacementId);
         var library = await prepared.Library.WaitAsync(token);
         token.ThrowIfCancellationRequested();
@@ -74,10 +77,10 @@ internal sealed partial class ActorWorldHost : IActorWorldDiagnostics
         try
         {
             var placement = request.Context is { } context ? prepared.Placement with { NativeContextId = context } : prepared.Placement;
-            var factory = _factories!.Resolve(placement);
+            var factory = factories.Resolve(placement);
             if (request.FailPickupBank)
             {
-                var trial = _native.ConstructionTrialFactory(new(_runtime!, _scene!, _bodies), _sources);
+                var trial = _native.ConstructionTrialFactory(new(runtime, scene, _bodies), _sources);
                 var registry = new ActorAdapterRegistry<IActorFactory>(); registry.Register(trial.Descriptor, trial);
                 factory = registry.Resolve(placement);
             }

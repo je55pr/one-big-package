@@ -151,8 +151,9 @@ internal sealed partial class ActorWorldHost
         if (_runtime is null || _preparation?.Find(id) is null) return new(false, "No registered actor placement.");
         if (_placed.Remove(id, out var previous))
         {
-            try { _runtime.Retire(previous); }
-            finally { Unbind(previous); }
+            var failures = _runtime.RetireActors([previous]);
+            Unbind(previous);
+            foreach (var error in failures) GD.PrintErr("[actors] placement reset retirement failed after cleanup: " + error);
         }
         _ports.InvalidateOcclusion();
         _preparation.Retry(id);
