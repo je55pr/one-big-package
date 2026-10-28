@@ -1205,8 +1205,8 @@ public static class GcUyaMoby
         byte[] assets,
         IReadOnlyList<int> sectionBoundaries,
         ClassTable table,
-        Func<int, bool>? recoverPersistentVertexCache = null,
-        Func<int, bool>? previewNativeInitialPose = null)
+        Func<int, bool>? recoverPersistentVertexCache,
+        Func<int, bool>? previewNativeInitialPose)
     {
         var outp = new Dictionary<int, MobyClass>();
 

@@ -297,6 +297,8 @@ public sealed class Rac2MobyNativePoseTests
             case 4:
                 BinaryPrimitives.WriteUInt16LittleEndian(source.AsSpan(0x106), 4097);
                 break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(invalidPacket));
         }
 
         var error = Assert.Throws<InvalidDataException>(() =>
@@ -327,7 +329,7 @@ public sealed class Rac2MobyNativePoseTests
         BinaryPrimitives.WriteInt32LittleEndian(index.AsSpan(4), 2827);
         int previewCalls = 0;
         var classes = GcUyaMoby.ReadClasses(index, assets, [], new(1, 0),
-            previewNativeInitialPose: _ => { previewCalls++; throw new InvalidDataException("Predicate failure"); });
+            recoverPersistentVertexCache: null, previewNativeInitialPose: _ => { previewCalls++; throw new InvalidDataException("Predicate failure"); });
         Assert.True(classes.ContainsKey(2827));
         Assert.False(classes[2827].Mesh.NativeInitialPoseApplied);
         Assert.Equal(0, previewCalls);

@@ -35,8 +35,14 @@ public static class Rac2MobyClasses
         return core.Assets.AsSpan(start, end - start).ToArray();
     }
 
+    public static Dictionary<int, GcUyaMoby.MobyClass> Read(Rac2LevelCore.Core core) =>
+        Read(core, -1, null);
+
+    public static Dictionary<int, GcUyaMoby.MobyClass> Read(Rac2LevelCore.Core core, int level) =>
+        Read(core, level, null);
+
     public static Dictionary<int, GcUyaMoby.MobyClass> Read(
-        Rac2LevelCore.Core core, int level = -1, bool? nativePoseOverride = null)
+        Rac2LevelCore.Core core, int level, bool? nativePoseOverride)
     {
         var table = core.Header.MobyClasses;
         bool nativePose = level >= 0 && (nativePoseOverride ?? NativePoseEnabledForLevel(level));

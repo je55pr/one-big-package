@@ -150,7 +150,7 @@ public static class Ps2MobyNativePose
                 sum += weight;
             }
             if (!double.IsFinite(sum)) throw new InvalidDataException("Nonfinite Moby weight sum.");
-            if (sum == 0) value = raw;
+            if (sum <= 0) value = raw;
             else value = (1 / sum) * value;
             if (!Finite(value)) throw new InvalidDataException("Nonfinite posed Moby vertex.");
             output[v] = value.X;

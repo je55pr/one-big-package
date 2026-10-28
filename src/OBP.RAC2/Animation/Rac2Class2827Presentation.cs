@@ -15,8 +15,11 @@ public static class Rac2Class2827Presentation
         public RuntimeObjectAnimationSet Presentation => new(Clips.Values.ToArray());
     }
 
+    public static Asset Load(string path, IReadOnlyList<RuntimeObjectMesh> surfaces) =>
+        Load(path, surfaces, false);
+
     public static Asset Load(string path, IReadOnlyList<RuntimeObjectMesh> surfaces,
-        bool nativePosePreview = false)
+        bool nativePosePreview)
     {
         using var reader = new FileRandomAccessReader(path);
         var wad = Iso9660Filesystem.Open(reader).OpenFile("/G/LEVEL0.WAD") ?? throw new InvalidDataException("Aranos actor bank is missing.");

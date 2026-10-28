@@ -52,7 +52,7 @@ public sealed class Rac2CrossLevelMobyEligibilityAuditTests(ITestOutputHelper lo
                 {
                     errors++;
                     if (failedRows.Count < 65) failedRows.Add($"LEVEL{file} oClass={id} cache failure {ex.GetType().Name}: {ex.Message}");
-                    try { result = GcUyaMoby.ReadClass(bytes); legacy++; }
+                    try { _ = GcUyaMoby.ReadClass(bytes); legacy++; }
                     catch { failed++; }
                     continue;
                 }
