@@ -641,10 +641,16 @@ public partial class OBPGame : Node3D
     public override void _ExitTree()
     {
         // Also cover external/engine exits which bypass RequestQuit.
-        ReleaseAudioForExit();
-        _persistentPlayer.RetireEquipment();
-        ApplicationLifecycle.SetQuitPreparation(null);
-        ApplicationLifecycle.ReportRootExit(Name);
+        try
+        {
+            ReleaseAudioForExit();
+        }
+        finally
+        {
+            _persistentPlayer.RetireEquipment();
+            ApplicationLifecycle.SetQuitPreparation(null);
+            ApplicationLifecycle.ReportRootExit(Name);
+        }
     }
 
     /// <summary>F1..F7 + J toggle the <see cref="DebugOverlay"/> inspection layers in a loaded world.</summary>

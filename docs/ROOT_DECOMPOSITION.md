@@ -426,7 +426,7 @@ unchanged.
 The #351 equipment extraction retires `OBPGame.PlayerEquipment.cs` and its UID,
 including 14 historical declaration/member permissions. The root changes from
 56 files, 14,772 lines, 531 methods, 355 fields (223 mutable), 43 exposed members
-and 1,570 cross-file references to 55 files, 14,655 lines, 526 methods, the same
+and 1,570 cross-file references to 55 files, 14,661 lines, 526 methods, the same
 field/exposed-member counts and 1,529 references. `PlayerSessionHost` owns one
 `PlayerEquipmentFacade` for its lifetime, including explicit parity projections.
 The facade uses the existing native inventory, hand, weapon and assignment

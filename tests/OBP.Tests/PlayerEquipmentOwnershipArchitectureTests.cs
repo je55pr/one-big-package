@@ -38,6 +38,19 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
     }
 
     [Fact]
+    public void ApplicationExitRetiresEquipmentEvenIfAudioCleanupThrows()
+    {
+        var root = CSharpSyntaxTree.ParseText(Read("OBPGame.cs")).GetRoot();
+        var exit = Assert.Single(root.DescendantNodes().OfType<MethodDeclarationSyntax>(), method => method.Identifier.ValueText == "_ExitTree");
+        var cleanup = Assert.Single(exit.Body!.Statements.OfType<TryStatementSyntax>());
+        Assert.Contains("ReleaseAudioForExit()", cleanup.Block.ToString(), StringComparison.Ordinal);
+        var retirement = Assert.IsType<FinallyClauseSyntax>(cleanup.Finally);
+        Assert.Contains("_persistentPlayer.RetireEquipment()", retirement.Block.ToString(), StringComparison.Ordinal);
+        Assert.Contains("ApplicationLifecycle.SetQuitPreparation(null)", retirement.Block.ToString(), StringComparison.Ordinal);
+        Assert.Contains("ApplicationLifecycle.ReportRootExit(Name)", retirement.Block.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void FacadeUsesExistingNativeContractsAndCopiedSceneFactsWithoutPrivilegedRootAccess()
     {
         string facade = Read("PlayerEquipmentFacade.cs");
