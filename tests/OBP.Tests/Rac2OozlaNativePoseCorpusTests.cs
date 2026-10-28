@@ -26,6 +26,8 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
         var table = core.Header.MobyClasses;
         var classes = Rac2MobyClasses.Read(core, level: 1);
         int eligible = 0, checkedFrames = 0, sphereEscapes = 0, checkedVerts = 0, unsupported = 0;
+        double largestRadiusMultiple = 0;
+        int worstClass = -1, worstSequence = -1;
         var failures = new List<string>();
         foreach (var cls in classes.Values)
         {
@@ -59,10 +61,18 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
                         if (seq.BoundingSphere is not { } sphere || sphere.Radius <= 0) continue;
                         double k = cls.Mesh.Scale / 1024.0;
                         double cx = sphere.X * k, cy = sphere.Y * k, cz = sphere.Z * k, r = Math.Abs(sphere.Radius * k);
+                        if (r <= 0) continue;
                         for (int v = 0; v < points.Length; v += 3)
                         {
                             double dx = points[v] - cx, dy = points[v + 1] - cy, dz = points[v + 2] - cz;
-                            if (dx * dx + dy * dy + dz * dz > r * r * 1.002001) outside++;
+                            double radiusMultiple = Math.Sqrt(dx * dx + dy * dy + dz * dz) / r;
+                            if (radiusMultiple > largestRadiusMultiple)
+                            {
+                                largestRadiusMultiple = radiusMultiple;
+                                worstClass = cls.OClass;
+                                worstSequence = seq.Index;
+                            }
+                            if (radiusMultiple > 1.001) outside++;
                             vertices++;
                         }
                     }
@@ -76,7 +86,7 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
                 if (failures.Count < 30) failures.Add($"class={cls.OClass} UNSUPPORTED: {ex.GetType().Name} {ex.Message}");
             }
         }
-        output.WriteLine($"General Oozla eligible_classes={eligible}, sampled_frames={checkedFrames}, checked_vertices={checkedVerts}, escapes={sphereEscapes}, unsupported_classes={unsupported}");
+        output.WriteLine($"General Oozla eligible_classes={eligible}, sampled_frames={checkedFrames}, checked_vertices={checkedVerts}, escapes={sphereEscapes}, unsupported_classes={unsupported}, largest_radius_multiple={largestRadiusMultiple:F6}, worst_class={worstClass}, worst_sequence={worstSequence}");
         foreach (var f in failures.Take(40)) output.WriteLine(f);
         Assert.True(eligible >= 8);
         Assert.True(checkedVerts > 0);
@@ -84,5 +94,11 @@ public sealed class Rac2OozlaNativePoseCorpusTests(ITestOutputHelper output)
         // The retail corpus contains a handful of legitimate sphere outliers.
         Assert.True((double)sphereEscapes / checkedVerts < 0.001,
             $"Too many authored-sphere outliers: {sphereEscapes}/{checkedVerts}");
+        // The retail witness peaks at 1.354028 radii in class 2818,
+        // sequence 3. Do not silently admit arbitrarily exploded vertices
+        // just because their fraction of the full corpus is small.
+        Assert.True(largestRadiusMultiple < 1.36,
+            $"Excessive authored-sphere displacement: {largestRadiusMultiple:F6} " +
+            $"radii (class {worstClass}, sequence {worstSequence})");
     }
 }

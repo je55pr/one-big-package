@@ -30,7 +30,10 @@ This change does not opt R&C3 into the new default.
 - Of 1,137,308 crab/snail positions, six exceed source sequence spheres by slightly
   more than 0.1%. For the smaller creature, zero of 374,945 exceed tolerance.
 - The separate 32-class Oozla sample (316 poses, 469,822 vertex positions) had
-  352 slight authored-bound outliers among four classes. Do not hide these.
+  352 authored-bound outliers among four classes. The largest displacement was
+  1.354028 times the recorded sequence radius (class 2818, sequence 3), so
+  sphere bounds are approximate, not exact. Both the outlier frequency and
+  maximum relative displacement are regression-tested.
 - The 27-level differential test verifies matching geometry indices, textures,
   UVs, normals, GS states, skin bindings and class inventory in preview/control.
 - Fusion Lab Aranos MSR I (class 2827) has 2,953 recovered vertices versus
