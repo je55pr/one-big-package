@@ -423,6 +423,48 @@ finalization and audio/world disposal. Both owners retain their independent
 composition entries and retired permissions; the frozen origin ledger remains
 unchanged.
 
+The #356 capture/replay extraction retires `OBPGame.CaptureDiagnostics.cs`,
+`OBPGame.CaptureSession.cs` and `OBPGame.Playtest.cs`, plus the privileged
+recorder and report-control fragments. The recorder's existing UIDs move with
+its scripts; the ordinary bookmark launch UI remains with #358. Against the
+combined #355 census above, the root has **51 files, 13,601 lines, 511 methods,
+353 fields (221 mutable), 43 exposed members and 1,448 cross-file references**.
+The migration retires 138 historical declaration/member permissions and the
+old diagnostic-harness field permission. Nine exact composition entries bind
+copied snapshots and existing actions; the surviving diagnostic/shot factories
+contain wiring only and expire with final composition #376. The frozen origin
+ledger does not expand. The world-provenance metadata adapter moves to the
+read-only capture snapshot binding with its rationale retained.
+
+`CaptureReplayCoordinator` owns startup/header admission, seed/profile handoff,
+source-qualified adapters, command/fact serialization and checkpoint hashes.
+Its typed snapshots can be exercised without Godot or unrelated UI. The external
+`PlaytestDriver` retains the original input order and process/physics priorities
+(-10,000/+10,000); `GodotCapturePresentation` retains timer and post-draw capture
+phases. Capture version 1/2, profile/bookmark schemas, native tolerances and the
+same-build gate are unchanged. Recording pins attachment stamps and rejects
+replacement before admitting another step/checkpoint or bookmark. File paths
+remain private admission data and never enter headers or archive evidence.
+
+Critical startup, capture, shot and persistence tasks remain in the existing
+`HostOperationScope`. Optional hashing has a distinct
+`SourceVerificationCoordinator` scope and still uses one
+`SourceVerificationOperation` per attachment. Replacement retires that operation;
+generation-qualified failures cannot cancel or publish into its successor.
+Shutdown cancels and drains both scopes before source/audio/world disposal.
+The coordinator owns the cached diagnostic harness; the report UI continues to
+borrow its existing writer through the #355 ports.
+
+Portable regressions cover command order, copied native/shared facts, source and
+adapter admission, initial controller reset, startup rejection, metadata wire
+fields and optional verification cancellation/replacement. A fresh comparison
+against `b0f3aa6c090da169dcf9bc987e1e2b5e24b09bc4` keeps all 1,057 scripted steps
+and 13 checkpoints identical, including logical inputs, command/gameplay order
+and checkpoint hashes. Assembly/application build identities and wall-clock input
+timestamps are expected to change between fresh builds/processes; these are
+excluded only from that comparison, never from ordinary replay admission.
+The rendered Oozla metadata sidecar is byte-identical to the baseline.
+
 The #351 equipment extraction retires `OBPGame.PlayerEquipment.cs` and its UID,
 including 14 historical declaration/member permissions. The root changes from
 56 files, 14,772 lines, 531 methods, 355 fields (223 mutable), 43 exposed members
@@ -442,6 +484,14 @@ Seven public compatibility delegations expire with #376. Seven existing
 #350/#354 presentation composition bridges move into the main root file with
 their #352 expiry retained; four existing bindings now read through the facade.
 The immutable origin and player/world ownership ledger do not expand.
+
+With #356 integrated, the combined root has 50 files, 13,494 lines, 506 methods,
+353 fields (221 mutable), 43 exposed members and 1,409 cross-file references.
+Capture command actions reach the same equipment facade through the retained
+public delegations; the facade's recording callback uses `CaptureReplayCoordinator`.
+Both retired equipment/capture-session partials stay absent. The combined ledger
+retains both migrations' composition boundaries and retired permissions without
+expanding the frozen origin.
 
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.

@@ -63,7 +63,13 @@ public sealed class PlayerEquipmentOwnershipArchitectureTests
         Assert.Contains("native.Assignments.Assign(slot", facade, StringComparison.Ordinal);
         Assert.Contains("native.Assignments.Enable(entry.Definition", facade, StringComparison.Ordinal);
         Assert.Contains("native.Held.HoldWrench()", facade, StringComparison.Ordinal);
-        Assert.Contains("_persistentPlayer.Equipment.ApplyCommand(command).Accepted", Read("OBPGame.CaptureSession.cs"), StringComparison.Ordinal);
+        string capture = Read("CaptureReplayCoordinator.cs");
+        Assert.Contains("actions.Equip(command.Value)", capture, StringComparison.Ordinal);
+        Assert.Contains("actions.QuickSlot(command.Slot", capture, StringComparison.Ordinal);
+        string composition = Read("OBPGame.cs");
+        Assert.Contains("item => SelectPlayerEquipment(item).Accepted", composition, StringComparison.Ordinal);
+        Assert.Contains("(slot, item) => AssignPlayerQuickSelect(slot, item).Accepted", composition, StringComparison.Ordinal);
+        Assert.Contains("Record: command => CaptureReplay.RecordCommand(command)", composition, StringComparison.Ordinal);
         string modal = Read("UiModalCoordinator.cs");
         Assert.DoesNotContain("PlayerSessionNativeState", modal, StringComparison.Ordinal);
         Assert.DoesNotContain("PlayerEquipmentPresentationBinder", modal, StringComparison.Ordinal);
