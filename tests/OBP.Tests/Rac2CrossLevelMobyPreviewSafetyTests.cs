@@ -41,6 +41,7 @@ public sealed class Rac2CrossLevelMobyPreviewSafetyTests(ITestOutputHelper log)
                 Assert.Equal(a.Mesh.Positions.Length, b.Mesh.Positions.Length);
                 Assert.Equal(a.Mesh.Indices, b.Mesh.Indices);
                 Assert.Equal(a.Mesh.Uvs, b.Mesh.Uvs);
+                Assert.Equal(a.Mesh.Normals.Length, b.Mesh.Normals.Length);
                 if (!b.Mesh.NativeInitialPoseApplied)
                     Assert.Equal(a.Mesh.Normals, b.Mesh.Normals);
                 else
