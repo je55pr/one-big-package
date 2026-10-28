@@ -2,6 +2,7 @@ using OBP.PS2.Geometry;
 using OBP.PS2.Graphics;
 using OBP.RAC1;
 using OBP.RAC1.Level;
+using OBP.Runtime;
 using OBP.Runtime.Presentation;
 
 namespace OBP.Tests;
@@ -37,7 +38,9 @@ public sealed class Rac1CrossLevelFoliageTests
             RcTextureWrapHint.Unknown, RcTextureWrapHint.Unknown,
             RcTextureMinFilterHint.Unknown, 0, 0, 0, 0, "synthetic")
         {
-            AlphaBlend = fixedAlpha ? new RcGsAlphaState(0, 1, 2, 1, 64) : null,
+            AlphaBlend = fixedAlpha
+                ? new RcGsAlphaState(0, 1, 2, 1, 64)
+                : new RcGsAlphaState(0, 1, 0, 1, 0),
         };
         var mesh = new RcShrub.Mesh(
             positions.ToArray(), new float[indices.Count * 2],
@@ -54,6 +57,57 @@ public sealed class Rac1CrossLevelFoliageTests
 
         var actual = Rac1FoliageCutoutPolicy.FindLayeredCutoutTextures(shrub, alpha);
         Assert.Equal(expected, actual.OrderBy(x => x));
+    }
+
+    /// <summary>
+    /// Two source classes can share a level-local texture ID without sharing
+    /// the right to replace alpha blending with a depth-writing cutout.
+    /// Probe the actual placement path using distinct source positions.
+    /// </summary>
+    [Fact]
+    public void PlacementAppliesCutoutOnlyToTheSelectedSourceClassWhenTexturesAreShared()
+    {
+        static float[] TranslateX(float x) =>
+        [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            x, 0, 0, 1,
+        ];
+
+        var geometry = (
+            Positions: new double[] { 0, 0, 0, 1, 0, 0, 0, 1, 0 },
+            Uvs: new float[] { 0, 0, 1, 0, 0, 1 },
+            Indices: new[] { 0, 1, 2 },
+            TriangleTextureIds: new[] { 10 },
+            TrianglePresentations: new RuntimeMaterialPresentation?[]
+            {
+                new(AlphaBlendEnabled: true, BlendEquation: RuntimeBlendEquation.SourceAlpha),
+            });
+
+        var meshes = new List<RuntimeMesh>();
+        double minX = double.PositiveInfinity, minY = double.PositiveInfinity, minZ = double.PositiveInfinity;
+        double maxX = double.NegativeInfinity, maxY = double.NegativeInfinity, maxZ = double.NegativeInfinity;
+        Rac1WorldImport.PlaceMatrixInstances(
+            "shrub",
+            [(700, TranslateX(100)), (701, TranslateX(200))],
+            classId => classId is 700 or 701 ? geometry : null,
+            [10],
+            new Dictionary<int, AlphaProfile> { [10] = new(.55, .35, .10, true) },
+            new Dictionary<int, HashSet<int>> { [700] = [10], [701] = [] },
+            null,
+            meshes,
+            ref minX, ref minY, ref minZ, ref maxX, ref maxY, ref maxZ);
+
+        Assert.Equal(2, meshes.Count);
+        var selected = Assert.Single(meshes, m => m.Positions[0] == 100);
+        var other = Assert.Single(meshes, m => m.Positions[0] == 200);
+        Assert.Equal(10, selected.TextureId);
+        Assert.Equal(10, other.TextureId);
+        Assert.True(selected.MaterialPresentation?.PreferFoliageCutout);
+        Assert.False(other.MaterialPresentation?.PreferFoliageCutout);
+        Assert.True(other.MaterialPresentation?.PreferPerPlacementFoliageDepth);
+        Assert.Equal(2, meshes.Sum(m => m.TriangleCount));
     }
 
     [SkippableTheory]

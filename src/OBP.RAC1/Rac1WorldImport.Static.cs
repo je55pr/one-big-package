@@ -179,7 +179,7 @@ public static partial class Rac1WorldImport
     internal static double UnwrapPackedTieUv(double value, bool crossesSeam) =>
         crossesSeam && value <= 1d ? value + 16d : value;
 
-    private static void PlaceMatrixInstances(
+    internal static void PlaceMatrixInstances(
         string kind,
         IEnumerable<(int OClass, float[] Matrix)> instances,
         Func<int, (double[] Positions, float[] Uvs, int[] Indices, int[] TriangleTextureIds, RuntimeMaterialPresentation?[] TrianglePresentations)?> lookup,
