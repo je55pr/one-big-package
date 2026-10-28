@@ -1,26 +1,22 @@
-using System.Collections.Immutable;
 using System.Text.Json;
 using Godot;
 using OBP.Runtime.Diagnostics;
 
 namespace OBP.Game.Diagnostics;
 
-internal sealed class GodotBugReporterDiagnosticFixture(Node owner, Func<BugReportUi?> ui, Func<bool> modal,
-    Func<BugReporterWorldDiagnostic> world, Func<BugReportInbox?> inbox, Func<Guid> session,
+internal sealed class GodotBugReporterDiagnosticFixture(Node owner, Func<IBugReportUiDiagnostics?> coordinator, Func<bool> modal,
+    Func<BugReporterWorldDiagnostic> world,
     Func<Node?> recorder) : IBugReporterDiagnosticFixture
 {
-    private BugReportUi Ui => ui() is { } value && GodotObject.IsInstanceValid(value) ? value : throw new DiagnosticUnavailableException("The report UI is unavailable.");
-    private BugReportInbox Inbox => inbox() ?? throw new DiagnosticUnavailableException("The report inbox is unavailable.");
+    private IBugReportUiDiagnostics Reports => coordinator() ?? throw new DiagnosticUnavailableException("The report capture is unavailable.");
     public BugReporterUiDiagnostic ReadUi()
     {
-        var panel = ui(); bool valid = GodotObject.IsInstanceValid(panel); var focus = owner.GetViewport().GuiGetFocusOwner();
-        return new(modal(), valid && !panel!.InboxMode, valid && panel!.InboxMode, valid && panel!.Busy,
-            valid ? panel!.Status : "", focus?.Name.ToString(), (focus as Button)?.Text,
-            valid && panel!.FindChild("ReportDescription", true, false) is LineEdit description ? description.Text : "");
+        var view = Reports.ReadUi();
+        return new(modal(), view.FormOpen, view.InboxOpen, view.Busy, view.Status, view.FocusName, view.FocusText, view.Description);
     }
     public BugReporterWorldDiagnostic ReadWorld() => world();
-    public void FocusDescription() => ((LineEdit)Ui.FindChild("ReportDescription", true, false)).GrabFocus();
-    public void FocusButton(string label) => Ui.FindChildren("*", "Button", true, false).OfType<Button>().Single(button => button.Text == label).GrabFocus();
+    public void FocusDescription() => Reports.FocusDescription();
+    public void FocusButton(string label) => Reports.FocusButton(label);
     public System.Numerics.Vector2 ReportButtonCentre
     {
         get
@@ -29,32 +25,30 @@ internal sealed class GodotBugReporterDiagnosticFixture(Node owner, Func<BugRepo
             var point = ((Button)capture.FindChild("BugReportControl", true, false)).GetGlobalRect().GetCenter(); return new(point.X, point.Y);
         }
     }
-    private static int Count(string path, string pattern) => Directory.Exists(path) ? Directory.GetFiles(path, pattern).Length : 0;
     public BugReporterArchiveDiagnostic ReadArchive()
     {
-        var store = Inbox; var id = session(); var manifest = store.Read(id); bool excluded = true;
-        if (manifest.Reports.Count > 0)
+        var snapshot = Reports.ReadReports(); bool excluded = true;
+        if (snapshot.Reports.Length > 0)
         {
-            var resolved = store.Resolve(id, manifest.Reports[0].Id);
-            using var reader = new PlaytestRunReader(resolved.RecordingPath);
+            using var reader = new PlaytestRunReader(snapshot.RecordingPath);
             while (reader.ReadNextStep() is { } step)
                 if (step.Events.Any(item => item.Kind == PlaytestInputKind.Key && item.Code is (int)Key.W or (int)Key.Q)) excluded = false;
         }
-        string results = Path.Combine(store.Root, "replay-results"); var files = Directory.Exists(results) ? Directory.GetFiles(results, "*.json") : [];
+        var files = snapshot.ReplayResults;
         bool matched = files.Length == 2;
         foreach (string file in files)
         {
             using var result = JsonDocument.Parse(File.ReadAllText(file));
             matched &= result.RootElement.GetProperty("Result").GetString() == "matched" && !result.RootElement.GetProperty("BuildChanged").GetBoolean();
         }
-        return new([.. manifest.Reports.Select(report => new BugReporterReportDiagnostic(report.Id.ToString("N"), report.Description))],
-            Count(store.SessionDirectory(id), "*.gz"), Count(Path.Combine(store.Root, "exports"), "*.zip"), excluded, matched);
+        return new([.. snapshot.Reports.Select(report => new BugReporterReportDiagnostic(report.Id.ToString("N"), report.Description))],
+            snapshot.Recordings, snapshot.Exports, excluded, matched);
     }
     public async Task CaptureAsync(string name, DiagnosticRunContext run)
     {
         if (DisplayServer.GetName() == "headless") return;
         await run.WaitAsync(DiagnosticFramePhase.PostDraw);
         using var image = owner.GetViewport().GetTexture().GetImage();
-        if (image.SavePng(Path.Combine(Inbox.Root, name + ".png")) != Error.Ok) throw new IOException("Report UI capture failed.");
+        if (image.SavePng(Path.Combine(Reports.StorageRoot, name + ".png")) != Error.Ok) throw new IOException("Report UI capture failed.");
     }
 }

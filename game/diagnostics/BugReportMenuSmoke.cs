@@ -42,9 +42,10 @@ public partial class BugReportMenuSmoke : Node
             GetWindow().Size = new(960, 540);
             var inbox = new BugReportUi { InboxMode = true };
             AddChild(inbox);
-            int selected = -1, replays = 0;
+            int selected = -1, replays = 0, closes = 0;
             inbox.SelectionChanged += value => selected = value;
             inbox.ReplayRequested += () => replays++;
+            inbox.CloseRequested += () => closes++;
             inbox.SetReports(["First report", "Second report"]);
             await Frames();
             var list = (ItemList)inbox.FindChild("ReportList", true, false);
@@ -81,6 +82,9 @@ public partial class BugReportMenuSmoke : Node
             inbox.SetBusy(true, "Working");
             await Click(list.GlobalPosition + list.GetItemRect(1).GetCenter());
             Check(selected == 0, "Busy inbox still accepted mouse selection.");
+            Check(!Button("BACK").Disabled, "Busy inbox cannot close its view.");
+            await Pad(JoyButton.B);
+            Check(closes == 1, "Busy inbox did not forward Back for cancellation.");
             inbox.SetBusy(false, "Done");
             await Frames();
             Check(GetViewport().GuiGetFocusOwner() == export, "Finishing an action unexpectedly moved focus.");
@@ -111,6 +115,16 @@ public partial class BugReportMenuSmoke : Node
             // available through its standalone diagnostic scene.
             await AutomationDesktopSmoke.VerifyAsync(this);
             inbox.QueueFree(); await Frames();
+            var form = new BugReportUi();
+            AddChild(form); await Frames();
+            form.SetBusy(true, "Saving replayable report…");
+            var close = form.FindChildren("*", "Button", true, false).OfType<Button>()
+                .Single(button => button.Text == "CLOSE · saving continues");
+            Check(!close.Disabled, "Committed-save close must explain that saving continues and remain available.");
+            form.SetBusy(false, "Retry");
+            Check(close.Text == "CANCEL", "Failed-save retry did not restore the ordinary cancel action.");
+            if (_failures.Count > 0) throw new InvalidOperationException(string.Join("\n", _failures));
+            form.QueueFree(); await Frames();
             await PauseLoadoutSmoke.VerifyAsync(this);
             GD.Print("[bug-menu-smoke] PASS: mouse, D-pad, activation, focus return, busy/empty states and scrolling");
             GetTree().Quit();

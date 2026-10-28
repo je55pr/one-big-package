@@ -135,6 +135,9 @@
     <Compile Include="../../game/diagnostics/ControllerWeaponInputRegression.cs" Link="Diagnostics/ControllerWeaponInputRegression.cs" />
     <Compile Include="../../game/scripts/WorldSceneLifetime.cs" Link="Game/WorldSceneLifetime.cs" />
     <Compile Include="../../game/scripts/HostOperationScope.cs" Link="Game/HostOperationScope.cs" />
+    <Compile Include="../../game/scripts/BugReportCapture.cs" Link="Game/BugReportCapture.cs" />
+    <Compile Include="../../game/scripts/BugReportUiWork.cs" Link="Game/BugReportUiWork.cs" />
+    <Compile Include="../../game/scripts/BugReportReplayProcess.cs" Link="Game/BugReportReplayProcess.cs" />
     <Compile Include="../../game/scripts/ActorSourceCache.cs" Link="Game/ActorSourceCache.cs" />
     <Compile Include="../../game/scripts/ActorPlacementPreparation.cs" Link="Game/ActorPlacementPreparation.cs" />
     <Compile Include="../../game/scripts/ActorReplayAdmission.cs" Link="Game/ActorReplayAdmission.cs" />

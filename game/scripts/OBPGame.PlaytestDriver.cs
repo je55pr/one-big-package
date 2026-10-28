@@ -177,7 +177,7 @@ public partial class OBPGame
             {
                 if (Game._movementStateLoading) throw new InvalidOperationException("Movement-state loads cannot be mixed into an input tape.");
                 if (Game._bookmarkReplayStep is { } bookmarkStep && _nextStep > bookmarkStep) { CompleteReplay(atBookmark: true); return; }
-                if (Game._bugReplayReport is { } report && _nextStep > report.Step) { CompleteReplay(atReportMarker: true); return; }
+                if (Game._bugReporting?.ReplayReport is { } report && _nextStep > report.Step) { CompleteReplay(atReportMarker: true); return; }
                 if (Reader is not null)
                 {
                     _bufferedStep ??= Reader.ReadNextStep();
@@ -437,7 +437,7 @@ public partial class OBPGame
             if (atReportMarker && Game._args.PlaytestInspectMarker)
             {
                 GetTree().Paused = true;
-                SetNotice($"REPLAY · {Game._bugReplayReport!.Title}\nMarked moment reached · {(matched ? "sampled checks matched" : "state divergence recorded")}\nClose this window to return to the report inbox.");
+                SetNotice($"REPLAY · {Game._bugReporting!.ReplayReport!.Title}\nMarked moment reached · {(matched ? "sampled checks matched" : "state divergence recorded")}\nClose this window to return to the report inbox.");
                 return;
             }
             ApplicationLifecycle.RequestQuit(Game, "playtest-replay-complete", matched ? 0 : 3);
@@ -460,7 +460,7 @@ public partial class OBPGame
                 BuildChanged = !PlaytestBuildMatches(Reader.Header),
                 FirstDifference = _firstDifference,
                 Reader.Markers,
-                ReportMarker = Game._bugReplayReport,
+                ReportMarker = Game._bugReporting?.ReplayReport,
                 LastObserved = _lastObserved,
             }, new JsonSerializerOptions { WriteIndented = true }));
         }

@@ -72,6 +72,14 @@ public sealed class BugReporterScenario(CaptureDiagnosticContext context, ICaptu
         Require(reports.ReadArchive().Exports == 1, "No portable ZIP was saved.");
         await TapPad(CaptureButton.Up); Require(reports.ReadUi().FocusName == "ReportList", "Cannot return from export to the selected report.");
         Log("[bug-report-smoke] paused Square, blank controller submission, multiple reports, inbox and export PASS");
+        await TapPad(CaptureButton.A);
+        await WaitProcess(() => reports.ReadUi() is { Busy: true, Status: "Replaying in a separate game process…" }, "Reproduction child did not start.");
+        await TapPad(CaptureButton.B);
+        await WaitProcess(() => !reports.ReadUi().ModalOpen, "Back did not cancel the active reproduction and close its view.");
+        await Frames(8); await TapKey(CaptureKey.F7);
+        await WaitProcess(() => reports.ReadUi().InboxOpen, "Inbox did not reopen after canceled reproduction.");
+        Require(!reports.ReadUi().Busy, "Canceled reproduction updated the replacement inbox.");
+        Log("[bug-report-smoke] active child cancellation, view cleanup and inbox reopen PASS");
         for (int index = 0; index < 2; index++)
         {
             Require(reports.ReadUi().FocusName == "ReportList", "Replay did not restore list focus.");

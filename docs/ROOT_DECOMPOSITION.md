@@ -314,6 +314,51 @@ authorized retail suite (3,322 passed, 15 optional oracle checks skipped), pinne
 UID coverage and `dotnet format --verify-no-changes --no-restore`. The Godot app
 build passes with warnings as errors; mixed-source weapon fixtures and a fresh
 same-build input recording/replay retain their original source-identity gates.
+
+The #355 report UI extraction retires `OBPGame.BugReports.cs`, moving its script
+UID to `BugReportUiCoordinator`. The root changes from 62 files, 15,767 lines,
+588 methods, 380 fields (238 mutable), 43 exposed members and 1,675 cross-file
+references to 61 files, 15,397 lines, 572 methods, 370 fields (229 mutable),
+43 exposed members and 1,663 cross-file references. One coordinator reference
+replaces the 11 bug-report fields; all 29 historical declaration/member
+permissions retire. Two exact composition entries retain the owner reference
+and the existing bootstrap modal observation until #376. The existing #344
+capture-fixture binding now consumes the report owner's narrow diagnostic
+interface; the frozen origin and external-access ledger do not grow.
+
+`BugReportUiCoordinator` owns forms, inbox rows/selection, confirmations and
+child dialogs. Its nine composition ports bind the Godot host, overlay parent,
+recording writer, resume/notice callbacks, build and physics identity checks,
+frame waits and failure exit. Its five-member diagnostic interface exposes
+copied UI/report snapshots, the local evidence root and focused UI actions;
+neither mutable views nor the report store escape through that interface.
+`BugReportCapture` preserves startup/profile/campaign provenance separately from
+view lifetime. The existing `BugReportInbox` and `PlaytestRunWriter` retain
+publication, recording and archive authority; report/marker IDs, manifests,
+source stamps, F7/F8 input and native recording phases stay unchanged.
+
+Closing or disposing the coordinator cancels view work, retires dialogs and
+prevents late callbacks from updating another inbox. Export/import temporary
+files and owned reproduction children are cleaned up on cancellation/failure,
+including interactive children. Back/Cancel remains available during work;
+a saving form explicitly labels its close action as continuing the save.
+An admitted report save is supervised independently of the view and drains
+before capture finalization during host shutdown; failed shutdown writes still
+require a nonzero exit. Portable regressions cover late callbacks, committed
+saves, child cancellation/deadlines, failed replacement writes and cancellation
+after a temporary manifest write. The retained engine scenario also cancels an
+active child, reopens its inbox and performs both same-build report replays.
+
+Submitted report prose is atomically retained by the existing inbox before a
+save can outlive its view. Successful publication removes that pending draft.
+Capture startup restores pending reports from their original completed capture,
+preserving session/marker/source identity and copying the tape without rewriting
+input or observations. Unfinished or unwritable captures retain their drafts and
+remain explicitly pending; committed-save failures still reach host supervision
+and require the existing nonzero exit. Recovery/publication retries and explicit
+session deletion have portable regressions, with no new root fields or schemas
+for saved reports or portable archives.
+
 The #359 actor-composition extraction retires `OBPGame.Actors.cs`,
 `OBPGame.ActorAdapters.cs` and `OBPGame.ActorContacts.cs`. Against #350, the root
 changes from 62 files, 15,767 lines, 588 methods, 380 fields (238 mutable),
@@ -369,6 +414,14 @@ service; its accepted wrench-feedback port delegates to the player audio
 presenter. Only that existing composition binding and the two player diagnostic
 bindings need combined fingerprints; #359's remaining composition expiry stays
 with #376 and the frozen origin ledger remains unchanged.
+
+With #355 integrated after #354/#359, the combined four-configuration census is
+56 files, 14,772 lines, 531 methods, 355 fields (223 mutable), 43 exposed
+members and 1,570 cross-file references. Report startup follows the unbound
+audio owner's composition; admitted report saves drain before capture
+finalization and audio/world disposal. Both owners retain their independent
+composition entries and retired permissions; the frozen origin ledger remains
+unchanged.
 
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
