@@ -8,29 +8,31 @@ The tester reached the Veldin tree from issue #414 in the authentic R&C1 NTSC-U 
 
 Private data, deliberately NOT committed:
 - PCSX2 screenshot and matching GS dump: Ratchet & Clank_SCUS-97199_20261027213131.png / .gs.zst in the PCSX2 snaps directory
-- Parsed summary: captures/retail-gs-416/draw-state.json
+- Corrected parsed summary: captures/retail-gs-416/draw-state-pr418.json (the earlier draw-state.json is retained for comparison)
 
-The source-independent tool tools/rac1-gs-dump-audit.py reads GS dump packets and GIF packed A+D register writes. Five synthetic, portable tests cover the packet parser and depth-state decoding. It does not simply assume that the boot-time register values remain active during gameplay.
+The source-independent tool tools/rac1-gs-dump-audit.py reads GS dump packets and GIF packed, REGLIST and A+D register writes. Portable synthetic tests cover packet parsing, state accounting and malformed input. It does not simply assume that the boot-time register values remain active during gameplay.
 
 ## Streamed GS state (not just startup state)
 
 The capture reports R&C1 SCUS-97199, CRC CE4933D0, GS state version 9, captured image 640 x 480, four frame boundaries, and 7,060 GIF transfers.
 
-All four analysed frame periods produce identical observed distributions, with **81,299 GIF vertex writes** per frame:
+All four analysed frame periods produce identical observed distributions, with **81,920 GIF vertex writes** per frame:
 
 | Depth/alpha state | Vertex writes per frame |
 | --- | ---: |
 | GEQUAL, depth write on, alpha test GEQUAL, alpha-fail=3 | 79,507 |
 | GEQUAL, depth write on, other alpha-test states | 1,622 |
-| ALWAYS, various alpha/depth-write modes | 170 |
+| ALWAYS, various alpha/depth-write modes | 791 |
 
-Therefore **81,129 / 81,299** vertex writes use an inclusive GEQUAL depth comparison with depth writes enabled. Representative actual streamed values include TEST_1 = 0x000000000005360B, TEST_1 = 0x000000000005380B, and ZBUF_1 = 0x00000000010000D8. The latter TEST register has a threshold of 128, alpha comparison GEQUAL, alpha-fail mode 3, depth-test GEQUAL and depth testing enabled; the ZBUF register permits depth writes.
+The per-frame rows are derived from the private full JSON report (generated using `--out`), by grouping `draw_batches` by `frame` and the depth/alpha values in `gs_state`, then summing `vertex_writes`. The default console summary does not print these combined groups. These figures were regenerated from the same private retail dump with the corrected parser in this PR. The previous report missed 621 A+D vertex-register writes per frame (81,299 instead of 81,920). Each corrected frame contains 79,559 packed, 1,740 REGLIST and 621 A+D vertex-register writes; there are no incomplete GIF paths.
+
+Therefore **81,129 / 81,920** vertex writes use an inclusive GEQUAL depth comparison with depth writes enabled. Representative actual streamed values include TEST_1 = 0x000000000005360B, TEST_1 = 0x000000000005380B, and ZBUF_1 = 0x00000000010000D8. The latter TEST register has a threshold of 128, alpha comparison GEQUAL, alpha-fail mode 3, depth-test GEQUAL and depth testing enabled; the ZBUF register permits depth writes.
 
 A GIF vertex write is not a pixel, a triangle or necessarily a draw call. The report groups consecutive writes by observed state. It has **not** associated any given batch with the 119 class-501 / texture-13 tree-root triangles. The exact draw-state for that object remains unproven until packet/texture identification is resolved.
 
 ## Source comparison and meaning
 
-The original-game native rendering port describes world ordering sky -> tfrag -> TIE -> shrubs -> Mobys; see https://github.com/RAC-Native/rac1-native-game/blob/main/docs/rendering.md . Retail class-501 texture-13 GIF material data enables blending and carries TEX0/TEX1/CLAMP/MIPTBP, but does not itself override GS TEST or ZBUF. Original executable initialization likewise enables GEQUAL testing and writes.
+A reverse-engineered public native-game port describes world ordering sky -> tfrag -> TIE -> shrubs -> Mobys (secondary reference, [revision-pinned rendering notes](https://github.com/RAC-Native/rac1-native-game/blob/5ff2b5e411b97e7923c41b12fb591ae23a6e3ac5/docs/rendering.md)). This is not independently authenticated retail evidence for the captured draw. The GS dump does establish observed streamed TEST and ZBUF state for batches with those register writes; it **does not** establish the specific class-501 texture-13 material configuration or executable initialization. Those retail-specific claims require separate binary-identified, payload-free evidence and are deliberately left unasserted here.
 
 **The retail-emulator flicker means inclusive depth comparison is NOT a universal Z-fighting cure**. The result might be genuinely retail-authentic, depend on PCSX2 software versus hardware renderer and its depth conversion, or vary with platform/precision. The current captured frame cannot distinguish these.
 

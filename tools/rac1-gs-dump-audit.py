@@ -13,7 +13,6 @@ import lzma
 import os
 from pathlib import Path
 import struct
-from collections import Counter
 from dataclasses import dataclass
 
 REGISTER_NAMES = {
@@ -24,6 +23,7 @@ REGISTER_NAMES = {
     0x4E: "ZBUF_1", 0x4F: "ZBUF_2",
 }
 VERTEX_REGS = {0x04, 0x05, 0x0C, 0x0D}
+MAX_DECOMPRESSED_BYTES = 512 * 1024 * 1024
 ZTEST_NAMES = ("never", "always", "gequal", "greater")
 ATST_NAMES = ("never", "always", "less", "lequal", "equal", "gequal", "greater", "notequal")
 
@@ -48,12 +48,30 @@ def decompress(path: Path) -> bytes:
     data = path.read_bytes()
     name = path.name.lower()
     if name.endswith(".xz"):
-        return lzma.decompress(data)
+        if not data:
+            raise ValueError("Empty XZ dump")
+        output = bytearray()
+        remaining = data
+        # PCSX2 may concatenate XZ streams. Bound each decompression call
+        # before materialising its output, across every stream combined.
+        while remaining:
+            decoder = lzma.LZMADecompressor()
+            compressed = remaining
+            while not decoder.eof:
+                available = MAX_DECOMPRESSED_BYTES - len(output) + 1
+                output.extend(decoder.decompress(compressed, max_length=available))
+                if len(output) > MAX_DECOMPRESSED_BYTES:
+                    raise ValueError("Decompressed GS dump exceeds size limit")
+                compressed = b""
+                if not decoder.eof and decoder.needs_input:
+                    raise ValueError("Truncated XZ stream")
+            remaining = decoder.unused_data
+        return bytes(output)
     if not name.endswith(".zst"):
         return data
     try:
         import zstandard  # type: ignore[import-not-found]
-        return zstandard.ZstdDecompressor().decompress(data, max_output_size=512 * 1024 * 1024)
+        return zstandard.ZstdDecompressor().decompress(data, max_output_size=MAX_DECOMPRESSED_BYTES)
     except ImportError:
         pass
     # PCSX2 bundles the Zstandard DLL on Windows. Avoid installing packages
@@ -70,7 +88,7 @@ def decompress(path: Path) -> bytes:
     lib.ZSTD_isError.restype = ctypes.c_uint
     src = ctypes.create_string_buffer(data)
     bound = lib.ZSTD_decompressBound(src, len(data))
-    if not 0 < bound <= 512 * 1024 * 1024:
+    if not 0 < bound <= MAX_DECOMPRESSED_BYTES:
         raise ValueError(f"Compressed GS dump has invalid/unreasonably large bound: {bound}")
     dst = ctypes.create_string_buffer(bound)
     length = lib.ZSTD_decompress(dst, bound, src, len(data))
@@ -114,7 +132,7 @@ class GifPath:
                 mode = (lo >> 58) & 3
                 nreg = (lo >> 60) & 15 or 16
                 regs = tuple((hi >> (i * 4)) & 15 for i in range(nreg))
-                if (lo >> 46) & 1:
+                if loops and (lo >> 46) & 1:
                     self.audit.set_register(0x00, (lo >> 47) & 0x7FF, self.index)
                 if mode >= 2:
                     self.image_bytes = loops * 16
@@ -136,12 +154,16 @@ class GifPath:
                     if reg == 0xE:  # GIF packed A+D, GS address in high qword
                         address = struct.unpack_from("<Q", data, cursor + 8)[0] & 0xFF
                         self.audit.set_register(address, value, self.index)
-                    elif reg == 0x00:
-                        self.audit.set_register(0x00, value, self.index)
+                        if address in VERTEX_REGS:
+                            self.audit.vertex(self.index, "ad")
+                    elif reg in (0x00, 0x06, 0x07):
+                        self.audit.set_register(reg, value, self.index)
                     elif reg in VERTEX_REGS:
-                        self.audit.vertex(self.index)
+                        self.audit.vertex(self.index, "packed")
+                elif reg in (0x00, 0x06, 0x07):
+                    self.audit.set_register(reg, value, self.index)
                 elif reg in VERTEX_REGS:
-                    self.audit.vertex(self.index)
+                    self.audit.vertex(self.index, "reglist")
                 cursor += width
                 t.remaining -= 1
             if t.remaining == 0:
@@ -175,7 +197,7 @@ class GsAudit:
                 "register": REGISTER_NAMES[address], "value": f"0x{value:016x}",
             })
 
-    def vertex(self, path: int):
+    def vertex(self, path: int, source: str):
         context = (self.registers.get(0x00, 0) >> 9) & 1
         test = self.registers.get(0x47 + context)
         zbuf = self.registers.get(0x4E + context)
@@ -185,11 +207,14 @@ class GsAudit:
         key = (self.frame, context, test, zbuf, tex0, alpha, prim)
         if self.batches and self.batches[-1]["_key"] == key:
             self.batches[-1]["vertex_writes"] += 1
+            sources = self.batches[-1]["vertex_sources"]
+            sources[source] = sources.get(source, 0) + 1
             return
         self.batches.append({
             "_key": key, "frame": self.frame, "packet_start": self.packet,
             "path": path, "context": context,
-            "vertex_writes": 1, "gs_state": depth_state(test, zbuf),
+            "vertex_writes": 1, "vertex_sources": {source: 1},
+            "gs_state": depth_state(test, zbuf),
             "primitive": None if prim is None else prim & 7,
             "texture_mapping_enabled": None if prim is None else bool((prim >> 4) & 1),
             "alpha_blending_enabled": None if prim is None else bool((prim >> 6) & 1),
@@ -244,15 +269,20 @@ class GsAudit:
             {k: v for k, v in batch.items() if k != "_key"}
             for batch in self.batches
         ]
+        incomplete_paths = [
+            index for index, path in self.paths.items()
+            if path.tail or path.tag is not None or path.image_bytes
+        ]
         return {
             "dump": {"serial": serial, "crc": f"{crc:08x}", "state_version": version,
                      "screenshot_size": [width, height], "frame_boundaries": self.frame,
                      "transfer_packets": self.packet},
-            "depth_state_counts_by_vertex_writes": dict(Counter({
+            "depth_state_counts_by_vertex_writes": {
                 name: sum(b["vertex_writes"] for b in summary
-                          if b["gs_state"].get("depth_function") == name)
+                          if b["gs_state"].get("depth_function", "unknown") == name)
                 for name in (*ZTEST_NAMES, "unknown")
-            })),
+            },
+            "incomplete_paths": incomplete_paths,
             "register_changes": self.events,
             "draw_batches": summary,
             "warning": "GS header initial register state is not decoded. These are vertex-write "
@@ -277,6 +307,7 @@ def main():
         "dump": result["dump"], "depth_state_counts_by_vertex_writes":
             result["depth_state_counts_by_vertex_writes"],
         "register_changes": len(result["register_changes"]),
+        "incomplete_paths": result["incomplete_paths"],
         "draw_batches": len(result["draw_batches"]),
         "last_batches": result["draw_batches"][-args.last:] if args.last > 0 else [],
         "warning": result["warning"],
