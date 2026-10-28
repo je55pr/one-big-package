@@ -109,6 +109,16 @@ public sealed class WorldHost
     public bool PlayEffect(RuntimeAudioPlaybackIntent intent) =>
         IsLoaded && _hostNode is { } host && _audio.PlayEffect(host, intent);
 
+    /// <summary>OBP integration cue using this world's representative source clip.</summary>
+    public void PlayRepresentativeAudioOneShot(RuntimeDynamicObject? source = null)
+    {
+        if (World?.RepresentativeAudioOneShot is not { } clip) return;
+        var matrix = source?.Transform.Matrix;
+        RuntimeAudioPosition? position = matrix is { Length: >= 16 }
+            ? new(matrix[12], matrix[13], matrix[14]) : null;
+        PlayEffect(new(clip, RuntimeAudioCategory.SoundEffect, position: position));
+    }
+
     /// <summary>
     /// Build and attach a world. <paramref name="hostNode"/> parents the
     /// <see cref="WorldEnvironment"/> + hero light; <paramref name="sceneParent"/>

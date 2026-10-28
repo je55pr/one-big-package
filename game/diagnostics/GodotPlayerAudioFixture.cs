@@ -6,7 +6,7 @@ using OBP.RAC1.Player;
 
 namespace OBP.Game.Diagnostics;
 
-internal sealed record GodotPlayerAudioBindings(Func<PlayerHost?> Player, Func<DiagnosticAudioHostState> Host,
+internal sealed record GodotPlayerAudioBindings(Func<PlayerHost?> Player, Func<DiagnosticAudioHostState> Host, Func<ImmutableArray<DiagnosticAudioVoice>> Voices,
     Action ClearInput, Action<float, float> Analogue, Action<double, double> Conditioned,
     Func<bool> Back, Action<Rac1WeaponId> SelectWeapon, Action<bool> Preview,
     Func<ImmutableArray<RuntimeWorldScene.DynamicObjectNode>> Crates, Func<RuntimeWorldScene.DynamicObjectNode, bool> ActiveCrate,
@@ -24,9 +24,7 @@ internal sealed class GodotPlayerAudioFixture(Node owner, GodotPlayerAudioBindin
         var player = Player;
         return new(true, player.IsOnFloor(), player.Rac1MovementPhase == Rac1RatchetMovementPhase.Grounded, player.Rac1AudioSurfaceEffectMode, player.Rac1TraversalAction, player.Rac1DevelopmentPackPreview,
             player.Rac1WrenchFrame.Active, player.Rac1WrenchAnimationBlending, player.Rac1TraversalAuthoredAnimationTime,
-            owner.GetTree().Paused, [.. player.GetChildren().OfType<AudioStreamPlayer>().Where(node => !node.IsQueuedForDeletion()).Select(node =>
-                new DiagnosticAudioVoice(node.Name, node.Stream is AudioStreamWav,
-                    node.Stream is AudioStreamWav { LoopMode: AudioStreamWav.LoopModeEnum.Forward }, node.Playing, node.StreamPaused, node.CanProcess()))], bindings.Host());
+            owner.GetTree().Paused, bindings.Voices(), bindings.Host());
     }
     public IDisposable BeginStage()
     {

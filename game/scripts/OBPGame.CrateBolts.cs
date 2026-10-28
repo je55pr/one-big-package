@@ -101,7 +101,7 @@ public partial class OBPGame
         }
         area.SetDeferred(Area3D.PropertyName.Monitoring, false);
         area.QueueFree();
-        PlayRepresentativeAudioOneShot();
+        _worldHost.PlayRepresentativeAudioOneShot();
         resources.CrateDiagnostics.Probe.RewardStatus = $"collected +{denomination}; session total {rewards.CollectedBolts}; " +
             $"{rewards.OutstandingPickupCount} physical remain, {rewards.DeferredBolts} deferred";
         GD.Print($"[crate-bolts] pickup={pickup.PickupId} denomination={denomination} " +

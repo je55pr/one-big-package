@@ -245,7 +245,7 @@ public partial class OBPGame
         player.Rac1CrankInput = TryTurnRac1NovalisCrank;
         player.Rac1WaterSurfaceHeight = SampleRac1NovalisWaterHeight;
         player.Rac1NovalisDrowned += OnRac1NovalisDrowned;
-        player.Rac1WaterSoundRequested += sound => PlayRac1PlayerSound(new(0, sound));
+        player.Rac1WaterSoundRequested += sound => _playerAudio?.Play(new(0, sound));
         player.ConfigureRac1TraversalTargets(_world.DynamicObjects ?? []);
     }
 
