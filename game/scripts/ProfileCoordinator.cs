@@ -37,11 +37,15 @@ internal sealed class ProfileCoordinator(ProfileCoordinatorPorts ports)
         return payload.Data.Deserialize<PlayerSessionNativeState.State>(ObpProfile.Options) ?? throw new InvalidDataException("Player contributor is empty.");
     }
 
-    internal IReadOnlyList<ProfileSource> CaptureProfileSources() => (_profileDocument?.Sources ?? [])
-        .Where(saved => !_ports.AttachedSources().Any(source => source.Game == saved.Game))
-        .Concat(_ports.AttachedSources().Select(source => source with
-        { Extensions = _profileDocument?.Sources.SingleOrDefault(saved => saved.Game == source.Game)?.Extensions }))
-        .OrderBy(source => source.Game).ToArray();
+    internal IReadOnlyList<ProfileSource> CaptureProfileSources()
+    {
+        var attached = _ports.AttachedSources();
+        return (_profileDocument?.Sources ?? [])
+            .Where(saved => !attached.Any(source => source.Game == saved.Game))
+            .Concat(attached.Select(source => source with
+            { Extensions = _profileDocument?.Sources.SingleOrDefault(saved => saved.Game == source.Game)?.Extensions }))
+            .OrderBy(source => source.Game).ToArray();
+    }
 
     internal ObpProfile Capture()
     {
@@ -146,7 +150,7 @@ internal sealed class ProfileCoordinator(ProfileCoordinatorPorts ports)
 
     internal void Tick(double delta)
     {
-        if (SharedProfilePath is null || !_ports.WorldActive()) return;
+        if (!_ports.WorldActive() || SharedProfilePath is null) return;
         _profileSaveElapsed += delta;
         if (_profileSaveElapsed < 10) return;
         _profileSaveElapsed = 0; Save("autosave");

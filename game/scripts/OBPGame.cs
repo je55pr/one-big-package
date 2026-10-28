@@ -100,8 +100,9 @@ public partial class OBPGame : Node3D
         WorldActive: () => _mode == Mode.World,
         Log: message => GD.Print(message)));
 
-    // Read-only projections keep existing world and diagnostic clients compatible.
-    // No second mutable player/profile fields are retained on the application root.
+    // Owner-backed projections keep existing world and diagnostic clients compatible.
+    // The avatar stamp and committed destination setters write through to their owners;
+    // no duplicate mutable player/profile state lives in the application root.
     private ObpPlayerSession? _playerSession => _persistentPlayer.Session;
     private PlayerSessionNativeState? _playerNative => _persistentPlayer.Native;
     private WorldEntrySession? _worldEntries => _persistentPlayer.WorldEntries;

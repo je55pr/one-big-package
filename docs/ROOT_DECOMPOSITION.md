@@ -226,12 +226,14 @@ versions, atomic write guard, source mismatch rejection and retail-parity file
 isolation are unchanged.
 
 All 36 historical direct members from the two retired partials are recorded as
-retired; 30 exact, token-hashed root composition/read-only compatibility
-projections are temporary and expire with #376. Their narrow consumers should
+retired; 30 exact, token-hashed root composition/owner-backed compatibility
+projections (including two writable projections) are temporary and expire with #376. Their narrow consumers should
 migrate to owned ports, rather than growing the root bridge. The frozen legacy
-source/owner ledger is unchanged. The source-free owner tests cover five-stop
-session identity, version/build rejection, blocked saves, absent profile,
-world-only autosave and opaque campaign preservation.
+source/owner ledger is unchanged. The source-free owner tests exercise five
+committed world entries, world unload, rejected preparation/activation,
+unchanged player and native state, version/build
+rejection, blocked saves, absent profile, world-only autosave and opaque campaign
+preservation.
 
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
