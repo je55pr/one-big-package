@@ -266,6 +266,55 @@ public sealed class Rac2MobyNativePoseTests
         Assert.Equal(1, previewCalls);
     }
 
+    [Theory]
+    [InlineData(1)] // Missing VIF stream: truncated VIF list pointer.
+    [InlineData(2)] // Vertex table header outside source asset.
+    [InlineData(3)] // No VIF unpack records.
+    [InlineData(4)] // Declared vertex table is implausibly large.
+    public void RecoveredPacketSkipFailsClosedAndRetainsLegacyClass(int invalidPacket)
+    {
+        var source = new byte[0x1c0];
+        PacketClass().CopyTo(source, 0);
+        // Third packet deliberately reuses slot 17 from the first packet.
+        // A skipped second packet breaks cache continuity: retaining its old
+        // slots would silently fabricate valid-looking source geometry.
+        source[4] = 3;
+        source.AsSpan(0x60, 16).CopyTo(source.AsSpan(0x70));
+        source.AsSpan(0x100, 0x40).CopyTo(source.AsSpan(0x160));
+        BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x78), 0x160);
+        switch (invalidPacket)
+        {
+            case 1:
+                BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x60), 0x400);
+                break;
+            case 2:
+                BinaryPrimitives.WriteInt32LittleEndian(source.AsSpan(0x68), 0x400);
+                break;
+            case 3:
+                BinaryPrimitives.WriteUInt16LittleEndian(source.AsSpan(0x64), 0);
+                break;
+            case 4:
+                BinaryPrimitives.WriteUInt16LittleEndian(source.AsSpan(0x106), 4097);
+                break;
+        }
+
+        var error = Assert.Throws<InvalidDataException>(() =>
+            GcUyaMoby.ReadClass(source, recoverPersistentVertexCache: true));
+        Assert.Contains("duplicate VU1 vertex-cache slot", error.Message);
+        var legacy = GcUyaMoby.ReadClass(source);
+
+        var assets = new byte[source.Length + 16];
+        source.CopyTo(assets, 16);
+        var index = new byte[GcUyaMoby.ClassEntrySize];
+        BinaryPrimitives.WriteInt32LittleEndian(index, 16);
+        BinaryPrimitives.WriteInt32LittleEndian(index.AsSpan(4), 2827);
+        var classes = GcUyaMoby.ReadClasses(index, assets, [], new(1, 0),
+            recoverPersistentVertexCache: _ => true,
+            previewNativeInitialPose: _ => true);
+        Assert.Equal(legacy.Positions, classes[2827].Mesh.Positions);
+        Assert.Equal(legacy.Indices, classes[2827].Mesh.Indices);
+    }
+
     [Fact]
     public void ClassTableDoesNotReinvokeAThrowingPreviewPredicateFromItsFilter()
     {

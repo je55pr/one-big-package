@@ -725,6 +725,16 @@ public static class GcUyaMoby
         bool skinningApplied = false;
         var vertexCache = new Dictionary<int, CachedVertex>();
 
+        void InvalidateSkippedPacket()
+        {
+            if (!recoverPersistentVertexCache) return;
+            // Missing packet writes break VU1 cache continuity. Never allow
+            // later duplicates to reuse stale slots from earlier packets or
+            // admit an incomplete skin stream for source-backed posing.
+            vertexCache.Clear();
+            skinState.FullyResolved = false;
+        }
+
         // The PS2 GS texture register persists across the whole draw: a moby
         // packet only emits an AD-GIF when the texture changes, so a packet /
         // strip with none inherits the last texture set by an earlier packet.
@@ -738,6 +748,7 @@ public static class GcUyaMoby
             int eo = packetTableOffset + pkt * 0x10;
             if (eo < 0 || eo + 0x10 > buf.Length)
             {
+                InvalidateSkippedPacket();
                 break;
             }
 
@@ -747,6 +758,7 @@ public static class GcUyaMoby
 
             if (vifListOffset + vifListSize > buf.Length || vertexOffset + 0x10 > buf.Length)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -754,6 +766,7 @@ public static class GcUyaMoby
                 new ArraySegment<byte>(buf, (int)vifListOffset, vifListSize)));
             if (unpacks.Count < 2)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -769,6 +782,7 @@ public static class GcUyaMoby
             var idxData = unpacks[1].Data;
             if (idxData.Count < 4)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -809,6 +823,7 @@ public static class GcUyaMoby
             int vbase = vh + vertexTableOffset;
             if (vbase + inFileCount * 0x10 > buf.Length || inFileCount > 4096)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
