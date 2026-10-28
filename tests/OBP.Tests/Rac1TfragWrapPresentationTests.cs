@@ -28,6 +28,95 @@ public sealed class Rac1TfragWrapPresentationTests
                 RuntimeTextureWrap.Repeat, RuntimeTextureWrap.Clamp)).TextureRepeat);
     }
 
+    [Fact]
+    public void SyntheticTfrag_SameTextureDifferentAxisWrapsStayInSeparateMeshes()
+    {
+        // Portable fixture: the same texture appears on three adjacent faces,
+        // but the original per-face materials disagree on S/T addressing.
+        // The grouping boundary must survive even without the retail ISO.
+        static OBP.PS2.Graphics.RcMaterialState Material(int s, int t) => new(
+            TextureId: 7,
+            WrapS: OBP.PS2.Graphics.RcTextureWrapHint.Unknown,
+            WrapT: OBP.PS2.Graphics.RcTextureWrapHint.Unknown,
+            MinFilter: OBP.PS2.Graphics.RcTextureMinFilterHint.Unknown,
+            LodKRaw: 0, MinFilterRaw: 0, ClampRawLo: s, ClampRawHi: t,
+            Layout: "synthetic-tfrag");
+
+        var native = new RcTfrag.Mesh(
+            Positions:
+            [
+                0, 0, 0,
+                1, 0, 0,
+                1, 0, 1,
+                0, 0, 1,
+                -1, 0, 1,
+            ],
+            Uvs:
+            [
+                0, 0,
+                2, 0,
+                2, 2,
+                0, 2,
+                -2, 2,
+            ],
+            Colors:
+            [
+                1, 0, 0,
+                0, 1, 0,
+                0, 0, 1,
+                1, 1, 0,
+                0, 1, 1,
+            ],
+            VertexAlpha: [1, 1, 1, 1, 1],
+            Indices: [0, 1, 2, 0, 2, 3, 0, 3, 4],
+            TriangleTextureIds: [7, 7, 7],
+            TriangleMaterialIndices: [0, 1, 2],
+            Materials: [Material(0, 0), Material(0, 1), Material(1, 0)],
+            TfragCount: 1,
+            BoundsMin: (-1, 0, 0),
+            BoundsMax: (1, 0, 1),
+            TextureIds: [7]);
+
+        var output = Rac1WorldImport.ToTfragMeshes(native, [7]).ToArray();
+        Assert.Equal(3, output.Length);
+        Assert.All(output, mesh =>
+        {
+            Assert.Equal("tfrag", mesh.AssetKind);
+            Assert.Equal(7, mesh.TextureId);
+            Assert.Equal(1, mesh.TriangleCount);
+        });
+
+        var expectedModes = new[]
+        {
+            (RuntimeTextureWrap.Repeat, RuntimeTextureWrap.Repeat),
+            (RuntimeTextureWrap.Repeat, RuntimeTextureWrap.Clamp),
+            (RuntimeTextureWrap.Clamp, RuntimeTextureWrap.Repeat),
+        };
+        for (int face = 0; face < 3; face++)
+        {
+            var mesh = Assert.Single(output, m =>
+                m.MaterialPresentation?.WrapS == expectedModes[face].Item1 &&
+                m.MaterialPresentation?.WrapT == expectedModes[face].Item2);
+            var colours = Assert.IsType<float[]>(mesh.Colors);
+            for (int corner = 0; corner < 3; corner++)
+            {
+                int sourceVertex = native.Indices[face * 3 + corner];
+                int dst = mesh.Indices[corner];
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    Assert.Equal(native.Positions[sourceVertex * 3 + axis],
+                        mesh.Positions[dst * 3 + axis]);
+                    Assert.Equal(native.Colors[sourceVertex * 3 + axis],
+                        colours[dst * 4 + axis]);
+                }
+                Assert.Equal(native.Uvs[sourceVertex * 2], mesh.Uvs[dst * 2]);
+                Assert.Equal(native.Uvs[sourceVertex * 2 + 1], mesh.Uvs[dst * 2 + 1]);
+                Assert.Equal(native.VertexAlpha[sourceVertex],
+                    colours[dst * 4 + 3]);
+            }
+        }
+    }
+
     [SkippableFact]
     public void Aridia_NativeAddressModesArePreservedPerTextureAndTriangle()
     {

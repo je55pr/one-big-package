@@ -131,7 +131,7 @@ public static partial class Rac1WorldImport
             PlayerStart: playerStart);
     }
 
-    private static IEnumerable<RuntimeMesh> ToTfragMeshes(RcTfrag.Mesh mesh, HashSet<int> textureIds)
+    internal static IEnumerable<RuntimeMesh> ToTfragMeshes(RcTfrag.Mesh mesh, HashSet<int> textureIds)
     {
         if (mesh.Indices.Length != mesh.TriangleTextureIds.Length * 3)
         {
