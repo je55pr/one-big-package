@@ -36,6 +36,10 @@ public sealed class Rac1HostArchitectureTests
             "ports.EnvironmentalRestart()",
             gameplay,
             StringComparison.Ordinal);
+        Assert.Contains(
+            "() => TryCompleteRac1EnvironmentalRestart(automatic: true)",
+            File.ReadAllText(Path.Combine(RepoPaths.Root, "game", "scripts", "OBPGame.cs")),
+            StringComparison.Ordinal);
     }
 
     [Fact]

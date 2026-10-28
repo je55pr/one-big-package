@@ -13,6 +13,10 @@ public sealed class SourceNeutralHostArchitectureTests
         var tree = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/Rac1WorldModule.cs");
         var method = tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "BindSourcePlayerContacts");
+        var moduleModel = compilation.GetSemanticModel(tree);
+        Assert.Empty(method.DescendantNodes().OfType<InvocationExpressionSyntax>()
+            .Select(call => moduleModel.GetSymbolInfo(call).Symbol).OfType<IMethodSymbol>()
+            .Where(symbol => symbol.ContainingType.Name is "Rac1PlayerAudioPresenter" or "PlayerAvatarPresentationHost"));
         var composition = compilation.SyntaxTrees.Single(tree => tree.FilePath == "game/scripts/OBPGame.cs");
         var factory = composition.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>()
             .Single(method => method.Identifier.ValueText == "CreateRac1WorldModule");
