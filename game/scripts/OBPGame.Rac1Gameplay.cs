@@ -235,7 +235,7 @@ public partial class OBPGame
         player.Rac1GameplayState = _rac1Nanotech.Probe();
         player.Rac1MovementEquipment = Rac1MovementCapabilities.FromInventory(_rac1Weapons);
         player.Rac1ActiveBackpack = player.Rac1MovementEquipment.RememberedBackpack(_rac1Weapons);
-        RefreshPlayerMovementEquipment();
+        _persistentPlayer.Equipment.RefreshMovementEquipment();
         BindSourcePlayerContacts(player);
     }
 

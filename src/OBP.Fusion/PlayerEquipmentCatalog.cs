@@ -48,19 +48,22 @@ public sealed class PlayerEquipmentCatalog
         {
             var state = observe(item);
             if (!Enum.IsDefined(state.Model) || !Enum.IsDefined(state.Icon) || state.Ammo < 0 || state.Capacity < 0 ||
-                state.Ammo > state.Capacity || !state.ContextAllowed && string.IsNullOrWhiteSpace(state.ContextReason))
+                state.Ammo > state.Capacity || !state.ContextAllowed && string.IsNullOrWhiteSpace(state.ContextReason) ||
+                !state.PresentationReady && string.IsNullOrWhiteSpace(state.PresentationReason))
                 throw new ArgumentException("Invalid equipment resource, ammo or context projection.");
             bool present = sources.TryGetValue(item.SourceGame, out var build);
             var status = item.Implementation != EquipmentImplementation.Implemented ? EquipmentUsability.Unimplemented :
                 !present ? EquipmentUsability.MissingSource : build != item.BuildId ? EquipmentUsability.UnsupportedBuild :
                 state.Model == EquipmentResourceStatus.Unavailable ? EquipmentUsability.MissingModel :
+                !state.PresentationReady ? EquipmentUsability.PresentationBlocked :
                 !state.Owned ? EquipmentUsability.Unowned : !state.ContextAllowed ? EquipmentUsability.ContextBlocked : EquipmentUsability.Ready;
             string? reason = status switch
             {
                 EquipmentUsability.Unimplemented => item.UnsupportedReason,
                 EquipmentUsability.MissingSource => $"Attach the {SourceIdentityWire.FormatSource(item.SourceGame)} source for {item.DisplayName}.",
                 EquipmentUsability.UnsupportedBuild => $"{item.DisplayName} requires {item.BuildId}.",
-                EquipmentUsability.MissingModel => state.ContextReason ?? $"The genuine {item.DisplayName} model is unavailable.",
+                EquipmentUsability.MissingModel => state.PresentationReason ?? state.ContextReason ?? $"The genuine {item.DisplayName} model is unavailable.",
+                EquipmentUsability.PresentationBlocked => state.PresentationReason,
                 EquipmentUsability.Unowned => "This loadout does not own the item.",
                 EquipmentUsability.ContextBlocked => state.ContextReason ?? "The required runtime context is unavailable.",
                 _ => null,

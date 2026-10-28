@@ -75,7 +75,7 @@ public partial class OBPGame
             if (_rac1EquipmentViews.TryGetValue(weapon, out var view))
                 view.Play(0, false, ++_rac1WeaponPoseGeneration, 1);
             HoldSelectedRac1HandItem();
-            RefreshPlayerEquipmentAvailability();
+            _persistentPlayer.Equipment.RefreshAvailability();
             GD.Print($"[rac1-gameplay] {_rac1CombatStatus}");
         }
         else ReportMovementState("Enable weapon preview from Pause → Testing Equipment (or press 0), then hold Triangle to select.");
@@ -85,7 +85,7 @@ public partial class OBPGame
     {
         if (_fusion is not null)
         {
-            var order = PlayerWeaponOrder();
+            var order = _persistentPlayer.Equipment.WeaponOrder();
             int current = order.ToList().IndexOf(CurrentWeaponKey);
             SelectWeaponKey(order[(current + Math.Sign(direction) + order.Count) % order.Count]);
             return;

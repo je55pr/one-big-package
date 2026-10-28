@@ -77,6 +77,7 @@ public sealed class PlayerCapabilitiesTests
     [InlineData(EquipmentUsability.MissingModel)]
     [InlineData(EquipmentUsability.Unowned)]
     [InlineData(EquipmentUsability.ContextBlocked)]
+    [InlineData(EquipmentUsability.PresentationBlocked)]
     public void CatalogKeepsSourceOwnershipResourcesAndContextSeparate(EquipmentUsability expected)
     {
         var sources = Sources.ToDictionary();
@@ -88,6 +89,8 @@ public sealed class PlayerCapabilitiesTests
             Model = expected == EquipmentUsability.MissingModel ? EquipmentResourceStatus.Unavailable : EquipmentResourceStatus.Available,
             ContextAllowed = expected != EquipmentUsability.ContextBlocked,
             ContextReason = expected == EquipmentUsability.ContextBlocked ? "Source target context absent." : null,
+            PresentationReady = expected != EquipmentUsability.PresentationBlocked,
+            PresentationReason = expected == EquipmentUsability.PresentationBlocked ? "No measured compatible hand socket." : null,
         }).Single(entry => entry.Definition.Item == FusionWeaponSession.Lancer);
         Assert.Equal(expected, entry.Usability); Assert.NotEmpty(entry.Reason!); Assert.False(entry.Usable);
         Assert.Equal(expected == EquipmentUsability.ContextBlocked, entry.Selectable);

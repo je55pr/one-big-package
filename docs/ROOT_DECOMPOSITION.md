@@ -423,6 +423,26 @@ finalization and audio/world disposal. Both owners retain their independent
 composition entries and retired permissions; the frozen origin ledger remains
 unchanged.
 
+The #351 equipment extraction retires `OBPGame.PlayerEquipment.cs` and its UID,
+including 14 historical declaration/member permissions. The root changes from
+56 files, 14,772 lines, 531 methods, 355 fields (223 mutable), 43 exposed members
+and 1,570 cross-file references to 55 files, 14,655 lines, 526 methods, the same
+field/exposed-member counts and 1,529 references. `PlayerSessionHost` owns one
+`PlayerEquipmentFacade` for its lifetime, including explicit parity projections.
+The facade uses the existing native inventory, hand, weapon and assignment
+contracts and receives copied presentation/context observations. It does not
+own another inventory, cache, node, subscription or clock. World retirement
+retains it and the player state; application exit releases its scene callbacks.
+Prepared models and admitted presentation bindings are separate read-model facts;
+unimplemented, unowned, missing-source/build and absent-world-context states
+retain their individual reasons. Missing presentation bindings remain disabled,
+while contextual gadgets retain their desired assignments. The existing slot,
+equip, gadget and unequip command IDs and configuration identity stay unchanged.
+Seven public compatibility delegations expire with #376. Seven existing
+#350/#354 presentation composition bridges move into the main root file with
+their #352 expiry retained; four existing bindings now read through the facade.
+The immutable origin and player/world ownership ledger do not expand.
+
 `RootBoundaryArchitectureTests` runs with the ordinary source-free test suite.
 The reusable Roslyn implementation/CLI is `tools/OBP.ArchitectureTool`.
 It scans all C# source below `game/`, excluding build/import outputs, binds

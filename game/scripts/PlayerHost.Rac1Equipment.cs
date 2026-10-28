@@ -13,6 +13,14 @@ public partial class PlayerHost
     public bool Rac1ClankAvailable { get; set; }
     public int? Rac1DevelopmentPackPreview { get; private set; }
     public bool Rac1DevelopmentSwingshotPreview { get; private set; }
+
+    internal void ApplyPlayerEquipment(Rac1MovementCapabilities movement, Rac1TraversalEquipmentId? backpack)
+    {
+        Rac1MovementEquipment = movement;
+        Rac1ActiveBackpack = backpack;
+        Rac1ClankAvailable = backpack.HasValue;
+        Rac1SwingshotEquipped = movement.Swingshot;
+    }
     public int? Rac1TraversalAction => Rac1SwimmingActive ? _rac1SwimState.NativeAction :
         Rac1SwingshotActive ? Rac1SwingshotNativeAction :
         Rac1Hanging ? _rac1Ledge.NativeAction : _rac1Movement.TraversalAction;

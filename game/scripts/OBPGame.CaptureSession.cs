@@ -51,10 +51,7 @@ public partial class OBPGame
         {
             "destination" => command.Value == "obp:fusion-lab" ? EnterFusionLab() :
                 TrilogyWorldProviders.Resolve(command.Value) is { } destination && OnDestinationChosen(destination),
-            "equip" => SelectPlayerEquipment(command.Value).Accepted,
-            "gadget" => SetPlayerGadgetEnabled(command.Value, command.Enabled).Accepted,
-            "quick-slot" => AssignPlayerQuickSelect(command.Slot, command.Value.Length == 0 ? null : command.Value).Accepted,
-            "unequip" => UnequipPlayerEquipment().Accepted,
+            "equip" or "gadget" or "quick-slot" or "unequip" => _persistentPlayer.Equipment.ApplyCommand(command).Accepted,
             "effects" => _worldScenes?.Current?.Resources.Effects?.Control(command.Value).Accepted == true,
             _ => false,
         };
