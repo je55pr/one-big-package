@@ -173,7 +173,7 @@ public partial class OBPGame
         finally { preparation.Dispose(); }
         _fusionLoadingStatus = null;
         ShowSharedWeaponPreparation(_fusionAssetFailure);
-        RefreshPlayerEquipmentAvailability();
+        _persistentPlayer.Equipment.RefreshAvailability();
         RefreshRac1HudState();
     }
 
@@ -226,7 +226,7 @@ public partial class OBPGame
         if (_fusion is null || key.SourceGame == ObpSourceGame.Rac1 && !FusionTestActive)
         {
             if (key.SourceGame == ObpSourceGame.Rac1) OnRac1WeaponSelectionRequested((Rac1WeaponId)key.NativeItemId);
-            RefreshPlayerEquipmentAvailability();
+            _persistentPlayer.Equipment.RefreshAvailability();
             return;
         }
         var previous = _fusion.Selected;
@@ -243,7 +243,7 @@ public partial class OBPGame
             if (_fusionBeam is not null) _fusionBeam.Visible = false;
         }
         if (key.SourceGame == ObpSourceGame.Rac1) HoldSelectedRac1HandItem();
-        RefreshPlayerEquipmentAvailability();
+        _persistentPlayer.Equipment.RefreshAvailability();
         RefreshRac1WrenchPresentationVisibility();
         RefreshRac1HudState();
         GD.Print($"[fusion] equipped {key}: {FusionWeaponDetail(key)}");
