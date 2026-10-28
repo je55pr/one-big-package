@@ -63,6 +63,9 @@ public static class GcUyaMoby
         /// <summary>True only when every VU0 matrix-slot read and blend source was retail-valid.</summary>
         public bool SkinStateFullyResolved { get; init; } = true;
 
+        /// <summary>True when the mesh is initialized from a validated native regular key.</summary>
+        public bool NativeInitialPoseApplied { get; init; }
+
         /// <summary>Native per-switch Moby material records, in decode order.</summary>
         public IReadOnlyList<RcMaterialState> Materials { get; init; } = [];
 
@@ -84,8 +87,27 @@ public static class GcUyaMoby
         public (float X, float Y, float Z) LocalTranslation { get; init; }
     }
 
-    /// <summary>One animation frame: a local rotation quaternion per joint (<c>x,y,z,w</c>, unit length).</summary>
-    public sealed record MobyFrame(float Speed, System.Numerics.Quaternion[] JointRotations);
+    /// <summary>Native frame scale for one joint: 0x80 means inherited by children; otherwise post-scale.</summary>
+    public readonly record struct MobyScaleOverride(int Joint, float X, float Y, float Z, bool Inherited);
+
+    /// <summary>Native frame translation for one joint, in class model units (stored s16 / 1024).</summary>
+    public readonly record struct MobyTranslationOverride(int Joint, float X, float Y, float Z);
+
+    /// <summary>One native animation frame, including optional joint scale and translation records.</summary>
+    public sealed record MobyFrame(float Speed, System.Numerics.Quaternion[] JointRotations)
+    {
+        /// <summary>Optional native per-joint scale channels. The default means unresolved or absent.</summary>
+        public IReadOnlyList<MobyScaleOverride> ScaleOverrides { get; init; } = [];
+
+        /// <summary>Optional native per-joint translation channels. The default means unresolved or absent.</summary>
+        public IReadOnlyList<MobyTranslationOverride> TranslationOverrides { get; init; } = [];
+
+        /// <summary>Whether the source frame's complete optional channel payload was validated and decoded.</summary>
+        public bool ExtraChannelsResolved { get; init; }
+
+        /// <summary>Signed native key time in eighths of a tick.</summary>
+        public short TimeEighthTicks { get; init; }
+    }
 
     /// <summary>
     /// A named motion — an ordered list of frames. <c>MobySequenceHeader</c>:
@@ -100,6 +122,18 @@ public static class GcUyaMoby
     {
         /// <summary>Native sequence bounding sphere in raw class units.</summary>
         public MobySphere? BoundingSphere { get; init; }
+
+        /// <summary>Native rate override; zero uses each frame's rate.</summary>
+        public float RateOverride { get; init; }
+
+        /// <summary>Original sequence sound/loop flag byte.</summary>
+        public byte LoopSound { get; init; }
+
+        /// <summary>Number of native sequence triggers.</summary>
+        public byte TriggerCount { get; init; }
+
+        /// <summary>Class-relative offset of the optional gait data.</summary>
+        public int TriggerDataOffset { get; init; }
     }
 
     public sealed record MobyClass(
@@ -130,6 +164,15 @@ public static class GcUyaMoby
         public SkinAttr?[] Slots { get; } = new SkinAttr?[64];
         public bool FullyResolved { get; set; } = true;
     }
+
+    // The Moby VU1 vertex cache survives packet boundaries. Its duplicate
+    // entries inherit geometry, skin and normal data from the previous packet,
+    // but use ST values from the current packet's VIF unpack.
+    private readonly record struct CachedVertex(
+        double X, double Y, double Z,
+        double LocalX, double LocalY, double LocalZ,
+        (float X, float Y, float Z) Normal,
+        (int J0, int J1, int J2, float W0, float W1, float W2) Binding);
 
     private static readonly double[] AffineId = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
 
@@ -237,6 +280,66 @@ public static class GcUyaMoby
     }
 
     /// <summary>
+    /// Decode the full regular-frame trailing payload without interpreting it
+    /// as a pose. Flagged/special or malformed frame layouts remain unresolved.
+    /// All offsets/counts come from the original 0x10-byte frame header.
+    /// </summary>
+    private static bool TryReadFrameChannels(
+        byte[] buf, int frameOffset, int jointCount,
+        out MobyScaleOverride[] scales,
+        out MobyTranslationOverride[] translations)
+    {
+        scales = [];
+        translations = [];
+        if (frameOffset < 0 || frameOffset > buf.Length - 0x10)
+            return false;
+
+        int qwords = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(frameOffset + 6));
+        int quaternionBytes = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(frameOffset + 8));
+        int scaleCount = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(frameOffset + 10));
+        int translationOffset = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(frameOffset + 12));
+        int translationCount = BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(frameOffset + 14));
+        if (quaternionBytes != jointCount * 8 ||
+            translationOffset != quaternionBytes + scaleCount * 8 ||
+            qwords != (translationOffset + translationCount * 8 + 15) / 16 ||
+            (long)frameOffset + 0x10 + qwords * 16 > buf.Length)
+            return false;
+
+        var decodedScales = new MobyScaleOverride[scaleCount];
+        for (int i = 0; i < scaleCount; i++)
+        {
+            int at = frameOffset + 0x10 + quaternionBytes + i * 8;
+            int joint = buf[at + 6], flags = buf[at + 7];
+            if (joint >= jointCount || (flags & 0x7f) != 0)
+                return false;
+            decodedScales[i] = new MobyScaleOverride(
+                joint,
+                BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(at)) / 4096f,
+                BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(at + 2)) / 4096f,
+                BinaryPrimitives.ReadUInt16LittleEndian(buf.AsSpan(at + 4)) / 4096f,
+                (flags & 0x80) != 0);
+        }
+
+        var decodedTranslations = new MobyTranslationOverride[translationCount];
+        for (int i = 0; i < translationCount; i++)
+        {
+            int at = frameOffset + 0x10 + translationOffset + i * 8;
+            int joint = buf[at + 6], padding = buf[at + 7];
+            if (joint >= jointCount || padding != 0)
+                return false;
+            decodedTranslations[i] = new MobyTranslationOverride(
+                joint,
+                BinaryPrimitives.ReadInt16LittleEndian(buf.AsSpan(at)) / 1024f,
+                BinaryPrimitives.ReadInt16LittleEndian(buf.AsSpan(at + 2)) / 1024f,
+                BinaryPrimitives.ReadInt16LittleEndian(buf.AsSpan(at + 4)) / 1024f);
+        }
+
+        scales = decodedScales;
+        translations = decodedTranslations;
+        return true;
+    }
+
+    /// <summary>
     /// Read every <c>MobySequence</c> from the offset list at <c>class + 0x48</c>
     /// (<c>s32[sequenceCount]</c>, relative to the class). <c>sequenceCount</c> is
     /// <c>u8 @ 0x0c</c>. Frames whose data is out of range are skipped.
@@ -270,10 +373,21 @@ public static class GcUyaMoby
                 BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 8)),
                 System.Math.Abs(BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 12))));
             int frameCount = buf[seqOffset + 0x10];
+            byte loopSound = buf[seqOffset + 0x11];
+            byte triggerCount = buf[seqOffset + 0x12];
+            int triggerDataOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(seqOffset + 0x14));
+            float rateOverride = BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(seqOffset + 0x18));
             int frameTable = seqOffset + 0x1c;
             if (frameCount <= 0 || frameTable + frameCount * 4 > buf.Length)
             {
-                sequences.Add(new MobySequence(s, []) { BoundingSphere = sphere });
+                sequences.Add(new MobySequence(s, [])
+                {
+                    BoundingSphere = sphere,
+                    RateOverride = rateOverride,
+                    LoopSound = loopSound,
+                    TriggerCount = triggerCount,
+                    TriggerDataOffset = triggerDataOffset,
+                });
                 continue;
             }
 
@@ -300,10 +414,27 @@ public static class GcUyaMoby
                         BinaryPrimitives.ReadInt16LittleEndian(buf.AsSpan(o + 6)) / 32768f);
                 }
 
-                frames.Add(new MobyFrame(speed, rotations));
+                MobyScaleOverride[] scales = [];
+                MobyTranslationOverride[] translations = [];
+                bool channelsResolved = (entry & 0xf0000000u) == 0 &&
+                    TryReadFrameChannels(buf, frameOffset, jointCount, out scales, out translations);
+                frames.Add(new MobyFrame(speed, rotations)
+                {
+                    ScaleOverrides = scales,
+                    TranslationOverrides = translations,
+                    ExtraChannelsResolved = channelsResolved,
+                    TimeEighthTicks = BinaryPrimitives.ReadInt16LittleEndian(buf.AsSpan(frameOffset + 4)),
+                });
             }
 
-            sequences.Add(new MobySequence(s, frames) { BoundingSphere = sphere });
+            sequences.Add(new MobySequence(s, frames)
+            {
+                BoundingSphere = sphere,
+                RateOverride = rateOverride,
+                LoopSound = loopSound,
+                TriggerCount = triggerCount,
+                TriggerDataOffset = triggerDataOffset,
+            });
         }
 
         return sequences;
@@ -463,7 +594,9 @@ public static class GcUyaMoby
         return attrs;
     }
 
-    public static Mesh ReadClass(byte[] buf)
+    public static Mesh ReadClass(byte[] buf) => ReadClass(buf, false);
+
+    public static Mesh ReadClass(byte[] buf, bool recoverPersistentVertexCache)
     {
         if (buf.Length < ClassHeaderSize)
         {
@@ -473,20 +606,25 @@ public static class GcUyaMoby
         float boundingRadius = System.Math.Abs(BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(0x3c)))
             * (BinaryPrimitives.ReadSingleLittleEndian(buf.AsSpan(0x24)) / 1024f);
 
-        var skinned = Decode(buf, true);
+        var skinned = Decode(buf, true, recoverPersistentVertexCache);
         if (!skinned.SkinningApplied)
         {
             return skinned;
         }
 
         var (pruned, removedFraction) = PruneSpikeTriangles(skinned);
-        var folded = Decode(buf, false);
+        var folded = Decode(buf, false, recoverPersistentVertexCache);
         double se = MeshExtent(pruned);
         bool broken = se == 0
             || removedFraction > 0.03
             || se > System.Math.Max(40, System.Math.Max(boundingRadius * 5, MeshExtent(folded) * 4));
 
-        return broken ? folded with { Skinned = true } : pruned;
+        // A fully reconstructed VU1 packet cache preserves the authored strip
+        // indices; do not delete retail faces based on triangle edge length.
+        // Pruning also leaves the per-triangle GS material-state indices out of
+        // sync with the triangle arrays. Retain the established fallback for
+        // genuinely unsupported skinning until the bind-pose work is complete.
+        return broken ? folded with { Skinned = true } : recoverPersistentVertexCache ? skinned : pruned;
     }
 
     private static double MeshExtent(Mesh m)
@@ -565,7 +703,7 @@ public static class GcUyaMoby
         return (m with { Indices = keep.ToArray(), TriangleMaterialSlots = slots.ToArray() }, (double)removed / triCount);
     }
 
-    private static Mesh Decode(byte[] buf, bool allowSkinning)
+    private static Mesh Decode(byte[] buf, bool allowSkinning, bool recoverPersistentVertexCache)
     {
         int packetTableOffset = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(0x00));
         int highLodCount = buf[0x04];
@@ -590,6 +728,17 @@ public static class GcUyaMoby
         var materials = new List<RcMaterialState>();
         bool skinned = false;
         bool skinningApplied = false;
+        var vertexCache = new Dictionary<int, CachedVertex>();
+
+        void InvalidateSkippedPacket()
+        {
+            if (!recoverPersistentVertexCache) return;
+            // Missing packet writes break VU1 cache continuity. Never allow
+            // later duplicates to reuse stale slots from earlier packets or
+            // admit an incomplete skin stream for source-backed posing.
+            vertexCache.Clear();
+            skinState.FullyResolved = false;
+        }
 
         // The PS2 GS texture register persists across the whole draw: a moby
         // packet only emits an AD-GIF when the texture changes, so a packet /
@@ -604,6 +753,7 @@ public static class GcUyaMoby
             int eo = packetTableOffset + pkt * 0x10;
             if (eo < 0 || eo + 0x10 > buf.Length)
             {
+                InvalidateSkippedPacket();
                 break;
             }
 
@@ -613,6 +763,7 @@ public static class GcUyaMoby
 
             if (vifListOffset + vifListSize > buf.Length || vertexOffset + 0x10 > buf.Length)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -620,6 +771,7 @@ public static class GcUyaMoby
                 new ArraySegment<byte>(buf, (int)vifListOffset, vifListSize)));
             if (unpacks.Count < 2)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -635,6 +787,7 @@ public static class GcUyaMoby
             var idxData = unpacks[1].Data;
             if (idxData.Count < 4)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -675,6 +828,7 @@ public static class GcUyaMoby
             int vbase = vh + vertexTableOffset;
             if (vbase + inFileCount * 0x10 > buf.Length || inFileCount > 4096)
             {
+                InvalidateSkippedPacket();
                 continue;
             }
 
@@ -711,6 +865,36 @@ public static class GcUyaMoby
             for (int i = VertexPipeline; i < inFileCount; i++)
             {
                 rawIdx[i - VertexPipeline] = rawIdx[i];
+            }
+
+            if (recoverPersistentVertexCache)
+            {
+                // The last seven VU1 slot indices are written into trailing
+                // epilogue records, then into six halfwords in the last one.
+                // The old path retained unrelated skin bits as slot IDs.
+                int epilogueRecords = buf[eo + 0x0c] - vertexTableOffset / 16 - inFileCount;
+                long epilogueEnd = (long)vbase + (inFileCount + epilogueRecords) * 16;
+                if (epilogueRecords is < 1 or > 6 || epilogueEnd > buf.Length)
+                    throw new InvalidDataException("Invalid GC/UYA Moby vertex-index epilogue.");
+
+                for (int i = System.Math.Max(VertexPipeline - inFileCount, 0);
+                    i < epilogueRecords; i++)
+                {
+                    int dest = inFileCount + i - VertexPipeline;
+                    if (dest >= 0 && dest < inFileCount)
+                        rawIdx[dest] = BinaryPrimitives.ReadUInt16LittleEndian(
+                            buf.AsSpan(vbase + (inFileCount + i) * 16)) & 0x1ff;
+                }
+
+                int finalRecord = vbase + (inFileCount + epilogueRecords - 1) * 16;
+                for (int i = System.Math.Max(VertexPipeline - inFileCount - epilogueRecords, 0);
+                    i < 6; i++)
+                {
+                    int dest = inFileCount + epilogueRecords + i - VertexPipeline;
+                    if (dest >= 0 && dest < inFileCount)
+                        rawIdx[dest] = BinaryPrimitives.ReadUInt16LittleEndian(
+                            buf.AsSpan(finalRecord + 4 + i * 2)) & 0x1ff;
+                }
             }
 
             var posX = new List<double>();
@@ -813,7 +997,8 @@ public static class GcUyaMoby
             var listT = new List<float>();
             var listN = new List<(float X, float Y, float Z)>();
             var listJW = new List<(int J0, int J1, int J2, float W0, float W1, float W2)>();
-            var cache = new Dictionary<int, int>();
+            if (!recoverPersistentVertexCache)
+                vertexCache.Clear();
 
             static (int, int, int, float, float, float) Bind(SkinAttr? attr)
             {
@@ -846,24 +1031,29 @@ public static class GcUyaMoby
                 var st = v < sts.Count ? sts[v] : (0, 0);
                 listS.Add(st.Item1 / 4096f);
                 listT.Add(st.Item2 / 4096f);
-                cache[rawIdx[v]] = pos;
+                vertexCache[rawIdx[v]] = new CachedVertex(
+                    listX[pos], listY[pos], listZ[pos],
+                    listLocalX[pos], listLocalY[pos], listLocalZ[pos],
+                    listN[pos], listJW[pos]);
             }
 
             for (int di = 0; di < dupes.Count; di++)
             {
-                if (!cache.TryGetValue(dupes[di], out int from))
+                if (!vertexCache.TryGetValue(dupes[di], out var from))
                 {
+                    if (recoverPersistentVertexCache)
+                        throw new InvalidDataException("Unresolved Moby duplicate VU1 vertex-cache slot.");
                     continue;
                 }
 
-                listX.Add(listX[from]);
-                listY.Add(listY[from]);
-                listZ.Add(listZ[from]);
-                listLocalX.Add(listLocalX[from]);
-                listLocalY.Add(listLocalY[from]);
-                listLocalZ.Add(listLocalZ[from]);
-                listN.Add(listN[from]);
-                listJW.Add(listJW[from]);
+                listX.Add(from.X);
+                listY.Add(from.Y);
+                listZ.Add(from.Z);
+                listLocalX.Add(from.LocalX);
+                listLocalY.Add(from.LocalY);
+                listLocalZ.Add(from.LocalZ);
+                listN.Add(from.Normal);
+                listJW.Add(from.Binding);
                 var st = inFileCount + di < sts.Count ? sts[inFileCount + di] : (0, 0);
                 listS.Add(st.Item1 / 4096f);
                 listT.Add(st.Item2 / 4096f);
@@ -1002,10 +1192,21 @@ public static class GcUyaMoby
     public readonly record struct ClassTable(int Count, int Offset);
 
     public static Dictionary<int, MobyClass> ReadClasses(
+        byte[] index, byte[] assets, IReadOnlyList<int> sectionBoundaries, ClassTable table) =>
+        ReadClasses(index, assets, sectionBoundaries, table, null, null);
+
+    public static Dictionary<int, MobyClass> ReadClasses(
+        byte[] index, byte[] assets, IReadOnlyList<int> sectionBoundaries, ClassTable table,
+        Func<int, bool>? recoverPersistentVertexCache) =>
+        ReadClasses(index, assets, sectionBoundaries, table, recoverPersistentVertexCache, null);
+
+    public static Dictionary<int, MobyClass> ReadClasses(
         byte[] index,
         byte[] assets,
         IReadOnlyList<int> sectionBoundaries,
-        ClassTable table)
+        ClassTable table,
+        Func<int, bool>? recoverPersistentVertexCache,
+        Func<int, bool>? previewNativeInitialPose)
     {
         var outp = new Dictionary<int, MobyClass>();
 
@@ -1031,24 +1232,67 @@ public static class GcUyaMoby
             }
 
             int end = sectionBoundaries.FirstOrDefault(b => b > assetOffset, assets.Length);
+            bool nativePoseAdmitted = false;
             try
             {
                 var classBuf = assets.AsSpan(assetOffset, end - assetOffset).ToArray();
-                var mesh = ReadClass(classBuf);
+                // R&C2 levels can contain R&C1-format class packets. The
+                // native class header's format byte, not an Oozla-specific
+                // class ID, decides whether the recovered GC/UYA VU1 cache
+                // and trailing epilogue rules are safe to apply.
+                bool compatiblePacketFormat = classBuf.Length > 0x0b &&
+                    classBuf[0x0b] == 0;
+                bool recoverCache = recoverPersistentVertexCache?.Invoke(oClass) == true &&
+                    compatiblePacketFormat;
+                Mesh mesh;
+                bool strictRecoverySucceeded = recoverCache;
+                try
+                {
+                    mesh = ReadClass(classBuf, recoverCache);
+                }
+                catch (InvalidDataException) when (recoverCache)
+                {
+                    // A valid GC-format marker alone does not guarantee every
+                    // authored cache/epilogue variant is supported. Keep the
+                    // previously available class on the established decoder
+                    // when strict recovery rejects an unsupported packet.
+                    strictRecoverySucceeded = false;
+                    mesh = ReadClass(classBuf);
+                }
                 var triTexIds = mesh.TriangleMaterialSlots
                     .Select(slot => slot >= 0 && slot < 16 ? textures[slot] : -1)
                     .ToArray();
                 int jointCount = classBuf[0x08];
                 var joints = ReadJoints(classBuf, jointCount);
                 var sequences = joints.Count > 0 ? ReadSequences(classBuf, jointCount) : new List<MobySequence>();
+                if (strictRecoverySucceeded && jointCount is > 0 and <= 112 &&
+                    previewNativeInitialPose?.Invoke(oClass) == true &&
+                    mesh.SkinningApplied && mesh.SkinStateFullyResolved &&
+                    sequences.FirstOrDefault(s => s.Index == 0) is { Frames.Count: > 0 } first &&
+                    first.Frames[0].ExtraChannelsResolved)
+                {
+                    // Source-backed initial pose. Gameplay may select another
+                    // sequence after the native instance is initialized.
+                    nativePoseAdmitted = true;
+                    var initialPositions = Ps2MobyNativePose.Pose(classBuf, mesh, first.Frames[0]);
+                    var initialNormals = Ps2MobyNativePose.PoseNormals(
+                        classBuf, mesh, first.Frames[0], initialPositions);
+                    mesh = mesh with
+                    {
+                        Positions = initialPositions,
+                        Normals = initialNormals,
+                        NativeInitialPoseApplied = true
+                    };
+                }
                 outp[oClass] = new MobyClass(
                     oClass, mesh, triTexIds,
                     triTexIds.Where(id => id >= 0).Distinct().OrderBy(id => id).ToList(),
                     joints, sequences);
             }
-            catch
+            catch when (!nativePoseAdmitted)
             {
-                // Preserve the established GC permissive class-table behavior.
+                // Preserve the established GC permissive class-table behavior,
+                // but fail visibly for an explicitly admitted native bind.
             }
         }
 

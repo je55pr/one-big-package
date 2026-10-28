@@ -1,4 +1,5 @@
 using OBP.IO;
+using OBP.PS2.Geometry;
 using OBP.PS2.Iso;
 using OBP.RAC2.Gameplay;
 using OBP.RAC2.Level;
@@ -14,13 +15,25 @@ public static class Rac2Class2827Presentation
         public RuntimeObjectAnimationSet Presentation => new(Clips.Values.ToArray());
     }
 
-    public static Asset Load(string path, IReadOnlyList<RuntimeObjectMesh> surfaces)
+    public static Asset Load(string path, IReadOnlyList<RuntimeObjectMesh> surfaces) =>
+        Load(path, surfaces, false);
+
+    public static Asset Load(string path, IReadOnlyList<RuntimeObjectMesh> surfaces,
+        bool nativePosePreview)
     {
         using var reader = new FileRandomAccessReader(path);
         var wad = Iso9660Filesystem.Open(reader).OpenFile("/G/LEVEL0.WAD") ?? throw new InvalidDataException("Aranos actor bank is missing.");
         var header = Rac2LevelWad.ReadHeader(wad);
         var core = Rac2LevelCore.Open(Rac2LevelWad.RequireLump(wad, header, 0));
-        var cls = Rac2MobyClasses.Read(core)[Rac2Class2827HostileSession.NativeClassId];
+        // The actor's model comes from the same LEVEL0 importer. When the
+        // generic GC native-pose preview is enabled, its recovered VU1 cache
+        // adds vertices. Animation keys must use that identical source stream,
+        // otherwise the actor factory rejects the mismatched model entirely.
+        var cls = Rac2MobyClasses.Read(core, level: 0,
+            nativePoseOverride: nativePosePreview)[Rac2Class2827HostileSession.NativeClassId];
+        byte[]? nativeClassBytes = nativePosePreview
+            ? Rac2MobyClasses.ClassBytes(core, Rac2Class2827HostileSession.NativeClassId)
+            : null;
         var result = new Dictionary<int, RuntimeObjectAnimationClip>();
         foreach (int id in new[] { Rac2Class2827HostileSession.ChaseSequence, Rac2Class2827HostileSession.AttackSequence16,
             Rac2Class2827HostileSession.AttackSequence27, Rac2Class2827HostileSession.RecoverySequence })
@@ -30,7 +43,9 @@ public static class Rac2Class2827Presentation
                 throw new NotSupportedException("MSR I attack clip has unsupported native transition timing.");
             var poses = clip.Frames.Select(frame =>
             {
-                var posed = Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame);
+                var posed = nativeClassBytes is null
+                    ? Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame)
+                    : Ps2MobyNativePose.Pose(nativeClassBytes, cls.Mesh, frame);
                 var positions = new double[posed.Length];
                 for (int index = 0; index < posed.Length; index += 3)
                 { positions[index] = posed[index]; positions[index + 1] = posed[index + 2]; positions[index + 2] = posed[index + 1]; }

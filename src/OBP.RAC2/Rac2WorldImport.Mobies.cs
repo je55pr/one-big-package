@@ -35,6 +35,7 @@ public static partial class Rac2WorldImport
     private static List<RuntimeAnimatedMesh> BuildAnimatedMeshes(
         Rac2Instances.Gameplay gameplay,
         Dictionary<int, GcUyaMoby.MobyClass> classes,
+        Rac2LevelCore.Core core,
         out HashSet<int> animatedInstances)
     {
         const int MaxAnimatedInstances = 12;
@@ -76,9 +77,27 @@ public static partial class Rac2WorldImport
                 (inst.Rotation.X, inst.Rotation.Y, inst.Rotation.Z), sc);
 
             var frames = new List<double[]>(seq.Frames.Count);
+            // Never feed already natively posed vertices back into the legacy
+            // rotation-only evaluator: animation starts from source skin-local
+            // coordinates and must include native scale and translation channels.
+            byte[]? nativeBytes = cls.Mesh.NativeInitialPoseApplied
+                ? Rac2MobyClasses.ClassBytes(core, cls.OClass)
+                : null;
+            bool invalidNativeFrame = false;
             foreach (var frame in seq.Frames)
             {
-                var posed = OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame);
+                double[] posed;
+                try
+                {
+                    posed = nativeBytes is null
+                        ? OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame)
+                        : Ps2MobyNativePose.Pose(nativeBytes, cls.Mesh, frame);
+                }
+                catch (InvalidDataException) when (nativeBytes is not null)
+                {
+                    invalidNativeFrame = true;
+                    break;
+                }
                 var world = new double[posed.Length];
                 for (int i = 0; i < posed.Length; i += 3)
                 {
@@ -90,6 +109,8 @@ public static partial class Rac2WorldImport
 
                 frames.Add(world);
             }
+            if (invalidNativeFrame)
+                continue;
 
             // Flat per-vertex shade from the instance's baked ambient.
             int vc = cls.Mesh.Positions.Length / 3;
@@ -155,6 +176,7 @@ public static partial class Rac2WorldImport
     /// </summary>
     private static List<RuntimeDynamicObject> BuildDynamicMobyObjects(
         int level,
+        Rac2LevelCore.Core core,
         Rac2Instances.Gameplay gameplay,
         Dictionary<int, GcUyaMoby.MobyClass> classes,
         IReadOnlyList<Rac2Instances.DirLight> dirLights,
@@ -295,21 +317,30 @@ public static partial class Rac2WorldImport
                 Transform: new RuntimeObjectTransform(obpMatrix),
                 Meshes: surfaces,
                 NativePayloads: payloads,
-                Animations: BuildAdmittedDynamicAnimationSet(cls, surfaces)));
+                Animations: BuildAdmittedDynamicAnimationSet(cls, surfaces, core,
+                    Rac2MobyClasses.NativePoseEnabledForLevel(level))));
             dynamicInstances.Add(inst.Index);
         }
 
         return outp;
     }
 
-    private static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
+    private static byte[] NativeMobyClassBytes(Rac2LevelCore.Core core, int oClass) =>
+        Rac2MobyClasses.ClassBytes(core, oClass);
+
+    internal static RuntimeObjectAnimationSet? BuildAdmittedDynamicAnimationSet(
         GcUyaMoby.MobyClass cls,
-        IReadOnlyList<RuntimeObjectMesh> surfaces)
+        IReadOnlyList<RuntimeObjectMesh> surfaces,
+        Rac2LevelCore.Core core,
+        bool nativePosePreview)
     {
         if (cls.OClass != Rac2AranosOpeningDoorSession.NativeClassId)
             return null;
 
-        if (cls.Joints.Count != 7 || cls.Mesh.Indices.Length / 3 != 120)
+        // Original static decoder omitted four genuine VU1 faces. Keep both
+        // source-backed witnesses exact rather than relaxing the old guard.
+        int expectedTriangles = nativePosePreview ? 124 : 120;
+        if (cls.Joints.Count != 7 || cls.Mesh.Indices.Length / 3 != expectedTriangles)
             throw new InvalidDataException("Aranos class-2755 door model drifted from the retail witness.");
 
         var opening = cls.Sequences.SingleOrDefault(sequence => sequence.Index == 1)
@@ -323,9 +354,24 @@ public static partial class Rac2WorldImport
             throw new InvalidDataException("Aranos class-2755 door animation no longer matches the retail witness.");
 #pragma warning restore S1244
 
-        var posedFrames = opening.Frames.Concat(open.Frames).Select(frame =>
+        byte[]? sourceBytes = nativePosePreview ? NativeMobyClassBytes(core, cls.OClass) : null;
+        var posedFrames = new List<double[]>();
+        foreach (var frame in opening.Frames.Concat(open.Frames))
         {
-            var posed = OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame);
+            double[] posed;
+            try
+            {
+                posed = sourceBytes is null
+                    ? OBP.RAC2.Animation.Rac2MobyAnimation.Pose(cls.Mesh, cls.Joints, frame)
+                    : Ps2MobyNativePose.Pose(sourceBytes, cls.Mesh, frame);
+            }
+            catch (InvalidDataException) when (sourceBytes is not null)
+            {
+                // Unsupported later keys must not abort the whole level import.
+                // Legacy keys have different recovered vertex topology, so
+                // omit this clip rather than silently mismatch its surfaces.
+                return null;
+            }
             var local = new double[posed.Length];
             for (int i = 0; i < posed.Length; i += 3)
             {
@@ -333,14 +379,14 @@ public static partial class Rac2WorldImport
                 local[i + 1] = R2(posed[i + 2]);
                 local[i + 2] = R2(posed[i + 1]);
             }
-            return local;
-        }).ToArray();
+            posedFrames.Add(local);
+        }
 
         var animatedSurfaces = Enumerable.Range(0, surfaces.Count)
             .Select(index => new RuntimeObjectAnimationSurface(index, posedFrames))
             .ToArray();
         double secondsPerFrame = 1d / Rac2AranosOpeningDoorSession.OpeningFrameRate;
-        var durations = Enumerable.Repeat(secondsPerFrame, posedFrames.Length).ToArray();
+        var durations = Enumerable.Repeat(secondsPerFrame, posedFrames.Count).ToArray();
         return new RuntimeObjectAnimationSet([
             new RuntimeObjectAnimationClip(
                 "opening", RuntimeObjectAnimationRole.Reaction, animatedSurfaces, durations)

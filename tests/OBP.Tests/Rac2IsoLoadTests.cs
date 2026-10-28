@@ -1,5 +1,6 @@
 using OBP.IO;
 using OBP.RAC2;
+using OBP.RAC2.Level;
 using OBP.Tests.Helpers;
 
 namespace OBP.Tests;
@@ -75,9 +76,14 @@ public class Rac2IsoLoadTests
         // Crates are preserved separately as dynamic gameplay objects. Native material
         // presentation splits two same-texture Moby surface buckets without adding triangles.
         Assert.Equal(304, load.World.Meshes.Count);
-        Assert.Equal(1_860_879, load.World.TotalRenderTriangles);
-        Assert.Equal(21_470, load.World.TotalDynamicTriangles);
-        Assert.Equal(1_882_349, load.World.TotalRenderTriangles + load.World.TotalDynamicTriangles);
+        // The recovered VU1 cache restores authored Moby triangles. Preserve
+        // both the reviewed original baseline and the retail-verified native
+        // counts, selected by the same diagnostic mode as the importer.
+        bool nativePose = Environment.GetEnvironmentVariable("OBP_RAC2_LEGACY_MOBY") != "1";
+        Assert.Equal(nativePose ? 1_950_147 : 1_860_879, load.World.TotalRenderTriangles);
+        Assert.Equal(nativePose ? 23_560 : 21_470, load.World.TotalDynamicTriangles);
+        Assert.Equal(nativePose ? 1_973_707 : 1_882_349,
+            load.World.TotalRenderTriangles + load.World.TotalDynamicTriangles);
         Assert.Equal(190, load.World.DynamicObjects!.Count(o => o.NativeClassId == 500));
         Assert.Equal(2, load.World.AnimatedMeshes!.Count);
 

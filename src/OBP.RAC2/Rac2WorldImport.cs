@@ -155,7 +155,7 @@ public static partial class Rac2WorldImport
         // --- tie / shrub / moby instances ---
         var gameplay = Rac2Instances.Read(Rac2LevelWad.RequireLump(wad, header, 2));
         var authoredPlayerStart = BuildAuthoredPlayerStart(gameplay);
-        var mobyClasses = Rac2MobyClasses.Read(Core());
+        var mobyClasses = Rac2MobyClasses.Read(Core(), level);
 
         CollectTextures("tie", Rac2LevelTextures.Table.Tie);
         var tieClasses = Rac2Tie.ReadClasses(Core());
@@ -180,7 +180,7 @@ public static partial class Rac2WorldImport
             meshes, Grow, growBounds: true);
 
         CollectTextures("moby", Rac2LevelTextures.Table.Moby);
-        var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, out var animatedInstances);
+        var animatedMeshes = BuildAnimatedMeshes(gameplay, mobyClasses, Core(), out var animatedInstances);
         var dynamicClasses = new HashSet<int> { 500 };
         if (level == 0)
         {
@@ -193,6 +193,7 @@ public static partial class Rac2WorldImport
         }
         var dynamicObjects = BuildDynamicMobyObjects(
             level,
+            Core(),
             gameplay,
             mobyClasses,
             gameplay.DirLights,

@@ -15,7 +15,8 @@ public sealed class Rac2Class2827PresentationTests
         using var reader = new FileRandomAccessReader(path!);
         var world = Rac2WorldImport.Build(reader, 0);
         var source = world.DynamicObjects!.First(actor => actor.NativeClassId == Rac2Class2827HostileSession.NativeClassId);
-        var asset = Rac2Class2827Presentation.Load(path!, source.Meshes);
+        var asset = Rac2Class2827Presentation.Load(path!, source.Meshes,
+            nativePosePreview: OBP.RAC2.Level.Rac2MobyClasses.NativePoseEnabledForLevel(0));
         Assert.Equal(new[] { 11, 16, 17, 27 }, asset.Clips.Keys.Order());
         foreach (var clip in asset.Clips.Values)
         {
