@@ -105,10 +105,25 @@ public partial class OBPGame
                 ApplicationLifecycle.RequestQuit(this, "world-entry-failed", 2);
             return false;
         }
+        finally
+        {
+            _avatarPresentation.DiscardPrepared();
+            _equipmentPresentation.DiscardPrepared();
+        }
     }
 
     private void ActivateOwnedWorld(WorldSceneLease<GodotWorldResources> entry)
     {
+        // The previous world has been retired. Only now may prepared source
+        // data replace the active avatar and equipment presentation bank.
+        if (_avatarPresentation.HasPrepared && _avatarPresentation.ApplyPrepared())
+        {
+            _equipmentPresentation.InvalidateSource();
+            _rac1EquipmentAssets = null;
+            _rac1EquipmentSource = null;
+        }
+        _avatarSourceStamp = _avatarPresentation.CommittedSourceStamp;
+        if (OrdinaryPlayerSession) _equipmentPresentation.ApplyPreparedBank();
         entry.Resources.EffectScope = entry.Plan.Request;
         ClearBootstrapSceneArtifacts();
         BeginPlayerHealthWorld(entry.Plan.Request.WorldInstanceId, entry.Plan.Request.Generation);
@@ -281,15 +296,10 @@ public partial class OBPGame
             if (!probe.Supported || probe.Definition?.Authority.BuildId != identity.BuildId)
                 throw new InvalidOperationException("The selected avatar source no longer identifies as the selected supported build.");
         }
-        if (_avatarPresentation.Stage(identity, source.Path, (file.Length, file.LastWriteTimeUtc.Ticks)))
-        {
-            _avatarSourceStamp = (file.Length, file.LastWriteTimeUtc.Ticks);
-            _equipmentPresentation.InvalidateSource();
-            _rac1EquipmentAssets = null;
-            _rac1EquipmentSource = null;
-        }
+        _avatarPresentation.Prepare(identity, source.Path, (file.Length, file.LastWriteTimeUtc.Ticks));
         if (identity.SourceGame == ObpSourceGame.Rac1)
-            _equipmentPresentation.PrepareSelectedBank(source.Path, OrdinaryPlayerSession);
+            _equipmentPresentation.PrepareSelectedBank(source.Path, OrdinaryPlayerSession,
+                _avatarPresentation.PreparedSourceChanged);
     }
 
 

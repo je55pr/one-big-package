@@ -3531,7 +3531,7 @@
       "Owner": "#350",
       "Rationale": "The host now owns state and presentation; this pre-existing root member forwards world/lifetime integration until the final thin-root composition.",
       "ExpiresWith": "#376",
-      "Hash": "1212f22073ef88a362bb7ed951a84762aa066c95ff28bf523a6066c8c9fbd42f"
+      "Hash": "5ef9245f9f10d0f1b1c016e45c8d4f4ffbeeeb6471477f137c4bbaab23455a5b"
     },
     {
       "Key": "game/scripts/OBPGame.WorldEntry.cs::OBPGame::method:RefreshRac1HeldItem(:int ?):void:private",

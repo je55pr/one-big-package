@@ -19,20 +19,38 @@ internal sealed class PlayerEquipmentPresentationBinder
     private readonly Dictionary<SourceWeaponKey, EquipmentPresentationBinding> _bindings = [];
     private readonly Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> _effectMeshes = [];
     private string? _selectedBankPath;
+    private string? _preparedBankPath;
+    private Rac1PickupAssets.Catalogue? _preparedBank;
 
     internal Rac1PickupAssets.Catalogue? SelectedAssets { get; private set; }
     internal WorldMaterialFactory? EffectMaterials { get; private set; }
     internal Dictionary<int, List<(ArrayMesh Mesh, Material Material)>> EffectMeshes => _effectMeshes;
     internal EquipmentPresentationBinding? Binding(SourceWeaponKey key) => _bindings.GetValueOrDefault(key);
 
-    internal void PrepareSelectedBank(string path, bool ordinary)
+    internal void PrepareSelectedBank(string path, bool ordinary, bool sourceChanged)
     {
         if (!ordinary) return;
-        if (SelectedAssets is null || _selectedBankPath != path)
-        {
-            SelectedAssets = Rac1PickupAssets.Load(path, 0);
-            _selectedBankPath = path;
-        }
+        if (_preparedBankPath == path && _preparedBank is not null) return;
+        // Same-path ISO replacements may have a different stamp. Never borrow
+        // the committed bank for a candidate whose source has changed.
+        _preparedBank = !sourceChanged && SelectedAssets is not null && _selectedBankPath == path
+            ? SelectedAssets : Rac1PickupAssets.Load(path, 0);
+        _preparedBankPath = path;
+    }
+
+    internal void ApplyPreparedBank()
+    {
+        if (_preparedBank is null || _preparedBankPath is null)
+            throw new InvalidOperationException("Selected player equipment assets were not prepared.");
+        SelectedAssets = _preparedBank;
+        _selectedBankPath = _preparedBankPath;
+        DiscardPrepared();
+    }
+
+    internal void DiscardPrepared()
+    {
+        _preparedBank = null;
+        _preparedBankPath = null;
     }
 
     internal void InvalidateSource()

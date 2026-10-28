@@ -242,14 +242,20 @@ avatar and R&C1 hand asset caches, world-scoped visual nodes, native animation
 controller and fixed 60-Hz clock, pose sampling, hand attachments and event
 unsubscription. `PlayerEquipmentPresentationBinder` owns the selected R&C1
 presentation bank, weapon model/socket admissions and per-world effect material
-and mesh cache. On world teardown, the avatar detaches from `PlayerHost`, restores
-the fallback visual and releases references to world nodes; the source avatar
-stays staged for a same-source destination. On a source identity/stamp change,
-source-specific equipment and avatar caches are invalidated, independently of
-the persistent player session. No synthetic assets replace missing retail data.
+and mesh cache. World entry decodes both avatar and selected equipment data
+into pending candidates without retiring the currently active presentation.
+A rejected or superseded pre-commit preparation discards those candidates while
+the live avatar, 60-Hz clock and animation callbacks remain intact. The next
+world publishes them only after the previous world has begun its committed
+retirement. On teardown, the avatar detaches from `PlayerHost`, restores the
+fallback visual and releases references to world nodes; the committed source
+avatar can be reused for a same-source destination. Identity or stamp changes
+also force a refresh of the selected equipment bank, including a replacement ISO
+at the same path. The persistent player session is not invalidated. No synthetic
+assets replace missing retail data.
 
 Compared with #349 (64 files, 15,910 lines, 589 methods, 399 fields / 256
-mutable), the four-configuration root census is **62 files, 15,757 lines,
+mutable), the four-configuration root census is **62 files, 15,767 lines,
 588 methods, 380 fields / 238 mutable, 43 exposed members**. The retired
 original fields are replaced by two readonly composition references, not new
 player-global feature state. Original weapon decisions/physics callback order,

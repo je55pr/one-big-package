@@ -26,11 +26,18 @@ internal sealed class PlayerAvatarPresentationHost
     private string? _sourcePath;
     private ObpSourceGame? _sourceGame;
     private (long Length, long Written)? _sourceStamp;
-    private string? _wrenchSourcePath;
-    private string? _gloveSourcePath;
     private PlayerHost? _physicsPlayer;
     private Action<double, PlayerAnimationState, Rac1LocomotionAnimationInput>? _step;
     private Action? _reset;
+    private PreparedAssets? _prepared;
+
+    private sealed record PreparedAssets(PlayerAvatarIdentity Identity, string Path,
+        (long Length, long Written) Stamp, PlayerAvatar Avatar, Rac1WrenchAsset.Asset? Wrench,
+        Rac1BombGloveAssets.Asset? Glove, bool Changed);
+
+    internal (long Length, long Written)? CommittedSourceStamp => _sourceStamp;
+    internal bool HasPrepared => _prepared is not null;
+    internal bool PreparedSourceChanged => _prepared?.Changed == true;
 
     internal PlayerAvatar? Avatar { get; private set; }
     internal PlayerAvatarView? View { get; private set; }
@@ -45,45 +52,75 @@ internal sealed class PlayerAvatarPresentationHost
     internal double AnimationTime { get; private set; }
     internal PlayerHost? PhysicsPlayer => _physicsPlayer;
 
+    internal readonly record struct WrenchContactPose(Vector3 Hand, Vector3 Tip);
+    internal bool TryWrenchContactPose(out WrenchContactPose pose)
+    {
+        pose = default;
+        if (View is null || WrenchView is null || !GodotObject.IsInstanceValid(View) ||
+            !GodotObject.IsInstanceValid(WrenchView)) return false;
+        pose = new(View.ToGlobal(WrenchView.HandLocal), View.ToGlobal(WrenchView.TipLocal));
+        return true;
+    }
+
+    internal void UpdateThrownWrenchVisual(Vector3 position, float spin)
+    {
+        if (WrenchView is not null && GodotObject.IsInstanceValid(WrenchView))
+            WrenchView.StepThrown(position, spin);
+    }
+
+    internal bool TryEquipmentMuzzle(Rac1EquipmentView equipment, int socket, out Vector3 position)
+    {
+        position = default;
+        if (View is null || !GodotObject.IsInstanceValid(View) || !GodotObject.IsInstanceValid(equipment))
+            return false;
+        position = View.ToGlobal(equipment.MuzzleAt(socket));
+        return true;
+    }
+
     internal static IPlayerAvatarProvider Provider(ObpSourceGame game) =>
         Providers.Get(game) ?? throw new InvalidOperationException($"No provider for selected avatar source {game}.");
 
-    /// <summary>Stage verified source data, invalidating all borrowed world visuals on replacement.</summary>
-    internal bool Stage(PlayerAvatarIdentity identity, string path, (long Length, long Written) stamp)
+    /// <summary>
+    /// Decode a pending candidate without touching the live visual or its callbacks.
+    /// Failure before world activation must leave the active player unchanged.
+    /// </summary>
+    internal void Prepare(PlayerAvatarIdentity identity, string path, (long Length, long Written) stamp)
     {
+        if (_prepared is { } previous)
+        {
+            if (previous.Identity != identity || previous.Path != path || previous.Stamp != stamp)
+                throw new InvalidDataException("The selected avatar source changed during world preparation.");
+            return;
+        }
         bool changed = Avatar?.Identity != identity || _sourcePath != path ||
             _sourceGame != identity.SourceGame || _sourceStamp != stamp;
-        if (changed)
-        {
-            Retire();
-            // Load only after the caller has verified the source build and file stamp.
-            var avatar = Provider(identity.SourceGame).Load(path, identity.AvatarId);
-            if (avatar.Identity != identity)
-                throw new InvalidOperationException("Decoded avatar identity differs from the selected player profile.");
-            Avatar = avatar;
-            _sourcePath = path;
-            _sourceGame = identity.SourceGame;
-            _sourceStamp = stamp;
-            WrenchAsset = null; GloveAsset = null;
-            _wrenchSourcePath = null; _gloveSourcePath = null;
-        }
-        if (Avatar?.Identity != identity)
+        var avatar = changed ? Provider(identity.SourceGame).Load(path, identity.AvatarId) :
+            Avatar ?? throw new InvalidOperationException("The selected avatar is unavailable.");
+        if (avatar.Identity != identity)
             throw new InvalidOperationException("Decoded avatar identity differs from the selected player profile.");
-        if (identity.SourceGame == ObpSourceGame.Rac1)
-        {
-            if (WrenchAsset is null || _wrenchSourcePath != path)
-            {
-                WrenchAsset = Rac1WrenchAsset.Load(path);
-                _wrenchSourcePath = path;
-            }
-            if (GloveAsset is null || _gloveSourcePath != path)
-            {
-                GloveAsset = Rac1BombGloveAssets.Load(path);
-                _gloveSourcePath = path;
-            }
-        }
-        return changed;
+        var wrench = identity.SourceGame != ObpSourceGame.Rac1 ? null :
+            changed || WrenchAsset is null ? Rac1WrenchAsset.Load(path) : WrenchAsset;
+        var glove = identity.SourceGame != ObpSourceGame.Rac1 ? null :
+            changed || GloveAsset is null ? Rac1BombGloveAssets.Load(path) : GloveAsset;
+        _prepared = new(identity, path, stamp, avatar, wrench, glove, changed);
     }
+
+    /// <summary>Publish only after the previous world has retired its visuals and callbacks.</summary>
+    internal bool ApplyPrepared()
+    {
+        var prepared = _prepared ?? throw new InvalidOperationException("No verified avatar preparation was committed.");
+        _prepared = null;
+        if (prepared.Changed) Retire();
+        Avatar = prepared.Avatar;
+        WrenchAsset = prepared.Wrench;
+        GloveAsset = prepared.Glove;
+        _sourcePath = prepared.Path;
+        _sourceGame = prepared.Identity.SourceGame;
+        _sourceStamp = prepared.Stamp;
+        return prepared.Changed;
+    }
+
+    internal void DiscardPrepared() => _prepared = null;
 
     internal (PlayerAvatarView View, Rac1PlayerAnimationPresentationController Controller) CreateWorldVisual(
         PlayerHost player, PlayerAnimationProfile profile, WorldMaterialFactory? gloveMaterials)
@@ -103,12 +140,22 @@ internal sealed class PlayerAvatarPresentationHost
             throw new InvalidOperationException("Selected native animation adapter did not produce its admitted physics controller.");
         controller.SetAnimationState(player.AnimationState);
         var view = new PlayerAvatarView(avatar, controller.Current, alignGeometricBase: true) { Name = "PlayerAvatar" };
-        if (avatar.Identity.SourceGame == ObpSourceGame.Rac1)
+        try
         {
-            WrenchView = new(WrenchAsset!, avatar);
-            view.AddChild(WrenchView);
-            GloveView = new(GloveAsset!, avatar, gloveMaterials!);
-            view.AddChild(GloveView);
+            if (avatar.Identity.SourceGame == ObpSourceGame.Rac1)
+            {
+                WrenchView = new(WrenchAsset!, avatar);
+                view.AddChild(WrenchView);
+                GloveView = new(GloveAsset!, avatar, gloveMaterials!);
+                view.AddChild(GloveView);
+            }
+        }
+        catch
+        {
+            view.Free();
+            WrenchView = null;
+            GloveView = null;
+            throw;
         }
         View = view;
         Sink = view;
@@ -234,6 +281,7 @@ internal sealed class PlayerAvatarPresentationHost
             if (View is not null && GodotObject.IsInstanceValid(View) &&
                 ReferenceEquals(_physicsPlayer.VisualRoot.CustomVisual, View))
                 _physicsPlayer.VisualRoot.ReplaceVisual(null);
+            else if (View is not null && GodotObject.IsInstanceValid(View)) View.QueueFree();
         }
         else if (View is not null && GodotObject.IsInstanceValid(View)) View.QueueFree();
         _physicsPlayer = null; _step = null; _reset = null;

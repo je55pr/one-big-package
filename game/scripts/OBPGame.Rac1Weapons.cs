@@ -253,9 +253,9 @@ public partial class OBPGame
 
     private Vector3 EquipmentMuzzle(Rac1WeaponId weapon, int socket = 0)
     {
-        if (_avatarPresentation.View is not null && _rac1EquipmentViews.TryGetValue(weapon, out var view))
+        if (_rac1EquipmentViews.TryGetValue(weapon, out var view) &&
+            _avatarPresentation.TryEquipmentMuzzle(view, socket, out var muzzle))
         {
-            var muzzle = _avatarPresentation.View.ToGlobal(view.MuzzleAt(socket));
             var start = _player!.GlobalPosition + Vector3.Up * .8f;
             var ray = PhysicsRayQueryParameters3D.Create(start, muzzle); ray.Exclude = [_player.GetRid()];
             var hit = _player.GetWorld3D().DirectSpaceState.IntersectRay(ray);

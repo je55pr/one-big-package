@@ -52,8 +52,14 @@ public sealed class PersistentPlayerScenario(DiagnosticScenarioDefinition defini
             Require(live.WorldInstance == current.WorldInstance && live.PlayerNode == current.PlayerNode, "missing avatar source destroyed the live player/world");
             Require(current.State?.SelectedWeapon == initial.SelectedWeapon, "source removal reset desired equipment");
         }
+        long beforeRejectedStage = movement.ReadPlayer().NativeTick;
         Require(!lifecycle.TryFailedPreparation(), "invalid source was admitted");
+        await run.WaitAsync(DiagnosticFramePhase.Physics, 3);
         var afterFailure = player.Read();
+        long afterRejectedStage = movement.ReadPlayer().NativeTick;
+        Require(afterRejectedStage > beforeRejectedStage, "failed preparation stopped the live 60-Hz avatar animation callback");
+        Require(afterFailure.AvatarPresented && afterFailure.PresentedAvatar == configuration.Avatar,
+            "failed preparation retired the live selected avatar");
         Require(live.WorldInstance == afterFailure.WorldInstance && live.PlayerNode == afterFailure.PlayerNode && entered.SessionOwner == afterFailure.SessionOwner,
             "failed preparation destroyed the live world/player");
         bool ownedBlaster = afterFailure.NativeBlasterOwned;
